@@ -146,10 +146,15 @@ export function imageExtensionForContentType(contentType?: string) {
  * Twitter, an email client) and hoping their crawler can fetch it. Those
  * crawlers give up after a couple of seconds and silently drop the image;
  * here we can afford a real timeout and fall through to another gateway.
+ *
+ * `timeout` caps a single gateway; `deadline` (epoch ms) caps the whole cascade.
+ * Callers running under a serverless function budget must pass a deadline, or an
+ * all-gateways miss costs `timeout` × the gateway count and leaves no time to
+ * act on the failure.
  */
 export async function fetchImageFromIPFSWithFallback(
   ipfsHash: string,
-  timeout = 10000
+  { timeout = 10000, deadline }: { timeout?: number; deadline?: number } = {}
 ): Promise<IPFSImage> {
   const hash = ipfsHash.startsWith('ipfs://')
     ? ipfsHash.replace('ipfs://', '')
@@ -162,8 +167,14 @@ export async function fetchImageFromIPFSWithFallback(
   const errors: string[] = []
 
   for (const gateway of IPFS_GATEWAYS) {
+    const budget = deadline === undefined ? timeout : Math.min(timeout, deadline - Date.now())
+    if (budget <= 0) {
+      errors.push('deadline reached')
+      break
+    }
+
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeout)
+    const timer = setTimeout(() => controller.abort(), budget)
     try {
       const response = await fetch(`${gateway}${hash}`, {
         signal: controller.signal,

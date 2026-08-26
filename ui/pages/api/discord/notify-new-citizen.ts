@@ -36,6 +36,12 @@ const CHANNEL_ID =
 const MAX_POLL_ATTEMPTS = 12
 const POLL_INTERVAL_MS = 3000
 
+// All portrait downloads share this budget so the Discord call always happens
+// inside `config.maxDuration`. Without it a dead portrait CID costs one full
+// gateway cascade per attempted URI, the function is killed mid-retry, and
+// nothing at all is announced — worse than announcing without an image.
+const PORTRAIT_BUDGET_MS = 45000
+
 function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms))
 }
@@ -67,11 +73,16 @@ async function pollForCitizenRow(chain: any, tokenId: string) {
   return null
 }
 
-async function resolveCitizenImage(imageURI?: string): Promise<CitizenAttachment | null> {
+async function resolveCitizenImage(
+  imageURI: string | undefined,
+  deadline: number
+): Promise<CitizenAttachment | null> {
   if (!imageURI) return null
 
   try {
-    const { bytes, contentType, gateway } = await fetchImageFromIPFSWithFallback(imageURI)
+    const { bytes, contentType, gateway } = await fetchImageFromIPFSWithFallback(imageURI, {
+      deadline,
+    })
 
     if (bytes.byteLength > MAX_ATTACHMENT_BYTES) {
       console.warn(
@@ -103,16 +114,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const chain = DEFAULT_CHAIN_V5
 
+  const portraitDeadline = Date.now() + PORTRAIT_BUDGET_MS
+
   // The client already knows the `ipfs://` URI it wrote on-chain, so start
   // downloading the portrait immediately rather than waiting on Tableland.
   const rowPromise = pollForCitizenRow(chain, tokenId)
-  const clientImagePromise = resolveCitizenImage(image)
+  const clientImagePromise = resolveCitizenImage(image, portraitDeadline)
 
   const row = await rowPromise
   let attachment = await clientImagePromise
 
-  if (!attachment && row?.image) {
-    attachment = await resolveCitizenImage(row.image)
+  // Retrying is only worth it for a URI we have not already exhausted; the row
+  // normally carries the very same `ipfs://` URI the client sent.
+  if (!attachment && row?.image && row.image !== image) {
+    attachment = await resolveCitizenImage(row.image, portraitDeadline)
   }
 
   const profileUrl = citizenProfileUrl(DEPLOYED_ORIGIN, prettyLink)
