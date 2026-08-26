@@ -12,6 +12,12 @@
  * crawler allows. Stage 2 runs the same citizens through the fixed code. Stage 3
  * builds the real Discord request body and confirms the portrait now ships with
  * the message instead of being something Discord has to go and fetch.
+ *
+ * Citizens are sampled at random rather than newest-first on purpose. ipfs.io
+ * answers quickly for any CID it already has cached, so re-requesting the same
+ * handful of CIDs makes the bug disappear — which is exactly why this looked
+ * unreproducible whenever someone re-opened the link to check on it. A brand-new
+ * citizen's CID is never in that cache.
  */
 import { CITIZEN_TABLE_NAMES, DISCORD_CITIZEN_ROLE_ID, DEPLOYED_ORIGIN } from 'const/config'
 import {
@@ -38,35 +44,55 @@ function legacyOgImageUrl(image: string) {
   return `https://ipfs.io/ipfs/${image.split('ipfs://')[1]}`
 }
 
-async function fetchRecentCitizens(): Promise<CitizenRow[]> {
-  const statement = `SELECT id,name,image,description FROM ${CITIZEN_TABLE_NAMES.arbitrum} ORDER BY id DESC LIMIT ${SAMPLE_SIZE}`
+async function fetchSampleCitizens(): Promise<CitizenRow[]> {
+  const statement = `SELECT id,name,image,description FROM ${CITIZEN_TABLE_NAMES.arbitrum} WHERE image != '' AND name != ''`
   const res = await fetch(
     `https://tableland.network/api/v1/query?statement=${encodeURIComponent(statement)}`
   )
   if (!res.ok) {
     throw new Error(`Tableland query failed: HTTP ${res.status}`)
   }
-  return res.json()
+  const rows: CitizenRow[] = await res.json()
+
+  const sample: CitizenRow[] = []
+  const pool = [...rows]
+  while (sample.length < SAMPLE_SIZE && pool.length > 0) {
+    sample.push(...pool.splice(Math.floor(Math.random() * pool.length), 1))
+  }
+  return sample
 }
 
 type FetchOutcome = { ok: boolean; detail: string; ms: number }
 
+/**
+ * A crawler needs the *whole* image inside its budget, so a fast set of response
+ * headers followed by a stalled body still means no image in the embed. Compare
+ * the bytes actually delivered against Content-Length rather than trusting the
+ * status code.
+ */
 async function tryFetchWithinCrawlerBudget(url: string): Promise<FetchOutcome> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), CRAWLER_BUDGET_MS)
   const started = Date.now()
   try {
     const res = await fetch(url, { signal: controller.signal, redirect: 'follow' })
-    const bytes = (await res.arrayBuffer()).byteLength
+    if (!res.ok) {
+      return { ok: false, detail: `HTTP ${res.status}`, ms: Date.now() - started }
+    }
+
+    const expected = Number(res.headers.get('content-length') || 0)
+    const delivered = (await res.arrayBuffer()).byteLength
+    const complete = delivered > 0 && (!expected || delivered === expected)
+
     return {
-      ok: res.ok && bytes > 0,
-      detail: res.ok ? `HTTP ${res.status}, ${bytes} bytes` : `HTTP ${res.status}`,
+      ok: complete,
+      detail: complete ? `${delivered} bytes` : `truncated after ${delivered} of ${expected} bytes`,
       ms: Date.now() - started,
     }
   } catch (err: any) {
     return {
       ok: false,
-      detail: err?.name === 'AbortError' ? `no response in ${CRAWLER_BUDGET_MS}ms` : String(err),
+      detail: err?.name === 'AbortError' ? `no image in ${CRAWLER_BUDGET_MS}ms` : String(err),
       ms: Date.now() - started,
     }
   } finally {
@@ -80,9 +106,11 @@ function line(ok: boolean, label: string, outcome: FetchOutcome) {
 }
 
 async function main() {
-  const citizens = await fetchRecentCitizens()
+  const citizens = await fetchSampleCitizens()
   console.log(
-    `Sampling the ${citizens.length} most recent citizens from ${CITIZEN_TABLE_NAMES.arbitrum}\n`
+    `Sampling ${citizens.length} random citizens from ${CITIZEN_TABLE_NAMES.arbitrum}: ${citizens
+      .map((c) => `#${c.id}`)
+      .join(' ')}\n`
   )
 
   console.log(`Stage 1 — reproduce: og:image as the profile page built it (ipfs.io)`)
@@ -162,9 +190,9 @@ async function main() {
     } imageless announcements on the old code)`
   )
   console.log(
-    `Fixed: ${fixed ? 'yes' : 'no'} (${
-      citizens.length - missingAttachments
-    }/${citizens.length} announcements now carry the portrait)`
+    `Fixed: ${fixed ? 'yes' : 'no'} (${citizens.length - missingAttachments}/${
+      citizens.length
+    } announcements now carry the portrait)`
   )
 
   if (!reproduced) {

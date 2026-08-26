@@ -1,6 +1,6 @@
+import { IPFS_GATEWAY } from 'const/config'
 import fs from 'fs'
 import path from 'path'
-import { IPFS_GATEWAY } from 'const/config'
 import {
   buildNewCitizenBody,
   buildNewCitizenContent,
@@ -26,6 +26,7 @@ describe('citizen profile og:image', () => {
   })
 
   it('falls back to an absolute URL on our own origin when there is no portrait', () => {
+    // Citizens with no portrait previously got `https://ipfs.io/ipfs/undefined`.
     for (const missing of [undefined, '']) {
       const url = normalizeOgImageUrl(missing)
       expect(url).to.match(/^https?:\/\//)
@@ -34,14 +35,8 @@ describe('citizen profile og:image', () => {
     }
   })
 
-  it('does not throw when the portrait is missing', () => {
-    expect(() => normalizeOgImageUrl(undefined)).to.not.throw()
-  })
-
   it('leaves non-IPFS absolute URLs alone', () => {
-    expect(normalizeOgImageUrl('https://example.com/a.png')).to.equal(
-      'https://example.com/a.png'
-    )
+    expect(normalizeOgImageUrl('https://example.com/a.png')).to.equal('https://example.com/a.png')
   })
 })
 
@@ -56,14 +51,22 @@ describe('citizen profile page metadata', () => {
   // reached the helper looking like an already-resolved https URL and was passed
   // straight through to Discord.
   it('does not hardcode a public IPFS gateway for the portrait', () => {
-    expect(source).to.not.include('ipfs.io')
+    for (const gateway of [
+      'https://ipfs.io/ipfs/',
+      'https://dweb.link/ipfs/',
+      'https://cloudflare-ipfs.com/ipfs/',
+      'https://gateway.pinata.cloud/ipfs/',
+    ]) {
+      expect(source).to.not.include(gateway)
+    }
   })
 
   it('hands the raw metadata image to Head so it gets normalized', () => {
     expect(source).to.include('image={nft?.metadata?.image}')
   })
 
-  it('does not split the portrait URI, which threw when there was no portrait', () => {
+  // A citizen with no portrait used to yield `https://ipfs.io/ipfs/undefined`.
+  it('does not split the portrait URI into a gateway path', () => {
     expect(source).to.not.include("image.split('ipfs://')")
   })
 })

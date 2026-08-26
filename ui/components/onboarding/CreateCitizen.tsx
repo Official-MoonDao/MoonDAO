@@ -873,7 +873,7 @@ export default function CreateCitizen({
         const urlParams = new URLSearchParams(window.location.search)
         const referredBy = urlParams.get('referredBy')
 
-        if (referredBy && referredBy !== address) {
+        if (accessToken && referredBy && referredBy !== address) {
           const referralResponse = await fetch('/api/xp/citizen-referred', {
             method: 'POST',
             headers: {

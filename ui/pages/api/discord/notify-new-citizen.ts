@@ -117,7 +117,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const profileUrl = citizenProfileUrl(DEPLOYED_ORIGIN, prettyLink)
   const imageFilename = attachment
-    ? citizenImageFilename(tokenId, attachment.contentType)
+    ? citizenImageFilename(Number(tokenId), attachment.contentType)
     : undefined
 
   const payload = buildNewCitizenPayload({
@@ -132,9 +132,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   })
 
   if (!attachment) {
-    console.warn(
-      `[notify-new-citizen] Sending citizen ${tokenId} announcement without a portrait`
-    )
+    console.warn(`[notify-new-citizen] Sending citizen ${tokenId} announcement without a portrait`)
   }
 
   const { headers, body } = buildNewCitizenBody(payload, imageFilename, attachment ?? undefined)

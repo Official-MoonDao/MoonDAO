@@ -93,7 +93,7 @@ export function buildNewCitizenBody(
   payload: Record<string, any>,
   imageFilename?: string,
   attachment?: CitizenAttachment
-) {
+): { headers: Record<string, string>; body: string | FormData } {
   if (!imageFilename || !attachment) {
     return {
       headers: { 'Content-Type': 'application/json' },
