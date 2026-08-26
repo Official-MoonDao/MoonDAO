@@ -27,6 +27,10 @@ import {
   type Plot,
   type SitePlan,
 } from '../../../lib/lunar-atlas/baseplan'
+import {
+  BURIED_HABITATS,
+  vaultGeometry,
+} from '../../../lib/lunar-atlas/subplan'
 import type { ProjectType } from '../../../lib/lunar-atlas/types'
 
 const plots = (...radii: number[]): Plot[] =>
@@ -65,11 +69,22 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // competing against its own precursor lander; ILRS reads as the
   // extended-model station China/Roscosmos have on the public roadmap for the
   // 2040s, not the single-mast 2035 basic model — alongside Sierra's
-  // inflatable LIFE habitat (6 m), Thales' MPH module (5.5 m), and Toyota's
-  // Lunar Cruiser (3.3 m). A base is not a different kind of thing from a
-  // habitat module, just more of them integrated together, so all five
-  // compete on the same hardstand.
-  habitat: plots(19, 12.86, 6, 5.5, 3.3),
+  // inflatable LIFE habitat and Thales' MPH module, and Toyota's Lunar Cruiser
+  // (3.3 m). A base is not a different kind of thing from a habitat module,
+  // just more of them integrated together, so all five compete on the same
+  // hardstand.
+  //
+  // The two modules are BURIED, and the figures below are the ones that costs
+  // them: 13.937 and 14.056 m are their cover mounds' half-lengths, not their
+  // hulls' — a cut-and-cover berm reaches about twice as far as the can under
+  // it, so each went from a ~6 m plot to a ~14 m one. Both come out of
+  // vaultGeometry (lib/lunar-atlas/subplan) via footprintRadiusM, so a change
+  // to either vault's span, length, cover or excavation moves them and this
+  // roster has to be recomputed rather than nudged. It is also why the core
+  // ring did NOT have to grow to take them: the ring's radius is solved off
+  // the two LARGEST plots (see the 'ring' case in districtSlots), and Artemis
+  // Base Camp at 19 m plus ILRS at 12.86 m still set it.
+  habitat: plots(19, 12.86, 13.937, 14.056, 3.3),
   lander: plots(31.2, 9.6),
   // eVinci radiator wall, IX's radiator canopy, Lockheed's radiator mast — the
   // three fission bids, and three very different amounts of ground.
@@ -143,12 +158,21 @@ describe('moon base zero street plan', () => {
       // centreline radially, and the same from its avenue perpendicularly — so
       // every asset on the base ends up with an identical strip of clear
       // regolith at its edge.
+      //
+      // Both hold exactly for the four CORNER lots. A fifth and beyond continue
+      // along main street on the corners' own sides, so they keep the radial
+      // setback exactly and stand FURTHER off the avenue than it, never nearer.
       for (const [category, field] of races) {
         const plan = BASE_PLAN[category]!
         if (plan.front) continue
         const bearing = (districtBearingDeg(plan) * Math.PI) / 180
         const slots = districtSlots(plan, field)
-        for (const plot of field) {
+        // districtSlots fills the corners largest first, so the lot's place in
+        // that order is what decides whether it is a corner or a later block.
+        const order = [...field].sort(
+          (a, b) => b.radiusM - a.radiusM || a.id.localeCompare(b.id)
+        )
+        order.forEach((plot, i) => {
           const slot = slots.get(plot.id)!
           const want = ROAD_HALF_M + SETBACK_M + plot.radiusM
           const radius = Math.hypot(slot.east, slot.north)
@@ -160,11 +184,10 @@ describe('moon base zero street plan', () => {
           const across = Math.abs(
             -Math.sin(bearing) * slot.east + Math.cos(bearing) * slot.north
           )
-          expect(across, `${category}/${plot.id} off its avenue`).to.be.closeTo(
-            want,
-            1e-6
-          )
-        }
+          const label = `${category}/${plot.id} off its avenue`
+          if (i < 4) expect(across, label).to.be.closeTo(want, 1e-6)
+          else expect(across, label).to.be.at.least(want - 1e-6)
+        })
       }
     })
 
@@ -326,6 +349,58 @@ describe('moon base zero street plan', () => {
         districtExtentM(pad, ROSTERS.lander!) -
         districtExtentM(core, ROSTERS.habitat!)
       expect(gap).to.be.greaterThan(30)
+    })
+  })
+
+  describe('the buried habitats', () => {
+    it('reserves the cover mound rather than the module', () => {
+      // The roster above mirrors these by hand, and the whole core ring is
+      // solved against those figures — so if a vault's dimensions move and this
+      // roster doesn't, every packing assertion in this file starts testing a
+      // colony that no longer exists.
+      const want: Record<string, number> = {
+        'sierra-space-life': 13.937,
+        'thales-mph': 14.056,
+      }
+      for (const [id, site] of Object.entries(BURIED_HABITATS)) {
+        expect(want[id], `${id} is missing from this test's roster`).to.exist
+        expect(vaultGeometry(site).footprintM, id).to.be.closeTo(want[id], 5e-4)
+      }
+    })
+
+    it('carries enough regolith over the crown to be worth burying for', () => {
+      // The point of the exercise. Three to five meters is the range the
+      // shielding literature keeps landing on, and it is the number the
+      // dataset's shielding milestones quote — a vault that quietly lost its
+      // cover to a geometry tweak would still look fine and mean nothing.
+      for (const [id, site] of Object.entries(BURIED_HABITATS)) {
+        expect(site.coverM, id).to.be.at.least(3)
+      }
+    })
+
+    it('stands the cutaway camera inside the vault it is looking into', () => {
+      // The eye is placed from these same numbers (see subViewFraming and the
+      // `sub` branch of MoonGlobe's CameraRig), and there is no fallback if it
+      // lands wrong: outside the end wall it looks at the back of the liner,
+      // and below the floor it looks at nothing at all.
+      for (const [id, site] of Object.entries(BURIED_HABITATS)) {
+        const g = vaultGeometry(site)
+        expect(g.standoffM, `${id} eye is past the end wall`).to.be.lessThan(
+          g.lengthM / 2
+        )
+        // Between the floor and the crown, and looking UP at the module rather
+        // than down through the floor at it.
+        expect(g.eyeDepthM, `${id} eye is under the floor`).to.be.lessThan(
+          g.floorDepthM
+        )
+        expect(g.eyeDepthM, `${id} eye is above the crown`).to.be.greaterThan(
+          g.floorDepthM - g.crownM
+        )
+        expect(
+          g.subjectDepthM,
+          `${id} looks down at its own module`
+        ).to.be.lessThan(g.eyeDepthM)
+      }
     })
   })
 

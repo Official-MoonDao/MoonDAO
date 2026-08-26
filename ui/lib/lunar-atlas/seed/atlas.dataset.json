@@ -1864,6 +1864,37 @@
               "retrievedAt": "2026-07-27"
             }
           ]
+        },
+        {
+          "id": "mph-shielded",
+          "title": "Module emplaced in a cut-and-cover vault and covered by the surface construction fleet",
+          "targetDate": "2034",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "metrics": [
+            {
+              "label": "Regolith over the vault crown",
+              "value": 4,
+              "unit": "m"
+            },
+            {
+              "label": "Excavation depth",
+              "value": 7,
+              "unit": "m"
+            }
+          ],
+          "sources": [
+            {
+              "label": "NASA — NASA, ICON advance lunar construction technology",
+              "url": "https://www.nasa.gov/centers-and-facilities/marshall/nasa-icon-advance-lunar-construction-technology-for-moon-missions/",
+              "retrievedAt": "2026-07-16"
+            },
+            {
+              "label": "Redwire — $12.9M NASA award for lunar infrastructure (pads, roads, berms)",
+              "url": "https://rdw.com/newsroom/pads-roads-and-other-forms-of-infrastructure-on-the-moon/",
+              "retrievedAt": "2026-07-16"
+            }
+          ]
         }
       ],
       "sharedGoalIds": [
@@ -1925,6 +1956,37 @@
               "label": "Sierra Space",
               "url": "https://www.sierraspace.com/",
               "retrievedAt": "2026-07-27"
+            }
+          ]
+        },
+        {
+          "id": "life-shielded",
+          "title": "Shell inflated in a cut-and-cover vault and covered by the surface construction fleet",
+          "targetDate": "2033",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "metrics": [
+            {
+              "label": "Regolith over the vault crown",
+              "value": 4,
+              "unit": "m"
+            },
+            {
+              "label": "Excavation depth",
+              "value": 11,
+              "unit": "m"
+            }
+          ],
+          "sources": [
+            {
+              "label": "NASA — NASA, ICON advance lunar construction technology",
+              "url": "https://www.nasa.gov/centers-and-facilities/marshall/nasa-icon-advance-lunar-construction-technology-for-moon-missions/",
+              "retrievedAt": "2026-07-16"
+            },
+            {
+              "label": "Redwire — $12.9M NASA award for lunar infrastructure (pads, roads, berms)",
+              "url": "https://rdw.com/newsroom/pads-roads-and-other-forms-of-infrastructure-on-the-moon/",
+              "retrievedAt": "2026-07-16"
             }
           ]
         }

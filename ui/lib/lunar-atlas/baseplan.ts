@@ -310,27 +310,43 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
       // past this district in both directions, so a lot placed further along it
       // fronts road that is there whatever the roster does.
       const centre = Math.hypot(plan.east, plan.north)
-      // These are same-side neighbours down one street, so they clear each
-      // other on their own radii and a gap — unlike the corners, which face
-      // each other across a road and are held apart by frontage instead.
-      let step = 0
-      for (let i = 4; i < order.length; i++) {
-        step = Math.max(
-          step,
-          order[i].radiusM + order[i - 4].radiusM + DISTRICT_GAP_M
-        )
-      }
+      // Two lots further along main street on the same side are the one pair in
+      // the plan with no road between them: the corners face each other across
+      // a street and are held apart by frontage, but these only have open
+      // ground. So each keeps the clear strip it would have had against a
+      // street, and the district's gap of untouched regolith separates the two
+      // strips.
+      const laneClearM = DISTRICT_GAP_M + 2 * SETBACK_M
+      // Angle about the base centre for each lot. Radius is fixed by the lot's
+      // own setback off main street, so only the angle is free.
+      const angle: number[] = []
+      const radii: number[] = []
       order.forEach((plot, i) => {
         const [alongSign, acrossSign] = CORNERS[i % 4]
-        const lane = Math.floor(i / 4)
         const front = frontageM(plot.radiusM)
-        // Radially, `front` off main street's centreline; tangentially, the
-        // angle whose perpendicular distance from the avenue is `front` for a
-        // corner lot, plus a lane's step for each block further along.
         const radius = centre + alongSign * front
-        const swing =
-          acrossSign * Math.asin(Math.min(1, (front + lane * step) / radius))
-        const a = bearing + swing
+        // A corner lot takes the angle whose perpendicular distance from the
+        // avenue is exactly its frontage. Each further lot on the same corner
+        // is swung on past the one before it until the CHORD between the two
+        // centres is wide enough — which is not the same as advancing its
+        // distance from the avenue by a fixed step, because two lots of
+        // different sizes keep different setbacks off main street and so sit on
+        // different arcs. Stepping the avenue offset instead let a 6 m paving
+        // lot slide up the arc into the side of a 19 m one 13 m further out.
+        const back = i - 4
+        if (back < 0) {
+          angle[i] =
+            bearing + acrossSign * Math.asin(Math.min(1, front / radius))
+        } else {
+          const want = order[back].radiusM + plot.radiusM + laneClearM
+          const cos =
+            (radii[back] ** 2 + radius ** 2 - want ** 2) /
+            (2 * radii[back] * radius)
+          const delta = Math.acos(Math.max(-1, Math.min(1, cos)))
+          angle[i] = angle[back] + acrossSign * delta
+        }
+        radii[i] = radius
+        const a = angle[i]
         out.set(plot.id, {
           east: Math.cos(a) * radius,
           north: Math.sin(a) * radius,

@@ -43,6 +43,7 @@ import {
   capCenterDirection,
   capOffsetLatLon,
 } from '@/lib/lunar-atlas/southpole'
+import { buriedSite, vaultAxis } from '@/lib/lunar-atlas/subplan'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -313,6 +314,15 @@ function CompetitorPlot({
     }
   }, [standAt, radiusAt, project])
 
+  // A buried habitat's vault runs along a KNOWN bearing rather than on the
+  // base's camera-facing heading, because the cutaway camera has to stand at one
+  // end of it (see vaultAxis, and `sub` in flyToProject). Read off the plot's
+  // own slot so the model and the camera derive the axis from one value.
+  const vaultAlong = useMemo(
+    () => (buriedSite(project.id) ? vaultAxis(slot) : undefined),
+    [project.id, slot]
+  )
+
   // Laps of main street, for a race whose hardware drives rather than stands
   // (see PATROL).
   //
@@ -383,7 +393,7 @@ function CompetitorPlot({
         dir={[ndir.x, ndir.y, ndir.z]}
         accent={accent}
         turn={THREE.MathUtils.degToRad(slot.turn)}
-        noseAlong={lap?.noseAlong}
+        noseAlong={lap?.noseAlong ?? vaultAlong}
         dim={dim}
         onSelect={onSelect}
         onHover={(id) => onHover?.(Boolean(id))}

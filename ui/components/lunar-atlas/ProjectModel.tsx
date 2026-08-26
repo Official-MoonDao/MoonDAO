@@ -24,6 +24,7 @@ import {
 import * as THREE from 'three'
 import { HOME_CAM, HOME_TARGET } from '@/lib/lunar-atlas/homeview'
 import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
+import { buriedVault, type VaultGeometry } from '@/lib/lunar-atlas/subplan'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { ModelTransform, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
@@ -198,6 +199,14 @@ const GRADED_DECK_FRACTION: Partial<Record<ProjectType, number>> = {
 // Radius in meters of the graded deck a model rests on, or null if it has none
 // and must meet the ground directly beneath it.
 export function gradedDeckRadiusM(project: Project): number | null {
+  // A buried habitat is nothing BUT graded deck: its cover mound is 28 m of
+  // placed regolith with a skirt bedded below grade all the way round, so it
+  // seats on the high ground under its footprint and lets the skirt fall away
+  // downhill — exactly the case this mechanism exists for, and the alternative
+  // (seating a 28 m mound on the single point beneath its centre) buries its
+  // uphill end on any slope at all.
+  const vault = buriedVault(project.id)
+  if (vault) return vault.footprintM
   const f = GRADED_DECK_FRACTION[project.type]
   return f === undefined ? null : projectSizeM(project) * f
 }
@@ -273,6 +282,13 @@ const FOOTPRINT_FRACTION: Record<string, number> = {
 // must not overlap. Where a model brings its own graded deck that deck IS the
 // footprint — it is the part that has to sit on clear regolith.
 export function footprintRadiusM(project: Project): number {
+  // A buried habitat's footprint is its EARTHWORKS, not its module: the cover
+  // mound reaches about twice as far as the can under it, and that reach is
+  // already derived from the vault's own dimensions (see vaultGeometry). Taken
+  // from there rather than through a FOOTPRINT_FRACTION entry so the number
+  // cannot drift away from the mound the model layer actually draws.
+  const vault = buriedVault(project.id)
+  if (vault) return vault.footprintM
   const graded = gradedDeckRadiusM(project)
   if (graded !== null) return graded
   return projectSizeM(project) * (FOOTPRINT_FRACTION[project.id] ?? 0.5)
@@ -10894,6 +10910,1078 @@ function ParsecTerminal({ accent }: { accent: string }) {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Buried habitats — cut-and-cover vaults under a regolith cover
+// ---------------------------------------------------------------------------
+//
+// Two competitors in the core race end up under the surface rather than on it;
+// lib/lunar-atlas/subplan.ts holds which, why, and every dimension used here.
+// This is the geometry, and it is really three models stacked on one plot:
+//
+//   ABOVE GRADE  the cover mound, an airlock head house part-way down its
+//                inward flank, and the radiator wall, PV and vent stacks that
+//                a buried habitat CANNOT bury — a radiator needs cold sky and
+//                an array needs the sun, so the thermal and power hardware
+//                stays up while only the pressure shell goes down. This is the
+//                part that is always on screen, and it is the click target.
+//   THE VAULT    liner, floor, ribs and work lighting, drawn DOUBLE-SIDED so
+//                the same geometry reads from inside on the cutaway view (see
+//                subViewFraming) and from outside for anything that gets under
+//                the terrain another way.
+//   THE MODULE   the competitor's own pressure shell, on its cradles, with the
+//                radiators and arrays stripped off it and moved to the crest.
+//
+// Nothing has to be hidden or toggled to make this work. From above, the mound
+// is solid opaque geometry covering the whole vault in plan, so it occludes
+// everything under it the same way a hill occludes a valley; from below, the
+// terrain cap and the roads are front-sided and cull away on their own. The
+// only concession anywhere in the scene is the camera floor, which stands down
+// while a cutaway is open (see CAMERA_CLEARANCE in MoonGlobe).
+
+const VAULT_LINER = '#8b8780' // cast-regolith intrados, lamp-lit
+const VAULT_RIB = '#767b85' // the hoop frame the liner was cast over
+const VAULT_DECK = '#9b978d' // laid floor slab
+const VAULT_WALK = '#87837a' // the traffic strip worn down the middle of it
+const VAULT_LAMP = '#ffe4bd' // work lighting
+const COVER = '#a29c92' // heaped, graded cover regolith
+
+// Fill the vault's own lamps throw onto everything in it. The interior sits in
+// the mound's shadow — which is correct, and is why it needs this at all: the
+// scene's fill is nearly nothing (see the airless-fill note in MoonGlobe), so
+// without a lit look every surface down here renders as a black hole. Applied
+// as emissive rather than as real lights on purpose: point lights are global to
+// the renderer, and two vaults' worth of them would be paid for by every lit
+// material in the scene, forever, to light two rooms nobody is usually in.
+const VAULT_FILL = '#ffd9a8'
+const VAULT_FILL_I = 0.17
+const VAULT_FILL_DEEP_I = 0.1 // further from the lamps: the floor, the far end
+
+// How far the cover's skirt is bedded BELOW grade, in meters. A skirt that
+// stops exactly at grade is coplanar with the plaza it stands on, which is the
+// z-fight this avoids; a third of a meter of it buried is invisible.
+const COVER_BED_M = 0.35
+
+// Liner thickness in meters. Mirrors LINER_M in subplan, which is where the
+// packing side of the same number lives.
+const LINER_T = 0.5
+
+// The cover's height above grade at a plan position, in meters. Both the mound
+// geometry and everything standing on it read their height from this one
+// function, so a head house cannot end up floating over its own berm.
+//
+// The shape is a graded ridge, not a dome: full crest height directly over the
+// liner, straight flanks falling at the angle of repose, and both ends tapering
+// over the same batter run. `k` is how much of full height this station carries.
+function moundRise(g: VaultGeometry, x: number, z: number): number {
+  const k = Math.max(
+    0,
+    Math.min(1, (g.moundHalfLengthM - Math.abs(x)) / g.batterM)
+  )
+  if (k <= 0) return 0
+  const crestHalfZ = (g.moundHalfWidthM - g.batterM) * k
+  const toeHalfZ = g.moundHalfWidthM * k
+  const az = Math.abs(z)
+  if (az <= crestHalfZ) return g.crestM * k
+  if (az >= toeHalfZ) return 0
+  return g.crestM * k * (1 - (az - crestHalfZ) / (toeHalfZ - crestHalfZ))
+}
+
+// Stations along the axis, and samples across it. The across-samples are given
+// in SHOULDER units — 0 is the crest line, 1 the shoulder where the flank
+// breaks, 2 the toe — and cluster toward the shoulder, which is the only crease
+// in the profile and the one place a coarse sample reads as a facet. The last
+// sample is past the toe: it carries the skirt that tucks the rim under grade.
+const MOUND_NX = 72
+const MOUND_SKIRT = 2.06
+const MOUND_ACROSS = (() => {
+  const half = [
+    0, 0.34, 0.68, 0.88, 1, 1.2, 1.45, 1.7, 1.86, 1.96, 2, MOUND_SKIRT,
+  ]
+  return [...half.slice(1).reverse().map((u) => -u), ...half]
+})()
+
+// The cover, as one mesh. Built rather than assembled from primitives because
+// the toe outline has to be exactly the plan shape moundRise describes: a
+// rectangular sheet of ground-height geometry would lie coplanar with the plaza
+// wherever the mound isn't, which is the same z-fight COVER_BED_M avoids at the
+// skirt.
+function coverMoundGeometry(g: VaultGeometry): THREE.BufferGeometry {
+  // Fraction of the toe half-width the flat crest reaches. Constant along the
+  // whole ridge — both crest and toe scale with the same `k` — which is what
+  // lets one normalized sample list serve every station.
+  const c = (g.moundHalfWidthM - g.batterM) / g.moundHalfWidthM
+  // Shoulder units to a signed fraction of the toe half-width. Folded through
+  // |u| so both halves come off the same curve: taking `u` straight put every
+  // negative sample on the crest branch, which left the far flank a squashed
+  // copy of the near one with its toe hanging out past the plan outline.
+  const us = MOUND_ACROSS.map((u) => {
+    const au = Math.abs(u)
+    return Math.sign(u) * (au <= 1 ? au * c : c + (au - 1) * (1 - c))
+  })
+
+  const nz = us.length
+  const pos: number[] = []
+  const col: number[] = []
+  const idx: number[] = []
+  const base = new THREE.Color(COVER)
+
+  for (let i = 0; i <= MOUND_NX; i++) {
+    const x = -g.moundHalfLengthM + (2 * g.moundHalfLengthM * i) / MOUND_NX
+    const k = Math.max(
+      0,
+      Math.min(1, (g.moundHalfLengthM - Math.abs(x)) / g.batterM)
+    )
+    const toe = g.moundHalfWidthM * k
+    const rise = g.crestM * k
+    for (let j = 0; j < nz; j++) {
+      const v = us[j]
+      const av = Math.abs(v)
+      // The profile meets grade exactly at the toe; the one sample beyond it
+      // carries the rim down under the plaza, so the mound's edge is never
+      // coplanar with the ground it stands on.
+      const y =
+        av > 1 ? -COVER_BED_M : rise * (av <= c ? 1 : (1 - av) / (1 - c))
+      pos.push(x, y, v * toe)
+      // Placed in LIFTS, and a compacted berm shows it: a faint horizontal
+      // banding on the flanks, plus per-vertex grain so the surface doesn't
+      // read as one moulded shell.
+      const lift = Math.sin(y * 7.4) * 0.028
+      const grain = (hash1(i * 131 + j * 17) - 0.5) * 0.075
+      const m = 1 + lift + grain
+      col.push(base.r * m, base.g * m, base.b * m)
+    }
+  }
+
+  // Wound counter-clockwise seen from ABOVE, which is where this is looked at
+  // from. Wound the other way the cover was a hole in the ground: every face
+  // culled from every viewpoint outside it, so the crest hardware stood on bare
+  // regolith and the vault showed through the berm that is meant to hide it.
+  for (let i = 0; i < MOUND_NX; i++) {
+    for (let j = 0; j < nz - 1; j++) {
+      const a = i * nz + j
+      const b = a + nz
+      idx.push(a, a + 1, b, a + 1, b + 1, b)
+    }
+  }
+
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
+  geo.setIndex(idx)
+  geo.computeVertexNormals()
+  return geo
+}
+
+function CoverMound({ g }: { g: VaultGeometry }) {
+  const geo = useMemo(() => coverMoundGeometry(g), [g])
+  return (
+    <mesh geometry={geo}>
+      {/* White base colour: the tone rides on the vertex colours instead, so
+          SurfaceAnchor's dust and wear passes still have material.color to
+          themselves and compose over the banding rather than erasing it. */}
+      <meshStandardMaterial
+        color="#ffffff"
+        vertexColors
+        roughness={0.96}
+        metalness={0.02}
+      />
+    </mesh>
+  )
+}
+
+// The structure: floor, side walls, barrel, end walls, ribs and lighting.
+function VaultShell({ g }: { g: VaultGeometry }) {
+  const floor = -g.floorDepthM
+  const spring = floor + g.wallM // where the arch springs from
+  const r = g.spanM / 2
+  const halfL = g.lengthM / 2
+  // Ribs at a spacing that lands whole: a hoop frame is built to a module, and
+  // an odd stub bay at one end is the tell that it wasn't.
+  const bays = Math.max(4, Math.round(g.lengthM / 2.5))
+  return (
+    <group>
+      {/* Floor slab. Front-sided — it is only ever seen from above, standing
+          in the vault — and bedded so its edges disappear into the walls. */}
+      <mesh position={[0, floor - 0.18, 0]}>
+        <boxGeometry args={[g.lengthM + 0.4, 0.36, g.spanM + 0.4]} />
+        <meshStandardMaterial
+          color={VAULT_DECK}
+          roughness={0.92}
+          metalness={0.04}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_DEEP_I}
+        />
+      </mesh>
+
+      {/* The traffic strip: a laid walkway down the axis, one shade darker
+          where boots and a cart have polished it. */}
+      <mesh position={[0.4, floor + 0.02, 0]}>
+        <boxGeometry args={[g.lengthM - 1.2, 0.04, 1.9]} />
+        <meshStandardMaterial
+          color={VAULT_WALK}
+          roughness={0.78}
+          metalness={0.05}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_DEEP_I}
+        />
+      </mesh>
+
+      {/* Side walls, floor to springing */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[0, floor + g.wallM / 2, s * (r + LINER_T / 2)]}>
+          <boxGeometry args={[g.lengthM, g.wallM, LINER_T]} />
+          <meshStandardMaterial
+            color={VAULT_LINER}
+            roughness={0.9}
+            metalness={0.03}
+            side={THREE.DoubleSide}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+      ))}
+
+      {/* The barrel. thetaStart PI over a PI arc, with the lathe's own
+          rotation, is what puts the open half UP rather than sideways. */}
+      <mesh position={[0, spring, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry
+          args={[r, r, g.lengthM, 44, 1, true, Math.PI, Math.PI]}
+        />
+        <meshStandardMaterial
+          color={VAULT_LINER}
+          roughness={0.9}
+          metalness={0.03}
+          side={THREE.DoubleSide}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+
+      {/* End walls, as the vault's own section: a panel to the springing line
+          with a half-disc closing the arch over it. Squaring them off instead
+          would put corners outside the barrel, which is invisible from the
+          surface and obvious from inside. */}
+      {[-1, 1].map((s) => (
+        <group key={s} position={[s * halfL, 0, 0]}>
+          <mesh
+            position={[0, floor + g.wallM / 2, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+          >
+            <planeGeometry args={[g.spanM, g.wallM]} />
+            <meshStandardMaterial
+              color={VAULT_LINER}
+              roughness={0.92}
+              metalness={0.03}
+              side={THREE.DoubleSide}
+              emissive={VAULT_FILL}
+              emissiveIntensity={VAULT_FILL_DEEP_I}
+            />
+          </mesh>
+          <mesh position={[0, spring, 0]} rotation={[0, Math.PI / 2, 0]}>
+            <circleGeometry args={[r, 40, 0, Math.PI]} />
+            <meshStandardMaterial
+              color={VAULT_LINER}
+              roughness={0.92}
+              metalness={0.03}
+              side={THREE.DoubleSide}
+              emissive={VAULT_FILL}
+              emissiveIntensity={VAULT_FILL_DEEP_I}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Hoop frame: a half-torus across the vault at every bay, on legs down
+          the side walls. Rotated a quarter turn about Y so the hoop's own
+          plane lies across the axis and its arc covers the upper half. */}
+      {Array.from({ length: bays + 1 }, (_, i) => {
+        const x = -halfL + (g.lengthM * i) / bays
+        return (
+          <group key={i}>
+            <mesh position={[x, spring, 0]} rotation={[0, Math.PI / 2, 0]}>
+              <torusGeometry args={[r + 0.05, 0.11, 7, 30, Math.PI]} />
+              <meshStandardMaterial
+                color={VAULT_RIB}
+                roughness={0.55}
+                metalness={0.5}
+                emissive={VAULT_FILL}
+                emissiveIntensity={VAULT_FILL_I}
+              />
+            </mesh>
+            {[-1, 1].map((s) => (
+              <mesh
+                key={s}
+                position={[x, floor + g.wallM / 2, s * (r + 0.05)]}
+              >
+                <boxGeometry args={[0.2, g.wallM, 0.2]} />
+                <meshStandardMaterial
+                  color={VAULT_RIB}
+                  roughness={0.55}
+                  metalness={0.5}
+                  emissive={VAULT_FILL}
+                  emissiveIntensity={VAULT_FILL_I}
+                />
+              </mesh>
+            ))}
+          </group>
+        )
+      })}
+
+      {/* Work lighting, on the springing line either side. These are the only
+          things in the vault bright enough to bloom, which is what sells the
+          rest of the interior as lit by them. */}
+      {[-1, 1].map((s) =>
+        Array.from({ length: bays }, (_, i) => (
+          <mesh
+            key={`${s}:${i}`}
+            position={[
+              -halfL + g.lengthM * ((i + 0.5) / bays),
+              spring + 0.12,
+              s * (r - 0.22),
+            ]}
+          >
+            <boxGeometry args={[g.lengthM / bays - 0.9, 0.09, 0.16]} />
+            <meshStandardMaterial
+              color={VAULT_LAMP}
+              emissive={VAULT_LAMP}
+              emissiveIntensity={2.1}
+              toneMapped={false}
+            />
+          </mesh>
+        ))
+      )}
+    </group>
+  )
+}
+
+// What makes it a room rather than a pipe: cable tray, ducting, the hatch
+// through the end wall to the shaft, stowage, and a work bench.
+function VaultFitOut({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const floor = -g.floorDepthM
+  const spring = floor + g.wallM
+  const r = g.spanM / 2
+  const halfL = g.lengthM / 2
+  // The service bay: everything between the inward end wall and the module.
+  const bayEnd = g.moduleOffsetM - 5.6
+  return (
+    <group>
+      {/* Cable tray and a duct run along one haunch, the whole length */}
+      {[
+        { z: r - 0.35, y: spring + 0.55, w: 0.34, h: 0.16, c: VAULT_RIB },
+        { z: -(r - 0.4), y: spring + 0.75, w: 0.42, h: 0.42, c: HULL_DARK },
+      ].map((run, i) => (
+        <mesh key={i} position={[0.2, run.y, run.z]}>
+          <boxGeometry args={[g.lengthM - 1, run.h, run.w]} />
+          <meshStandardMaterial
+            color={run.c}
+            roughness={0.6}
+            metalness={0.4}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+      ))}
+
+      {/* Hatch through the inward end wall. The shaft is on the far side of
+          it, which is the whole reason the access is here and not a hole in the
+          barrel: a shaft dropped through the crown would need the arch opened
+          around it, and an opening is the one thing a surface of revolution
+          cannot have without cutting the geometry apart. */}
+      <group position={[-halfL + 0.08, floor + 1.15, 0]}>
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[1.12, 1.12, 0.16, 28]} />
+          <meshStandardMaterial
+            color={VAULT_RIB}
+            roughness={0.5}
+            metalness={0.55}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        <mesh position={[0.12, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.98, 0.98, 0.12, 26]} />
+          <meshStandardMaterial
+            color={MPH_TRIM}
+            roughness={0.42}
+            metalness={0.5}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        {/* Hatch status light, in the operator's colour */}
+        <mesh position={[0.24, 0.72, 0.55]}>
+          <sphereGeometry args={[0.075, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.7}
+            toneMapped={false}
+          />
+        </mesh>
+        {/* Grab rails either side of the sill */}
+        {[-1, 1].map((s) => (
+          <mesh key={s} position={[0.3, 0, s * 1.32]}>
+            <boxGeometry args={[0.08, 1.9, 0.08]} />
+            <meshStandardMaterial color={MPH_TRIM} roughness={0.5} metalness={0.45} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Service bay: stowage against the wall and a bench. Deliberately not
+          centred on the walkway — a corridor a cart has to use stays clear. */}
+      <group position={[-halfL + 2.6, floor, 0]}>
+        {[
+          { x: 0.2, z: r - 1.1, v: 'medium' as const, s: 3 },
+          { x: 1.7, z: r - 1.0, v: 'small' as const, s: 7 },
+          { x: 1.75, z: r - 1.9, v: 'small' as const, s: 11 },
+          { x: 0.4, z: -(r - 1.2), v: 'large' as const, s: 5 },
+        ].map((c, i) => (
+          <group key={i} position={[c.x, 0, c.z]}>
+            <CargoCrate variant={c.v} seed={c.s} />
+          </group>
+        ))}
+        {/* Bench along the far wall, with a lit panel over it */}
+        <mesh position={[2.9, 0.86, -(r - 0.85)]}>
+          <boxGeometry args={[2.4, 0.09, 0.8]} />
+          <meshStandardMaterial
+            color={VAULT_RIB}
+            roughness={0.55}
+            metalness={0.45}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        {[-1, 1].map((s) => (
+          <mesh key={s} position={[2.9 + s * 1.05, 0.42, -(r - 0.85)]}>
+            <boxGeometry args={[0.1, 0.84, 0.7]} />
+            <meshStandardMaterial color={VAULT_RIB} roughness={0.6} metalness={0.4} />
+          </mesh>
+        ))}
+        <mesh position={[2.9, 1.62, -(r - 0.55)]} rotation={[0.6, 0, 0]}>
+          <boxGeometry args={[1.5, 0.5, 0.04]} />
+          <meshStandardMaterial
+            color={PANEL}
+            emissive="#7fb2ff"
+            emissiveIntensity={0.9}
+            toneMapped={false}
+            roughness={0.3}
+          />
+        </mesh>
+      </group>
+
+      {/* Somebody in it. This is the one thing the cutaway needs more than any
+          other detail: a vault is an unreadable tube until there is a 1.85 m
+          person standing on its floor, and then it is a room with a known size.
+          Parked on the walkway between the hatch and the module, which is the
+          only part of the floor the shot looks straight down. */}
+      <group position={[0, floor, 0]}>
+        <PatrollingAstronaut
+          center={[-halfL + 4.6, 0]}
+          radius={1.3}
+          seed={19}
+          accent={accent}
+        />
+      </group>
+
+      {/* The plant the bay exists for: a thermal/ECLSS skid piped up into the
+          cover, which is where a buried habitat's heat has to go. */}
+      <group position={[bayEnd - 1.4, floor, -(r - 1.5)]}>
+        <mesh position={[0, 0.95, 0]}>
+          <boxGeometry args={[1.9, 1.9, 1.4]} />
+          <meshStandardMaterial
+            color={HULL_DARK}
+            roughness={0.5}
+            metalness={0.45}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        {[-0.55, 0.55].map((dz) => (
+          <mesh key={dz} position={[0.3, 1.9 + (spring - floor) * 0.5, dz]}>
+            <cylinderGeometry args={[0.17, 0.17, spring - floor + 0.9, 12]} />
+            <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.6} />
+          </mesh>
+        ))}
+        <mesh position={[0, 1.98, 0]}>
+          <sphereGeometry args={[0.09, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.5}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// The shaft, and the head house on top of it. Both sit at the inward end,
+// beyond the vault's end wall, so neither has to open the barrel.
+//
+// Placed by moundRise rather than at a chosen height: the head house stands on
+// the cover's own inward flank, which is where a graded ridge actually gives
+// you somewhere to put a door.
+function VaultAccess({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const x = -(g.lengthM / 2 + 2)
+  const grade = moundRise(g, x, 0)
+  const floor = -g.floorDepthM
+  const R = 1.5 // shaft bore
+  return (
+    <group position={[x, 0, 0]}>
+      {/* Shaft, from the head house sill down to the vault floor. Double-sided
+          so the bore reads from inside as well as out. */}
+      <mesh position={[0, (grade + floor) / 2, 0]}>
+        <cylinderGeometry args={[R, R, grade - floor, 26, 1, true]} />
+        <meshStandardMaterial
+          color={VAULT_LINER}
+          roughness={0.9}
+          metalness={0.04}
+          side={THREE.DoubleSide}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_DEEP_I}
+        />
+      </mesh>
+
+      {/* Ladder down the bore, with a rest platform half way */}
+      {Array.from(
+        { length: Math.max(2, Math.round((grade - floor) / 0.32)) },
+        (_, i) => (
+          <mesh key={i} position={[0, floor + 0.3 + i * 0.32, -R + 0.34]}>
+            <boxGeometry args={[0.78, 0.045, 0.045]} />
+            <meshStandardMaterial color={MPH_TRIM} roughness={0.5} metalness={0.5} />
+          </mesh>
+        )
+      )}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={[s * 0.4, (grade + floor) / 2, -R + 0.34]}
+        >
+          <boxGeometry args={[0.06, grade - floor - 0.4, 0.06]} />
+          <meshStandardMaterial color={MPH_TRIM} roughness={0.5} metalness={0.5} />
+        </mesh>
+      ))}
+
+      {/* Head house: the airlock, and the only pressurized thing on this plot
+          standing in the sun. */}
+      <group position={[0, grade, 0]}>
+        <mesh position={[0, 1.45, 0]}>
+          <boxGeometry args={[3.3, 2.9, 3.3]} />
+          <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.22} />
+        </mesh>
+        {/* Benched pad. The shaft has to land clear of the vault's end wall,
+            which puts the head house out on the cover's END TAPER — most of a
+            crest's worth of berm against its inboard wall, bare regolith a
+            couple of meters outboard. So it gets cut-and-fill rather than a
+            fillet: the pad is retained down to below grade on the low side and
+            buried by the berm on the high one, which is why the building reads
+            as set INTO the cover from uphill and standing on it from the stair.
+            A shallow fillet spanned neither and floated over the low corner. */}
+        <mesh position={[0, -(grade + 0.8) / 2, 0]}>
+          <boxGeometry args={[4.3, grade + 0.8, 4.3]} />
+          <meshStandardMaterial color={COVER} roughness={0.95} metalness={0.02} />
+        </mesh>
+        {/* Kerb round the bench, which is what retains it */}
+        <mesh position={[0, -0.12, 0]}>
+          <boxGeometry args={[4.62, 0.24, 4.62]} />
+          <meshStandardMaterial color={PAD_SLAB} roughness={0.9} metalness={0.05} />
+        </mesh>
+        {/* Roof: a shallow cap plus its own thin shield layer */}
+        <mesh position={[0, 3.02, 0]}>
+          <boxGeometry args={[3.6, 0.26, 3.6]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.6} metalness={0.3} />
+        </mesh>
+        {/* Outer hatch, facing away from the mound */}
+        <group position={[-1.68, 1.15, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <mesh>
+            <cylinderGeometry args={[0.95, 0.95, 0.14, 26]} />
+            <meshStandardMaterial color={MPH_TRIM} roughness={0.45} metalness={0.5} />
+          </mesh>
+          <mesh position={[0, 0.09, 0]}>
+            <cylinderGeometry args={[0.78, 0.78, 0.1, 24]} />
+            <meshStandardMaterial color={HULL_DARK} roughness={0.4} metalness={0.45} />
+          </mesh>
+        </group>
+        {/* Operator band, a light over the door, and a whip antenna */}
+        <mesh position={[0, 2.72, 0]}>
+          <boxGeometry args={[3.36, 0.2, 3.36]} />
+          <meshStandardMaterial color={accent} roughness={0.5} metalness={0.3} />
+        </mesh>
+        <mesh position={[-1.74, 2.2, 0]}>
+          <sphereGeometry args={[0.11, 10, 10]} />
+          <meshStandardMaterial
+            color={VAULT_LAMP}
+            emissive={VAULT_LAMP}
+            emissiveIntensity={2.3}
+            toneMapped={false}
+          />
+        </mesh>
+        <Strut from={[1.3, 3.1, 1.3]} to={[1.3, 6.4, 1.3]} r={0.05} color={METAL} />
+        <mesh position={[1.3, 6.5, 1.3]}>
+          <sphereGeometry args={[0.09, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.6}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+
+      {/* Stair down the flank to grade. Steep, because the flank is at the
+          angle of repose and a ramp gentle enough to drive would run half a
+          district; crew climb, cargo goes down the shaft on the hoist. */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const t = (i + 1) / 8
+        return (
+          <mesh
+            key={i}
+            position={[-2.1 - t * 2.6, grade * (1 - t) - 0.1, 0]}
+          >
+            <boxGeometry args={[0.42, 0.16, 1.7]} />
+            <meshStandardMaterial color={PAD_SLAB} roughness={0.9} metalness={0.03} />
+          </mesh>
+        )
+      })}
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[-2.2, grade + 0.9, s * 0.9]}
+          to={[-4.8, 0.85, s * 0.9]}
+          r={0.045}
+          color={MPH_TRIM}
+        />
+      ))}
+    </group>
+  )
+}
+
+// What cannot go under: heat rejection, power, and the stacks that connect the
+// two to what is buried. All of it stands on the crest, which is both the best
+// sky a buried plot has and the shortest run to the plant below.
+function CrestWorks({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const radX = -(g.lengthM / 2) * 0.34
+  const pvX = g.lengthM * 0.3
+  return (
+    <group>
+      {/* Radiator wall. Vertical and edge-on to the sun's bearing, exactly as
+          every surface radiator on this base is, for the same reason: at 89°S
+          the sun circles the horizon and a panel lying flat bakes. */}
+      {[-1, 1].map((s) => (
+        <group
+          key={s}
+          position={[radX + s * 1.5, moundRise(g, radX + s * 1.5, 0), 0]}
+        >
+          <mesh position={[0, 1.95, 0]}>
+            <boxGeometry args={[0.1, 3.5, 6.4]} />
+            <meshStandardMaterial
+              color={HULL}
+              roughness={0.34}
+              metalness={0.55}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          {[-1, 1].map((e) => (
+            <mesh key={e} position={[0, 1.95, e * 3.25]}>
+              <boxGeometry args={[0.22, 3.7, 0.16]} />
+              <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.55} />
+            </mesh>
+          ))}
+          <mesh position={[0, 0.2, 0]}>
+            <boxGeometry args={[0.9, 0.4, 6.6]} />
+            <meshStandardMaterial color={VAULT_RIB} roughness={0.6} metalness={0.4} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Thermal/ECLSS stacks, over the plant below */}
+      {[-1.4, 1.4].map((dz) => {
+        const x = radX + 4.2
+        return (
+          <group key={dz} position={[x, moundRise(g, x, dz), dz]}>
+            <mesh position={[0, 0.85, 0]}>
+              <cylinderGeometry args={[0.34, 0.42, 1.7, 14]} />
+              <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.45} />
+            </mesh>
+            <mesh position={[0, 1.78, 0]}>
+              <cylinderGeometry args={[0.46, 0.34, 0.2, 14]} />
+              <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.6} />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* PV over the far end of the cover */}
+      {[-1, 1].map((s) => {
+        const z = s * 3.1
+        return (
+          <group key={s} position={[pvX, moundRise(g, pvX, z), z]}>
+            <Strut from={[0, 0, 0]} to={[0, 1.5, 0]} r={0.08} color={METAL} />
+            <mesh position={[0, 1.9, 0]} rotation={[0, 0, 1.15]}>
+              <boxGeometry args={[0.05, 5.2, 2.1]} />
+              <meshStandardMaterial
+                color={PANEL}
+                roughness={0.28}
+                metalness={0.42}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+            <mesh position={[0, 1.62, 0]}>
+              <boxGeometry args={[0.34, 0.3, 0.34]} />
+              <meshStandardMaterial color={VAULT_RIB} roughness={0.55} metalness={0.45} />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* Survey monument on the crest — the mark the cover's thickness is
+          checked against, and the only thing up here that isn't hardware. */}
+      {(() => {
+        const x = g.lengthM * 0.06
+        const z = g.moundHalfWidthM * 0.42
+        return (
+          <group position={[x, moundRise(g, x, z), z]}>
+            <mesh position={[0, 0.5, 0]}>
+              <cylinderGeometry args={[0.07, 0.09, 1, 8]} />
+              <meshStandardMaterial color={HULL_DARK} roughness={0.6} metalness={0.3} />
+            </mesh>
+            <mesh position={[0, 1.06, 0]}>
+              <boxGeometry args={[0.34, 0.16, 0.05]} />
+              <meshStandardMaterial
+                color={accent}
+                emissive={accent}
+                emissiveIntensity={0.5}
+                roughness={0.5}
+              />
+            </mesh>
+          </group>
+        )
+      })()}
+
+      {/* Surplus spoil: what came out of the hole and didn't go back over it,
+          windrowed along the outward flank where the haulers left it. */}
+      {[0, 1, 2].map((i) => {
+        const x = g.moundHalfLengthM * (0.34 + i * 0.2)
+        const z = -g.moundHalfWidthM * 0.72
+        const rr = 1.5 - i * 0.22
+        return (
+          <mesh key={i} position={[x, moundRise(g, x, z) + rr * 0.1, z]}>
+            <sphereGeometry args={[rr, 12, 7, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            <meshStandardMaterial
+              color={COVER}
+              roughness={0.97}
+              metalness={0.02}
+            />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// Thales' MPH as it sits in a vault. Built from the SAME dimensions the surface
+// model is (MPH_R, MPH_BARREL, MPH_Y, MPH_LOCK_X — see the Habitat component,
+// which is the MPH): a buried article that read as a different diameter or a
+// different length would look like a different program's module, and the whole
+// argument of this race is that no two bids look alike.
+//
+// What is deliberately absent is everything the surface model deploys INTO the
+// sky — the tracking array, the radiator wings over the roof, the antennas. A
+// radiator four meters under regolith rejects heat to the regolith, which is
+// the one thing it must not do, so that hardware is re-erected on the crest
+// (see CrestWorks) and the shell down here is just the shell.
+function MphVaultModule({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const base = -g.floorDepthM
+  return (
+    // Turned to face the service bay. Both modules here are authored with their
+    // hatch end on local +X — that is where the road was when they stood on the
+    // surface — and in a vault the road is the shaft at the INWARD end, so the
+    // whole module comes about rather than its door being re-cut on the far side.
+    <group position={[g.moduleOffsetM, base, 0]} rotation={[0, Math.PI, 0]}>
+      {/* Still on its own landing legs: it arrived on them, and a module set
+          down in a trench is not re-cradled afterwards. */}
+      {[-3.3, -0.2].map((x) =>
+        [-1, 1].map((s) => <HabitatLeg key={`${x}:${s}`} x={x} z={s * 1.45} />)
+      )}
+      <HabitatLeg x={MPH_LOCK_X} z={-1.05} />
+      <HabitatLeg x={MPH_LOCK_X} z={1.05} />
+
+      {/* Pressure shell and its end caps. The cap sign is the same trap the
+          surface model documents: Rz(+PI/2) carries +Y to -X, so the forward
+          cap needs the NEGATED sign to dome forward. */}
+      <mesh position={[MPH_X, MPH_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[MPH_R, MPH_R, MPH_BARREL, 32]} />
+        <meshStandardMaterial
+          color={MPH_MLI}
+          roughness={0.72}
+          metalness={0.14}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+      {[
+        [MPH_FWD, 1],
+        [MPH_AFT, -1],
+      ].map(([x, s]) => (
+        <mesh
+          key={x}
+          position={[x, MPH_Y, 0]}
+          rotation={[0, 0, -s * (Math.PI / 2)]}
+        >
+          <sphereGeometry args={[MPH_R, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial
+            color={MPH_MLI}
+            roughness={0.72}
+            metalness={0.14}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+      ))}
+
+      {/* Ring frames over the barrel */}
+      {[-3.1, -1.4, 0.3].map((x) => (
+        <mesh key={x} position={[x, MPH_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[MPH_R + 0.06, MPH_R + 0.06, 0.14, 32]} />
+          <meshStandardMaterial color={MPH_TRIM} roughness={0.55} metalness={0.42} />
+        </mesh>
+      ))}
+
+      {/* Operator band on the forward ring — the same one the surface model
+          carries, and the only paint on the pressure shell. */}
+      <mesh position={[MPH_FWD - 0.35, MPH_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[MPH_R + 0.08, MPH_R + 0.08, 0.28, 32]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.3} />
+      </mesh>
+
+      {/* Airlock tower. Above ground it is the EVA door; down here it is the
+          way through to the shaft, so its hatch faces the service bay. */}
+      <mesh position={[MPH_LOCK_X, 1.95, 0]}>
+        <cylinderGeometry args={[MPH_LOCK_R, MPH_LOCK_R, 2.9, 24]} />
+        <meshStandardMaterial
+          color={MPH_MLI}
+          roughness={0.72}
+          metalness={0.14}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+      <mesh position={[MPH_LOCK_X, 3.4, 0]}>
+        <sphereGeometry args={[MPH_LOCK_R, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial
+          color={MPH_MLI}
+          roughness={0.72}
+          metalness={0.14}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+
+      {/* Berthing port on the aft cap, still waiting on the element that was
+          always meant to dock to it */}
+      <mesh
+        position={[MPH_AFT - MPH_R - 0.22, MPH_Y, 0]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
+        <cylinderGeometry args={[0.92, 0.92, 0.44, 24]} />
+        <meshStandardMaterial color={MPH_SHADE} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh
+        position={[MPH_AFT - MPH_R - 0.46, MPH_Y, 0]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
+        <cylinderGeometry args={[1.06, 1.06, 0.14, 24]} />
+        <meshStandardMaterial color={MPH_TRIM} roughness={0.45} metalness={0.5} />
+      </mesh>
+
+      {/* Gangway from the airlock sill down to the vault's walkway */}
+      <mesh position={[MPH_LOCK_X + MPH_LOCK_R + 0.85, 1.42, 0]}>
+        <boxGeometry args={[1.6, 0.1, 1.3]} />
+        <meshStandardMaterial color={MPH_SHADE} roughness={0.7} metalness={0.25} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[MPH_LOCK_X + MPH_LOCK_R + 0.05, 2.32, s * 0.62]}
+          to={[MPH_LOCK_X + MPH_LOCK_R + 2.6, 2.32, s * 0.62]}
+          r={0.04}
+          color={MPH_TRIM}
+        />
+      ))}
+      {[0, 1, 2].map((i) => (
+        <mesh
+          key={i}
+          position={[MPH_LOCK_X + MPH_LOCK_R + 1.8 + i * 0.34, 1.2 - i * 0.34, 0]}
+        >
+          <boxGeometry args={[0.36, 0.09, 1.2]} />
+          <meshStandardMaterial color={MPH_SHADE} roughness={0.8} metalness={0.2} />
+        </mesh>
+      ))}
+
+      {/* Lit ports. A buried module has no view out, and these look into the
+          vault instead — the crew's window is onto their own hall. */}
+      {[-2.6, -0.9].map((x) => (
+        <mesh
+          key={x}
+          position={[x, MPH_Y + 0.55, mphFlankZ(MPH_Y + 0.55) - 0.06]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <cylinderGeometry args={[0.3, 0.3, 0.12, 18]} />
+          <meshStandardMaterial
+            color={WINDOW}
+            emissive={WINDOW}
+            emissiveIntensity={1.2}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+
+      {/* Handrails along the crown */}
+      {[-3.6, -2.1, -0.6, 0.9].map((x) => (
+        <Strut
+          key={x}
+          from={[x, MPH_Y + MPH_R + 0.04, -0.4]}
+          to={[x, MPH_Y + MPH_R + 0.04, 0.4]}
+          r={0.035}
+          color={MPH_TRIM}
+        />
+      ))}
+    </group>
+  )
+}
+
+// Sierra's LIFE in its vault. The shell is the SAME lathe profile the surface
+// model uses (LIFE_PROFILE) — the quilting between the cinch straps is the one
+// feature that says "inflatable", and re-drawing it looser here would make the
+// buried article read as a different program's hardware. What is deliberately
+// absent is the standoff radiators: those are on the crest now.
+function LifeVaultModule({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const base = -g.floorDepthM
+  return (
+    // Turned about, for the same reason the MPH is: the vestibule is authored
+    // on local +X where the road used to be, and in a vault the way out is the
+    // shaft behind the inward end wall.
+    <group position={[g.moduleOffsetM, base, 0]} rotation={[0, Math.PI, 0]}>
+      {/* Saddles, sized off the CINCH radius like the surface model's */}
+      {[-2.9, -0.8, 1.3].map((x) => (
+        <mesh key={x} position={[x, 0.39, 0]}>
+          <boxGeometry args={[0.5, 0.78, 2.6]} />
+          <meshStandardMaterial color={LIFE_CRADLE} roughness={0.85} metalness={0.18} />
+        </mesh>
+      ))}
+
+      {/* Softgoods shell */}
+      <mesh position={[LIFE_X, LIFE_Y, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <latheGeometry args={[LIFE_PROFILE, 48]} />
+        <meshStandardMaterial
+          color={LIFE_SOFT}
+          roughness={0.9}
+          metalness={0.03}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+
+      {/* Hoop straps at every cinch */}
+      {Array.from({ length: LIFE_BAYS + 1 }, (_, i) => (
+        <mesh
+          key={i}
+          position={[LIFE_X + (i / LIFE_BAYS - 0.5) * LIFE_BARREL, LIFE_Y, 0]}
+          rotation={[0, Math.PI / 2, 0]}
+        >
+          <torusGeometry args={[LIFE_R_STRAP + 0.03, 0.1, 8, 44]} />
+          <meshStandardMaterial
+            color={LIFE_STRAP}
+            roughness={0.85}
+            metalness={0.08}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_DEEP_I}
+          />
+        </mesh>
+      ))}
+
+      {/* Rigid ends, forward one carrying the operator's colour */}
+      <LifeBulkhead x={LIFE_X - LIFE_END} s={-1} />
+      <LifeBulkhead x={LIFE_X + LIFE_END} s={1} ring={accent} />
+
+      {/* Vestibule, canted down off the forward bulkhead onto the walkway —
+          the same solution the surface model uses for a hull this fat. */}
+      <group position={[LIFE_X + LIFE_VEST_X, LIFE_VEST_Y, 0]}>
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[LIFE_VEST_R, LIFE_VEST_R, 1.8, 22]} />
+          <meshStandardMaterial
+            color={LIFE_CORE}
+            roughness={0.5}
+            metalness={0.35}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        <mesh position={[0.98, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[LIFE_VEST_R + 0.16, LIFE_VEST_R + 0.16, 0.16, 22]} />
+          <meshStandardMaterial color={LIFE_TRIM} roughness={0.45} metalness={0.45} />
+        </mesh>
+        {/* Steps down to the deck */}
+        {[0, 1, 2].map((i) => (
+          <mesh key={i} position={[1.15 + i * 0.34, -0.55 - i * 0.34, 0]}>
+            <boxGeometry args={[0.36, 0.08, 1.1]} />
+            <meshStandardMaterial color={LIFE_TRIM} roughness={0.55} metalness={0.35} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  )
+}
+
+// The per-project pressure shell inside the vault. Only the two buried
+// competitors appear here; anything else buried later needs its own entry,
+// because the whole reason this race is worth drawing is that no two answers
+// to "what is a first habitat" look alike (see PROJECT_MODEL).
+function VaultModule({
+  project,
+  g,
+  accent,
+}: {
+  project: Project
+  g: VaultGeometry
+  accent: string
+}) {
+  if (project.id === 'sierra-space-life')
+    return <LifeVaultModule g={g} accent={accent} />
+  return <MphVaultModule g={g} accent={accent} />
+}
+
+// A buried habitat, assembled. Authored entirely in METERS: the outer group
+// cancels the model-size normalization the same way every true-size model here
+// does, so a 2.9 m head house really is 2.9 m beside a 1.85 m astronaut.
+//
+// The long axis is local +X, which SurfaceAnchor puts on the world bearing
+// vaultAxis hands it — NOT on the camera-facing heading every other ground
+// model uses. The cutaway camera has to stand at a known end of a known axis,
+// and a heading solved against the home viewpoint is not a bearing subplan can
+// predict (see vaultAxis).
+function BuriedHabitat({
+  project,
+  accent,
+}: {
+  project: Project
+  accent: string
+}) {
+  const g = buriedVault(project.id)
+  if (!g) return null
+  return (
+    <group scale={UNIT_MAX_DIM / projectSizeM(project)}>
+      <CoverMound g={g} />
+      <VaultShell g={g} />
+      <VaultFitOut g={g} accent={accent} />
+      <VaultModule project={project} g={g} accent={accent} />
+      <VaultAccess g={g} accent={accent} />
+      <CrestWorks g={g} accent={accent} />
+    </group>
+  )
+}
+
 // Company-specific builds, keyed by project. A named competitor's hardware
 // should look like theirs; the per-type model below is the stand-in for
 // everyone else in that category.
@@ -11104,6 +12192,12 @@ const DUST_MAX = 0.3
 // lane, a decal. Dust settling on top of the ground is just the ground, and
 // tinting these washes out albedos that were chosen to read as dark holes.
 const DUST_FLAT_M = 0.03
+// Height, in meters, below which a mesh is taken to be INSIDE something rather
+// than standing on the regolith, and so exempt from the gradient entirely — the
+// buried habitats' vaults and the modules in them. A metre of margin, because
+// surface models routinely bed a skirt or a footpad slightly into the ground
+// and those are still standing on it.
+const DUST_BURIED_M = -1
 
 const DUST_BOX = new THREE.Box3()
 const DUST_MAT = new THREE.Matrix4()
@@ -11276,24 +12370,32 @@ export function SurfaceAnchor({
       if (!unlit && tint.color && emissive < 0.3 && m.geometry) {
         if (!m.geometry.boundingBox) m.geometry.computeBoundingBox()
         const bb = m.geometry.boundingBox
-        if (bb) {
+        // The mesh's own box in the MODEL's frame, which is the frame local
+        // height is measured in — a geometry-space box would put a flat
+        // ground decal's degenerate axis wherever that geometry happens to
+        // be authored rather than vertically.
+        DUST_MAT.copy(root.matrixWorld).invert().multiply(m.matrixWorld)
+        if (bb) DUST_BOX.copy(bb).applyMatrix4(DUST_MAT)
+        // Meters above the model's own grade.
+        const centreY = bb
+          ? (DUST_BOX.min.y + DUST_BOX.max.y) / 2 / localPerM
+          : 0
+        // Below grade the gradient has nothing to measure. Dust here is a
+        // statement about height above the REGOLITH SURFACE — thrown up by
+        // boots and wheels and settling back — and a vault liner seven meters
+        // down is not low on that surface, it is inside something. Left at its
+        // authored colour instead, because otherwise a buried habitat's whole
+        // interior clamps to full dust and renders as one uniform brown, which
+        // is the opposite of the point. The threshold is a metre rather than
+        // zero because plenty of surface models bed a skirt or a foot slightly
+        // into the ground, and those are still standing on it.
+        if (bb && centreY >= DUST_BURIED_M) {
           if (!mat.userData.dustBaseColor)
             mat.userData.dustBaseColor = tint.color.clone()
-          // The mesh's own box in the MODEL's frame, which is the frame local
-          // height is measured in — a geometry-space box would put a flat
-          // ground decal's degenerate axis wherever that geometry happens to
-          // be authored rather than vertically.
-          DUST_MAT.copy(root.matrixWorld).invert().multiply(m.matrixWorld)
-          DUST_BOX.copy(bb).applyMatrix4(DUST_MAT)
           const flat = DUST_BOX.max.y - DUST_BOX.min.y < DUST_FLAT_M * localPerM
-          const centreY = (DUST_BOX.min.y + DUST_BOX.max.y) / 2
           const t = Math.min(
             1,
-            Math.max(
-              0,
-              (centreY / localPerM - DUST_FULL_M) /
-                (DUST_HEIGHT_M - DUST_FULL_M)
-            )
+            Math.max(0, (centreY - DUST_FULL_M) / (DUST_HEIGHT_M - DUST_FULL_M))
           )
           const w = flat ? 0 : DUST_MAX * (1 - t) * (1 - t)
           // Dust first, then this unit's own wear over the top of it — the
@@ -11412,6 +12514,7 @@ export default function ProjectModel({
   const isBase = project.type === 'habitat'
   const frontAz =
     (project.modelURI ? MODEL_FRONT_AZ[project.modelURI] : undefined) ?? 0
+  const buried = buriedVault(project.id)
 
   return (
     <SurfaceAnchor
@@ -11419,13 +12522,19 @@ export default function ProjectModel({
       surfaceRadius={surfaceRadius}
       scale={projectScale(project)}
       turn={turn}
+      // A buried habitat's axis is handed down from the layout (see vaultAxis),
+      // because the cutaway camera has to stand at a known end of it. Everything
+      // else keeps the camera-facing heading, and a driving competitor's travel
+      // direction still wins over both.
       noseAlong={noseAlong}
       dim={dim}
       frontAz={frontAz}
       onClick={() => onSelect?.(project.id)}
       onHoverChange={(h) => onHover?.(h ? project.id : null)}
     >
-      {project.modelURI ? (
+      {buried ? (
+        <BuriedHabitat project={project} accent={accent} />
+      ) : project.modelURI ? (
         <Suspense
           fallback={<ProceduralModel project={project} accent={accent} />}
         >

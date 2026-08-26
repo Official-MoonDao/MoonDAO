@@ -38,6 +38,7 @@ import {
   orgColor,
 } from '@/lib/lunar-atlas/display'
 import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
+import { buriedVault, vaultAxisBearingDeg } from '@/lib/lunar-atlas/subplan'
 import {
   atlasYear,
   buildTechTrees,
@@ -467,6 +468,29 @@ export default function MoonBaseZeroIndex() {
     if (stations?.length) {
       const { lat, lon } = stationLatLon(stations[0])
       setFocus({ lat, lon, view: 'sky', heightM: stations[0].altM })
+      return
+    }
+    // A competitor whose pressure shell is UNDER the surface is framed inside
+    // its vault instead. Same logic as the orbital case above and for the same
+    // reason: it keeps its plot, and the mound, head house and radiator wall on
+    // it are real hardware on real regolith — but the habitat itself cannot be
+    // seen from any above-ground viewpoint, because four meters of regolith is
+    // the entire point of it (see lib/lunar-atlas/subplan).
+    const vault = buriedVault(project.id)
+    const vaultPlot = vault && layout.plots.get(project.id)
+    if (vault && vaultPlot) {
+      const ll = vector3ToLatLon(vaultPlot.dir)
+      setFocus({
+        lat: ll.lat,
+        lon: ll.lon,
+        view: 'sub',
+        sub: {
+          subjectDepthM: vault.subjectDepthM,
+          eyeDepthM: vault.eyeDepthM,
+          standoffM: vault.standoffM,
+          axisBearingDeg: vaultAxisBearingDeg(vaultPlot.slot),
+        },
+      })
       return
     }
     const cat = siteCategory ?? selectedTreeCategory ?? project.type
