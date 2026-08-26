@@ -10,6 +10,7 @@
     "scripts/typeform-parse-body.test.ts",
     "scripts/gift-purchase-validation.test.ts",
     "scripts/tableland-clean-data.test.ts",
+    "scripts/new-citizen-discord-notification-source.test.ts",
     "cypress/integration/unit/job-metadata.cy.ts",
     "cypress/integration/unit/new-citizen-discord-notification.cy.ts",
     "cypress/integration/unit/job-posting-jsonld.cy.ts",
