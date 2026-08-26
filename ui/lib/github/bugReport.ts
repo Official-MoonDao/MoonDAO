@@ -1,15 +1,11 @@
-export const BUG_REPORT_REPO_URL =
-  'https://github.com/Official-MoonDao/MoonDAO/issues/new'
+export const BUG_REPORT_REPO_URL = 'https://github.com/Official-MoonDao/MoonDAO/issues/new'
 
 export type BugReportContext = {
   pageUrl: string
   environment: string
 }
 
-export function buildBugReportHref({
-  pageUrl,
-  environment,
-}: BugReportContext): string {
+export function buildBugReportHref({ pageUrl, environment }: BugReportContext): string {
   const params = new URLSearchParams({
     template: 'bug_report.yml',
     title: '[Bug]: ',

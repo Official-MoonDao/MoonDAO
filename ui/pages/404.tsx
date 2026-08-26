@@ -19,8 +19,8 @@ export default function FourOhFour() {
                   This page could not be found
                 </h1>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  The page you're looking for doesn't exist or has been moved.
-                  Check the URL or navigate back to our homepage.
+                  The page you're looking for doesn't exist or has been moved. Check the URL or
+                  navigate back to our homepage.
                 </p>
               </div>
             </div>

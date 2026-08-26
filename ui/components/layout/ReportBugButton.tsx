@@ -2,10 +2,7 @@ import { BugAntIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import {
-  buildBugReportHref,
-  formatBugReportEnvironment,
-} from '@/lib/github/bugReport'
+import { buildBugReportHref, formatBugReportEnvironment } from '@/lib/github/bugReport'
 
 type ReportBugButtonProps = {
   className?: string
