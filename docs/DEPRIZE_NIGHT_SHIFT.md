@@ -5,7 +5,7 @@
 > **CONFIDENTIAL — INTERNAL / NDA**
 > Draft for advisor and expert review. Not for publication, quotation, or distribution
 > outside the review list.
-> **Version** 0.4-draft · **Date** 26 Aug 2026 · **Owner** MoonDAO · **Status** pre-registration,
+> **Version** 0.5-draft · **Date** 26 Aug 2026 · **Owner** MoonDAO · **Status** pre-registration,
 > nothing on-chain.
 > Competitor listings are editorial and based solely on public sources. No listed organization
 > has been contacted, has consented, or is affiliated with this prize.
@@ -18,7 +18,8 @@
 | Judging | 3-person expert referee panel | **A validator script anyone can run** |
 | "Permanent asset" test | Decade Rule (referee audits energy inventory) | **Sustained Output Rule** (98% retention, read off the same CSV) |
 | Procurement Rule | Referee judges "commercially procurable" | **Documentary** — produce an invoice or a published price |
-| Who runs the test | MoonDAO-organised, free kits shipped | **Anyone, anywhere.** Resolves off published evidence from any source |
+| Who runs the test | MoonDAO-organised, free kits shipped | **Any chamber, any country** |
+| Verification | Referee panel attends | **Independent custody of the instruments** — you may own the chamber, never the meter |
 | Purse | $5,000 seed | **$25,000** |
 | Deadline | 18-month sunset | **Rolling** — open until solved |
 
@@ -28,10 +29,11 @@
 
 Destructive criticism, not approval. Questions are in [Part VII](#part-vii--open-questions).
 
-The design now rests on two claims, and both should be attacked:
+The design now rests on three claims, and all three should be attacked:
 
 1. **A script can judge this.** Everything that decides the outcome is a number in a data file. If you can find a way to win this prize with a file that passes the validator and hardware that shouldn't count, we have a problem.
-2. **The Sustained Output Rule is technology-agnostic but still grounded in what a lunar outpost actually needs.** If you think it either bans something unfairly or fails to exclude something it should, say so.
+2. **Independent custody of the instruments is enough to make that file trustworthy** — without dragging an expert back in to decide what counts. Nobody grades their own homework, but nobody exercises judgment either.
+3. **The Sustained Output Rule is technology-agnostic but still grounded in what a lunar outpost actually needs.** If you think it either bans something unfairly or fails to exclude something it should, say so.
 
 This document supersedes `DEPRIZE_SURVIVE_THE_NIGHT_SPEC.md`.
 
@@ -140,7 +142,7 @@ instrument station*. It is not the difference between a lander and a base.
 | **The bar** | ≥ 10 We delivered continuously for **354 hours**, at ≤ 100 K and ≤ 1×10⁻⁵ torr, on stored onboard energy only, with output undiminished at the end |
 | **Milestones** | **One** |
 | **Purse** | **$25,000**, growing with 5% of betting volume |
-| **Judged by** | A published validator script, run on the entrant's own data |
+| **Judged by** | A published validator script, run on data captured by an independent verifier |
 | **Where** | Any thermal-vacuum chamber, anywhere in the world |
 | **Deadline** | None — rolling sunset, open until solved |
 | **Roster** | 7 named systems + Open Field |
@@ -282,21 +284,24 @@ one to come from an isotope.
 
 **Nobody judges. A script does.**
 
-MoonDAO publishes an open-source validator. It takes the entrant's data files and returns pass or
-fail. Anyone — a bettor, a rival, a journalist — can download it and run it on the same files and
-get the same answer.
+MoonDAO publishes an open-source validator. It takes the data files and returns pass or fail.
+Anyone — a bettor, a rival, a journalist — can download it and run it on the same files and get the
+same answer.
+
+That only works if the files are trustworthy, which is what §9 is for. **The script decides the
+answer; an independent verifier vouches for the inputs.**
 
 ### 8.1 What must be published
 
-| # | Item |
-|---|---|
-| 1 | Load voltage and current, ≥ 1 Hz, covering the full Window |
-| 2 | Chamber pressure and ≥ 4 shroud temperatures, ≥ 0.1 Hz, same Window |
-| 3 | Article mass, with a photograph of the sealed weigh-in |
-| 4 | Chamber configuration: every conductor through the feedthrough panel and what it carries; how the article is mounted |
-| 5 | **The attestation** (§9) |
-| 6 | The procurement document (§7) |
-| 7 | All of the above under an open licence |
+| # | Item | Produced by |
+|---|---|---|
+| 1 | Load voltage and current, ≥ 1 Hz, covering the full Window | **Verifier** (§9) |
+| 2 | Chamber pressure and ≥ 4 shroud temperatures, ≥ 0.1 Hz, same Window | **Verifier** (§9) |
+| 3 | Article mass, with a photograph of the sealed weigh-in | **Verifier** (§9) |
+| 4 | Feedthrough inventory: every conductor through the panel and what it carries; how the article is mounted | **Verifier** (§9) |
+| 5 | The signed verification statement | **Verifier** (§9) |
+| 6 | The procurement document (§7) | Entrant |
+| 7 | All of the above under an open licence | Entrant |
 
 ### 8.2 What the validator checks
 
@@ -315,29 +320,75 @@ max(pressure)                   <= 1e-5 torr, except <= 60 min cumulative up to 
 If the script passes and the checklist in §8.1 is complete, the claim is good. The Senate's role is
 to confirm the checklist is complete and the script was run — clerical, not technical.
 
-### 8.3 Any source, anywhere
+### 8.3 Any chamber, any country
 
-A Qualifying Run does **not** have to be organised by MoonDAO, held at a MoonDAO venue, or announced
-in advance. **A competitor's own published test qualifies** if it meets §8.1 and passes the
-validator.
-
-This is deliberate. It means the prize works whether or not anyone ever formally enters, and it
-means the only way to win is to **publish your data** — which is the disclosure we are actually
-trying to produce.
+A Qualifying Run does **not** have to be organised by MoonDAO or held at a MoonDAO venue. Use your
+own chamber, a university's, or a commercial lab's, in any jurisdiction — provided §9 is satisfied.
 
 Pre-registration is welcome and will be publicised, but it is not required.
 
-## 9. The attestation
+## 9. Independent verification
 
-The one thing a script cannot check is whether someone quietly ran a wire.
+> **You may own the chamber and you may own the article. You may never own the instruments or the
+> data.**
 
-> A named individual who is **not** an employee, contractor, investor, or family member of the
-> entrant must sign a statement that they observed the run and that no energy entered the article
-> during the Window. Name, affiliation, and contact are published.
+The party that calibrates, installs, seals, and reads the measurement chain must be independent of
+the entrant.
 
-An accredited test laboratory signing its own standard test report satisfies this by default, which
-is the easy path for a funded entrant. A self-hosted run needs a named independent observer plus
-continuous witness video. If nobody will put their name to it, there is no claim.
+### 9.1 Why this does not reintroduce expert judgment
+
+The verifier does **not** decide whether an entry counts. The validator does that, and it is a
+script. The verifier attests only to facts a competent person can observe:
+
+- the article weighed this much, and was sealed
+- the feedthrough panel contained exactly these conductors, carrying exactly these signals
+- these sensors were the verifier's own, calibrated to these certificates
+- these files came off those sensors, unaltered
+- the seals were intact at the end
+
+**Observation is not judgment.** A verifier needs no opinion about lunar power systems, no view on
+whether a design is clever, and no ability to adjudicate a grey area — because there aren't any left
+to adjudicate. That is what lets us add independence without giving back what we gained by deleting
+the referee panel.
+
+### 9.2 Accepted verifiers
+
+| Route | Who | Cost to entrant | Fits |
+|---|---|---|---|
+| **A** | An ISO/IEC 17025-accredited test laboratory hosting the run | **~$0 marginal** — this is already what a test report is | Funded entrants |
+| **B** | An independent verification body attending the entrant's own chamber — DNV, TÜV, Bureau Veritas, Lloyd's Register, Element, NTS, Intertek | **~$3–8k**, two site visits | Mid-size entrants |
+| **C** | A MoonDAO sealed metrology package plus a MoonDAO-appointed observer | Shipping and observer travel | Open Field |
+| **D** | A MoonDAO-hosted trials event (Part VI) | Included | Everyone, once it exists |
+
+**Disqualifying relationships.** An employee, contractor, investor, board member, adviser, or family
+member of the entrant. Anyone holding a position in the market on any outcome. Any organisation
+receiving funding from the entrant. Conflicts are declared in writing and published.
+
+Route B is the load-bearing one and it is not exotic. Verification bodies certify performance claims
+for batteries, hydrogen systems and grid equipment as routine business. They do not need to
+understand lunar anything; they need to own a meter and sign their name.
+
+### 9.3 The observation protocol — two attended days, not 354 hours
+
+**Day 0.** The verifier weighs and photographs the article, applies tamper-evident seals, inventories
+every conductor at the feedthrough panel and records what each one carries, installs and calibrates
+their own load and environment sensors, then starts the log and the witness video.
+
+**Day 15.** The verifier confirms the seals are intact, stops the log, takes custody of the raw
+files, and publishes them with a signed statement.
+
+Nothing between those two days is attended. Tamper-evident seals plus continuous video cover the
+gap, which is what keeps verification affordable — the cost is two person-days and travel, not two
+weeks of standing watch.
+
+### 9.4 Self-published and retroactive claims
+
+A test MoonDAO did not organise still qualifies, **but only if independent custody was in place at
+the time.** An accredited laboratory's own test report generally satisfies this. A company's internal
+test does not, however good the data and however open the licence.
+
+In practice most historical tests will fail on the feedthrough inventory, which nobody records unless
+someone is specifically looking for smuggled energy. Expect claims to be prospective.
 
 ## 10. Restarts, excursions, and ties
 
@@ -615,11 +666,13 @@ without either being disqualified.
 # PART VI — A TESTING FACILITY (future track, not a launch dependency)
 
 Nothing in Part II requires MoonDAO to own or book a chamber. That is deliberate — chamber access was
-the single most likely quiet killer of the v0.3 design, and §8.3 removes it from the critical path.
+the single most likely quiet killer of the v0.3 design, and §8.3 keeps it off the critical path.
 
-It remains the most interesting thing we could build second. **Fifteen continuous days of
-cryoshrouded vacuum is the real barrier to entry**, and whoever lowers it decides how large the field
-gets.
+It remains the most interesting thing we could build second, and it now has two justifications rather
+than one. **Fifteen continuous days of cryoshrouded vacuum is the real barrier to entry**, and
+whoever lowers it decides how large the field gets — but a MoonDAO-hosted event is also **verification
+Route D**, the strongest and cheapest form of independence available to a small team. Own the venue
+and the independence problem solves itself for everyone who shows up.
 
 **Shape of the event.** A 15-day soak cannot be a live event, but it can be bracketed by two:
 
@@ -658,17 +711,21 @@ qualifying evidence, never the only one.
    consumable. Too tight, too loose, or measuring the wrong thing?
 3. **Is 10 We right?** 4× Chang'e-4, and ~$1.4M of americium for an isotope entry. Correct, or should
    it be 5 We?
-4. **Is the attestation strong enough?** One named independent observer is all that stands between
-   the prize and someone quietly running a wire. Is that sufficient, and who would actually sign?
-5. **Does resolving off self-published tests create a credibility problem** — a company grading its
-   own homework — even with open data and a public validator?
-6. **Is the wall-power ban correct?** It means Zeno's flagship 2027 demonstration does not count
+4. **Is two attended days enough independence?** Seals and video cover the 350 hours in between. Can
+   you defeat that, and would a third mid-run spot check be worth its cost?
+5. **Would a verification body actually take this?** Route B assumes DNV, TÜV, Element or similar
+   will witness a fifteen-day cryogenic vacuum test for a few thousand dollars. Is that realistic
+   pricing, and does anyone have a relationship worth using?
+6. **Does the verification cost price out the Open Field?** Route B at $3–8k on top of chamber time
+   may be the difference between a university team entering and not. Should MoonDAO fund Route C
+   metrology packages out of the purse, and if so at what cost to the headline number?
+7. **Is the wall-power ban correct?** It means Zeno's flagship 2027 demonstration does not count
    unless reconfigured. Honest rigour, or self-defeating?
-7. **Who did we miss?** Especially outside the US and Europe, and especially non-nuclear approaches.
-8. **Does an unclaimed prize with a live scoreboard read as patient, or as failed?** The design bets
+8. **Who did we miss?** Especially outside the US and Europe, and especially non-nuclear approaches.
+9. **Does an unclaimed prize with a live scoreboard read as patient, or as failed?** The design bets
    heavily on the former.
-9. **Is $25k the right purse** given it is roughly 50–100% of the cheapest credible attempt, ~10–25%
-   of a corporate one, and ~1% of a nuclear one?
+10. **Is $25k the right purse** given it is roughly 50–100% of the cheapest credible attempt, ~10–25%
+    of a corporate one, and ~1% of a nuclear one?
 
 ---
 
