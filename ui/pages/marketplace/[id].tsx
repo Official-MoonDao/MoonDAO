@@ -3,7 +3,7 @@ import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import {
   formatListingDate,
@@ -16,6 +16,7 @@ import { fetchListingById, fetchRelatedListings } from '@/lib/marketplace/market
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { serializeJsonLd } from '@/lib/utils/jsonLd'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -68,8 +69,14 @@ export default function ListingDetail({
   useChainDefault()
 
   const [buyModalEnabled, setBuyModalEnabled] = useState(false)
+  const currTime = useCurrUnixTime(60000)
 
-  const availability = getListingAvailability(listing)
+  // The page is served from an ISR cache, so anything relative to "now" would
+  // disagree with the pre-rendered HTML on hydration.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  const availability = getListingAvailability(listing, currTime)
   const shareUrl = getListingShareUrl(listing)
   const teamHref = team ? `/team/${team.name ? generatePrettyLink(team.name) : team.id}` : undefined
   const jsonLd = buildListingJsonLd({ listing, teamName: team?.name })
@@ -102,7 +109,7 @@ export default function ListingDetail({
         {isGiftListing(listing) && <Badge>Gifted Citizenship</Badge>}
         {listing.currency && <Badge>{listing.currency}</Badge>}
         {listing.shipping === 'true' && <Badge>Ships to you</Badge>}
-        <Badge>{availability.label}</Badge>
+        {mounted && <Badge>{availability.label}</Badge>}
       </div>
     </div>
   )
@@ -222,7 +229,7 @@ export default function ListingDetail({
         </ContentLayout>
       </Container>
 
-      {availability.isPurchasable && (
+      {mounted && availability.isPurchasable && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-slate-900/95 backdrop-blur px-4 py-3">
           <button
             type="button"
