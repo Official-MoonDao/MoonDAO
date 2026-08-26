@@ -359,6 +359,61 @@ export function buildJobMetadata(doc: JobPostingDoc, cid?: string): JobMetadataE
   }) as JobMetadataEnvelope
 }
 
+/**
+ * The authoring doc for a role is easy to paste whole: a structured-fields
+ * table, a `## Body (markdown)` heading, then the public posting, then internal
+ * notes. The live page only wants the public posting. This pulls that out and
+ * leaves a normal markdown body untouched.
+ */
+const BODY_SECTION_HEADING = /^#{1,3}\s+body(?:\s*\(.*\))?\s*$/i
+const INTERNAL_NOTES_HEADING = /^#{1,3}\s+notes on what changed\b/i
+const TABLE_ROW = /^\s*\|.+\|\s*$/
+const AUTHORING_TABLE_FIELD = /^\s*\|\s*(Title|Category|Summary|Compensation|Commitment|Location|Seniority|Application deadline|Apply URL|Skills)\s*\|/i
+
+export function extractPublicJobBody(markdown: string): string {
+  if (!markdown || !markdown.trim()) return ''
+
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n')
+
+  let start = 0
+  for (let i = 0; i < lines.length; i++) {
+    if (BODY_SECTION_HEADING.test(lines[i].trim())) {
+      start = i + 1
+      break
+    }
+  }
+
+  let end = lines.length
+  for (let i = start; i < lines.length; i++) {
+    if (INTERNAL_NOTES_HEADING.test(lines[i].trim())) {
+      end = i
+      break
+    }
+  }
+
+  return stripLeadingAuthoringTable(lines.slice(start, end).join('\n'))
+}
+
+function stripLeadingAuthoringTable(markdown: string): string {
+  const lines = markdown.split('\n')
+  let i = 0
+  while (i < lines.length && lines[i].trim() === '') i++
+  if (i >= lines.length || !TABLE_ROW.test(lines[i])) return markdown.trim()
+
+  const tableStart = i
+  while (i < lines.length && (TABLE_ROW.test(lines[i]) || lines[i].trim() === '')) {
+    if (lines[i].trim() === '' && i + 1 < lines.length && !TABLE_ROW.test(lines[i + 1])) break
+    i++
+  }
+
+  const tableBlock = lines.slice(tableStart, i).join('\n')
+  const fieldHits = tableBlock.split('\n').filter((line) => AUTHORING_TABLE_FIELD.test(line))
+  if (fieldHits.length < 2) return markdown.trim()
+
+  while (i < lines.length && (/^\s*-{3,}\s*$/.test(lines[i]) || lines[i].trim() === '')) i++
+  return lines.slice(i).join('\n').trim()
+}
+
 /** Normalize an IPFS document, discarding anything that isn't the expected shape. */
 export function normalizeJobPostingDoc(raw: any): JobPostingDoc | null {
   if (!isPlainObject(raw)) return null
@@ -409,7 +464,10 @@ export function normalizeJobPostingDoc(raw: any): JobPostingDoc | null {
   const doc = compact({
     v: cleanNumber(raw.v) ?? JOB_METADATA_VERSION,
     summary: cleanString(raw.summary),
-    body: typeof raw.body === 'string' && raw.body.trim() !== '' ? raw.body : undefined,
+    body:
+      typeof raw.body === 'string' && raw.body.trim() !== ''
+        ? extractPublicJobBody(raw.body) || undefined
+        : undefined,
     responsibilities: cleanStringArray(raw.responsibilities),
     requirements: cleanStringArray(raw.requirements),
     niceToHave: cleanStringArray(raw.niceToHave),

@@ -1,8 +1,10 @@
 # Social Media Manager (X) — public posting
 
-Ready to paste into the jobs board authoring form. The values under
-[Structured fields](#structured-fields) map 1:1 to the fields in the new form; the
-[Body](#body-markdown) section is the markdown body.
+Ready to paste into the jobs board authoring form. Map
+[Structured fields](#structured-fields) onto the matching form inputs. Paste
+**only** the [Body](#body-markdown) section into Full description — not this
+whole file, and not the fields table. The live page already renders those facts
+from the form; pasting the table shows up as raw `| Title | ... |` markdown.
 
 Compensation reasoning and negotiation guidance live in
 [`JOB_SOCIAL_MEDIA_MANAGER_COMP.md`](./JOB_SOCIAL_MEDIA_MANAGER_COMP.md) and are deliberately

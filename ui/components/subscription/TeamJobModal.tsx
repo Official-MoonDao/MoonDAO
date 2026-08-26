@@ -658,7 +658,7 @@ export default function TeamJobModal({
           <Field
             id="job-body-input"
             label="Full description"
-            hint="Markdown supported: headings, lists, links and tables. No length limit — this is stored on IPFS and rendered on the role's own page."
+            hint="Markdown supported: headings, lists, links and tables. Paste the public description only — not the structured-fields table; those already have their own inputs above and below."
           >
             <textarea
               id="job-body-input"
