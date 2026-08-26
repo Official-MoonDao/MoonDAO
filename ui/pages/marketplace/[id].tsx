@@ -16,13 +16,14 @@ import { fetchListingById, fetchRelatedListings } from '@/lib/marketplace/market
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { serializeJsonLd } from '@/lib/utils/jsonLd'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import IPFSRenderer from '@/components/layout/IPFSRenderer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import MarketplaceListingCard from '@/components/marketplace/MarketplaceListing'
 import ListingPurchasePanel from '@/components/marketplace/ListingPurchasePanel'
+import MarketplaceListingCard from '@/components/marketplace/MarketplaceListing'
 import BuyTeamListingModal from '@/components/subscription/BuyTeamListingModal'
 import type { TeamListing } from '@/components/subscription/TeamListing'
 
@@ -117,7 +118,7 @@ export default function ListingDetail({
         <script
           type="application/ld+json"
           key="listing-jsonld"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
         />
       </Head>
       <Container>
@@ -194,7 +195,9 @@ export default function ListingDetail({
                   listing={listing}
                   onBuy={() => setBuyModalEnabled(true)}
                   shareUrl={shareUrl}
-                  shareText={`${listing.title}${team?.name ? ` from ${team.name}` : ''} on the MoonDAO marketplace`}
+                  shareText={`${listing.title}${
+                    team?.name ? ` from ${team.name}` : ''
+                  } on the MoonDAO marketplace`}
                   teamName={team?.name}
                   teamHref={teamHref}
                   otherListingsCount={otherListingsCount}

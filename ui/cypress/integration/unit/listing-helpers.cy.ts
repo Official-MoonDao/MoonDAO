@@ -7,6 +7,7 @@ import {
   requiresShipping,
 } from '@/lib/marketplace/listing'
 import { buildListingJsonLd } from '@/lib/marketplace/listingJsonLd'
+import { serializeJsonLd } from '@/lib/utils/jsonLd'
 
 const DAY = 86400
 const NOW = 1_800_000_000
@@ -48,7 +49,7 @@ describe('getListingAvailability', () => {
   it('is upcoming before the start time', () => {
     const availability = getListingAvailability(
       listing({ startTime: NOW + 5 * DAY, endTime: NOW + 10 * DAY }),
-      NOW,
+      NOW
     )
     expect(availability.status).to.equal('upcoming')
     expect(availability.isPurchasable).to.equal(false)
@@ -63,13 +64,13 @@ describe('getListingAvailability', () => {
 
   it('counts down a timed window that is still open', () => {
     expect(getListingAvailability(listing({ endTime: NOW + 3 * DAY }), NOW).label).to.equal(
-      'Ends in 3 days',
+      'Ends in 3 days'
     )
     expect(getListingAvailability(listing({ endTime: NOW + DAY }), NOW).label).to.equal(
-      'Ends in 1 day',
+      'Ends in 1 day'
     )
     expect(getListingAvailability(listing({ endTime: NOW + 60 }), NOW).label).to.equal(
-      'Ends in 1 day',
+      'Ends in 1 day'
     )
   })
 })
@@ -90,14 +91,14 @@ describe('formatListingPrice', () => {
 
   it('tolerates thousands separators', () => {
     expect(
-      formatListingPrice(listing({ price: '1,000', currency: 'USDC' }), true).display,
+      formatListingPrice(listing({ price: '1,000', currency: 'USDC' }), true).display
     ).to.equal('1,000 USDC')
   })
 
   it('never marks up a gifted citizenship', () => {
     const price = formatListingPrice(
       listing({ price: '100', currency: 'ETH', tag: CITIZENSHIP_GIFT_TAG }),
-      false,
+      false
     )
     expect(price.display).to.equal('100 ETH')
     expect(price.savings).to.equal('')
@@ -142,12 +143,23 @@ describe('buildListingJsonLd', () => {
 
   it('reflects sold-out and pre-order states', () => {
     expect(
-      buildListingJsonLd({ listing: listing({ endTime: NOW - DAY }), now: NOW }).offers
-        .availability,
+      buildListingJsonLd({ listing: listing({ endTime: NOW - DAY }), now: NOW }).offers.availability
     ).to.equal('https://schema.org/SoldOut')
     expect(
       buildListingJsonLd({ listing: listing({ startTime: NOW + DAY }), now: NOW }).offers
-        .availability,
+        .availability
     ).to.equal('https://schema.org/PreOrder')
+  })
+
+  it('escapes a listing title that tries to break out of the script tag', () => {
+    const jsonLd = buildListingJsonLd({
+      listing: listing({ title: 'Payload</script><script>alert(1)</script>' }),
+      now: NOW,
+    })
+    const serialized = serializeJsonLd(jsonLd)
+
+    expect(serialized).to.not.include('<')
+    expect(serialized).to.not.include('>')
+    expect(JSON.parse(serialized).name).to.equal('Payload</script><script>alert(1)</script>')
   })
 })
