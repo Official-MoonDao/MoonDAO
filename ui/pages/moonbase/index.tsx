@@ -1,4 +1,4 @@
-import { GlobeAltIcon } from '@heroicons/react/24/outline'
+import { CameraIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import { useLogin } from '@privy-io/react-auth'
 import type { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
@@ -175,6 +175,12 @@ export default function MoonBaseZeroIndex() {
   const yearRange = useMemo(() => datasetYearRange(dataset), [dataset])
   const [year, setYear] = useState(yearRange.max)
   const [playing, setPlaying] = useState(false)
+  // Everything the base could not actually have — this page's own panels, the
+  // beacons and the floating names in the scene — out of the way at once, so
+  // what's left is just the Moon and the hardware on it. The scene is
+  // photographic enough now that the furniture is the only thing between it and
+  // a usable image, and there was no way to get one without one.
+  const [cinematic, setCinematic] = useState(false)
 
   // This is a fixed, fullscreen scene — it must never scroll. The shared Layout
   // gives <main> `pt-16` on top of `min-h-screen`, making the document ~4rem
@@ -193,6 +199,18 @@ export default function MoonBaseZeroIndex() {
       body.style.overflow = prevBody
     }
   }, [])
+
+  // Escape leaves the clean view. Bound only while it's on, so it can't shadow
+  // Escape's meaning anywhere else on the page, and because the one control
+  // still on screen is deliberately small enough to be missed.
+  useEffect(() => {
+    if (!cinematic) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCinematic(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [cinematic])
 
   // Density of milestones that actually put hardware at the Moon in a given
   // year — matches what the scrubber's range covers, so a tall bar means
@@ -670,10 +688,42 @@ export default function MoonBaseZeroIndex() {
           getProjectStyle={getProjectStyle}
           layout={layout}
           onBackgroundClick={handleBackgroundClick}
+          cinematic={cinematic}
         />
 
+        {/* The one control that survives cinematic mode, since it is the only
+            way back out of it besides Escape. Bottom right, where nothing else
+            lives, and sized down to a corner mark so it costs the frame almost
+            nothing while it's the only thing in it. */}
+        <button
+          type="button"
+          onClick={() => setCinematic((c) => !c)}
+          title={
+            cinematic
+              ? 'Show the map furniture again (Esc)'
+              : 'Hide all panels, pins and labels'
+          }
+          aria-pressed={cinematic}
+          className={`absolute bottom-4 right-4 z-30 flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium backdrop-blur-md transition-colors ${
+            cinematic
+              ? 'border-white/10 bg-black/30 text-white/40 hover:border-white/25 hover:text-white/80'
+              : 'border-white/10 bg-black/40 text-white/60 hover:border-white/25 hover:text-white'
+          }`}
+        >
+          <CameraIcon className="h-3.5 w-3.5" />
+          {cinematic ? 'Exit' : 'Clean view'}
+        </button>
+
         {/* Overlay HUD */}
-        <div className="pointer-events-none absolute inset-0 flex flex-col">
+        <div
+          className={`pointer-events-none absolute inset-0 flex flex-col transition-opacity duration-300 ${
+            cinematic ? 'opacity-0' : 'opacity-100'
+          }`}
+          // Faded out AND taken out of the tree for input, so a hidden Legend
+          // can't still swallow a drag meant for the globe underneath it.
+          aria-hidden={cinematic}
+          style={cinematic ? { visibility: 'hidden' } : undefined}
+        >
           {/* Top row */}
           <div className="flex items-start justify-between gap-4 p-4 sm:p-6">
             <div className="pointer-events-auto max-w-sm rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
@@ -729,7 +779,7 @@ export default function MoonBaseZeroIndex() {
             Positioned absolutely (not in the HUD flex column) so its height
             doesn't depend on how tall the Legend happens to be; it overlays
             the Legend while open. One panel at a time — race view wins. */}
-        {(selectedGoal || selectedTree || selectedProject) && (
+        {(selectedGoal || selectedTree || selectedProject) && !cinematic && (
           <div className="pointer-events-none absolute inset-x-4 bottom-40 top-auto z-20 h-[55vh] sm:inset-x-auto sm:bottom-40 sm:right-4 sm:top-20 sm:h-auto sm:w-[380px]">
             {selectedGoal ? (
               <SharedGoalPanel

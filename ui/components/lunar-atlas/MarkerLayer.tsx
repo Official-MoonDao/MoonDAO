@@ -18,7 +18,7 @@
 
 import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   BASE_PLAN,
@@ -143,6 +143,12 @@ type MarkerLayerProps = {
   getProjectStyle?: (project: Project) => MarkerStyle
   // Displaced terrain radius lookup so pins/models sit on the rendered ground.
   radiusAt?: RadiusAt | null
+  // Strips the map furniture — beacons, tethers, every floating name — and
+  // leaves only what would actually be standing on the Moon. This layer is a
+  // MAP most of the time and the reticles are the point of it, but they are
+  // also the one thing in the frame that could not exist, so a screenshot with
+  // them in it can only ever read as a diagram of a base rather than as a base.
+  cinematic?: boolean
 }
 
 // Offsets above the local terrain (which the sampler provides per marker),
@@ -223,6 +229,7 @@ function CompetitorPlot({
   onSelect,
   onHover,
   radiusAt,
+  cinematic,
 }: {
   project: Project
   slot: Slot
@@ -251,6 +258,8 @@ function CompetitorPlot({
   onSelect?: () => void
   onHover?: (hovered: boolean) => void
   radiusAt?: RadiusAt | null
+  // See MarkerLayerProps. Suppresses this plot's name card.
+  cinematic?: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
 
@@ -383,7 +392,7 @@ function CompetitorPlot({
 
       {/* The asset's own name. Shown on hover, and for the whole field while
           its race is open — which is how you tell three reactors apart. */}
-      {(called || raceOpen) && (
+      {(called || raceOpen) && !cinematic && (
         <Html
           position={labelAt}
           center
@@ -435,6 +444,29 @@ function CompetitorPlot({
 // are spent, which is what keeps `RoverDepotYard` a compact 13 x 10 m.
 const DEPOT_FOOTPRINT_R = 9 // half-diagonal of the yard's 13 x 10 m apron, with room to spare
 
+// Where the yard actually stands, in plan (east, north) meters — the inward
+// setback the comment above works out, plus the radius and district bearing the
+// yard needs to know which way to face.
+function roverDepotPlan(): {
+  east: number
+  north: number
+  radius: number
+  districtBearing: number
+} {
+  const plan = BASE_PLAN.rover!
+  const districtBearing = Math.atan2(plan.north, plan.east)
+  const front = ROAD_HALF_M + SETBACK_M + DEPOT_FOOTPRINT_R
+  const radius = MAIN_LOOP_M - front
+  const swing = Math.asin(Math.min(1, front / radius))
+  const a = districtBearing + swing
+  return {
+    east: Math.cos(a) * radius,
+    north: Math.sin(a) * radius,
+    radius,
+    districtBearing,
+  }
+}
+
 function RoverDepotSite({
   accent,
   dim,
@@ -447,14 +479,9 @@ function RoverDepotSite({
   radiusAt?: RadiusAt | null
 }) {
   const { seat, ndir, noseAlong } = useMemo(() => {
-    const plan = BASE_PLAN.rover!
-    const bearing = Math.atan2(plan.north, plan.east)
-    const front = ROAD_HALF_M + SETBACK_M + DEPOT_FOOTPRINT_R
-    const radius = MAIN_LOOP_M - front
-    const swing = Math.asin(Math.min(1, front / radius))
-    const a = bearing + swing
+    const { east, north, radius, districtBearing } = roverDepotPlan()
 
-    const ll = capOffsetLatLon(Math.cos(a) * radius, Math.sin(a) * radius)
+    const ll = capOffsetLatLon(east, north)
     const d = new THREE.Vector3(
       ...latLonToVector3(ll.lat, ll.lon, 1)
     ).normalize()
@@ -471,8 +498,8 @@ function RoverDepotSite({
     // avenue's own radial line — so the yard's open (aisle) side faces the
     // road it is served by rather than an arbitrary camera-relative default.
     const backLl = capOffsetLatLon(
-      Math.cos(bearing) * radius,
-      Math.sin(bearing) * radius
+      Math.cos(districtBearing) * radius,
+      Math.sin(districtBearing) * radius
     )
     const backDir = new THREE.Vector3(
       ...latLonToVector3(backLl.lat, backLl.lon, 1)
@@ -685,9 +712,21 @@ const UGC_EXTRA_LIFT_M = 0.6
 
 function UndergroundConstructionSiteMarker({
   radiusAt,
+  cinematic,
 }: {
   radiusAt?: RadiusAt | null
+  // See MarkerLayerProps. The dig itself stays — it's real hardware doing real
+  // work — but its caption goes, like every other floating name.
+  cinematic?: boolean
 }) {
+  // The caption is shown on hover only, like every other name on the base (see
+  // CompetitorPlot). It used to be permanent, which made it the one label in
+  // the scene that was always up: a card floating over the middle of the base
+  // at fixed screen size whatever the camera was doing, and — since it is
+  // pinned above the tallest thing here — one that sat over the habitats behind
+  // it from most angles.
+  const [hovered, setHovered] = useState(false)
+
   const { dir, seat, labelAt } = useMemo(() => {
     const ll = capOffsetLatLon(UGC_EAST_M, UGC_NORTH_M)
     const d = latLonToVector3(ll.lat, ll.lon, 1)
@@ -703,25 +742,44 @@ function UndergroundConstructionSiteMarker({
 
   return (
     <>
-      <SurfaceAnchor
-        dir={dir}
-        surfaceRadius={seat}
-        scale={M_TO_UNITS}
-        castShadows={false}
-        interactive={false}
+      {/* Hover handled here rather than through SurfaceAnchor's own
+          `interactive` flag, which is all-or-nothing: that flag also swallows
+          the click and switches the cursor to a pointer, and this is a piece of
+          scenery with nothing to open — a dead click on it would stop the
+          background click that deselects and zooms back out. Pointer events
+          from the meshes inside bubble up to this group either way. */}
+      <group
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          setHovered(true)
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          setHovered(false)
+        }}
       >
-        <UndergroundConstructionSite seed={4021} />
-      </SurfaceAnchor>
-      <Html
-        position={labelAt}
-        center
-        zIndexRange={[15, 0]}
-        style={{ pointerEvents: 'none' }}
-      >
-        <div className="whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
-          Underground base construction
-        </div>
-      </Html>
+        <SurfaceAnchor
+          dir={dir}
+          surfaceRadius={seat}
+          scale={M_TO_UNITS}
+          castShadows={false}
+          interactive={false}
+        >
+          <UndergroundConstructionSite seed={4021} />
+        </SurfaceAnchor>
+      </group>
+      {hovered && !cinematic && (
+        <Html
+          position={labelAt}
+          center
+          zIndexRange={[15, 0]}
+          style={{ pointerEvents: 'none' }}
+        >
+          <div className="whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
+            Underground base construction
+          </div>
+        </Html>
+      )}
     </>
   )
 }
@@ -1249,6 +1307,7 @@ export default function MarkerLayer({
   onHoverTree,
   getProjectStyle,
   radiusAt,
+  cinematic,
 }: MarkerLayerProps) {
   const orgMap = useMemo(() => {
     const m = new Map<string, Organization>()
@@ -1319,6 +1378,7 @@ export default function MarkerLayer({
                   onSelect={() => onSelectProject?.(project.id)}
                   onHover={(h) => onHoverTree?.(h ? tree.category : null)}
                   radiusAt={radiusAt}
+                  cinematic={cinematic}
                 />
               )
             })}
@@ -1340,24 +1400,34 @@ export default function MarkerLayer({
               </>
             )}
 
-            <DistrictBeacon
-              dir={districtDir}
-              color={color}
-              label={label}
-              pinModelSizeM={tallestM}
-              selected={isOpen}
-              hovered={hoveredCategory === tree.category}
-              style={{ opacity: districtOpacity * dim, visible: true }}
-              onSelect={() => onSelectTree?.(tree.category)}
-              onHover={(h) => onHoverTree?.(h ? tree.category : null)}
-              radiusAt={radiusAt}
-            />
+            {/* Dropped entirely rather than made invisible: the beacon owns
+                this district's oversized click target (see its hit sphere), and
+                leaving that behind would have a base with no visible markers
+                still turning the cursor to a pointer over empty sky. In
+                cinematic mode the hardware itself is the only thing to click. */}
+            {!cinematic && (
+              <DistrictBeacon
+                dir={districtDir}
+                color={color}
+                label={label}
+                pinModelSizeM={tallestM}
+                selected={isOpen}
+                hovered={hoveredCategory === tree.category}
+                style={{ opacity: districtOpacity * dim, visible: true }}
+                onSelect={() => onSelectTree?.(tree.category)}
+                onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+                radiusAt={radiusAt}
+              />
+            )}
           </group>
         )
       })}
 
       <InterDistrictFiller radiusAt={radiusAt} />
-      <UndergroundConstructionSiteMarker radiusAt={radiusAt} />
+      <UndergroundConstructionSiteMarker
+        radiusAt={radiusAt}
+        cinematic={cinematic}
+      />
     </group>
   )
 }

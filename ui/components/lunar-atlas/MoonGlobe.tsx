@@ -49,6 +49,7 @@ import type {
 } from '@/lib/lunar-atlas/types'
 import BaseRoads from './BaseRoads'
 import EarthGlobe from './EarthGlobe'
+import GroundDisturbance from './GroundDisturbance'
 import MarkerLayer, {
   ColonyLayout,
   MarkerStyle,
@@ -94,6 +95,9 @@ export type MoonGlobeProps = {
   // Fired on a genuine click (not a drag-rotation) of the lunar surface or
   // the empty starfield — the page uses it to deselect and zoom back out.
   onBackgroundClick?: () => void
+  // Strips every beacon, tether and floating name out of the scene, leaving
+  // only what would physically be there. See MarkerLayerProps.
+  cinematic?: boolean
   children?: ReactNode
 }
 
@@ -442,6 +446,7 @@ export default function MoonGlobe({
   getProjectStyle,
   layout,
   onBackgroundClick,
+  cinematic,
   children,
 }: MoonGlobeProps) {
   const controlsRef = useRef<any>(null)
@@ -552,6 +557,18 @@ export default function MoonGlobe({
         siteOpacity={sitePresence}
       />
 
+      {/* Churned ground under the hardware. After the roads so a stain blends
+          over a road's own crust where the two meet — a machine tracks dust
+          onto the pavement it works off, not the other way round. */}
+      {trees && layout && (
+        <GroundDisturbance
+          trees={trees}
+          layout={layout}
+          radiusAt={radiusAt}
+          siteOpacity={sitePresence}
+        />
+      )}
+
       {trees && organizations && layout && (
         <MarkerLayer
           trees={trees}
@@ -565,6 +582,7 @@ export default function MoonGlobe({
           onHoverTree={onHoverTree}
           getProjectStyle={getProjectStyle}
           radiusAt={radiusAt}
+          cinematic={cinematic}
         />
       )}
 
@@ -579,6 +597,7 @@ export default function MoonGlobe({
           getProjectStyle={getProjectStyle}
           onSelectProject={onSelectProject}
           onHoverTree={onHoverTree}
+          cinematic={cinematic}
         />
       )}
 

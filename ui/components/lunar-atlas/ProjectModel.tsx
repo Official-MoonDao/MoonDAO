@@ -11064,6 +11064,83 @@ function AstronautCompanion({ accent }: { accent: string }) {
 // Pointer travel beyond this between down and up is a globe drag, not a click.
 const CLICK_DRAG_TOLERANCE_PX = 8
 
+// ---------------------------------------------------------------------------
+// Dust on the hardware
+// ---------------------------------------------------------------------------
+//
+// Lunar dust gets on everything, and it gets on the bottom of everything
+// first. It is electrostatically charged, jagged, and thrown by every wheel,
+// boot and thruster on the surface, with no atmosphere to slow it and no
+// weather to wash it off — so it arrives, sticks, and stays. Apollo hardware is
+// the whole argument: the LRV came home with its fenders and lower body the
+// colour of the ground it drove over while its upper surfaces stayed the colour
+// they were painted, and every LM's descent stage wore the same gradient. Clean
+// hardware, uniformly the colour of its own paint from the ground up, is one of
+// the loudest tells that a surface render was assembled rather than used.
+//
+// So every lit surface on the base is blended toward the regolith by how low it
+// sits. Measured in REAL METERS off local grade and not as a fraction of the
+// model, because that's how the physics works: dust is thrown to about the same
+// height whether the thing standing in it is a 2 m rover or a 105 m guideway,
+// so a rover ends up dusty nearly all over and the guideway ends up dusty only
+// around the feet of its legs. A fraction-of-model rule would have got the
+// rover right and painted the guideway's roof.
+const DUST = new THREE.Color('#9b948a')
+// How far up the dust reaches. Generous for footfall alone; this is a working
+// site with vehicles running laps of it and landers coming in.
+const DUST_HEIGHT_M = 2.2
+// ...and how much of that is the splash zone, coated as heavily as it gets. A
+// falloff that starts thinning from the ground up leaves the one band that
+// should be unambiguously filthy — tracks, feet, skirts, the bottom of a leg —
+// at two thirds strength, which is the height at which the whole effect stops
+// being legible at any distance.
+const DUST_FULL_M = 0.6
+// Blend at grade. Deliberately short of a full coat — this is hardware in
+// service, not hardware abandoned, and past about a third the underlying
+// material stops reading as itself at all.
+const DUST_MAX = 0.3
+// Vertical extent, in meters, below which a mesh is taken to be a marking ON
+// the ground rather than a surface standing on it — a pit floor, a painted
+// lane, a decal. Dust settling on top of the ground is just the ground, and
+// tinting these washes out albedos that were chosen to read as dark holes.
+const DUST_FLAT_M = 0.03
+
+const DUST_BOX = new THREE.Box3()
+const DUST_MAT = new THREE.Matrix4()
+const DUST_WANT = new THREE.Color()
+
+// ---------------------------------------------------------------------------
+// Per-instance weathering
+// ---------------------------------------------------------------------------
+//
+// The base fields real duplicates: three fission plants of one design, a row of
+// identical printed pads, a scatter of the same boulder and the same street
+// light over and over. Duplicated hardware is correct — you would build a
+// second reactor to the first one's drawings — but duplicated WEAR is not.
+// Two units off the same line have been on the surface different lengths of
+// time, taken different amounts of dust, and been scuffed by different work,
+// and it is that variation the eye uses to read a row of things as several
+// objects rather than one object copied. Without it, identical models tile:
+// the repeat becomes the most visible thing in the frame.
+//
+// So every anchored instance shifts its own materials a little, off a seed
+// taken from the one thing guaranteed unique and stable per instance — where
+// it stands. No plumbing, no props to thread through a dozen call sites, and a
+// given unit looks the same on every reload because its site never moves.
+const WEATHER_ROUGH = 0.07 // ± roughness, on a 0-1 scale
+const WEATHER_VALUE = 0.05 // ± brightness, as a fraction
+
+// Stable, well-mixed and cheap, from a point on the unit sphere. Multipliers
+// are the usual irrationals — the point is only that the three axes don't
+// alias against each other for directions this close together (every site on
+// this base is within a few hundred meters, so the inputs agree to five
+// decimals and a weak hash would hand neighbours the same number).
+function siteSeed(dir: Vec3): number {
+  const s =
+    Math.sin(dir[0] * 12.9898 + dir[1] * 78.233 + dir[2] * 37.719) * 43758.5453
+  return s - Math.floor(s)
+}
+
 // Anchors any model on the globe: seats it at the sampled terrain radius
 // along `dir`, orients its +Y to the local surface normal, and makes the
 // whole thing a drag-tolerant click/hover target. Shared by per-project
@@ -11140,7 +11217,25 @@ export function SurfaceAnchor({
   // to arrive already dimmed.
   const groupRef = useRef<THREE.Group>(null)
   useEffect(() => {
-    groupRef.current?.traverse((o) => {
+    const root = groupRef.current
+    if (!root) return
+    // Forced, rather than trusting whatever the render loop last left behind:
+    // this effect runs at commit, and a mesh mounting for the first time (or
+    // streaming in out of a GLB's Suspense) has its position set but its world
+    // matrix still stale. The dust pass below reads a mesh's height through
+    // those matrices, so a stale one bakes the wrong amount of dust onto a
+    // material — and since nothing re-renders afterwards, it would stay wrong.
+    root.updateWorldMatrix(true, true)
+    // Meters, in this model's own local units — the anchor's `scale` is world
+    // units per local unit and M_TO_UNITS is world units per meter.
+    const localPerM = M_TO_UNITS / scale
+    // This unit's own wear, held for its whole subtree so the instance reads as
+    // one object that has had one life — not as parts weathered independently.
+    const wear = siteSeed(dir)
+    const wearRough = (wear - 0.5) * 2 * WEATHER_ROUGH
+    const wearValue = 1 + (siteSeed([dir[1], dir[2], dir[0]]) - 0.5) * 2 * WEATHER_VALUE
+
+    root.traverse((o) => {
       const m = o as THREE.Mesh
       if (!m.isMesh) return
       const mat = m.material as THREE.Material | undefined
@@ -11168,6 +11263,67 @@ export function SurfaceAnchor({
       m.receiveShadow = !unlit
 
       if (!mat) return
+
+      // Dust, thickest at grade and thinning with height (see DUST_HEIGHT_M).
+      // Recomputed from a remembered base colour every pass rather than applied
+      // once, for the same reason the dim above is: it has to be idempotent, so
+      // that a pass which ran before this mesh's transform settled is corrected
+      // by the next one instead of leaving a permanent mistake.
+      const tint = mat as THREE.MeshStandardMaterial
+      const emissive = tint.emissive
+        ? tint.emissive.r + tint.emissive.g + tint.emissive.b
+        : 0
+      if (!unlit && tint.color && emissive < 0.3 && m.geometry) {
+        if (!m.geometry.boundingBox) m.geometry.computeBoundingBox()
+        const bb = m.geometry.boundingBox
+        if (bb) {
+          if (!mat.userData.dustBaseColor)
+            mat.userData.dustBaseColor = tint.color.clone()
+          // The mesh's own box in the MODEL's frame, which is the frame local
+          // height is measured in — a geometry-space box would put a flat
+          // ground decal's degenerate axis wherever that geometry happens to
+          // be authored rather than vertically.
+          DUST_MAT.copy(root.matrixWorld).invert().multiply(m.matrixWorld)
+          DUST_BOX.copy(bb).applyMatrix4(DUST_MAT)
+          const flat = DUST_BOX.max.y - DUST_BOX.min.y < DUST_FLAT_M * localPerM
+          const centreY = (DUST_BOX.min.y + DUST_BOX.max.y) / 2
+          const t = Math.min(
+            1,
+            Math.max(
+              0,
+              (centreY / localPerM - DUST_FULL_M) /
+                (DUST_HEIGHT_M - DUST_FULL_M)
+            )
+          )
+          const w = flat ? 0 : DUST_MAX * (1 - t) * (1 - t)
+          // Dust first, then this unit's own wear over the top of it — the
+          // order matters: wear is a property of THIS unit's surface, so it has
+          // to modulate what that surface actually looks like now, coating and
+          // all, rather than being blended away under a coat of dust.
+          DUST_WANT.copy(mat.userData.dustBaseColor)
+            .lerp(DUST, w)
+            .multiplyScalar(wearValue)
+          if (!tint.color.equals(DUST_WANT)) tint.color.copy(DUST_WANT)
+
+          if (tint.roughness !== undefined) {
+            if (mat.userData.wearBaseRough === undefined)
+              mat.userData.wearBaseRough = tint.roughness
+            // Rougher low down as well as browner: the same abrasive that
+            // discolours a surface also frosts it. Clamped short of a perfect
+            // mirror at one end and of total diffusion at the other, both of
+            // which read as a material error rather than as wear.
+            const rough = Math.min(
+              1,
+              Math.max(
+                0.04,
+                mat.userData.wearBaseRough + wearRough + w * 0.25
+              )
+            )
+            if (tint.roughness !== rough) tint.roughness = rough
+          }
+        }
+      }
+
       const want = mat.userData.dimBaseOpacity * dim
       // Guarded: writing `transparent` unconditionally would bump the material
       // version every render and force a shader recompile.
