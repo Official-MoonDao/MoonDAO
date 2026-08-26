@@ -34,6 +34,9 @@ export function getIPFSGateway(ipfsString: string) {
   return `${IPFS_GATEWAY}${hash}`
 }
 
+// MoonDAO's own pins live on the dedicated Pinata gateway, so it is the only
+// gateway guaranteed to serve them; ipfs.io and dweb.link routinely 504 on
+// freshly pinned MoonDAO CIDs. Keep the dedicated gateway first everywhere.
 const IPFS_GATEWAYS = [
   IPFS_GATEWAY,
   'https://gateway.pinata.cloud/ipfs/',
@@ -115,5 +118,86 @@ export async function fetchFromIPFSWithFallback(
 
   throw new Error(
     `All IPFS gateways failed for hash: ${hash} (${errors.join('; ')})`
+  )
+}
+
+export type IPFSImage = {
+  bytes: Uint8Array
+  contentType: string
+  gateway: string
+}
+
+const IMAGE_EXTENSIONS: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+}
+
+export function imageExtensionForContentType(contentType?: string) {
+  const normalized = contentType?.split(';')[0].trim().toLowerCase() || ''
+  return IMAGE_EXTENSIONS[normalized] || 'png'
+}
+
+/**
+ * Download image bytes from IPFS, trying each gateway in turn.
+ *
+ * Use this instead of handing an IPFS gateway URL to a third party (Discord,
+ * Twitter, an email client) and hoping their crawler can fetch it. Those
+ * crawlers give up after a couple of seconds and silently drop the image;
+ * here we can afford a real timeout and fall through to another gateway.
+ */
+export async function fetchImageFromIPFSWithFallback(
+  ipfsHash: string,
+  timeout = 10000
+): Promise<IPFSImage> {
+  const hash = ipfsHash.startsWith('ipfs://')
+    ? ipfsHash.replace('ipfs://', '')
+    : ipfsHash
+
+  if (!hash || !hash.trim()) {
+    throw new Error('Empty IPFS hash')
+  }
+
+  const errors: string[] = []
+
+  for (const gateway of IPFS_GATEWAYS) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeout)
+    try {
+      const response = await fetch(`${gateway}${hash}`, {
+        signal: controller.signal,
+        headers: { Accept: 'image/*' },
+        redirect: 'follow',
+      })
+
+      if (!response.ok) {
+        errors.push(`${gateway}: HTTP ${response.status}`)
+        continue
+      }
+
+      const contentType = response.headers.get('content-type') || 'image/png'
+      const bytes = new Uint8Array(await response.arrayBuffer())
+
+      if (bytes.byteLength === 0) {
+        errors.push(`${gateway}: empty body`)
+        continue
+      }
+
+      return { bytes, contentType, gateway }
+    } catch (error: any) {
+      const reason =
+        error?.name === 'AbortError'
+          ? 'timeout'
+          : error?.message || String(error)
+      errors.push(`${gateway}: ${reason}`)
+      continue
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  throw new Error(
+    `All IPFS gateways failed for image: ${hash} (${errors.join('; ')})`
   )
 }

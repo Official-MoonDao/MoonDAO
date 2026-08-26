@@ -9,82 +9,156 @@ import {
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import {
+  buildNewCitizenBody,
+  buildNewCitizenContent,
+  buildNewCitizenPayload,
+  citizenImageFilename,
+  citizenProfileUrl,
+  CitizenAttachment,
+  MAX_ATTACHMENT_BYTES,
+} from '@/lib/discord/newCitizenNotification'
+import { fetchImageFromIPFSWithFallback } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
-// Allow up to 75 seconds so Tableland has time to index the new citizen before
-// the Discord message is sent. Discord scrapes the profile URL immediately on
-// receiving the message, so if the citizen row isn't in Tableland yet the page
-// returns 404 and Discord shows no preview image.
-export const maxDuration = 75
+// Pages Router API routes read the timeout from `config.maxDuration`. The bare
+// `export const maxDuration` form is App Router only and was silently ignored
+// here, leaving this route on the ~10s platform default — so the Tableland poll
+// below was killed long before it could finish.
+export const config = {
+  maxDuration: 60,
+}
 
 const CHANNEL_ID =
   process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? GENERAL_CHANNEL_ID : TEST_CHANNEL_ID
 
 const MAX_POLL_ATTEMPTS = 12
-const POLL_INTERVAL_MS = 5000
+const POLL_INTERVAL_MS = 3000
 
-async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms))
+}
 
-  const { tokenId, citizenName, prettyLink } = req.body
-
-  if (!tokenId || !citizenName || !prettyLink) {
-    return res.status(400).json({ error: 'tokenId, citizenName and prettyLink are required' })
-  }
-
-  const chain = DEFAULT_CHAIN_V5
+// Waits for Tableland to index the new row so the profile link in the message
+// resolves instead of 404ing. The portrait no longer depends on this — it is
+// uploaded with the message — so a slow index only costs us the bio.
+async function pollForCitizenRow(chain: any, tokenId: string) {
   const chainSlug = getChainSlug(chain)
-  const statement = `SELECT id FROM ${CITIZEN_TABLE_NAMES[chainSlug]} WHERE id = ${Number(tokenId)} LIMIT 1`
+  const statement = `SELECT id, name, description, image FROM ${
+    CITIZEN_TABLE_NAMES[chainSlug]
+  } WHERE id = ${Number(tokenId)} LIMIT 1`
 
-  // Poll Tableland until the citizen row is indexed so that when Discord
-  // scrapes the profile URL the SSR page actually has data to render.
-  let indexed = false
   for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
     try {
       const rows = await queryTable(chain, statement)
       if (rows?.length > 0) {
-        indexed = true
-        break
+        return rows[0]
       }
     } catch (err) {
       console.error(`[notify-new-citizen] Tableland poll attempt ${attempt + 1} failed:`, err)
     }
 
     if (attempt < MAX_POLL_ATTEMPTS - 1) {
-      await new Promise<void>((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
+      await sleep(POLL_INTERVAL_MS)
     }
   }
 
-  if (!indexed) {
+  return null
+}
+
+async function resolveCitizenImage(imageURI?: string): Promise<CitizenAttachment | null> {
+  if (!imageURI) return null
+
+  try {
+    const { bytes, contentType, gateway } = await fetchImageFromIPFSWithFallback(imageURI)
+
+    if (bytes.byteLength > MAX_ATTACHMENT_BYTES) {
+      console.warn(
+        `[notify-new-citizen] Portrait ${imageURI} is ${bytes.byteLength} bytes, above the ${MAX_ATTACHMENT_BYTES} upload limit`
+      )
+      return null
+    }
+
+    console.log(
+      `[notify-new-citizen] Fetched portrait ${imageURI} from ${gateway} (${bytes.byteLength} bytes)`
+    )
+    return { bytes, contentType }
+  } catch (err) {
+    console.error(`[notify-new-citizen] Could not fetch portrait ${imageURI}:`, err)
+    return null
+  }
+}
+
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const { tokenId, citizenName, prettyLink, image, description } = req.body
+
+  if (!tokenId || !citizenName || !prettyLink) {
+    return res.status(400).json({ error: 'tokenId, citizenName and prettyLink are required' })
+  }
+
+  const chain = DEFAULT_CHAIN_V5
+
+  // The client already knows the `ipfs://` URI it wrote on-chain, so start
+  // downloading the portrait immediately rather than waiting on Tableland.
+  const rowPromise = pollForCitizenRow(chain, tokenId)
+  const clientImagePromise = resolveCitizenImage(image)
+
+  const row = await rowPromise
+  let attachment = await clientImagePromise
+
+  if (!attachment && row?.image) {
+    attachment = await resolveCitizenImage(row.image)
+  }
+
+  const profileUrl = citizenProfileUrl(DEPLOYED_ORIGIN, prettyLink)
+  const imageFilename = attachment
+    ? citizenImageFilename(tokenId, attachment.contentType)
+    : undefined
+
+  const payload = buildNewCitizenPayload({
+    content: buildNewCitizenContent({
+      citizenName,
+      profileUrl,
+      citizenRoleId: DISCORD_CITIZEN_ROLE_ID,
+    }),
+    profileUrl,
+    description: description || row?.description,
+    imageFilename,
+  })
+
+  if (!attachment) {
     console.warn(
-      `[notify-new-citizen] Citizen ${tokenId} still not in Tableland after ${MAX_POLL_ATTEMPTS} attempts — sending notification anyway`
+      `[notify-new-citizen] Sending citizen ${tokenId} announcement without a portrait`
     )
   }
 
-  const message = `## [**${citizenName}**](${DEPLOYED_ORIGIN}/citizen/${prettyLink}) has just become a <@&${DISCORD_CITIZEN_ROLE_ID}> of the Space Acceleration Network!`
+  const { headers, body } = buildNewCitizenBody(payload, imageFilename, attachment ?? undefined)
 
-  const discordRes = await fetch(
-    `https://discord.com/api/v10/channels/${CHANNEL_ID}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
-      },
-      body: JSON.stringify({ content: message }),
-    }
-  )
+  const discordRes = await fetch(`https://discord.com/api/v10/channels/${CHANNEL_ID}/messages`, {
+    method: 'POST',
+    headers: {
+      ...headers,
+      Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+    },
+    body: body as any,
+  })
 
   if (!discordRes.ok) {
-    const body = await discordRes.text()
-    console.error('[notify-new-citizen] Discord API error:', body)
+    const errorBody = await discordRes.text()
+    console.error('[notify-new-citizen] Discord API error:', errorBody)
     return res.status(500).json({ error: 'Failed to send Discord message' })
   }
 
-  return res.status(200).json({ success: true, indexed })
+  return res.status(200).json({
+    success: true,
+    indexed: !!row,
+    imageAttached: !!attachment,
+  })
 }
 
 export default withMiddleware(handler, authMiddleware)

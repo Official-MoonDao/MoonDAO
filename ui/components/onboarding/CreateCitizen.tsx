@@ -853,6 +853,7 @@ export default function CreateCitizen({
 
       const citizenName = citizenData.name
       const citizenPrettyLink = generatePrettyLinkWithId(citizenName, mintedTokenId)
+      const accessToken = await getAccessToken().catch(() => null)
 
       // The citizen's on-chain tokenURI is a Tableland gateway query, so its
       // metadata (name/image/attributes) only resolves once Tableland has
@@ -869,7 +870,6 @@ export default function CreateCitizen({
 
       // Record referral
       try {
-        const accessToken = await getAccessToken()
         const urlParams = new URLSearchParams(window.location.search)
         const referredBy = urlParams.get('referredBy')
 
@@ -941,16 +941,23 @@ export default function CreateCitizen({
       setMintComplete(true)
       fireCelebrationConfetti()
 
-      // Fire-and-forget: notify Discord once Tableland has indexed the new
-      // citizen so Discord's bot can scrape the OG image from the profile page.
-      // The server-side route polls Tableland before sending the message.
+      // Fire-and-forget: announce the new citizen in Discord. Pass the portrait
+      // URI and bio we just wrote on-chain so the server can upload the image
+      // with the message instead of relying on Discord to crawl the profile page
+      // (which needs Tableland to have indexed the row, and which drops the
+      // image whenever the IPFS gateway is slow).
       fetch('/api/discord/notify-new-citizen', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           tokenId: mintedTokenId,
           citizenName,
           prettyLink: citizenPrettyLink,
+          image: imageURI,
+          description: profile.bio,
         }),
       }).catch((err) => console.error('Failed to send Discord notification:', err))
 
