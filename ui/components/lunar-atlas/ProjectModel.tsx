@@ -266,7 +266,7 @@ const FOOTPRINT_FRACTION: Record<string, number> = {
   // clears main street's own pavement by ~5 m, and clears the avenue by
   // ~70 m. Change `turn` on this district and this number stops being
   // correct; the two were solved together, not independently.
-  'anthrofuturism-lunar-mass-driver': 0.32,
+  'lunar-mass-driver-concept': 0.32,
 }
 
 // Radius in meters of the ground a project occupies, for laying out plots that
@@ -6892,7 +6892,7 @@ function ConstructionSite({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Lunar mass driver (concept study) — Anthrofuturism
+// Lunar mass driver (concept study, no developer assigned)
 // ---------------------------------------------------------------------------
 
 // Local units per METER, as in the other true-size installations — but this
@@ -6945,7 +6945,8 @@ const MD_LIFT_M = 5
 
 // Coil stages: a reluctance launcher is, at bottom, hundreds to thousands of
 // these switched in sequence ("imagine if we did this over and over again
-// ... for a kilometer or four" — Anthrofuturism, Coil-type Mass Drivers).
+// ... for a kilometer or four" — the source design study; see the project's
+// own `sources` in the dataset for the citation).
 function MassDriverCoils() {
   return (
     <>

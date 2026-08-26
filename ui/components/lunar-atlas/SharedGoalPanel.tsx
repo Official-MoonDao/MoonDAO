@@ -14,6 +14,7 @@ import {
   ROSTER_DISCLAIMER,
   findDePrizeIdForGoal,
   getDePrizeRaceBinding,
+  isCompetitiveRace,
   isCompetitorClaimed,
   isDePrizeGoalMarketBound,
 } from '@/lib/deprize/competitions'
@@ -129,6 +130,13 @@ export default function SharedGoalPanel({
   // A registry id alone is not enough — incomplete race bindings must not
   // show bound chrome (market CTA / ROSTER_DISCLAIMER). Match the bridge gate.
   const bound = !!chainSlug && isDePrizeGoalMarketBound(chainSlug, goal.id)
+  // A single entrant has nowhere for odds to point at — see isCompetitiveRace.
+  // Today that's only the mass driver: an open-source concept study with no
+  // funded developer. Without this gate its lone row would price at a
+  // mechanical 100% and show a live Buy button, which reads as MoonDAO
+  // declaring that entrant the winning builder rather than what it actually
+  // is — the only public writeup on a capability nobody has committed to yet.
+  const hasRace = isCompetitiveRace(competitors.length)
   const marketDeprizeId = bound
     ? deprizeId ?? findDePrizeIdForGoal(chainSlug!, goal.id)
     : undefined
@@ -206,6 +214,7 @@ export default function SharedGoalPanel({
   // the demo market's current price (which starts at the curator prior and
   // moves as demo bets land).
   const oddsFractionFor = (projectId: string): number | undefined => {
+    if (!hasRace) return undefined
     if (bound) return odds?.[projectId]
     const pct = demo.odds[projectId]
     return pct !== undefined ? pct / 100 : odds?.[projectId]
@@ -249,13 +258,23 @@ export default function SharedGoalPanel({
               Capability race
             </span>
             <MarketPill status={marketStatus} />
-            {!bound && competitors.length > 0 && (
+            {!bound && hasRace ? (
               <span
                 className="rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-fuchsia-200"
                 title="No on-chain market yet — betting here is simulated and only updates odds shown in this browser."
               >
                 Demo market
               </span>
+            ) : (
+              !bound &&
+              competitors.length > 0 && (
+                <span
+                  className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/50"
+                  title="Only one concept study is on record for this capability — there is no active competition to bet on."
+                >
+                  No developer yet
+                </span>
+              )
             )}
           </div>
           <h2 className="mt-1 text-lg font-semibold leading-snug text-white">
@@ -305,8 +324,15 @@ export default function SharedGoalPanel({
         {competitors.length > 0 && (
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
-              Competitors ({competitors.length})
+              {hasRace ? `Competitors (${competitors.length})` : 'No committed developer'}
             </h3>
+            {!hasRace && (
+              <p className="mb-2 text-xs leading-relaxed text-white/50">
+                Only one concept study is on record for this capability and no
+                organization has committed to building it — there is no
+                active competition to bet on. Shown below for reference.
+              </p>
+            )}
             <div className="space-y-2">
               {ranked.map(({ project, organization }) => {
                 const color = accentFor(project.id, organization)
@@ -315,9 +341,13 @@ export default function SharedGoalPanel({
                 // Every competitor can be backed: for real races once bound
                 // to an outcome index, for everything else via the demo
                 // sandbox (which uses the project id directly as its key).
-                const canBack = bound
-                  ? marketDeprizeId !== undefined && outcomeIndex !== undefined
-                  : true
+                // A single-entrant non-race (hasRace false) is never
+                // backable — see isCompetitiveRace.
+                const canBack =
+                  hasRace &&
+                  (bound
+                    ? marketDeprizeId !== undefined && outcomeIndex !== undefined
+                    : true)
                 const outcome = outcomeAt(outcomeIndex)
                 const demoPosition = demo.positions[project.id]
                 const holding = bound
@@ -370,7 +400,9 @@ export default function SharedGoalPanel({
                             {project.name}
                           </span>
                           <span className="block truncate text-[11px] text-white/40">
-                            {organization?.name ?? project.orgId}
+                            {project.orgId === 'unassigned'
+                              ? 'No developer assigned'
+                              : organization?.name ?? project.orgId}
                           </span>
                         </span>
                       </button>
@@ -557,6 +589,7 @@ export default function SharedGoalPanel({
                 {ROSTER_DISCLAIMER}
               </p>
             ) : (
+              hasRace &&
               anyUnconfirmed && (
                 <p className="mt-2 text-[11px] leading-relaxed text-white/40">
                   &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment
@@ -664,7 +697,13 @@ export default function SharedGoalPanel({
           </div>
         )}
 
-        {!bound ? (
+        {!hasRace ? (
+          <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
+            This capability has no competing developer and no MoonDAO
+            DePrize market. Nothing above is a bet, an offer, an
+            endorsement, or a prediction that this entrant will build it.
+          </p>
+        ) : !bound ? (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
             No on-chain MoonDAO DePrize market exists for this race yet, so the
             odds and positions above are a demo sandbox — no real ETH moves.

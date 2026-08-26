@@ -16,6 +16,7 @@ import type { Chain } from 'thirdweb'
 import {
   findDePrizeIdForGoal,
   getDePrizeRaceBinding,
+  isCompetitiveRace,
   isDePrizeGoalMarketBound,
 } from '@/lib/deprize/competitions'
 import { MarketStage, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
@@ -50,12 +51,19 @@ type OutcomeRowVM = {
   balanceWei: bigint | undefined
 }
 
-function StatusPill({ label, tone }: { label: string; tone: 'live' | 'paused' | 'demo' | 'resolved' }) {
+function StatusPill({
+  label,
+  tone,
+}: {
+  label: string
+  tone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept'
+}) {
   const cls: Record<typeof tone, string> = {
     live: 'text-moon-green border-moon-green/40 bg-moon-green/15',
     paused: 'text-amber-300 border-amber-500/40 bg-amber-500/15',
     demo: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',
     resolved: 'text-gray-300 border-white/20 bg-white/10',
+    concept: 'text-gray-400 border-white/15 bg-white/5',
   } as const
   return (
     <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls[tone]}`}>
@@ -67,24 +75,29 @@ function StatusPill({ label, tone }: { label: string; tone: 'live' | 'paused' | 
 function OutcomeBetRow({
   outcome,
   bettingEnabled,
+  showOdds = true,
   onBet,
   onCashOut,
 }: {
   outcome: OutcomeRowVM
   bettingEnabled: boolean
+  /** False for a single-entrant non-race — see isCompetitiveRace. */
+  showOdds?: boolean
   onBet: () => void
   onCashOut?: () => void
 }) {
   const pct = Number.isFinite(outcome.probability) ? fmt(outcome.probability, 0) : undefined
   return (
     <div className="relative flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-2 overflow-hidden">
-      <div
-        className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
-        style={{
-          width: `${Math.max(0, Math.min(100, outcome.probability))}%`,
-          background: outcome.color,
-        }}
-      />
+      {showOdds && (
+        <div
+          className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
+          style={{
+            width: `${Math.max(0, Math.min(100, outcome.probability))}%`,
+            background: outcome.color,
+          }}
+        />
+      )}
       <span className="relative z-10 w-2 h-2 rounded-full shrink-0" style={{ background: outcome.color }} />
       <span className="relative z-10 flex-1 min-w-0 truncate text-sm text-white/90">{outcome.name}</span>
       {!!outcome.heldQty && (
@@ -92,9 +105,11 @@ function OutcomeBetRow({
           Holding {fmt(outcome.heldQty, 3)}
         </span>
       )}
-      <span className="relative z-10 w-9 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-200">
-        {pct !== undefined ? `${pct}%` : '—'}
-      </span>
+      {showOdds && (
+        <span className="relative z-10 w-9 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-200">
+          {pct !== undefined ? `${pct}%` : '—'}
+        </span>
+      )}
       {bettingEnabled && (
         <button
           type="button"
@@ -219,6 +234,12 @@ export default function RaceMarketCard({
     onHasPosition(goal.id, hasPosition)
   }, [goal.id, hasPosition, onHasPosition])
 
+  // A single entrant has nowhere for odds to point — see isCompetitiveRace.
+  // Every odds bar, Buy button, and pool figure below is gated on this so a
+  // capability nobody has committed to building yet reads as an open goal,
+  // not a market with a "leading" competitor priced at 100%.
+  const hasRace = isCompetitiveRace(competitors.length)
+
   const tradingHalted = live.tradingHalted
   // Whether the on-chain market itself is tradable, independent of region —
   // drives the status pill so "Paused" always reflects the real market state.
@@ -231,16 +252,24 @@ export default function RaceMarketCard({
   // Whether the Buy button actually opens — the market must be tradable AND
   // region rules must allow real bets (demo markets skip this entirely).
   const bettingOpenReal = marketTradable && !bettingBlockedReason
-  const bettingEnabled = bound ? bettingOpenReal : true // demo markets never gate
+  const bettingEnabled = hasRace && (bound ? bettingOpenReal : true) // demo markets never gate
 
-  const statusTone: 'live' | 'paused' | 'demo' | 'resolved' = !bound
-    ? 'demo'
-    : live.resolved
-      ? 'resolved'
-      : marketTradable
-        ? 'live'
-        : 'paused'
-  const statusLabel = { live: 'Live', paused: 'Paused', demo: 'Demo', resolved: 'Resolved' }[statusTone]
+  const statusTone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept' = !hasRace
+    ? 'concept'
+    : !bound
+      ? 'demo'
+      : live.resolved
+        ? 'resolved'
+        : marketTradable
+          ? 'live'
+          : 'paused'
+  const statusLabel = {
+    live: 'Live',
+    paused: 'Paused',
+    demo: 'Demo',
+    resolved: 'Resolved',
+    concept: 'No developer yet',
+  }[statusTone]
 
   const category = goal.category ?? 'other'
   const categoryLabel = PROJECT_TYPE_LABEL[category]
@@ -454,15 +483,19 @@ export default function RaceMarketCard({
                 key={o.projectId}
                 className="relative flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1.5 overflow-hidden"
               >
-                <div
-                  className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
-                  style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
-                />
+                {hasRace && (
+                  <div
+                    className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
+                    style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
+                  />
+                )}
                 <span className="relative z-10 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.color }} />
                 <span className="relative z-10 flex-1 min-w-0 truncate text-xs text-white/90">{o.name}</span>
-                <span className="relative z-10 shrink-0 text-xs font-semibold tabular-nums text-gray-200">
-                  {pct !== undefined ? `${pct}%` : '—'}
-                </span>
+                {hasRace && (
+                  <span className="relative z-10 shrink-0 text-xs font-semibold tabular-nums text-gray-200">
+                    {pct !== undefined ? `${pct}%` : '—'}
+                  </span>
+                )}
                 {bettingEnabled && (
                   <button
                     type="button"
@@ -485,10 +518,16 @@ export default function RaceMarketCard({
         </div>
 
         <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 truncate">
-          <span className="text-gray-300 font-semibold tabular-nums">
-            {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-          </span>{' '}
-          ETH {bound ? 'pool' : 'demo'}
+          {hasRace ? (
+            <>
+              <span className="text-gray-300 font-semibold tabular-nums">
+                {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
+              </span>{' '}
+              ETH {bound ? 'pool' : 'demo'}
+            </>
+          ) : (
+            'No committed developer — not an active competition'
+          )}
         </div>
 
         {marketModals}
@@ -536,28 +575,44 @@ export default function RaceMarketCard({
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
-                {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-                <span className="text-sm font-medium text-gray-400 ml-1.5">ETH</span>
-              </p>
-              <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-                {bound ? 'prize pool' : 'demo pool'}
-              </p>
+              {hasRace ? (
+                <>
+                  <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
+                    {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
+                    <span className="text-sm font-medium text-gray-400 ml-1.5">ETH</span>
+                  </p>
+                  <p className="text-gray-500 text-[10px] uppercase tracking-wide">
+                    {bound ? 'prize pool' : 'demo pool'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-gray-500 text-[11px] max-w-[10rem]">
+                  No committed developer yet
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex w-full h-2 rounded-full overflow-hidden bg-white/5 mb-4">
-            {ranked.map((o) => (
-              <div
-                key={o.projectId}
-                style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
-              />
-            ))}
-          </div>
+          {hasRace && (
+            <div className="flex w-full h-2 rounded-full overflow-hidden bg-white/5 mb-4">
+              {ranked.map((o) => (
+                <div
+                  key={o.projectId}
+                  style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="flex flex-col gap-1.5">
             {featuredTop.map((o) => (
-              <OutcomeBetRow key={o.projectId} outcome={o} bettingEnabled={bettingEnabled} onBet={() => handleBet(o)} />
+              <OutcomeBetRow
+                key={o.projectId}
+                outcome={o}
+                bettingEnabled={bettingEnabled}
+                showOdds={hasRace}
+                onBet={() => handleBet(o)}
+              />
             ))}
             {featuredMore > 0 && (
               <a href={detailHref} className="text-gray-500 hover:text-gray-300 text-xs mt-0.5 transition-colors">
@@ -609,13 +664,21 @@ export default function RaceMarketCard({
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-white text-base sm:text-lg font-bold tabular-nums">
-                {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-                <span className="text-xs font-medium text-gray-400 ml-1">ETH</span>
-              </p>
-              <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-                {bound ? 'prize pool' : 'demo pool'}
-              </p>
+              {hasRace ? (
+                <>
+                  <p className="text-white text-base sm:text-lg font-bold tabular-nums">
+                    {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
+                    <span className="text-xs font-medium text-gray-400 ml-1">ETH</span>
+                  </p>
+                  <p className="text-gray-500 text-[10px] uppercase tracking-wide">
+                    {bound ? 'prize pool' : 'demo pool'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-gray-500 text-[11px] max-w-[9rem]">
+                  No committed developer yet
+                </p>
+              )}
             </div>
           </div>
 
@@ -625,6 +688,7 @@ export default function RaceMarketCard({
                 key={o.projectId}
                 outcome={o}
                 bettingEnabled={bettingEnabled}
+                showOdds={hasRace}
                 onBet={() => handleBet(o)}
               />
             ))}

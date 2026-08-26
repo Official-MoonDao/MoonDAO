@@ -108,15 +108,32 @@ const ROCKS_PER_SPAN = 2
 const ROCK_MIN_M = 0.34
 const ROCK_MAX_M = 0.95
 
-// Hardstand cross-section, as a fraction of its radius. Flat, and with no edge
-// treatment of its own — the ring road's inner windrow is its boundary.
-const PLAZA_RINGS: { r: number; rise: number }[] = [
+// Hardstand cross-section: rise above local grade at a fraction of its radius.
+// Flat, and with no edge treatment of its own — the ring road's inner windrow
+// is its boundary. This is only the PROFILE. It is not the tessellation, and
+// the yard used to be built as a fan straight off these four radii, which is
+// what put the regolith back through the middle of it: every vertex is seated
+// on the rendered ground (see `seat`), so the yard clears that ground by its
+// lift only AT a vertex, and in between it runs dead straight while the terrain
+// keeps following its own ~15.6 m polygon pitch (CAP_GRID over CAP_EXTENT_M).
+// Sampled at these radii alone the innermost band chords across 36 m of a 60 m
+// yard, and on ridge terrain rough enough to vary a meter from one terrain node
+// to the next — a few degrees of slope, which this site has — the ground rises
+// through the chord by up to ~1 m across a tenth of the yard's area.
+const PLAZA_PROFILE: { r: number; rise: number }[] = [
   { r: 0, rise: 0.2 },
   { r: 0.6, rise: 0.18 },
   { r: 0.93, rise: 0.15 },
   { r: 1, rise: 0.08 },
 ]
-const PLAZA_SPOKES = 72
+// So the yard is triangulated on stations of its own, at the spacing the roads
+// already use for exactly the same reason — following the ground closely enough
+// that LIFT_M is a real clearance rather than a clearance at the corners. This
+// is also why the roads never showed the artefact the yard did.
+const PLAZA_STATION_M = STATION_SPACING_M
+// Enough spokes to put the rim's circumferential pitch on the same order, so
+// the mesh hugs the ground going around the yard as well as out across it.
+const PLAZA_SPOKES = 144
 
 const NO_RAYCAST = () => {}
 
@@ -364,6 +381,19 @@ function buildStreet(
   return { geometry: finish(positions, colors, uvs, index), origin, rocks }
 }
 
+// Rise above local grade, in meters, at a fraction of the yard's radius.
+function plazaRise(t: number): number {
+  for (let i = 1; i < PLAZA_PROFILE.length; i++) {
+    const a = PLAZA_PROFILE[i - 1]
+    const b = PLAZA_PROFILE[i]
+    if (t <= b.r) {
+      const f = b.r > a.r ? (t - a.r) / (b.r - a.r) : 0
+      return a.rise + (b.rise - a.rise) * f
+    }
+  }
+  return PLAZA_PROFILE[PLAZA_PROFILE.length - 1].rise
+}
+
 // The graded yard at the core, inside the ring. Without it the habitat stands
 // on untouched regolith a few meters off a road, which reads as a building that
 // happened to land next to one rather than as the middle of a worked site.
@@ -375,19 +405,22 @@ function buildHardstand(
 ): Pick<Piece, 'geometry' | 'origin'> {
   const origin = seat(planDir(eastM, northM), radiusAt, 0)
 
+  const rings = Math.max(2, Math.round(radiusM / PLAZA_STATION_M)) + 1
   const positions: number[] = []
   const colors: number[] = []
   const uvs: number[] = []
-  for (const ring of PLAZA_RINGS) {
+  for (let r = 0; r < rings; r++) {
+    const t = r / (rings - 1)
+    const off = t * radiusM
+    const rise = plazaRise(t)
     for (let s = 0; s < PLAZA_SPOKES; s++) {
       const a = (s / PLAZA_SPOKES) * Math.PI * 2
-      const off = ring.r * radiusM
       const dx = Math.cos(a) * off
       const dy = Math.sin(a) * off
       const p = seat(
         planDir(eastM + dx, northM + dy),
         radiusAt,
-        LIFT_M + ring.rise
+        LIFT_M + rise
       ).sub(origin)
       positions.push(p.x, p.y, p.z)
       colors.push(BED.r, BED.g, BED.b, 1)
@@ -396,7 +429,7 @@ function buildHardstand(
   }
 
   const index: number[] = []
-  for (let r = 0; r < PLAZA_RINGS.length - 1; r++) {
+  for (let r = 0; r < rings - 1; r++) {
     for (let s = 0; s < PLAZA_SPOKES; s++) {
       const s1 = (s + 1) % PLAZA_SPOKES
       const i0 = r * PLAZA_SPOKES + s

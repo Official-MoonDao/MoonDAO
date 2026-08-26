@@ -298,27 +298,38 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
       // short: main street's arc cuts inside the tangent line by a couple of
       // meters at this radius, which is the whole setback gone.
       //
-      // Beyond four competitors the block repeats further out along the avenue —
-      // a second row of corners — rather than the lots creeping toward each
-      // other.
+      // Beyond four competitors the block continues ALONG MAIN STREET, each
+      // extra lot taking the next frontage past the corner on its own side,
+      // rather than marching outward down the avenue. Outward is where a fifth
+      // lot wants to go on paper and it is the one direction that doesn't work:
+      // the avenue is only built to `reach` past the junction (see the field,
+      // and AVENUE_TAIL_M), so a second row lands beyond the end of the only
+      // road that serves it — a lot sitting alone on open regolith while every
+      // other plot on the base keeps SETBACK_M of clear ground against a
+      // windrow. Main street, by contrast, is a closed loop that already runs
+      // past this district in both directions, so a lot placed further along it
+      // fronts road that is there whatever the roster does.
       const centre = Math.hypot(plan.east, plan.north)
+      // These are same-side neighbours down one street, so they clear each
+      // other on their own radii and a gap — unlike the corners, which face
+      // each other across a road and are held apart by frontage instead.
       let step = 0
       for (let i = 4; i < order.length; i++) {
         step = Math.max(
           step,
-          frontageM(order[i].radiusM) +
-            frontageM(order[i - 4].radiusM) +
-            DISTRICT_GAP_M
+          order[i].radiusM + order[i - 4].radiusM + DISTRICT_GAP_M
         )
       }
       order.forEach((plot, i) => {
         const [alongSign, acrossSign] = CORNERS[i % 4]
-        const row = Math.floor(i / 4)
+        const lane = Math.floor(i / 4)
         const front = frontageM(plot.radiusM)
         // Radially, `front` off main street's centreline; tangentially, the
-        // angle whose perpendicular distance from the avenue is also `front`.
-        const radius = centre + alongSign * (front + row * step)
-        const swing = acrossSign * Math.asin(Math.min(1, front / radius))
+        // angle whose perpendicular distance from the avenue is `front` for a
+        // corner lot, plus a lane's step for each block further along.
+        const radius = centre + alongSign * front
+        const swing =
+          acrossSign * Math.asin(Math.min(1, (front + lane * step) / radius))
         const a = bearing + swing
         out.set(plot.id, {
           east: Math.cos(a) * radius,
@@ -464,7 +475,7 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // street, between the rover depot and the comms terminals, and it clears
   // both neighbors' junctions by the same 45°+ margin every other pair on
   // this ring keeps. A single concept-study competitor stands alone on its
-  // own corner lot (see the `anthrofuturism-lunar-mass-driver` entry in
+  // own corner lot (see the `lunar-mass-driver-concept` entry in
   // ProjectModel.tsx's FOOTPRINT_FRACTION for why its 105 m schematic model,
   // at MD_SCALE, doesn't push this junction out to a true 52.5 m-radius
   // footprint).

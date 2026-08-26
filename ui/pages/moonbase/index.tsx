@@ -6,6 +6,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { isPublicProductionHost } from 'const/flags'
+import { isCompetitiveRace } from '@/lib/deprize/competitions'
 import { MarketStage, UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
@@ -356,10 +357,13 @@ export default function MoonBaseZeroIndex() {
   const layout = useMemo(() => buildColonyLayout(surfaceTrees), [surfaceTrees])
 
   // The race list that drives the panel, ordered biggest field first — the more
-  // companies are chasing a capability, the more of a race it is.
+  // companies are chasing a capability, the more of a race it is. A single
+  // unassigned concept (today, only the mass driver) is a capability on the
+  // map, not a race, so it stays off this list.
   const races = useMemo<RaceEntry[]>(
     () =>
       [...surfaceTrees]
+        .filter((tree) => isCompetitiveRace(tree.projects.length))
         .sort((a, b) => b.projects.length - a.projects.length)
         .map((tree) => {
           const leader = rankedMembers(tree)[0]
@@ -373,6 +377,11 @@ export default function MoonBaseZeroIndex() {
           }
         }),
     [surfaceTrees, dataset]
+  )
+
+  const legendOrgs = useMemo(
+    () => dataset.organizations.filter((org) => org.id !== 'unassigned'),
+    [dataset.organizations]
   )
 
   // Timeline-driven marker styling: future projects ghost, achieved solid,
@@ -684,7 +693,7 @@ export default function MoonBaseZeroIndex() {
               selectedRace={selectedTreeCategory}
               onSelectRace={handleToggleRace}
               onHoverRace={setHoveredCategory}
-              organizations={dataset.organizations}
+              organizations={legendOrgs}
               selectedOrgIds={selectedOrgIds}
               onToggleOrg={toggleOrg}
               onClear={clearFilters}

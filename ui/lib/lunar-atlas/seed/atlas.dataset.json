@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-25",
+  "updatedAt": "2026-08-26",
   "organizations": [
     {
       "id": "nasa",
@@ -376,29 +376,12 @@
       ]
     },
     {
-      "id": "anthrofuturism",
-      "name": "Anthrofuturism",
+      "id": "unassigned",
+      "name": "Unassigned",
       "kind": "consortium",
-      "website": "https://www.youtube.com/@Anthrofuturism",
       "brandColor": "#5eead4",
-      "summary": "Anthrofuturism (creator Ian Long) is an independent, open-source engineering research effort — audience- and Patreon-funded, with a MoonDAO-sponsored episode — running orbital-mechanics, thermal and power-sizing simulations for a first-generation lunar mass driver and publishing the write-ups, data and code for anyone to check. Not a funded agency or company program.",
-      "sources": [
-        {
-          "label": "Anthrofuturism — Coil-type Mass Drivers",
-          "url": "https://www.youtube.com/watch?v=VVwMgPKX1eM",
-          "retrievedAt": "2026-08-24"
-        },
-        {
-          "label": "Anthrofuturism — The Lunar Mass Driver Orbital Supply Chain",
-          "url": "https://www.youtube.com/watch?v=8DUydTgyGQ0",
-          "retrievedAt": "2026-08-24"
-        },
-        {
-          "label": "Anthrofuturism — Moon To LEO Transfer Simulations For A Lunar Mass Driver & Terrain Analysis + Power Sizing Estimate",
-          "url": "https://www.youtube.com/watch?v=3I4P_6G3PFY",
-          "retrievedAt": "2026-08-24"
-        }
-      ]
+      "summary": "Placeholder for a capability this atlas tracks that no specific agency, company, or team has publicly committed to building yet — reused across any project in this state rather than inventing a named developer per capability.",
+      "sources": []
     },
     {
       "id": "cislune",
@@ -2309,70 +2292,18 @@
       "visibility": "public"
     },
     {
-      "id": "anthrofuturism-lunar-mass-driver",
-      "orgId": "anthrofuturism",
-      "name": "Lunar Mass Driver (concept study)",
+      "id": "lunar-mass-driver-concept",
+      "orgId": "unassigned",
+      "name": "Lunar Mass Driver",
       "type": "mass_driver",
-      "summary": "An open-source concept study, not yet a funded program: a reluctance/coil-gun launcher built from ISRU-refined aluminum and iron that fires lunar-mined material off the Moon on electricity alone. Sized backwards from a Low Earth Orbit receiving depot to ejection velocity, rocket-pod mass and launcher length — the capstone this base's other races feed once ISRU refining, power and rovers are mature enough to supply it.",
+      "summary": "An electromagnetic surface launcher that exports lunar-mined material off the Moon on electricity alone, with no chemical rocket. Every other race on this base is upstream of this one — it only becomes buildable once ISRU refining, power and construction are mature enough to feed it. No agency or company has publicly committed to building one.",
       "location": {
-        "lat": 8.1,
-        "lon": -38
+        "lat": -89.4,
+        "lon": -137
       },
       "locationPrecision": "region",
-      "regionLabel": "Oceanus Procellarum, near Kepler crater — \"Kepler Abundantia Tertia\" candidate site",
+      "regionLabel": "Lunar South Pole (representative placement — no committed site)",
       "milestones": [
-        {
-          "id": "coil-launcher-design-study",
-          "title": "ISRU coil/rail/reluctance launcher design study published",
-          "targetDate": "2025-11",
-          "datePrecision": "month",
-          "status": "achieved",
-          "location": "earth",
-          "sources": [
-            {
-              "label": "Anthrofuturism — Coil-type Mass Drivers",
-              "url": "https://www.youtube.com/watch?v=VVwMgPKX1eM",
-              "retrievedAt": "2026-08-24"
-            }
-          ]
-        },
-        {
-          "id": "orbital-depot-supply-chain-concept",
-          "title": "Cislunar receiving-depot and mass-export supply-chain concept published",
-          "targetDate": "2026-02",
-          "datePrecision": "month",
-          "status": "achieved",
-          "location": "earth",
-          "sources": [
-            {
-              "label": "Anthrofuturism — The Lunar Mass Driver Orbital Supply Chain",
-              "url": "https://www.youtube.com/watch?v=8DUydTgyGQ0",
-              "retrievedAt": "2026-08-24"
-            }
-          ]
-        },
-        {
-          "id": "cat-site-trajectory-sim",
-          "title": "Multi-burn Moon-to-LEO trajectory simulation selects the Kepler Abundantia Tertia launch site",
-          "targetDate": "2026-08",
-          "datePrecision": "month",
-          "status": "achieved",
-          "location": "earth",
-          "metrics": [
-            {
-              "label": "Required ejection velocity",
-              "value": 2.5,
-              "unit": "km/s"
-            }
-          ],
-          "sources": [
-            {
-              "label": "Anthrofuturism — Moon To LEO Transfer Simulations For A Lunar Mass Driver & Terrain Analysis + Power Sizing Estimate",
-              "url": "https://www.youtube.com/watch?v=3I4P_6G3PFY",
-              "retrievedAt": "2026-08-24"
-            }
-          ]
-        },
         {
           "id": "first-mass-driver-operational",
           "title": "First lunar mass driver begins continuous cislunar mass export",
@@ -2381,11 +2312,6 @@
           "status": "planned",
           "location": "moon",
           "sources": [
-            {
-              "label": "Anthrofuturism — Coil-type Mass Drivers (\"something for 2050 or beyond, not a near-term goal\")",
-              "url": "https://www.youtube.com/watch?v=VVwMgPKX1eM",
-              "retrievedAt": "2026-08-24"
-            },
             {
               "label": "American Foreign Policy Council — Strategic Implications of Lunar Mass Drivers as a Dual-Use Technology",
               "url": "https://www.afpc.org/uploads/documents/Special_Report_-_Strategic_Implications_of_Lunar_Mass_Drivers-5.27.26.pdf",
@@ -2397,16 +2323,10 @@
       "sharedGoalIds": [
         "shared-mass-driver"
       ],
-      "rosterStatus": "listed",
       "sources": [
         {
-          "label": "Anthrofuturism — Coil-type Mass Drivers",
-          "url": "https://www.youtube.com/watch?v=VVwMgPKX1eM",
-          "retrievedAt": "2026-08-24"
-        },
-        {
-          "label": "Anthrofuturism — Moon To LEO Transfer Simulations For A Lunar Mass Driver & Terrain Analysis + Power Sizing Estimate",
-          "url": "https://www.youtube.com/watch?v=3I4P_6G3PFY",
+          "label": "American Foreign Policy Council — Strategic Implications of Lunar Mass Drivers as a Dual-Use Technology",
+          "url": "https://www.afpc.org/uploads/documents/Special_Report_-_Strategic_Implications_of_Lunar_Mass_Drivers-5.27.26.pdf",
           "retrievedAt": "2026-08-24"
         }
       ],
@@ -3032,33 +2952,23 @@
     {
       "id": "shared-mass-driver",
       "title": "First operational lunar mass driver",
-      "description": "Every other race on this base — ISRU refining, power, construction — is upstream of this one: an electromagnetic launcher that exports lunar-mined material off the Moon on electricity alone, no chemical rocket. Right now it's a single open-source concept study rather than a funded agency or company program, sized backwards from a Low Earth Orbit receiving depot to ejection velocity, rocket-pod mass and launcher length. It's the last thing a base like this is actually FOR.",
+      "description": "Every other race on this base — ISRU refining, power, construction — is upstream of this one: an electromagnetic launcher that exports lunar-mined material off the Moon on electricity alone, no chemical rocket. No agency or company has publicly committed to building one yet. It's the last thing a base like this is actually for.",
       "projectIds": [
-        "anthrofuturism-lunar-mass-driver"
+        "lunar-mass-driver-concept"
       ],
       "location": {
-        "lat": 8.1,
-        "lon": -38
+        "lat": -89.4,
+        "lon": -137
       },
-      "regionLabel": "Oceanus Procellarum, near Kepler crater — \"Kepler Abundantia Tertia\" candidate site",
+      "regionLabel": "Lunar South Pole (representative placement — no committed site)",
       "targetWindow": {
-        "from": "2025",
+        "from": "2050",
         "to": "2050"
       },
       "sources": [
         {
-          "label": "Anthrofuturism — Coil-type Mass Drivers",
-          "url": "https://www.youtube.com/watch?v=VVwMgPKX1eM",
-          "retrievedAt": "2026-08-24"
-        },
-        {
-          "label": "Anthrofuturism — The Lunar Mass Driver Orbital Supply Chain",
-          "url": "https://www.youtube.com/watch?v=8DUydTgyGQ0",
-          "retrievedAt": "2026-08-24"
-        },
-        {
-          "label": "Anthrofuturism — Moon To LEO Transfer Simulations For A Lunar Mass Driver & Terrain Analysis + Power Sizing Estimate",
-          "url": "https://www.youtube.com/watch?v=3I4P_6G3PFY",
+          "label": "American Foreign Policy Council — Strategic Implications of Lunar Mass Drivers as a Dual-Use Technology",
+          "url": "https://www.afpc.org/uploads/documents/Special_Report_-_Strategic_Implications_of_Lunar_Mass_Drivers-5.27.26.pdf",
           "retrievedAt": "2026-08-24"
         }
       ],

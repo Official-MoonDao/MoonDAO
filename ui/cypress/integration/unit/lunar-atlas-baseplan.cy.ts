@@ -80,7 +80,13 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // still stands on.
   isru_plant: plots(9.5, 5.35, 5.58),
   rover: plots(2.3, 2.1, 2.2),
-  construction: plots(6.3, 6.3, 6.3, 6.3),
+  // ICON, Redwire, Astroport, AI SpaceFactory, Astrobotic — five bids on the
+  // same generic paving footprint, and the only district on main street that
+  // fields more than four. It is therefore the only one that exercises the
+  // second lane in districtSlots' crossroads case, so this roster has to stay
+  // at the real count: at four it silently stopped covering that branch, which
+  // is how a fifth lot came to be placed off the end of its own avenue.
+  construction: plots(6.3, 6.3, 6.3, 6.3, 6.3),
   // Nokia, ESA, Crescent, IM — dataset order. ESA's user terminal (1.04) and
   // Crescent's (1.52) are a fraction of the ground Nokia takes. Crescent's
   // case is a bigger footprint than ESA's mast despite being the smaller
@@ -93,7 +99,7 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   comms_pnt: plots(7.5, 1.04, 1.52, 1.13),
   // A single concept-study competitor, standing alone on its own corner lot.
   // 33.6 m (0.32 of the 105 m schematic model's full length at MD_SCALE) —
-  // see FOOTPRINT_FRACTION['anthrofuturism-lunar-mass-driver'] in
+  // see FOOTPRINT_FRACTION['lunar-mass-driver-concept'] in
   // ProjectModel.tsx, which this figure must stay paired with
   // BASE_PLAN.mass_driver's `turn: 45` (baseplan.ts) rather than being
   // tuned alone.

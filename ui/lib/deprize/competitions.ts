@@ -350,6 +350,22 @@ export function isOpenFieldOutcome(
 }
 
 /**
+ * True when a shared goal actually has more than one entrant to bet between.
+ * A single-competitor "race" (today, only `shared-mass-driver`: an
+ * open-source concept study with no funded developer) has nowhere for odds
+ * to point — the sole entry is mechanically priced at 100% by both the mock
+ * market (`ensureMarket` in mockMarket.ts, weight 1/N with N=1) and any real
+ * LMSR, which reads as MoonDAO declaring that entrant the winning builder.
+ * It isn't one; it's the only public writeup on the capability. Gate every
+ * odds bar, Buy button, and pool figure in RaceMarketCard/SharedGoalPanel on
+ * this so a capability nobody has committed to building yet is shown as an
+ * open goal, not a market with a "leading" competitor.
+ */
+export function isCompetitiveRace(competitorCount: number): boolean {
+  return competitorCount >= 2
+}
+
+/**
  * Has this competitor claimed its listing? Gates BRANDING ONLY (logo, brand
  * color) — never market visibility. Unclaimed competitors still render their
  * name and link, just with a neutral monogram instead of their mark.
