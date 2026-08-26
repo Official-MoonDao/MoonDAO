@@ -1,34 +1,39 @@
 # NIGHT SHIFT
 
-### A DePrize for the first purchasable lunar-night power system
+### A DePrize for the first machine that works through a lunar night
 
 > **CONFIDENTIAL — INTERNAL / NDA**
 > Draft for advisor and expert review. Not for publication, quotation, or distribution
 > outside the review list.
-> **Version** 0.3-draft · **Date** 25 Aug 2026 · **Owner** MoonDAO · **Status** pre-registration,
+> **Version** 0.4-draft · **Date** 26 Aug 2026 · **Owner** MoonDAO · **Status** pre-registration,
 > nothing on-chain.
 > Competitor listings are editorial and based solely on public sources. No listed organization
 > has been contacted, has consented, or is affiliated with this prize.
+
+**Changes from v0.3**, all in response to advisor review:
+
+| | v0.3 | v0.4 |
+|---|---|---|
+| Milestones | M1 120 h + M2 354 h, 30/70 | **One**: 354 h |
+| Judging | 3-person expert referee panel | **A validator script anyone can run** |
+| "Permanent asset" test | Decade Rule (referee audits energy inventory) | **Sustained Output Rule** (98% retention, read off the same CSV) |
+| Procurement Rule | Referee judges "commercially procurable" | **Documentary** — produce an invoice or a published price |
+| Who runs the test | MoonDAO-organised, free kits shipped | **Anyone, anywhere.** Resolves off published evidence from any source |
+| Purse | $5,000 seed | **$25,000** |
+| Deadline | 18-month sunset | **Rolling** — open until solved |
 
 ---
 
 ## 0. What we are asking you for
 
-This document is a request for destructive criticism, not approval. The specific questions are
-in [Part V](#part-v--questions-for-reviewers). If you read only one section, read that one, then
-§2.1 and §II.5.
+Destructive criticism, not approval. Questions are in [Part VII](#part-vii--open-questions).
 
-Three things we most want challenged:
+The design now rests on two claims, and both should be attacked:
 
-1. **Is 10 We the right floor?** We raised it from 1 We after concluding that Chang'e-4 already
-   clears 1 We in flight.
-2. **Is the Procurement Rule enforceable?** It is the load-bearing novelty of this prize and the
-   easiest thing to get wrong.
-3. **Have we mis-scoped the claim?** We assert this has never been done. We would rather find out
-   from you than from a reviewer on launch day.
+1. **A script can judge this.** Everything that decides the outcome is a number in a data file. If you can find a way to win this prize with a file that passes the validator and hardware that shouldn't count, we have a problem.
+2. **The Sustained Output Rule is technology-agnostic but still grounded in what a lunar outpost actually needs.** If you think it either bans something unfairly or fails to exclude something it should, say so.
 
-This document supersedes `DEPRIZE_SURVIVE_THE_NIGHT_SPEC.md`, whose 1 kg mass cap and
-no-radioisotopes clause were technology-banning and outcome-blind.
+This document supersedes `DEPRIZE_SURVIVE_THE_NIGHT_SPEC.md`.
 
 ---
 
@@ -43,8 +48,11 @@ The result is that lunar surface assets are **disposable**. A CLPS lander is a t
 that becomes a monument at sunset. A rover is a machine that spends half its life unconscious.
 Nothing accumulates. Every mission starts from zero, and the Moon acquires no installed base.
 
-The technical problem is not warmth. It is **useful electrical work, continuously, from a source
-you can actually buy.**
+A sustained human presence is not possible on hardware that has to be replaced every fortnight.
+Before anything else can be built there, something has to be able to **keep working**.
+
+The technical problem is not warmth. It is **useful electrical work, continuously, without
+degrading, from a source you can actually buy.**
 
 ## 2. Why it matters
 
@@ -70,8 +78,7 @@ So the honest framing of this prize is not *"can it be done."* It is:
 > **Apollo did it in 1969 with fuel you can't buy. Chang'e-4 does it today with fuel you can't
 > buy, while the spacecraft sleeps. Do it awake, at ten watts, with fuel you can order.**
 
-This is an **industrialization** milestone, not a physics breakthrough. Reviewers should hold us to
-that framing and tell us if it is too modest to be worth doing.
+This is an **industrialization** milestone, not a physics breakthrough. Hold us to that framing.
 
 ## 3. Historical context
 
@@ -115,6 +122,8 @@ purchase. That is the gap this prize targets.
 - **Sellable days of data**: turns a lander from a delivery service into an operating asset with
   recurring output.
 - **Surface mobility**: LTV and CLV-class rovers currently plan around chasing the sun.
+- **An installed base.** The first piece of hardware that is still working when the next one lands
+  is the beginning of infrastructure rather than a sequence of expeditions.
 
 **What it does not unlock — say this plainly**
 
@@ -127,216 +136,244 @@ instrument station*. It is not the difference between a lander and a base.
 | | |
 |---|---|
 | **Name** | Night Shift |
-| **Question** | Which team will first complete a verified 120-hour closed-loop lunar-night operating run at ≥ 10 We? |
-| **Environment** | ≤ 1×10⁻⁵ torr, radiative sink ≤ 100 K, terrestrial thermal-vacuum chamber |
-| **Core rule** | **Nothing crosses the chamber boundary into the article except data** |
-| **Second rule** | The energy source must be **commercially procurable**, with price and lead time published |
-| **M1 — market resolves, 30%** | 120 continuous hours at ≥ 10 We |
-| **M2 — 70%, 18 months** | 354 h + dawn transition + 72 h, plus a **decade-class energy inventory** |
-| **Seed** | $5,000; pool grows from 5% of betting volume |
+| **Question** | Who will first run 10 watts through a full lunar night? |
+| **The bar** | ≥ 10 We delivered continuously for **354 hours**, at ≤ 100 K and ≤ 1×10⁻⁵ torr, on stored onboard energy only, with output undiminished at the end |
+| **Milestones** | **One** |
+| **Purse** | **$25,000**, growing with 5% of betting volume |
+| **Judged by** | A published validator script, run on the entrant's own data |
+| **Where** | Any thermal-vacuum chamber, anywhere in the world |
+| **Deadline** | None — rolling sunset, open until solved |
 | **Roster** | 7 named systems + Open Field |
-| **Sunset** | 18 months |
 
 ---
 
-# PART II — PRIZE RULES v0.3
+# PART II — PRIZE RULES v0.4
 
-## 1. Definitions
+## 1. The prize in one sentence
 
-**Article** — the complete system under test, including every energy source, converter, storage
-element, structure, insulation, and control electronics inside the chamber. Its mass is the mass of
-everything the team put in.
+> **Deliver at least 10 watts of electricity, continuously, for 354 hours, in a vacuum chamber
+> colder than 100 kelvin, with nothing plugged in — and still be delivering the same 10 watts at
+> the end. Publish the data.**
 
-**Qualifying Run** — a pre-registered, referee-witnessed test satisfying §2 through §6.
+Everything below is the precise version of that sentence. There is **one milestone**. You either
+cleared it or you didn't.
 
-**T0** — the instant the chamber first satisfies §3 with the article in its final configuration and
+## 2. Definitions
+
+**Article** — the complete system under test: every energy source, converter, storage element,
+structure, insulation, and control electronic inside the chamber. Its mass is the mass of
+everything you put in.
+
+**Qualifying Run** — a continuous test satisfying §3 through §6.
+
+**T0** — the instant the chamber first satisfies §4 with the article in its final configuration and
 all external connections in their run state.
 
-**Night phase** — any period during a Qualifying Run when §3 is satisfied and no illumination is
-applied.
+**Window** — T0 to T0 + 354 hours.
 
-## 2. The Unplug Rule
+## 3. The Unplug Rule
 
-> During any night phase, **nothing crosses the chamber boundary into the article except data.**
+> During the Window, **nothing crosses the chamber boundary into the article except data.**
 
 No electrical power, heat, propellant, coolant, gas, or mass. Every joule the article spends must
 have been aboard at T0 and included in its declared mass.
 
-### 2.1 Consequences, stated explicitly to prevent argument later
+**Consequences, stated explicitly to prevent argument later:**
 
 - A wall-powered electric heater standing in for a radioisotope source is **not permitted**. The
   chamber wall would be the power source.
 - An electric heater **powered by an onboard battery is permitted**. It is a genuine closed-loop
-  demonstration; it simply spends the team's own energy inventory, which matters at M2.
+  demonstration; it simply spends your own energy inventory.
 - There is **no technology ban and no carve-out for nuclear.** One rule, applied identically to
   every chemistry.
+- **Telemetry is signal only.** If a telemetry link draws power, that power comes from the article
+  and counts against the article, not as delivered output.
 
-**2.2 Telemetry** — signal only. If a telemetry link draws power, that power comes from the article
-and counts as parasitic load, not as delivered output.
-
-**2.3 Boundary control** — a single feedthrough panel, sealed by the referee. Every conductor
-entering the chamber is metered and logged for the duration.
-
-## 3. Environment
+## 4. Environment
 
 | Parameter | Requirement |
 |---|---|
-| Pressure | ≤ 1×10⁻⁵ torr. Excursions to 1×10⁻⁴ permitted, ≤ 60 min cumulative |
-| Radiative sink | ≤ 100 K across ≥ 90% of the article's view factor. **LN₂ at 77 K qualifies** |
-| Conduction | No surface in contact with the article above 100 K. Parasitic conduction through mounts and sense leads budgeted and measured at < 0.1 W |
-| Illumination | Zero during night phases |
-| Instrumentation | ≥ 4 shroud thermocouples and chamber pressure logged at ≥ 0.1 Hz for the entire run |
+| Pressure | ≤ 1×10⁻⁵ torr throughout. Excursions to 1×10⁻⁴ permitted, ≤ 60 min cumulative |
+| Radiative sink | **≤ 100 K** on all shroud sensors. LN₂ at 77 K qualifies |
+| Conduction | No surface in contact with the article above 100 K |
+| Illumination | None |
+| Instrumentation | ≥ 4 shroud thermocouples and chamber pressure logged at ≥ 0.1 Hz for the full Window |
 
 **Note on accessibility.** LN₂ satisfying the shroud spec is deliberate. A qualifying chamber can be
-a dewar-jacketed bell jar; boil-off for a small article runs roughly 20–60 L/day, on the order of
-$500–1,500 of nitrogen for a full campaign. **We want this winnable outside a national laboratory.**
-Reviewers should tell us if 100 K is too generous — see Part V, Q5.
+a dewar-jacketed bell jar. Boil-off for a small article runs roughly 20–60 L/day — on the order of
+$300–1,800 of nitrogen for the full 354 hours. **We want this winnable outside a national
+laboratory.** The binding constraint is not money, it is holding a chamber for fifteen days.
 
-## 4. Load and measurement
-
-MoonDAO supplies a **Standard Night Load** kit free to every pre-registered attempt: a cold-tolerant
-wirewound resistive bank inside the chamber, with precision metrology outside on the feedthrough
-panel. External metrology is measurement-only and adds no energy.
+## 5. Output
 
 | Requirement | Value |
 |---|---|
-| Delivered power | **≥ 10.0 We** averaged over any rolling 60-minute window |
+| Delivered power | **≥ 10.0 We** averaged over every rolling 60-minute window |
 | Instantaneous floor | **≥ 5.0 We** at all times |
-| Maximum gap | No output below floor for > 60 s |
-| Logging | V and I at the load, ≥ 1 Hz, calibrated, certificates filed |
+| Maximum gap | No interval > 60 s below the floor |
+| Load | A real electrical load, with V and I both measured **at the load**, logged at ≥ 1 Hz |
 
 The rolling average and the instantaneous floor exist together so that a large burst cannot
 substitute for continuous operation.
 
 **Why 10 We.** Four times Chang'e-4's entire nighttime electrical budget. It is the line between *a
 thermometer running while the spacecraft sleeps* and *a lander doing work* — a real radio, a real
-computer, a heated instrument. Our earlier draft used 1 We, benchmarked against a 1.1 W thermal RHU.
-That benchmark was wrong once Chang'e-4 is on the table.
+computer, a heated instrument.
 
-## 5. The Procurement Rule
+## 6. The Sustained Output Rule
 
-> The article's energy source must be **commercially procurable**. Evidence: a purchase order, an
-> offtake agreement, or a published price and lead time, from a supplier who could deliver a second
-> unit within 24 months. **The price and lead time are published as part of the record.**
+> Mean delivered power over the **final hour** of the Window must be **≥ 98%** of mean delivered
+> power over the **first hour**.
+
+This is the rule that grounds the prize in what a sustained presence actually requires, without
+naming a single technology.
+
+An asset whose output decays across one night is not infrastructure — it is a consumable with a
+fortnight of runway, which is the problem we are trying to retire. An asset that ends the night
+exactly as strong as it started can do it again next month, and the month after.
+
+The rule is deliberately blind to how you achieve it:
+
+| Source | Decay over 354 h | Result |
+|---|---|---|
+| Am-241 (432 yr half-life) | ~0.007% | Passes without trying |
+| Sr-90 (29 yr half-life) | ~0.1% | Passes without trying |
+| Pu-238 (88 yr half-life) | ~0.03% | Passes without trying |
+| Fuel cell sized to the Window | Cliff at the end | Fails unless oversized |
+| Primary battery sized to the Window | Sags then collapses | Fails unless oversized |
+
+Any chemistry can pass it. Consumables simply have to be oversized enough that 354 hours is a small
+bite out of their inventory — which is precisely the property we want, and it costs them mass,
+which the scoreboard then reports.
+
+**This replaces the Decade Rule from v0.3.** That rule required an expert to audit a proprietary
+energy inventory. This one is two numbers from the same file the validator already reads.
+
+## 7. The Procurement Rule
+
+> The article's energy source must be **commercially procurable**, evidenced by **a purchase order,
+> an invoice, or a supplier's published price**. The document, or its price and lead time, is
+> published with the results.
 
 **This is not a technology ban.** It says nothing about which physics you use. It says the answer
 must be one that someone else could buy.
 
 | Source | Status |
 |---|---|
-| DOE Pu-238 | **Fails** — state reserve, < 0.5 kg/yr, not for sale |
+| DOE Pu-238 | **Fails** — a government furnishing, not a purchase. No invoice exists |
 | Chinese or Russian state Pu-238 | **Fails** — same reason, applied identically |
 | Am-241 (Orano, NNL, QSA Global) | **Passes** — ~$1,500/g, offtakes exist today |
 | Sr-90 | **Passes** — reprocessing byproduct |
-| Batteries, chemical, fuel cells | **Passes** |
+| Batteries, chemical, fuel cells | **Passes** — off the shelf |
+
+**v0.3 asked a referee whether a supplier "could deliver a second unit within 24 months."** That was
+an opinion. v0.4 asks whether a document with a price on it exists. Yes or no.
 
 A useful side effect: nationality never enters the rules. A Chinese entry does not fail for being
-Chinese; it fails on the merits if its fuel comes from a state reserve, exactly as a US entry using
+Chinese. It fails on the merits if its fuel came out of a state reserve, exactly as a US entry using
 DOE plutonium would.
 
-**Cost reality, for calibration.** At Stirling-class conversion, Am-241 runs roughly **$136,000 of
-fuel per watt electric**. A 10 We isotope source is therefore ~0.9 kg of americium and ~$1.4M in
-fuel alone. This is why we expect M1 to be won by a battery or chemical system and M2 to require a
-funded program.
+**Cost reality, for calibration.** At Stirling-class conversion Am-241 runs roughly **$136,000 of
+fuel per watt electric**, so a 10 We isotope source is ~0.9 kg of americium and ~$1.4M in fuel
+alone. Expect the first clearance to come from a battery or chemical system, and the first *good*
+one to come from an isotope.
 
-## 6. Milestones
+## 8. Qualifying Evidence, and who judges
 
-### M1 — FIRST LIGHT · the market resolves here · 30% of pool
+**Nobody judges. A script does.**
 
-- **120 continuous hours** satisfying §2 through §5.
-- Chosen to align with the NASA CLPS CS-8 survive-the-night bonus, so the number already carries
-  meaning in industry.
-- **No endurance requirement.** Batteries, chemical, hibernation, isotope — all eligible. This is
-  the open bar.
+MoonDAO publishes an open-source validator. It takes the entrant's data files and returns pass or
+fail. Anyone — a bettor, a rival, a journalist — can download it and run it on the same files and
+get the same answer.
 
-### M2 — THE LONG NIGHT · 70% · within 18 months of M1
+### 8.1 What must be published
 
-One unbroken chamber campaign, approximately 19.5 days:
+| # | Item |
+|---|---|
+| 1 | Load voltage and current, ≥ 1 Hz, covering the full Window |
+| 2 | Chamber pressure and ≥ 4 shroud temperatures, ≥ 0.1 Hz, same Window |
+| 3 | Article mass, with a photograph of the sealed weigh-in |
+| 4 | Chamber configuration: every conductor through the feedthrough panel and what it carries; how the article is mounted |
+| 5 | **The attestation** (§9) |
+| 6 | The procurement document (§7) |
+| 7 | All of the above under an open licence |
 
-1. **354 continuous hours** at ≥ 10 We under full spec.
-2. **Verified dawn transition** — shroud raised, ≥ 12 hours, article remains functional.
-3. **Return to ≤ 100 K and ≥ 72 further hours** at ≥ 10 We.
+### 8.2 What the validator checks
 
-Plus:
+Entirely from items 1 and 2:
 
-> **The Decade Rule.** At T0 the article must carry an available energy inventory of
-> **≥ 876,600 Wh** of output at the demonstrated power level — ten years at 10 We — verified by
-> referee audit of the declared source.
+```
+min(rolling_60min_mean(P))      >= 10.0 W
+min(P)                          >= 5.0 W
+max_contiguous_seconds(P < 5.0) <= 60
+mean(P[-1h]) / mean(P[0:1h])    >= 0.98
+duration                        >= 354 h, contiguous
+max(shroud_T, all sensors)      <= 100 K
+max(pressure)                   <= 1e-5 torr, except <= 60 min cumulative up to 1e-4
+```
 
-Step 3 is the permanence proof: *fifteen days dark, wake up, keep going.* The Decade Rule is what
-separates a permanent asset from a large battery. A battery clearing it would weigh roughly two
-tonnes.
+If the script passes and the checklist in §8.1 is complete, the claim is good. The Senate's role is
+to confirm the checklist is complete and the script was run — clerical, not technical.
 
-**Consequence, disclosed:** the market resolves at M1, so a team can win the market and the 30% and
-then fail M2. Bettors are paid in full at M1 from a separate pool; the unearned 70% returns to the
-prize pool. This is designed behaviour.
+### 8.3 Any source, anywhere
 
-## 7. Pre-registration
+A Qualifying Run does **not** have to be organised by MoonDAO, held at a MoonDAO venue, or announced
+in advance. **A competitor's own published test qualifies** if it meets §8.1 and passes the
+validator.
 
-Mandatory for any market-resolving attempt. Declare **≥ 14 days ahead**; a referee is assigned; T0
-is announced publicly. Every pre-registered run is published, pass or fail — no cherry-picking.
-Retroactive claims may be adjudicated only with complete raw data and facility countersignature.
+This is deliberate. It means the prize works whether or not anyone ever formally enters, and it
+means the only way to win is to **publish your data** — which is the disclosure we are actually
+trying to produce.
 
-## 8. Verification and referees
+Pre-registration is welcome and will be publicised, but it is not required.
 
-A three-member **Night Operations Review Panel**: one cryogenic/TVAC test engineer, one space power
-systems engineer, one member literate in radiological licensing. Independent of every listed
-competitor, with published conflict disclosures. **Two of three** must sign. The panel issues the
-technical finding; the **MoonDAO Senate votes on the memo**. The Senate is not asked to adjudicate
-thermodynamics.
+## 9. The attestation
 
-Facility operators countersign chamber logs. Referees attend in person or witness remotely via
-sealed cameras.
+The one thing a script cannot check is whether someone quietly ran a wire.
 
-**Excursions and restarts.** Exceed the §3 budget and the run voids; a restart is free and
-unpenalised with a fresh T0. A facility compressor failure is not the team's fault.
+> A named individual who is **not** an employee, contractor, investor, or family member of the
+> entrant must sign a statement that they observed the run and that no energy entered the article
+> during the Window. Name, affiliation, and contact are published.
 
-**Rules freeze at market open.** A pre-open clarification window is provided. Afterwards, only
-clarifications that cannot change an outcome, appended to a public Referee FAQ.
+An accredited test laboratory signing its own standard test report satisfies this by default, which
+is the easy path for a funded entrant. A self-hosted run needs a named independent observer plus
+continuous witness video. If nobody will put their name to it, there is no claim.
 
-## 9. Publication
+## 10. Restarts, excursions, and ties
 
-Within 30 days of run end, under an open licence: raw CSV logs, facility-countersigned chamber
-records, mass statement, photographs and video, **source price and lead time** (§5), and a
-**Longevity Statement** naming the limiting mechanism — isotope half-life, propellant mass,
-convertor wear, cell chemistry — with evidence.
+**Excursions.** Exceed the §4 budget and the run is void. Restarting is free and unpenalised with a
+fresh T0. A facility compressor failure is not the entrant's fault, and there is no limit on
+attempts.
 
-**Minimum public dataset** is deliberately narrow — load power, timestamps, chamber pressure and
-temperature, mass, source procurement terms — so that export-controlled or security-sensitive
-programs can compete without disclosing anything else.
+**Ties.** Earlier verified end-of-Window timestamp wins.
 
-## 10. Records leaderboard (published, non-resolving)
+**Rules changes.** The rules freeze when the market opens. Afterwards, only clarifications that
+cannot change an outcome, published as a dated addendum. The validator script is versioned and
+pinned at open.
 
-Specific energy (Wh delivered per kg of article), peak sustained We, total Wh, cost per watt-year,
-and projected operating life. This is where two systems that both cleared M1 are told apart in
-public without either being disqualified.
-
-## 11. Safety
-
-Mandatory facility EHS sign-off. Unsafe runs are disqualified regardless of result. MoonDAO does not
-direct, supervise, or fund entrant work, and entrants sign a waiver. Radiological work must be
-conducted under valid licence at a licensed facility in any jurisdiction; security-sensitive
-parameters may be redacted from the public record.
-
-We note this section exists precisely because §3 deliberately invites small teams to work with
-liquid nitrogen and vacuum vessels.
-
-## 12. Eligibility and roster
+## 11. Roster and eligibility
 
 Teams **claim** — they do not apply. Listing is editorial and does not imply participation,
 endorsement, or affiliation. Any qualifying entrant not named competes through the **Open Field**
-slot. The outcome set is frozen when the market opens and can never be resized.
+slot. The outcome set is frozen when the market opens and can never be resized; changing it requires
+a new generation (§IV).
 
-## 13. Ties
-
-Earlier verified T0 wins. If identical, earlier pre-registration timestamp.
-
-## 14. What this test does not prove
+## 12. What this test does not prove
 
 Stated in the rules so nobody has to discover it later. A terrestrial chamber does not reproduce
-regolith conduction, dust, one-sixth gravity, launch vibration, or the radiation environment.
-Optional bonus credit is available for vibration and thermal-cycling campaigns. A 100 K shroud is
-warm relative to a ~40 K PSR floor.
+regolith conduction, dust, one-sixth gravity, launch vibration, or the radiation environment. A
+100 K shroud is warm relative to a ~40 K permanently-shadowed crater floor. Clearing this bar makes
+a system credible for a lunar night; it does not qualify it for flight.
+
+## 13. Safety
+
+Entrants are responsible for their own safety, insurance, and regulatory compliance. Radiological
+work must be conducted under valid licence at a licensed facility in any jurisdiction;
+security-sensitive parameters may be redacted, but the §8.2 data may not. MoonDAO does not direct,
+supervise, fund, or supply entrant work.
+
+We note this section matters because §4 deliberately makes the prize accessible to small teams
+working with liquid nitrogen and vacuum vessels.
 
 ---
 
@@ -368,10 +405,10 @@ Separately, Zeno supplies a **5 W thermal Am-241 RHU** for Firefly's CLPS CS-8 "
 Package" on Blue Ghost, NET 2028, against a ~$15M task order with a 120-hour beacon bonus. A parallel
 Sr-90 line serves DoD and Navy programs (DEPTHS, STRATFI).
 
-**Read.** Strongest M2 candidate on the board. Two frictions: their marquee 2027 demonstration is
-electrically heated, which under §2 counts only if the heater draws on onboard stored energy; and
-10 We of Am-241 is ~$1.4M of fuel. Their Sr-90 line may be the faster route to a genuinely fueled
-closed-loop run.
+**Read.** The favourite, and the Sustained Output Rule is almost free for them — an isotope source
+decays by fractions of a percent over fifteen days. Two frictions: their marquee 2027 demonstration
+is electrically heated, which counts only if the heater draws on onboard stored energy; and 10 We of
+americium is ~$1.4M of fuel. Their Sr-90 line may be the faster route to a fueled closed-loop run.
 
 ## Slot 1 — Astrobotic, NITE (US)
 
@@ -382,9 +419,9 @@ leakage and an oxidizer pump failure under vacuum. Assessed at roughly TRL 4.
 Astrobotic's wider record is mixed and relevant: Peregrine Mission One failed in January 2024;
 Griffin follows; the company will fly Venturi Astrolab's FLIP rover in late 2026.
 
-**Read.** The only serious non-nuclear operate-through system with dedicated funding. A real M1
-contender with no licensing friction. **Structurally cannot clear the Decade Rule** — a one-night
-chemical system is by definition not a decade-class inventory.
+**Read.** The only serious non-nuclear operate-through system with dedicated funding, and no
+licensing friction. The Sustained Output Rule is the live question: a fuel cell sized exactly to 354
+hours will be sagging at the end and fail the 98% check. Oversizing fixes it and costs mass.
 
 ## Slot 2 — Venturi Space (Monaco / Switzerland / France)
 
@@ -396,14 +433,14 @@ The relevant capability is the battery. Packs are qualified across **−240 °C 
 low, far below our 100 K shroud. Cell screening is severe: of 10,000 cells delivered, ~80% are
 selected, after **endurance simulations over lunar cycles under vacuum**, plus short-circuit,
 overload, over-discharge, vibration, shock, impact, vacuum and radiation testing. The BMS monitors
-every cell voltage at 10 ms intervals and manages thermal and energy state through the night. Their
-rovers — FLIP (450 kg, flying on Astrobotic late 2026), CLV-1, and Mona Luna (750 kg, ESA/Argonaut,
-2030) — are all advertised as designed to survive multiple lunar nights.
+every cell voltage at 10 ms intervals. Their rovers — FLIP (450 kg, flying on Astrobotic late 2026),
+CLV-1, and Mona Luna (750 kg, ESA/Argonaut, 2030) — are all advertised as designed to survive
+multiple lunar nights.
 
-**Read.** The strongest recent addition. Non-nuclear, so zero licensing friction, and **vacuum
-lunar-cycle endurance testing is already inside their qualification flow** — we would largely be
-asking them to instrument and publish a test they run anyway. Same structural position as Astrobotic:
-strong at M1, cannot clear the Decade Rule.
+**Read.** The fastest possible clearance on the board. Non-nuclear, no licensing friction, and
+**vacuum lunar-cycle endurance testing is already inside their qualification flow** — we would
+largely be asking them to instrument and publish a test they run anyway. The 98% rule forces them to
+oversize; the scoreboard will then show exactly what that costs in kilograms.
 
 ## Slot 3 — Perpetual Atomics + University of Leicester (UK)
 
@@ -419,9 +456,9 @@ core** — ceramic Am-241 pellets in metal containment. Also April 2026, a Gener
 structural thermal model passed **25 G sine and 28 Grms random** vibration and was thermally cycled
 **+80 °C to −70 °C in vacuum**.
 
-**Read.** Genuine, fast-moving, and the most credible European entrant. Two gaps against this prize:
-−70 °C is 203 K, nowhere near our 100 K spec; and an RHU produces **heat**, so they need a convertor
-to deliver watts electric.
+**Read.** Genuine, fast-moving, the most credible European entrant. Two gaps: −70 °C is 203 K,
+nowhere near our 100 K spec; and an RHU produces **heat**, so they need a convertor to deliver watts
+electric.
 
 ## Slot 4 — CNNC / China Institute of Atomic Energy (China)
 
@@ -438,19 +475,18 @@ Institutionally the signal is stronger than the hardware. China issued **GB/T 44
 force since March 2025 — standardization implies productionization. A 2026 CNNC/CIAE paper sets out
 Pu-238 RTGs for the ILRS south pole as emergency backup, primary power, or heat source, explicitly
 including PSR work. Chang'e-7 launched around 24 August 2026 for the Shackleton rim, but on solar
-with a follow-the-light and hibernation strategy — no RTG in the published configuration. Chang'e-8
-follows around 2028–29.
+with a follow-the-light and hibernation strategy. Chang'e-8 follows around 2028–29.
 
 **Read.** Deepest relevant flight heritage on the board, and the prior art most likely to be cited
-against this prize. Would have to clear the **Procurement Rule**, which Chinese state Pu-238 does
-not obviously do. Realistically will not claim.
+against this prize. Would have to clear the **Procurement Rule**, which state Pu-238 does not.
+Realistically will not claim.
 
 ## Slot 5 — Rosatom / Krasnaya Zvezda / Kurchatov Institute (Russia)
 
 Heritage runs from Lunokhod's Po-210 heaters through the RORSAT and TOPAZ reactor programmes.
 Luna-25 carried a radioisotope unit and crashed in August 2023.
 
-Current activity is at two very different scales. Valery Efremov of the Sarov nuclear centre has
+Current activity sits at two very different scales. Valery Efremov of the Sarov nuclear centre has
 described small **RTG-based power plants** with ≥10-year autonomous operation, intended to prepare
 ILRS infrastructure. Far larger is **Selena** — Roscosmos, Rosatom and the Kurchatov Institute,
 5–10 kWe, ten-year life, likely lead-bismuth cooled, derived from the Elena-AM terrestrial SMR. NPO
@@ -460,7 +496,7 @@ pole in 2029, 27B the north in 2030.
 
 **Read.** Real heritage and, because Russia reprocesses spent fuel, a legitimate Sr-90 and Am-241
 supply route. But nothing at watt scale on a near timeline — Selena is a reactor, wrong scale and
-wrong decade for this prize. Expect it to price low.
+wrong decade. Expect it to price low.
 
 ## Slot 6 — ISRO / BARC (India)
 
@@ -485,8 +521,9 @@ Any qualifying entrant not named above: university laboratories, unannounced sta
 small teams. Bettors backing this slot do not know which entity they are backing — the standard
 "field" instrument, disclosed as such.
 
-Given that §3 permits an LN₂-shrouded bell jar, we consider the Open Field a genuine threat at M1
-rather than a formality.
+§4 permits an LN₂-shrouded bell jar and §8.3 permits a self-published run, so the Open Field is a
+genuine threat rather than a formality. The binding constraint on a small team is not money — it is
+holding a chamber for fifteen continuous days.
 
 ## Considered and deliberately excluded
 
@@ -503,7 +540,7 @@ rather than a formality.
 | Betavolt | Betavoltaic cells at ~100 µW |
 | entX | Suborbital RHU demonstration, duration in minutes |
 | Advanced Cooling Technologies | $5M heat-pipe toolbox — parts, not a system |
-| NASA Glenn | Hibernation research (S3R cold start at 57 K; 18650 freeze/thaw at 50 K). **Survive and wake, not operate.** Better as a referee source and as public contrast |
+| NASA Glenn | Hibernation research (S3R cold start at 57 K; 18650 freeze/thaw at 50 K). **Survive and wake, not operate.** Better as a facility partner and as public contrast |
 
 ---
 
@@ -511,48 +548,127 @@ rather than a formality.
 
 Night Shift runs on MoonDAO's existing DePrize infrastructure. Bettors buy outcome tokens on named
 competitors through an LMSR market; 5% of betting volume accrues to a Juicebox prize pool; the Senate
-declares the winner; the pool disburses 30% at M1 and 70% at M2. See [DEPRIZE.md](DEPRIZE.md) and
+settles the winner. See [DEPRIZE.md](DEPRIZE.md) and
 [DEPRIZE_ROSTER_CHANGES.md](DEPRIZE_ROSTER_CHANGES.md).
 
 | Item | Value |
 |---|---|
+| Purse | **$25,000**, plus 5% of betting volume |
 | Outcome slots | **8** — frozen at market open, can never be resized |
-| Sunset | 18 months |
-| Seed | $5,000 |
-| Resolution | Referee panel memo → Senate vote → Safe transaction |
-| If no claim by sunset | Disclosed no-winner terminal; pool rolls to a Gen-2 prize with a revised bar |
+| Deadline | **Rolling** (see below) |
+| Resolution | Validator script → checklist confirmation → Senate vote → Safe transaction |
 
-**Seed allocation.** $2,000 LMSR liquidity (recoverable at settlement); $1,500 Standard Night Load
-kits; $750 referee honoraria; $500 data hosting and publication; $250 contingency.
+## Open until solved, in practice
 
-The $5,000 is **seed, not prize**. The pool grows with betting volume, and the product a serious
-entrant receives is an independently witnessed public record plus a live market pricing them against
-their rivals.
+There is no way to register a DePrize with no deadline. `register` reverts with `InvalidSunset`
+unless the sunset is in the future
+([DePrizeRegistry.sol:92](../subscription-contracts/src/deprize/DePrizeRegistry.sol)).
+
+But `setSunset` has since shipped, and outside `DRAFT` it is **extend-only** — a sunset can always be
+pushed out and can never be pulled in
+([:124-136](../subscription-contracts/src/deprize/DePrizeRegistry.sol)). That gives us what was
+actually wanted, and gives bettors something better than an open-ended market: **a date that can only
+ever move away from them.**
+
+**Recommended operation.** Register with a 24-month sunset. Review annually and extend by 12 months
+while the prize is unclaimed. The market never expires in practice; the pool keeps accumulating; no
+one is ever surprised by an early close.
+
+**When the roster changes**, use `supersede` — also now shipped
+([:166](../subscription-contracts/src/deprize/DePrizeRegistry.sol)) — which forks onto a new roster
+while keeping the same Juicebox project, and therefore the same accumulating pool. Prefer extending
+the sunset over superseding: extension keeps one liquid market, while superseding leaves the old
+generation sell-only until settlement.
+
+## One milestone, two contract calls
+
+The registry hard-codes a two-tranche payout: `SETTLED → M1_RELEASED (30%) → M2_COMPLETE (70%)`.
+With a single milestone, **call `releaseM1` and `completeM2` in the same Safe batch.** The 30/70
+split becomes an implementation detail that no entrant or bettor ever sees. Flagging it so whoever
+runs the deployment is not surprised by the state machine.
 
 ---
 
-# PART V — QUESTIONS FOR REVIEWERS
+# PART V — THE SCOREBOARD
 
-1. **Is 10 We right?** It is 4× Chang'e-4 and implies ~$1.4M of americium for an isotope entry. Does
-   that make M2 unwinnable, or correctly hard? Would 5 We be better?
-2. **Is the Procurement Rule enforceable?** How should a referee audit "commercially procurable"? Is
-   a signed offtake sufficient, or does it need a delivered invoice? Where does it break?
-3. **Is 354 h + dawn + 72 h the right permanence proof**, or should M2 require two complete nights?
-   The latter roughly doubles chamber cost.
-4. **Is a decade the right inventory horizon**, and can a referee actually audit an energy inventory
-   without proprietary disclosure?
-5. **Is 100 K too generous?** It admits LN₂ and therefore small teams, but a PSR floor is nearer
-   40 K. Gen-2 tightening, or wrong now?
-6. **Is the wall-power ban correct?** It is the biggest structural call in the document, and it means
-   Zeno's flagship 2027 demonstration does not count unless reconfigured. Is that honest rigour or
-   self-defeating?
+The prize may go years without being claimed. The **scoreboard** is what makes that fine, and it is
+arguably the more valuable artifact.
+
+MoonDAO publishes a standing public table of every listed competitor's **best publicly verified
+result against this exact standard** — watts, hours, sink temperature, output retention, mass,
+source and price. Most cells will start empty or say *"not publicly demonstrated."*
+
+This does three things:
+
+1. **It is the disclosure engine.** Organisations correct records that show them behind. An empty
+   cell next to a rival's filled one is an argument inside their own building.
+2. **It gives the market something to price** every month, rather than one binary event years out.
+3. **It works from day one**, with no entrants, no venue, and no chamber.
+
+Alongside it, a records ladder that keeps running after the prize is claimed: **specific energy**
+(Wh delivered per kg), **output retention**, **cost per watt-year**, and **projected repeat cycles**.
+This is where a 40 kg battery and a 4 kg RTG that both cleared the same bar get told apart in public
+without either being disqualified.
+
+---
+
+# PART VI — A TESTING FACILITY (future track, not a launch dependency)
+
+Nothing in Part II requires MoonDAO to own or book a chamber. That is deliberate — chamber access was
+the single most likely quiet killer of the v0.3 design, and §8.3 removes it from the critical path.
+
+It remains the most interesting thing we could build second. **Fifteen continuous days of
+cryoshrouded vacuum is the real barrier to entry**, and whoever lowers it decides how large the field
+gets.
+
+**Shape of the event.** A 15-day soak cannot be a live event, but it can be bracketed by two:
+
+| Phase | Format |
+|---|---|
+| Load-in day | Public, streamed. Weigh-in, sealing, cold-soak start |
+| 354-hour soak | Unattended. Live public telemetry dashboard, running leaderboard |
+| Dawn day | Public, streamed. Shroud up — who is still delivering ten watts |
+
+Multiple articles can share one shroud provided each has an isolated mount and its own feedthrough
+allocation; chamber volume and feedthrough count set the field size.
+
+**Partnering rather than building.** A dedicated chamber sized for several 10–20 kg articles is
+plausibly $30–80k of capital plus operating cost, which is more than the purse. Partnering is likely
+better. Candidate hosts, with the conflict position noted:
+
+| Host | Note |
+|---|---|
+| Commercial labs — Element, NTS, Intertek, Wyle | Conflict-free by construction; they sign test reports as core business. Costs $2–10k/day |
+| NASA Glenn (Armstrong Test Facility) | Large chambers, and there is **direct precedent**: Watts on the Moon ran its finals in Glenn's vacuum chambers. Slow to arrange; arguably conflicted via Harmonia |
+| Non-conflicted university centres — Colorado/LASP, Purdue, Texas A&M, ASU, Colorado School of Mines | Cheaper, slower, variable capability |
+| Penn State ARL | **Conflicted** — Astrobotic's test house |
+| Space Park Leicester | **Conflicted** — Perpetual Atomics' home |
+
+Recommended sequencing: launch the market and the scoreboard with no venue, and open facility
+conversations in parallel. If a partner materialises, the trials become an additional route to
+qualifying evidence, never the only one.
+
+---
+
+# PART VII — OPEN QUESTIONS
+
+1. **Can you beat the validator?** Find a data file that passes §8.2 with hardware that shouldn't
+   count. This is the highest-value thing a reviewer can do.
+2. **Is 98% the right retention threshold?** It is trivial for any isotope and hard for any
+   consumable. Too tight, too loose, or measuring the wrong thing?
+3. **Is 10 We right?** 4× Chang'e-4, and ~$1.4M of americium for an isotope entry. Correct, or should
+   it be 5 We?
+4. **Is the attestation strong enough?** One named independent observer is all that stands between
+   the prize and someone quietly running a wire. Is that sufficient, and who would actually sign?
+5. **Does resolving off self-published tests create a credibility problem** — a company grading its
+   own homework — even with open data and a public validator?
+6. **Is the wall-power ban correct?** It means Zeno's flagship 2027 demonstration does not count
+   unless reconfigured. Honest rigour, or self-defeating?
 7. **Who did we miss?** Especially outside the US and Europe, and especially non-nuclear approaches.
-8. **Who will actually lend a chamber for 19 continuous days**, and at what cost? This is our largest
-   unpriced risk.
-9. **Is "market resolves at M1, money weighted to M2" legible** to a non-expert bettor, or does it
-   invite a sense of being misled?
-10. **Is the framing too modest?** We claim an industrialization milestone, not a physics
-    breakthrough. Is that worth a prize?
+8. **Does an unclaimed prize with a live scoreboard read as patient, or as failed?** The design bets
+   heavily on the former.
+9. **Is $25k the right purse** given it is roughly 50–100% of the cheapest credible attempt, ~10–25%
+   of a corporate one, and ~1% of a nuclear one?
 
 ---
 
@@ -565,4 +681,5 @@ releases · *Nuclear Systems Used for Space Exploration by Other Countries* (Cha
 Lunar Scientific Research Station*, 2026 · University of Leicester / Space Park Leicester releases,
 Nov 2025 and Apr 2026 · UNOOSA A/AC.105/C.1/2026/CRP.17 — ESA RPS and NLSAP · NEI, WNN and TASS on
 Selena and Lavochkin · Venturi Space technical pages · NASA Tipping Point award announcements ·
-Planetary Society and Wikipedia mission summaries for Chang'e-7 and LUPEX.
+NASA Watts on the Moon Challenge · Planetary Society and Wikipedia mission summaries for Chang'e-7
+and LUPEX.
