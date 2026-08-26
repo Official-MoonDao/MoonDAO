@@ -1,6 +1,7 @@
 import {
   MAX_METADATA_BYTES,
   buildJobMetadata,
+  extractPublicJobBody,
   formatCommitment,
   formatCompensation,
   formatDeadlineCountdown,
@@ -164,6 +165,68 @@ describe('buildJobMetadata', () => {
   })
 })
 
+describe('extractPublicJobBody', () => {
+  const pitch = '### The pitch\n\nMoonDAO has already put civilians in space.'
+  const processTable = [
+    '### Hiring process',
+    '',
+    '| Stage | What happens |',
+    '|---|---|',
+    '| Interview | A conversation about prior results. |',
+  ].join('\n')
+
+  it('leaves a normal posting untouched', () => {
+    const body = `${pitch}\n\n${processTable}`
+    expect(extractPublicJobBody(body)).to.equal(body)
+  })
+
+  it('keeps a real table that is not the authoring cheat sheet', () => {
+    expect(extractPublicJobBody(processTable)).to.equal(processTable)
+  })
+
+  it('takes the public section out of an authoring paste', () => {
+    const pasted = [
+      '|---|---|',
+      '| Title | Social Media Manager — X (Twitter) |',
+      '| Category | Marketing |',
+      '| Summary | Own @OfficialMoonDAO and grow it. |',
+      '| Compensation | $2,000–$2,800 / month |',
+      '',
+      '---',
+      '',
+      '## Body (markdown)',
+      '',
+      pitch,
+      '',
+      processTable,
+      '',
+      '## Notes on what changed from the original draft, and why',
+      '',
+      'Internal: this must never ship on the public page.',
+    ].join('\n')
+
+    const extracted = extractPublicJobBody(pasted)
+    expect(extracted).to.equal(`${pitch}\n\n${processTable}`)
+    expect(extracted).to.not.include('| Title |')
+    expect(extracted).to.not.include('Body (markdown)')
+    expect(extracted).to.not.include('Notes on what changed')
+    expect(extracted).to.not.include('must never ship')
+  })
+
+  it('drops a leading structured-fields table even without a Body heading', () => {
+    const pasted = [
+      '| Field | Value |',
+      '|---|---|',
+      '| Title | Social Media Manager — X (Twitter) |',
+      '| Category | Marketing |',
+      '',
+      pitch,
+    ].join('\n')
+
+    expect(extractPublicJobBody(pasted)).to.equal(pitch)
+  })
+})
+
 describe('normalizeJobPostingDoc', () => {
   it('returns null when there is no content', () => {
     expect(normalizeJobPostingDoc({})).to.equal(null)
@@ -182,6 +245,24 @@ describe('normalizeJobPostingDoc', () => {
     expect(doc?.requirements).to.deep.equal(['Proven growth', 'Crypto fluency'])
     expect(doc?.hiringProcess).to.deep.equal([{ label: 'Interview', detail: '30 minutes' }])
     expect(doc?.links).to.deep.equal([{ label: 'https://moondao.com', url: 'https://moondao.com' }])
+  })
+
+  it('strips authoring scaffolding from the stored body', () => {
+    const doc = normalizeJobPostingDoc({
+      body: [
+        '|---|---|',
+        '| Title | Social Media Manager — X (Twitter) |',
+        '| Category | Marketing |',
+        '',
+        '## Body (markdown)',
+        '',
+        '### The pitch',
+        '',
+        'Own the account.',
+      ].join('\n'),
+    })
+
+    expect(doc?.body).to.equal('### The pitch\n\nOwn the account.')
   })
 })
 
