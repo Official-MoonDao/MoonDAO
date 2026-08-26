@@ -66,7 +66,25 @@ export default function JobDetail({
   useChainDefault()
 
   const isGated = !JOB_DETAIL_PUBLIC && !citizen
-  const posting = isGated ? null : doc
+  // Pages Router reuses this component across /jobs/[id] navigations, so a
+  // fetched doc is tagged with its CID and ignored once the route moves on.
+  const [clientDoc, setClientDoc] = useState<{ cid: string; doc: JobPostingDoc } | null>(null)
+  const fetchedDoc = clientDoc && clientDoc.cid === metadata.cid ? clientDoc.doc : null
+  const posting = isGated ? null : doc || fetchedDoc
+
+  // ISR can ship without the IPFS body (slow gateway). Retry in the browser
+  // whenever the on-chain envelope has a CID but the server did not load it.
+  useEffect(() => {
+    const cid = metadata.cid
+    if (doc || !cid || isGated) return
+    let cancelled = false
+    fetchJobPostingDoc(cid).then((loaded) => {
+      if (!cancelled && loaded) setClientDoc({ cid, doc: loaded })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [doc, metadata.cid, isGated])
 
   const teamContract = useContract({
     chain: selectedChain,

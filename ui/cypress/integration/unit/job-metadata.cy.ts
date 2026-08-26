@@ -25,9 +25,20 @@ describe('parseJobMetadata', () => {
     expect(parseJobMetadata('"a string"')).to.deep.equal({ v: 0 })
   })
 
+  it('accepts an already-parsed object from Tableland', () => {
+    const parsed = parseJobMetadata({
+      v: 1,
+      cid: 'Qmb4SknAG3eNGxQmKbUiJ4RVSRA7qdWuW53nb4XTuNmpWd',
+      deadline: 1791342000,
+    })
+    expect(parsed.cid).to.equal('Qmb4SknAG3eNGxQmKbUiJ4RVSRA7qdWuW53nb4XTuNmpWd')
+    expect(parsed.deadline).to.equal(1791342000)
+    expect(parsed.v).to.equal(1)
+  })
+
   it('still reads the legacy { compensation, location } shape', () => {
     const parsed = parseJobMetadata(
-      JSON.stringify({ compensation: '$2,000 / month', location: 'Remote' })
+      JSON.stringify({ compensation: '$2,000 / month', location: 'Remote' }),
     )
     expect(parsed.compensation).to.equal('$2,000 / month')
     expect(parsed.location).to.equal('Remote')
@@ -53,7 +64,7 @@ describe('parseJobMetadata', () => {
 
   it('drops enum values it does not recognize', () => {
     const parsed = parseJobMetadata(
-      JSON.stringify({ v: 1, commitmentType: 'indentured', locationType: 'lunar' })
+      JSON.stringify({ v: 1, commitmentType: 'indentured', locationType: 'lunar' }),
     )
     expect(parsed.commitmentType).to.equal(undefined)
     expect(parsed.locationType).to.equal(undefined)
@@ -92,19 +103,19 @@ describe('serializeJobMetadata', () => {
 describe('formatters', () => {
   it('formats a compensation range', () => {
     expect(formatCompensation({ min: 3000, max: 4500, currency: 'USD', period: 'month' })).to.equal(
-      '$3,000–$4,500 / month'
+      '$3,000–$4,500 / month',
     )
   })
 
   it('formats a single compensation figure', () => {
     expect(formatCompensation({ min: 100, currency: 'USD', period: 'hour' })).to.equal(
-      '$100 / hour'
+      '$100 / hour',
     )
   })
 
   it('prefers an author-written display string', () => {
     expect(formatCompensation({ min: 1, max: 2, display: 'Bounty, negotiable' })).to.equal(
-      'Bounty, negotiable'
+      'Bounty, negotiable',
     )
   })
 
@@ -116,7 +127,7 @@ describe('formatters', () => {
   it('formats location and commitment summaries', () => {
     expect(formatLocation({ type: 'remote', region: 'Worldwide' })).to.equal('Remote · Worldwide')
     expect(formatCommitment({ type: 'part-time', hoursPerWeek: 10 })).to.equal(
-      'Part-time · ≤10 hrs/week'
+      'Part-time · ≤10 hrs/week',
     )
   })
 })
@@ -133,7 +144,7 @@ describe('buildJobMetadata', () => {
         applicationDeadline: 1800000000,
         skills: ['X growth'],
       },
-      'bafytestcid'
+      'bafytestcid',
     )
 
     expect(envelope).to.deep.equal({
