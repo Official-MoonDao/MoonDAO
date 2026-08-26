@@ -63,8 +63,13 @@ describe('<ReportBugButton />', () => {
         expect(url.origin + url.pathname).to.eq(BUG_REPORT_REPO_URL)
         expect(url.searchParams.get('template')).to.eq('bug_report.yml')
         expect(url.searchParams.get('title')).to.eq('[Bug]: ')
-        expect(url.searchParams.get('page-url')).to.include('/lock')
-        expect(url.searchParams.get('environment')).to.include('Network:')
+        // After mount the href is enriched with window.location.href (the
+        // Cypress iframe URL in component tests) plus viewport and UA.
+        expect(url.searchParams.get('page-url')).to.eq(window.location.href)
+        const environment = url.searchParams.get('environment') || ''
+        expect(environment).to.include('Network:')
+        expect(environment).to.include('Viewport:')
+        expect(environment).to.include('User agent:')
       })
   })
 })
