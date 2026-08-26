@@ -55,12 +55,7 @@ export type JobLocation = {
 }
 
 export type JobCommitmentType =
-  | 'full-time'
-  | 'part-time'
-  | 'contract'
-  | 'internship'
-  | 'bounty'
-  | 'volunteer'
+  'full-time' | 'part-time' | 'contract' | 'internship' | 'bounty' | 'volunteer'
 
 export type JobCommitment = {
   type?: JobCommitmentType
@@ -269,17 +264,26 @@ export function isPaidRole(compensation?: JobCompensation): boolean | undefined 
 }
 
 /**
- * Parse the on-chain `metadata` column. Accepts the v1 envelope, the legacy
- * `{ compensation, location }` object, and anything unrecognizable (which
- * degrades to "no metadata" rather than throwing on a job page).
+ * Parse the on-chain `metadata` column. Accepts a JSON string, an already-parsed
+ * object (Tableland's HTTP/SDK validators return TEXT JSON as an object — the
+ * same way citizen `location` comes back), the legacy `{ compensation, location }`
+ * shape, and anything unrecognizable (which degrades to "no metadata" rather
+ * than throwing on a job page).
  */
-export function parseJobMetadata(raw?: string | null): JobMetadataEnvelope {
-  if (!raw || typeof raw !== 'string' || raw.trim() === '') return EMPTY_JOB_METADATA
+export function parseJobMetadata(raw?: unknown): JobMetadataEnvelope {
+  if (raw == null || raw === '') return EMPTY_JOB_METADATA
 
   let parsed: any
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
+  if (typeof raw === 'string') {
+    if (raw.trim() === '') return EMPTY_JOB_METADATA
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return EMPTY_JOB_METADATA
+    }
+  } else if (isPlainObject(raw)) {
+    parsed = raw
+  } else {
     return EMPTY_JOB_METADATA
   }
   if (!isPlainObject(parsed)) return EMPTY_JOB_METADATA
@@ -398,7 +402,7 @@ export function normalizeJobPostingDoc(raw: any): JobPostingDoc | null {
     ? raw.links
         .filter((link: any) => isPlainObject(link) && cleanString(link.url))
         .map((link: any) =>
-          compact({ label: cleanString(link.label) || link.url.trim(), url: link.url.trim() })
+          compact({ label: cleanString(link.label) || link.url.trim(), url: link.url.trim() }),
         )
     : undefined
 
@@ -440,7 +444,7 @@ export function getJobHref(job: { id: number | string }): string {
 /** The date applications close: an explicit deadline, else the listing's expiry. */
 export function getApplicationDeadline(
   envelope: JobMetadataEnvelope,
-  endTime?: number
+  endTime?: number,
 ): number | undefined {
   if (envelope.deadline) return envelope.deadline
   return endTime && endTime > 0 ? endTime : undefined
@@ -462,7 +466,7 @@ export function daysUntil(timestamp?: number, now = Math.floor(Date.now() / 1000
 
 export function formatDeadlineCountdown(
   timestamp?: number,
-  now = Math.floor(Date.now() / 1000)
+  now = Math.floor(Date.now() / 1000),
 ): string | null {
   const days = daysUntil(timestamp, now)
   if (days === null) return null

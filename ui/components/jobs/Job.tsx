@@ -24,7 +24,8 @@ export type Job = {
   endTime: number
   timestamp: number
   tag: string
-  metadata: string
+  /** JSON string or already-parsed object — Tableland returns TEXT JSON as either. */
+  metadata: string | Record<string, unknown>
   contactInfo: string
 }
 
@@ -213,8 +214,8 @@ export default function Job({
                 {daysSincePosting === 0
                   ? 'Posted today'
                   : daysSincePosting === 1
-                  ? '1 day ago'
-                  : `${daysSincePosting} days ago`}
+                    ? '1 day ago'
+                    : `${daysSincePosting} days ago`}
               </span>
               {countdown && !isExpired && (
                 <span className="ml-2 text-slate-400">· {countdown}</span>
