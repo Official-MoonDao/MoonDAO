@@ -3,6 +3,7 @@ import {
   BUG_REPORT_REPO_URL,
   buildBugReportHref,
   formatBugReportEnvironment,
+  stripBugReportPageUrl,
 } from '@/lib/github/bugReport'
 import ReportBugButton from '@/components/layout/ReportBugButton'
 
@@ -25,6 +26,16 @@ describe('buildBugReportHref', () => {
     expect(url.searchParams.get('environment')).to.eq(
       'Network: mainnet\nViewport: 1440x900\nUser agent: Mozilla/5.0'
     )
+  })
+
+  it('drops query strings and fragments so secrets are not published', () => {
+    const href = buildBugReportHref({
+      pageUrl: 'https://moondao.com/citizen?invite=secret-token#step-2',
+      environment: formatBugReportEnvironment({ chain: 'mainnet' }),
+    })
+
+    expect(new URL(href).searchParams.get('page-url')).to.eq('https://moondao.com/citizen')
+    expect(href).to.not.include('secret-token')
   })
 })
 
@@ -65,7 +76,7 @@ describe('<ReportBugButton />', () => {
         expect(url.searchParams.get('title')).to.eq('[Bug]: ')
         // After mount the href is enriched with window.location.href (the
         // Cypress iframe URL in component tests) plus viewport and UA.
-        expect(url.searchParams.get('page-url')).to.eq(window.location.href)
+        expect(url.searchParams.get('page-url')).to.eq(stripBugReportPageUrl(window.location.href))
         const environment = url.searchParams.get('environment') || ''
         expect(environment).to.include('Network:')
         expect(environment).to.include('Viewport:')
