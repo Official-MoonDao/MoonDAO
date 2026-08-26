@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import Container from '@/components/layout/Container'
+import ReportBugButton from '@/components/layout/ReportBugButton'
 
 export default function FourOhFour() {
   return (
@@ -32,6 +33,9 @@ export default function FourOhFour() {
               >
                 <span>Go to Homepage</span>
               </Link>
+              <div className="flex justify-center">
+                <ReportBugButton />
+              </div>
             </div>
           </div>
         </div>

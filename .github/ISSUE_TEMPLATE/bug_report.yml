@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a bug you found on the MoonDAO site
+title: '[Bug]: '
+labels: ['bug', 'user-report']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Issues are **public** — do not include wallet
+        addresses, private keys, emails, or other personal information.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: I clicked X and then Y happened...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this?
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See error
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+  - type: input
+    id: page-url
+    attributes:
+      label: Page URL
+      description: The page where you found the bug. Prefills automatically from the site.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser and device information. Prefills automatically from the site.
+      render: shell
+  - type: checkboxes
+    id: public-acknowledgement
+    attributes:
+      label: Public disclosure
+      description: GitHub issues are public. Do not include wallet addresses, emails, private keys, or other personal information.
+      options:
+        - label: I understand this issue will be public and I have not included private information.
+          required: true

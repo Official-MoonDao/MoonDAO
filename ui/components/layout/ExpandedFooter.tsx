@@ -15,6 +15,7 @@ import {
 } from '@/components/assets'
 import Disclaimer from './Disclaimer'
 import LegalLinks from './LegalLinks'
+import ReportBugButton from './ReportBugButton'
 
 type SocialLink = {
   href: string
@@ -295,6 +296,9 @@ export function ExpandedFooter({
                     {link.icon}
                   </Link>
                 ))}
+              </div>
+              <div className="mb-6">
+                <ReportBugButton />
               </div>
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-gray-400 mb-4">
                 <Link href="/docs" className="hover:text-white transition-colors">
