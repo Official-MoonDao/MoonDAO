@@ -12,10 +12,9 @@ import {
 // than in the page: a gate the browser evaluates is a gate whose password is in
 // the bundle.
 //
-// The matcher is duplicated from GATED_PREFIXES because Next requires it to be
-// a static literal it can read at build time — it cannot be computed or
-// imported. lib/gate/access.ts holds the list the rest of the app uses, and a
-// unit test asserts the two agree.
+// Static literal — Next reads this at build time, so it cannot import from
+// lib/gate/access.ts. Keep these strings identical to GATED_MIDDLEWARE_MATCHERS
+// in that file; the access-gate unit test pins the pairing.
 export const config = {
   matcher: ['/moonbase/:path*', '/deprize/:path*', '/deprize-play'],
 }

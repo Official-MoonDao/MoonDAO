@@ -25,10 +25,14 @@ contract ERC5643Test is Test {
 
         Whitelist discountList = new Whitelist();
 
-        vm.prank(user3);
+        // startPrank for the CREATE + follow-up setter. A one-shot vm.prank
+        // before `new MoonDAOTeam` is not applied under `forge coverage
+        // --via-ir` on a fork, so the next vm.prank errors with
+        // "cannot overwrite a prank until it is applied at least once".
+        vm.startPrank(user3);
         team = new MoonDAOTeam("erc5369", "ERC5643", user3, 0x3bc1A0Ad72417f2d411118085256fC53CBdDd137, address(discountList));
-        vm.prank(user3);
         team.setMoonDaoCreator(user1);
+        vm.stopPrank();
 
         uint256 before = user3.balance;
 

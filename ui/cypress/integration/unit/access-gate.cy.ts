@@ -6,10 +6,9 @@
  * cookie good" are worth pinning down properly.
  */
 import { expect } from 'chai'
-import { readFileSync } from 'fs'
-import { join } from 'path'
 import {
   GATED_PREFIXES,
+  GATED_MIDDLEWARE_MATCHERS,
   GATE_COOKIE,
   GATE_PATH,
   MIN_TOKEN_LENGTH,
@@ -53,19 +52,18 @@ describe('access gate', () => {
       }
     })
 
-    // Next needs the middleware matcher to be a static literal, so the list
-    // exists twice. If they drift, the middleware silently stops guarding a
-    // route while everything else still believes it is gated.
+    // Next needs the middleware matcher to be a static literal, so the gated
+    // list exists as GATED_PREFIXES (app logic) + GATED_MIDDLEWARE_MATCHERS
+    // (what middleware.ts must declare). If they drift, a prefix is "gated" in
+    // the app but never actually matched by middleware.
     it('keeps the middleware matcher in step with the prefix list', () => {
-      const source = readFileSync(join(process.cwd(), 'middleware.ts'), 'utf8')
-      const matcher = source.match(/matcher:\s*\[([^\]]*)\]/)
-      expect(matcher, 'no matcher found in middleware.ts').to.not.equal(null)
-      const routes = Array.from((matcher as RegExpMatchArray)[1].matchAll(/'([^']+)'/g)).map(
-        (m) => m[1]
-      )
-
       const base = (route: string) => route.replace(/\/:path\*$/, '')
-      expect(routes.map(base).sort()).to.deep.equal([...GATED_PREFIXES].sort())
+      expect(GATED_MIDDLEWARE_MATCHERS.map(base).sort()).to.deep.equal([...GATED_PREFIXES].sort())
+      expect(GATED_MIDDLEWARE_MATCHERS).to.deep.equal([
+        '/moonbase/:path*',
+        '/deprize/:path*',
+        '/deprize-play',
+      ])
     })
   })
 

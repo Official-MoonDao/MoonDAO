@@ -19,8 +19,13 @@ contract HelpersTest is Test {
     function test_VestingSetTokenCallerScope() public {
         address beneficiary = address(0xB1);
         address factory = address(0xFAC0);
-        vm.prank(factory);
+        // startPrank (not prank): under `forge coverage --via-ir` on a fork,
+        // a one-shot vm.prank before CREATE is not applied, so factory would
+        // silently become address(this) and the "only factory" check below
+        // would never revert.
+        vm.startPrank(factory);
         Vesting v = new Vesting(beneficiary);
+        vm.stopPrank();
 
         // External actor cannot set the token.
         vm.expectRevert(bytes("only factory"));
@@ -40,8 +45,11 @@ contract HelpersTest is Test {
     function test_PoolDeployerSetTokenCallerScope() public {
         address factory = address(0xFAC1);
         address ownerAddr = address(0x0FFC);
-        vm.prank(factory);
+        // See test_VestingSetTokenCallerScope — one-shot prank + CREATE is
+        // unreliable under forge coverage --via-ir on a fork.
+        vm.startPrank(factory);
         PoolDeployer pd = new PoolDeployer(address(0xB001), address(0xB002), ownerAddr);
+        vm.stopPrank();
 
         // External actor cannot front-run setToken.
         vm.expectRevert(bytes("only factory"));
