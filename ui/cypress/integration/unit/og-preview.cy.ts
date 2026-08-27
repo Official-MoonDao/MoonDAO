@@ -12,6 +12,7 @@ import {
   parseListingOgParams,
   sanitizeDiscordEmbeds,
 } from '@/lib/og/preview'
+import { escapeXml, renderOgSvg, wrapText } from '@/lib/og/svg'
 
 describe('clip', () => {
   it('collapses whitespace and ellipsizes long strings', () => {
@@ -193,5 +194,40 @@ describe('Discord embeds', () => {
     expect((cleaned?.[0] as any).extra).to.equal(undefined)
     expect(cleaned?.[1].url).to.equal(undefined)
     expect(cleaned?.[1].image).to.equal(undefined)
+  })
+})
+
+describe('OG SVG card', () => {
+  it('escapes markup so a title cannot break out of the SVG', () => {
+    expect(escapeXml(`Engineer</text><script>alert(1)</script>`)).to.equal(
+      'Engineer&lt;/text&gt;&lt;script&gt;alert(1)&lt;/script&gt;'
+    )
+    const svg = renderOgSvg({
+      eyebrow: 'MoonDAO  ·  Jobs',
+      title: 'Engineer</text><script>alert(1)</script>',
+      footer: 'moondao.com/jobs',
+    })
+    expect(svg).to.include('Engineer&lt;/text&gt;')
+    expect(svg).to.not.include('</text><script>')
+  })
+
+  it('wraps a long title onto a second line', () => {
+    expect(wrapText('Senior Full Stack Engineer for Lunar Missions', 22, 2)).to.have.length(2)
+  })
+
+  it('includes the title, chips and footer', () => {
+    const svg = renderOgSvg({
+      eyebrow: 'MoonDAO  ·  Jobs',
+      title: 'Growth Lead',
+      subtitle: 'MoonDAO',
+      chips: ['Remote', '$3,000 / month'],
+      footer: 'moondao.com/jobs',
+    })
+    expect(svg).to.include('Growth Lead')
+    expect(svg).to.include('MoonDAO')
+    expect(svg).to.include('Remote')
+    expect(svg).to.include('moondao.com/jobs')
+    expect(svg).to.include('width="1200"')
+    expect(svg).to.include('height="630"')
   })
 })

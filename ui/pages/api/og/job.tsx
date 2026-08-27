@@ -1,39 +1,27 @@
-import { ImageResponse } from '@vercel/og'
-import React from 'react'
-import { OgCard } from '@/lib/og/OgCard'
-import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, parseJobOgParams } from '@/lib/og/preview'
+import { NextApiRequest, NextApiResponse } from 'next'
+import sharp from 'sharp'
+import { parseJobOgParams } from '@/lib/og/preview'
+import { renderOgSvg } from '@/lib/og/svg'
 
-export const config = {
-  runtime: 'edge',
-}
-
-export default function handler(req: Request) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
-    return new Response('Method not allowed', { status: 405 })
+    return res.status(405).end('Method not allowed')
   }
 
-  const { searchParams } = new URL(req.url)
-  const fields = parseJobOgParams(searchParams)
-
-  const response = new ImageResponse(
-    (
-      <OgCard
-        eyebrow="MoonDAO  ·  Jobs"
-        title={fields.title}
-        subtitle={fields.team}
-        chips={[fields.tag, fields.commitment, fields.location, fields.compensation].filter(
-          (chip): chip is string => Boolean(chip)
-        )}
-        footer="moondao.com/jobs"
-      />
+  const fields = parseJobOgParams(new URL(req.url || '/', 'http://localhost').searchParams)
+  const svg = renderOgSvg({
+    eyebrow: 'MoonDAO  ·  Jobs',
+    title: fields.title,
+    subtitle: fields.team,
+    chips: [fields.tag, fields.commitment, fields.location, fields.compensation].filter(
+      (chip): chip is string => Boolean(chip)
     ),
-    {
-      width: OG_IMAGE_WIDTH,
-      height: OG_IMAGE_HEIGHT,
-    }
-  )
+    footer: 'moondao.com/jobs',
+  })
 
-  response.headers.set('Cache-Control', 'public, immutable, no-transform, max-age=86400')
-  response.headers.set('Content-Type', 'image/png')
-  return response
+  const png = await sharp(Buffer.from(svg)).png().toBuffer()
+  res.setHeader('Content-Type', 'image/png')
+  res.setHeader('Cache-Control', 'public, immutable, no-transform, max-age=86400')
+  res.setHeader('Content-Length', String(png.length))
+  res.end(png)
 }
