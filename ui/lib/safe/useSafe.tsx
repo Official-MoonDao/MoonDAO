@@ -13,7 +13,7 @@ import {
 } from '@safe-global/safe-core-sdk-types'
 import ERC20ABI from 'const/abis/ERC20.json'
 import { ethers } from 'ethers'
-import { useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { Chain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
@@ -40,10 +40,11 @@ export type SafeData = {
   owners: string[]
   threshold: number
   pendingTransactions: PendingTransaction[]
+  isLoadingTransactions: boolean
   transactionsToSign: PendingTransaction[]
   transactionsToExecute: PendingTransaction[]
   signPendingTransaction: (safeTxHash: string) => Promise<any>
-  fetchPendingTransactions: () => Promise<void>
+  fetchPendingTransactions: (options?: { silent?: boolean }) => Promise<void>
   rejectTransaction: (safeTxHash: string) => Promise<string>
   sendFunds: (
     to: string,
@@ -75,13 +76,25 @@ export default function useSafe(
   const [pendingTransactions, setPendingTransactions] = useState<
     PendingTransaction[]
   >([])
-  const [transactionsToSign, setTransactionsToSign] = useState<
-    PendingTransaction[]
-  >([])
-  const [transactionsToExecute, setTransactionsToExecute] = useState<
-    PendingTransaction[]
-  >([])
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
   const [currentNonce, setCurrentNonce] = useState<number | null>(null)
+  const pendingTxRequestId = useRef(0)
+
+  const transactionsToSign = useMemo(
+    () => pendingTransactions.filter((tx) => !tx.isExecuted),
+    [pendingTransactions]
+  )
+
+  const transactionsToExecute = useMemo(
+    () =>
+      pendingTransactions.filter(
+        (tx) =>
+          !tx.isExecuted &&
+          (tx.confirmations?.length ?? 0) >=
+            (tx.confirmationsRequired ?? threshold)
+      ),
+    [pendingTransactions, threshold]
+  )
 
   async function getCurrentNonce() {
     if (!safe) return null
@@ -423,12 +436,21 @@ export default function useSafe(
         safeAddress,
       })
 
-      // Get initial state
-      const currentOwners = await newSafe.getOwners()
-      const currentThreshold = await newSafe.getThreshold()
+      // Owners/threshold are required to init; nonce is not. Isolate
+      // getNonce so an RPC blip cannot skip setSafe, but still apply
+      // it in the same render as the new Safe (null if the fetch fails).
+      const [currentOwners, currentThreshold, nonce] = await Promise.all([
+        newSafe.getOwners(),
+        newSafe.getThreshold(),
+        newSafe.getNonce().catch((nonceErr) => {
+          console.error('Error getting current nonce:', nonceErr)
+          return null
+        }),
+      ])
 
       setOwners(currentOwners)
       setThreshold(currentThreshold)
+      setCurrentNonce(nonce)
       setSafe(newSafe)
 
       return newSafe
@@ -442,57 +464,45 @@ export default function useSafe(
     if (!account) return
 
     try {
-      const newSafe = await initializeSafe()
-      if (!newSafe) return
-
-      await fetchPendingTransactions()
+      await Promise.all([
+        initializeSafe(),
+        fetchPendingTransactions({ silent: true }),
+      ])
     } catch (err) {
       console.error('Error refreshing Safe state:', err)
     }
   }
 
-  async function fetchPendingTransactions() {
-    if (!safeApiKit || !safe) return
+  // Reads straight from the Safe Transaction Service, so it deliberately does
+  // not depend on the protocol-kit `Safe` instance. Gating on `safe` meant the
+  // queue couldn't load until a wallet was connected on the matching chain and
+  // several RPC round-trips had completed, which is what made the tab sit on
+  // "No pending transactions" for the first ~30s.
+  const fetchPendingTransactions = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!safeApiKit || !safeAddress) {
+        pendingTxRequestId.current += 1
+        setPendingTransactions([])
+        setIsLoadingTransactions(false)
+        return
+      }
 
-    try {
-      const pendingTxs = await safeApiKit.getPendingTransactions(safeAddress)
-      setPendingTransactions(pendingTxs.results)
-
-      const currentThreshold = await safe.getThreshold()
-      // Keep the on-chain nonce in sync here so execution gating works
-      // immediately on mount (the 30s interval alone leaves it null at first).
+      const requestId = ++pendingTxRequestId.current
+      if (!silent) setIsLoadingTransactions(true)
       try {
-        const nonce = await safe.getNonce()
-        setCurrentNonce(nonce)
-      } catch (nonceErr) {
-        console.error('Error getting current nonce:', nonceErr)
+        const pendingTxs = await safeApiKit.getPendingTransactions(safeAddress)
+        if (requestId !== pendingTxRequestId.current) return
+        setPendingTransactions(pendingTxs.results)
+      } catch (err) {
+        console.error('Error fetching pending transactions:', err)
+      } finally {
+        if (requestId === pendingTxRequestId.current) {
+          setIsLoadingTransactions(false)
+        }
       }
-      const currentAddress = wallets?.[selectedWallet]?.address
-
-      if (currentAddress) {
-        // Show all pending transactions, but mark which ones need signing
-        const toSign = pendingTxs.results.filter((tx) => {
-          const hasSigned = tx.confirmations?.some(
-            (conf) => conf.owner.toLowerCase() === currentAddress.toLowerCase()
-          )
-          return !tx.isExecuted // Show all non-executed transactions
-        })
-        setTransactionsToSign(toSign)
-
-        // Filter transactions that can be executed
-        const toExecute = pendingTxs.results.filter((tx) => {
-          return (
-            tx.confirmations?.length &&
-            tx.confirmations.length >= currentThreshold &&
-            !tx.isExecuted
-          )
-        })
-        setTransactionsToExecute(toExecute)
-      }
-    } catch (err) {
-      console.error('Error fetching pending transactions:', err)
-    }
-  }
+    },
+    [safeApiKit, safeAddress]
+  )
 
   async function signPendingTransaction(safeTxHash: string) {
     if (!safe) throw new Error('Safe not initialized')
@@ -602,27 +612,38 @@ export default function useSafe(
     return queueSafeTx(safeTransactionData)
   }
 
+  // Load the queue as soon as we know which Safe to ask about, in parallel
+  // with (and independent of) wallet-dependent Safe initialization below.
   useEffect(() => {
-    async function setupSafe() {
-      const newSafe = await initializeSafe()
-      if (newSafe) {
-        await fetchPendingTransactions()
-      }
+    setPendingTransactions([])
+    fetchPendingTransactions()
+
+    return () => {
+      // Invalidate in-flight responses so a slower previous Safe cannot
+      // overwrite the queue after navigation.
+      pendingTxRequestId.current += 1
     }
-    setupSafe()
+  }, [fetchPendingTransactions])
+
+  useEffect(() => {
+    initializeSafe()
   }, [wallets, selectedWallet, safeAddress, account])
 
   // Background refresh of the Safe state. Only poll once a Safe is actually
   // initialized, at a relaxed cadence, and never while the tab is hidden —
   // this hook is mounted on team/project pages where users mostly read.
+  // Silent so a periodic refetch never swaps the rendered queue for a spinner.
   useEffect(() => {
     if (!safe) return
     const interval = setInterval(async () => {
       if (document.hidden) return
-      await refreshSafeState()
+      await Promise.all([
+        fetchPendingTransactions({ silent: true }),
+        getCurrentNonce(),
+      ])
     }, 30000)
     return () => clearInterval(interval)
-  }, [safeApiKit, safe, wallets, selectedWallet, safeAddress])
+  }, [safe, fetchPendingTransactions])
 
   // Tight 5s polling is only justified while a queued transaction is being
   // monitored; stop as soon as it executes.
@@ -633,22 +654,13 @@ export default function useSafe(
       const isExecuted = await monitorTransactionExecution(lastSafeTxHash)
       if (isExecuted) {
         setLastSafeTxExecuted(isExecuted)
-        await fetchPendingTransactions()
+        await fetchPendingTransactions({ silent: true })
       }
     }
 
     const interval = setInterval(checkExecution, 5000)
     return () => clearInterval(interval)
   }, [lastSafeTxHash, lastSafeTxExecuted])
-
-  useEffect(() => {
-    if (!safe) return
-    const interval = setInterval(async () => {
-      if (document.hidden) return
-      await getCurrentNonce()
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [safe])
 
   return {
     safe,
@@ -662,6 +674,7 @@ export default function useSafe(
     owners,
     threshold,
     pendingTransactions,
+    isLoadingTransactions,
     transactionsToSign,
     transactionsToExecute,
     signPendingTransaction,

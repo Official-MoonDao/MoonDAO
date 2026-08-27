@@ -3,14 +3,17 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
-import { useActiveAccount, useReadContract } from 'thirdweb/react'
+import { useActiveAccount } from 'thirdweb/react'
+import {
+  formatDeadlineCountdown,
+  getApplicationDeadline,
+  getJobHref,
+  parseJobMetadata,
+} from '@/lib/jobs/jobMetadata'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysSinceTimestamp } from '@/lib/utils/timestamp'
-import ExpandableText from '../layout/ExpandableText'
-import Frame from '../layout/Frame'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import StandardButton from '../layout/StandardButton'
-import StandardCard from '../layout/StandardCard'
 import TeamJobModal from '../subscription/TeamJobModal'
 
 export type Job = {
@@ -21,7 +24,8 @@ export type Job = {
   endTime: number
   timestamp: number
   tag: string
-  metadata: string
+  /** JSON string or already-parsed object — Tableland returns TEXT JSON as either. */
+  metadata: string | Record<string, unknown>
   contactInfo: string
 }
 
@@ -34,6 +38,14 @@ type JobProps = {
   teamContract?: any
   showTeam?: boolean
   previewMode?: boolean
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-block px-2 py-1 text-xs bg-white/5 text-slate-300 rounded-md border border-white/10">
+      {children}
+    </span>
+  )
 }
 
 export default function Job({
@@ -57,6 +69,10 @@ export default function Job({
   const currTime = useCurrUnixTime()
 
   const daysSincePosting = daysSinceTimestamp(job?.timestamp)
+  const metadata = parseJobMetadata(job?.metadata)
+  const deadline = getApplicationDeadline(metadata, job?.endTime)
+  const countdown = formatDeadlineCountdown(deadline, currTime)
+  const href = getJobHref(job)
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -76,11 +92,7 @@ export default function Job({
       setIsActive(false)
     }
 
-    if (
-      currTime > job.endTime &&
-      job.endTime !== 0 &&
-      job.endTime !== undefined
-    ) {
+    if (currTime > job.endTime && job.endTime !== 0 && job.endTime !== undefined) {
       setIsExpired(true)
     } else {
       setIsExpired(false)
@@ -111,9 +123,7 @@ export default function Job({
               setEnabledEditJobModal(true)
             }}
           >
-            {!isDeleting && (
-              <PencilIcon className="h-4 w-4 text-slate-300 hover:text-white" />
-            )}
+            {!isDeleting && <PencilIcon className="h-4 w-4 text-slate-300 hover:text-white" />}
           </button>
           {isDeleting ? (
             <div className="p-2">
@@ -157,86 +167,64 @@ export default function Job({
     </div>
   )
 
-  if (!isActive) return null
-
   return (
     <>
-      <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-xl border border-slate-600/30 p-5 flex flex-col h-full hover:border-slate-500/50 transition-all duration-200">
-        {/* Header with title and team link */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex-1 min-w-0">
-            {showTeam && teamNFT && (
-              <Link
-                href={`/team/${job.teamId}`}
-                className="text-xs text-blue-400 hover:text-blue-300 mb-1 block"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {teamNFT.metadata.name}
-              </Link>
-            )}
-            <h3 className="font-GoodTimes text-white text-base leading-tight">
-              {job.title}
-            </h3>
+      <div
+        id={id}
+        className="group bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-xl border border-slate-600/30 p-5 flex flex-col h-full hover:border-slate-500/50 transition-all duration-200"
+      >
+        {showTeam && teamNFT && (
+          <Link
+            href={`/team/${job.teamId}`}
+            className="text-xs text-blue-400 hover:text-blue-300 mb-1 block w-fit"
+          >
+            {teamNFT.metadata.name}
+          </Link>
+        )}
+
+        <Link href={href} className="flex-1 flex flex-col">
+          <h3 className="font-GoodTimes text-white text-base leading-tight group-hover:text-blue-200 transition-colors">
+            {job.title}
+          </h3>
+
+          <div className="flex flex-wrap gap-2 mt-2">
             {job.tag && (
-              <span className="inline-block mt-2 px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded-md border border-blue-500/30">
+              <span className="inline-block px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded-md border border-blue-500/30">
                 {job.tag}
               </span>
             )}
+            {metadata.commitment && <Chip>{metadata.commitment}</Chip>}
+            {metadata.location && <Chip>{metadata.location}</Chip>}
+            {metadata.compensation && <Chip>{metadata.compensation}</Chip>}
           </div>
-        </div>
 
-        {/* Description */}
-        <div className="flex-1 mb-4">
-          <ExpandableText className="text-sm text-slate-300 leading-relaxed" lines={3}>
+          <p className="mt-3 flex-1 text-sm text-slate-300 leading-relaxed line-clamp-3">
             {job.description}
-          </ExpandableText>
-        </div>
+          </p>
 
-        {/* Metadata (compensation, location) */}
-        {job.metadata && (
-          <div className="mb-4 space-y-1">
-            {(() => {
-              try {
-                const metadata = JSON.parse(job.metadata)
-                return (
-                  <>
-                    {metadata.compensation && (
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <span className="font-semibold">💰</span>
-                        <span>{metadata.compensation}</span>
-                      </div>
-                    )}
-                    {metadata.location && (
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <span className="font-semibold">📍</span>
-                        <span>{metadata.location}</span>
-                      </div>
-                    )}
-                  </>
-                )
-              } catch {
-                return null
-              }
-            })()}
-          </div>
-        )}
+          <span className="text-xs text-blue-400 group-hover:text-blue-300 mt-3 transition-colors">
+            View role and apply →
+          </span>
+        </Link>
 
-        {/* Footer with actions and timestamp */}
-        <div className="pt-3 border-t border-slate-600/30">
+        <div className="pt-3 mt-4 border-t border-slate-600/30">
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs text-slate-500">
-              {daysSincePosting === 0
-                ? 'Posted today'
-                : daysSincePosting === 1
-                ? '1 day ago'
-                : `${daysSincePosting} days ago`}
+              <span>
+                {daysSincePosting === 0
+                  ? 'Posted today'
+                  : daysSincePosting === 1
+                    ? '1 day ago'
+                    : `${daysSincePosting} days ago`}
+              </span>
+              {countdown && !isExpired && (
+                <span className="ml-2 text-slate-400">· {countdown}</span>
+              )}
             </div>
             {jobActions}
           </div>
           {editable && isExpired && (
-            <p className="text-xs text-red-400 mt-2">
-              This job post has expired
-            </p>
+            <p className="text-xs text-red-400 mt-2">This job post has expired</p>
           )}
         </div>
       </div>

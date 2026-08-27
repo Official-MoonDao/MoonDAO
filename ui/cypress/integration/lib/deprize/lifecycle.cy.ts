@@ -222,8 +222,11 @@ describe('deprize lifecycle derivations', () => {
     })
 
     it('rejects an unsettled tip', () => {
-      // Cypress's .throw() treats a RegExp as the expected thrown *value*,
-      // not a message matcher, so a string substring is the reliable check.
+      // Match on a substring rather than a regex: chai decides how to treat this
+      // argument with `errorLike instanceof RegExp`, which is false under Cypress
+      // because the spec's regex is created in the AUT frame while chai comes
+      // from the runner frame. A cross-realm regex is then misread as an expected
+      // error object and the assertion fails. `typeof === 'string'` is realm-safe.
       expect(() =>
         buildSupersededPayouts({
           teamIds: roster,

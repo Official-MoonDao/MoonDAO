@@ -10,6 +10,10 @@
   },
   "scripts": {
     "dev": "NODE_OPTIONS='--max-old-space-size=8192' next dev",
+    "docs:check": "TS_NODE_COMPILER_OPTIONS='{\"types\":[\"node\"]}' ts-node -r tsconfig-paths/register scripts/docs-check.ts",
+    "docs:generate": "TS_NODE_COMPILER_OPTIONS='{\"types\":[\"node\"]}' ts-node -r tsconfig-paths/register scripts/docs-generate.ts",
+    "docs:migrate": "node scripts/migrate-vault.mjs",
+    "test:docs": "TS_NODE_COMPILER_OPTIONS='{\"types\":[\"node\",\"mocha\"]}' node node_modules/mocha/bin/mocha.js --require ts-node/register --require tsconfig-paths/register --spec scripts/docs-pipeline.test.ts",
     "build": "NODE_OPTIONS='--max-old-space-size=8192' next build",
     "analyze": "ANALYZE=true NODE_OPTIONS='--max-old-space-size=8192' next build",
     "postbuild": "next-sitemap",

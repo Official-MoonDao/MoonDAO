@@ -559,7 +559,7 @@ async function main() {
   console.log()
 
   // Budget = 5% of liquid non-MOONEY assets in USD (stablecoins)
-  // See: https://docs.moondao.com/Projects/Project-System#quarterly-rewards
+  // See: /docs/Projects/Project-System#quarterly-rewards
   const usdBudget = Math.round(totalUSD * 0.05)
   const maxPerProject = Math.round(usdBudget / 5)
   const approvalCap = Math.round((usdBudget * 3) / 4)

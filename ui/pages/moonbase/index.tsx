@@ -775,9 +775,11 @@ export default function MoonBaseZeroIndex() {
           aria-hidden={cinematic}
           style={cinematic ? { visibility: 'hidden' } : undefined}
         >
-          {/* Top row */}
-          <div className="flex items-start justify-between gap-4 p-4 sm:p-6">
-            <div className="pointer-events-auto max-w-sm rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
+          {/* Top row: stacked on mobile so the info card and race legend never
+              have to squeeze into half the viewport each (see mobile audit). */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 p-4 sm:p-6">
+            <div className="pointer-events-auto w-full sm:max-w-sm rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
+
               <div className="flex items-center gap-2">
                 <GlobeAltIcon className="h-5 w-5 text-cyan-300" />
                 <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>

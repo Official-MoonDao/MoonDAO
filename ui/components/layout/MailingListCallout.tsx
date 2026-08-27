@@ -32,7 +32,7 @@ function MailingListCallout() {
                         </span>
                         <span>
                             <u>
-                                <a className="opacity-[60%] hover:opacity-[100%]" href="https://docs.moondao.com/About/FAQ">the FAQ</a>
+                                <a className="opacity-[60%] hover:opacity-[100%]" href="/docs/About/FAQ">the FAQ</a>
                             </u> 
                         </span>    
                         <span className="opacity-[60%]">

@@ -15,6 +15,7 @@ import {
   POLYGON_ASSETS_URL,
   BASE_ASSETS_URL,
   USD_BUDGET,
+  ANNOUNCE_PROJECT_BUDGET,
   RETRO_PAYOUT_TOKEN,
   RETRO_ETH_BUDGET,
   RETRO_USD_BUDGET,
@@ -1654,14 +1655,20 @@ export function ProjectRewards({
                       <span className="leading-none">Create Project</span>
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-4">
-                    <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
-                      <RewardAsset
-                        name="USDC"
-                        value={`$${USD_BUDGET.toLocaleString()}`}
-                        usdValue={USD_BUDGET.toFixed(2)}
-                      />
-                    </div>
+                  <div
+                    className={`grid grid-cols-1 gap-1.5 sm:gap-4 ${
+                      ANNOUNCE_PROJECT_BUDGET ? 'md:grid-cols-2' : ''
+                    }`}
+                  >
+                    {ANNOUNCE_PROJECT_BUDGET && (
+                      <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
+                        <RewardAsset
+                          name="USDC"
+                          value={`$${USD_BUDGET.toLocaleString()}`}
+                          usdValue={USD_BUDGET.toFixed(2)}
+                        />
+                      </div>
+                    )}
                     <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                       <RewardAsset
                         name="MOONEY"
@@ -2110,14 +2117,14 @@ export function ProjectRewards({
                       </ol>
                       <p className="text-[11px] text-gray-500 pt-1">
                         Read the full mechanism in the{' '}
-                        <Link
-                          href="https://docs.moondao.com/Projects/Project-System#retroactive-rewards"
+                        <a
+                          href="/docs/Projects/Project-System#retroactive-rewards"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="underline text-blue-300 hover:text-blue-200"
                         >
                           docs
-                        </Link>
+                        </a>
                         .
                       </p>
                     </div>

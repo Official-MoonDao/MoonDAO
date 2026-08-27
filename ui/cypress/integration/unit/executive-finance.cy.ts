@@ -1,0 +1,402 @@
+/**
+ * Executive finance helpers (headless, mocha + chai).
+ *
+ * Locks in monthly/annual burn assembly, cash-flow-positive runway, and
+ * exhaustion-date arithmetic — including month-end overflow.
+ */
+import { expect } from 'chai'
+import {
+  EB_BONUS_POOL_MONTHLY_USD,
+  STATED_ANNUAL_REVENUE_USD,
+  computeBurnModel,
+  getEbCoreMonthlyUSD,
+  runwayExhaustionDate,
+  runwayMonths,
+} from 'const/executiveFinance'
+import { aggregateHoldings } from '@/lib/treasury/assetBreakdown'
+import { ProgramSourceConfig, classifyTreasuryInflows } from '@/lib/treasury/programRevenue'
+import {
+  FRANK_MISSION_ID,
+  MISSION_STAGE,
+  TRACKED_LAUNCHPAD_RAISES,
+  effectiveMissionStage,
+  summariseLaunchpadUncollected,
+} from '@/lib/treasury/launchpadPipeline'
+
+describe('executiveFinance', () => {
+  describe('computeBurnModel', () => {
+    it('assembles monthly and annual burn from the approved cost stack', () => {
+      const quarterlyProjectBudgetUSD = 30000
+      const annualRevenueUSD = 12000
+      const burn = computeBurnModel({ quarterlyProjectBudgetUSD, annualRevenueUSD })
+
+      const ebCoreMonthlyUSD = getEbCoreMonthlyUSD()
+      const projectsMonthlyUSD = quarterlyProjectBudgetUSD / 3
+      const grossMonthlyUSD = ebCoreMonthlyUSD + projectsMonthlyUSD
+      const revenueMonthlyUSD = annualRevenueUSD / 12
+      const netMonthlyUSD = grossMonthlyUSD - revenueMonthlyUSD
+
+      expect(burn.ebCoreMonthlyUSD).to.equal(ebCoreMonthlyUSD)
+      expect(burn.ebBonusMonthlyUSD).to.equal(EB_BONUS_POOL_MONTHLY_USD)
+      expect(burn.projectsMonthlyUSD).to.equal(projectsMonthlyUSD)
+      expect(burn.grossMonthlyUSD).to.equal(grossMonthlyUSD)
+      expect(burn.revenueMonthlyUSD).to.equal(revenueMonthlyUSD)
+      expect(burn.netMonthlyUSD).to.equal(netMonthlyUSD)
+      expect(burn.netMonthlyWithBonusesUSD).to.equal(netMonthlyUSD + EB_BONUS_POOL_MONTHLY_USD)
+      expect(burn.annual.grossUSD).to.equal(grossMonthlyUSD * 12)
+      expect(burn.annual.revenueUSD).to.equal(annualRevenueUSD)
+      expect(burn.annual.netUSD).to.equal(netMonthlyUSD * 12)
+      expect(burn.annual.netWithBonusesUSD).to.equal(
+        (netMonthlyUSD + EB_BONUS_POOL_MONTHLY_USD) * 12
+      )
+    })
+
+    it('credits the stated MDP-249 figure when that is the annual revenue passed in', () => {
+      const burn = computeBurnModel({
+        quarterlyProjectBudgetUSD: 24310,
+        annualRevenueUSD: STATED_ANNUAL_REVENUE_USD,
+      })
+      expect(burn.annual.revenueUSD).to.equal(STATED_ANNUAL_REVENUE_USD)
+      expect(burn.revenueMonthlyUSD).to.equal(STATED_ANNUAL_REVENUE_USD / 12)
+    })
+  })
+
+  describe('runwayMonths', () => {
+    it('divides assets by net monthly burn', () => {
+      expect(runwayMonths(120000, 10000)).to.equal(12)
+    })
+
+    it('returns null when net burn is zero or negative (cash-flow positive)', () => {
+      expect(runwayMonths(100000, 0)).to.equal(null)
+      expect(runwayMonths(100000, -100)).to.equal(null)
+    })
+
+    it('returns 0 when there are no assets left to burn', () => {
+      expect(runwayMonths(0, 10000)).to.equal(0)
+    })
+  })
+
+  describe('runwayExhaustionDate', () => {
+    it('returns null when cash-flow positive', () => {
+      expect(runwayExhaustionDate(100000, 0, new Date(Date.UTC(2026, 0, 15)))).to.equal(null)
+    })
+
+    it('adds whole months without overflowing month-end start dates', () => {
+      const from = new Date(Date.UTC(2026, 0, 31))
+      const exhausted = runwayExhaustionDate(100, 100, from)
+      expect(exhausted).to.not.equal(null)
+      expect(exhausted!.toISOString().slice(0, 10)).to.equal('2026-02-28')
+    })
+
+    it('keeps mid-month dates on the same day of the target month', () => {
+      const from = new Date(Date.UTC(2026, 0, 15))
+      const exhausted = runwayExhaustionDate(100, 100, from)
+      expect(exhausted).to.not.equal(null)
+      expect(exhausted!.toISOString().slice(0, 10)).to.equal('2026-02-15')
+    })
+
+    it('adds the fractional-month day count after clamping', () => {
+      const from = new Date(Date.UTC(2026, 0, 31))
+      // 1.5 months: clamp 31 Jan → 28 Feb, then +15 days → 15 Mar
+      const exhausted = runwayExhaustionDate(150, 100, from)
+      expect(exhausted).to.not.equal(null)
+      expect(exhausted!.toISOString().slice(0, 10)).to.equal('2026-03-15')
+    })
+  })
+})
+
+describe('classifyTreasuryInflows', () => {
+  const CITIZEN = '0xC1717777777777777777777777777777777777C1'
+  const TEAM = '0xTEAM000000000000000000000000000000000000'.replace('TEAM', 'a11a')
+  const TERMINAL = '0xJB0000000000000000000000000000000000000b'.replace('JB', 'b2')
+  const ROUTER = '0xd3d3000000000000000000000000000000000003'
+  const SAFE = '0x5afe000000000000000000000000000000000005'
+  const STRANGER = '0x9999000000000000000000000000000000000009'
+
+  const sources: ProgramSourceConfig = {
+    citizen: [CITIZEN],
+    team: [TEAM],
+    launchpad: [TERMINAL, ''],
+    deprize: [ROUTER],
+    internal: [SAFE],
+  }
+
+  const tx = (from: string, valueETH: number, hash = from + valueETH) => ({
+    from,
+    valueETH,
+    timestamp: 1,
+    hash,
+  })
+
+  it('buckets each program by the sender that routed the ETH', () => {
+    const out = classifyTreasuryInflows(
+      [tx(CITIZEN, 1), tx(CITIZEN, 2), tx(TEAM, 3), tx(TERMINAL, 4), tx(ROUTER, 5)],
+      sources
+    )
+
+    expect(out.buckets.citizen).to.deep.equal({ totalETH: 3, txCount: 2 })
+    expect(out.buckets.team).to.deep.equal({ totalETH: 3, txCount: 1 })
+    expect(out.buckets.launchpad).to.deep.equal({ totalETH: 4, txCount: 1 })
+    expect(out.buckets.deprize).to.deep.equal({ totalETH: 5, txCount: 1 })
+    expect(out.unclassified.totalETH).to.equal(0)
+  })
+
+  it('matches senders case-insensitively', () => {
+    const out = classifyTreasuryInflows([tx(CITIZEN.toUpperCase(), 1)], sources)
+    expect(out.buckets.citizen.totalETH).to.equal(1)
+    expect(out.unclassified.txCount).to.equal(0)
+  })
+
+  it('keeps transfers between MoonDAO safes out of every revenue bucket', () => {
+    const out = classifyTreasuryInflows([tx(SAFE, 10)], sources)
+    expect(out.internalTransfers).to.deep.equal({ totalETH: 10, txCount: 1 })
+    expect(out.unclassified.totalETH).to.equal(0)
+    const revenueTotal = Object.values(out.buckets).reduce((s, b) => s + b.totalETH, 0)
+    expect(revenueTotal).to.equal(0)
+  })
+
+  it('surfaces unknown senders instead of absorbing them into a stream', () => {
+    const out = classifyTreasuryInflows([tx(STRANGER, 7), tx(STRANGER, 3)], sources)
+    expect(out.unclassified.totalETH).to.equal(10)
+    expect(out.unclassified.txCount).to.equal(2)
+    expect(out.unclassified.topSources[0]).to.deep.equal({
+      address: STRANGER.toLowerCase(),
+      totalETH: 10,
+      txCount: 2,
+    })
+    const revenueTotal = Object.values(out.buckets).reduce((s, b) => s + b.totalETH, 0)
+    expect(revenueTotal).to.equal(0)
+  })
+
+  it('ranks unattributed senders by value and caps the list', () => {
+    const out = classifyTreasuryInflows(
+      [tx('0xaaa1', 1), tx('0xbbb2', 9), tx('0xccc3', 5)],
+      sources,
+      2
+    )
+    expect(out.unclassified.topSources.map((s) => s.address)).to.deep.equal(['0xbbb2', '0xccc3'])
+  })
+
+  it('ignores zero-value transfers', () => {
+    const out = classifyTreasuryInflows([tx(CITIZEN, 0), tx(STRANGER, 0)], sources)
+    expect(out.buckets.citizen.txCount).to.equal(0)
+    expect(out.unclassified.txCount).to.equal(0)
+  })
+
+  it('does not treat an unconfigured program address as a wildcard match', () => {
+    // `launchpad` carries an empty string for chains without a terminal. An
+    // inflow from an unrelated sender must not be attributed to it.
+    const out = classifyTreasuryInflows([tx(STRANGER, 2)], sources)
+    expect(out.buckets.launchpad.totalETH).to.equal(0)
+    expect(out.unclassified.totalETH).to.equal(2)
+  })
+})
+
+describe('summariseLaunchpadUncollected', () => {
+  const RATES = { treasury: 0.025, liquidity: 0.05 }
+
+  const mission = (
+    missionId: number,
+    stage: number,
+    undistributedETH: number,
+    name?: string
+  ) => ({
+    missionId,
+    projectId: missionId + 100,
+    stage,
+    undistributedETH,
+    name,
+  })
+
+  it('counts the full 7.5% MoonDAO share, split into cash and liquidity', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(1, MISSION_STAGE.GOAL_MET, 100)],
+      RATES
+    )
+
+    expect(out.receivableETH).to.equal(7.5)
+    expect(out.receivableTreasuryETH).to.equal(2.5)
+    expect(out.receivableLiquidityETH).to.equal(5)
+    expect(out.missions[0].totalETH).to.equal(7.5)
+    expect(out.missions[0].treasuryETH).to.equal(2.5)
+    expect(out.missions[0].liquidityETH).to.equal(5)
+    expect(out.projectedETH).to.equal(7.5)
+    expect(out.raisedETH).to.equal(100)
+  })
+
+  it('projects on total raised, counting ETH already paid out', () => {
+    const out = summariseLaunchpadUncollected(
+      [
+        {
+          missionId: 7,
+          projectId: 107,
+          stage: MISSION_STAGE.GOAL_MET,
+          undistributedETH: 40,
+          distributedETH: 60,
+        },
+      ],
+      RATES
+    )
+
+    // 7.5% of the full 100 ETH raised is projected...
+    expect(out.raisedETH).to.equal(100)
+    expect(out.projectedETH).to.equal(7.5)
+    // ...but only the 40 ETH still held is outstanding.
+    expect(out.receivableETH).to.equal(3)
+    expect(out.missions[0].collectedETH).to.be.closeTo(4.5, 1e-9)
+  })
+
+  it('keeps a refunding mission out of the projection', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(1, MISSION_STAGE.REFUNDING, 100)],
+      RATES
+    )
+    expect(out.projectedETH).to.equal(0)
+    expect(out.raisedETH).to.equal(0)
+    expect(out.forfeitedETH).to.equal(7.5)
+  })
+
+  it('defaults to the on-chain launchpad split when no rates are passed', () => {
+    const out = summariseLaunchpadUncollected([mission(1, MISSION_STAGE.GOAL_MET, 100)])
+    expect(out.receivableETH).to.be.closeTo(7.5, 1e-9)
+    expect(out.receivableTreasuryETH).to.be.closeTo(2.5, 1e-9)
+    expect(out.receivableLiquidityETH).to.be.closeTo(5, 1e-9)
+  })
+
+  it('treats a funded mission as earned and one still raising as contingent', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(1, MISSION_STAGE.GOAL_MET, 100), mission(2, MISSION_STAGE.RAISING, 40)],
+      RATES
+    )
+
+    expect(out.receivableETH).to.equal(7.5)
+    expect(out.contingentETH).to.equal(3)
+    expect(out.contingentTreasuryETH).to.equal(1)
+    expect(out.contingentLiquidityETH).to.equal(2)
+    expect(out.receivableMissions).to.equal(1)
+    expect(out.contingentMissions).to.equal(1)
+    expect(out.forfeitedETH).to.equal(0)
+  })
+
+  it('books nothing for refunding missions and reports them as forfeited', () => {
+    const out = summariseLaunchpadUncollected(
+      [
+        mission(1, MISSION_STAGE.REFUNDING, 100),
+        mission(2, MISSION_STAGE.REFUND_WINDOW_PASSED, 100),
+      ],
+      RATES
+    )
+
+    expect(out.receivableETH).to.equal(0)
+    expect(out.contingentETH).to.equal(0)
+    expect(out.forfeitedETH).to.equal(15)
+    expect(out.refundingMissions).to.equal(2)
+  })
+
+  it('treats an unrecognised stage as unearned rather than assuming collection', () => {
+    const out = summariseLaunchpadUncollected([mission(1, 99, 100)], RATES)
+    expect(out.receivableETH).to.equal(0)
+    expect(out.contingentETH).to.equal(7.5)
+  })
+
+  it('skips missions holding nothing', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(1, MISSION_STAGE.GOAL_MET, 0), mission(2, MISSION_STAGE.RAISING, -5)],
+      RATES
+    )
+    expect(out.receivableETH).to.equal(0)
+    expect(out.contingentETH).to.equal(0)
+    expect(out.receivableMissions).to.equal(0)
+    expect(out.contingentMissions).to.equal(0)
+  })
+
+  it('sums several funded missions at the configured rates', () => {
+    const out = summariseLaunchpadUncollected(
+      [
+        mission(1, MISSION_STAGE.GOAL_MET, 200),
+        mission(2, MISSION_STAGE.GOAL_MET, 300),
+        mission(3, MISSION_STAGE.RAISING, 100),
+      ],
+      RATES
+    )
+    expect(out.receivableETH).to.equal(37.5)
+    expect(out.contingentETH).to.equal(7.5)
+    expect(out.receivableMissions).to.equal(2)
+  })
+
+  it('returns an empty summary for no missions', () => {
+    const out = summariseLaunchpadUncollected([])
+    expect(out.receivableETH).to.equal(0)
+    expect(out.contingentETH).to.equal(0)
+    expect(out.forfeitedETH).to.equal(0)
+    expect(out.missions).to.deep.equal([])
+  })
+
+  it('lists Frank by name with the ETH raised and the full 7.5% claim', () => {
+    const out = summariseLaunchpadUncollected(
+      [mission(FRANK_MISSION_ID, MISSION_STAGE.RAISING, 80, 'Go to Space with Frank White')],
+      RATES
+    )
+    expect(out.missions).to.have.length(1)
+    expect(out.missions[0].name).to.equal('Go to Space with Frank White')
+    expect(out.missions[0].raisedETH).to.equal(80)
+    expect(out.missions[0].treasuryETH).to.equal(2)
+    expect(out.missions[0].liquidityETH).to.equal(4)
+    expect(out.missions[0].totalETH).to.equal(6)
+    expect(out.missions[0].kind).to.equal('contingent')
+    expect(out.contingentETH).to.equal(6)
+    expect(out.projectedETH).to.equal(6)
+  })
+
+  it('always tracks Frank so a failed registry read cannot drop the projection', () => {
+    const frank = TRACKED_LAUNCHPAD_RAISES.find((r) => r.missionId === FRANK_MISSION_ID)
+    expect(frank, 'Frank must be a tracked raise').to.not.equal(undefined)
+    // Needs a token to recover the project id without Tableland, and a floor so
+    // the line degrades to a marked estimate rather than vanishing.
+    expect(frank!.tokenAddress).to.match(/^0x[a-fA-F0-9]{40}$/)
+    expect(frank!.fallbackOnChainRaisedUSD).to.be.greaterThan(0)
+  })
+
+  it('does not forfeit Frank when MissionCreator still reports the first-round refund stage', () => {
+    const stale = {
+      missionId: FRANK_MISSION_ID,
+      projectId: 40,
+      stage: MISSION_STAGE.REFUND_WINDOW_PASSED,
+      undistributedETH: 80,
+    }
+    expect(effectiveMissionStage(stale)).to.equal(MISSION_STAGE.RAISING)
+    const out = summariseLaunchpadUncollected([stale], RATES)
+    expect(out.contingentETH).to.equal(6)
+    expect(out.forfeitedETH).to.equal(0)
+    expect(out.missions[0].kind).to.equal('contingent')
+  })
+})
+
+describe('aggregateHoldings', () => {
+  it('rolls WETH into ETH and WBTC into BTC, and groups stables', () => {
+    const out = aggregateHoldings([
+      { symbol: 'ETH', amount: 10, usd: 20000 },
+      { symbol: 'WETH', amount: 2, usd: 4000 },
+      { symbol: 'WBTC', amount: 0.5, usd: 30000 },
+      { symbol: 'USDC', amount: 1000, usd: 1000 },
+      { symbol: 'DAI', amount: 500, usd: 500 },
+    ])
+
+    expect(out.map((r) => r.label)).to.deep.equal(['ETH', 'BTC', 'Stablecoins'])
+    expect(out[0].amount).to.equal(12)
+    expect(out[0].usd).to.equal(24000)
+    expect(out[1].amount).to.equal(0.5)
+    expect(out[1].usd).to.equal(30000)
+    expect(out[2].usd).to.equal(1500)
+    expect(out[2].amount).to.equal(null)
+  })
+
+  it('drops dust and keeps other tokens as their own rows', () => {
+    const out = aggregateHoldings([
+      { symbol: 'ETH', amount: 1, usd: 2000 },
+      { symbol: 'DUST', amount: 1, usd: 0.4 },
+      { symbol: 'LINK', amount: 10, usd: 150 },
+    ])
+    expect(out.map((r) => r.label)).to.deep.equal(['ETH', 'LINK'])
+  })
+})

@@ -1,6 +1,10 @@
 export const CITIZEN_PENDING_IMAGE_JOB_KEY = 'CreateCitizen_pendingImageJob'
 
-/** Max age before we stop resuming a job (slightly above client poll ceiling). */
+/**
+ * Max age before we stop resuming an 'uploading' job (slightly above client
+ * poll ceiling). Once a job reaches 'polling' it has a real comfy.icu jobId
+ * that stays resumable far longer than this — see decideImageResumeAction.
+ */
 export const PENDING_IMAGE_JOB_TTL_MS = 8 * 60 * 1000
 
 export type PendingImageJobStatus = 'uploading' | 'polling'

@@ -3,7 +3,11 @@ import {
   getGenerationSourceImage,
   getReviewPreviewFile,
   hasAiPortraitImage,
+  isGeneratedAiPortraitFile,
+  isUsableAiPortrait,
+  restoredCitizenImageLooksLikeAi,
 } from '../lib/image-generator/citizenOnboardingImage'
+import { comfyJobStatusUrl, parseComfyJobStatus } from '../lib/image-generator/pollComfyImageJob'
 
 function mockFile(name: string): File {
   return new File(['x'], name, { type: 'image/png' })
@@ -123,7 +127,7 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: true,
       }),
       'restart-generation',
-      'uploading + source restarts',
+      'uploading + source restarts'
     )
     expectEqual(
       decideImageResumeAction({
@@ -133,20 +137,37 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: false,
       }),
       'none',
-      'uploading without source cannot restart',
+      'uploading without source cannot restart'
     )
   })
 
-  it('does nothing for stale jobs or when AI portrait already ready', () => {
+  // The exact reported bug: comfy.icu jobs were completing successfully, but
+  // citizens who took a while to return (e.g. funding their wallet via
+  // onramp) had their local job timer exceed the staleness window, so a
+  // finished portrait was silently discarded and the mint fell back to the
+  // raw uploaded photo. A 'polling' job's jobId stays valid on comfy.icu far
+  // longer than the local staleness window, so staleness alone must not
+  // block resuming it.
+  it('resumes a stale polling job instead of discarding a finished portrait', () => {
+    const action = decideImageResumeAction({
+      job: { status: 'polling', jobId: 'x' },
+      jobStale: true,
+      hasAiPortraitReady: false,
+      hasSourceImage: true,
+    })
+    expectEqual(action, 'resume-polling', 'stale polling job still resumes')
+  })
+
+  it('does nothing for a stale uploading job or when AI portrait already ready', () => {
     expectEqual(
       decideImageResumeAction({
-        job: { status: 'polling', jobId: 'x' },
+        job: { status: 'uploading' },
         jobStale: true,
         hasAiPortraitReady: false,
         hasSourceImage: true,
       }),
       'none',
-      'stale job ignored',
+      'stale uploading job ignored (no jobId to recover)'
     )
     expectEqual(
       decideImageResumeAction({
@@ -156,7 +177,7 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: true,
       }),
       'none',
-      'already have AI portrait',
+      'already have AI portrait'
     )
     expectEqual(
       decideImageResumeAction({
@@ -166,7 +187,7 @@ describe('citizenOnboardingImage', () => {
         hasSourceImage: true,
       }),
       'none',
-      'no job',
+      'no job'
     )
   })
 
@@ -186,6 +207,94 @@ describe('citizenOnboardingImage', () => {
 
   // Regression: after Privy return, cache often had full input + stale fitted citizenImage
   // but not aiPortraitReady — old UI showed the full upload on Review.
+  it('treats comfy download filenames as AI even when the session flag is missing', () => {
+    const crop = mockFile('face-crop.jpg')
+    const ai = mockFile('image_VE52rnl_BVdbgou9tQbEF.png')
+    expectTruthy(isGeneratedAiPortraitFile(ai), 'png job filename')
+    expectTruthy(
+      isGeneratedAiPortraitFile(mockFile('image_VE52rnl_BVdbgou9tQbEF.jpg')),
+      'restored jpeg'
+    )
+    expectFalsy(isGeneratedAiPortraitFile(crop), 'user crop filename')
+    expectFalsy(
+      isGeneratedAiPortraitFile(mockFile('image_1234.jpg')),
+      'common camera/upload name is not a Comfy job id'
+    )
+    expectFalsy(
+      isGeneratedAiPortraitFile(mockFile('image_20240115.png')),
+      'date-stamped upload is not a Comfy job id'
+    )
+    expectTruthy(isUsableAiPortrait(ai, crop, false), 'usable without session flag')
+    expectFalsy(
+      isUsableAiPortrait(mockFile('image_1234.jpg'), mockFile('image_1234.jpg'), false),
+      'same-name user upload is not usable AI'
+    )
+
+    const preview = getReviewPreviewFile({
+      citizenImage: ai,
+      croppedInputImage: crop,
+      isImageGenerating: false,
+      hasPendingImageJob: false,
+      aiPortraitReady: false,
+    })
+    expectEqual(preview, ai, 'AI file wins without session flag')
+  })
+
+  it('restore does not treat image_* user photos as AI via filename or dataURL', () => {
+    const userPhoto = {
+      name: 'image_1234.jpg',
+      data: 'data:image/jpeg;base64,AAA',
+    }
+    const crop = { name: 'image_1234.jpg', data: 'data:image/jpeg;base64,AAA' }
+    expectFalsy(restoredCitizenImageLooksLikeAi(userPhoto, crop), 'same-name user upload is not AI')
+    expectFalsy(
+      restoredCitizenImageLooksLikeAi(userPhoto, undefined),
+      'user image_* name alone is not AI'
+    )
+    const ai = {
+      name: 'image_VE52rnl_BVdbgou9tQbEF.jpg',
+      data: 'data:image/jpeg;base64,BBB',
+    }
+    expectTruthy(
+      restoredCitizenImageLooksLikeAi(ai, crop),
+      'Comfy filename with different bytes is AI'
+    )
+    expectTruthy(
+      restoredCitizenImageLooksLikeAi(ai, undefined),
+      'Comfy filename without crop is AI'
+    )
+  })
+
+  it('does not treat a fitted fallback as AI just because it is a different File', () => {
+    const crop = mockFile('face-crop.jpg')
+    const fitted = mockFile('face-crop.jpg')
+    expectFalsy(isGeneratedAiPortraitFile(fitted), 'fallback keeps user filename')
+    expectFalsy(isUsableAiPortrait(fitted, crop, false), 'fallback is not AI without flag')
+  })
+
+  it('polls a single comfy run by id instead of listing every job', () => {
+    expectEqual(
+      comfyJobStatusUrl('/api/image-gen/citizen-image', 'VE52rnl_BVdbgou9tQbEF'),
+      '/api/image-gen/citizen-image?id=VE52rnl_BVdbgou9tQbEF',
+      'status url'
+    )
+    const job = { id: 'VE52rnl_BVdbgou9tQbEF', status: 'COMPLETED' }
+    expectEqual(parseComfyJobStatus(job, 'VE52rnl_BVdbgou9tQbEF'), job, 'single-run payload')
+    expectEqual(
+      parseComfyJobStatus([job, { id: 'other' }], 'VE52rnl_BVdbgou9tQbEF'),
+      job,
+      'legacy list payload'
+    )
+    try {
+      parseComfyJobStatus({ id: 'other' }, 'VE52rnl_BVdbgou9tQbEF')
+      throw new Error('expected mismatched id to throw')
+    } catch (err: any) {
+      if (!String(err?.message).includes('did not match')) {
+        throw err
+      }
+    }
+  })
+
   it('Privy-return regression: stale full-size citizenImage must not win over crop', () => {
     const full = mockFile('vacation-full.jpg')
     const crop = mockFile('face-crop.jpg')

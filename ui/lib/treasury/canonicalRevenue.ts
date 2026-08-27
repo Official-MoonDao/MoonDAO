@@ -14,16 +14,12 @@
  *        &action=txlistinternal&address=0xAF26a002d716508b7e375f1f620338442F5470c0\
  *        &startblock=0&endblock=99999999&sort=asc&apikey=YOUR_KEY"
  */
-import {
-  CITIZEN_ADDRESSES,
-  TEAM_ADDRESSES,
-  MOONDAO_ARBITRUM_TREASURY,
-} from 'const/config'
+import { CITIZEN_ADDRESSES, TEAM_ADDRESSES, MOONDAO_ARBITRUM_TREASURY } from 'const/config'
 
 const CITIZEN_ADDRESS = CITIZEN_ADDRESSES['arbitrum']
 const TEAM_ADDRESS = TEAM_ADDRESSES['arbitrum']
 
-interface InternalTx {
+export interface InternalTx {
   blockNumber: string
   timeStamp: string
   hash: string
@@ -41,6 +37,16 @@ interface TxRecord {
 
 let memo: { fetchedAt: number; txs: InternalTx[] } | null = null
 const TTL_MS = 10 * 60 * 1000 // 10 min
+
+/**
+ * Every internal (contract-routed) transaction touching the Arbitrum treasury,
+ * memoised for 10 minutes. Exported so other revenue helpers can classify the
+ * same list instead of each paying for its own Etherscan round trip — the free
+ * tier throttles at 5 req/sec and this endpoint already makes several calls.
+ */
+export async function fetchTreasuryInternalTxs(): Promise<InternalTx[]> {
+  return fetchAllInternalTxs()
+}
 
 async function fetchAllInternalTxs(): Promise<InternalTx[]> {
   if (memo && Date.now() - memo.fetchedAt < TTL_MS) {
@@ -73,9 +79,7 @@ async function fetchAllInternalTxs(): Promise<InternalTx[]> {
       // per sec rate limit reached" when we're throttled. Treat as retryable.
       if (data.status !== '1') {
         const resultStr = typeof data.result === 'string' ? data.result : ''
-        const isRateLimit =
-          data.message === 'NOTOK' ||
-          /rate limit|max calls/i.test(resultStr)
+        const isRateLimit = data.message === 'NOTOK' || /rate limit|max calls/i.test(resultStr)
         if (isRateLimit && attempt < maxAttempts) {
           const backoff = 600 * attempt
           await new Promise((r) => setTimeout(r, backoff))
@@ -110,20 +114,14 @@ function filterFromTo(
   const toLc = to.toLowerCase()
   return txs
     .filter(
-      (t) =>
-        t.from?.toLowerCase() === fromLc &&
-        t.to?.toLowerCase() === toLc &&
-        t.isError === '0'
+      (t) => t.from?.toLowerCase() === fromLc && t.to?.toLowerCase() === toLc && t.isError === '0'
     )
     .map((t) => ({
       timestamp: parseInt(t.timeStamp, 10) * 1000,
       valueETH: parseInt(t.value, 10) / 1e18,
       hash: t.hash,
     }))
-    .filter(
-      (t) =>
-        t.valueETH > 0 && t.timestamp >= startMs && t.timestamp <= endMs
-    )
+    .filter((t) => t.valueETH > 0 && t.timestamp >= startMs && t.timestamp <= endMs)
     .sort((a, b) => a.timestamp - b.timestamp)
 }
 

@@ -16,8 +16,12 @@ export type RegionRestriction = {
   // don't briefly flash a creation flow before discovering the user is in a
   // restricted region.
   isLoading: boolean
-  // True when geo resolution failed after retries. Callers gating personal-data
-  // creation flows should treat this as "unresolved" rather than "allowed".
+  // True when geo resolution failed after retries (network error, timeout,
+  // etc.) rather than resolving to a definite country. This is distinct from
+  // `isRestricted`, which is only ever true for a *confirmed* EU/EEA/UK
+  // country code -- an error here does not mean the visitor is restricted.
+  // Whether to treat an unresolved lookup as "allow" or "block" is a
+  // per-flow decision for the caller (see usage notes below).
   isError: boolean
 }
 
@@ -30,11 +34,19 @@ export type RegionRestriction = {
  * (citizen / team creation). Detection comes from Vercel/Cloudflare geo headers
  * via `/api/geo/country`.
  *
- * This client hook is only a UX gate; it retries on error (rather than silently
- * failing open after one failed fetch) and surfaces `isError` so creation pages
- * can avoid rendering the wizard on an unresolved region. The authoritative
+ * This client hook is only a UX gate; it retries on error rather than
+ * silently failing open after one failed fetch, and surfaces `isError` so
+ * callers can decide how to handle an unresolved lookup. The authoritative
  * GDPR block is enforced server-side in the data-persistence routes (see
- * `enforceRegionNotRestricted`), which return HTTP 451 regardless of the client.
+ * `enforceRegionNotRestricted`), which return HTTP 451 regardless of the
+ * client -- so it's safe for personal-data creation flows (citizen/team) to
+ * fail *open* on `isError` and let the visitor into the flow, rather than
+ * assuming an unresolved lookup means "restricted". Failing closed on error
+ * incorrectly blocked non-EU/EEA visitors (e.g. Russia) whenever their geo
+ * lookup happened to fail, even though they were never actually in a
+ * restricted region. Flows with additional non-GDPR regulatory concerns
+ * (e.g. DePrize betting, which also cares about unknown jurisdictions) may
+ * still choose to fail closed on `isError` -- that's a per-flow decision.
  */
 export default function useRegionRestriction(): RegionRestriction {
   const { data, error, isLoading } = useSWR<GeoCountryResponse>(

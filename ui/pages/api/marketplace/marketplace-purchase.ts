@@ -230,7 +230,16 @@ async function handler(req: any, res: any) {
       return res.status(status).send({ message })
     }
 
-    //Get the team email from the tx to address
+    // Derive the team that received this payment from the tx recipient. This
+    // is only reliable for ETH listings: `sendTransaction({ to: recipient })`
+    // makes tx.to the actual recipient, so "does that address own a Team NFT"
+    // is a trustworthy, un-spoofable check — which is exactly why the gift-
+    // citizenship flow below relies on it (gift listings are ETH-only). For
+    // ERC20 listings (USDC/MOONEY/DAI — most listings) the buyer instead calls
+    // `transfer()` ON THE TOKEN CONTRACT, so tx.to is the token contract
+    // address, which never owns a Team NFT. That silently produced an empty
+    // `ownedNFTs` and dropped the vendor email notification for every
+    // non-ETH purchase.
     const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
     const teamAddress = txReceipt.to
     const ownedNFTs = await getOwnedNFTs({
@@ -239,6 +248,23 @@ async function handler(req: any, res: any) {
     })
     const teamTokenId = ownedNFTs?.[0]?.id.toString()
 
+    // Resolve the listing row once, by its trusted on-chain-indexed id, so we
+    // have a currency-agnostic source of the vendor's teamId for the email
+    // lookup below and the gift-citizenship check doesn't need a second query.
+    const numericListingId = Number(listingId)
+    let listingRow: any = null
+    if (Number.isInteger(numericListingId) && numericListingId >= 0) {
+      try {
+        const listingRows = await queryTable(
+          DEFAULT_CHAIN_V5,
+          `SELECT * FROM ${MARKETPLACE_TABLE_NAMES[chainSlug]} WHERE id = ${numericListingId}`
+        )
+        listingRow = listingRows?.[0] || null
+      } catch (err: any) {
+        console.log('Error looking up listing for marketplace purchase:', err)
+      }
+    }
+
     // Gift-a-citizenship: when the purchased listing is a verified gift listing
     // on the EB team and the buyer paid at least the listing price, issue a
     // one-time free-citizen invite link. Generating the token server-side after
@@ -246,22 +272,18 @@ async function handler(req: any, res: any) {
     // authorization — buyers don't need to be operators.
     let giftLink: string | undefined
     if (isGift) {
-      const numericListingId = Number(listingId)
-
-      // Only query the table for a well-formed id on the EB team, so a bad
-      // listingId or non-EB payment can never produce malformed SQL. The
-      // authoritative accept/reject decision is made by validateGiftPurchase.
-      const canQueryListing =
-        Number.isInteger(numericListingId) &&
-        numericListingId >= 0 &&
+      // Security anchor: both the listing's own recorded teamId AND the
+      // on-chain-derived recipient's team must independently resolve to the
+      // EB team. The latter can't be spoofed by the client (it's derived from
+      // the real payment recipient), which is what actually proves the buyer
+      // paid the EB team and not some other address. validateGiftPurchase
+      // makes the authoritative accept/reject decision.
+      const giftListing =
+        listingRow &&
+        String(listingRow.teamId) === EB_TEAM_ID &&
         String(teamTokenId) === EB_TEAM_ID
-      const listingRows = canQueryListing
-        ? await queryTable(
-            DEFAULT_CHAIN_V5,
-            `SELECT * FROM ${MARKETPLACE_TABLE_NAMES[chainSlug]} WHERE id = ${numericListingId} AND teamId = ${teamTokenId}`
-          )
-        : []
-      const giftListing: any = listingRows?.[0]
+          ? listingRow
+          : undefined
 
       // Read the actual ETH value transferred so we can bind the payment to
       // this specific gift listing (see validateGiftPurchase).
@@ -302,11 +324,18 @@ async function handler(req: any, res: any) {
     // (Tableland hiccup, Typeform down/rate-limited, missing formId, etc.)
     // must NOT crash the request or block the buyer's receipt below — it just
     // means we fall back to notifying ops instead of the vendor directly.
+    // Prefer the listing's own teamId here (works for every currency); only
+    // fall back to the on-chain-derived id (ETH-only, see above) if the
+    // listing lookup came back empty.
+    const vendorTeamId =
+      listingRow?.teamId !== undefined && listingRow?.teamId !== null
+        ? listingRow.teamId
+        : teamTokenId
     let teamTypeformEmail = null
     try {
       const teamRows = await queryTable(
         DEFAULT_CHAIN_V5,
-        `SELECT * FROM ${TEAM_TABLE_NAMES[chainSlug]} WHERE id = '${teamTokenId}'`
+        `SELECT * FROM ${TEAM_TABLE_NAMES[chainSlug]} WHERE id = '${vendorTeamId}'`
       )
       const team: any = teamRows?.[0]
 

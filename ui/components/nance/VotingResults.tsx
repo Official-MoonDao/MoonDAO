@@ -71,7 +71,7 @@ export default function VotingResults({
         </div>
 
         {/* Summary Stats - Moved to top */}
-        <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-white/5 rounded-lg">
+        <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-white/5 rounded-lg">
           <div className="text-center">
             <p className="text-2xl font-bold text-white">{votes?.length || 0}</p>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Total Voters</p>

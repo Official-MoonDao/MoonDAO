@@ -14,7 +14,7 @@ type DashboardActiveProjectsProps = {
 export default function DashboardActiveProjects({
   currentProjects,
   usdBudget,
-  showBudget = true,
+  showBudget = false,
   maxProjects = 6,
 }: DashboardActiveProjectsProps) {
   const { quarter, year } = getRelativeQuarter(0)

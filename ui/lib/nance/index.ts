@@ -1,4 +1,4 @@
-import { MAX_BUDGET_USD, MOONDAO_ARBITRUM_TREASURY, MOONDAO_TREASURY } from 'const/config'
+import { ANNOUNCE_PROJECT_BUDGET, MAX_BUDGET_USD, MOONDAO_ARBITRUM_TREASURY, MOONDAO_TREASURY } from 'const/config'
 
 export function formatNumberUSStyle(n: string | number | bigint, compact: boolean = false) {
   return new Intl.NumberFormat('en-US', {
@@ -10,6 +10,15 @@ export function formatNumberUSStyle(n: string | number | bigint, compact: boolea
 /** Markdown project proposal template shown to authors and used as the canonical form. */
 export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): string {
   const maxFormatted = maxBudgetUsd.toLocaleString('en-US')
+  const maxAskBlurb = ANNOUNCE_PROJECT_BUDGET
+    ? `*Total ask must be ≤ **$${maxFormatted}** (1/5 of this quarter’s project budget — confirm the live figure on moondao.com/propose). Classify every dollar.*`
+    : `*Total ask must be ≤ the posted quarterly max (1/5 of this quarter’s project budget). Classify every dollar.*`
+  const maxTotalCell = ANNOUNCE_PROJECT_BUDGET
+    ? `*≤ $${maxFormatted}*`
+    : `*≤ posted quarterly max*`
+  const maxChecklist = ANNOUNCE_PROJECT_BUDGET
+    ? `- [ ] Ask ≤ posted quarterly max ($${maxFormatted})`
+    : `- [ ] Ask ≤ posted quarterly max`
 
   return `\n*Note: Please remove the italicized instructions before submitting. Incomplete Key Results, missing Novelty & Prior Art, or asks above the quarterly max will be returned for rewrite.*\n
 
@@ -132,7 +141,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 
 # Budget (Table C)
 
-*Total ask must be ≤ **$${maxFormatted}** (1/5 of this quarter’s project budget — confirm the live figure on moondao.com/propose). Classify every dollar.*
+${maxAskBlurb}
 
 **What MoonDAO funds:** labor for inspectable deliverables, and specialized equipment/services the work uniquely needs (with ownership/access terms).
 
@@ -145,7 +154,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 | *Foundational PC / home office* | *C — not allowed* | *$0* | *Remove* |
 | *Entity formation / tax / bailout* | *D — not allowed* | *$0* | *Remove* |
 | *Other overhead* | *E* | *$* | *Scrutinize* |
-| **Total** |  | *≤ $${maxFormatted}* |  |
+| **Total** |  | ${maxTotalCell} |  |
 
 *If success depends on a university, launch provider, or other partner: attach LOI, quote, or access MOU before the vote.*
 
@@ -159,7 +168,7 @@ export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): stri
 
 # Pre-submit checklist
 
-- [ ] Ask ≤ posted quarterly max ($${maxFormatted})
+${maxChecklist}
 - [ ] All required sections completed; italicized instructions removed
 - [ ] Key Results are non-empty and testable
 - [ ] Budget justified and within allowed categories
@@ -176,7 +185,7 @@ export const TEMPLATE = getProposalTemplate()
 export const FINAL_REPORT_TEMPLATE = `
 *The title of the project will be included at the top of the file."
 
-*\\*Please read [Projects System v6: Completion](https://docs.moondao.com/Projects/Project-System#completion) before submitting to understand the process of submitting a project final report. When ready, download this doc as a markdown file (File \\> Download \\> Markdown (.md)) and then upload and submit it at [https://moondao.com/report](https://moondao.com/report)*
+*\\*Please read [Projects System v6: Completion](/docs/Projects/Project-System#completion) before submitting to understand the process of submitting a project final report. When ready, download this doc as a markdown file (File \\> Download \\> Markdown (.md)) and then upload and submit it at [https://moondao.com/report](https://moondao.com/report)*
 
 ## Original Proposal
 

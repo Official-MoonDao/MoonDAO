@@ -457,7 +457,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
             subscriptionContract={citizenContract}
             validPass={subIsValid}
             expiresAt={expiresAt}
-            type="citizen'"
+            type="citizen"
           />
         )}
 

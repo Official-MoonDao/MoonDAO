@@ -3,9 +3,10 @@ import { useMemo } from 'react'
 import { Chain } from 'thirdweb'
 
 export default function useSafeApiKit(selectedChain: Chain): SafeApiKit {
+  const chainId = selectedChain?.id
   return useMemo(() => {
     return new SafeApiKit({
-      chainId: BigInt(selectedChain.id),
+      chainId: BigInt(chainId),
     })
-  }, [selectedChain])
+  }, [chainId])
 }

@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 interface DisclaimerProps {
   isCentered?: boolean
 }
@@ -13,9 +11,9 @@ function TokenLink({ href, label }: TokenLinkProps) {
   return (
     <span className="opacity-[60%] hover:opacity-[100%]">
       <u>
-        <Link id="token-link" href={href} target="_blank">
+        <a id="token-link" href={href} target="_blank">
           {label}
-        </Link>
+        </a>
       </u>
     </span>
   )
@@ -28,19 +26,19 @@ export default function Disclaimer({ isCentered = false }: DisclaimerProps) {
         <span className="opacity-[60%]">
           <strong>Disclaimer:</strong> There is no expectation of profit with the $MOONEY token. It is a governance token. You are not receiving fractionalized ownership of the DAO's assets in exchange for the token, check the{' '}
           <u>
-            <Link
+            <a
               id="FAQ-link"
               className="hover:opacity-[100%]"
-              href="https://docs.moondao.com/About/FAQ"
+              href="/docs/About/FAQ"
               target="_blank"
             >
               FAQ
-            </Link>
+            </a>
           </u>
           . Always ensure you are interacting with an{' '}
           <TokenLink
             label="official token address"
-            href="https://docs.moondao.com/Governance/Governance-Tokens"
+            href="/docs/Governance/Governance-Tokens"
           />
           :{' '}
           <TokenLink

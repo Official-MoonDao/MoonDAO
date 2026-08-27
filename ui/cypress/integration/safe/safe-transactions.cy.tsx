@@ -55,6 +55,7 @@ describe('SafeTransactions', () => {
           signatures: null,
         },
       ],
+      isLoadingTransactions: false,
       transactionsToSign: [],
       transactionsToExecute: [],
       fetchPendingTransactions: fetchPendingTransactionsStub,

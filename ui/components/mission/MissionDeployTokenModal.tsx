@@ -163,7 +163,7 @@ export default function MissionDeployTokenModal({
               ACCEPT ALL{' '}
               <Link
                 className="text-blue-500 hover:underline"
-                href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+                href="/docs/Launchpad/Launchpad-Disclaimer"
                 target="_blank"
                 rel="noreferrer"
               >

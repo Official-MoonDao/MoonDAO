@@ -52,10 +52,13 @@ describe('MissionTeamSection', () => {
   })
 
   it('renders TeamMembers when teamHats provided', () => {
+    // Wearers come from the Hats subgraph as objects keyed by address, which is
+    // what useUniqueHatWearers reads (`w.id`). Plain strings yield addressless
+    // wearers and exercise nothing.
     const mockTeamHats = [
       {
         id: '1',
-        wearers: ['0x1234567890123456789012345678901234567890'],
+        wearers: [{ id: '0x1234567890123456789012345678901234567890' }],
       },
     ]
 

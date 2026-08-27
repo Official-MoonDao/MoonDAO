@@ -261,7 +261,7 @@ export default function ContributionsPage() {
               <>
                 Did something that advances MoonDAO's mission? Submit it here. Each quarter, senators evaluate all submissions and distribute a reward pool in ETH and vMOONEY based on impact.{' '}
                 <a
-                  href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards"
+                  href="/docs/Reference/Nested-Docs/Community-Rewards"
                   className="text-blue-400 hover:text-blue-300 underline"
                   target="_blank"
                   rel="noreferrer"

@@ -36,7 +36,7 @@ const LinkTree: React.FC = () => {
     {
       name: 'Documentation',
       description: 'Learn about our mission & governance',
-      url: 'https://docs.moondao.com',
+      url: '/docs',
       icon: DocumentTextIcon,
     },
     {

@@ -1,4 +1,9 @@
-import { PROJECT_SYSTEM_CONFIG, NEXT_QUARTER_BUDGET_USD, MAX_BUDGET_USD } from 'const/config'
+import {
+  ANNOUNCE_PROJECT_BUDGET,
+  PROJECT_SYSTEM_CONFIG,
+  NEXT_QUARTER_BUDGET_USD,
+  MAX_BUDGET_USD,
+} from 'const/config'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -37,6 +42,7 @@ export default function ProjectBanner() {
   const isDeadlinePassed = new Date() > SUBMISSION_DEADLINE
 
   if (
+    !ANNOUNCE_PROJECT_BUDGET ||
     !isVisible ||
     isOnProjectPage ||
     isOnFullscreenPage ||

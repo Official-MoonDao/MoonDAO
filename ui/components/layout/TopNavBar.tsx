@@ -271,7 +271,7 @@ const TopNavBar = ({
               spare. */}
           <div className="flex items-center space-x-2 navwide:space-x-4 flex-shrink-0">
             <div className="flex items-center space-x-3 navwide:space-x-6">
-              <div className="max-w-[200px] overflow-hidden scale-100 navwide:scale-105 min-w-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
+              <div className="max-w-[200px] overflow-hidden scale-100 navwide:scale-105 min-w-0 flex-shrink-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
                 <PrivyConnectWallet
                   type="desktop"
                   citizenContract={citizenContract}

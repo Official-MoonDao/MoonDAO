@@ -1138,3 +1138,17 @@ body {
     animation: shooting-star-move-trail 2.2s ease-out forwards;
   }
 }
+
+/* Native docs callouts (converted from Obsidian > [!TIP] blocks). */
+.docs-callout {
+  border-left: 3px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+}
+.docs-callout-tip,
+.docs-callout-info,
+.docs-callout-note {
+  border-left-color: rgba(123, 151, 170, 0.8);
+}
