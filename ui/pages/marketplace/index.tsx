@@ -1,23 +1,9 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
-import MarketplaceABI from 'const/abis/MarketplaceTable.json'
-import TeamABI from 'const/abis/Team.json'
-import {
-  DEFAULT_CHAIN_V5,
-  MARKETPLACE_TABLE_ADDRESSES,
-  MARKETPLACE_TABLE_NAMES,
-  TEAM_ADDRESSES,
-  TEAM_TABLE_NAMES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useMemo, useState } from 'react'
-import { getContract, readContract } from 'thirdweb'
-import CitizenContext from '@/lib/citizen/citizen-context'
-import queryTable from '@/lib/tableland/queryTable'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/serverClient'
+import { useEffect, useMemo, useState } from 'react'
+import { fetchActiveListings } from '@/lib/marketplace/marketplaceTable'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useShallowQueryRoute } from '@/lib/utils/hooks/useShallowQueryRoute'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -49,11 +35,8 @@ type MarketplaceProps = {
 }
 
 export default function Marketplace({ listings }: MarketplaceProps) {
-  const { selectedChain } = useContext(ChainContextV5)
-  const { citizen } = useContext(CitizenContext)
   const router = useRouter()
   const shallowQueryRoute = useShallowQueryRoute()
-  const chainSlug = getChainSlug(selectedChain)
 
   const [filteredListings, setFilteredListings] = useState<MarketplaceListing[]>(listings || [])
   const [input, setInput] = useState('')
@@ -76,12 +59,6 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
   const ITEMS_PER_PAGE = 8 // 4 items per row x 2 rows
 
-  const teamContract = useContract({
-    chain: selectedChain,
-    address: TEAM_ADDRESSES[chainSlug],
-    abi: TeamABI as any,
-  })
-
   useChainDefault()
 
   // Handle URL parameters for pagination
@@ -102,14 +79,14 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
     if (selectedTeam !== 'all') {
       result = result.filter(
-        (listing: MarketplaceListing) => String(listing.teamId) === selectedTeam
+        (listing: MarketplaceListing) => String(listing.teamId) === selectedTeam,
       )
     }
 
     if (input.trim() !== '') {
       const query = input.toLowerCase()
       result = result.filter((listing: MarketplaceListing) =>
-        listing.title.toLowerCase().includes(query)
+        listing.title.toLowerCase().includes(query),
       )
     }
 
@@ -151,7 +128,11 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                 className="w-full cursor-pointer appearance-none rounded-xl bg-black/20 backdrop-blur-sm border border-white/10 py-2 pl-3 pr-9 text-sm text-white focus:outline-none focus:ring-1 focus:ring-white/30"
               >
                 {teamOptions.map((option) => (
-                  <option key={option.value} value={option.value} className="bg-dark-cool text-white">
+                  <option
+                    key={option.value}
+                    value={option.value}
+                    className="bg-dark-cool text-white"
+                  >
                     {option.label}
                   </option>
                 ))}
@@ -196,8 +177,6 @@ export default function Marketplace({ listings }: MarketplaceProps) {
                       <MarketplaceListing
                         key={`marketplace-listing-${startIdx + i}`}
                         listing={listing}
-                        teamContract={teamContract}
-                        selectedChain={selectedChain}
                       />
                     ))
                   })()
@@ -233,128 +212,10 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
 export async function getStaticProps() {
   try {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
-
-    const now = Math.floor(Date.now() / 1000)
-
-    const marketplaceTableContract = getContract({
-      client: serverClient,
-      chain,
-      address: MARKETPLACE_TABLE_ADDRESSES[chainSlug],
-      abi: MarketplaceABI as any,
-    })
-    const teamContract = getContract({
-      client: serverClient,
-      chain,
-      address: TEAM_ADDRESSES[chainSlug],
-      abi: TeamABI as any,
-    })
-
-    // The table name is a known constant, so prefer it and avoid an RPC call on
-    // the critical path. Only fall back to the on-chain lookup if the constant
-    // is somehow missing. A rate-limited getTableName() previously took down the
-    // entire page (every render fell into the catch block below).
-    let marketplaceTableName: any = MARKETPLACE_TABLE_NAMES[chainSlug]
-    if (!marketplaceTableName) {
-      marketplaceTableName = await readContract({
-        contract: marketplaceTableContract,
-        method: 'getTableName',
-      })
-    }
-
-    const statement = `SELECT * FROM ${marketplaceTableName} WHERE (startTime = 0 OR startTime <= ${now}) AND (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC`
-
-    const allListings = await queryTable(chain, statement)
-
-    // Resolve each team's expiration only once. Multiple listings frequently
-    // share a teamId, so de-duping drastically cuts the number of RPC calls and
-    // therefore the chance of getting rate limited under heavy traffic.
-    const uniqueTeamIds = Array.from(
-      new Set(allListings.map((listing: any) => listing.teamId))
-    )
-
-    async function getTeamExpiration(
-      teamId: any,
-      retries = 3,
-      delay = 500
-    ): Promise<number | null> {
-      for (let attempt = 0; attempt < retries; attempt++) {
-        try {
-          const teamExpiration = await readContract({
-            contract: teamContract,
-            method: 'expiresAt',
-            params: [teamId],
-          })
-          return +teamExpiration.toString()
-        } catch (error) {
-          if (attempt < retries - 1) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, delay * Math.pow(2, attempt))
-            )
-            continue
-          }
-          // Persistent failure (likely rate limiting). Return null so the
-          // caller can decide to "fail open" rather than dropping listings.
-          return null
-        }
-      }
-      return null
-    }
-
-    // Process unique teams in batches to check expiration and avoid rate limiting
-    const BATCH_SIZE = 10
-    const DELAY_BETWEEN_BATCHES = 100 // ms
-    const teamExpirations = new Map<any, number | null>()
-
-    for (let i = 0; i < uniqueTeamIds.length; i += BATCH_SIZE) {
-      const batch = uniqueTeamIds.slice(i, i + BATCH_SIZE)
-
-      await Promise.all(
-        batch.map(async (teamId: any) => {
-          teamExpirations.set(teamId, await getTeamExpiration(teamId))
-        })
-      )
-
-      // Add delay between batches to avoid rate limiting
-      if (i + BATCH_SIZE < uniqueTeamIds.length) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, DELAY_BETWEEN_BATCHES)
-        )
-      }
-    }
-
-    // Keep a listing when its team is unexpired. If the expiration could not be
-    // resolved (null, e.g. rate limited), fail open and keep the listing so a
-    // transient RPC issue never wipes out the entire marketplace.
-    const validListings = allListings.filter((listing: any) => {
-      const expiration = teamExpirations.get(listing.teamId)
-      return expiration === null || expiration === undefined || expiration > now
-    })
-
-    // Team names are a nice-to-have label. A failure here must not discard the
-    // listings we already fetched, so resolve it best-effort.
-    let allTeamNames: any[] = []
-    try {
-      allTeamNames = await queryTable(
-        chain,
-        `SELECT id, name FROM ${TEAM_TABLE_NAMES[chainSlug]}`
-      )
-    } catch (error) {
-      console.error('Failed to fetch team names for marketplace listings:', error)
-    }
-
-    const listingsWithTeamNames = validListings.map((listing: any) => {
-      return {
-        ...listing,
-        teamName: allTeamNames.find((team: any) => team.id === listing.teamId)?.name,
-      }
-    })
+    const listings = await fetchActiveListings(DEFAULT_CHAIN_V5)
 
     return {
-      props: {
-        listings: listingsWithTeamNames,
-      },
+      props: { listings },
       revalidate: 60,
     }
   } catch (error) {

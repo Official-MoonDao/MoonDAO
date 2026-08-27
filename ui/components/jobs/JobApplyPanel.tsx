@@ -1,9 +1,9 @@
-import { ArrowTopRightOnSquareIcon, LinkIcon } from '@heroicons/react/24/outline'
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
 import { formatDeadlineCountdown, formatPostedAt } from '@/lib/jobs/jobMetadata'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
+import ShareButtons from '@/components/layout/ShareButtons'
 
 type JobApplyPanelProps = {
   applyUrl?: string
@@ -14,14 +14,6 @@ type JobApplyPanelProps = {
   shareUrl: string
   shareText: string
   otherRolesCount?: number
-}
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  )
 }
 
 export default function JobApplyPanel({
@@ -43,19 +35,6 @@ export default function JobApplyPanel({
 
   const countdown = mounted ? formatDeadlineCountdown(deadline, currTime) : null
   const isClosed = countdown === 'Closed'
-
-  const xShareHref = `https://x.com/intent/tweet?text=${encodeURIComponent(
-    shareText
-  )}&url=${encodeURIComponent(shareUrl)}`
-
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(shareUrl)
-      toast.success('Link copied')
-    } catch {
-      toast.error('Could not copy the link')
-    }
-  }
 
   return (
     <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-700/30 to-slate-800/40 backdrop-blur-xl p-5 flex flex-col gap-4">
@@ -88,25 +67,7 @@ export default function JobApplyPanel({
         </p>
       )}
 
-      <div className="flex gap-2">
-        <a
-          href={xShareHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors"
-        >
-          <XIcon className="h-4 w-4" />
-          Share
-        </a>
-        <button
-          type="button"
-          onClick={copyLink}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white hover:bg-white/10 transition-colors"
-        >
-          <LinkIcon className="h-4 w-4" />
-          Copy link
-        </button>
-      </div>
+      <ShareButtons url={shareUrl} text={shareText} />
 
       {teamName && teamHref && (
         <div className="pt-4 border-t border-white/10">

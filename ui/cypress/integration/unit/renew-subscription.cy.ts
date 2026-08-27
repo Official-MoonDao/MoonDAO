@@ -44,9 +44,15 @@ function legacyBuggyCall({
   }
 }
 
-function thirdwebV5PayableValue(call: { value?: unknown } | null | undefined): bigint {
-  if (!call || call.value == null) return BigInt(0)
-  return BigInt(call.value.toString())
+/**
+ * Takes `unknown` on purpose: the legacy shape below has no top-level `value` at
+ * all, and a `{ value?: unknown }` parameter trips TypeScript's weak-type check
+ * ("no properties in common") for an object that only has `options`.
+ */
+function thirdwebV5PayableValue(call: unknown): bigint {
+  const value = (call as { value?: unknown } | null | undefined)?.value
+  if (value == null) return BigInt(0)
+  return BigInt(String(value))
 }
 
 describe('Issue #1537 — extend team subscription', () => {
@@ -60,9 +66,7 @@ describe('Issue #1537 — extend team subscription', () => {
     })
 
     expect(call).to.not.equal(null)
-    expect(call && 'options' in call && (call as any).options.value).to.equal(
-      COST_WEI.toString()
-    )
+    expect(call && 'options' in call && (call as any).options.value).to.equal(COST_WEI.toString())
     expect(thirdwebV5PayableValue(call)).to.equal(BigInt(0))
   })
 

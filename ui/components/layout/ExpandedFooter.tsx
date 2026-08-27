@@ -15,6 +15,7 @@ import {
 } from '@/components/assets'
 import Disclaimer from './Disclaimer'
 import LegalLinks from './LegalLinks'
+import ReportBugButton from './ReportBugButton'
 
 type SocialLink = {
   href: string
@@ -270,9 +271,7 @@ export function ExpandedFooter({
           {/* Social Links */}
           <div className="container mx-auto px-[5vw] xl:px-[2vw] max-w-[1200px] w-full">
             <div className="flex flex-col items-center border-t border-white/10 mt-6 pt-6">
-              <h3 className="text-sm font-medium text-gray-400 uppercase mb-4">
-                Follow Us
-              </h3>
+              <h3 className="text-sm font-medium text-gray-400 uppercase mb-4">Follow Us</h3>
               {/*
                 7 social icons at 40px + a 16px gap was overflowing on
                 ~360–390px viewports (the row needs ~376px but the
@@ -295,6 +294,9 @@ export function ExpandedFooter({
                     {link.icon}
                   </Link>
                 ))}
+              </div>
+              <div className="mb-6">
+                <ReportBugButton />
               </div>
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-gray-400 mb-4">
                 <Link href="/docs" className="hover:text-white transition-colors">

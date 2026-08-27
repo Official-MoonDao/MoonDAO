@@ -55,12 +55,7 @@ export type JobLocation = {
 }
 
 export type JobCommitmentType =
-  | 'full-time'
-  | 'part-time'
-  | 'contract'
-  | 'internship'
-  | 'bounty'
-  | 'volunteer'
+  'full-time' | 'part-time' | 'contract' | 'internship' | 'bounty' | 'volunteer'
 
 export type JobCommitment = {
   type?: JobCommitmentType
@@ -269,17 +264,26 @@ export function isPaidRole(compensation?: JobCompensation): boolean | undefined 
 }
 
 /**
- * Parse the on-chain `metadata` column. Accepts the v1 envelope, the legacy
- * `{ compensation, location }` object, and anything unrecognizable (which
- * degrades to "no metadata" rather than throwing on a job page).
+ * Parse the on-chain `metadata` column. Accepts a JSON string, an already-parsed
+ * object (Tableland's HTTP/SDK validators return TEXT JSON as an object — the
+ * same way citizen `location` comes back), the legacy `{ compensation, location }`
+ * shape, and anything unrecognizable (which degrades to "no metadata" rather
+ * than throwing on a job page).
  */
-export function parseJobMetadata(raw?: string | null): JobMetadataEnvelope {
-  if (!raw || typeof raw !== 'string' || raw.trim() === '') return EMPTY_JOB_METADATA
+export function parseJobMetadata(raw?: unknown): JobMetadataEnvelope {
+  if (raw == null || raw === '') return EMPTY_JOB_METADATA
 
   let parsed: any
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
+  if (typeof raw === 'string') {
+    if (raw.trim() === '') return EMPTY_JOB_METADATA
+    try {
+      parsed = JSON.parse(raw)
+    } catch {
+      return EMPTY_JOB_METADATA
+    }
+  } else if (isPlainObject(raw)) {
+    parsed = raw
+  } else {
     return EMPTY_JOB_METADATA
   }
   if (!isPlainObject(parsed)) return EMPTY_JOB_METADATA
@@ -355,6 +359,61 @@ export function buildJobMetadata(doc: JobPostingDoc, cid?: string): JobMetadataE
   }) as JobMetadataEnvelope
 }
 
+/**
+ * The authoring doc for a role is easy to paste whole: a structured-fields
+ * table, a `## Body (markdown)` heading, then the public posting, then internal
+ * notes. The live page only wants the public posting. This pulls that out and
+ * leaves a normal markdown body untouched.
+ */
+const BODY_SECTION_HEADING = /^#{1,3}\s+body(?:\s*\(.*\))?\s*$/i
+const INTERNAL_NOTES_HEADING = /^#{1,3}\s+notes on what changed\b/i
+const TABLE_ROW = /^\s*\|.+\|\s*$/
+const AUTHORING_TABLE_FIELD = /^\s*\|\s*(Title|Category|Summary|Compensation|Commitment|Location|Seniority|Application deadline|Apply URL|Skills)\s*\|/i
+
+export function extractPublicJobBody(markdown: string): string {
+  if (!markdown || !markdown.trim()) return ''
+
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n')
+
+  let start = 0
+  for (let i = 0; i < lines.length; i++) {
+    if (BODY_SECTION_HEADING.test(lines[i].trim())) {
+      start = i + 1
+      break
+    }
+  }
+
+  let end = lines.length
+  for (let i = start; i < lines.length; i++) {
+    if (INTERNAL_NOTES_HEADING.test(lines[i].trim())) {
+      end = i
+      break
+    }
+  }
+
+  return stripLeadingAuthoringTable(lines.slice(start, end).join('\n'))
+}
+
+function stripLeadingAuthoringTable(markdown: string): string {
+  const lines = markdown.split('\n')
+  let i = 0
+  while (i < lines.length && lines[i].trim() === '') i++
+  if (i >= lines.length || !TABLE_ROW.test(lines[i])) return markdown.trim()
+
+  const tableStart = i
+  while (i < lines.length && (TABLE_ROW.test(lines[i]) || lines[i].trim() === '')) {
+    if (lines[i].trim() === '' && i + 1 < lines.length && !TABLE_ROW.test(lines[i + 1])) break
+    i++
+  }
+
+  const tableBlock = lines.slice(tableStart, i).join('\n')
+  const fieldHits = tableBlock.split('\n').filter((line) => AUTHORING_TABLE_FIELD.test(line))
+  if (fieldHits.length < 2) return markdown.trim()
+
+  while (i < lines.length && (/^\s*-{3,}\s*$/.test(lines[i]) || lines[i].trim() === '')) i++
+  return lines.slice(i).join('\n').trim()
+}
+
 /** Normalize an IPFS document, discarding anything that isn't the expected shape. */
 export function normalizeJobPostingDoc(raw: any): JobPostingDoc | null {
   if (!isPlainObject(raw)) return null
@@ -398,14 +457,17 @@ export function normalizeJobPostingDoc(raw: any): JobPostingDoc | null {
     ? raw.links
         .filter((link: any) => isPlainObject(link) && cleanString(link.url))
         .map((link: any) =>
-          compact({ label: cleanString(link.label) || link.url.trim(), url: link.url.trim() })
+          compact({ label: cleanString(link.label) || link.url.trim(), url: link.url.trim() }),
         )
     : undefined
 
   const doc = compact({
     v: cleanNumber(raw.v) ?? JOB_METADATA_VERSION,
     summary: cleanString(raw.summary),
-    body: typeof raw.body === 'string' && raw.body.trim() !== '' ? raw.body : undefined,
+    body:
+      typeof raw.body === 'string' && raw.body.trim() !== ''
+        ? extractPublicJobBody(raw.body) || undefined
+        : undefined,
     responsibilities: cleanStringArray(raw.responsibilities),
     requirements: cleanStringArray(raw.requirements),
     niceToHave: cleanStringArray(raw.niceToHave),
@@ -440,7 +502,7 @@ export function getJobHref(job: { id: number | string }): string {
 /** The date applications close: an explicit deadline, else the listing's expiry. */
 export function getApplicationDeadline(
   envelope: JobMetadataEnvelope,
-  endTime?: number
+  endTime?: number,
 ): number | undefined {
   if (envelope.deadline) return envelope.deadline
   return endTime && endTime > 0 ? endTime : undefined
@@ -462,7 +524,7 @@ export function daysUntil(timestamp?: number, now = Math.floor(Date.now() / 1000
 
 export function formatDeadlineCountdown(
   timestamp?: number,
-  now = Math.floor(Date.now() / 1000)
+  now = Math.floor(Date.now() / 1000),
 ): string | null {
   const days = daysUntil(timestamp, now)
   if (days === null) return null

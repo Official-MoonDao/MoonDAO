@@ -1,4 +1,5 @@
 import type { DocsPageProps } from '@/lib/docs/types'
+import ReportBugButton from '@/components/layout/ReportBugButton'
 import DocMarkdown from './DocMarkdown'
 import DocsBacklinks from './DocsBacklinks'
 import DocsBreadcrumbs from './DocsBreadcrumbs'
@@ -47,6 +48,9 @@ export default function DocsLayout({ page }: { page: DocsPageProps }) {
             )}
             <DocMarkdown body={page.body} />
             <DocsBacklinks items={page.backlinks} />
+            <div className="mt-10 pt-6 border-t border-white/10">
+              <ReportBugButton />
+            </div>
           </main>
 
           <aside className="hidden xl:block w-56 shrink-0 px-4 py-8 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
