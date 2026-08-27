@@ -101,6 +101,7 @@ export default function useNavigation(citizen: any) {
         icon: FolderIcon,
         href: '/info',
         children: [
+          { name: 'Blog', href: '/blog' },
           { name: 'News', href: '/news' },
           { name: 'Press', href: '/press' },
           { name: 'Town Hall', href: '/townhall' },

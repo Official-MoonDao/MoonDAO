@@ -40,6 +40,8 @@ type WebsiteHeadProps = {
    * Defaults to the current path.
    */
   canonical?: string
+  /** Open Graph type. Defaults to `website`; blog posts pass `article`. */
+  ogType?: string
   children?: any
 }
 
@@ -52,6 +54,7 @@ export default function WebsiteHead({
   author = 'MoonDAO',
   robots = 'index, follow',
   canonical,
+  ogType = 'website',
   children,
 }: WebsiteHeadProps) {
   const router = useRouter()
@@ -93,7 +96,7 @@ export default function WebsiteHead({
       <meta property="og:description" content={truncatedDescription} key="meta-ogdesc" />
       <meta property="og:image" content={ogImage} key="meta-ogimage" />
       <meta property="og:image:alt" content={title} key="meta-ogimagealt" />
-      <meta property="og:type" content="website" key="meta-ogweb" />
+      <meta property="og:type" content={ogType} key="meta-ogweb" />
       <meta property="og:url" content={canonicalUrl || 'https://moondao.com/'} key="meta-ogurl" />
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta property="og:locale" content="en_US" key="meta-oglocale" />
