@@ -3,9 +3,12 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import sharp from 'sharp'
 import { parseListingOgParams } from '@/lib/og/preview'
 import { renderOgSvg } from '@/lib/og/svg'
+import { MAX_UPLOAD_BYTES } from '@/lib/utils/images'
 
-const MAX_MEDIA_BYTES = 2 * 1024 * 1024
-const MAX_MEDIA_PIXELS = 24_000_000
+/** Must not undercut the upload cap, or listings we accepted render with an empty media box. */
+const MAX_MEDIA_BYTES = MAX_UPLOAD_BYTES
+/** Room for a full-resolution phone photo while still rejecting decompression bombs. */
+const MAX_MEDIA_PIXELS = 64_000_000
 /** Raster only — an SVG source would let a pinned file pull in more markup at rasterize time. */
 const ALLOWED_MEDIA_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif']
 /** Matches the media box `renderOgSvg` draws the image into. */

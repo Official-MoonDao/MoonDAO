@@ -235,7 +235,7 @@ export async function cropImageWithCoordinates(
   })
 }
 
-const MAX_UPLOAD_BYTES = 4 * 1024 * 1024 // 4 MB (Vercel limit is 4.5 MB, leave headroom)
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024 // 4 MB (Vercel limit is 4.5 MB, leave headroom)
 const MAX_DIMENSION = 2048
 
 /**
