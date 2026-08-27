@@ -25,25 +25,21 @@ describe('extractTitleFromContentDisposition', () => {
     const header =
       'attachment; filename="MoonDAOProjectProposalTemplate.html"; filename*=UTF-8\'\'MoonDAO%20Project%20Proposal%20Template.html'
 
-    expect(extractTitleFromContentDisposition(header)).to.equal(
-      'MoonDAO Project Proposal Template'
-    )
+    expect(extractTitleFromContentDisposition(header)).to.equal('MoonDAO Project Proposal Template')
   })
 
   it('falls back to a quoted filename when filename* is missing', () => {
     expect(
-      extractTitleFromContentDisposition(
-        'attachment; filename="LifeShip Q3 Proposal.html"'
-      )
+      extractTitleFromContentDisposition('attachment; filename="LifeShip Q3 Proposal.html"')
     ).to.equal('LifeShip Q3 Proposal')
   })
 
   it('returns null for missing, untitled, or empty headers', () => {
     expect(extractTitleFromContentDisposition(null)).to.equal(null)
     expect(extractTitleFromContentDisposition('inline')).to.equal(null)
-    expect(
-      extractTitleFromContentDisposition('attachment; filename="Untitled.html"')
-    ).to.equal(null)
+    expect(extractTitleFromContentDisposition('attachment; filename="Untitled.html"')).to.equal(
+      null
+    )
   })
 })
 
@@ -78,8 +74,7 @@ describe('resolveGoogleDocTitle', () => {
   it('uses Content-Disposition before HTML, then preview HTML', () => {
     expect(
       resolveGoogleDocTitle({
-        contentDisposition:
-          'attachment; filename*=UTF-8\'\'Orbital%20Greenhouse.html',
+        contentDisposition: "attachment; filename*=UTF-8''Orbital%20Greenhouse.html",
         html: '<title>Wrong Title - Google Docs</title>',
       })
     ).to.equal('Orbital Greenhouse')

@@ -11,14 +11,14 @@ function extractDocId(url: string): string | null {
     /\/document\/d\/([a-zA-Z0-9_-]+)/,
     /^([a-zA-Z0-9_-]+)$/, // Direct ID
   ]
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern)
     if (match) {
       return match[1]
     }
   }
-  
+
   return null
 }
 
@@ -28,7 +28,7 @@ function htmlToMarkdown(html: string): string {
 
   // Remove style tags and their content
   markdown = markdown.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-  
+
   // Remove script tags and their content
   markdown = markdown.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
 
@@ -65,10 +65,12 @@ function htmlToMarkdown(html: string): string {
   let listCounter = 0
   markdown = markdown.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (match, content) => {
     listCounter = 0
-    return content.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, () => {
-      listCounter++
-      return `${listCounter}. `
-    }) + '\n'
+    return (
+      content.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, () => {
+        listCounter++
+        return `${listCounter}. `
+      }) + '\n'
+    )
   })
 
   // Handle list items that might still be there
@@ -85,11 +87,19 @@ function htmlToMarkdown(html: string): string {
 
   // Handle blockquotes
   markdown = markdown.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (match, content) => {
-    return content.split('\n').map((line: string) => `> ${line}`).join('\n') + '\n\n'
+    return (
+      content
+        .split('\n')
+        .map((line: string) => `> ${line}`)
+        .join('\n') + '\n\n'
+    )
   })
 
   // Handle code blocks
-  markdown = markdown.replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, '\n```\n$1\n```\n\n')
+  markdown = markdown.replace(
+    /<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi,
+    '\n```\n$1\n```\n\n'
+  )
   markdown = markdown.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, '\n```\n$1\n```\n\n')
 
   // Handle inline code
@@ -99,21 +109,21 @@ function htmlToMarkdown(html: string): string {
   markdown = markdown.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (match, content) => {
     let tableMarkdown = '\n'
     const rows = content.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || []
-    
+
     rows.forEach((row: string, rowIndex: number) => {
       const cells = row.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi) || []
       const cellContents = cells.map((cell: string) => {
         return cell.replace(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/i, '$1').trim()
       })
-      
+
       tableMarkdown += '| ' + cellContents.join(' | ') + ' |\n'
-      
+
       // Add header separator after first row
       if (rowIndex === 0) {
         tableMarkdown += '| ' + cellContents.map(() => '---').join(' | ') + ' |\n'
       }
     })
-    
+
     return tableMarkdown + '\n'
   })
 
@@ -154,10 +164,9 @@ const GOOGLE_FETCH_HEADERS = {
 
 async function fetchPreviewTitle(docId: string): Promise<string> {
   try {
-    const previewResponse = await fetch(
-      `https://docs.google.com/document/d/${docId}/preview`,
-      { headers: GOOGLE_FETCH_HEADERS }
-    )
+    const previewResponse = await fetch(`https://docs.google.com/document/d/${docId}/preview`, {
+      headers: GOOGLE_FETCH_HEADERS,
+    })
     if (!previewResponse.ok) return ''
     const previewHtml = await previewResponse.text()
     return resolveGoogleDocTitle({ previewHtml })
@@ -166,61 +175,60 @@ async function fetchPreviewTitle(docId: string): Promise<string> {
   }
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
-  
+
   try {
     const { url } = req.body
-    
+
     if (!url) {
       return res.status(400).json({ error: 'Google Docs URL is required' })
     }
-    
+
     const docId = extractDocId(url)
-    
+
     if (!docId) {
-      return res.status(400).json({ 
-        error: 'Invalid Google Docs URL. Please provide a valid Google Docs link.' 
+      return res.status(400).json({
+        error: 'Invalid Google Docs URL. Please provide a valid Google Docs link.',
       })
     }
-    
+
     // Use the public export URL - this works for any document with "Anyone with the link" access
     const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=html`
-    
+
     const response = await fetch(exportUrl, {
       headers: GOOGLE_FETCH_HEADERS,
     })
-    
+
     if (!response.ok) {
       if (response.status === 404) {
         return res.status(404).json({
           error: 'Document not found. Please check the URL and try again.',
         })
       }
-      
+
       if (response.status === 403 || response.status === 401) {
         return res.status(403).json({
-          error: 'Access denied. Please make sure the document sharing is set to "Anyone with the link can view".',
+          error:
+            'Access denied. Please make sure the document sharing is set to "Anyone with the link can view".',
         })
       }
-      
+
       throw new Error(`Failed to fetch document: ${response.status}`)
     }
-    
+
     const html = await response.text()
-    
+
     // Check if we got an error page instead of the document
     if (html.includes('Sign in') && html.includes('Google Account')) {
       return res.status(403).json({
-        error: 'Access denied. Please make sure the document sharing is set to "Anyone with the link can view".',
+        error:
+          'Access denied. Please make sure the document sharing is set to "Anyone with the link can view".',
       })
     }
-    
+
     // Export HTML does not include a <title> tag. The document name lives on
     // Content-Disposition (filename*) and, as a fallback, the public preview page.
     let title = resolveGoogleDocTitle({
@@ -231,7 +239,7 @@ export default async function handler(
       title = await fetchPreviewTitle(docId)
     }
     const markdown = htmlToMarkdown(html)
-    
+
     return res.status(200).json({
       title,
       content: markdown,
@@ -239,9 +247,10 @@ export default async function handler(
     })
   } catch (error: any) {
     console.error('Error fetching Google Doc:', error)
-    
+
     return res.status(500).json({
-      error: 'Failed to fetch document. Please make sure the document sharing is set to "Anyone with the link can view".',
+      error:
+        'Failed to fetch document. Please make sure the document sharing is set to "Anyone with the link can view".',
     })
   }
 }
