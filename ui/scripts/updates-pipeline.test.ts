@@ -192,6 +192,26 @@ body
     if (!threw) throw new Error('expected bad date to throw')
   })
 
+  it('stores omitted optional fields as null, not undefined', () => {
+    // getStaticProps refuses to serialize undefined, so an update that leaves
+    // authorRole or image out would fail the build.
+    fs.writeFileSync(
+      path.join(dir, '2024-01-01-bare.md'),
+      `---
+title: Bare
+description: No role, no image
+date: 2024-01-01
+author: Tester
+---
+body
+`
+    )
+    const [update] = listUpdates(dir)
+    expectEqual(update.authorRole, null, 'authorRole')
+    expectEqual(update.image, null, 'image')
+    expectEqual(JSON.stringify(update).includes('undefined'), false, 'serializable')
+  })
+
   it('throws on a duplicate slug', () => {
     writeUpdate(dir, '2024-01-01-same.md', '')
     writeUpdate(dir, '2024-02-02-same.md', 'date: 2024-02-02\n')
