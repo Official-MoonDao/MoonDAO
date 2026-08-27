@@ -99,6 +99,18 @@ export default function ProposalEditor({ project }: { project: Project }) {
     reset(actions[0].payload as RequestBudget)
   }
 
+  const handleSetTitle = (title: string) => {
+    setProposalTitle(title)
+    const cache = proposalCache || {
+      body: proposalBody || '',
+    }
+    setProposalCache({
+      ...cache,
+      title,
+      timestamp: getUnixTime(new Date()),
+    })
+  }
+
   // Function to set markdown content from Google Docs import
   const handleSetMarkdown = (markdown: string) => {
     setProposalBody(markdown)
@@ -400,7 +412,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
                   <GoogleDocsImport 
                     setMarkdown={handleSetMarkdown} 
-                    setTitle={setProposalTitle}
+                    setTitle={handleSetTitle}
                     onImportStart={() => setIsUploadingImage(true)}
                     onImportEnd={() => setIsUploadingImage(false)}
                   />
@@ -415,16 +427,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 value={proposalTitle}
                 onChange={(s) => {
                   if (isUploadingImage) return
-                  setProposalTitle(s)
-                  console.debug('setProposalTitle', s)
-                  const cache = proposalCache || {
-                    body: proposalBody || '',
-                  }
-                  setProposalCache({
-                    ...cache,
-                    title: s,
-                    timestamp: getUnixTime(new Date()),
-                  })
+                  handleSetTitle(s)
                 }}
               />
             </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { isUsableDocTitle } from '@/lib/google/docsTitle'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { DocumentTextIcon, ArrowPathIcon, LinkIcon, CloudArrowDownIcon } from '@heroicons/react/24/outline'
 
@@ -52,11 +53,9 @@ export default function GoogleDocsImport({
         throw new Error(data.error || 'Failed to fetch document')
       }
 
-      // Set the content in the editor
       setMarkdown(data.content)
-      
-      // Optionally set the title if provided
-      if (setTitle && data.title) {
+
+      if (setTitle && isUsableDocTitle(data.title)) {
         setTitle(data.title)
       }
 

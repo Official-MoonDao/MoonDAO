@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { resolveGoogleDocTitle } from '@/lib/google/docsTitle'
 
 // Extract document ID from various Google Docs URL formats
 function extractDocId(url: string): string | null {
@@ -147,16 +148,22 @@ function htmlToMarkdown(html: string): string {
   return markdown
 }
 
-// Extract title from HTML
-function extractTitle(html: string): string {
-  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)
-  if (titleMatch) {
-    let title = titleMatch[1]
-    // Google Docs titles often end with " - Google Docs"
-    title = title.replace(/\s*-\s*Google Docs\s*$/i, '')
-    return title.trim()
+const GOOGLE_FETCH_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (compatible; MoonDAO/1.0)',
+}
+
+async function fetchPreviewTitle(docId: string): Promise<string> {
+  try {
+    const previewResponse = await fetch(
+      `https://docs.google.com/document/d/${docId}/preview`,
+      { headers: GOOGLE_FETCH_HEADERS }
+    )
+    if (!previewResponse.ok) return ''
+    const previewHtml = await previewResponse.text()
+    return resolveGoogleDocTitle({ previewHtml })
+  } catch {
+    return ''
   }
-  return 'Untitled'
 }
 
 export default async function handler(
@@ -186,9 +193,7 @@ export default async function handler(
     const exportUrl = `https://docs.google.com/document/d/${docId}/export?format=html`
     
     const response = await fetch(exportUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; MoonDAO/1.0)',
-      },
+      headers: GOOGLE_FETCH_HEADERS,
     })
     
     if (!response.ok) {
@@ -216,7 +221,15 @@ export default async function handler(
       })
     }
     
-    const title = extractTitle(html)
+    // Export HTML does not include a <title> tag. The document name lives on
+    // Content-Disposition (filename*) and, as a fallback, the public preview page.
+    let title = resolveGoogleDocTitle({
+      contentDisposition: response.headers.get('content-disposition'),
+      html,
+    })
+    if (!title) {
+      title = await fetchPreviewTitle(docId)
+    }
     const markdown = htmlToMarkdown(html)
     
     return res.status(200).json({
