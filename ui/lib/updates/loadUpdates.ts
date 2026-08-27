@@ -91,8 +91,10 @@ function loadCorpus(root: string = UPDATES_ROOT): Corpus {
       description: frontmatter.description,
       date: frontmatter.date,
       author: frontmatter.author,
-      authorRole: frontmatter.authorRole,
-      image: frontmatter.image,
+      // null, not undefined: these reach `getStaticProps`, which cannot
+      // serialize undefined.
+      authorRole: frontmatter.authorRole || null,
+      image: frontmatter.image || null,
       category: frontmatter.category as string,
       tags: frontmatter.tags,
       featured: frontmatter.featured,

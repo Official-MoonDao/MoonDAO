@@ -24,8 +24,8 @@ export type UpdateMeta = {
   description: string
   date: string
   author: string
-  authorRole?: string
-  image?: string
+  authorRole?: string | null
+  image?: string | null
   category: UpdateCategory
   tags: string[]
   featured: boolean
