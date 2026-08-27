@@ -150,8 +150,8 @@ export function getAdjacentPosts(
 }
 
 export function featuredPost(root?: string): BlogPostMeta | undefined {
-  const posts = visiblePosts(root)
-  return posts.find((post) => post.featured)
+  const post = visiblePosts(root).find((entry) => entry.featured)
+  return post ? toMeta(post) : undefined
 }
 
 export function allBlogStaticPaths(root?: string): { params: { slug: string } }[] {

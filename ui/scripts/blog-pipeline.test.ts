@@ -285,6 +285,11 @@ new
 `
     )
     expectEqual(featuredPost(dir)?.slug, 'new-feature', 'newest featured')
+    expectEqual(
+      Object.prototype.hasOwnProperty.call(featuredPost(dir) as object, 'body'),
+      false,
+      'featured meta has no body'
+    )
   })
 })
 
