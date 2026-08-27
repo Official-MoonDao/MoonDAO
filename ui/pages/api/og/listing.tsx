@@ -1,5 +1,6 @@
 import { ImageResponse } from '@vercel/og'
 import { IPFS_GATEWAY } from 'const/config'
+import React from 'react'
 import { OgCard } from '@/lib/og/OgCard'
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, parseListingOgParams } from '@/lib/og/preview'
 
