@@ -40,7 +40,7 @@ type WebsiteHeadProps = {
    * Defaults to the current path.
    */
   canonical?: string
-  /** Open Graph type. Defaults to `website`; blog posts pass `article`. */
+  /** Open Graph type. Defaults to `website`; long-form updates pass `article`. */
   ogType?: string
   children?: any
 }

@@ -1,7 +1,7 @@
-import type { BlogPostMeta } from '@/lib/blog/types'
-import BlogPostCard from '@/components/blog/BlogPostCard'
+import type { UpdateMeta } from '@/lib/updates/types'
+import UpdateCard from '@/components/updates/UpdateCard'
 
-const post: BlogPostMeta = {
+const update: UpdateMeta = {
   slug: 'the-master-plan',
   filePath: '2023-09-12-the-master-plan.md',
   title: 'The Master Plan',
@@ -9,22 +9,23 @@ const post: BlogPostMeta = {
   date: '2023-09-12',
   author: 'Pablo Moncada-Larrotiz',
   authorRole: 'Founder',
+  category: 'Essay',
   tags: ['ideas'],
   featured: true,
   draft: false,
   readingMinutes: 20,
 }
 
-describe('<BlogPostCard />', () => {
+describe('<UpdateCard />', () => {
   beforeEach(() => {
     cy.mountNextRouter('/')
   })
 
   it('renders title, dek, and a link to the post', () => {
-    cy.mount(<BlogPostCard post={post} />)
+    cy.mount(<UpdateCard update={update} />)
     cy.contains('The Master Plan').should('be.visible')
     cy.contains('Why MoonDAO exists.').should('be.visible')
     cy.contains('Pablo Moncada-Larrotiz').should('be.visible')
-    cy.get('a').should('have.attr', 'href', '/blog/the-master-plan')
+    cy.get('a').should('have.attr', 'href', '/updates/the-master-plan')
   })
 })

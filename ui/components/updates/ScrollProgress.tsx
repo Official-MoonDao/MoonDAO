@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 
-export default function BlogScrollProgress() {
+export default function ScrollProgress() {
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {
     function onScroll() {
-      const scrolled = window.scrollY
-      const height = document.documentElement.scrollHeight - window.innerHeight
-      setProgress(height > 0 ? Math.min(1, scrolled / height) : 0)
+      const doc = document.documentElement
+      const height = doc.scrollHeight - window.innerHeight
+      setProgress(height > 0 ? Math.min(1, Math.max(0, window.scrollY / height)) : 0)
     }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
   }, [])
 
   return (

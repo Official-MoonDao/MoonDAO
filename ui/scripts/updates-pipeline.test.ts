@@ -2,19 +2,19 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
-import formatBlogDate from '../lib/blog/formatBlogDate'
-import { parseBlogFrontmatter, isValidPostDate } from '../lib/blog/frontmatter'
+import formatUpdateDate from '../lib/updates/formatUpdateDate'
+import { parseUpdateFrontmatter, isValidUpdateDate } from '../lib/updates/frontmatter'
 import {
-  allBlogStaticPaths,
-  featuredPost,
-  getAdjacentPosts,
-  getPost,
-  listPosts,
-  resetBlogCache,
+  allUpdateStaticPaths,
+  featuredUpdate,
+  getAdjacentUpdates,
+  getUpdate,
+  listUpdates,
+  resetUpdatesCache,
   slugFromFilename,
-} from '../lib/blog/loadPosts'
-import { readingMinutes } from '../lib/blog/readingTime'
-import { buildRssXml } from '../lib/blog/rss'
+} from '../lib/updates/loadUpdates'
+import { readingMinutes } from '../lib/updates/readingTime'
+import { buildRssXml } from '../lib/updates/rss'
 
 function expectEqual<T>(actual: T, expected: T, label: string) {
   if (actual !== expected) {
@@ -22,7 +22,7 @@ function expectEqual<T>(actual: T, expected: T, label: string) {
   }
 }
 
-function writePost(
+function writeUpdate(
   dir: string,
   fileName: string,
   extra: string,
@@ -42,7 +42,7 @@ ${body}
   )
 }
 
-describe('blog slug from filename', () => {
+describe('update slug from filename', () => {
   it('strips a leading YYYY-MM-DD prefix', () => {
     expectEqual(slugFromFilename('2023-09-12-the-master-plan.md'), 'the-master-plan', 'dated')
   })
@@ -52,14 +52,15 @@ describe('blog slug from filename', () => {
   })
 })
 
-describe('blog frontmatter', () => {
-  it('parses blog-only keys without leaking into the body', () => {
+describe('update frontmatter', () => {
+  it('parses update-only keys without leaking into the body', () => {
     const raw = `---
 title: Hello
 description: A dek
 date: 2023-09-12
 author: Pablo
 authorRole: Founder
+category: Press Release
 image: /assets/MoonDAO-OG.png
 tags:
   - ideas
@@ -68,20 +69,33 @@ draft: false
 ---
 # Body
 `
-    const { frontmatter, body } = parseBlogFrontmatter(raw)
+    const { frontmatter, body } = parseUpdateFrontmatter(raw)
     expectEqual(frontmatter.title, 'Hello', 'title')
     expectEqual(frontmatter.date, '2023-09-12', 'date')
     expectEqual(frontmatter.authorRole, 'Founder', 'role')
+    expectEqual(frontmatter.category, 'Press Release', 'category')
     expectEqual(frontmatter.featured, true, 'featured')
     expectEqual(frontmatter.draft, false, 'draft')
     expectEqual(frontmatter.tags.join(','), 'ideas', 'tags')
     if (!body.startsWith('# Body')) throw new Error(`body: ${body}`)
   })
 
+  it('defaults category to Update when omitted', () => {
+    const { frontmatter } = parseUpdateFrontmatter(`---
+title: Hello
+description: A dek
+date: 2023-09-12
+author: Pablo
+---
+Body
+`)
+    expectEqual(frontmatter.category, 'Update', 'default category')
+  })
+
   it('accepts only YYYY-MM-DD dates', () => {
-    expectEqual(isValidPostDate('2023-09-12'), true, 'valid')
-    expectEqual(isValidPostDate('09/12/2023'), false, 'slash')
-    expectEqual(isValidPostDate(undefined), false, 'missing')
+    expectEqual(isValidUpdateDate('2023-09-12'), true, 'valid')
+    expectEqual(isValidUpdateDate('09/12/2023'), false, 'slash')
+    expectEqual(isValidUpdateDate(undefined), false, 'missing')
   })
 })
 
@@ -96,31 +110,31 @@ describe('reading time', () => {
   })
 })
 
-describe('formatBlogDate', () => {
+describe('formatUpdateDate', () => {
   it('does not shift the calendar day', () => {
-    expectEqual(formatBlogDate('2023-09-12'), 'September 12, 2023', 'date')
+    expectEqual(formatUpdateDate('2023-09-12'), 'September 12, 2023', 'date')
   })
 })
 
-describe('blog loader', () => {
+describe('updates loader', () => {
   let dir: string
   const previousEnv = process.env.VERCEL_ENV
 
   beforeEach(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'moondao-blog-'))
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'moondao-updates-'))
     delete process.env.VERCEL_ENV
-    resetBlogCache()
+    resetUpdatesCache()
   })
 
   afterEach(() => {
     fs.rmSync(dir, { recursive: true, force: true })
     if (previousEnv === undefined) delete process.env.VERCEL_ENV
     else process.env.VERCEL_ENV = previousEnv
-    resetBlogCache()
+    resetUpdatesCache()
   })
 
   it('sorts newest first and skips _template.md and README.md', () => {
-    writePost(dir, '2024-01-01-older.md', '')
+    writeUpdate(dir, '2024-01-01-older.md', '')
     fs.writeFileSync(
       path.join(dir, '2024-06-01-newer.md'),
       `---
@@ -134,7 +148,7 @@ newer
     )
     fs.writeFileSync(path.join(dir, '_template.md'), '---\ntitle: Template\n---\n')
     fs.writeFileSync(path.join(dir, 'README.md'), '# Authoring notes\n')
-    const posts = listPosts(dir)
+    const posts = listUpdates(dir)
     expectEqual(posts.map((p) => p.slug).join(','), 'newer,older', 'order')
   })
 
@@ -151,13 +165,13 @@ body
     )
     let threw = false
     try {
-      listPosts(dir)
+      listUpdates(dir)
     } catch {
       threw = true
     }
     if (!threw) throw new Error('expected missing title to throw')
 
-    resetBlogCache()
+    resetUpdatesCache()
     fs.writeFileSync(
       path.join(dir, '2024-01-01-bad.md'),
       `---
@@ -171,7 +185,7 @@ body
     )
     threw = false
     try {
-      listPosts(dir)
+      listUpdates(dir)
     } catch {
       threw = true
     }
@@ -179,11 +193,11 @@ body
   })
 
   it('throws on a duplicate slug', () => {
-    writePost(dir, '2024-01-01-same.md', '')
-    writePost(dir, '2024-02-02-same.md', 'date: 2024-02-02\n')
+    writeUpdate(dir, '2024-01-01-same.md', '')
+    writeUpdate(dir, '2024-02-02-same.md', 'date: 2024-02-02\n')
     let threw = false
     try {
-      listPosts(dir)
+      listUpdates(dir)
     } catch {
       threw = true
     }
@@ -203,17 +217,17 @@ draft: true
 secret
 `
     )
-    expectEqual(listPosts(dir).length, 1, 'local shows draft')
+    expectEqual(listUpdates(dir).length, 1, 'local shows draft')
 
     process.env.VERCEL_ENV = 'production'
-    resetBlogCache()
-    expectEqual(listPosts(dir).length, 0, 'production hides draft')
-    expectEqual(getPost('draft', dir), null, 'production 404s draft')
-    expectEqual(allBlogStaticPaths(dir).length, 0, 'production omits draft path')
+    resetUpdatesCache()
+    expectEqual(listUpdates(dir).length, 0, 'production hides draft')
+    expectEqual(getUpdate('draft', dir), null, 'production 404s draft')
+    expectEqual(allUpdateStaticPaths(dir).length, 0, 'production omits draft path')
 
     process.env.VERCEL_ENV = 'preview'
-    resetBlogCache()
-    expectEqual(listPosts(dir).length, 1, 'preview shows draft')
+    resetUpdatesCache()
+    expectEqual(listUpdates(dir).length, 1, 'preview shows draft')
   })
 
   it('returns adjacent posts on a newest-first list', () => {
@@ -250,11 +264,11 @@ author: Tester
 three
 `
     )
-    const newest = getAdjacentPosts('last', dir)
+    const newest = getAdjacentUpdates('last', dir)
     expectEqual(newest.prev, undefined, 'newest has no prev')
     expectEqual(newest.next?.slug, 'middle', 'newest next')
 
-    const oldest = getAdjacentPosts('first', dir)
+    const oldest = getAdjacentUpdates('first', dir)
     expectEqual(oldest.next, undefined, 'oldest has no next')
     expectEqual(oldest.prev?.slug, 'middle', 'oldest prev')
   })
@@ -284,16 +298,16 @@ featured: true
 new
 `
     )
-    expectEqual(featuredPost(dir)?.slug, 'new-feature', 'newest featured')
+    expectEqual(featuredUpdate(dir)?.slug, 'new-feature', 'newest featured')
     expectEqual(
-      Object.prototype.hasOwnProperty.call(featuredPost(dir) as object, 'body'),
+      Object.prototype.hasOwnProperty.call(featuredUpdate(dir) as object, 'body'),
       false,
       'featured meta has no body'
     )
   })
 })
 
-describe('blog rss', () => {
+describe('updates rss', () => {
   it('emits a title and a permalink', () => {
     const xml = buildRssXml(
       [
@@ -304,6 +318,7 @@ describe('blog rss', () => {
           description: 'An essay',
           date: '2023-09-12',
           author: 'Pablo',
+          category: 'Essay',
           tags: [],
           featured: true,
           draft: false,
@@ -313,6 +328,7 @@ describe('blog rss', () => {
       'https://moondao.com'
     )
     if (!xml.includes('<title>The Master Plan</title>')) throw new Error('missing title')
-    if (!xml.includes('https://moondao.com/blog/the-master-plan')) throw new Error('missing link')
+    if (!xml.includes('https://moondao.com/updates/the-master-plan'))
+      throw new Error('missing link')
   })
 })

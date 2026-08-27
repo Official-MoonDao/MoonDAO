@@ -146,6 +146,20 @@ module.exports = withBundleAnalyzer(
           // real pages via LEGACY_DOC_ALIASES in lib/docs/slug.ts, with the
           // canonical tag pointing at the primary slug. See
           // docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md.
+          // The updates section shipped briefly at /blog. Safe to redirect
+          // because no dynamic route lives under /blog any more — a redirect
+          // that overlaps a dynamic route's own prefix is what broke the
+          // deploy for /docs (see the note above).
+          {
+            source: '/blog',
+            destination: '/updates',
+            permanent: true,
+          },
+          {
+            source: '/blog/:slug',
+            destination: '/updates/:slug',
+            permanent: true,
+          },
           {
             source: '/lunar-atlas',
             destination: '/moonbase',
@@ -353,9 +367,10 @@ module.exports = withBundleAnalyzer(
             destination: '/mission/4',
             permanent: false,
           },
-                    {
+          {
             source: '/overview-media',
-            destination: 'https://drive.google.com/drive/folders/1_Nwjqwq8oHfp0irBcBKyyRjL3KcGRqC5?usp=drive_link',
+            destination:
+              'https://drive.google.com/drive/folders/1_Nwjqwq8oHfp0irBcBKyyRjL3KcGRqC5?usp=drive_link',
             permanent: false,
           },
           {

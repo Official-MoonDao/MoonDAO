@@ -1,14 +1,24 @@
-# Blog Plan — markdown-in-repo, `/blog`
+# Updates Plan — markdown-in-repo, `/updates`
 
-A plan for a long-form blog that lives alongside `/press`. Publishing is "commit a
+A long-form updates section that lives alongside `/press`. Publishing is "commit a
 markdown file and merge"; reading is a single-column editorial page with a real OG
 preview on every post.
+
+> **Status: implemented.** Shipped at `/updates` rather than `/blog`, so one feed
+> can carry announcements, press releases, and long-form essays. A free-text
+> `category` field labels each item, and nothing branches on it. `/blog` and
+> `/blog/<slug>` permanently redirect to the new paths.
+>
+> Two review notes were folded in after the first pass. Hero images are now
+> letterboxed to the 1200×630 social ratio instead of being centre-cropped, and
+> the index and post pages share one `UpdatesPanel` component so their widths
+> match, with the reading measure widened from 68ch to 85ch to cut scrolling.
 
 ## Why not the old self-hosted blog
 
 The previous self-hosted blog was abandoned because it was a system to operate:
 a database, an admin UI, accounts, upgrades. Everything below is static — markdown
-files in `ui/content/blog/`, prerendered at build time by the Next.js build that
+files in `ui/content/updates/`, prerendered at build time by the Next.js build that
 already runs on every merge. There is no runtime, no database, and no admin.
 
 The repo already proved this shape works: `content/docs/` holds ~200 markdown files
@@ -18,7 +28,7 @@ blog is the same idea with a much smaller feature set and a reading-first layout
 ## Goals
 
 - Publish by committing a `.md` file. No CMS, no database, no admin UI.
-- Every post has a stable, shareable URL (`/blog/<slug>`) with a correct Open Graph
+- Every post has a stable, shareable URL (`/updates/<slug>`) with a correct Open Graph
   and Twitter card preview.
 - A reading experience good enough that people finish a 2,000-word essay.
 - Discoverable from the same places `/press` is: main nav, footer, and a cross-link
@@ -74,14 +84,14 @@ Posts live in a new flat directory. Flat, not nested — nesting is what makes t
 slug logic in `lib/docs/slug.ts` complicated, and a blog does not need it.
 
 ```
-ui/content/blog/
+ui/content/updates/
   2026-08-14-why-a-decentralized-space-program.md
   2026-09-02-what-we-learned-from-frank.md
 ```
 
 The date prefix in the filename is for humans scanning the directory and for a
 natural sort; it is stripped from the slug. `2026-08-14-why-a-decentralized-space-program.md`
-serves at `/blog/why-a-decentralized-space-program`.
+serves at `/updates/why-a-decentralized-space-program`.
 
 Frontmatter:
 
@@ -93,7 +103,7 @@ description: The case for funding spaceflight from the bottom up, and what the
 date: 2026-08-14
 author: Ryan Nguyen
 authorRole: Core Contributor
-image: /assets/blog/decentralized-space-program.jpg
+image: /assets/updates/decentralized-space-program.jpg
 tags:
   - governance
   - missions
@@ -123,8 +133,8 @@ Reading time is computed from the body, not authored.
 ## Routes
 
 ```
-pages/blog/index.tsx     →  /blog          index, getStaticProps
-pages/blog/[slug].tsx    →  /blog/<slug>   post, getStaticPaths + getStaticProps
+pages/updates/index.tsx     →  /updates       index, getStaticProps
+pages/updates/[slug].tsx    →  /updates/<slug>  post, getStaticPaths + getStaticProps
 ```
 
 **On the Vercel deploy risk.** `next.config.js` carries a long warning that a dynamic
@@ -132,34 +142,39 @@ route under `/docs/*` broke the Vercel deploy, which is why the docs catch-all l
 at `/documentation/[...slug].tsx` and is surfaced through a rewrite. That problem was
 specific to a **catch-all** (`[...slug]`) route. Single-segment dynamic routes with
 `getStaticPaths` already deploy fine in this app — `pages/jobs/[id].tsx` and
-`pages/marketplace/[id].tsx` both do exactly that. So `pages/blog/[slug].tsx` needs
+`pages/marketplace/[id].tsx` both do exactly that. So `pages/updates/[slug].tsx` needs
 no rewrite indirection.
 
 Two consequences worth respecting anyway:
 
 - Use `[slug].tsx`, not `[[...slug]].tsx`. The optional catch-all form is what
   interacts badly with this app's `i18n` config.
-- Do not add a `redirects()` entry whose `source` sits under `/blog/*`. Per the same
+- Do not add a `redirects()` entry whose `source` sits under `/updates/*`. Per the same
   comment in `next.config.js`, a redirect overlapping a dynamic route's prefix has
   failed this deploy before. Handle any legacy URL aliasing inside `getStaticPaths`
   instead, the way `LEGACY_DOC_ALIASES` does for docs.
+
+  The shipped `/blog` → `/updates` redirects are safe under that rule precisely
+  because no route lives under `/blog` any more: nothing overlaps. If the section
+  is ever renamed again, move the pages first and only then redirect the old
+  prefix.
 
 `fallback: false` — all posts are known at build time, and an unknown slug should be
 a real 404.
 
 ## Implementation
 
-### `lib/blog/`
+### `lib/updates/`
 
 Four small files. This deliberately does not reuse `lib/docs/loadDocs.ts`: that module
 carries wikilinks, transclusions, backlinks, tag trees, folder indexes, and a
 Quartz-compat alias table, none of which a blog wants. It *does* reuse the
 frontmatter parser.
 
-**`lib/blog/types.ts`**
+**`lib/updates/types.ts`**
 
 ```ts
-export type BlogPostMeta = {
+export type UpdateMeta = {
   slug: string
   title: string
   description: string
@@ -173,25 +188,25 @@ export type BlogPostMeta = {
   readingMinutes: number
 }
 
-export type BlogPost = BlogPostMeta & { body: string }
+export type Update = UpdateMeta & { body: string }
 ```
 
-**`lib/blog/frontmatter.ts`** — thin wrapper over `parseFrontmatter` from
+**`lib/updates/frontmatter.ts`** — thin wrapper over `parseFrontmatter` from
 `lib/docs/frontmatter.ts`, which already handles string scalars and dash-lists, plus
 the blog-only keys (`date`, `author`, `authorRole`, `image`, `featured`, `draft`).
 Extending the shared parser's `DocsFrontmatter` type instead would leak blog fields
 into the docs pipeline, so keep the widening local to the blog.
 
-**`lib/blog/loadPosts.ts`** — server-only; `fs` is aliased away in the client bundle
+**`lib/updates/loadUpdates.ts`** — server-only; `fs` is aliased away in the client bundle
 by the `webpack` config, so this must only ever be imported from `getStaticProps`.
 
 ```ts
 export const BLOG_ROOT = path.join(process.cwd(), 'content', 'blog')
 
-listPosts(): BlogPostMeta[]          // newest first, drafts filtered per environment
-getPost(slug: string): BlogPost | null
-getAdjacentPosts(slug): { prev?: BlogPostMeta; next?: BlogPostMeta }
-allBlogStaticPaths(): { params: { slug: string } }[]
+listPosts(): UpdateMeta[]          // newest first, drafts filtered per environment
+getPost(slug: string): Update | null
+getAdjacentPosts(slug): { prev?: UpdateMeta; next?: UpdateMeta }
+allUpdateStaticPaths(): { params: { slug: string } }[]
 ```
 
 Module-level cache keyed on the root, mirroring `loadCorpus`, so a build reads each
@@ -202,7 +217,7 @@ or two files resolving to the same slug should throw during `getStaticProps` and
 the build. A silently-broken post is worse than a red build.
 
 Drafts work by exclusion at build time rather than at request time. `listPosts()` and
-`allBlogStaticPaths()` drop `draft: true` posts when building for production and keep
+`allUpdateStaticPaths()` drop `draft: true` posts when building for production and keep
 them otherwise, so a draft is never prerendered on production and `fallback: false`
 turns it into a genuine 404. Preview deploys prerender it normally.
 
@@ -223,20 +238,20 @@ the one signal that distinguishes the production deploy from a preview. It is no
 anywhere in this repo yet, so treat it as a new convention and comment it. Local
 `next dev` leaves it undefined, which correctly means "show drafts."
 
-**`lib/blog/readingTime.ts`** — word count / 220, minimum 1.
+**`lib/updates/readingTime.ts`** — word count / 220, minimum 1.
 
-### `components/blog/`
+### `components/updates/`
 
-- **`BlogFeaturedCard.tsx`** — the top-of-index treatment: hero image, oversized
+- **`UpdateFeaturedCard.tsx`** — the top-of-index treatment: hero image, oversized
   title, dek, byline.
-- **`BlogPostCard.tsx`** — one index row. Title, dek, date, author, reading time,
+- **`UpdateCard.tsx`** — one index row. Title, dek, date, author, reading time,
   small thumbnail only if `image` is set. Text-forward.
-- **`BlogPostHeader.tsx`** — title, dek, byline row, optional hero.
-- **`BlogMarkdown.tsx`** — the article body renderer.
-- **`BlogPostFooter.tsx`** — tags, previous/next, and a subscribe CTA reusing the
+- **`UpdateHeader.tsx`** — title, dek, byline row, optional hero.
+- **`UpdateMarkdown.tsx`** — the article body renderer.
+- **`UpdateFooter.tsx`** — tags, previous/next, and a subscribe CTA reusing the
   existing `NoticeFooter`.
 
-**Why `BlogMarkdown` rather than reusing `DocMarkdown`.** Same plugin stack
+**Why `UpdateMarkdown` rather than reusing `DocMarkdown`.** Same plugin stack
 (`remarkGfm`, `rehypeSlug`, `rehypeAutolinkHeadings`, `rehypeRaw` — all already
 installed), different type scale. `DocMarkdown` is tuned for documentation: 16px
 body, `font-GoodTimes` on every heading down to `h4`, bordered tables, heading
@@ -263,16 +278,16 @@ That is acceptable for the same reason — content arrives only via reviewed com
 this repo, never from users. Worth stating explicitly in a comment so nobody later
 wires user input into this renderer.
 
-### `pages/blog/index.tsx`
+### `pages/updates/index.tsx`
 
 `getStaticProps` calls `listPosts()`. Renders inside the existing `Container` /
 `ContentLayout` shell so the page inherits the site frame, matching how `press.tsx`
 is built. Featured post first if present, then the list. Empty state if there are no
 posts yet.
 
-### `pages/blog/[slug].tsx`
+### `pages/updates/[slug].tsx`
 
-`getStaticPaths` from `allBlogStaticPaths()`, `getStaticProps` from `getPost()` plus
+`getStaticPaths` from `allUpdateStaticPaths()`, `getStaticProps` from `getUpdate()` plus
 `getAdjacentPosts()`, `notFound: true` for a missing slug.
 
 Reading experience details that matter and are cheap:
@@ -297,7 +312,7 @@ against `DEPLOYED_ORIGIN`. So the post page passes:
   description={post.description}
   image={post.image || '/assets/MoonDAO-OG.png'}
   keywords={post.tags.join(', ')}
-  canonical={`${DEPLOYED_ORIGIN}/blog/${post.slug}`}
+  canonical={`${DEPLOYED_ORIGIN}/updates/${update.slug}`}
   ogType="article"
 >
   <meta property="article:published_time" content={post.date} />
@@ -328,7 +343,7 @@ as children.
    having `NEXT_PUBLIC_CHAIN=mainnet` and no staging origin set. Verify this on the
    production deploy before announcing the blog — a wrong origin here means every
    shared link previews a staging image or nothing at all.
-3. Hero images committed to `public/assets/blog/` must be sized for social: 1200×630,
+3. Hero images committed to `public/assets/updates/` must be sized for social: 1200×630,
    under ~300KB. Add a short note to the authoring guide; a 4MB screenshot will be
    silently dropped by some scrapers.
 
@@ -347,14 +362,14 @@ visitor:
 - **`/news`** — the ConvertKit newsletter, embedded in an iframe. Frequent, short,
   operational: weekly updates, governance notices.
 - **`/press`** — for journalists. Announcements, coverage, press kit, spokespeople.
-- **`/blog`** — first-person long-form: essays, ideas, mission retrospectives,
+- **`/updates`** — first-person long-form: essays, ideas, mission retrospectives,
   technical write-ups. What we think, not what happened this week.
 
 Wiring:
 
-- `lib/navigation/useNavigation.tsx` — add `{ name: 'Blog', href: '/blog' }` to the
+- `lib/navigation/useNavigation.tsx` — add `{ name: 'Updates', href: '/updates' }` to the
   `Learn` group, first in the list, above `News`.
-- `components/layout/ExpandedFooter.tsx` — add `{ text: 'Blog', href: '/blog' }`
+- `components/layout/ExpandedFooter.tsx` — add `{ text: 'Updates', href: '/updates' }`
   alongside the existing `News` and `Press` entries.
 - `pages/press.tsx` — a new `PressSection` titled "From the blog" showing the three
   most recent posts, placed after `press-releases`, with a "Read all posts" action
@@ -367,14 +382,14 @@ Wiring:
 ## RSS and sitemap
 
 **RSS.** Space and VC blogs are read through readers more than their own sites, and a
-feed is ~30 lines. Generate `public/blog/rss.xml` from a script wired into the build,
+feed is ~30 lines. Generate `public/updates/rss.xml` from a script wired into the build,
 rather than adding a route: it keeps the feed static and needs no new dependency.
-Extend `scripts/docs-generate.ts`'s pattern, or add `scripts/blog-generate.ts` run
+Extend `scripts/docs-generate.ts`'s pattern, or add `scripts/updates-generate.ts` run
 from `prebuild`. Link it with `<link rel="alternate" type="application/rss+xml">` on
 the index page.
 
 **Sitemap.** `next-sitemap` runs in `postbuild` and picks up prerendered pages
-automatically, so `/blog` and each `/blog/<slug>` land in the sitemap with no config
+automatically, so `/updates` and each `/updates/<slug>` land in the sitemap with no config
 change. Separately: `next-sitemap.config.js` currently has `siteUrl: 'moondao.com'`
 with a "Replace with your site URL" placeholder comment and no scheme, which produces
 malformed absolute URLs. Worth fixing to `https://moondao.com` while in the
@@ -382,12 +397,12 @@ neighborhood, but it is a pre-existing bug and should be its own commit.
 
 ## Authoring workflow
 
-Document this in `ui/content/blog/README.md` so the next author does not need to read
+Document this in `ui/content/updates/README.md` so the next author does not need to read
 any code:
 
-1. Copy `ui/content/blog/_template.md` to `ui/content/blog/YYYY-MM-DD-my-post-title.md`.
+1. Copy `ui/content/updates/_template.md` to `ui/content/updates/YYYY-MM-DD-my-post-title.md`.
 2. Fill in the frontmatter. Write the body in markdown.
-3. Drop any images in `ui/public/assets/blog/`. Hero images 1200×630.
+3. Drop any images in `ui/public/assets/updates/`. Hero images 1200×630.
 4. Open a PR. The Vercel preview deploy renders the post exactly as it will ship —
    this is the draft preview.
 5. Merge. The post is live on the next production deploy.
@@ -398,13 +413,13 @@ any code:
 
 Matching what the repo already does rather than inventing a new harness:
 
-- **Unit, mocha** — `scripts/blog-pipeline.test.ts`, following
+- **Unit, mocha** — `scripts/updates-pipeline.test.ts`, following
   `scripts/docs-pipeline.test.ts` and its `test:docs` script. Covers slug derivation
   from dated filenames, frontmatter parsing, draft filtering, sort order, reading-time
   math, adjacent-post edges (first and last post), and that duplicate slugs and
   missing required fields throw.
-- **Component, Cypress** — `cypress/integration/blog/blog-post-card.cy.tsx` and
-  `blog-markdown.cy.tsx`, following the existing `cypress/integration/**` component
+- **Component, Cypress** — `cypress/integration/updates/update-card.cy.tsx` and
+  `update-markdown.cy.tsx`, following the existing `cypress/integration/**` component
   tests.
 - **Manual** — one real post end to end on a preview deploy, with the resulting URL
   checked in a social card validator and pasted into Discord to confirm the unfurl.
@@ -414,9 +429,9 @@ Matching what the repo already does rather than inventing a new harness:
 
 ## Phasing
 
-**Phase 1 — readable and shareable.** `lib/blog/*`, `components/blog/*`,
-`pages/blog/index.tsx`, `pages/blog/[slug].tsx`, the `ogType` prop on `WebsiteHead`,
-`content/blog/` with the template, README, and one real post. Nav and footer links.
+**Phase 1 — readable and shareable.** `lib/updates/*`, `components/updates/*`,
+`pages/updates/index.tsx`, `pages/updates/[slug].tsx`, the `ogType` prop on `WebsiteHead`,
+`content/updates/` with the template, README, and one real post. Nav and footer links.
 This is the whole product: commit markdown, get a good-looking post at a stable URL
 with a working OG preview.
 
@@ -436,31 +451,31 @@ or changes the authoring workflow.
 New:
 
 ```
-ui/content/blog/README.md
-ui/content/blog/_template.md
-ui/content/blog/<first-post>.md
-ui/lib/blog/types.ts
-ui/lib/blog/frontmatter.ts
-ui/lib/blog/loadPosts.ts
-ui/lib/blog/readingTime.ts
-ui/components/blog/BlogFeaturedCard.tsx
-ui/components/blog/BlogPostCard.tsx
-ui/components/blog/BlogPostHeader.tsx
-ui/components/blog/BlogMarkdown.tsx
-ui/components/blog/BlogPostFooter.tsx
-ui/pages/blog/index.tsx
-ui/pages/blog/[slug].tsx
-ui/scripts/blog-pipeline.test.ts
-ui/public/assets/blog/            (hero images)
+ui/content/updates/README.md
+ui/content/updates/_template.md
+ui/content/updates/<first-post>.md
+ui/lib/updates/types.ts
+ui/lib/updates/frontmatter.ts
+ui/lib/updates/loadUpdates.ts
+ui/lib/updates/readingTime.ts
+ui/components/updates/UpdateFeaturedCard.tsx
+ui/components/updates/UpdateCard.tsx
+ui/components/updates/UpdateHeader.tsx
+ui/components/updates/UpdateMarkdown.tsx
+ui/components/updates/UpdateFooter.tsx
+ui/pages/updates/index.tsx
+ui/pages/updates/[slug].tsx
+ui/scripts/updates-pipeline.test.ts
+ui/public/assets/updates/            (hero images)
 ```
 
 Modified:
 
 ```
 ui/components/layout/Head.tsx              add optional `ogType` prop
-ui/lib/navigation/useNavigation.tsx        add Blog to the Learn group
-ui/components/layout/ExpandedFooter.tsx    add Blog link
-ui/package.json                            add `test:blog` script
+ui/lib/navigation/useNavigation.tsx        add Updates to the Learn group
+ui/components/layout/ExpandedFooter.tsx    add Updates link
+ui/package.json                            add `test:updates` script
 ui/pages/press.tsx                         OG image path fix; phase 2: "From the blog"
 ui/pages/info.tsx                          OG image path fix
 ui/pages/governance.tsx                    OG image path fix
@@ -478,11 +493,11 @@ devDependency, which is correct for a Tailwind plugin) are all already installed
 - **The Vercel dynamic-route history.** Mitigated by using a single-segment `[slug]`
   route with no overlapping redirect, matching `pages/jobs/[id].tsx` which deploys
   today. If the deploy does fail, the escape hatch is already proven: move the route
-  under a different prefix and add a `/blog/:path*` rewrite, exactly as `/docs` does.
+  under a different prefix and add an `/updates/:path*` rewrite, exactly as `/docs` does.
 - **`DEPLOYED_ORIGIN` pointing at a non-production host** would break every OG image
   and canonical URL. Verify against the production deploy, not just a preview, before
   announcing.
-- **`fs` in the client bundle.** `loadPosts.ts` must only be imported from
+- **`fs` in the client bundle.** `loadUpdates.ts` must only be imported from
   `getStaticProps`. An accidental import into a component surfaces as a confusing
   build error, since `next.config.js` sets `resolve.fallback.fs = false`. Keep the
   import boundary obvious and note it at the top of the file.

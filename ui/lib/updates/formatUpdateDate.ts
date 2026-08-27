@@ -14,7 +14,7 @@ const MONTHS = [
 ]
 
 /** Format a required `YYYY-MM-DD` without a Date parse (timezone-safe). */
-export default function formatBlogDate(date: string) {
+export default function formatUpdateDate(date: string) {
   const [year, month, day] = date.split('-')
   const monthName = month ? MONTHS[Number(month) - 1] : undefined
 

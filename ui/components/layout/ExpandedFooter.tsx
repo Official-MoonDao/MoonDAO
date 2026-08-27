@@ -186,7 +186,7 @@ export function ExpandedFooter({
   ]
 
   const learnLinks = [
-    { text: 'Blog', href: '/blog' },
+    { text: 'Updates', href: '/updates' },
     { text: 'News', href: '/news' },
     { text: 'Press', href: '/press' },
     { text: 'Town Hall', href: '/townhall' },

@@ -4,6 +4,7 @@ description: Why MoonDAO exists, why a lunar settlement is possible, and the pla
 date: 2023-09-12
 author: Pablo Moncada-Larrotiz
 authorRole: Founder
+category: Essay
 image: /assets/MoonDAO-OG.png
 tags:
   - ideas
@@ -242,7 +243,7 @@ What we’re trying to achieve is to take the best from DAOs and the best from t
 
 Furthermore, this model creates an abstraction layer between the core operating system of the DAO through it's governance and the people that are receiving funds through the DAO. Teams competing within the DAO model do not need to read lengthy documentation, they can plug into the ecosystem and start building.
 
-![The DePrize abstraction layer](/assets/blog/layered-mental-model.png)
+![The DePrize abstraction layer](/assets/updates/layered-mental-model.png)
 The DePrize abstraction layer will allow teams to plug into the MoonDAO ecosystem without requiring them to submit lengthy proposals for funding, or read documentation like a developer. They can pick the problems they want to solve and immeditately jump in to compete towards the solution.
 
 Through this model we are balancing collaboration towards a shared goal, and competition for those who can achieve it first.  
@@ -256,7 +257,7 @@ To be more specific, we’re trying to create a flywheel where we crowdsource to
 We’re calling that the DePrize. It will use blockchain to create a fund where members get a token in exchange for their contribution. Then the members of the fund can vote with their tokens to allocate towards the teams that have the most appealing solutions to the problem. A portion is left as a competition for the first to complete the requirements as arbitrated by the DAO. Finally, the IP that is generated is co-owned by the community and the winning team, where a portion of the data and income from the IP go towards both the financiers of the IP and back to MoonDAO.  
 
 
-![An early construction of the DePrize](/assets/blog/deprize-construction.png)
+![An early construction of the DePrize](/assets/updates/deprize-construction.png)
 
 An early construction of the DePrize, the details may vary from this initial design.
 
@@ -270,7 +271,7 @@ In three steps, the flywheel looks like this:
 1. We crowdsource towards specific initiatives to set up competitions and fund the companies and individuals that are doing the best work to accelerate our goals. Direct blockchain funding from the people that want to make those goals possible.
 2. We release open-source data and technology from the companies we fund to allow everyday people to contribute to the most difficult problems those companies are facing.
 3. We build open markets to allow those companies to directly offer products and services to everyday people that want to propel our goals. Building a feedback cycle to generate revenue for MoonDAO and get direct market feedback on initiatives.
-![The economic flywheel](/assets/blog/economic-flywheel.png)
+![The economic flywheel](/assets/updates/economic-flywheel.png)
 
 The Economic Flywheel in a nutshell.
 

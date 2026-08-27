@@ -1,22 +1,22 @@
-import BlogMarkdown from '@/components/blog/BlogMarkdown'
+import UpdateMarkdown from '@/components/updates/UpdateMarkdown'
 
-describe('<BlogMarkdown />', () => {
+describe('<UpdateMarkdown />', () => {
   beforeEach(() => {
     cy.mountNextRouter('/')
   })
 
   it('renders headings, paragraphs, and internal links', () => {
     cy.mount(
-      <BlogMarkdown
+      <UpdateMarkdown
         body={`# Hello
 
-A paragraph with a [docs link](/docs/About/The-Master-Plan) and a [blog link](/blog).
+A paragraph with a [docs link](/docs/About/The-Master-Plan) and a [updates link](/updates).
 `}
       />
     )
     cy.get('h1').should('contain', 'Hello')
     cy.contains('A paragraph with a').should('be.visible')
     cy.get('a').contains('docs link').should('have.attr', 'href', '/docs/About/The-Master-Plan')
-    cy.get('a').contains('blog link').should('have.attr', 'href', '/blog')
+    cy.get('a').contains('updates link').should('have.attr', 'href', '/updates')
   })
 })

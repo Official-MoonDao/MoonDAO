@@ -16,12 +16,12 @@ function isAnchor(href?: string): boolean {
 }
 
 /**
- * Essay renderer. `rehypeRaw` is safe here because posts arrive only via
+ * Long-form renderer. `rehypeRaw` is safe here because updates arrive only via
  * reviewed commits to this repo, never from user-submitted content.
  */
-export default function BlogMarkdown({ body }: { body: string }) {
+export default function UpdateMarkdown({ body }: { body: string }) {
   return (
-    <article className="blog-prose mx-auto w-full max-w-[68ch] overflow-x-hidden break-words text-[19px] leading-[1.7] text-white [&>p:first-of-type]:text-[21px] [&>p:first-of-type]:leading-[1.7] [&>p:first-of-type]:text-slate-100">
+    <article className="mx-auto w-full max-w-[85ch] overflow-x-hidden break-words text-[19px] leading-[1.7] text-white [&>p:first-of-type]:text-[21px] [&>p:first-of-type]:leading-[1.7] [&>p:first-of-type]:text-slate-100">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSlug, rehypeRaw]}
@@ -55,7 +55,7 @@ export default function BlogMarkdown({ body }: { body: string }) {
             }
             if (isRoute(href)) {
               return (
-                <DocsLink href={href || '/blog'} className={LINK_CLASS}>
+                <DocsLink href={href || '/updates'} className={LINK_CLASS}>
                   {children}
                 </DocsLink>
               )

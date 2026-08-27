@@ -1,5 +1,5 @@
 import { parseFrontmatter } from '@/lib/docs/frontmatter'
-import type { BlogFrontmatter } from './types'
+import { DEFAULT_CATEGORY, type UpdateFrontmatter } from './types'
 
 function unquote(value: string): string {
   const trimmed = value.trim()
@@ -16,11 +16,18 @@ function asBoolean(value: string | undefined): boolean {
   return value?.trim().toLowerCase() === 'true'
 }
 
+function optional(value: string | undefined): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined
+}
+
 /**
- * Widen the shared docs frontmatter parser with the blog-only keys. Kept local
- * so `DocsFrontmatter` does not grow fields the docs pipeline never uses.
+ * Widen the shared docs frontmatter parser with the update-only keys. Kept
+ * local so `DocsFrontmatter` does not grow fields the docs pipeline never uses.
  */
-export function parseBlogFrontmatter(raw: string): { frontmatter: BlogFrontmatter; body: string } {
+export function parseUpdateFrontmatter(raw: string): {
+  frontmatter: UpdateFrontmatter
+  body: string
+} {
   const { frontmatter: docsFm, body } = parseFrontmatter(raw)
   const extras: Record<string, string> = {}
 
@@ -41,10 +48,10 @@ export function parseBlogFrontmatter(raw: string): { frontmatter: BlogFrontmatte
       description: docsFm.description,
       author: docsFm.author,
       tags: docsFm.tags,
-      date: typeof extras.date === 'string' && extras.date ? extras.date : undefined,
-      authorRole:
-        typeof extras.authorRole === 'string' && extras.authorRole ? extras.authorRole : undefined,
-      image: typeof extras.image === 'string' && extras.image ? extras.image : undefined,
+      date: optional(extras.date),
+      authorRole: optional(extras.authorRole),
+      image: optional(extras.image),
+      category: optional(extras.category) || DEFAULT_CATEGORY,
       featured: asBoolean(extras.featured),
       draft: asBoolean(extras.draft),
     },
@@ -54,6 +61,6 @@ export function parseBlogFrontmatter(raw: string): { frontmatter: BlogFrontmatte
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
-export function isValidPostDate(value: string | undefined): value is string {
+export function isValidUpdateDate(value: string | undefined): value is string {
   return !!value && DATE_RE.test(value)
 }

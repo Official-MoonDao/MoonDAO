@@ -2,8 +2,6 @@ import { ArrowTopRightOnSquareIcon, EnvelopeIcon } from '@heroicons/react/24/out
 import { GetStaticProps } from 'next'
 import Link from 'next/link'
 import React from 'react'
-import { listPosts } from '@/lib/blog/loadPosts'
-import type { BlogPostMeta } from '@/lib/blog/types'
 import {
   BRAND_ASSETS,
   CAMPAIGN_PRESS_CONTACT_EMAIL,
@@ -18,10 +16,11 @@ import {
   VIDEO_APPEARANCES,
 } from '@/lib/press/press-data'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { listUpdates } from '@/lib/updates/loadUpdates'
+import type { UpdateMeta } from '@/lib/updates/types'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
-import BlogPostCard from '@/components/blog/BlogPostCard'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import CoverageGrid from '@/components/press/CoverageGrid'
 import MediaAppearances from '@/components/press/MediaAppearances'
@@ -30,11 +29,12 @@ import PressKit from '@/components/press/PressKit'
 import PressReleaseList from '@/components/press/PressReleaseList'
 import PressSection from '@/components/press/PressSection'
 import Spokespeople from '@/components/press/Spokespeople'
+import UpdateCard from '@/components/updates/UpdateCard'
 
 const sections = [
   { id: 'about', label: 'About' },
   { id: 'press-releases', label: 'Announcements' },
-  { id: 'blog', label: 'From the blog' },
+  { id: 'updates', label: 'Latest updates' },
   { id: 'coverage', label: 'In the news' },
   { id: 'appearances', label: 'Podcasts & video' },
   { id: 'press-kit', label: 'Press kit' },
@@ -43,10 +43,10 @@ const sections = [
 ]
 
 type PressProps = {
-  recentPosts: BlogPostMeta[]
+  recentUpdates: UpdateMeta[]
 }
 
-export default function Press({ recentPosts }: PressProps) {
+export default function Press({ recentUpdates }: PressProps) {
   useChainDefault()
 
   return (
@@ -118,23 +118,23 @@ export default function Press({ recentPosts }: PressProps) {
                 <PressReleaseList releases={PRESS_RELEASES} />
               </PressSection>
 
-              {recentPosts.length > 0 && (
+              {recentUpdates.length > 0 && (
                 <PressSection
-                  id="blog"
-                  title="From the blog"
-                  description="Long-form essays and ideas from MoonDAO, published as markdown in the repo."
+                  id="updates"
+                  title="Latest updates"
+                  description="Announcements, mission updates, and long-form essays published by MoonDAO."
                   action={
                     <Link
-                      href="/blog"
+                      href="/updates"
                       className="inline-flex flex-shrink-0 items-center gap-2 text-sm font-medium text-blue-300 hover:text-blue-200"
                     >
-                      Read all posts
+                      Read all updates
                     </Link>
                   }
                 >
                   <div className="rounded-xl border border-white/10 px-5">
-                    {recentPosts.map((post) => (
-                      <BlogPostCard key={post.slug} post={post} />
+                    {recentUpdates.map((update) => (
+                      <UpdateCard key={update.slug} update={update} />
                     ))}
                   </div>
                 </PressSection>
@@ -225,7 +225,7 @@ export default function Press({ recentPosts }: PressProps) {
 export const getStaticProps: GetStaticProps<PressProps> = async () => {
   return {
     props: {
-      recentPosts: listPosts().slice(0, 3),
+      recentUpdates: listUpdates().slice(0, 3),
     },
   }
 }
