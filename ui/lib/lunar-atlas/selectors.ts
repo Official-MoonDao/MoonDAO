@@ -41,45 +41,139 @@ export function isMoonMilestone(m: Milestone): boolean {
   return m.location !== 'earth'
 }
 
-// Dated milestone years for a project. `onMoonOnly` restricts to milestones
-// that put hardware AT the Moon — what the year scrubber should track, since
-// scrubbing to a year is a claim about what's on the Moon then, not about
-// which contracts have been signed on Earth by then.
-function milestoneYears(project: Project, onMoonOnly: boolean): number[] {
-  return project.milestones
-    .filter((m) => !onMoonOnly || isMoonMilestone(m))
-    .map((m) => parseAtlasYear(m.targetDate))
-    .filter((y): y is number => y != null)
+// The real-world year. The scrubber's past is history and its future is
+// forecast, and the boundary between the two moves, so it has to be read off
+// the clock rather than baked into the dataset. Every function below takes it
+// as an argument so tests can pin it and not rot as the year turns over.
+export function atlasNowYear(): number {
+  return new Date().getUTCFullYear()
 }
 
-// Earliest / latest Moon-arrival (fractional) year for a project, or null
-// when the project has no dated Moon milestone yet (e.g. hardware still in
-// Earth-side development, with no confirmed flight-to-the-Moon date).
+// The scrubber year at which a Moon milestone actually puts hardware on the
+// Moon, or null when it never does. Three cases:
+//
+//   - Achieved: it happened, so it counts from the year it happened.
+//   - Cancelled: it delivered nothing. A hard landing leaves debris on the
+//     Moon, not a lander, and scrubbing past it must not stand the vehicle up
+//     on the surface.
+//   - Still only planned (or delayed, or in progress on Earth): a promise. A
+//     target date that has already come and gone without being marked achieved
+//     is a slip, not an arrival — so it counts no earlier than the first year
+//     still ahead of us. This is what stops the scrubber claiming a 2026
+//     landing is on the ground in 2026 when it has not flown.
+export function milestoneArrivalYear(
+  m: Milestone,
+  nowYear: number
+): number | null {
+  if (!isMoonMilestone(m)) return null
+  const y = parseAtlasYear(m.targetDate)
+  if (y == null) return null
+  if (m.status === 'cancelled') return null
+  if (m.status === 'achieved') return y
+  return Math.max(y, nowYear + 1)
+}
+
+// Has this milestone's hardware arrived by scrubber year `at`? Integer scrubber
+// years cover the whole calendar year, so a "2025-06" milestone counts as
+// reached at scrubber year 2025; a fractional `at` keeps month ordering.
+function arrivedBy(m: Milestone, at: number, nowYear: number): boolean {
+  const y = milestoneArrivalYear(m, nowYear)
+  if (y == null) return false
+  return (Number.isInteger(at) ? Math.floor(y) : y) <= at
+}
+
+// The race a project is entered in: the goal that declares its category, or
+// failing that the first goal that lists it at all.
+function raceForProject(
+  project: Project,
+  goals: SharedGoal[]
+): SharedGoal | undefined {
+  const entered = goals.filter((g) => g.projectIds.includes(project.id))
+  return entered.find((g) => g.category === project.type) ?? entered[0]
+}
+
+// Where to put a competitor that has no Moon date of its own on the timeline.
+//
+// Plenty of real, funded hardware has no announced flight date — most of the
+// regolith-construction and ISRU field is in that position, holding NASA
+// contracts with no manifested lunar demo. Showing it in every year (which is
+// what this code used to do) claims it is on the Moon today; showing it in no
+// year at all deletes a whole race from the base. Neither is true.
+//
+// Its race is the honest answer: each capability race carries a sourced
+// targetWindow, and an undated entrant is taken to arrive by the far end of
+// that window — the latest the race itself expects to be settled. So the
+// landing-pad field turns up together at 2032 rather than in 2023 or never.
+// Give a project its own dated milestone and that always wins over this.
+export function raceArrivalYear(
+  project: Project,
+  goals: SharedGoal[],
+  nowYear: number
+): number | null {
+  const window = raceForProject(project, goals)?.targetWindow
+  const y = parseAtlasYear(window?.to ?? window?.from)
+  return y == null ? null : Math.max(y, nowYear + 1)
+}
+
+// Years this project is on the Moon: its own arrivals when it has any, and
+// otherwise the year its race expects it by. Empty when neither exists.
+function arrivalYears(
+  project: Project,
+  nowYear: number,
+  raceYear?: number | null
+): number[] {
+  const own = project.milestones
+    .map((m) => milestoneArrivalYear(m, nowYear))
+    .filter((y): y is number => y != null)
+  if (own.length > 0) return own
+  return raceYear == null ? [] : [Math.max(raceYear, nowYear + 1)]
+}
+
+// First / last (fractional) year this project has hardware on the Moon, or null
+// when it never does on the current data — nothing but failed attempts, or no
+// date at all and no race window to fall back on.
 export function projectDateRange(
-  project: Project
+  project: Project,
+  nowYear: number = atlasNowYear(),
+  raceYear?: number | null
 ): { earliest: number; latest: number } | null {
-  const years = milestoneYears(project, true)
+  const years = arrivalYears(project, nowYear, raceYear)
   if (years.length === 0) return null
   return { earliest: Math.min(...years), latest: Math.max(...years) }
 }
 
-// The [min, max] integer year span across every Moon-arrival milestone in the
-// dataset — i.e. the years the scrubber should cover, since it answers "what
-// is on the Moon in year Y", not "what has been announced by year Y". Falls
-// back to the current year when nothing in the dataset has a confirmed
-// Moon date yet.
+// The [min, max] integer year span the scrubber should cover.
+//
+// The left edge is today. Everything on the Moon right now got there in the
+// last couple of years, so the years before today hold at most a lander or two
+// and no two of them differ — scrubbing them travelled two years to watch
+// nothing change. Today is also the one edge that means something on a scrubber
+// whose whole point is the future: left of it there is nothing to see, and
+// right of it is the entire base being built.
+//
+// Landings that already happened are not lost by this; they are on the Moon at
+// every year in the window, including its first. What is dropped is the ability
+// to ask "what was on the Moon in 2024", which the milestone list on each
+// project answers better than a globe on which those craft are three specks.
+//
+// The right edge is the last arrival anything is expected to make.
 export function datasetYearRange(
-  dataset: Pick<AtlasDataset, 'projects'>
+  dataset: Pick<AtlasDataset, 'projects'> &
+    Partial<Pick<AtlasDataset, 'sharedGoals'>>,
+  nowYear: number = atlasNowYear()
 ): { min: number; max: number } {
+  const goals = dataset.sharedGoals ?? []
   const years: number[] = []
   for (const p of dataset.projects) {
-    for (const y of milestoneYears(p, true)) years.push(y)
+    years.push(
+      ...arrivalYears(p, nowYear, raceArrivalYear(p, goals, nowYear))
+    )
   }
-  if (years.length === 0) {
-    const now = new Date().getUTCFullYear()
-    return { min: now, max: now + 1 }
-  }
-  return { min: Math.floor(Math.min(...years)), max: Math.ceil(Math.max(...years)) }
+  if (years.length === 0) return { min: nowYear, max: nowYear + 1 }
+  const min = Math.max(nowYear, Math.floor(Math.min(...years)))
+  // Never collapse to a single year: a dataset whose last arrival is already
+  // behind us would otherwise hand the scrubber an empty range to divide by.
+  return { min, max: Math.max(min + 1, Math.ceil(Math.max(...years))) }
 }
 
 export type ProjectTimeStatus =
@@ -100,44 +194,51 @@ export type ProjectTimeState = {
 // current year: whether it has appeared yet and which status to style it with.
 export function projectStateAtYear(
   project: Project,
-  currentYear: number
+  currentYear: number,
+  nowYear: number = atlasNowYear(),
+  raceYear?: number | null
 ): ProjectTimeState {
-  const range = projectDateRange(project)
-  if (!range) {
-    // Undated project: always present, treated as planned.
-    return { revealed: true, status: 'planned' }
-  }
-  // Integer scrubber years cover the whole calendar year (month-dated
-  // milestones like "2025-06" must count as reached at scrubber year 2025).
-  // Fractional currentYear keeps month/day ordering within a year.
-  const earliest = Number.isInteger(currentYear)
-    ? Math.floor(range.earliest)
-    : range.earliest
-  if (currentYear < earliest) {
+  const moon = project.milestones.filter(isMoonMilestone)
+
+  // Presence on the surface is earned by arrival and nothing else. A project
+  // whose only attempts failed has nothing standing there, however much
+  // Earth-side work is behind it — it stays a ghost until it has a date it can
+  // keep.
+  const arrived = moon.filter((m) => arrivedBy(m, currentYear, nowYear))
+  if (arrived.length === 0) {
+    // No arrival of its own. If it has no Moon date whatsoever, its race window
+    // stands in for one (see raceArrivalYear) and it turns up with the rest of
+    // the field — as a plan, since there is no milestone to have achieved.
+    const [fallback] = arrivalYears(project, nowYear, raceYear)
+    const dated = moon.some((m) => parseAtlasYear(m.targetDate) != null)
+    if (!dated && fallback != null && Math.floor(fallback) <= currentYear) {
+      return { revealed: true, status: 'planned' }
+    }
     return { revealed: false, status: 'future' }
   }
 
-  // Among Moon milestones already reached by currentYear, the latest one
-  // drives the displayed status; ties fall back to the whole set. Earth-side
-  // milestones (contract awards, ground tests) are excluded here too — a
-  // signed contract doesn't make hardware "achieved" on the lunar surface.
-  const reached = project.milestones
-    .filter(isMoonMilestone)
-    .map((m) => ({ m, y: parseAtlasYear(m.targetDate) }))
+  // The headline for the project at this year is the most recent Moon milestone
+  // the year has passed, whether or not it delivered — a cancelled follow-on to
+  // hardware that did arrive is the honest thing to show. Cancellations are
+  // ordered on their own date, since they have no arrival year.
+  const passed = moon
+    .map((m) => ({
+      m,
+      y: milestoneArrivalYear(m, nowYear) ?? parseAtlasYear(m.targetDate),
+    }))
     .filter((x): x is { m: Milestone; y: number } => {
       if (x.y == null) return false
-      const y = Number.isInteger(currentYear) ? Math.floor(x.y) : x.y
-      return y <= currentYear
+      return (Number.isInteger(currentYear) ? Math.floor(x.y) : x.y) <=
+        currentYear
     })
     .sort((a, b) => a.y - b.y)
 
-  const active = reached.length ? reached[reached.length - 1].m : undefined
+  const active = passed[passed.length - 1].m
 
   let status: ProjectTimeStatus = 'planned'
-  if (reached.some((x) => x.m.status === 'cancelled')) status = 'cancelled'
-  else if (reached.some((x) => x.m.status === 'delayed')) status = 'delayed'
-  else if (active?.status === 'achieved') status = 'achieved'
-  else status = 'planned'
+  if (active.status === 'achieved') status = 'achieved'
+  else if (active.status === 'cancelled') status = 'cancelled'
+  else if (active.status === 'delayed') status = 'delayed'
 
   return { revealed: true, status, activeMilestone: active }
 }

@@ -51,6 +51,24 @@ describe('<ProjectBanner />', () => {
     })
   })
 
+  // The moonbase docks its own controls along the bottom edge, which is where
+  // this banner is fixed — it landed on the year scrubber.
+  it('Does not render anywhere under /moonbase', () => {
+    const beforeDeadline = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
+    beforeDeadline.setDate(beforeDeadline.getDate() - 1)
+    cy.clock(beforeDeadline)
+
+    // Both the index and the dynamic project route.
+    const moonbasePages = ['/moonbase', '/moonbase/[projectId]']
+
+    moonbasePages.forEach((page) => {
+      cy.mountNextRouter(page)
+      cy.mount(<ProjectBanner />)
+      cy.get('div').contains('Project Proposals Open').should('not.exist')
+      cy.contains('Submit Proposal').should('not.exist')
+    })
+  })
+
   it('Can be closed by clicking the close button', () => {
     // Set clock to a date before the deadline
     const beforeDeadline = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)

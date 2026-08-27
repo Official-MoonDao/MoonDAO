@@ -155,6 +155,10 @@ type MarkerLayerProps = {
   // also the one thing in the frame that could not exist, so a screenshot with
   // them in it can only ever read as a diagram of a base rather than as a base.
   cinematic?: boolean
+  // How far along the timeline the base's built environment is, on the same
+  // 0..1 scale as a marker's opacity. Drives the street furniture and the vault
+  // dig, which belong to no single race but cannot precede all of them.
+  infraPresence?: number
 }
 
 // Offsets above the local terrain (which the sampler provides per marker),
@@ -755,11 +759,15 @@ const UGC_EXTRA_LIFT_M = 0.6
 function UndergroundConstructionSiteMarker({
   radiusAt,
   cinematic,
+  presence = 1,
 }: {
   radiusAt?: RadiusAt | null
   // See MarkerLayerProps. The dig itself stays — it's real hardware doing real
   // work — but its caption goes, like every other floating name.
   cinematic?: boolean
+  // Fades with the construction fleet: this is that fleet at work, so it cannot
+  // be digging the vault years before anything that could dig it is on the Moon.
+  presence?: number
 }) {
   // The caption is shown on hover only, like every other name on the base (see
   // CompetitorPlot). It used to be permanent, which made it the one label in
@@ -781,6 +789,9 @@ function UndergroundConstructionSiteMarker({
     )
     return { dir: d, seat, labelAt }
   }, [radiusAt])
+
+  // Nothing is digging the vault until the fleet that digs it is here.
+  if (presence <= MODEL_PRESENCE) return null
 
   return (
     <>
@@ -804,6 +815,7 @@ function UndergroundConstructionSiteMarker({
           dir={dir}
           surfaceRadius={seat}
           scale={M_TO_UNITS}
+          dim={presence}
           castShadows={false}
           interactive={false}
         >
@@ -826,7 +838,24 @@ function UndergroundConstructionSiteMarker({
   )
 }
 
-function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
+// Everything between the districts: the boulder field, and the street furniture
+// that accumulates around a base once there is a base. The boulders were on this
+// ridge for three billion years and stay at full strength whatever year the
+// scrubber is on; the lights, the roadside cargo and the parked excavators are
+// hardware, and they fade with the rest of the built environment. Showing lit
+// streets and idle diggers in a year whose Moon holds a single dead lander is
+// exactly as wrong as standing a habitat there.
+function InterDistrictFiller({
+  radiusAt,
+  presence = 1,
+}: {
+  radiusAt?: RadiusAt | null
+  presence?: number
+}) {
+  // Same threshold the competitors' own models use: below it the furniture is
+  // gone rather than faint, because a ghost street light is still a street
+  // light standing on a Moon that has none.
+  const built = presence > MODEL_PRESENCE
   const boulders = useMemo(() => {
     const out: { dir: Vec3; seat: number; size: number; seed: number }[] = []
     for (let ri = 0; ri < BOULDER_RADIAL_BANDS; ri++) {
@@ -851,6 +880,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
 
   const lights = useMemo(() => {
     const out: { dir: Vec3; seat: number; noseAlong: Vec3 }[] = []
+    if (!built) return out
     // A fine angular step (every ~1-3 m of arc on these radii) walked all the
     // way round each loop, placing a light once STREET_LIGHT_SPACING_M has
     // accumulated since the last one and skipping any candidate over a
@@ -897,7 +927,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
       }
     }
     return out
-  }, [radiusAt])
+  }, [radiusAt, built])
 
   const roadsideCargo = useMemo(() => {
     const out: {
@@ -907,6 +937,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
       seed: number
       yaw: number
     }[] = []
+    if (!built) return out
     const STEP_DEG = 2
     for (const r of [RING_RADIUS_M, MAIN_LOOP_M]) {
       let lastSlotDeg: number | null = null
@@ -948,10 +979,11 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
       }
     }
     return out
-  }, [radiusAt])
+  }, [radiusAt, built])
 
   const excavators = useMemo(() => {
     const out: { dir: Vec3; seat: number; noseAlong: Vec3; seed: number }[] = []
+    if (!built) return out
     let placed = 0
     for (let tries = 0; placed < EXCAVATOR_COUNT && tries < 400; tries++) {
       const k = tries * 733 + 5501
@@ -993,7 +1025,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
       placed++
     }
     return out
-  }, [radiusAt])
+  }, [radiusAt, built])
 
   return (
     <group>
@@ -1016,6 +1048,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
           surfaceRadius={l.seat}
           scale={M_TO_UNITS}
           noseAlong={l.noseAlong}
+          dim={presence}
           castShadows={false}
           interactive={false}
         >
@@ -1028,6 +1061,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
           dir={c.dir}
           surfaceRadius={c.seat}
           scale={M_TO_UNITS}
+          dim={presence}
           castShadows={false}
           interactive={false}
         >
@@ -1059,6 +1093,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
           surfaceRadius={e.seat}
           scale={M_TO_UNITS}
           noseAlong={e.noseAlong}
+          dim={presence}
           castShadows={false}
           interactive={false}
         >
@@ -1350,6 +1385,7 @@ export default function MarkerLayer({
   getProjectStyle,
   radiusAt,
   cinematic,
+  infraPresence = 1,
 }: MarkerLayerProps) {
   const orgMap = useMemo(() => {
     const m = new Map<string, Organization>()
@@ -1465,10 +1501,11 @@ export default function MarkerLayer({
         )
       })}
 
-      <InterDistrictFiller radiusAt={radiusAt} />
+      <InterDistrictFiller radiusAt={radiusAt} presence={infraPresence} />
       <UndergroundConstructionSiteMarker
         radiusAt={radiusAt}
         cinematic={cinematic}
+        presence={infraPresence}
       />
     </group>
   )

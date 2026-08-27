@@ -40,14 +40,15 @@ import {
 import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
 import { buriedVault, vaultAxisBearingDeg } from '@/lib/lunar-atlas/subplan'
 import {
-  atlasYear,
+  atlasNowYear,
   buildTechTrees,
   datasetYearRange,
   filterProjects,
-  isMoonMilestone,
+  milestoneArrivalYear,
   orgById,
   projectById,
   projectStateAtYear,
+  raceArrivalYear,
   sharedGoalById,
   type TechTree,
 } from '@/lib/lunar-atlas/selectors'
@@ -213,22 +214,43 @@ export default function MoonBaseZeroIndex() {
     return () => window.removeEventListener('keydown', onKey)
   }, [cinematic])
 
-  // Density of milestones that actually put hardware at the Moon in a given
-  // year — matches what the scrubber's range covers, so a tall bar means
-  // "a lot lands/arrives this year", not "a lot of contracts were signed".
+  // The year each competitor with no Moon date of its own is taken to arrive,
+  // from the target window of the race it runs in. Resolved once here so the
+  // markers, the scrubber range and the histogram all place it identically.
+  const raceYears = useMemo(() => {
+    const now = atlasNowYear()
+    const years = new Map<string, number | null>()
+    for (const p of dataset.projects) {
+      years.set(p.id, raceArrivalYear(p, dataset.sharedGoals, now))
+    }
+    return years
+  }, [dataset.projects, dataset.sharedGoals])
+
+  // Density of arrivals at the Moon in a given year, on the same rule the
+  // markers use, so a tall bar means "a lot lands this year" — not "a lot of
+  // contracts were signed", and not "a lot was once hoped for this year".
+  // Milestones that failed, or whose date has slipped by, count at the year
+  // they can honestly be shown rather than the year they were promised.
   const histogram = useMemo(() => {
     const counts = new Map<number, number>()
+    const now = atlasNowYear()
+    const bump = (y: number) =>
+      counts.set(Math.floor(y), (counts.get(Math.floor(y)) ?? 0) + 1)
     for (const p of dataset.projects) {
-      for (const m of p.milestones) {
-        if (!isMoonMilestone(m)) continue
-        const y = atlasYear(m.targetDate)
-        if (y != null) counts.set(y, (counts.get(y) ?? 0) + 1)
+      const own = p.milestones
+        .map((m) => milestoneArrivalYear(m, now))
+        .filter((y): y is number => y != null)
+      if (own.length) own.forEach(bump)
+      else {
+        // Undated entrant: one bar, in the year its race expects the field.
+        const race = raceYears.get(p.id)
+        if (race != null) bump(race)
       }
     }
     return Array.from(counts.entries())
       .map(([y, count]) => ({ year: y, count }))
       .sort((a, b) => a.year - b.year)
-  }, [dataset.projects])
+  }, [dataset.projects, raceYears])
 
   // Auto-advance the year while playing; stop at the end.
   const yearRef = useRef(year)
@@ -408,10 +430,15 @@ export default function MoonBaseZeroIndex() {
   const getProjectStyle = useMemo(
     () =>
       (project: Project): MarkerStyle => {
-        const st = projectStateAtYear(project, year)
+        const st = projectStateAtYear(
+          project,
+          year,
+          atlasNowYear(),
+          raceYears.get(project.id)
+        )
         return { opacity: TIME_STATUS_OPACITY[st.status], visible: true }
       },
-    [year]
+    [year, raceYears]
   )
 
   const selectedProject = selectedProjectId
@@ -795,6 +822,7 @@ export default function MoonBaseZeroIndex() {
               playing={playing}
               onTogglePlay={() => setPlaying((p) => !p)}
               histogram={histogram}
+              nowYear={atlasNowYear()}
             />
           </div>
         </div>

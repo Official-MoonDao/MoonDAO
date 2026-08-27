@@ -11,6 +11,13 @@ const PROJECT_PAGES = [
   '/submit',
 ]
 
+// Routes this banner must never appear on, whatever the deadline says. The
+// moonbase is a fixed, fullscreen scene that docks its own controls along the
+// bottom edge; this banner is fixed to that same edge at z-40 and lands squarely
+// on the year scrubber. Matched by prefix so /moonbase/[projectId] is covered
+// as well as /moonbase itself.
+const FULLSCREEN_PAGES = ['/moonbase']
+
 // Check if deadline has passed (computed once on module load)
 const SUBMISSION_DEADLINE = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
 
@@ -21,10 +28,21 @@ export default function ProjectBanner() {
   // Hide banner if user is on project-related pages
   const isOnProjectPage = PROJECT_PAGES.includes(router.pathname)
 
+  const isOnFullscreenPage = FULLSCREEN_PAGES.some(
+    (page) =>
+      router.pathname === page || router.pathname.startsWith(`${page}/`)
+  )
+
   // Hide banner if submission deadline has passed
   const isDeadlinePassed = new Date() > SUBMISSION_DEADLINE
 
-  if (!isVisible || isOnProjectPage || isDeadlinePassed || process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true') {
+  if (
+    !isVisible ||
+    isOnProjectPage ||
+    isOnFullscreenPage ||
+    isDeadlinePassed ||
+    process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true'
+  ) {
     return null
   }
 
