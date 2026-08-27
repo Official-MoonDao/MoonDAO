@@ -1,11 +1,13 @@
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { useLogin } from '@privy-io/react-auth'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
+import { getFeaturedLiveDePrizeId } from '@/lib/deprize/competitions'
 import { UNIT } from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
-import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { resetMockData } from '@/lib/deprize/mockMarket'
+import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
 import { PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
@@ -13,12 +15,12 @@ import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
+import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 
 export default function DePrizeIndexContent() {
   // Follow the app's live selected chain (wallet / header dropdown), not the
@@ -59,7 +61,9 @@ export default function DePrizeIndexContent() {
   const categories = useMemo(() => {
     const set = new Set<ProjectType>()
     races.forEach((r) => set.add(r.goal.category as ProjectType))
-    return Array.from(set).sort((a, b) => PROJECT_TYPE_LABEL[a].localeCompare(PROJECT_TYPE_LABEL[b]))
+    return Array.from(set).sort((a, b) =>
+      PROJECT_TYPE_LABEL[a].localeCompare(PROJECT_TYPE_LABEL[b])
+    )
   }, [races])
 
   const filteredRaces = useMemo(() => {
@@ -72,25 +76,21 @@ export default function DePrizeIndexContent() {
     })
   }, [races, search, category])
 
-  // Fission surface power leads the browse grid as the hero race — bigger
-  // card, full odds bar, more visible outcomes. Falls out of the featured
-  // slot (and back into the grid) whenever a search/category filter hides it.
-  const FEATURED_GOAL_ID = 'shared-fission-power'
-  const featuredRace = useMemo(
-    () => filteredRaces.find((r) => r.goal.id === FEATURED_GOAL_ID),
-    [filteredRaces],
-  )
-  const gridRaces = useMemo(
-    () => filteredRaces.filter((r) => r.goal.id !== FEATURED_GOAL_ID),
-    [filteredRaces],
-  )
+  // Live on-chain competitions that aren't bound to a Moon Base Zero race
+  // (Arbitrum #1 — The Moon Is A Harsh Mistress) take the hero slot. Atlas
+  // race demos fill the grid below; fission no longer steals the featured
+  // position when a real market is live on this chain.
+  const featuredLiveId = useMemo(() => getFeaturedLiveDePrizeId(chainSlug), [chainSlug])
+  const gridRaces = filteredRaces
 
   const positionsCount = useMemo(
     () => Object.values(positionsMap).filter(Boolean).length,
-    [positionsMap],
+    [positionsMap]
   )
   const handleHasPosition = (sharedGoalId: string, has: boolean) => {
-    setPositionsMap((prev) => (prev[sharedGoalId] === has ? prev : { ...prev, [sharedGoalId]: has }))
+    setPositionsMap((prev) =>
+      prev[sharedGoalId] === has ? prev : { ...prev, [sharedGoalId]: has }
+    )
   }
 
   const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
@@ -106,7 +106,7 @@ export default function DePrizeIndexContent() {
       try {
         const bal = await eth_getBalance(
           getRpcClient({ client: deprizeReadClient, chain: readChain }),
-          { address: account.address },
+          { address: account.address }
         )
         if (!cancelled) {
           setSpendableEth(spendableFromBalanceEth(Number(bal) / Number(UNIT), readChain.id))
@@ -126,10 +126,10 @@ export default function DePrizeIndexContent() {
   const bettingBlockedReason = region.isRestricted
     ? "Betting on live on-chain markets isn't available in your region."
     : !region.isLoading && !region.isError && !region.country
-      ? "Can't verify your region — live betting is disabled until it resolves. Demo markets still work."
-      : region.isLoading
-        ? 'Checking your region…'
-        : undefined
+    ? "Can't verify your region — live betting is disabled until it resolves. Demo markets still work."
+    : region.isLoading
+    ? 'Checking your region…'
+    : undefined
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
@@ -237,23 +237,17 @@ export default function DePrizeIndexContent() {
               </div>
             ) : activeTab === 'all' ? (
               <>
-                {featuredRace && (
-                  <RaceMarketCard
-                    key={featuredRace.goal.id}
-                    goal={featuredRace.goal}
-                    competitors={featuredRace.competitors}
+                {featuredLiveId !== undefined && (
+                  <LiveDePrizeHero
+                    deprizeId={featuredLiveId}
                     chain={chain}
                     chainSlug={chainSlug}
                     account={account}
                     userAddress={userAddress}
                     spendableEth={spendableEth}
-                    refreshNonce={refreshNonce}
-                    activeTab={activeTab}
                     bettingBlockedReason={bettingBlockedReason}
                     onConnectWallet={() => login()}
-                    onHasPosition={handleHasPosition}
                     onDone={() => setRefreshNonce((n) => n + 1)}
-                    variant="featured"
                   />
                 )}
 
@@ -308,7 +302,8 @@ export default function DePrizeIndexContent() {
 
                 {positionsCount === 0 && (
                   <div className="p-8 text-center text-gray-400 text-sm">
-                    You haven&apos;t backed any teams yet. Pick a race above to place your first bet.
+                    You haven&apos;t backed any teams yet. Pick a race above to place your first
+                    bet.
                   </div>
                 )}
               </div>

@@ -82,8 +82,7 @@ export type DePrizeCompetition = {
 
 export const GENERIC_DEPRIZE_COMPETITION: DePrizeCompetition = {
   title: 'DePrize',
-  tagline:
-    'Back the team you think will win — live odds, payout when a winner is declared.',
+  tagline: 'Back the team you think will win — live odds, payout when a winner is declared.',
   metaDescription:
     'Back the team you think will win — live odds, payout when a winner is declared.',
 }
@@ -101,8 +100,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
       metaDescription:
         'Arbitrum DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
-      questionId:
-        '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
+      questionId: '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
     },
   },
   sepolia: {
@@ -116,8 +114,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         'Sepolia QA fixture for the fission surface power race — three Team NFTs, live LMSR odds, FeeRouter-owned market.',
       metaDescription:
         'Sepolia DePrize bound to the Moon Base Zero fission surface power race. Back a competitor and cash out or claim when resolved.',
-      questionId:
-        '0xab937cdea2250786bf37ee2dd06f244bbeed62159c337927074523844d5759fb',
+      questionId: '0xab937cdea2250786bf37ee2dd06f244bbeed62159c337927074523844d5759fb',
       sharedGoalId: 'shared-fission-power',
       raceLabel: 'Fission surface power',
       outcomes: [
@@ -145,6 +142,23 @@ export function isKnownDePrizeCompetition(
 ): boolean {
   if (deprizeId === undefined || !Number.isFinite(deprizeId)) return false
   return !!DEPRIZE_COMPETITIONS[chainSlug]?.[deprizeId]
+}
+
+/**
+ * Live on-chain DePrize to feature at the top of /deprize — the first registered
+ * competition on this chain that is NOT bound to a Moon Base Zero race. Today
+ * that is Arbitrum #1 (The Moon Is A Harsh Mistress). Race-bound entries stay
+ * on their RaceMarketCard; unbound ones have nowhere else to show up.
+ */
+export function getFeaturedLiveDePrizeId(chainSlug: string): number | undefined {
+  const entries = DEPRIZE_COMPETITIONS[chainSlug]
+  if (!entries) return undefined
+  const unbound = Object.entries(entries)
+    .filter(([, c]) => !c.sharedGoalId)
+    .map(([id]) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0)
+    .sort((a, b) => a - b)
+  return unbound[0]
 }
 
 /** Competition copy for a DePrize; falls back to generic copy when unregistered. */
@@ -343,9 +357,7 @@ export function isRaceBindingComplete(
 }
 
 /** True when this outcome is the Open Field slot. */
-export function isOpenFieldOutcome(
-  outcome: DePrizeRaceOutcome | undefined
-): boolean {
+export function isOpenFieldOutcome(outcome: DePrizeRaceOutcome | undefined): boolean {
   return !!outcome?.field
 }
 
@@ -370,9 +382,7 @@ export function isCompetitiveRace(competitorCount: number): boolean {
  * color) — never market visibility. Unclaimed competitors still render their
  * name and link, just with a neutral monogram instead of their mark.
  */
-export function isCompetitorClaimed(
-  outcome: DePrizeRaceOutcome | undefined
-): boolean {
+export function isCompetitorClaimed(outcome: DePrizeRaceOutcome | undefined): boolean {
   return outcome?.consented === true
 }
 
