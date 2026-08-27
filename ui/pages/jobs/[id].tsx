@@ -1,6 +1,6 @@
 import { ArrowLeftIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import TeamABI from 'const/abis/Team.json'
-import { DEFAULT_CHAIN_V5, DEPLOYED_ORIGIN, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES } from 'const/config'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -15,11 +15,18 @@ import {
   formatDeadlineCountdown,
   formatLocation,
   getApplicationDeadline,
+  getJobShareUrl,
   parseJobMetadata,
 } from '@/lib/jobs/jobMetadata'
 import { fetchJobPostingDoc } from '@/lib/jobs/jobPostingDoc'
 import { buildJobPostingJsonLd, serializeJsonLd } from '@/lib/jobs/jobPostingJsonLd'
 import { fetchJobById, fetchRelatedJobs } from '@/lib/jobs/jobsTable'
+import {
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_WIDTH,
+  buildJobOgImageUrl,
+  jobOgFieldsFrom,
+} from '@/lib/og/preview'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -96,7 +103,9 @@ export default function JobDetail({
   const summary = posting?.summary || job.description
   const applyUrl = isGated ? undefined : posting?.applyUrl || job.contactInfo
   const teamHref = team ? `/team/${team.id}` : undefined
-  const shareUrl = `${DEPLOYED_ORIGIN}/jobs/${job.id}`
+  const shareUrl = getJobShareUrl(job)
+  const ogFields = jobOgFieldsFrom({ job, envelope: metadata, doc: posting, teamName: team?.name })
+  const ogImage = buildJobOgImageUrl(ogFields)
   const facts = buildJobFacts({ envelope: metadata, doc: posting, deadline })
 
   const compensation = formatCompensation(posting?.compensation) || metadata.compensation
@@ -155,6 +164,9 @@ export default function JobDetail({
         title={job.title}
         secondaryTitle={team?.name ? `${team.name} · MoonDAO Jobs` : 'MoonDAO Jobs'}
         description={summary}
+        image={ogImage}
+        imageWidth={OG_IMAGE_WIDTH}
+        imageHeight={OG_IMAGE_HEIGHT}
       >
         {jsonLd && (
           <script

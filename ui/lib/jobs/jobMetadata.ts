@@ -1,3 +1,4 @@
+import { DEPLOYED_ORIGIN } from 'const/config'
 import { bytesOfString } from '@/lib/utils/strings'
 
 /**
@@ -55,7 +56,12 @@ export type JobLocation = {
 }
 
 export type JobCommitmentType =
-  'full-time' | 'part-time' | 'contract' | 'internship' | 'bounty' | 'volunteer'
+  | 'full-time'
+  | 'part-time'
+  | 'contract'
+  | 'internship'
+  | 'bounty'
+  | 'volunteer'
 
 export type JobCommitment = {
   type?: JobCommitmentType
@@ -368,7 +374,8 @@ export function buildJobMetadata(doc: JobPostingDoc, cid?: string): JobMetadataE
 const BODY_SECTION_HEADING = /^#{1,3}\s+body(?:\s*\(.*\))?\s*$/i
 const INTERNAL_NOTES_HEADING = /^#{1,3}\s+notes on what changed\b/i
 const TABLE_ROW = /^\s*\|.+\|\s*$/
-const AUTHORING_TABLE_FIELD = /^\s*\|\s*(Title|Category|Summary|Compensation|Commitment|Location|Seniority|Application deadline|Apply URL|Skills)\s*\|/i
+const AUTHORING_TABLE_FIELD =
+  /^\s*\|\s*(Title|Category|Summary|Compensation|Commitment|Location|Seniority|Application deadline|Apply URL|Skills)\s*\|/i
 
 export function extractPublicJobBody(markdown: string): string {
   if (!markdown || !markdown.trim()) return ''
@@ -457,7 +464,7 @@ export function normalizeJobPostingDoc(raw: any): JobPostingDoc | null {
     ? raw.links
         .filter((link: any) => isPlainObject(link) && cleanString(link.url))
         .map((link: any) =>
-          compact({ label: cleanString(link.label) || link.url.trim(), url: link.url.trim() }),
+          compact({ label: cleanString(link.label) || link.url.trim(), url: link.url.trim() })
         )
     : undefined
 
@@ -499,10 +506,14 @@ export function getJobHref(job: { id: number | string }): string {
   return `/jobs/${job.id}`
 }
 
+export function getJobShareUrl(job: { id: number | string }): string {
+  return `${DEPLOYED_ORIGIN}${getJobHref(job)}`
+}
+
 /** The date applications close: an explicit deadline, else the listing's expiry. */
 export function getApplicationDeadline(
   envelope: JobMetadataEnvelope,
-  endTime?: number,
+  endTime?: number
 ): number | undefined {
   if (envelope.deadline) return envelope.deadline
   return endTime && endTime > 0 ? endTime : undefined
@@ -524,7 +535,7 @@ export function daysUntil(timestamp?: number, now = Math.floor(Date.now() / 1000
 
 export function formatDeadlineCountdown(
   timestamp?: number,
-  now = Math.floor(Date.now() / 1000),
+  now = Math.floor(Date.now() / 1000)
 ): string | null {
   const days = daysUntil(timestamp, now)
   if (days === null) return null

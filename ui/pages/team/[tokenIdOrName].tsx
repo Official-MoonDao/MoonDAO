@@ -52,6 +52,15 @@ import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import { parseJobMetadata } from '@/lib/jobs/jobMetadata'
+import {
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_WIDTH,
+  buildJobOgImageUrl,
+  buildListingOgImageUrl,
+  jobOgFieldsFrom,
+  listingOgFieldsFrom,
+} from '@/lib/og/preview'
 import useSafe from '@/lib/safe/useSafe'
 import queryTable from '@/lib/tableland/queryTable'
 import { resolveTeamIdFromPrettyLink } from '@/lib/team/teamPrettyLinks'
@@ -405,6 +414,19 @@ function TeamDetailPageContent({
   )
 
   const teamIcon = '/./assets/icon-team.svg'
+  const teamName = nft?.metadata?.name as string | undefined
+  const shareOgImage = queriedListing
+    ? buildListingOgImageUrl(listingOgFieldsFrom(queriedListing, teamName))
+    : queriedJob
+    ? buildJobOgImageUrl(
+        jobOgFieldsFrom({
+          job: queriedJob,
+          envelope: parseJobMetadata(queriedJob.metadata),
+          teamName,
+        })
+      )
+    : `https://ipfs.io/ipfs/${imageIpfsLink.split('ipfs://')[1]}`
+  const shareOgSized = Boolean(queriedListing || queriedJob)
 
   return (
     <Container>
@@ -414,11 +436,9 @@ function TeamDetailPageContent({
         description={
           queriedListing?.description || queriedJob?.description || nft.metadata.description
         }
-        image={`https://ipfs.io/ipfs/${
-          queriedListing
-            ? queriedListing.image.split('ipfs://')[1]
-            : imageIpfsLink.split('ipfs://')[1]
-        }`}
+        image={shareOgImage}
+        imageWidth={shareOgSized ? OG_IMAGE_WIDTH : undefined}
+        imageHeight={shareOgSized ? OG_IMAGE_HEIGHT : undefined}
       />
 
       {teamSubscriptionModalEnabled && (
