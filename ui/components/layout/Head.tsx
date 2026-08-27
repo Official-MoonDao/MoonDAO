@@ -1,30 +1,12 @@
 // Page Metadata
-import { DEPLOYED_ORIGIN, IPFS_GATEWAY } from 'const/config'
+import { DEPLOYED_ORIGIN } from 'const/config'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import { DEFAULT_OG_IMAGE_PATH, normalizeOgImageUrl } from '@/lib/utils/ogImage'
 
 const defaultTitle = "MoonDAO: The Internet's Space Program"
 const defaultDescription =
   'Join MoonDAO and be part of the future of space exploration. Learn more about our mission and how you can get involved.'
-const defaultImage = 'https://ipfs.io/ipfs/QmXY1axN4tQGV7CQBFtoE4hMZM3TRGMqqg5DD5LG3dz1dA'
-
-function normalizeOgImageUrl(image: string): string {
-  if (!image) return defaultImage
-
-  if (image.startsWith('http://') || image.startsWith('https://')) {
-    return image
-  }
-
-  if (image.startsWith('ipfs://')) {
-    return `${IPFS_GATEWAY}${image.replace('ipfs://', '')}`
-  }
-
-  if (image.startsWith('/')) {
-    return `${DEPLOYED_ORIGIN}${image}`
-  }
-
-  return `${IPFS_GATEWAY}${image}`
-}
 
 type WebsiteHeadProps = {
   title?: string
@@ -47,7 +29,7 @@ export default function WebsiteHead({
   title = defaultTitle,
   secondaryTitle,
   description = defaultDescription,
-  image = defaultImage,
+  image = DEFAULT_OG_IMAGE_PATH,
   keywords,
   author = 'MoonDAO',
   robots = 'index, follow',
