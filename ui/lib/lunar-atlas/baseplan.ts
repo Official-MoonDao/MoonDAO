@@ -490,29 +490,29 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // LUNAR MASS DRIVER, south-south-east (300°) — the widest open gap on main
   // street, between the rover depot and the comms terminals, and it clears
   // both neighbors' junctions by the same 45°+ margin every other pair on
-  // this ring keeps. A single concept-study competitor stands alone on its
-  // own corner lot (see the `lunar-mass-driver-concept` entry in
-  // ProjectModel.tsx's FOOTPRINT_FRACTION for why its 105 m schematic model,
-  // at MD_SCALE, doesn't push this junction out to a true 52.5 m-radius
-  // footprint).
+  // this ring keeps.
   //
-  // `turn` is doing real work here, not just breaking up a chorus line the
-  // way it does everywhere else: this district's own MASS DRIVER AVENUE runs
-  // dead straight along this exact 300° bearing, and the guideway's long
-  // axis, at the default (camera-facing) heading, sits roughly PERPENDICULAR
-  // to that — fine for standing clear of main street's arc (a long axis
-  // tangential to a circle barely pushes its radius out) but exactly the
-  // wrong axis for a straight road along the district's own bearing, which
-  // it then swept straight across for its whole length. Turning the model
-  // 45° swings its long axis away from square-on to the avenue without
-  // swinging it INTO square-on with main street's tangent either — the one
-  // window where both roads clear at once; see the FOOTPRINT_FRACTION
-  // comment in ProjectModel.tsx for the fraction this pairs with. `reach` is
-  // bigger than every other district's here for the same underlying reason
-  // every number on this entry is: this is by far the longest single asset
-  // on the base, and the avenue has to run out far enough to actually reach
-  // it, not just far enough for an LTV-scale plot.
-  mass_driver: { ...at(300), turn: 45, reach: 65 },
+  // What stands on this lot is the launcher's BREACH WORKS — capacitor hall,
+  // power feed, solar field — and that is all this entry describes. The
+  // guideway itself runs 600 m out of the lot on its own heading, is not
+  // packed as a disc, and is checked as a corridor; see lib/lunar-atlas/
+  // trackplan for why, and for why its heading is not this bearing (the
+  // short version: 300° runs downhill off the ridge crest hardest of any
+  // direction, and a level guideway pays for downhill in leg height).
+  //
+  // `turn` and `reach` are back to ordinary values, which is the point. They
+  // used to be 45 and 65: `turn` was holding a 105 m model's long axis off
+  // square-on to this district's own dead-straight avenue, `reach` was
+  // stretching the avenue out to meet a lot pushed far out to hold that
+  // model, and both had to be solved jointly with a FOOTPRINT_FRACTION in
+  // ProjectModel — three coupled numbers, none of which meant anything on its
+  // own. None of that is load-bearing now: the track's direction comes from
+  // trackplan, and the lot only has to hold the breach works. `reach` is just
+  // the ordinary thing it is everywhere else: far enough for the avenue to
+  // actually arrive at the lot, which for a 14 m lot swung 10.8° off the
+  // avenue is 28 (the avenue-reach test in
+  // cypress/integration/unit/lunar-atlas-baseplan.cy.ts pins it).
+  mass_driver: { ...at(300), turn: 0, reach: 28 },
 }
 
 // Every "on-street" district's bearing, own centre radius, and reach — the
@@ -719,7 +719,8 @@ export const BASE_STREETS: Street[] = [
   // reasons.
   avenue('rover', { width: 0.72 }),
 
-  // MASS DRIVER AVENUE — maintenance out to the launcher's breach house.
-  // Rover width: one concept-study competitor generates no haul traffic yet.
+  // MASS DRIVER AVENUE — maintenance out to the launcher's breach works, which
+  // is the only part of it standing on a lot. Rover width: one concept-study
+  // competitor generates no haul traffic yet.
   avenue('mass_driver', { width: 0.72 }),
 ]

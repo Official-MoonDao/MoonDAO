@@ -24,6 +24,8 @@ import {
   districtBearingDeg,
   districtExtentM,
   districtSlots,
+  onLoopRoad,
+  withinDistrictGround,
   type Plot,
   type SitePlan,
 } from '../../../lib/lunar-atlas/baseplan'
@@ -31,6 +33,18 @@ import {
   BURIED_HABITATS,
   vaultGeometry,
 } from '../../../lib/lunar-atlas/subplan'
+import {
+  BREACH_LOT_RADIUS_M,
+  TRACK_CORRIDOR_HALF_M,
+  TRACK_DECK_CLEAR_M,
+  TRACK_HEADING_DEG,
+  TRACK_LENGTH_M,
+  TRACK_SPLAY,
+  bentLegs,
+  trackBentStations,
+  trackDeckY,
+  trackLegHeights,
+} from '../../../lib/lunar-atlas/trackplan'
 import type { ProjectType } from '../../../lib/lunar-atlas/types'
 
 const plots = (...radii: number[]): Plot[] =>
@@ -113,12 +127,11 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // mast-shelter-array lot Nokia still stands on.
   comms_pnt: plots(7.5, 1.04, 1.52, 1.13),
   // A single concept-study competitor, standing alone on its own corner lot.
-  // 33.6 m (0.32 of the 105 m schematic model's full length at MD_SCALE) —
-  // see FOOTPRINT_FRACTION['lunar-mass-driver-concept'] in
-  // ProjectModel.tsx, which this figure must stay paired with
-  // BASE_PLAN.mass_driver's `turn: 45` (baseplan.ts) rather than being
-  // tuned alone.
-  mass_driver: plots(33.6),
+  // The lot holds the launcher's BREACH WORKS only (BREACH_LOT_RADIUS_M) — the
+  // 600 m guideway runs out of it and is checked as a corridor, further down,
+  // because no disc describes it. This used to be 33.6 m, a fraction of the
+  // model's own length that had to be kept paired with the district's `turn`.
+  mass_driver: plots(BREACH_LOT_RADIUS_M),
 }
 
 const races = Object.entries(ROSTERS) as [ProjectType, Plot[]][]
@@ -471,6 +484,123 @@ describe('moon base zero street plan', () => {
             .empty
         }
       }
+    })
+  })
+
+  describe('the mass driver guideway', () => {
+    // The launcher is the one asset the plot-packing math above cannot describe.
+    // Every other check in this file models an installation as a DISC, which is
+    // fair for a reactor and useless for a structure 600 m long and 6 m wide:
+    // the disc containing it is 300 m across. So its lot holds the breach works
+    // only, and the track is checked here as what it is — a corridor running out
+    // of that lot across open ground. See lib/lunar-atlas/trackplan.
+
+    const plan = BASE_PLAN.mass_driver!
+    const slot = districtSlots(plan, ROSTERS.mass_driver!).get('p0')!
+
+    // Every point the guideway sweeps: both edges of the corridor and its
+    // centreline, at 1 m stations. Sampling the centreline alone would miss a
+    // corridor that straddles a road, which is the failure that matters.
+    const corridor = () => {
+      const rad = (TRACK_HEADING_DEG * Math.PI) / 180
+      const ce = Math.cos(rad)
+      const cn = Math.sin(rad)
+      const pts: { d: number; radius: number; bearing: number }[] = []
+      for (let d = 0; d <= TRACK_LENGTH_M; d += 1) {
+        for (const off of [-TRACK_CORRIDOR_HALF_M, 0, TRACK_CORRIDOR_HALF_M]) {
+          const east = slot.east + ce * d - cn * off
+          const north = slot.north + cn * d + ce * off
+          pts.push({
+            d,
+            radius: Math.hypot(east, north),
+            bearing:
+              ((Math.atan2(north, east) * 180) / Math.PI + 360) % 360,
+          })
+        }
+      }
+      return pts
+    }
+
+    it('runs the whole way without touching a road', () => {
+      for (const p of corridor()) {
+        expect(
+          onLoopRoad(p.radius),
+          `guideway on a loop road at ${p.d} m (r=${p.radius.toFixed(1)})`
+        ).to.equal(false)
+      }
+    })
+
+    it('runs the whole way without crossing another district', () => {
+      // The breach works stand on this district's own ground on purpose, so the
+      // first stations are exempt — that lot is where they belong.
+      const exempt = BREACH_LOT_RADIUS_M + TRACK_CORRIDOR_HALF_M
+      for (const p of corridor()) {
+        if (p.d <= exempt) continue
+        expect(
+          withinDistrictGround(p.radius, p.bearing, 10),
+          `guideway on district ground at ${p.d} m ` +
+            `(r=${p.radius.toFixed(1)}, bearing=${p.bearing.toFixed(1)})`
+        ).to.equal(false)
+      }
+    })
+
+    it('stands its deck clear of the ground at every bent', () => {
+      // The geometric contract the model relies on: whatever the ground does
+      // under the run, the deck is level and no bent is shorter than the
+      // clearance. Exercised with a fall profile at least as bad as the real
+      // one — the flattest heading measures about 10.6 m over the run.
+      const stations = trackBentStations()
+      const fall = stations.map((d) => -(d / TRACK_LENGTH_M) * 14)
+      const deck = trackDeckY(fall)
+      const legs = trackLegHeights(fall)
+
+      expect(legs.length, 'a leg height per bent').to.equal(stations.length)
+      for (const [i, h] of legs.entries()) {
+        expect(h, `bent ${i} clearance`).to.be.at.least(TRACK_DECK_CLEAR_M)
+        // Level means level: every bent's foot plus its own height lands on the
+        // one deck. This is what makes a trestle a trestle.
+        expect(fall[i] + h, `bent ${i} reaches the deck`).to.be.closeTo(
+          deck,
+          1e-9
+        )
+      }
+      // The tallest bent is the clearance plus the whole fall, and no more.
+      expect(Math.max(...legs)).to.be.closeTo(TRACK_DECK_CLEAR_M + 14, 1e-9)
+    })
+
+    it('stands every bent on its feet rather than on its point', () => {
+      // An A-frame, not a V. This is not a nicety about which way a shape looks:
+      // the splay is the base width that resists the cross-track overturning
+      // moment, and inverted it puts the whole trestle up on its points. It
+      // shipped inverted once, from a lean angle whose sign was written by hand,
+      // which is why bentLegs returns endpoints instead.
+      for (const h of [TRACK_DECK_CLEAR_M, 9, 16, 40]) {
+        const [left, right] = bentLegs(0, 0, h)
+        const footSpan = Math.abs(right.foot[2] - left.foot[2])
+        const headSpan = Math.abs(right.head[2] - left.head[2])
+        expect(footSpan, `bent ${h} m: feet wider than head`).to.be.greaterThan(
+          headSpan
+        )
+        // Symmetric about the centreline, and the right leg is the +z one.
+        expect(left.foot[2]).to.be.closeTo(-right.foot[2], 1e-9)
+        expect(right.foot[2]).to.be.greaterThan(0)
+        // Splay grows with height — a taller bent needs a wider base, and a
+        // fixed foot offset would make the tall far-end bents the slenderest.
+        expect(footSpan - headSpan).to.be.closeTo(2 * TRACK_SPLAY * h, 1e-9)
+        // Feet on the ground, heads at the cap.
+        expect(left.foot[1]).to.equal(0)
+        expect(right.head[1]).to.equal(h)
+      }
+    })
+
+    it('keeps the breach works on a lot that fits the district', () => {
+      // The lot is sized to the breach works, not to the track. If that ever
+      // drifts back toward the model's own length, the junction gets shoved out
+      // and this district stops matching the ring.
+      expect(ROSTERS.mass_driver![0].radiusM).to.equal(BREACH_LOT_RADIUS_M)
+      const radius = Math.hypot(slot.east, slot.north)
+      expect(radius - MAIN_LOOP_M, 'breach lot setback off main street').to.be
+        .closeTo(ROAD_HALF_M + SETBACK_M + BREACH_LOT_RADIUS_M, 1e-6)
     })
   })
 })

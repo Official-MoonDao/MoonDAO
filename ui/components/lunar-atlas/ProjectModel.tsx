@@ -22,10 +22,19 @@ import {
   useRef,
 } from 'react'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { HOME_CAM, HOME_TARGET } from '@/lib/lunar-atlas/homeview'
 import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import { buriedVault, type VaultGeometry } from '@/lib/lunar-atlas/subplan'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
+import {
+  BREACH_LOT_RADIUS_M,
+  MASS_DRIVER_ID,
+  TRACK_LENGTH_M,
+  bentLegs,
+  trackBentStations,
+  trackDeckY,
+} from '@/lib/lunar-atlas/trackplan'
 import type { ModelTransform, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 
@@ -61,13 +70,11 @@ const TYPE_SIZE_M: Partial<Record<ProjectType, number>> = {
   // exact number, so the terminal is authored in real meters.
   comms_pnt: 15,
   orbital: 20,
-  // NOT true scale — see the comment on MASS_DRIVER_M. A launcher able to
-  // reach lunar escape velocity runs for kilometers; this is the length of
-  // the schematic near segment (breach house through the first dozen coil
-  // stages) rendered in its place — 105 m, MD_SCALE's 1.5x on the
-  // schematic's original 70 m, once that read as under-scale for the
-  // base's capstone next to the rest of the true-size hardware here.
-  mass_driver: 105,
+  // Breach to muzzle. A launcher able to reach lunar escape velocity runs for
+  // kilometers, so this is still only its near segment — but the segment is now
+  // authored at true 1:1 size, and its length lives in one place (trackplan)
+  // because the layout tests and the terrain sampling need the same number.
+  mass_driver: TRACK_LENGTH_M,
 }
 const PROJECT_SIZE_M: Record<string, number> = {
   'spacex-starship-hls': 52, // Ship upper stage ~50 m + gear
@@ -254,28 +261,6 @@ const FOOTPRINT_FRACTION: Record<string, number> = {
   // (12.86 m, scripts/tmp-ilrs-check.ts) is well past the 0.5 default, though
   // not the whole figure the way MRE's single-origin plant is.
   ilrs: 0.587,
-  // The 105 m size figure is the schematic model's full LENGTH (see
-  // MassDriver below). What has to clear the neighboring lot RADIALLY (main
-  // street's own circle) is the model's WIDTH, not its length: the solar
-  // field is the widest reach off the guideway's centerline, at 6.5 m
-  // (still true at MD_SCALE — see the comment there). The 0.5 default would
-  // reserve a 52.5 m-radius lot for a structure that, in the radial
-  // direction, only needs a fraction of that.
-  //
-  // 0.32, not something smaller: this district's own BASE_PLAN.turn (45°,
-  // see the comment there) is what actually keeps the guideway's long axis
-  // off square-on to MASS DRIVER AVENUE — a straight road along this
-  // district's own bearing, which the model's long axis crosses dead
-  // perpendicular at the default (camera-facing) heading. 0.32 is not sized
-  // to the model's true worst-case footprint under rotation (that number,
-  // at this length, would push the junction absurdly far out); it is sized,
-  // together with `turn: 45`, to the one narrow window verified against
-  // BOTH roads directly — main street's circle and the avenue's straight
-  // line — where the plot sits close enough to the ring for a corner lot,
-  // clears main street's own pavement by ~5 m, and clears the avenue by
-  // ~70 m. Change `turn` on this district and this number stops being
-  // correct; the two were solved together, not independently.
-  'lunar-mass-driver-concept': 0.32,
 }
 
 // Radius in meters of the ground a project occupies, for laying out plots that
@@ -289,6 +274,20 @@ export function footprintRadiusM(project: Project): number {
   // cannot drift away from the mound the model layer actually draws.
   const vault = buriedVault(project.id)
   if (vault) return vault.footprintM
+  // The mass driver is the one asset a DISC cannot describe: 600 m long and 6 m
+  // wide, so the disc containing it is 300 m across and would reserve a quarter
+  // of the base. Only its BREACH WORKS stand on a lot; the guideway runs out of
+  // that lot into open regolith on a heading picked for the ground, and is
+  // checked as a corridor instead (see trackplan, and the corridor test in
+  // cypress/integration/unit/lunar-atlas-baseplan.cy.ts).
+  //
+  // This replaced a FOOTPRINT_FRACTION entry that had to be solved jointly with
+  // the district's `turn` — 0.32 paired with 45 degrees — because the fraction
+  // was standing in for "how much of a 105 m model swings where". Nothing has to
+  // be co-solved now: the lot is sized to the hardware that is actually on it,
+  // and the track's direction is set by trackplan rather than by whatever angle
+  // happened to miss both roads.
+  if (project.id === MASS_DRIVER_ID) return BREACH_LOT_RADIUS_M
   const graded = gradedDeckRadiusM(project)
   if (graded !== null) return graded
   return projectSizeM(project) * (FOOTPRINT_FRACTION[project.id] ?? 0.5)
@@ -6911,77 +6910,80 @@ function ConstructionSite({ accent }: { accent: string }) {
 // Lunar mass driver (concept study, no developer assigned)
 // ---------------------------------------------------------------------------
 
-// Local units per METER, as in the other true-size installations — but this
-// one is NOT true scale. A reluctance/coil-gun launcher able to reach lunar
-// escape velocity runs for kilometers (the source study's own half-metre-bore
-// design comes out "over 7 km long"), two orders of magnitude past what this
-// 16 km settlement patch can show in the same frame as everything else on
-// the base. There is no honest way around that, so — the same kind of
-// compromise BASE_PLAN.lander's 300 m standoff already is — this model shows
-// a schematic NEAR segment only: the breach house, its capacitor bank, and
-// the first dozen coil stages off the muzzle. A real track keeps running
-// well past the edge of this rendered patch.
-const MASS_DRIVER_M = UNIT_MAX_DIM / (TYPE_SIZE_M.mass_driver ?? 105)
+// Local units per METER, and now genuinely 1:1 — the model is authored in
+// meters and TYPE_SIZE_M.mass_driver is its true length, so nothing here is
+// multiplied by a fudge factor on the way out. (It used to be: a 70 m
+// schematic blown up 1.5x, because 70 m of track read as under-scale for the
+// base's capstone. The answer to that was never a scale factor; it was more
+// track.)
+//
+// Still a NEAR SEGMENT, and unavoidably so. A reluctance launcher able to
+// reach lunar escape velocity runs for kilometers — the source study's own
+// half-metre-bore design comes out "over 7 km long" — so what caps this model
+// is not the patch (16 km would hold 7 km of track) but the GROUND: the base
+// sits on the ridge crest and every run off it descends, and a level guideway
+// pays for descent in leg height. 600 m is as far as the flattest available
+// heading stays level under legs a builder would recognise; see trackplan.
+const MASS_DRIVER_M = UNIT_MAX_DIM / (TYPE_SIZE_M.mass_driver ?? TRACK_LENGTH_M)
 
-// A pure visual enlargement on top of the schematic geometry below, which is
-// still authored (and internally proportioned) at its original 1:1 scale —
-// every MD_* constant here is unchanged from the launcher's first pass. At
-// 1:1 the rendered near-segment came out reading as under-scale for what is
-// supposed to be the base's capstone, next to true-size hardware everywhere
-// else on the map, so the whole model is blown up 1.5x here rather than
-// hand-multiplying every dimension below. TYPE_SIZE_M.mass_driver (105 =
-// 70 * this) carries the same factor, so footprintRadiusM still measures the
-// model actually on screen, not the pre-scale geometry.
-const MD_SCALE = 1.5
+// --- The guideway, in cross-section (meters) --------------------------------
+// A spine beam carrying a continuous row of stator modules, each a square cell
+// with a recessed window, under a capping rail. This is the reference
+// animation's own build-up, and it is also why the beam reads as machinery
+// rather than a girder: the repeat is at MD_MODULE_M, so the eye gets a scale
+// ruler laid along the whole run.
+const MD_SPINE_W = 2.2 // across the track
+const MD_SPINE_H = 1.15 // spine depth, deck underside to module seat
+const MD_MODULE_M = 3.0 // module pitch along the track
+const MD_MODULE_GAP = 0.34 // dark joint between neighbouring modules
+const MD_MODULE_W = 3.06 // module outer width, wider than the spine
+const MD_MODULE_H = 1.52
+const MD_WINDOW_INSET = 0.42 // how far the recessed cell sits inside its frame
+const MD_RAIL_H = 0.2 // capping rail on top of the module row
+const MD_RAIL_W = 3.24
+const MD_BORE_R = 0.55 // bore radius — the source study's own figure
 
-// Half the rendered track's length, in meters, and the reach of the coil
-// stages within it, BEFORE MD_SCALE. footprintRadiusM's 0.5 default would
-// land exactly on this number times MD_SCALE — the model's own half-length
-// IS its footprint radius, same as any other installation on the base —
-// except this asset overrides that default; see FOOTPRINT_FRACTION above.
-const MD_HALF_M = 35
-const MD_COIL_SPAN_M = 30
-const MD_COIL_COUNT = 11
-const MD_DECK_Y = 1.1 // guideway deck height above the PLATFORM (see MD_LIFT_M)
-const MD_BORE_R = 0.55 // rail/coil bore radius — the source study's own figure
+// --- The trestle bents -----------------------------------------------------
+// An A-frame per bay: two splayed legs meeting under a pier cap, tied across at
+// MD_TIE_FRAC of their height. The splay itself (and so which way up the bent
+// is) comes from trackplan's bentLegs, as the two points each leg spans.
+const MD_LEG_T = 0.52 // leg thickness along the track
+const MD_LEG_W = 0.9 // leg width across it
+const MD_TIE_FRAC = 0.42 // height up the bent that the cross tie sits at
+const MD_TIE_T = 0.3
+const MD_CAP_W = 3.4 // pier cap: the saddle the spine bears on
+const MD_CAP_H = 0.76
+const MD_CAP_D = 1.34
+const MD_CHAMFER_H = 0.34 // the cap's tapered underside
 
-// Clearance from true local grade up to the underside of the platform deck,
-// BEFORE MD_SCALE. The rendered terrain is sampled at one point (this site's
-// own anchor) and assumed flat under the whole installation — fine for
-// every other asset on the base, which is a few meters across, but this is
-// by far the longest rigid structure here (over 100 m at MD_SCALE), and the
-// real baked terrain relief across that span can exceed what a
-// grade-hugging berm has room for, so the far end reads as dug into the
-// ground instead of standing on it. Raised onto trestle legs instead of a
-// solid fill berm, both because it is honestly closer to how a real
-// guideway this exposed would be built (clear of blown dust and drifting
-// regolith) and because legs are what let the deck stay level while
-// whatever ground happens to be under any one leg varies.
-const MD_LIFT_M = 5
-
-// Coil stages: a reluctance launcher is, at bottom, hundreds to thousands of
-// these switched in sequence ("imagine if we did this over and over again
-// ... for a kilometer or four" — the source design study; see the project's
-// own `sources` in the dataset for the citation).
-function MassDriverCoils() {
-  return (
-    <>
-      {Array.from({ length: MD_COIL_COUNT }, (_, i) => {
-        const x =
-          -MD_COIL_SPAN_M + (i * (MD_COIL_SPAN_M * 2)) / (MD_COIL_COUNT - 1)
-        return (
-          <mesh
-            key={x}
-            position={[x, MD_DECK_Y + 0.55, 0]}
-            rotation={[0, Math.PI / 2, 0]}
-          >
-            <torusGeometry args={[MD_BORE_R + 0.16, 0.14, 8, 20]} />
-            <meshStandardMaterial color={DARK} metalness={0.3} roughness={0.55} />
-          </mesh>
-        )
-      })}
-    </>
-  )
+// Merges a pile of boxes into one geometry.
+//
+// 600 m of trestle is 41 bents and 200 stator modules — about 600 boxes. As
+// separate meshes that is 600 draw calls for one asset, on a page that already
+// carries a 2 M-triangle terrain patch; merged it is five. They can be merged
+// because they never move relative to each other and share one material, which
+// is exactly the case merging is for.
+function mergedBoxes(
+  boxes: {
+    size: [number, number, number]
+    pos: [number, number, number]
+    rot?: [number, number, number]
+  }[]
+): THREE.BufferGeometry {
+  const parts = boxes.map((b) => {
+    const g = new THREE.BoxGeometry(...b.size)
+    const m = new THREE.Matrix4()
+    if (b.rot) m.makeRotationFromEuler(new THREE.Euler(...b.rot))
+    // setPosition writes the translation column only, so the rotation above
+    // survives: this is rotate-then-translate, which is what a member placed
+    // at a midpoint and leaned over needs.
+    m.setPosition(b.pos[0], b.pos[1], b.pos[2])
+    g.applyMatrix4(m)
+    return g
+  })
+  const merged = mergeGeometries(parts, false)
+  parts.forEach((g) => g.dispose())
+  return merged ?? new THREE.BufferGeometry()
 }
 
 // Solar field feeding the capacitor bank beside the breach house. The source
@@ -7001,18 +7003,11 @@ function MassDriverCoils() {
 // own positions, worked out once from the tilt so the legs can be planted
 // exactly under them rather than guessed.
 //
-// Those legs have to reach all the way down to TRUE GRADE (local y =
-// -MD_LIFT_M, since this whole component is nested inside the platform's
-// own `position={[0, MD_LIFT_M, 0]}` lift), not just down to this group's
-// local y = 0. Local y = 0 is only a real, standable surface where the main
-// guideway deck mesh actually is — inside ±(MD_HALF_M + 2) on x. The breach
-// house and this whole solar field sit past that, at breachX and beyond, so
-// out here local y = 0 is empty air with nothing under it; the only things
-// that reach real ground out there are the dedicated MassDriverLeg trestle
-// posts at breachX ± 1.6. Stopping this field's own legs at y = 0 left them
-// dangling above open air instead of planted — the "still floating above
-// the ground" bug — so they now span the full MD_LIFT_M down to true grade,
-// the same way those dedicated breach-house legs do.
+// The field stands on the LOT, at the model's own origin height, and its legs
+// reach y = 0 — the ground under the breach works. It used to be nested inside
+// a platform lift and reaching down through it, which is what made the panels
+// float twice over; there is no platform now. Everything at the breach end
+// stands on real ground, and only the guideway is up in the air.
 const MD_PANEL_TILT = -0.55
 const MD_PANEL_HALF_W = 1.13
 const MD_PANEL_HALF_H = 1.33
@@ -7022,7 +7017,7 @@ const MD_PANEL_BACK_Y = MD_PANEL_HALF_H * Math.cos(MD_PANEL_TILT)
 const MD_PANEL_BACK_Z = MD_PANEL_HALF_H * Math.sin(MD_PANEL_TILT)
 
 function MassDriverSolarField({ originX }: { originX: number }) {
-  const groundY = -MD_LIFT_M
+  const groundY = 0
   return (
     <>
       {Array.from({ length: 5 }, (_, i) => {
@@ -7080,112 +7075,242 @@ function MassDriverSolarField({ originX }: { originX: number }) {
   )
 }
 
-// One trestle leg, from true local grade (y=0, OUTSIDE the lifted platform
-// group) up to the deck's underside — plus a pair of diagonal braces to the
-// neighboring leg so it reads as an open trestle rather than a row of posts
-// that happen to be tall. `next` is null for the last leg in a row.
-function MassDriverLeg({
-  x,
-  next,
-}: {
-  x: number
-  next: number | null
-}) {
-  return (
-    <group>
-      <mesh position={[x, MD_LIFT_M / 2, 0]}>
-        <boxGeometry args={[1.6, MD_LIFT_M, 3.8]} />
-        <meshStandardMaterial color={PAD_SLAB_ALT} roughness={0.95} />
-      </mesh>
-      {next != null && (
-        <>
-          <Strut
-            from={[x, MD_LIFT_M - 0.3, -1.7]}
-            to={[next, 0.3, -1.7]}
-            r={0.09}
-            color={METAL}
-          />
-          <Strut
-            from={[x, 0.3, 1.7]}
-            to={[next, MD_LIFT_M - 0.3, 1.7]}
-            r={0.09}
-            color={METAL}
-          />
-        </>
-      )}
-    </group>
-  )
+// The whole row of A-frame bents, as three merged geometries: the legs and
+// their cross ties, the pier caps, and the caps' tapered undersides.
+//
+// `groundM[i]` is the ground under bent `i` relative to the model's origin (the
+// ground under the LOT), so it is mostly negative — the run descends. Each bent
+// is therefore a different height, and that is the entire reason this is
+// computed from sampled terrain rather than authored: a level deck over falling
+// ground is what a trestle IS. Authoring one leg length and repeating it would
+// bury the near bents or hang the far ones in the air, which is the failure
+// this model had at 100 m and could not survive at 600 m.
+function useTrestle(groundM: number[], deckY: number) {
+  return useMemo(() => {
+    const stations = trackBentStations()
+    const legs: Parameters<typeof mergedBoxes>[0] = []
+    const caps: Parameters<typeof mergedBoxes>[0] = []
+    const chamfers: Parameters<typeof mergedBoxes>[0] = []
+
+    stations.forEach((x, i) => {
+      const footY = groundM[i] ?? 0
+      const topY = deckY - MD_CAP_H
+      const h = topY - footY
+      if (h <= 0.5) return // ground at or above the deck: no bent to build
+      const pair = bentLegs(x, footY, topY)
+      for (const leg of pair) {
+        const dy = leg.head[1] - leg.foot[1]
+        const dz = leg.head[2] - leg.foot[2]
+        legs.push({
+          size: [MD_LEG_T, Math.hypot(dy, dz), MD_LEG_W],
+          pos: [
+            x,
+            (leg.foot[1] + leg.head[1]) / 2,
+            (leg.foot[2] + leg.head[2]) / 2,
+          ],
+          // A box's local +Y is its length, and a rotation of φ about the track
+          // axis sends that to (0, cosφ, sinφ) — so the lean is whatever angle
+          // carries +Y onto foot→head. Read off the endpoints rather than
+          // constructed, so there is no sign here to get backwards.
+          rot: [Math.atan2(dz, dy), 0, 0],
+        })
+      }
+      // Cross tie, spanning the legs wherever they happen to be at its height.
+      // Interpolated between the same two endpoints, so it tracks the splay
+      // instead of assuming it.
+      const [, right] = pair
+      const tieHalf =
+        right.foot[2] + MD_TIE_FRAC * (right.head[2] - right.foot[2])
+      legs.push({
+        size: [MD_TIE_T, MD_TIE_T, tieHalf * 2],
+        pos: [x, footY + MD_TIE_FRAC * h, 0],
+      })
+      caps.push({
+        size: [MD_CAP_D, MD_CAP_H, MD_CAP_W],
+        pos: [x, deckY - MD_CAP_H / 2, 0],
+      })
+      chamfers.push({
+        size: [MD_CAP_D * 0.78, MD_CHAMFER_H, MD_CAP_W * 0.6],
+        pos: [x, topY - MD_CHAMFER_H / 2, 0],
+      })
+    })
+
+    return {
+      legs: mergedBoxes(legs),
+      caps: mergedBoxes(caps),
+      chamfers: mergedBoxes(chamfers),
+    }
+  }, [groundM, deckY])
 }
 
-function MassDriver({ accent }: { accent: string }) {
-  const breachX = -MD_HALF_M - 3.4
-  const legXs = [
-    breachX - 1.6,
-    breachX + 1.6,
-    ...Array.from({ length: 7 }, (_, i) => -MD_HALF_M + (i * (MD_HALF_M * 2)) / 6),
-  ]
+// The stator modules: a square cell every MD_MODULE_M along the run, each a
+// frame with a recessed window. Two merged geometries, frames and windows.
+function useStatorModules(deckY: number) {
+  return useMemo(() => {
+    const n = Math.floor(TRACK_LENGTH_M / MD_MODULE_M)
+    const frames: Parameters<typeof mergedBoxes>[0] = []
+    const windows: Parameters<typeof mergedBoxes>[0] = []
+    const y = deckY + MD_SPINE_H + MD_MODULE_H / 2
+    for (let i = 0; i < n; i++) {
+      const x = i * MD_MODULE_M + MD_MODULE_M / 2
+      frames.push({
+        size: [MD_MODULE_M - MD_MODULE_GAP, MD_MODULE_H, MD_MODULE_W],
+        pos: [x, y, 0],
+      })
+      // The recess reads as the cell's window from any angle that matters,
+      // because it is inset on all four sides of the frame's own face.
+      windows.push({
+        size: [
+          MD_MODULE_M - MD_MODULE_GAP - MD_WINDOW_INSET,
+          MD_MODULE_H - MD_WINDOW_INSET,
+          MD_MODULE_W + 0.06,
+        ],
+        pos: [x, y, 0],
+      })
+    }
+    return { frames: mergedBoxes(frames), windows: mergedBoxes(windows) }
+  }, [deckY])
+}
+
+function MassDriver({
+  accent,
+  trackGround,
+}: {
+  accent: string
+  // Ground under each trestle bent, in meters relative to this model's origin.
+  // Handed down from MarkerLayer, which owns the terrain sampler. Undefined
+  // until the height map decodes, in which case the run is treated as flat.
+  trackGround?: number[]
+}) {
+  const groundM = useMemo(
+    () => trackGround ?? trackBentStations().map(() => 0),
+    [trackGround]
+  )
+  const deckY = trackDeckY(groundM)
+  const trestle = useTrestle(groundM, deckY)
+  const modules = useStatorModules(deckY)
+
+  // The breach works sit BEHIND the launch line, on the lot, on real ground.
+  const breachX = -6.2
+
   return (
-    <group scale={MASS_DRIVER_M * MD_SCALE}>
-      {/* Trestle legs stand on true grade, below the platform lift — see
-          MD_LIFT_M. Everything else in this model sits on top of the
-          platform, `MD_LIFT_M` higher, in the group below. */}
-      {legXs.map((x, i) => (
-        <MassDriverLeg key={x} x={x} next={legXs[i + 1] ?? null} />
-      ))}
-      <group position={[0, MD_LIFT_M, 0]}>
-        {/* The elevated guideway deck: a sintered-regolith platform on the
-            legs above, keeping blown dust and ejecta off the rail bore the
-            same reason a landing pad sits on its own deck — and, now, clear
-            of the ground itself along the whole run, not just resting on it. */}
-        <mesh position={[0, MD_DECK_Y / 2, 0]}>
-          <boxGeometry args={[MD_HALF_M * 2 + 4, MD_DECK_Y, 3.2]} />
-          <meshStandardMaterial color={PAD_WALL} roughness={0.92} />
+    <group scale={MASS_DRIVER_M}>
+      {/* --- The trestle ------------------------------------------------- */}
+      <mesh geometry={trestle.legs} castShadow receiveShadow>
+        <meshStandardMaterial color={HULL} roughness={0.62} metalness={0.16} />
+      </mesh>
+      <mesh geometry={trestle.caps} castShadow receiveShadow>
+        <meshStandardMaterial color={PAD_SLAB_ALT} roughness={0.9} />
+      </mesh>
+      <mesh geometry={trestle.chamfers} castShadow receiveShadow>
+        <meshStandardMaterial color={HULL_DARK} roughness={0.85} />
+      </mesh>
+
+      {/* --- The guideway ------------------------------------------------
+          One continuous spine, then the module row on top of it, then the
+          capping rail. Continuous members are single long boxes rather than
+          per-bay pieces: there is nothing to be gained by chopping up a beam
+          that is straight and unbroken for 600 m. */}
+      <mesh
+        position={[TRACK_LENGTH_M / 2, deckY + MD_SPINE_H / 2, 0]}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry args={[TRACK_LENGTH_M, MD_SPINE_H, MD_SPINE_W]} />
+        <meshStandardMaterial color={PAD_WALL} roughness={0.86} />
+      </mesh>
+      <mesh geometry={modules.frames} castShadow receiveShadow>
+        <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.2} />
+      </mesh>
+      <mesh geometry={modules.windows}>
+        <meshStandardMaterial color={DARK} roughness={0.7} metalness={0.35} />
+      </mesh>
+      <mesh
+        position={[
+          TRACK_LENGTH_M / 2,
+          deckY + MD_SPINE_H + MD_MODULE_H + MD_RAIL_H / 2,
+          0,
+        ]}
+        castShadow
+      >
+        <boxGeometry args={[TRACK_LENGTH_M, MD_RAIL_H, MD_RAIL_W]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      {/* The bore itself, run as a continuous dark slot down the module row's
+          centreline so the cells read as openings on a barrel rather than
+          decoration stuck to a beam. */}
+      <mesh
+        position={[
+          TRACK_LENGTH_M / 2,
+          deckY + MD_SPINE_H + MD_MODULE_H / 2,
+          0,
+        ]}
+      >
+        <boxGeometry
+          args={[TRACK_LENGTH_M + 0.4, MD_BORE_R * 2, MD_BORE_R * 2]}
+        />
+        <meshStandardMaterial color={DARK} roughness={0.45} metalness={0.5} />
+      </mesh>
+
+      {/* --- Muzzle ------------------------------------------------------
+          The release end, flared and ringed. Also the one place the accent
+          colour goes: it is what the eye is meant to follow the run out to. */}
+      <group
+        position={[TRACK_LENGTH_M, deckY + MD_SPINE_H + MD_MODULE_H / 2, 0]}
+      >
+        <mesh castShadow>
+          <boxGeometry args={[2.6, MD_MODULE_H + 0.5, MD_MODULE_W + 0.5]} />
+          <meshStandardMaterial
+            color={HULL_DARK}
+            roughness={0.5}
+            metalness={0.35}
+          />
         </mesh>
-        {/* Twin rails the coil stages clamp to. */}
-        {[-1.1, 1.1].map((z) => (
-          <mesh key={z} position={[0, MD_DECK_Y + 0.08, z]}>
-            <boxGeometry args={[MD_HALF_M * 2 + 2, 0.16, 0.3]} />
-            <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+        <mesh position={[1.5, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <torusGeometry args={[MD_BORE_R + 0.3, 0.16, 8, 24]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.9}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+
+      {/* --- Breach works, on the lot ------------------------------------- */}
+      <group position={[breachX, 0, 0]}>
+        <mesh position={[0, 2.0, 0]} castShadow receiveShadow>
+          <boxGeometry args={[4.4, 4.0, 5.2]} />
+          <meshStandardMaterial color={HULL} roughness={0.7} />
+        </mesh>
+        <mesh position={[0, 4.0, 0]} castShadow>
+          <boxGeometry args={[4.6, 0.16, 5.4]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.75} />
+        </mesh>
+        {/* Capacitor/flywheel racks — the "accumulate slowly, discharge
+            quickly" hardware that has to survive the launcher's peak power,
+            not its average. */}
+        {[-1.6, 0, 1.6].map((z) => (
+          <mesh key={z} position={[2.9, 0.9, z]} castShadow>
+            <cylinderGeometry args={[0.55, 0.55, 1.8, 12]} />
+            <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
           </mesh>
         ))}
-        <MassDriverCoils />
-        {/* Breach house at the near end: the capacitor/flywheel bank and the
-            power feed in from the base grid stand behind the launch line
-            rather than in it. */}
-        <group position={[breachX, 0, 0]}>
-          <mesh position={[0, 2.0, 0]}>
-            <boxGeometry args={[4.4, 4.0, 5.2]} />
-            <meshStandardMaterial color={HULL} roughness={0.7} />
-          </mesh>
-          <mesh position={[0, 4.0, 0]}>
-            <boxGeometry args={[4.6, 0.16, 5.4]} />
-            <meshStandardMaterial color={HULL_DARK} roughness={0.75} />
-          </mesh>
-          {/* Capacitor/flywheel racks — the "accumulate slowly, discharge
-              quickly" hardware that has to survive the launcher's peak power,
-              not its average. */}
-          {[-1.6, 0, 1.6].map((z) => (
-            <mesh key={z} position={[2.9, 0.9, z]}>
-              <cylinderGeometry args={[0.55, 0.55, 1.8, 12]} />
-              <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
-            </mesh>
-          ))}
-          <mesh position={[0, 4.5, 0]}>
-            <cylinderGeometry args={[0.06, 0.06, 1.0, 6]} />
-            <meshStandardMaterial color={DARK} />
-          </mesh>
-          <mesh position={[0, 5.05, 0]}>
-            <sphereGeometry args={[0.16, 10, 10]} />
-            <meshStandardMaterial
-              color={accent}
-              emissive={accent}
-              emissiveIntensity={1.5}
-              toneMapped={false}
-            />
-          </mesh>
-        </group>
-        <MassDriverSolarField originX={breachX} />
+        <mesh position={[0, 4.5, 0]}>
+          <cylinderGeometry args={[0.06, 0.06, 1.0, 6]} />
+          <meshStandardMaterial color={DARK} />
+        </mesh>
+        <mesh position={[0, 5.05, 0]}>
+          <sphereGeometry args={[0.16, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.5}
+            toneMapped={false}
+          />
+        </mesh>
       </group>
+      <MassDriverSolarField originX={breachX} />
     </group>
   )
 }
@@ -12040,9 +12165,13 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
 export function ProceduralModel({
   project,
   accent,
+  trackGround,
 }: {
   project: Project
   accent: string
+  // Only the mass driver uses this: the ground under each of its trestle bents.
+  // See MassDriver.
+  trackGround?: number[]
 }) {
   const Custom = PROJECT_MODEL[project.id]
   if (Custom) return <Custom accent={accent} />
@@ -12064,7 +12193,7 @@ export function ProceduralModel({
     case 'construction':
       return <ConstructionSite accent={accent} />
     case 'mass_driver':
-      return <MassDriver accent={accent} />
+      return <MassDriver accent={accent} trackGround={trackGround} />
     case 'other':
     default:
       return <GenericStructure accent={accent} />
@@ -12498,6 +12627,10 @@ type ProjectModelProps = {
   // zoomed in, the installation is the obvious thing to click.
   onSelect?: (id: string) => void
   onHover?: (id: string | null) => void
+  // Ground under each of the mass driver's trestle bents, in meters relative to
+  // its seat. Sampled by MarkerLayer, which is the layer that holds the terrain
+  // sampler; unused by every other project. See MassDriver.
+  trackGround?: number[]
 }
 
 export default function ProjectModel({
@@ -12510,6 +12643,7 @@ export default function ProjectModel({
   dim,
   onSelect,
   onHover,
+  trackGround,
 }: ProjectModelProps) {
   const isBase = project.type === 'habitat'
   const frontAz =
@@ -12536,7 +12670,13 @@ export default function ProjectModel({
         <BuriedHabitat project={project} accent={accent} />
       ) : project.modelURI ? (
         <Suspense
-          fallback={<ProceduralModel project={project} accent={accent} />}
+          fallback={
+            <ProceduralModel
+              project={project}
+              accent={accent}
+              trackGround={trackGround}
+            />
+          }
         >
           {/* Landers touch down on a prepared pad; everything else stands
               directly on the regolith (GLBs are seated with their lowest
@@ -12556,7 +12696,11 @@ export default function ProjectModel({
           {isBase && <AstronautCompanion accent={accent} />}
         </Suspense>
       ) : (
-        <ProceduralModel project={project} accent={accent} />
+        <ProceduralModel
+          project={project}
+          accent={accent}
+          trackGround={trackGround}
+        />
       )}
     </SurfaceAnchor>
   )

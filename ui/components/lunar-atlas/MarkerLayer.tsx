@@ -44,6 +44,11 @@ import {
   capOffsetLatLon,
 } from '@/lib/lunar-atlas/southpole'
 import { buriedSite, vaultAxis } from '@/lib/lunar-atlas/subplan'
+import {
+  MASS_DRIVER_ID,
+  trackAxis,
+  trackBentOffsets,
+} from '@/lib/lunar-atlas/trackplan'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -323,6 +328,32 @@ function CompetitorPlot({
     [project.id, slot]
   )
 
+  // The mass driver needs two things no other competitor does, both because it
+  // is the only asset that is long rather than compact.
+  //
+  // Its AXIS is a fixed compass heading rather than the base's camera-facing
+  // one, chosen for the ground it has to stay level over (see trackplan) — the
+  // same reason a buried vault gets its axis handed down rather than derived.
+  //
+  // And it needs the GROUND UNDER EVERY BENT, not just under its own anchor.
+  // One seat radius is a fair description of where a 10 m reactor stands and a
+  // useless one for a 600 m trestle: the far end is 10 m below the near end, so
+  // a model built to a single sampled height has to either bury one end or hang
+  // the other in the air. This layer is the only one holding the terrain
+  // sampler, so the sampling happens here and the model is told the answer.
+  const track = useMemo(() => {
+    if (project.id !== MASS_DRIVER_ID) return null
+    const along = trackAxis()
+    if (!radiusAt) return { along, ground: undefined }
+    const ground = trackBentOffsets(slot).map((o) => {
+      const ll = capOffsetLatLon(o.east, o.north)
+      // Scene units back to meters, relative to the seat this model is placed
+      // at — which is the frame the model authors its own geometry in.
+      return (radiusAt(ll.lat, ll.lon) - seatRadius) / M_TO_UNITS
+    })
+    return { along, ground }
+  }, [project.id, slot, radiusAt, seatRadius])
+
   // Laps of main street, for a race whose hardware drives rather than stands
   // (see PATROL).
   //
@@ -393,11 +424,12 @@ function CompetitorPlot({
         dir={[ndir.x, ndir.y, ndir.z]}
         accent={accent}
         turn={THREE.MathUtils.degToRad(slot.turn)}
-        noseAlong={lap?.noseAlong ?? vaultAlong}
+        noseAlong={lap?.noseAlong ?? vaultAlong ?? track?.along}
         dim={dim}
         onSelect={onSelect}
         onHover={(id) => onHover?.(Boolean(id))}
         surfaceRadius={seatRadius}
+        trackGround={track?.ground}
       />
 
       {/* The asset's own name. Shown on hover, and for the whole field while
