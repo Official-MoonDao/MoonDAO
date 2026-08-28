@@ -103,11 +103,16 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // eVinci radiator wall, IX's radiator canopy, Lockheed's radiator mast — the
   // three fission bids, and three very different amounts of ground.
   power: plots(11, 6.5, 4),
-  // Blue Origin, Sierra, Lunar Resources — dataset order. Sierra's packaged
-  // skid (5.35) and Lunar Resources' single crucible (5.58) are each little
-  // more than half the generic field-plus-tower footprint (9.5) Blue Origin
-  // still stands on.
-  isru_plant: plots(9.5, 5.35, 5.58),
+  // Blue Origin, Sierra, Lunar Resources, Cislune — dataset order. Sierra's
+  // packaged skid (5.35) and Lunar Resources' single crucible (5.58) are each
+  // little more than half the generic field-plus-tower footprint (9.5) Blue
+  // Origin and Cislune both still stand on.
+  //
+  // Cislune was MISSING from this roster, and its absence is what let the
+  // second 9.5 m plot sit on the perimeter road unnoticed — a hand-mirrored
+  // roster that under-counts a district does not fail, it just quietly stops
+  // testing the case that breaks. See the seating comment in districtSlots.
+  isru_plant: plots(9.5, 5.35, 5.58, 9.5),
   rover: plots(2.3, 2.1, 2.2),
   // ICON, Redwire, Astroport, AI SpaceFactory, Astrobotic — five bids on the
   // same generic paving footprint, and the only district on main street that
@@ -125,7 +130,14 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // avionics package (1.13) sits between the two — it operates the network
   // rather than subscribing to one — but is a fraction of the generic
   // mast-shelter-array lot Nokia still stands on.
-  comms_pnt: plots(7.5, 1.04, 1.52, 1.13),
+  //
+  // Solstar (7.5, on the same generic terminal as Nokia) and CNSA's Queqiao-2
+  // tracking dish (1.14) were both missing here, the same under-count as the
+  // ISRU district above and with the same consequence — Solstar's lot was
+  // standing 1.4 m inside the perimeter road with no test to say so. Six
+  // competitors makes this the largest district on main street and the only
+  // one besides construction to exercise the second lane.
+  comms_pnt: plots(7.5, 1.04, 1.52, 1.13, 7.5, 1.14),
   // A single concept-study competitor, standing alone on its own corner lot.
   // The lot holds the launcher's BREACH WORKS only (BREACH_LOT_RADIUS_M) — the
   // 600 m guideway runs out of it and is checked as a corridor, further down,

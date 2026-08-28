@@ -343,6 +343,22 @@
       ]
     },
     {
+      "id": "cnsa",
+      "name": "CNSA / CAST",
+      "kind": "agency",
+      "country": "China",
+      "website": "https://www.cnsa.gov.cn/english/",
+      "brandColor": "#E4572E",
+      "summary": "China's National Space Administration and the China Academy of Space Technology, which built and operates the Queqiao relay satellites. Queqiao-2 is the only lunar communications relay in service today, and CNSA has said publicly it will carry other nations' missions as well as China's own.",
+      "sources": [
+        {
+          "label": "CNSA — China launches new relay satellite for Earth-Moon communications",
+          "url": "https://www.cnsa.gov.cn/english/n6465652/n6465653/c10489434/content.html",
+          "retrievedAt": "2026-08-28"
+        }
+      ]
+    },
+    {
       "id": "esa",
       "name": "European Space Agency",
       "kind": "international",
@@ -2590,6 +2606,101 @@
       "visibility": "public"
     },
     {
+      "id": "queqiao-2",
+      "orgId": "cnsa",
+      "name": "Queqiao-2 Relay",
+      "type": "comms_pnt",
+      "summary": "The only lunar communications relay actually in service. Queqiao-2 reached lunar orbit in March 2024 and has carried Chang'e-4 on the far side and Chang'e-6 through the first sample return ever flown from it, at downlink rates from 1 to 500 Mb/s. It is the incumbent every other bid in this race is trying to displace — with one caveat that keeps it from being the favourite outright: it answers to CNSA's own standards rather than the NASA/ESA LunaNet framework, so a Western mission cannot simply buy time on it.",
+      "location": {
+        "lat": -88.75,
+        "lon": 60
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole — service coverage area",
+      "milestones": [
+        {
+          "id": "queqiao2-launch",
+          "title": "Launched to lunar orbit on a Long March 8",
+          "targetDate": "2024-03",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "CNSA — China launches new relay satellite for Earth-Moon communications",
+              "url": "https://www.cnsa.gov.cn/english/n6465652/n6465653/c10489434/content.html",
+              "retrievedAt": "2026-08-28"
+            }
+          ]
+        },
+        {
+          "id": "queqiao2-in-service",
+          "title": "In-orbit tests complete; relaying for Chang'e-4 on the far side",
+          "targetDate": "2024-04",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "China Daily — Relay satellite ready for lunar mission service",
+              "url": "https://www.chinadaily.com.cn/a/202404/13/WS6619c67ea31082fc043c1be6.html",
+              "retrievedAt": "2026-08-28"
+            }
+          ]
+        },
+        {
+          "id": "queqiao2-change6",
+          "title": "Carried Chang'e-6 — first sample return from the lunar far side",
+          "targetDate": "2024-06",
+          "datePrecision": "month",
+          "status": "achieved",
+          "metrics": [
+            {
+              "label": "Downlink rate to Earth",
+              "value": 500,
+              "unit": "Mb/s"
+            }
+          ],
+          "sources": [
+            {
+              "label": "Journal of Deep Space Exploration — Queqiao-2 integrated data processing and transmission",
+              "url": "https://doi.org/10.3724/j.issn.2096-9287.2026.20250043",
+              "retrievedAt": "2026-08-28"
+            }
+          ]
+        },
+        {
+          "id": "queqiao2-change7",
+          "title": "Relay support for Chang'e-7 at the south pole",
+          "targetDate": "2026",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "CNSA — China launches new relay satellite for Earth-Moon communications",
+              "url": "https://www.cnsa.gov.cn/english/n6465652/n6465653/c10489434/content.html",
+              "retrievedAt": "2026-08-28"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-lunar-comms"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "China Daily — Relay satellite ready for lunar mission service",
+          "url": "https://www.chinadaily.com.cn/a/202404/13/WS6619c67ea31082fc043c1be6.html",
+          "retrievedAt": "2026-08-28"
+        },
+        {
+          "label": "CNSA — China launches new relay satellite for Earth-Moon communications",
+          "url": "https://www.cnsa.gov.cn/english/n6465652/n6465653/c10489434/content.html",
+          "retrievedAt": "2026-08-28"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
       "id": "solstar-lunar-wifi",
       "orgId": "solstar-space",
       "name": "Lunar WiFi Access Point",
@@ -3122,13 +3233,14 @@
     {
       "id": "shared-lunar-comms",
       "title": "First operational lunar communications and navigation service",
-      "description": "Every mission today flies its own radio link back to Earth, which does not scale to a base. Five groups are trying to make connectivity something you buy: Modul8 — the Nokia Bell Labs venture that spun out in 2026 — has already run LTE on the surface, Intuitive Machines holds NASA's Near Space Network relay contract, ESA is procuring the Moonlight constellation behind its Lunar Pathfinder relay, Lockheed's Crescent Space is selling Parsec as a subscription, and Solstar — which flew the first commercial WiFi hotspot in space in 2018 — is adapting that same hardware into a lunar-rated access point under NASA SBIR funding. Coverage and interoperability decide who can sell a service at all; throughput decides whether it is worth buying, which is why bandwidth is a bar here and not a footnote.",
+      "description": "Every mission today flies its own radio link back to Earth, which does not scale to a base. One relay is already up and working — China's Queqiao-2 has been in lunar orbit since 2024 and carried Chang'e-6 through the first far-side sample return — so this race is really about who can sell that as a service to anyone who asks. Five others are trying: Modul8, the Nokia Bell Labs venture that spun out in 2026, has already run LTE on the surface; Intuitive Machines holds NASA's Near Space Network relay contract; ESA is procuring the Moonlight constellation behind its Lunar Pathfinder relay; Lockheed's Crescent Space is selling Parsec as a subscription; and Solstar — which flew the first commercial WiFi hotspot in space in 2018 — is adapting that hardware into a lunar-rated access point under NASA SBIR funding. Coverage and interoperability decide who can sell a service at all, which is where the incumbent is weakest; throughput decides whether it is worth buying, which is why bandwidth is a bar here and not a footnote.",
       "projectIds": [
         "nokia-lunar-lte",
         "im-near-space-network",
         "esa-lunar-pathfinder",
         "crescent-parsec",
-        "solstar-lunar-wifi"
+        "solstar-lunar-wifi",
+        "queqiao-2"
       ],
       "location": {
         "lat": -88.7,
@@ -3170,11 +3282,12 @@
         "status": "planned",
         "resolutionAuthority": "senate",
         "impliedOdds": {
-          "nokia-lunar-lte": 0.28,
-          "im-near-space-network": 0.26,
-          "esa-lunar-pathfinder": 0.23,
-          "crescent-parsec": 0.17,
-          "solstar-lunar-wifi": 0.06
+          "queqiao-2": 0.24,
+          "nokia-lunar-lte": 0.21,
+          "im-near-space-network": 0.2,
+          "esa-lunar-pathfinder": 0.18,
+          "crescent-parsec": 0.13,
+          "solstar-lunar-wifi": 0.04
         }
       },
       "sources": [

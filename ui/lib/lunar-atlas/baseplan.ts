@@ -317,11 +317,46 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
       // street, and the district's gap of untouched regolith separates the two
       // strips.
       const laneClearM = DISTRICT_GAP_M + 2 * SETBACK_M
+      // Which plot sits in which of the first four corner seats.
+      //
+      // The seats alternate OUTWARD and INWARD of main street (see CORNERS),
+      // and the two are not equally deep: an outward lot has the whole plain
+      // to grow into, while an inward one reaches back toward the perimeter
+      // road, its inner edge landing at `centre - frontage - radius` — so
+      // every extra metre of radius costs an inward lot two metres of
+      // clearance. Seating strictly largest-first therefore put the SECOND
+      // biggest plot on the first inward corner, which is exactly where the
+      // ground runs out: it is how Cislune's 9.5 m ISRU plant came to stand
+      // 5.4 m into the ring road and Solstar's comms lot 1.4 m into it, with
+      // nothing catching either because both projects were missing from the
+      // hand-mirrored roster in lunar-atlas-baseplan.cy.ts.
+      //
+      // So the biggest plots take the outward seats and the smallest take the
+      // inward ones. The fill ORDER is untouched — a two-competitor race still
+      // gets one lot either side of BOTH streets, which is the whole reason
+      // CORNERS fills diagonally — because with two seats there is one of each
+      // and the choice makes no difference. It only bites from three up, where
+      // there is a genuine choice to get wrong.
+      const seatCount = Math.min(order.length, 4)
+      const outwardSeats: number[] = []
+      const inwardSeats: number[] = []
+      for (let i = 0; i < seatCount; i++) {
+        ;(CORNERS[i][0] > 0 ? outwardSeats : inwardSeats).push(i)
+      }
+      const seated = [...order]
+      const corners = order.slice(0, seatCount)
+      outwardSeats.forEach((seat, k) => {
+        seated[seat] = corners[k]
+      })
+      inwardSeats.forEach((seat, k) => {
+        seated[seat] = corners[outwardSeats.length + k]
+      })
+
       // Angle about the base centre for each lot. Radius is fixed by the lot's
       // own setback off main street, so only the angle is free.
       const angle: number[] = []
       const radii: number[] = []
-      order.forEach((plot, i) => {
+      seated.forEach((plot, i) => {
         const [alongSign, acrossSign] = CORNERS[i % 4]
         const front = frontageM(plot.radiusM)
         const radius = centre + alongSign * front
@@ -338,7 +373,7 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
           angle[i] =
             bearing + acrossSign * Math.asin(Math.min(1, front / radius))
         } else {
-          const want = order[back].radiusM + plot.radiusM + laneClearM
+          const want = seated[back].radiusM + plot.radiusM + laneClearM
           const cos =
             (radii[back] ** 2 + radius ** 2 - want ** 2) /
             (2 * radii[back] * radius)
