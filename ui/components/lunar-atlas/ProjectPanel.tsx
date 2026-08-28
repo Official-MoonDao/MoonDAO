@@ -72,8 +72,11 @@ export default function ProjectPanel({
               style={{ backgroundColor: color, boxShadow: `0 0 10px ${color}` }}
             />
             <span className="truncate text-xs font-medium uppercase tracking-wide text-white/60">
-              {organization?.name ?? project.orgId}
-              {organization?.kind ? ` · ${organization.kind}` : ''}
+              {project.orgId === 'unassigned'
+                ? 'No developer assigned'
+                : `${organization?.name ?? project.orgId}${
+                    organization?.kind ? ` · ${organization.kind}` : ''
+                  }`}
             </span>
           </div>
           <h2 className="mt-1 truncate text-lg font-semibold text-white">

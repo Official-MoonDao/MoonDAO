@@ -24,9 +24,27 @@ import {
   districtBearingDeg,
   districtExtentM,
   districtSlots,
+  onLoopRoad,
+  withinDistrictGround,
   type Plot,
   type SitePlan,
 } from '../../../lib/lunar-atlas/baseplan'
+import {
+  BURIED_HABITATS,
+  vaultGeometry,
+} from '../../../lib/lunar-atlas/subplan'
+import {
+  BREACH_LOT_RADIUS_M,
+  TRACK_CORRIDOR_HALF_M,
+  TRACK_DECK_CLEAR_M,
+  TRACK_HEADING_DEG,
+  TRACK_LENGTH_M,
+  TRACK_SPLAY,
+  bentLegs,
+  trackBentStations,
+  trackDeckY,
+  trackLegHeights,
+} from '../../../lib/lunar-atlas/trackplan'
 import type { ProjectType } from '../../../lib/lunar-atlas/types'
 
 const plots = (...radii: number[]): Plot[] =>
@@ -59,12 +77,28 @@ function tightestGap(plan: SitePlan, list: Plot[]): number {
 
 // The real rosters, by race. Radii are footprints in meters (footprintRadiusM).
 const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
-  // Artemis Base Camp (38 m, dome-to-dome) beside ILRS (21.9 m, comms guy
-  // anchor to the PV field's far corner) — the two publicly declared
-  // sustained-presence programs, not one competing against its own precursor
-  // lander. ILRS reads as the extended-model station China/Roscosmos have on
-  // the public roadmap for the 2040s, not the single-mast 2035 basic model.
-  crewed_base: plots(19, 12.86),
+  // The whole habitat race, largest to smallest: Artemis Base Camp (38 m,
+  // dome-to-dome) and ILRS (21.9 m, comms guy anchor to the PV field's far
+  // corner) — the two publicly declared sustained-presence programs, not one
+  // competing against its own precursor lander; ILRS reads as the
+  // extended-model station China/Roscosmos have on the public roadmap for the
+  // 2040s, not the single-mast 2035 basic model — alongside Sierra's
+  // inflatable LIFE habitat and Thales' MPH module, and Toyota's Lunar Cruiser
+  // (3.3 m). A base is not a different kind of thing from a habitat module,
+  // just more of them integrated together, so all five compete on the same
+  // hardstand.
+  //
+  // The two modules are BURIED, and the figures below are the ones that costs
+  // them: 13.937 and 14.056 m are their cover mounds' half-lengths, not their
+  // hulls' — a cut-and-cover berm reaches about twice as far as the can under
+  // it, so each went from a ~6 m plot to a ~14 m one. Both come out of
+  // vaultGeometry (lib/lunar-atlas/subplan) via footprintRadiusM, so a change
+  // to either vault's span, length, cover or excavation moves them and this
+  // roster has to be recomputed rather than nudged. It is also why the core
+  // ring did NOT have to grow to take them: the ring's radius is solved off
+  // the two LARGEST plots (see the 'ring' case in districtSlots), and Artemis
+  // Base Camp at 19 m plus ILRS at 12.86 m still set it.
+  habitat: plots(19, 12.86, 13.937, 14.056, 3.3),
   lander: plots(31.2, 9.6),
   // eVinci radiator wall, IX's radiator canopy, Lockheed's radiator mast — the
   // three fission bids, and three very different amounts of ground.
@@ -75,10 +109,13 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // still stands on.
   isru_plant: plots(9.5, 5.35, 5.58),
   rover: plots(2.3, 2.1, 2.2),
-  // Sierra's inflatable, the MPH module, the Lunar Cruiser — and the inflatable
-  // takes the most ground of the three, which is the point of inflating it.
-  habitat: plots(6, 5.5, 3.3),
-  construction: plots(6.3, 6.3, 6.3, 6.3),
+  // ICON, Redwire, Astroport, AI SpaceFactory, Astrobotic — five bids on the
+  // same generic paving footprint, and the only district on main street that
+  // fields more than four. It is therefore the only one that exercises the
+  // second lane in districtSlots' crossroads case, so this roster has to stay
+  // at the real count: at four it silently stopped covering that branch, which
+  // is how a fifth lot came to be placed off the end of its own avenue.
+  construction: plots(6.3, 6.3, 6.3, 6.3, 6.3),
   // Nokia, ESA, Crescent, IM — dataset order. ESA's user terminal (1.04) and
   // Crescent's (1.52) are a fraction of the ground Nokia takes. Crescent's
   // case is a bigger footprint than ESA's mast despite being the smaller
@@ -89,6 +126,12 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // rather than subscribing to one — but is a fraction of the generic
   // mast-shelter-array lot Nokia still stands on.
   comms_pnt: plots(7.5, 1.04, 1.52, 1.13),
+  // A single concept-study competitor, standing alone on its own corner lot.
+  // The lot holds the launcher's BREACH WORKS only (BREACH_LOT_RADIUS_M) — the
+  // 600 m guideway runs out of it and is checked as a corridor, further down,
+  // because no disc describes it. This used to be 33.6 m, a fraction of the
+  // model's own length that had to be kept paired with the district's `turn`.
+  mass_driver: plots(BREACH_LOT_RADIUS_M),
 }
 
 const races = Object.entries(ROSTERS) as [ProjectType, Plot[]][]
@@ -128,12 +171,21 @@ describe('moon base zero street plan', () => {
       // centreline radially, and the same from its avenue perpendicularly — so
       // every asset on the base ends up with an identical strip of clear
       // regolith at its edge.
+      //
+      // Both hold exactly for the four CORNER lots. A fifth and beyond continue
+      // along main street on the corners' own sides, so they keep the radial
+      // setback exactly and stand FURTHER off the avenue than it, never nearer.
       for (const [category, field] of races) {
         const plan = BASE_PLAN[category]!
         if (plan.front) continue
         const bearing = (districtBearingDeg(plan) * Math.PI) / 180
         const slots = districtSlots(plan, field)
-        for (const plot of field) {
+        // districtSlots fills the corners largest first, so the lot's place in
+        // that order is what decides whether it is a corner or a later block.
+        const order = [...field].sort(
+          (a, b) => b.radiusM - a.radiusM || a.id.localeCompare(b.id)
+        )
+        order.forEach((plot, i) => {
           const slot = slots.get(plot.id)!
           const want = ROAD_HALF_M + SETBACK_M + plot.radiusM
           const radius = Math.hypot(slot.east, slot.north)
@@ -145,11 +197,10 @@ describe('moon base zero street plan', () => {
           const across = Math.abs(
             -Math.sin(bearing) * slot.east + Math.cos(bearing) * slot.north
           )
-          expect(across, `${category}/${plot.id} off its avenue`).to.be.closeTo(
-            want,
-            1e-6
-          )
-        }
+          const label = `${category}/${plot.id} off its avenue`
+          if (i < 4) expect(across, label).to.be.closeTo(want, 1e-6)
+          else expect(across, label).to.be.at.least(want - 1e-6)
+        })
       }
     })
 
@@ -250,17 +301,21 @@ describe('moon base zero street plan', () => {
             a.r -
             b.r
           // A 'lot' district's two neighbours are packed to EXACTLY the gap
-          // (see the `lot` case in districtSlots), so this is a floating-point
-          // tie rather than real slack — allow the same 1e-6 the rest of this
-          // file uses for exact geometric identities.
+          // (see the `lot` case in districtSlots — nothing in BASE_PLAN uses
+          // it today, but the mechanism is still exact), so this is a
+          // floating-point tie rather than real slack there — allow the
+          // same 1e-6 the rest of this file uses for exact geometric
+          // identities. 'ring' districts (the core) pack with real margin
+          // on top of the gap by construction, so they clear this with room
+          // to spare rather than by a hair.
           expect(gap, `${a.id} vs ${b.id}`).to.be.at.least(DISTRICT_GAP_M - 1e-6)
         }
       }
     })
 
     it('keeps the core district on its hardstand, inside the perimeter road', () => {
-      const core = BASE_PLAN.crewed_base!
-      const extent = districtExtentM(core, ROSTERS.crewed_base!)
+      const core = BASE_PLAN.habitat!
+      const extent = districtExtentM(core, ROSTERS.habitat!)
       expect(extent).to.be.lessThan(HARDSTAND.radius)
       expect(HARDSTAND.radius).to.be.lessThan(RING_RADIUS_M)
     })
@@ -301,12 +356,64 @@ describe('moon base zero street plan', () => {
       // stop it. This is already a compromise with keeping the vehicle in frame,
       // so the assertion is a floor, not a target.
       const pad = BASE_PLAN.lander!
-      const core = BASE_PLAN.crewed_base!
+      const core = BASE_PLAN.habitat!
       const gap =
         Math.hypot(pad.east - core.east, pad.north - core.north) -
         districtExtentM(pad, ROSTERS.lander!) -
-        districtExtentM(core, ROSTERS.crewed_base!)
+        districtExtentM(core, ROSTERS.habitat!)
       expect(gap).to.be.greaterThan(30)
+    })
+  })
+
+  describe('the buried habitats', () => {
+    it('reserves the cover mound rather than the module', () => {
+      // The roster above mirrors these by hand, and the whole core ring is
+      // solved against those figures — so if a vault's dimensions move and this
+      // roster doesn't, every packing assertion in this file starts testing a
+      // colony that no longer exists.
+      const want: Record<string, number> = {
+        'sierra-space-life': 13.937,
+        'thales-mph': 14.056,
+      }
+      for (const [id, site] of Object.entries(BURIED_HABITATS)) {
+        expect(want[id], `${id} is missing from this test's roster`).to.exist
+        expect(vaultGeometry(site).footprintM, id).to.be.closeTo(want[id], 5e-4)
+      }
+    })
+
+    it('carries enough regolith over the crown to be worth burying for', () => {
+      // The point of the exercise. Three to five meters is the range the
+      // shielding literature keeps landing on, and it is the number the
+      // dataset's shielding milestones quote — a vault that quietly lost its
+      // cover to a geometry tweak would still look fine and mean nothing.
+      for (const [id, site] of Object.entries(BURIED_HABITATS)) {
+        expect(site.coverM, id).to.be.at.least(3)
+      }
+    })
+
+    it('stands the cutaway camera inside the vault it is looking into', () => {
+      // The eye is placed from these same numbers (see subViewFraming and the
+      // `sub` branch of MoonGlobe's CameraRig), and there is no fallback if it
+      // lands wrong: outside the end wall it looks at the back of the liner,
+      // and below the floor it looks at nothing at all.
+      for (const [id, site] of Object.entries(BURIED_HABITATS)) {
+        const g = vaultGeometry(site)
+        expect(g.standoffM, `${id} eye is past the end wall`).to.be.lessThan(
+          g.lengthM / 2
+        )
+        // Between the floor and the crown, and looking UP at the module rather
+        // than down through the floor at it.
+        expect(g.eyeDepthM, `${id} eye is under the floor`).to.be.lessThan(
+          g.floorDepthM
+        )
+        expect(g.eyeDepthM, `${id} eye is above the crown`).to.be.greaterThan(
+          g.floorDepthM - g.crownM
+        )
+        expect(
+          g.subjectDepthM,
+          `${id} looks down at its own module`
+        ).to.be.lessThan(g.eyeDepthM)
+      }
     })
   })
 
@@ -329,7 +436,7 @@ describe('moon base zero street plan', () => {
     it('runs an avenue from the perimeter road out through every district', () => {
       for (const [category, field] of races) {
         const plan = BASE_PLAN[category]!
-        if (plan.front === 'lot') continue
+        if (plan.front === 'lot' || plan.front === 'ring') continue
         const street = BASE_STREETS.find(
           (s) => !s.closed && s.serves?.includes(category)
         )
@@ -377,6 +484,123 @@ describe('moon base zero street plan', () => {
             .empty
         }
       }
+    })
+  })
+
+  describe('the mass driver guideway', () => {
+    // The launcher is the one asset the plot-packing math above cannot describe.
+    // Every other check in this file models an installation as a DISC, which is
+    // fair for a reactor and useless for a structure 600 m long and 6 m wide:
+    // the disc containing it is 300 m across. So its lot holds the breach works
+    // only, and the track is checked here as what it is — a corridor running out
+    // of that lot across open ground. See lib/lunar-atlas/trackplan.
+
+    const plan = BASE_PLAN.mass_driver!
+    const slot = districtSlots(plan, ROSTERS.mass_driver!).get('p0')!
+
+    // Every point the guideway sweeps: both edges of the corridor and its
+    // centreline, at 1 m stations. Sampling the centreline alone would miss a
+    // corridor that straddles a road, which is the failure that matters.
+    const corridor = () => {
+      const rad = (TRACK_HEADING_DEG * Math.PI) / 180
+      const ce = Math.cos(rad)
+      const cn = Math.sin(rad)
+      const pts: { d: number; radius: number; bearing: number }[] = []
+      for (let d = 0; d <= TRACK_LENGTH_M; d += 1) {
+        for (const off of [-TRACK_CORRIDOR_HALF_M, 0, TRACK_CORRIDOR_HALF_M]) {
+          const east = slot.east + ce * d - cn * off
+          const north = slot.north + cn * d + ce * off
+          pts.push({
+            d,
+            radius: Math.hypot(east, north),
+            bearing:
+              ((Math.atan2(north, east) * 180) / Math.PI + 360) % 360,
+          })
+        }
+      }
+      return pts
+    }
+
+    it('runs the whole way without touching a road', () => {
+      for (const p of corridor()) {
+        expect(
+          onLoopRoad(p.radius),
+          `guideway on a loop road at ${p.d} m (r=${p.radius.toFixed(1)})`
+        ).to.equal(false)
+      }
+    })
+
+    it('runs the whole way without crossing another district', () => {
+      // The breach works stand on this district's own ground on purpose, so the
+      // first stations are exempt — that lot is where they belong.
+      const exempt = BREACH_LOT_RADIUS_M + TRACK_CORRIDOR_HALF_M
+      for (const p of corridor()) {
+        if (p.d <= exempt) continue
+        expect(
+          withinDistrictGround(p.radius, p.bearing, 10),
+          `guideway on district ground at ${p.d} m ` +
+            `(r=${p.radius.toFixed(1)}, bearing=${p.bearing.toFixed(1)})`
+        ).to.equal(false)
+      }
+    })
+
+    it('stands its deck clear of the ground at every bent', () => {
+      // The geometric contract the model relies on: whatever the ground does
+      // under the run, the deck is level and no bent is shorter than the
+      // clearance. Exercised with a fall profile at least as bad as the real
+      // one — the flattest heading measures about 10.6 m over the run.
+      const stations = trackBentStations()
+      const fall = stations.map((d) => -(d / TRACK_LENGTH_M) * 14)
+      const deck = trackDeckY(fall)
+      const legs = trackLegHeights(fall)
+
+      expect(legs.length, 'a leg height per bent').to.equal(stations.length)
+      for (const [i, h] of legs.entries()) {
+        expect(h, `bent ${i} clearance`).to.be.at.least(TRACK_DECK_CLEAR_M)
+        // Level means level: every bent's foot plus its own height lands on the
+        // one deck. This is what makes a trestle a trestle.
+        expect(fall[i] + h, `bent ${i} reaches the deck`).to.be.closeTo(
+          deck,
+          1e-9
+        )
+      }
+      // The tallest bent is the clearance plus the whole fall, and no more.
+      expect(Math.max(...legs)).to.be.closeTo(TRACK_DECK_CLEAR_M + 14, 1e-9)
+    })
+
+    it('stands every bent on its feet rather than on its point', () => {
+      // An A-frame, not a V. This is not a nicety about which way a shape looks:
+      // the splay is the base width that resists the cross-track overturning
+      // moment, and inverted it puts the whole trestle up on its points. It
+      // shipped inverted once, from a lean angle whose sign was written by hand,
+      // which is why bentLegs returns endpoints instead.
+      for (const h of [TRACK_DECK_CLEAR_M, 9, 16, 40]) {
+        const [left, right] = bentLegs(0, 0, h)
+        const footSpan = Math.abs(right.foot[2] - left.foot[2])
+        const headSpan = Math.abs(right.head[2] - left.head[2])
+        expect(footSpan, `bent ${h} m: feet wider than head`).to.be.greaterThan(
+          headSpan
+        )
+        // Symmetric about the centreline, and the right leg is the +z one.
+        expect(left.foot[2]).to.be.closeTo(-right.foot[2], 1e-9)
+        expect(right.foot[2]).to.be.greaterThan(0)
+        // Splay grows with height — a taller bent needs a wider base, and a
+        // fixed foot offset would make the tall far-end bents the slenderest.
+        expect(footSpan - headSpan).to.be.closeTo(2 * TRACK_SPLAY * h, 1e-9)
+        // Feet on the ground, heads at the cap.
+        expect(left.foot[1]).to.equal(0)
+        expect(right.head[1]).to.equal(h)
+      }
+    })
+
+    it('keeps the breach works on a lot that fits the district', () => {
+      // The lot is sized to the breach works, not to the track. If that ever
+      // drifts back toward the model's own length, the junction gets shoved out
+      // and this district stops matching the ring.
+      expect(ROSTERS.mass_driver![0].radiusM).to.equal(BREACH_LOT_RADIUS_M)
+      const radius = Math.hypot(slot.east, slot.north)
+      expect(radius - MAIN_LOOP_M, 'breach lot setback off main street').to.be
+        .closeTo(ROAD_HALF_M + SETBACK_M + BREACH_LOT_RADIUS_M, 1e-6)
     })
   })
 })

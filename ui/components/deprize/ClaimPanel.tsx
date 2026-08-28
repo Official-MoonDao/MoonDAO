@@ -7,6 +7,7 @@ import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { fmt, formatPrizeTokenLabel, toEth } from '@/lib/deprize/format'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
+import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeRedeemPreview } from '@/lib/deprize/useDePrizeRedeem'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -43,6 +44,8 @@ export default function ClaimPanel({
   const userAddress = account?.address
   const [busy, setBusy] = useState(false)
   const [claimed, setClaimed] = useState(false)
+  const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
+    useDePrizeChainGuard(chain)
 
   // Local success flag is per-session; clear it when the holder or DePrize changes
   // so a wallet switch cannot leave the previous address's "Claimed" UI stuck.
@@ -83,6 +86,7 @@ export default function ClaimPanel({
 
   const approveHelper = async () => {
     if (!account || !ctf) return
+    if (blockedByNetwork()) return
     setBusy(true)
     try {
       await sendDePrizeTx(
@@ -107,6 +111,7 @@ export default function ClaimPanel({
 
   const claim = async () => {
     if (!account || !helper) return
+    if (blockedByNetwork()) return
     setBusy(true)
     toast.loading('Claiming…', { id: 'claim', style: toastStyle })
     try {
@@ -169,14 +174,25 @@ export default function ClaimPanel({
             {claimEth !== undefined ? `${fmt(claimEth)} ETH` : '…'}
           </p>
           <div className="mt-3">
-            <StandardButton
-              onClick={approved ? claim : approveHelper}
-              disabled={busy}
-              className="rounded-full"
-              backgroundColor="bg-moon-green"
-            >
-              {busy ? 'Working…' : approved ? 'Claim' : 'Approve'}
-            </StandardButton>
+            {wrongNetwork ? (
+              <StandardButton
+                onClick={switchToChain}
+                disabled={switching}
+                className="rounded-full"
+                backgroundColor="bg-moon-green"
+              >
+                {switching ? 'Switching…' : `Switch wallet to ${chainLabel}`}
+              </StandardButton>
+            ) : (
+              <StandardButton
+                onClick={approved ? claim : approveHelper}
+                disabled={busy}
+                className="rounded-full"
+                backgroundColor="bg-moon-green"
+              >
+                {busy ? 'Working…' : approved ? 'Claim' : 'Approve'}
+              </StandardButton>
+            )}
           </div>
         </>
       )}

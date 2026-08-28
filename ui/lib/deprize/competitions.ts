@@ -82,14 +82,27 @@ export type DePrizeCompetition = {
 
 export const GENERIC_DEPRIZE_COMPETITION: DePrizeCompetition = {
   title: 'DePrize',
-  tagline:
-    'Back the team you think will win — live odds, payout when a winner is declared.',
+  tagline: 'Back the team you think will win — live odds, payout when a winner is declared.',
   metaDescription:
     'Back the team you think will win — live odds, payout when a winner is declared.',
 }
 
 /** chainSlug → deprizeId → competition */
 const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> = {
+  arbitrum: {
+    // First Arbitrum mainnet DePrize — internal end-to-end competition.
+    // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.
+    // Roster is placeholder MoonDAOTeam ids [2, 6, 7, 8]; not race-bound, so it
+    // groups under "Other challenges" on the index.
+    1: {
+      title: 'The Moon Is A Harsh Mistress',
+      tagline:
+        'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Arbitrum DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
+      questionId: '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
+    },
+  },
   sepolia: {
     // Browser QA fixture — see docs/DEPRIZE_QA.md (DePrize 9).
     // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.
@@ -101,8 +114,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         'Sepolia QA fixture for the fission surface power race — three Team NFTs, live LMSR odds, FeeRouter-owned market.',
       metaDescription:
         'Sepolia DePrize bound to the Moon Base Zero fission surface power race. Back a competitor and cash out or claim when resolved.',
-      questionId:
-        '0xab937cdea2250786bf37ee2dd06f244bbeed62159c337927074523844d5759fb',
+      questionId: '0xab937cdea2250786bf37ee2dd06f244bbeed62159c337927074523844d5759fb',
       sharedGoalId: 'shared-fission-power',
       raceLabel: 'Fission surface power',
       outcomes: [
@@ -130,6 +142,23 @@ export function isKnownDePrizeCompetition(
 ): boolean {
   if (deprizeId === undefined || !Number.isFinite(deprizeId)) return false
   return !!DEPRIZE_COMPETITIONS[chainSlug]?.[deprizeId]
+}
+
+/**
+ * Live on-chain DePrize to feature at the top of /deprize — the first registered
+ * competition on this chain that is NOT bound to a Moon Base Zero race. Today
+ * that is Arbitrum #1 (The Moon Is A Harsh Mistress). Race-bound entries stay
+ * on their RaceMarketCard; unbound ones have nowhere else to show up.
+ */
+export function getFeaturedLiveDePrizeId(chainSlug: string): number | undefined {
+  const entries = DEPRIZE_COMPETITIONS[chainSlug]
+  if (!entries) return undefined
+  const unbound = Object.entries(entries)
+    .filter(([, c]) => !c.sharedGoalId)
+    .map(([id]) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0)
+    .sort((a, b) => a - b)
+  return unbound[0]
 }
 
 /** Competition copy for a DePrize; falls back to generic copy when unregistered. */
@@ -328,10 +357,24 @@ export function isRaceBindingComplete(
 }
 
 /** True when this outcome is the Open Field slot. */
-export function isOpenFieldOutcome(
-  outcome: DePrizeRaceOutcome | undefined
-): boolean {
+export function isOpenFieldOutcome(outcome: DePrizeRaceOutcome | undefined): boolean {
   return !!outcome?.field
+}
+
+/**
+ * True when a shared goal actually has more than one entrant to bet between.
+ * A single-competitor "race" (today, only `shared-mass-driver`: an
+ * open-source concept study with no funded developer) has nowhere for odds
+ * to point — the sole entry is mechanically priced at 100% by both the mock
+ * market (`ensureMarket` in mockMarket.ts, weight 1/N with N=1) and any real
+ * LMSR, which reads as MoonDAO declaring that entrant the winning builder.
+ * It isn't one; it's the only public writeup on the capability. Gate every
+ * odds bar, Buy button, and pool figure in RaceMarketCard/SharedGoalPanel on
+ * this so a capability nobody has committed to building yet is shown as an
+ * open goal, not a market with a "leading" competitor.
+ */
+export function isCompetitiveRace(competitorCount: number): boolean {
+  return competitorCount >= 2
 }
 
 /**
@@ -339,9 +382,7 @@ export function isOpenFieldOutcome(
  * color) — never market visibility. Unclaimed competitors still render their
  * name and link, just with a neutral monogram instead of their mark.
  */
-export function isCompetitorClaimed(
-  outcome: DePrizeRaceOutcome | undefined
-): boolean {
+export function isCompetitorClaimed(outcome: DePrizeRaceOutcome | undefined): boolean {
   return outcome?.consented === true
 }
 

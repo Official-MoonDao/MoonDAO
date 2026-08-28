@@ -5,6 +5,7 @@ import {
   MoonIcon,
   PlusIcon,
   RocketLaunchIcon,
+  TrophyIcon,
   UserGroupIcon,
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
@@ -66,6 +67,11 @@ export default function useNavigation(citizen: any) {
               name: 'Moon Base Zero',
               icon: MoonIcon,
               href: '/moonbase',
+            },
+            {
+              name: 'DePrize',
+              icon: TrophyIcon,
+              href: '/deprize',
             },
           ]
         : []),

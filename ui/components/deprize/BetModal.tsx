@@ -9,6 +9,7 @@ import { fmt, formatPrizeTokenLabel, toEth, toWei } from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
+import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import client from '@/lib/thirdweb/client'
@@ -56,6 +57,8 @@ export default function BetModal({
   const [quote, setQuote] = useState<{ qty: number } | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [busy, setBusy] = useState(false)
+  const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
+    useDePrizeChainGuard(chain)
 
   const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
   const prizeToken = formatPrizeTokenLabel(launchpad.symbol)
@@ -124,6 +127,9 @@ export default function BetModal({
       toast.error('Enter an amount to bet.', { style: toastStyle })
       return
     }
+    // Re-checked here as well as in the button: the wallet can be switched
+    // while this modal is open.
+    if (blockedByNetwork()) return
     setBusy(true)
     toast.loading('Quoting…', { id: 'quote', style: toastStyle })
     try {
@@ -278,6 +284,21 @@ export default function BetModal({
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
             Betting isn&apos;t live yet on this network — the bet router is not deployed. Check back
             soon.
+          </div>
+        ) : wrongNetwork ? (
+          <div className="space-y-3">
+            <p className="text-amber-300 text-sm">
+              Your wallet is on a different network. Bets are placed on{' '}
+              <span className="font-semibold">{chainLabel}</span> — switch to continue.
+            </p>
+            <StandardButton
+              onClick={switchToChain}
+              disabled={switching}
+              className="rounded-full w-full"
+              backgroundColor="bg-moon-green"
+            >
+              {switching ? 'Switching…' : `Switch wallet to ${chainLabel}`}
+            </StandardButton>
           </div>
         ) : insufficient ? (
           <p className="text-amber-300 text-sm">

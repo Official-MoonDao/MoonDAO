@@ -27,5 +27,12 @@ namespace NodeJS {
     UPSTASH_REDIS_TOKEN: string
     CONTRIBUTIONS_SHEET_CSV_URL: string
     CRON_SECRET: string
+    // Moonbase / DePrize access gate. Both are server-side only — deliberately
+    // NOT prefixed NEXT_PUBLIC_, so Next never inlines them into client code.
+    // Set them in the deployment environment and in an untracked .env.local;
+    // neither may ever be committed. See lib/gate/access.ts and
+    // docs/ACCESS_GATE.md.
+    MOONBASE_GATE_PASSWORD: string // what a person types into the form
+    MOONBASE_GATE_TOKEN: string // random string that becomes the cookie
   }
 }
