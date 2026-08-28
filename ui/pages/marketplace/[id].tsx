@@ -13,6 +13,12 @@ import {
 } from '@/lib/marketplace/listing'
 import { buildListingJsonLd } from '@/lib/marketplace/listingJsonLd'
 import { fetchListingById, fetchRelatedListings } from '@/lib/marketplace/marketplaceTable'
+import {
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_WIDTH,
+  buildListingOgImageUrl,
+  listingOgFieldsFrom,
+} from '@/lib/og/preview'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -71,6 +77,7 @@ export default function ListingDetail({
 
   const availability = getListingAvailability(listing)
   const shareUrl = getListingShareUrl(listing)
+  const ogImage = buildListingOgImageUrl(listingOgFieldsFrom(listing, team?.name))
   const teamHref = team ? `/team/${team.name ? generatePrettyLink(team.name) : team.id}` : undefined
   const jsonLd = buildListingJsonLd({ listing, teamName: team?.name })
 
@@ -113,7 +120,9 @@ export default function ListingDetail({
         title={listing.title}
         secondaryTitle={team?.name ? `${team.name} · MoonDAO Marketplace` : 'MoonDAO Marketplace'}
         description={listing.description}
-        image={listing.image ? getIPFSGateway(listing.image) : undefined}
+        image={ogImage}
+        imageWidth={OG_IMAGE_WIDTH}
+        imageHeight={OG_IMAGE_HEIGHT}
       >
         <script
           type="application/ld+json"

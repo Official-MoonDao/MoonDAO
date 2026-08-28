@@ -186,22 +186,19 @@ contract Config is Script {
         MISSION_TABLE_ADDRESSES[SEP] = sepJson.readAddress(".MissionTable");
 
         // DePrize prediction-market stack.
-        // AUDIT[plan 1.5 / Phase 2]: WETH on Arbitrum is the canonical bridged
-        // aeWETH proxy (official Arbitrum contract-addresses). CTF + LMSR factory
-        // do NOT exist on mainnet yet — leave those slots zero so
-        // requireDePrizeCollateral reverts on 42161 until Phase 2 deploys them
-        // and this file is updated. Do not invent addresses.
+        // AUDIT[plan 1.5 / Phase 2]: WETH is canonical aeWETH. CTF + LMSR
+        // factory were deployed 2026-08-18 (Truffle migrate -f 2 --to 4).
         WETH_ADDRESSES[SEP] = 0x8cfF28F922AeEe80d3a0663e735681469F7374c6;
         WETH_ADDRESSES[ARB_SEP] = 0xA441f20115c868dc66bC1977E1c17D4B9A0189c7;
         WETH_ADDRESSES[ARBITRUM] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
         CONDITIONAL_TOKENS_ADDRESSES[SEP] = 0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8;
         CONDITIONAL_TOKENS_ADDRESSES[ARB_SEP] = 0xa0B1b14515C26acb193cb45Be5508A8A46109a27;
-        // CONDITIONAL_TOKENS_ADDRESSES[ARBITRUM] — fill after Phase 2 Truffle migrate -f 2 --to 4
+        CONDITIONAL_TOKENS_ADDRESSES[ARBITRUM] = 0x12DAC07Bf586E06a9bDa32c422864C8Fda43FA29;
 
         LMSR_MARKET_ADDRESSES[SEP] = 0x11DCe86c804ca088A0d9036eeE368e4055b235dE;
         LMSR_MARKET_ADDRESSES[ARB_SEP] = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
-        // LMSR_FACTORY_ADDRESSES[ARBITRUM] — fill after Phase 2 (migration 04)
+        LMSR_FACTORY_ADDRESSES[ARBITRUM] = 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8;
     }
 
     /// @notice Resolve WETH + ConditionalTokens for `chainId`, or revert with a

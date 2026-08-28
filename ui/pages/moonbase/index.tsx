@@ -1,12 +1,17 @@
-import { GlobeAltIcon } from '@heroicons/react/24/outline'
-import type { GetServerSideProps } from 'next'
+import { CameraIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
+import { useLogin } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { isPublicProductionHost } from 'const/flags'
-import { UNIT } from '@/lib/deprize/constants'
+import { useActiveAccount } from 'thirdweb/react'
+import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
+import { isCompetitiveRace } from '@/lib/deprize/competitions'
+import { MarketStage, UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
+import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { mergeLiveMarketInto } from '@/lib/deprize/goal-market'
+import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
+import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -31,14 +36,17 @@ import {
   orgColor,
 } from '@/lib/lunar-atlas/display'
 import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
+import { buriedVault, vaultAxisBearingDeg } from '@/lib/lunar-atlas/subplan'
 import {
-  atlasYear,
+  atlasNowYear,
   buildTechTrees,
   datasetYearRange,
   filterProjects,
+  milestoneArrivalYear,
   orgById,
   projectById,
   projectStateAtYear,
+  raceArrivalYear,
   sharedGoalById,
   type TechTree,
 } from '@/lib/lunar-atlas/selectors'
@@ -137,6 +145,10 @@ export default function MoonBaseZeroIndex() {
   const dataset = SEED_ATLAS
   const { selectedChain: chain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(chain)
+  const account = useActiveAccount()
+  const userAddress = account?.address
+  const { login } = useLogin()
+  const region = useRegionRestriction()
 
   const [focus, setFocus] = useState<GlobeFocus>(null)
   // Selection is layered: a tech-tree site (category) opens the race/market
@@ -163,6 +175,12 @@ export default function MoonBaseZeroIndex() {
   const yearRange = useMemo(() => datasetYearRange(dataset), [dataset])
   const [year, setYear] = useState(yearRange.max)
   const [playing, setPlaying] = useState(false)
+  // Everything the base could not actually have — this page's own panels, the
+  // beacons and the floating names in the scene — out of the way at once, so
+  // what's left is just the Moon and the hardware on it. The scene is
+  // photographic enough now that the furniture is the only thing between it and
+  // a usable image, and there was no way to get one without one.
+  const [cinematic, setCinematic] = useState(false)
 
   // This is a fixed, fullscreen scene — it must never scroll. The shared Layout
   // gives <main> `pt-16` on top of `min-h-screen`, making the document ~4rem
@@ -182,18 +200,55 @@ export default function MoonBaseZeroIndex() {
     }
   }, [])
 
+  // Escape leaves the clean view. Bound only while it's on, so it can't shadow
+  // Escape's meaning anywhere else on the page, and because the one control
+  // still on screen is deliberately small enough to be missed.
+  useEffect(() => {
+    if (!cinematic) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCinematic(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [cinematic])
+
+  // The year each competitor with no Moon date of its own is taken to arrive,
+  // from the target window of the race it runs in. Resolved once here so the
+  // markers, the scrubber range and the histogram all place it identically.
+  const raceYears = useMemo(() => {
+    const now = atlasNowYear()
+    const years = new Map<string, number | null>()
+    for (const p of dataset.projects) {
+      years.set(p.id, raceArrivalYear(p, dataset.sharedGoals, now))
+    }
+    return years
+  }, [dataset.projects, dataset.sharedGoals])
+
+  // Density of arrivals at the Moon in a given year, on the same rule the
+  // markers use, so a tall bar means "a lot lands this year" — not "a lot of
+  // contracts were signed", and not "a lot was once hoped for this year".
+  // Milestones that failed, or whose date has slipped by, count at the year
+  // they can honestly be shown rather than the year they were promised.
   const histogram = useMemo(() => {
     const counts = new Map<number, number>()
+    const now = atlasNowYear()
+    const bump = (y: number) =>
+      counts.set(Math.floor(y), (counts.get(Math.floor(y)) ?? 0) + 1)
     for (const p of dataset.projects) {
-      for (const m of p.milestones) {
-        const y = atlasYear(m.targetDate)
-        if (y != null) counts.set(y, (counts.get(y) ?? 0) + 1)
+      const own = p.milestones
+        .map((m) => milestoneArrivalYear(m, now))
+        .filter((y): y is number => y != null)
+      if (own.length) own.forEach(bump)
+      else {
+        // Undated entrant: one bar, in the year its race expects the field.
+        const race = raceYears.get(p.id)
+        if (race != null) bump(race)
       }
     }
     return Array.from(counts.entries())
       .map(([y, count]) => ({ year: y, count }))
       .sort((a, b) => a.year - b.year)
-  }, [dataset.projects])
+  }, [dataset.projects, raceYears])
 
   // Auto-advance the year while playing; stop at the end.
   const yearRef = useRef(year)
@@ -222,8 +277,11 @@ export default function MoonBaseZeroIndex() {
   )
 
   // Mount one DePrize market — the open race only. Eight concurrent 30s polls
-  // on the r3f scene is exactly what the bridge was designed to avoid.
-  const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined)
+  // on the r3f scene is exactly what the bridge was designed to avoid. Also
+  // the single source for the race's betting/positions surface (marketAddress,
+  // per-outcome balances) so "Back this team" can bet inline instead of
+  // navigating to /deprize/{id}.
+  const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined, userAddress)
   const { totalFunding, isLoading: isLoadingPrizePool } = useTotalFunding(
     liveOdds.jbProjectId,
     chain
@@ -232,6 +290,50 @@ export default function MoonBaseZeroIndex() {
     liveOdds.jbProjectId !== undefined && !isLoadingPrizePool
       ? `${fmtPrizeEth(Number(totalFunding) / Number(UNIT))} ETH`
       : undefined
+
+  // Spendable native ETH for the inline BetModal — same pattern as the
+  // DePrize detail page, bumped after a bet/cash-out/claim via refreshNonce.
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const [nativeBalance, setNativeBalance] = useState<number | undefined>()
+  const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
+  useEffect(() => {
+    if (!userAddress) {
+      setNativeBalance(undefined)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const b = await eth_getBalance(
+          getRpcClient({ client: deprizeReadClient, chain: readChain }),
+          { address: userAddress }
+        )
+        if (!cancelled) setNativeBalance(Number(b) / Number(UNIT))
+      } catch {
+        if (!cancelled) setNativeBalance(undefined)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [userAddress, readChain, refreshNonce])
+  const spendableEth = spendableFromBalanceEth(nativeBalance, readChain.id)
+
+  // Default-deny when country is unknown, exactly like the detail page.
+  const bettingAllowed =
+    liveOdds.bettingOpen &&
+    liveOdds.mintBound &&
+    !!liveOdds.mintAddress &&
+    !!region.country &&
+    !region.isRestricted &&
+    !region.isLoading &&
+    !region.isError &&
+    liveOdds.stage === MarketStage.Running
+
+  const handleRaceMarketDone = () => {
+    liveOdds.refresh()
+    setRefreshNonce((n) => n + 1)
+  }
   // Depend on the bridge fields, not the result object — the hook returns a
   // fresh object every render and would rebuild trees on every hover/frame.
   // Pass the dataset array itself, not a copy: mergeLiveMarketInto returns the
@@ -294,10 +396,13 @@ export default function MoonBaseZeroIndex() {
   const layout = useMemo(() => buildColonyLayout(surfaceTrees), [surfaceTrees])
 
   // The race list that drives the panel, ordered biggest field first — the more
-  // companies are chasing a capability, the more of a race it is.
+  // companies are chasing a capability, the more of a race it is. A single
+  // unassigned concept (today, only the mass driver) is a capability on the
+  // map, not a race, so it stays off this list.
   const races = useMemo<RaceEntry[]>(
     () =>
       [...surfaceTrees]
+        .filter((tree) => isCompetitiveRace(tree.projects.length))
         .sort((a, b) => b.projects.length - a.projects.length)
         .map((tree) => {
           const leader = rankedMembers(tree)[0]
@@ -313,15 +418,25 @@ export default function MoonBaseZeroIndex() {
     [surfaceTrees, dataset]
   )
 
+  const legendOrgs = useMemo(
+    () => dataset.organizations.filter((org) => org.id !== 'unassigned'),
+    [dataset.organizations]
+  )
+
   // Timeline-driven marker styling: future projects ghost, achieved solid,
   // delayed/cancelled flagged. Composes on top of the org/type filter.
   const getProjectStyle = useMemo(
     () =>
       (project: Project): MarkerStyle => {
-        const st = projectStateAtYear(project, year)
+        const st = projectStateAtYear(
+          project,
+          year,
+          atlasNowYear(),
+          raceYears.get(project.id)
+        )
         return { opacity: TIME_STATUS_OPACITY[st.status], visible: true }
       },
-    [year]
+    [year, raceYears]
   )
 
   const selectedProject = selectedProjectId
@@ -378,6 +493,29 @@ export default function MoonBaseZeroIndex() {
     if (stations?.length) {
       const { lat, lon } = stationLatLon(stations[0])
       setFocus({ lat, lon, view: 'sky', heightM: stations[0].altM })
+      return
+    }
+    // A competitor whose pressure shell is UNDER the surface is framed inside
+    // its vault instead. Same logic as the orbital case above and for the same
+    // reason: it keeps its plot, and the mound, head house and radiator wall on
+    // it are real hardware on real regolith — but the habitat itself cannot be
+    // seen from any above-ground viewpoint, because four meters of regolith is
+    // the entire point of it (see lib/lunar-atlas/subplan).
+    const vault = buriedVault(project.id)
+    const vaultPlot = vault && layout.plots.get(project.id)
+    if (vault && vaultPlot) {
+      const ll = vector3ToLatLon(vaultPlot.dir)
+      setFocus({
+        lat: ll.lat,
+        lon: ll.lon,
+        view: 'sub',
+        sub: {
+          subjectDepthM: vault.subjectDepthM,
+          eyeDepthM: vault.eyeDepthM,
+          standoffM: vault.standoffM,
+          axisBearingDeg: vaultAxisBearingDeg(vaultPlot.slot),
+        },
+      })
       return
     }
     const cat = siteCategory ?? selectedTreeCategory ?? project.type
@@ -599,14 +737,47 @@ export default function MoonBaseZeroIndex() {
           getProjectStyle={getProjectStyle}
           layout={layout}
           onBackgroundClick={handleBackgroundClick}
+          cinematic={cinematic}
         />
 
+        {/* The one control that survives cinematic mode, since it is the only
+            way back out of it besides Escape. Bottom right, where nothing else
+            lives, and sized down to a corner mark so it costs the frame almost
+            nothing while it's the only thing in it. */}
+        <button
+          type="button"
+          onClick={() => setCinematic((c) => !c)}
+          title={
+            cinematic
+              ? 'Show the map furniture again (Esc)'
+              : 'Hide all panels, pins and labels'
+          }
+          aria-pressed={cinematic}
+          className={`absolute bottom-4 right-4 z-30 flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium backdrop-blur-md transition-colors ${
+            cinematic
+              ? 'border-white/10 bg-black/30 text-white/40 hover:border-white/25 hover:text-white/80'
+              : 'border-white/10 bg-black/40 text-white/60 hover:border-white/25 hover:text-white'
+          }`}
+        >
+          <CameraIcon className="h-3.5 w-3.5" />
+          {cinematic ? 'Exit' : 'Clean view'}
+        </button>
+
         {/* Overlay HUD */}
-        <div className="pointer-events-none absolute inset-0 flex flex-col">
+        <div
+          className={`pointer-events-none absolute inset-0 flex flex-col transition-opacity duration-300 ${
+            cinematic ? 'opacity-0' : 'opacity-100'
+          }`}
+          // Faded out AND taken out of the tree for input, so a hidden Legend
+          // can't still swallow a drag meant for the globe underneath it.
+          aria-hidden={cinematic}
+          style={cinematic ? { visibility: 'hidden' } : undefined}
+        >
           {/* Top row: stacked on mobile so the info card and race legend never
               have to squeeze into half the viewport each (see mobile audit). */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 p-4 sm:p-6">
             <div className="pointer-events-auto w-full sm:max-w-sm rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
+
               <div className="flex items-center gap-2">
                 <GlobeAltIcon className="h-5 w-5 text-cyan-300" />
                 <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
@@ -623,7 +794,7 @@ export default function MoonBaseZeroIndex() {
               selectedRace={selectedTreeCategory}
               onSelectRace={handleToggleRace}
               onHoverRace={setHoveredCategory}
-              organizations={dataset.organizations}
+              organizations={legendOrgs}
               selectedOrgIds={selectedOrgIds}
               onToggleOrg={toggleOrg}
               onClear={clearFilters}
@@ -651,6 +822,7 @@ export default function MoonBaseZeroIndex() {
               playing={playing}
               onTogglePlay={() => setPlaying((p) => !p)}
               histogram={histogram}
+              nowYear={atlasNowYear()}
             />
           </div>
         </div>
@@ -659,7 +831,7 @@ export default function MoonBaseZeroIndex() {
             Positioned absolutely (not in the HUD flex column) so its height
             doesn't depend on how tall the Legend happens to be; it overlays
             the Legend while open. One panel at a time — race view wins. */}
-        {(selectedGoal || selectedTree || selectedProject) && (
+        {(selectedGoal || selectedTree || selectedProject) && !cinematic && (
           <div className="pointer-events-none absolute inset-x-4 bottom-40 top-auto z-20 h-[55vh] sm:inset-x-auto sm:bottom-40 sm:right-4 sm:top-20 sm:h-auto sm:w-[380px]">
             {selectedGoal ? (
               <SharedGoalPanel
@@ -673,6 +845,25 @@ export default function MoonBaseZeroIndex() {
                 prizePoolLoading={
                   liveOdds.jbProjectId !== undefined && isLoadingPrizePool
                 }
+                chain={chain}
+                account={account}
+                userAddress={userAddress}
+                onConnectWallet={() => login()}
+                spendableEth={spendableEth}
+                mintAddress={liveOdds.mintAddress}
+                marketAddress={liveOdds.marketAddress}
+                numOutcomes={liveOdds.numOutcomes}
+                outcomes={liveOdds.outcomes}
+                bettingAllowed={bettingAllowed}
+                tradingHalted={liveOdds.tradingHalted}
+                resolved={liveOdds.resolved}
+                winningIndex={liveOdds.winningIndex}
+                isRefundVector={liveOdds.isRefundVector}
+                payoutDen={liveOdds.payoutDen}
+                payoutNums={liveOdds.payoutNums}
+                jbProjectId={liveOdds.jbProjectId}
+                refreshNonce={refreshNonce}
+                onDone={handleRaceMarketDone}
               />
             ) : selectedTree ? (
               <TechTreePanel
@@ -697,22 +888,4 @@ export default function MoonBaseZeroIndex() {
       </div>
     </>
   )
-}
-
-// Moon Base Zero lives in main but isn't public yet. Hide it on the live
-// production site (moondao.com) while leaving it fully usable everywhere we
-// develop — local, Vercel previews off any branch, staging. The gate is the
-// request host, since our env vars are pulled from prod and can't tell those
-// apart (see const/flags). Runs for both `/moonbase` and `/moonbase/[projectId]`
-// (that route re-exports this).
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const forwarded = req.headers['x-forwarded-host']
-  const host =
-    (Array.isArray(forwarded) ? forwarded[0] : forwarded) ?? req.headers.host
-  if (isPublicProductionHost(host)) {
-    return {
-      redirect: { destination: '/coming-soon?from=moonbase', permanent: false },
-    }
-  }
-  return { props: {} }
 }

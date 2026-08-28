@@ -10,11 +10,17 @@ type TimelineScrubberProps = {
   playing: boolean
   onTogglePlay: () => void
   histogram?: YearHistogram
+  nowYear?: number
 }
 
-// Global year scrubber. Drag to move through time and watch planned assets
-// appear as their target dates arrive; press play to auto-advance. A faint
-// histogram shows milestone density per year.
+// Global year scrubber. Drag to move through time and watch hardware appear in
+// the year it arrives at the Moon; press play to auto-advance. A faint
+// histogram shows arrivals per year.
+//
+// The scrubber straddles today, and the two halves are different kinds of
+// claim: to the left is what actually landed, to the right is what is planned
+// to. Nothing marks that in the bar itself, so it is called out — a rule at
+// today on the histogram, and a readout that names which half you are in.
 export default function TimelineScrubber({
   minYear,
   maxYear,
@@ -23,6 +29,7 @@ export default function TimelineScrubber({
   playing,
   onTogglePlay,
   histogram = [],
+  nowYear,
 }: TimelineScrubberProps) {
   // Inclusive year count: a single-year range (min === max) is one bar, not two.
   const span = Math.max(0, maxYear - minYear)
@@ -44,8 +51,8 @@ export default function TimelineScrubber({
         </button>
 
         <div className="min-w-0 flex-1">
-          {/* Milestone-density histogram */}
-          <div className="mb-1 flex h-6 items-end gap-px">
+          {/* Arrivals-per-year histogram */}
+          <div className="relative mb-1 flex h-6 items-end gap-px">
             {Array.from({ length: span + 1 }, (_, i) => {
               const y = minYear + i
               const count = histogram.find((h) => h.year === y)?.count ?? 0
@@ -60,10 +67,20 @@ export default function TimelineScrubber({
                       ? 'rgba(103,232,249,0.55)'
                       : 'rgba(255,255,255,0.12)',
                   }}
-                  title={count ? `${y}: ${count} milestone${count > 1 ? 's' : ''}` : `${y}`}
+                  title={count ? `${y}: ${count} arrival${count > 1 ? 's' : ''}` : `${y}`}
                 />
               )
             })}
+
+            {/* Today, drawn on the trailing edge of its own bar. */}
+            {nowYear != null && nowYear >= minYear && nowYear < maxYear && (
+              <div
+                className="pointer-events-none absolute inset-y-0 w-px bg-white/30"
+                style={{
+                  left: `${((nowYear - minYear + 1) / (span + 1)) * 100}%`,
+                }}
+              />
+            )}
           </div>
 
           <input
@@ -85,7 +102,11 @@ export default function TimelineScrubber({
 
         <div className="shrink-0 text-right">
           <div className="text-[10px] uppercase tracking-wide text-white/40">
-            Year
+            {nowYear == null
+              ? 'Year'
+              : year <= nowYear
+              ? 'On the Moon in'
+              : 'Planned for'}
           </div>
           <div className="text-2xl font-semibold tabular-nums text-white">
             {year}

@@ -7,5 +7,8 @@ module.exports = function (deployer) {
   deployer.link(Fixed192x64Math, LMSRMarketMaker);
   deployer.link(Fixed192x64Math, LMSRWithTWAPFactory);
   deployer.link(Fixed192x64Math, LMSRWithTWAP);
-  deployer.deploy(LMSRWithTWAPFactory);
+  // Match migrations 02 and 03: reuse the factory recorded in the artifact's
+  // networks entry. Redeploying would silently diverge from the address in
+  // fee-hook/script/base/Config.sol and ui/const/config.ts.
+  deployer.deploy(LMSRWithTWAPFactory, { overwrite: false });
 };

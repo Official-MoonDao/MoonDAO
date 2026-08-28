@@ -39,7 +39,10 @@ export type LatLon = { lat: number; lon: number }
 export type LocationPrecision = 'exact' | 'approximate' | 'region'
 
 export type ProjectType =
-  | 'crewed_base'
+  // Any pressurized, human-occupiable structure or vehicle — a flagship
+  // sustained-presence program (Artemis Base Camp, ILRS) is not a different
+  // kind of thing from a single habitat module or a pressurized rover, just
+  // a bigger and more integrated one, so all of it races in one category.
   | 'habitat'
   | 'lander'
   | 'rover'
@@ -48,6 +51,12 @@ export type ProjectType =
   | 'comms_pnt'
   | 'orbital'
   | 'construction'
+  // Electromagnetic surface launcher that exports lunar-mined material off
+  // the Moon on electricity alone, no chemical rocket. Every other race on
+  // this base is upstream of this one — it only becomes buildable once ISRU
+  // refining, power and rovers are mature enough to feed it — which is why
+  // it's the final capability, not a competitor to any of the others.
+  | 'mass_driver'
   | 'other'
 
 // Where a project stands in a DePrize competitor roster. `listed` means
@@ -80,6 +89,19 @@ export type Milestone = {
   targetDate: string // ISO year ("2027"), year-month ("2027-09"), or full date.
   datePrecision: DatePrecision
   status: MilestoneStatus
+  // Where this milestone actually happens. 'moon' (the default) means the
+  // hardware is landed, delivered, or operating at the Moon on this date —
+  // an uncrewed landing, a surface demo, a crewed touchdown. 'earth' is
+  // everything that happens before the Moon does: a contract award, a
+  // concept publication, a critical design review, a vacuum-chamber or
+  // thermal-vac test on the ground. Both kinds are real progress and both
+  // get a row in a project's timeline, but only 'moon' dates answer "when
+  // is this actually on the Moon" — which is what the year scrubber's range
+  // and reveal/achieved state are keyed off (see datasetYearRange,
+  // projectStateAtYear in selectors.ts). Mislabeling an Earth milestone as
+  // the default would show hardware as present on the lunar surface years
+  // before it ever leaves Earth.
+  location?: 'moon' | 'earth'
   metrics?: MilestoneMetric[]
   sources: SourceRef[]
 }

@@ -24,6 +24,7 @@ import {
   MOON_RADIUS_M,
   orbitUpVector,
   skyViewFraming,
+  subViewFraming,
   surfaceNormal,
   surfaceViewFraming,
   vector3ToLatLon,
@@ -37,6 +38,7 @@ import {
   M_TO_UNITS,
   capCenterDirection,
   capCenterLatLon,
+  capLocalDirection,
   heightToRadius,
 } from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
@@ -49,6 +51,7 @@ import type {
 } from '@/lib/lunar-atlas/types'
 import BaseRoads from './BaseRoads'
 import EarthGlobe from './EarthGlobe'
+import GroundDisturbance from './GroundDisturbance'
 import MarkerLayer, {
   ColonyLayout,
   MarkerStyle,
@@ -67,11 +70,23 @@ export type GlobeFocus = {
   distanceRadii?: number
   // 'orbit' (default) looks down from above; 'surface' does a cinematic low
   // pan to a from-the-ground vantage looking across at the model; 'sky' frames
-  // a subject that is off the ground entirely (see skyViewFraming).
-  view?: 'orbit' | 'surface' | 'sky'
+  // a subject that is off the ground entirely (see skyViewFraming); 'sub' drops
+  // the eye BELOW grade into a buried habitat's vault (see subViewFraming).
+  view?: 'orbit' | 'surface' | 'sky' | 'sub'
   // Meters above the base datum of the thing being looked at. Only 'sky' uses
   // it — every other framing takes its subject to be on the ground.
   heightM?: number
+  // The cutaway framing, for 'sub' only: how far below local grade the subject
+  // and the eye sit, how far back along the vault's axis the eye stands, and
+  // which way that axis runs (degrees CCW from east, the district convention).
+  // All of it is derived from the vault itself by vaultGeometry, so the camera
+  // lands inside the structure the model layer drew rather than near it.
+  sub?: {
+    subjectDepthM: number
+    eyeDepthM: number
+    standoffM: number
+    axisBearingDeg: number
+  }
 } | null
 
 export type MoonGlobeProps = {
@@ -94,6 +109,9 @@ export type MoonGlobeProps = {
   // Fired on a genuine click (not a drag-rotation) of the lunar surface or
   // the empty starfield — the page uses it to deselect and zoom back out.
   onBackgroundClick?: () => void
+  // Strips every beacon, tether and floating name out of the scene, leaving
+  // only what would physically be there. See MarkerLayerProps.
+  cinematic?: boolean
   children?: ReactNode
 }
 
@@ -118,7 +136,16 @@ const HOME_UP = (() => {
 })()
 
 // Minimum camera clearance above the local terrain: 3 m — walking height.
+// Enforced every frame except while a cutaway view is open, which is under the
+// terrain deliberately; see the floor in CameraRig's frame loop.
 const CAMERA_CLEARANCE = 3 * M_TO_UNITS
+
+// Far plane. Generous rather than tuned: with a conventional depth buffer (see
+// the Canvas' gl props for why it is not a logarithmic one) precision is set by
+// the NEAR plane and the distance to what is being looked at, and is flat in
+// `far` once far greatly exceeds both. So this only has to be far enough to hold
+// the Moon, and nothing is bought by trimming it.
+const FULL_FAR = GLOBE_RADIUS * 40
 
 // Three-quarter "hero" framing for a single site (fractions of the sphere
 // radius = meters / MOON_RADIUS_M): the eye ~30 m up and ~75 m back, looking
@@ -185,7 +212,19 @@ function CameraRig({
       // this once the sampler arrives, refining the framing in-flight).
       const surfaceR = radiusAt ? radiusAt(focus.lat, focus.lon) : GLOBE_RADIUS
       const { position, target } =
-        focus.view === 'sky'
+        focus.view === 'sub' && focus.sub
+          ? subViewFraming(
+              focus.lat,
+              focus.lon,
+              surfaceR - focus.sub.eyeDepthM * M_TO_UNITS,
+              surfaceR - focus.sub.subjectDepthM * M_TO_UNITS,
+              // Back along the vault's axis, which puts the eye at the inward
+              // service-bay end looking out over the module (see vaultAxis).
+              capLocalDirection(focus.sub.axisBearingDeg + 180, 0).map(
+                (c) => c * focus.sub!.standoffM * M_TO_UNITS
+              ) as [number, number, number]
+            )
+          : focus.view === 'sky'
           ? skyViewFraming(
               focus.lat,
               focus.lon,
@@ -214,16 +253,22 @@ function CameraRig({
               focus.distanceRadii ?? 1500 / MOON_RADIUS_M
             )
       // Pans onto a subject glide in slowly for a cinematic feel, whether that
-      // subject is on the ground or over it; orbit moves snappier.
+      // subject is on the ground, over it or under it; orbit moves snappier.
       easeBase.current =
-        focus.view === 'surface' || focus.view === 'sky' ? 0.05 : 0.0022
+        focus.view === 'surface' || focus.view === 'sky' || focus.view === 'sub'
+          ? 0.05
+          : 0.0022
       desiredPos.current.set(position[0], position[1], position[2])
       desiredTarget.current.set(target[0], target[1], target[2])
-      // Surface and sky views roll the camera so "up" is the local outward
-      // normal — otherwise the view is upside down at the pole. Orbit views use
-      // a pole-safe up (raw world-Y is parallel to the view axis when looking
-      // straight down at the pole).
-      if (focus.view === 'surface' || focus.view === 'sky') {
+      // Surface, sky and cutaway views roll the camera so "up" is the local
+      // outward normal — otherwise the view is upside down at the pole. Orbit
+      // views use a pole-safe up (raw world-Y is parallel to the view axis when
+      // looking straight down at the pole).
+      if (
+        focus.view === 'surface' ||
+        focus.view === 'sky' ||
+        focus.view === 'sub'
+      ) {
         const n = surfaceNormal(focus.lat, focus.lon)
         desiredUp.current.set(n[0], n[1], n[2])
       } else {
@@ -248,7 +293,16 @@ function CameraRig({
     // Hard floor: free zooming/tumbling must never put the camera under the
     // terrain. Sample the rendered ground below the camera every frame (a
     // handful of bilinear taps — cheap) and push the camera up if needed.
-    {
+    //
+    // Suspended for the one framing that is under the terrain ON PURPOSE. It has
+    // to stay suspended for as long as that view is open and not merely while
+    // the flight into it is running: re-arming on arrival would yank the eye
+    // out of the vault the instant it got there, and re-arming when the user
+    // takes the controls would do the same the instant they looked around. The
+    // consequence is that there is no floor at all while a cutaway is open,
+    // which is the right trade — the whole point of the view is to be beneath
+    // the ground, and deselecting restores the clamp on the way home.
+    if (focus?.view !== 'sub') {
       const p = camera.position
       const ll = vector3ToLatLon([p.x, p.y, p.z])
       const ground = radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
@@ -442,6 +496,7 @@ export default function MoonGlobe({
   getProjectStyle,
   layout,
   onBackgroundClick,
+  cinematic,
   children,
 }: MoonGlobeProps) {
   const controlsRef = useRef<any>(null)
@@ -457,10 +512,20 @@ export default function MoonGlobe({
       byCategory.set(t.category, siteOpacity(t, getProjectStyle))
     return byCategory
   }, [trees, getProjectStyle])
-  const basePresence = useMemo(
-    () => Math.max(0, ...Array.from(sitePresence.values())),
-    [sitePresence]
-  )
+  // The built environment — graded roads, the hardstand, street lighting, the
+  // roadside cargo, the parked excavators, the vault dig — is the work of the
+  // surface construction fleet, so it arrives when that fleet does and not when
+  // the first lander touches down. Keying it to the loudest district on the
+  // ridge (which is what this did) put a lit street grid around a single dead
+  // 2024 lander, because one achieved landing was enough to build the whole
+  // town. Falls back to that behaviour only when a filter has taken the
+  // construction race off the map entirely, so filtering cannot delete the
+  // roads under everything else.
+  const basePresence = useMemo(() => {
+    const construction = sitePresence.get('construction')
+    if (construction != null) return construction
+    return Math.max(0, ...Array.from(sitePresence.values()))
+  }, [sitePresence])
   // Auto-drift pauses whenever the user is interacting or a camera
   // transition is in flight.
   const [userInteracting, setUserInteracting] = useState(false)
@@ -505,15 +570,33 @@ export default function MoonGlobe({
         fov: 42,
         // 1 m near plane: the camera can stand right next to a rover.
         near: 1 * M_TO_UNITS,
-        far: GLOBE_RADIUS * 40,
+        far: FULL_FAR,
       }}
       gl={{
         antialias: true,
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.2,
-        // Wide near/far span at this closer scale — log depth avoids z-fighting
-        // between terrain, pads, and models up close.
-        logarithmicDepthBuffer: true,
+        // A LOGARITHMIC depth buffer is the obvious choice for a scene that
+        // spans orbit to millimeters, and it was used here, and it was the
+        // wrong call — it is the direct cause of the shimmer that has been
+        // chased around this scene with lift hacks (the pit halo, the plaza
+        // hardstand, the excavator) and of vault interiors that boiled.
+        //
+        // Three computes log depth as log2(1.0 + gl_Position.w). One scene unit
+        // here is 868 km, so `w` eight meters from the eye is 9.2e-6, and that
+        // `1.0 +` drops the whole number into float32's mantissa next to 1.0,
+        // where the steps are 1.2e-7. Depth therefore quantises to between 3 and
+        // 9 cm everywhere the camera actually goes, and no near/far tuning
+        // touches it: the precision is gone in the vertex shader, before the far
+        // plane is consulted.
+        //
+        // A conventional 1/z buffer has no such term and concentrates precision
+        // near the eye, which is exactly where this scene needs it: about 4
+        // microns at 8 m, 0.6 mm at 100 m, 1 cm at the base overview. It pays
+        // for that at the horizon — meters of slop out at the cap's 16 km rim —
+        // which costs nothing, because there is no coplanar geometry out there
+        // to fight, only a convex sphere and a terrain patch two kilometers
+        // clear of it.
       }}
       onPointerMissed={(e) => {
         const down = pointerDownAt.current
@@ -552,6 +635,18 @@ export default function MoonGlobe({
         siteOpacity={sitePresence}
       />
 
+      {/* Churned ground under the hardware. After the roads so a stain blends
+          over a road's own crust where the two meet — a machine tracks dust
+          onto the pavement it works off, not the other way round. */}
+      {trees && layout && (
+        <GroundDisturbance
+          trees={trees}
+          layout={layout}
+          radiusAt={radiusAt}
+          siteOpacity={sitePresence}
+        />
+      )}
+
       {trees && organizations && layout && (
         <MarkerLayer
           trees={trees}
@@ -565,6 +660,8 @@ export default function MoonGlobe({
           onHoverTree={onHoverTree}
           getProjectStyle={getProjectStyle}
           radiusAt={radiusAt}
+          cinematic={cinematic}
+          infraPresence={basePresence}
         />
       )}
 
@@ -579,6 +676,7 @@ export default function MoonGlobe({
           getProjectStyle={getProjectStyle}
           onSelectProject={onSelectProject}
           onHoverTree={onHoverTree}
+          cinematic={cinematic}
         />
       )}
 
@@ -595,7 +693,15 @@ export default function MoonGlobe({
       {/* Trackball gives full free tumble around the current pivot. The pivot
           starts at the ridge center; drill-ins move it to the focused site.
           Distances are real: from 12 m off a rover out to 40 km above the
-          patch — past that there is nothing more to see. */}
+          patch — past that there is nothing more to see.
+
+          The vault cutaway has to be let closer than that, and the floor is not
+          a preference there but a wall. Its eye stands two meters inside the end
+          wall looking down a twenty-meter room, which is barely eight meters
+          from what it is aimed at — so a 12 m floor did not merely feel tight,
+          it pushed the camera a meter clear THROUGH the liner every frame and
+          filled the screen with the inside of the end wall. Underground the only
+          real limit is the near plane. */}
       <TrackballControls
         ref={controlsRef}
         makeDefault
@@ -603,7 +709,7 @@ export default function MoonGlobe({
         rotateSpeed={2.2}
         zoomSpeed={1.2}
         dynamicDampingFactor={0.12}
-        minDistance={12 * M_TO_UNITS}
+        minDistance={(focus?.view === 'sub' ? 1.5 : 12) * M_TO_UNITS}
         maxDistance={40000 * M_TO_UNITS}
         target={[HOME_TARGET.x, HOME_TARGET.y, HOME_TARGET.z]}
       />
