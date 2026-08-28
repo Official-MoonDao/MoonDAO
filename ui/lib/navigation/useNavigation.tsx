@@ -10,14 +10,10 @@ import {
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
-import { useHiddenOnProduction } from 'const/flags'
 import IconOrg from '@/components/assets/IconOrg'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 
 export default function useNavigation(citizen: any) {
-  // Moon Base Zero is merged to main but not public yet, so its entry drops out
-  // on the live production site while staying present everywhere we develop.
-  const hideUnreleased = useHiddenOnProduction()
   return useMemo(() => {
     const isCitizen = !!citizen?.metadata?.name
     const citizenshipChildren = [
@@ -61,20 +57,16 @@ export default function useNavigation(citizen: any) {
         href: '/projects',
         dynamicChildren: 'Projects' as const,
       },
-      ...(!hideUnreleased
-        ? [
-            {
-              name: 'Moon Base Zero',
-              icon: MoonIcon,
-              href: '/moonbase',
-            },
-            {
-              name: 'DePrize',
-              icon: TrophyIcon,
-              href: '/deprize',
-            },
-          ]
-        : []),
+      {
+        name: 'Moon Base Zero',
+        icon: MoonIcon,
+        href: '/moonbase',
+      },
+      {
+        name: 'DePrize',
+        icon: TrophyIcon,
+        href: '/deprize',
+      },
       {
         name: '$MOONEY',
         icon: CircleStackIcon,
@@ -117,5 +109,5 @@ export default function useNavigation(citizen: any) {
         ],
       },
     ]
-  }, [citizen, hideUnreleased])
+  }, [citizen])
 }

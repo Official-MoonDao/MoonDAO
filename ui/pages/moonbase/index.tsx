@@ -1,11 +1,9 @@
 import { CameraIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import { useLogin } from '@privy-io/react-auth'
-import type { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
-import { isPublicProductionHost } from 'const/flags'
 import { isCompetitiveRace } from '@/lib/deprize/competitions'
 import { MarketStage, UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
@@ -890,22 +888,4 @@ export default function MoonBaseZeroIndex() {
       </div>
     </>
   )
-}
-
-// Moon Base Zero lives in main but isn't public yet. Hide it on the live
-// production site (moondao.com) while leaving it fully usable everywhere we
-// develop — local, Vercel previews off any branch, staging. The gate is the
-// request host, since our env vars are pulled from prod and can't tell those
-// apart (see const/flags). Runs for both `/moonbase` and `/moonbase/[projectId]`
-// (that route re-exports this).
-export const getServerSideProps: GetServerSideProps = async ({ req }) => {
-  const forwarded = req.headers['x-forwarded-host']
-  const host =
-    (Array.isArray(forwarded) ? forwarded[0] : forwarded) ?? req.headers.host
-  if (isPublicProductionHost(host)) {
-    return {
-      redirect: { destination: '/coming-soon?from=moonbase', permanent: false },
-    }
-  }
-  return { props: {} }
 }

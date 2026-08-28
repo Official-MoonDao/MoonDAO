@@ -14,7 +14,9 @@ const PRODUCTION_HOSTS = new Set(['moondao.com', 'www.moondao.com'])
 
 // Routes that exist in main but aren't public yet. `router.pathname` is the
 // matched route pattern, so a dynamic child appears here in its bracket form.
-const UNRELEASED_PATHS = ['/moonbase', '/moonbase/[projectId]']
+// Moonbase and DePrize used to live here; they are password-gated now (see
+// lib/gate/access.ts) and reachable on production, so they are not listed.
+const UNRELEASED_PATHS: string[] = []
 
 // Bare hostname, no port, lower-cased. Accepts either a `Host` header value or
 // a `window.location.host`.
@@ -58,7 +60,8 @@ export function FlagProvider({ children }: { children: React.ReactNode }) {
 // — no hydration mismatch — then settles to the real answer after mount. The
 // routes themselves are gated server-side regardless, so the brief pre-mount
 // visibility of a link on the production site is harmless: following it just
-// lands on /coming-soon.
+// lands on /coming-soon. Password-gated pages (moonbase, DePrize) should not
+// use this hook — they are meant to be visible, then locked by /gate.
 export function useHiddenOnProduction(): boolean {
   const [hidden, setHidden] = useState(false)
   useEffect(() => {
