@@ -57,10 +57,17 @@ describe('access gate', () => {
     // (what middleware.ts must declare). If they drift, a prefix is "gated" in
     // the app but never actually matched by middleware.
     it('keeps the middleware matcher in step with the prefix list', () => {
-      const base = (route: string) => route.replace(/\/:path\*$/, '')
-      expect(GATED_MIDDLEWARE_MATCHERS.map(base).sort()).to.deep.equal([...GATED_PREFIXES].sort())
+      // Every prefix must be matched as itself (the typed URL) and, when it
+      // has children, as `${prefix}/:path*`. Dedup so `/deprize-play` (no
+      // children) still counts once.
+      const covered = new Set(
+        GATED_MIDDLEWARE_MATCHERS.map((route) => route.replace(/\/:path\*$/, ''))
+      )
+      expect([...covered].sort()).to.deep.equal([...GATED_PREFIXES].sort())
       expect(GATED_MIDDLEWARE_MATCHERS).to.deep.equal([
+        '/moonbase',
         '/moonbase/:path*',
+        '/deprize',
         '/deprize/:path*',
         '/deprize-play',
       ])

@@ -44,7 +44,16 @@ export const GATED_PREFIXES = ['/moonbase', '/deprize', '/deprize-play']
 // Exact strings that must appear in middleware.ts `config.matcher`. Kept here
 // so the Cypress unit suite can assert the pairing without reading the file
 // (the browser bundle has no Node `fs`).
-export const GATED_MIDDLEWARE_MATCHERS = ['/moonbase/:path*', '/deprize/:path*', '/deprize-play']
+// Next's `:path*` matcher does not reliably fire on the bare prefix
+// (`/deprize` vs `/deprize/1`). List both so a typed URL is gated the same
+// way as a deep link.
+export const GATED_MIDDLEWARE_MATCHERS = [
+  '/moonbase',
+  '/moonbase/:path*',
+  '/deprize',
+  '/deprize/:path*',
+  '/deprize-play',
+]
 
 // Where the gate form lives, and the query parameter holding the route the
 // visitor was trying to reach.

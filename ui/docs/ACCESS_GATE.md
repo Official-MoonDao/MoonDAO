@@ -76,14 +76,17 @@ than returning early, so a rejection does not time out the length of the secret.
   directly. If the concern is that real money should not be at stake yet, that
   has to be settled on-chain, not here.
 - **Anything already public.** Routes outside the three prefixes are untouched.
-  Navigation still links to the gated pages; visitors reach the password form
-  rather than a 404.
+  The production nav links to the gated pages; visitors reach the password form
+  rather than a 404 or `/coming-soon`. The old host-based coming-soon lock on
+  `/moonbase` is gone — the password is the only gate.
 - **Sharing.** One password among several people is exactly as private as the
   least careful of them.
 
 ## Adding a route to the gate
 
 Add the prefix to `GATED_PREFIXES` in `ui/lib/gate/access.ts` **and** to the
-`matcher` in `ui/middleware.ts`. Next requires that matcher to be a static
-literal it can read at build time, so it cannot import the list. A unit test in
+`matcher` in `ui/middleware.ts` — the bare path (`/foo`) plus `/foo/:path*`
+if it has children. Next's `:path*` matcher does not reliably fire on the
+typed URL alone. The matcher must be a static literal Next can read at
+build time, so it cannot import the list. A unit test in
 `cypress/integration/unit/access-gate.cy.ts` fails if the two drift apart.

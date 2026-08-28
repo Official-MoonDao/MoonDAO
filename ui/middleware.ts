@@ -16,7 +16,13 @@ import {
 // lib/gate/access.ts. Keep these strings identical to GATED_MIDDLEWARE_MATCHERS
 // in that file; the access-gate unit test pins the pairing.
 export const config = {
-  matcher: ['/moonbase/:path*', '/deprize/:path*', '/deprize-play'],
+  matcher: [
+    '/moonbase',
+    '/moonbase/:path*',
+    '/deprize',
+    '/deprize/:path*',
+    '/deprize-play',
+  ],
 }
 
 export function middleware(req: NextRequest) {
