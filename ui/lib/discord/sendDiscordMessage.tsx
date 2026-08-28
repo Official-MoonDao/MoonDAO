@@ -1,6 +1,11 @@
+import type { DiscordEmbed } from '@/lib/og/preview'
+
+export type { DiscordEmbed }
+
 export default async function sendDiscordMessage(
   type: 'networkNotifications',
-  message: string
+  message: string,
+  embeds?: DiscordEmbed[]
 ) {
   try {
     const response = await fetch(`/api/discord/send?type=${type}`, {
@@ -8,7 +13,7 @@ export default async function sendDiscordMessage(
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, embeds }),
     })
 
     if (!response.ok) {

@@ -148,13 +148,14 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      // Wait for initial load requests to complete first
-      cy.wait('@getTablelandQuery')
-      cy.wait('@getTablelandQuery')
-
+      // SWR's Tableland cache is module-scoped and survives `cy.mount`, so
+      // later tests in this file often get a cache hit and never fire
+      // `@getTablelandQuery`. Pin to the search field and result instead of
+      // waiting on XHR — same reason the Map tab dropped `cy.wait`.
+      cy.get('input[name="search"]').should('exist')
       cy.get('input[name="search"]').type('Test')
-      // Wait for debounce (500ms) + search request
-      cy.wait('@getTablelandQuery', { timeout: 10000 })
+      cy.get('input[name="search"]').should('have.value', 'Test')
+      cy.contains('Test Citizen', { timeout: 10000 }).should('exist')
     })
   })
 

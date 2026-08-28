@@ -15,6 +15,7 @@
     "cypress/integration/unit/new-citizen-discord-notification.cy.ts",
     "cypress/integration/unit/listing-helpers.cy.ts",
     "cypress/integration/unit/job-posting-jsonld.cy.ts",
+    "cypress/integration/unit/og-preview.cy.ts",
     "cypress/integration/unit/voting.cy.tsx",
     "cypress/integration/unit/vmooney-snapshots.cy.tsx",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",

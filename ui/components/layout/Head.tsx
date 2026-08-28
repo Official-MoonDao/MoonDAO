@@ -22,6 +22,9 @@ type WebsiteHeadProps = {
    * Defaults to the current path.
    */
   canonical?: string
+  /** Pixel size of `image` when it is a generated 1200×630 preview card. */
+  imageWidth?: number
+  imageHeight?: number
   children?: any
 }
 
@@ -34,6 +37,8 @@ export default function WebsiteHead({
   author = 'MoonDAO',
   robots = 'index, follow',
   canonical,
+  imageWidth,
+  imageHeight,
   children,
 }: WebsiteHeadProps) {
   const router = useRouter()
@@ -75,6 +80,15 @@ export default function WebsiteHead({
       <meta property="og:description" content={truncatedDescription} key="meta-ogdesc" />
       <meta property="og:image" content={ogImage} key="meta-ogimage" />
       <meta property="og:image:alt" content={title} key="meta-ogimagealt" />
+      {imageWidth ? (
+        <meta property="og:image:width" content={String(imageWidth)} key="meta-ogimagewidth" />
+      ) : null}
+      {imageHeight ? (
+        <meta property="og:image:height" content={String(imageHeight)} key="meta-ogimageheight" />
+      ) : null}
+      {imageWidth && imageHeight ? (
+        <meta property="og:image:type" content="image/png" key="meta-ogimagetype" />
+      ) : null}
       <meta property="og:type" content="website" key="meta-ogweb" />
       <meta property="og:url" content={canonicalUrl || 'https://moondao.com/'} key="meta-ogurl" />
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
