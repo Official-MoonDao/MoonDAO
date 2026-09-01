@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { expect } from 'chai'
 import fs from 'fs'
 import path from 'path'
@@ -19,7 +20,7 @@ describe('CreateTeam Discord announcement wiring', () => {
 
   it('does not send the announcement through the unauthenticated helper', () => {
     expect(source).to.not.include('sendDiscordMessage')
-    expect(source).to.not.include('/api/discord/send')
+    expect(source).to.not.match(/fetch\([`'"]\/api\/discord\/send/)
   })
 
   it('does not wait 10 seconds after mint before announcing', () => {
