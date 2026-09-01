@@ -2,8 +2,6 @@ import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Widget } from '@typeform/embed-react'
 import {
   DEFAULT_TEAM_MULTISIG_SIGNERS,
-  DEPLOYED_ORIGIN,
-  DISCORD_CITIZEN_ROLE_ID,
   TEAM_ADDRESSES,
   TEAM_CREATOR_ADDRESSES,
 } from 'const/config'
@@ -18,8 +16,8 @@ import useWindowSize from '../../lib/team/use-window-size'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
-import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
 import {
   estimateGasWithAPI,
   applyGasBuffer,
@@ -171,18 +169,11 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   }, [])
 
   const handlePostMint = useCallback(
-    async (mintedTokenId: string, teamName: string) => {
+    async (teamName: string) => {
       const teamPrettyLink = generatePrettyLink(teamName)
       clearCache()
-      setTimeout(async () => {
-        await sendDiscordMessage(
-          'networkNotifications',
-          `## [**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
-        )
-
-        router.push(`/team/${teamPrettyLink}`)
-        setIsLoadingMint(false)
-      }, 10000)
+      router.push(`/team/${teamPrettyLink}`)
+      setIsLoadingMint(false)
     },
     [router, clearCache]
   )
@@ -360,10 +351,33 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
         return toast.error('Mint unverified — check your wallet or contact support.')
       }
 
-      if (mintedTokenId) {
+      // Announce immediately. The old path waited for Tableland metadata
+      // (`waitForERC721`, up to 60s) and then another 10s before calling
+      // `/api/discord/send` without a Privy Bearer token. Any failure in that
+      // chain — including the 401 from `authMiddleware` — silently dropped
+      // the Discord message after the on-chain mint had already succeeded.
+      const txHash = receipt?.transactionHash || receipt?.hash || `team-mint-${mintedTokenId}`
+      const teamPrettyLink = generatePrettyLink(teamData.name)
+      void sendOnchainNotification(
+        '/api/discord/notify-new-team',
+        {
+          txHash,
+          tokenId: mintedTokenId,
+          teamName: teamData.name,
+          prettyLink: teamPrettyLink,
+          image: 'ipfs://' + newImageIpfsHash,
+          description: teamData.description,
+        },
+        { label: 'notify-new-team' }
+      )
+
+      try {
         await waitForERC721(teamContract, +mintedTokenId)
-        await handlePostMint(mintedTokenId, teamData.name)
+      } catch (err) {
+        // Metadata lag must not block redirect or the already-fired announcement.
+        console.error('Team NFT metadata not ready yet:', err)
       }
+      await handlePostMint(teamData.name)
     } catch (err) {
       console.error(err)
       setIsLoadingMint(false)
