@@ -1,4 +1,4 @@
-// The graded roads of Moon Base Zero and the hardstand at its core.
+// The graded roads of Moon Base Zero: one spine and a branch per district.
 //
 // A road network is the one cue that says every asset on the plain belongs to
 // the same operation, so this is what turns a scatter of hardware into a
@@ -38,10 +38,12 @@
 // about how they are found lives.
 //
 // This is what an earlier version could not do, because it faded a windrow only
-// from that road's OWN ends. That handled an avenue dying into the perimeter
-// road it starts on and nothing else: main street crosses six avenues in the
-// middle of its own run, so it drove a half-meter wall of rubble and a line of
-// boulders straight through six junctions.
+// from that road's OWN ends. That handled a branch dying into the road it
+// starts on and nothing else, and on this plan NOTHING dies into anything: the
+// spine crosses all seven branches in the middle of its own run, and each
+// branch crosses the spine in the middle of ITS run. Faded from the ends alone,
+// every one of those crossings got a half-meter wall of rubble and a line of
+// boulders driven straight through it.
 //
 // Everything is LIT and takes light like the hardware standing on it, which is
 // what the berms are for: they are the only part with enough relief to catch
@@ -52,10 +54,7 @@
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import {
-  BASE_PLAN,
   BASE_STREETS,
-  HARDSTAND,
-  RING_RADIUS_M,
   ROAD_HALF_M,
   type Street,
 } from '@/lib/lunar-atlas/baseplan'
@@ -239,51 +238,6 @@ const ROCK_MIN_M = 0.16
 const ROCK_MAX_M = 1.05
 const ROCK_SKEW = 2.4
 
-// Hardstand cross-section: rise above local grade, and opacity, at a fraction
-// of its radius. Flat, and its boundary is the ring road's inner windrow rather
-// than an edge of its own — which is a claim the yard has to be built to reach
-// far enough out to make true, and the fade at the rim is what lets it. See
-// PLAZA_RADIUS_M. This is only the PROFILE. It is not the tessellation, and
-// the yard used to be built as a fan straight off these four radii, which is
-// what put the regolith back through the middle of it: every vertex is seated
-// on the rendered ground (see `seat`), so the yard clears that ground by its
-// lift only AT a vertex, and in between it runs dead straight while the terrain
-// keeps following its own ~15.6 m polygon pitch (CAP_GRID over CAP_EXTENT_M).
-// Sampled at these radii alone the innermost band chords across 36 m of a 60 m
-// yard, and on ridge terrain rough enough to vary a meter from one terrain node
-// to the next — a few degrees of slope, which this site has — the ground rises
-// through the chord by up to ~1 m across a tenth of the yard's area.
-const PLAZA_PROFILE: { r: number; rise: number; alpha: number }[] = [
-  { r: 0, rise: 0.2, alpha: 1 },
-  { r: 0.6, rise: 0.18, alpha: 1 },
-  { r: 0.9, rise: 0.15, alpha: 1 },
-  { r: 0.945, rise: 0.13, alpha: 1 },
-  { r: 1, rise: 0.09, alpha: 0 },
-]
-// So the yard is triangulated on stations of its own, at the spacing the roads
-// already use for exactly the same reason — following the ground closely enough
-// that LIFT_M is a real clearance rather than a clearance at the corners. This
-// is also why the roads never showed the artefact the yard did.
-const PLAZA_STATION_M = STATION_SPACING_M
-// Enough spokes to put the rim's circumferential pitch on the same order, so
-// the mesh hugs the ground going around the yard as well as out across it.
-const PLAZA_SPOKES = 144
-// Where the paving actually stops, which is NOT HARDSTAND.radius. That figure
-// is the ground the core district's plots are packed to fit inside, and the two
-// are different questions: laid out to it, the yard ends about 1.8 m short of
-// the perimeter road's inner windrow, and the ring of untouched regolith left
-// between them reads as a seam running right round downtown. Run out to the
-// windrow's own toe instead, the yard and the road it serves are one continuous
-// worked surface, which is what the comment on HARDSTAND has always claimed.
-//
-// The rim fades to nothing over the last few meters rather than ending on an
-// edge, which is doing two jobs: a paved yard that stops on a hard line reads
-// as a sticker, and the toe it is running out to WANDERS (see `spread`), so on
-// the stretches where the blade heaped the spoil furthest in, the last of the
-// yard is lying under the foot of the heap. At the opacity it has out there the
-// two surfaces are indistinguishable whichever way the transparency sort falls.
-const PLAZA_RADIUS_M = RING_RADIUS_M - SPOIL_TOE_OFF_M
-
 const NO_RAYCAST = () => {}
 
 // Deterministic value noise, so the rubble is identical on every load.
@@ -394,9 +348,9 @@ function makeSurfaceMaps(): Surface | null {
       // The chatter is weighted DOWN in albedo and left at full strength in the
       // relief above, which is where it belongs: a blade ripple is a shape the
       // sun rakes across, not a change of colour. It is also the one periodic
-      // thing on this surface, and the hardstand — whose grain runs on the map's
-      // axes rather than along a road — crosses it with the longitudinal streak
-      // at right angles. Any louder in albedo and the yard reads as woven cloth.
+      // thing on this surface, and every crossing on the plan lays one road's
+      // grain across another's at right angles. Any louder in albedo and a
+      // junction reads as woven cloth.
       const v = Math.round(
         THREE.MathUtils.clamp(
           1 + streak[x] + chatter[y] * 0.85 + grit * 0.07 + mottle,
@@ -423,7 +377,7 @@ function makeSurfaceMaps(): Surface | null {
   // is tilting the surface normal tens of degrees per centimetre — which is not
   // a swept crust, it is gravel, and it costs real average brightness under a
   // sun this low. Turned up far enough to read, it visibly greyed the whole
-  // roadbed and the yard against the rest of the plan.
+  // roadbed against the rest of the plan.
   const STRENGTH = 7
   const nrm = nctx.createImageData(SIZE, SIZE)
   const wrap = (k: number) => (k + SIZE) % SIZE
@@ -661,20 +615,9 @@ function buildStreet(
     }
   }
 
-  // Loose rock along the windrows. Placed between stations rather than on
-  // them, so the boulders don't line up with the crest's own jitter.
-  //
-  // A loop only gets them on its OUTER flank. `side` is the tangent turned
-  // +90°, which for counter-clockwise waypoints points into the loop, so that
-  // is the flank to skip: the ring's inner windrow is the boundary of the
-  // hardstand, and strewing it with boulders fences the yard off from the road
-  // that serves it.
-  const signedArea = plan.reduce((sum, p, i) => {
-    const q = plan[(i + 1) % plan.length]
-    return sum + (p.x * q.y - q.x * p.y)
-  }, 0)
-  const insideSign = street.closed ? (signedArea > 0 ? 1 : -1) : 0
-
+  // Loose rock along the windrows, on both flanks of every road. Placed
+  // between stations rather than on them, so the boulders don't line up with
+  // the crest's own jitter.
   const rocks: Rock[] = []
   for (let i = 0; i < quadRows; i++) {
     // No boulders where the windrow has been graded flat — at an open end, and
@@ -684,7 +627,6 @@ function buildStreet(
     const a = centre[i]
     const b = centre[wrap(i + 1)]
     for (const sign of [-1, 1]) {
-      if (sign === insideSign) continue
       const j = crest(i, sign)
       for (let k = 0; k < ROCKS_PER_SPAN; k++) {
         const n = streetIdx * 7919 + i * 31 + k * 7 + (sign > 0 ? 3 : 0)
@@ -710,72 +652,6 @@ function buildStreet(
   }
 
   return { geometry: finish(positions, colors, uvs, index), origin, rocks }
-}
-
-// Rise above local grade, in meters, and opacity, at a fraction of the yard's
-// radius.
-function plazaAt(t: number): { rise: number; alpha: number } {
-  for (let i = 1; i < PLAZA_PROFILE.length; i++) {
-    const a = PLAZA_PROFILE[i - 1]
-    const b = PLAZA_PROFILE[i]
-    if (t <= b.r) {
-      const f = b.r > a.r ? (t - a.r) / (b.r - a.r) : 0
-      return {
-        rise: a.rise + (b.rise - a.rise) * f,
-        alpha: a.alpha + (b.alpha - a.alpha) * f,
-      }
-    }
-  }
-  return PLAZA_PROFILE[PLAZA_PROFILE.length - 1]
-}
-
-// The graded yard at the core, inside the ring. Without it the habitat stands
-// on untouched regolith a few meters off a road, which reads as a building that
-// happened to land next to one rather than as the middle of a worked site.
-function buildHardstand(
-  eastM: number,
-  northM: number,
-  radiusM: number,
-  radiusAt: RadiusAt
-): Pick<Piece, 'geometry' | 'origin'> {
-  const origin = seat(planDir(eastM, northM), radiusAt, 0)
-
-  const rings = Math.max(2, Math.round(radiusM / PLAZA_STATION_M)) + 1
-  const positions: number[] = []
-  const colors: number[] = []
-  const uvs: number[] = []
-  for (let r = 0; r < rings; r++) {
-    const t = r / (rings - 1)
-    const off = t * radiusM
-    const { rise, alpha } = plazaAt(t)
-    for (let s = 0; s < PLAZA_SPOKES; s++) {
-      const a = (s / PLAZA_SPOKES) * Math.PI * 2
-      const dx = Math.cos(a) * off
-      const dy = Math.sin(a) * off
-      const p = seat(
-        planDir(eastM + dx, northM + dy),
-        radiusAt,
-        LIFT_M + rise
-      ).sub(origin)
-      positions.push(p.x, p.y, p.z)
-      colors.push(BED.r, BED.g, BED.b, alpha)
-      uvs.push(dx / TILE_M, dy / TILE_M)
-    }
-  }
-
-  const index: number[] = []
-  for (let r = 0; r < rings - 1; r++) {
-    for (let s = 0; s < PLAZA_SPOKES; s++) {
-      const s1 = (s + 1) % PLAZA_SPOKES
-      const i0 = r * PLAZA_SPOKES + s
-      const i1 = r * PLAZA_SPOKES + s1
-      const j0 = (r + 1) * PLAZA_SPOKES + s
-      const j1 = (r + 1) * PLAZA_SPOKES + s1
-      index.push(i0, j0, j1)
-      index.push(i0, j1, i1)
-    }
-  }
-  return { geometry: finish(positions, colors, uvs, index), origin }
 }
 
 // The base shape every boulder is an instance of. A subdivided icosahedron
@@ -897,9 +773,9 @@ function RoadPiece({
   )
 }
 
-// The ring and the yard arrive with the settlement. A spur waits for whatever
-// stands at the end of it, and on the same threshold the model itself uses —
-// otherwise a road runs out to a plot the hardware hasn't landed on yet.
+// The spine arrives with the settlement. A branch waits for whatever stands on
+// its crossing, and on the same threshold the model itself uses — otherwise a
+// road crosses a lot the hardware hasn't landed on yet.
 function roadPresence(
   piece: Piece,
   presence: number,
@@ -938,23 +814,6 @@ export default function BaseRoads({
   const pieces = useMemo(() => {
     if (!radiusAt) return { list: [] as Piece[], rockGeometry: null }
     const out: Piece[] = []
-    const hub = BASE_PLAN[HARDSTAND.site]
-    if (hub) {
-      out.push({
-        key: 'hardstand',
-        // Out to the perimeter road's windrow rather than to the figure the
-        // core district is PACKED to — see PLAZA_RADIUS_M. Never smaller than
-        // that figure, so a plan that grew the core past the road would still
-        // get a yard its own district fits in rather than one silently cropped
-        // to the road's radius.
-        ...buildHardstand(
-          hub.east,
-          hub.north,
-          Math.max(HARDSTAND.radius, PLAZA_RADIUS_M),
-          radiusAt
-        ),
-      })
-    }
 
     // Every centreline first, then every crossing between them, and only then
     // the geometry: a road cannot be built until it knows where it is met.

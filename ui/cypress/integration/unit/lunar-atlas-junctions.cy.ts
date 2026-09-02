@@ -5,27 +5,30 @@
  * broken, in the specific sense that when it IS broken it still looks like
  * scenery. A road's windrow of pushed-aside rock is built by sweeping a
  * cross-section along a centreline, which is a job each street can do alone —
- * and done alone, main street drives a half-meter wall of rubble and a line of
- * boulders straight through all seven of the junctions it crosses in the middle
- * of its own run. That shipped, because a junction full of rock reads as a
- * junction full of rock rather than as a bug.
+ * and done alone, the spine drives a half-meter wall of rubble and a line of
+ * boulders straight through all seven of the crossings it makes in the middle of
+ * its own run. That shipped, because a junction full of rock reads as a junction
+ * full of rock rather than as a bug.
  *
- * So the invariants are asserted here instead: every avenue meets both loops
- * exactly once, at the district's own bearing; no road carries any windrow at
+ * So the invariants are asserted here instead: every branch meets the spine
+ * exactly once, at its own district's crossing; no road carries any windrow at
  * all across another road's graded width; and the windrow comes back between
  * the crossings, because a network that swept itself flat everywhere would pass
  * every check above and have no edges left.
+ *
+ * Every crossing on this plan is a mid-run crossing, both ways, which the
+ * concentric plan it replaces never had: a branch crosses the spine at its own
+ * midpoint and carries on out the other side, where an avenue used to T into the
+ * perimeter road at its own first station. Nothing here ends on anything.
  */
 
 import { expect } from 'chai'
 import {
   BASE_PLAN,
   BASE_STREETS,
-  HARDSTAND,
-  MAIN_LOOP_M,
-  RING_RADIUS_M,
   ROAD_HALF_M,
-  districtBearingDeg,
+  districtAlongM,
+  spineCoords,
   type SitePlan,
 } from '../../../lib/lunar-atlas/baseplan'
 import {
@@ -49,20 +52,23 @@ import type { ProjectType } from '../../../lib/lunar-atlas/types'
 const lines = BASE_STREETS.map(centreline)
 const junctions = findJunctions(lines)
 
-const loops = BASE_STREETS.map((s, i) => (s.closed ? i : -1)).filter(
+// The one through route and the branches that cross it.
+const spines = BASE_STREETS.map((s, i) => (s.through ? i : -1)).filter(
   (i) => i >= 0
 )
-const avenues = BASE_STREETS.map((s, i) => (s.closed ? -1 : i)).filter(
+const branches = BASE_STREETS.map((s, i) => (s.through ? -1 : i)).filter(
   (i) => i >= 0
 )
 
 const at = (i: number) => lines[i] as Centreline
-const radiusOf = (p: { east: number; north: number }) =>
-  Math.hypot(p.east, p.north)
-const bearingOf = (p: { east: number; north: number }) =>
-  ((Math.atan2(p.north, p.east) * 180) / Math.PI + 360) % 360
+// Where a point is in the spine's own frame, which is the frame this whole plan
+// is stated in.
+const alongOf = (p: { east: number; north: number }) =>
+  spineCoords(p).alongM
+const whereOf = (p: { east: number; north: number }) =>
+  `along ${spineCoords(p).alongM.toFixed(1)} m`
 
-// The district an avenue serves, which is also the bearing it runs on.
+// The district a branch serves, which is also the crossing it makes.
 const districtOf = (streetIdx: number): SitePlan => {
   const serves = BASE_STREETS[streetIdx].serves as ProjectType[]
   return BASE_PLAN[serves[0]]!
@@ -70,59 +76,68 @@ const districtOf = (streetIdx: number): SitePlan => {
 
 describe('moon base zero road junctions', () => {
   describe('the crossings themselves', () => {
-    it('meets every avenue to both loop roads, once each', () => {
-      // Seven districts on a bearing, two loops to cross on the way out. The
-      // count is asserted whole rather than per-avenue because the failure this
-      // exists to catch is a crossing that stops being FOUND — a plan change
-      // that moves main street or an avenue's start by a meter would drop one
-      // silently, and a dropped crossing is a wall of rubble through a junction.
-      expect(junctions).to.have.length(avenues.length * loops.length)
-      for (const i of avenues) {
-        expect(junctionsOn(junctions, i), `street ${i}`).to.have.length(
-          loops.length
-        )
+    it('meets every branch to the spine, exactly once each', () => {
+      // One spine, one crossing per district. The count is asserted whole
+      // rather than per-branch because the failure this exists to catch is a
+      // crossing that stops being FOUND — a plan change that moves the spine or
+      // a branch by a meter would drop one silently, and a dropped crossing is a
+      // wall of rubble through a junction.
+      expect(spines, 'exactly one through route').to.have.length(1)
+      expect(junctions).to.have.length(branches.length)
+      for (const i of branches) {
+        expect(junctionsOn(junctions, i), `street ${i}`).to.have.length(1)
       }
-      for (const i of loops) {
-        expect(junctionsOn(junctions, i), `loop ${i}`).to.have.length(
-          avenues.length
-        )
-      }
+      expect(
+        junctionsOn(junctions, spines[0]),
+        'the spine takes every crossing'
+      ).to.have.length(branches.length)
     })
 
-    it('crosses an avenue with a loop and never one road with its own kind', () => {
-      // The two loops are concentric and the avenues all radiate from the same
-      // centre at 45° or more apart, so any junction between two of either is a
-      // false positive from the search window rather than a road on this plan.
+    it('crosses a branch with the spine and never one branch with another', () => {
+      // The branches are all perpendicular to the spine and none is longer than
+      // 114 m, so no two of them come anywhere near each other: any junction
+      // between two branches is a false positive from the search window rather
+      // than a road on this plan.
       for (const j of junctions) {
         const pair = [...j.clear.keys()]
         expect(pair, 'a junction joins exactly two roads').to.have.length(2)
-        const closed = pair.filter((i) => BASE_STREETS[i].closed)
-        expect(closed, `junction at ${bearingOf(j)}°`).to.have.length(1)
+        expect(pair, `junction at ${whereOf(j)}`).to.include(spines[0])
       }
     })
 
-    it('puts each crossing on the road it crosses, at its district bearing', () => {
-      for (const i of avenues) {
+    it('puts each crossing on its own district, in the middle of the branch', () => {
+      for (const i of branches) {
         const plan = districtOf(i)
-        const want = (districtBearingDeg(plan) + 360) % 360
-        const radii = junctionsOn(junctions, i)
-          .map((m) => Math.hypot(m.x, m.y))
-          .sort((a, b) => a - b)
+        const [m] = junctionsOn(junctions, i)
         // Located off the rendered centrelines rather than from the plan's own
         // numbers, so this is the check that the two agree. A tenth of a meter
         // on roads whose spoil is swept back by nine.
-        expect(radii[0], `street ${i} at the perimeter road`).to.be.closeTo(
-          RING_RADIUS_M,
-          0.1
-        )
-        expect(radii[1], `street ${i} at main street`).to.be.closeTo(
-          MAIN_LOOP_M,
-          0.1
-        )
-        for (const m of junctionsOn(junctions, i)) {
-          const got = ((Math.atan2(m.y, m.x) * 180) / Math.PI + 360) % 360
-          expect(got, `street ${i} bearing`).to.be.closeTo(want, 0.1)
-        }
+        expect(
+          alongOf({ east: m.x, north: m.y }),
+          `street ${i} crosses at its district`
+        ).to.be.closeTo(districtAlongM(plan), 0.1)
+        expect(
+          spineCoords({ east: m.x, north: m.y }).acrossM,
+          `street ${i} crosses on the spine`
+        ).to.be.closeTo(0, 0.1)
+
+        // And it crosses at the branch's own MIDPOINT, which is what makes the
+        // district a crossroads rather than a spur with lots down one side. This
+        // is the assertion that the branch is symmetric about the road it meets.
+        const line = at(i)
+        let nearest = 0
+        let best = Infinity
+        line.plan.forEach((p, k) => {
+          const d = Math.hypot(p.x - m.x, p.y - m.y)
+          if (d < best) {
+            best = d
+            nearest = k
+          }
+        })
+        expect(
+          nearest / (line.plan.length - 1),
+          `street ${i} crosses at its own midpoint`
+        ).to.be.closeTo(0.5, 0.06)
       }
     })
   })
@@ -133,7 +148,7 @@ describe('moon base zero road junctions', () => {
         for (const i of j.clear.keys()) {
           expect(
             junctionBermLevel(j.east, j.north, junctionsOn(junctions, i)),
-            `street ${i} at ${bearingOf(j)}°`
+            `street ${i} at ${whereOf(j)}`
           ).to.equal(0)
         }
       }
@@ -168,10 +183,12 @@ describe('moon base zero road junctions', () => {
     })
 
     it('sweeps each road back for the other road width, not its own', () => {
-      // A rover-width avenue does not need main street swept as far back as a
-      // haul road does, and main street's own width is what the avenue has to
+      // A rover-width branch does not need the spine swept as far back as a
+      // haul road does, and the spine's own width is what the branch has to
       // clear either way. Getting this backwards is invisible on screen and
-      // leaves the narrow junctions over-graded and the wide ones under.
+      // leaves the narrow junctions over-graded and the wide ones under. Four
+      // of the seven branches are rover width, so this really does differ from
+      // crossing to crossing.
       for (const j of junctions) {
         const [x, y] = [...j.clear.keys()]
         expect(j.clear.get(x)).to.be.closeTo(
@@ -189,20 +206,20 @@ describe('moon base zero road junctions', () => {
   describe('the windrow everywhere else', () => {
     it('gives every road its edge back between the crossings', () => {
       // The one check that stops all of the above being satisfied by a network
-      // with no windrows on it anywhere. Main street crosses seven avenues and
-      // the perimeter road takes seven more, so these two are the roads with
-      // the least edge left; if they still carry one over most of their length,
-      // nothing else on the plan is over-graded either.
-      for (const i of loops) {
+      // with no windrows on it anywhere. The spine takes all seven crossings, so
+      // it is the road with the least edge left by a wide margin; if it still
+      // carries one over most of its length, nothing else on the plan is
+      // over-graded either.
+      for (const i of spines) {
         const levels = at(i).plan.map((p) =>
           junctionBermLevel(p.x, p.y, junctionsOn(junctions, i))
         )
         const full = levels.filter((l) => l > 0.999).length
-        expect(full / levels.length, `loop ${i} at full windrow`).to.be.above(
+        expect(full / levels.length, `spine ${i} at full windrow`).to.be.above(
           0.4
         )
       }
-      for (const i of avenues) {
+      for (const i of branches) {
         const levels = at(i).plan.map((p) =>
           junctionBermLevel(p.x, p.y, junctionsOn(junctions, i))
         )
@@ -215,31 +232,43 @@ describe('moon base zero road junctions', () => {
   })
 
   describe('the bed through a crossing', () => {
-    it('runs an avenue into the road it starts on rather than fading out', () => {
-      // Every avenue begins on the perimeter road, and an open end fades its bed
-      // out over the first few meters so a road stops instead of dissolving.
-      // At a junction that is exactly wrong — it would put a notch in the
-      // surface at the one point the two roads are supposed to become one — so
-      // the crossing carries the bed at full strength.
-      for (const i of avenues) {
-        const start = at(i).plan[0]
+    it('carries a branch bed through the crossing rather than fading out', () => {
+      // An open end fades a road's bed out over the first few meters so it stops
+      // instead of dissolving. In a junction that is exactly wrong — it would put
+      // a notch in the surface at the one point the two roads are supposed to
+      // become one — so the crossing carries the bed at full strength.
+      //
+      // On this plan the crossing is in the MIDDLE of a branch rather than at
+      // its first station, so the fade and the crossing are nowhere near each
+      // other and this is easier to satisfy than it used to be. It is kept
+      // because the failure it catches has nothing to do with where the junction
+      // falls: it catches a fade computed over the whole road instead of over
+      // its ends.
+      for (const i of branches) {
+        const [m] = junctionsOn(junctions, i)
         expect(
-          junctionBedCover(start.x, start.y, junctionsOn(junctions, i)),
-          `street ${i} start`
+          junctionBedCover(m.x, m.y, junctionsOn(junctions, i)),
+          `street ${i} crossing`
         ).to.be.above(0.99)
       }
     })
 
-    it('still lets an avenue stop at the far end of its own district', () => {
-      // The other end has no junction on it, so it keeps the fade. An avenue
-      // that ran to a hard edge out past the last lot would read as a road
+    it('lets a branch stop at BOTH ends of its own district', () => {
+      // Both ends now, where an avenue only ever had one: a branch runs out past
+      // the corner lots on each side of the spine and stops in open regolith at
+      // each. A road that ran to a hard edge past the last lot would read as one
       // sawn off rather than as one that ends.
-      for (const i of avenues) {
-        const end = at(i).plan[at(i).plan.length - 1]
-        expect(
-          junctionBedCover(end.x, end.y, junctionsOn(junctions, i)),
-          `street ${i} end`
-        ).to.equal(0)
+      for (const i of branches) {
+        const line = at(i)
+        for (const [label, p] of [
+          ['start', line.plan[0]],
+          ['end', line.plan[line.plan.length - 1]],
+        ] as const) {
+          expect(
+            junctionBedCover(p.x, p.y, junctionsOn(junctions, i)),
+            `street ${i} ${label}`
+          ).to.equal(0)
+        }
       }
     })
   })
@@ -258,24 +287,30 @@ describe('moon base zero road junctions', () => {
     // and not two, and not none.
     const cutsOf = (i: number) => junctionCutsOn(junctions, i, lines)
 
-    it('hands every crossing to the loop road that runs through it', () => {
+    it('hands every crossing to the spine', () => {
+      // And to the spine SPECIFICALLY, not merely to one of the two: three of
+      // the branches are full haul width, so a rule that picked the wider road
+      // could not decide those crossings and would fall back on whichever road
+      // BASE_STREETS happened to list first. That is why the spine declares
+      // itself the through route (see `through` in Street).
       for (const j of junctions) {
-        expect([...j.clear.keys()], `junction at ${bearingOf(j)}°`).to.include(
+        expect([...j.clear.keys()], `junction at ${whereOf(j)}`).to.include(
           j.through
         )
         expect(
-          BASE_STREETS[j.through].closed,
-          `junction at ${bearingOf(j)}° is carried by a loop`
-        ).to.equal(true)
+          j.through,
+          `junction at ${whereOf(j)} is carried by the spine`
+        ).to.equal(spines[0])
       }
     })
 
-    it('never breaks a loop road for an avenue', () => {
-      // The corollary, and the reason the loops win: main street is continuous
-      // by construction, and cutting it at all seven of its crossings so an
-      // avenue could lie across it is the same artefact the other way round.
-      for (const i of loops) {
-        expect(cutsOf(i), `loop ${i} is cut`).to.have.length(0)
+    it('never breaks the spine for a branch', () => {
+      // The corollary, and the reason the spine wins: it is the one road that
+      // runs the length of the settlement, and cutting it at all seven of its
+      // crossings so a branch could lie across it is the same artefact the other
+      // way round.
+      for (const i of spines) {
+        expect(cutsOf(i), `spine ${i} is cut`).to.have.length(0)
       }
     })
 
@@ -285,7 +320,7 @@ describe('moon base zero road junctions', () => {
         const cuts = cutsOf(gives)
         expect(
           junctionBedCut(j.east, j.north, cuts),
-          `street ${gives} paves over street ${j.through} at ${bearingOf(j)}°`
+          `street ${gives} paves over street ${j.through} at ${whereOf(j)}`
         ).to.equal(0)
         // Not just at the centre point: anywhere on the other road's lane.
         for (const p of at(gives).plan) {
@@ -317,18 +352,29 @@ describe('moon base zero road junctions', () => {
       }
     })
 
+    it('cuts a branch only where it actually meets the spine', () => {
+      // A branch crosses the spine ONCE, at its own midpoint, so it gives way in
+      // exactly one place and keeps both halves of itself. This is the check
+      // that the cut is local: on the concentric plan an avenue gave way twice
+      // and the two corridors were most of a short avenue's length, so a cut
+      // that leaked was hard to see. Here each branch has a long clear run
+      // either side of its crossing, and a leak shows up immediately.
+      for (const i of branches) {
+        const cuts = cutsOf(i)
+        expect(cuts, `street ${i} gives way once`).to.have.length(1)
+      }
+    })
+
     it('gives the giving-way road all of its own surface back', () => {
       // Which is what stops every check above being satisfied by simply not
-      // drawing the avenues at all. An avenue gives way over the corridors of
-      // the two loops it crosses and over NOTHING else: every station clear of
-      // both is at full strength, which bounds the cut from above as tightly as
-      // the checks above bound it from below. Asserted station by station
-      // rather than as a fraction of the road, because the avenues run from
-      // 32 m to 300 m and a fraction that passes for the pad road says nothing
-      // about the short one into the core.
-      for (const i of avenues) {
+      // drawing the branches at all. A branch gives way over the spine's own
+      // corridor and over NOTHING else: every station clear of it is at full
+      // strength, which bounds the cut from above as tightly as the checks
+      // above bound it from below. Asserted station by station rather than as a
+      // fraction of the road, because the branches run from 54 m to 114 m and a
+      // fraction that passes for the habitat's says nothing about a short one.
+      for (const i of branches) {
         const cuts = cutsOf(i)
-        expect(cuts, `street ${i} gives way twice`).to.have.length(loops.length)
         let clear = 0
         for (const p of at(i).plan) {
           const inside = cuts.some(
@@ -341,7 +387,24 @@ describe('moon base zero road junctions', () => {
             `street ${i} withheld at ${p.x.toFixed(1)}, ${p.y.toFixed(1)}`
           ).to.equal(1)
         }
-        expect(clear, `street ${i} runs clear of both loops somewhere`).to.be
+        // Both halves, not just one: the crossing is at the branch's midpoint,
+        // so a branch that lost a whole side would still pass a "runs clear
+        // somewhere" check.
+        const spine = at(spines[0])
+        for (const side of [1, -1]) {
+          const kept = at(i).plan.filter((p) => {
+            const across = spineCoords({ east: p.x, north: p.y }).acrossM
+            return (
+              Math.sign(across) === side &&
+              distToCentreline(p, spine) >= spine.bedHalfM + JUNCTION_MERGE_M
+            )
+          })
+          expect(
+            kept.length,
+            `street ${i} keeps its ${side > 0 ? 'left' : 'right'} half`
+          ).to.be.above(0)
+        }
+        expect(clear, `street ${i} runs clear of the spine somewhere`).to.be
           .above(0)
       }
     })
@@ -356,19 +419,24 @@ describe('moon base zero road junctions', () => {
       expect(SPOIL_TOE_OFF_M).to.be.lessThan(ROAD_HALF_M)
     })
 
-    it('runs the hardstand out to the perimeter road without paving over it', () => {
-      // The yard is laid to the windrow's inner toe rather than to
-      // HARDSTAND.radius, which is the figure the core district's PLOTS are
-      // packed inside — see PLAZA_RADIUS_M in BaseRoads. Both ends of that have
-      // to hold: far enough out that no ring of untouched regolith is left
-      // between the yard and the road, and not so far that the paving swallows
-      // the road's own lane.
-      const paving = RING_RADIUS_M - SPOIL_TOE_OFF_M
-      expect(paving, 'the yard covers the ground its own plots stand on').to.be
-        .greaterThan(HARDSTAND.radius)
-      expect(paving, 'the yard stops short of the lane').to.be.lessThan(
-        RING_RADIUS_M - BED_HALF_M
-      )
+    it('scales the whole cross-section together for a narrow road', () => {
+      // Four of the seven branches are rover width, and the lane, the windrow's
+      // toe and the merge all have to shrink together: a road whose lane
+      // narrowed but whose spoil did not would have its own rubble standing on
+      // its driving surface, everywhere, not just at a junction.
+      for (const i of branches) {
+        const line = at(i)
+        expect(line.bedHalfM, `street ${i} lane`).to.be.closeTo(
+          BED_HALF_M * line.widthScale,
+          1e-9
+        )
+        expect(line.toeHalfM, `street ${i} toe`).to.be.closeTo(
+          ROAD_HALF_M * line.widthScale,
+          1e-9
+        )
+        expect(line.bedHalfM, `street ${i} lane inside its own toe`).to.be
+          .lessThan(line.toeHalfM)
+      }
     })
   })
 })

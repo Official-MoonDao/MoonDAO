@@ -39,7 +39,7 @@
 // Cut-and-cover needs no such licence: it works anywhere there is loose
 // regolith, which is everywhere on this ridge.
 //
-// HOW IT STAYS OBSERVABLE. A buried habitat keeps its plot in the core ring and
+// HOW IT STAYS OBSERVABLE. A buried habitat keeps its corner lot and
 // its whole surface expression — mound, airlock head house, radiator wall, PV,
 // spoil pile — so it is picked, hovered and framed exactly like every other
 // competitor, and nothing in the layout or the panels needs to know it is
@@ -50,6 +50,7 @@
 // continuous height-mapped cap with nothing behind it, so there is no hole to
 // cut and nothing that would be revealed by cutting one.
 
+import { SPINE_BEARING_DEG, spineCoords } from './baseplan'
 import { type Vec3 } from './geo'
 import { capLocalDirection } from './southpole'
 
@@ -91,7 +92,7 @@ export const BURIED_HABITATS: Record<string, SubsurfaceSite> = {
   // with a walkway either side, and a 5.4 m interior crown clears the airlock
   // tower's dome (4.6 m over its own feet) and the barrel crown (4.8 m) with
   // room to spare. A 7 m excavation puts the liner crown 1.1 m BELOW grade, so
-  // the 4 m of cover stands 2.9 m proud of the plaza as a mound rather than
+  // the 4 m of cover stands 2.9 m proud of the lot as a mound rather than
   // being buried flush — which is both the cheaper build (less digging) and the
   // only version you can see anything of from the surface.
   //
@@ -137,7 +138,7 @@ const END_WALL_M = 0.6
 // Angle of repose for the cover, in degrees. Loose regolith stands at about
 // 30–35°; a graded and compacted berm holds steeper, and 40° is what the Mason
 // compactor's whole product is for. It matters here because it sets the mound's
-// PLAN SIZE — every degree shallower spreads the skirt further across a plaza
+// PLAN SIZE — every degree shallower spreads the skirt further across a lot
 // that the base camp and ILRS are already standing on.
 const REPOSE_DEG = 40
 
@@ -210,28 +211,38 @@ export function buriedVault(projectId: string): VaultGeometry | undefined {
 }
 
 // Compass bearing (degrees CCW from east, the convention every district and sky
-// station here uses) that a vault's long axis runs along: RADIALLY out of the
-// plaza, away from the core's centre.
+// station here uses) that a vault's long axis runs along: ACROSS the spine, on
+// the habitat branch's own line, with the service bay and head house at the end
+// nearer the street.
 //
-// Radial rather than tangential, and it is not an aesthetic choice. The core is
-// a ring of five plots (see the 'ring' case in districtSlots) whose neighbours
-// sit TANGENTIALLY either side, so the tangent is the one direction a 28 m-long
-// mound must not run; radially it reaches into the open plaza and out toward
-// the perimeter road instead. It also puts each vault's service bay and head
-// house at the INWARD end, facing the middle of the base — which is where crew
-// coming off the hardstand would actually enter.
+// Along the branch rather than along the spine, and it is not an aesthetic
+// choice. The habitat race takes the four corner lots of its crossing (see the
+// 'crossroads' case in districtSlots), and a corner lot is bounded by the spine
+// on one side and the branch on the other. A 28 m mound laid ALONG the spine
+// would run the full width of the block and out the far side into the next
+// lot's clear ground; laid across it, it runs away from the spine into the open
+// regolith behind the block, which is the one direction a lot on a crossing has
+// depth in. It also puts the entrance at the end nearest the pavement, which is
+// where crew coming off the street would actually go in.
 //
-// Read off the plot's own position rather than stored per project, because the
-// ring assigns angles by roster rank: change any competitor's footprint and the
-// order changes, and a hardcoded bearing would silently point the mound the
-// wrong way. Valid because the core district's centre IS the map origin
-// (BASE_PLAN.habitat is east 0, north 0), so a plot's map bearing is already
-// its bearing out of the district.
+// This used to be the plot's RADIAL bearing out of the district centre, which
+// worked only because that district was a ring of five plots around a plaza and
+// its centre was the map origin. There is no ring and no plaza now, so radial
+// out of a crossing points diagonally across a corner lot — the one direction
+// that fits neither of the two streets the lot fronts.
+//
+// The SIGN is read off the plot's own position rather than stored per project:
+// the corners are assigned by roster rank, so changing any competitor's
+// footprint can move a plot to the other side of the spine, and a hardcoded
+// bearing would then bury the entrance and open the mound onto empty ground.
 export function vaultAxisBearingDeg(slot: {
   east: number
   north: number
 }): number {
-  return (Math.atan2(slot.north, slot.east) * 180) / Math.PI
+  // Which side of the spine this lot is on. The axis then points from the lot
+  // back toward the spine, so the head house ends up at the street end.
+  const inward = spineCoords(slot).acrossM > 0 ? -1 : 1
+  return SPINE_BEARING_DEG + 90 * inward
 }
 
 // World-space unit direction the vault's long axis runs along. Fed to

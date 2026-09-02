@@ -25,9 +25,13 @@ import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import { capOffsetLatLon } from '@/lib/lunar-atlas/southpole'
 import {
   BASE_PLAN,
-  FALLBACK_RING_M,
+  FALLBACK_ALONG_M,
+  FALLBACK_SPREAD_M,
   PATROL,
+  at,
   districtSlots,
+  shuttleAt,
+  shuttleLapM,
   type Slot,
 } from '@/lib/lunar-atlas/baseplan'
 import {
@@ -96,13 +100,14 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
   for (const tree of trees) {
     let plan = BASE_PLAN[tree.category]
     if (!plan) {
-      // A category the plan doesn't zone gets a plot on a wide outer ring, so a
-      // race added to the dataset appears somewhere sane rather than at the
-      // origin on top of the core.
-      const a = (fallbackIdx / Math.max(nUnmapped, 1)) * Math.PI * 2
+      // A category the plan doesn't zone stands past the head of the spine, so a
+      // race added to the dataset appears on open regolith beyond the built
+      // plan rather than at the origin on top of the habitat district. Spread
+      // ACROSS the spine from there, centred on it, which keeps them together
+      // as a row of outliers instead of scattered round the settlement.
+      const t = nUnmapped > 1 ? fallbackIdx / (nUnmapped - 1) - 0.5 : 0
       plan = {
-        east: Math.cos(a) * FALLBACK_RING_M,
-        north: Math.sin(a) * FALLBACK_RING_M,
+        ...at(FALLBACK_ALONG_M, t * FALLBACK_SPREAD_M * 2),
         turn: 0,
       }
       fallbackIdx++
@@ -113,12 +118,12 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       tree.projects.map((p) => ({ id: p.id, radiusM: footprintRadiusM(p) }))
     )
     // A race whose hardware DRIVES doesn't stand on its plots — it rests out on
-    // the patrol road, spaced evenly around it by rank (see PATROL and the lap
-    // in MarkerLayer's CompetitorPlot). Precompute that road position here, in
-    // the same shared table the models and the camera both read, so a drill-in
-    // aims at the rover itself rather than at its own empty corner lot. Uses
-    // the identical phase MarkerLayer does — rank index over count — so the two
-    // cannot disagree about where a given rover comes to rest.
+    // the spine, spread along the run by rank (see PATROL and the shuttle in
+    // MarkerLayer's CompetitorPlot). Precompute that road position here, in the
+    // same shared table the models and the camera both read, so a drill-in aims
+    // at the rover itself rather than at its own empty corner lot. Uses the
+    // identical phase MarkerLayer does — rank index over count — and the same
+    // `shuttleAt`, so the two cannot disagree about where a rover comes to rest.
     const patrol = PATROL[tree.category]
     const rankOf = patrol
       ? new Map(rankedMembers(tree).map((p, i) => [p.id, i]))
@@ -126,12 +131,12 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
     for (const [id, slot] of slots) {
       let standDir: Vec3 | undefined
       if (patrol && rankOf) {
-        const phase = (rankOf.get(id)! / rankOf.size) * Math.PI * 2
-        const bearing = Math.atan2(slot.north, slot.east) + phase
-        const ll = capOffsetLatLon(
-          Math.cos(bearing) * patrol.radiusM,
-          Math.sin(bearing) * patrol.radiusM
+        const phase = rankOf.get(id)! / rankOf.size
+        const { east, north } = shuttleAt(
+          patrol,
+          phase * shuttleLapM(patrol)
         )
+        const ll = capOffsetLatLon(east, north)
         standDir = latLonToVector3(ll.lat, ll.lon, 1)
       }
       plots.set(id, { dir: dirAt(slot.east, slot.north), slot, standDir })

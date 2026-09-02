@@ -22,13 +22,22 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   BASE_PLAN,
-  MAIN_LOOP_M,
-  onLoopRoad,
+  BRANCH_TAIL_M,
   PATROL,
-  RING_RADIUS_M,
   ROAD_HALF_M,
+  ROAD_RUNS,
   SETBACK_M,
+  SPINE_BEARING_DEG,
+  SPINE_END_M,
+  SPINE_START_M,
+  at,
+  districtAlongM,
+  onRoad,
+  shuttleAt,
+  shuttleLapM,
+  spineCoords,
   withinDistrictGround,
+  type ShuttleRun,
   type Slot,
 } from '@/lib/lunar-atlas/baseplan'
 import {
@@ -40,7 +49,7 @@ import {
 import { PROJECT_TYPE_LABEL, orgColor } from '@/lib/lunar-atlas/display'
 import {
   M_TO_UNITS,
-  capCenterDirection,
+  capLocalDirection,
   capOffsetLatLon,
 } from '@/lib/lunar-atlas/southpole'
 import { buriedSite, vaultAxis } from '@/lib/lunar-atlas/subplan'
@@ -86,9 +95,9 @@ export function rankedMembers(tree: TechTree): Project[] {
   )
 }
 
-// Axis of the map patch, and so of the perimeter road: a lap is a rotation
-// about it. Fixed for the life of the app.
-const CAP_AXIS = new THREE.Vector3(...capCenterDirection()).normalize()
+// Scratch quaternion for the shuttle's per-frame rotation, so driving the fleet
+// allocates nothing.
+const TURN = new THREE.Quaternion()
 
 // Seconds-ish for a patrolling vehicle to reach speed, or to come to a stand
 // when its race is opened. A vehicle that stops dead reads as a paused
@@ -252,13 +261,13 @@ function CompetitorPlot({
   opacity: number
   // 1 while this plot's race is the subject, DIM_FACTOR while another's is.
   dim: number
-  // The road to drive and how fast, for a race whose hardware drives rather than
+  // The run to drive and how fast, for a race whose hardware drives rather than
   // stands. Taken straight from PATROL rather than rebuilt per render, because
   // it keys the seating memos below and a fresh object each render would have
   // them resample the terrain for nothing.
-  patrol?: { speedMps: number; radiusM: number }
-  // Radians round that road this vehicle starts at, which is what keeps a whole
-  // depot's worth of them off each other.
+  patrol?: ShuttleRun
+  // Fraction of one out-and-back this vehicle starts at, which is what keeps a
+  // whole depot's worth of them off each other.
   patrolPhase?: number
   // Whether this plot's own race is the open one. Names every asset on the lot,
   // and brings the driving ones to a stand so they can be read.
@@ -283,13 +292,13 @@ function CompetitorPlot({
     // itself for anything that isn't driving.
     if (standDir) return standDir
     if (!patrol) return dir
-    const bearing = Math.atan2(slot.north, slot.east) + (patrolPhase ?? 0)
-    const ll = capOffsetLatLon(
-      Math.cos(bearing) * patrol.radiusM,
-      Math.sin(bearing) * patrol.radiusM
+    const { east, north } = shuttleAt(
+      patrol,
+      (patrolPhase ?? 0) * shuttleLapM(patrol)
     )
+    const ll = capOffsetLatLon(east, north)
     return latLonToVector3(ll.lat, ll.lon, 1)
-  }, [standDir, dir, patrol, patrolPhase, slot.east, slot.north])
+  }, [standDir, dir, patrol, patrolPhase])
 
   const { ndir, seatRadius, labelAt } = useMemo(() => {
     const d = new THREE.Vector3(
@@ -358,46 +367,76 @@ function CompetitorPlot({
     return { along, ground }
   }, [project.id, slot, radiusAt, seatRadius])
 
-  // Laps of main street, for a race whose hardware drives rather than stands
-  // (see PATROL).
+  // Runs of the spine, for a race whose hardware drives rather than stands (see
+  // PATROL). Out to the far end and back, forever.
   //
-  // The lap is a rigid rotation of the vehicle about the patch axis, which is
-  // what makes it both cheap and correct: a rotation of the sphere holds it at
-  // exactly the radius it started from — the road — and carries its seating and
-  // its heading with it, so neither has to be recomputed per frame.
+  // Still a rigid rotation of the vehicle about the globe centre, which is what
+  // keeps it cheap and correct: a rotation holds the vehicle at exactly the
+  // radius it started from and carries its seating and its heading with it, so
+  // neither is recomputed per frame. What changes on a spine is that the
+  // rotation can no longer be one angle about one fixed axis — a lap of a circle
+  // was, a triangle wave along a line is not — so it is solved each frame as the
+  // shortest rotation from where the vehicle was MOUNTED to where it has driven
+  // to. Over 680 m on a 1737 km sphere that is 0.02 degrees of arc, so the twist
+  // it also imparts is far below anything visible.
   //
-  // It is also why a whole fleet can share one road safely. Every vehicle turns
-  // through the same angle at the same rate, so the gaps the phases opened up are
-  // held for good: the convoy can never close on itself, however long it runs.
-  const lap = useMemo(() => {
-    if (!patrol) return null
-    // Travel direction where it stands. Rotating a point p about axis n moves it
-    // along n × p, so this is the way a positive rate drives.
-    const along = CAP_AXIS.clone().cross(ndir).normalize()
-    return {
-      rate: patrol.speedMps / patrol.radiusM,
-      noseAlong: [along.x, along.y, along.z] as Vec3,
-    }
-  }, [patrol, ndir])
-  const lapRef = useRef(0)
+  // A whole fleet still shares the road safely. Every vehicle covers the same
+  // distance at the same rate, so the gaps the phases opened up are held for
+  // good — but unlike a lap, vehicles on opposite legs now close on each other
+  // head on, which is what `acrossM` is for: they pass on opposite sides.
+  // The outbound direction of the spine, in world space. The nose is mounted on
+  // it and the frame loop below turns the vehicle round from there, so this is
+  // one fixed axis for the whole fleet rather than a per-vehicle heading.
+  const driveAlong = useMemo(
+    () => (patrol ? capLocalDirection(SPINE_BEARING_DEG, 0) : undefined),
+    [patrol]
+  )
+
+  const distRef = useRef(0)
   const throttleRef = useRef(0)
+  // +1 driving northeast, -1 coming back. Eased rather than switched, so the
+  // turn at each end swings round over a few meters instead of the vehicle
+  // snapping to face the other way on one frame. Seeded from the leg this
+  // vehicle actually starts on, so a fleet spread over both legs doesn't spend
+  // its first second turning around on the spot.
+  const headingRef = useRef(
+    patrol &&
+      !shuttleAt(patrol, (patrolPhase ?? 0) * shuttleLapM(patrol)).outbound
+      ? -1
+      : 1
+  )
 
   useFrame((_, delta) => {
     const g = groupRef.current
-    if (!g || !lap) return
+    if (!g || !patrol) return
     // Roll to a stand where it IS when this race is opened — the vehicle sits
     // still while the user reads about it, but stays put on the road rather than
     // teleporting back to a start line. The camera comes to the vehicle instead
     // (see LIVE_PATROL_DIR, published below, and the page's flyToProject).
     const throttle = raceOpen ? 0 : 1
-    throttleRef.current +=
-      (throttle - throttleRef.current) * (1 - Math.pow(PATROL_EASE, delta))
-    lapRef.current += lap.rate * throttleRef.current * delta
-    g.quaternion.setFromAxisAngle(CAP_AXIS, lapRef.current)
-    // Where the vehicle actually is this frame — its start direction carried
-    // round the lap. Published so a drill-in can find it on the road, and
-    // reused just below to ride the road's rise and fall.
-    const p = ndir.clone().applyQuaternion(g.quaternion)
+    const ease = 1 - Math.pow(PATROL_EASE, delta)
+    throttleRef.current += (throttle - throttleRef.current) * ease
+    distRef.current += patrol.speedMps * throttleRef.current * delta
+
+    const pos = shuttleAt(
+      patrol,
+      (patrolPhase ?? 0) * shuttleLapM(patrol) + distRef.current
+    )
+    headingRef.current += ((pos.outbound ? 1 : -1) - headingRef.current) * ease
+
+    const ll = capOffsetLatLon(pos.east, pos.north)
+    const p = new THREE.Vector3(
+      ...latLonToVector3(ll.lat, ll.lon, 1)
+    ).normalize()
+    // Carry the vehicle from where it was mounted to where it has driven to,
+    // then spin it about its own local up by however far round the turn it is.
+    // A rotation about `p` fixes `p`, so the spin moves the nose without moving
+    // the vehicle.
+    g.quaternion
+      .setFromAxisAngle(p, (Math.PI * (1 - headingRef.current)) / 2)
+      .multiply(TURN.setFromUnitVectors(ndir, p))
+    // Published so a drill-in can find it on the road, and reused just below to
+    // ride the road's rise and fall.
     LIVE_PATROL_DIR.set(project.id, [p.x, p.y, p.z])
     // Every child is positioned in world space from the globe centre, so a
     // uniform scale IS a radial offset: the ratio of ground radii lifts the
@@ -405,8 +444,7 @@ function CompetitorPlot({
     // — about a part in a million for a couple of meters of relief against a
     // 1737 km radius.
     if (radiusAt) {
-      const pll = vector3ToLatLon([p.x, p.y, p.z])
-      g.scale.setScalar(radiusAt(pll.lat, pll.lon) / seatRadius)
+      g.scale.setScalar(radiusAt(ll.lat, ll.lon) / seatRadius)
     }
   })
 
@@ -428,7 +466,7 @@ function CompetitorPlot({
         dir={[ndir.x, ndir.y, ndir.z]}
         accent={accent}
         turn={THREE.MathUtils.degToRad(slot.turn)}
-        noseAlong={lap?.noseAlong ?? vaultAlong ?? track?.along}
+        noseAlong={driveAlong ?? vaultAlong ?? track?.along}
         dim={dim}
         onSelect={onSelect}
         onHover={(id) => onHover?.(Boolean(id))}
@@ -466,50 +504,50 @@ function CompetitorPlot({
 //
 // Every other district's plots are populated by `CompetitorPlot` above, one
 // per project, placed by `districtSlots` with a setback that clears both
-// streets it fronts. The rover race has no plots standing: its whole field
-// drives permanent laps (see PATROL), so `districtDir` itself — the raw
-// junction where the depot avenue crosses main street — has nothing a
-// per-project loop would ever draw there. `RoverDepotYard` (ProjectModel.tsx)
-// is the fix, but it cannot simply stand AT `districtDir`: that point sits
-// ON both roads at once (the avenue's own radial line and the loop's circle
-// both pass through it), which is exactly what put the pad under the pavement
-// the first time this was tried.
+// streets it fronts. The rover race has no plots standing: its whole field is
+// out shuttling the spine (see PATROL), so the crossing where its branch meets
+// the spine has nothing a per-project loop would ever draw there.
 //
-// So this reproduces `districtSlots`' own radial/angular setback by hand
-// rather than calling it, but placed INWARD of main street rather than at an
-// outward corner like a real competitor's plot would be: `districtSlots`
-// always gives a single plot the district's first (outward) corner, which
-// would need `BASE_PLAN.rover.reach` inflated well past what this district's
-// own LTV-scale roster justifies — exactly what the avenue-overshoot check
-// in lunar-atlas-baseplan.cy.ts exists to catch, since `reach` is shared
-// with the real (if never-standing) competitor plots. Sitting inward instead
-// touches neither the avenue's own radial line nor the loop's circle, with
-// no baseplan.ts change at all: same radial setback off main street, same
-// angular swing off the avenue, just measured toward the core instead of
-// away from it. That belt is only ~23 m deep once both roads' own setbacks
-// are spent, which is what keeps `RoverDepotYard` a compact 13 x 10 m.
+// `RoverDepotYard` and `RoverGasStation` (ProjectModel.tsx) are what stands
+// there instead, and they take two of the crossing's four corners — the same
+// lots, at the same frontage, a competitor would get. Neither can stand at the
+// crossing itself: that point is on both roads at once, which is what put the
+// apron under the pavement the first time this was tried.
+//
+// Both on the SAME side of the spine, facing each other across the depot's own
+// branch, so the pair reads as two sides of one street rather than as two
+// unrelated sheds on opposite verges. `BASE_PLAN.rover`'s `reach` is sized for
+// these two rather than for the roster, which is the honest way round: at 2.3 m
+// an LTV would only need a 13 m branch, and nothing in the roster ever parks.
 const DEPOT_FOOTPRINT_R = 9 // half-diagonal of the yard's 13 x 10 m apron, with room to spare
 
-// Where the yard actually stands, in plan (east, north) meters — the inward
-// setback the comment above works out, plus the radius and district bearing the
-// yard needs to know which way to face.
-function roverDepotPlan(): {
-  east: number
-  north: number
-  radius: number
-  districtBearing: number
-} {
+// Half-diagonal of the gas station's own 10 x 8.8 m forecourt apron (see
+// `GAS_STATION_HALF_W`/`GAS_STATION_HALF_D`), with room to spare — the same
+// role `DEPOT_FOOTPRINT_R` plays for the yard.
+const GAS_STATION_FOOTPRINT_R =
+  Math.hypot(GAS_STATION_HALF_W, GAS_STATION_HALF_D) + 0.6
+
+// A corner of the depot crossing, plus the point on the branch it should face.
+//
+// Flat now, and worth noticing how much: this used to be an arcsine swing and a
+// radius solved against a circle, because the two roads a district
+// fronted were a circle and a radial. A spine and a perpendicular branch are
+// two straight lines, so the setback off each is just a distance, and the whole
+// thing is one call to `at()`.
+function depotCorner(
+  footprintR: number,
+  alongSign: 1 | -1
+): { here: { east: number; north: number }; faces: { east: number; north: number } } {
   const plan = BASE_PLAN.rover!
-  const districtBearing = Math.atan2(plan.north, plan.east)
-  const front = ROAD_HALF_M + SETBACK_M + DEPOT_FOOTPRINT_R
-  const radius = MAIN_LOOP_M - front
-  const swing = Math.asin(Math.min(1, front / radius))
-  const a = districtBearing + swing
+  const front = ROAD_HALF_M + SETBACK_M + footprintR
+  const alongM = districtAlongM(plan)
   return {
-    east: Math.cos(a) * radius,
-    north: Math.sin(a) * radius,
-    radius,
-    districtBearing,
+    here: at(alongM + alongSign * front, front),
+    // Back on the branch's own centreline at the same offset off the spine, so
+    // the facing direction runs purely ALONG the spine: the yard's aisle and the
+    // station's forecourt each open onto the branch between them, which means
+    // they open onto each other.
+    faces: at(alongM, front),
   }
 }
 
@@ -525,9 +563,10 @@ function RoverDepotSite({
   radiusAt?: RadiusAt | null
 }) {
   const { seat, ndir, noseAlong } = useMemo(() => {
-    const { east, north, radius, districtBearing } = roverDepotPlan()
+    // The northeast corner of the crossing; the station takes the southwest one.
+    const { here, faces } = depotCorner(DEPOT_FOOTPRINT_R, 1)
 
-    const ll = capOffsetLatLon(east, north)
+    const ll = capOffsetLatLon(here.east, here.north)
     const d = new THREE.Vector3(
       ...latLonToVector3(ll.lat, ll.lon, 1)
     ).normalize()
@@ -540,13 +579,10 @@ function RoverDepotSite({
       ? GLOBE_RADIUS
       : footprintSeatRadius(d, radiusAt, DEPOT_FOOTPRINT_R)
 
-    // A second point at the same radius but zero swing — back on the
-    // avenue's own radial line — so the yard's open (aisle) side faces the
-    // road it is served by rather than an arbitrary camera-relative default.
-    const backLl = capOffsetLatLon(
-      Math.cos(districtBearing) * radius,
-      Math.sin(districtBearing) * radius
-    )
+    // The point on the branch it faces, so the yard's open (aisle) side looks
+    // down the road it is served by rather than at an arbitrary camera-relative
+    // default.
+    const backLl = capOffsetLatLon(faces.east, faces.north)
     const backDir = new THREE.Vector3(
       ...latLonToVector3(backLl.lat, backLl.lon, 1)
     )
@@ -576,18 +612,11 @@ function RoverDepotSite({
   )
 }
 
-// Half-diagonal of the gas station's own 10 x 8.8 m forecourt apron (see
-// `GAS_STATION_HALF_W`/`GAS_STATION_HALF_D`), with room to spare — the same
-// role `DEPOT_FOOTPRINT_R` plays for the yard above.
-const GAS_STATION_FOOTPRINT_R = Math.hypot(GAS_STATION_HALF_W, GAS_STATION_HALF_D) + 0.6
-
 // The rover district's recharge/propellant station: a second, freestanding
-// piece of shared infrastructure, sited on the OPPOSITE side of the depot
-// avenue from `RoverDepotSite` — same radial setback off main street, same
-// angular swing off the avenue, just the other sign, so the two face each
-// other across the one straight road they both front rather than crowding
-// one footprint. This is the "different structure, across the street" the
-// depot's own corner never had room for.
+// piece of shared infrastructure, on the OPPOSITE side of the depot branch
+// from `RoverDepotSite` — same setback off the spine, same setback off the
+// branch, just the other sign, so the two face each other across the one
+// straight road they both front rather than crowding one footprint.
 function RoverGasStationSite({
   accent,
   dim,
@@ -600,17 +629,11 @@ function RoverGasStationSite({
   radiusAt?: RadiusAt | null
 }) {
   const { seat, ndir, noseAlong } = useMemo(() => {
-    const plan = BASE_PLAN.rover!
-    const bearing = Math.atan2(plan.north, plan.east)
-    const front = ROAD_HALF_M + SETBACK_M + GAS_STATION_FOOTPRINT_R
-    const radius = MAIN_LOOP_M - front
-    const swing = Math.asin(Math.min(1, front / radius))
-    // The depot itself takes `bearing + swing` (see RoverDepotSite); this
-    // stands at `bearing - swing` — the mirror image across the avenue's own
-    // radial line, at whatever radius ITS OWN (smaller) footprint needs.
-    const a = bearing - swing
+    // The depot takes the northeast corner; this takes the southwest one, at
+    // whatever setback ITS OWN (smaller) footprint needs.
+    const { here, faces } = depotCorner(GAS_STATION_FOOTPRINT_R, -1)
 
-    const ll = capOffsetLatLon(Math.cos(a) * radius, Math.sin(a) * radius)
+    const ll = capOffsetLatLon(here.east, here.north)
     const d = new THREE.Vector3(
       ...latLonToVector3(ll.lat, ll.lon, 1)
     ).normalize()
@@ -618,14 +641,11 @@ function RoverGasStationSite({
       ? GLOBE_RADIUS
       : footprintSeatRadius(d, radiusAt, GAS_STATION_FOOTPRINT_R)
 
-    // Face back toward the avenue's own radial line, same technique as
-    // RoverDepotSite — which, since the two sit on opposite sides of that
-    // line, points this station's own forecourt entrance at the depot yard
-    // across the road rather than out into open regolith.
-    const backLl = capOffsetLatLon(
-      Math.cos(bearing) * radius,
-      Math.sin(bearing) * radius
-    )
+    // Face back toward the branch, same technique as RoverDepotSite — which,
+    // since the two sit on opposite sides of it, points this station's own
+    // forecourt entrance at the depot yard across the road rather than out
+    // into open regolith.
+    const backLl = capOffsetLatLon(faces.east, faces.north)
     const backDir = new THREE.Vector3(
       ...latLonToVector3(backLl.lat, backLl.lon, 1)
     )
@@ -660,13 +680,13 @@ function RoverGasStationSite({
 // Everything above is either a competitor's plot or the depot's own shared
 // yard — one per district. This is the one layer that renders ONCE for the
 // whole base rather than per-district, because most of the plan by area is
-// neither a district nor a road: it's the open regolith between avenues, and
-// the two closed loops stitching the districts together. Left bare, that is
-// most of what the camera actually sees on approach.
+// neither a district nor a road: it's the open regolith either side of the
+// spine, and the spine itself stitching the districts together. Left bare, that
+// is most of what the camera actually sees on approach.
 //
 // A boulder field fills the open ground — native rock, not manifested cargo,
 // so it belongs on unclaimed regolith in a way none of the logistics props in
-// ProjectModel.tsx do — and street lights line both loop roads. Both are kept
+// ProjectModel.tsx do — and street lights line the haul routes. Both are kept
 // off every district's own ground by `withinDistrictGround` (baseplan.ts),
 // which is deliberately generous rather than exact: it doesn't know any
 // district's live roster, only the widest plausible spread its `reach`
@@ -680,23 +700,34 @@ function hash1(n: number): number {
   return s - Math.floor(s)
 }
 
-// The annulus a boulder can land in: just past the ring road's own clearance
-// out to a bit beyond the landing zone's own reach (the single furthest any
-// district goes — see `wide` in baseplan.ts' DISTRICT_ZONES). Sampled as a
-// polar grid with per-cell jitter and a low keep-rate, which is what makes a
-// grid read as scatter instead of a filled ring.
-const BOULDER_MIN_R = RING_RADIUS_M + 5
-const BOULDER_MAX_R = 165
-const BOULDER_RADIAL_BANDS = 7
-const BOULDER_ANGULAR_STEPS = 30
+// The ground a boulder can land on: a band running the length of the spine and
+// a good way either side of it, sampled as a grid in the spine's own frame with
+// per-cell jitter and a low keep-rate — which is what makes a grid read as
+// scatter rather than as rows. Roads and district ground are skipped as the
+// walk goes (see the filter below), so the band can simply cover the whole base
+// instead of being an annulus threaded between two ring roads.
+//
+// Wider across than the base is (the landing zone's pads reach 70 m off the
+// spine) and longer than the spine, so the scatter runs past the settlement in
+// every direction rather than stopping at a boundary the eye can find.
+const BOULDER_ALONG_MIN_M = SPINE_START_M - 60
+const BOULDER_ALONG_MAX_M = SPINE_END_M + 60
+const BOULDER_ACROSS_M = 150
+const BOULDER_ALONG_STEPS = 34
+const BOULDER_ACROSS_STEPS = 15
 const BOULDER_KEEP_FRACTION = 0.34
 
-// A post every ~40 m along a loop, just outside its windrow — close enough
-// together to actually read as street lighting, far enough apart that a
-// closed loop doesn't need dozens of them.
+// A post every ~40 m of pavement, just outside the windrow — close enough
+// together to actually read as street lighting, far enough apart that 730 m of
+// spine doesn't need dozens of them.
 const STREET_LIGHT_SPACING_M = 40
 
-// Staged cargo along the shoulders of both loop roads — the manifested-cargo
+// Roads narrower than this are left dark. A lit street is a street with traffic
+// on it, and a rover track out to four relay masts has none — see `width` in
+// baseplan.ts' Street, and the branches that ask for 0.72.
+const LIT_ROAD_WIDTH = 1
+
+// Staged cargo along the shoulders of every road — the manifested-cargo
 // counterpart to the boulder field, for stretches of road with nothing to
 // look at otherwise. Unlike the boulders (native rock, scattered anywhere on
 // open ground) this stays close to a road on purpose: a crate stack or a
@@ -707,7 +738,7 @@ const ROADSIDE_KEEP_PROB = 0.75
 type RoadsideKind = 'crates' | 'cablereel' | 'parts' | 'bricks'
 
 // A small grading/earthmoving fleet, parked hard against the shoulder of
-// one of the two loop roads — the same "close enough to a road that a
+// one of the roads — the same "close enough to a road that a
 // hauler could reach it" logic as `roadsideCargo`, not the boulder field's
 // wide-open annulus, since this is the settlement's own maintenance crew
 // working the street it grades rather than native scatter. A handful of
@@ -721,22 +752,33 @@ const EXCAVATOR_COUNT = 6
 const EXCAVATOR_SHOULDER_MIN_M = 2.6
 const EXCAVATOR_SHOULDER_MAX_M = 6.5
 
-// Fixed spot for the base's own dig: well inside the habitat ring's own
-// empty middle. Every habitat plot sits at a fixed radius from the district
-// center (~38 m — see BASE_PLAN.habitat's `ring` frontage and districtSlots'
-// 'ring' case in baseplan.ts), so anything under ~19 m of that same center is
-// clear of all five of them by construction; a 9 m offset keeps the whole
-// assembly (pit + spoil + the excavator standing off one side of it) well
-// inside that with room to spare, and off the exact point the habitat
-// district's own beacon tethers to. The composite itself (ConstructionPit +
+// Fixed spot for the base's own dig: at the far end of the habitat's own
+// branch, past the last of its corner lots.
+//
+// It used to sit in the middle of the habitat district, which was possible
+// because that district was a ring of five plots around an empty plaza. There
+// is no plaza now — the middle of a crossing is the crossing — so the dig moves
+// to the one place on this district that is both served by its road and not
+// somebody's lot: the end of the branch, `BRANCH_TAIL_M` short of where the
+// pavement stops. That is arguably where it belonged all along, since what this
+// is digging is the vaults the buried habitats stand in, and a cut-and-cover
+// excavation wants to be at the edge of a settlement rather than its centre.
+//
+// Offset off the branch's centreline by enough to clear the windrow, so the
+// machine works beside its road rather than in it. The composite itself
+// (ConstructionPit +
 // its Excavator, both authored together in ProjectModel.tsx) is asymmetric —
 // the machine stands off to one side of the pit, not scattered by angle like
 // InterDistrictFiller's ambient fleet — but SurfaceAnchor's default facing
 // (no `noseAlong` given here) turns that whole composite toward the home
 // camera on its own, the same as any other un-steered installation, so this
 // only ever needs to pick a location, never an orientation.
-const UGC_EAST_M = 9
-const UGC_NORTH_M = 0
+const UGC_SITE = at(
+  districtAlongM(BASE_PLAN.habitat!) - (ROAD_HALF_M + 8),
+  (BASE_PLAN.habitat!.reach ?? 0) + BRANCH_TAIL_M - 4
+)
+const UGC_EAST_M = UGC_SITE.east
+const UGC_NORTH_M = UGC_SITE.north
 // Clears the arm's own highest hoisted point (see EXC_DIG_POSES' "hoist"
 // keyframe) rather than the machine's parked height, so the label never
 // clips through the boom mid-cycle.
@@ -858,16 +900,22 @@ function InterDistrictFiller({
   const built = presence > MODEL_PRESENCE
   const boulders = useMemo(() => {
     const out: { dir: Vec3; seat: number; size: number; seed: number }[] = []
-    for (let ri = 0; ri < BOULDER_RADIAL_BANDS; ri++) {
-      for (let ai = 0; ai < BOULDER_ANGULAR_STEPS; ai++) {
-        const k = ri * 977 + ai * 31 + 1
+    for (let ai = 0; ai < BOULDER_ALONG_STEPS; ai++) {
+      for (let ci = 0; ci < BOULDER_ACROSS_STEPS; ci++) {
+        const k = ai * 977 + ci * 31 + 1
         if (hash1(k) > BOULDER_KEEP_FRACTION) continue
-        const rFrac = (ri + 0.15 + hash1(k + 1) * 0.7) / BOULDER_RADIAL_BANDS
-        const r = BOULDER_MIN_R + rFrac * (BOULDER_MAX_R - BOULDER_MIN_R)
-        const bearing = ((ai + hash1(k + 2)) / BOULDER_ANGULAR_STEPS) * 360
-        if (onLoopRoad(r) || withinDistrictGround(r, bearing, 20)) continue
-        const a = (bearing * Math.PI) / 180
-        const ll = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+        const alongM =
+          BOULDER_ALONG_MIN_M +
+          ((ai + hash1(k + 1)) / BOULDER_ALONG_STEPS) *
+            (BOULDER_ALONG_MAX_M - BOULDER_ALONG_MIN_M)
+        const acrossM =
+          -BOULDER_ACROSS_M +
+          ((ci + hash1(k + 2)) / BOULDER_ACROSS_STEPS) * BOULDER_ACROSS_M * 2
+        const { east, north } = at(alongM, acrossM)
+        if (onRoad(east, north) || withinDistrictGround(east, north, 20)) {
+          continue
+        }
+        const ll = capOffsetLatLon(east, north)
         const dir = latLonToVector3(ll.lat, ll.lon, 1)
         const seat = radiusAt
           ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
@@ -881,49 +929,53 @@ function InterDistrictFiller({
   const lights = useMemo(() => {
     const out: { dir: Vec3; seat: number; noseAlong: Vec3 }[] = []
     if (!built) return out
-    // A fine angular step (every ~1-3 m of arc on these radii) walked all the
-    // way round each loop, placing a light once STREET_LIGHT_SPACING_M has
-    // accumulated since the last one and skipping any candidate over a
-    // district's own ground. A fixed COUNT of evenly-spaced stations was
-    // tried first and aliased badly: with 7 districts on the ring road and 7
-    // evenly-spaced stations, nearly every station landed within a wedge by
-    // coincidence and only one light survived. Walking and accumulating arc
-    // length instead means a wedge just delays the next light rather than
-    // deleting a whole station, so the loop is never left with a long dark
-    // stretch merely because a station's angle happened to land badly.
-    const STEP_DEG = 2
-    for (const r of [RING_RADIUS_M, MAIN_LOOP_M]) {
-      const postR = r + ROAD_HALF_M + 1.4
-      let lastPlacedDeg: number | null = null
-      for (let deg = 0; deg < 360; deg += STEP_DEG) {
-        // A narrower margin than the boulders': a thin post just needs to
-        // clear a district's own ground, not stand well back from it, so
-        // lights still line the road right up to each district's junction.
-        if (withinDistrictGround(postR, deg, 11)) continue
-        if (lastPlacedDeg !== null) {
-          const arcSinceM = ((deg - lastPlacedDeg) * Math.PI * r) / 180
-          if (arcSinceM < STREET_LIGHT_SPACING_M) continue
-        }
-        lastPlacedDeg = deg
+    // A fine step walked along each lit road, placing a light once
+    // STREET_LIGHT_SPACING_M of pavement has accumulated since the last one and
+    // skipping any candidate over a district's own ground. A fixed COUNT of
+    // evenly-spaced stations was tried first and aliased badly: with as many
+    // districts as stations, nearly every station landed on a district by
+    // coincidence and only one light survived. Walking and accumulating
+    // distance instead means a district just delays the next light rather than
+    // deleting a whole station, so no road is left with a long dark stretch
+    // merely because a station happened to land badly.
+    //
+    // Posts alternate sides as the walk goes, which a ring road could not do:
+    // its two flanks were an inner and an outer circle of different lengths.
+    // On a straight road they are the same road, so a single walk lights both
+    // verges and the spine gets a post every 20 m of its length rather than
+    // every 40.
+    const STEP_M = 2
+    for (const run of ROAD_RUNS) {
+      if (run.width < LIT_ROAD_WIDTH) continue
+      let placed = 0
+      let lastAt: number | null = null
+      for (let d = 0; d < run.lengthM; d += STEP_M) {
+        if (lastAt !== null && d - lastAt < STREET_LIGHT_SPACING_M) continue
+        const side = placed % 2 ? -1 : 1
+        const post = run.at(d, side * (ROAD_HALF_M + 1.4))
+        // A narrower margin than the boulders': a thin post just needs to clear
+        // a district's own ground, not stand well back from it, so lights still
+        // line the road right up to each district's crossing.
+        if (withinDistrictGround(post.east, post.north, 11)) continue
+        lastAt = d
+        placed++
 
-        const a = (deg * Math.PI) / 180
-        const ll = capOffsetLatLon(Math.cos(a) * postR, Math.sin(a) * postR)
-        const d = new THREE.Vector3(
+        const ll = capOffsetLatLon(post.east, post.north)
+        const dv = new THREE.Vector3(
           ...latLonToVector3(ll.lat, ll.lon, 1)
         ).normalize()
         const seat = radiusAt
           ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
           : GLOBE_RADIUS + SEAT_LIFT
-        // The boom leans toward the road's own centerline (radius r), not
-        // toward the ridge center generally — for the ring road that's the
-        // same thing, but for main street it keeps every light's fixture
-        // facing the pavement it actually lights rather than the core.
-        const innerLl = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+        // The boom leans toward this road's own centreline, so every light's
+        // fixture faces the pavement it actually lights.
+        const inner = run.at(d, 0)
+        const innerLl = capOffsetLatLon(inner.east, inner.north)
         const innerDir = new THREE.Vector3(
           ...latLonToVector3(innerLl.lat, innerLl.lon, 1)
         )
-        const noseAlong = innerDir.sub(d).normalize().toArray() as Vec3
-        out.push({ dir: [d.x, d.y, d.z] as Vec3, seat, noseAlong })
+        const noseAlong = innerDir.sub(dv).normalize().toArray() as Vec3
+        out.push({ dir: [dv.x, dv.y, dv.z] as Vec3, seat, noseAlong })
       }
     }
     return out
@@ -938,29 +990,34 @@ function InterDistrictFiller({
       yaw: number
     }[] = []
     if (!built) return out
-    const STEP_DEG = 2
-    for (const r of [RING_RADIUS_M, MAIN_LOOP_M]) {
-      let lastSlotDeg: number | null = null
-      for (let deg = 0; deg < 360; deg += STEP_DEG) {
-        if (lastSlotDeg !== null) {
-          const arcSinceM = ((deg - lastSlotDeg) * Math.PI * r) / 180
-          if (arcSinceM < ROADSIDE_SPACING_M) continue
+    const STEP_M = 2
+    ROAD_RUNS.forEach((run, ri) => {
+      let lastAt: number | null = null
+      for (let d = 0; d < run.lengthM; d += STEP_M) {
+        if (lastAt !== null && d - lastAt < ROADSIDE_SPACING_M) continue
+        // Alternate shoulders rather than always the same one, so both verges
+        // pick up traffic. Offset starts further out than the street lights'
+        // own fixed band (ROAD_HALF_M + 1.4) so a crate cluster can never land
+        // close enough to clip one.
+        const seed = ri * 4001 + d * 13 + 7
+        const side = hash1(seed + 1) > 0.5 ? 1 : -1
+        const spot = run.at(
+          d,
+          side * (ROAD_HALF_M + 3.2 + hash1(seed + 2) * 3)
+        )
+        if (
+          onRoad(spot.east, spot.north) ||
+          withinDistrictGround(spot.east, spot.north, 8)
+        ) {
+          continue
         }
-        // Alternate shoulders rather than always the outward side, so a
-        // loop's inner and outer edges both pick up traffic. Offset starts
-        // further out than the street lights' own fixed band (r + ROAD_HALF_M
-        // + 1.4) so a crate cluster can never land close enough to clip one.
-        const side = hash1(r + deg * 3 + 1) > 0.5 ? 1 : -1
-        const postR = r + side * (ROAD_HALF_M + 3.2 + hash1(r + deg * 3 + 2) * 3)
-        if (onLoopRoad(postR) || withinDistrictGround(postR, deg, 8)) continue
         // Advance the walk past this slot regardless of whether it renders
         // anything below — that's what keeps the spacing organic (some
         // slots come up empty) rather than every eligible slot filling.
-        lastSlotDeg = deg
-        const k = Math.round(r) * 4001 + deg * 13 + 7
-        if (hash1(k) > ROADSIDE_KEEP_PROB) continue
+        lastAt = d
+        if (hash1(seed) > ROADSIDE_KEEP_PROB) continue
 
-        const roll = hash1(k + 1)
+        const roll = hash1(seed + 1)
         const kind: RoadsideKind =
           roll < 0.4
             ? 'crates'
@@ -969,15 +1026,20 @@ function InterDistrictFiller({
             : roll < 0.85
             ? 'parts'
             : 'bricks'
-        const a = (deg * Math.PI) / 180
-        const ll = capOffsetLatLon(Math.cos(a) * postR, Math.sin(a) * postR)
+        const ll = capOffsetLatLon(spot.east, spot.north)
         const dir = latLonToVector3(ll.lat, ll.lon, 1)
         const seat = radiusAt
           ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
           : GLOBE_RADIUS + SEAT_LIFT
-        out.push({ dir, seat, kind, seed: k, yaw: hash1(k + 2) * Math.PI * 2 })
+        out.push({
+          dir,
+          seat,
+          kind,
+          seed,
+          yaw: hash1(seed + 2) * Math.PI * 2,
+        })
       }
-    }
+    })
     return out
   }, [radiusAt, built])
 
@@ -987,33 +1049,38 @@ function InterDistrictFiller({
     let placed = 0
     for (let tries = 0; placed < EXCAVATOR_COUNT && tries < 400; tries++) {
       const k = tries * 733 + 5501
-      const loopR = hash1(k) > 0.5 ? MAIN_LOOP_M : RING_RADIUS_M
-      const bearing = hash1(k + 1) * 360
+      const run = ROAD_RUNS[Math.floor(hash1(k) * ROAD_RUNS.length)]
+      const d = hash1(k + 1) * run.lengthM
       const side = hash1(k + 2) > 0.5 ? 1 : -1
       const shoulder =
         EXCAVATOR_SHOULDER_MIN_M +
         hash1(k + 3) * (EXCAVATOR_SHOULDER_MAX_M - EXCAVATOR_SHOULDER_MIN_M)
-      const r = loopR + side * (ROAD_HALF_M + shoulder)
+      const spot = run.at(d, side * (ROAD_HALF_M + shoulder))
       // A narrower margin than the boulders' (which stand well clear of
       // every district): this fleet works right up against a district's
       // own edge, not out in open regolith.
-      if (onLoopRoad(r) || withinDistrictGround(r, bearing, 9)) continue
-      const a = (bearing * Math.PI) / 180
-      const ll = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+      if (
+        onRoad(spot.east, spot.north) ||
+        withinDistrictGround(spot.east, spot.north, 9)
+      ) {
+        continue
+      }
+      const ll = capOffsetLatLon(spot.east, spot.north)
       const dir = latLonToVector3(ll.lat, ll.lon, 1)
       const seat = radiusAt
         ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
         : GLOBE_RADIUS + SEAT_LIFT
-      // Nose along the road's own tangent (a nearby point at the same
-      // radius, a fraction of a degree further round), the same
-      // "sample a neighboring point on the base plane and subtract" trick
-      // `lights` uses for its boom heading — a grader actually working the
-      // shoulder sits lengthwise along the road, not at a random angle to
-      // it. Which way down the tangent is picked per-instance so a run of
-      // them doesn't all face the same direction.
-      const aTangent = ((bearing + 0.4) * Math.PI) / 180
-      const llTangent = capOffsetLatLon(Math.cos(aTangent) * r, Math.sin(aTangent) * r)
-      const dTangent = new THREE.Vector3(...latLonToVector3(llTangent.lat, llTangent.lon, 1))
+      // Nose along the road's own direction (a point a few meters further down
+      // the same run), the same "sample a neighbouring point on the base plane
+      // and subtract" trick `lights` uses for its boom heading — a grader
+      // actually working the shoulder sits lengthwise along the road, not at a
+      // random angle to it. Which way down the road is picked per-instance so a
+      // run of them doesn't all face the same direction.
+      const ahead = run.at(d + 4, side * (ROAD_HALF_M + shoulder))
+      const llAhead = capOffsetLatLon(ahead.east, ahead.north)
+      const dTangent = new THREE.Vector3(
+        ...latLonToVector3(llAhead.lat, llAhead.lon, 1)
+      )
       const dVec = new THREE.Vector3(...dir)
       const flip = hash1(k + 4) > 0.5 ? 1 : -1
       const noseAlong = dTangent
@@ -1423,9 +1490,9 @@ export default function MarkerLayer({
         // The pin has to clear the tallest thing on the lot, not the average.
         const tallestM = Math.max(...members.map((p) => projectSizeM(p)))
         // The whole field drives, if this race's hardware is vehicles. Spread
-        // evenly round the circuit rather than sent out as a convoy: three rovers
-        // nose to tail is one moving object, where a third of a lap apart puts
-        // traffic somewhere in the city whichever way the camera is pointing.
+        // evenly along the run rather than sent out as a convoy: three rovers
+        // nose to tail is one moving object, where a third of a run apart puts
+        // traffic somewhere on the street whichever way the camera is pointing.
         const patrol = PATROL[tree.category]
 
         return (
@@ -1450,7 +1517,7 @@ export default function MarkerLayer({
                   opacity={style.opacity}
                   dim={dim}
                   patrol={patrol}
-                  patrolPhase={(i / count) * Math.PI * 2}
+                  patrolPhase={i / count}
                   raceOpen={isOpen}
                   called={selectedProject?.id === project.id}
                   onSelect={() => onSelectProject?.(project.id)}

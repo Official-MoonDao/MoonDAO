@@ -17,19 +17,28 @@
 // numbers that have to be kept in step.
 //
 // WHY THE CROSSINGS ARE FOUND AND NOT DECLARED. The plan already derives its
-// avenues from the districts (see BASE_STREETS), so a race that moves to another
-// bearing, or a main street pushed out by a district that grew, takes its
+// branches from the districts (see BASE_STREETS), so a race that moves to another
+// crossing, or a branch lengthened by a district that grew, takes its
 // junctions with it. A hand-written list of crossings is one more thing that
 // would quietly go stale when that happened, and the failure would be silent:
 // rubble through a junction looks like scenery, not like a bug.
 //
-// WHY IT IS A DISTANCE MINIMUM AND NOT A SEGMENT CROSSING. Half the junctions on
-// this base are not crossings. An avenue T's into the perimeter road at its own
-// first station, and it is drawn to START at exactly RING_RADIUS_M while the
-// perimeter road it meets there is a spline through twelve waypoints that bulges
-// a fraction of a meter inside the true circle between them. On four of the seven
-// approaches the two therefore come within centimetres of each other and cross
-// nothing whatsoever.
+// WHY IT IS A DISTANCE MINIMUM AND NOT A SEGMENT CROSSING. On the linear plan
+// every junction really is a crossing — each branch meets the spine at its own
+// midpoint and carries on out the far side — so a segment intersection would
+// find all seven of them, which was not true before: on the radial plan a road
+// T'd into the ring at its own first station, drawn to start at exactly the
+// ring's radius while the ring was a spline that bulged a fraction of a meter
+// inside the true circle between waypoints, and four of the seven approaches
+// therefore came within centimetres of each other and crossed nothing at all.
+//
+// A minimum stays, for two reasons that outlive that geometry. It is what gives
+// the fillet a CENTRE to grade around, which an intersection point of two
+// infinitely thin lines does not; and a road that stops on another rather than
+// crossing it is a thing this plan is one edit away from at any time — the
+// landing zone would have had one if the pads were not on the spine — and an
+// intersection test would silently find nothing there, which is a wall of
+// rubble through a junction and no error anywhere.
 
 import * as THREE from 'three'
 import { ROAD_HALF_M, type Street } from './baseplan'
@@ -65,7 +74,7 @@ export const JUNCTION_SEARCH_M = 18
 
 // How near the two centrelines have to come at their closest for that to count
 // as a junction rather than a near miss. Loose on purpose — see the note above
-// about avenues that T into a splined loop a few centimetres short of it.
+// about roads that T into a splined loop a few centimetres short of it.
 export const JUNCTION_TOUCH_M = 3
 
 // Ground swept clear of spoil on each approach, PAST the half-width of whatever
@@ -99,6 +108,9 @@ export type Centreline = {
   spans: number
   lengthM: number
   closed: boolean
+  // Whether the plan declares this a through route, which is what decides who
+  // carries a crossing — see throughRoad.
+  through: boolean
   // Half this road's own sintered lane, which is what a road crossing it has to
   // be swept back far enough to clear.
   bedHalfM: number
@@ -135,13 +147,24 @@ export type Junction = {
 // edge and picks up again on the far side, which leaves precisely one surface on
 // every patch of ground and puts the only seam where a road's edge belongs.
 //
-// A closed loop is the through route. It is continuous by construction, and
-// breaking main street at every one of its crossings so an avenue could lie
-// across it would just be the same artefact the other way round. Failing that
-// the wider road carries it, and failing that the earlier one, so the answer
-// does not depend on the order the plan happens to list its streets in.
+// A road the plan DECLARES a through route wins (see `through` in Street, which
+// on this plan is the spine and only the spine). It runs the length of the
+// settlement and every other road crosses it, so breaking it at all seven of
+// its crossings so a branch could lie across it would just be the same artefact
+// the other way round. Failing that the wider road carries it, and failing that
+// the earlier one, so the answer never depends on the order the plan happens to
+// list its streets in.
+//
+// The flag is declared rather than inferred, and it used to be inferred: a
+// CLOSED road was the through route, which was sound when the network was two
+// ring roads and a fan of radial spurs, because a loop is continuous by
+// construction and a spur is not. Nothing is closed on a linear plan, so that
+// test silently stopped deciding anything — and three of the branches are full
+// haul width, so the width rule below could not break the tie either and the
+// crossings fell through to "whichever road the plan listed first". That is a
+// correct answer for exactly as long as nobody reorders BASE_STREETS.
 function throughRoad(i: number, li: Centreline, j: number, lj: Centreline) {
-  if (li.closed !== lj.closed) return li.closed ? i : j
+  if (li.through !== lj.through) return li.through ? i : j
   if (li.bedHalfM !== lj.bedHalfM) return li.bedHalfM > lj.bedHalfM ? i : j
   return Math.min(i, j)
 }
@@ -169,6 +192,7 @@ export function centreline(street: Street): Centreline | null {
     spans,
     lengthM,
     closed: !!street.closed,
+    through: !!street.through,
     bedHalfM: BED_HALF_M * widthScale,
     toeHalfM: ROAD_HALF_M * widthScale,
     widthScale,
@@ -204,7 +228,7 @@ export function distToCentreline(p: THREE.Vector2, line: Centreline): number {
 
 // The closest the walked road actually comes to the other one, searched between
 // the neighbours of the station the sweep settled on. Chording across two
-// segments rather than following the spline is exact for an avenue, which is
+// segments rather than following the spline is exact for a straight road, which is
 // straight, and off by under 5 cm on either loop at this station spacing.
 function refine(walk: Centreline, against: Centreline, at: number) {
   const n = walk.plan.length
@@ -236,7 +260,7 @@ export function findJunctions(lines: (Centreline | null)[]): Junction[] {
       const lb = lines[b]
       if (!la || !lb) continue
       // Walk the shorter road against the longer one's segments: the same
-      // answer either way, and on this plan it means walking an avenue rather
+      // answer either way, and on this plan it means walking a branch rather
       // than a loop. Distance is measured to the other road's SEGMENTS rather
       // than to its stations, so the junction is located to well inside a meter
       // however coarsely the road it meets happens to be sampled.

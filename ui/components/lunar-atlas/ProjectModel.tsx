@@ -102,7 +102,7 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // extended state — five linked modules under the mast's fan, a redundant
   // comms tower and a fixed PV field on their own footings, still one cargo
   // stack short of finished — which is what makes it a real second
-  // competitor for the core hardstand rather than a construction footnote
+  // competitor for the habitat district rather than a construction footnote
   // next to Artemis Base Camp. Comms-tower guy-anchor to the PV field's far
   // corner is the widest span (see scripts/tmp-ilrs-check.ts). ILRS_M inverts
   // this exact number.
@@ -2920,8 +2920,8 @@ export function UndergroundConstructionSite({ seed = 0 }: { seed?: number }) {
 // Rover depot yard — the motor pool's own lot, not a competitor's model
 // ---------------------------------------------------------------------------
 //
-// The rover race's actual hardware never stands here: the whole field drives
-// permanent laps of main street (see PATROL in baseplan.ts), so every
+// The rover race's actual hardware never stands here: the whole field is out
+// shuttling the spine (see PATROL in baseplan.ts), so every
 // competitor's own plot in this district is bare regolith by design — "a
 // motor pool with its yard bare is a motor pool whose fleet is working," per
 // BASE_PLAN.rover's own comment. Left literally empty, though, that reads as
@@ -2930,15 +2930,14 @@ export function UndergroundConstructionSite({ seed = 0 }: { seed?: number }) {
 // with marked bays, charging points, and a service canopy — infrastructure
 // nobody's competitor owns.
 //
-// It has to fit INWARD of main street rather than at an outward corner like
-// a real competitor's plot would: `BASE_PLAN.rover.reach` is sized for an
-// LTV-class footprint, and the avenue-overshoot check in
-// lunar-atlas-baseplan.cy.ts exists precisely to catch a reach inflated past
-// what a district's own roster justifies. The belt between the perimeter
-// road and main street is only ~23 m deep once both roads' own setbacks are
-// spent, which is what keeps this yard a compact 13 x 10 m rather than the
-// sprawl an outward corner could otherwise afford — see MarkerLayer's
-// `RoverDepotSite`, which does the actual placement math and picks the exact
+// It takes a real CORNER LOT of the depot crossing, at the same frontage off
+// both roads a competitor's plot would get, with the recharge station facing
+// it across the branch. `BASE_PLAN.rover.reach` is sized for these two rather
+// than for the district's LTV-class roster, which is the honest way round:
+// nothing in that roster ever parks, and a branch has to reach what actually
+// stands on it. Kept a compact 13 x 10 m all the same, because a motor pool
+// whose apron dwarfs the vehicles using it reads as a car park — see
+// MarkerLayer's `RoverDepotSite`, which does the placement and picks the exact
 // setback this footprint needs.
 //
 // Two of the three bays are filled, not three, and not zero: a full lot
@@ -3081,9 +3080,9 @@ function DepotLightMast({
 // A neutral roadside street light — the same leaning-boom fixture as the
 // depot's own yard lights, taller and longer-armed to reach a full haul
 // road rather than a parking aisle, and lit a fixed cool white rather than
-// any org's accent: public lighting along main street belongs to the
+// any org's accent: public lighting along the spine belongs to the
 // settlement, not to whichever race happens to be nearest. Placed by
-// `InterDistrictFiller` in MarkerLayer.tsx along both closed loop roads,
+// `InterDistrictFiller` in MarkerLayer.tsx along every haul route,
 // clear of every district's own ground (see `withinDistrictGround` in
 // baseplan.ts) — the one piece of infrastructure in this file with no
 // district or competitor tied to it at all.
@@ -3373,7 +3372,7 @@ function PropellantTank({ x, z }: { x: number; z: number }) {
 // yard lights already tie to whichever team the map currently favors. Faces
 // stay on local ±Z with no extra rotation, since the station itself is
 // authored front-on-+Z (see `RoverGasStation`) and a pylon at the front
-// corner is meant to read from the avenue the whole lot fronts.
+// corner is meant to read from the branch the whole lot fronts.
 function StationSign({ accent }: { accent: string }) {
   const h = 2.8
   return (
@@ -3569,7 +3568,7 @@ export const GAS_STATION_HALF_D = 4.4
 // The depot yard is a parking apron; this is what refuels or recharges a
 // unit before or after that, and a real forecourt is its own lot with its
 // own frontage, not a corner of somebody else's — the reason `MarkerLayer`
-// stands this on the OPPOSITE side of the depot avenue from
+// stands this on the OPPOSITE side of the depot branch from
 // `RoverDepotYard` (see `RoverGasStationSite`), so the two face each other
 // across the one straight road they both front rather than sharing a single
 // footprint. Same authoring convention as the depot yard: real meters, open
@@ -8249,7 +8248,7 @@ function IlrsPvFarm() {
 // construction through the 2040s (see PROJECT_SIZE_M['ilrs']) — a
 // considerable-scale, stably-operating station — rather than the single-mast
 // 2035 basic model the site started as, which is what makes it a real second
-// competitor for the hardstand rather than a construction footnote next to
+// competitor for the habitat district rather than a construction footnote next to
 // Artemis Base Camp.
 function ILRSBase({ accent }: { accent: string }) {
   const modAngles = Array.from(
@@ -11082,7 +11081,7 @@ const VAULT_FILL_I = 0.17
 const VAULT_FILL_DEEP_I = 0.1 // further from the lamps: the floor, the far end
 
 // How far the cover's skirt is bedded BELOW grade, in meters. A skirt that
-// stops exactly at grade is coplanar with the plaza it stands on, which is the
+// stops exactly at grade is coplanar with the ground it stands on, which is the
 // z-fight this avoids; a third of a meter of it buried is invisible.
 const COVER_BED_M = 0.35
 
@@ -11127,7 +11126,7 @@ const MOUND_ACROSS = (() => {
 
 // The cover, as one mesh. Built rather than assembled from primitives because
 // the toe outline has to be exactly the plan shape moundRise describes: a
-// rectangular sheet of ground-height geometry would lie coplanar with the plaza
+// rectangular sheet of ground-height geometry would lie coplanar with the ground
 // wherever the mound isn't, which is the same z-fight COVER_BED_M avoids at the
 // skirt.
 function coverMoundGeometry(g: VaultGeometry): THREE.BufferGeometry {
@@ -11162,7 +11161,7 @@ function coverMoundGeometry(g: VaultGeometry): THREE.BufferGeometry {
       const v = us[j]
       const av = Math.abs(v)
       // The profile meets grade exactly at the toe; the one sample beyond it
-      // carries the rim down under the plaza, so the mound's edge is never
+      // carries the rim down under the ground, so the mound's edge is never
       // coplanar with the ground it stands on.
       const y =
         av > 1 ? -COVER_BED_M : rise * (av <= c ? 1 : (1 - av) / (1 - c))

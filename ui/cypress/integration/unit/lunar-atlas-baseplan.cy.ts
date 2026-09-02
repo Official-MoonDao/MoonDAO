@@ -3,28 +3,43 @@
  *
  * The plan is geometry that nothing on screen will tell you has broken. Add a
  * fourth competitor to a race and two corner lots quietly overlap, and what you
- * see is one reactor standing inside another; nudge main street's radius and the
- * inward lots creep under its windrow. So the invariants are asserted here: no
- * two plots touch, every plot fronts a street at the same setback, every avenue
- * runs the full length of the district it serves, and the districts clear each
- * other on the ground.
+ * see is one reactor standing inside another; shorten a branch and the outer
+ * lots stand on open regolith. So the invariants are asserted here: no two plots
+ * touch, every plot fronts a street at the same setback, every branch runs the
+ * full length of the district it serves, the spine runs past both ends of the
+ * settlement, and the districts clear each other along the street.
+ *
+ * The plan is LINEAR — one spine, one perpendicular branch per district — so
+ * almost everything below is stated in the spine's own frame (`along` up the
+ * road, `across` to its left) rather than in the polar radius-and-bearing this
+ * file used to be written in. That is not a translation of the same assertions:
+ * a corner lot's setback off a straight road is a distance, where off a circle
+ * it was an arc, and several of the checks here that needed a tolerance are now
+ * exact.
  */
 
 import { expect } from 'chai'
 import {
   BASE_PLAN,
   BASE_STREETS,
+  BRANCH_TAIL_M,
   DISTRICT_GAP_M,
-  HARDSTAND,
-  MAIN_LOOP_M,
   PATROL,
-  RING_RADIUS_M,
   ROAD_HALF_M,
+  ROAD_RUNS,
   SETBACK_M,
-  districtBearingDeg,
+  SPINE_BEARING_DEG,
+  SPINE_END_M,
+  SPINE_START_M,
+  at,
+  distToRoadM,
+  districtAlongM,
   districtExtentM,
   districtSlots,
-  onLoopRoad,
+  onRoad,
+  shuttleAt,
+  shuttleLapM,
+  spineCoords,
   withinDistrictGround,
   type Plot,
   type SitePlan,
@@ -50,14 +65,25 @@ import type { ProjectType } from '../../../lib/lunar-atlas/types'
 const plots = (...radii: number[]): Plot[] =>
   radii.map((radiusM, i) => ({ id: `p${i}`, radiusM }))
 
-// A crossroads district on main street, which is the default everything else is
-// measured against.
+// A crossroads district on the spine, which is the default everything else is
+// measured against. Placed away from the origin on purpose: at `along` 0 the
+// spine's own frame and the map frame share a centre, so a check that
+// accidentally worked in the wrong one would still pass.
+const JUNCTION_ALONG_M = 120
 const junction = (over: Partial<SitePlan> = {}): SitePlan => ({
-  east: MAIN_LOOP_M,
-  north: 0,
+  ...at(JUNCTION_ALONG_M),
   turn: 0,
   ...over,
 })
+
+// A plot's position in the spine's own frame, relative to its district.
+const local = (plan: SitePlan, slot: { east: number; north: number }) => {
+  const here = spineCoords(slot)
+  return {
+    alongM: here.alongM - districtAlongM(plan),
+    acrossM: here.acrossM,
+  }
+}
 
 // Closest approach between the EDGES of every pair of plots, which is the
 // number that matters: plots are spaced from their edges, not their centres.
@@ -94,10 +120,9 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // it, so each went from a ~6 m plot to a ~14 m one. Both come out of
   // vaultGeometry (lib/lunar-atlas/subplan) via footprintRadiusM, so a change
   // to either vault's span, length, cover or excavation moves them and this
-  // roster has to be recomputed rather than nudged. It is also why the core
-  // ring did NOT have to grow to take them: the ring's radius is solved off
-  // the two LARGEST plots (see the 'ring' case in districtSlots), and Artemis
-  // Base Camp at 19 m plus ILRS at 12.86 m still set it.
+  // roster has to be recomputed rather than nudged. Artemis Base Camp at 19 m
+  // is the largest, so it is what sets this district's `reach` — and at 47 m
+  // that is the longest branch on the plan.
   habitat: plots(19, 12.86, 13.937, 14.056, 3.3),
   lander: plots(31.2, 9.6),
   // eVinci radiator wall, IX's radiator canopy, Lockheed's radiator mast — the
@@ -110,11 +135,11 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   isru_plant: plots(9.5, 5.35, 5.58),
   rover: plots(2.3, 2.1, 2.2),
   // ICON, Redwire, Astroport, AI SpaceFactory, Astrobotic — five bids on the
-  // same generic paving footprint, and the only district on main street that
-  // fields more than four. It is therefore the only one that exercises the
-  // second lane in districtSlots' crossroads case, so this roster has to stay
-  // at the real count: at four it silently stopped covering that branch, which
-  // is how a fifth lot came to be placed off the end of its own avenue.
+  // same generic paving footprint, and one of only two districts that field
+  // more than four. It is therefore what exercises the spill in districtSlots'
+  // crossroads case, so this roster has to stay at the real count: at four it
+  // silently stopped covering that branch, which is how a fifth lot came to be
+  // placed off the end of its own road.
   construction: plots(6.3, 6.3, 6.3, 6.3, 6.3),
   // Nokia, ESA, Crescent, IM — dataset order. ESA's user terminal (1.04) and
   // Crescent's (1.52) are a fraction of the ground Nokia takes. Crescent's
@@ -135,6 +160,59 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
 }
 
 const races = Object.entries(ROSTERS) as [ProjectType, Plot[]][]
+
+// Ground taken by SHARED infrastructure rather than by anyone's competitor —
+// mirrored by hand from the model layer exactly as ROSTERS mirrors
+// footprintRadiusM, and for the same reason: this file must not import the
+// models. Only the rover district has any: its whole roster is out driving (see
+// PATROL), so what stands on its corners is the depot yard and the recharge
+// station, and its `reach` is sized for those rather than for an LTV. See
+// `DEPOT_FOOTPRINT_R` and `GAS_STATION_FOOTPRINT_R` in MarkerLayer.tsx.
+const SHARED_GROUND: Partial<Record<ProjectType, number[]>> = {
+  rover: [9, 7.25],
+}
+
+// How far a district's ground actually reaches from its crossing, across the
+// spine and along it, once its real roster AND anything shared standing on its
+// corners are packed. This is what `reach` and `block` are checked against —
+// both are hand-set and neither the rosters nor the yard footprints are.
+function districtNeed(category: ProjectType, field: Plot[]) {
+  const plan = BASE_PLAN[category]!
+  const slots = districtSlots(plan, field)
+  let across = 0
+  let along = 0
+  for (const plot of field) {
+    const here = local(plan, slots.get(plot.id)!)
+    across = Math.max(across, Math.abs(here.acrossM) + plot.radiusM)
+    along = Math.max(along, Math.abs(here.alongM) + plot.radiusM)
+  }
+  // Shared infrastructure takes a corner at its own frontage off both roads, so
+  // it reaches the same distance either way.
+  for (const r of SHARED_GROUND[category] ?? []) {
+    const corner = ROAD_HALF_M + SETBACK_M + r + r
+    across = Math.max(across, corner)
+    along = Math.max(along, corner)
+  }
+  return { across, along }
+}
+
+// True if a point stands on ONE named district's ground — the per-district form
+// of withinDistrictGround, which only answers for the base as a whole. Needed
+// because the guideway legitimately stands on its own district and must clear
+// everyone else's.
+function onDistrictGround(
+  category: ProjectType,
+  east: number,
+  north: number,
+  marginM: number
+): boolean {
+  const plan = BASE_PLAN[category]!
+  const { alongM, acrossM } = spineCoords({ east, north })
+  const half = (plan.block ?? plan.reach!) + BRANCH_TAIL_M + marginM
+  return (
+    Math.abs(alongM - districtAlongM(plan)) <= half && Math.abs(acrossM) <= half
+  )
+}
 
 describe('moon base zero street plan', () => {
   describe('districtSlots', () => {
@@ -167,39 +245,38 @@ describe('moon base zero street plan', () => {
 
     it('stands every plot the same setback off the street it fronts', () => {
       // The one number that makes the whole base read as surveyed. A crossroads
-      // plot is `setback + road half-width + its own radius` from main street's
-      // centreline radially, and the same from its avenue perpendicularly — so
-      // every asset on the base ends up with an identical strip of clear
-      // regolith at its edge.
+      // plot is `setback + road half-width + its own radius` off the SPINE and
+      // the same off its own BRANCH, so every asset on the base ends up with an
+      // identical strip of clear regolith at its edge.
       //
-      // Both hold exactly for the four CORNER lots. A fifth and beyond continue
-      // along main street on the corners' own sides, so they keep the radial
-      // setback exactly and stand FURTHER off the avenue than it, never nearer.
+      // Both hold EXACTLY, for every lot, which is the simplification the
+      // linear plan buys. On the concentric plan the spine was a circle and the
+      // setback off it was measured radially, so the branch setback could only
+      // be an arc-versus-tangent approximation and the fifth lot onward could
+      // only be asserted as a lower bound. Two straight roads have no such
+      // problem: `along` is the distance from the branch and `across` is the
+      // distance from the spine, full stop.
       for (const [category, field] of races) {
         const plan = BASE_PLAN[category]!
         if (plan.front) continue
-        const bearing = (districtBearingDeg(plan) * Math.PI) / 180
         const slots = districtSlots(plan, field)
         // districtSlots fills the corners largest first, so the lot's place in
-        // that order is what decides whether it is a corner or a later block.
+        // that order is what decides whether it is a corner or a spill.
         const order = [...field].sort(
           (a, b) => b.radiusM - a.radiusM || a.id.localeCompare(b.id)
         )
         order.forEach((plot, i) => {
-          const slot = slots.get(plot.id)!
           const want = ROAD_HALF_M + SETBACK_M + plot.radiusM
-          const radius = Math.hypot(slot.east, slot.north)
+          const { alongM, acrossM } = local(plan, slots.get(plot.id)!)
           expect(
-            Math.abs(radius - MAIN_LOOP_M),
-            `${category}/${plot.id} off main street`
-          ).to.be.closeTo(want, 1e-6)
-          // Perpendicular distance from the avenue, which runs along `bearing`.
-          const across = Math.abs(
-            -Math.sin(bearing) * slot.east + Math.cos(bearing) * slot.north
-          )
-          const label = `${category}/${plot.id} off its avenue`
-          if (i < 4) expect(across, label).to.be.closeTo(want, 1e-6)
-          else expect(across, label).to.be.at.least(want - 1e-6)
+            Math.abs(acrossM),
+            `${category}/${plot.id} off the spine`
+          ).to.be.closeTo(want, 1e-9)
+          // A spill lot has no branch beside it — it continues up the spine
+          // past a corner — so it stands FURTHER off the branch, never nearer.
+          const label = `${category}/${plot.id} off its branch`
+          if (i < 4) expect(Math.abs(alongM), label).to.be.closeTo(want, 1e-9)
+          else expect(Math.abs(alongM), label).to.be.at.least(want - 1e-9)
         })
       }
     })
@@ -234,15 +311,17 @@ describe('moon base zero street plan', () => {
     it('flanks a road with the landing zone rather than cornering it', () => {
       const plan = BASE_PLAN.lander!
       const slots = districtSlots(plan, ROSTERS.lander!)
-      const bearing = (districtBearingDeg(plan) * Math.PI) / 180
-      const side = (s: { east: number; north: number }) =>
-        Math.sign(
-          -Math.sin(bearing) * (s.east - plan.east) +
-            Math.cos(bearing) * (s.north - plan.north)
-        )
-      // One pad each side of the haul road: it runs BETWEEN them, so a road that
-      // dead-ends at the near pad can never leave the bigger vehicle unreachable.
-      expect(side(slots.get('p0')!)).to.equal(-side(slots.get('p1')!))
+      const side = (id: string) => Math.sign(local(plan, slots.get(id)!).acrossM)
+      // One pad each side of the spine: it runs BETWEEN them, so a road that
+      // dead-ends at the near pad can never leave the bigger vehicle
+      // unreachable. This is the one district with no branch of its own, and the
+      // reason is grade — a spur out to the pads would run the fall line (see
+      // the bearing table in baseplan.ts).
+      expect(side('p0')).to.equal(-side('p1'))
+      expect(
+        BASE_STREETS.some((st) => st.serves?.includes('lander')),
+        'the landing zone has no branch'
+      ).to.equal(false)
     })
   })
 
@@ -253,30 +332,51 @@ describe('moon base zero street plan', () => {
       }
     })
 
-    it('stands the crossroads districts on main street', () => {
+    it('stands every district on the spine', () => {
+      // The whole plan in one assertion: a district's centre is a point ON the
+      // one road, so `across` is zero and `along` is all that distinguishes any
+      // of them. Exact rather than tolerant because every position in BASE_PLAN
+      // is written by `at()` rather than as a hand-rounded coordinate pair.
       for (const [category] of races) {
         const plan = BASE_PLAN[category]!
-        if (plan.front) continue
-        expect(
-          Math.hypot(plan.east, plan.north),
-          category
-        ).to.be.closeTo(MAIN_LOOP_M, 0.05)
+        expect(spineCoords(plan).acrossM, category).to.be.closeTo(0, 1e-9)
       }
     })
 
-    it('spaces the junctions evenly enough to read as surveyed', () => {
-      const bearings = races
-        .filter(([category]) => !BASE_PLAN[category]!.front)
-        .map(
-          ([category]) => (districtBearingDeg(BASE_PLAN[category]!) + 360) % 360
-        )
-        .sort((a, b) => a - b)
-      const gaps = bearings.map(
-        (b, i) => ((i ? b - bearings[i - 1] : b + 360 - bearings.at(-1)!) + 360) % 360
-      )
-      // A regular grid is what a viewer reads as a plan. Multiples of 45° with
-      // nothing crowded closer than that.
-      for (const gap of gaps) expect(gap).to.be.at.least(44)
+    it('keeps every district inside the length of the spine', () => {
+      // A district past the end of the road is a district with no road, and the
+      // spine is the only road that reaches any of them. Measured ALONG the
+      // spine rather than as a radius: the landing zone's pads reach 70 m ACROSS
+      // it, which says nothing about whether the road is long enough.
+      for (const [category, field] of races) {
+        const alongM = districtAlongM(BASE_PLAN[category]!)
+        const { along } = districtNeed(category, field)
+        expect(alongM - along, `${category} runs off the southwest end`).to.be
+          .greaterThan(SPINE_START_M)
+        expect(alongM + along, `${category} runs off the northeast end`).to.be
+          .lessThan(SPINE_END_M)
+      }
+    })
+
+    it('clears each district of its neighbours up the street', () => {
+      // The spacing along the spine is hand-set (see BASE_PLAN), and the rosters
+      // are not: a race that gains a competitor spreads further up the street,
+      // and construction's fifth paving bid already reaches 43 m. So the gaps
+      // are asserted against the real packing rather than against the centres.
+      const zones = races
+        .map(([category, field]) => {
+          const along = districtAlongM(BASE_PLAN[category]!)
+          const need = districtNeed(category, field).along
+          return { category, along, sw: along - need, ne: along + need }
+        })
+        .sort((a, b) => a.along - b.along)
+
+      for (let i = 1; i < zones.length; i++) {
+        expect(
+          zones[i].sw - zones[i - 1].ne,
+          `${zones[i - 1].category} to ${zones[i].category}`
+        ).to.be.at.least(DISTRICT_GAP_M)
+      }
     })
 
     it('has nothing on the base standing inside anything else', () => {
@@ -305,49 +405,152 @@ describe('moon base zero street plan', () => {
           // it today, but the mechanism is still exact), so this is a
           // floating-point tie rather than real slack there — allow the
           // same 1e-6 the rest of this file uses for exact geometric
-          // identities. 'ring' districts (the core) pack with real margin
-          // on top of the gap by construction, so they clear this with room
-          // to spare rather than by a hair.
+          // identities.
           expect(gap, `${a.id} vs ${b.id}`).to.be.at.least(DISTRICT_GAP_M - 1e-6)
         }
       }
     })
 
-    it('keeps the core district on its hardstand, inside the perimeter road', () => {
-      const core = BASE_PLAN.habitat!
-      const extent = districtExtentM(core, ROSTERS.habitat!)
-      expect(extent).to.be.lessThan(HARDSTAND.radius)
-      expect(HARDSTAND.radius).to.be.lessThan(RING_RADIUS_M)
+    it('gives the habitat race a block on the street like everyone else', () => {
+      // The habitat race used to be THE CORE: a plaza of its own inside a
+      // perimeter road, on a 60.5 m paved hardstand, packed as a ring of five
+      // with no road through it. It is now an ordinary crossroads district, and
+      // this is the assertion that says so — it fronts two streets at the same
+      // setback as every other lot on the base, and it packs TIGHTER than the
+      // ring did (38 m of the 58.7 m the ring needed) because a corner lot uses
+      // the ground behind it that a ring could only leave empty in the middle.
+      const habitat = BASE_PLAN.habitat!
+      expect(habitat.front, 'no special frontage').to.be.undefined
+      expect(
+        districtExtentM(habitat, ROSTERS.habitat!),
+        'packs no wider than the ring it replaced'
+      ).to.be.lessThan(58.7)
+      // And its branch is a real road on the network, which the plaza never was.
+      expect(
+        BASE_STREETS.some((st) => st.serves?.includes('habitat')),
+        'the habitat race has a branch'
+      ).to.equal(true)
     })
 
-    it('leaves the inward corner lots clear of the perimeter road', () => {
-      // Main street's radius is set by whichever district reaches deepest, and
-      // this is the assertion that says so: pull the loop in and the power
-      // district's reactors end up on the ring road.
+    it('leaves every plot clear of every road, not just its own two', () => {
+      // The check that used to be "clear of the perimeter road", and it is
+      // strictly stronger: a lot is measured against the whole network, so a
+      // district moved next to a neighbour's branch is caught too. The old plan
+      // could not ask this — main street was a spline that bulged inside its own
+      // circle, so the distance to it was only ever approximate.
       for (const [category, field] of races) {
         const plan = BASE_PLAN[category]!
-        if (plan.front) continue
         const slots = districtSlots(plan, field)
         for (const plot of field) {
           const slot = slots.get(plot.id)!
-          const inner = Math.hypot(slot.east, slot.north) - plot.radiusM
-          expect(inner, `${category}/${plot.id}`).to.be.greaterThan(
-            RING_RADIUS_M + ROAD_HALF_M + 1
-          )
+          expect(
+            distToRoadM(slot.east, slot.north) - plot.radiusM,
+            `${category}/${plot.id} off the nearest road`
+          ).to.be.at.least(ROAD_HALF_M + SETBACK_M - 1e-9)
         }
       }
     })
 
-    it('drives the patrol on a road, not on the shoulder of a lot', () => {
-      // The lap is a rigid rotation about the patch centre, so the vehicle holds
-      // whatever radius it starts from. Naming a road here is what keeps it out
-      // of the windrow — reading the radius off its own corner lot would not.
-      for (const [category, patrol] of Object.entries(PATROL)) {
-        expect(patrol!.radiusM, category).to.be.oneOf([
-          RING_RADIUS_M,
-          MAIN_LOOP_M,
-        ])
+    it('sizes every branch to the lots it serves and no further', () => {
+      // `reach` is hand-set and the rosters are not, so this is the check that
+      // keeps them honest in both directions. Short, and the outer corner lots
+      // stand on open regolith; long, and the branch is a road to nowhere.
+      for (const [category, field] of races) {
+        const plan = BASE_PLAN[category]!
+        const need = districtNeed(category, field).across
+        expect(plan.reach!, `${category} branch reach`).to.be.at.least(need)
+        expect(
+          plan.reach! - need,
+          `${category} branch overshoot`
+        ).to.be.lessThan(12)
+      }
+    })
+
+    it('keeps every district keep-out around its own real block', () => {
+      // `block` is what holds base-wide filler off a district (see
+      // withinDistrictGround), and unlike `reach` it has to cover the district
+      // in BOTH directions — a race with more than four competitors spreads up
+      // the spine, so its block is much wider than it is deep.
+      for (const [category, field] of races) {
+        const plan = BASE_PLAN[category]!
+        const need = districtNeed(category, field)
+        expect(
+          plan.block ?? plan.reach!,
+          `${category} keep-out covers its block`
+        ).to.be.at.least(Math.max(need.across, need.along))
+      }
+    })
+
+    it('holds base-wide filler off every plot on the base', () => {
+      // The point of the keep-out, asserted from the outside in: the boulder
+      // field and the street furniture only ever ask withinDistrictGround, so
+      // whatever it says is clear had better actually be clear.
+      for (const [category, field] of races) {
+        const plan = BASE_PLAN[category]!
+        const slots = districtSlots(plan, field)
+        for (const plot of field) {
+          const slot = slots.get(plot.id)!
+          expect(
+            withinDistrictGround(slot.east, slot.north, 0),
+            `${category}/${plot.id} is district ground`
+          ).to.equal(true)
+        }
+      }
+    })
+
+    it('shuttles the patrol along the spine and back', () => {
+      for (const [category, run] of Object.entries(PATROL)) {
         expect(BASE_PLAN[category as ProjectType], category).to.exist
+        const lap = shuttleLapM(run!)
+        // The run stays on the road, short of both ends by a turning circle.
+        expect(run!.fromAlongM, `${category} start`).to.be.greaterThan(
+          SPINE_START_M
+        )
+        expect(run!.toAlongM, `${category} end`).to.be.lessThan(SPINE_END_M)
+
+        // Sampled right round one lap: never off the pavement, and never off
+        // the ends of the run. This is what the rigid rotation used to give for
+        // free — a lap of a circle cannot leave the circle — and what a triangle
+        // wave along a line has to be checked for instead.
+        let sawOutbound = false
+        let sawReturn = false
+        let minAlong = Infinity
+        let maxAlong = -Infinity
+        for (let d = 0; d < lap; d += 3) {
+          const p = shuttleAt(run!, d)
+          const here = spineCoords(p)
+          expect(
+            Math.abs(here.acrossM),
+            `${category} wanders off the lane at ${d} m`
+          ).to.be.closeTo(run!.acrossM, 1e-9)
+          expect(
+            distToRoadM(p.east, p.north),
+            `${category} leaves the road at ${d} m`
+          ).to.be.lessThan(ROAD_HALF_M)
+          minAlong = Math.min(minAlong, here.alongM)
+          maxAlong = Math.max(maxAlong, here.alongM)
+          if (p.outbound) sawOutbound = true
+          else sawReturn = true
+        }
+        // Out and BACK: a fleet that only ever drove one way would have to
+        // teleport home, and half of it would be doing so at any moment.
+        expect(sawOutbound, `${category} drives out`).to.equal(true)
+        expect(sawReturn, `${category} drives back`).to.equal(true)
+        // And it covers the whole street rather than a stretch of it, which is
+        // the only reason the traffic reads as belonging to the settlement
+        // rather than to the depot.
+        expect(minAlong, `${category} covers the southwest end`).to.be.lessThan(
+          run!.fromAlongM + 4
+        )
+        expect(maxAlong, `${category} covers the northeast end`).to.be.greaterThan(
+          run!.toAlongM - 4
+        )
+        // Closes exactly: one lap returns a vehicle to where it started, so the
+        // fleet's spacing holds however long it runs.
+        const start = shuttleAt(run!, 0)
+        const round = shuttleAt(run!, lap)
+        expect(round.east, `${category} lap closes`).to.be.closeTo(start.east, 1e-9)
+        expect(round.north, `${category} lap closes`).to.be.closeTo(start.north, 1e-9)
       }
     })
 
@@ -356,21 +559,29 @@ describe('moon base zero street plan', () => {
       // stop it. This is already a compromise with keeping the vehicle in frame,
       // so the assertion is a floor, not a target.
       const pad = BASE_PLAN.lander!
-      const core = BASE_PLAN.habitat!
+      const homes = BASE_PLAN.habitat!
       const gap =
-        Math.hypot(pad.east - core.east, pad.north - core.north) -
+        Math.hypot(pad.east - homes.east, pad.north - homes.north) -
         districtExtentM(pad, ROSTERS.lander!) -
-        districtExtentM(core, ROSTERS.habitat!)
+        districtExtentM(homes, ROSTERS.habitat!)
       expect(gap).to.be.greaterThan(30)
+      // And the launcher fires from the OTHER end, so the two things on the plan
+      // that throw mass are as far apart as the street is long.
+      expect(
+        Math.abs(
+          districtAlongM(BASE_PLAN.mass_driver!) - districtAlongM(pad)
+        ),
+        'the pads and the launcher share an end'
+      ).to.be.greaterThan(500)
     })
   })
 
   describe('the buried habitats', () => {
     it('reserves the cover mound rather than the module', () => {
-      // The roster above mirrors these by hand, and the whole core ring is
-      // solved against those figures — so if a vault's dimensions move and this
-      // roster doesn't, every packing assertion in this file starts testing a
-      // colony that no longer exists.
+      // The roster above mirrors these by hand, and the habitat district's whole
+      // packing is solved against those figures — so if a vault's dimensions
+      // move and this roster doesn't, every packing assertion in this file
+      // starts testing a colony that no longer exists.
       const want: Record<string, number> = {
         'sierra-space-life': 13.937,
         'thales-mph': 14.056,
@@ -418,72 +629,134 @@ describe('moon base zero street plan', () => {
   })
 
   describe('the street network', () => {
-    const closed = BASE_STREETS.filter((s) => s.closed)
-    const radiusOf = (pt: [number, number]) => Math.hypot(pt[0], pt[1])
+    const spine = BASE_STREETS.find((st) => !st.serves)!
+    const branches = BASE_STREETS.filter((st) => st.serves)
 
-    it('lays the perimeter road and main street as true circles', () => {
-      expect(closed).to.have.length(2)
-      for (const [street, want] of [
-        [closed[0], RING_RADIUS_M],
-        [closed[1], MAIN_LOOP_M],
-      ] as const) {
-        for (const pt of street.points) {
-          expect(radiusOf(pt)).to.be.closeTo(want, 1e-6)
-        }
+    it('lays one spine, straight, on the bearing the ground chose', () => {
+      // Every road on this plan is described by its two endpoints and nothing
+      // in between, which is the whole reason a distance to a road is now exact
+      // (see distToRoadM). A waypoint off the line would silently reintroduce
+      // the spline bulge the concentric plan had.
+      expect(BASE_STREETS.filter((st) => !st.serves), 'exactly one spine').to.have
+        .length(1)
+      expect(spine.points, 'the spine is two waypoints').to.have.length(2)
+      for (const pt of spine.points) {
+        expect(
+          spineCoords({ east: pt[0], north: pt[1] }).acrossM,
+          'the spine is straight'
+        ).to.be.closeTo(0, 1e-9)
+      }
+      // Runs the full declared extent, and nothing is closed: there is no ring
+      // road on this plan, and the windrow logic in BaseRoads keys off `closed`.
+      const ends = spine.points
+        .map((pt) => spineCoords({ east: pt[0], north: pt[1] }).alongM)
+        .sort((a, b) => a - b)
+      expect(ends[0]).to.be.closeTo(SPINE_START_M, 1e-9)
+      expect(ends[1]).to.be.closeTo(SPINE_END_M, 1e-9)
+      for (const street of BASE_STREETS) {
+        expect(street.closed, 'no road on this plan is a loop').to.not.equal(true)
       }
     })
 
-    it('runs an avenue from the perimeter road out through every district', () => {
+    it('crosses the spine with one straight branch per district', () => {
       for (const [category, field] of races) {
         const plan = BASE_PLAN[category]!
-        if (plan.front === 'lot' || plan.front === 'ring') continue
-        const street = BASE_STREETS.find(
-          (s) => !s.closed && s.serves?.includes(category)
-        )
-        expect(street, `${category} avenue`).to.exist
+        // The landing zone flanks the spine instead (see its own test above).
+        if (plan.front === 'lot' || plan.front === 'flank') continue
+        const street = branches.find((st) => st.serves?.includes(category))
+        expect(street, `${category} branch`).to.exist
         const pts = street!.points
-        // Starts on the perimeter road, on the district's own bearing, so it
-        // leaves the junction pointing at where it is going.
-        expect(radiusOf(pts[0])).to.be.closeTo(RING_RADIUS_M, 1e-6)
-        const bearing = (districtBearingDeg(plan) * Math.PI) / 180
+        const alongM = districtAlongM(plan)
+
+        // Perpendicular to the spine, and crossing at its district's own
+        // crossing — so the branch stays on one `along` from end to end.
         for (const pt of pts) {
-          const across = Math.abs(
-            -Math.sin(bearing) * pt[0] + Math.cos(bearing) * pt[1]
-          )
-          expect(across, `${category} avenue is radial`).to.be.lessThan(1e-6)
+          expect(
+            spineCoords({ east: pt[0], north: pt[1] }).alongM,
+            `${category} branch is perpendicular`
+          ).to.be.closeTo(alongM, 1e-9)
         }
-        // And runs the full length of the lot: an avenue that stops short leaves
-        // the outer corner lots standing on open regolith.
-        const slots = districtSlots(plan, field)
-        const outer = Math.max(
-          ...field.map((p) => {
-            const s = slots.get(p.id)!
-            return (
-              (s.east - plan.east) * Math.cos(bearing) +
-              (s.north - plan.north) * Math.sin(bearing) +
-              p.radiusM
-            )
-          })
+
+        // Symmetric about the spine, which is what makes it a CROSSING rather
+        // than a spur: the corner lots on both sides are served by one road.
+        const across = pts
+          .map((pt) => spineCoords({ east: pt[0], north: pt[1] }).acrossM)
+          .sort((a, b) => a - b)
+        expect(across[0], `${category} branch is symmetric`).to.be.closeTo(
+          -across[across.length - 1],
+          1e-9
         )
-        const end = radiusOf(pts.at(-1)!) - Math.hypot(plan.east, plan.north)
-        expect(end, `${category} avenue reach`).to.be.at.least(outer)
+
+        // And runs the full width of the lots: a branch that stops short leaves
+        // the outer corner lots standing on open regolith.
+        const outer = districtNeed(category, field).across
+        const end = across[across.length - 1]
+        expect(end, `${category} branch reach`).to.be.at.least(outer)
         // But not so far past it that it reads as a road to nowhere.
-        expect(end - outer, `${category} avenue overshoot`).to.be.lessThan(12)
+        expect(
+          end - outer,
+          `${category} branch overshoot`
+        ).to.be.lessThan(BRANCH_TAIL_M + 12)
       }
     })
 
     it('gives no road a bearing the base has no reason to travel', () => {
-      // Every road is either the settlement's own frame (the two loops) or an
-      // avenue named for the district it reaches. The rule exists because the
-      // failure mode here is decorative roads, which read as tyre marks.
-      for (const street of BASE_STREETS) {
-        if (street.closed) {
-          expect(street.serves).to.be.undefined
-        } else {
-          expect(street.serves, 'every open road serves a district').to.not.be
-            .empty
-        }
+      // Every road is either the settlement's own frame (the spine) or a branch
+      // named for the district it crosses. The rule exists because the failure
+      // mode here is decorative roads, which read as tyre marks.
+      expect(branches.length, 'a branch per crossroads district').to.equal(
+        races.filter(([c]) => !BASE_PLAN[c]!.front).length
+      )
+      for (const street of branches) {
+        expect(street.serves, 'every branch serves a district').to.not.be.empty
       }
+    })
+
+    it('walks every road as a straight run of its own length', () => {
+      // ROAD_RUNS is what the base-wide filler places against (see
+      // InterDistrictFiller), and it is derived from BASE_STREETS rather than
+      // written out, so this is the check that the derivation holds: a run's
+      // own `at()` has to agree with the street it came from at both ends.
+      expect(ROAD_RUNS).to.have.length(BASE_STREETS.length)
+      ROAD_RUNS.forEach((run, i) => {
+        const pts = BASE_STREETS[i].points
+        const start = run.at(0, 0)
+        const end = run.at(run.lengthM, 0)
+        expect(start.east, `run ${i} start`).to.be.closeTo(pts[0][0], 1e-6)
+        expect(start.north, `run ${i} start`).to.be.closeTo(pts[0][1], 1e-6)
+        expect(end.east, `run ${i} end`).to.be.closeTo(pts.at(-1)![0], 1e-6)
+        expect(end.north, `run ${i} end`).to.be.closeTo(pts.at(-1)![1], 1e-6)
+        // An offset is perpendicular to the run and exactly as far as asked, so
+        // a light placed at ROAD_HALF_M + 1.4 really is that far off the
+        // pavement. Checked against the run's OWN centreline rather than the
+        // network: a branch's midpoint is its crossing with the spine, so a
+        // point offset from there is legitimately right on another road.
+        const mid = run.at(run.lengthM / 2, 0)
+        const off = run.at(run.lengthM / 2, 9)
+        expect(
+          Math.hypot(off.east - mid.east, off.north - mid.north),
+          `run ${i} offset distance`
+        ).to.be.closeTo(9, 1e-9)
+        const dot =
+          (off.east - mid.east) * (end.east - start.east) +
+          (off.north - mid.north) * (end.north - start.north)
+        expect(dot, `run ${i} offset is perpendicular`).to.be.closeTo(0, 1e-6)
+      })
+    })
+
+    it('runs the spine on the same line the guideway was levelled on', () => {
+      // Two independent answers to the same question about the same ridge.
+      // Profiled off the rendered height field over the spine's true extent,
+      // every whole bearing, 5 m stations: 40 deg is 12.7 m of relief end to
+      // end (24th of 180) and never pitches past 8.0% (14th of 180) — the only
+      // bearing in the top 15% on both. See the table in baseplan.ts.
+      //
+      // Pinned to the guideway's heading rather than to the literal 40, because
+      // the interesting claim is that they AGREE: the guideway needs level
+      // because fall is leg height, the spine needs it because a 730 m road
+      // cannot dodge, and they land on one line. Split them and the launcher
+      // stops reading as the street continuing out of town.
+      expect(SPINE_BEARING_DEG).to.equal(TRACK_HEADING_DEG)
     })
   })
 
@@ -505,16 +778,13 @@ describe('moon base zero street plan', () => {
       const rad = (TRACK_HEADING_DEG * Math.PI) / 180
       const ce = Math.cos(rad)
       const cn = Math.sin(rad)
-      const pts: { d: number; radius: number; bearing: number }[] = []
+      const pts: { d: number; east: number; north: number }[] = []
       for (let d = 0; d <= TRACK_LENGTH_M; d += 1) {
         for (const off of [-TRACK_CORRIDOR_HALF_M, 0, TRACK_CORRIDOR_HALF_M]) {
-          const east = slot.east + ce * d - cn * off
-          const north = slot.north + cn * d + ce * off
           pts.push({
             d,
-            radius: Math.hypot(east, north),
-            bearing:
-              ((Math.atan2(north, east) * 180) / Math.PI + 360) % 360,
+            east: slot.east + ce * d - cn * off,
+            north: slot.north + cn * d + ce * off,
           })
         }
       }
@@ -524,24 +794,52 @@ describe('moon base zero street plan', () => {
     it('runs the whole way without touching a road', () => {
       for (const p of corridor()) {
         expect(
-          onLoopRoad(p.radius),
-          `guideway on a loop road at ${p.d} m (r=${p.radius.toFixed(1)})`
+          onRoad(p.east, p.north),
+          `guideway on a road at ${p.d} m`
         ).to.equal(false)
       }
     })
 
     it('runs the whole way without crossing another district', () => {
-      // The breach works stand on this district's own ground on purpose, so the
-      // first stations are exempt — that lot is where they belong.
-      const exempt = BREACH_LOT_RADIUS_M + TRACK_CORRIDOR_HALF_M
+      // Checked per district and with the launcher's OWN excluded, rather than
+      // against the base as a whole after a few exempt stations. The breach
+      // works stand on their own lot on purpose and the guideway leaves it up
+      // the same street, so any "first N meters are exempt" figure is really a
+      // restatement of the mass driver's own block — and would go stale the
+      // moment that block changed.
       for (const p of corridor()) {
-        if (p.d <= exempt) continue
-        expect(
-          withinDistrictGround(p.radius, p.bearing, 10),
-          `guideway on district ground at ${p.d} m ` +
-            `(r=${p.radius.toFixed(1)}, bearing=${p.bearing.toFixed(1)})`
-        ).to.equal(false)
+        for (const [category] of races) {
+          if (category === 'mass_driver') continue
+          expect(
+            onDistrictGround(category, p.east, p.north, 10),
+            `guideway over ${category} at ${p.d} m ` +
+              `(east=${p.east.toFixed(1)}, north=${p.north.toFixed(1)})`
+          ).to.equal(false)
+        }
       }
+    })
+
+    it('fires the guideway away from the base rather than over it', () => {
+      // The launcher sits at the head of the spine and throws outward, which is
+      // the point of putting it there. Asserted as "the far end is further up
+      // the street than every district" rather than as a bearing, because it is
+      // the ORDER on the street that makes it safe.
+      const rad = (TRACK_HEADING_DEG * Math.PI) / 180
+      const muzzle = {
+        east: slot.east + Math.cos(rad) * TRACK_LENGTH_M,
+        north: slot.north + Math.sin(rad) * TRACK_LENGTH_M,
+      }
+      const far = spineCoords(muzzle).alongM
+      for (const [category] of races) {
+        if (category === 'mass_driver') continue
+        expect(
+          far,
+          `the guideway ends past ${category}`
+        ).to.be.greaterThan(districtAlongM(BASE_PLAN[category]!))
+      }
+      expect(far, 'the guideway ends past the spine itself').to.be.greaterThan(
+        SPINE_END_M
+      )
     })
 
     it('stands its deck clear of the ground at every bent', () => {
@@ -595,12 +893,13 @@ describe('moon base zero street plan', () => {
 
     it('keeps the breach works on a lot that fits the district', () => {
       // The lot is sized to the breach works, not to the track. If that ever
-      // drifts back toward the model's own length, the junction gets shoved out
-      // and this district stops matching the ring.
+      // drifts back toward the model's own length, the crossing gets shoved out
+      // and this district stops matching the street.
       expect(ROSTERS.mass_driver![0].radiusM).to.equal(BREACH_LOT_RADIUS_M)
-      const radius = Math.hypot(slot.east, slot.north)
-      expect(radius - MAIN_LOOP_M, 'breach lot setback off main street').to.be
-        .closeTo(ROAD_HALF_M + SETBACK_M + BREACH_LOT_RADIUS_M, 1e-6)
+      expect(
+        Math.abs(local(plan, slot).acrossM),
+        'breach lot setback off the spine'
+      ).to.be.closeTo(ROAD_HALF_M + SETBACK_M + BREACH_LOT_RADIUS_M, 1e-9)
     })
   })
 })

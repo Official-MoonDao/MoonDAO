@@ -23,7 +23,7 @@
 //
 // WHY THE TRACK DOES NOT FOLLOW ITS DISTRICT'S BEARING
 //
-// A district's bearing places its lot and the avenue that serves it. It has no
+// A district's position places its lot and the branch that serves it. It has no
 // authority over which way a 600 m structure standing on that lot points, and
 // following it here would be actively wrong, because the base sits on the ridge
 // CREST: every direction runs downhill, and 300 deg runs downhill hardest —
