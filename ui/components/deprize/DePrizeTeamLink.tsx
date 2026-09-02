@@ -186,3 +186,38 @@ export function useDePrizeTeamName(teamId: bigint | undefined, teamContract: any
   if (!teamId || teamId <= 0n) return ''
   return (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
 }
+
+/** Resolve all roster names in one pass (chart legend / tooltips). */
+export function useDePrizeTeamNames(
+  teamIds: readonly bigint[] | undefined,
+  teamContract: any
+): string[] {
+  const key = (teamIds ?? []).map((id) => id.toString()).join(',')
+  const [names, setNames] = useState<string[]>(() =>
+    (teamIds ?? []).map((id, i) => (id > 0n ? `Team #${id.toString()}` : `Team #${i + 1}`))
+  )
+
+  useEffect(() => {
+    if (!teamContract || !teamIds?.length) return
+    let cancelled = false
+    ;(async () => {
+      const resolved = await Promise.all(
+        teamIds.map(async (id, i) => {
+          if (!id || id <= 0n) return `Team #${i + 1}`
+          try {
+            const nft = await getNFT({ contract: teamContract, tokenId: id })
+            return (nft as any)?.metadata?.name || `Team #${id.toString()}`
+          } catch {
+            return `Team #${id.toString()}`
+          }
+        })
+      )
+      if (!cancelled) setNames(resolved)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [teamContract, key])
+
+  return names
+}

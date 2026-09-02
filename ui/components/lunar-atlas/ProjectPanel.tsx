@@ -1,16 +1,24 @@
 import { ArrowLeftIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useMemo } from 'react'
-import { parseAtlasYear } from '@/lib/lunar-atlas/selectors'
+import {
+  parseAtlasYear,
+  raceStandingForProject,
+} from '@/lib/lunar-atlas/selectors'
 import {
   LOCATION_PRECISION_LABEL,
   MILESTONE_STATUS_CLASSES,
   MILESTONE_STATUS_LABEL,
   PROJECT_TYPE_GLYPH,
   PROJECT_TYPE_LABEL,
-  ROSTER_STATUS_CLASSES,
   ROSTER_STATUS_LABEL,
+  formatPlace,
+  participationKind,
   orgColor,
 } from '@/lib/lunar-atlas/display'
+import {
+  PARTICIPATION_BAR_CLASSES,
+  PARTICIPATION_ROW_CLASSES,
+} from './participation-styles'
 import type {
   Organization,
   Project,
@@ -43,6 +51,19 @@ export default function ProjectPanel({
 }: ProjectPanelProps) {
   const color = orgColor(organization)
   const approximate = project.locationPrecision !== 'exact'
+  const rosterKind = participationKind(project.rosterStatus)
+  const standings = useMemo(
+    () =>
+      sharedGoals
+        .map((g) => raceStandingForProject(project.id, g))
+        .filter((s): s is NonNullable<typeof s> => s !== undefined),
+    [sharedGoals, project.id]
+  )
+  const standingGoalIds = useMemo(
+    () => new Set(standings.map((s) => s.goalId)),
+    [standings]
+  )
+  const otherGoals = sharedGoals.filter((g) => !standingGoalIds.has(g.id))
 
   const milestones = useMemo(
     () =>
@@ -86,6 +107,12 @@ export default function ProjectPanel({
             <span>{PROJECT_TYPE_GLYPH[project.type]}</span>
             <span>{PROJECT_TYPE_LABEL[project.type]}</span>
           </div>
+          {standings[0] && (
+            <p className="mt-1 text-sm font-medium tabular-nums text-cyan-200/90">
+              {formatPlace(standings[0].place)} place ·{' '}
+              {Math.round(standings[0].probability * 100)}%
+            </p>
+          )}
         </div>
         <button
           onClick={onClose}
@@ -118,16 +145,66 @@ export default function ProjectPanel({
           )}
         </div>
 
+        {standings.length > 0 && (
+          <div className="space-y-2">
+            {standings.map((s) => {
+              const body = (
+                <>
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm font-semibold text-white">
+                      {formatPlace(s.place)} place
+                    </span>
+                    <span className="text-lg font-semibold tabular-nums text-cyan-200">
+                      {Math.round(s.probability * 100)}%
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block truncate text-sm text-white/80">
+                    {s.title}
+                  </span>
+                  <span className="mt-1.5 flex items-center gap-2">
+                    <MarketPill status={s.marketStatus ?? 'none'} />
+                    <span className="text-[11px] text-white/40">
+                      {s.fieldSize} competitor{s.fieldSize === 1 ? '' : 's'}
+                    </span>
+                  </span>
+                </>
+              )
+              return onSelectSharedGoal ? (
+                <button
+                  key={s.goalId}
+                  type="button"
+                  onClick={() => onSelectSharedGoal(s.goalId)}
+                  className="w-full rounded-lg border border-fuchsia-400/25 bg-fuchsia-500/[0.07] px-3 py-2.5 text-left transition hover:border-fuchsia-400/45 hover:bg-fuchsia-500/10"
+                >
+                  {body}
+                </button>
+              ) : (
+                <div
+                  key={s.goalId}
+                  className="w-full rounded-lg border border-fuchsia-400/25 bg-fuchsia-500/[0.07] px-3 py-2.5 text-left"
+                >
+                  {body}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {/* Summary */}
         <p className="text-sm leading-relaxed text-white/80">{project.summary}</p>
 
-        {/* DePrize roster status — honest consent state, not implied endorsement */}
-        {project.rosterStatus && (
-          <span
-            className={`inline-flex rounded-md border px-2 py-1 text-xs font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
+        {rosterKind && project.rosterStatus && (
+          <div
+            className={`flex overflow-hidden rounded-lg border ${PARTICIPATION_ROW_CLASSES[rosterKind]}`}
           >
-            {ROSTER_STATUS_LABEL[project.rosterStatus]}
-          </span>
+            <span
+              aria-hidden
+              className={`w-1 shrink-0 ${PARTICIPATION_BAR_CLASSES[rosterKind]}`}
+            />
+            <p className="px-3 py-2 text-xs leading-relaxed text-white/80">
+              {ROSTER_STATUS_LABEL[project.rosterStatus]}
+            </p>
+          </div>
         )}
 
         {/* Milestones */}
@@ -168,14 +245,13 @@ export default function ProjectPanel({
           </div>
         )}
 
-        {/* Shared goals */}
-        {sharedGoals.length > 0 && (
+        {otherGoals.length > 0 && (
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
               Shared goals
             </h3>
             <div className="space-y-2">
-              {sharedGoals.map((g) =>
+              {otherGoals.map((g) =>
                 // Only render an interactive affordance when there is a real
                 // handler — a button that does nothing reads as broken.
                 onSelectSharedGoal ? (
