@@ -119,25 +119,93 @@ function useImageTexture(url: string, srgb: boolean): THREE.Texture | null {
   return tex
 }
 
-// Thin Fresnel rim glow: brightest at the grazing limb, falling off toward
-// the center, rendered back-face-only and additively so it only ever adds a
-// soft blue halo rather than a lit disc. There is no real atmospheric
-// scattering simulation here — this is the standard cheap approximation every
-// three.js "glowing planet" demo uses, and it is doing a cosmetic job (an
-// airless-Moon base looking OUT at a planet that does have air) rather than a
-// scientific one.
+// THE DEPTH BUFFER IS USELESS OUT HERE, and every layer below is built around
+// that. This Canvas runs a conventional 1/z buffer with a 1 METRE near plane
+// (see MoonGlobe's gl props for why both of those are the right call for a
+// scene whose subject is hardware you can stand next to). One depth code at
+// distance z spans roughly z² / (near · 2²⁴) — and at Earth's 24 units, with
+// near at 1 m = 1.15e-6 units, that is about 30 SCENE UNITS. Earth's disc is
+// 0.8 units across and the whole prop, halo shell included, is under 1. Every
+// fragment of the surface, the cloud shell and the halo shell therefore
+// quantises to a single depth value, and which of two coincident codes a given
+// triangle lands on is down to float rounding.
+//
+// That is what made this Earth look like a disco ball: the halo shell's far
+// hemisphere passed the depth test against the surface across some patches and
+// failed it across others, so the disc came out a mottled patchwork of blown-out
+// blue-white (halo won) and near-black ocean (halo lost), in facets the size of
+// the sphere's own triangles.
+//
+// The fix is to stop asking the depth buffer a question it cannot answer.
+// NOTHING in this prop writes depth, so no layer is ever tested against another
+// one — they composite in a fixed painter's order (surface, cloud, halo, set by
+// renderOrder below) the way a background prop with three fixed layers should.
+// All three still depth-TEST, against the terrain and the hardware, which are
+// metres from the eye and have depth precision to spare, so a ridge or a
+// spacecraft in the way still occludes Earth correctly.
+//
+// Stars are the one thing that used to be occluded by the surface writing depth
+// and now are not. 6000 of them over the whole sky, against a disc covering
+// 2.8 of 41253 square degrees, works out to less than half a star expected
+// anywhere on Earth's disc — and the depth codes were already colliding with
+// the star shell at 28–40 units, so this was never reliably working anyway.
+
+// Radius of the halo shell, as a multiple of Earth's own. Its only real job is
+// to be wide enough to read: Earth subtends 1.9° in a 42° vertical fov, so the
+// disc is only ~36 px tall at 800 px of viewport, and the old 1.06 shell put
+// the entire halo inside a single pixel.
+const ATMOSPHERE_SCALE = 1.25
+// |N·V| at the point where the shell's far hemisphere crosses Earth's own
+// silhouette — the horizon of the halo, past which a fragment is hidden behind
+// the planet and must contribute nothing. Derived from the scale rather than
+// written down so the two cannot drift apart (1.25 makes it exactly 0.6).
+const ATMOSPHERE_LIMB_COS = Math.sqrt(1 - 1 / (ATMOSPHERE_SCALE * ATMOSPHERE_SCALE))
+// Peak radiance of the halo at the limb. Deliberately under the Bloom pass'
+// 0.9 luminance threshold (MoonGlobe) so the rim stays a rim and does not
+// bloom into the smear that a too-hot halo makes of a disc this small.
+const ATMOSPHERE_STRENGTH = 0.8
+
+// Thin limb glow, additive on a back-faced shell, and NOT a scattering model —
+// it is the cosmetic job of an airless-Moon base looking out at a planet that
+// does have air, same as before. The one thing it now does that the usual
+// three.js "glowing planet" snippet does not is stay OFF the disc.
+//
+// The snippet's pow(c - N·V, p) is brightest in the MIDDLE of the far
+// hemisphere and dimmest at the rim — 4.1 against 0.2 here — which is only ever
+// survivable because the planet's own depth normally masks the middle out. It
+// cannot be relied on to here (see above), so the falloff is re-anchored to
+// Earth's silhouette instead of to the eye: peak at the limb, fading OUTWARD to
+// nothing at the shell's edge, and identically zero anywhere that projects
+// behind the planet. The glow is then correct whether or not it is depth-tested,
+// which is the property this scene actually needs.
 const ATMOSPHERE_VERTEX = /* glsl */ `
-  varying vec3 vNormal;
+  varying vec3 vViewNormal;
+  varying vec3 vViewDir;
   void main() {
-    vNormal = normalize(normalMatrix * normal);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vViewNormal = normalize(normalMatrix * normal);
+    // Per-fragment rather than a fixed (0,0,1): the disc is small enough that
+    // it barely matters, but it costs one varying and removes the assumption.
+    vViewDir = normalize(-mv.xyz);
+    gl_Position = projectionMatrix * mv;
   }
 `
 const ATMOSPHERE_FRAGMENT = /* glsl */ `
-  varying vec3 vNormal;
+  uniform vec3 uColor;
+  uniform float uLimbCos;
+  uniform float uStrength;
+  varying vec3 vViewNormal;
+  varying vec3 vViewDir;
   void main() {
-    float rim = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0);
-    gl_FragColor = vec4(0.35, 0.6, 1.0, 1.0) * clamp(rim, 0.0, 1.0);
+    // Back-faced shell, so the outward normal points away from the eye: this
+    // runs from 0 at the shell's own silhouette to 1 directly behind Earth.
+    float away = clamp(-dot(normalize(vViewNormal), normalize(vViewDir)), 0.0, 1.0);
+    // 0 at the shell's outer edge, 1 exactly at Earth's silhouette, >1 behind
+    // the planet. The cutoff needs no smoothing: it falls on the limb itself,
+    // where Earth's own disc is already drawn over it.
+    float t = away / uLimbCos;
+    float halo = pow(clamp(t, 0.0, 1.0), 3.0) * step(t, 1.0);
+    gl_FragColor = vec4(uColor * halo * uStrength, 1.0);
   }
 `
 
@@ -162,6 +230,15 @@ export default function EarthGlobe() {
     )
   }, [])
 
+  const atmosphereUniforms = useMemo(
+    () => ({
+      uColor: { value: new THREE.Color(0.35, 0.6, 1.0) },
+      uLimbCos: { value: ATMOSPHERE_LIMB_COS },
+      uStrength: { value: ATMOSPHERE_STRENGTH },
+    }),
+    []
+  )
+
   const spinRef = useRef<THREE.Group>(null)
   const cloudRef = useRef<THREE.Mesh>(null)
   useFrame((_, delta) => {
@@ -176,10 +253,13 @@ export default function EarthGlobe() {
   return (
     <group position={position}>
       <group ref={spinRef}>
-        <mesh>
+        <mesh renderOrder={0}>
           <sphereGeometry args={[EARTH_RENDER_RADIUS, 48, 48]} />
           <meshStandardMaterial
             map={dayMap}
+            // See the depth note above the atmosphere shader: writing depth
+            // here is what let the shells fight the surface for the disc.
+            depthWrite={false}
             // City lights on the night face: emissive is unconditional in
             // three.js (it ignores scene lighting entirely), so a modest
             // intensity is invisible against the sunlit face's much brighter
@@ -194,7 +274,7 @@ export default function EarthGlobe() {
         </mesh>
 
         {cloudsMap && (
-          <mesh ref={cloudRef} scale={1.008}>
+          <mesh ref={cloudRef} scale={1.008} renderOrder={1}>
             <sphereGeometry args={[EARTH_RENDER_RADIUS, 48, 48]} />
             <meshStandardMaterial
               map={cloudsMap}
@@ -207,11 +287,12 @@ export default function EarthGlobe() {
         )}
       </group>
 
-      <mesh scale={1.06}>
+      <mesh scale={ATMOSPHERE_SCALE} renderOrder={2}>
         <sphereGeometry args={[EARTH_RENDER_RADIUS, 32, 32]} />
         <shaderMaterial
           vertexShader={ATMOSPHERE_VERTEX}
           fragmentShader={ATMOSPHERE_FRAGMENT}
+          uniforms={atmosphereUniforms}
           transparent
           depthWrite={false}
           side={THREE.BackSide}
