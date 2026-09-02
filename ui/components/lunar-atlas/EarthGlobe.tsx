@@ -42,9 +42,8 @@
 // show isn't a specific real moment. It is an honest phase of SOME sun
 // direction rather than a flat, unlit decal, which is what actually reads as
 // a real planet instead of a sticker.
-
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   CAP_CENTER_HEIGHT_M,
@@ -59,17 +58,17 @@ const EARTH_RADIUS_M = 6_371_000 // mean radius
 const EARTH_MOON_MEAN_DIST_M = 384_400_000
 // Half-angle subtended by Earth's disc at mean distance — the real fact this
 // whole model exists to preserve, independent of the portrayed distance below.
-const EARTH_ANGULAR_RADIUS_RAD = Math.atan(EARTH_RADIUS_M / EARTH_MOON_MEAN_DIST_M)
+export const EARTH_ANGULAR_RADIUS_RAD = Math.atan(EARTH_RADIUS_M / EARTH_MOON_MEAN_DIST_M)
 
 // Degrees CCW from east — the ridge's own bearing convention (see
 // capLocalDirection). ~90° is very close to due "north" underneath this
 // near-polar site, which is geometrically required: the equatorial near side
 // Earth hangs over is, from 89.46°S, in the direction away from the pole.
-const EARTH_BEARING_DEG = 90
+export const EARTH_BEARING_DEG = 90
 // Reuse the relay dishes' own "Earth sits ~8° above horizontal, at the
 // favorable point in its libration cycle" fact (see SAT_DISH_EL) rather than
 // asserting a second, independently-chosen number for the same real object.
-const EARTH_ELEV_DEG = (SAT_DISH_EL * 180) / Math.PI
+export const EARTH_ELEV_DEG = (SAT_DISH_EL * 180) / Math.PI
 
 // Portrayed distance from the ridge, in scene units. Comfortably inside the
 // Canvas far plane (GLOBE_RADIUS*40) and the star shell's inner radius

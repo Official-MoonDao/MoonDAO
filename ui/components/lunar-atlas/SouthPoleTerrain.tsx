@@ -13,14 +13,16 @@
 // Geometry positions come from the same decoded height field the CPU sampler
 // (useTerrainSampler) reads, so everything seated on the terrain agrees with
 // the rendered ground by construction.
-
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
-  CAP_GRID,
-  buildCapGeometry,
-  type PolarHeightField,
-} from '@/lib/lunar-atlas/southpole'
+  OPPOSITION_B0,
+  OPPOSITION_H,
+  PHASE_REF_DEG,
+  oppositionSurge,
+} from '@/lib/lunar-atlas/regolith'
+import { CAP_GRID, buildCapGeometry, type PolarHeightField } from '@/lib/lunar-atlas/southpole'
+import { SUN_DIR, SUN_MAP_AZ_DEG } from '@/lib/lunar-atlas/sun'
 import { SP_ALBEDO_MAP } from '@/lib/lunar-atlas/textures'
 import { loadInnerField } from './useTerrainSampler'
 
@@ -103,10 +105,11 @@ function makeDetailTile(size = 512): THREE.DataTexture {
     }
   }
 
-  // Hillshade with a wrapping gradient. Light azimuth matches SUN_AZ_DEG in
-  // the bake script (40°); elevation is kept moderate so bowls shade without
+  // Hillshade with a wrapping gradient. Light azimuth is the bake's own
+  // map-frame azimuth (SUN_MAP_AZ_DEG), which this file used to repeat as a
+  // bare 40 of its own; elevation is kept moderate so bowls shade without
   // going black. Flat ground maps to 128 so the multiply blend is neutral.
-  const az = (40 * Math.PI) / 180
+  const az = (SUN_MAP_AZ_DEG * Math.PI) / 180
   const el = (35 * Math.PI) / 180
   const lx = Math.sin(az) * Math.cos(el)
   const ly = Math.cos(az) * Math.cos(el)
@@ -180,15 +183,43 @@ export default function SouthPoleTerrain({
   }, [innerGeo, albedo, onReady])
 
   // Multiplies octaves of the tiled craterlet shading into the cap's diffuse
-  // so magnified close-ups keep structure. Mean is ~1.0 (flat tile = 0.5,
-  // blend is 0.76 + 0.48·dn), so the overall tone is preserved.
+  // so magnified close-ups keep structure, then applies the one piece of
+  // regolith shading a bake can never hold (see the surge block below). Mean
+  // of the detail blend is ~1.0 (flat tile = 0.5, blend is 0.76 + 0.48·dn), so
+  // the overall tone is preserved.
   const onBeforeCompile = useMemo(
     () => (shader: THREE.WebGLProgramParametersWithUniforms) => {
       shader.uniforms.detailMap = { value: detail }
+      shader.uniforms.sunDirection = {
+        value: new THREE.Vector3(...SUN_DIR),
+      }
+      shader.uniforms.surgeRef = {
+        value: oppositionSurge((PHASE_REF_DEG * Math.PI) / 180),
+      }
+
+      // The phase angle has to be computed in VIEW space, not world space.
+      // World positions on this mesh are magnitude ~2 in float32, where a step
+      // is 21 cm (the precision argument in southpole.ts' buildCapGeometry) —
+      // eight metres from the eye that is a 1.5° error in the view direction,
+      // and the surge would boil as the camera moved. The geometry is stored
+      // camera-relative with its offset on the mesh transform precisely so
+      // that modelViewMatrix · position stays exact, so mvPosition is the one
+      // place in this shader where the view vector can be trusted.
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vSurgeViewPos;')
+        .replace(
+          '#include <project_vertex>',
+          '#include <project_vertex>\nvSurgeViewPos = mvPosition.xyz;'
+        )
+
       shader.fragmentShader = shader.fragmentShader
         .replace(
           '#include <map_pars_fragment>',
-          '#include <map_pars_fragment>\nuniform sampler2D detailMap;'
+          `#include <map_pars_fragment>
+          uniform sampler2D detailMap;
+          uniform vec3 sunDirection;
+          uniform float surgeRef;
+          varying vec3 vSurgeViewPos;`
         )
         .replace(
           '#include <map_fragment>',
@@ -210,6 +241,35 @@ export default function SouthPoleTerrain({
             // a long, soft gradient turns the slab into a fading disc.
             float rr = length(vMapUv - 0.5) * 2.0;
             diffuseColor.rgb *= 1.0 - smoothstep(0.82, 1.34, rr);
+
+            // The opposition surge — the one thing about regolith that a baked
+            // hillshade fundamentally cannot carry, because a bake has no
+            // viewer and this term depends only on where the viewer is.
+            //
+            // Regolith is a deep pile of loose grains, so it is full of tiny
+            // shadows, and every one of them hides behind the grain that casts
+            // it. Move the eye toward the sun and those shadows disappear
+            // behind their own grains, so the ground brightens sharply: it is
+            // why a full moon is far more than twice a half moon, and why an
+            // Apollo crewman photographed a halo around the shadow of his own
+            // head. Hapke's shadow-hiding term, B(g) = 1 + B0/(1 + tan(g/2)/h),
+            // with g the sun-surface-viewer phase angle (see regolith.ts).
+            //
+            // Divided through by its value at PHASE_REF_DEG so this is a
+            // RELATIVE effect. B is never below 1, so applying it raw would
+            // brighten the whole ridge and throw away the exposure the scene
+            // is tuned around; normalized at 85° — the mean phase angle across
+            // the home framing — the load-in shot is left within 2% of where it
+            // was and the surge only appears once the camera tumbles down-sun,
+            // which is exactly where it belongs. The clamp is a backstop for
+            // the last fraction of a degree around exact opposition, where the
+            // real surge keeps climbing and a bloom threshold is waiting.
+            vec3 toEye = normalize(-vSurgeViewPos);
+            vec3 toSun = normalize((viewMatrix * vec4(sunDirection, 0.0)).xyz);
+            float g = acos(clamp(dot(toSun, toEye), -1.0, 1.0));
+            float surge = 1.0 + ${OPPOSITION_B0.toFixed(3)}
+              / (1.0 + tan(0.5 * g) / ${OPPOSITION_H.toFixed(3)});
+            diffuseColor.rgb *= clamp(surge / surgeRef, 0.85, 1.75);
           }`
         )
     },
@@ -225,16 +285,12 @@ export default function SouthPoleTerrain({
   return (
     <group>
       {/* Unlit: the albedo IS the final shaded image (see header comment). */}
-      <mesh
-        geometry={innerGeo.geometry}
-        position={innerGeo.origin}
-        onClick={handleClick}
-      >
+      <mesh geometry={innerGeo.geometry} position={innerGeo.origin} onClick={handleClick}>
         <meshBasicMaterial
           map={albedo}
           onBeforeCompile={onBeforeCompile}
           // onBeforeCompile changes don't retrigger compilation on their own.
-          customProgramCacheKey={() => 'sp-inner-detail-v2'}
+          customProgramCacheKey={() => 'sp-inner-detail-v3-surge'}
         />
       </mesh>
       {/* Shadow catcher. An unlit material cannot receive shadows, so the
@@ -246,17 +302,19 @@ export default function SouthPoleTerrain({
           The terrain deliberately does NOT cast: its own relief shadows are
           already baked into the albedo, so casting them again would
           double-darken every slope. */}
-      <mesh
-        geometry={innerGeo.geometry}
-        position={innerGeo.origin}
-        receiveShadow
-      >
+      <mesh geometry={innerGeo.geometry} position={innerGeo.origin} receiveShadow>
         <shadowMaterial
           transparent
-          // Lunar shadows are near-black (no atmosphere to scatter light into
-          // them), lifted a hair by regolith bounce.
-          opacity={0.88}
-          color="#04050a"
+          // What is left in a lunar shadow is regolith bounce and nothing else
+          // — about 4% of the sun, computed from albedo 0.12 at a 44.5° solar
+          // incidence. Hence 0.92 rather than 0.88: shadows here are deeper
+          // than a terrestrial eye expects, because there is no sky to fill
+          // them. The residual was also the wrong COLOUR. It was a blue-black,
+          // which is the colour of a shadow on Earth, where the fill really is
+          // blue sky; the only thing lighting a lunar shadow is warm-grey soil
+          // a few metres away, so the floor it settles onto is warm.
+          opacity={0.92}
+          color="#0d0a06"
           depthWrite={false}
           polygonOffset
           polygonOffsetFactor={-1}
