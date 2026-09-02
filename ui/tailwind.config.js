@@ -8,6 +8,20 @@ module.exports = {
       screens: {
         '3xl': '1920px',
         '4xl': '2560px',
+        // Two widths the desktop navbar steps at. Measured, not chosen: its
+        // eight top-level items are unbreakable content — 807px of labels
+        // alone, 999px once each carries an icon — and the logo, wallet, avatar
+        // and gutters want another 387px on top.
+        //
+        // `navicons` is where the icons fit; below it the labels go it alone,
+        // since 8 icons cost 192px and a label says what its icon does.
+        // `navwide` is where there is enough left over to spend on breathing
+        // room — wider item padding, bigger logo, deeper gutters.
+        //
+        // Nothing below xl (1280px) uses either: Layout hands anything narrower
+        // to the mobile drawer. See components/layout/TopNavBar.
+        navicons: '1500px',
+        navwide: '1650px',
       },
       fontFamily: {
         GoodTimes: ['Good Times', 'sans-serif'],

@@ -28,7 +28,6 @@ import { orgColor } from '@/lib/lunar-atlas/display'
 import {
   DePrizeState,
   DEPRIZE_STATE_META,
-  GAS_RESERVE_ETH,
   MarketStage,
   OUTCOME_COLORS,
   positionRedeemValue,
@@ -36,6 +35,7 @@ import {
   UNIT,
 } from '@/lib/deprize/constants'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
+import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 import { formatBettingCloses, isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
@@ -53,7 +53,6 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import BetModal from '@/components/deprize/BetModal'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DePrizeAdminPanel from '@/components/deprize/DePrizeAdminPanel'
-import DePrizeComingSoon from '@/components/deprize/DePrizeComingSoon'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import DePrizeTeamLink, { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
@@ -91,12 +90,6 @@ function StateBadge({
 }
 
 export default function DePrizeDetailPage() {
-  const { selectedChain } = useContext(ChainContextV5)
-  // AUDIT[plan Phase 6.3]: keep the coming-soon gate until Phase 5 verify is
-  // green and DEPRIZE_* arbitrum addresses are filled in const/config.ts.
-  if (getChainSlug(selectedChain) === 'arbitrum') {
-    return <DePrizeComingSoon />
-  }
   return <DePrizeDetailContent />
 }
 
@@ -353,7 +346,7 @@ function DePrizeDetailContent() {
     }
   }, [lmsrRead, market.outcomes, market.stage, numOutcomes])
 
-  const spendable = Math.max(0, (nativeBalance ?? 0) - GAS_RESERVE_ETH)
+  const spendable = spendableFromBalanceEth(nativeBalance, chain.id)
   const tradingHalted = market.stage !== undefined && market.stage !== MarketStage.Running
   const mintConfigured = isMintConfigured(mintAddress)
   const marketBound =

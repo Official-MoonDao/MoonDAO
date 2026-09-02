@@ -22,9 +22,19 @@ import {
   useRef,
 } from 'react'
 import * as THREE from 'three'
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { HOME_CAM, HOME_TARGET } from '@/lib/lunar-atlas/homeview'
 import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
+import { buriedVault, type VaultGeometry } from '@/lib/lunar-atlas/subplan'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
+import {
+  BREACH_LOT_RADIUS_M,
+  MASS_DRIVER_ID,
+  TRACK_LENGTH_M,
+  bentLegs,
+  trackBentStations,
+  trackDeckY,
+} from '@/lib/lunar-atlas/trackplan'
 import type { ModelTransform, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 
@@ -40,11 +50,10 @@ const UNIT_MAX_DIM = 1.7
 // where they exist, honest estimates otherwise. Per-project entries override
 // the per-type defaults (a Starship is not the same size as a Blue Moon).
 const TYPE_SIZE_M: Partial<Record<ProjectType, number>> = {
-  // The full camp, dome to dome across the connector spine. CAMP_M below
-  // inverts this exact number, so the camp is authored in real meters.
-  crewed_base: 38,
-  // A single pressurized module end to end, ISS-element class. MPH_M below
-  // inverts this exact number, so the habitat is authored in real meters.
+  // A single pressurized module end to end, ISS-element class — the generic
+  // fallback for a habitat with no model of its own. The full camp (see
+  // CAMP_M) and the ILRS cluster are authored to their own real sizes
+  // instead; only projects on the generic model use this default.
   habitat: 11,
   lander: 16,
   rover: 4.5,
@@ -61,9 +70,23 @@ const TYPE_SIZE_M: Partial<Record<ProjectType, number>> = {
   // exact number, so the terminal is authored in real meters.
   comms_pnt: 15,
   orbital: 20,
+  // Breach to muzzle. A launcher able to reach lunar escape velocity runs for
+  // kilometers, so this is still only its near segment — but the segment is now
+  // authored at true 1:1 size, and its length lives in one place (trackplan)
+  // because the layout tests and the terrain sampling need the same number.
+  mass_driver: TRACK_LENGTH_M,
 }
 const PROJECT_SIZE_M: Record<string, number> = {
   'spacex-starship-hls': 52, // Ship upper stage ~50 m + gear
+  // Dome-to-dome across the connector spine (see CAMP_M, which this exact
+  // number inverts). Without an entry here `projectSizeM` fell back to
+  // TYPE_SIZE_M.habitat (11 m, the generic single-module default) once
+  // `crewed_base` merged into `habitat` and took its own type-level default
+  // with it — SurfaceAnchor's outer scale (projectScale) and CrewedBase's
+  // own inner CAMP_M scale are supposed to cancel out to true 1:1 size, and
+  // with the wrong number feeding the outer one they no longer did: the
+  // whole camp rendered at 11/38 of its real size instead.
+  'nasa-artemis-base-camp': 38,
   'blue-origin-blue-moon-mk1': 8,
   // Footpad to nose tip — NASA's own Artemis III renders show a tall stack:
   // splayed legs, a windowed crew module with a deployable crew ladder, two
@@ -183,6 +206,14 @@ const GRADED_DECK_FRACTION: Partial<Record<ProjectType, number>> = {
 // Radius in meters of the graded deck a model rests on, or null if it has none
 // and must meet the ground directly beneath it.
 export function gradedDeckRadiusM(project: Project): number | null {
+  // A buried habitat is nothing BUT graded deck: its cover mound is 28 m of
+  // placed regolith with a skirt bedded below grade all the way round, so it
+  // seats on the high ground under its footprint and lets the skirt fall away
+  // downhill — exactly the case this mechanism exists for, and the alternative
+  // (seating a 28 m mound on the single point beneath its centre) buries its
+  // uphill end on any slope at all.
+  const vault = buriedVault(project.id)
+  if (vault) return vault.footprintM
   const f = GRADED_DECK_FRACTION[project.type]
   return f === undefined ? null : projectSizeM(project) * f
 }
@@ -236,6 +267,27 @@ const FOOTPRINT_FRACTION: Record<string, number> = {
 // must not overlap. Where a model brings its own graded deck that deck IS the
 // footprint — it is the part that has to sit on clear regolith.
 export function footprintRadiusM(project: Project): number {
+  // A buried habitat's footprint is its EARTHWORKS, not its module: the cover
+  // mound reaches about twice as far as the can under it, and that reach is
+  // already derived from the vault's own dimensions (see vaultGeometry). Taken
+  // from there rather than through a FOOTPRINT_FRACTION entry so the number
+  // cannot drift away from the mound the model layer actually draws.
+  const vault = buriedVault(project.id)
+  if (vault) return vault.footprintM
+  // The mass driver is the one asset a DISC cannot describe: 600 m long and 6 m
+  // wide, so the disc containing it is 300 m across and would reserve a quarter
+  // of the base. Only its BREACH WORKS stand on a lot; the guideway runs out of
+  // that lot into open regolith on a heading picked for the ground, and is
+  // checked as a corridor instead (see trackplan, and the corridor test in
+  // cypress/integration/unit/lunar-atlas-baseplan.cy.ts).
+  //
+  // This replaced a FOOTPRINT_FRACTION entry that had to be solved jointly with
+  // the district's `turn` — 0.32 paired with 45 degrees — because the fraction
+  // was standing in for "how much of a 105 m model swings where". Nothing has to
+  // be co-solved now: the lot is sized to the hardware that is actually on it,
+  // and the track's direction is set by trackplan rather than by whatever angle
+  // happened to miss both roads.
+  if (project.id === MASS_DRIVER_ID) return BREACH_LOT_RADIUS_M
   const graded = gradedDeckRadiusM(project)
   if (graded !== null) return graded
   return projectSizeM(project) * (FOOTPRINT_FRACTION[project.id] ?? 0.5)
@@ -2224,6 +2276,642 @@ export function BoulderCluster({
           <Boulder size={it.s} seed={it.k} />
         </group>
       ))}
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Excavator — ambient construction hardware, not a competitor's model
+// ---------------------------------------------------------------------------
+//
+// Scattered by `InterDistrictFiller` in MarkerLayer.tsx the same way boulders
+// and roadside cargo are: base-wide scenery that reads as the settlement's
+// own grading/earthmoving fleet at work along the roads, unaffiliated with
+// any org's race entry (compare `RoverBody` for the same "generic, no
+// accent" treatment). Built to the same standard as an actual competitor
+// model like `CruiserRover` — layered panel lines, glazing with real
+// envMapIntensity, hydraulic rams alongside every boom member rather than a
+// single bare cylinder — rather than the flat-primitive treatment that
+// works for a crate or a boulder but reads as a placeholder on something
+// this size and this close to the road.
+
+const EXC_HULL = '#e3e6ea' // main bodywork, a shade brighter than the shared HULL
+const EXC_SHADE = '#8f95a0' // wheel-arch / skirt shading, matches CRU_SHADE's role
+const EXC_TRIM = '#33383f' // frame rails, pins, roof trim
+const EXC_GLASS = '#173042' // canopy glazing base tone, lit through envMapIntensity
+const EXC_GLASS_BRACE = '#8be8ff' // interior brace glowing through the glass
+const EXC_BEACON = '#ffb454' // rotating hazard beacon, work-light amber
+const EXC_TRACK_DARK = '#1b1d22'
+
+const EXC_TRACK_LEN = 2.6
+const EXC_TRACK_W = 0.58
+const EXC_TRACK_H = 0.52
+const EXC_TRACK_GAUGE = 2.05 // center-to-center distance between the two tracks
+const EXC_ROLLER_R = EXC_TRACK_H / 2
+const EXC_TURRET_R = 1.02
+const EXC_TURRET_H = 0.22
+const EXC_BODY_D = 1.9
+const EXC_BODY_W = 1.7
+const EXC_BODY_H = 0.98
+const EXC_DECK_Y = EXC_TRACK_H + EXC_TURRET_H
+const EXC_BODY_Y = EXC_DECK_Y + EXC_BODY_H / 2
+
+// One track unit: a frame rail over a row of road rollers, a drive sprocket
+// and idler at the ends, and a lugged belt — the same "layer several
+// primitives instead of one box" treatment `CruiserRover`'s wheel arches use,
+// just applied to a tracked undercarriage instead of a wheeled one.
+function ExcavatorTrack({ side }: { side: 1 | -1 }) {
+  const z = (side * EXC_TRACK_GAUGE) / 2
+  const rollerCount = 5
+  const rollerSpan = EXC_TRACK_LEN - EXC_TRACK_H - 0.3
+  return (
+    <group position={[0, EXC_TRACK_H / 2, z]}>
+      {/* belt */}
+      <mesh>
+        <boxGeometry args={[EXC_TRACK_LEN, EXC_TRACK_H, EXC_TRACK_W]} />
+        <meshStandardMaterial color={EXC_TRACK_DARK} roughness={0.9} />
+      </mesh>
+      {/* drive sprocket + idler at each end, with a hub cap so they read as
+          driven wheels rather than the belt's own rounded corners */}
+      {[-1, 1].map((end) => (
+        <group key={end} position={[end * (EXC_TRACK_LEN / 2 - EXC_TRACK_H / 2), 0, 0]}>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[EXC_TRACK_H / 2, EXC_TRACK_H / 2, EXC_TRACK_W + 0.04, 16]} />
+            <meshStandardMaterial color={EXC_TRIM} metalness={0.55} roughness={0.45} />
+          </mesh>
+          <mesh position={[0, 0, side * (EXC_TRACK_W / 2 + 0.02)]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[EXC_TRACK_H / 2 - 0.05, EXC_TRACK_H / 2 - 0.05, 0.05, 16]} />
+            <meshStandardMaterial color={METAL} metalness={0.65} roughness={0.35} />
+          </mesh>
+          <mesh position={[0, 0, side * (EXC_TRACK_W / 2 + 0.05)]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.09, 0.09, 0.04, 10]} />
+            <meshStandardMaterial color={DARK} metalness={0.5} roughness={0.4} />
+          </mesh>
+        </group>
+      ))}
+      {/* road rollers along the top run, under a frame rail */}
+      {Array.from({ length: rollerCount }, (_, i) => {
+        const x = -rollerSpan / 2 + (i * rollerSpan) / (rollerCount - 1)
+        return (
+          <mesh key={i} position={[x, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[EXC_ROLLER_R - 0.03, EXC_ROLLER_R - 0.03, EXC_TRACK_W - 0.06, 14]} />
+            <meshStandardMaterial color={EXC_TRIM} metalness={0.5} roughness={0.5} />
+          </mesh>
+        )
+      })}
+      <mesh position={[0, EXC_TRACK_H / 2 + 0.02, 0]}>
+        <boxGeometry args={[EXC_TRACK_LEN - EXC_TRACK_H * 0.6, 0.09, EXC_TRACK_W + 0.06]} />
+        <meshStandardMaterial color={EXC_TRIM} metalness={0.4} roughness={0.55} />
+      </mesh>
+      {/* lugged belt */}
+      {Array.from({ length: 16 }, (_, i) => {
+        const x = -EXC_TRACK_LEN / 2 + 0.15 + i * ((EXC_TRACK_LEN - 0.3) / 15)
+        return (
+          <mesh key={i} position={[x, -EXC_TRACK_H / 2 + 0.01, 0]}>
+            <boxGeometry args={[0.07, 0.05, EXC_TRACK_W + 0.06]} />
+            <meshStandardMaterial color="#0d0e11" roughness={0.95} />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// Turntable ring connecting the tracked undercarriage to the upper works —
+// the joint that, on a real excavator, is what actually lets the house swing
+// independent of the tracks. Static here, but modeling the ring is what
+// keeps the hull from reading as bolted straight to the chassis.
+function ExcavatorTurret() {
+  return (
+    <group position={[0, EXC_TRACK_H + EXC_TURRET_H / 2, 0]}>
+      <mesh>
+        <cylinderGeometry args={[EXC_TURRET_R, EXC_TURRET_R * 0.94, EXC_TURRET_H, 24]} />
+        <meshStandardMaterial color={EXC_TRIM} metalness={0.5} roughness={0.5} />
+      </mesh>
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[Math.cos(a) * (EXC_TURRET_R - 0.05), EXC_TURRET_H / 2, Math.sin(a) * (EXC_TURRET_R - 0.05)]}
+          >
+            <cylinderGeometry args={[0.025, 0.025, 0.05, 8]} />
+            <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.35} />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// The house: a shouldered hull built from stacked, progressively inset boxes
+// (skirt → lower body → upper body → roof deck) the same way CruiserRover's
+// cabin reads as glazing on a shoulder line instead of one slab, plus a
+// framed canopy over the compute/sensor bay, a ribbed rear counterweight,
+// a roof-mounted solar array for a machine with no engine to run off, and a
+// hazard beacon.
+function ExcavatorCab() {
+  return (
+    <group position={[0, EXC_BODY_Y, 0]}>
+      {/* skirt */}
+      <mesh position={[0, -EXC_BODY_H / 2 - 0.07, 0]}>
+        <boxGeometry args={[EXC_BODY_D + 0.1, 0.16, EXC_BODY_W + 0.1]} />
+        <meshStandardMaterial color={EXC_SHADE} roughness={0.6} metalness={0.15} />
+      </mesh>
+      {/* lower body */}
+      <mesh position={[0.05, -EXC_BODY_H * 0.18, 0]}>
+        <boxGeometry args={[EXC_BODY_D - 0.1, EXC_BODY_H * 0.62, EXC_BODY_W - 0.06]} />
+        <meshStandardMaterial color={EXC_SHADE} roughness={0.55} metalness={0.2} />
+      </mesh>
+      {/* upper body */}
+      <mesh position={[0.05, EXC_BODY_H * 0.16, 0]}>
+        <boxGeometry args={[EXC_BODY_D - 0.18, EXC_BODY_H * 0.56, EXC_BODY_W - 0.16]} />
+        <meshStandardMaterial color={EXC_HULL} roughness={0.5} metalness={0.18} />
+      </mesh>
+      {/* roof deck */}
+      <mesh position={[0.05, EXC_BODY_H / 2 - 0.03, 0]}>
+        <boxGeometry args={[EXC_BODY_D - 0.1, 0.1, EXC_BODY_W - 0.06]} />
+        <meshStandardMaterial color={EXC_HULL} roughness={0.5} metalness={0.18} />
+      </mesh>
+      {/* ribbed counterweight, opposite the arm's reach */}
+      <mesh position={[-EXC_BODY_D / 2 - 0.09, -0.04, 0]}>
+        <boxGeometry args={[0.2, EXC_BODY_H * 0.72, EXC_BODY_W * 0.9]} />
+        <meshStandardMaterial color={EXC_TRIM} roughness={0.6} metalness={0.35} />
+      </mesh>
+      {Array.from({ length: 5 }, (_, i) => {
+        const z = -EXC_BODY_W * 0.4 + (i * (EXC_BODY_W * 0.8)) / 4
+        return (
+          <mesh key={i} position={[-EXC_BODY_D / 2 - 0.19, -0.04, z]}>
+            <boxGeometry args={[0.03, EXC_BODY_H * 0.68, 0.06]} />
+            <meshStandardMaterial color={DARK} roughness={0.65} metalness={0.3} />
+          </mesh>
+        )
+      })}
+
+      {/* canopy over the compute/sensor bay: a proper glazed box with a
+          frame instead of one glass slab, plus the internal brace glowing
+          through it. Offset toward the arm side, mirroring how a real
+          excavator's cab sits opposite its counterweight. */}
+      <group position={[EXC_BODY_D * 0.12, EXC_BODY_H / 2 + 0.18, EXC_BODY_W * 0.06]}>
+        <mesh position={[0, -0.16, 0]}>
+          <boxGeometry args={[0.86, 0.08, 0.8]} />
+          <meshStandardMaterial color={EXC_TRIM} metalness={0.4} roughness={0.5} />
+        </mesh>
+        <mesh>
+          <boxGeometry args={[0.8, 0.34, 0.74]} />
+          <meshStandardMaterial
+            color={EXC_GLASS}
+            roughness={0.12}
+            metalness={0.6}
+            envMapIntensity={1.6}
+          />
+        </mesh>
+        {/* corner pillars framing the glazing */}
+        {[
+          [-0.39, -0.35],
+          [-0.39, 0.35],
+          [0.39, -0.35],
+          [0.39, 0.35],
+        ].map(([x, z], i) => (
+          <mesh key={i} position={[x, 0, z]}>
+            <boxGeometry args={[0.06, 0.36, 0.06]} />
+            <meshStandardMaterial color={EXC_TRIM} metalness={0.5} roughness={0.45} />
+          </mesh>
+        ))}
+        <mesh position={[0, 0.18, 0]}>
+          <boxGeometry args={[0.84, 0.05, 0.78]} />
+          <meshStandardMaterial color={EXC_TRIM} metalness={0.45} roughness={0.5} />
+        </mesh>
+        <Strut from={[-0.32, 0, -0.3]} to={[0.32, 0, 0.3]} r={0.022} color={EXC_GLASS_BRACE} glow={1.1} />
+        <Strut from={[0.32, 0, -0.3]} to={[-0.32, 0, 0.3]} r={0.022} color={EXC_GLASS_BRACE} glow={1.1} />
+      </group>
+
+      {/* roof solar array, tilted toward the sun-facing side */}
+      <group position={[-EXC_BODY_D * 0.14, EXC_BODY_H / 2 + 0.08, 0]} rotation={[0, 0, 0.08]}>
+        {[-1, 0, 1].map((i) => (
+          <mesh key={i} position={[0, 0.02, i * 0.42]}>
+            <boxGeometry args={[0.62, 0.04, 0.36]} />
+            <meshStandardMaterial color={PANEL} metalness={0.15} roughness={0.4} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* hazard beacon on a short mast */}
+      <group position={[0, EXC_BODY_H / 2 + 0.06, -EXC_BODY_W * 0.34]}>
+        <mesh position={[0, 0.13, 0]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.26, 8]} />
+          <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
+        </mesh>
+        <mesh position={[0, 0.29, 0]}>
+          <sphereGeometry args={[0.07, 12, 12]} />
+          <meshStandardMaterial
+            color={EXC_BEACON}
+            emissive={EXC_BEACON}
+            emissiveIntensity={2.2}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+
+      {/* forward work lights, low on the hull facing the arm's reach */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[EXC_BODY_D / 2 - 0.06, -EXC_BODY_H * 0.24, s * EXC_BODY_W * 0.32]}>
+          <boxGeometry args={[0.04, 0.1, 0.14]} />
+          <meshStandardMaterial
+            color="#fff6de"
+            emissive="#fff6de"
+            emissiveIntensity={1.6}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+// A parallel pair of beams from A to B, tapering slightly toward B, plus a
+// hydraulic ram mounted alongside — the actuator every real boom/stick/
+// bucket joint is driven by, and the single detail that reads as "hydraulic
+// excavator" rather than "robot arm." `rodExtend` is how far out of its
+// barrel the ram's piston sits, which is what lets the same component pose
+// as either fully retracted (arm folded) or extended (arm reaching).
+function ExcavatorMember({
+  from,
+  to,
+  width,
+  rodExtend = 0.5,
+  ramSide = 1,
+}: {
+  from: [number, number, number]
+  to: [number, number, number]
+  width: number
+  rodExtend?: number
+  ramSide?: 1 | -1
+}) {
+  const a = new THREE.Vector3(...from)
+  const b = new THREE.Vector3(...to)
+  const mid = a.clone().add(b).multiplyScalar(0.5)
+  const axis = b.clone().sub(a)
+  const len = axis.length() || 1e-6
+  const quat = useMemo(
+    () => new THREE.Quaternion().setFromUnitVectors(MODEL_UP, axis.clone().normalize()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [from[0], from[1], from[2], to[0], to[1], to[2]]
+  )
+  // A perpendicular offset for the ram, in the member's local frame (off the
+  // X axis once rotated by `quat`), then rotated into world space.
+  const perp = new THREE.Vector3(ramSide * (width * 0.62), 0, 0).applyQuaternion(quat)
+  const ramBarrelLen = len * 0.55
+  const ramA = a.clone().add(perp.clone().multiplyScalar(0.3))
+  const ramBarrelB = a
+    .clone()
+    .lerp(b, ramBarrelLen / len)
+    .add(perp)
+  const ramRodB = a
+    .clone()
+    .lerp(b, (ramBarrelLen + rodExtend) / len)
+    .add(perp)
+  return (
+    <group>
+      <mesh position={mid} quaternion={quat}>
+        <boxGeometry args={[width, len, width * 0.72]} />
+        <meshStandardMaterial color={EXC_HULL} roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={mid} quaternion={quat}>
+        <boxGeometry args={[width * 0.72, len - width * 0.1, width * 0.78]} />
+        <meshStandardMaterial color={EXC_SHADE} roughness={0.55} metalness={0.15} />
+      </mesh>
+      <Strut from={ramA.toArray() as Vec3} to={ramBarrelB.toArray() as Vec3} r={width * 0.24} color={EXC_TRIM} />
+      <Strut from={ramBarrelB.toArray() as Vec3} to={ramRodB.toArray() as Vec3} r={width * 0.11} color={METAL} />
+    </group>
+  )
+}
+
+// A wide bucket: an open trapezoidal shell (back plate, two tapered side
+// plates, a curled underside) plus a rocker-link tying it to the stick, the
+// way a real bucket curls on a 4-bar linkage rather than a rigid extension
+// of the arm.
+function ExcavatorBucket({
+  position,
+  rotation,
+}: {
+  position: [number, number, number]
+  rotation: [number, number, number]
+}) {
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh position={[-0.14, 0.05, 0]}>
+        <boxGeometry args={[0.1, 0.44, 0.62]} />
+        <meshStandardMaterial color={EXC_TRIM} metalness={0.4} roughness={0.5} />
+      </mesh>
+      <mesh position={[0.1, -0.02, 0]} rotation={[0, 0, -0.32]}>
+        <boxGeometry args={[0.5, 0.4, 0.58]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
+      </mesh>
+      <mesh position={[0.32, -0.24, 0]} rotation={[0, 0, -0.62]}>
+        <boxGeometry args={[0.3, 0.34, 0.56]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
+      </mesh>
+      {/* rocker link back to the stick's wrist pin */}
+      <Strut from={[-0.14, 0.24, 0]} to={[-0.02, 0.5, 0]} r={0.05} color={EXC_TRIM} />
+      {Array.from({ length: 5 }, (_, i) => {
+        const z = -0.24 + i * 0.12
+        return (
+          <mesh key={i} position={[0.5, -0.42, z]} rotation={[0, 0, Math.PI / 2 - 0.62]}>
+            <coneGeometry args={[0.055, 0.17, 8]} />
+            <meshStandardMaterial color={DARK} metalness={0.4} roughness={0.5} />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// Fixed boom/stick link lengths — now that the arm actually rotates at its
+// own joints (see `digging` below) rather than being posed once from static
+// absolute points, a rigid link's own length never changes, only the angle
+// between links does.
+const EXC_BOOM_LEN = 1.7
+const EXC_STICK_LEN = 1.75
+
+// Four hand-posed keyframes of one real dig cycle — reach out and bite,
+// curl the bucket through the load, hoist the loaded bucket up and swing
+// back, tip it to dump — each a [boom, stick, bucket] triple in radians.
+// Boom is measured off horizontal at the shoulder; stick and bucket are each
+// relative to the link they're mounted on (a stick angle is how far it's
+// bent off the BOOM's own line, not off horizontal), so nesting the three
+// rotating groups directly reproduces the pose without any extra math.
+//
+// Boom stays in a narrow, always-slightly-upward band across every keyframe
+// on purpose. The shoulder pivot sits at the REAR corner of the hull, right
+// at roof height (see `shoulderPos` below) — exactly like a real excavator's
+// king-pin, which is why a real one never dips its BOOM down; it keeps the
+// boom raised and lets the stick do the reaching. Any keyframe that swings
+// the boom down past ~horizontal drags the whole link back down through the
+// cab and turret it pivots from, since the pivot itself is still directly
+// over the hull — that's the "arm phasing through the body" bug this exact
+// range fixes. The stick supplies all the real reach, from nearly straight
+// down (K0) to curled back up over the boom (K2), while staying forward of
+// the elbow (see the excavator's own shoulder mount) the entire time so it
+// never sweeps back across the hull either.
+const EXC_DIG_POSES: [number, number, number][] = [
+  [0.15, -1.35, -0.3], // reach down and forward, bucket angled to bite
+  [0.2, -0.95, 1.0], // curl the bucket up through the load
+  [0.15, 0.55, 0.85], // hoist the loaded bucket up and back
+  [0.2, 0.15, -0.35], // tip the bucket, dumping the load
+]
+
+function smoothstep01(x: number): number {
+  const t = Math.max(0, Math.min(1, x))
+  return t * t * (3 - 2 * t)
+}
+
+// Blends between EXC_DIG_POSES around the cycle with smoothstep easing at
+// each keyframe, the same "a boom has mass, it slows into and out of every
+// reversal" reasoning PrinterGantry's own boom slew already uses — a linear
+// blend snaps at each keyframe instead of settling into it.
+function excDigPose(p: number): [number, number, number] {
+  const n = EXC_DIG_POSES.length
+  const cyc = ((p % 1) + 1) % 1
+  const seg = cyc * n
+  const i = Math.floor(seg) % n
+  const f = smoothstep01(seg - Math.floor(seg))
+  const a = EXC_DIG_POSES[i]
+  const b = EXC_DIG_POSES[(i + 1) % n]
+  return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]
+}
+
+// The full machine: tracked undercarriage, turret, hull, and a
+// boom/stick/bucket arm mounted off one rear corner — the same asymmetric
+// mount the reference concept uses, sized here to a real compact
+// excavator's proportions rather than a toy scale. `seed` jitters the arm's
+// resting pose a little so a handful scattered along the roads read as a
+// fleet mid-shift rather than one model copy-pasted (see `Boulder`'s own
+// seeded variation for the same reasoning). `digging` swaps that static rest
+// pose for a continuously looping dig cycle, driving the boom/stick/bucket
+// joints directly off refs each frame (see EXC_DIG_POSES) instead of
+// re-deriving absolute points on every render — the same imperative-ref
+// pattern AstronautRig's stride and PrinterGantry's slew already use.
+export function Excavator({
+  seed = 0,
+  digging = false,
+}: {
+  seed?: number
+  digging?: boolean
+}) {
+  const shoulderRef = useRef<THREE.Group>(null)
+  const elbowRef = useRef<THREE.Group>(null)
+  const wristRef = useRef<THREE.Group>(null)
+  // A few seconds either way per machine, so a handful of these digging at
+  // once don't all swing in lockstep.
+  const period = 6 + hash1(seed * 7 + 5) * 2
+  const phase = hash1(seed * 7 + 6) * period
+
+  useFrame((state) => {
+    if (!digging) return
+    const p = (state.clock.elapsedTime + phase) / period
+    const [boom, stick, bucket] = excDigPose(p)
+    if (shoulderRef.current) shoulderRef.current.rotation.z = boom
+    if (elbowRef.current) elbowRef.current.rotation.z = stick
+    if (wristRef.current) wristRef.current.rotation.z = bucket
+  })
+
+  const armZ = EXC_BODY_W / 2 - 0.22
+  const shoulderPos: [number, number, number] = [
+    -EXC_BODY_D / 2 + 0.24,
+    EXC_BODY_Y + EXC_BODY_H / 2 - 0.05,
+    armZ,
+  ]
+  // A parked machine rests with the boom raised a little (same safe,
+  // slightly-upward band EXC_DIG_POSES uses, for the same reason — see the
+  // comment there) and the stick curled down toward the ground, jittered a
+  // little per-seed; a digging one starts from the cycle's own first pose
+  // instead (the ref-driven useFrame above takes over from there).
+  const restBoom = digging ? EXC_DIG_POSES[0][0] : 0.15 + hash1(seed * 7 + 1) * 0.25
+  const restStick = digging ? EXC_DIG_POSES[0][1] : -0.6 - hash1(seed * 7 + 2) * 0.5
+  const restBucket = digging ? EXC_DIG_POSES[0][2] : -0.1 + hash1(seed * 7 + 3) * 0.3
+
+  return (
+    <group>
+      <ExcavatorTrack side={1} />
+      <ExcavatorTrack side={-1} />
+      <ExcavatorTurret />
+      <ExcavatorCab />
+      <group ref={shoulderRef} position={shoulderPos} rotation={[0, 0, restBoom]}>
+        <ExcavatorMember
+          from={[0, 0, 0]}
+          to={[EXC_BOOM_LEN, 0, 0]}
+          width={0.26}
+          rodExtend={0.55}
+          ramSide={1}
+        />
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.11, 0.11, 0.44, 12]} />
+          <meshStandardMaterial color={EXC_TRIM} metalness={0.6} roughness={0.35} />
+        </mesh>
+        <group ref={elbowRef} position={[EXC_BOOM_LEN, 0, 0]} rotation={[0, 0, restStick]}>
+          <ExcavatorMember
+            from={[0, 0, 0]}
+            to={[EXC_STICK_LEN, 0, 0]}
+            width={0.2}
+            rodExtend={0.4}
+            ramSide={-1}
+          />
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.11, 0.11, 0.44, 12]} />
+            <meshStandardMaterial color={EXC_TRIM} metalness={0.6} roughness={0.35} />
+          </mesh>
+          <group ref={wristRef} position={[EXC_STICK_LEN, 0, 0]} rotation={[0, 0, restBucket]}>
+            <mesh rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.11, 0.11, 0.44, 12]} />
+              <meshStandardMaterial color={EXC_TRIM} metalness={0.6} roughness={0.35} />
+            </mesh>
+            <ExcavatorBucket position={[0.3, -0.34, 0]} rotation={[0.18, 0, 0]} />
+          </group>
+        </group>
+      </group>
+    </group>
+  )
+}
+
+const PIT_HOLE_R = 2.3 // radius of the dark "opening" patch
+// This map's terrain is one continuous height-mapped shell with no seam for
+// a decorative feature to cut a real void into — the same reason every other
+// "sunk" object here (Boulder's own bury, TailingsPile's slight settle) only
+// ever tucks a SMALL fraction of itself below grade rather than excavating
+// one. So the hole itself is sold entirely by what's ABOVE grade: a dark,
+// low-albedo patch standing in for the shadowed opening, a crumbling rubble
+// edge around it, and the loose material a real dig would have piled up
+// going out from there — not by any actual depth.
+const PIT_HALO_R = 2.85
+const PIT_HOLE_COLOR = '#15130f'
+const PIT_HALO_COLOR = '#3a352c'
+const PIT_SPOIL_GAP_DEG = 130
+const PIT_SPOIL_COUNT = 10
+// Real clearance above local y=0 for the two flat, ground-parallel meshes
+// below — see the comment on them for why a wide flat disc needs much more
+// of this than a compact prop does under a logarithmic depth buffer.
+const PIT_LIFT_M = 0.18
+
+// One shallow excavation: a dark patch (see PIT_HOLE_R above) ringed by
+// TailingsPile heaps of the material it displaced, plus a scatter of small
+// rubble right at the patch's own edge so the flat disc reads as a
+// crumbling lip rather than a printed decal. `gapCenterRad` leaves a wedge
+// of the spoil ring empty — the bearing the digging Excavator actually
+// works from, so its swing never has to cross ground the scene says is
+// already piled with what it dug.
+function ConstructionPit({
+  seed = 0,
+  gapCenterRad = 0,
+}: {
+  seed?: number
+  gapCenterRad?: number
+}) {
+  const spoil = useMemo(() => {
+    const out: { x: number; z: number; size: number; seed: number }[] = []
+    const gapHalf = (PIT_SPOIL_GAP_DEG * Math.PI) / 360
+    for (let i = 0; i < PIT_SPOIL_COUNT; i++) {
+      const k = seed * 97 + i * 13 + 3
+      const a = hash1(k) * Math.PI * 2
+      const d = Math.atan2(Math.sin(a - gapCenterRad), Math.cos(a - gapCenterRad))
+      if (Math.abs(d) < gapHalf) continue
+      const r = PIT_HALO_R + 0.3 + hash1(k + 1) * 1.5
+      out.push({
+        x: Math.cos(a) * r,
+        z: Math.sin(a) * r,
+        size: 0.7 + hash1(k + 2) * 0.5,
+        seed: k,
+      })
+    }
+    return out
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, gapCenterRad])
+
+  const dumpPiles = useMemo(
+    () =>
+      [0, 1].map((i) => {
+        const k = seed * 131 + i * 29 + 11
+        const a = gapCenterRad + Math.PI + (hash1(k) - 0.5) * 1.3
+        const r = PIT_HALO_R + 2.4 + hash1(k + 1) * 1.4
+        return { x: Math.cos(a) * r, z: Math.sin(a) * r, seed: k }
+      }),
+    [seed, gapCenterRad]
+  )
+
+  const rubble = useMemo(
+    () =>
+      Array.from({ length: 14 }, (_, i) => {
+        const k = seed * 227 + i * 17 + 41
+        const a = hash1(k) * Math.PI * 2
+        const r = PIT_HOLE_R * (0.82 + hash1(k + 1) * 0.3)
+        return {
+          x: Math.cos(a) * r,
+          z: Math.sin(a) * r,
+          size: 0.14 + hash1(k + 2) * 0.22,
+          seed: k,
+        }
+      }),
+    [seed]
+  )
+
+  return (
+    <group>
+      {/* One disc plus a ring sharing its exact outer/inner radius, rather
+          than two overlapping discs a few centimeters apart in y, so there's
+          no coincident geometry for the two to fight each other over. Both
+          also sit a real fraction of a meter clear of local y=0 (not flush
+          with it, and nowhere near the centimeter-scale offset an earlier
+          version used) — this scene runs a logarithmic depth buffer (needed
+          to span orbit-to-meter scale in one camera), which loses precision
+          for near-coincident surfaces far sooner than a linear buffer would,
+          and a WIDE flat disc lying parallel to the local ground plane is
+          the worst case for that: unlike a boulder or a track, which only
+          touches the terrain at a point or a curve, every pixel of a flat
+          disc is fighting the terrain at once if the two are close enough.
+          PIT_LIFT_M is sized well past that risk rather than just clearing
+          it, and UGC_EXTRA_LIFT_M in MarkerLayer.tsx does the same for this
+          whole composite's anchor, for the same reason. */}
+      <mesh position={[0, PIT_LIFT_M, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[PIT_HOLE_R, 32]} />
+        <meshStandardMaterial color={PIT_HOLE_COLOR} roughness={1} />
+      </mesh>
+      <mesh position={[0, PIT_LIFT_M, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[PIT_HOLE_R, PIT_HALO_R, 32]} />
+        <meshStandardMaterial color={PIT_HALO_COLOR} roughness={1} />
+      </mesh>
+      {rubble.map((r, i) => (
+        <group key={i} position={[r.x, 0, r.z]}>
+          <Boulder size={r.size} seed={r.seed} />
+        </group>
+      ))}
+      {spoil.map((s, i) => (
+        <group key={i} position={[s.x, 0, s.z]}>
+          <TailingsPile size={s.size} seed={s.seed} />
+        </group>
+      ))}
+      {dumpPiles.map((p, i) => (
+        <group key={i} position={[p.x, 0, p.z]}>
+          <TailingsPile size={1.9} seed={p.seed} />
+        </group>
+      ))}
+    </group>
+  )
+}
+
+const UGC_EXCAVATOR_STANDOFF_M = 3.9
+
+// The base's first real excavation: one animated Excavator (`digging`)
+// worked up against a ConstructionPit, offset out on the excavator's own
+// side (local -X) so its arm's reach lands inside the pit's dark patch —
+// see the placement comment on `UndergroundConstructionSiteMarker` in
+// MarkerLayer.tsx for why this whole assembly sits where it does.
+export function UndergroundConstructionSite({ seed = 0 }: { seed?: number }) {
+  return (
+    <group>
+      <ConstructionPit seed={seed} gapCenterRad={Math.PI} />
+      <group position={[-UGC_EXCAVATOR_STANDOFF_M, 0, 0]}>
+        <Excavator seed={seed + 1} digging />
+      </group>
     </group>
   )
 }
@@ -6219,11 +6907,423 @@ function ConstructionSite({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Lunar mass driver (concept study, no developer assigned)
+// ---------------------------------------------------------------------------
+
+// Local units per METER, and now genuinely 1:1 — the model is authored in
+// meters and TYPE_SIZE_M.mass_driver is its true length, so nothing here is
+// multiplied by a fudge factor on the way out. (It used to be: a 70 m
+// schematic blown up 1.5x, because 70 m of track read as under-scale for the
+// base's capstone. The answer to that was never a scale factor; it was more
+// track.)
+//
+// Still a NEAR SEGMENT, and unavoidably so. A reluctance launcher able to
+// reach lunar escape velocity runs for kilometers — the source study's own
+// half-metre-bore design comes out "over 7 km long" — so what caps this model
+// is not the patch (16 km would hold 7 km of track) but the GROUND: the base
+// sits on the ridge crest and every run off it descends, and a level guideway
+// pays for descent in leg height. 600 m is as far as the flattest available
+// heading stays level under legs a builder would recognise; see trackplan.
+const MASS_DRIVER_M = UNIT_MAX_DIM / (TYPE_SIZE_M.mass_driver ?? TRACK_LENGTH_M)
+
+// --- The guideway, in cross-section (meters) --------------------------------
+// A spine beam carrying a continuous row of stator modules, each a square cell
+// with a recessed window, under a capping rail. This is the reference
+// animation's own build-up, and it is also why the beam reads as machinery
+// rather than a girder: the repeat is at MD_MODULE_M, so the eye gets a scale
+// ruler laid along the whole run.
+const MD_SPINE_W = 2.2 // across the track
+const MD_SPINE_H = 1.15 // spine depth, deck underside to module seat
+const MD_MODULE_M = 3.0 // module pitch along the track
+const MD_MODULE_GAP = 0.34 // dark joint between neighbouring modules
+const MD_MODULE_W = 3.06 // module outer width, wider than the spine
+const MD_MODULE_H = 1.52
+const MD_WINDOW_INSET = 0.42 // how far the recessed cell sits inside its frame
+const MD_RAIL_H = 0.2 // capping rail on top of the module row
+const MD_RAIL_W = 3.24
+const MD_BORE_R = 0.55 // bore radius — the source study's own figure
+
+// --- The trestle bents -----------------------------------------------------
+// An A-frame per bay: two splayed legs meeting under a pier cap, tied across at
+// MD_TIE_FRAC of their height. The splay itself (and so which way up the bent
+// is) comes from trackplan's bentLegs, as the two points each leg spans.
+const MD_LEG_T = 0.52 // leg thickness along the track
+const MD_LEG_W = 0.9 // leg width across it
+const MD_TIE_FRAC = 0.42 // height up the bent that the cross tie sits at
+const MD_TIE_T = 0.3
+const MD_CAP_W = 3.4 // pier cap: the saddle the spine bears on
+const MD_CAP_H = 0.76
+const MD_CAP_D = 1.34
+const MD_CHAMFER_H = 0.34 // the cap's tapered underside
+
+// Merges a pile of boxes into one geometry.
+//
+// 600 m of trestle is 41 bents and 200 stator modules — about 600 boxes. As
+// separate meshes that is 600 draw calls for one asset, on a page that already
+// carries a 2 M-triangle terrain patch; merged it is five. They can be merged
+// because they never move relative to each other and share one material, which
+// is exactly the case merging is for.
+function mergedBoxes(
+  boxes: {
+    size: [number, number, number]
+    pos: [number, number, number]
+    rot?: [number, number, number]
+  }[]
+): THREE.BufferGeometry {
+  const parts = boxes.map((b) => {
+    const g = new THREE.BoxGeometry(...b.size)
+    const m = new THREE.Matrix4()
+    if (b.rot) m.makeRotationFromEuler(new THREE.Euler(...b.rot))
+    // setPosition writes the translation column only, so the rotation above
+    // survives: this is rotate-then-translate, which is what a member placed
+    // at a midpoint and leaned over needs.
+    m.setPosition(b.pos[0], b.pos[1], b.pos[2])
+    g.applyMatrix4(m)
+    return g
+  })
+  const merged = mergeGeometries(parts, false)
+  parts.forEach((g) => g.dispose())
+  return merged ?? new THREE.BufferGeometry()
+}
+
+// Solar field feeding the capacitor bank beside the breach house. The source
+// study's governing constraint is PEAK power, not total energy — the whole
+// argument for a flywheel/capacitor bank is that it can accumulate slowly off
+// a field this size and discharge in the fraction of a second a shot takes.
+//
+// Each panel's rack tilt (MD_PANEL_TILT) swings its LOW edge forward and its
+// HIGH edge up and back from the group's own pivot point — the pivot itself
+// is just a hinge line in space, not a physical support, so without a frame
+// under those two edges the panel reads as floating with nothing holding it
+// up (which is exactly what it did before this frame existed). A real
+// fixed ground-mount array solves that with two rows of legs sized to the
+// edge they sit under — short ones at the low front edge, tall ones at the
+// high back edge — plus a rail tying each row's two legs together, which is
+// what MD_PANEL_FRONT_Y/Z and MD_PANEL_BACK_Y/Z below are: those two edges'
+// own positions, worked out once from the tilt so the legs can be planted
+// exactly under them rather than guessed.
+//
+// The field stands on the LOT, at the model's own origin height, and its legs
+// reach y = 0 — the ground under the breach works. It used to be nested inside
+// a platform lift and reaching down through it, which is what made the panels
+// float twice over; there is no platform now. Everything at the breach end
+// stands on real ground, and only the guideway is up in the air.
+const MD_PANEL_TILT = -0.55
+const MD_PANEL_HALF_W = 1.13
+const MD_PANEL_HALF_H = 1.33
+const MD_PANEL_FRONT_Y = -MD_PANEL_HALF_H * Math.cos(MD_PANEL_TILT)
+const MD_PANEL_FRONT_Z = -MD_PANEL_HALF_H * Math.sin(MD_PANEL_TILT)
+const MD_PANEL_BACK_Y = MD_PANEL_HALF_H * Math.cos(MD_PANEL_TILT)
+const MD_PANEL_BACK_Z = MD_PANEL_HALF_H * Math.sin(MD_PANEL_TILT)
+
+function MassDriverSolarField({ originX }: { originX: number }) {
+  const groundY = 0
+  return (
+    <>
+      {Array.from({ length: 5 }, (_, i) => {
+        const x = originX + (i - 2) * 2.3
+        const pivotY = 1.5
+        const pivotZ = -6.5
+        const frontEdgeY = pivotY + MD_PANEL_FRONT_Y
+        const frontZ = pivotZ + MD_PANEL_FRONT_Z
+        const backEdgeY = pivotY + MD_PANEL_BACK_Y
+        const backZ = pivotZ + MD_PANEL_BACK_Z
+        const frontLegH = frontEdgeY - groundY
+        const frontLegY = (frontEdgeY + groundY) / 2
+        const backLegH = backEdgeY - groundY
+        const backLegY = (backEdgeY + groundY) / 2
+        return (
+          <group key={x}>
+            <group position={[x, pivotY, pivotZ]} rotation={[MD_PANEL_TILT, 0, 0]}>
+              <mesh position={[0, 0, -0.05]}>
+                <boxGeometry args={[2.26, 2.66, 0.05]} />
+                <meshStandardMaterial color={PANEL_EDGE} metalness={0.4} roughness={0.5} />
+              </mesh>
+              <mesh>
+                <boxGeometry args={[2.1, 2.5, 0.08]} />
+                <meshStandardMaterial color={PANEL} metalness={0.12} roughness={0.46} />
+              </mesh>
+            </group>
+            {[-1, 1].map((s) => (
+              <group key={s}>
+                <mesh position={[x + s * MD_PANEL_HALF_W, frontLegY, frontZ]}>
+                  <cylinderGeometry args={[0.05, 0.06, frontLegH, 8]} />
+                  <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.5} />
+                </mesh>
+                <mesh position={[x + s * MD_PANEL_HALF_W, backLegY, backZ]}>
+                  <cylinderGeometry args={[0.05, 0.06, backLegH, 8]} />
+                  <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.5} />
+                </mesh>
+              </group>
+            ))}
+            <Strut
+              from={[x - MD_PANEL_HALF_W, frontEdgeY, frontZ]}
+              to={[x + MD_PANEL_HALF_W, frontEdgeY, frontZ]}
+              r={0.045}
+              color={METAL}
+            />
+            <Strut
+              from={[x - MD_PANEL_HALF_W, backEdgeY, backZ]}
+              to={[x + MD_PANEL_HALF_W, backEdgeY, backZ]}
+              r={0.045}
+              color={METAL}
+            />
+          </group>
+        )
+      })}
+    </>
+  )
+}
+
+// The whole row of A-frame bents, as three merged geometries: the legs and
+// their cross ties, the pier caps, and the caps' tapered undersides.
+//
+// `groundM[i]` is the ground under bent `i` relative to the model's origin (the
+// ground under the LOT), so it is mostly negative — the run descends. Each bent
+// is therefore a different height, and that is the entire reason this is
+// computed from sampled terrain rather than authored: a level deck over falling
+// ground is what a trestle IS. Authoring one leg length and repeating it would
+// bury the near bents or hang the far ones in the air, which is the failure
+// this model had at 100 m and could not survive at 600 m.
+function useTrestle(groundM: number[], deckY: number) {
+  return useMemo(() => {
+    const stations = trackBentStations()
+    const legs: Parameters<typeof mergedBoxes>[0] = []
+    const caps: Parameters<typeof mergedBoxes>[0] = []
+    const chamfers: Parameters<typeof mergedBoxes>[0] = []
+
+    stations.forEach((x, i) => {
+      const footY = groundM[i] ?? 0
+      const topY = deckY - MD_CAP_H
+      const h = topY - footY
+      if (h <= 0.5) return // ground at or above the deck: no bent to build
+      const pair = bentLegs(x, footY, topY)
+      for (const leg of pair) {
+        const dy = leg.head[1] - leg.foot[1]
+        const dz = leg.head[2] - leg.foot[2]
+        legs.push({
+          size: [MD_LEG_T, Math.hypot(dy, dz), MD_LEG_W],
+          pos: [
+            x,
+            (leg.foot[1] + leg.head[1]) / 2,
+            (leg.foot[2] + leg.head[2]) / 2,
+          ],
+          // A box's local +Y is its length, and a rotation of φ about the track
+          // axis sends that to (0, cosφ, sinφ) — so the lean is whatever angle
+          // carries +Y onto foot→head. Read off the endpoints rather than
+          // constructed, so there is no sign here to get backwards.
+          rot: [Math.atan2(dz, dy), 0, 0],
+        })
+      }
+      // Cross tie, spanning the legs wherever they happen to be at its height.
+      // Interpolated between the same two endpoints, so it tracks the splay
+      // instead of assuming it.
+      const [, right] = pair
+      const tieHalf =
+        right.foot[2] + MD_TIE_FRAC * (right.head[2] - right.foot[2])
+      legs.push({
+        size: [MD_TIE_T, MD_TIE_T, tieHalf * 2],
+        pos: [x, footY + MD_TIE_FRAC * h, 0],
+      })
+      caps.push({
+        size: [MD_CAP_D, MD_CAP_H, MD_CAP_W],
+        pos: [x, deckY - MD_CAP_H / 2, 0],
+      })
+      chamfers.push({
+        size: [MD_CAP_D * 0.78, MD_CHAMFER_H, MD_CAP_W * 0.6],
+        pos: [x, topY - MD_CHAMFER_H / 2, 0],
+      })
+    })
+
+    return {
+      legs: mergedBoxes(legs),
+      caps: mergedBoxes(caps),
+      chamfers: mergedBoxes(chamfers),
+    }
+  }, [groundM, deckY])
+}
+
+// The stator modules: a square cell every MD_MODULE_M along the run, each a
+// frame with a recessed window. Two merged geometries, frames and windows.
+function useStatorModules(deckY: number) {
+  return useMemo(() => {
+    const n = Math.floor(TRACK_LENGTH_M / MD_MODULE_M)
+    const frames: Parameters<typeof mergedBoxes>[0] = []
+    const windows: Parameters<typeof mergedBoxes>[0] = []
+    const y = deckY + MD_SPINE_H + MD_MODULE_H / 2
+    for (let i = 0; i < n; i++) {
+      const x = i * MD_MODULE_M + MD_MODULE_M / 2
+      frames.push({
+        size: [MD_MODULE_M - MD_MODULE_GAP, MD_MODULE_H, MD_MODULE_W],
+        pos: [x, y, 0],
+      })
+      // The recess reads as the cell's window from any angle that matters,
+      // because it is inset on all four sides of the frame's own face.
+      windows.push({
+        size: [
+          MD_MODULE_M - MD_MODULE_GAP - MD_WINDOW_INSET,
+          MD_MODULE_H - MD_WINDOW_INSET,
+          MD_MODULE_W + 0.06,
+        ],
+        pos: [x, y, 0],
+      })
+    }
+    return { frames: mergedBoxes(frames), windows: mergedBoxes(windows) }
+  }, [deckY])
+}
+
+function MassDriver({
+  accent,
+  trackGround,
+}: {
+  accent: string
+  // Ground under each trestle bent, in meters relative to this model's origin.
+  // Handed down from MarkerLayer, which owns the terrain sampler. Undefined
+  // until the height map decodes, in which case the run is treated as flat.
+  trackGround?: number[]
+}) {
+  const groundM = useMemo(
+    () => trackGround ?? trackBentStations().map(() => 0),
+    [trackGround]
+  )
+  const deckY = trackDeckY(groundM)
+  const trestle = useTrestle(groundM, deckY)
+  const modules = useStatorModules(deckY)
+
+  // The breach works sit BEHIND the launch line, on the lot, on real ground.
+  const breachX = -6.2
+
+  return (
+    <group scale={MASS_DRIVER_M}>
+      {/* --- The trestle ------------------------------------------------- */}
+      <mesh geometry={trestle.legs} castShadow receiveShadow>
+        <meshStandardMaterial color={HULL} roughness={0.62} metalness={0.16} />
+      </mesh>
+      <mesh geometry={trestle.caps} castShadow receiveShadow>
+        <meshStandardMaterial color={PAD_SLAB_ALT} roughness={0.9} />
+      </mesh>
+      <mesh geometry={trestle.chamfers} castShadow receiveShadow>
+        <meshStandardMaterial color={HULL_DARK} roughness={0.85} />
+      </mesh>
+
+      {/* --- The guideway ------------------------------------------------
+          One continuous spine, then the module row on top of it, then the
+          capping rail. Continuous members are single long boxes rather than
+          per-bay pieces: there is nothing to be gained by chopping up a beam
+          that is straight and unbroken for 600 m. */}
+      <mesh
+        position={[TRACK_LENGTH_M / 2, deckY + MD_SPINE_H / 2, 0]}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry args={[TRACK_LENGTH_M, MD_SPINE_H, MD_SPINE_W]} />
+        <meshStandardMaterial color={PAD_WALL} roughness={0.86} />
+      </mesh>
+      <mesh geometry={modules.frames} castShadow receiveShadow>
+        <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.2} />
+      </mesh>
+      <mesh geometry={modules.windows}>
+        <meshStandardMaterial color={DARK} roughness={0.7} metalness={0.35} />
+      </mesh>
+      <mesh
+        position={[
+          TRACK_LENGTH_M / 2,
+          deckY + MD_SPINE_H + MD_MODULE_H + MD_RAIL_H / 2,
+          0,
+        ]}
+        castShadow
+      >
+        <boxGeometry args={[TRACK_LENGTH_M, MD_RAIL_H, MD_RAIL_W]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      {/* The bore itself, run as a continuous dark slot down the module row's
+          centreline so the cells read as openings on a barrel rather than
+          decoration stuck to a beam. */}
+      <mesh
+        position={[
+          TRACK_LENGTH_M / 2,
+          deckY + MD_SPINE_H + MD_MODULE_H / 2,
+          0,
+        ]}
+      >
+        <boxGeometry
+          args={[TRACK_LENGTH_M + 0.4, MD_BORE_R * 2, MD_BORE_R * 2]}
+        />
+        <meshStandardMaterial color={DARK} roughness={0.45} metalness={0.5} />
+      </mesh>
+
+      {/* --- Muzzle ------------------------------------------------------
+          The release end, flared and ringed. Also the one place the accent
+          colour goes: it is what the eye is meant to follow the run out to. */}
+      <group
+        position={[TRACK_LENGTH_M, deckY + MD_SPINE_H + MD_MODULE_H / 2, 0]}
+      >
+        <mesh castShadow>
+          <boxGeometry args={[2.6, MD_MODULE_H + 0.5, MD_MODULE_W + 0.5]} />
+          <meshStandardMaterial
+            color={HULL_DARK}
+            roughness={0.5}
+            metalness={0.35}
+          />
+        </mesh>
+        <mesh position={[1.5, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <torusGeometry args={[MD_BORE_R + 0.3, 0.16, 8, 24]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.9}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+
+      {/* --- Breach works, on the lot ------------------------------------- */}
+      <group position={[breachX, 0, 0]}>
+        <mesh position={[0, 2.0, 0]} castShadow receiveShadow>
+          <boxGeometry args={[4.4, 4.0, 5.2]} />
+          <meshStandardMaterial color={HULL} roughness={0.7} />
+        </mesh>
+        <mesh position={[0, 4.0, 0]} castShadow>
+          <boxGeometry args={[4.6, 0.16, 5.4]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.75} />
+        </mesh>
+        {/* Capacitor/flywheel racks — the "accumulate slowly, discharge
+            quickly" hardware that has to survive the launcher's peak power,
+            not its average. */}
+        {[-1.6, 0, 1.6].map((z) => (
+          <mesh key={z} position={[2.9, 0.9, z]} castShadow>
+            <cylinderGeometry args={[0.55, 0.55, 1.8, 12]} />
+            <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.4} />
+          </mesh>
+        ))}
+        <mesh position={[0, 4.5, 0]}>
+          <cylinderGeometry args={[0.06, 0.06, 1.0, 6]} />
+          <meshStandardMaterial color={DARK} />
+        </mesh>
+        <mesh position={[0, 5.05, 0]}>
+          <sphereGeometry args={[0.16, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.5}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+      <MassDriverSolarField originX={breachX} />
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Artemis Base Camp
 // ---------------------------------------------------------------------------
 
-// Local units per METER, as in the other true-size installations.
-const CAMP_M = UNIT_MAX_DIM / (TYPE_SIZE_M.crewed_base ?? 38)
+// Local units per METER, as in the other true-size installations. 38 m dome
+// to dome across the connector spine — the camp's own real size, not the
+// generic habitat default (see TYPE_SIZE_M), since `CrewedBase` is reached
+// by an explicit PROJECT_MODEL entry rather than the type-level fallback.
+const CAMP_M = UNIT_MAX_DIM / 38
 
 // The glazing is nearly clear on purpose. What should read at distance is the
 // lattice holding it up and the crop beds behind it, not a tinted shell.
@@ -9935,6 +11035,1078 @@ function ParsecTerminal({ accent }: { accent: string }) {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Buried habitats — cut-and-cover vaults under a regolith cover
+// ---------------------------------------------------------------------------
+//
+// Two competitors in the core race end up under the surface rather than on it;
+// lib/lunar-atlas/subplan.ts holds which, why, and every dimension used here.
+// This is the geometry, and it is really three models stacked on one plot:
+//
+//   ABOVE GRADE  the cover mound, an airlock head house part-way down its
+//                inward flank, and the radiator wall, PV and vent stacks that
+//                a buried habitat CANNOT bury — a radiator needs cold sky and
+//                an array needs the sun, so the thermal and power hardware
+//                stays up while only the pressure shell goes down. This is the
+//                part that is always on screen, and it is the click target.
+//   THE VAULT    liner, floor, ribs and work lighting, drawn DOUBLE-SIDED so
+//                the same geometry reads from inside on the cutaway view (see
+//                subViewFraming) and from outside for anything that gets under
+//                the terrain another way.
+//   THE MODULE   the competitor's own pressure shell, on its cradles, with the
+//                radiators and arrays stripped off it and moved to the crest.
+//
+// Nothing has to be hidden or toggled to make this work. From above, the mound
+// is solid opaque geometry covering the whole vault in plan, so it occludes
+// everything under it the same way a hill occludes a valley; from below, the
+// terrain cap and the roads are front-sided and cull away on their own. The
+// only concession anywhere in the scene is the camera floor, which stands down
+// while a cutaway is open (see CAMERA_CLEARANCE in MoonGlobe).
+
+const VAULT_LINER = '#8b8780' // cast-regolith intrados, lamp-lit
+const VAULT_RIB = '#767b85' // the hoop frame the liner was cast over
+const VAULT_DECK = '#9b978d' // laid floor slab
+const VAULT_WALK = '#87837a' // the traffic strip worn down the middle of it
+const VAULT_LAMP = '#ffe4bd' // work lighting
+const COVER = '#a29c92' // heaped, graded cover regolith
+
+// Fill the vault's own lamps throw onto everything in it. The interior sits in
+// the mound's shadow — which is correct, and is why it needs this at all: the
+// scene's fill is nearly nothing (see the airless-fill note in MoonGlobe), so
+// without a lit look every surface down here renders as a black hole. Applied
+// as emissive rather than as real lights on purpose: point lights are global to
+// the renderer, and two vaults' worth of them would be paid for by every lit
+// material in the scene, forever, to light two rooms nobody is usually in.
+const VAULT_FILL = '#ffd9a8'
+const VAULT_FILL_I = 0.17
+const VAULT_FILL_DEEP_I = 0.1 // further from the lamps: the floor, the far end
+
+// How far the cover's skirt is bedded BELOW grade, in meters. A skirt that
+// stops exactly at grade is coplanar with the plaza it stands on, which is the
+// z-fight this avoids; a third of a meter of it buried is invisible.
+const COVER_BED_M = 0.35
+
+// Liner thickness in meters. Mirrors LINER_M in subplan, which is where the
+// packing side of the same number lives.
+const LINER_T = 0.5
+
+// The cover's height above grade at a plan position, in meters. Both the mound
+// geometry and everything standing on it read their height from this one
+// function, so a head house cannot end up floating over its own berm.
+//
+// The shape is a graded ridge, not a dome: full crest height directly over the
+// liner, straight flanks falling at the angle of repose, and both ends tapering
+// over the same batter run. `k` is how much of full height this station carries.
+function moundRise(g: VaultGeometry, x: number, z: number): number {
+  const k = Math.max(
+    0,
+    Math.min(1, (g.moundHalfLengthM - Math.abs(x)) / g.batterM)
+  )
+  if (k <= 0) return 0
+  const crestHalfZ = (g.moundHalfWidthM - g.batterM) * k
+  const toeHalfZ = g.moundHalfWidthM * k
+  const az = Math.abs(z)
+  if (az <= crestHalfZ) return g.crestM * k
+  if (az >= toeHalfZ) return 0
+  return g.crestM * k * (1 - (az - crestHalfZ) / (toeHalfZ - crestHalfZ))
+}
+
+// Stations along the axis, and samples across it. The across-samples are given
+// in SHOULDER units — 0 is the crest line, 1 the shoulder where the flank
+// breaks, 2 the toe — and cluster toward the shoulder, which is the only crease
+// in the profile and the one place a coarse sample reads as a facet. The last
+// sample is past the toe: it carries the skirt that tucks the rim under grade.
+const MOUND_NX = 72
+const MOUND_SKIRT = 2.06
+const MOUND_ACROSS = (() => {
+  const half = [
+    0, 0.34, 0.68, 0.88, 1, 1.2, 1.45, 1.7, 1.86, 1.96, 2, MOUND_SKIRT,
+  ]
+  return [...half.slice(1).reverse().map((u) => -u), ...half]
+})()
+
+// The cover, as one mesh. Built rather than assembled from primitives because
+// the toe outline has to be exactly the plan shape moundRise describes: a
+// rectangular sheet of ground-height geometry would lie coplanar with the plaza
+// wherever the mound isn't, which is the same z-fight COVER_BED_M avoids at the
+// skirt.
+function coverMoundGeometry(g: VaultGeometry): THREE.BufferGeometry {
+  // Fraction of the toe half-width the flat crest reaches. Constant along the
+  // whole ridge — both crest and toe scale with the same `k` — which is what
+  // lets one normalized sample list serve every station.
+  const c = (g.moundHalfWidthM - g.batterM) / g.moundHalfWidthM
+  // Shoulder units to a signed fraction of the toe half-width. Folded through
+  // |u| so both halves come off the same curve: taking `u` straight put every
+  // negative sample on the crest branch, which left the far flank a squashed
+  // copy of the near one with its toe hanging out past the plan outline.
+  const us = MOUND_ACROSS.map((u) => {
+    const au = Math.abs(u)
+    return Math.sign(u) * (au <= 1 ? au * c : c + (au - 1) * (1 - c))
+  })
+
+  const nz = us.length
+  const pos: number[] = []
+  const col: number[] = []
+  const idx: number[] = []
+  const base = new THREE.Color(COVER)
+
+  for (let i = 0; i <= MOUND_NX; i++) {
+    const x = -g.moundHalfLengthM + (2 * g.moundHalfLengthM * i) / MOUND_NX
+    const k = Math.max(
+      0,
+      Math.min(1, (g.moundHalfLengthM - Math.abs(x)) / g.batterM)
+    )
+    const toe = g.moundHalfWidthM * k
+    const rise = g.crestM * k
+    for (let j = 0; j < nz; j++) {
+      const v = us[j]
+      const av = Math.abs(v)
+      // The profile meets grade exactly at the toe; the one sample beyond it
+      // carries the rim down under the plaza, so the mound's edge is never
+      // coplanar with the ground it stands on.
+      const y =
+        av > 1 ? -COVER_BED_M : rise * (av <= c ? 1 : (1 - av) / (1 - c))
+      pos.push(x, y, v * toe)
+      // Placed in LIFTS, and a compacted berm shows it: a faint horizontal
+      // banding on the flanks, plus per-vertex grain so the surface doesn't
+      // read as one moulded shell.
+      const lift = Math.sin(y * 7.4) * 0.028
+      const grain = (hash1(i * 131 + j * 17) - 0.5) * 0.075
+      const m = 1 + lift + grain
+      col.push(base.r * m, base.g * m, base.b * m)
+    }
+  }
+
+  // Wound counter-clockwise seen from ABOVE, which is where this is looked at
+  // from. Wound the other way the cover was a hole in the ground: every face
+  // culled from every viewpoint outside it, so the crest hardware stood on bare
+  // regolith and the vault showed through the berm that is meant to hide it.
+  for (let i = 0; i < MOUND_NX; i++) {
+    for (let j = 0; j < nz - 1; j++) {
+      const a = i * nz + j
+      const b = a + nz
+      idx.push(a, a + 1, b, a + 1, b + 1, b)
+    }
+  }
+
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
+  geo.setIndex(idx)
+  geo.computeVertexNormals()
+  return geo
+}
+
+function CoverMound({ g }: { g: VaultGeometry }) {
+  const geo = useMemo(() => coverMoundGeometry(g), [g])
+  return (
+    <mesh geometry={geo}>
+      {/* White base colour: the tone rides on the vertex colours instead, so
+          SurfaceAnchor's dust and wear passes still have material.color to
+          themselves and compose over the banding rather than erasing it. */}
+      <meshStandardMaterial
+        color="#ffffff"
+        vertexColors
+        roughness={0.96}
+        metalness={0.02}
+      />
+    </mesh>
+  )
+}
+
+// The structure: floor, side walls, barrel, end walls, ribs and lighting.
+function VaultShell({ g }: { g: VaultGeometry }) {
+  const floor = -g.floorDepthM
+  const spring = floor + g.wallM // where the arch springs from
+  const r = g.spanM / 2
+  const halfL = g.lengthM / 2
+  // Ribs at a spacing that lands whole: a hoop frame is built to a module, and
+  // an odd stub bay at one end is the tell that it wasn't.
+  const bays = Math.max(4, Math.round(g.lengthM / 2.5))
+  return (
+    <group>
+      {/* Floor slab. Front-sided — it is only ever seen from above, standing
+          in the vault — and bedded so its edges disappear into the walls. */}
+      <mesh position={[0, floor - 0.18, 0]}>
+        <boxGeometry args={[g.lengthM + 0.4, 0.36, g.spanM + 0.4]} />
+        <meshStandardMaterial
+          color={VAULT_DECK}
+          roughness={0.92}
+          metalness={0.04}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_DEEP_I}
+        />
+      </mesh>
+
+      {/* The traffic strip: a laid walkway down the axis, one shade darker
+          where boots and a cart have polished it. */}
+      <mesh position={[0.4, floor + 0.02, 0]}>
+        <boxGeometry args={[g.lengthM - 1.2, 0.04, 1.9]} />
+        <meshStandardMaterial
+          color={VAULT_WALK}
+          roughness={0.78}
+          metalness={0.05}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_DEEP_I}
+        />
+      </mesh>
+
+      {/* Side walls, floor to springing */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[0, floor + g.wallM / 2, s * (r + LINER_T / 2)]}>
+          <boxGeometry args={[g.lengthM, g.wallM, LINER_T]} />
+          <meshStandardMaterial
+            color={VAULT_LINER}
+            roughness={0.9}
+            metalness={0.03}
+            side={THREE.DoubleSide}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+      ))}
+
+      {/* The barrel. thetaStart PI over a PI arc, with the lathe's own
+          rotation, is what puts the open half UP rather than sideways. */}
+      <mesh position={[0, spring, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry
+          args={[r, r, g.lengthM, 44, 1, true, Math.PI, Math.PI]}
+        />
+        <meshStandardMaterial
+          color={VAULT_LINER}
+          roughness={0.9}
+          metalness={0.03}
+          side={THREE.DoubleSide}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+
+      {/* End walls, as the vault's own section: a panel to the springing line
+          with a half-disc closing the arch over it. Squaring them off instead
+          would put corners outside the barrel, which is invisible from the
+          surface and obvious from inside. */}
+      {[-1, 1].map((s) => (
+        <group key={s} position={[s * halfL, 0, 0]}>
+          <mesh
+            position={[0, floor + g.wallM / 2, 0]}
+            rotation={[0, Math.PI / 2, 0]}
+          >
+            <planeGeometry args={[g.spanM, g.wallM]} />
+            <meshStandardMaterial
+              color={VAULT_LINER}
+              roughness={0.92}
+              metalness={0.03}
+              side={THREE.DoubleSide}
+              emissive={VAULT_FILL}
+              emissiveIntensity={VAULT_FILL_DEEP_I}
+            />
+          </mesh>
+          <mesh position={[0, spring, 0]} rotation={[0, Math.PI / 2, 0]}>
+            <circleGeometry args={[r, 40, 0, Math.PI]} />
+            <meshStandardMaterial
+              color={VAULT_LINER}
+              roughness={0.92}
+              metalness={0.03}
+              side={THREE.DoubleSide}
+              emissive={VAULT_FILL}
+              emissiveIntensity={VAULT_FILL_DEEP_I}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Hoop frame: a half-torus across the vault at every bay, on legs down
+          the side walls. Rotated a quarter turn about Y so the hoop's own
+          plane lies across the axis and its arc covers the upper half. */}
+      {Array.from({ length: bays + 1 }, (_, i) => {
+        const x = -halfL + (g.lengthM * i) / bays
+        return (
+          <group key={i}>
+            <mesh position={[x, spring, 0]} rotation={[0, Math.PI / 2, 0]}>
+              <torusGeometry args={[r + 0.05, 0.11, 7, 30, Math.PI]} />
+              <meshStandardMaterial
+                color={VAULT_RIB}
+                roughness={0.55}
+                metalness={0.5}
+                emissive={VAULT_FILL}
+                emissiveIntensity={VAULT_FILL_I}
+              />
+            </mesh>
+            {[-1, 1].map((s) => (
+              <mesh
+                key={s}
+                position={[x, floor + g.wallM / 2, s * (r + 0.05)]}
+              >
+                <boxGeometry args={[0.2, g.wallM, 0.2]} />
+                <meshStandardMaterial
+                  color={VAULT_RIB}
+                  roughness={0.55}
+                  metalness={0.5}
+                  emissive={VAULT_FILL}
+                  emissiveIntensity={VAULT_FILL_I}
+                />
+              </mesh>
+            ))}
+          </group>
+        )
+      })}
+
+      {/* Work lighting, on the springing line either side. These are the only
+          things in the vault bright enough to bloom, which is what sells the
+          rest of the interior as lit by them. */}
+      {[-1, 1].map((s) =>
+        Array.from({ length: bays }, (_, i) => (
+          <mesh
+            key={`${s}:${i}`}
+            position={[
+              -halfL + g.lengthM * ((i + 0.5) / bays),
+              spring + 0.12,
+              s * (r - 0.22),
+            ]}
+          >
+            <boxGeometry args={[g.lengthM / bays - 0.9, 0.09, 0.16]} />
+            <meshStandardMaterial
+              color={VAULT_LAMP}
+              emissive={VAULT_LAMP}
+              emissiveIntensity={2.1}
+              toneMapped={false}
+            />
+          </mesh>
+        ))
+      )}
+    </group>
+  )
+}
+
+// What makes it a room rather than a pipe: cable tray, ducting, the hatch
+// through the end wall to the shaft, stowage, and a work bench.
+function VaultFitOut({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const floor = -g.floorDepthM
+  const spring = floor + g.wallM
+  const r = g.spanM / 2
+  const halfL = g.lengthM / 2
+  // The service bay: everything between the inward end wall and the module.
+  const bayEnd = g.moduleOffsetM - 5.6
+  return (
+    <group>
+      {/* Cable tray and a duct run along one haunch, the whole length */}
+      {[
+        { z: r - 0.35, y: spring + 0.55, w: 0.34, h: 0.16, c: VAULT_RIB },
+        { z: -(r - 0.4), y: spring + 0.75, w: 0.42, h: 0.42, c: HULL_DARK },
+      ].map((run, i) => (
+        <mesh key={i} position={[0.2, run.y, run.z]}>
+          <boxGeometry args={[g.lengthM - 1, run.h, run.w]} />
+          <meshStandardMaterial
+            color={run.c}
+            roughness={0.6}
+            metalness={0.4}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+      ))}
+
+      {/* Hatch through the inward end wall. The shaft is on the far side of
+          it, which is the whole reason the access is here and not a hole in the
+          barrel: a shaft dropped through the crown would need the arch opened
+          around it, and an opening is the one thing a surface of revolution
+          cannot have without cutting the geometry apart. */}
+      <group position={[-halfL + 0.08, floor + 1.15, 0]}>
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[1.12, 1.12, 0.16, 28]} />
+          <meshStandardMaterial
+            color={VAULT_RIB}
+            roughness={0.5}
+            metalness={0.55}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        <mesh position={[0.12, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.98, 0.98, 0.12, 26]} />
+          <meshStandardMaterial
+            color={MPH_TRIM}
+            roughness={0.42}
+            metalness={0.5}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        {/* Hatch status light, in the operator's colour */}
+        <mesh position={[0.24, 0.72, 0.55]}>
+          <sphereGeometry args={[0.075, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.7}
+            toneMapped={false}
+          />
+        </mesh>
+        {/* Grab rails either side of the sill */}
+        {[-1, 1].map((s) => (
+          <mesh key={s} position={[0.3, 0, s * 1.32]}>
+            <boxGeometry args={[0.08, 1.9, 0.08]} />
+            <meshStandardMaterial color={MPH_TRIM} roughness={0.5} metalness={0.45} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Service bay: stowage against the wall and a bench. Deliberately not
+          centred on the walkway — a corridor a cart has to use stays clear. */}
+      <group position={[-halfL + 2.6, floor, 0]}>
+        {[
+          { x: 0.2, z: r - 1.1, v: 'medium' as const, s: 3 },
+          { x: 1.7, z: r - 1.0, v: 'small' as const, s: 7 },
+          { x: 1.75, z: r - 1.9, v: 'small' as const, s: 11 },
+          { x: 0.4, z: -(r - 1.2), v: 'large' as const, s: 5 },
+        ].map((c, i) => (
+          <group key={i} position={[c.x, 0, c.z]}>
+            <CargoCrate variant={c.v} seed={c.s} />
+          </group>
+        ))}
+        {/* Bench along the far wall, with a lit panel over it */}
+        <mesh position={[2.9, 0.86, -(r - 0.85)]}>
+          <boxGeometry args={[2.4, 0.09, 0.8]} />
+          <meshStandardMaterial
+            color={VAULT_RIB}
+            roughness={0.55}
+            metalness={0.45}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        {[-1, 1].map((s) => (
+          <mesh key={s} position={[2.9 + s * 1.05, 0.42, -(r - 0.85)]}>
+            <boxGeometry args={[0.1, 0.84, 0.7]} />
+            <meshStandardMaterial color={VAULT_RIB} roughness={0.6} metalness={0.4} />
+          </mesh>
+        ))}
+        <mesh position={[2.9, 1.62, -(r - 0.55)]} rotation={[0.6, 0, 0]}>
+          <boxGeometry args={[1.5, 0.5, 0.04]} />
+          <meshStandardMaterial
+            color={PANEL}
+            emissive="#7fb2ff"
+            emissiveIntensity={0.9}
+            toneMapped={false}
+            roughness={0.3}
+          />
+        </mesh>
+      </group>
+
+      {/* Somebody in it. This is the one thing the cutaway needs more than any
+          other detail: a vault is an unreadable tube until there is a 1.85 m
+          person standing on its floor, and then it is a room with a known size.
+          Parked on the walkway between the hatch and the module, which is the
+          only part of the floor the shot looks straight down. */}
+      <group position={[0, floor, 0]}>
+        <PatrollingAstronaut
+          center={[-halfL + 4.6, 0]}
+          radius={1.3}
+          seed={19}
+          accent={accent}
+        />
+      </group>
+
+      {/* The plant the bay exists for: a thermal/ECLSS skid piped up into the
+          cover, which is where a buried habitat's heat has to go. */}
+      <group position={[bayEnd - 1.4, floor, -(r - 1.5)]}>
+        <mesh position={[0, 0.95, 0]}>
+          <boxGeometry args={[1.9, 1.9, 1.4]} />
+          <meshStandardMaterial
+            color={HULL_DARK}
+            roughness={0.5}
+            metalness={0.45}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        {[-0.55, 0.55].map((dz) => (
+          <mesh key={dz} position={[0.3, 1.9 + (spring - floor) * 0.5, dz]}>
+            <cylinderGeometry args={[0.17, 0.17, spring - floor + 0.9, 12]} />
+            <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.6} />
+          </mesh>
+        ))}
+        <mesh position={[0, 1.98, 0]}>
+          <sphereGeometry args={[0.09, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.5}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// The shaft, and the head house on top of it. Both sit at the inward end,
+// beyond the vault's end wall, so neither has to open the barrel.
+//
+// Placed by moundRise rather than at a chosen height: the head house stands on
+// the cover's own inward flank, which is where a graded ridge actually gives
+// you somewhere to put a door.
+function VaultAccess({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const x = -(g.lengthM / 2 + 2)
+  const grade = moundRise(g, x, 0)
+  const floor = -g.floorDepthM
+  const R = 1.5 // shaft bore
+  return (
+    <group position={[x, 0, 0]}>
+      {/* Shaft, from the head house sill down to the vault floor. Double-sided
+          so the bore reads from inside as well as out. */}
+      <mesh position={[0, (grade + floor) / 2, 0]}>
+        <cylinderGeometry args={[R, R, grade - floor, 26, 1, true]} />
+        <meshStandardMaterial
+          color={VAULT_LINER}
+          roughness={0.9}
+          metalness={0.04}
+          side={THREE.DoubleSide}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_DEEP_I}
+        />
+      </mesh>
+
+      {/* Ladder down the bore, with a rest platform half way */}
+      {Array.from(
+        { length: Math.max(2, Math.round((grade - floor) / 0.32)) },
+        (_, i) => (
+          <mesh key={i} position={[0, floor + 0.3 + i * 0.32, -R + 0.34]}>
+            <boxGeometry args={[0.78, 0.045, 0.045]} />
+            <meshStandardMaterial color={MPH_TRIM} roughness={0.5} metalness={0.5} />
+          </mesh>
+        )
+      )}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={[s * 0.4, (grade + floor) / 2, -R + 0.34]}
+        >
+          <boxGeometry args={[0.06, grade - floor - 0.4, 0.06]} />
+          <meshStandardMaterial color={MPH_TRIM} roughness={0.5} metalness={0.5} />
+        </mesh>
+      ))}
+
+      {/* Head house: the airlock, and the only pressurized thing on this plot
+          standing in the sun. */}
+      <group position={[0, grade, 0]}>
+        <mesh position={[0, 1.45, 0]}>
+          <boxGeometry args={[3.3, 2.9, 3.3]} />
+          <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.22} />
+        </mesh>
+        {/* Benched pad. The shaft has to land clear of the vault's end wall,
+            which puts the head house out on the cover's END TAPER — most of a
+            crest's worth of berm against its inboard wall, bare regolith a
+            couple of meters outboard. So it gets cut-and-fill rather than a
+            fillet: the pad is retained down to below grade on the low side and
+            buried by the berm on the high one, which is why the building reads
+            as set INTO the cover from uphill and standing on it from the stair.
+            A shallow fillet spanned neither and floated over the low corner. */}
+        <mesh position={[0, -(grade + 0.8) / 2, 0]}>
+          <boxGeometry args={[4.3, grade + 0.8, 4.3]} />
+          <meshStandardMaterial color={COVER} roughness={0.95} metalness={0.02} />
+        </mesh>
+        {/* Kerb round the bench, which is what retains it */}
+        <mesh position={[0, -0.12, 0]}>
+          <boxGeometry args={[4.62, 0.24, 4.62]} />
+          <meshStandardMaterial color={PAD_SLAB} roughness={0.9} metalness={0.05} />
+        </mesh>
+        {/* Roof: a shallow cap plus its own thin shield layer */}
+        <mesh position={[0, 3.02, 0]}>
+          <boxGeometry args={[3.6, 0.26, 3.6]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.6} metalness={0.3} />
+        </mesh>
+        {/* Outer hatch, facing away from the mound */}
+        <group position={[-1.68, 1.15, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <mesh>
+            <cylinderGeometry args={[0.95, 0.95, 0.14, 26]} />
+            <meshStandardMaterial color={MPH_TRIM} roughness={0.45} metalness={0.5} />
+          </mesh>
+          <mesh position={[0, 0.09, 0]}>
+            <cylinderGeometry args={[0.78, 0.78, 0.1, 24]} />
+            <meshStandardMaterial color={HULL_DARK} roughness={0.4} metalness={0.45} />
+          </mesh>
+        </group>
+        {/* Operator band, a light over the door, and a whip antenna */}
+        <mesh position={[0, 2.72, 0]}>
+          <boxGeometry args={[3.36, 0.2, 3.36]} />
+          <meshStandardMaterial color={accent} roughness={0.5} metalness={0.3} />
+        </mesh>
+        <mesh position={[-1.74, 2.2, 0]}>
+          <sphereGeometry args={[0.11, 10, 10]} />
+          <meshStandardMaterial
+            color={VAULT_LAMP}
+            emissive={VAULT_LAMP}
+            emissiveIntensity={2.3}
+            toneMapped={false}
+          />
+        </mesh>
+        <Strut from={[1.3, 3.1, 1.3]} to={[1.3, 6.4, 1.3]} r={0.05} color={METAL} />
+        <mesh position={[1.3, 6.5, 1.3]}>
+          <sphereGeometry args={[0.09, 10, 10]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.6}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+
+      {/* Stair down the flank to grade. Steep, because the flank is at the
+          angle of repose and a ramp gentle enough to drive would run half a
+          district; crew climb, cargo goes down the shaft on the hoist. */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const t = (i + 1) / 8
+        return (
+          <mesh
+            key={i}
+            position={[-2.1 - t * 2.6, grade * (1 - t) - 0.1, 0]}
+          >
+            <boxGeometry args={[0.42, 0.16, 1.7]} />
+            <meshStandardMaterial color={PAD_SLAB} roughness={0.9} metalness={0.03} />
+          </mesh>
+        )
+      })}
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[-2.2, grade + 0.9, s * 0.9]}
+          to={[-4.8, 0.85, s * 0.9]}
+          r={0.045}
+          color={MPH_TRIM}
+        />
+      ))}
+    </group>
+  )
+}
+
+// What cannot go under: heat rejection, power, and the stacks that connect the
+// two to what is buried. All of it stands on the crest, which is both the best
+// sky a buried plot has and the shortest run to the plant below.
+function CrestWorks({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const radX = -(g.lengthM / 2) * 0.34
+  const pvX = g.lengthM * 0.3
+  return (
+    <group>
+      {/* Radiator wall. Vertical and edge-on to the sun's bearing, exactly as
+          every surface radiator on this base is, for the same reason: at 89°S
+          the sun circles the horizon and a panel lying flat bakes. */}
+      {[-1, 1].map((s) => (
+        <group
+          key={s}
+          position={[radX + s * 1.5, moundRise(g, radX + s * 1.5, 0), 0]}
+        >
+          <mesh position={[0, 1.95, 0]}>
+            <boxGeometry args={[0.1, 3.5, 6.4]} />
+            <meshStandardMaterial
+              color={HULL}
+              roughness={0.34}
+              metalness={0.55}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          {[-1, 1].map((e) => (
+            <mesh key={e} position={[0, 1.95, e * 3.25]}>
+              <boxGeometry args={[0.22, 3.7, 0.16]} />
+              <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.55} />
+            </mesh>
+          ))}
+          <mesh position={[0, 0.2, 0]}>
+            <boxGeometry args={[0.9, 0.4, 6.6]} />
+            <meshStandardMaterial color={VAULT_RIB} roughness={0.6} metalness={0.4} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Thermal/ECLSS stacks, over the plant below */}
+      {[-1.4, 1.4].map((dz) => {
+        const x = radX + 4.2
+        return (
+          <group key={dz} position={[x, moundRise(g, x, dz), dz]}>
+            <mesh position={[0, 0.85, 0]}>
+              <cylinderGeometry args={[0.34, 0.42, 1.7, 14]} />
+              <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.45} />
+            </mesh>
+            <mesh position={[0, 1.78, 0]}>
+              <cylinderGeometry args={[0.46, 0.34, 0.2, 14]} />
+              <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.6} />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* PV over the far end of the cover */}
+      {[-1, 1].map((s) => {
+        const z = s * 3.1
+        return (
+          <group key={s} position={[pvX, moundRise(g, pvX, z), z]}>
+            <Strut from={[0, 0, 0]} to={[0, 1.5, 0]} r={0.08} color={METAL} />
+            <mesh position={[0, 1.9, 0]} rotation={[0, 0, 1.15]}>
+              <boxGeometry args={[0.05, 5.2, 2.1]} />
+              <meshStandardMaterial
+                color={PANEL}
+                roughness={0.28}
+                metalness={0.42}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+            <mesh position={[0, 1.62, 0]}>
+              <boxGeometry args={[0.34, 0.3, 0.34]} />
+              <meshStandardMaterial color={VAULT_RIB} roughness={0.55} metalness={0.45} />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* Survey monument on the crest — the mark the cover's thickness is
+          checked against, and the only thing up here that isn't hardware. */}
+      {(() => {
+        const x = g.lengthM * 0.06
+        const z = g.moundHalfWidthM * 0.42
+        return (
+          <group position={[x, moundRise(g, x, z), z]}>
+            <mesh position={[0, 0.5, 0]}>
+              <cylinderGeometry args={[0.07, 0.09, 1, 8]} />
+              <meshStandardMaterial color={HULL_DARK} roughness={0.6} metalness={0.3} />
+            </mesh>
+            <mesh position={[0, 1.06, 0]}>
+              <boxGeometry args={[0.34, 0.16, 0.05]} />
+              <meshStandardMaterial
+                color={accent}
+                emissive={accent}
+                emissiveIntensity={0.5}
+                roughness={0.5}
+              />
+            </mesh>
+          </group>
+        )
+      })()}
+
+      {/* Surplus spoil: what came out of the hole and didn't go back over it,
+          windrowed along the outward flank where the haulers left it. */}
+      {[0, 1, 2].map((i) => {
+        const x = g.moundHalfLengthM * (0.34 + i * 0.2)
+        const z = -g.moundHalfWidthM * 0.72
+        const rr = 1.5 - i * 0.22
+        return (
+          <mesh key={i} position={[x, moundRise(g, x, z) + rr * 0.1, z]}>
+            <sphereGeometry args={[rr, 12, 7, 0, Math.PI * 2, 0, Math.PI / 2]} />
+            <meshStandardMaterial
+              color={COVER}
+              roughness={0.97}
+              metalness={0.02}
+            />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// Thales' MPH as it sits in a vault. Built from the SAME dimensions the surface
+// model is (MPH_R, MPH_BARREL, MPH_Y, MPH_LOCK_X — see the Habitat component,
+// which is the MPH): a buried article that read as a different diameter or a
+// different length would look like a different program's module, and the whole
+// argument of this race is that no two bids look alike.
+//
+// What is deliberately absent is everything the surface model deploys INTO the
+// sky — the tracking array, the radiator wings over the roof, the antennas. A
+// radiator four meters under regolith rejects heat to the regolith, which is
+// the one thing it must not do, so that hardware is re-erected on the crest
+// (see CrestWorks) and the shell down here is just the shell.
+function MphVaultModule({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const base = -g.floorDepthM
+  return (
+    // Turned to face the service bay. Both modules here are authored with their
+    // hatch end on local +X — that is where the road was when they stood on the
+    // surface — and in a vault the road is the shaft at the INWARD end, so the
+    // whole module comes about rather than its door being re-cut on the far side.
+    <group position={[g.moduleOffsetM, base, 0]} rotation={[0, Math.PI, 0]}>
+      {/* Still on its own landing legs: it arrived on them, and a module set
+          down in a trench is not re-cradled afterwards. */}
+      {[-3.3, -0.2].map((x) =>
+        [-1, 1].map((s) => <HabitatLeg key={`${x}:${s}`} x={x} z={s * 1.45} />)
+      )}
+      <HabitatLeg x={MPH_LOCK_X} z={-1.05} />
+      <HabitatLeg x={MPH_LOCK_X} z={1.05} />
+
+      {/* Pressure shell and its end caps. The cap sign is the same trap the
+          surface model documents: Rz(+PI/2) carries +Y to -X, so the forward
+          cap needs the NEGATED sign to dome forward. */}
+      <mesh position={[MPH_X, MPH_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[MPH_R, MPH_R, MPH_BARREL, 32]} />
+        <meshStandardMaterial
+          color={MPH_MLI}
+          roughness={0.72}
+          metalness={0.14}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+      {[
+        [MPH_FWD, 1],
+        [MPH_AFT, -1],
+      ].map(([x, s]) => (
+        <mesh
+          key={x}
+          position={[x, MPH_Y, 0]}
+          rotation={[0, 0, -s * (Math.PI / 2)]}
+        >
+          <sphereGeometry args={[MPH_R, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial
+            color={MPH_MLI}
+            roughness={0.72}
+            metalness={0.14}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+      ))}
+
+      {/* Ring frames over the barrel */}
+      {[-3.1, -1.4, 0.3].map((x) => (
+        <mesh key={x} position={[x, MPH_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[MPH_R + 0.06, MPH_R + 0.06, 0.14, 32]} />
+          <meshStandardMaterial color={MPH_TRIM} roughness={0.55} metalness={0.42} />
+        </mesh>
+      ))}
+
+      {/* Operator band on the forward ring — the same one the surface model
+          carries, and the only paint on the pressure shell. */}
+      <mesh position={[MPH_FWD - 0.35, MPH_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[MPH_R + 0.08, MPH_R + 0.08, 0.28, 32]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.3} />
+      </mesh>
+
+      {/* Airlock tower. Above ground it is the EVA door; down here it is the
+          way through to the shaft, so its hatch faces the service bay. */}
+      <mesh position={[MPH_LOCK_X, 1.95, 0]}>
+        <cylinderGeometry args={[MPH_LOCK_R, MPH_LOCK_R, 2.9, 24]} />
+        <meshStandardMaterial
+          color={MPH_MLI}
+          roughness={0.72}
+          metalness={0.14}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+      <mesh position={[MPH_LOCK_X, 3.4, 0]}>
+        <sphereGeometry args={[MPH_LOCK_R, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial
+          color={MPH_MLI}
+          roughness={0.72}
+          metalness={0.14}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+
+      {/* Berthing port on the aft cap, still waiting on the element that was
+          always meant to dock to it */}
+      <mesh
+        position={[MPH_AFT - MPH_R - 0.22, MPH_Y, 0]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
+        <cylinderGeometry args={[0.92, 0.92, 0.44, 24]} />
+        <meshStandardMaterial color={MPH_SHADE} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh
+        position={[MPH_AFT - MPH_R - 0.46, MPH_Y, 0]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
+        <cylinderGeometry args={[1.06, 1.06, 0.14, 24]} />
+        <meshStandardMaterial color={MPH_TRIM} roughness={0.45} metalness={0.5} />
+      </mesh>
+
+      {/* Gangway from the airlock sill down to the vault's walkway */}
+      <mesh position={[MPH_LOCK_X + MPH_LOCK_R + 0.85, 1.42, 0]}>
+        <boxGeometry args={[1.6, 0.1, 1.3]} />
+        <meshStandardMaterial color={MPH_SHADE} roughness={0.7} metalness={0.25} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[MPH_LOCK_X + MPH_LOCK_R + 0.05, 2.32, s * 0.62]}
+          to={[MPH_LOCK_X + MPH_LOCK_R + 2.6, 2.32, s * 0.62]}
+          r={0.04}
+          color={MPH_TRIM}
+        />
+      ))}
+      {[0, 1, 2].map((i) => (
+        <mesh
+          key={i}
+          position={[MPH_LOCK_X + MPH_LOCK_R + 1.8 + i * 0.34, 1.2 - i * 0.34, 0]}
+        >
+          <boxGeometry args={[0.36, 0.09, 1.2]} />
+          <meshStandardMaterial color={MPH_SHADE} roughness={0.8} metalness={0.2} />
+        </mesh>
+      ))}
+
+      {/* Lit ports. A buried module has no view out, and these look into the
+          vault instead — the crew's window is onto their own hall. */}
+      {[-2.6, -0.9].map((x) => (
+        <mesh
+          key={x}
+          position={[x, MPH_Y + 0.55, mphFlankZ(MPH_Y + 0.55) - 0.06]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <cylinderGeometry args={[0.3, 0.3, 0.12, 18]} />
+          <meshStandardMaterial
+            color={WINDOW}
+            emissive={WINDOW}
+            emissiveIntensity={1.2}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+
+      {/* Handrails along the crown */}
+      {[-3.6, -2.1, -0.6, 0.9].map((x) => (
+        <Strut
+          key={x}
+          from={[x, MPH_Y + MPH_R + 0.04, -0.4]}
+          to={[x, MPH_Y + MPH_R + 0.04, 0.4]}
+          r={0.035}
+          color={MPH_TRIM}
+        />
+      ))}
+    </group>
+  )
+}
+
+// Sierra's LIFE in its vault. The shell is the SAME lathe profile the surface
+// model uses (LIFE_PROFILE) — the quilting between the cinch straps is the one
+// feature that says "inflatable", and re-drawing it looser here would make the
+// buried article read as a different program's hardware. What is deliberately
+// absent is the standoff radiators: those are on the crest now.
+function LifeVaultModule({ g, accent }: { g: VaultGeometry; accent: string }) {
+  const base = -g.floorDepthM
+  return (
+    // Turned about, for the same reason the MPH is: the vestibule is authored
+    // on local +X where the road used to be, and in a vault the way out is the
+    // shaft behind the inward end wall.
+    <group position={[g.moduleOffsetM, base, 0]} rotation={[0, Math.PI, 0]}>
+      {/* Saddles, sized off the CINCH radius like the surface model's */}
+      {[-2.9, -0.8, 1.3].map((x) => (
+        <mesh key={x} position={[x, 0.39, 0]}>
+          <boxGeometry args={[0.5, 0.78, 2.6]} />
+          <meshStandardMaterial color={LIFE_CRADLE} roughness={0.85} metalness={0.18} />
+        </mesh>
+      ))}
+
+      {/* Softgoods shell */}
+      <mesh position={[LIFE_X, LIFE_Y, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <latheGeometry args={[LIFE_PROFILE, 48]} />
+        <meshStandardMaterial
+          color={LIFE_SOFT}
+          roughness={0.9}
+          metalness={0.03}
+          emissive={VAULT_FILL}
+          emissiveIntensity={VAULT_FILL_I}
+        />
+      </mesh>
+
+      {/* Hoop straps at every cinch */}
+      {Array.from({ length: LIFE_BAYS + 1 }, (_, i) => (
+        <mesh
+          key={i}
+          position={[LIFE_X + (i / LIFE_BAYS - 0.5) * LIFE_BARREL, LIFE_Y, 0]}
+          rotation={[0, Math.PI / 2, 0]}
+        >
+          <torusGeometry args={[LIFE_R_STRAP + 0.03, 0.1, 8, 44]} />
+          <meshStandardMaterial
+            color={LIFE_STRAP}
+            roughness={0.85}
+            metalness={0.08}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_DEEP_I}
+          />
+        </mesh>
+      ))}
+
+      {/* Rigid ends, forward one carrying the operator's colour */}
+      <LifeBulkhead x={LIFE_X - LIFE_END} s={-1} />
+      <LifeBulkhead x={LIFE_X + LIFE_END} s={1} ring={accent} />
+
+      {/* Vestibule, canted down off the forward bulkhead onto the walkway —
+          the same solution the surface model uses for a hull this fat. */}
+      <group position={[LIFE_X + LIFE_VEST_X, LIFE_VEST_Y, 0]}>
+        <mesh rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[LIFE_VEST_R, LIFE_VEST_R, 1.8, 22]} />
+          <meshStandardMaterial
+            color={LIFE_CORE}
+            roughness={0.5}
+            metalness={0.35}
+            emissive={VAULT_FILL}
+            emissiveIntensity={VAULT_FILL_I}
+          />
+        </mesh>
+        <mesh position={[0.98, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[LIFE_VEST_R + 0.16, LIFE_VEST_R + 0.16, 0.16, 22]} />
+          <meshStandardMaterial color={LIFE_TRIM} roughness={0.45} metalness={0.45} />
+        </mesh>
+        {/* Steps down to the deck */}
+        {[0, 1, 2].map((i) => (
+          <mesh key={i} position={[1.15 + i * 0.34, -0.55 - i * 0.34, 0]}>
+            <boxGeometry args={[0.36, 0.08, 1.1]} />
+            <meshStandardMaterial color={LIFE_TRIM} roughness={0.55} metalness={0.35} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  )
+}
+
+// The per-project pressure shell inside the vault. Only the two buried
+// competitors appear here; anything else buried later needs its own entry,
+// because the whole reason this race is worth drawing is that no two answers
+// to "what is a first habitat" look alike (see PROJECT_MODEL).
+function VaultModule({
+  project,
+  g,
+  accent,
+}: {
+  project: Project
+  g: VaultGeometry
+  accent: string
+}) {
+  if (project.id === 'sierra-space-life')
+    return <LifeVaultModule g={g} accent={accent} />
+  return <MphVaultModule g={g} accent={accent} />
+}
+
+// A buried habitat, assembled. Authored entirely in METERS: the outer group
+// cancels the model-size normalization the same way every true-size model here
+// does, so a 2.9 m head house really is 2.9 m beside a 1.85 m astronaut.
+//
+// The long axis is local +X, which SurfaceAnchor puts on the world bearing
+// vaultAxis hands it — NOT on the camera-facing heading every other ground
+// model uses. The cutaway camera has to stand at a known end of a known axis,
+// and a heading solved against the home viewpoint is not a bearing subplan can
+// predict (see vaultAxis).
+function BuriedHabitat({
+  project,
+  accent,
+}: {
+  project: Project
+  accent: string
+}) {
+  const g = buriedVault(project.id)
+  if (!g) return null
+  return (
+    <group scale={UNIT_MAX_DIM / projectSizeM(project)}>
+      <CoverMound g={g} />
+      <VaultShell g={g} />
+      <VaultFitOut g={g} accent={accent} />
+      <VaultModule project={project} g={g} accent={accent} />
+      <VaultAccess g={g} accent={accent} />
+      <CrestWorks g={g} accent={accent} />
+    </group>
+  )
+}
+
 // Company-specific builds, keyed by project. A named competitor's hardware
 // should look like theirs; the per-type model below is the stand-in for
 // everyone else in that category.
@@ -9970,9 +12142,12 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // gimballed onto the lid, not the generic CommsPnt mast-shelter-array site
   // Nokia still stands on. RelaySat flies via SKY_STATIONS/SkyLayer.
   'im-near-space-network': RelayGroundTerminal,
-  // The core's second competitor: see ILRSBase. `nasa-artemis-base-camp`
-  // keeps using the generic `CrewedBase` model (it always has — see the
-  // handoff doc), so this is the only override the district needs.
+  // The habitat race's two flagship sustained-presence programs. Both need
+  // an explicit entry now that `crewed_base` and `habitat` are one type —
+  // the generic `Habitat` model (a single pressurized module) is the wrong
+  // fallback for either of these, so neither can be reached by the
+  // type-level switch below the way a project with no model of its own is.
+  'nasa-artemis-base-camp': CrewedBase,
   ilrs: ILRSBase,
   // ISRU district: a packaged skid plant instead of IsruPlant's own
   // field-plus-tower installation. `blue-origin-blue-alchemist` keeps the
@@ -9990,15 +12165,17 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
 export function ProceduralModel({
   project,
   accent,
+  trackGround,
 }: {
   project: Project
   accent: string
+  // Only the mass driver uses this: the ground under each of its trestle bents.
+  // See MassDriver.
+  trackGround?: number[]
 }) {
   const Custom = PROJECT_MODEL[project.id]
   if (Custom) return <Custom accent={accent} />
   switch (project.type) {
-    case 'crewed_base':
-      return <CrewedBase accent={accent} />
     case 'habitat':
       return <Habitat accent={accent} />
     case 'lander':
@@ -10015,6 +12192,8 @@ export function ProceduralModel({
       return <RelaySat accent={accent} />
     case 'construction':
       return <ConstructionSite accent={accent} />
+    case 'mass_driver':
+      return <MassDriver accent={accent} trackGround={trackGround} />
     case 'other':
     default:
       return <GenericStructure accent={accent} />
@@ -10102,6 +12281,89 @@ function AstronautCompanion({ accent }: { accent: string }) {
 // Pointer travel beyond this between down and up is a globe drag, not a click.
 const CLICK_DRAG_TOLERANCE_PX = 8
 
+// ---------------------------------------------------------------------------
+// Dust on the hardware
+// ---------------------------------------------------------------------------
+//
+// Lunar dust gets on everything, and it gets on the bottom of everything
+// first. It is electrostatically charged, jagged, and thrown by every wheel,
+// boot and thruster on the surface, with no atmosphere to slow it and no
+// weather to wash it off — so it arrives, sticks, and stays. Apollo hardware is
+// the whole argument: the LRV came home with its fenders and lower body the
+// colour of the ground it drove over while its upper surfaces stayed the colour
+// they were painted, and every LM's descent stage wore the same gradient. Clean
+// hardware, uniformly the colour of its own paint from the ground up, is one of
+// the loudest tells that a surface render was assembled rather than used.
+//
+// So every lit surface on the base is blended toward the regolith by how low it
+// sits. Measured in REAL METERS off local grade and not as a fraction of the
+// model, because that's how the physics works: dust is thrown to about the same
+// height whether the thing standing in it is a 2 m rover or a 105 m guideway,
+// so a rover ends up dusty nearly all over and the guideway ends up dusty only
+// around the feet of its legs. A fraction-of-model rule would have got the
+// rover right and painted the guideway's roof.
+const DUST = new THREE.Color('#9b948a')
+// How far up the dust reaches. Generous for footfall alone; this is a working
+// site with vehicles running laps of it and landers coming in.
+const DUST_HEIGHT_M = 2.2
+// ...and how much of that is the splash zone, coated as heavily as it gets. A
+// falloff that starts thinning from the ground up leaves the one band that
+// should be unambiguously filthy — tracks, feet, skirts, the bottom of a leg —
+// at two thirds strength, which is the height at which the whole effect stops
+// being legible at any distance.
+const DUST_FULL_M = 0.6
+// Blend at grade. Deliberately short of a full coat — this is hardware in
+// service, not hardware abandoned, and past about a third the underlying
+// material stops reading as itself at all.
+const DUST_MAX = 0.3
+// Vertical extent, in meters, below which a mesh is taken to be a marking ON
+// the ground rather than a surface standing on it — a pit floor, a painted
+// lane, a decal. Dust settling on top of the ground is just the ground, and
+// tinting these washes out albedos that were chosen to read as dark holes.
+const DUST_FLAT_M = 0.03
+// Height, in meters, below which a mesh is taken to be INSIDE something rather
+// than standing on the regolith, and so exempt from the gradient entirely — the
+// buried habitats' vaults and the modules in them. A metre of margin, because
+// surface models routinely bed a skirt or a footpad slightly into the ground
+// and those are still standing on it.
+const DUST_BURIED_M = -1
+
+const DUST_BOX = new THREE.Box3()
+const DUST_MAT = new THREE.Matrix4()
+const DUST_WANT = new THREE.Color()
+
+// ---------------------------------------------------------------------------
+// Per-instance weathering
+// ---------------------------------------------------------------------------
+//
+// The base fields real duplicates: three fission plants of one design, a row of
+// identical printed pads, a scatter of the same boulder and the same street
+// light over and over. Duplicated hardware is correct — you would build a
+// second reactor to the first one's drawings — but duplicated WEAR is not.
+// Two units off the same line have been on the surface different lengths of
+// time, taken different amounts of dust, and been scuffed by different work,
+// and it is that variation the eye uses to read a row of things as several
+// objects rather than one object copied. Without it, identical models tile:
+// the repeat becomes the most visible thing in the frame.
+//
+// So every anchored instance shifts its own materials a little, off a seed
+// taken from the one thing guaranteed unique and stable per instance — where
+// it stands. No plumbing, no props to thread through a dozen call sites, and a
+// given unit looks the same on every reload because its site never moves.
+const WEATHER_ROUGH = 0.07 // ± roughness, on a 0-1 scale
+const WEATHER_VALUE = 0.05 // ± brightness, as a fraction
+
+// Stable, well-mixed and cheap, from a point on the unit sphere. Multipliers
+// are the usual irrationals — the point is only that the three axes don't
+// alias against each other for directions this close together (every site on
+// this base is within a few hundred meters, so the inputs agree to five
+// decimals and a weak hash would hand neighbours the same number).
+function siteSeed(dir: Vec3): number {
+  const s =
+    Math.sin(dir[0] * 12.9898 + dir[1] * 78.233 + dir[2] * 37.719) * 43758.5453
+  return s - Math.floor(s)
+}
+
 // Anchors any model on the globe: seats it at the sampled terrain radius
 // along `dir`, orients its +Y to the local surface normal, and makes the
 // whole thing a drag-tolerant click/hover target. Shared by per-project
@@ -10178,7 +12440,25 @@ export function SurfaceAnchor({
   // to arrive already dimmed.
   const groupRef = useRef<THREE.Group>(null)
   useEffect(() => {
-    groupRef.current?.traverse((o) => {
+    const root = groupRef.current
+    if (!root) return
+    // Forced, rather than trusting whatever the render loop last left behind:
+    // this effect runs at commit, and a mesh mounting for the first time (or
+    // streaming in out of a GLB's Suspense) has its position set but its world
+    // matrix still stale. The dust pass below reads a mesh's height through
+    // those matrices, so a stale one bakes the wrong amount of dust onto a
+    // material — and since nothing re-renders afterwards, it would stay wrong.
+    root.updateWorldMatrix(true, true)
+    // Meters, in this model's own local units — the anchor's `scale` is world
+    // units per local unit and M_TO_UNITS is world units per meter.
+    const localPerM = M_TO_UNITS / scale
+    // This unit's own wear, held for its whole subtree so the instance reads as
+    // one object that has had one life — not as parts weathered independently.
+    const wear = siteSeed(dir)
+    const wearRough = (wear - 0.5) * 2 * WEATHER_ROUGH
+    const wearValue = 1 + (siteSeed([dir[1], dir[2], dir[0]]) - 0.5) * 2 * WEATHER_VALUE
+
+    root.traverse((o) => {
       const m = o as THREE.Mesh
       if (!m.isMesh) return
       const mat = m.material as THREE.Material | undefined
@@ -10206,6 +12486,75 @@ export function SurfaceAnchor({
       m.receiveShadow = !unlit
 
       if (!mat) return
+
+      // Dust, thickest at grade and thinning with height (see DUST_HEIGHT_M).
+      // Recomputed from a remembered base colour every pass rather than applied
+      // once, for the same reason the dim above is: it has to be idempotent, so
+      // that a pass which ran before this mesh's transform settled is corrected
+      // by the next one instead of leaving a permanent mistake.
+      const tint = mat as THREE.MeshStandardMaterial
+      const emissive = tint.emissive
+        ? tint.emissive.r + tint.emissive.g + tint.emissive.b
+        : 0
+      if (!unlit && tint.color && emissive < 0.3 && m.geometry) {
+        if (!m.geometry.boundingBox) m.geometry.computeBoundingBox()
+        const bb = m.geometry.boundingBox
+        // The mesh's own box in the MODEL's frame, which is the frame local
+        // height is measured in — a geometry-space box would put a flat
+        // ground decal's degenerate axis wherever that geometry happens to
+        // be authored rather than vertically.
+        DUST_MAT.copy(root.matrixWorld).invert().multiply(m.matrixWorld)
+        if (bb) DUST_BOX.copy(bb).applyMatrix4(DUST_MAT)
+        // Meters above the model's own grade.
+        const centreY = bb
+          ? (DUST_BOX.min.y + DUST_BOX.max.y) / 2 / localPerM
+          : 0
+        // Below grade the gradient has nothing to measure. Dust here is a
+        // statement about height above the REGOLITH SURFACE — thrown up by
+        // boots and wheels and settling back — and a vault liner seven meters
+        // down is not low on that surface, it is inside something. Left at its
+        // authored colour instead, because otherwise a buried habitat's whole
+        // interior clamps to full dust and renders as one uniform brown, which
+        // is the opposite of the point. The threshold is a metre rather than
+        // zero because plenty of surface models bed a skirt or a foot slightly
+        // into the ground, and those are still standing on it.
+        if (bb && centreY >= DUST_BURIED_M) {
+          if (!mat.userData.dustBaseColor)
+            mat.userData.dustBaseColor = tint.color.clone()
+          const flat = DUST_BOX.max.y - DUST_BOX.min.y < DUST_FLAT_M * localPerM
+          const t = Math.min(
+            1,
+            Math.max(0, (centreY - DUST_FULL_M) / (DUST_HEIGHT_M - DUST_FULL_M))
+          )
+          const w = flat ? 0 : DUST_MAX * (1 - t) * (1 - t)
+          // Dust first, then this unit's own wear over the top of it — the
+          // order matters: wear is a property of THIS unit's surface, so it has
+          // to modulate what that surface actually looks like now, coating and
+          // all, rather than being blended away under a coat of dust.
+          DUST_WANT.copy(mat.userData.dustBaseColor)
+            .lerp(DUST, w)
+            .multiplyScalar(wearValue)
+          if (!tint.color.equals(DUST_WANT)) tint.color.copy(DUST_WANT)
+
+          if (tint.roughness !== undefined) {
+            if (mat.userData.wearBaseRough === undefined)
+              mat.userData.wearBaseRough = tint.roughness
+            // Rougher low down as well as browner: the same abrasive that
+            // discolours a surface also frosts it. Clamped short of a perfect
+            // mirror at one end and of total diffusion at the other, both of
+            // which read as a material error rather than as wear.
+            const rough = Math.min(
+              1,
+              Math.max(
+                0.04,
+                mat.userData.wearBaseRough + wearRough + w * 0.25
+              )
+            )
+            if (tint.roughness !== rough) tint.roughness = rough
+          }
+        }
+      }
+
       const want = mat.userData.dimBaseOpacity * dim
       // Guarded: writing `transparent` unconditionally would bump the material
       // version every render and force a shader recompile.
@@ -10278,6 +12627,10 @@ type ProjectModelProps = {
   // zoomed in, the installation is the obvious thing to click.
   onSelect?: (id: string) => void
   onHover?: (id: string | null) => void
+  // Ground under each of the mass driver's trestle bents, in meters relative to
+  // its seat. Sampled by MarkerLayer, which is the layer that holds the terrain
+  // sampler; unused by every other project. See MassDriver.
+  trackGround?: number[]
 }
 
 export default function ProjectModel({
@@ -10290,10 +12643,12 @@ export default function ProjectModel({
   dim,
   onSelect,
   onHover,
+  trackGround,
 }: ProjectModelProps) {
-  const isBase = project.type === 'crewed_base' || project.type === 'habitat'
+  const isBase = project.type === 'habitat'
   const frontAz =
     (project.modelURI ? MODEL_FRONT_AZ[project.modelURI] : undefined) ?? 0
+  const buried = buriedVault(project.id)
 
   return (
     <SurfaceAnchor
@@ -10301,15 +12656,27 @@ export default function ProjectModel({
       surfaceRadius={surfaceRadius}
       scale={projectScale(project)}
       turn={turn}
+      // A buried habitat's axis is handed down from the layout (see vaultAxis),
+      // because the cutaway camera has to stand at a known end of it. Everything
+      // else keeps the camera-facing heading, and a driving competitor's travel
+      // direction still wins over both.
       noseAlong={noseAlong}
       dim={dim}
       frontAz={frontAz}
       onClick={() => onSelect?.(project.id)}
       onHoverChange={(h) => onHover?.(h ? project.id : null)}
     >
-      {project.modelURI ? (
+      {buried ? (
+        <BuriedHabitat project={project} accent={accent} />
+      ) : project.modelURI ? (
         <Suspense
-          fallback={<ProceduralModel project={project} accent={accent} />}
+          fallback={
+            <ProceduralModel
+              project={project}
+              accent={accent}
+              trackGround={trackGround}
+            />
+          }
         >
           {/* Landers touch down on a prepared pad; everything else stands
               directly on the regolith (GLBs are seated with their lowest
@@ -10329,7 +12696,11 @@ export default function ProjectModel({
           {isBase && <AstronautCompanion accent={accent} />}
         </Suspense>
       ) : (
-        <ProceduralModel project={project} accent={accent} />
+        <ProceduralModel
+          project={project}
+          accent={accent}
+          trackGround={trackGround}
+        />
       )}
     </SurfaceAnchor>
   )

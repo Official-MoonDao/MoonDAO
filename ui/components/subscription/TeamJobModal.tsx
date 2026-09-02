@@ -29,6 +29,7 @@ import {
   serializeJobMetadata,
 } from '@/lib/jobs/jobMetadata'
 import { fetchJobPostingDoc, pinJobPostingDoc } from '@/lib/jobs/jobPostingDoc'
+import { jobDiscordEmbed, jobOgFieldsFrom } from '@/lib/og/preview'
 import cleanData from '@/lib/tableland/cleanData'
 import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -491,11 +492,19 @@ export default function TeamJobModal({
       const team = await getNFT({ contract: teamContract, tokenId: BigInt(jobTeamId) })
       const teamName = team?.metadata.name as string
       const link = jobId ? `${DEPLOYED_ORIGIN}/jobs/${jobId}` : `${DEPLOYED_ORIGIN}/jobs`
+      const doc = buildPostingDoc(0)
+      const fields = jobOgFieldsFrom({
+        job: { title: form.title, tag: form.tag },
+        envelope: doc ? buildJobMetadata(doc) : undefined,
+        doc,
+        teamName,
+      })
       sendDiscordMessage(
         'networkNotifications',
         `## [**${teamName}** has ${
           edit ? 'updated a' : 'posted a new'
-        } job](${link}) <@&${DISCORD_CITIZEN_ROLE_ID}>`
+        } job](${link}) <@&${DISCORD_CITIZEN_ROLE_ID}>`,
+        [jobDiscordEmbed({ fields, summary: form.description, url: link, teamName })]
       )
     } catch (error) {
       console.error('Failed to send job Discord notification:', error)

@@ -18,6 +18,27 @@ interface TopNavBarProps {
   citizenContract: any
 }
 
+// A nav item's icon, in a fixed box.
+//
+// The box exists because the icons do not agree with each other. Most are
+// heroicons that take a className, but Citizens' is a hand-rolled SVG that
+// accepts no props at all and hard-codes its own `mr-2 h-5 w-5` — so styling
+// them through `item.icon`'s className silently missed that one, which is how
+// the bar came to hide seven icons and leave the eighth showing at a size the
+// others were not. Sizing from the outside cannot be ignored by an icon, and
+// the child overrides win on specificity (two classes and an element beats the
+// icon's one class), so every item gets the same 16px mark either way.
+//
+// Below `navicons` they all go: eight of them cost 192px, and nothing is lost
+// that the label beside them was not already saying.
+function NavItemIcon({ icon: Icon }: { icon: any }) {
+  return (
+    <span className="hidden navicons:flex items-center justify-center w-4 h-4 mr-2 flex-shrink-0 [&>svg]:w-full [&>svg]:h-full [&>svg]:m-0">
+      <Icon />
+    </span>
+  )
+}
+
 const TopNavBar = ({
   navigation,
   lightMode,
@@ -84,20 +105,32 @@ const TopNavBar = ({
       <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-transform duration-300 ease-in-out ${
         isVisible ? 'translate-y-0' : '-translate-y-full'
       }`}>
-      <div className="max-w-full mx-auto px-2 lg:px-3 xl:px-4 2xl:px-6">
+      {/* Steps at `navicons` and `navwide` (see tailwind.config), and at nothing
+          else: the md:/lg:/xl: steps this used to carry were dead code, because
+          Layout only mounts this bar from xl: up and hands everything narrower
+          to the mobile drawer. */}
+      <div className="max-w-full mx-auto px-4 navwide:px-6">
         <div className="flex items-center justify-between h-16 lg:h-18 min-w-0">
+          {/* The gutter and this margin both stand the logo off the window edge,
+              so they are read together: 32px of clear space at the compact end,
+              48px at the wide one. It used to be 20px, which read as the mark
+              being cropped by the screen rather than placed on it. */}
           <NavLink
             href="/"
-            className="flex-shrink-0 ml-2 md:ml-4 mr-3 lg:mr-4 xl:mr-5 2xl:mr-8 cursor-pointer"
+            className="flex-shrink-0 ml-4 mr-2 navwide:ml-6 navwide:mr-8 cursor-pointer"
           >
             <div className="flex items-center">
-              <div className="w-24 md:w-28 lg:w-28 xl:w-32 2xl:w-36 hover:scale-105 transition-transform duration-200">
+              <div className="w-28 navwide:w-36 hover:scale-105 transition-transform duration-200">
                 <LogoSidebar />
               </div>
             </div>
           </NavLink>
 
-          <div className="hidden lg:flex items-center gap-0.5 xl:gap-1 2xl:gap-2 flex-1 justify-center max-w-[1024px] mx-auto">
+          {/* No max-width. It used to be capped at 1024px, which is 54px NARROWER
+              than the items it holds — so the row overflowed its own box at every
+              window size, including a 2560px one, and the spill landed on the
+              logo and the wallet because the box is centred. */}
+          <div className="flex items-center gap-1 navwide:gap-2 flex-1 justify-center min-w-0">
             {navigation.map((item, i) => {
               if (!item) return null
               const hasDropdown = item.children || item.dynamicChildren
@@ -139,27 +172,27 @@ const TopNavBar = ({
                         }
                       }}
                       title={item.href ? 'Single click: open menu. Double click: go to page.' : 'Click to open menu'}
-                      className={`flex items-center px-1.5 xl:px-2 2xl:px-3 py-2 text-[13px] 2xl:text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg w-full text-left cursor-pointer
+                      className={`flex items-center px-2 navwide:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg w-full text-left cursor-pointer
                         border
                         ${isActive
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30'
                           : 'text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20 border-transparent'
                         }`}
                     >
-                      <item.icon className="w-4 h-4 mr-1 2xl:mr-2" />
+                      <NavItemIcon icon={item.icon} />
                       {t(item.name)}
                       <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform duration-200 ${openDropdown === item.name ? 'rotate-180' : ''}`} />
                     </button>
                   ) : (
                     <NavLink
                       href={item.href}
-                      className={`flex items-center px-1.5 xl:px-2 2xl:px-3 py-2 text-[13px] 2xl:text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg cursor-pointer border border-transparent hover:border-white/20 ${
+                      className={`flex items-center px-2 navwide:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg cursor-pointer border border-transparent hover:border-white/20 ${
                         isActive
                           ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30'
                           : 'text-gray-300 hover:text-white hover:bg-white/10'
                       }`}
                     >
-                      <item.icon className="w-4 h-4 mr-1 2xl:mr-2" />
+                      <NavItemIcon icon={item.icon} />
                       {t(item.name)}
                     </NavLink>
                   )}
@@ -231,20 +264,25 @@ const TopNavBar = ({
             })}
           </div>
 
-          <div className="flex items-center space-x-1 xl:space-x-2 2xl:space-x-4 flex-shrink-0">
-            <div className="flex items-center space-x-2 xl:space-x-3 2xl:space-x-6">
-              <div className="max-w-[180px] 2xl:max-w-[200px] overflow-hidden scale-100 2xl:scale-105 min-w-0 flex-shrink-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap">
+          {/* Note the scales: a transform does not change an element's layout
+              box, so scale-105 grew the wallet 5% past the space reserved for
+              it and let it reach across into the nav items. Kept for the roomy
+              form, dropped for the compact one, where there is nothing to
+              spare. */}
+          <div className="flex items-center space-x-2 navwide:space-x-4 flex-shrink-0">
+            <div className="flex items-center space-x-3 navwide:space-x-6">
+              <div className="max-w-[200px] overflow-hidden scale-100 navwide:scale-105 min-w-0 flex-shrink-0 [&>*]:max-w-full [&>*]:overflow-hidden [&>*]:text-ellipsis [&>*]:whitespace-nowrap [&>button]:max-w-[200px]">
                 <PrivyConnectWallet
                   type="desktop"
                   citizenContract={citizenContract}
                 />
               </div>
-              <div className="scale-100 2xl:scale-105 flex-shrink-0 flex items-center justify-center">
+              <div className="scale-100 navwide:scale-105 flex-shrink-0 flex items-center justify-center">
                 <CitizenProfileLink />
               </div>
             </div>
-            
-            <div className="scale-100 2xl:scale-105">
+
+            <div className="scale-100 navwide:scale-105">
               <LanguageChange />
             </div>
           </div>

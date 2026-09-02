@@ -2,3 +2,14 @@ src/abi/
 package-lock.json
 truffle.js
 .env
+
+# Truffle artifacts are build output, but the three Phase 2 contracts are
+# tracked: their `networks.42161` record is what makes migration 02's
+# `overwrite: false` reuse the live mainnet deployment instead of deploying a
+# second ConditionalTokens from a clean checkout.
+build/*
+!build/contracts/
+build/contracts/*
+!build/contracts/ConditionalTokens.json
+!build/contracts/Fixed192x64Math.json
+!build/contracts/LMSRWithTWAPFactory.json

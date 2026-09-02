@@ -164,9 +164,15 @@ softgoods module uses for its own power feed.
   tapered ascent hull and nose, built off NASA's own Artemis renders of the
   selected lander. `spacex-starship-hls` still uses its GLB.
 
-### Core district — crewed_base (2 of 2 done)
+### Core of the habitat district — the two flagship programs (2 of 2 done)
 
-`nasa-artemis-base-camp` renders `CrewedBase`; `ilrs` renders `ILRSBase`. This
+`crewed_base` and `habitat` are one `ProjectType` now (`habitat`) — a base
+isn't a different kind of hardware from a habitat module, just more of it
+integrated together, so Artemis Base Camp and ILRS compete on the same
+hardstand as the MPH, LIFE and Lunar Cruiser modules (see `BASE_PLAN.habitat`
+in `baseplan.ts`). Both keep explicit `PROJECT_MODEL` overrides rather than
+falling back through `project.type` — `nasa-artemis-base-camp` renders
+`CrewedBase`; `ilrs` renders `ILRSBase`. This
 pair used to be Artemis Base Camp racing `nasa-artemis-iii` — NASA's own
 precursor crewed landing — which was a data bug, not a race: the shared goal's
 own description said the two were sequential, not competing, and the

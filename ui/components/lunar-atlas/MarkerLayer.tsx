@@ -18,7 +18,7 @@
 
 import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   BASE_PLAN,
@@ -43,6 +43,12 @@ import {
   capCenterDirection,
   capOffsetLatLon,
 } from '@/lib/lunar-atlas/southpole'
+import { buriedSite, vaultAxis } from '@/lib/lunar-atlas/subplan'
+import {
+  MASS_DRIVER_ID,
+  trackAxis,
+  trackBentOffsets,
+} from '@/lib/lunar-atlas/trackplan'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -56,6 +62,7 @@ import ProjectModel, {
   CableReel,
   CargoCrate,
   CrateCluster,
+  Excavator,
   GAS_STATION_HALF_D,
   GAS_STATION_HALF_W,
   gradedDeckRadiusM,
@@ -65,6 +72,7 @@ import ProjectModel, {
   SparePartsPallet,
   StreetLight,
   SurfaceAnchor,
+  UndergroundConstructionSite,
 } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
@@ -141,6 +149,16 @@ type MarkerLayerProps = {
   getProjectStyle?: (project: Project) => MarkerStyle
   // Displaced terrain radius lookup so pins/models sit on the rendered ground.
   radiusAt?: RadiusAt | null
+  // Strips the map furniture — beacons, tethers, every floating name — and
+  // leaves only what would actually be standing on the Moon. This layer is a
+  // MAP most of the time and the reticles are the point of it, but they are
+  // also the one thing in the frame that could not exist, so a screenshot with
+  // them in it can only ever read as a diagram of a base rather than as a base.
+  cinematic?: boolean
+  // How far along the timeline the base's built environment is, on the same
+  // 0..1 scale as a marker's opacity. Drives the street furniture and the vault
+  // dig, which belong to no single race but cannot precede all of them.
+  infraPresence?: number
 }
 
 // Offsets above the local terrain (which the sampler provides per marker),
@@ -221,6 +239,7 @@ function CompetitorPlot({
   onSelect,
   onHover,
   radiusAt,
+  cinematic,
 }: {
   project: Project
   slot: Slot
@@ -249,6 +268,8 @@ function CompetitorPlot({
   onSelect?: () => void
   onHover?: (hovered: boolean) => void
   radiusAt?: RadiusAt | null
+  // See MarkerLayerProps. Suppresses this plot's name card.
+  cinematic?: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
 
@@ -301,6 +322,41 @@ function CompetitorPlot({
         .multiplyScalar(ground + projectSizeM(project) * 1.25 * M_TO_UNITS),
     }
   }, [standAt, radiusAt, project])
+
+  // A buried habitat's vault runs along a KNOWN bearing rather than on the
+  // base's camera-facing heading, because the cutaway camera has to stand at one
+  // end of it (see vaultAxis, and `sub` in flyToProject). Read off the plot's
+  // own slot so the model and the camera derive the axis from one value.
+  const vaultAlong = useMemo(
+    () => (buriedSite(project.id) ? vaultAxis(slot) : undefined),
+    [project.id, slot]
+  )
+
+  // The mass driver needs two things no other competitor does, both because it
+  // is the only asset that is long rather than compact.
+  //
+  // Its AXIS is a fixed compass heading rather than the base's camera-facing
+  // one, chosen for the ground it has to stay level over (see trackplan) — the
+  // same reason a buried vault gets its axis handed down rather than derived.
+  //
+  // And it needs the GROUND UNDER EVERY BENT, not just under its own anchor.
+  // One seat radius is a fair description of where a 10 m reactor stands and a
+  // useless one for a 600 m trestle: the far end is 10 m below the near end, so
+  // a model built to a single sampled height has to either bury one end or hang
+  // the other in the air. This layer is the only one holding the terrain
+  // sampler, so the sampling happens here and the model is told the answer.
+  const track = useMemo(() => {
+    if (project.id !== MASS_DRIVER_ID) return null
+    const along = trackAxis()
+    if (!radiusAt) return { along, ground: undefined }
+    const ground = trackBentOffsets(slot).map((o) => {
+      const ll = capOffsetLatLon(o.east, o.north)
+      // Scene units back to meters, relative to the seat this model is placed
+      // at — which is the frame the model authors its own geometry in.
+      return (radiusAt(ll.lat, ll.lon) - seatRadius) / M_TO_UNITS
+    })
+    return { along, ground }
+  }, [project.id, slot, radiusAt, seatRadius])
 
   // Laps of main street, for a race whose hardware drives rather than stands
   // (see PATROL).
@@ -372,16 +428,17 @@ function CompetitorPlot({
         dir={[ndir.x, ndir.y, ndir.z]}
         accent={accent}
         turn={THREE.MathUtils.degToRad(slot.turn)}
-        noseAlong={lap?.noseAlong}
+        noseAlong={lap?.noseAlong ?? vaultAlong ?? track?.along}
         dim={dim}
         onSelect={onSelect}
         onHover={(id) => onHover?.(Boolean(id))}
         surfaceRadius={seatRadius}
+        trackGround={track?.ground}
       />
 
       {/* The asset's own name. Shown on hover, and for the whole field while
           its race is open — which is how you tell three reactors apart. */}
-      {(called || raceOpen) && (
+      {(called || raceOpen) && !cinematic && (
         <Html
           position={labelAt}
           center
@@ -433,6 +490,29 @@ function CompetitorPlot({
 // are spent, which is what keeps `RoverDepotYard` a compact 13 x 10 m.
 const DEPOT_FOOTPRINT_R = 9 // half-diagonal of the yard's 13 x 10 m apron, with room to spare
 
+// Where the yard actually stands, in plan (east, north) meters — the inward
+// setback the comment above works out, plus the radius and district bearing the
+// yard needs to know which way to face.
+function roverDepotPlan(): {
+  east: number
+  north: number
+  radius: number
+  districtBearing: number
+} {
+  const plan = BASE_PLAN.rover!
+  const districtBearing = Math.atan2(plan.north, plan.east)
+  const front = ROAD_HALF_M + SETBACK_M + DEPOT_FOOTPRINT_R
+  const radius = MAIN_LOOP_M - front
+  const swing = Math.asin(Math.min(1, front / radius))
+  const a = districtBearing + swing
+  return {
+    east: Math.cos(a) * radius,
+    north: Math.sin(a) * radius,
+    radius,
+    districtBearing,
+  }
+}
+
 function RoverDepotSite({
   accent,
   dim,
@@ -445,14 +525,9 @@ function RoverDepotSite({
   radiusAt?: RadiusAt | null
 }) {
   const { seat, ndir, noseAlong } = useMemo(() => {
-    const plan = BASE_PLAN.rover!
-    const bearing = Math.atan2(plan.north, plan.east)
-    const front = ROAD_HALF_M + SETBACK_M + DEPOT_FOOTPRINT_R
-    const radius = MAIN_LOOP_M - front
-    const swing = Math.asin(Math.min(1, front / radius))
-    const a = bearing + swing
+    const { east, north, radius, districtBearing } = roverDepotPlan()
 
-    const ll = capOffsetLatLon(Math.cos(a) * radius, Math.sin(a) * radius)
+    const ll = capOffsetLatLon(east, north)
     const d = new THREE.Vector3(
       ...latLonToVector3(ll.lat, ll.lon, 1)
     ).normalize()
@@ -469,8 +544,8 @@ function RoverDepotSite({
     // avenue's own radial line — so the yard's open (aisle) side faces the
     // road it is served by rather than an arbitrary camera-relative default.
     const backLl = capOffsetLatLon(
-      Math.cos(bearing) * radius,
-      Math.sin(bearing) * radius
+      Math.cos(districtBearing) * radius,
+      Math.sin(districtBearing) * radius
     )
     const backDir = new THREE.Vector3(
       ...latLonToVector3(backLl.lat, backLl.lon, 1)
@@ -631,7 +706,156 @@ const ROADSIDE_SPACING_M = 30
 const ROADSIDE_KEEP_PROB = 0.75
 type RoadsideKind = 'crates' | 'cablereel' | 'parts' | 'bricks'
 
-function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
+// A small grading/earthmoving fleet, parked hard against the shoulder of
+// one of the two loop roads — the same "close enough to a road that a
+// hauler could reach it" logic as `roadsideCargo`, not the boulder field's
+// wide-open annulus, since this is the settlement's own maintenance crew
+// working the street it grades rather than native scatter. A handful of
+// fixed units rather than a sampled grid: a dozen would read as a second
+// race's roster, five to six reads as a crew mid-shift. Placed by walking a
+// deterministic sequence of candidate (loop, bearing, side) triples — not a
+// grid — until enough clear the road itself and every district's own
+// ground, so a change to one district's `reach` can only ever shift where
+// these land, never how many.
+const EXCAVATOR_COUNT = 6
+const EXCAVATOR_SHOULDER_MIN_M = 2.6
+const EXCAVATOR_SHOULDER_MAX_M = 6.5
+
+// Fixed spot for the base's own dig: well inside the habitat ring's own
+// empty middle. Every habitat plot sits at a fixed radius from the district
+// center (~38 m — see BASE_PLAN.habitat's `ring` frontage and districtSlots'
+// 'ring' case in baseplan.ts), so anything under ~19 m of that same center is
+// clear of all five of them by construction; a 9 m offset keeps the whole
+// assembly (pit + spoil + the excavator standing off one side of it) well
+// inside that with room to spare, and off the exact point the habitat
+// district's own beacon tethers to. The composite itself (ConstructionPit +
+// its Excavator, both authored together in ProjectModel.tsx) is asymmetric —
+// the machine stands off to one side of the pit, not scattered by angle like
+// InterDistrictFiller's ambient fleet — but SurfaceAnchor's default facing
+// (no `noseAlong` given here) turns that whole composite toward the home
+// camera on its own, the same as any other un-steered installation, so this
+// only ever needs to pick a location, never an orientation.
+const UGC_EAST_M = 9
+const UGC_NORTH_M = 0
+// Clears the arm's own highest hoisted point (see EXC_DIG_POSES' "hoist"
+// keyframe) rather than the machine's parked height, so the label never
+// clips through the boom mid-cycle.
+const UGC_LABEL_HEIGHT_M = 6.5
+// SEAT_LIFT is sized to clear z-fighting for a single point sample against
+// the rendered (displaced) terrain, but this whole composite spans a good
+// 13 m from the pit's own anchor out past the excavator standing off it —
+// far wider than the compact, single-point props (a boulder, a streetlight)
+// SEAT_LIFT was tuned against. Anywhere the real terrain's own slope across
+// that span puts ground even a little above the flat-plane height sampled at
+// the anchor's one point eats into that margin, and with this renderer's
+// logarithmic depth buffer (needed for a scene that spans orbit-to-meter
+// scale) precision loss shows up as shimmer/dropout well before it would on
+// a linear buffer — see the ground-level flat pit floor in ProjectModel.tsx
+// for the other half of this fix. A flat extra lift on top of SEAT_LIFT,
+// well past anything that stretch of ridge terrain plausibly slopes, buys
+// back that margin.
+const UGC_EXTRA_LIFT_M = 0.6
+
+function UndergroundConstructionSiteMarker({
+  radiusAt,
+  cinematic,
+  presence = 1,
+}: {
+  radiusAt?: RadiusAt | null
+  // See MarkerLayerProps. The dig itself stays — it's real hardware doing real
+  // work — but its caption goes, like every other floating name.
+  cinematic?: boolean
+  // Fades with the construction fleet: this is that fleet at work, so it cannot
+  // be digging the vault years before anything that could dig it is on the Moon.
+  presence?: number
+}) {
+  // The caption is shown on hover only, like every other name on the base (see
+  // CompetitorPlot). It used to be permanent, which made it the one label in
+  // the scene that was always up: a card floating over the middle of the base
+  // at fixed screen size whatever the camera was doing, and — since it is
+  // pinned above the tallest thing here — one that sat over the habitats behind
+  // it from most angles.
+  const [hovered, setHovered] = useState(false)
+
+  const { dir, seat, labelAt } = useMemo(() => {
+    const ll = capOffsetLatLon(UGC_EAST_M, UGC_NORTH_M)
+    const d = latLonToVector3(ll.lat, ll.lon, 1)
+    const seat =
+      (radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS) +
+      SEAT_LIFT +
+      UGC_EXTRA_LIFT_M * M_TO_UNITS
+    const labelAt = new THREE.Vector3(...d).multiplyScalar(
+      seat + UGC_LABEL_HEIGHT_M * M_TO_UNITS
+    )
+    return { dir: d, seat, labelAt }
+  }, [radiusAt])
+
+  // Nothing is digging the vault until the fleet that digs it is here.
+  if (presence <= MODEL_PRESENCE) return null
+
+  return (
+    <>
+      {/* Hover handled here rather than through SurfaceAnchor's own
+          `interactive` flag, which is all-or-nothing: that flag also swallows
+          the click and switches the cursor to a pointer, and this is a piece of
+          scenery with nothing to open — a dead click on it would stop the
+          background click that deselects and zooms back out. Pointer events
+          from the meshes inside bubble up to this group either way. */}
+      <group
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          setHovered(true)
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          setHovered(false)
+        }}
+      >
+        <SurfaceAnchor
+          dir={dir}
+          surfaceRadius={seat}
+          scale={M_TO_UNITS}
+          dim={presence}
+          castShadows={false}
+          interactive={false}
+        >
+          <UndergroundConstructionSite seed={4021} />
+        </SurfaceAnchor>
+      </group>
+      {hovered && !cinematic && (
+        <Html
+          position={labelAt}
+          center
+          zIndexRange={[15, 0]}
+          style={{ pointerEvents: 'none' }}
+        >
+          <div className="whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
+            Underground base construction
+          </div>
+        </Html>
+      )}
+    </>
+  )
+}
+
+// Everything between the districts: the boulder field, and the street furniture
+// that accumulates around a base once there is a base. The boulders were on this
+// ridge for three billion years and stay at full strength whatever year the
+// scrubber is on; the lights, the roadside cargo and the parked excavators are
+// hardware, and they fade with the rest of the built environment. Showing lit
+// streets and idle diggers in a year whose Moon holds a single dead lander is
+// exactly as wrong as standing a habitat there.
+function InterDistrictFiller({
+  radiusAt,
+  presence = 1,
+}: {
+  radiusAt?: RadiusAt | null
+  presence?: number
+}) {
+  // Same threshold the competitors' own models use: below it the furniture is
+  // gone rather than faint, because a ghost street light is still a street
+  // light standing on a Moon that has none.
+  const built = presence > MODEL_PRESENCE
   const boulders = useMemo(() => {
     const out: { dir: Vec3; seat: number; size: number; seed: number }[] = []
     for (let ri = 0; ri < BOULDER_RADIAL_BANDS; ri++) {
@@ -656,6 +880,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
 
   const lights = useMemo(() => {
     const out: { dir: Vec3; seat: number; noseAlong: Vec3 }[] = []
+    if (!built) return out
     // A fine angular step (every ~1-3 m of arc on these radii) walked all the
     // way round each loop, placing a light once STREET_LIGHT_SPACING_M has
     // accumulated since the last one and skipping any candidate over a
@@ -702,7 +927,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
       }
     }
     return out
-  }, [radiusAt])
+  }, [radiusAt, built])
 
   const roadsideCargo = useMemo(() => {
     const out: {
@@ -712,6 +937,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
       seed: number
       yaw: number
     }[] = []
+    if (!built) return out
     const STEP_DEG = 2
     for (const r of [RING_RADIUS_M, MAIN_LOOP_M]) {
       let lastSlotDeg: number | null = null
@@ -753,7 +979,53 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
       }
     }
     return out
-  }, [radiusAt])
+  }, [radiusAt, built])
+
+  const excavators = useMemo(() => {
+    const out: { dir: Vec3; seat: number; noseAlong: Vec3; seed: number }[] = []
+    if (!built) return out
+    let placed = 0
+    for (let tries = 0; placed < EXCAVATOR_COUNT && tries < 400; tries++) {
+      const k = tries * 733 + 5501
+      const loopR = hash1(k) > 0.5 ? MAIN_LOOP_M : RING_RADIUS_M
+      const bearing = hash1(k + 1) * 360
+      const side = hash1(k + 2) > 0.5 ? 1 : -1
+      const shoulder =
+        EXCAVATOR_SHOULDER_MIN_M +
+        hash1(k + 3) * (EXCAVATOR_SHOULDER_MAX_M - EXCAVATOR_SHOULDER_MIN_M)
+      const r = loopR + side * (ROAD_HALF_M + shoulder)
+      // A narrower margin than the boulders' (which stand well clear of
+      // every district): this fleet works right up against a district's
+      // own edge, not out in open regolith.
+      if (onLoopRoad(r) || withinDistrictGround(r, bearing, 9)) continue
+      const a = (bearing * Math.PI) / 180
+      const ll = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+      const dir = latLonToVector3(ll.lat, ll.lon, 1)
+      const seat = radiusAt
+        ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
+        : GLOBE_RADIUS + SEAT_LIFT
+      // Nose along the road's own tangent (a nearby point at the same
+      // radius, a fraction of a degree further round), the same
+      // "sample a neighboring point on the base plane and subtract" trick
+      // `lights` uses for its boom heading — a grader actually working the
+      // shoulder sits lengthwise along the road, not at a random angle to
+      // it. Which way down the tangent is picked per-instance so a run of
+      // them doesn't all face the same direction.
+      const aTangent = ((bearing + 0.4) * Math.PI) / 180
+      const llTangent = capOffsetLatLon(Math.cos(aTangent) * r, Math.sin(aTangent) * r)
+      const dTangent = new THREE.Vector3(...latLonToVector3(llTangent.lat, llTangent.lon, 1))
+      const dVec = new THREE.Vector3(...dir)
+      const flip = hash1(k + 4) > 0.5 ? 1 : -1
+      const noseAlong = dTangent
+        .sub(dVec)
+        .multiplyScalar(flip)
+        .normalize()
+        .toArray() as Vec3
+      out.push({ dir, seat, noseAlong, seed: k })
+      placed++
+    }
+    return out
+  }, [radiusAt, built])
 
   return (
     <group>
@@ -776,6 +1048,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
           surfaceRadius={l.seat}
           scale={M_TO_UNITS}
           noseAlong={l.noseAlong}
+          dim={presence}
           castShadows={false}
           interactive={false}
         >
@@ -788,6 +1061,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
           dir={c.dir}
           surfaceRadius={c.seat}
           scale={M_TO_UNITS}
+          dim={presence}
           castShadows={false}
           interactive={false}
         >
@@ -810,6 +1084,20 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
             {c.kind === 'parts' && <SparePartsPallet seed={c.seed} />}
             {c.kind === 'bricks' && <BrickPallet seed={c.seed} />}
           </group>
+        </SurfaceAnchor>
+      ))}
+      {excavators.map((e, i) => (
+        <SurfaceAnchor
+          key={`excavator:${i}`}
+          dir={e.dir}
+          surfaceRadius={e.seat}
+          scale={M_TO_UNITS}
+          noseAlong={e.noseAlong}
+          dim={presence}
+          castShadows={false}
+          interactive={false}
+        >
+          <Excavator seed={e.seed} />
         </SurfaceAnchor>
       ))}
     </group>
@@ -1096,6 +1384,8 @@ export default function MarkerLayer({
   onHoverTree,
   getProjectStyle,
   radiusAt,
+  cinematic,
+  infraPresence = 1,
 }: MarkerLayerProps) {
   const orgMap = useMemo(() => {
     const m = new Map<string, Organization>()
@@ -1166,6 +1456,7 @@ export default function MarkerLayer({
                   onSelect={() => onSelectProject?.(project.id)}
                   onHover={(h) => onHoverTree?.(h ? tree.category : null)}
                   radiusAt={radiusAt}
+                  cinematic={cinematic}
                 />
               )
             })}
@@ -1187,23 +1478,35 @@ export default function MarkerLayer({
               </>
             )}
 
-            <DistrictBeacon
-              dir={districtDir}
-              color={color}
-              label={label}
-              pinModelSizeM={tallestM}
-              selected={isOpen}
-              hovered={hoveredCategory === tree.category}
-              style={{ opacity: districtOpacity * dim, visible: true }}
-              onSelect={() => onSelectTree?.(tree.category)}
-              onHover={(h) => onHoverTree?.(h ? tree.category : null)}
-              radiusAt={radiusAt}
-            />
+            {/* Dropped entirely rather than made invisible: the beacon owns
+                this district's oversized click target (see its hit sphere), and
+                leaving that behind would have a base with no visible markers
+                still turning the cursor to a pointer over empty sky. In
+                cinematic mode the hardware itself is the only thing to click. */}
+            {!cinematic && (
+              <DistrictBeacon
+                dir={districtDir}
+                color={color}
+                label={label}
+                pinModelSizeM={tallestM}
+                selected={isOpen}
+                hovered={hoveredCategory === tree.category}
+                style={{ opacity: districtOpacity * dim, visible: true }}
+                onSelect={() => onSelectTree?.(tree.category)}
+                onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+                radiusAt={radiusAt}
+              />
+            )}
           </group>
         )
       })}
 
-      <InterDistrictFiller radiusAt={radiusAt} />
+      <InterDistrictFiller radiusAt={radiusAt} presence={infraPresence} />
+      <UndergroundConstructionSiteMarker
+        radiusAt={radiusAt}
+        cinematic={cinematic}
+        presence={infraPresence}
+      />
     </group>
   )
 }

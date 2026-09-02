@@ -2,11 +2,10 @@ import { GENERAL_CHANNEL_ID, TEST_CHANNEL_ID } from 'const/config'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
+import { sanitizeDiscordEmbeds } from '@/lib/og/preview'
 
 const NETWORK_NOTIFICATION_CHANNEL_ID =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? GENERAL_CHANNEL_ID
-    : TEST_CHANNEL_ID // general || test-channel
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? GENERAL_CHANNEL_ID : TEST_CHANNEL_ID // general || test-channel
 
 const channelIds = {
   networkNotifications: NETWORK_NOTIFICATION_CHANNEL_ID,
@@ -15,7 +14,8 @@ const channelIds = {
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const type = req.query.type as keyof typeof channelIds
-    const { message } = req.body
+    const { message, embeds } = req.body
+    const sanitizedEmbeds = sanitizeDiscordEmbeds(embeds)
 
     const response = await fetch(
       `https://discord.com/api/v10/channels/${channelIds?.[type]}/messages`,
@@ -25,7 +25,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           'Content-Type': 'application/json',
           Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
         },
-        body: JSON.stringify({ content: message }),
+        body: JSON.stringify({
+          content: message,
+          ...(sanitizedEmbeds ? { embeds: sanitizedEmbeds } : {}),
+        }),
       }
     )
 

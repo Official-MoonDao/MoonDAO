@@ -1,7 +1,13 @@
+import {
+  DocumentTextIcon,
+  ArrowPathIcon,
+  LinkIcon,
+  CloudArrowDownIcon,
+} from '@heroicons/react/24/outline'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { isUsableDocTitle } from '@/lib/google/docsTitle'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { DocumentTextIcon, ArrowPathIcon, LinkIcon, CloudArrowDownIcon } from '@heroicons/react/24/outline'
 
 interface GoogleDocsImportProps {
   setMarkdown: (markdown: string) => void
@@ -52,11 +58,9 @@ export default function GoogleDocsImport({
         throw new Error(data.error || 'Failed to fetch document')
       }
 
-      // Set the content in the editor
       setMarkdown(data.content)
-      
-      // Optionally set the title if provided
-      if (setTitle && data.title) {
+
+      if (setTitle && isUsableDocTitle(data.title)) {
         setTitle(data.title)
       }
 
@@ -84,7 +88,7 @@ export default function GoogleDocsImport({
         <CloudArrowDownIcon className="w-5 h-5 text-indigo-400" />
         <span className="font-medium">Import from Google Docs</span>
       </div>
-      
+
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <LinkIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -117,10 +121,14 @@ export default function GoogleDocsImport({
           )}
         </button>
       </div>
-      
+
       <p className="text-xs text-gray-400 flex items-center gap-1">
         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+          <path
+            fillRule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+            clipRule="evenodd"
+          />
         </svg>
         Document must be shared with &quot;Anyone with the link can view&quot;
       </p>

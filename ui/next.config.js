@@ -425,57 +425,66 @@ module.exports = withBundleAnalyzer(
           '@stablelib/random': false,
         }
 
-        // Optimize chunk splitting for better LCP and First Load JS
-        config.optimization = {
-          ...config.optimization,
-          splitChunks: {
-            chunks: 'all',
-            cacheGroups: {
-              default: false,
-              vendors: false,
-              // Framework chunk - React/Next.js core (always needed, load sync)
-              framework: {
-                test: /[\\/]node_modules[\\/](react|react-dom|scheduler|next)[\\/]/,
-                name: 'framework',
-                chunks: 'all',
-                priority: 50,
-                enforce: true,
-              },
-              // Web3 libraries - load async (only when wallet functionality needed)
-              thirdweb: {
-                test: /[\\/]node_modules[\\/](thirdweb|@thirdweb)[\\/]/,
-                name: 'thirdweb',
-                chunks: 'async',
-                priority: 40,
-              },
-              privy: {
-                test: /[\\/]node_modules[\\/](@privy-io)[\\/]/,
-                name: 'privy',
-                chunks: 'async',
-                priority: 40,
-              },
-              web3: {
-                test: /[\\/]node_modules[\\/](ethers|viem|wagmi|@safe-global|ox)[\\/]/,
-                name: 'web3',
-                chunks: 'async',
-                priority: 40,
-              },
-              // Globe/Three.js - load async (heavy 3D library)
-              globe: {
-                test: /[\\/]node_modules[\\/](react-globe\.gl|three|gsap)[\\/]/,
-                name: 'globe',
-                chunks: 'async',
-                priority: 40,
-              },
-              // Common chunk for shared code between pages
-              common: {
-                minChunks: 2,
-                priority: 10,
-                reuseExistingChunk: true,
-                chunks: 'async',
+        // Optimize chunk splitting for better LCP and First Load JS.
+        //
+        // Browser build only. LCP and First Load JS are browser concerns, and
+        // the server builds do not merely fail to benefit — splitting the Edge
+        // bundle breaks it. The Edge runtime evaluates one self-contained ESM
+        // module, so hoisting React/Next into a shared `framework` chunk emits
+        // CommonJS that dies on first request with "exports is not defined",
+        // taking every middleware-matched route with it.
+        if (!isServer) {
+          config.optimization = {
+            ...config.optimization,
+            splitChunks: {
+              chunks: 'all',
+              cacheGroups: {
+                default: false,
+                vendors: false,
+                // Framework chunk - React/Next.js core (always needed, load sync)
+                framework: {
+                  test: /[\\/]node_modules[\\/](react|react-dom|scheduler|next)[\\/]/,
+                  name: 'framework',
+                  chunks: 'all',
+                  priority: 50,
+                  enforce: true,
+                },
+                // Web3 libraries - load async (only when wallet functionality needed)
+                thirdweb: {
+                  test: /[\\/]node_modules[\\/](thirdweb|@thirdweb)[\\/]/,
+                  name: 'thirdweb',
+                  chunks: 'async',
+                  priority: 40,
+                },
+                privy: {
+                  test: /[\\/]node_modules[\\/](@privy-io)[\\/]/,
+                  name: 'privy',
+                  chunks: 'async',
+                  priority: 40,
+                },
+                web3: {
+                  test: /[\\/]node_modules[\\/](ethers|viem|wagmi|@safe-global|ox)[\\/]/,
+                  name: 'web3',
+                  chunks: 'async',
+                  priority: 40,
+                },
+                // Globe/Three.js - load async (heavy 3D library)
+                globe: {
+                  test: /[\\/]node_modules[\\/](react-globe\.gl|three|gsap)[\\/]/,
+                  name: 'globe',
+                  chunks: 'async',
+                  priority: 40,
+                },
+                // Common chunk for shared code between pages
+                common: {
+                  minChunks: 2,
+                  priority: 10,
+                  reuseExistingChunk: true,
+                  chunks: 'async',
+                },
               },
             },
-          },
+          }
         }
 
         return config

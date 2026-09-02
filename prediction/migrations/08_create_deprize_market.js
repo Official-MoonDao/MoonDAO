@@ -16,7 +16,7 @@
 //   DEPRIZE_ORACLE=0x<multisig> DEPRIZE_NUM_OUTCOMES=3 \
 //   DEPRIZE_CTF=0xa0B1... DEPRIZE_WETH=0xA441... DEPRIZE_FACTORY=0x<factory> \
 //   DEPRIZE_QUESTION_ID=0x...02 \
-//   npx truffle migrate -f 8 --to 8 --network arbitrumSepolia
+//   npm run truffle -- migrate -f 8 --to 8 --network arbitrumSepolia
 
 const BN = require("bn.js");
 

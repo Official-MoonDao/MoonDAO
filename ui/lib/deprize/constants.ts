@@ -33,9 +33,15 @@ export const UNIT = 10n ** BigInt(COLLATERAL_DECIMALS)
 export const MAX_UINT256 = (1n << 256n) - 1n
 
 // Keep a little native ETH back for gas when placing a bet (the router pulls the
-// full msg.value and refunds leftover, but the wallet still pays gas).
-export const GAS_RESERVE_WEI = 10n ** 15n // 0.001 ETH
-export const GAS_RESERVE_ETH = Number(GAS_RESERVE_WEI) / 1e18
+// full msg.value and refunds leftover, but the wallet still pays gas). The
+// amount is chain-aware — see gas-reserve.ts for why a flat reserve is wrong.
+export {
+  DEFAULT_GAS_RESERVE_WEI,
+  L2_GAS_RESERVE_WEI,
+  gasReserveEth,
+  gasReserveWei,
+  spendableFromBalanceEth,
+} from './gas-reserve'
 
 // Per-outcome line/accent colors, shared across the chart and team cards.
 // Sized for the largest planned race (4) plus headroom; wraps via `% length`.
