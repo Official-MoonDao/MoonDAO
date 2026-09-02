@@ -99,6 +99,21 @@ export const SKY_STATIONS: Record<string, SkyStation[]> = {
     { bearingDeg: 20, ringM: 200, altM: 380, wingBearingDeg: 132 },
     { bearingDeg: 340, ringM: 150, altM: 300, wingBearingDeg: 148 },
   ],
+  // One station, for the one relay in this race that is already flying.
+  //
+  // It is the furthest out and the lowest of all four programs (430 m at 240 m
+  // altitude, where the American and European birds sit between 150 and 360 m
+  // out and 300 to 500 m up), which is not a ranking but a separation: three of
+  // these programs are selling into the same Western market and read as one
+  // cluster, and Queqiao-2 answers to nobody in it. Standing it off on its own
+  // arc says that before any panel does.
+  //
+  // Bearing 40° is the lighting choice. The 4.2 m reflector is pitched down
+  // and OUTWARD (see QQ_DISH_PITCH), so unlike the Earth-pointing relays the
+  // face worth seeing is the one turned away from the colony — which puts the
+  // sun, at bearing 50°, almost directly behind an eye standing off outward
+  // here. Bearings past about 95° swing that gold mesh into its own shadow.
+  'queqiao-2': [{ bearingDeg: 40, ringM: 430, altM: 240, wingBearingDeg: 134 }],
 }
 
 // Meters east and north of the ridge center.

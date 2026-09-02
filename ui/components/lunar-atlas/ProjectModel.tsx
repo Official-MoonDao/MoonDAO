@@ -154,6 +154,14 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // at this case measured a true 0.79 m and read as basically invisible next
   // to its neighbors, so it was scaled up 2.5x (proportions unchanged).
   'crescent-parsec': 2.0,
+  // Grade to the rim of the tilted dish on the Queqiao user terminal — a
+  // tracking mount, so it stands taller than the other customer terminals
+  // while spreading no further across the ground than its tripod (0.9 m of
+  // radial reach against the 1.14 m the default footprint fraction reserves,
+  // so it needs no FOOTPRINT_FRACTION entry). Measured off the authored
+  // geometry rather than chosen, with scripts/tmp-queqiao-check.ts (deleted).
+  // QQ_TERM_M inverts this number.
+  'queqiao-2': 2.28,
   // Ground to the dish's tilted apex — taller than it is wide, unlike the
   // other three comms terminals, because the dish rides gimballed straight
   // on the equipment box's lid rather than on its own ground mount (see
@@ -6495,6 +6503,332 @@ export function Parsec({ accent }: { accent: string }) {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Queqiao-2 — CNSA / CAST
+// ---------------------------------------------------------------------------
+//
+// The fourth orbiter here and the only one that is already working. It looks
+// nothing like the other three because it was not built to sell anything: IM,
+// ESA and Crescent are all pitching a service to whoever subscribes, while
+// Queqiao-2 was built to keep one programme alive on the far side, where a
+// lander has no line of sight to Earth at all and a relay is not a convenience
+// but the entire mission.
+//
+// That shows in the proportion anyone notices first, and it is the reason this
+// model is worth building rather than reskinning the relay above: the dish
+// aimed at the MOON is 4.2 m across and the one aimed at EARTH is 0.6 m. It
+// reads backwards — Earth is 380,000 km away and a lander a few hundred —
+// until you ask which end of each link owns the big antenna. Talking to Earth,
+// Queqiao-2 is speaking into a ground station tens of metres across and can
+// afford to whisper. Talking to a lander it is the only good antenna in the
+// conversation, so it carries the whole link budget itself. Both figures are
+// CNSA's own, and between them they invert the relay's layout completely.
+//
+// The 4.2 m reflector is a deployable gold MESH, not a solid shell, which is
+// what every published image of this spacecraft leads with and what the
+// wireframe cap below exists to draw.
+
+// Wingtip to wingtip, the same convention as RELAY_SPAN_M — and, as with
+// Pathfinder, CNSA publish the antennas but not a deployed array span, so this
+// is measured off the geometry rather than chosen first.
+export const QUEQIAO_SPAN_M = 5.34
+const QQ_M = UNIT_MAX_DIM / QUEQIAO_SPAN_M
+export const QUEQIAO_SCALE = (QUEQIAO_SPAN_M * M_TO_UNITS) / UNIT_MAX_DIM
+
+// Mesh gold, and a darker gold for the ribs behind it. Both are warmer and
+// far more saturated than SAT_FOIL's MLI trim: a mesh reflector is the one
+// place on a spacecraft where gold is the structure rather than a wrapper.
+const QQ_MESH = '#d6a63c'
+const QQ_RIB = '#7d5c1c'
+
+const QQ_BUS_W = 1.5 // across the wing axis (X)
+const QQ_BUS_H = 1.4
+const QQ_BUS_D = 1.3
+
+// Two panels a side rather than the relay's four. Queqiao-2 is a ~1.2 t
+// spacecraft against a TDRS-class bus, and the wings are sized to that: they
+// clear the reflector's 4.2 m by about half a metre a side, which is the whole
+// reason the span figure above is a wing measurement and not the dish.
+const QQ_YOKE = 0.32
+const QQ_PANEL_L = 0.8
+const QQ_PANEL_H = 1.25
+const QQ_PANELS = 2
+const QQ_WING_ROOT = QQ_BUS_W / 2 + QQ_YOKE
+// Wings ride above the bus centreline so the reflector hanging below them has
+// somewhere to go — see QQ_DISH_Y.
+const QQ_WING_Y = 0.35
+
+const QQ_DISH_D = 4.2
+const QQ_DISH_THETA = 0.72
+const QQ_DISH_R = QQ_DISH_D / 2 / Math.sin(QQ_DISH_THETA)
+const QQ_DISH_DEPTH = QQ_DISH_R * (1 - Math.cos(QQ_DISH_THETA))
+const QQ_DISH_FOCUS = QQ_DISH_R / 2
+// Radial ribs, counted off the published imagery rather than picked for looks.
+const QQ_RIBS = 24
+
+// How far the big reflector hangs below the bus. Driven by a collision, not by
+// taste: the rim swings up as the dish pitches down, and at the first pass
+// (vertex at -0.9 m) it came within 12 cm of the inboard solar panels. Dropped
+// until there is a third of a metre of daylight between the two.
+const QQ_DISH_Y = -1.4
+// Radians the reflector is pitched DOWN off horizontal, on the side away from
+// the Earth dish. Positive because a positive rotation about +X carries +Z
+// toward -Y (see the rotation-sign rule in docs/MOONBASE_MODEL_HANDOFF.md).
+//
+// It is deliberately NOT aimed at Moon Base Zero, and that is the honest
+// reading rather than a framing convenience. Queqiao-2's customers are
+// Chang'e landers — the far side, then the south pole — so at any given
+// moment its 4.2 m dish is pointed at somebody else's mission somewhere else
+// on the Moon. A relay in this scene that aimed its high-gain antenna at this
+// colony would be claiming a service the colony cannot actually buy, which is
+// exactly the thing keeping the only working relay in the race from being its
+// outright favourite.
+const QQ_DISH_PITCH = 0.84
+
+// The Earth link, and the one thing on this spacecraft that follows the relay's
+// own rule: from 89°S the Earth sits within a few degrees of the horizon, so
+// this dish is very nearly horizontal. It is a sixth the diameter of the one
+// pointed at the Moon.
+const QQ_EARTH_DISH_D = 0.6
+const QQ_EARTH_DISH_THETA = 0.9
+const QQ_EARTH_DISH_R = QQ_EARTH_DISH_D / 2 / Math.sin(QQ_EARTH_DISH_THETA)
+const QQ_EARTH_DISH_DEPTH =
+  QQ_EARTH_DISH_R * (1 - Math.cos(QQ_EARTH_DISH_THETA))
+
+function QueqiaoPanel({ x }: { x: number }) {
+  return (
+    <group position={[x, 0, 0]}>
+      <mesh>
+        <boxGeometry args={[QQ_PANEL_L, QQ_PANEL_H, 0.045]} />
+        <meshStandardMaterial color={PANEL} roughness={0.4} metalness={0.18} />
+      </mesh>
+      {/* Cell strings, standing proud so they don't strobe against the face */}
+      {Array.from({ length: 2 }, (_, i) => (
+        <mesh key={i} position={[QQ_PANEL_L * ((i + 1) / 3 - 0.5), 0, 0.035]}>
+          <boxGeometry args={[0.035, QQ_PANEL_H - 0.08, 0.02]} />
+          <meshStandardMaterial color={PANEL_EDGE} roughness={0.5} metalness={0.3} />
+        </mesh>
+      ))}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[0, (s * QQ_PANEL_H) / 2, 0]}>
+          <boxGeometry args={[QQ_PANEL_L, 0.06, 0.08]} />
+          <meshStandardMaterial color={SAT_SHADE} roughness={0.5} metalness={0.4} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function QueqiaoWing({ side }: { side: 1 | -1 }) {
+  return (
+    <group scale={[side, 1, 1]} position={[0, QQ_WING_Y, 0]}>
+      {/* Array drive. The wings turn about the wing axis to hold a sun that
+          circles low, which is also why the faces stand upright rather than
+          lying flat — the same argument every array on this base makes. */}
+      <mesh position={[QQ_BUS_W / 2 + 0.12, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.24, 0.24, 0.24, 14]} />
+        <meshStandardMaterial color={SAT_TRIM} roughness={0.5} metalness={0.5} />
+      </mesh>
+      <mesh
+        position={[QQ_BUS_W / 2 + QQ_YOKE / 2, 0, 0]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
+        <cylinderGeometry args={[0.09, 0.09, QQ_YOKE, 10]} />
+        <meshStandardMaterial color={SAT_SHADE} roughness={0.55} metalness={0.4} />
+      </mesh>
+      {Array.from({ length: QQ_PANELS }, (_, i) => (
+        <QueqiaoPanel key={i} x={QQ_WING_ROOT + QQ_PANEL_L * (i + 0.5)} />
+      ))}
+    </group>
+  )
+}
+
+// The 4.2 m deployable mesh reflector — the whole reason this spacecraft is
+// recognisable at a glance.
+//
+// The mesh is drawn as two caps rather than one textured surface: a solid gold
+// membrane, and a wireframe cap of the same profile set 2 cm INSIDE it. A
+// sphere's own wireframe is already a radial-and-hoop grid, which is exactly
+// what a rib-and-cord mesh antenna looks like, so QQ_RIBS segments of longitude
+// gives the 24 real ribs for free and the latitude rings read as the cords
+// between them. Inside rather than outside because the ribs show through from
+// the FRONT in every published image, and because a second cap resolved on the
+// same radius would z-fight the first across its whole area.
+function QueqiaoMeshDish({ accent }: { accent: string }) {
+  const rimR = QQ_DISH_D / 2
+  return (
+    <group>
+      <mesh position={[0, 0, QQ_DISH_R]} rotation={[-Math.PI / 2, 0, 0]}>
+        <sphereGeometry
+          args={[QQ_DISH_R, 40, 20, 0, Math.PI * 2, 0, QQ_DISH_THETA]}
+        />
+        <meshStandardMaterial
+          color={QQ_MESH}
+          side={THREE.DoubleSide}
+          roughness={0.44}
+          metalness={0.72}
+        />
+      </mesh>
+      <mesh position={[0, 0, QQ_DISH_R]} rotation={[-Math.PI / 2, 0, 0]}>
+        <sphereGeometry
+          args={[QQ_DISH_R - 0.02, QQ_RIBS, 7, 0, Math.PI * 2, 0, QQ_DISH_THETA]}
+        />
+        <meshBasicMaterial color={QQ_RIB} wireframe transparent opacity={0.6} />
+      </mesh>
+
+      {/* Rim hoop — the tensioned ring the mesh is strung from, and the one
+          part of a deployable antenna that is unambiguously structure. */}
+      <mesh position={[0, 0, QQ_DISH_DEPTH]}>
+        <torusGeometry args={[rimR, 0.05, 8, 48]} />
+        <meshStandardMaterial color={SAT_SHADE} roughness={0.45} metalness={0.5} />
+      </mesh>
+
+      {/* Deployment ribs on the BACK, where the real load path is. Eight of
+          the 24, because the back of the dish is mostly seen in silhouette and
+          all 24 as solid members reads as a plate rather than a truss. */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = (i / 8) * Math.PI * 2
+        return (
+          <TaperedMast
+            key={i}
+            from={[0, 0, -0.12]}
+            to={[Math.cos(a) * rimR, Math.sin(a) * rimR, QQ_DISH_DEPTH - 0.03]}
+            r0={0.07}
+            r1={0.022}
+            color={QQ_RIB}
+          />
+        )
+      })}
+      {/* Hub the ribs fold out of */}
+      <mesh position={[0, 0, -0.14]}>
+        <cylinderGeometry args={[0.26, 0.3, 0.22, 16]} />
+        <meshStandardMaterial color={SAT_FOIL} roughness={0.4} metalness={0.6} />
+      </mesh>
+
+      {/* Feed at the focus on its tripod. Same reasoning as the relay's: the
+          tripod is what says "antenna" instead of "bowl". */}
+      {[0, (Math.PI * 2) / 3, (Math.PI * 4) / 3].map((a) => (
+        <Strut
+          key={a}
+          from={[
+            Math.cos(a) * rimR * 0.84,
+            Math.sin(a) * rimR * 0.84,
+            QQ_DISH_DEPTH * 0.8,
+          ]}
+          to={[0, 0, QQ_DISH_FOCUS]}
+          r={0.035}
+          color={SAT_TRIM}
+        />
+      ))}
+      <mesh position={[0, 0, QQ_DISH_FOCUS + 0.02]}>
+        <boxGeometry args={[0.34, 0.34, 0.4]} />
+        <meshStandardMaterial color={SAT_FOIL} roughness={0.4} metalness={0.6} />
+      </mesh>
+      <mesh position={[0, 0, QQ_DISH_FOCUS + 0.26]}>
+        <sphereGeometry args={[0.08, 10, 10]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.4}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The 0.6 m Earth link, mounted on the bus roof and very nearly horizontal.
+function QueqiaoEarthDish() {
+  return (
+    <group position={[0, QQ_BUS_H / 2 + 0.28, QQ_BUS_D / 2 - 0.2]}>
+      <mesh position={[0, -0.2, 0]}>
+        <cylinderGeometry args={[0.09, 0.11, 0.4, 12]} />
+        <meshStandardMaterial color={SAT_TRIM} roughness={0.5} metalness={0.5} />
+      </mesh>
+      <group rotation={[-SAT_DISH_EL, 0, 0]}>
+        <mesh position={[0, 0, QQ_EARTH_DISH_R]} rotation={[-Math.PI / 2, 0, 0]}>
+          <sphereGeometry
+            args={[
+              QQ_EARTH_DISH_R,
+              20,
+              12,
+              0,
+              Math.PI * 2,
+              0,
+              QQ_EARTH_DISH_THETA,
+            ]}
+          />
+          <meshStandardMaterial
+            color={SAT_REFLECT}
+            side={THREE.DoubleSide}
+            roughness={0.32}
+            metalness={0.3}
+          />
+        </mesh>
+        <mesh position={[0, 0, QQ_EARTH_DISH_DEPTH]}>
+          <torusGeometry args={[QQ_EARTH_DISH_D / 2, 0.022, 6, 24]} />
+          <meshStandardMaterial color={SAT_SHADE} roughness={0.45} metalness={0.5} />
+        </mesh>
+        <mesh position={[0, 0, QQ_EARTH_DISH_R / 2]}>
+          <cylinderGeometry args={[0.045, 0.06, 0.14, 10]} />
+          <meshStandardMaterial color={SAT_FOIL} roughness={0.4} metalness={0.6} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+export function Queqiao({ accent }: { accent: string }) {
+  return (
+    <group scale={QQ_M}>
+      {/* Bus, in gold MLI rather than the relay's white blanket — CAST's own
+          renders and the CNSA release imagery both show a foiled bus. */}
+      <mesh>
+        <boxGeometry args={[QQ_BUS_W, QQ_BUS_H, QQ_BUS_D]} />
+        <meshStandardMaterial color={SAT_FOIL} roughness={0.44} metalness={0.62} />
+      </mesh>
+      {/* Corner longerons, so the bus reads as a built frame under its foil */}
+      {[-1, 1].map((sx) =>
+        [-1, 1].map((sz) => (
+          <mesh
+            key={`${sx}:${sz}`}
+            position={[(sx * QQ_BUS_W) / 2, 0, (sz * QQ_BUS_D) / 2]}
+          >
+            <boxGeometry args={[0.07, QQ_BUS_H + 0.02, 0.07]} />
+            <meshStandardMaterial color={SAT_TRIM} roughness={0.55} metalness={0.45} />
+          </mesh>
+        ))
+      )}
+      {/* Instrument deck on the shaded flank: the EUV camera and the neutral
+          atom imager Queqiao-2 carries alongside the relay payload. */}
+      <mesh position={[0, -0.1, -QQ_BUS_D / 2 - 0.14]}>
+        <boxGeometry args={[0.7, 0.5, 0.28]} />
+        <meshStandardMaterial color={SAT_MLI} roughness={0.6} metalness={0.24} />
+      </mesh>
+
+      <QueqiaoWing side={1} />
+      <QueqiaoWing side={-1} />
+      <QueqiaoEarthDish />
+
+      {/* The reflector, slung under the bus on a short yoke and pitched down
+          onto the surface. */}
+      <group position={[0, QQ_DISH_Y, 0]}>
+        <Strut
+          from={[0, QQ_BUS_H / 2 - QQ_DISH_Y - QQ_BUS_H, 0]}
+          to={[0, 0.1, 0]}
+          r={0.09}
+          color={SAT_TRIM}
+        />
+        <group rotation={[0, Math.PI, 0]}>
+          <group rotation={[QQ_DISH_PITCH, 0, 0]}>
+            <QueqiaoMeshDish accent={accent} />
+          </group>
+        </group>
+      </group>
+    </group>
+  )
+}
+
 // Which model, scale and span a flying project uses — keyed by project id,
 // exactly like PROJECT_MODEL for ground installations. SkyLayer looks these up
 // per station instead of assuming every satellite is the relay above.
@@ -6502,16 +6836,19 @@ export const SKY_SAT_MODEL: Record<string, ComponentType<{ accent: string }>> = 
   'im-near-space-network': RelaySat,
   'esa-lunar-pathfinder': Pathfinder,
   'crescent-parsec': Parsec,
+  'queqiao-2': Queqiao,
 }
 export const SKY_SAT_SCALE: Record<string, number> = {
   'im-near-space-network': RELAY_SCALE,
   'esa-lunar-pathfinder': PATHFINDER_SCALE,
   'crescent-parsec': PARSEC_SCALE,
+  'queqiao-2': QUEQIAO_SCALE,
 }
 export const SKY_SAT_SPAN_M: Record<string, number> = {
   'im-near-space-network': RELAY_SPAN_M,
   'esa-lunar-pathfinder': PATHFINDER_SPAN_M,
   'crescent-parsec': PARSEC_SPAN_M,
+  'queqiao-2': QUEQIAO_SPAN_M,
 }
 
 // ---------------------------------------------------------------------------
@@ -11036,6 +11373,157 @@ function ParsecTerminal({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Queqiao-2 ground terminal
+// ---------------------------------------------------------------------------
+//
+// The one terminal in this district that has to TRACK, and that is the whole
+// design. Queqiao-2 is a single spacecraft in a 24-hour elliptical orbit, so
+// from the ground it is somewhere different every hour and gone entirely for
+// part of the day — a user needs a real dish on a real two-axis mount that
+// follows it across the sky. Crescent's terminal makes the opposite argument
+// with a fixed patch under a radome and no gimbal at all (see ParsecTerminal),
+// because a constellation means never having to point at one specific node.
+// Standing the two side by side in the same district is the clearest statement
+// this map makes about what a customer is actually buying.
+//
+// The reflector is a small gold mesh in the same livery as the orbiter's 4.2 m
+// antenna, because it is the same CAST hardware family scaled down — and
+// because a Queqiao user terminal reading as Queqiao hardware is the point:
+// this is the lot that says the incumbent relay comes with the incumbent's
+// standards attached.
+const QQ_TERM_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['queqiao-2'] ?? 2.28)
+
+const QQ_TERM_HEAD_H = 1.7 // grade to the elevation trunnion
+const QQ_TERM_DISH_D = 1.1
+const QQ_TERM_DISH_THETA = 0.85
+const QQ_TERM_DISH_R = QQ_TERM_DISH_D / 2 / Math.sin(QQ_TERM_DISH_THETA)
+const QQ_TERM_DISH_DEPTH =
+  QQ_TERM_DISH_R * (1 - Math.cos(QQ_TERM_DISH_THETA))
+// Radians the dish is tilted UP. High rather than near-horizontal because
+// Queqiao-2 spends most of a 24-hour ellipse near apolune, well up the sky —
+// unlike every Earth-pointing antenna on this base, which lies nearly flat.
+const QQ_TERM_EL = 0.7
+const QQ_TERM_LEG_R = 0.9
+
+function QueqiaoTerminal({ accent }: { accent: string }) {
+  return (
+    <group scale={QQ_TERM_M}>
+      {/* Tripod, with the feet driven in below grade like every other footing
+          on this base. */}
+      {[0, 1, 2].map((i) => {
+        const a = (i / 3) * Math.PI * 2 + 0.5
+        const x = Math.cos(a) * QQ_TERM_LEG_R
+        const z = Math.sin(a) * QQ_TERM_LEG_R
+        return (
+          <group key={i}>
+            <Strut
+              from={[x, -0.07, z]}
+              to={[0, QQ_TERM_HEAD_H - 0.3, 0]}
+              r={0.038}
+              color={TERM_TRIM}
+            />
+            <mesh position={[x, -0.04, z]}>
+              <cylinderGeometry args={[0.11, 0.14, 0.12, 8]} />
+              <meshStandardMaterial color={HULL_DARK} roughness={0.85} metalness={0.15} />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* Azimuth bearing, then the elevation trunnion above it — two axes,
+          which is the part Crescent's terminal deliberately does without. */}
+      <mesh position={[0, QQ_TERM_HEAD_H - 0.28, 0]}>
+        <cylinderGeometry args={[0.19, 0.22, 0.22, 16]} />
+        <meshStandardMaterial color={TERM_TRIM} roughness={0.5} metalness={0.5} />
+      </mesh>
+      <mesh position={[0, QQ_TERM_HEAD_H - 0.09, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.075, 0.075, 0.42, 12]} />
+        <meshStandardMaterial color={SAT_SHADE} roughness={0.5} metalness={0.45} />
+      </mesh>
+
+      <group position={[0, QQ_TERM_HEAD_H, 0]} rotation={[-QQ_TERM_EL, 0, 0]}>
+        <mesh position={[0, 0, QQ_TERM_DISH_R]} rotation={[-Math.PI / 2, 0, 0]}>
+          <sphereGeometry
+            args={[QQ_TERM_DISH_R, 32, 16, 0, Math.PI * 2, 0, QQ_TERM_DISH_THETA]}
+          />
+          <meshStandardMaterial
+            color={QQ_MESH}
+            side={THREE.DoubleSide}
+            roughness={0.44}
+            metalness={0.72}
+          />
+        </mesh>
+        {/* Same two-cap trick as the orbiter's reflector: a wireframe shell
+            just inside the membrane draws the ribs and cords. */}
+        <mesh position={[0, 0, QQ_TERM_DISH_R]} rotation={[-Math.PI / 2, 0, 0]}>
+          <sphereGeometry
+            args={[
+              QQ_TERM_DISH_R - 0.012,
+              16,
+              5,
+              0,
+              Math.PI * 2,
+              0,
+              QQ_TERM_DISH_THETA,
+            ]}
+          />
+          <meshBasicMaterial color={QQ_RIB} wireframe transparent opacity={0.6} />
+        </mesh>
+        <mesh position={[0, 0, QQ_TERM_DISH_DEPTH]}>
+          <torusGeometry args={[QQ_TERM_DISH_D / 2, 0.03, 6, 32]} />
+          <meshStandardMaterial color={SAT_SHADE} roughness={0.45} metalness={0.5} />
+        </mesh>
+        {/* Feed on a tripod at the focus */}
+        {[0, (Math.PI * 2) / 3, (Math.PI * 4) / 3].map((a) => (
+          <Strut
+            key={a}
+            from={[
+              (Math.cos(a) * QQ_TERM_DISH_D) / 2 * 0.82,
+              (Math.sin(a) * QQ_TERM_DISH_D) / 2 * 0.82,
+              QQ_TERM_DISH_DEPTH * 0.78,
+            ]}
+            to={[0, 0, QQ_TERM_DISH_R / 2]}
+            r={0.018}
+            color={TERM_TRIM}
+          />
+        ))}
+        <mesh position={[0, 0, QQ_TERM_DISH_R / 2 + 0.03]}>
+          <cylinderGeometry args={[0.06, 0.08, 0.16, 10]} />
+          <meshStandardMaterial color={SAT_FOIL} roughness={0.4} metalness={0.6} />
+        </mesh>
+        <mesh position={[0, 0, QQ_TERM_DISH_R / 2 + 0.15]}>
+          <sphereGeometry args={[0.045, 8, 8]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.6}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+
+      {/* Modem and drive electronics at the foot, bedded into the regolith */}
+      <mesh position={[0.5, 0.2, -0.14]}>
+        <boxGeometry args={[0.5, 0.42, 0.38]} />
+        <meshStandardMaterial color={TERM_SHELTER} roughness={0.6} metalness={0.2} />
+      </mesh>
+      <mesh position={[0.5, -0.02, -0.14]}>
+        <boxGeometry args={[0.54, 0.06, 0.42]} />
+        <meshStandardMaterial color={TERM_TRIM} roughness={0.7} metalness={0.3} />
+      </mesh>
+      {/* Cable run from the case up to the drive, so the mount is plainly
+          powered rather than decorative. */}
+      <Strut
+        from={[0.5, 0.38, -0.14]}
+        to={[0.08, QQ_TERM_HEAD_H - 0.34, -0.04]}
+        r={0.016}
+        color={HULL_DARK}
+      />
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Buried habitats — cut-and-cover vaults under a regolith cover
 // ---------------------------------------------------------------------------
 //
@@ -12138,6 +12626,10 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // Crescent's ground lot, smaller again than ESA's: see ParsecTerminal.
   // Parsec itself flies as two satellites via SKY_STATIONS/SkyLayer.
   'crescent-parsec': ParsecTerminal,
+  // CNSA's ground lot: a two-axis tracking dish, the only one in the district,
+  // because a single satellite in a 24-hour ellipse has to be followed. The
+  // orbiter itself flies via SKY_STATIONS/SkyLayer.
+  'queqiao-2': QueqiaoTerminal,
   // IM's ground lot: a single sealed avionics package with its dish
   // gimballed onto the lid, not the generic CommsPnt mast-shelter-array site
   // Nokia still stands on. RelaySat flies via SKY_STATIONS/SkyLayer.

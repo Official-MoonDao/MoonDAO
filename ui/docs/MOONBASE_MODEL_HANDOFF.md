@@ -42,18 +42,34 @@ are each down to a single project (Nokia; Blue Origin) on the generic model,
 which is no longer duplication, just one competitor left where the generic
 model already happens to be that competitor's own concept:
 
-### Priority 1 — comms / PNT (1 of 4 still on the generic model)
+### Priority 1 — comms / PNT (2 of 6 still on the generic model)
 
 | Odds | Org | Project | id | Status |
 |---|---|---|---|---|
-| 30% | Nokia Bell Labs | Lunar Surface Communication System | `nokia-lunar-lte` | generic `CommsPnt` |
-| 28% | Intuitive Machines | Lunar Relay Satellites | `im-near-space-network` | **done** — `RelaySat` (orbit, ×3) + `RelayGroundTerminal` (ground) |
-| 24% | ESA | Lunar Pathfinder & Moonlight | `esa-lunar-pathfinder` | **done** — `Pathfinder` (orbit) + `PathfinderTerminal` (ground) |
-| 18% | Crescent Space Services | Parsec | `crescent-parsec` | **done** — `Parsec` (orbit, ×2) + `ParsecTerminal` (ground) |
+| 24% | CNSA / CAST | Queqiao-2 Relay | `queqiao-2` | **done** — `Queqiao` (orbit) + `QueqiaoTerminal` (ground) |
+| 21% | Modul8 (ex-Nokia Bell Labs) | Lunar Surface Communication System | `nokia-lunar-lte` | generic `CommsPnt` |
+| 20% | Intuitive Machines | Lunar Relay Satellites | `im-near-space-network` | **done** — `RelaySat` (orbit, ×3) + `RelayGroundTerminal` (ground) |
+| 18% | ESA | Lunar Pathfinder & Moonlight | `esa-lunar-pathfinder` | **done** — `Pathfinder` (orbit) + `PathfinderTerminal` (ground) |
+| 13% | Crescent Space Services | Parsec | `crescent-parsec` | **done** — `Parsec` (orbit, ×2) + `ParsecTerminal` (ground) |
+| 4% | Solstar Space | Lunar WiFi Access Point | `solstar-lunar-wifi` | generic `CommsPnt` |
 
-All four comms bids are now orbiter-plus-ground builds except Nokia, which has
-no orbital component to begin with, and each one answers "what's in orbit and
+This is the largest district on the map and every bid in it except Solstar and
+Modul8 is an orbiter-plus-ground build, each answering "what's in orbit and
 what's on the ground" differently on purpose:
+
+- **CNSA** (`Queqiao`, ×1 station + `QueqiaoTerminal`): the only relay in the
+  race that is already flying, and the only one built to serve a single
+  programme rather than a market. Its whole silhouette is one proportion: a
+  4.2 m gold mesh reflector pointed at the MOON and a 0.6 m dish pointed at
+  EARTH. That reads backwards until you ask which end of each link owns the
+  big antenna — into a ground station tens of metres across it can whisper;
+  to a lander it is the only good antenna in the conversation. The mesh is
+  drawn as a solid gold cap with a wireframe cap of the same profile 2 cm
+  inside it, since a sphere's own wireframe is already the radial-and-hoop
+  grid a rib-and-cord antenna is made of. Its ground lot is the district's
+  only two-axis TRACKING mount, which is the direct counter-argument to
+  Crescent's gimbal-less patch: one satellite in a 24-hour ellipse has to be
+  followed across the sky, a constellation never does.
 
 - **IM** (`RelaySat`, ×3 stations + `RelayGroundTerminal`): an operational
   TDRS-class bus, four-panel wings, a big Earth dish, overhead. On the ground,
@@ -83,14 +99,23 @@ what's on the ground" differently on purpose:
   point-mast does, so ESA keeps the smallest-footprint lot and Crescent the
   smallest model.
 
-All three orbiters are wired through the same generalized lookup —
+All four orbiters are wired through the same generalized lookup —
 `SKY_SAT_MODEL` / `SKY_SAT_SCALE` / `SKY_SAT_SPAN_M` in `ProjectModel.tsx`,
 keyed by project id and consumed by `SkyLayer.tsx` — and each gets its own
 entry in `SKY_STATIONS` (`skyplan.ts`): 3 stations for IM, 1 for Pathfinder, 2
-for Parsec, which is not a portrayal but each program's actual state (an
-operational fleet, a single precursor, and a network that starts at two and
-scales). Only Nokia's LTE network of small cells remains on the fully generic
-`CommsPnt` terminal — the last item in this district.
+for Parsec, 1 for Queqiao-2, which is not a portrayal but each program's actual
+state (an operational fleet, a single precursor, a network that starts at two
+and scales, and one working relay). Queqiao-2's station stands furthest out and
+lowest of the four — 430 m out at 240 m, where the others sit 150–360 m out and
+300–500 m up — to separate it from the three programs selling into the same
+Western market, and its bearing (40°) is set by the fact that its hero face is
+turned AWAY from the colony, so the sun ends up behind an eye standing off
+outward rather than in front of it.
+
+Modul8's LTE network of small cells and Solstar's access point are what remain
+on the fully generic `CommsPnt` terminal — and Solstar in particular should not
+stay there, because that generic model is a 15 m mast-shelter-array site
+standing in for what is really a single small radio (see the layout note in §4).
 
 ### Priority 2 — surface construction (4 competitors, 4× the same model)
 
@@ -261,6 +286,23 @@ going any further without `MAIN_LOOP_M` moving too (see the comment on
 These are all mistakes that were made and fixed in this scene. They are cheap to
 avoid up front and annoying to find later.
 
+- **A district seats its biggest plots on the OUTWARD corners, and an
+  under-counted test roster hides it when that goes wrong.** The four corner
+  seats of a crossroads alternate outward and inward of main street, and the
+  two are not equally deep — an inward lot reaches back toward the perimeter
+  road, so every extra metre of radius costs it two metres of clearance.
+  `districtSlots` used to seat plots strictly largest-first, which put the
+  *second* biggest plot on the first inward corner: Cislune's 9.5 m ISRU plant
+  ended up 5.4 m inside the ring road and Solstar's comms lot 1.4 m inside it.
+  Nothing failed, because `ROSTERS` in `lunar-atlas-baseplan.cy.ts` is mirrored
+  by hand and both projects were missing from it — a roster that under-counts
+  a district doesn't fail, it silently stops testing the case that breaks. The
+  seating is now size-aware (biggest onto the outward seats, smallest onto the
+  inward ones) and both rosters are at their true counts. The fill ORDER is
+  untouched, so a two-competitor race still gets one lot either side of both
+  streets. Worst margin on the map is now construction's 1.0 m, where all five
+  plots are the same 6.3 m and no seating choice can help. **When you add a
+  competitor, add it to `ROSTERS` in the same change.**
 - **Nothing floats, nothing hovers.** Bed every foot, pad and fitting a few
   centimetres *into* what it stands on. Footings should run below grade — a pad
   resolved exactly at `y = 0` lifts clear of any hollow it lands over. Bedding an
