@@ -1,4 +1,3 @@
-import { DEPLOYED_ORIGIN } from 'const/config'
 import {
   buildJobOgImageUrl,
   buildListingOgImageUrl,
@@ -10,9 +9,12 @@ import {
   listingOgFieldsFrom,
   parseJobOgParams,
   parseListingOgParams,
+  previewOrigin,
   sanitizeDiscordEmbeds,
 } from '@/lib/og/preview'
+import { ogFontIsBundled, rasterizeOgSvg } from '@/lib/og/rasterize'
 import { escapeXml, renderOgSvg, wrapText } from '@/lib/og/svg'
+import sharp from 'sharp'
 
 describe('clip', () => {
   it('collapses whitespace and ellipsizes long strings', () => {
@@ -88,7 +90,7 @@ describe('job OG fields and URLs', () => {
       tag: 'Engineering',
     })
 
-    expect(url.startsWith(`${DEPLOYED_ORIGIN}/api/og/job?`)).to.equal(true)
+    expect(url.startsWith(`${previewOrigin()}/api/og/job?`)).to.equal(true)
     const parsed = parseJobOgParams(new URL(url).searchParams)
     expect(parsed.title).to.equal('Software Engineer')
     expect(parsed.team).to.equal('MoonDAO')
@@ -129,7 +131,7 @@ describe('listing OG fields and URLs', () => {
     expect(fields.image).to.equal('ipfs://QmSuJQjNWDQn5Wht6d6PqUoten6DVm3cLocoHxi85G9N8T')
 
     const url = buildListingOgImageUrl(fields)
-    expect(url.startsWith(`${DEPLOYED_ORIGIN}/api/og/listing?`)).to.equal(true)
+    expect(url.startsWith(`${previewOrigin()}/api/og/listing?`)).to.equal(true)
     const parsed = parseListingOgParams(new URL(url).searchParams)
     expect(parsed.title).to.equal('Lunar Payload Slot')
     expect(parsed.price).to.equal('1,000 USDC')
@@ -155,7 +157,7 @@ describe('Discord embeds', () => {
     })
     expect(embed.title).to.equal('Engineer')
     expect(embed.url).to.equal('https://moondao.com/jobs/1')
-    expect(embed.image?.url.startsWith(`${DEPLOYED_ORIGIN}/api/og/job?`)).to.equal(true)
+    expect(embed.image?.url.startsWith(`${previewOrigin()}/api/og/job?`)).to.equal(true)
     expect(embed.footer?.text).to.equal('MoonDAO Jobs')
     expect(embed.author?.name).to.equal('MoonDAO')
   })
@@ -168,7 +170,7 @@ describe('Discord embeds', () => {
       url: 'https://moondao.com/marketplace/7',
       teamName: 'LifeShip',
     })
-    expect(embed.image?.url.startsWith(`${DEPLOYED_ORIGIN}/api/og/listing?`)).to.equal(true)
+    expect(embed.image?.url.startsWith(`${previewOrigin()}/api/og/listing?`)).to.equal(true)
     expect(embed.footer?.text).to.equal('MoonDAO Marketplace')
     expect(embed.author?.name).to.equal('LifeShip')
   })
@@ -194,6 +196,14 @@ describe('Discord embeds', () => {
     expect((cleaned?.[0] as any).extra).to.equal(undefined)
     expect(cleaned?.[1].url).to.equal(undefined)
     expect(cleaned?.[1].image).to.equal(undefined)
+  })
+})
+
+describe('previewOrigin', () => {
+  it('sends production OG images to www so crawlers do not follow a 307', () => {
+    expect(previewOrigin('https://moondao.com')).to.equal('https://www.moondao.com')
+    expect(previewOrigin('https://www.moondao.com')).to.equal('https://www.moondao.com')
+    expect(previewOrigin('https://example.vercel.app')).to.equal('https://example.vercel.app')
   })
 })
 
@@ -229,5 +239,33 @@ describe('OG SVG card', () => {
     expect(svg).to.include('moondao.com/jobs')
     expect(svg).to.include('width="1200"')
     expect(svg).to.include('height="630"')
+    expect(svg).to.include('font-family:Lato')
+    expect(svg).to.include('font-family="Lato, sans-serif"')
+  })
+})
+
+describe('OG rasterize', () => {
+  it('bundles Lato and paints readable title pixels', async () => {
+    expect(ogFontIsBundled()).to.equal(true)
+    const svg = renderOgSvg({
+      eyebrow: 'MoonDAO  ·  Jobs',
+      title: 'Social Media Manager',
+      subtitle: 'Executive Branch',
+      chips: ['Marketing', 'Part-time'],
+      footer: 'moondao.com/jobs',
+    })
+    const png = await rasterizeOgSvg(svg)
+    const image = sharp(png)
+    const meta = await image.metadata()
+    expect(meta.width).to.equal(1200)
+    expect(meta.height).to.equal(630)
+    expect(meta.format).to.equal('png')
+
+    // Title block: white Lato glyphs, not empty tofu on a dark navy card.
+    const titleStats = await sharp(png)
+      .extract({ left: 50, top: 150, width: 700, height: 140 })
+      .stats()
+    expect(titleStats.channels[0].max).to.be.greaterThan(200)
+    expect(titleStats.channels[0].mean).to.be.greaterThan(20)
   })
 })

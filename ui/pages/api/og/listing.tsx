@@ -1,7 +1,7 @@
 import { IPFS_GATEWAY } from 'const/config'
 import { NextApiRequest, NextApiResponse } from 'next'
-import sharp from 'sharp'
 import { parseListingOgParams } from '@/lib/og/preview'
+import { rasterizeListingThumb, rasterizeOgSvg } from '@/lib/og/rasterize'
 import { renderOgSvg } from '@/lib/og/svg'
 import { MAX_UPLOAD_BYTES } from '@/lib/utils/images'
 
@@ -49,10 +49,7 @@ async function resolveListingImage(cid?: string): Promise<string | undefined> {
     if (Number.isFinite(declaredLength) && declaredLength > MAX_MEDIA_BYTES) return undefined
     const buffer = await readCapped(response.body, MAX_MEDIA_BYTES)
     if (!buffer?.length) return undefined
-    const media = await sharp(buffer, { limitInputPixels: MAX_MEDIA_PIXELS })
-      .resize(MEDIA_WIDTH, MEDIA_HEIGHT, { fit: 'cover' })
-      .png()
-      .toBuffer()
+    const media = await rasterizeListingThumb(buffer, MEDIA_WIDTH, MEDIA_HEIGHT, MAX_MEDIA_PIXELS)
     return `data:image/png;base64,${media.toString('base64')}`
   } catch {
     return undefined
@@ -77,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     mediaDataUri,
   })
 
-  const png = await sharp(Buffer.from(svg)).png().toBuffer()
+  const png = await rasterizeOgSvg(svg)
   res.setHeader('Content-Type', 'image/png')
   res.setHeader('Cache-Control', 'public, immutable, no-transform, max-age=86400')
   res.setHeader('Content-Length', String(png.length))
