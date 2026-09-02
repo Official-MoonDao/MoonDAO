@@ -26,6 +26,7 @@
     "cypress/integration/unit/lunar-atlas-deprize.cy.ts",
     "cypress/integration/unit/lunar-atlas-geo.cy.ts",
     "cypress/integration/unit/lunar-atlas-selectors.cy.ts",
+    "cypress/integration/unit/lunar-atlas-shading.cy.ts",
     "cypress/integration/unit/lunar-atlas-southpole.cy.ts",
     "cypress/integration/unit/team-roles.cy.tsx",
     "cypress/integration/unit/renew-subscription.cy.ts",
