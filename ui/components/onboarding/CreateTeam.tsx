@@ -169,10 +169,20 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   }, [])
 
   const handlePostMint = useCallback(
-    async (teamName: string) => {
-      const teamPrettyLink = generatePrettyLink(teamName)
+    (tokenId: string, metadataReady: boolean) => {
       clearCache()
-      router.push(`/team/${teamPrettyLink}`)
+      // Numeric `/team/<id>` skips the 60s pretty-link cache, which never
+      // contains a team minted in the last minute. Only go there once
+      // `waitForERC721` has seen `metadata.name` — that read is Tableland-
+      // backed, so a miss means `fetchTeamWithOwner` would 404 too.
+      if (metadataReady) {
+        router.push(`/team/${tokenId}`)
+      } else {
+        toast.success(
+          'Team created. Profile indexing is taking longer than usual — it will appear on the network shortly.'
+        )
+        router.push('/network')
+      }
       setIsLoadingMint(false)
     },
     [router, clearCache]
@@ -371,13 +381,17 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
         { label: 'notify-new-team' }
       )
 
+      let metadataReady = false
       try {
         await waitForERC721(teamContract, +mintedTokenId)
+        metadataReady = true
       } catch (err) {
-        // Metadata lag must not block redirect or the already-fired announcement.
+        // Announcement already fired. Do not send the payer to a pretty-link
+        // (or even `/team/<id>`) while Tableland is still missing the row —
+        // getServerSideProps 404s in that case.
         console.error('Team NFT metadata not ready yet:', err)
       }
-      await handlePostMint(teamData.name)
+      handlePostMint(mintedTokenId, metadataReady)
     } catch (err) {
       console.error(err)
       setIsLoadingMint(false)

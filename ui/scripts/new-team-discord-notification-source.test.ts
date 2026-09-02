@@ -27,4 +27,10 @@ describe('CreateTeam Discord announcement wiring', () => {
     expect(source).to.not.include('10000')
     expect(source).to.not.include('_timestamp=123456789')
   })
+
+  it('does not send a just-minted team to a pretty-link that can 404', () => {
+    expect(source).to.include('router.push(`/team/${tokenId}`)')
+    expect(source).to.include("router.push('/network')")
+    expect(source).to.not.match(/router\.push\(`\/team\/\$\{teamPrettyLink\}`\)/)
+  })
 })
