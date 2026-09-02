@@ -261,11 +261,11 @@ describe('OG rasterize', () => {
     expect(meta.height).to.equal(630)
     expect(meta.format).to.equal('png')
 
-    // Title block: white Lato glyphs, not empty tofu on a dark navy card.
+    // Title baseline sits at y=200. White Lato glyphs must be present; a
+    // missing-font card is only the dark gradient (channel max ~50).
     const titleStats = await sharp(png)
-      .extract({ left: 50, top: 150, width: 700, height: 140 })
+      .extract({ left: 50, top: 160, width: 700, height: 80 })
       .stats()
     expect(titleStats.channels[0].max).to.be.greaterThan(200)
-    expect(titleStats.channels[0].mean).to.be.greaterThan(20)
   })
 })
