@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>MoonDAO Updates</title>
+    <link>https://moondao.com/updates</link>
+    <description>Announcements, updates, and long-form essays from the Internet's Space Program.</description>
+    <language>en-us</language>
+    <item>
+      <title>The Master Plan</title>
+      <link>https://moondao.com/updates/the-master-plan</link>
+      <guid>https://moondao.com/updates/the-master-plan</guid>
+      <pubDate>Tue, 12 Sep 2023 00:00:00 GMT</pubDate>
+      <category>Essay</category>
+      <description>Why MoonDAO exists, why a lunar settlement is possible, and the plan to get there. A 2023 essay by founder Pablo Moncada-Larrotiz.</description>
+      <author>Pablo Moncada-Larrotiz</author>
+    </item>
+  </channel>
+</rss>

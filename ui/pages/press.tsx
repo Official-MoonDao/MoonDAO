@@ -1,4 +1,6 @@
 import { ArrowTopRightOnSquareIcon, EnvelopeIcon } from '@heroicons/react/24/outline'
+import { GetStaticProps } from 'next'
+import Link from 'next/link'
 import React from 'react'
 import {
   BRAND_ASSETS,
@@ -14,6 +16,8 @@ import {
   VIDEO_APPEARANCES,
 } from '@/lib/press/press-data'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { listUpdates } from '@/lib/updates/loadUpdates'
+import type { UpdateMeta } from '@/lib/updates/types'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -25,10 +29,12 @@ import PressKit from '@/components/press/PressKit'
 import PressReleaseList from '@/components/press/PressReleaseList'
 import PressSection from '@/components/press/PressSection'
 import Spokespeople from '@/components/press/Spokespeople'
+import UpdateCard from '@/components/updates/UpdateCard'
 
 const sections = [
   { id: 'about', label: 'About' },
   { id: 'press-releases', label: 'Announcements' },
+  { id: 'updates', label: 'Latest updates' },
   { id: 'coverage', label: 'In the news' },
   { id: 'appearances', label: 'Podcasts & video' },
   { id: 'press-kit', label: 'Press kit' },
@@ -36,7 +42,11 @@ const sections = [
   { id: 'contact', label: 'Contact' },
 ]
 
-export default function Press() {
+type PressProps = {
+  recentUpdates: UpdateMeta[]
+}
+
+export default function Press({ recentUpdates }: PressProps) {
   useChainDefault()
 
   return (
@@ -44,7 +54,7 @@ export default function Press() {
       <WebsiteHead
         title="Press"
         description="MoonDAO press releases, news coverage, and press kit. Logos, boilerplate, imagery, and media contacts for the Internet's Space Program."
-        image="/assets/moondao-og.jpg"
+        image="/assets/MoonDAO-OG.png"
       />
       <section className="mt-5 flex w-[90vw] animate-fadeIn flex-col items-start justify-start px-5 md:w-full">
         <Container>
@@ -107,6 +117,28 @@ export default function Press() {
               >
                 <PressReleaseList releases={PRESS_RELEASES} />
               </PressSection>
+
+              {recentUpdates.length > 0 && (
+                <PressSection
+                  id="updates"
+                  title="Latest updates"
+                  description="Announcements, mission updates, and long-form essays published by MoonDAO."
+                  action={
+                    <Link
+                      href="/updates"
+                      className="inline-flex flex-shrink-0 items-center gap-2 text-sm font-medium text-blue-300 hover:text-blue-200"
+                    >
+                      Read all updates
+                    </Link>
+                  }
+                >
+                  <div className="rounded-xl border border-white/10 px-5">
+                    {recentUpdates.map((update) => (
+                      <UpdateCard key={update.slug} update={update} />
+                    ))}
+                  </div>
+                </PressSection>
+              )}
 
               <PressSection
                 id="coverage"
@@ -188,4 +220,12 @@ export default function Press() {
       />
     </>
   )
+}
+
+export const getStaticProps: GetStaticProps<PressProps> = async () => {
+  return {
+    props: {
+      recentUpdates: listUpdates().slice(0, 3),
+    },
+  }
 }

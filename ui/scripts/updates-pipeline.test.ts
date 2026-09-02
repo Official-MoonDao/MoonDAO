@@ -1,0 +1,354 @@
+/// <reference types="node" />
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
+import formatUpdateDate from '../lib/updates/formatUpdateDate'
+import { parseUpdateFrontmatter, isValidUpdateDate } from '../lib/updates/frontmatter'
+import {
+  allUpdateStaticPaths,
+  featuredUpdate,
+  getAdjacentUpdates,
+  getUpdate,
+  listUpdates,
+  resetUpdatesCache,
+  slugFromFilename,
+} from '../lib/updates/loadUpdates'
+import { readingMinutes } from '../lib/updates/readingTime'
+import { buildRssXml } from '../lib/updates/rss'
+
+function expectEqual<T>(actual: T, expected: T, label: string) {
+  if (actual !== expected) {
+    throw new Error(`${label}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`)
+  }
+}
+
+function writeUpdate(
+  dir: string,
+  fileName: string,
+  extra: string,
+  body = 'Hello world from a test post.'
+) {
+  fs.writeFileSync(
+    path.join(dir, fileName),
+    `---
+title: ${fileName}
+description: A test description for ${fileName}
+date: 2024-01-01
+author: Tester
+${extra}
+---
+${body}
+`
+  )
+}
+
+describe('update slug from filename', () => {
+  it('strips a leading YYYY-MM-DD prefix', () => {
+    expectEqual(slugFromFilename('2023-09-12-the-master-plan.md'), 'the-master-plan', 'dated')
+  })
+
+  it('keeps an undated filename as the slug', () => {
+    expectEqual(slugFromFilename('untitled-notes.md'), 'untitled-notes', 'plain')
+  })
+})
+
+describe('update frontmatter', () => {
+  it('parses update-only keys without leaking into the body', () => {
+    const raw = `---
+title: Hello
+description: A dek
+date: 2023-09-12
+author: Pablo
+authorRole: Founder
+category: Press Release
+image: /assets/MoonDAO-OG.png
+tags:
+  - ideas
+featured: true
+draft: false
+---
+# Body
+`
+    const { frontmatter, body } = parseUpdateFrontmatter(raw)
+    expectEqual(frontmatter.title, 'Hello', 'title')
+    expectEqual(frontmatter.date, '2023-09-12', 'date')
+    expectEqual(frontmatter.authorRole, 'Founder', 'role')
+    expectEqual(frontmatter.category, 'Press Release', 'category')
+    expectEqual(frontmatter.featured, true, 'featured')
+    expectEqual(frontmatter.draft, false, 'draft')
+    expectEqual(frontmatter.tags.join(','), 'ideas', 'tags')
+    if (!body.startsWith('# Body')) throw new Error(`body: ${body}`)
+  })
+
+  it('defaults category to Update when omitted', () => {
+    const { frontmatter } = parseUpdateFrontmatter(`---
+title: Hello
+description: A dek
+date: 2023-09-12
+author: Pablo
+---
+Body
+`)
+    expectEqual(frontmatter.category, 'Update', 'default category')
+  })
+
+  it('accepts only YYYY-MM-DD dates', () => {
+    expectEqual(isValidUpdateDate('2023-09-12'), true, 'valid')
+    expectEqual(isValidUpdateDate('09/12/2023'), false, 'slash')
+    expectEqual(isValidUpdateDate(undefined), false, 'missing')
+  })
+})
+
+describe('reading time', () => {
+  it('is at least one minute', () => {
+    expectEqual(readingMinutes('short'), 1, 'min')
+  })
+
+  it('rounds word count at 220 wpm', () => {
+    const words = Array.from({ length: 440 }, () => 'word').join(' ')
+    expectEqual(readingMinutes(words), 2, '440 words')
+  })
+})
+
+describe('formatUpdateDate', () => {
+  it('does not shift the calendar day', () => {
+    expectEqual(formatUpdateDate('2023-09-12'), 'September 12, 2023', 'date')
+  })
+})
+
+describe('updates loader', () => {
+  let dir: string
+  const previousEnv = process.env.VERCEL_ENV
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'moondao-updates-'))
+    delete process.env.VERCEL_ENV
+    resetUpdatesCache()
+  })
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true })
+    if (previousEnv === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = previousEnv
+    resetUpdatesCache()
+  })
+
+  it('sorts newest first and skips _template.md and README.md', () => {
+    writeUpdate(dir, '2024-01-01-older.md', '')
+    fs.writeFileSync(
+      path.join(dir, '2024-06-01-newer.md'),
+      `---
+title: Newer
+description: Newer dek
+date: 2024-06-01
+author: Tester
+---
+newer
+`
+    )
+    fs.writeFileSync(path.join(dir, '_template.md'), '---\ntitle: Template\n---\n')
+    fs.writeFileSync(path.join(dir, 'README.md'), '# Authoring notes\n')
+    const posts = listUpdates(dir)
+    expectEqual(posts.map((p) => p.slug).join(','), 'newer,older', 'order')
+  })
+
+  it('throws on a missing title or bad date', () => {
+    fs.writeFileSync(
+      path.join(dir, '2024-01-01-bad.md'),
+      `---
+description: Missing title
+date: 2024-01-01
+author: Tester
+---
+body
+`
+    )
+    let threw = false
+    try {
+      listUpdates(dir)
+    } catch {
+      threw = true
+    }
+    if (!threw) throw new Error('expected missing title to throw')
+
+    resetUpdatesCache()
+    fs.writeFileSync(
+      path.join(dir, '2024-01-01-bad.md'),
+      `---
+title: Bad date
+description: Missing valid date
+date: yesterday
+author: Tester
+---
+body
+`
+    )
+    threw = false
+    try {
+      listUpdates(dir)
+    } catch {
+      threw = true
+    }
+    if (!threw) throw new Error('expected bad date to throw')
+  })
+
+  it('stores omitted optional fields as null, not undefined', () => {
+    // getStaticProps refuses to serialize undefined, so an update that leaves
+    // authorRole or image out would fail the build.
+    fs.writeFileSync(
+      path.join(dir, '2024-01-01-bare.md'),
+      `---
+title: Bare
+description: No role, no image
+date: 2024-01-01
+author: Tester
+---
+body
+`
+    )
+    const [update] = listUpdates(dir)
+    expectEqual(update.authorRole, null, 'authorRole')
+    expectEqual(update.image, null, 'image')
+    expectEqual(JSON.stringify(update).includes('undefined'), false, 'serializable')
+  })
+
+  it('throws on a duplicate slug', () => {
+    writeUpdate(dir, '2024-01-01-same.md', '')
+    writeUpdate(dir, '2024-02-02-same.md', 'date: 2024-02-02\n')
+    let threw = false
+    try {
+      listUpdates(dir)
+    } catch {
+      threw = true
+    }
+    if (!threw) throw new Error('expected duplicate slug to throw')
+  })
+
+  it('hides drafts on a production Vercel build and keeps them otherwise', () => {
+    fs.writeFileSync(
+      path.join(dir, '2024-01-01-draft.md'),
+      `---
+title: Draft
+description: A draft
+date: 2024-01-01
+author: Tester
+draft: true
+---
+secret
+`
+    )
+    expectEqual(listUpdates(dir).length, 1, 'local shows draft')
+
+    process.env.VERCEL_ENV = 'production'
+    resetUpdatesCache()
+    expectEqual(listUpdates(dir).length, 0, 'production hides draft')
+    expectEqual(getUpdate('draft', dir), null, 'production 404s draft')
+    expectEqual(allUpdateStaticPaths(dir).length, 0, 'production omits draft path')
+
+    process.env.VERCEL_ENV = 'preview'
+    resetUpdatesCache()
+    expectEqual(listUpdates(dir).length, 1, 'preview shows draft')
+  })
+
+  it('returns adjacent posts on a newest-first list', () => {
+    fs.writeFileSync(
+      path.join(dir, '2024-01-01-first.md'),
+      `---
+title: First
+description: First dek
+date: 2024-01-01
+author: Tester
+---
+one
+`
+    )
+    fs.writeFileSync(
+      path.join(dir, '2024-02-01-middle.md'),
+      `---
+title: Middle
+description: Middle dek
+date: 2024-02-01
+author: Tester
+---
+two
+`
+    )
+    fs.writeFileSync(
+      path.join(dir, '2024-03-01-last.md'),
+      `---
+title: Last
+description: Last dek
+date: 2024-03-01
+author: Tester
+---
+three
+`
+    )
+    const newest = getAdjacentUpdates('last', dir)
+    expectEqual(newest.prev, undefined, 'newest has no prev')
+    expectEqual(newest.next?.slug, 'middle', 'newest next')
+
+    const oldest = getAdjacentUpdates('first', dir)
+    expectEqual(oldest.next, undefined, 'oldest has no next')
+    expectEqual(oldest.prev?.slug, 'middle', 'oldest prev')
+  })
+
+  it('picks the newest featured post', () => {
+    fs.writeFileSync(
+      path.join(dir, '2024-01-01-old-feature.md'),
+      `---
+title: Old feature
+description: Old
+date: 2024-01-01
+author: Tester
+featured: true
+---
+old
+`
+    )
+    fs.writeFileSync(
+      path.join(dir, '2024-06-01-new-feature.md'),
+      `---
+title: New feature
+description: New
+date: 2024-06-01
+author: Tester
+featured: true
+---
+new
+`
+    )
+    expectEqual(featuredUpdate(dir)?.slug, 'new-feature', 'newest featured')
+    expectEqual(
+      Object.prototype.hasOwnProperty.call(featuredUpdate(dir) as object, 'body'),
+      false,
+      'featured meta has no body'
+    )
+  })
+})
+
+describe('updates rss', () => {
+  it('emits a title and a permalink', () => {
+    const xml = buildRssXml(
+      [
+        {
+          slug: 'the-master-plan',
+          filePath: '2023-09-12-the-master-plan.md',
+          title: 'The Master Plan',
+          description: 'An essay',
+          date: '2023-09-12',
+          author: 'Pablo',
+          category: 'Essay',
+          tags: [],
+          featured: true,
+          draft: false,
+          readingMinutes: 20,
+        },
+      ],
+      'https://moondao.com'
+    )
+    if (!xml.includes('<title>The Master Plan</title>')) throw new Error('missing title')
+    if (!xml.includes('https://moondao.com/updates/the-master-plan'))
+      throw new Error('missing link')
+  })
+})

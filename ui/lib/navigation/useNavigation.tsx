@@ -99,6 +99,7 @@ export default function useNavigation(citizen: any) {
         icon: FolderIcon,
         href: '/info',
         children: [
+          { name: 'Updates', href: '/updates' },
           { name: 'News', href: '/news' },
           { name: 'Press', href: '/press' },
           { name: 'Town Hall', href: '/townhall' },

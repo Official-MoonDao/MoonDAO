@@ -22,6 +22,8 @@ type WebsiteHeadProps = {
    * Defaults to the current path.
    */
   canonical?: string
+  /** Open Graph type. Defaults to `website`; long-form updates pass `article`. */
+  ogType?: string
   /** Pixel size of `image` when it is a generated 1200×630 preview card. */
   imageWidth?: number
   imageHeight?: number
@@ -37,6 +39,7 @@ export default function WebsiteHead({
   author = 'MoonDAO',
   robots = 'index, follow',
   canonical,
+  ogType = 'website',
   imageWidth,
   imageHeight,
   children,
@@ -89,7 +92,7 @@ export default function WebsiteHead({
       {imageWidth && imageHeight ? (
         <meta property="og:image:type" content="image/png" key="meta-ogimagetype" />
       ) : null}
-      <meta property="og:type" content="website" key="meta-ogweb" />
+      <meta property="og:type" content={ogType} key="meta-ogweb" />
       <meta property="og:url" content={canonicalUrl || 'https://moondao.com/'} key="meta-ogurl" />
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta property="og:locale" content="en_US" key="meta-oglocale" />

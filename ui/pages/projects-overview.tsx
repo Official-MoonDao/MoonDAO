@@ -173,7 +173,7 @@ const ProjectsOverview: React.FC<{
 
   return (
     <>
-      <WebsiteHead title={title} description={description} image="/assets/moondao-og.jpg" />
+      <WebsiteHead title={title} description={description} image="/assets/MoonDAO-OG.png" />
 
       <Container>
         <div className="bg-[#010208]">

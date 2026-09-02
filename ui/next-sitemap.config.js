@@ -1,5 +1,5 @@
 module.exports = {
-  siteUrl: 'moondao.com', // Replace with your site URL
+  siteUrl: 'https://moondao.com',
   generateRobotsTxt: true, // Set to generate robots.txt
   robotsTxtOptions: {
     policies: [
