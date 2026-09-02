@@ -159,13 +159,12 @@ export interface Senator {
 
 export const SENATORS_LIST: { [key: string]: Senator[] } = {
   arbitrum: [
-    { address: '0xf2Befa4B9489c1ef75E069D16A6F829F71B4B988', name: 'Frank' },
-    { address: '0x8687AB2FF3188F961828FC2131b6150Ee97Bedce', name: 'Kara' },
-    { address: '0xB87b8c495d3DAE468d4351621b69d2eC10E656FE', name: 'Alex' },
-    { address: '0x529Bd2351476ba114f9D60E71A020A9F0b99f047', name: 'Anastasia' },
-    { address: '0x8A7fD7F4B1A77A606DFdD229c194B1F22De868Ff', name: 'Daniel' },
-    { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Jade' },
-    { address: '0xE99cAD0078Dd4aC9cBEAddc0dacf6759aFD8fF43', name: 'Rina' },
+    { address: '0x7F79A7AAf569F350806813d41aebA544cbD017f4', name: 'Trent Tresch' },
+    { address: '0x1A1E25BcA28DcA769cb29df860D18e093cC894AE', name: 'Julio Rezende' },
+    { address: '0xf85dBC31D0C7bD46EB9Ec684A64D97e41AB04Ce3', name: 'Lakshmi Karan' },
+    { address: '0x2d2f4f747e1A56da59ceC9BE3aC7C373E5701BA6', name: 'Michael Castle Miller' },
+    { address: '0x8687AB2FF3188F961828FC2131b6150Ee97Bedce', name: 'Kara Howard' },
+    { address: '0xA64f2228cceC96076c82abb903021C33859082F8', name: 'Rod Mamin' },
   ],
   sepolia: [
     { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Test Senator 1' },
