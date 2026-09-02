@@ -21,7 +21,7 @@
 // on a normal district lot (BREACH_LOT_RADIUS_M), and the track itself is a
 // corridor running out of that lot into open regolith, checked as a corridor.
 //
-// WHY THE TRACK DOES NOT FOLLOW ITS DISTRICT'S BEARING
+// WHY THE TRACK CARRIES A HEADING OF ITS OWN
 //
 // A district's position places its lot and the branch that serves it. It has no
 // authority over which way a 600 m structure standing on that lot points, and
@@ -35,18 +35,25 @@
 // simply what you would survey for. Fall over the 600 m run, by heading, from
 // the breach lot:
 //
-//     300 deg   94.2 m      (the district's own bearing)
+//     300 deg   94.2 m      (the steepest first 400 m)
 //     330 deg  117.0 m      (the worst)
 //      15 deg   18.6 m
 //      30 deg   11.4 m
 //      40 deg   10.6 m      <- this
 //     250 deg   11.2 m      (as good, but see below)
 //
-// 40 deg over 250 deg because the corridor also has to miss the base, and the
-// clearance sweep (see the guideway corridor test in
-// cypress/integration/unit/lunar-atlas-baseplan.cy.ts) puts the usable window
-// at 20-45 deg: from 50 deg the corridor clips the comms district's ground, and
-// by 60 deg it is on main street itself.
+// 40 deg over 250 deg because those two are opposite ends of one line and only
+// one of them points away from town. The breach lot sits at the head of the
+// spine, so 250 deg walks the corridor back down the street and over every
+// district standing on it, while 40 deg leaves the base behind and keeps going.
+// The corridor tests in cypress/integration/unit/lunar-atlas-baseplan.cy.ts
+// check that directly — no road touched, no other district crossed, muzzle past
+// the far end of the spine — rather than fixing a window of usable bearings.
+//
+// That it equals SPINE_BEARING_DEG is not a coincidence and not a constraint
+// either: the road and the guideway were levelled against the same ridge for
+// different reasons and arrived at the same line. See the bearing table in
+// baseplan.ts, and the test that pins the two together.
 
 import { type Vec3 } from './geo'
 import { capLocalDirection } from './southpole'
@@ -55,8 +62,8 @@ import { capLocalDirection } from './southpole'
 // need to recognise it and none of them should be matching on a string.
 export const MASS_DRIVER_ID = 'lunar-mass-driver-concept'
 
-// Compass bearing of the run, degrees CCW from east — the same frame every
-// district bearing uses. See the table above for why this value.
+// Compass bearing of the run, degrees CCW from east — the same frame the spine
+// and every district placement use. See the table above for why this value.
 export const TRACK_HEADING_DEG = 40
 
 // Length of the rendered guideway, breach to muzzle. A real reluctance launcher

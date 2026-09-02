@@ -53,7 +53,7 @@ export const OPPOSITION_H = 0.07
 // framing left exactly as it was.
 //
 // 85° is not a taste call. Sampled across the home framing — ridge centre, both
-// ends of main street, the near and far edges of the colony — the phase angle
+// ends of the spine, the near and far edges of the colony — the phase angle
 // runs 68° to 99° with a mean of 84.7°, so the load-in shot is left untouched
 // to within 2% and the surge only shows up once the user tumbles the camera
 // down-sun, which is the one place it belongs.
