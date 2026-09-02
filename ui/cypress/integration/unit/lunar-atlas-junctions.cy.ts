@@ -31,12 +31,16 @@ import {
 import {
   BED_HALF_M,
   JUNCTION_FILLET_M,
+  JUNCTION_MERGE_M,
+  SPOIL_OPAQUE_OFF_M,
   SPOIL_TOE_OFF_M,
   centreline,
   distToCentreline,
   findJunctions,
   junctionBedCover,
+  junctionBedCut,
   junctionBermLevel,
+  junctionCutsOn,
   junctionsOn,
   type Centreline,
 } from '../../../lib/lunar-atlas/junctions'
@@ -236,6 +240,109 @@ describe('moon base zero road junctions', () => {
           junctionBedCover(end.x, end.y, junctionsOn(junctions, i)),
           `street ${i} end`
         ).to.equal(0)
+      }
+    })
+  })
+
+  describe('who owns the ground in the middle of a crossing', () => {
+    // Sweeping the rubble out is not enough to make a junction, because both
+    // roads are still a full-width surface swept along their own centreline and
+    // both still cover the middle. Two lit, textured, cambered surfaces stacked
+    // on one patch of ground do not average into one — the second drawn wins,
+    // and because its grain and its camber run the other way it wins as a
+    // hard-edged rectangle a shade off everything around it. That rectangle is
+    // the tell that the roads are lying on each other, and matching their
+    // colours cannot remove it, because the difference is in the lighting.
+    //
+    // So exactly one road paves each patch. These are the checks that it is one
+    // and not two, and not none.
+    const cutsOf = (i: number) => junctionCutsOn(junctions, i, lines)
+
+    it('hands every crossing to the loop road that runs through it', () => {
+      for (const j of junctions) {
+        expect([...j.clear.keys()], `junction at ${bearingOf(j)}°`).to.include(
+          j.through
+        )
+        expect(
+          BASE_STREETS[j.through].closed,
+          `junction at ${bearingOf(j)}° is carried by a loop`
+        ).to.equal(true)
+      }
+    })
+
+    it('never breaks a loop road for an avenue', () => {
+      // The corollary, and the reason the loops win: main street is continuous
+      // by construction, and cutting it at all seven of its crossings so an
+      // avenue could lie across it is the same artefact the other way round.
+      for (const i of loops) {
+        expect(cutsOf(i), `loop ${i} is cut`).to.have.length(0)
+      }
+    })
+
+    it('stops the giving-way road dead at the through road lane', () => {
+      for (const j of junctions) {
+        const gives = [...j.clear.keys()].find((i) => i !== j.through)!
+        const cuts = cutsOf(gives)
+        expect(
+          junctionBedCut(j.east, j.north, cuts),
+          `street ${gives} paves over street ${j.through} at ${bearingOf(j)}°`
+        ).to.equal(0)
+        // Not just at the centre point: anywhere on the other road's lane.
+        for (const p of at(gives).plan) {
+          if (distToCentreline(p, at(j.through)) > at(j.through).bedHalfM) {
+            continue
+          }
+          expect(
+            junctionBedCut(p.x, p.y, cuts),
+            `street ${gives} paves street ${j.through} at ${p.x.toFixed(1)}, ${p.y.toFixed(1)}`
+          ).to.equal(0)
+        }
+      }
+    })
+
+    it('leaves no ring of unpaved ground around a crossing', () => {
+      // The failure mode of the cut, and the one worth a test of its own: a
+      // giving-way road that comes back too slowly is still transparent by the
+      // time the through road's own outer flank has started to feather, so a
+      // thin band around every junction gets paved by neither of them and the
+      // terrain shows through as a halo. The merge has to finish while the
+      // through road is still solid, with the windrow's lateral jitter — three
+      // percent either way, see `crest` in BaseRoads — allowed for.
+      for (const j of junctions) {
+        const through = at(j.through)
+        expect(
+          through.bedHalfM + JUNCTION_MERGE_M,
+          `merge into street ${j.through}`
+        ).to.be.lessThan(SPOIL_OPAQUE_OFF_M * through.widthScale * 0.97)
+      }
+    })
+
+    it('gives the giving-way road all of its own surface back', () => {
+      // Which is what stops every check above being satisfied by simply not
+      // drawing the avenues at all. An avenue gives way over the corridors of
+      // the two loops it crosses and over NOTHING else: every station clear of
+      // both is at full strength, which bounds the cut from above as tightly as
+      // the checks above bound it from below. Asserted station by station
+      // rather than as a fraction of the road, because the avenues run from
+      // 32 m to 300 m and a fraction that passes for the pad road says nothing
+      // about the short one into the core.
+      for (const i of avenues) {
+        const cuts = cutsOf(i)
+        expect(cuts, `street ${i} gives way twice`).to.have.length(loops.length)
+        let clear = 0
+        for (const p of at(i).plan) {
+          const inside = cuts.some(
+            (c) => distToCentreline(p, c.line) < c.halfM + JUNCTION_MERGE_M
+          )
+          if (inside) continue
+          clear++
+          expect(
+            junctionBedCut(p.x, p.y, cuts),
+            `street ${i} withheld at ${p.x.toFixed(1)}, ${p.y.toFixed(1)}`
+          ).to.equal(1)
+        }
+        expect(clear, `street ${i} runs clear of both loops somewhere`).to.be
+          .above(0)
       }
     })
   })

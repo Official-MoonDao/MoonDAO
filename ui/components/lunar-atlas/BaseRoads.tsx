@@ -62,12 +62,15 @@ import {
 import { latLonToVector3, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
 import {
   BED_HALF_M,
+  SPOIL_OPAQUE_OFF_M,
   SPOIL_TOE_OFF_M,
   STATION_SPACING_M,
   centreline,
   findJunctions,
   junctionBedCover,
+  junctionBedCut,
   junctionBermLevel,
+  junctionCutsOn,
   junctionsOn,
   type Centreline,
   type Junction,
@@ -82,8 +85,13 @@ import type { RadiusAt } from './useTerrainSampler'
 // is broken rock rather than fused dust.
 const BED = new THREE.Color('#aaa69d')
 const TRACK = new THREE.Color('#9b978f')
-const RUBBLE = new THREE.Color('#837f79')
-const SPOIL = new THREE.Color('#8d8983')
+const RUBBLE = new THREE.Color('#8b8781')
+const SPOIL = new THREE.Color('#95918a')
+// The blade's cut line is scuffed crust rather than tipped rock, so it sits
+// nearer the bed than the heap does. Keeping the dark tone to the heap PROPER is
+// what stops the shoulder reading as a wide dark band ruled down each side of
+// the road, which is half of what makes a road look drawn rather than built.
+const SCUFF = new THREE.Color('#a09c94')
 
 type Lane = {
   off: number
@@ -130,11 +138,11 @@ const HALF_SECTION: Lane[] = [
   { off: BED_HALF_M, rise: 0.132, tone: BED, alpha: 1, wander: true },
   // The blade's cut line: a shallow trough of un-sintered scuff between the
   // crust and the heap, which is where the material in the heap came from.
-  { off: 4.4, rise: 0.1, tone: SPOIL, alpha: 1, wander: true, spoil: true },
+  { off: 4.4, rise: 0.1, tone: SCUFF, alpha: 1, wander: true, spoil: true },
   {
     off: SPOIL_TOE_OFF_M,
     rise: 0.115,
-    tone: RUBBLE,
+    tone: SPOIL,
     alpha: 1,
     wander: true,
     crest: true,
@@ -159,7 +167,7 @@ const HALF_SECTION: Lane[] = [
     spoil: true,
   },
   {
-    off: 5.62,
+    off: SPOIL_OPAQUE_OFF_M,
     rise: 0.43,
     tone: RUBBLE,
     alpha: 1,
@@ -204,8 +212,9 @@ const PROFILE: Lane[] = [
 // where there should be a low mound.
 const SWEPT_CREST = 0.18
 // How far the spoil's tone is carried toward the bed's where it has been swept.
-// Not all the way — this is flattened rock, not new crust.
-const SWEPT_TONE = 0.85
+// Not all the way — this is flattened rock, not new crust, and carrying it the
+// whole way turns each crossing into a bright plus sign painted on the plan.
+const SWEPT_TONE = 0.6
 
 // Enough to clear z-fighting against the terrain the bed is cut into, far less
 // than the eye can read as a step at any distance the camera reaches.
@@ -225,7 +234,7 @@ const TILE_M = 5
 // toward the small end rather than uniform, which is both what fragmentation
 // actually produces and what stops a windrow reading as a row of identical
 // pebbles: a handful of real boulders against a lot of gravel.
-const ROCKS_PER_SPAN = 3
+const ROCKS_PER_SPAN = 2
 const ROCK_MIN_M = 0.16
 const ROCK_MAX_M = 1.05
 const ROCK_SKEW = 2.4
@@ -482,6 +491,7 @@ function buildStreet(
   street: Street,
   streetIdx: number,
   line: Centreline,
+  lines: (Centreline | null)[],
   junctions: Junction[],
   radiusAt: RadiusAt
 ): { geometry: THREE.BufferGeometry; origin: THREE.Vector3; rocks: Rock[] } {
@@ -512,15 +522,21 @@ function buildStreet(
       ? (i + stations) % stations
       : THREE.MathUtils.clamp(i, 0, stations - 1)
 
-  // Per-station, per-side windrow jitter, at the two scales a real heap has.
-  // The geometry and the loose rock have to agree on where the crest is, so it
-  // is drawn once here.
+  // Per-station, per-side windrow jitter. The geometry and the loose rock have
+  // to agree on where the crest is, so it is drawn once here.
+  //
+  // Both terms below are narrow, and that is the whole lesson of this function.
+  // A windrow is a heap of rock that a blade pushed aside while driving a
+  // straight line, so it varies the way a heap does — a little. Given a wide
+  // range and a slow wavelength it stops reading as rubble altogether and reads
+  // as a dark ribbon meandering alongside the road: two squiggly lines drawn
+  // down every street on the plan, which is what a crest allowed to treble in
+  // height over ~18 m actually looks like from above.
   //
   // The slow term is indexed in BANDS of about seven stations rather than in
-  // stations, and is interpolated between them, so it comes out as a heap that
-  // swells and thins over ~18 m instead of a step every few meters. Bands are
-  // counted off the road's own station count so a closed loop's slow wander
-  // closes on itself rather than showing a seam where it wraps.
+  // stations, and interpolated between them, so what variation is left is
+  // smooth. Bands are counted off the road's own station count so a loop's slow
+  // wander closes on itself rather than showing a seam where it wraps.
   const bands = Math.max(3, Math.round(stations / 7))
   const crest = (i: number, sign: number) => {
     const w = wrap(i)
@@ -528,13 +544,21 @@ function buildStreet(
     const band = (w / stations) * bands
     const b0 = Math.floor(band)
     const f = smoothstep(band - b0)
-    const slowAt = (k: number) =>
-      hash(streetIdx * 977 + (k % bands) * 13.1 + s * 3.7)
-    const slow = slowAt(b0) + (slowAt(b0 + 1) - slowAt(b0)) * f
+    const slow = (seed: number) => {
+      const at = (k: number) => hash(seed + (k % bands) * 13.1 + s * 3.7)
+      return at(b0) + (at(b0 + 1) - at(b0)) * f
+    }
     const fast = hash(streetIdx * 613 + w * 2 + s)
     return {
-      height: (0.5 + slow * 0.95) * (0.78 + fast * 0.44),
-      spread: 0.93 + hash(streetIdx * 331 + w * 2.7 + s * 5.3) * 0.22,
+      // Height takes both scales, because a heap has both: a swell over tens of
+      // meters from how much the blade was carrying, and meter-to-meter
+      // lumpiness from tipped rock.
+      height: (0.86 + slow(streetIdx * 977) * 0.28) * (0.9 + fast * 0.2),
+      // Offset takes ONLY the slow one, and barely any of it. A grader does not
+      // step half a meter sideways between one station and the next, and this
+      // number moves the lane's own edge as well as the heap's — so per-station
+      // noise here tears the straight edge of the road up as well.
+      spread: 0.97 + slow(streetIdx * 1361) * 0.06,
     }
   }
 
@@ -551,6 +575,8 @@ function buildStreet(
   // crossings allow it; its bed is whichever is MORE, because an end that lands
   // in a junction joins the road it meets rather than dissolving into it.
   const meets = junctionsOn(junctions, streetIdx)
+  // And the ones where it gives way, whose ground it does not draw at all.
+  const cuts = junctionCutsOn(junctions, streetIdx, lines)
   const bermAt = (i: number) => {
     const p = plan[wrap(i)]
     return Math.min(
@@ -560,9 +586,11 @@ function buildStreet(
   }
   const bedAt = (i: number) => {
     const p = plan[wrap(i)]
-    return Math.max(
-      fade((wrap(i) / spans) * lengthM, bedFade),
-      junctionBedCover(p.x, p.y, meets)
+    return (
+      Math.max(
+        fade((wrap(i) / spans) * lengthM, bedFade),
+        junctionBedCover(p.x, p.y, meets)
+      ) * junctionBedCut(p.x, p.y, cuts)
     )
   }
 
@@ -937,7 +965,7 @@ export default function BaseRoads({
     BASE_STREETS.forEach((street, i) => {
       const line = lines[i]
       if (!line) return
-      const built = buildStreet(street, i, line, junctions, radiusAt)
+      const built = buildStreet(street, i, line, lines, junctions, radiusAt)
       out.push({
         key: `street-${i}`,
         geometry: built.geometry,

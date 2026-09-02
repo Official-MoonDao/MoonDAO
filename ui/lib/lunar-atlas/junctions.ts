@@ -47,6 +47,16 @@ export const BED_HALF_M = 4.1
 // The inner toe of the windrow, where the heap meets the scuffed verge.
 export const SPOIL_TOE_OFF_M = 4.72
 
+// The outermost lane of the cross-section that is still fully opaque; the
+// windrow's outer flank feathers into the regolith beyond it.
+//
+// This lives here, next to the junction figures, because it is the constraint
+// that makes JUNCTION_MERGE_M safe rather than a free choice: a road that gives
+// way at a crossing has to have its own surface back to full strength while it
+// is still over ground the through road covers solidly, or the crossing gets a
+// ring of half-transparent ground around it that neither road quite paves.
+export const SPOIL_OPAQUE_OFF_M = 5.62
+
 // How far off a road another road's centreline has to pass before the search
 // stops looking for a crossing between them. Comfortably wider than the widest
 // clearance below, because this is only the window the search runs in; what
@@ -63,10 +73,18 @@ export const JUNCTION_TOUCH_M = 3
 // gap punched in a wall of rubble, and it is why the two roads at a junction
 // almost never get the same figure: what a road has to be swept back for is the
 // OTHER one's width, not its own.
-export const JUNCTION_FILLET_M = 5.5
+export const JUNCTION_FILLET_M = 4.5
 
 // Meters beyond that over which the windrow climbs back to full height.
 export const JUNCTION_TAPER_M = 7
+
+// Meters over which the road that gives way at a crossing brings its surface
+// back, measured out from the edge of the through road's sintered lane.
+//
+// Long enough not to read as a ruled line, and short enough to fit between
+// BED_HALF_M and SPOIL_OPAQUE_OFF_M with the windrow's lateral jitter allowed
+// for — which is the invariant, and is asserted.
+export const JUNCTION_MERGE_M = 1.1
 
 // Subdivisions used to refine a crossing off the station the search landed on.
 // Stations are 2.5 m apart, so an unrefined junction can sit over a meter from
@@ -97,6 +115,35 @@ export type Junction = {
   // over which that road's windrow is graded flat. Only those two roads are in
   // the map, which is also how a road finds the junctions that concern it.
   clear: Map<number, number>
+  // Which of the two owns the ground in the middle. See throughRoad.
+  through: number
+}
+
+// Which road's surface CARRIES a crossing, the other one stopping at its edge.
+//
+// Sweeping the rubble out of a junction is not on its own enough to make one,
+// because both roads are still a full-width surface swept along their own
+// centreline and both still cover the middle. Two textured, cambered, separately
+// lit surfaces stacked on the same patch of ground do not average into one: the
+// one drawn second wins, and since its grain and its camber run the other way it
+// wins as a hard-edged rectangle sitting a shade off its surroundings. That
+// rectangle is exactly the tell that the roads are lying on each other, and no
+// amount of matching their colours removes it, because the difference is in the
+// lighting and not in the paint.
+//
+// So one of the two gives way: its surface stops at the through road's lane
+// edge and picks up again on the far side, which leaves precisely one surface on
+// every patch of ground and puts the only seam where a road's edge belongs.
+//
+// A closed loop is the through route. It is continuous by construction, and
+// breaking main street at every one of its crossings so an avenue could lie
+// across it would just be the same artefact the other way round. Failing that
+// the wider road carries it, and failing that the earlier one, so the answer
+// does not depend on the order the plan happens to list its streets in.
+function throughRoad(i: number, li: Centreline, j: number, lj: Centreline) {
+  if (li.closed !== lj.closed) return li.closed ? i : j
+  if (li.bedHalfM !== lj.bedHalfM) return li.bedHalfM > lj.bedHalfM ? i : j
+  return Math.min(i, j)
 }
 
 export function centreline(street: Street): Centreline | null {
@@ -223,6 +270,7 @@ export function findJunctions(lines: (Centreline | null)[]): Junction[] {
             [i, against.bedHalfM + JUNCTION_FILLET_M],
             [j, walk.bedHalfM + JUNCTION_FILLET_M],
           ]),
+          through: throughRoad(i, walk, j, against),
         })
       }
       for (let s = 0; s < n; s++) {
@@ -262,6 +310,48 @@ export function junctionBermLevel(
     level = Math.min(level, t * t * (3 - 2 * t))
   }
   return level
+}
+
+// The crossings where this road gives way, as the through road's centreline and
+// the half-width of the lane its surface has to stop at. Empty for a road that
+// carries all of its own junctions, which is every closed loop on this plan.
+export function junctionCutsOn(
+  junctions: Junction[],
+  streetIdx: number,
+  lines: (Centreline | null)[]
+): { line: Centreline; halfM: number }[] {
+  const out: { line: Centreline; halfM: number }[] = []
+  for (const j of junctions) {
+    if (!j.clear.has(streetIdx) || j.through === streetIdx) continue
+    const line = lines[j.through]
+    if (line) out.push({ line, halfM: line.bedHalfM })
+  }
+  return out
+}
+
+// How much of its own surface a giving-way road still draws at a point: none
+// inside the through road's lane, all of it a merge-length outside.
+//
+// Measured to the through road's whole CENTRELINE rather than to the junction
+// point, because what the surface has to stop at is the edge of the other road's
+// lane, which is a straight line across this one — not a circle around where the
+// two centrelines happen to be closest. The distinction is the difference
+// between a road that meets another squarely and one that meets it through a
+// bite taken out of its end.
+export function junctionBedCut(
+  east: number,
+  north: number,
+  cuts: { line: Centreline; halfM: number }[]
+): number {
+  if (!cuts.length) return 1
+  const p = new THREE.Vector2(east, north)
+  let open = 1
+  for (const c of cuts) {
+    const d = distToCentreline(p, c.line)
+    const t = THREE.MathUtils.clamp((d - c.halfM) / JUNCTION_MERGE_M, 0, 1)
+    open = Math.min(open, t * t * (3 - 2 * t))
+  }
+  return open
 }
 
 // How much of the bed a crossing is already carrying, which is what stops a road
