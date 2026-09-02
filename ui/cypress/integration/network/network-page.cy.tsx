@@ -125,9 +125,10 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      cy.wait('@getTablelandQuery')
-      cy.wait('@getTablelandQuery')
-
+      // SWR's Tableland cache is module-scoped and survives `cy.mount`, so
+      // later tests in this file often get a cache hit and never fire
+      // `@getTablelandQuery`. Pin to the rendered name instead of waiting
+      // on XHR — same reason the Map tab and citizen search dropped `cy.wait`.
       cy.contains('Test Citizen', { timeout: 10000 }).should('exist')
     })
 
@@ -167,16 +168,12 @@ describe('<Network />', () => {
         </TestnetProviders>
       )
 
-      // Wait for initial citizens tab requests (COUNT + SELECT)
-      cy.wait('@getTablelandQuery')
-      cy.wait('@getTablelandQuery')
-
-      cy.contains('Teams').click()
-
-      // Wait for teams tab requests (COUNT + SELECT)
-      cy.wait('@getTablelandQuery')
-      cy.wait('@getTablelandQuery')
-
+      // Same SWR cache + detached-button races as the Map tab: do not
+      // `cy.wait('@getTablelandQuery')` (cache hits never fire the XHR),
+      // and re-query the Teams button before clicking so we don't act on
+      // a node SWR just replaced.
+      cy.contains('button', 'Teams', { timeout: 10000 }).should('exist')
+      cy.contains('button', 'Teams').click({ force: true })
       cy.contains('Test Team', { timeout: 10000 }).should('exist')
     })
 
