@@ -25,6 +25,7 @@
     "cypress/integration/unit/lunar-atlas-baseplan.cy.ts",
     "cypress/integration/unit/lunar-atlas-deprize.cy.ts",
     "cypress/integration/unit/lunar-atlas-geo.cy.ts",
+    "cypress/integration/unit/lunar-atlas-junctions.cy.ts",
     "cypress/integration/unit/lunar-atlas-selectors.cy.ts",
     "cypress/integration/unit/lunar-atlas-shading.cy.ts",
     "cypress/integration/unit/lunar-atlas-southpole.cy.ts",

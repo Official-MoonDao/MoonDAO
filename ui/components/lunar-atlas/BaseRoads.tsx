@@ -8,23 +8,46 @@
 // is nothing like a terrestrial one. There is no paving and there are no kerbs:
 // a grader clears a lane, the spoil goes into a loose rubble windrow along each
 // side, and the lane itself is sintered into a hard smooth crust. So the
-// realism lives in two places.
+// realism lives in three places.
 //
 // The EDGE is a rubble berm — an irregular windrow of pushed-aside rock whose
 // crest wanders in height and offset from meter to meter, with loose boulders
 // strewn along it. That ragged, unsurveyed line is the single strongest cue
 // that the road was cut by a machine rather than drawn on the ground, and a
-// tidy geometric kerb actively destroys it.
+// tidy geometric kerb actively destroys it. The wander runs at two scales,
+// because a real windrow has both: a slow one over tens of meters, which is how
+// much spoil the blade happened to be carrying along a stretch, and a fast one
+// meter to meter, which is tipped rock. White noise alone gives a crest that
+// reads as television static rather than as a heap.
 //
 // The SURFACE is defined by smoothness, not colour. The terrain around it is a
 // noisy hillshade full of craterlets; the roadbed is a near-uniform crust with
-// nothing but a faint grading grain and two shallow wheel tracks down it. That
-// contrast is what makes it read as swept, and it survives at any distance,
-// whereas a tint only ever reads as a stain.
+// nothing but a faint grading grain, the blade's transverse chatter, and two
+// shallow wheel ruts down it. That contrast is what makes it read as swept, and
+// it survives at any distance, whereas a tint only ever reads as a stain.
+//
+// The JUNCTIONS are where the network either becomes one or stays a pile of
+// roads that happen to touch, and they are the reason no road here can be built
+// until every road has been measured. A grader joining an existing route does
+// not heap its spoil across it and does not leave boulders standing in the
+// crossing: it sweeps the windrow back on all four approaches, and what is left
+// is a flared apron of swept ground where the two beds run together. Every
+// road's windrow, its boulders and its end fade are therefore evaluated against
+// one shared set of crossings, found from the rendered centrelines rather than
+// declared — see lib/lunar-atlas/junctions, which is also where the reasoning
+// about how they are found lives.
+//
+// This is what an earlier version could not do, because it faded a windrow only
+// from that road's OWN ends. That handled an avenue dying into the perimeter
+// road it starts on and nothing else: main street crosses six avenues in the
+// middle of its own run, so it drove a half-meter wall of rubble and a line of
+// boulders straight through six junctions.
 //
 // Everything is LIT and takes light like the hardware standing on it, which is
 // what the berms are for: they are the only part with enough relief to catch
-// the low sun on one face and shade the other.
+// the low sun on one face and shade the other. The crust gets a normal map for
+// the same reason — under a sun this low, micro-relief is most of what a swept
+// surface looks like, and an albedo texture alone renders it flat.
 
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
@@ -32,9 +55,26 @@ import {
   BASE_PLAN,
   BASE_STREETS,
   HARDSTAND,
+  RING_RADIUS_M,
+  ROAD_HALF_M,
   type Street,
 } from '@/lib/lunar-atlas/baseplan'
 import { latLonToVector3, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
+import {
+  BED_HALF_M,
+  SPOIL_OPAQUE_OFF_M,
+  SPOIL_TOE_OFF_M,
+  STATION_SPACING_M,
+  centreline,
+  findJunctions,
+  junctionBedCover,
+  junctionBedCut,
+  junctionBermLevel,
+  junctionCutsOn,
+  junctionsOn,
+  type Centreline,
+  type Junction,
+} from '@/lib/lunar-atlas/junctions'
 import { capOffsetLatLon, M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { MODEL_PRESENCE } from './MarkerLayer'
@@ -45,72 +85,165 @@ import type { RadiusAt } from './useTerrainSampler'
 // is broken rock rather than fused dust.
 const BED = new THREE.Color('#aaa69d')
 const TRACK = new THREE.Color('#9b978f')
-const RUBBLE = new THREE.Color('#837f79')
-const SPOIL = new THREE.Color('#8d8983')
+const RUBBLE = new THREE.Color('#8b8781')
+const SPOIL = new THREE.Color('#95918a')
+// The blade's cut line is scuffed crust rather than tipped rock, so it sits
+// nearer the bed than the heap does. Keeping the dark tone to the heap PROPER is
+// what stops the shoulder reading as a wide dark band ruled down each side of
+// the road, which is half of what makes a road look drawn rather than built.
+const SCUFF = new THREE.Color('#a09c94')
 
 type Lane = {
   off: number
   rise: number
   tone: THREE.Color
   alpha: number
-  // Berm lanes get their crest height and offset jittered per station, so the
-  // windrow wanders instead of running dead straight.
-  berm?: boolean
+  // Offset moves with the windrow's per-station spread. Set on everything from
+  // the sintered bed's own edge outward, so the graded lane breathes in and out
+  // with the blade instead of running dead straight — and, because one number
+  // moves all of them together, so the lanes can never cross each other however
+  // far the blade wandered.
+  wander?: boolean
+  // Height moves with the windrow's crest, and is graded away at a junction.
+  crest?: boolean
+  // Broken rock rather than sintered crust, so it is swept toward the bed's own
+  // tone wherever the windrow has been graded out of a crossing.
+  spoil?: boolean
 }
 
 // Nominal windrow crest: how far the spoil stands above grade, and how far off
 // the centreline it is heaped. Both are jittered per station.
 const CREST_RISE_M = 0.55
 const CREST_OFF_M = 5.4
+// The outer toe of the windrow, taken straight from the plan's own figure
+// rather than written twice: ROAD_HALF_M is what every plot on the base keeps
+// its setback from, so a profile that quietly reached past it would eat the
+// setback on all eight districts at once.
+const TOE_OFF_M = ROAD_HALF_M
 
-// Road cross-section: offset from the centreline and rise above the local
-// grade, both in meters. A 9.4 m sintered lane, faintly cambered, between two
-// rubble windrows. Only the outer toes are transparent, so the spoil dies into
-// the regolith without the lane itself having a soft edge.
-const PROFILE: Lane[] = [
-  { off: -6.3, rise: 0.0, tone: SPOIL, alpha: 0, berm: true },
-  { off: -CREST_OFF_M, rise: CREST_RISE_M, tone: RUBBLE, alpha: 1, berm: true },
-  { off: -4.7, rise: 0.1, tone: RUBBLE, alpha: 1 },
-  { off: -4.35, rise: 0.13, tone: BED, alpha: 1 },
-  { off: -2.4, rise: 0.16, tone: BED, alpha: 1 },
-  { off: -1.6, rise: 0.11, tone: TRACK, alpha: 1 },
-  { off: -0.8, rise: 0.16, tone: BED, alpha: 1 },
-  { off: 0.8, rise: 0.16, tone: BED, alpha: 1 },
-  { off: 1.6, rise: 0.11, tone: TRACK, alpha: 1 },
-  { off: 2.4, rise: 0.16, tone: BED, alpha: 1 },
-  { off: 4.35, rise: 0.13, tone: BED, alpha: 1 },
-  { off: 4.7, rise: 0.1, tone: RUBBLE, alpha: 1 },
-  { off: CREST_OFF_M, rise: CREST_RISE_M, tone: RUBBLE, alpha: 1, berm: true },
-  { off: 6.3, rise: 0.0, tone: SPOIL, alpha: 0, berm: true },
+// Half the road's cross-section, crown outward, in meters off the centreline
+// and meters above the local grade. An 8.2 m sintered lane, faintly cambered,
+// with a scuffed verge where the blade cut and a rounded rubble windrow beyond
+// it. Only the outer toe is transparent, so the spoil dies into the regolith
+// without the lane itself having a soft edge.
+const HALF_SECTION: Lane[] = [
+  { off: 0.4, rise: 0.162, tone: BED, alpha: 1 },
+  // A wheel rut is a trough with lips, not a stripe of darker paint. Two
+  // vertices to a side and 5 cm deep is enough to catch the sun on one wall and
+  // shade the other, which is the whole reason it reads as a rut at all.
+  { off: 1.15, rise: 0.15, tone: BED, alpha: 1 },
+  { off: 1.6, rise: 0.098, tone: TRACK, alpha: 1 },
+  { off: 2.05, rise: 0.15, tone: BED, alpha: 1 },
+  { off: 2.6, rise: 0.156, tone: BED, alpha: 1 },
+  { off: BED_HALF_M, rise: 0.132, tone: BED, alpha: 1, wander: true },
+  // The blade's cut line: a shallow trough of un-sintered scuff between the
+  // crust and the heap, which is where the material in the heap came from.
+  { off: 4.4, rise: 0.1, tone: SCUFF, alpha: 1, wander: true, spoil: true },
+  {
+    off: SPOIL_TOE_OFF_M,
+    rise: 0.115,
+    tone: SPOIL,
+    alpha: 1,
+    wander: true,
+    crest: true,
+    spoil: true,
+  },
+  {
+    off: 5.1,
+    rise: 0.4,
+    tone: RUBBLE,
+    alpha: 1,
+    wander: true,
+    crest: true,
+    spoil: true,
+  },
+  {
+    off: CREST_OFF_M,
+    rise: CREST_RISE_M,
+    tone: RUBBLE,
+    alpha: 1,
+    wander: true,
+    crest: true,
+    spoil: true,
+  },
+  {
+    off: SPOIL_OPAQUE_OFF_M,
+    rise: 0.43,
+    tone: RUBBLE,
+    alpha: 1,
+    wander: true,
+    crest: true,
+    spoil: true,
+  },
+  // The outer flank feathers rather than ending: fines run further out of a
+  // tipped heap than the coarse rock does, so the last 0.7 m is a fade.
+  {
+    off: 5.95,
+    rise: 0.19,
+    tone: SPOIL,
+    alpha: 0.45,
+    wander: true,
+    crest: true,
+    spoil: true,
+  },
+  {
+    off: TOE_OFF_M,
+    rise: 0,
+    tone: SPOIL,
+    alpha: 0,
+    wander: true,
+    crest: true,
+    spoil: true,
+  },
 ]
+
+// The full cross-section, left toe to right toe, mirrored from the half so the
+// road can only ever be symmetric. No vertex sits on the centreline; the crown
+// is the flat between the two innermost lanes.
+const PROFILE: Lane[] = [
+  ...HALF_SECTION.map((lane) => ({ ...lane, off: -lane.off })).reverse(),
+  ...HALF_SECTION,
+]
+
+// What is left of a windrow's height where it has been graded flat through a
+// junction, as a fraction of its nominal section. Not zero: a swept crossing
+// still has the spoil lying about in it, pushed down rather than carted away,
+// and dropping the shoulder to dead flat leaves a 13 cm cliff at the bed's edge
+// where there should be a low mound.
+const SWEPT_CREST = 0.18
+// How far the spoil's tone is carried toward the bed's where it has been swept.
+// Not all the way — this is flattened rock, not new crust, and carrying it the
+// whole way turns each crossing into a bright plus sign painted on the plan.
+const SWEPT_TONE = 0.6
 
 // Enough to clear z-fighting against the terrain the bed is cut into, far less
 // than the eye can read as a step at any distance the camera reaches.
 const LIFT_M = 0.12
-// One station roughly every 2.5 m of road: close enough that the bed follows
-// the terrain's undulations, and that the berm's jitter reads as rubble rather
-// than as a slow wave.
-const STATION_SPACING_M = 2.5
 // Meters over which an open end fades out. Short: a road should stop, not
-// dissolve. Spurs that run into the facility they serve never reach it.
+// dissolve. Spurs that run into the facility they serve never reach it. An end
+// that lands in a junction is exempt (see the bed alpha in buildStreet) — a
+// road that Ts into another joins it, it does not dissolve into it.
 const END_FADE_M = 4
-// The windrow, though, dies out much further back, and its crest is flattened
-// as it goes rather than just made transparent. Two reasons, and they are the
-// difference between a network and a pile of roads that happen to touch:
-// a grader joining an existing route doesn't heap its spoil across it, and a
-// junction with a half-meter wall of rubble through it doesn't read as one.
+// The windrow, though, dies out much further back than the bed does, and its
+// crest is flattened as it goes rather than just made transparent.
 const BERM_FADE_M = 11
 // Meters of road per tile of the surface grain.
 const TILE_M = 5
 
-// Loose rock strewn along the windrows: one every ~1.25 m of each side.
+// Loose rock strewn along the windrows. The size distribution is skewed hard
+// toward the small end rather than uniform, which is both what fragmentation
+// actually produces and what stops a windrow reading as a row of identical
+// pebbles: a handful of real boulders against a lot of gravel.
 const ROCKS_PER_SPAN = 2
-const ROCK_MIN_M = 0.34
-const ROCK_MAX_M = 0.95
+const ROCK_MIN_M = 0.16
+const ROCK_MAX_M = 1.05
+const ROCK_SKEW = 2.4
 
-// Hardstand cross-section: rise above local grade at a fraction of its radius.
-// Flat, and with no edge treatment of its own — the ring road's inner windrow
-// is its boundary. This is only the PROFILE. It is not the tessellation, and
+// Hardstand cross-section: rise above local grade, and opacity, at a fraction
+// of its radius. Flat, and its boundary is the ring road's inner windrow rather
+// than an edge of its own — which is a claim the yard has to be built to reach
+// far enough out to make true, and the fade at the rim is what lets it. See
+// PLAZA_RADIUS_M. This is only the PROFILE. It is not the tessellation, and
 // the yard used to be built as a fan straight off these four radii, which is
 // what put the regolith back through the middle of it: every vertex is seated
 // on the rendered ground (see `seat`), so the yard clears that ground by its
@@ -120,11 +253,12 @@ const ROCK_MAX_M = 0.95
 // yard, and on ridge terrain rough enough to vary a meter from one terrain node
 // to the next — a few degrees of slope, which this site has — the ground rises
 // through the chord by up to ~1 m across a tenth of the yard's area.
-const PLAZA_PROFILE: { r: number; rise: number }[] = [
-  { r: 0, rise: 0.2 },
-  { r: 0.6, rise: 0.18 },
-  { r: 0.93, rise: 0.15 },
-  { r: 1, rise: 0.08 },
+const PLAZA_PROFILE: { r: number; rise: number; alpha: number }[] = [
+  { r: 0, rise: 0.2, alpha: 1 },
+  { r: 0.6, rise: 0.18, alpha: 1 },
+  { r: 0.9, rise: 0.15, alpha: 1 },
+  { r: 0.945, rise: 0.13, alpha: 1 },
+  { r: 1, rise: 0.09, alpha: 0 },
 ]
 // So the yard is triangulated on stations of its own, at the spacing the roads
 // already use for exactly the same reason — following the ground closely enough
@@ -134,6 +268,21 @@ const PLAZA_STATION_M = STATION_SPACING_M
 // Enough spokes to put the rim's circumferential pitch on the same order, so
 // the mesh hugs the ground going around the yard as well as out across it.
 const PLAZA_SPOKES = 144
+// Where the paving actually stops, which is NOT HARDSTAND.radius. That figure
+// is the ground the core district's plots are packed to fit inside, and the two
+// are different questions: laid out to it, the yard ends about 1.8 m short of
+// the perimeter road's inner windrow, and the ring of untouched regolith left
+// between them reads as a seam running right round downtown. Run out to the
+// windrow's own toe instead, the yard and the road it serves are one continuous
+// worked surface, which is what the comment on HARDSTAND has always claimed.
+//
+// The rim fades to nothing over the last few meters rather than ending on an
+// edge, which is doing two jobs: a paved yard that stops on a hard line reads
+// as a sticker, and the toe it is running out to WANDERS (see `spread`), so on
+// the stretches where the blade heaped the spoil furthest in, the last of the
+// yard is lying under the foot of the heap. At the opacity it has out there the
+// two surfaces are indistinguishable whichever way the transparency sort falls.
+const PLAZA_RADIUS_M = RING_RADIUS_M - SPOIL_TOE_OFF_M
 
 const NO_RAYCAST = () => {}
 
@@ -141,6 +290,39 @@ const NO_RAYCAST = () => {}
 function hash(n: number) {
   const s = Math.sin(n * 127.1) * 43758.5453
   return s - Math.floor(s)
+}
+
+function smoothstep(t: number) {
+  const c = THREE.MathUtils.clamp(t, 0, 1)
+  return c * c * (3 - 2 * c)
+}
+
+// Tiling 1D value noise on [0, 1), so a texture built from it meets itself.
+function noise1(t: number, cells: number, seed: number) {
+  const f = t * cells
+  const i = Math.floor(f)
+  const s = smoothstep(f - i)
+  const at = (k: number) => hash(seed + (((k % cells) + cells) % cells) * 57.31)
+  return at(i) + (at(i + 1) - at(i)) * s
+}
+
+// Tiling 2D value noise on the unit square, for the same reason.
+function noise2(x: number, y: number, cells: number, seed: number) {
+  const fx = x * cells
+  const fy = y * cells
+  const ix = Math.floor(fx)
+  const iy = Math.floor(fy)
+  const sx = smoothstep(fx - ix)
+  const sy = smoothstep(fy - iy)
+  const at = (i: number, j: number) =>
+    hash(
+      seed +
+        (((i % cells) + cells) % cells) * 57.31 +
+        (((j % cells) + cells) % cells) * 131.77
+    )
+  const a = at(ix, iy) + (at(ix + 1, iy) - at(ix, iy)) * sx
+  const b = at(ix, iy + 1) + (at(ix + 1, iy + 1) - at(ix, iy + 1)) * sx
+  return a + (b - a) * sy
 }
 
 type Rock = { pos: THREE.Vector3; sizeM: number; tone: number }
@@ -153,43 +335,125 @@ type Piece = {
   rubble?: THREE.InstancedMesh
   serves?: ProjectType[]
 }
+type Surface = { albedo: THREE.Texture; normal: THREE.Texture }
 
 // The graded crust: near-uniform, with a faint longitudinal grain from the
-// blade and a fine sintering speckle. Deliberately low contrast — the roadbed
-// is meant to read as smooth against noisy ground, so anything stronger here
-// would undo the very thing that makes it look swept.
-function makeSurfaceTexture() {
-  const SIZE = 256
-  const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = SIZE
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return null
-  const img = ctx.createImageData(SIZE, SIZE)
-  // Per-column bias gives the grading grain; it tiles because the columns are
-  // hashed by index and the pattern is only ever sampled at integer columns.
-  const streak: number[] = []
+// blade, the transverse chatter it leaves as it rides, and a fine sintering
+// speckle. Deliberately low contrast in ALBEDO — the roadbed is meant to read
+// as smooth against noisy ground, so anything stronger there would undo the
+// very thing that makes it look swept — and considerably stronger in RELIEF,
+// which is the half of it the sun does the work on.
+function makeSurfaceMaps(): Surface | null {
+  const SIZE = 512
+  const albedoCanvas = document.createElement('canvas')
+  const normalCanvas = document.createElement('canvas')
+  albedoCanvas.width = albedoCanvas.height = SIZE
+  normalCanvas.width = normalCanvas.height = SIZE
+  const actx = albedoCanvas.getContext('2d')
+  const nctx = normalCanvas.getContext('2d')
+  if (!actx || !nctx) return null
+
+  // v runs ALONG the road and u across it, so a per-column value is a
+  // longitudinal grain and a per-row value is a line across the lane.
+  const streak = new Float32Array(SIZE)
   for (let x = 0; x < SIZE; x++) {
     streak[x] =
-      (hash(x * 3.7) - 0.5) * 0.05 + (hash(Math.floor(x / 9) * 11.3) - 0.5) * 0.06
+      (hash(x * 3.7) - 0.5) * 0.05 +
+      (hash(Math.floor(x / 9) * 11.3) - 0.5) * 0.06 +
+      (hash(Math.floor(x / 37) * 7.9) - 0.5) * 0.045
   }
+  // Blade chatter. A grader riding a surface leaves faint regular ripples
+  // across it, and their being REGULAR is the tell — no natural process on this
+  // ground makes anything periodic. Amplitude-modulated by slow noise so it
+  // comes and goes down the road rather than running as a perfect sine, and
+  // phase-wobbled for the same reason. Both terms complete a whole number of
+  // cycles per tile, so the pattern meets itself.
+  const chatter = new Float32Array(SIZE)
+  for (let y = 0; y < SIZE; y++) {
+    const t = y / SIZE
+    const swing = 0.45 + 0.55 * noise1(t, 6, 21.3)
+    chatter[y] =
+      Math.sin(t * Math.PI * 2 * 8 + noise1(t, 4, 5.1) * 3) * 0.017 * swing +
+      Math.sin(t * Math.PI * 2 * 3 + 1.7) * 0.008
+  }
+
+  const height = new Float32Array(SIZE * SIZE)
+  const img = actx.createImageData(SIZE, SIZE)
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
-      const grain = (hash(x * 1.7 + y * 311.7) - 0.5) * 0.07
-      const v = Math.round(THREE.MathUtils.clamp(1 + streak[x] + grain, 0, 1) * 255)
-      const i = (y * SIZE + x) * 4
-      img.data[i] = v
-      img.data[i + 1] = v
-      img.data[i + 2] = v
-      img.data[i + 3] = 255
+      const grit = hash(x * 1.7 + y * 311.7) - 0.5
+      const i = y * SIZE + x
+      // Relief carries the grain, the chatter and the grit — the things that
+      // actually stand off the surface. It does NOT carry the mottling below,
+      // which is a patchiness in how well the crust took the sinter and has no
+      // height to it at all.
+      height[i] = streak[x] * 0.55 + chatter[y] + grit * 0.02
+      const mottle =
+        (noise2(x / SIZE, y / SIZE, 4, 3.1) - 0.5) * 0.055 +
+        (noise2(x / SIZE, y / SIZE, 11, 8.7) - 0.5) * 0.035
+      // The chatter is weighted DOWN in albedo and left at full strength in the
+      // relief above, which is where it belongs: a blade ripple is a shape the
+      // sun rakes across, not a change of colour. It is also the one periodic
+      // thing on this surface, and the hardstand — whose grain runs on the map's
+      // axes rather than along a road — crosses it with the longitudinal streak
+      // at right angles. Any louder in albedo and the yard reads as woven cloth.
+      const v = Math.round(
+        THREE.MathUtils.clamp(
+          1 + streak[x] + chatter[y] * 0.85 + grit * 0.07 + mottle,
+          0,
+          1
+        ) * 255
+      )
+      const p = i * 4
+      img.data[p] = v
+      img.data[p + 1] = v
+      img.data[p + 2] = v
+      img.data[p + 3] = 255
     }
   }
-  ctx.putImageData(img, 0, 0)
-  const tex = new THREE.CanvasTexture(canvas)
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
-  tex.colorSpace = THREE.SRGBColorSpace
-  tex.anisotropy = 16
-  return tex
+  actx.putImageData(img, 0, 0)
+
+  // Tangent-space normals from that height field. A normal map rather than a
+  // bump map because bump is applied against the derivative of view position,
+  // and a scene unit here is most of a lunar radius — any bumpScale small
+  // enough to be sane is indistinguishable from none at all.
+  //
+  // Gentle, and that is a correction rather than a preference. One texel is
+  // about a centimetre of ground, so a relief map strong enough to be obvious
+  // is tilting the surface normal tens of degrees per centimetre — which is not
+  // a swept crust, it is gravel, and it costs real average brightness under a
+  // sun this low. Turned up far enough to read, it visibly greyed the whole
+  // roadbed and the yard against the rest of the plan.
+  const STRENGTH = 7
+  const nrm = nctx.createImageData(SIZE, SIZE)
+  const wrap = (k: number) => (k + SIZE) % SIZE
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      const dx = height[y * SIZE + wrap(x - 1)] - height[y * SIZE + wrap(x + 1)]
+      const dy = height[wrap(y - 1) * SIZE + x] - height[wrap(y + 1) * SIZE + x]
+      const nx = dx * STRENGTH
+      const ny = dy * STRENGTH
+      const inv = 1 / Math.hypot(nx, ny, 1)
+      const p = (y * SIZE + x) * 4
+      nrm.data[p] = Math.round((nx * inv * 0.5 + 0.5) * 255)
+      nrm.data[p + 1] = Math.round((ny * inv * 0.5 + 0.5) * 255)
+      nrm.data[p + 2] = Math.round((inv * 0.5 + 0.5) * 255)
+      nrm.data[p + 3] = 255
+    }
+  }
+  nctx.putImageData(nrm, 0, 0)
+
+  const albedo = new THREE.CanvasTexture(albedoCanvas)
+  albedo.wrapS = albedo.wrapT = THREE.RepeatWrapping
+  albedo.colorSpace = THREE.SRGBColorSpace
+  albedo.anisotropy = 16
+  const normal = new THREE.CanvasTexture(normalCanvas)
+  normal.wrapS = normal.wrapT = THREE.RepeatWrapping
+  normal.anisotropy = 16
+  return { albedo, normal }
 }
+
+const NORMAL_SCALE = new THREE.Vector2(0.42, 0.42)
 
 // A point on the plan, as a unit direction in scene space.
 function planDir(eastM: number, northM: number) {
@@ -226,25 +490,13 @@ function finish(
 function buildStreet(
   street: Street,
   streetIdx: number,
+  line: Centreline,
+  lines: (Centreline | null)[],
+  junctions: Junction[],
   radiusAt: RadiusAt
-): { geometry: THREE.BufferGeometry; origin: THREE.Vector3; rocks: Rock[] } | null {
-  if (street.points.length < 2) return null
-
-  // Spline the centreline through the waypoints in the flat map frame — over
-  // 150 m of a 1737 km sphere the curvature is far below the width of the road
-  // — so a handful of hand-placed corners comes out as a graded curve.
-  const curve = new THREE.CatmullRomCurve3(
-    street.points.map(([e, n]) => new THREE.Vector3(e, n, 0)),
-    !!street.closed,
-    'catmullrom',
-    0.4
-  )
-  const lengthM = curve.getLength()
-  const spans = Math.max(8, Math.round(lengthM / STATION_SPACING_M))
-  // A closed loop's first and last stations are the same point, and letting
-  // both exist leaves a hairline seam; the index wraps to station 0 instead.
-  const plan = curve.getSpacedPoints(spans)
-  const stations = street.closed ? spans : spans + 1
+): { geometry: THREE.BufferGeometry; origin: THREE.Vector3; rocks: Rock[] } {
+  const { plan, spans, lengthM } = line
+  const stations = plan.length
 
   const centre: THREE.Vector3[] = []
   const up: THREE.Vector3[] = []
@@ -272,25 +524,81 @@ function buildStreet(
 
   // Per-station, per-side windrow jitter. The geometry and the loose rock have
   // to agree on where the crest is, so it is drawn once here.
+  //
+  // Both terms below are narrow, and that is the whole lesson of this function.
+  // A windrow is a heap of rock that a blade pushed aside while driving a
+  // straight line, so it varies the way a heap does — a little. Given a wide
+  // range and a slow wavelength it stops reading as rubble altogether and reads
+  // as a dark ribbon meandering alongside the road: two squiggly lines drawn
+  // down every street on the plan, which is what a crest allowed to treble in
+  // height over ~18 m actually looks like from above.
+  //
+  // The slow term is indexed in BANDS of about seven stations rather than in
+  // stations, and interpolated between them, so what variation is left is
+  // smooth. Bands are counted off the road's own station count so a loop's slow
+  // wander closes on itself rather than showing a seam where it wraps.
+  const bands = Math.max(3, Math.round(stations / 7))
   const crest = (i: number, sign: number) => {
-    const n = streetIdx * 977 + wrap(i) * 2 + (sign > 0 ? 1 : 0)
-    return { height: 0.55 + hash(n) * 0.85, spread: 0.9 + hash(n + 0.5) * 0.3 }
+    const w = wrap(i)
+    const s = sign > 0 ? 1 : 0
+    const band = (w / stations) * bands
+    const b0 = Math.floor(band)
+    const f = smoothstep(band - b0)
+    const slow = (seed: number) => {
+      const at = (k: number) => hash(seed + (k % bands) * 13.1 + s * 3.7)
+      return at(b0) + (at(b0 + 1) - at(b0)) * f
+    }
+    const fast = hash(streetIdx * 613 + w * 2 + s)
+    return {
+      // Height takes both scales, because a heap has both: a swell over tens of
+      // meters from how much the blade was carrying, and meter-to-meter
+      // lumpiness from tipped rock.
+      height: (0.86 + slow(streetIdx * 977) * 0.28) * (0.9 + fast * 0.2),
+      // Offset takes ONLY the slow one, and barely any of it. A grader does not
+      // step half a meter sideways between one station and the next, and this
+      // number moves the lane's own edge as well as the heap's — so per-station
+      // noise here tears the straight edge of the road up as well.
+      spread: 0.97 + slow(streetIdx * 1361) * 0.06,
+    }
   }
 
-  const width = street.width ?? 1
+  const width = line.widthScale
   // Fades are capped to a fraction of the road so a short link isn't all fade:
   // a 10 m spur given the full 4 m at each end has 2 m of road in the middle.
   const bedFade = Math.min(END_FADE_M, lengthM * 0.25)
   const bermFade = Math.min(BERM_FADE_M, lengthM * 0.45)
   const fade = (along: number, over: number) =>
-    street.closed
-      ? 1
-      : Math.min(1, along / over, (lengthM - along) / over)
+    street.closed ? 1 : Math.min(1, along / over, (lengthM - along) / over)
+
+  // The junctions on THIS road, and what it owes each of them. A station's
+  // windrow is whichever is less, what its own ends allow it and what the
+  // crossings allow it; its bed is whichever is MORE, because an end that lands
+  // in a junction joins the road it meets rather than dissolving into it.
+  const meets = junctionsOn(junctions, streetIdx)
+  // And the ones where it gives way, whose ground it does not draw at all.
+  const cuts = junctionCutsOn(junctions, streetIdx, lines)
+  const bermAt = (i: number) => {
+    const p = plan[wrap(i)]
+    return Math.min(
+      fade((wrap(i) / spans) * lengthM, bermFade),
+      junctionBermLevel(p.x, p.y, meets)
+    )
+  }
+  const bedAt = (i: number) => {
+    const p = plan[wrap(i)]
+    return (
+      Math.max(
+        fade((wrap(i) / spans) * lengthM, bedFade),
+        junctionBedCover(p.x, p.y, meets)
+      ) * junctionBedCut(p.x, p.y, cuts)
+    )
+  }
 
   const sides: THREE.Vector3[] = []
   const positions: number[] = []
   const colors: number[] = []
   const uvs: number[] = []
+  const tone = new THREE.Color()
   for (let i = 0; i < stations; i++) {
     const prev = centre[wrap(i - 1)]
     const next = centre[wrap(i + 1)]
@@ -303,19 +611,41 @@ function buildStreet(
       .normalize()
     sides.push(side)
     const along = (i / spans) * lengthM
-    const endFade = fade(along, bedFade)
-    const bermLevel = fade(along, bermFade)
+    const bedAlpha = bedAt(i)
+    const bermLevel = bermAt(i)
+    // A stretch of crust does not take the sinter as evenly as the stretch
+    // before it. Very slight, and the reason it is here rather than in the
+    // texture is that the texture tiles every 5 m: this is the variation at the
+    // scale of a whole length of road, which is what stops it reading as an
+    // extruded ribbon.
+    const patch = 1 + (hash(streetIdx * 149 + wrap(i) * 1.7) - 0.5) * 0.055
+    // One draw of the jitter per side, shared by every lane on it — the whole
+    // windrow has to move together or its own lanes cross each other.
+    const jitter = [crest(i, -1), crest(i, 1)]
     for (const lane of PROFILE) {
-      const j = lane.berm ? crest(i, Math.sign(lane.off)) : null
+      const j = lane.wander ? jitter[lane.off > 0 ? 1 : 0] : null
       const off = (j ? lane.off * j.spread : lane.off) * width
-      const rise = j ? lane.rise * j.height * bermLevel : lane.rise
+      const rise =
+        lane.crest && j
+          ? lane.rise * (SWEPT_CREST + (j.height - SWEPT_CREST) * bermLevel)
+          : lane.rise
       const p = centre[i]
         .clone()
         .addScaledVector(side, off * M_TO_UNITS)
         .addScaledVector(up[i], (LIFT_M + rise) * M_TO_UNITS)
         .sub(origin)
       positions.push(p.x, p.y, p.z)
-      colors.push(lane.tone.r, lane.tone.g, lane.tone.b, lane.alpha * endFade)
+      // Spoil that has been graded out of a crossing is swept ground, not a
+      // dark stripe of rubble laid across the junction — so its tone comes back
+      // toward the bed's by however much of the windrow has gone.
+      tone.copy(lane.tone)
+      if (lane.spoil) tone.lerp(BED, (1 - bermLevel) * SWEPT_TONE)
+      colors.push(
+        tone.r * patch,
+        tone.g * patch,
+        tone.b * patch,
+        lane.alpha * bedAlpha
+      )
       uvs.push(off / TILE_M, (along / TILE_M) * tiles)
     }
   }
@@ -347,9 +677,10 @@ function buildStreet(
 
   const rocks: Rock[] = []
   for (let i = 0; i < quadRows; i++) {
-    // No boulders where the windrow has been graded flat into a junction.
-    const along = (i / spans) * lengthM
-    if (fade(along, bermFade) < 1) continue
+    // No boulders where the windrow has been graded flat — at an open end, and
+    // above all in a junction, where a boulder standing in the crossing is the
+    // single loudest thing that says these two roads were drawn separately.
+    if (bermAt(i) < 0.995) continue
     const a = centre[i]
     const b = centre[wrap(i + 1)]
     for (const sign of [-1, 1]) {
@@ -358,13 +689,13 @@ function buildStreet(
       for (let k = 0; k < ROCKS_PER_SPAN; k++) {
         const n = streetIdx * 7919 + i * 31 + k * 7 + (sign > 0 ? 3 : 0)
         const t = (k + 0.5) / ROCKS_PER_SPAN
-        const sizeM = ROCK_MIN_M + hash(n) * (ROCK_MAX_M - ROCK_MIN_M)
+        const sizeM =
+          ROCK_MIN_M + (ROCK_MAX_M - ROCK_MIN_M) * hash(n) ** ROCK_SKEW
         // Scattered down the flanks of the heap, not balanced on its ridge.
         const off =
-          sign * (CREST_OFF_M * j.spread * width + (hash(n + 1) - 0.5) * 1.6)
+          sign * (CREST_OFF_M * j.spread * width + (hash(n + 1) - 0.5) * 1.9)
         // Sunk to roughly a third of their height, the way rock sits in spoil.
-        const rise =
-          LIFT_M + CREST_RISE_M * j.height * 0.55 + sizeM * 0.17
+        const rise = LIFT_M + CREST_RISE_M * j.height * 0.55 + sizeM * 0.17
         rocks.push({
           pos: a
             .clone()
@@ -381,17 +712,21 @@ function buildStreet(
   return { geometry: finish(positions, colors, uvs, index), origin, rocks }
 }
 
-// Rise above local grade, in meters, at a fraction of the yard's radius.
-function plazaRise(t: number): number {
+// Rise above local grade, in meters, and opacity, at a fraction of the yard's
+// radius.
+function plazaAt(t: number): { rise: number; alpha: number } {
   for (let i = 1; i < PLAZA_PROFILE.length; i++) {
     const a = PLAZA_PROFILE[i - 1]
     const b = PLAZA_PROFILE[i]
     if (t <= b.r) {
       const f = b.r > a.r ? (t - a.r) / (b.r - a.r) : 0
-      return a.rise + (b.rise - a.rise) * f
+      return {
+        rise: a.rise + (b.rise - a.rise) * f,
+        alpha: a.alpha + (b.alpha - a.alpha) * f,
+      }
     }
   }
-  return PLAZA_PROFILE[PLAZA_PROFILE.length - 1].rise
+  return PLAZA_PROFILE[PLAZA_PROFILE.length - 1]
 }
 
 // The graded yard at the core, inside the ring. Without it the habitat stands
@@ -412,7 +747,7 @@ function buildHardstand(
   for (let r = 0; r < rings; r++) {
     const t = r / (rings - 1)
     const off = t * radiusM
-    const rise = plazaRise(t)
+    const { rise, alpha } = plazaAt(t)
     for (let s = 0; s < PLAZA_SPOKES; s++) {
       const a = (s / PLAZA_SPOKES) * Math.PI * 2
       const dx = Math.cos(a) * off
@@ -423,7 +758,7 @@ function buildHardstand(
         LIFT_M + rise
       ).sub(origin)
       positions.push(p.x, p.y, p.z)
-      colors.push(BED.r, BED.g, BED.b, 1)
+      colors.push(BED.r, BED.g, BED.b, alpha)
       uvs.push(dx / TILE_M, dy / TILE_M)
     }
   }
@@ -443,11 +778,39 @@ function buildHardstand(
   return { geometry: finish(positions, colors, uvs, index), origin }
 }
 
+// The base shape every boulder is an instance of. A subdivided icosahedron
+// pushed about by noise and flat-shaded, rather than the bare solid: broken
+// rock has faces of wildly different sizes, and twenty identical equilateral
+// ones read as dice however they are rotated. One geometry for the whole base,
+// because per-instance rotation and a non-uniform squash are what carry the
+// variety from there.
+function makeRockGeometry() {
+  const geo = new THREE.IcosahedronGeometry(0.5, 1)
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute
+  const v = new THREE.Vector3()
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i)
+    const n = v.clone().normalize()
+    const bump =
+      0.72 +
+      0.34 * hash(n.x * 31.7 + n.y * 57.1 + n.z * 93.3) +
+      0.14 * hash(n.x * 113.9 + n.y * 71.3 + n.z * 17.7)
+    v.multiplyScalar(bump)
+    pos.setXYZ(i, v.x, v.y, v.z)
+  }
+  pos.needsUpdate = true
+  geo.computeVertexNormals()
+  return geo
+}
+
 // One draw call for a road's boulders. Instance transforms live in a float32
 // buffer, so they are stored relative to the road's origin for the same reason
 // its vertices are.
-function buildRubble(rocks: Rock[], origin: THREE.Vector3) {
-  const geo = new THREE.IcosahedronGeometry(0.5, 0)
+function buildRubble(
+  rocks: Rock[],
+  origin: THREE.Vector3,
+  geo: THREE.BufferGeometry
+) {
   const mat = new THREE.MeshStandardMaterial({
     roughness: 1,
     metalness: 0,
@@ -469,10 +832,18 @@ function buildRubble(rocks: Rock[], origin: THREE.Vector3) {
     )
     q.setFromEuler(e)
     // Squashed a little, so they read as broken slabs rather than marbles.
-    s.set(size, size * (0.55 + hash(i * 9.4) * 0.4), size * (0.8 + hash(i * 3.3) * 0.4))
+    s.set(
+      size,
+      size * (0.5 + hash(i * 9.4) * 0.42),
+      size * (0.74 + hash(i * 3.3) * 0.5)
+    )
     p.copy(rock.pos).sub(origin)
     mesh.setMatrixAt(i, m.compose(p, q, s))
-    const v = 0.42 + rock.tone * 0.16
+    // The big ones run darker: a boulder is freshly broken rock with real
+    // shadow on it, where the gravel is half-buried in the bright fines it is
+    // lying in and takes their tone.
+    const buried = 1 - THREE.MathUtils.clamp(rock.sizeM / ROCK_MAX_M, 0, 1)
+    const v = 0.38 + rock.tone * 0.14 + buried * 0.1
     mesh.setColorAt(i, tint.setRGB(v, v * 0.985, v * 0.95))
   })
   mesh.instanceMatrix.needsUpdate = true
@@ -489,7 +860,7 @@ function RoadPiece({
   opacity,
 }: {
   piece: Piece
-  surface: THREE.Texture | null
+  surface: Surface | null
   opacity: number
 }) {
   // The boulders take the road's fade too, but their material is built
@@ -507,7 +878,9 @@ function RoadPiece({
     <group position={piece.origin}>
       <mesh geometry={piece.geometry} receiveShadow raycast={NO_RAYCAST}>
         <meshStandardMaterial
-          map={surface ?? undefined}
+          map={surface?.albedo ?? undefined}
+          normalMap={surface?.normal ?? undefined}
+          normalScale={NORMAL_SCALE}
           vertexColors
           roughness={0.96}
           metalness={0}
@@ -553,22 +926,46 @@ export default function BaseRoads({
   // end of it to drive to.
   siteOpacity?: Map<string, number>
 }) {
-  const surface = useMemo(makeSurfaceTexture, [])
-  useEffect(() => () => surface?.dispose(), [surface])
+  const surface = useMemo(makeSurfaceMaps, [])
+  useEffect(
+    () => () => {
+      surface?.albedo.dispose()
+      surface?.normal.dispose()
+    },
+    [surface]
+  )
 
   const pieces = useMemo(() => {
-    if (!radiusAt) return [] as Piece[]
+    if (!radiusAt) return { list: [] as Piece[], rockGeometry: null }
     const out: Piece[] = []
     const hub = BASE_PLAN[HARDSTAND.site]
     if (hub) {
       out.push({
         key: 'hardstand',
-        ...buildHardstand(hub.east, hub.north, HARDSTAND.radius, radiusAt),
+        // Out to the perimeter road's windrow rather than to the figure the
+        // core district is PACKED to — see PLAZA_RADIUS_M. Never smaller than
+        // that figure, so a plan that grew the core past the road would still
+        // get a yard its own district fits in rather than one silently cropped
+        // to the road's radius.
+        ...buildHardstand(
+          hub.east,
+          hub.north,
+          Math.max(HARDSTAND.radius, PLAZA_RADIUS_M),
+          radiusAt
+        ),
       })
     }
+
+    // Every centreline first, then every crossing between them, and only then
+    // the geometry: a road cannot be built until it knows where it is met.
+    const lines = BASE_STREETS.map(centreline)
+    const junctions = findJunctions(lines)
+    const rockGeometry = makeRockGeometry()
+
     BASE_STREETS.forEach((street, i) => {
-      const built = buildStreet(street, i, radiusAt)
-      if (!built) return
+      const line = lines[i]
+      if (!line) return
+      const built = buildStreet(street, i, line, lines, junctions, radiusAt)
       out.push({
         key: `street-${i}`,
         geometry: built.geometry,
@@ -576,29 +973,31 @@ export default function BaseRoads({
         serves: street.serves,
         rubble:
           built.rocks.length > 0
-            ? buildRubble(built.rocks, built.origin)
+            ? buildRubble(built.rocks, built.origin, rockGeometry)
             : undefined,
       })
     })
-    return out
+    return { list: out, rockGeometry }
   }, [radiusAt])
 
   useEffect(
     () => () => {
-      pieces.forEach((p) => {
+      pieces.list.forEach((p) => {
         p.geometry.dispose()
-        p.rubble?.geometry.dispose()
         ;(p.rubble?.material as THREE.Material | undefined)?.dispose()
         p.rubble?.dispose()
       })
+      // Shared across every road, so it is disposed once here rather than with
+      // whichever piece happens to be torn down first.
+      pieces.rockGeometry?.dispose()
     },
     [pieces]
   )
 
-  if (pieces.length === 0 || presence <= 0) return null
+  if (pieces.list.length === 0 || presence <= 0) return null
   return (
     <group>
-      {pieces.map((p) => (
+      {pieces.list.map((p) => (
         <RoadPiece
           key={p.key}
           piece={p}
