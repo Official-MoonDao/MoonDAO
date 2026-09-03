@@ -1,5 +1,18 @@
 import { ArrowLeftIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
+import type { Chain } from 'thirdweb'
+import {
+  findDePrizeIdForGoal,
+  getDePrizeRaceBinding,
+  isCompetitiveRace,
+  isDePrizeGoalMarketBound,
+} from '@/lib/deprize/competitions'
+import { positionRedeemValue, UNIT } from '@/lib/deprize/constants'
+import { fmt } from '@/lib/deprize/format'
+import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
+import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import {
   parseAtlasYear,
   raceStandingForProject,
@@ -24,6 +37,9 @@ import type {
   Project,
   SharedGoal,
 } from '@/lib/lunar-atlas/types'
+import BetModal from '@/components/deprize/BetModal'
+import DemoBetModal from '@/components/deprize/DemoBetModal'
+import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 import SourceBadge from './SourceBadge'
 
 type ProjectPanelProps = {
@@ -37,6 +53,28 @@ type ProjectPanelProps = {
   // return to that list.
   onBack?: () => void
   backLabel?: string
+  /** Race this competitor was opened from (or its first competitive goal). */
+  betGoal?: SharedGoal
+  chainSlug?: string
+  chain?: Chain
+  account?: any
+  userAddress?: string
+  onConnectWallet?: () => void
+  spendableEth?: number
+  deprizeId?: number
+  mintAddress?: string
+  marketAddress?: string
+  numOutcomes?: number
+  outcomes?: Outcome[]
+  bettingAllowed?: boolean
+  tradingHalted?: boolean
+  resolved?: boolean
+  winningIndex?: number
+  isRefundVector?: boolean
+  payoutDen?: bigint
+  payoutNums?: bigint[]
+  jbProjectId?: number | bigint
+  onDone?: () => void
 }
 
 export default function ProjectPanel({
@@ -48,6 +86,27 @@ export default function ProjectPanel({
   onSelectSharedGoal,
   onBack,
   backLabel = 'Back to competitors',
+  betGoal,
+  chainSlug,
+  chain,
+  account,
+  userAddress,
+  onConnectWallet,
+  spendableEth = 0,
+  deprizeId,
+  mintAddress,
+  marketAddress,
+  numOutcomes = 0,
+  outcomes,
+  bettingAllowed = false,
+  tradingHalted = false,
+  resolved = false,
+  winningIndex = -1,
+  isRefundVector = false,
+  payoutDen,
+  payoutNums,
+  jbProjectId,
+  onDone,
 }: ProjectPanelProps) {
   const color = orgColor(organization)
   const approximate = project.locationPrecision !== 'exact'
@@ -64,6 +123,89 @@ export default function ProjectPanel({
     [standings]
   )
   const otherGoals = sharedGoals.filter((g) => !standingGoalIds.has(g.id))
+
+  const hasRace = !!betGoal && isCompetitiveRace(betGoal.projectIds.length)
+  const bound =
+    !!betGoal && !!chainSlug && isDePrizeGoalMarketBound(chainSlug, betGoal.id)
+  const marketDeprizeId = bound
+    ? deprizeId ?? findDePrizeIdForGoal(chainSlug!, betGoal!.id)
+    : undefined
+  const binding =
+    marketDeprizeId !== undefined && chainSlug
+      ? getDePrizeRaceBinding(chainSlug, marketDeprizeId)
+      : undefined
+  const outcomeIndex = binding
+    ? binding.outcomes.findIndex((o) => !o.field && o.projectId === project.id)
+    : -1
+  const outcome =
+    bound && outcomeIndex >= 0 ? outcomes?.[outcomeIndex] : undefined
+  const canBack =
+    hasRace &&
+    (bound ? marketDeprizeId !== undefined && outcomeIndex >= 0 : true)
+  const demo = useMockMarket(
+    betGoal?.id ?? project.id,
+    betGoal?.projectIds ?? [project.id],
+    betGoal?.market?.impliedOdds,
+    userAddress,
+  )
+  const demoPosition = demo.positions[project.id]
+  const holding = bound
+    ? !!outcome && Number.isFinite(outcome.balance) && outcome.balance > 0
+    : !!demoPosition && demoPosition.qty > 0
+  const heldValueEth = bound ? outcome?.balance : demoPosition?.qty
+  const redeemValueEth =
+    bound && resolved && outcome?.balanceWei !== undefined && payoutDen
+      ? Number(
+          positionRedeemValue(
+            outcome.balanceWei,
+            payoutNums?.[outcomeIndex] ?? 0n,
+            payoutDen,
+          ),
+        ) / Number(UNIT)
+      : undefined
+  const isWinningSlot =
+    bound && resolved && outcomeIndex >= 0 && outcomeIndex === winningIndex
+  const backDisabled =
+    !!userAddress && bound && (!bettingAllowed || tradingHalted)
+
+  const [betOpen, setBetOpen] = useState(false)
+  const [exitOpen, setExitOpen] = useState(false)
+  const [demoBetOpen, setDemoBetOpen] = useState(false)
+  useEffect(() => {
+    setBetOpen(false)
+    setExitOpen(false)
+    setDemoBetOpen(false)
+  }, [project.id, betGoal?.id])
+
+  const handleBetClick = () => {
+    if (!userAddress) {
+      onConnectWallet?.()
+      return
+    }
+    if (!bound) {
+      setDemoBetOpen(true)
+      return
+    }
+    if (
+      !bettingAllowed ||
+      outcomeIndex < 0 ||
+      !marketAddress ||
+      !mintAddress ||
+      outcomeIndex >= numOutcomes
+    ) {
+      return
+    }
+    setBetOpen(true)
+  }
+
+  const handleDemoExit = () => {
+    if (!betGoal) return
+    const valueEth = exitMockPosition(betGoal.id, project.id, userAddress)
+    toast.success(`Cashed out ${project.name} (demo) for ≈ ${fmt(valueEth)} ETH.`, {
+      style: toastStyle,
+    })
+    onDone?.()
+  }
 
   const milestones = useMemo(
     () =>
@@ -114,13 +256,36 @@ export default function ProjectPanel({
             </p>
           )}
         </div>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="shrink-0 rounded-lg p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white"
-        >
-          <XMarkIcon className="h-5 w-5" />
-        </button>
+        <div className="flex shrink-0 items-start gap-2">
+          {canBack && !resolved && (
+            <button
+              type="button"
+              onClick={handleBetClick}
+              disabled={backDisabled}
+              className="rounded-md px-3 py-1.5 text-xs font-semibold text-white transition-all
+                bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
+                disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {userAddress ? 'Buy' : 'Connect'}
+            </button>
+          )}
+          {resolved && redeemValueEth !== undefined && (
+            <span
+              className={`self-center text-xs font-semibold tabular-nums ${
+                isWinningSlot || isRefundVector ? 'text-emerald-300' : 'text-gray-500'
+              }`}
+            >
+              ≈ {fmt(redeemValueEth)} ETH
+            </span>
+          )}
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-lg p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto p-4">
@@ -187,6 +352,23 @@ export default function ProjectPanel({
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {holding && !resolved && (
+          <div className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
+            <span className="text-[11px] text-white/50">
+              {fmt(heldValueEth ?? 0)} {bound ? 'ETH' : 'demo ETH'} if wins
+            </span>
+            {(bound ? !tradingHalted : true) && (
+              <button
+                type="button"
+                onClick={() => (bound ? setExitOpen(true) : handleDemoExit())}
+                className="shrink-0 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white transition-all hover:border-indigo-400/35 hover:bg-indigo-500/15"
+              >
+                Cash out
+              </button>
+            )}
           </div>
         )}
 
@@ -296,6 +478,74 @@ export default function ProjectPanel({
           endorsement, guarantee, or prediction of outcomes.
         </p>
       </div>
+
+      {betOpen &&
+        chain &&
+        account &&
+        marketAddress &&
+        mintAddress &&
+        marketDeprizeId !== undefined &&
+        outcomeIndex >= 0 && (
+          <BetModal
+            deprizeId={marketDeprizeId}
+            outcomeIndex={outcomeIndex}
+            teamName={project.name}
+            probability={outcome?.probability ?? NaN}
+            numOutcomes={numOutcomes}
+            mintAddress={mintAddress}
+            marketAddress={marketAddress}
+            jbProjectId={jbProjectId}
+            chain={chain}
+            account={account}
+            spendableEth={spendableEth}
+            onClose={() => setBetOpen(false)}
+            onDone={() => {
+              setBetOpen(false)
+              onDone?.()
+            }}
+          />
+        )}
+
+      {exitOpen &&
+        chain &&
+        account &&
+        marketAddress &&
+        marketDeprizeId !== undefined &&
+        outcomeIndex >= 0 && (
+          <ExitPositionModal
+            deprizeId={marketDeprizeId}
+            outcomeIndex={outcomeIndex}
+            teamName={project.name}
+            balanceWei={outcome?.balanceWei ?? 0n}
+            positionId={outcome?.positionId ?? 0n}
+            numOutcomes={numOutcomes}
+            marketAddress={marketAddress}
+            chain={chain}
+            account={account}
+            onClose={() => setExitOpen(false)}
+            onDone={() => {
+              setExitOpen(false)
+              onDone?.()
+            }}
+          />
+        )}
+
+      {demoBetOpen && betGoal && (
+        <DemoBetModal
+          sharedGoalId={betGoal.id}
+          projectIds={betGoal.projectIds}
+          impliedOdds={betGoal.market?.impliedOdds}
+          projectId={project.id}
+          teamName={project.name}
+          probability={demo.odds[project.id] ?? 0}
+          address={userAddress}
+          onClose={() => setDemoBetOpen(false)}
+          onDone={() => {
+            setDemoBetOpen(false)
+            onDone?.()
+          }}
+        />
+      )}
     </div>
   )
 }

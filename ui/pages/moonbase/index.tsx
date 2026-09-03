@@ -276,12 +276,21 @@ export default function MoonBaseZeroIndex() {
     [dataset.projects, selectedOrgIds]
   )
 
-  // Mount one DePrize market — the open race only. Eight concurrent 30s polls
-  // on the r3f scene is exactly what the bridge was designed to avoid. Also
-  // the single source for the race's betting/positions surface (marketAddress,
-  // per-outcome balances) so "Back this team" can bet inline instead of
-  // navigating to /deprize/{id}.
-  const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined, userAddress)
+  // Mount one DePrize market — the open race, or the race a competitor
+  // panel was opened from. Clearing selectedGoalId to show ProjectPanel
+  // must not drop the market, or Buy would vanish and force a trip back.
+  const oddsGoalId = useMemo(() => {
+    if (selectedGoalId) return selectedGoalId
+    if (raceReturn?.kind === 'goal') return raceReturn.id
+    if (!selectedProjectId) return undefined
+    const project = projectById(dataset, selectedProjectId)
+    return project?.sharedGoalIds.find((id) => {
+      const goal = sharedGoalById(dataset, id)
+      return !!goal && isCompetitiveRace(goal.projectIds.length)
+    })
+  }, [selectedGoalId, raceReturn, selectedProjectId, dataset])
+
+  const liveOdds = useDePrizeGoalOdds(chain, oddsGoalId, userAddress)
   const { totalFunding, isLoading: isLoadingPrizePool } = useTotalFunding(
     liveOdds.jbProjectId,
     chain
@@ -343,13 +352,13 @@ export default function MoonBaseZeroIndex() {
     () =>
       mergeLiveMarketInto(
         dataset.sharedGoals,
-        selectedGoalId ?? undefined,
+        oddsGoalId,
         liveOdds
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional field deps
     [
       dataset.sharedGoals,
-      selectedGoalId,
+      oddsGoalId,
       liveOdds.deprizeId,
       liveOdds.status,
       liveOdds.fieldOdds,
@@ -904,6 +913,34 @@ export default function MoonBaseZeroIndex() {
                 onFocusRegion={flyToProject}
                 onSelectSharedGoal={handleSelectSharedGoal}
                 onBack={raceReturn ? handleBackToRace : undefined}
+                betGoal={
+                  (raceReturn?.kind === 'goal'
+                    ? sharedGoals.find((g) => g.id === raceReturn.id)
+                    : undefined) ??
+                  selectedSharedGoals.find((g) =>
+                    isCompetitiveRace(g.projectIds.length)
+                  )
+                }
+                chainSlug={chainSlug}
+                chain={chain}
+                account={account}
+                userAddress={userAddress}
+                onConnectWallet={() => login()}
+                spendableEth={spendableEth}
+                deprizeId={liveOdds.deprizeId}
+                mintAddress={liveOdds.mintAddress}
+                marketAddress={liveOdds.marketAddress}
+                numOutcomes={liveOdds.numOutcomes}
+                outcomes={liveOdds.outcomes}
+                bettingAllowed={bettingAllowed}
+                tradingHalted={liveOdds.tradingHalted}
+                resolved={liveOdds.resolved}
+                winningIndex={liveOdds.winningIndex}
+                isRefundVector={liveOdds.isRefundVector}
+                payoutDen={liveOdds.payoutDen}
+                payoutNums={liveOdds.payoutNums}
+                jbProjectId={liveOdds.jbProjectId}
+                onDone={handleRaceMarketDone}
               />
             ) : null}
           </div>
