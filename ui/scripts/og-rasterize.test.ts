@@ -24,7 +24,7 @@ describe('OG rasterize', () => {
     expect(withFont).to.include('font-family:Lato')
     expect(withFont).to.include('font-family="Lato, sans-serif"')
 
-    const png = await rasterizeOgSvg(svg)
+    const { png } = await rasterizeOgSvg(svg)
     const image = sharp(png)
     const meta = await image.metadata()
     expect(meta.width).to.equal(1200)

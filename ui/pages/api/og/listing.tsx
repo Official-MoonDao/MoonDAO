@@ -74,9 +74,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     mediaDataUri,
   })
 
-  const png = await rasterizeOgSvg(svg)
+  const { png, cacheControl } = await rasterizeOgSvg(svg)
   res.setHeader('Content-Type', 'image/png')
-  res.setHeader('Cache-Control', 'public, immutable, no-transform, max-age=86400')
+  res.setHeader('Cache-Control', cacheControl)
   res.setHeader('Content-Length', String(png.length))
   res.end(png)
 }

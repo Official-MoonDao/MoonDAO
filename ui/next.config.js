@@ -38,10 +38,18 @@ module.exports = withBundleAnalyzer(
         esmExternals: 'loose',
         serverComponentsExternalPackages: ['thirdweb'],
         // vercel.json includeFiles is ignored for Next.js — only NFT / this
-        // map can put Lato into the OG serverless bundles.
+        // map can put Lato and the fallback OG cards into the serverless bundles.
         outputFileTracingIncludes: {
-          '/api/og/job': ['./lib/og/fonts/Lato-Regular.ttf'],
-          '/api/og/listing': ['./lib/og/fonts/Lato-Regular.ttf'],
+          '/api/og/job': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+          ],
+          '/api/og/listing': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+          ],
         },
         optimizePackageImports: [
           '@heroicons/react',
