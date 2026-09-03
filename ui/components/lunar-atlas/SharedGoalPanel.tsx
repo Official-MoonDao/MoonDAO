@@ -1,7 +1,7 @@
-// Race view for a DePrize-shaped shared goal: the competitor roster (with
-// honest consent badges), the draft capability criteria, market structure,
-// and sources. Opened from a shared-goal row in ProjectPanel or by clicking
-// the goal's region marker on the globe.
+// Race view for a DePrize-shaped shared goal: the competitor roster (official
+// vs unofficial via color, not a repeating "listed" chip), the draft
+// capability criteria, market structure, and sources. Opened from a
+// shared-goal row in ProjectPanel or by clicking the goal's region marker.
 
 import { FlagIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -24,10 +24,14 @@ import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import {
-  ROSTER_STATUS_CLASSES,
-  ROSTER_STATUS_LABEL,
+  PARTICIPATION_LABEL,
+  participationKind,
   orgColor,
 } from '@/lib/lunar-atlas/display'
+import {
+  PARTICIPATION_BAR_CLASSES,
+  PARTICIPATION_ROW_CLASSES,
+} from './participation-styles'
 import type {
   Organization,
   Project,
@@ -144,11 +148,13 @@ export default function SharedGoalPanel({
     marketDeprizeId !== undefined && chainSlug
       ? getDePrizeRaceBinding(chainSlug, marketDeprizeId)
       : undefined
-  const anyUnconfirmed = competitors.some(
-    (c) =>
-      c.project.rosterStatus === 'listed' ||
-      c.project.rosterStatus === 'invited'
+  const kinds = competitors.map((c) =>
+    participationKind(c.project.rosterStatus)
   )
+  const anyOfficial = kinds.includes('official')
+  const anyUnofficial = kinds.includes('unofficial')
+  const anyDeclined = kinds.includes('declined')
+  const showParticipationLegend = anyOfficial || anyUnofficial || anyDeclined
 
   // Demo betting sandbox for races without a bound on-chain market yet — same
   // local ledger the /deprize index uses, so "Back this team" always does
@@ -333,6 +339,34 @@ export default function SharedGoalPanel({
                 active competition to bet on. Shown below for reference.
               </p>
             )}
+            {hasRace && showParticipationLegend && (
+              <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/45">
+                {anyOfficial && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={`h-3 w-1 rounded-full ${PARTICIPATION_BAR_CLASSES.official}`}
+                    />
+                    Official participant
+                  </span>
+                )}
+                {anyUnofficial && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={`h-3 w-1 rounded-full ${PARTICIPATION_BAR_CLASSES.unofficial}`}
+                    />
+                    Unofficial — not confirmed
+                  </span>
+                )}
+                {anyDeclined && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className={`h-3 w-1 rounded-full ${PARTICIPATION_BAR_CLASSES.declined}`}
+                    />
+                    Declined
+                  </span>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               {ranked.map(({ project, organization }) => {
                 const color = accentFor(project.id, organization)
@@ -348,6 +382,7 @@ export default function SharedGoalPanel({
                   (bound
                     ? marketDeprizeId !== undefined && outcomeIndex !== undefined
                     : true)
+                const kind = participationKind(project.rosterStatus)
                 const outcome = outcomeAt(outcomeIndex)
                 const demoPosition = demo.positions[project.id]
                 const holding = bound
@@ -373,15 +408,26 @@ export default function SharedGoalPanel({
                 return (
                   <div
                     key={project.id}
-                    className="relative overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.03] transition-colors hover:border-cyan-400/30"
+                    title={kind ? PARTICIPATION_LABEL[kind] : undefined}
+                    className={`relative overflow-hidden rounded-lg border transition-colors hover:border-cyan-400/30 ${
+                      kind
+                        ? PARTICIPATION_ROW_CLASSES[kind]
+                        : 'border-white/[0.06] bg-white/[0.03]'
+                    }`}
                   >
+                    {kind && (
+                      <span
+                        aria-hidden
+                        className={`absolute inset-y-0 left-0 z-20 w-1 ${PARTICIPATION_BAR_CLASSES[kind]}`}
+                      />
+                    )}
                     {p != null && (
                       <div
                         className="pointer-events-none absolute inset-y-0 left-0 opacity-[0.14]"
                         style={{ width: `${Math.round(p * 100)}%`, background: color }}
                       />
                     )}
-                    <div className="relative z-10 flex items-center gap-2.5 px-2.5 py-2">
+                    <div className="relative z-10 flex items-center gap-2.5 px-2.5 py-2 pl-3.5">
                       <button
                         type="button"
                         onClick={() => onSelectProject(project.id)}
@@ -406,14 +452,6 @@ export default function SharedGoalPanel({
                           </span>
                         </span>
                       </button>
-                      {project.rosterStatus && (
-                        <span
-                          className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-medium ${ROSTER_STATUS_CLASSES[project.rosterStatus]}`}
-                          title={ROSTER_STATUS_LABEL[project.rosterStatus]}
-                        >
-                          {project.rosterStatus}
-                        </span>
-                      )}
                       {holding && (
                         <span className="shrink-0 text-[10px] font-medium text-moon-green">
                           {resolved
@@ -590,11 +628,11 @@ export default function SharedGoalPanel({
               </p>
             ) : (
               hasRace &&
-              anyUnconfirmed && (
+              anyUnofficial && (
                 <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-                  &ldquo;Listed&rdquo; reflects MoonDAO&apos;s curatorial judgment
-                  of credible competitors. It does not imply these organizations
-                  have agreed to participate in any MoonDAO prize.
+                  Unofficial competitors are listed at MoonDAO&apos;s editorial
+                  discretion. That does not mean the organization has agreed to
+                  participate in any MoonDAO prize.
                 </p>
               )
             )}

@@ -1,4 +1,5 @@
 import { createThirdwebClient, defineChain, readContract } from 'thirdweb'
+import { getChainById } from '@/lib/thirdweb/chain'
 
 // Dedicated read client with RPC batching DISABLED (maxBatchSize: 1). Batching is
 // broken in this thirdweb/viem version: when several eth_call results come back
@@ -6,19 +7,31 @@ import { createThirdwebClient, defineChain, readContract } from 'thirdweb'
 // them ("Cannot read properties of undefined (reading 'buffer')"), which silently
 // blanks reads. So each call goes on its own.
 //
-// The flip side of no batching is request volume, and the chain RPC is a single
-// Infura endpoint shared with the rest of the app — so we additionally cap
-// concurrency and retry on 429 (see rpcRead below) to stay under the rate limit.
+// The flip side of no batching is request volume, so we cap concurrency and
+// retry on 429 (see rpcRead below).
 export const deprizeReadClient = createThirdwebClient({
   clientId: process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID as string,
   config: { rpc: { maxBatchSize: 1, fetch: { requestTimeoutMs: 15000 } } },
 })
 
-// Read through thirdweb's RPC edge (derived from the client id) rather than the
-// app's hardcoded Infura endpoint. `defineChain(<id>)` with no explicit rpc makes
-// thirdweb use https://<id>.rpc.thirdweb.com/<clientId>, isolating these reads
-// from the app's Infura traffic and its 429 rate limit.
-export const deprizeReadChain = (chainId: number) => defineChain(chainId)
+/**
+ * Use the app's chain RPC (browser → `/api/rpc/<id>` with Infura + public
+ * fallbacks; SSR → Infura/Ankr directly). `defineChain(id)` with no `rpc`
+ * used to isolate DePrize from Infura 429s via thirdweb's edge
+ * (`https://<id>.rpc.thirdweb.com/<clientId>`), but that endpoint now returns
+ * HTTP 401 Unauthorized, which is what blanked `/deprize/1` on Arbitrum.
+ */
+export function deprizeReadChain(chainId: number) {
+  const known = getChainById(chainId)
+  if (known) return known
+  if (typeof window !== 'undefined') {
+    return defineChain({
+      id: chainId,
+      rpc: `${window.location.origin}/api/rpc/${chainId}`,
+    })
+  }
+  return defineChain(chainId)
+}
 
 // ---- Concurrency-limited, 429-retrying read layer ----
 // Never let more than a few reads hit the RPC at once (the app makes its own

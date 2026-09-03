@@ -37,7 +37,11 @@ import {
   vector3ToLatLon,
   Vec3,
 } from '@/lib/lunar-atlas/geo'
-import { PROJECT_TYPE_LABEL, orgColor } from '@/lib/lunar-atlas/display'
+import {
+  PROJECT_TYPE_LABEL,
+  formatPlace,
+  orgColor,
+} from '@/lib/lunar-atlas/display'
 import {
   M_TO_UNITS,
   capCenterDirection,
@@ -236,6 +240,7 @@ function CompetitorPlot({
   patrolPhase,
   raceOpen,
   called,
+  standing,
   onSelect,
   onHover,
   radiusAt,
@@ -265,6 +270,7 @@ function CompetitorPlot({
   raceOpen: boolean
   // Picked out specifically — hovered, or chosen from the competitor list.
   called: boolean
+  standing?: { place: number; probability: number }
   onSelect?: () => void
   onHover?: (hovered: boolean) => void
   radiusAt?: RadiusAt | null
@@ -452,7 +458,13 @@ function CompetitorPlot({
                 : 'border-white/10 bg-black/55 text-white/70'
             }`}
           >
-            {project.name}
+            <div>{project.name}</div>
+            {standing && (
+              <div className="tabular-nums text-cyan-200/90">
+                {formatPlace(standing.place)} ·{' '}
+                {Math.round(standing.probability * 100)}%
+              </div>
+            )}
           </div>
         </Html>
       )}
@@ -1439,6 +1451,7 @@ export default function MarkerLayer({
               }
               if (!style.visible) return null
               const org = orgMap.get(project.orgId)
+              const probability = tree.goal?.market?.impliedOdds?.[project.id]
               return (
                 <CompetitorPlot
                   key={project.id}
@@ -1453,6 +1466,11 @@ export default function MarkerLayer({
                   patrolPhase={(i / count) * Math.PI * 2}
                   raceOpen={isOpen}
                   called={selectedProject?.id === project.id}
+                  standing={
+                    probability != null && Number.isFinite(probability)
+                      ? { place: i + 1, probability }
+                      : undefined
+                  }
                   onSelect={() => onSelectProject?.(project.id)}
                   onHover={(h) => onHoverTree?.(h ? tree.category : null)}
                   radiusAt={radiusAt}

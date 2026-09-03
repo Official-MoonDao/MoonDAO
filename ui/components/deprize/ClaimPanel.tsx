@@ -5,10 +5,12 @@ import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
-import { fmt, formatPrizeTokenLabel, toEth } from '@/lib/deprize/format'
+import { fmtEthWithUsd, formatPrizeTokenLabel, toEth } from '@/lib/deprize/format'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
+import EthUsd from '@/components/deprize/EthUsd'
 import { useDePrizeRedeemPreview } from '@/lib/deprize/useDePrizeRedeem'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -46,6 +48,7 @@ export default function ClaimPanel({
   const [claimed, setClaimed] = useState(false)
   const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
     useDePrizeChainGuard(chain)
+  const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   // Local success flag is per-session; clear it when the holder or DePrize changes
   // so a wallet switch cannot leave the previous address's "Claimed" UI stuck.
@@ -128,7 +131,7 @@ export default function ClaimPanel({
       fireDePrizeConfetti()
       toast.success(
         claimEth !== undefined
-          ? `Claimed ≈ ${fmt(claimEth)} ETH.`
+          ? `Claimed ≈ ${fmtEthWithUsd(claimEth, ethPrice)}.`
           : 'Claimed.',
         { style: toastStyle, duration: 8000 }
       )
@@ -171,7 +174,7 @@ export default function ClaimPanel({
       ) : (
         <>
           <p className="text-white text-2xl font-bold mt-1">
-            {claimEth !== undefined ? `${fmt(claimEth)} ETH` : '…'}
+            {claimEth !== undefined ? <EthUsd eth={claimEth} /> : '…'}
           </p>
           <div className="mt-3">
             {wrongNetwork ? (

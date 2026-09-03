@@ -276,12 +276,33 @@ export default function MoonBaseZeroIndex() {
     [dataset.projects, selectedOrgIds]
   )
 
-  // Mount one DePrize market — the open race only. Eight concurrent 30s polls
-  // on the r3f scene is exactly what the bridge was designed to avoid. Also
-  // the single source for the race's betting/positions surface (marketAddress,
-  // per-outcome balances) so "Back this team" can bet inline instead of
-  // navigating to /deprize/{id}.
-  const liveOdds = useDePrizeGoalOdds(chain, selectedGoalId ?? undefined, userAddress)
+  // Mount one DePrize market — the open race, or the race a competitor
+  // panel was opened from. Clearing selectedGoalId to show ProjectPanel
+  // must not drop the market, or Buy would vanish and force a trip back.
+  // raceReturn is only that origin race when this project is on it:
+  // `/moonbase/[projectId]` reuses this page, so a leftover race must not win.
+  const oddsGoalId = useMemo(() => {
+    if (selectedGoalId) return selectedGoalId
+    if (!selectedProjectId) return undefined
+    const project = projectById(dataset, selectedProjectId)
+    if (!project) return undefined
+    if (raceReturn?.kind === 'goal') {
+      const returned = sharedGoalById(dataset, raceReturn.id)
+      if (
+        returned &&
+        isCompetitiveRace(returned.projectIds.length) &&
+        returned.projectIds.includes(project.id)
+      ) {
+        return raceReturn.id
+      }
+    }
+    return project.sharedGoalIds.find((id) => {
+      const goal = sharedGoalById(dataset, id)
+      return !!goal && isCompetitiveRace(goal.projectIds.length)
+    })
+  }, [selectedGoalId, raceReturn, selectedProjectId, dataset])
+
+  const liveOdds = useDePrizeGoalOdds(chain, oddsGoalId, userAddress)
   const { totalFunding, isLoading: isLoadingPrizePool } = useTotalFunding(
     liveOdds.jbProjectId,
     chain
@@ -343,13 +364,13 @@ export default function MoonBaseZeroIndex() {
     () =>
       mergeLiveMarketInto(
         dataset.sharedGoals,
-        selectedGoalId ?? undefined,
+        oddsGoalId,
         liveOdds
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional field deps
     [
       dataset.sharedGoals,
-      selectedGoalId,
+      oddsGoalId,
       liveOdds.deprizeId,
       liveOdds.status,
       liveOdds.fieldOdds,
@@ -535,29 +556,49 @@ export default function MoonBaseZeroIndex() {
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
   }
 
-  const handleSelectProject = (id: string) => {
+  const handleSelectProject = (id: string, opts?: { fromDeepLink?: boolean }) => {
     // Re-clicking the already-selected project is a no-op — the camera is
     // there (or on its way); re-triggering the transition just stutters it.
     if (id === selectedProjectId && !selectedGoalId) return
-    // Remember where we came from so the project panel can return to the list.
+    const project = projectById(dataset, id)
+    if (!project) return
+
+    // The cluster this asset actually stands in — not whichever race was
+    // already open. Each competitor has its own plot now, so picking a
+    // dimmed asset in another district must fill *that* district, the same
+    // way the hovering pin does.
+    const tree =
+      surfaceTrees.find((t) => t.projects.some((p) => p.id === id)) ??
+      trees.find((t) => t.projects.some((p) => p.id === id))
+    const category = tree?.category ?? project.type
+
     if (selectedGoalId) setRaceReturn({ kind: 'goal', id: selectedGoalId })
     else if (selectedTreeCategory)
       setRaceReturn({ kind: 'tree', id: selectedTreeCategory })
     else setRaceReturn(null)
-    // Keep the currently-viewed site focused: the competitor's model swaps in
-    // *there*, so picking a competitor never teleports to a different site.
-    const site =
-      selectedTreeCategory ??
-      (selectedGoalId
-        ? dataset.sharedGoals.find((g) => g.id === selectedGoalId)?.category
-        : undefined) ??
-      projectById(dataset, id)?.type ??
-      null
+
+    // Globe clicks on a dimmed asset open that district. Deep links must
+    // still open the requested project — `/moonbase/[projectId]` reuses this
+    // handler without remounting, so a prior race would otherwise win.
+    if (
+      !opts?.fromDeepLink &&
+      selectedTreeCategory &&
+      selectedTreeCategory !== category
+    ) {
+      // Same as the hovering district pin: fill this cluster, dim the rest,
+      // show the race, and frame the site.
+      setSelectedTreeCategory(category)
+      setSelectedGoalId(tree?.goal?.id ?? null)
+      setSelectedProjectId(null)
+      flyToSite(category)
+      replaceMoonbaseQuery({ race: tree?.goal?.id ?? null, year })
+      return
+    }
+
     setSelectedGoalId(null)
-    setSelectedTreeCategory(site)
+    setSelectedTreeCategory(category)
     setSelectedProjectId(id)
-    const p = projectById(dataset, id)
-    if (p) flyToProject(p, site)
+    flyToProject(project, category)
   }
 
   // Keep ?race= / ?year= in sync with selection without remounting the scene.
@@ -592,7 +633,7 @@ export default function MoonBaseZeroIndex() {
     const id = router.query.projectId
     if (typeof id !== 'string' || !id) return
     if (!projectById(dataset, id)) return
-    handleSelectProject(id)
+    handleSelectProject(id, { fromDeepLink: true })
     // Only react to the deep-link param itself; selection handlers stay stable
     // enough for a one-shot open on navigation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -723,6 +764,9 @@ export default function MoonBaseZeroIndex() {
         title="Moon Base Zero"
         description="A true-to-scale moonbase on the Shackleton connecting ridge — real NASA LOLA terrain at 5 m/px. Explore capability races, competitors, and who's leading each tech tree."
       />
+      {/* Only the 4rem top nav is subtracted: ProjectBanner lists /moonbase as
+          a fullscreen route and never renders here, so reserving its 4rem too
+          would leave a dead band under the year slider. */}
       <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#03040a]">
         <MoonGlobeLazy
           focus={focus}
@@ -881,6 +925,31 @@ export default function MoonBaseZeroIndex() {
                 onFocusRegion={flyToProject}
                 onSelectSharedGoal={handleSelectSharedGoal}
                 onBack={raceReturn ? handleBackToRace : undefined}
+                betGoal={
+                  oddsGoalId
+                    ? sharedGoals.find((g) => g.id === oddsGoalId)
+                    : undefined
+                }
+                chainSlug={chainSlug}
+                chain={chain}
+                account={account}
+                userAddress={userAddress}
+                onConnectWallet={() => login()}
+                spendableEth={spendableEth}
+                deprizeId={liveOdds.deprizeId}
+                mintAddress={liveOdds.mintAddress}
+                marketAddress={liveOdds.marketAddress}
+                numOutcomes={liveOdds.numOutcomes}
+                outcomes={liveOdds.outcomes}
+                bettingAllowed={bettingAllowed}
+                tradingHalted={liveOdds.tradingHalted}
+                resolved={liveOdds.resolved}
+                winningIndex={liveOdds.winningIndex}
+                isRefundVector={liveOdds.isRefundVector}
+                payoutDen={liveOdds.payoutDen}
+                payoutNums={liveOdds.payoutNums}
+                jbProjectId={liveOdds.jbProjectId}
+                onDone={handleRaceMarketDone}
               />
             ) : null}
           </div>

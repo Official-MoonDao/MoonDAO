@@ -7,6 +7,7 @@ import type {
   AtlasDataset,
   AtlasIndexRow,
   LatLon,
+  MarketStatus,
   Milestone,
   Project,
   ProjectType,
@@ -371,4 +372,40 @@ export function projectById(dataset: AtlasDataset, id: string) {
 }
 export function sharedGoalById(dataset: AtlasDataset, id: string) {
   return dataset.sharedGoals.find((g) => g.id === id)
+}
+
+export type RaceStanding = {
+  goalId: string
+  title: string
+  place: number
+  fieldSize: number
+  probability: number
+  marketStatus?: MarketStatus
+}
+
+/** Place + implied odds for a competitor in one shared goal, if priced. */
+export function raceStandingForProject(
+  projectId: string,
+  goal: SharedGoal
+): RaceStanding | undefined {
+  if (!goal.projectIds.includes(projectId)) return undefined
+  const odds = goal.market?.impliedOdds
+  const probability = odds?.[projectId]
+  if (probability == null || !Number.isFinite(probability)) return undefined
+  const ranked = [...goal.projectIds].sort((a, b) => {
+    const pa = odds?.[a]
+    const pb = odds?.[b]
+    const na = pa != null && Number.isFinite(pa) ? pa : -1
+    const nb = pb != null && Number.isFinite(pb) ? pb : -1
+    if (nb !== na) return nb - na
+    return goal.projectIds.indexOf(a) - goal.projectIds.indexOf(b)
+  })
+  return {
+    goalId: goal.id,
+    title: goal.title,
+    place: ranked.indexOf(projectId) + 1,
+    fieldSize: goal.projectIds.length,
+    probability,
+    marketStatus: goal.market?.status,
+  }
 }
