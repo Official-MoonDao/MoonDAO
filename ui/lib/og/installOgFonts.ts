@@ -88,5 +88,3 @@ export function installOgFonts(): string | undefined {
   fontconfigReady = true
   return dir
 }
-
-installOgFonts()

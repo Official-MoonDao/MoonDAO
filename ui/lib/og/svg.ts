@@ -1,4 +1,3 @@
-import { getOgFontDataUri } from './installOgFonts'
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from './preview'
 
 const OG_FONT_FAMILY = 'Lato, sans-serif'
@@ -99,11 +98,6 @@ export function renderOgSvg({
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${OG_IMAGE_WIDTH}" height="${OG_IMAGE_HEIGHT}" viewBox="0 0 ${OG_IMAGE_WIDTH} ${OG_IMAGE_HEIGHT}">
   <defs>
-    ${
-      getOgFontDataUri()
-        ? `<style>@font-face{font-family:Lato;src:url('${getOgFontDataUri()}') format('truetype');}</style>`
-        : ''
-    }
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#0b1533"/>
       <stop offset="55%" stop-color="#090D21"/>
