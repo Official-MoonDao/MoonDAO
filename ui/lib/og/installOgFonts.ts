@@ -1,8 +1,16 @@
 import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync } from 'fs'
-import { join, dirname } from 'path'
 import { tmpdir } from 'os'
+import { join, dirname } from 'path'
 
 const FONT_FILENAME = 'Lato-Regular.ttf'
+
+/**
+ * Literal paths Node File Tracing can follow. A loop of `join(root, name)` is
+ * invisible to NFT, so without these (and `outputFileTracingIncludes`) Vercel
+ * ships the OG functions with no TTF.
+ */
+const MODULE_FONT_PATH = join(__dirname, 'fonts', 'Lato-Regular.ttf')
+const TRACED_FONT_PATH = join(process.cwd(), 'lib/og/fonts/Lato-Regular.ttf')
 
 /**
  * Places we may find Lato after a Vercel/Next compile. `public/` is not always
@@ -25,6 +33,8 @@ function fontSearchRoots(): string[] {
 }
 
 export function resolveOgFontPath(): string | undefined {
+  if (existsSync(MODULE_FONT_PATH)) return MODULE_FONT_PATH
+  if (existsSync(TRACED_FONT_PATH)) return TRACED_FONT_PATH
   for (const root of fontSearchRoots()) {
     const candidate = join(root, FONT_FILENAME)
     if (existsSync(candidate)) return candidate

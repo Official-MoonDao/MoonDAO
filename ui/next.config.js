@@ -37,6 +37,12 @@ module.exports = withBundleAnalyzer(
       experimental: {
         esmExternals: 'loose',
         serverComponentsExternalPackages: ['thirdweb'],
+        // vercel.json includeFiles is ignored for Next.js — only NFT / this
+        // map can put Lato into the OG serverless bundles.
+        outputFileTracingIncludes: {
+          '/api/og/job': ['./lib/og/fonts/Lato-Regular.ttf'],
+          '/api/og/listing': ['./lib/og/fonts/Lato-Regular.ttf'],
+        },
         optimizePackageImports: [
           '@heroicons/react',
           'gsap',
