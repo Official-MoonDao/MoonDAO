@@ -539,25 +539,38 @@ export default function MoonBaseZeroIndex() {
     // Re-clicking the already-selected project is a no-op — the camera is
     // there (or on its way); re-triggering the transition just stutters it.
     if (id === selectedProjectId && !selectedGoalId) return
-    // Remember where we came from so the project panel can return to the list.
+    const project = projectById(dataset, id)
+    if (!project) return
+
+    // The cluster this asset actually stands in — not whichever race was
+    // already open. Each competitor has its own plot now, so picking a
+    // dimmed asset in another district must fill *that* district, the same
+    // way the hovering pin does.
+    const tree =
+      surfaceTrees.find((t) => t.projects.some((p) => p.id === id)) ??
+      trees.find((t) => t.projects.some((p) => p.id === id))
+    const category = tree?.category ?? project.type
+
     if (selectedGoalId) setRaceReturn({ kind: 'goal', id: selectedGoalId })
     else if (selectedTreeCategory)
       setRaceReturn({ kind: 'tree', id: selectedTreeCategory })
     else setRaceReturn(null)
-    // Keep the currently-viewed site focused: the competitor's model swaps in
-    // *there*, so picking a competitor never teleports to a different site.
-    const site =
-      selectedTreeCategory ??
-      (selectedGoalId
-        ? dataset.sharedGoals.find((g) => g.id === selectedGoalId)?.category
-        : undefined) ??
-      projectById(dataset, id)?.type ??
-      null
+
+    if (selectedTreeCategory && selectedTreeCategory !== category) {
+      // Same as the hovering district pin: fill this cluster, dim the rest,
+      // show the race, and frame the site.
+      setSelectedTreeCategory(category)
+      setSelectedGoalId(tree?.goal?.id ?? null)
+      setSelectedProjectId(null)
+      flyToSite(category)
+      replaceMoonbaseQuery({ race: tree?.goal?.id ?? null, year })
+      return
+    }
+
     setSelectedGoalId(null)
-    setSelectedTreeCategory(site)
+    setSelectedTreeCategory(category)
     setSelectedProjectId(id)
-    const p = projectById(dataset, id)
-    if (p) flyToProject(p, site)
+    flyToProject(project, category)
   }
 
   // Keep ?race= / ?year= in sync with selection without remounting the scene.

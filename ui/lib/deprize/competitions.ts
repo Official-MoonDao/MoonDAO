@@ -87,6 +87,11 @@ export const GENERIC_DEPRIZE_COMPETITION: DePrizeCompetition = {
     'Back the team you think will win — live odds, payout when a winner is declared.',
 }
 
+/** Stable prize-page path for a Moon Base Zero race. Resolves live or atlas. */
+export function deprizeDetailHref(sharedGoalId: string): string {
+  return `/deprize/${sharedGoalId}`
+}
+
 /** chainSlug → deprizeId → competition */
 const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> = {
   arbitrum: {
@@ -130,6 +135,109 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
           projectId: 'ix-fission-surface-power',
           teamId: 303,
         },
+      ],
+    },
+    // 10–16 were registered OPEN on Sepolia with Team 24 as the Open Field
+    // slot. Bind the three whose roster length matches a capability race
+    // (named competitors + field). Pads / habitat / comms are 17–19
+    // (provision-sepolia-races.ts).
+    10: {
+      title: 'First commercial crewed lunar landing',
+      tagline:
+        'Which crewed lander puts astronauts on the lunar surface first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first commercial crewed lunar landing. SpaceX Starship HLS vs Blue Origin Blue Moon MK2.',
+      sharedGoalId: 'shared-crewed-lander',
+      raceLabel: 'Crewed lunar landing',
+      outcomes: [
+        { projectId: 'spacex-starship-hls', teamId: 22 },
+        { projectId: 'blue-origin-blue-moon-mk2', teamId: 23 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    12: {
+      title: 'First crewed lunar terrain vehicle in service',
+      tagline:
+        'Which LTV is driving on the lunar surface first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first crewed lunar terrain vehicle. Astrolab, Lunar Outpost, and Intuitive Machines.',
+      sharedGoalId: 'shared-lunar-rover',
+      raceLabel: 'Crewed lunar rover',
+      outcomes: [
+        { projectId: 'astrolab-flex', teamId: 27 },
+        { projectId: 'lunar-outpost-lunar-dawn', teamId: 28 },
+        { projectId: 'im-moon-racer', teamId: 29 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    15: {
+      title: 'First sustained oxygen and metals from lunar regolith',
+      tagline:
+        'Which ISRU plant makes oxygen from regolith first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first sustained lunar ISRU plant. Blue Alchemist, Sierra Space, Lunar Resources, and Cislune.',
+      sharedGoalId: 'shared-isru-oxygen',
+      raceLabel: 'ISRU oxygen',
+      outcomes: [
+        { projectId: 'blue-origin-blue-alchemist', teamId: 36 },
+        { projectId: 'sierra-space-carbothermal', teamId: 37 },
+        { projectId: 'lunar-resources-mre', teamId: 38 },
+        { projectId: 'cislune-lunar-isru', teamId: 39 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    17: {
+      title: 'First demonstrated lunar landing-pad construction system',
+      tagline:
+        'Which team hardens a lunar landing pad first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first demonstrated lunar landing-pad construction system. ICON, Redwire, Astroport, AI SpaceFactory, and Astrobotic.',
+      questionId: '0x8cea9bc514c3b1f069f68b62046ab8679c2d8aaffcf91fdfd071b40399c1ab9b',
+      sharedGoalId: 'shared-landing-pads',
+      raceLabel: 'Landing pads',
+      outcomes: [
+        { projectId: 'icon-project-olympus', teamId: 501 },
+        { projectId: 'redwire-mason', teamId: 502 },
+        { projectId: 'astroport-lunatron', teamId: 503 },
+        { projectId: 'ai-spacefactory-react', teamId: 504 },
+        { projectId: 'astrobotic-additive-construction', teamId: 505 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    18: {
+      title: 'First pressurized habitat occupied on the lunar surface',
+      tagline:
+        'Which habitat houses crew on the Moon first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first pressurized lunar habitat. Artemis Base Camp, ILRS, Thales MPH, Sierra Space LIFE, and JAXA Lunar Cruiser.',
+      questionId: '0xb450b8b519b564b86a2ded23034b5e808080705e2567f0fc947676cb39cebc72',
+      sharedGoalId: 'shared-habitat',
+      raceLabel: 'Pressurized habitat',
+      outcomes: [
+        { projectId: 'nasa-artemis-base-camp', teamId: 511 },
+        { projectId: 'ilrs', teamId: 512 },
+        { projectId: 'thales-mph', teamId: 513 },
+        { projectId: 'sierra-space-life', teamId: 514 },
+        { projectId: 'jaxa-lunar-cruiser', teamId: 515 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    19: {
+      title: 'First operational lunar communications and navigation service',
+      tagline:
+        'Which network sells lunar comms first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first operational lunar communications and navigation service. Modul8, Intuitive Machines, ESA Moonlight, Crescent Parsec, and Solstar.',
+      questionId: '0xb97bc9385d44cda940b222c2027923496c034d44348931be525acf34970db986',
+      sharedGoalId: 'shared-lunar-comms',
+      raceLabel: 'Lunar comms',
+      outcomes: [
+        { projectId: 'nokia-lunar-lte', teamId: 521 },
+        { projectId: 'im-near-space-network', teamId: 522 },
+        { projectId: 'esa-lunar-pathfinder', teamId: 523 },
+        { projectId: 'crescent-parsec', teamId: 524 },
+        { projectId: 'solstar-lunar-wifi', teamId: 525 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
   },

@@ -104,42 +104,25 @@ function isInternalHref(href: string): boolean {
   return href.startsWith('/') && !href.startsWith('//')
 }
 
-/**
- * Team identity that navigates to `/team/{id}` by default. Optional overrides
- * let Moon Base Zero feed atlas org name/logo and link to `/moonbase/{projectId}`
- * for competitors that will never hold a Team NFT.
- */
-export default function DePrizeTeamLink({
+function TeamIdentity({
   teamId,
-  teamContract,
-  color = '#3b82f6',
-  className = '',
-  nameOnly = false,
-  size = 28,
-  nameOverride,
-  imageOverride,
-  hrefOverride,
-  unclaimed = false,
-}: DePrizeTeamLinkProps) {
-  // Only skip the NFT read when neither name nor image would come from it. An
-  // unclaimed competitor shows no logo at all, so a name is the whole identity.
-  const identityOverridden = !!nameOverride && (!!imageOverride || unclaimed)
-
-  const { data: teamNFT } = useReadContract(getNFT, {
-    contract: teamContract,
-    tokenId: BigInt(teamId),
-    queryOptions: {
-      enabled: !identityOverridden && !!teamContract && teamId > 0n,
-    },
-  })
-
-  // `||` (not `??`): an empty metadata name must still fall back to the id,
-  // and an empty override must not blank the row.
-  const name =
-    nameOverride || (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
-  const image = unclaimed ? '' : imageOverride || (teamNFT as any)?.metadata?.image || ''
-  const href = hrefOverride || `/team/${teamId.toString()}`
-
+  name,
+  image,
+  color,
+  className,
+  nameOnly,
+  size,
+  href,
+}: {
+  teamId: bigint
+  name: string
+  image: string
+  color: string
+  className: string
+  nameOnly: boolean
+  size: number
+  href: string
+}) {
   const linkClassName = `group inline-flex items-center gap-2 min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 transition-opacity hover:opacity-90 ${className}`
   const title = `View ${name} profile`
   const onClick = (e: MouseEvent) => e.stopPropagation()
@@ -173,6 +156,112 @@ export default function DePrizeTeamLink({
     <a href={href} className={linkClassName} title={title} onClick={onClick}>
       {body}
     </a>
+  )
+}
+
+/**
+ * Team identity that navigates to `/team/{id}` by default. Optional overrides
+ * let Moon Base Zero feed atlas org name/logo and link to `/moonbase/{projectId}`
+ * for competitors that will never hold a Team NFT.
+ *
+ * thirdweb's `useReadContract` reads `contract.chain` even when the query is
+ * disabled, so the NFT hook lives in a child that only mounts when a contract
+ * is actually present. Atlas / demo rows (no Team NFT) skip it entirely.
+ */
+export default function DePrizeTeamLink({
+  teamId,
+  teamContract,
+  color = '#3b82f6',
+  className = '',
+  nameOnly = false,
+  size = 28,
+  nameOverride,
+  imageOverride,
+  hrefOverride,
+  unclaimed = false,
+}: DePrizeTeamLinkProps) {
+  // Only skip the NFT read when neither name nor image would come from it. An
+  // unclaimed competitor shows no logo at all, so a name is the whole identity.
+  const identityOverridden = !!nameOverride && (!!imageOverride || unclaimed)
+  const canReadNft = !!teamContract && teamId > 0n && !identityOverridden
+  const href = hrefOverride || `/team/${teamId.toString()}`
+
+  if (!canReadNft) {
+    return (
+      <TeamIdentity
+        teamId={teamId}
+        name={nameOverride || `Team #${teamId.toString()}`}
+        image={unclaimed ? '' : imageOverride || ''}
+        color={color}
+        className={className}
+        nameOnly={nameOnly}
+        size={size}
+        href={href}
+      />
+    )
+  }
+
+  return (
+    <DePrizeTeamLinkFromChain
+      teamId={teamId}
+      teamContract={teamContract}
+      color={color}
+      className={className}
+      nameOnly={nameOnly}
+      size={size}
+      nameOverride={nameOverride}
+      imageOverride={imageOverride}
+      href={href}
+      unclaimed={unclaimed}
+    />
+  )
+}
+
+function DePrizeTeamLinkFromChain({
+  teamId,
+  teamContract,
+  color,
+  className,
+  nameOnly,
+  size,
+  nameOverride,
+  imageOverride,
+  href,
+  unclaimed,
+}: {
+  teamId: bigint
+  teamContract: any
+  color: string
+  className: string
+  nameOnly: boolean
+  size: number
+  nameOverride?: string
+  imageOverride?: string
+  href: string
+  unclaimed: boolean
+}) {
+  const { data: teamNFT } = useReadContract(getNFT, {
+    contract: teamContract,
+    tokenId: BigInt(teamId),
+  })
+
+  // `||` (not `??`): an empty metadata name must still fall back to the id,
+  // and an empty override must not blank the row.
+  const name =
+    nameOverride || (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
+  const image = unclaimed ? '' : imageOverride || (teamNFT as any)?.metadata?.image || ''
+
+  return (
+    <TeamIdentity
+      teamId={teamId}
+      name={name}
+      image={image}
+      color={color}
+      className={className}
+      nameOnly={nameOnly}
+      size={size}
+      href={href}
+    />
   )
 }
 

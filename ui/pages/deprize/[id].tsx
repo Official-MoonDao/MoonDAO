@@ -16,6 +16,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
   ROSTER_DISCLAIMER,
+  findDePrizeIdForGoal,
   getDePrizeCompetition,
   getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
@@ -23,7 +24,8 @@ import {
   isKnownDePrizeCompetition,
   isRaceBindingComplete,
 } from '@/lib/deprize/competitions'
-import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
+import { SEED_ATLAS, orgById, projectById, sharedGoalById } from '@/lib/lunar-atlas'
+import GoalDePrizeDetail from '@/components/deprize/GoalDePrizeDetail'
 import { orgColor } from '@/lib/lunar-atlas/display'
 import {
   DePrizeState,
@@ -114,12 +116,21 @@ export default function DePrizeDetailPage() {
 function DePrizeDetailContent() {
   const router = useRouter()
   const rawId = router.query.id
-  const deprizeId = typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
+  const numericId =
+    typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
+  const goalFromSlug =
+    typeof rawId === 'string' && !/^\d+$/.test(rawId)
+      ? sharedGoalById(SEED_ATLAS, rawId)
+      : undefined
+  const { selectedChain: chain } = useContext(ChainContextV5)
+  const chainSlug = getChainSlug(chain)
+  const boundFromSlug = goalFromSlug
+    ? findDePrizeIdForGoal(chainSlug, goalFromSlug.id)
+    : undefined
+  const deprizeId = numericId ?? boundFromSlug
 
   // Follow the app's live selected chain (wallet / header dropdown), not the
   // build-time default — otherwise switching networks never re-queries DePrize.
-  const { selectedChain: chain } = useContext(ChainContextV5)
-  const chainSlug = getChainSlug(chain)
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
   const namedRaceOutcomes = raceBinding?.outcomes.filter((o) => !o.field) ?? []
@@ -460,6 +471,16 @@ function DePrizeDetailContent() {
         : competition.title
 
   // --- Render states ---
+  if (!router.isReady) {
+    return (
+      <Shell title={shellTitle} description={competition.metaDescription}>
+        <div className="p-8 text-center text-gray-400">Loading DePrize…</div>
+      </Shell>
+    )
+  }
+  if (goalFromSlug && boundFromSlug === undefined) {
+    return <GoalDePrizeDetail goal={goalFromSlug} />
+  }
   if (!registryConfigured) {
     return (
       <Shell title={shellTitle} description={competition.metaDescription}>
@@ -470,10 +491,10 @@ function DePrizeDetailContent() {
       </Shell>
     )
   }
-  if (!router.isReady) {
+  if (typeof rawId === 'string' && !numericId && !goalFromSlug) {
     return (
       <Shell title={shellTitle} description={competition.metaDescription}>
-        <div className="p-8 text-center text-gray-400">Loading DePrize…</div>
+        <Notice tone="amber">This prize doesn&apos;t exist.</Notice>
       </Shell>
     )
   }
