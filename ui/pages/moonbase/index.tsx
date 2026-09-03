@@ -723,9 +723,10 @@ export default function MoonBaseZeroIndex() {
         title="Moon Base Zero"
         description="A true-to-scale moonbase on the Shackleton connecting ridge — real NASA LOLA terrain at 5 m/px. Explore capability races, competitors, and who's leading each tech tree."
       />
-      {/* 4rem top nav + 4rem ProjectBanner. The globe and year slider must
-          sit in the leftover band so the banner never covers the sim. */}
-      <div className="relative h-[calc(100vh-8rem)] w-full overflow-hidden bg-[#03040a]">
+      {/* Only the 4rem top nav is subtracted: ProjectBanner lists /moonbase as
+          a fullscreen route and never renders here, so reserving its 4rem too
+          would leave a dead band under the year slider. */}
+      <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#03040a]">
         <MoonGlobeLazy
           focus={focus}
           trees={surfaceTrees}
