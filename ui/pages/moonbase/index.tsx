@@ -535,7 +535,7 @@ export default function MoonBaseZeroIndex() {
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
   }
 
-  const handleSelectProject = (id: string) => {
+  const handleSelectProject = (id: string, opts?: { fromDeepLink?: boolean }) => {
     // Re-clicking the already-selected project is a no-op — the camera is
     // there (or on its way); re-triggering the transition just stutters it.
     if (id === selectedProjectId && !selectedGoalId) return
@@ -556,7 +556,14 @@ export default function MoonBaseZeroIndex() {
       setRaceReturn({ kind: 'tree', id: selectedTreeCategory })
     else setRaceReturn(null)
 
-    if (selectedTreeCategory && selectedTreeCategory !== category) {
+    // Globe clicks on a dimmed asset open that district. Deep links must
+    // still open the requested project — `/moonbase/[projectId]` reuses this
+    // handler without remounting, so a prior race would otherwise win.
+    if (
+      !opts?.fromDeepLink &&
+      selectedTreeCategory &&
+      selectedTreeCategory !== category
+    ) {
       // Same as the hovering district pin: fill this cluster, dim the rest,
       // show the race, and frame the site.
       setSelectedTreeCategory(category)
@@ -605,7 +612,7 @@ export default function MoonBaseZeroIndex() {
     const id = router.query.projectId
     if (typeof id !== 'string' || !id) return
     if (!projectById(dataset, id)) return
-    handleSelectProject(id)
+    handleSelectProject(id, { fromDeepLink: true })
     // Only react to the deep-link param itself; selection handlers stay stable
     // enough for a one-shot open on navigation.
     // eslint-disable-next-line react-hooks/exhaustive-deps

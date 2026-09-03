@@ -240,6 +240,13 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
               {outcomes.map((o) => {
                 const competitor = competitors[o.outcome.index]
                 const org = competitor?.organization
+                const pos = market.positions[o.projectId]
+                const sellQuoteEth =
+                  pos && pos.qty > 0
+                    ? Math.round(
+                        pos.qty * ((market.odds[o.projectId] ?? 0) / 100) * 1e6,
+                      ) / 1e6
+                    : undefined
                 return (
                   <DePrizeTeamCard
                     key={o.projectId}
@@ -251,7 +258,8 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
                     resolved={false}
                     isRefundVector={false}
                     isWinningSlot={false}
-                    investedEth={market.positions[o.projectId]?.costEth ?? 0}
+                    investedEth={pos?.costEth ?? 0}
+                    sellQuoteEth={sellQuoteEth}
                     bettingOpen={hasRace}
                     tradingHalted={false}
                     busy={false}
@@ -290,6 +298,20 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
                 .
               </p>
             </div>
+
+            {!userAddress && hasRace && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-indigo-100 text-sm font-medium">
+                  Connect a wallet to back a team or cash out.
+                </p>
+                <button
+                  onClick={() => login()}
+                  className="px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-semibold transition-all"
+                >
+                  Connect Wallet
+                </button>
+              </div>
+            )}
 
             {goal.criteria && goal.criteria.length > 0 && (
               <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
