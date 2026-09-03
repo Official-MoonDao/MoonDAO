@@ -279,12 +279,24 @@ export default function MoonBaseZeroIndex() {
   // Mount one DePrize market — the open race, or the race a competitor
   // panel was opened from. Clearing selectedGoalId to show ProjectPanel
   // must not drop the market, or Buy would vanish and force a trip back.
+  // raceReturn is only that origin race when this project is on it:
+  // `/moonbase/[projectId]` reuses this page, so a leftover race must not win.
   const oddsGoalId = useMemo(() => {
     if (selectedGoalId) return selectedGoalId
-    if (raceReturn?.kind === 'goal') return raceReturn.id
     if (!selectedProjectId) return undefined
     const project = projectById(dataset, selectedProjectId)
-    return project?.sharedGoalIds.find((id) => {
+    if (!project) return undefined
+    if (raceReturn?.kind === 'goal') {
+      const returned = sharedGoalById(dataset, raceReturn.id)
+      if (
+        returned &&
+        isCompetitiveRace(returned.projectIds.length) &&
+        returned.projectIds.includes(project.id)
+      ) {
+        return raceReturn.id
+      }
+    }
+    return project.sharedGoalIds.find((id) => {
       const goal = sharedGoalById(dataset, id)
       return !!goal && isCompetitiveRace(goal.projectIds.length)
     })
@@ -914,12 +926,9 @@ export default function MoonBaseZeroIndex() {
                 onSelectSharedGoal={handleSelectSharedGoal}
                 onBack={raceReturn ? handleBackToRace : undefined}
                 betGoal={
-                  (raceReturn?.kind === 'goal'
-                    ? sharedGoals.find((g) => g.id === raceReturn.id)
-                    : undefined) ??
-                  selectedSharedGoals.find((g) =>
-                    isCompetitiveRace(g.projectIds.length)
-                  )
+                  oddsGoalId
+                    ? sharedGoals.find((g) => g.id === oddsGoalId)
+                    : undefined
                 }
                 chainSlug={chainSlug}
                 chain={chain}

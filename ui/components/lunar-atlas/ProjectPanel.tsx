@@ -124,7 +124,10 @@ export default function ProjectPanel({
   )
   const otherGoals = sharedGoals.filter((g) => !standingGoalIds.has(g.id))
 
-  const hasRace = !!betGoal && isCompetitiveRace(betGoal.projectIds.length)
+  const hasRace =
+    !!betGoal &&
+    isCompetitiveRace(betGoal.projectIds.length) &&
+    betGoal.projectIds.includes(project.id)
   const bound =
     !!betGoal && !!chainSlug && isDePrizeGoalMarketBound(chainSlug, betGoal.id)
   const marketDeprizeId = bound
