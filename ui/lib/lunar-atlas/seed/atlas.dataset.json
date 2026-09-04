@@ -429,6 +429,102 @@
           "retrievedAt": "2026-08-25"
         }
       ]
+    },
+    {
+      "id": "zeno-power",
+      "name": "Zeno Power",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.zenopower.com/",
+      "brandColor": "#F59E0B",
+      "summary": "A radioisotope power company using Sr-90 and Am-241. Harmonia is a NASA Tipping Point lunar night-power product; Zeno also supplies a 5 W thermal Am-241 RHU for Firefly's CLPS CS-8 Survive-the-Night package.",
+      "sources": [
+        {
+          "label": "Zeno Power",
+          "url": "https://www.zenopower.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "venturi-space",
+      "name": "Venturi Space",
+      "kind": "company",
+      "country": "Monaco",
+      "website": "https://www.venturi.com/",
+      "brandColor": "#DC2626",
+      "summary": "Venturi Space builds lunar-cycle batteries qualified from −240 °C to +130 °C and is the strategic partner of Venturi Astrolab, whose CLV-1 NASA selected in May 2026 as a crewed lunar vehicle.",
+      "sources": [
+        {
+          "label": "Venturi",
+          "url": "https://www.venturi.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "perpetual-atomics",
+      "name": "Perpetual Atomics",
+      "kind": "company",
+      "country": "United Kingdom",
+      "website": "https://perpetualatomics.com/",
+      "brandColor": "#0EA5E9",
+      "summary": "University of Leicester spin-out leading European americium radioisotope power under ESA's ENDURE programme, with an Orano Am-241 offtake and the first full-scale americium RHU core in 2026.",
+      "sources": [
+        {
+          "label": "Perpetual Atomics",
+          "url": "https://perpetualatomics.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "cnnc",
+      "name": "CNNC / CIAE",
+      "kind": "agency",
+      "country": "China",
+      "website": "https://en.cnnc.com.cn/",
+      "brandColor": "#B91C1C",
+      "summary": "China National Nuclear Corporation and the China Institute of Atomic Energy supplied the Pu-238 RTGs and RHUs that have kept Chang'e-3 and Chang'e-4 producing electricity through lunar nights — the only flight-proven lunar night electricity besides Apollo.",
+      "sources": [
+        {
+          "label": "CNNC",
+          "url": "https://en.cnnc.com.cn/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "rosatom",
+      "name": "Rosatom",
+      "kind": "agency",
+      "country": "Russia",
+      "website": "https://www.rosatom.ru/en/",
+      "brandColor": "#166534",
+      "summary": "Russia's state nuclear corporation, with Krasnaya Zvezda and the Kurchatov Institute, holds Lunokhod-era radioisotope heritage and is developing both small RTG plants and the much larger Selena lunar reactor with Roscosmos.",
+      "sources": [
+        {
+          "label": "Rosatom",
+          "url": "https://www.rosatom.ru/en/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "isro",
+      "name": "ISRO",
+      "kind": "agency",
+      "country": "India",
+      "website": "https://www.isro.gov.in/",
+      "brandColor": "#EA580C",
+      "summary": "The Indian Space Research Organisation, with BARC, is developing Am-241 RHU heating to extend lander life from 14 days toward 100–200 days after Chandrayaan-3 died at first sunset. LUPEX with JAXA is the named night-survival demonstrator.",
+      "sources": [
+        {
+          "label": "ISRO",
+          "url": "https://www.isro.gov.in/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
     }
   ],
   "projects": [
@@ -2770,6 +2866,270 @@
         }
       ],
       "visibility": "public"
+    },
+    {
+      "id": "zeno-harmonia",
+      "orgId": "zeno-power",
+      "name": "Harmonia",
+      "type": "other",
+      "summary": "The only named commercial lunar night-power product: a NASA 2023 Tipping Point radioisotope system using Am-241 and Sr-90 rather than plutonium. FDR completed April 2026 at 3.5× the original power specification; a terrestrial TVAC demonstration is planned for early 2027.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "harmonia-fdr",
+          "title": "Harmonia final design review complete at 3.5× original power spec",
+          "targetDate": "2026-04",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Zeno Power",
+              "url": "https://www.zenopower.com/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Zeno Power",
+          "url": "https://www.zenopower.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "astrobotic-nite",
+      "orgId": "astrobotic",
+      "name": "NITE",
+      "type": "other",
+      "summary": "Astrobotic's non-nuclear lunar night power system — chemical and fuel-cell based — funded by a ~$2.8M NASA Tipping Point award. Thermal-vacuum testing at Penn State encountered leakage and an oxidizer pump failure under vacuum; assessed at roughly TRL 4.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "nite-tipping-point",
+          "title": "NASA Tipping Point award for non-nuclear night power",
+          "targetDate": "2023",
+          "datePrecision": "year",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Astrobotic — Lunar Delivery",
+              "url": "https://www.astrobotic.com/lunar-delivery/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Astrobotic — Lunar Delivery",
+          "url": "https://www.astrobotic.com/lunar-delivery/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "venturi-lunar-battery",
+      "orgId": "venturi-space",
+      "name": "Lunar-cycle battery",
+      "type": "other",
+      "summary": "Venturi Space packs qualified across −240 °C to +130 °C, already endurance-tested over lunar cycles under vacuum. The 98% sustained-output rule forces oversizing; the scoreboard then shows what that costs in kilograms.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "venturi-lunar-cycle",
+          "title": "Vacuum lunar-cycle endurance testing inside qualification flow",
+          "targetDate": "2026",
+          "datePrecision": "year",
+          "status": "in_progress",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Venturi",
+              "url": "https://www.venturi.com/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Venturi",
+          "url": "https://www.venturi.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "perpetual-atomics-endure",
+      "orgId": "perpetual-atomics",
+      "name": "ENDURE Am-241 RHU",
+      "type": "other",
+      "summary": "ESA ENDURE americium radioisotope work spun out of Leicester. April 2026 produced the first full-scale Am-241 RHU core with QSA Global; a Generation 5 structural thermal model passed 25 G sine / 28 Grms vibration. An RHU is heat — they still need a convertor for watts electric.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "endure-am-core",
+          "title": "First americium-fuelled RHU full-scale core",
+          "targetDate": "2026-04",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Perpetual Atomics",
+              "url": "https://perpetualatomics.com/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Perpetual Atomics",
+          "url": "https://perpetualatomics.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "cnnc-lunar-rtg",
+      "orgId": "cnnc",
+      "name": "Chang'e lunar RTG",
+      "type": "other",
+      "summary": "The only organization besides Apollo with flight-proven lunar night electricity. Chang'e-4's Pu-238 RTG delivers 2.5 We plus 120 W thermal while the bus sleeps. State plutonium does not clear the prize's commercial procurement rule.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "change-4-rtg",
+          "title": "Chang'e-4 far-side landing with Pu-238 RTG still producing night electricity",
+          "targetDate": "2019-01",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "CNNC",
+              "url": "https://en.cnnc.com.cn/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "CNNC",
+          "url": "https://en.cnnc.com.cn/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "rosatom-lunar-rtg",
+      "orgId": "rosatom",
+      "name": "Rosatom lunar RTG",
+      "type": "other",
+      "summary": "Small RTG-based plants described for ILRS infrastructure, plus the much larger Selena 5–10 kWe reactor (prototype 2032). Real heritage and a legitimate Sr-90 / Am-241 supply route; nothing at watt scale on a near timeline.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "selena-contract",
+          "title": "NPO Lavochkin signs Selena lunar reactor build contract",
+          "targetDate": "2025-12",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Rosatom",
+              "url": "https://www.rosatom.ru/en/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Rosatom",
+          "url": "https://www.rosatom.ru/en/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "isro-barc-rhu",
+      "orgId": "isro",
+      "name": "BARC / LUPEX night survival",
+      "type": "other",
+      "summary": "A BARC- and ISRO-developed RHU flew on Chandrayaan-3's propulsion module, not the lander. The funded night programme is aimed at heat, not watts; LUPEX (NET 2028) is the named lunar-night-survival demonstrator.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "chandrayaan3-rhu",
+          "title": "RHU technology demonstrator flew on Chandrayaan-3 propulsion module",
+          "targetDate": "2023-08",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "ISRO",
+              "url": "https://www.isro.gov.in/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "ISRO",
+          "url": "https://www.isro.gov.in/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
     }
   ],
   "sharedGoals": [
@@ -2966,6 +3326,76 @@
         {
           "label": "Wikipedia — Chang'e 7",
           "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "shared-night-shift",
+      "title": "Night Shift — first machine that works through a lunar night",
+      "description": "Who first delivers at least 10 watts of electricity, continuously, for 354 hours, in a vacuum chamber colder than 100 kelvin, with nothing plugged in — and is still delivering the same 10 watts at the end. The slot is the power system, not the host lander. Firefly, Intuitive Machines, and ispace are hosts or customers and sit in the Open Field only if they bring their own article. State plutonium does not clear the commercial procurement rule.",
+      "projectIds": [
+        "zeno-harmonia",
+        "astrobotic-nite",
+        "venturi-lunar-battery",
+        "perpetual-atomics-endure",
+        "cnnc-lunar-rtg",
+        "rosatom-lunar-rtg",
+        "isro-barc-rhu"
+      ],
+      "criteria": [
+        {
+          "id": "unplug",
+          "statement": "Nothing crosses the chamber boundary into the article except data",
+          "threshold": "No wall power, heat, propellant, coolant, gas, or mass during the window"
+        },
+        {
+          "id": "environment",
+          "statement": "Run in a lunar-night thermal-vacuum environment",
+          "threshold": "≤ 1×10⁻⁵ torr and ≤ 100 K shroud throughout, with published excursion limits"
+        },
+        {
+          "id": "ten-watts",
+          "statement": "Deliver useful electrical work continuously",
+          "threshold": "≥ 10.0 We averaged over every rolling 60-minute window for 354 hours"
+        },
+        {
+          "id": "sustained-output",
+          "statement": "Output is undiminished at the end of the night",
+          "threshold": "Mean power in the final hour ≥ 98% of mean power over the window"
+        },
+        {
+          "id": "procurable",
+          "statement": "The energy source can be bought",
+          "threshold": "Invoice or published price for the fuel or stored energy used in the run"
+        }
+      ],
+      "targetWindow": {
+        "from": "2026",
+        "to": "2030"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "zeno-harmonia": 0.32,
+          "venturi-lunar-battery": 0.22,
+          "astrobotic-nite": 0.16,
+          "perpetual-atomics-endure": 0.12,
+          "cnnc-lunar-rtg": 0.08,
+          "isro-barc-rhu": 0.05,
+          "rosatom-lunar-rtg": 0.05
+        }
+      },
+      "sources": [
+        {
+          "label": "Zeno Power",
+          "url": "https://www.zenopower.com/",
+          "retrievedAt": "2026-09-04"
+        },
+        {
+          "label": "NASA — Tipping Point partnerships",
+          "url": "https://www.nasa.gov/news-release/nasa-partners-with-american-companies-on-key-moon-exploration-tech/",
           "retrievedAt": "2026-09-04"
         }
       ]

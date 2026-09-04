@@ -15,6 +15,7 @@ import { buildTechTrees, sharedGoalById } from '../../../lib/lunar-atlas/selecto
 describe('lunar-atlas × DePrize binding', () => {
   const binding = getDePrizeRaceBinding('sepolia', 9)
   const goal = sharedGoalById(SEED_ATLAS, 'shared-fission-power')
+  const nightShift = sharedGoalById(SEED_ATLAS, 'shared-night-shift')
 
   it('binds Sepolia DePrize 9 to the fission shared goal with matching projectIds', () => {
     expect(binding?.sharedGoalId).to.equal('shared-fission-power')
@@ -58,5 +59,28 @@ describe('lunar-atlas × DePrize binding', () => {
     expect(power?.goal?.market?.impliedOdds?.['westinghouse-fission-surface-power']).to.equal(
       0.4
     )
+  })
+
+  it('seeds Night Shift as an unbound planned race with seven named systems', () => {
+    expect(nightShift).to.exist
+    expect(nightShift!.title).to.match(/Night Shift/)
+    expect(nightShift!.projectIds).to.deep.equal([
+      'zeno-harmonia',
+      'astrobotic-nite',
+      'venturi-lunar-battery',
+      'perpetual-atomics-endure',
+      'cnnc-lunar-rtg',
+      'rosatom-lunar-rtg',
+      'isro-barc-rhu',
+    ])
+    expect(nightShift!.category).to.equal(undefined)
+    expect(nightShift!.market?.status).to.equal('planned')
+    expect(getDePrizeRaceBinding('sepolia', 22)).to.equal(undefined)
+    for (const id of nightShift!.projectIds) {
+      const project = SEED_ATLAS.projects.find((p) => p.id === id)
+      expect(project, id).to.exist
+      expect(project!.sharedGoalIds).to.include('shared-night-shift')
+      expect(project!.location, `${id} must stay off the globe`).to.equal(undefined)
+    }
   })
 })

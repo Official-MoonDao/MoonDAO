@@ -271,6 +271,13 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
+    // Night Shift — first 10 We through a 354-hour lunar night (chamber).
+    // Not registered yet: `register` on the Sepolia registry is onlyOwner
+    // (0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011). After
+    // `GOAL_ID=shared-night-shift yarn tsx scripts/provision-sepolia-races.ts`
+    // paste the generated block here as the next id (expected 22) with
+    // teams 611–617 + field 24. Until then `/deprize/shared-night-shift`
+    // renders the atlas GoalDePrizeDetail (planned market).
   },
 }
 

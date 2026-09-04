@@ -1,8 +1,8 @@
 /**
  * Stand up the remaining Moon Base Zero capability races on Sepolia
- * (landing pads, habitat, comms) so `/deprize/{goalId}` can load a live
- * market. Crewed lander / rover / ISRU / fission already exist (ids 10, 12,
- * 15, 9).
+ * (landing pads, habitat, comms, Touchdown, Night Shift) so `/deprize/{goalId}`
+ * can load a live market. Crewed lander / rover / ISRU / fission already
+ * exist (ids 10, 12, 15, 9). Night Shift needs the registry owner key.
  *
  *   source ../prediction/.env   # DEPLOYER_PK
  *   yarn tsx --tsconfig tsconfig.json scripts/provision-sepolia-races.ts
@@ -74,6 +74,13 @@ const RACES: {
     teamIds: [601n, 602n, 603n, 604n, 605n, FIELD_TEAM],
     tokenName: 'DePrize Touchdown',
     tokenSymbol: 'DTCH',
+  },
+  {
+    goalId: 'shared-night-shift',
+    raceLabel: 'Lunar night power',
+    teamIds: [611n, 612n, 613n, 614n, 615n, 616n, 617n, FIELD_TEAM],
+    tokenName: 'DePrize Night Shift',
+    tokenSymbol: 'DNGT',
   },
 ]
 
