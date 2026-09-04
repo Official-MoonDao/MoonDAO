@@ -102,6 +102,14 @@ function compactParams(
   return params
 }
 
+/**
+ * Apex `moondao.com` 307s to `www.moondao.com`. Twitter, Slack and iMessage
+ * often abandon `og:image` on that redirect and show an empty loading card.
+ */
+export function previewOrigin(origin = DEPLOYED_ORIGIN): string {
+  return origin === 'https://moondao.com' ? 'https://www.moondao.com' : origin
+}
+
 export function buildJobOgImageUrl(fields: JobOgFields): string {
   const params = compactParams(
     {
@@ -114,7 +122,7 @@ export function buildJobOgImageUrl(fields: JobOgFields): string {
     },
     OG_FIELD_LIMITS
   )
-  return `${DEPLOYED_ORIGIN}/api/og/job?${params.toString()}`
+  return `${previewOrigin()}/api/og/job?${params.toString()}`
 }
 
 export function buildListingOgImageUrl(fields: ListingOgFields): string {
@@ -127,7 +135,7 @@ export function buildListingOgImageUrl(fields: ListingOgFields): string {
     },
     OG_FIELD_LIMITS
   )
-  return `${DEPLOYED_ORIGIN}/api/og/listing?${params.toString()}`
+  return `${previewOrigin()}/api/og/listing?${params.toString()}`
 }
 
 export function parseJobOgParams(searchParams: URLSearchParams): JobOgFields {

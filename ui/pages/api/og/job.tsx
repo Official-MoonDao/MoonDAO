@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import sharp from 'sharp'
 import { parseJobOgParams } from '@/lib/og/preview'
+import { rasterizeOgSvg } from '@/lib/og/rasterize'
 import { renderOgSvg } from '@/lib/og/svg'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -19,9 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     footer: 'moondao.com/jobs',
   })
 
-  const png = await sharp(Buffer.from(svg)).png().toBuffer()
+  const { png, cacheControl } = await rasterizeOgSvg(svg)
   res.setHeader('Content-Type', 'image/png')
-  res.setHeader('Cache-Control', 'public, immutable, no-transform, max-age=86400')
+  res.setHeader('Cache-Control', cacheControl)
   res.setHeader('Content-Length', String(png.length))
   res.end(png)
 }
