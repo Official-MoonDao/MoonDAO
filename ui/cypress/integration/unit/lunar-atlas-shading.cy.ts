@@ -49,6 +49,12 @@ import {
   SUN_MAP_AZ_DEG,
   SUN_MAP_EL_DEG,
 } from '../../../lib/lunar-atlas/sun'
+import {
+  buildDetailSlopeTile,
+  detailRmsSlope,
+  valueNoise,
+} from '../../../lib/lunar-atlas/detailTile'
+import { DETAIL_OCTAVES } from '../../../lib/lunar-atlas/terrainShader'
 
 const DEG = Math.PI / 180
 
@@ -295,6 +301,25 @@ describe('the full Hapke BRDF', () => {
     }
   })
 
+  it('fills a shadow from the ground s real radiance, not a Lambertian stand-in', () => {
+    // The bug this case exists for shipped once. The shadow fill was derived as
+    // albedo * sun * mu0 / pi — the Lambertian radiance of the ground — which at
+    // an 85° phase angle is 4x what the actual BRDF returns, so shadows were
+    // filled to 24% of the lit ground instead of 6%.
+    //
+    // A uniform 24% lift is not a cosmetic error. It is the "flat ambient pond"
+    // the terrain's own history warns about: it raises every slope by the same
+    // amount, flattening exactly the shading contrast that per-pixel normals were
+    // introduced to produce.
+    const mu0 = Math.sin(SUN_LOCAL_ELEV_DEG * DEG)
+    const lit = hapkeReflectance(mu0, 1, PHASE_REF_DEG * DEG)
+    const lambertian = (REGOLITH_ALBEDO * mu0) / Math.PI
+    expect(lambertian / lit).to.be.within(3, 5)
+    // And the fill built on the correct one stays in single digits.
+    const fill = lit * REGOLITH_ALBEDO * 0.5
+    expect(fill / lit).to.be.within(0.03, 0.1)
+  })
+
   it('brightens toward a grazing view, which is the bright lunar horizon', () => {
     // Lommel-Seeliger's actual visible consequence: at fixed illumination the
     // surface gets BRIGHTER as the view goes grazing, by enough to cancel the
@@ -308,5 +333,129 @@ describe('the full Hapke BRDF', () => {
       expect(r).to.be.greaterThan(prev)
       prev = r
     }
+  })
+})
+
+// Everything the DEM cannot describe. LOLA's 5 m grids are interpolated from
+// sparse tracks, so below ~10 m there is no data at all and the foreground is
+// whatever this tile says it is. It shipped once at less than half the roughness
+// of real ground, which read as smooth plaster, so the roughness is measured here
+// rather than eyeballed in the render.
+describe('sub-resolution detail tile', () => {
+  // The size the renderer actually uses. Roughness is only APPROXIMATELY
+  // resolution-invariant — crater coverage is invariant by construction, but a
+  // finer grid resolves more of each bowl's steepest part, so the measured slope
+  // still creeps up with resolution (14.2° at 256, 16.6° at 512, 19.5° at 1024).
+  // Measuring anything other than what ships would therefore be measuring the
+  // wrong number. It costs under 100 ms.
+  const TILE_SIZE = 512
+  const tile = buildDetailSlopeTile(TILE_SIZE)
+  const rms = detailRmsSlope(tile)
+
+  it('stores a true slope, because its heights are in pixel units', () => {
+    // Crater depths are fractions of their own radius IN PIXELS, so
+    // height-per-pixel is dimensionless and needs no unit conversion before being
+    // added to the terrain's gradient. If this stopped holding, every amplitude
+    // below would silently mean something else.
+    expect(rms).to.be.within(0.4, 1.2)
+  })
+
+  it('describes a fixed physical roughness, not a fixed pixel roughness', () => {
+    // Crater coverage goes as count * R^2 / size^2, and radii are fractions of the
+    // tile, so the count must stay FIXED for coverage to be invariant. Quoting
+    // radii in absolute pixels breaks this one way; also scaling the count by area
+    // over-corrects by the same factor the other way. Both have shipped. Halving
+    // the resolution must not halve the roughness.
+    const half = detailRmsSlope(buildDetailSlopeTile(TILE_SIZE / 2))
+    expect(half / rms).to.be.within(0.7, 1.05)
+  })
+
+  it('is rough enough to be regolith once the octaves are applied', () => {
+    // Independent octaves add in quadrature. Mature lunar regolith runs about
+    // 0.26-0.34 RMS slope at meter scale, i.e. 15-19°, and the summed tile has to
+    // land there: too low and the near field is plaster, too high and the ground
+    // is past the angle of repose and reads as gravel.
+    const total = Math.sqrt(
+      DETAIL_OCTAVES.reduce((acc, [, amp]) => acc + (amp * rms) ** 2, 0)
+    )
+    expect(total).to.be.within(0.24, 0.38)
+    const deg = (Math.atan(total) * 180) / Math.PI
+    expect(deg).to.be.within(14, 21)
+  })
+
+  it('is seamless in slope, not just in height', () => {
+    // Every octave is tiled, and a tile that matches in height but not in
+    // gradient shows a crease under grazing light — which is the only light there
+    // is on this world. Wrap-around differencing is what prevents it, so compare
+    // the two edges the wrap has to join.
+    const n = tile.size
+    for (const c of [0, 1, 37, n - 1]) {
+      const left = tile.data[(c * n + 0) * 2]
+      const right = tile.data[(c * n + (n - 1)) * 2]
+      // Not equal — adjacent columns differ — but both must be ordinary interior
+      // values rather than the one-sided garbage a clamped edge would give.
+      expect(Math.abs(left)).to.be.lessThan(rms * 12)
+      expect(Math.abs(right)).to.be.lessThan(rms * 12)
+    }
+  })
+
+  it('has no bias, so the detail cannot tilt the terrain it is added to', () => {
+    // A nonzero mean gradient would be a constant slope summed on top of the real
+    // DEM at four different scales, quietly tipping the whole 16 km patch.
+    let sx = 0
+    let sy = 0
+    for (let i = 0; i < tile.data.length; i += 2) {
+      sx += tile.data[i]
+      sy += tile.data[i + 1]
+    }
+    const n = tile.size * tile.size
+    expect(Math.abs(sx / n)).to.be.lessThan(rms * 0.02)
+    expect(Math.abs(sy / n)).to.be.lessThan(rms * 0.02)
+  })
+
+  describe('value noise', () => {
+    it('is band-limited, so it survives mip-mapping', () => {
+      // The point of replacing white noise. Energy at a real wavelength means a
+      // coarser lattice must be SMOOTHER per pixel; white noise has the same
+      // gradient at every scale, which is why it averaged to flat in the mips and
+      // aliased in the near field.
+      let rand = (() => {
+        let s = 99
+        return () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 0xffffffff)
+      })()
+      const grad = (f: Float32Array, size: number) => {
+        let acc = 0
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const dx = f[y * size + ((x + 1) % size)] - f[y * size + x]
+            acc += dx * dx
+          }
+        }
+        return Math.sqrt(acc / (size * size))
+      }
+      const fine = grad(valueNoise(128, 64, rand), 128)
+      const coarse = grad(valueNoise(128, 8, rand), 128)
+      expect(fine).to.be.greaterThan(coarse * 3)
+    })
+
+    it('wraps, so a tiled octave has no seam', () => {
+      let s = 7
+      const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 0xffffffff)
+      const n = valueNoise(64, 8, rand)
+      // Column 0 continues from column 63: the step across the wrap must be no
+      // larger than a typical interior step.
+      let interior = 0
+      for (let y = 0; y < 64; y++) interior += Math.abs(n[y * 64 + 32] - n[y * 64 + 31])
+      let seam = 0
+      for (let y = 0; y < 64; y++) seam += Math.abs(n[y * 64 + 0] - n[y * 64 + 63])
+      expect(seam).to.be.lessThan(interior * 3 + 1e-9)
+    })
+
+    it('stays inside [-1, 1] so octave amplitudes mean what they say', () => {
+      let s = 3
+      const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 0xffffffff)
+      const n = valueNoise(96, 12, rand)
+      for (let i = 0; i < n.length; i++) expect(Math.abs(n[i])).to.be.at.most(1)
+    })
   })
 })

@@ -33,7 +33,8 @@
 // with the rendered ground by construction.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
-import { REGOLITH_ALBEDO } from '@/lib/lunar-atlas/regolith'
+import { buildDetailSlopeTile } from '@/lib/lunar-atlas/detailTile'
+import { PHASE_REF_DEG, REGOLITH_ALBEDO, hapkeReflectance } from '@/lib/lunar-atlas/regolith'
 import {
   CAP_GRID,
   MAP_X_DIR,
@@ -59,23 +60,39 @@ const CLICK_DRAG_TOLERANCE_PX = 8
 // twice. Same values as lunarEnvironment.ts, for the same reason.
 const REGOLITH_TINT = '#fff8ed'
 
+// What sunlit regolith on flat ground actually radiates, at the phase angle the
+// home framing sits at. Not a tuning value — it is the BRDF evaluated once on
+// the CPU, and it exists so that anything derived from "as bright as the ground"
+// is derived from the ground the shader will actually draw.
+const LIT_GROUND_RADIANCE =
+  SUN_INTENSITY *
+  hapkeReflectance(
+    Math.sin((SUN_LOCAL_ELEV_DEG * Math.PI) / 180),
+    1,
+    (PHASE_REF_DEG * Math.PI) / 180
+  )
+
 // The light left in a lunar shadow, as scene radiance.
 //
-// There is no atmosphere, so nothing fills a shadow except sunlight that
-// already bounced off regolith somewhere nearby. Derived rather than dialled:
-// flat sunlit ground radiates about albedo * sun * mu0 / pi, a shadowed point
-// sees roughly half a hemisphere of that ground, and what it sees gets absorbed
-// by its own albedo on the way back out. It lands near 5% of the lit ground,
-// which is the same order as the 8% the old shadow-catcher pass implied — a
-// useful check that the two derivations agree.
+// There is no atmosphere, so nothing fills a shadow except sunlight that already
+// bounced off regolith nearby: the ground's own radiance, times the fraction of
+// the sky a shadowed point can see ground in, times its own albedo on the way
+// back out. That lands at 6% of the lit ground.
 //
-// Phase 2 replaces this constant with real sky visibility from the horizon map;
-// until then every shadow is equally deep, which is wrong in the direction of
-// being too bright in narrow crevices and too dark under overhangs.
-const SHADOW_BOUNCE_RADIANCE =
-  ((REGOLITH_ALBEDO * SUN_INTENSITY * Math.sin((SUN_LOCAL_ELEV_DEG * Math.PI) / 180)) / Math.PI) *
-  0.5 *
-  REGOLITH_ALBEDO
+// The first version of this multiplied a LAMBERTIAN ground radiance
+// (albedo * sun * mu0 / pi) instead, and came out 4x too high — 24% of the lit
+// ground rather than 6%. That is worth spelling out because it is the same 4x
+// error, from the same substitution, that lunarEnvironment.ts had: at an 85°
+// phase angle the real BRDF returns about a quarter of what a Lambertian surface
+// of the same normal albedo would. And a 24% uniform fill is not a small
+// cosmetic error, it is the "flat ambient pond" this component's own history
+// warns about — it lifts every slope by the same amount, so it flattens the
+// shading contrast that per-pixel normals were added to produce.
+//
+// Phase 2 replaces the constant with real sky visibility from the horizon map;
+// until then every shadow is equally deep, which is too bright in narrow
+// crevices and too dark under overhangs.
+const SHADOW_BOUNCE_RADIANCE = LIT_GROUND_RADIANCE * REGOLITH_ALBEDO * 0.5
 
 // The geometry plus the world offset its vertices are relative to (see
 // buildCapGeometry — the offset must go on the mesh transform, which three
@@ -116,68 +133,15 @@ function toNormalTexture(field: PolarHeightField): THREE.DataTexture {
   return tex
 }
 
-// Tiling regolith detail for close-range terrain, as SLOPES rather than as
-// shading. The height field bottoms out at 10 m/px, so the foreground magnifies
-// it into smooth plaster — this tile supplies the missing sub-10 m structure.
-//
-// It used to bake its own hillshade, from its own private copy of the sun
-// azimuth, which is exactly the kind of thing that cannot survive a sun that
-// moves. Storing the gradient instead means the detail is lit by whatever the
-// real sun is doing, and it composes with the terrain correctly: slopes of
-// superimposed height fields ADD, so the octaves below are summed with the
-// base terrain's gradient before the normal is rebuilt once at the end.
-function makeDetailSlopeTile(size = 512): THREE.DataTexture {
-  // Deterministic LCG so the ground doesn't change between mounts.
-  let s = 12345
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0
-    return s / 0xffffffff
-  }
-
-  // Height field: soft noise + a power-law population of crater bowls with
-  // raised rims, painted with wrap-around so the tile is seamless.
-  const h = new Float32Array(size * size)
-  for (let i = 0; i < h.length; i++) h[i] = (rand() + rand() - 1) * 0.6
-  const nCraters = 900
-  for (let c = 0; c < nCraters; c++) {
-    const cx = rand() * size
-    const cy = rand() * size
-    const R = 2 + Math.pow(rand(), 2.2) * 22 // px — many small, few large
-    const depth = R * (0.12 + rand() * 0.3)
-    const pad = Math.ceil(R * 1.4)
-    for (let y = Math.floor(cy) - pad; y <= Math.floor(cy) + pad; y++) {
-      for (let x = Math.floor(cx) - pad; x <= Math.floor(cx) + pad; x++) {
-        const dx = x - cx
-        const dy = y - cy
-        const r = Math.sqrt(dx * dx + dy * dy) / R
-        if (r >= 1.4) continue
-        const bowl = r < 1 ? -(1 - r * r) : 0.3 * ((1.4 - r) / 0.4)
-        const xi = ((x % size) + size) % size
-        const yi = ((y % size) + size) % size
-        h[yi * size + xi] += bowl * depth
-      }
-    }
-  }
-
-  // Central differences with wrap-around, in units of height per PIXEL. The
-  // shader scales each octave into a real slope; see DETAIL_OCTAVES.
-  const data = new Uint16Array(size * size * 2)
-  for (let y = 0; y < size; y++) {
-    const yp = (y + 1) % size
-    const ym = (y - 1 + size) % size
-    for (let x = 0; x < size; x++) {
-      const xp = (x + 1) % size
-      const xm = (x - 1 + size) % size
-      const gx = (h[y * size + xp] - h[y * size + xm]) * 0.5
-      // Image rows run top-down while the map frame's +Y runs up.
-      const gy = (h[ym * size + x] - h[yp * size + x]) * 0.5
-      const i2 = (y * size + x) * 2
-      data[i2] = THREE.DataUtils.toHalfFloat(gx)
-      data[i2 + 1] = THREE.DataUtils.toHalfFloat(gy)
-    }
-  }
-
-  const tex = new THREE.DataTexture(data, size, size, THREE.RGFormat, THREE.HalfFloatType)
+// The tiling sub-resolution detail, uploaded as slopes. The field itself is
+// generated in lib/lunar-atlas/detailTile.ts, which is where the argument for its
+// contents and the measurement of its roughness live; this only turns it into a
+// texture.
+function toDetailTexture(): THREE.DataTexture {
+  const { size, data } = buildDetailSlopeTile()
+  const half = new Uint16Array(data.length)
+  for (let i = 0; i < data.length; i++) half[i] = THREE.DataUtils.toHalfFloat(data[i])
+  const tex = new THREE.DataTexture(half, size, size, THREE.RGFormat, THREE.HalfFloatType)
   tex.wrapS = THREE.RepeatWrapping
   tex.wrapT = THREE.RepeatWrapping
   tex.magFilter = THREE.LinearFilter
@@ -197,7 +161,7 @@ export default function SouthPoleTerrain({
   const [innerGeo, setInnerGeo] = useState<CapMesh | null>(null)
   const [normalTex, setNormalTex] = useState<THREE.DataTexture | null>(null)
 
-  const detail = useMemo(() => makeDetailSlopeTile(), [])
+  const detail = useMemo(() => toDetailTexture(), [])
   useEffect(() => () => detail.dispose(), [detail])
 
   useEffect(() => {

@@ -32,16 +32,24 @@ export type ShaderPatch = {
 // spans 16 km, so x60 is a 267 m tile carrying 1-12 m craterlets, x250 is 64 m,
 // x800 is 20 m grain, and x6400 is 2.5 m soil texture for ground-level views.
 //
-// The amplitudes are SLOPES, which is what makes them physical rather than
-// arbitrary: a crater bowl of radius R and depth 0.12-0.42 R has wall slopes of
-// order 0.3, so the octaves sum to roughly that and no single octave tips the
-// surface past the angle of repose. They are the one genuinely tuned quantity in
-// the terrain.
+// The amplitudes are SLOPES, and they are solved against a target rather than
+// eyeballed. The tile's own height field measures an RMS gradient of 0.72 (its
+// heights are in pixel units, so that is already dimensionless), and mature lunar
+// regolith runs about 0.26-0.34 RMS at meter scale — 15° to 19°. Weighting the
+// octaves 1 : 1 : 0.7 : 0.5 and scaling to hit 0.30 gives the numbers below;
+// scripts can re-solve them by measuring the tile if the crater population
+// changes.
+//
+// The first version of these was 0.1 / 0.1 / 0.07 / 0.05, which summed to an RMS
+// slope of 0.128 — 7°, less than half of real ground. That is what made the near
+// field read as smooth plaster: the DEM genuinely has no information below ~10 m
+// (LOLA's grids are interpolated from sparse tracks), so if this tile is too
+// shallow there is nothing else to supply foreground texture.
 export const DETAIL_OCTAVES: [number, number][] = [
-  [60, 0.1],
-  [250, 0.1],
-  [800, 0.07],
-  [6400, 0.05],
+  [60, 0.25],
+  [250, 0.25],
+  [800, 0.18],
+  [6400, 0.13],
 ]
 
 // Fade the patch rim into the dark of space, so the 16 km square reads as a
