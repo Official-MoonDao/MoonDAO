@@ -383,12 +383,20 @@ export default function GroundDisturbance({
         if (presence <= MODEL_PRESENCE) return null
         return (
           <mesh key={category} geometry={geometry} raycast={NO_RAYCAST}>
-            {/* UNLIT, like the terrain it stains. The ground here is a baked
-                hillshade on a MeshBasicMaterial (see SouthPoleTerrain), so a
-                lit stain would shade against the sun while the ground under it
-                didn't — going dark on slopes the terrain still renders bright.
-                An albedo change has no business taking light of its own
-                anyway. */}
+            {/* UNLIT, and that premise has now inverted. It was correct while the
+                terrain was a baked hillshade on a MeshBasicMaterial: a lit stain
+                would have shaded against the sun while the ground under it did
+                not. The terrain is lit now (see SouthPoleTerrain), so it is this
+                stain that no longer shades with its own ground — it holds a fixed
+                brightness over a surface that varies, which reads worst in
+                shadow, where an albedo mark cannot be brighter than the soil it
+                is a mark on.
+
+                Left unlit for the moment because the fix is not "make it lit".
+                A stain is an albedo change, and the right shape for it is a
+                MULTIPLY against the ground rather than a surface with a light
+                response of its own — which is a blending change that wants to be
+                judged by eye next to the exposure question in MoonGlobe. */}
             <meshBasicMaterial
               vertexColors
               transparent

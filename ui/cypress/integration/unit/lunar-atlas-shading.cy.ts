@@ -5,25 +5,37 @@
  * the render is derived FROM is arithmetic, and that is what this pins. Two
  * classes of bug are worth a test here.
  *
- * The first is disagreement. The scene's sun is four things at once — a
+ * The first is disagreement. The scene's sun used to be four things at once — a
  * directional light, the hillshade baked into the terrain albedo, the craterlet
- * detail tile's own hillshade, and the regolith the metal reflects. They used
- * to hold private copies of the azimuth, and one copy was already wrong (a
- * map-frame 40° written down as a local bearing, which is really 50°). The
- * round-trip cases below re-derive the local bearing and elevation from
- * SUN_DIR, so the two frames can never again be confused without a red test.
+ * detail tile's own hillshade, and the regolith the metal reflects — and they
+ * held private copies of the azimuth, one of which was already wrong (a
+ * map-frame 40° written down as a local bearing, which is really 50°). Two of
+ * those four are now gone: the terrain evaluates the BRDF against the light
+ * instead of displaying a bake, so there is no baked azimuth left to disagree.
+ * The round-trip cases below still re-derive the local bearing and elevation
+ * from SUN_DIR, because the models place hardware by local bearing and that
+ * confusion is one edit away from returning.
  *
- * The second is the regolith BRDF, where the values matter and are easy to get
- * subtly wrong: the surge has to be exactly neutral at the reference angle or
- * the whole scene's exposure shifts, and it has to stay monotone in phase or
- * the ground brightens as the camera turns AWAY from opposition.
+ * The second is the regolith BRDF itself, where the values matter and are easy
+ * to get subtly wrong: the surge has to be exactly neutral at the reference
+ * angle or the whole scene's exposure shifts, it has to stay monotone in phase
+ * or the ground brightens as the camera turns AWAY from opposition, and now that
+ * the full Hapke law is evaluated per pixel, the law has to reproduce the
+ * Moon's actual albedo and stay bounded at the grazing angles this camera lives
+ * at.
  */
 import { expect } from 'chai'
 import {
+  HG_ASYMMETRY,
   OPPOSITION_B0,
   OPPOSITION_H,
   PHASE_REF_DEG,
   REGOLITH_ALBEDO,
+  SINGLE_SCATTERING_ALBEDO,
+  chandrasekharH,
+  hapkeNormalAlbedo,
+  hapkeReflectance,
+  hgPhase,
   normalizedSurge,
   oppositionSurge,
 } from '../../../lib/lunar-atlas/regolith'
@@ -177,6 +189,124 @@ describe('opposition surge', () => {
     // neutral, so the shot the user lands on is essentially as authored.
     for (let g = 68; g <= 99; g += 1) {
       expect(normalizedSurge(g * DEG)).to.be.closeTo(1, 0.1)
+    }
+  })
+})
+
+describe('single-particle phase function', () => {
+  it('backscatters, which is what regolith does', () => {
+    // The sign convention is the trap. A positive asymmetry parameter in this
+    // form FORWARD scatters, which would darken the ground toward opposition and
+    // brighten it into the sun — the Moon, inverted.
+    expect(HG_ASYMMETRY).to.be.lessThan(0)
+    expect(hgPhase(0)).to.be.greaterThan(hgPhase(Math.PI))
+    expect(hgPhase(0)).to.be.greaterThan(1)
+  })
+
+  it('is normalized over the sphere', () => {
+    // A phase function must integrate to 1 over 4 pi steradians, or it is
+    // inventing or destroying light. Integrated in the polar angle with the
+    // sin(g) measure, which is the only axis it varies along.
+    const steps = 200000
+    let sum = 0
+    for (let i = 0; i < steps; i++) {
+      const g = ((i + 0.5) / steps) * Math.PI
+      sum += hgPhase(g) * Math.sin(g)
+    }
+    sum *= Math.PI / steps / 2 // dg * (2 pi / 4 pi)
+    expect(sum).to.be.closeTo(1, 1e-4)
+  })
+})
+
+describe('multiple scattering (Chandrasekhar H)', () => {
+  it('vanishes when grains never survive a scattering', () => {
+    // w = 0 means every photon is absorbed on first contact, so there is no
+    // multiple scattering and H must be exactly 1 everywhere.
+    for (const mu of [0, 0.1, 0.5, 1]) expect(chandrasekharH(mu, 0)).to.be.closeTo(1, 1e-12)
+  })
+
+  it('only ever adds light, and more of it the brighter the grains', () => {
+    for (const mu of [0.05, 0.3, 0.7, 1]) {
+      expect(chandrasekharH(mu)).to.be.greaterThan(1)
+      expect(chandrasekharH(mu, 0.4)).to.be.greaterThan(chandrasekharH(mu, 0.1))
+    }
+  })
+})
+
+describe('the full Hapke BRDF', () => {
+  it('reproduces the Moon s normal albedo from its single scattering albedo', () => {
+    // The load-bearing calibration of the whole surface. w is not a free knob:
+    // it is solved so that the BRDF returns REGOLITH_ALBEDO looking straight
+    // down at zero phase. If REGOLITH_ALBEDO is ever retuned and w is not
+    // re-solved, the ground silently stops being as dark as the Moon.
+    expect(hapkeNormalAlbedo()).to.be.closeTo(REGOLITH_ALBEDO, 1e-4)
+    expect(SINGLE_SCATTERING_ALBEDO).to.be.within(0.05, 0.5)
+  })
+
+  it('is dark, because w is not the albedo', () => {
+    // Sanity on the distinction that is easiest to get wrong: the single
+    // scattering albedo is ~0.19 while the surface's normal albedo is 0.12. Wire
+    // REGOLITH_ALBEDO in as w and the ground comes out too dark by a third.
+    expect(SINGLE_SCATTERING_ALBEDO).to.be.greaterThan(REGOLITH_ALBEDO)
+  })
+
+  it('returns nothing for geometry facing away from the sun or the eye', () => {
+    expect(hapkeReflectance(-0.1, 0.5, 0)).to.equal(0)
+    expect(hapkeReflectance(0.5, -0.1, 0)).to.equal(0)
+    expect(hapkeReflectance(0, 0.5, 0)).to.equal(0)
+  })
+
+  it('stays bounded at grazing angles, unlike the correction factor it replaced', () => {
+    // This is the whole reason the terrain can be lit directly instead of having
+    // Lommel-Seeliger patched onto a Lambertian bake. As a correction the term
+    // goes as 1/(mu0 + mu) and runs away when both cosines vanish; in the real
+    // BRDF it appears as mu0/(mu0 + mu), which cannot exceed 1. Sweep right into
+    // the corner where the old formulation exploded.
+    let worst = 0
+    for (const mu0 of [1e-6, 1e-4, 0.01, 0.036, 0.5, 1]) {
+      for (const mu of [1e-6, 1e-4, 0.01, 0.05, 0.5, 1]) {
+        for (const gd of [0, 1, 45, 85, 120, 179]) {
+          const r = hapkeReflectance(mu0, mu, gd * DEG)
+          expect(Number.isFinite(r)).to.equal(true)
+          expect(r).to.be.greaterThan(-1e-12)
+          worst = Math.max(worst, r)
+        }
+      }
+    }
+    // Bounded by (w / 4 pi) * 1 * [(1 + B0) p(0) + H(1) - 1], about 0.075.
+    expect(worst).to.be.lessThan(0.1)
+  })
+
+  it('brightens monotonically toward opposition', () => {
+    // Both view-dependent terms — the surge and the backscattering phase
+    // function — grow toward zero phase, so the sum has to as well. If this ever
+    // fails the ground gets brighter as the camera turns away from the sun.
+    for (const [mu0, mu] of [
+      [0.7, 0.7],
+      [0.036, 0.5],
+      [1, 0.05],
+    ]) {
+      let prev = Infinity
+      for (let gd = 0; gd <= 179; gd += 1) {
+        const r = hapkeReflectance(mu0, mu, gd * DEG)
+        expect(r).to.be.lessThan(prev)
+        prev = r
+      }
+    }
+  })
+
+  it('brightens toward a grazing view, which is the bright lunar horizon', () => {
+    // Lommel-Seeliger's actual visible consequence: at fixed illumination the
+    // surface gets BRIGHTER as the view goes grazing, by enough to cancel the
+    // foreshortening that would darken a Lambertian limb. It is why the horizon
+    // reads as a band rather than fading out, and it is the one thing a
+    // Lambertian terrain can never look right without.
+    const mu0 = Math.sin(44.46 * DEG)
+    let prev = 0
+    for (const mu of [1, 0.8, 0.6, 0.4, 0.2, 0.1, 0.05, 0.02]) {
+      const r = hapkeReflectance(mu0, mu, 45 * DEG)
+      expect(r).to.be.greaterThan(prev)
+      prev = r
     }
   })
 })

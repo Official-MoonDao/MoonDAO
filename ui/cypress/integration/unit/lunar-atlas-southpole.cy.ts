@@ -20,7 +20,10 @@ import {
   CAP_CENTER_Y_M,
   CAP_EXTENT_M,
   HEIGHT_EXAGGERATION,
+  MAP_X_DIR,
+  MAP_Y_DIR,
   buildCapGeometry,
+  buildNormalField,
   capCenterLatLon,
   capOffsetLatLon,
   capRadiusAt,
@@ -343,6 +346,133 @@ describe('moonbase connecting-ridge terrain', () => {
       const stepM =
         Math.pow(2, exp - 23) * (MOON_RADIUS_M / GLOBE_RADIUS)
       expect(stepM).to.be.lessThan(0.005)
+    })
+  })
+
+  // The normal field is what actually lights the ground: the mesh resolves
+  // 15.6 m, the relief lives at 10 m, so shading is taken per pixel from these
+  // normals instead of from the geometry. Which means a sign error here does not
+  // show up as a wrong slope somewhere, it shows up as the entire landscape lit
+  // from the wrong side — and under a grazing polar sun, as a landscape lit from
+  // inside the hill. Hence the analytic ramps below.
+  describe('surface normals', () => {
+    const SIZE = 64
+    const SPACING_M = CAP_EXTENT_M / SIZE
+    // A ramp of `perPx` raw counts per pixel, over a 0..1000 m range.
+    const rampSlope = (perPx: number) =>
+      ((perPx * 1000) / 65535 / SPACING_M) * HEIGHT_EXAGGERATION
+
+    const nAt = (f: ReturnType<typeof buildNormalField>, x: number, y: number) => ({
+      nx: f.data[(y * f.size + x) * 2],
+      ny: f.data[(y * f.size + x) * 2 + 1],
+    })
+
+    describe('the map tangent frame the normals live in', () => {
+      it('is orthonormal', () => {
+        expect(Math.hypot(...MAP_X_DIR)).to.be.closeTo(1, 1e-9)
+        expect(Math.hypot(...MAP_Y_DIR)).to.be.closeTo(1, 1e-9)
+        const dot =
+          MAP_X_DIR[0] * MAP_Y_DIR[0] + MAP_X_DIR[1] * MAP_Y_DIR[1] + MAP_X_DIR[2] * MAP_Y_DIR[2]
+        expect(Math.abs(dot)).to.be.lessThan(1e-9)
+      })
+
+      it('is right-handed about the pole s outward vertical', () => {
+        // X cross Y must be UP, not down. Get this backwards and every slope in
+        // the scene is mirrored, which looks plausible until it is compared to
+        // the DEM.
+        const cross: [number, number, number] = [
+          MAP_X_DIR[1] * MAP_Y_DIR[2] - MAP_X_DIR[2] * MAP_Y_DIR[1],
+          MAP_X_DIR[2] * MAP_Y_DIR[0] - MAP_X_DIR[0] * MAP_Y_DIR[2],
+          MAP_X_DIR[0] * MAP_Y_DIR[1] - MAP_X_DIR[1] * MAP_Y_DIR[0],
+        ]
+        // The south pole's outward direction under geo.ts' convention.
+        const poleUp = [0, -1, 0]
+        for (let i = 0; i < 3; i++) expect(cross[i]).to.be.closeTo(poleUp[i], 1e-9)
+      })
+    })
+
+    it('leaves flat ground pointing straight up', () => {
+      const f = buildNormalField(makeField(SIZE, 0, 1000, () => 12345))
+      for (let i = 0; i < f.data.length; i++) expect(f.data[i]).to.equal(0)
+    })
+
+    it('tilts away from uphill on a ramp rising toward +X (map east)', () => {
+      const perPx = 700
+      const f = buildNormalField(makeField(SIZE, 0, 1000, (x) => x * perPx))
+      const slope = rampSlope(perPx)
+      const expectNx = -slope / Math.sqrt(slope * slope + 1)
+      // Interior only: edge columns get a clamped one-sided difference.
+      for (const x of [1, 17, 32, SIZE - 2]) {
+        const { nx, ny } = nAt(f, x, SIZE / 2)
+        expect(nx).to.be.closeTo(expectNx, 1e-6)
+        expect(ny).to.be.closeTo(0, 1e-9)
+        // The whole point of the sign: uphill is +X, so the normal leans -X.
+        expect(nx).to.be.lessThan(0)
+      }
+    })
+
+    it('tilts away from uphill on a ramp rising toward +Y (map north)', () => {
+      // Row 0 is the +Y edge of the patch, so raw values that GROW with the row
+      // index describe ground that FALLS toward +Y. This is the axis flip that a
+      // hillshade bakes in silently and a per-pixel normal cannot.
+      const perPx = 700
+      const f = buildNormalField(makeField(SIZE, 0, 1000, (_x, y) => y * perPx))
+      const slope = rampSlope(perPx)
+      const expectNy = slope / Math.sqrt(slope * slope + 1)
+      for (const y of [1, 17, 32, SIZE - 2]) {
+        const { nx, ny } = nAt(f, SIZE / 2, y)
+        expect(ny).to.be.closeTo(expectNy, 1e-6)
+        expect(nx).to.be.closeTo(0, 1e-9)
+        expect(ny).to.be.greaterThan(0)
+      }
+    })
+
+    it('never stores a normal the shader could not reconstruct', () => {
+      // The vertical component is not stored; it is rebuilt as
+      // sqrt(1 - nx^2 - ny^2), which needs nx^2 + ny^2 < 1 at every texel. A
+      // height field can only ever produce that, so a violation means the
+      // normalization is wrong rather than the terrain being steep.
+      const f = buildNormalField(
+        makeField(SIZE, -523.2, 1959.5, (x, y) =>
+          Math.round(32768 + 32000 * Math.sin(x * 0.7) * Math.cos(y * 0.9))
+        )
+      )
+      for (let i = 0; i < f.data.length; i += 2) {
+        const nx = f.data[i]
+        const ny = f.data[i + 1]
+        expect(Number.isFinite(nx)).to.equal(true)
+        expect(Number.isFinite(ny)).to.equal(true)
+        expect(nx * nx + ny * ny).to.be.lessThan(1)
+      }
+    })
+
+    it('agrees with a finite difference of the height sampler that seats models', () => {
+      // The normals shade the ground and sampleFieldMeters decides what height
+      // things stand at. If they disagree, hardware is lit as though it were on
+      // a slope it is not standing on.
+      const field = makeField(SIZE, -523.2, 1959.5, (x, y) =>
+        Math.round(32768 + 20000 * Math.sin(x * 0.31) * Math.cos(y * 0.17))
+      )
+      const f = buildNormalField(field)
+      const dS = 1 / SIZE // one texel in normalized patch coords
+      for (const [x, y] of [
+        [16, 16],
+        [32, 20],
+        [40, 45],
+      ]) {
+        const s = (x + 0.5) / SIZE - 0.5
+        const t = 0.5 - (y + 0.5) / SIZE
+        const dhdx =
+          (sampleFieldMeters(field, s + dS, t) - sampleFieldMeters(field, s - dS, t)) /
+          (2 * dS * CAP_EXTENT_M)
+        const dhdy =
+          (sampleFieldMeters(field, s, t + dS) - sampleFieldMeters(field, s, t - dS)) /
+          (2 * dS * CAP_EXTENT_M)
+        const inv = 1 / Math.sqrt(dhdx * dhdx + dhdy * dhdy + 1)
+        const { nx, ny } = nAt(f, x, y)
+        expect(nx).to.be.closeTo(-dhdx * inv, 1e-6)
+        expect(ny).to.be.closeTo(-dhdy * inv, 1e-6)
+      }
     })
   })
 })

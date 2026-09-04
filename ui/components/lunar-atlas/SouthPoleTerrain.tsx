@@ -1,34 +1,81 @@
-// Photorealistic Connecting Ridge terrain for Moon Base Zero.
+// Physically lit Connecting Ridge terrain for Moon Base Zero.
 //
 // A single 16x16 km patch of the Shackleton-de Gerlache connecting ridge
-// (PGDA Site01 LOLA DEM, 5 m/px) — no whole Moon, no polar cap. Rendered in
-// the cartographic style of LROC quickmaps: ALL terrain shading is baked
-// into the albedo as hillshade (the DEM's full 5 m/px relief as per-pixel
-// light), and the terrain material is UNLIT. Dynamic-lighting the coarser
-// displaced mesh on top of the bake made every away-facing slope collapse
-// into a flat ambient-gray "pond" — unlit terrain renders exactly the crisp
-// baked map, from every camera angle. Only the 3D models and markers are
-// dynamically lit (their sun matches the baked hillshade azimuth).
+// (PGDA Site01 LOLA DEM, 5 m/px). The ground is shaded by evaluating the
+// regolith BRDF per pixel (see lib/lunar-atlas/regolith.ts) against the real
+// sun, rather than by displaying a hillshade that was baked at one fixed sun.
 //
-// Geometry positions come from the same decoded height field the CPU sampler
-// (useTerrainSampler) reads, so everything seated on the terrain agrees with
-// the rendered ground by construction.
+// WHY THIS IS NOT THE BAKED-HILLSHADE SCENE ANY MORE
+//
+// It used to be, and the argument for the bake was that dynamic-lighting the
+// displaced mesh made every away-facing slope collapse into a flat ambient-grey
+// "pond". That was a real failure, but it was misdiagnosed as a lighting
+// problem when it was a NORMALS problem: the mesh resolves 15.6 m, the relief
+// lives at 5-10 m, so the mesh's own normals had almost none of the terrain in
+// them and the bake was carrying all of it as painted light.
+//
+// The fix is to keep the relief but move it off the geometry. Normals come from
+// a texture built at the full height-field resolution (buildNormalField in
+// southpole.ts), so shading is per pixel and completely independent of how
+// coarse the mesh is. That matters more than it sounds: reaching 5 m/px in
+// GEOMETRY would cost 20.5 M triangles and ~550 MB of vertex buffers, which no
+// browser tab can hold, while the same relief as a normal map is a few MB and
+// leaves the mesh free to drop to CAP_GRID/2 on a phone without changing how
+// the ground is lit at all.
+//
+// What this buys beyond honesty: the sun can move (a bake cannot), shadows are
+// real rather than painted, and the terrain no longer needs a second
+// shadow-catching pass over the same 2.1 M triangles — a lit material receives
+// shadows by itself.
+//
+// Geometry positions still come from the same decoded height field the CPU
+// sampler (useTerrainSampler) reads, so everything seated on the terrain agrees
+// with the rendered ground by construction.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { REGOLITH_ALBEDO } from '@/lib/lunar-atlas/regolith'
 import {
-  OPPOSITION_B0,
-  OPPOSITION_H,
-  PHASE_REF_DEG,
-  oppositionSurge,
-} from '@/lib/lunar-atlas/regolith'
-import { CAP_GRID, buildCapGeometry, type PolarHeightField } from '@/lib/lunar-atlas/southpole'
-import { SUN_DIR, SUN_MAP_AZ_DEG } from '@/lib/lunar-atlas/sun'
-import { SP_ALBEDO_MAP } from '@/lib/lunar-atlas/textures'
+  CAP_GRID,
+  MAP_X_DIR,
+  buildCapGeometry,
+  buildNormalField,
+  type PolarHeightField,
+} from '@/lib/lunar-atlas/southpole'
+import {
+  TERRAIN_FRAGMENT_PATCHES,
+  TERRAIN_VERTEX_PATCHES,
+  applyShaderPatches,
+} from '@/lib/lunar-atlas/terrainShader'
+import { SUN_INTENSITY, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import { loadInnerField } from './useTerrainSampler'
 
 // A pointer that travels farther than this between down and up is a drag
 // (camera tumble), not a click.
 const CLICK_DRAG_TOLERANCE_PX = 8
+
+// Regolith is very slightly warm and almost perfectly neutral. This is a TINT,
+// not a brightness: how dark the ground is comes from the BRDF's single
+// scattering albedo, so this must stay near white or the surface gets darkened
+// twice. Same values as lunarEnvironment.ts, for the same reason.
+const REGOLITH_TINT = '#fff8ed'
+
+// The light left in a lunar shadow, as scene radiance.
+//
+// There is no atmosphere, so nothing fills a shadow except sunlight that
+// already bounced off regolith somewhere nearby. Derived rather than dialled:
+// flat sunlit ground radiates about albedo * sun * mu0 / pi, a shadowed point
+// sees roughly half a hemisphere of that ground, and what it sees gets absorbed
+// by its own albedo on the way back out. It lands near 5% of the lit ground,
+// which is the same order as the 8% the old shadow-catcher pass implied — a
+// useful check that the two derivations agree.
+//
+// Phase 2 replaces this constant with real sky visibility from the horizon map;
+// until then every shadow is equally deep, which is wrong in the direction of
+// being too bright in narrow crevices and too dark under overhangs.
+const SHADOW_BOUNCE_RADIANCE =
+  ((REGOLITH_ALBEDO * SUN_INTENSITY * Math.sin((SUN_LOCAL_ELEV_DEG * Math.PI) / 180)) / Math.PI) *
+  0.5 *
+  REGOLITH_ALBEDO
 
 // The geometry plus the world offset its vertices are relative to (see
 // buildCapGeometry — the offset must go on the mesh transform, which three
@@ -41,38 +88,45 @@ function toBufferGeometry(field: PolarHeightField, grid: number): CapMesh {
   geo.setAttribute('position', new THREE.BufferAttribute(cap.positions, 3))
   geo.setAttribute('uv', new THREE.BufferAttribute(cap.uvs, 2))
   geo.setIndex(new THREE.BufferAttribute(cap.indices, 1))
+  // These vertex normals no longer light anything — the shader replaces `normal`
+  // with the per-pixel map-frame normal. They are still needed because three's
+  // shadow plumbing offsets its occlusion lookup along the interpolated vertex
+  // normal (shadowNormalBias), and because a missing `normal` attribute makes
+  // that offset NaN.
   geo.computeVertexNormals()
   return { geometry: geo, origin: new THREE.Vector3(...cap.origin) }
 }
 
-function useTexture(url: string, srgb: boolean): THREE.Texture | null {
-  const [tex, setTex] = useState<THREE.Texture | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    new THREE.TextureLoader().load(url, (t) => {
-      if (cancelled) {
-        t.dispose()
-        return
-      }
-      t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace
-      t.anisotropy = 16
-      setTex(t)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [url, srgb])
-  useEffect(() => () => tex?.dispose(), [tex])
+// The terrain's own normals, at the height field's full resolution, as a
+// two-channel float texture. Half float rather than bytes on purpose: 8 bits
+// across [-1, 1] quantises the normal to about 0.45°, and once the sun sits at
+// its true polar elevation of ~2° a 0.45° error is a tenth of the incidence
+// cosine. Linear filtering is safe here in a way it would NOT be on the packed
+// height PNG, whose high/low byte split cannot be interpolated at all.
+function toNormalTexture(field: PolarHeightField): THREE.DataTexture {
+  const { size, data } = buildNormalField(field)
+  const half = new Uint16Array(data.length)
+  for (let i = 0; i < data.length; i++) half[i] = THREE.DataUtils.toHalfFloat(data[i])
+  const tex = new THREE.DataTexture(half, size, size, THREE.RGFormat, THREE.HalfFloatType)
+  tex.magFilter = THREE.LinearFilter
+  tex.minFilter = THREE.LinearMipmapLinearFilter
+  tex.generateMipmaps = true
+  tex.anisotropy = 16
+  tex.needsUpdate = true
   return tex
 }
 
-// Tiling regolith detail for close-range terrain. The albedo bottoms out at
-// 2.5 m/px, so the foreground magnifies it into fuzz — this tile multiplies
-// in the missing structure. Plain white noise just reads as MORE fuzz;
-// instead the tile is a hillshaded field of small crater bowls + grain, so
-// magnified ground has the same cratered character as the baked albedo. It
-// is lit from the same azimuth as the baked sun so shading directions agree.
-function makeDetailTile(size = 512): THREE.DataTexture {
+// Tiling regolith detail for close-range terrain, as SLOPES rather than as
+// shading. The height field bottoms out at 10 m/px, so the foreground magnifies
+// it into smooth plaster — this tile supplies the missing sub-10 m structure.
+//
+// It used to bake its own hillshade, from its own private copy of the sun
+// azimuth, which is exactly the kind of thing that cannot survive a sun that
+// moves. Storing the gradient instead means the detail is lit by whatever the
+// real sun is doing, and it composes with the terrain correctly: slopes of
+// superimposed height fields ADD, so the octaves below are summed with the
+// base terrain's gradient before the normal is rebuilt once at the end.
+function makeDetailSlopeTile(size = 512): THREE.DataTexture {
   // Deterministic LCG so the ground doesn't change between mounts.
   let s = 12345
   const rand = () => {
@@ -105,16 +159,9 @@ function makeDetailTile(size = 512): THREE.DataTexture {
     }
   }
 
-  // Hillshade with a wrapping gradient. Light azimuth is the bake's own
-  // map-frame azimuth (SUN_MAP_AZ_DEG), which this file used to repeat as a
-  // bare 40 of its own; elevation is kept moderate so bowls shade without
-  // going black. Flat ground maps to 128 so the multiply blend is neutral.
-  const az = (SUN_MAP_AZ_DEG * Math.PI) / 180
-  const el = (35 * Math.PI) / 180
-  const lx = Math.sin(az) * Math.cos(el)
-  const ly = Math.cos(az) * Math.cos(el)
-  const lz = Math.sin(el)
-  const data = new Uint8Array(size * size)
+  // Central differences with wrap-around, in units of height per PIXEL. The
+  // shader scales each octave into a real slope; see DETAIL_OCTAVES.
+  const data = new Uint16Array(size * size * 2)
   for (let y = 0; y < size; y++) {
     const yp = (y + 1) % size
     const ym = (y - 1 + size) % size
@@ -122,18 +169,15 @@ function makeDetailTile(size = 512): THREE.DataTexture {
       const xp = (x + 1) % size
       const xm = (x - 1 + size) % size
       const gx = (h[y * size + xp] - h[y * size + xm]) * 0.5
-      // Rows run top-down while the map frame's +y runs up — flip so the
-      // tile's lit sides match the baked albedo's.
+      // Image rows run top-down while the map frame's +Y runs up.
       const gy = (h[ym * size + x] - h[yp * size + x]) * 0.5
-      const inv = 1 / Math.sqrt(gx * gx + gy * gy + 1)
-      const shade = Math.max((-gx * lx + gy * ly + lz) * inv, 0)
-      // Flat ground (shade = lz) -> 0.5; softened with a mild gamma.
-      const rel = Math.pow(shade / lz, 0.8) * 0.5
-      data[y * size + x] = Math.max(0, Math.min(255, Math.round(rel * 255)))
+      const i2 = (y * size + x) * 2
+      data[i2] = THREE.DataUtils.toHalfFloat(gx)
+      data[i2 + 1] = THREE.DataUtils.toHalfFloat(gy)
     }
   }
 
-  const tex = new THREE.DataTexture(data, size, size, THREE.RedFormat)
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGFormat, THREE.HalfFloatType)
   tex.wrapS = THREE.RepeatWrapping
   tex.wrapT = THREE.RepeatWrapping
   tex.magFilter = THREE.LinearFilter
@@ -151,9 +195,9 @@ export default function SouthPoleTerrain({
   onSurfaceClick?: () => void
 }) {
   const [innerGeo, setInnerGeo] = useState<CapMesh | null>(null)
+  const [normalTex, setNormalTex] = useState<THREE.DataTexture | null>(null)
 
-  const albedo = useTexture(SP_ALBEDO_MAP, true)
-  const detail = useMemo(() => makeDetailTile(), [])
+  const detail = useMemo(() => makeDetailSlopeTile(), [])
   useEffect(() => () => detail.dispose(), [detail])
 
   useEffect(() => {
@@ -161,6 +205,7 @@ export default function SouthPoleTerrain({
     loadInnerField().then((field) => {
       if (cancelled) return
       setInnerGeo(toBufferGeometry(field, CAP_GRID))
+      setNormalTex(toNormalTexture(field))
     })
     return () => {
       cancelled = true
@@ -173,153 +218,68 @@ export default function SouthPoleTerrain({
     },
     [innerGeo]
   )
+  useEffect(() => () => normalTex?.dispose(), [normalTex])
 
   const notified = useRef(false)
   useEffect(() => {
-    if (innerGeo && albedo && !notified.current) {
+    if (innerGeo && normalTex && !notified.current) {
       notified.current = true
       onReady?.()
     }
-  }, [innerGeo, albedo, onReady])
+  }, [innerGeo, normalTex, onReady])
 
-  // Multiplies octaves of the tiled craterlet shading into the cap's diffuse
-  // so magnified close-ups keep structure, then applies the one piece of
-  // regolith shading a bake can never hold (see the surge block below). Mean
-  // of the detail blend is ~1.0 (flat tile = 0.5, blend is 0.76 + 0.48·dn), so
-  // the overall tone is preserved.
   const onBeforeCompile = useMemo(
     () => (shader: THREE.WebGLProgramParametersWithUniforms) => {
-      shader.uniforms.detailMap = { value: detail }
-      shader.uniforms.sunDirection = {
-        value: new THREE.Vector3(...SUN_DIR),
-      }
-      shader.uniforms.surgeRef = {
-        value: oppositionSurge((PHASE_REF_DEG * Math.PI) / 180),
-      }
+      if (!normalTex) return
+      shader.uniforms.terrainNormalMap = { value: normalTex }
+      shader.uniforms.detailSlopeMap = { value: detail }
+      shader.uniforms.mapXDir = { value: new THREE.Vector3(...MAP_X_DIR) }
+      shader.uniforms.bounceRadiance = { value: SHADOW_BOUNCE_RADIANCE }
 
-      // The phase angle has to be computed in VIEW space, not world space.
-      // World positions on this mesh are magnitude ~2 in float32, where a step
-      // is 21 cm (the precision argument in southpole.ts' buildCapGeometry) —
-      // eight metres from the eye that is a 1.5° error in the view direction,
-      // and the surge would boil as the camera moved. The geometry is stored
-      // camera-relative with its offset on the mesh transform precisely so
-      // that modelViewMatrix · position stays exact, so mvPosition is the one
-      // place in this shader where the view vector can be trusted.
-      shader.vertexShader = shader.vertexShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vSurgeViewPos;')
-        .replace(
-          '#include <project_vertex>',
-          '#include <project_vertex>\nvSurgeViewPos = mvPosition.xyz;'
-        )
-
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
-          '#include <map_pars_fragment>',
-          `#include <map_pars_fragment>
-          uniform sampler2D detailMap;
-          uniform vec3 sunDirection;
-          uniform float surgeRef;
-          varying vec3 vSurgeViewPos;`
-        )
-        .replace(
-          '#include <map_fragment>',
-          `#include <map_fragment>
-          {
-            // The UV square spans 16 km. Tile repeats: x60 = 267 m tiles
-            // (craterlets ~1-12 m, the near-field structure the 2.5 m/px
-            // albedo can't carry), x250 = 64 m (0.3-3 m craterlets), x800 =
-            // 20 m grain, x6400 = 2.5 m soil sparkle for ground-level views.
-            float dn = texture2D(detailMap, vMapUv * 60.0).r * 0.3
-                     + texture2D(detailMap, vMapUv * 250.0).r * 0.3
-                     + texture2D(detailMap, vMapUv * 800.0).r * 0.2
-                     + texture2D(detailMap, vMapUv * 6400.0).r * 0.2;
-            diffuseColor.rgb *= 0.76 + 0.48 * dn;
-            // Radial fade to black: dissolve the square patch's rim into the
-            // dark of space so the terrain reads as an expansive field
-            // receding into shadow, not a hard-edged floating chunk. rr is
-            // 0 at the ridge, 1 at the edge midpoint, ~1.41 at the corners —
-            // a long, soft gradient turns the slab into a fading disc.
-            float rr = length(vMapUv - 0.5) * 2.0;
-            diffuseColor.rgb *= 1.0 - smoothstep(0.82, 1.34, rr);
-
-            // The opposition surge — the one thing about regolith that a baked
-            // hillshade fundamentally cannot carry, because a bake has no
-            // viewer and this term depends only on where the viewer is.
-            //
-            // Regolith is a deep pile of loose grains, so it is full of tiny
-            // shadows, and every one of them hides behind the grain that casts
-            // it. Move the eye toward the sun and those shadows disappear
-            // behind their own grains, so the ground brightens sharply: it is
-            // why a full moon is far more than twice a half moon, and why an
-            // Apollo crewman photographed a halo around the shadow of his own
-            // head. Hapke's shadow-hiding term, B(g) = 1 + B0/(1 + tan(g/2)/h),
-            // with g the sun-surface-viewer phase angle (see regolith.ts).
-            //
-            // Divided through by its value at PHASE_REF_DEG so this is a
-            // RELATIVE effect. B is never below 1, so applying it raw would
-            // brighten the whole ridge and throw away the exposure the scene
-            // is tuned around; normalized at 85° — the mean phase angle across
-            // the home framing — the load-in shot is left within 2% of where it
-            // was and the surge only appears once the camera tumbles down-sun,
-            // which is exactly where it belongs. The clamp is a backstop for
-            // the last fraction of a degree around exact opposition, where the
-            // real surge keeps climbing and a bloom threshold is waiting.
-            vec3 toEye = normalize(-vSurgeViewPos);
-            vec3 toSun = normalize((viewMatrix * vec4(sunDirection, 0.0)).xyz);
-            float g = acos(clamp(dot(toSun, toEye), -1.0, 1.0));
-            float surge = 1.0 + ${OPPOSITION_B0.toFixed(3)}
-              / (1.0 + tan(0.5 * g) / ${OPPOSITION_H.toFixed(3)});
-            diffuseColor.rgb *= clamp(surge / surgeRef, 0.85, 1.75);
-          }`
-        )
+      // The patches themselves, and the reasoning for each anchor, live in
+      // lib/lunar-atlas/terrainShader.ts — they are string surgery on shader
+      // source three owns, so they are unit-tested against three's real
+      // ShaderLib rather than trusted.
+      shader.vertexShader = applyShaderPatches(shader.vertexShader, TERRAIN_VERTEX_PATCHES)
+      shader.fragmentShader = applyShaderPatches(shader.fragmentShader, TERRAIN_FRAGMENT_PATCHES)
     },
-    [detail]
+    [normalTex, detail]
   )
 
   const handleClick = (e: any) => {
     if (e.delta <= CLICK_DRAG_TOLERANCE_PX) onSurfaceClick?.()
   }
 
-  if (!innerGeo || !albedo) return null
+  if (!innerGeo || !normalTex) return null
 
   return (
-    <group>
-      {/* Unlit: the albedo IS the final shaded image (see header comment). */}
-      <mesh geometry={innerGeo.geometry} position={innerGeo.origin} onClick={handleClick}>
-        <meshBasicMaterial
-          map={albedo}
-          onBeforeCompile={onBeforeCompile}
-          // onBeforeCompile changes don't retrigger compilation on their own.
-          customProgramCacheKey={() => 'sp-inner-detail-v3-surge'}
-        />
-      </mesh>
-      {/* Shadow catcher. An unlit material cannot receive shadows, so the
-          installations' cast shadows are drawn as a second, transparent pass
-          over the SAME geometry — ShadowMaterial renders nothing except where
-          something shadows it. Without this the hardware had no contact
-          shadow at all and read as pasted onto a photo.
+    <mesh
+      geometry={innerGeo.geometry}
+      position={innerGeo.origin}
+      onClick={handleClick}
+      receiveShadow
+    >
+      {/* Lambert only for its light loop and its shadow plumbing — RE_Direct is
+          replaced above, so nothing Lambertian survives into the image. The
+          colour is a TINT and must stay near white: the ground's darkness comes
+          from the BRDF's single scattering albedo, and a dark colour here would
+          apply it a second time.
 
-          The terrain deliberately does NOT cast: its own relief shadows are
-          already baked into the albedo, so casting them again would
-          double-darken every slope. */}
-      <mesh geometry={innerGeo.geometry} position={innerGeo.origin} receiveShadow>
-        <shadowMaterial
-          transparent
-          // What is left in a lunar shadow is regolith bounce and nothing else
-          // — about 4% of the sun, computed from albedo 0.12 at a 44.5° solar
-          // incidence. Hence 0.92 rather than 0.88: shadows here are deeper
-          // than a terrestrial eye expects, because there is no sky to fill
-          // them. The residual was also the wrong COLOUR. It was a blue-black,
-          // which is the colour of a shadow on Earth, where the fill really is
-          // blue sky; the only thing lighting a lunar shadow is warm-grey soil
-          // a few metres away, so the floor it settles onto is warm.
-          opacity={0.92}
-          color="#0d0a06"
-          depthWrite={false}
-          polygonOffset
-          polygonOffsetFactor={-1}
-        />
-      </mesh>
-    </group>
+          USE_UV is forced because this material has no `map`. Without a texture
+          bound to the uv channel three never declares vUv, and the normal and
+          detail lookups above would not compile.
+
+          The terrain deliberately does NOT cast. Its own relief is in the normal
+          map, not the geometry, so a shadow map rendered from this mesh would
+          only know about the 15.6 m mesh and would fight the per-pixel normals.
+          Terrain self-shadowing is Phase 2's horizon map. */}
+      <meshLambertMaterial
+        color={REGOLITH_TINT}
+        defines={{ USE_UV: '' }}
+        onBeforeCompile={onBeforeCompile}
+        // onBeforeCompile changes don't retrigger compilation on their own.
+        customProgramCacheKey={() => 'sp-hapke-v1'}
+      />
+    </mesh>
   )
 }
