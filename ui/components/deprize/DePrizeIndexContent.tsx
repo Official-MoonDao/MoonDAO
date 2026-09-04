@@ -39,12 +39,13 @@ export default function DePrizeIndexContent() {
   const [spendableEth, setSpendableEth] = useState(0)
   const [positionsMap, setPositionsMap] = useState<Record<string, boolean>>({})
 
-  // Every capability race Moon Base Zero tracks — this is the single source of
-  // truth for what shows up here, so the index can never drift into showing
-  // unrelated on-chain registry fixtures instead of the real competitions.
+  // Capability races Moon Base Zero tracks, plus any other market-bearing
+  // shared goal (Touchdown is a live landing prize, not the lander tech-tree
+  // site). The index stays atlas-sourced so it cannot drift into on-chain
+  // registry fixtures.
   const races = useMemo(() => {
     return SEED_ATLAS.sharedGoals
-      .filter((g) => !!g.category)
+      .filter((g) => !!g.category || !!g.market)
       .map((goal) => ({
         goal,
         competitors: goal.projectIds
@@ -60,7 +61,9 @@ export default function DePrizeIndexContent() {
 
   const categories = useMemo(() => {
     const set = new Set<ProjectType>()
-    races.forEach((r) => set.add(r.goal.category as ProjectType))
+    races.forEach((r) => {
+      if (r.goal.category) set.add(r.goal.category)
+    })
     return Array.from(set).sort((a, b) =>
       PROJECT_TYPE_LABEL[a].localeCompare(PROJECT_TYPE_LABEL[b])
     )

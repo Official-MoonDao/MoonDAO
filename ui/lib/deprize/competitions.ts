@@ -240,6 +240,37 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
+    // Sepolia twin of Arbitrum #1. Unbound featured prize — roster is Team
+    // NFTs [2, 6, 7, 8]. Oracle at prepareCondition = deployer 0x3c5e…E011.
+    20: {
+      title: 'The Moon Is A Harsh Mistress',
+      tagline:
+        'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
+      questionId: '0xe6430ff8d51a6e5389d1c23cfa5dcab4682407f866a208ef3ea60120b271d5cf',
+    },
+    // Touchdown — next successful lunar landing (robotic/commercial).
+    // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.
+    // Synthetic JB 3003; LMSR 0xA669CC2dAf08EED1f3F2af93C720DB884B2899dC.
+    21: {
+      title: 'Touchdown',
+      tagline:
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
+      questionId: '0x18f9e4f8e5b291580b00bd23299194b169a66c3513229c5e16240e05d8520f17',
+      sharedGoalId: 'shared-next-landing',
+      raceLabel: 'Next lunar landing',
+      outcomes: [
+        { projectId: 'astrobotic-griffin', teamId: 601 },
+        { projectId: 'im-nova-c', teamId: 602 },
+        { projectId: 'firefly-blue-ghost', teamId: 603 },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604 },
+        { projectId: 'cnsa-change-7', teamId: 605 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
   },
 }
 
@@ -255,8 +286,8 @@ export function isKnownDePrizeCompetition(
 /**
  * Live on-chain DePrize to feature at the top of /deprize — the first registered
  * competition on this chain that is NOT bound to a Moon Base Zero race. Today
- * that is Arbitrum #1 (The Moon Is A Harsh Mistress). Race-bound entries stay
- * on their RaceMarketCard; unbound ones have nowhere else to show up.
+ * that is Arbitrum #1 / Sepolia #20 (The Moon Is A Harsh Mistress). Race-bound
+ * entries stay on their RaceMarketCard; unbound ones have nowhere else to show up.
  */
 export function getFeaturedLiveDePrizeId(chainSlug: string): number | undefined {
   const entries = DEPRIZE_COMPETITIONS[chainSlug]

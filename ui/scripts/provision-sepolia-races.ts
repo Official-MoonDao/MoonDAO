@@ -6,6 +6,7 @@
  *
  *   source ../prediction/.env   # DEPLOYER_PK
  *   yarn tsx --tsconfig tsconfig.json scripts/provision-sepolia-races.ts
+ *   GOAL_ID=shared-next-landing yarn tsx --tsconfig tsconfig.json scripts/provision-sepolia-races.ts
  */
 import { readFileSync, writeFileSync } from 'node:fs'
 import {
@@ -66,6 +67,13 @@ const RACES: {
     teamIds: [521n, 522n, 523n, 524n, 525n, FIELD_TEAM],
     tokenName: 'DePrize Comms',
     tokenSymbol: 'DCOM',
+  },
+  {
+    goalId: 'shared-next-landing',
+    raceLabel: 'Next lunar landing',
+    teamIds: [601n, 602n, 603n, 604n, 605n, FIELD_TEAM],
+    tokenName: 'DePrize Touchdown',
+    tokenSymbol: 'DTCH',
   },
 ]
 
@@ -169,14 +177,30 @@ async function main() {
   const done = loadDone()
   const results = [...done]
 
+  const fees = await publicClient.estimateFeesPerGas()
+  const maxFeePerGas = ((fees.maxFeePerGas ?? 2_000_000_000n) * 3n) / 2n
+  const maxPriorityFeePerGas = (fees.maxPriorityFeePerGas ?? 1_000_000_000n) * 2n
+
   const send = async (params: Parameters<typeof wallet.writeContract>[0]) => {
-    const hash = await wallet.writeContract(params)
-    const receipt = await publicClient.waitForTransactionReceipt({ hash })
+    const hash = await wallet.writeContract({
+      ...params,
+      maxFeePerGas,
+      maxPriorityFeePerGas,
+    })
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash,
+      timeout: 180_000,
+    })
     if (receipt.status !== 'success') throw new Error(`tx reverted ${hash}`)
     return receipt
   }
 
+  const only = process.env.GOAL_ID || process.argv.find((a) => a.startsWith('shared-'))
+
   for (const race of RACES) {
+    if (only && race.goalId !== only) {
+      continue
+    }
     if (results.some((r) => r.goalId === race.goalId)) {
       console.log(`skip ${race.goalId} (already provisioned)`)
       continue
@@ -197,6 +221,7 @@ async function main() {
 
     let jbProjectId: bigint
     try {
+      if (process.env.SKIP_MISSION) throw new Error('SKIP_MISSION')
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 2 * 365 * 24 * 3600)
       const missionArgs = [
         22n,
