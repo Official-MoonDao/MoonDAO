@@ -276,8 +276,11 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     // (0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011). After
     // `GOAL_ID=shared-night-shift yarn tsx scripts/provision-sepolia-races.ts`
     // paste the generated block here as the next id (expected 22) with
-    // teams 611–617 + field 24. Until then `/deprize/shared-night-shift`
-    // renders the atlas GoalDePrizeDetail (planned market).
+    // teams 611–617 + field 24. questionId is
+    // keccak256("deprize:sepolia:shared-night-shift:v1") =
+    // 0x6058f2c9f314734e1f1ecf8c34c8d8835fff5d8fb5e075d8044823e1717f00d4.
+    // Until then `/deprize/shared-night-shift` renders the atlas
+    // GoalDePrizeDetail (planned market).
   },
 }
 
