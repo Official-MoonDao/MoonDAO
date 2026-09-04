@@ -214,20 +214,30 @@ budget: the race stood on a paved hardstand inside a ring road, so a bigger
 ILRS meant widening the ring itself, and the ring was near its ceiling because
 the power district's own lots were closing in on it from outside.
 
-There is no ring now. The race is a block on the street like every other one
-(`BASE_PLAN.habitat`, at the ridge centre), so growth is absorbed by its own
-`reach`/`block` — currently 47 m and 51 m, against a roster that packs to 38 m
-— and the only thing it has to stay clear of is its neighbours along the
-spine, which the district-spacing tests check directly. Dropping the hardstand
-tightened the race rather than loosening it: a ring of five plots around an
-empty plaza needed 58.7 m, and the same five fronting two streets need 38 m.
+There is no ring, and no hardstand. The race is a `terminus` district at the
+far end of its own branch (`BASE_PLAN.habitat`, off the ridge centre), which
+means growth is absorbed by the branch's own `lengthM` — 130 m, with a 38 m
+spur at 55 m — and by its `block`, the half-width of the keep-out capsule
+around its roads. Currently 39 m against a roster that needs 36.5 m, so about
+2.5 m of slack; `scripts/pack-size-tmp.ts` reports that margin per district if
+you need to check after a size change.
+
+That is a much cheaper place to grow than the ring was. The ring's diameter
+was shared by every plot at once, so one big model widened the whole thing; a
+branch is a line, so a big model either takes more of the branch's length or
+pushes the district's `block` out laterally, and the two are independent. What
+it has to stay clear of is its neighbours' capsules, which is checked
+plan-wide rather than only up the street — a diagonal branch can reach past
+its own along-spine neighbour toward somebody two crossings away, so
+"neighbours in spine order" is no longer a sufficient check and the tests do
+not use it.
 
 The landing zone kept its own separation for the same reason it always had
 one. `BASE_PLAN.lander` sits 280 m southwest along the spine, standing beside
-the road as a `flank` rather than taking a crossing, because a Starship-class
-descent has to clear the nearest structure by more than the 30 m
-ejecta-standoff floor the unit tests assert, and its 62 m apron is why its
-`reach` is more than twice any other district's.
+the road as a `flank` with no branch at all, because a Starship-class descent
+has to clear the nearest structure by more than the 30 m ejecta-standoff floor
+the unit tests assert, and its 62 m apron is why its `block` (71 m) is nearly
+twice any other district's.
 
 ---
 
@@ -289,10 +299,13 @@ avoid up front and annoying to find later.
 - **Hemisphere end caps dome the wrong way** if the mirror sign is wrong; the
   give-away is a berthing port that floats off the hull.
 - **The sun is at bearing 50°, elevation 44.5°** (`SUN_DIR` in `MoonGlobe.tsx`,
-  which must match the terrain bake's hillshade). At 89°S the sun circles near
-  the horizon and never climbs, so solar arrays stand **upright across** the
-  sun's bearing rather than lying flat, and radiators lie **flat** to see the
-  cold zenith. Both facts are already argued in the MPH and relay comments.
+  which must match the terrain bake's hillshade). The sun never gets near the
+  zenith here, so solar arrays are **turned onto the sun's bearing and raked
+  back to its elevation** rather than lying flat — which at 44.5° is a roughly
+  45° rake — and radiators lie **flat** to see the cold zenith. Both facts are
+  already argued in the MPH and relay comments. Note the sun is FIXED: the
+  terrain albedo is a hillshade baked from this exact direction, so nothing
+  here may be justified by the sun moving.
 - **The Earth sits within a few degrees of the horizon**, so an Earth-pointing
   dish is nearly horizontal — never nadir. Earth itself is now drawn (see
   `EarthGlobe.tsx`): a fixed backdrop sphere at the real bearing/elevation
@@ -366,7 +379,7 @@ avoid up front and annoying to find later.
   because the rover race's actual hardware never parks anywhere — the whole
   field shuttles the length of the spine and back (see `PATROL` in
   `baseplan.ts`) — so every competitor's own plot in that district is bare
-  regolith by design, and a literally empty crossing reads as a gap rather
+  regolith by design, and a literally empty district reads as a gap rather
   than as that story. Two of the three bays are filled (not three, not
   zero — see the section's own comment for why), with `RoverBody` — the
   generic unbranded rover shape kept as the fallback for a future competitor
@@ -374,16 +387,19 @@ avoid up front and annoying to find later.
   accent, so a depot spare never reads as one team's race entry benched
   there. It has no `PROJECT_SIZE_M`/`TYPE_SIZE_M` entry (it isn't a
   project): `MarkerLayer`'s `depotCorner` computes its own position by hand,
-  on a CORNER of the depot crossing rather than on `BASE_PLAN.rover`'s own
-  centre (which sits on top of both the spine and the branch at once), which
-  would otherwise need `reach` inflated well past what this district's actual
-  LTV-scale roster justifies — the exact thing `lunar-atlas-baseplan.cy.ts`'s
-  branch-overshoot check exists to catch. Worth noticing how much simpler this
-  got with the layout: it used to be an arcsine swing and a radius solved
-  against a circle, because the two roads a district fronted were a circle and
-  a radial. A spine and a perpendicular branch are two straight lines, so the
-  setback off each is just `ROAD_HALF_M + SETBACK_M + footprintR` and the whole
-  thing is one call to `at()`.
+  on a lot beside the HEAD of the depot's own branch rather than on
+  `BASE_PLAN.rover`'s own centre, which is the middle of the branch's turning
+  circle and would put the apron under the pavement. Worth noticing how much
+  simpler this got with each version of the plan: it began as an arcsine swing
+  and a radius solved against a circle, because the two roads a district
+  fronted were a circle and a radial; it became a pair of flat offsets when
+  those became a spine and a perpendicular branch; and now that a district
+  fronts ONE road it is just a distance along that road and a distance across
+  it, both in the road's own frame. `BASE_PLAN.rover.block` is sized for these
+  two rather than for the roster, which is the honest way round — at 2.3 m an
+  LTV needs almost no ground, and nothing in the roster ever parks — and
+  `scripts/pack-size-tmp.ts` counts them in when it reports the district's
+  margin.
 - **A driving competitor is framed where it IS on the road — the camera comes
   to the rover, the rover never comes to the camera.** Because the fleet
   shuttles the spine rather than parking (see `PATROL`), a rover's real position
@@ -407,11 +423,11 @@ avoid up front and annoying to find later.
   by `RoverGasStationSite`
   (`MarkerLayer.tsx`, right after `RoverDepotSite`) on the OPPOSITE side of
   the depot branch from the depot yard: the same `depotCorner` call with the
-  same setback off the spine and off the branch, just the other sign
-  (`alongSign` of `-1` instead of `+1`) and its own (smaller) footprint
-  radius, so the depot takes the northeast corner of the crossing and the
-  station the southwest one, facing each other across the one straight road
-  they both front rather than crowding one lot. The forecourt itself is a canopy on four posts (bigger
+  same distance back from the dead end and the same setback across the branch,
+  just the other sign (`side` of `-1` instead of `+1`) and its own (smaller)
+  footprint radius, so the two take the lots either side of the head of the
+  branch, facing each other across the one straight road they both front
+  rather than crowding one lot. The forecourt itself is a canopy on four posts (bigger
   than `ServiceCanopy`'s single wheel-hoist shed, since this is meant to
   read as its own site's principal structure) over two `GasPumpIsland`s,
   each with a glowing readout panel and a nozzle racked on a coiled hose
@@ -447,6 +463,88 @@ avoid up front and annoying to find later.
   whichever course the true ground actually intersects, everything below it
   is already buried and everything above it reads as a deliberate stepped
   foundation.
+- **The base's own solar farm is the one large installation that belongs to
+  no race.** `SOLAR_ARRAYS` (`baseplan.ts`, right after the district keep-out)
+  sites it and `SolarFarmSite` (`MarkerLayer.tsx`, just before
+  `InterDistrictFiller`) stands it up, out of `VerticalSolarArray`
+  (`ProjectModel.tsx`, just before `ServiceCanopy`), whose layout is
+  `solarArrayFrame` in `baseplan.ts`. 63 sun-tracking ground-mounted arrays in
+  two fields, one on each flank of the spine — a 4x7 of 28 on the industrial
+  flank and a 5x7 of 35 by the habitats, which is the larger because that is
+  where the continuous life-support load is. Both are COMPLETE rectangles, and
+  for the habitat field that is what caps its size rather than the ground: the
+  pocket is hemmed by the ISRU plant, the rover and the spine's setback, and a
+  bigger lattice loses corners to one of the three. Bigger rectangles exist
+  further out, but only by walking the field north of where it belongs.
+
+  Four things about it are geometry rather than decoration, and all four are
+  asserted in `lunar-atlas-baseplan.cy.ts` because all four would look
+  perfectly fine in a screenshot if they broke:
+
+  - **The arrays are raked back to face the sun.** At this sun elevation that
+    is a ~45° rake, which is why they read like the reference concepts.
+    Orientation is taken from `SUN_DIR`/`SUN_LOCAL_ELEV_DEG` rather than
+    written down: the site hands `SurfaceAnchor` the sun vector as `noseAlong`
+    (which lands the face normal, the model's own `+X`, on the sun's azimuth)
+    and the model lifts it by the sun's elevation. So the farm cannot face
+    somewhere the light is not. The elevation's sign was confirmed against the
+    resulting world vector, per the house rule above — negated, it points
+    88.9° off, into the ground.
+  - **Nothing structural stands in front of the face.** This sounds like it
+    could not go wrong and it already did: an earlier version hung the assembly
+    off a 10 m mast on a yoke, and because the yoke offset the panel to `-X`
+    while the mast stayed at `0`, the mast stood in *front* of the face and ran
+    2.5 m past the top of it. Every panel in the field had a pole through the
+    middle of it and the scene still rendered as a tidy solar farm. The layout
+    therefore lives in `solarArrayFrame` as plain numbers, and the spec checks
+    every structural node's signed distance from the face's own plane. Note
+    that the mast was not merely ugly, it was the wrong argument: masts are for
+    buying HORIZON on a single lander's array, and buy a 40-array field
+    nothing.
+  - **Each field is surveyed to something, and the two are surveyed to
+    different things.** Field 0's rows run square across the sun's bearing, so
+    a row's shadow lands on open ground and never on the next row — that is
+    the default, and it makes the shadow check true by construction. Field 1's
+    run PARALLEL TO THE HABITAT ROAD instead: it shares a frame with that
+    street from most of the spine, and a lattice at its own private angle next
+    to the one strong line near it reads as debris rather than as plant. What
+    the spec asserts is the discipline — every field's rows are parallel to a
+    bearing written down elsewhere on the plan — plus which field got which.
+  - **The row pitch is derived from the shadow, not declared.** And derived the
+    way the shadow actually lands: from the casting array's TOP edge to the
+    receiving array's LOWER edge (`SOLAR_SHADOW_PITCH_M`). Centre-to-centre
+    against the array height is the tempting version and it is wrong by two
+    panel reaches — about 4 m here, which is half the answer, and wrong in the
+    permissive direction. Because field 1's lattice is deliberately off the
+    sun's axis, the spec checks every PAIR of arrays in the farm rather than
+    just the pitch constant: for a lattice off the sun axis, the pitch alone
+    stops being proof.
+
+  The face itself is a texture, not geometry: `makeSolarFaceMaps` bakes a 3×3
+  module grid with cell lines, busbars and interconnect dots into one 1024²
+  albedo plus a **roughness map**, shared by every array. The roughness map
+  is the part that makes it read as glass — matte rails against glossy laminate,
+  where the CONTRAST is what the eye reads, not either value alone. The gloss
+  is a `clearcoat` over a dark diffuse base rather than a low roughness on the
+  base, because that is literally what a module is (cells under glass) and
+  because a metallic near-mirror crawls: it reflects the environment at a
+  frequency finer than a pixel and the renderer cannot filter it. The scene's
+  PMREM lunar environment gives the clearcoat something stable to reflect.
+
+  Siting was measured, not eyeballed (`scripts/open-ground-tmp.ts` maps the
+  clear ground). Both fields sit in pockets that reach in toward the spine, so
+  each is served off the main street and needs no road of its own — but set
+  well back from it (13 m at the closest, 26 m on the industrial flank), because
+  traffic throws regolith and dust on a blanket is the standing problem with
+  lunar PV. Putting the two on OPPOSITE flanks is
+  also the strongest form of the reason any real plant distributes its
+  generation: no single impact or dust event reaches both. Both are far from
+  the landing zone: the nearest race ground stands 59 m off the pads and the
+  nearest array 194 m,
+  which is the reason the *other* large empty area — the ground beside the
+  landing zone — has to stay empty. Ejecta on an airless body leaves at orbital
+  speed and does not come back down, and unlike a habitat a panel cannot be
+  bermed.
 - **The ground between districts is filled by one base-wide layer, not by
   any one district's model.** `InterDistrictFiller` (`MarkerLayer.tsx`,
   after the rover depot and gas station sites and the underground
@@ -463,7 +561,7 @@ avoid up front and annoying to find later.
     not a filled band);
   - street lights (`StreetLight`, a neutral-colored wrapper around the
     depot's own `DepotLightMast`, now parameterized by height/boom length
-    so one fixture serves both) along the spine and every branch;
+    so one fixture serves both) along the spine and every branch and spur;
   - staged cargo along the road shoulders — `CrateCluster`,
     `CableReel` (paired with a small `CargoCrate`), `SparePartsPallet`, and
     `BrickPallet`, all exported from the logistics prop library
@@ -477,13 +575,24 @@ avoid up front and annoying to find later.
     rather than standing well clear): this fleet works right up against a
     district's own edge, which is the whole reason it reads as active.
 
-  All four are kept off every district's own ground by
-  `withinDistrictGround` (`baseplan.ts`, right after `BASE_PLAN`), which is
-  read straight off each district's own `block` extent in spine coordinates
-  rather than hand-tuned per district, and is deliberately generous: it
-  doesn't know a district's live roster, only the widest plausible spread its
-  `block` allows, so a competitor added later can never find a rock, a lamp
-  post, or a crate sitting on its future lot. The street lights and the
+  All four are kept off every district's own ground — and off the solar farm's
+  — by `withinDistrictGround` (`baseplan.ts`, right after `BASE_PLAN`), which
+  is read straight off each district's own roads rather than hand-tuned per
+  district: `districtGround` returns a CAPSULE along each of a district's
+  roads, `block` wide, and the keep-out is the union of those plus one capsule
+  per planted solar row. Note the farm reserves its ROWS and not its whole
+  rectangle: the clear ground between two rows is a shadow gap rather than a
+  yard, so a boulder standing in it costs the field nothing, where a farm that
+  claimed its own gaps would sterilize most of the flank it stands on. That replaced a single
+  radius in spine coordinates, which had to be as large as a district's
+  longest dimension in every direction — fine when every district was a
+  compact block on the spine, and hopeless once a district became a 130 m
+  branch with a 38 m spur off it, since a circle big enough to cover the
+  branch's far end covers a great deal of open ground nobody is ever going to
+  build on. It stays deliberately generous within each capsule, though: it
+  doesn't know a district's live roster, only the widest spread its `block`
+  allows, so a competitor added later can never find a rock, a lamp post, or a
+  crate sitting on its future lot. The street lights and the
   roadside cargo are both placed by walking each road run at a fixed stride
   and dropping something once enough *open* road has accumulated since the
   last one — an evenly-spaced-station approach was tried first for the
@@ -533,7 +642,7 @@ npx ts-node -r tsconfig-paths/register --compiler-options '{"module":"commonjs"}
 # Typecheck
 node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json
 
-# Every lunar-atlas unit spec (162 tests, all passing as of this handoff)
+# Every lunar-atlas unit spec (165 tests, all passing as of this handoff)
 node node_modules/mocha/bin/mocha.js \
   --require tsconfig-paths/register --require ts-node/register \
   --require scripts/mocha-cypress-setup.cjs --extension ts \
@@ -562,27 +671,51 @@ bearing you intended.
 
 ## 6. State of the tree at handoff
 
-Uncommitted work on branch `race-district colony` (last commit `14d23f66e`):
+Work on branch `feat/moonbase-linear-spine`. Typecheck is clean (the four
+pre-existing `import.meta` errors in
+`scripts/verify-deprize-moonbase-sepolia.ts` are on `main` too and unrelated),
+and all 174 lunar-atlas unit tests pass.
 
-```
- M ui/components/lunar-atlas/MarkerLayer.tsx
- M ui/components/lunar-atlas/MoonGlobe.tsx
- M ui/components/lunar-atlas/ProjectModel.tsx
- M ui/cypress/integration/unit/lunar-atlas-baseplan.cy.ts
- M ui/lib/lunar-atlas/baseplan.ts
- M ui/lib/lunar-atlas/geo.ts
- M ui/lib/lunar-atlas/homeview.ts
- M ui/pages/moonbase/index.tsx
-?? ui/components/lunar-atlas/SkyLayer.tsx
-?? ui/lib/lunar-atlas/skyplan.ts
-```
+Four scratch scripts under `ui/scripts/` are deliberately left untracked, and
+are worth keeping until the layout settles, because between them they are what
+makes the plan checkable rather than eyeballed:
 
-Typecheck is clean and the 101 lunar-atlas unit tests pass. **Nothing here has
-been looked at in a browser yet** — the relay constellation in particular was
-verified numerically only.
+| Script | What it answers |
+|---|---|
+| `branch-survey-tmp.ts` | How far a branch can run off each crossing, per bearing, under the grade and relief budgets |
+| `branch-check-tmp.ts` | Whether the plan as written holds: grades, district separation, and roads fouling each other |
+| `pack-size-tmp.ts` | Whether each district's `block` actually contains its roster, and by how much |
+| `open-ground-tmp.ts` | Where the plan's clear ground actually is, as a map and as the largest clear rectangles — what sited the solar farm |
 
 ### What landed most recently
 
+- **The solar farm** — 63 ground-mounted sun-tracking arrays in two fields, one
+  on each flank of the spine, the base's first installation that belongs to no
+  race. See its own bullet above for the geometry; it exists because the tiered
+  plan left large wedges between districts reading as dead ground, and a solar
+  farm is the one kind of built ground that is *supposed* to be mostly empty.
+  The arrays were rebuilt once already: the first pass put them on 10 m masts,
+  which stood a pole in front of every panel and was the wrong argument anyway
+  (masts buy horizon for a lander, not for a field). The face also went from
+  one flat quad to a textured module grid with a roughness map, because a
+  single colour at a single roughness cannot be both rail and glass, and it is
+  the difference between them the eye reads as glass.
+- **The tiered street plan** — see the top of `baseplan.ts` for the full
+  rationale. One straight spine, one branch per district, and a spur off three
+  of them; each district stands at the FAR END of its branch rather than on the
+  spine, so a road reads as going somewhere. Branch bearings and lengths are
+  read off the height field rather than chosen, which is why they come out
+  varied (55–145 m, at +40, −130, +55, −35, +80, −50 and +60 degrees off the
+  spine, four northwest and three southeast). The old radial-concentric plan's
+  core, ring road and central hardstand are all gone.
+- **Junctions became hierarchical.** `junctions.ts` swapped its `through`
+  boolean for a `rank`, so at a junction the spine beats a branch and a branch
+  beats its own spur, and the giving-way road's surface stops at the through
+  road's lane edge. Two figures also stopped being constants: the sweep is now
+  angle-aware (`JUNCTION_SHALLOW_MARGIN_M`, because a branch leaving at 35°
+  lies in the spine's windrow for much longer than one leaving square), and the
+  merge scales with the through road's width (a fixed 1.1 m fits the spine and
+  overruns anything narrower, leaving a halo of unpaved ground).
 - **IX FSP**, **Thales MPH** (rebuilt as the generic `habitat` model) and
   **Sierra LIFE** models.
 - **Home camera refit** so every district clears the timeline and the race panel

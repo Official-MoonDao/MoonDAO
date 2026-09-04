@@ -108,7 +108,11 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       const t = nUnmapped > 1 ? fallbackIdx / (nUnmapped - 1) - 0.5 : 0
       plan = {
         ...at(FALLBACK_ALONG_M, t * FALLBACK_SPREAD_M * 2),
+        alongM: FALLBACK_ALONG_M,
         turn: 0,
+        // No road runs out here, so there is no dead end to arrange around and
+        // no street to set back from: the outliers simply stand in a line.
+        front: 'lot',
       }
       fallbackIdx++
     }

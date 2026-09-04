@@ -23,6 +23,7 @@ import {
 } from 'react'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { solarArrayFrame } from '@/lib/lunar-atlas/baseplan'
 import { HOME_CAM, HOME_TARGET } from '@/lib/lunar-atlas/homeview'
 import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import { buriedVault, type VaultGeometry } from '@/lib/lunar-atlas/subplan'
@@ -2930,12 +2931,12 @@ export function UndergroundConstructionSite({ seed = 0 }: { seed?: number }) {
 // with marked bays, charging points, and a service canopy — infrastructure
 // nobody's competitor owns.
 //
-// It takes a real CORNER LOT of the depot crossing, at the same frontage off
-// both roads a competitor's plot would get, with the recharge station facing
-// it across the branch. `BASE_PLAN.rover.reach` is sized for these two rather
-// than for the district's LTV-class roster, which is the honest way round:
-// nothing in that roster ever parks, and a branch has to reach what actually
-// stands on it. Kept a compact 13 x 10 m all the same, because a motor pool
+// It takes a real LOT at the head of the depot's own branch, at the same
+// frontage off that road a competitor's plot would get, with the recharge
+// station facing it across the branch. `BASE_PLAN.rover.block` is sized for
+// these two rather than for the district's LTV-class roster, which is the
+// honest way round: nothing in that roster ever parks, and a district's ground
+// has to hold what actually stands on it. Kept a compact 13 x 10 m all the same, because a motor pool
 // whose apron dwarfs the vehicles using it reads as a car park — see
 // MarkerLayer's `RoverDepotSite`, which does the placement and picks the exact
 // setback this footprint needs.
@@ -3093,6 +3094,300 @@ export function StreetLight() {
 // The one piece of built shelter on the lot: an open-sided canopy over a
 // wheel-service bay, set back in the aisle clear of every stall. The hoist
 // is what tells a carport from a maintenance bay.
+// ---------------------------------------------------------------------------
+// One array of the base's solar farm
+// ---------------------------------------------------------------------------
+
+// The cell grid, as a texture rather than as geometry.
+//
+// A real array's face is the thing that makes it read as a solar array at all:
+// modules in a frame, cells in a module, an interconnect dot at every cell
+// corner. Built as geometry that is hundreds of meshes for ONE array and tens
+// of thousands for a field of forty, which is not a trade worth making for
+// detail that is a few pixels across from any angle the camera actually takes.
+//
+// Two maps, because the frame and the glass are different SURFACES and not
+// merely different colours. That is the whole reason the first version of this
+// looked like painted cardboard: one flat colour at one roughness cannot be
+// both a matte anodized rail and a sheet of glass, and it is the difference
+// between them that the eye reads as glass.
+function makeSolarFaceMaps(): { albedo: THREE.Texture; rough: THREE.Texture } | null {
+  const SIZE = 1024
+  const a = document.createElement('canvas')
+  const r = document.createElement('canvas')
+  a.width = a.height = r.width = r.height = SIZE
+  const ac = a.getContext('2d')
+  const rc = r.getContext('2d')
+  if (!ac || !rc) return null
+
+  // Modules across and down the assembly, matching the references: a tall
+  // portrait module, three columns of them, three rows deep.
+  const COLS = 3
+  const ROWS = 3
+  // Frame widths in texture pixels: the outer rail is heavier than the bars
+  // between modules, which is true of every framed array and is most of what
+  // gives the face its scale.
+  const RAIL = 15
+  const BAR = 9
+
+  // Frame first, as the ground the modules are cut out of.
+  ac.fillStyle = '#dfe4ec'
+  ac.fillRect(0, 0, SIZE, SIZE)
+  // Deliberately a NARROW range against the laminate below (0.42 vs 0.24 of
+  // full roughness, not 0.60 vs 0.12). The contrast is what reads as glass, but
+  // past a point extra contrast buys no more of that and costs stability: the
+  // wider the swing between neighbouring texels, the more a half-resolved edge
+  // shimmers when the camera moves.
+  rc.fillStyle = '#6b6b6b' // matte: anodized rail
+  rc.fillRect(0, 0, SIZE, SIZE)
+
+  const cellW = (SIZE - 2 * RAIL - (COLS - 1) * BAR) / COLS
+  const cellH = (SIZE - 2 * RAIL - (ROWS - 1) * BAR) / ROWS
+
+  for (let cx = 0; cx < COLS; cx++) {
+    for (let cy = 0; cy < ROWS; cy++) {
+      const x0 = RAIL + cx * (cellW + BAR)
+      const y0 = RAIL + cy * (cellH + BAR)
+
+      // The laminate. A shallow vertical gradient rather than a flat fill: a
+      // module's glass picks up the sky unevenly down its own height, and a
+      // dead-flat blue is the other half of why the first version read as
+      // cardboard.
+      const g = ac.createLinearGradient(x0, y0, x0, y0 + cellH)
+      g.addColorStop(0, '#22406e')
+      g.addColorStop(0.55, '#16294f')
+      g.addColorStop(1, '#1b3560')
+      ac.fillStyle = g
+      ac.fillRect(x0, y0, cellW, cellH)
+      rc.fillStyle = '#3d3d3d' // glossy: glass over cells
+      rc.fillRect(x0, y0, cellW, cellH)
+
+      // Cells within the module, and the interconnect dot at each corner. The
+      // dots are the detail the reference images actually read by, so they are
+      // drawn even though each is barely a pixel on screen — in aggregate they
+      // are what stops the module looking like a painted rectangle.
+      // Chosen so the cells come out very nearly SQUARE on the finished
+      // panel, which they are in reality and which the eye notices. The
+      // texture is square and the assembly is not (6.4 x 5.6 m), so equal
+      // counts here would stretch every cell by the panel's aspect ratio.
+      const CELLS_X = 6
+      const CELLS_Y = 5
+      const gw = cellW / CELLS_X
+      const gh = cellH / CELLS_Y
+      ac.strokeStyle = 'rgba(150,175,220,0.26)'
+      ac.lineWidth = 2.4
+      for (let i = 1; i < CELLS_X; i++) {
+        ac.beginPath()
+        ac.moveTo(x0 + i * gw, y0)
+        ac.lineTo(x0 + i * gw, y0 + cellH)
+        ac.stroke()
+      }
+      for (let j = 1; j < CELLS_Y; j++) {
+        ac.beginPath()
+        ac.moveTo(x0, y0 + j * gh)
+        ac.lineTo(x0 + cellW, y0 + j * gh)
+        ac.stroke()
+      }
+      ac.fillStyle = 'rgba(198,214,238,0.3)'
+      for (let i = 0; i <= CELLS_X; i++) {
+        for (let j = 0; j <= CELLS_Y; j++) {
+          ac.beginPath()
+          ac.arc(x0 + i * gw, y0 + j * gh, 2.8, 0, Math.PI * 2)
+          ac.fill()
+        }
+      }
+      // A busbar down the middle of each module, brighter than the cell lines.
+      ac.strokeStyle = 'rgba(206,220,244,0.32)'
+      ac.lineWidth = 3.5
+      ac.beginPath()
+      ac.moveTo(x0 + cellW / 2, y0)
+      ac.lineTo(x0 + cellW / 2, y0 + cellH)
+      ac.stroke()
+    }
+  }
+
+  // Mipmapped and trilinear, explicitly. The cell lines and interconnect dots
+  // are near the finest detail this texture can carry, and a whole field of
+  // them is usually seen small — sampled without mip selection they alias into
+  // a crawling sparkle the moment the camera moves. Anisotropy is what keeps
+  // them from smearing to mush at the grazing angles most of the field is
+  // seen at, which is the other half of the same problem.
+  const albedo = new THREE.CanvasTexture(a)
+  albedo.colorSpace = THREE.SRGBColorSpace
+  albedo.generateMipmaps = true
+  albedo.minFilter = THREE.LinearMipmapLinearFilter
+  albedo.magFilter = THREE.LinearFilter
+  albedo.anisotropy = 16
+  // The roughness map matters MORE than the albedo here, not less. Aliasing a
+  // colour makes a speckled colour; aliasing roughness makes whole pixels flip
+  // between matte rail and mirror glass frame to frame, which is far louder.
+  const rough = new THREE.CanvasTexture(r)
+  rough.generateMipmaps = true
+  rough.minFilter = THREE.LinearMipmapLinearFilter
+  rough.magFilter = THREE.LinearFilter
+  rough.anisotropy = 16
+  return { albedo, rough }
+}
+
+let SOLAR_FACE_MAPS: {
+  albedo: THREE.Texture
+  rough: THREE.Texture
+} | null | undefined
+
+// Built once for the whole farm and shared by every array on it, rather than
+// per instance: it is the same hardware forty times over, and one 1024 canvas
+// is cheaper than forty of anything.
+//
+// Deliberately NOT disposed on unmount, which is where this differs from the
+// road surface maps in BaseRoads. Those belong to one mesh, so that mesh can
+// own them; this one is shared by every array in both fields, so disposing it
+// when any single array unmounts would pull the texture out from under all the
+// others. It is one texture for the life of the page.
+function solarFaceMaps() {
+  if (SOLAR_FACE_MAPS === undefined) SOLAR_FACE_MAPS = makeSolarFaceMaps()
+  return SOLAR_FACE_MAPS
+}
+
+// A single sun-tracking solar array: one framed assembly of modules on a
+// torque tube, carried on two raked A-frames.
+//
+// This is the base's own generation, not any competitor's — see SOLAR_ARRAYS in
+// baseplan.ts for where the fields stand and why. Authored in real meters.
+//
+// AIMED AT THE SUN, and aimed off the one place the sun is written down. The
+// assembly's normal is the model's own +X, so the caller turns the whole array
+// onto the sun's azimuth by handing SurfaceAnchor the sun vector as `noseAlong`
+// (see headingYaw) — which is also what a tracker physically does, and means
+// the azimuth is never written down twice. The elevation is applied here, about
+// +Z, which carries +X up toward +Y: a positive angle lifts the face off the
+// horizon by that much, so passing the sun's own elevation points it at the sun.
+// Signs on this were confirmed against the resulting world vector rather than
+// reasoned about, per the house rule — negated, the face looks into the ground.
+//
+// EVERY MEMBER STANDS BEHIND THE FACE, and that is a constraint rather than an
+// observation — see solarArrayFrame in baseplan.ts, which is where the layout
+// actually lives and which the spec asserts that property against. This only
+// draws what that returns.
+const SOLAR_RAIL = '#cfd5de' // anodized frame, matching the face map's rail
+const SOLAR_STEEL = '#5d636e' // the structure under it
+const SOLAR_FOOT = '#a6a298' // a bedded footing pad, same worked regolith as a deck
+
+export function VerticalSolarArray({
+  elevRad,
+  seed,
+}: {
+  // Radians the face is lifted off the horizon — the sun's own elevation,
+  // passed in rather than imported so the model stays a model.
+  elevRad: number
+  seed: number
+}) {
+  const maps = solarFaceMaps()
+  const f = solarArrayFrame(elevRad)
+
+  // A degree or so of tracking error, which every array in a real field carries
+  // and no two carry identically. Small enough to read as slack in a drive
+  // rather than as a fault, and deterministic in the array's own seed so a
+  // reload never reshuffles the field.
+  const slop = (hash1(seed * 17 + 3) - 0.5) * 0.05
+
+  return (
+    <group rotation={[0, slop, 0]}>
+      {/* Torque tube, spanning the assembly's width behind its middle. */}
+      <mesh position={f.tube} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.11, 0.11, f.tubeSpan, 10]} />
+        <meshStandardMaterial
+          color={SOLAR_STEEL}
+          metalness={0.5}
+          roughness={0.5}
+        />
+      </mesh>
+
+      {/* Two A-frames: a raked back leg and a forward brace to each side of the
+          tube, tied at the feet, each foot on a bedded pad. This is the support
+          the reference arrays stand on, and unlike a mast it cannot foul the
+          face. */}
+      {f.legs.map((leg) => (
+        <group key={leg.z}>
+          <Strut
+            from={leg.back}
+            to={[f.tube[0], f.tube[1], leg.z]}
+            r={0.075}
+            color={SOLAR_STEEL}
+          />
+          <Strut
+            from={leg.fore}
+            to={[f.tube[0], f.tube[1], leg.z]}
+            r={0.065}
+            color={SOLAR_STEEL}
+          />
+          <Strut from={leg.back} to={leg.fore} r={0.045} color={SOLAR_STEEL} />
+          {[leg.back, leg.fore].map((foot) => (
+            <mesh key={foot[0]} position={[foot[0], -0.08, foot[2]]}>
+              <cylinderGeometry args={[0.34, 0.42, 0.3, 10]} />
+              <meshStandardMaterial color={SOLAR_FOOT} roughness={0.97} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+
+      {/* The assembly. Its parts live in the tilted frame so they stay
+          coplanar: a backing tray, then the textured face just clear of it. */}
+      <group position={f.centre} rotation={[0, 0, elevRad]}>
+        {/* The backing tray sits a clear 5 cm behind the face rather than the
+            1 cm it first had. At 1 cm the two surfaces Z-FOUGHT: this scene is
+            a globe, so the depth range is enormous relative to a panel and the
+            buffer cannot separate two near-coplanar faces a centimeter apart.
+            The result was patches of every panel flickering between tray and
+            glass as the camera turned, which reads as the material shimmering
+            rather than as the depth artifact it actually is. */}
+        <mesh position={[-0.1, 0, 0]}>
+          <boxGeometry
+            args={[0.09, f.halfH * 2 + 0.05, f.halfW * 2 + 0.05]}
+          />
+          <meshStandardMaterial
+            color={SOLAR_RAIL}
+            metalness={0.35}
+            roughness={0.62}
+          />
+        </mesh>
+        {/* Glass over cells, which is literally what a module is — so the gloss
+            is a CLEARCOAT over a dark diffuse base rather than a low roughness
+            on the base itself. A metallic near-mirror was tried first and is
+            wrong twice over: a solar cell is not a metal, and a near-specular
+            surface reflects the environment at a frequency finer than a pixel,
+            which the renderer cannot filter and which crawls as the camera
+            moves. A clearcoat gives the single crisp highlight that actually
+            reads as glass, and leaves the cells' own colour alone underneath.
+            The roughness MAP is what carries it: the rails come out matte and
+            the laminate glossy, and it is the CONTRAST between the two that the
+            eye reads as glass rather than either value on its own. */}
+        <mesh position={[0.005, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+          <planeGeometry args={[f.halfW * 2, f.halfH * 2]} />
+          <meshPhysicalMaterial
+            map={maps?.albedo ?? null}
+            roughnessMap={maps?.rough ?? null}
+            color={maps ? '#ffffff' : '#16294f'}
+            metalness={0.04}
+            roughness={maps ? 1 : 0.22}
+            clearcoat={1}
+            // NOT the near-mirror 0.045 this started at. That value is exactly
+            // the case the comment above warns about and it behaved exactly as
+            // warned: a clearcoat that sharp samples the environment at a
+            // frequency finer than a pixel, and since the renderer has no way
+            // to filter a specular lobe per pixel, the highlight crawled across
+            // the field as the camera turned. 0.18 is still plainly glass —
+            // the highlight is what sells it, not how tight the highlight is —
+            // and it lands on a PMREM mip that is prefiltered enough to hold
+            // still.
+            clearcoatRoughness={0.18}
+            envMapIntensity={1.15}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
 function ServiceCanopy() {
   const w = 2.8
   const d = 3.6

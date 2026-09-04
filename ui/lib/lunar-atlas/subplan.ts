@@ -50,7 +50,7 @@
 // continuous height-mapped cap with nothing behind it, so there is no hole to
 // cut and nothing that would be revealed by cutting one.
 
-import { SPINE_BEARING_DEG, spineCoords } from './baseplan'
+import { BASE_PLAN, frontingRoad } from './baseplan'
 import { type Vec3 } from './geo'
 import { capLocalDirection } from './southpole'
 
@@ -211,38 +211,42 @@ export function buriedVault(projectId: string): VaultGeometry | undefined {
 }
 
 // Compass bearing (degrees CCW from east, the convention every district and sky
-// station here uses) that a vault's long axis runs along: ACROSS the spine, on
-// the habitat branch's own line, with the service bay and head house at the end
-// nearer the street.
+// station here uses) that a vault's long axis runs along: square across the road
+// the lot fronts, running away from it, with the service bay and head house at
+// the end nearer the pavement.
 //
-// Along the branch rather than along the spine, and it is not an aesthetic
-// choice. The habitat race takes the four corner lots of its crossing (see the
-// 'crossroads' case in districtSlots), and a corner lot is bounded by the spine
-// on one side and the branch on the other. A 28 m mound laid ALONG the spine
-// would run the full width of the block and out the far side into the next
-// lot's clear ground; laid across it, it runs away from the spine into the open
-// regolith behind the block, which is the one direction a lot on a crossing has
-// depth in. It also puts the entrance at the end nearest the pavement, which is
-// where crew coming off the street would actually go in.
+// Across its own road rather than along it, and that is not an aesthetic choice.
+// The buried modules stand on the side lots of the habitat's branch, lining its
+// final approach. A 28 m mound laid ALONG that road would run the length of two
+// lots and out into its neighbour's clear ground; laid across it, it runs away
+// from the road into the open regolith behind the lot, which is the one
+// direction a lot beside a street has depth in. It also puts the entrance at
+// the end nearest the pavement, which is where crew coming off the street would
+// actually go in.
 //
-// This used to be the plot's RADIAL bearing out of the district centre, which
-// worked only because that district was a ring of five plots around a plaza and
-// its centre was the map origin. There is no ring and no plaza now, so radial
-// out of a crossing points diagonally across a corner lot — the one direction
-// that fits neither of the two streets the lot fronts.
+// The road in question is whichever of the district's own roads the lot fronts,
+// asked of `frontingRoad` rather than assumed. Two earlier versions of this got
+// it wrong in the same way, by assuming a frame the plan had moved on from: the
+// first took the plot's RADIAL bearing out of the district centre, which worked
+// only while that district was a ring of five plots around a plaza centred on
+// the map origin; the second took the SPINE's bearing, which worked only while
+// every district straddled the spine. The habitat branch runs at 95 deg now, so
+// the spine's answer is 55 degrees out — enough to lay a mound diagonally across
+// the lot and open its head house onto nothing.
 //
-// The SIGN is read off the plot's own position rather than stored per project:
-// the corners are assigned by roster rank, so changing any competitor's
-// footprint can move a plot to the other side of the spine, and a hardcoded
-// bearing would then bury the entrance and open the mound onto empty ground.
+// The SIGN is read off the plot's own position for the same reason the road is:
+// lots are assigned by roster rank, so changing any competitor's footprint can
+// move one to the other side of its road, and a hardcoded bearing would then
+// bury the entrance and open the mound onto empty ground.
 export function vaultAxisBearingDeg(slot: {
   east: number
   north: number
 }): number {
-  // Which side of the spine this lot is on. The axis then points from the lot
-  // back toward the spine, so the head house ends up at the street end.
-  const inward = spineCoords(slot).acrossM > 0 ? -1 : 1
-  return SPINE_BEARING_DEG + 90 * inward
+  const road = frontingRoad(BASE_PLAN.habitat!, slot)
+  // The axis points from the lot back toward its road, so the head house ends
+  // up at the street end.
+  const inward = road.acrossM > 0 ? -1 : 1
+  return road.bearingDeg + 90 * inward
 }
 
 // World-space unit direction the vault's long axis runs along. Fed to

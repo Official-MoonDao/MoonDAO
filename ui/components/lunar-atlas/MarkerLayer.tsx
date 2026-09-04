@@ -27,10 +27,12 @@ import {
   ROAD_HALF_M,
   ROAD_RUNS,
   SETBACK_M,
+  SOLAR_ARRAYS,
   SPINE_BEARING_DEG,
   SPINE_END_M,
   SPINE_START_M,
   at,
+  dirFor,
   districtAlongM,
   onRoad,
   shuttleAt,
@@ -58,6 +60,7 @@ import {
   trackAxis,
   trackBentOffsets,
 } from '@/lib/lunar-atlas/trackplan'
+import { SUN_DIR, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -82,6 +85,7 @@ import ProjectModel, {
   StreetLight,
   SurfaceAnchor,
   UndergroundConstructionSite,
+  VerticalSolarArray,
 } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
@@ -503,22 +507,21 @@ function CompetitorPlot({
 // ---------------------------------------------------------------------------
 //
 // Every other district's plots are populated by `CompetitorPlot` above, one
-// per project, placed by `districtSlots` with a setback that clears both
-// streets it fronts. The rover race has no plots standing: its whole field is
-// out shuttling the spine (see PATROL), so the crossing where its branch meets
-// the spine has nothing a per-project loop would ever draw there.
+// per project, placed by `districtSlots` with a setback that clears the street
+// it fronts. The rover race has no plots standing: its whole field is out
+// shuttling the spine (see PATROL), so the end of its branch has nothing a
+// per-project loop would ever draw there.
 //
 // `RoverDepotYard` and `RoverGasStation` (ProjectModel.tsx) are what stands
-// there instead, and they take two of the crossing's four corners — the same
-// lots, at the same frontage, a competitor would get. Neither can stand at the
-// crossing itself: that point is on both roads at once, which is what put the
-// apron under the pavement the first time this was tried.
+// there instead, on the two lots either side of the head of the depot's own
+// branch — the same positions, at the same frontage, competitors would get.
+// Neither can stand at the district centre itself: that point is the middle of
+// the turning circle, which is what put the apron under the pavement the first
+// time this was tried.
 //
-// Both on the SAME side of the spine, facing each other across the depot's own
-// branch, so the pair reads as two sides of one street rather than as two
-// unrelated sheds on opposite verges. `BASE_PLAN.rover`'s `reach` is sized for
-// these two rather than for the roster, which is the honest way round: at 2.3 m
-// an LTV would only need a 13 m branch, and nothing in the roster ever parks.
+// `BASE_PLAN.rover`'s `block` is sized for these two rather than for the
+// roster, which is the honest way round: at 2.3 m an LTV needs almost no
+// ground, and nothing in the roster ever parks.
 const DEPOT_FOOTPRINT_R = 9 // half-diagonal of the yard's 13 x 10 m apron, with room to spare
 
 // Half-diagonal of the gas station's own 10 x 8.8 m forecourt apron (see
@@ -527,27 +530,43 @@ const DEPOT_FOOTPRINT_R = 9 // half-diagonal of the yard's 13 x 10 m apron, with
 const GAS_STATION_FOOTPRINT_R =
   Math.hypot(GAS_STATION_HALF_W, GAS_STATION_HALF_D) + 0.6
 
-// A corner of the depot crossing, plus the point on the branch it should face.
+// A lot beside the head of the depot's own branch, plus the point on that
+// branch it should face.
 //
-// Flat now, and worth noticing how much: this used to be an arcsine swing and a
-// radius solved against a circle, because the two roads a district
-// fronted were a circle and a radial. A spine and a perpendicular branch are
-// two straight lines, so the setback off each is just a distance, and the whole
-// thing is one call to `at()`.
+// The two stand on OPPOSITE sides of the branch, just short of its dead end, at
+// the same frontage a competitor's plot would get. That is what makes the pair
+// read as two sides of one street instead of two unrelated sheds: the yard's
+// aisle and the station's forecourt each open onto the road between them, and
+// therefore onto each other.
+//
+// Worth noticing how much simpler this got with each version of the plan. It
+// began as an arcsine swing and a radius solved against a circle, because the
+// two roads a district fronted were a circle and a radial. It became a pair of
+// flat offsets when those two roads became a spine and a perpendicular branch.
+// Now a district fronts ONE road, so it is a distance along that road and a
+// distance across it, in the road's own frame.
 function depotCorner(
   footprintR: number,
-  alongSign: 1 | -1
+  side: 1 | -1
 ): { here: { east: number; north: number }; faces: { east: number; north: number } } {
   const plan = BASE_PLAN.rover!
-  const front = ROAD_HALF_M + SETBACK_M + footprintR
-  const alongM = districtAlongM(plan)
+  const branch = plan.branch!
+  const [ue, un] = dirFor(branch.bearingDeg)
+  // Left of the branch's outbound direction.
+  const [ve, vn] = [-un, ue]
+  const across = side * (ROAD_HALF_M + SETBACK_M + footprintR)
+  // Back from the dead end by its own radius, so the apron's forward edge sits
+  // level with the district centre and the turning circle stays clear.
+  const along = -footprintR
   return {
-    here: at(alongM + alongSign * front, front),
-    // Back on the branch's own centreline at the same offset off the spine, so
-    // the facing direction runs purely ALONG the spine: the yard's aisle and the
-    // station's forecourt each open onto the branch between them, which means
-    // they open onto each other.
-    faces: at(alongM, front),
+    here: {
+      east: plan.east + ue * along + ve * across,
+      north: plan.north + un * along + vn * across,
+    },
+    faces: {
+      east: plan.east + ue * along,
+      north: plan.north + un * along,
+    },
   }
 }
 
@@ -563,7 +582,7 @@ function RoverDepotSite({
   radiusAt?: RadiusAt | null
 }) {
   const { seat, ndir, noseAlong } = useMemo(() => {
-    // The northeast corner of the crossing; the station takes the southwest one.
+    // The left-hand lot at the head of the branch; the station takes the right.
     const { here, faces } = depotCorner(DEPOT_FOOTPRINT_R, 1)
 
     const ll = capOffsetLatLon(here.east, here.north)
@@ -614,9 +633,10 @@ function RoverDepotSite({
 
 // The rover district's recharge/propellant station: a second, freestanding
 // piece of shared infrastructure, on the OPPOSITE side of the depot branch
-// from `RoverDepotSite` — same setback off the spine, same setback off the
-// branch, just the other sign, so the two face each other across the one
-// straight road they both front rather than crowding one footprint.
+// from `RoverDepotSite` — the same distance back from the dead end and the same
+// setback across the branch, just the other sign, so the two face each other
+// across the one straight road they both front rather than crowding one
+// footprint.
 function RoverGasStationSite({
   accent,
   dim,
@@ -629,8 +649,8 @@ function RoverGasStationSite({
   radiusAt?: RadiusAt | null
 }) {
   const { seat, ndir, noseAlong } = useMemo(() => {
-    // The depot takes the northeast corner; this takes the southwest one, at
-    // whatever setback ITS OWN (smaller) footprint needs.
+    // The depot takes the left-hand lot; this takes the right, at whatever
+    // setback ITS OWN (smaller) footprint needs.
     const { here, faces } = depotCorner(GAS_STATION_FOOTPRINT_R, -1)
 
     const ll = capOffsetLatLon(here.east, here.north)
@@ -689,9 +709,9 @@ function RoverGasStationSite({
 // ProjectModel.tsx do — and street lights line the haul routes. Both are kept
 // off every district's own ground by `withinDistrictGround` (baseplan.ts),
 // which is deliberately generous rather than exact: it doesn't know any
-// district's live roster, only the widest plausible spread its `reach`
-// allows, so nothing here can ever end up sitting on a competitor's plot no
-// matter how a roster changes. Neither is dimmed when a race is opened (see
+// district's live roster, only the widest spread its `block` allows along the
+// roads it actually has, so nothing here can ever end up sitting on a
+// competitor's plot no matter how a roster changes. Neither is dimmed when a race is opened (see
 // SurfaceAnchor's own `dim`, left at its default): this belongs to the
 // settlement, not to whichever district happens to be nearest.
 
@@ -707,14 +727,22 @@ function hash1(n: number): number {
 // walk goes (see the filter below), so the band can simply cover the whole base
 // instead of being an annulus threaded between two ring roads.
 //
-// Wider across than the base is (the landing zone's pads reach 70 m off the
-// spine) and longer than the spine, so the scatter runs past the settlement in
-// every direction rather than stopping at a boundary the eye can find.
+// Wider across than the base is and longer than the spine, so the scatter runs
+// past the settlement in every direction rather than stopping at a boundary the
+// eye can find.
+//
+// The across figure is set by the district that stands furthest off the spine,
+// which is no longer the landing zone: the pads reach 70 m, but the comms race
+// is now out at the end of a 145 m branch and its ground reaches 160 m. A band
+// sized for the pads would have stopped short of the two longest branches and
+// left the outer half of the base standing on conspicuously clean regolith.
 const BOULDER_ALONG_MIN_M = SPINE_START_M - 60
 const BOULDER_ALONG_MAX_M = SPINE_END_M + 60
-const BOULDER_ACROSS_M = 150
+const BOULDER_ACROSS_M = 200
+// Kept in proportion to the band so widening it scatters more rock rather than
+// thinning what there is.
 const BOULDER_ALONG_STEPS = 34
-const BOULDER_ACROSS_STEPS = 15
+const BOULDER_ACROSS_STEPS = 20
 const BOULDER_KEEP_FRACTION = 0.34
 
 // A post every ~40 m of pavement, just outside the windrow — close enough
@@ -746,37 +774,53 @@ type RoadsideKind = 'crates' | 'cablereel' | 'parts' | 'bricks'
 // race's roster, five to six reads as a crew mid-shift. Placed by walking a
 // deterministic sequence of candidate (loop, bearing, side) triples — not a
 // grid — until enough clear the road itself and every district's own
-// ground, so a change to one district's `reach` can only ever shift where
+// ground, so a change to one district's `block` can only ever shift where
 // these land, never how many.
 const EXCAVATOR_COUNT = 6
 const EXCAVATOR_SHOULDER_MIN_M = 2.6
 const EXCAVATOR_SHOULDER_MAX_M = 6.5
 
-// Fixed spot for the base's own dig: at the far end of the habitat's own
-// branch, past the last of its corner lots.
+// Fixed spot for the base's own dig: beside the habitat's branch, on the long
+// stretch between where its spur leaves and where its own lots begin.
 //
 // It used to sit in the middle of the habitat district, which was possible
 // because that district was a ring of five plots around an empty plaza. There
-// is no plaza now — the middle of a crossing is the crossing — so the dig moves
-// to the one place on this district that is both served by its road and not
-// somebody's lot: the end of the branch, `BRANCH_TAIL_M` short of where the
-// pavement stops. That is arguably where it belonged all along, since what this
-// is digging is the vaults the buried habitats stand in, and a cut-and-cover
-// excavation wants to be at the edge of a settlement rather than its centre.
+// is no plaza and no crossing now — the district is a cluster at the end of a
+// 130 m branch — so the dig takes the one stretch of that branch that is both
+// served by the road and nobody's lot: past the spur junction at 55 m, short of
+// the buried modules' own lots at 102 m.
 //
-// Offset off the branch's centreline by enough to clear the windrow, so the
-// machine works beside its road rather than in it. The composite itself
-// (ConstructionPit +
+// That is arguably where it belonged all along, since what this is digging is
+// the vaults those buried habitats stand in, and the next vault along is
+// exactly what a cut-and-cover excavation beside the access road would be.
+//
+// On the LEFT of the branch's outbound direction, which is the side the spur is
+// not on, so the machine has open regolith behind it rather than another road.
+// Offset far enough off the centreline to clear the windrow, so it works beside
+// its road rather than in it. The composite itself (ConstructionPit +
 // its Excavator, both authored together in ProjectModel.tsx) is asymmetric —
 // the machine stands off to one side of the pit, not scattered by angle like
 // InterDistrictFiller's ambient fleet — but SurfaceAnchor's default facing
 // (no `noseAlong` given here) turns that whole composite toward the home
 // camera on its own, the same as any other un-steered installation, so this
 // only ever needs to pick a location, never an orientation.
-const UGC_SITE = at(
-  districtAlongM(BASE_PLAN.habitat!) - (ROAD_HALF_M + 8),
-  (BASE_PLAN.habitat!.reach ?? 0) + BRANCH_TAIL_M - 4
-)
+// Meters out along the habitat branch. Between the spur junction and the lots,
+// with room for the composite's own 13 m span at either end — asserted in
+// lunar-atlas-baseplan.cy.ts rather than trusted, since both bounds move if the
+// habitat's roster or its spur does.
+const UGC_ALONG_BRANCH_M = 78
+const UGC_SITE = (() => {
+  const plan = BASE_PLAN.habitat!
+  const branch = plan.branch!
+  const crossing = at(plan.alongM)
+  const [de, dn] = dirFor(branch.bearingDeg)
+  return {
+    east:
+      crossing.east + de * UGC_ALONG_BRANCH_M - dn * (ROAD_HALF_M + 8),
+    north:
+      crossing.north + dn * UGC_ALONG_BRANCH_M + de * (ROAD_HALF_M + 8),
+  }
+})()
 const UGC_EAST_M = UGC_SITE.east
 const UGC_NORTH_M = UGC_SITE.north
 // Clears the arm's own highest hoisted point (see EXC_DIG_POSES' "hoist"
@@ -887,6 +931,79 @@ function UndergroundConstructionSiteMarker({
 // hardware, and they fade with the rest of the built environment. Showing lit
 // streets and idle diggers in a year whose Moon holds a single dead lander is
 // exactly as wrong as standing a habitat there.
+// ---------------------------------------------------------------------------
+// The solar farm
+// ---------------------------------------------------------------------------
+
+// The base's own generation: the fields of sun-tracking arrays whose siting,
+// lattices
+// and keep-out all live in baseplan.ts (see SOLAR_ARRAYS there for why they
+// stand where they do and why the rows are pitched as far apart as they are).
+// This only has to seat each array on the rendered ground and aim it.
+//
+// AIMED AT THE SUN, and aimed off the one place the sun is written down.
+// `SUN_DIR` is the world direction to the sun, so handing it to SurfaceAnchor
+// as `noseAlong` turns each array's blanket normal (its own +X) onto the sun's
+// azimuth; the model then lifts that normal by SUN_LOCAL_ELEV_DEG to catch the
+// sun's elevation. Both come from lib/sun.ts, which is what makes it impossible
+// for the farm to face somewhere the light is not — the failure that would
+// otherwise be invisible to write and glaring to look at.
+//
+// Not interactive and never dimmed: this belongs to the settlement rather than
+// to any race, so it neither swallows a click meant for the ground nor fades
+// when a competitor's district is opened.
+function SolarFarmSite({
+  radiusAt,
+  presence = 1,
+}: {
+  radiusAt?: RadiusAt | null
+  presence?: number
+}) {
+  const arrays = useMemo(() => {
+    return SOLAR_ARRAYS.map((a) => {
+      const ll = capOffsetLatLon(a.east, a.north)
+      const d = new THREE.Vector3(
+        ...latLonToVector3(ll.lat, ll.lon, 1)
+      ).normalize()
+      // Seats on the ground directly under the mast rather than on the highest
+      // point of a footprint: a mast on a planted footing is not a rigid apron,
+      // so it follows the terrain instead of needing a skirt to hide a gap.
+      const ground = radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
+      return {
+        key: `${a.row}:${a.bay}`,
+        dir: [d.x, d.y, d.z] as Vec3,
+        seat: ground + SEAT_LIFT,
+        seed: a.row * 131 + a.bay * 17,
+      }
+    })
+  }, [radiusAt])
+
+  // Same threshold the street furniture uses: below it the farm is gone rather
+  // than faint, because a ghost solar array is still an array standing on a
+  // Moon that has none.
+  if (presence <= MODEL_PRESENCE) return null
+
+  return (
+    <>
+      {arrays.map((a) => (
+        <SurfaceAnchor
+          key={a.key}
+          dir={a.dir}
+          surfaceRadius={a.seat}
+          scale={M_TO_UNITS}
+          noseAlong={SUN_DIR}
+          interactive={false}
+        >
+          <VerticalSolarArray
+            elevRad={(SUN_LOCAL_ELEV_DEG * Math.PI) / 180}
+            seed={a.seed}
+          />
+        </SurfaceAnchor>
+      ))}
+    </>
+  )
+}
+
 function InterDistrictFiller({
   radiusAt,
   presence = 1,
@@ -1568,6 +1685,7 @@ export default function MarkerLayer({
         )
       })}
 
+      <SolarFarmSite radiusAt={radiusAt} presence={infraPresence} />
       <InterDistrictFiller radiusAt={radiusAt} presence={infraPresence} />
       <UndergroundConstructionSiteMarker
         radiusAt={radiusAt}
