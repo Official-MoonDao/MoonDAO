@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-26",
+  "updatedAt": "2026-09-04",
   "organizations": [
     {
       "id": "nasa",
@@ -1033,7 +1033,10 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Blue Origin — Blue Moon",
@@ -1482,7 +1485,10 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Firefly Aerospace — Blue Ghost",
@@ -1549,7 +1555,10 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Astrobotic — Lunar Delivery",
@@ -1686,12 +1695,76 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Intuitive Machines — Lunar Access",
           "url": "https://www.intuitivemachines.com/lunaraccess",
           "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "cnsa-change-7",
+      "orgId": "cnsa-roscosmos",
+      "name": "Chang'e-7",
+      "type": "lander",
+      "summary": "CNSA's next South Pole robotic scout — orbiter, lander, rover, and hopper. Four Chang'e landings have succeeded in a row; this is the first ILRS reconnaissance flight and cannot be the next landing of 2026 after the August 2026 stand-down.",
+      "location": {
+        "lat": -85.5,
+        "lon": 31.5
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (Chang'e-7 reconnaissance)",
+      "milestones": [
+        {
+          "id": "change7-standdown",
+          "title": "2026 launch window stood down; retargeted to 2027",
+          "targetDate": "2026-08",
+          "datePrecision": "month",
+          "status": "delayed",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Wikipedia — Chang'e 7",
+              "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        },
+        {
+          "id": "change7-landing",
+          "title": "South Pole landing after a ~90-day orbital scout",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Wikipedia — Chang'e 7",
+              "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+              "retrievedAt": "2026-09-04"
+            },
+            {
+              "label": "Wikipedia — International Lunar Research Station",
+              "url": "https://en.wikipedia.org/wiki/International_Lunar_Research_Station",
+              "retrievedAt": "2026-07-28"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Wikipedia — Chang'e 7",
+          "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+          "retrievedAt": "2026-09-04"
         }
       ],
       "visibility": "public"
@@ -2818,6 +2891,82 @@
           "label": "NASA — Blue Origin selected for Artemis V lander",
           "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-as-second-artemis-lunar-lander-provider/",
           "retrievedAt": "2026-07-20"
+        }
+      ]
+    },
+    {
+      "id": "shared-next-landing",
+      "title": "Touchdown — next successful lunar landing",
+      "description": "Which landing-vehicle operator after market open first lands upright on the Moon and returns surface data for at least 24 hours. The slot is the vehicle operator, not the payload or launch provider. Win tests are binary and public: touchdown UTC after OPEN, controlled powered descent, stable planned orientation, ≥24 h surface data, and independent confirmation. Tip-overs (IM-1, IM-2, SLIM) do not count. ispace, ISRO, and later flights sit in the Open Field.",
+      "projectIds": [
+        "astrobotic-griffin",
+        "im-nova-c",
+        "firefly-blue-ghost",
+        "blue-origin-blue-moon-mk1",
+        "cnsa-change-7"
+      ],
+      "location": {
+        "lat": -85.5,
+        "lon": -10
+      },
+      "regionLabel": "Next attempted lunar landing site",
+      "criteria": [
+        {
+          "id": "after-open",
+          "statement": "Touchdown UTC is after this market opens",
+          "threshold": "Landing timestamp > OPEN"
+        },
+        {
+          "id": "powered-descent",
+          "statement": "Controlled powered descent to the surface",
+          "threshold": "Not a crash or uncontrolled impact"
+        },
+        {
+          "id": "upright",
+          "statement": "Vehicle comes to rest in its planned orientation",
+          "threshold": "Excludes tip-overs such as IM-1, IM-2, and SLIM"
+        },
+        {
+          "id": "surface-data",
+          "statement": "Return surface data after landing",
+          "threshold": "≥ 24 hours of post-touchdown data"
+        },
+        {
+          "id": "independent-confirm",
+          "statement": "Independent confirmation of the landing",
+          "threshold": "Agency statement, third-party orbital imagery, or independently received telemetry"
+        }
+      ],
+      "targetWindow": {
+        "from": "2026",
+        "to": "2028"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "firefly-blue-ghost": 0.28,
+          "im-nova-c": 0.22,
+          "cnsa-change-7": 0.2,
+          "astrobotic-griffin": 0.18,
+          "blue-origin-blue-moon-mk1": 0.12
+        }
+      },
+      "sources": [
+        {
+          "label": "NASA — Firefly's Blue Ghost lands on the Moon",
+          "url": "https://www.nasa.gov/news-release/nasa-science-tech-lands-on-moon-aboard-firefly-blue-ghost/",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "NASA — Moon Base cargo landers and tech demonstrations update",
+          "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+          "retrievedAt": "2026-08-28"
+        },
+        {
+          "label": "Wikipedia — Chang'e 7",
+          "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+          "retrievedAt": "2026-09-04"
         }
       ]
     },
