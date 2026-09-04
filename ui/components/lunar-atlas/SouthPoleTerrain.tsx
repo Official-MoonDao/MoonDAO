@@ -34,7 +34,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { buildDetailSlopeTile } from '@/lib/lunar-atlas/detailTile'
-import { PHASE_REF_DEG, REGOLITH_ALBEDO, hapkeReflectance } from '@/lib/lunar-atlas/regolith'
+import { litGroundRadiance, shadowFillRadiance } from '@/lib/lunar-atlas/regolith'
 import {
   CAP_GRID,
   MAP_X_DIR,
@@ -46,7 +46,7 @@ import {
   TERRAIN_FRAGMENT_PATCHES,
   TERRAIN_VERTEX_PATCHES,
   applyShaderPatches,
-} from '@/lib/lunar-atlas/terrainShader'
+} from '@/lib/lunar-atlas/regolithShader'
 import { SUN_INTENSITY, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import { loadInnerField } from './useTerrainSampler'
 
@@ -60,39 +60,19 @@ const CLICK_DRAG_TOLERANCE_PX = 8
 // twice. Same values as lunarEnvironment.ts, for the same reason.
 const REGOLITH_TINT = '#fff8ed'
 
-// What sunlit regolith on flat ground actually radiates, at the phase angle the
-// home framing sits at. Not a tuning value — it is the BRDF evaluated once on
-// the CPU, and it exists so that anything derived from "as bright as the ground"
-// is derived from the ground the shader will actually draw.
-const LIT_GROUND_RADIANCE =
-  SUN_INTENSITY *
-  hapkeReflectance(
-    Math.sin((SUN_LOCAL_ELEV_DEG * Math.PI) / 180),
-    1,
-    (PHASE_REF_DEG * Math.PI) / 180
-  )
-
-// The light left in a lunar shadow, as scene radiance.
+// The fill in every shadow. Derived in lib/lunar-atlas/regolith.ts, and shared
+// with the graded surfaces in BaseRoads so a road in shadow cannot sit at a
+// different depth from the ground it crosses.
 //
-// There is no atmosphere, so nothing fills a shadow except sunlight that already
-// bounced off regolith nearby: the ground's own radiance, times the fraction of
-// the sky a shadowed point can see ground in, times its own albedo on the way
-// back out. That lands at 6% of the lit ground.
-//
-// The first version of this multiplied a LAMBERTIAN ground radiance
-// (albedo * sun * mu0 / pi) instead, and came out 4x too high — 24% of the lit
-// ground rather than 6%. That is worth spelling out because it is the same 4x
-// error, from the same substitution, that lunarEnvironment.ts had: at an 85°
-// phase angle the real BRDF returns about a quarter of what a Lambertian surface
-// of the same normal albedo would. And a 24% uniform fill is not a small
-// cosmetic error, it is the "flat ambient pond" this component's own history
-// warns about — it lifts every slope by the same amount, so it flattens the
-// shading contrast that per-pixel normals were added to produce.
-//
-// Phase 2 replaces the constant with real sky visibility from the horizon map;
-// until then every shadow is equally deep, which is too bright in narrow
-// crevices and too dark under overhangs.
-const SHADOW_BOUNCE_RADIANCE = LIT_GROUND_RADIANCE * REGOLITH_ALBEDO * 0.5
+// The first version of this was computed here, from a LAMBERTIAN ground radiance,
+// and came out 4x too high — 24% of the lit ground rather than 6%. A 24% uniform
+// fill is not a small cosmetic error: it is the "flat ambient pond" this
+// component's own history warns about, since it lifts every slope by the same
+// amount and so flattens exactly the shading contrast per-pixel normals were
+// added to produce. Sharing one derivation is how that stops recurring.
+const SHADOW_BOUNCE_RADIANCE = shadowFillRadiance(
+  litGroundRadiance(SUN_INTENSITY, SUN_LOCAL_ELEV_DEG)
+)
 
 // The geometry plus the world offset its vertices are relative to (see
 // buildCapGeometry — the offset must go on the mesh transform, which three
@@ -201,7 +181,7 @@ export default function SouthPoleTerrain({
       shader.uniforms.bounceRadiance = { value: SHADOW_BOUNCE_RADIANCE }
 
       // The patches themselves, and the reasoning for each anchor, live in
-      // lib/lunar-atlas/terrainShader.ts — they are string surgery on shader
+      // lib/lunar-atlas/regolithShader.ts — they are string surgery on shader
       // source three owns, so they are unit-tested against three's real
       // ShaderLib rather than trusted.
       shader.vertexShader = applyShaderPatches(shader.vertexShader, TERRAIN_VERTEX_PATCHES)

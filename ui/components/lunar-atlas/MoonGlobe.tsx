@@ -629,15 +629,25 @@ export default function MoonGlobe({
         // this scene kept being described as grey plastic.
         //
         // So this is deliberately NOT multiplied by 17 to put the ground back
-        // where it was. Exposure is global, and every unlit MeshBasicMaterial in
-        // the scene — the ground stains, the road crust, the decals — has its
-        // colours authored as final screen values; scaling the curve blows all of
-        // them to white while doing nothing for the physics. Re-anchoring the
-        // exposure means re-authoring those together with it, which is a
-        // deliberate pass and not a constant.
+        // where it was — but the reason has changed, and shrunk.
         //
-        // Until then the frame is physically consistent but darker than it was,
-        // and how much of that darkness to buy back is a judgement about the
+        // The original objection was that exposure is global while half the ground
+        // was unlit materials carrying colours authored as final screen values, so
+        // scaling the curve would blow those to white while doing nothing for the
+        // physics. Most of that is gone now. The road crust, the hardstand and the
+        // rubble are lit by the same BRDF as the terrain (see BaseRoads), so they
+        // track exposure exactly as the ground does. The stains no longer carry
+        // absolute values at all — they are multiplicative albedo factors, so they
+        // are exposure-invariant by construction (see GroundDisturbance).
+        //
+        // What is left that would not survive a 17x is the annotation layer: the
+        // marker beacons, pin lines and labels in MarkerLayer. Those are arguably
+        // supposed to hold a fixed screen brightness, being UI drawn into the scene
+        // rather than objects in it, which means the re-anchor is now a decision
+        // about them specifically rather than a scene-wide re-authoring pass.
+        //
+        // Until it is taken, the frame is physically consistent but darker than it
+        // was, and how much of that darkness to buy back is a judgement about the
         // photograph rather than about the Moon.
         toneMappingExposure: 1.05,
         // A LOGARITHMIC depth buffer is the obvious choice for a scene that

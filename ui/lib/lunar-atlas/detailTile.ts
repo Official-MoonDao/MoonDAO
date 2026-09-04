@@ -13,7 +13,7 @@
 // be combined with the terrain's relief except by multiplying two images of
 // light together. Slopes of superimposed height fields simply add, so the
 // renderer sums this into the terrain's own gradient and rebuilds one normal at
-// the end (see terrainShader.ts).
+// the end (see regolithShader.ts).
 //
 // No three import: this is a pure array producer so the tile's roughness can be
 // measured in a unit test. It is measured, because the amplitude it gets scaled

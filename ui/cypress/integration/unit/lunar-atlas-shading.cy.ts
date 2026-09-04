@@ -54,7 +54,7 @@ import {
   detailRmsSlope,
   valueNoise,
 } from '../../../lib/lunar-atlas/detailTile'
-import { DETAIL_OCTAVES } from '../../../lib/lunar-atlas/terrainShader'
+import { DETAIL_OCTAVES } from '../../../lib/lunar-atlas/regolithShader'
 
 const DEG = Math.PI / 180
 

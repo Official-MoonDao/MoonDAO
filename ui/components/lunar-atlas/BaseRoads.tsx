@@ -74,10 +74,47 @@ import {
   type Centreline,
   type Junction,
 } from '@/lib/lunar-atlas/junctions'
+import { litGroundRadiance, shadowFillRadiance } from '@/lib/lunar-atlas/regolith'
+import {
+  GRADED_SURFACE_FRAGMENT_PATCHES,
+  applyShaderPatches,
+} from '@/lib/lunar-atlas/regolithShader'
 import { capOffsetLatLon, M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
+import { SUN_INTENSITY, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { MODEL_PRESENCE } from './MarkerLayer'
 import type { RadiusAt } from './useTerrainSampler'
+
+// Everything this file draws is regolith — graded, sintered, or tipped, but still
+// lunar soil — so it has to reflect light by the same law as the ground it sits
+// on, and that is the only reason this shader hook exists.
+//
+// The alternative is not "slightly different", which is why it is worth the
+// machinery. three's diffuse lobe is Lambertian, and at the phase angles a polar
+// scene lives at, a Lambertian surface is about 4x brighter than regolith of the
+// same albedo. So a road authored to match the ground, against a terrain that now
+// uses the real BRDF, renders as poured concrete: pale, flat, and conspicuously
+// pasted onto the landscape. The colours below were chosen against a hillshade
+// bake and their RELATIVE values still hold; what changed is the law that turns
+// them into light.
+//
+// Everything else in three's light loop is kept, deliberately — most importantly
+// the shadow attenuation, which arrives already folded into directLight.color.
+const GRADED_BOUNCE_RADIANCE = shadowFillRadiance(
+  litGroundRadiance(SUN_INTENSITY, SUN_LOCAL_ELEV_DEG)
+)
+
+function gradedRegolithShader(shader: THREE.WebGLProgramParametersWithUniforms) {
+  shader.uniforms.bounceRadiance = { value: GRADED_BOUNCE_RADIANCE }
+  shader.fragmentShader = applyShaderPatches(
+    shader.fragmentShader,
+    GRADED_SURFACE_FRAGMENT_PATCHES
+  )
+}
+
+// onBeforeCompile is not part of three's own program cache key, so without this
+// the patched and unpatched variants collide and whichever compiled first wins.
+const GRADED_CACHE_KEY = () => 'regolith-graded-v1'
 
 // Multiplied against the surface texture. The sintered crust runs a little
 // lighter than the regolith it was fused from; the spoil is darker because it
@@ -687,11 +724,17 @@ function buildRubble(
   origin: THREE.Vector3,
   geo: THREE.BufferGeometry
 ) {
+  // Dust-coated rock rather than dust, but on this world that distinction does
+  // not survive contact with reality: every exposed surface is mantled in the
+  // same regolith, and a boulder shaded Lambertian beside Hapke ground reads as a
+  // polystyrene prop.
   const mat = new THREE.MeshStandardMaterial({
     roughness: 1,
     metalness: 0,
     flatShading: true,
   })
+  mat.onBeforeCompile = gradedRegolithShader
+  mat.customProgramCacheKey = GRADED_CACHE_KEY
   const mesh = new THREE.InstancedMesh(geo, mat, rocks.length)
   const m = new THREE.Matrix4()
   const q = new THREE.Quaternion()
@@ -766,6 +809,8 @@ function RoadPiece({
           // risks sorting artefacts against the terrain it hovers a few
           // centimetres over.
           depthWrite={false}
+          onBeforeCompile={gradedRegolithShader}
+          customProgramCacheKey={GRADED_CACHE_KEY}
         />
       </mesh>
       {piece.rubble && <primitive object={piece.rubble} />}

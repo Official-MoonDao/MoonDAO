@@ -166,6 +166,48 @@ export function hapkeNormalAlbedo(w = SINGLE_SCATTERING_ALBEDO): number {
   return Math.PI * hapkeReflectance(1, 1, 0, w)
 }
 
+// ---------------------------------------------------------------------------
+// Derived scene radiances
+//
+// Functions of the sun rather than constants, for two reasons. It keeps this
+// module free of scene imports, so the BRDF stays independently testable; and it
+// is what a moving sun will need, since both quantities scale with elevation.
+// ---------------------------------------------------------------------------
+
+// Radiance of flat sunlit ground, viewed head-on, at a given sun elevation.
+//
+// The one thing to know about this function is that it is roughly a QUARTER of
+// what the Lambertian shorthand albedo * E / pi gives at this scene's phase
+// angles. That is not a small discrepancy to absorb silently: anything derived as
+// "about as bright as the ground" and built on the Lambertian form comes out 4x
+// too bright, which has now happened three times in this codebase — in the
+// environment map, in the shadow fill below, and in the graded road surfaces. Use
+// this, not the shorthand.
+export function litGroundRadiance(
+  sunIntensity: number,
+  sunElevDeg: number,
+  phaseDeg = PHASE_REF_DEG
+): number {
+  const mu0 = Math.sin((sunElevDeg * Math.PI) / 180)
+  return sunIntensity * hapkeReflectance(mu0, 1, (phaseDeg * Math.PI) / 180)
+}
+
+// The light left in a lunar shadow, as radiance.
+//
+// There is no atmosphere, so nothing fills a shadow except sunlight that already
+// bounced off regolith nearby: the ground's own radiance, times the fraction of
+// its sky that is filled by lit ground, times its own albedo on the way back out.
+// It lands near 6% of the lit ground.
+//
+// skyFraction is the crude part, and deliberately the only crude part — a single
+// number standing in for how much lit ground a point can actually see. Phase 2
+// replaces it with real per-texel sky visibility from a horizon map. Until then
+// every shadow is equally deep, which is too bright in narrow crevices and too
+// dark under overhangs.
+export function shadowFillRadiance(litRadiance: number, skyFraction = 0.5): number {
+  return litRadiance * REGOLITH_ALBEDO * skyFraction
+}
+
 // The same law as GLSL, for the terrain shader. Kept as a string beside the
 // TypeScript rather than in the component so there is exactly one place to look
 // when the two are compared, and so the constants below cannot drift from the

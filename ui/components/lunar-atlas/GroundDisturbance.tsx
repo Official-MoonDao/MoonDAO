@@ -37,6 +37,7 @@ import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import { M_TO_UNITS, capCenterDirection } from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
+import { STAIN_FRAGMENT_PATCHES, applyShaderPatches } from '@/lib/lunar-atlas/regolithShader'
 import { MODEL_PRESENCE, type ColonyLayout } from './MarkerLayer'
 import { footprintRadiusM } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
@@ -59,10 +60,11 @@ const PROFILE: { t: number; a: number }[] = [
   { t: 1, a: 0 },
 ]
 
-// Churned regolith, for blending over the terrain's own albedo. A dark warm
-// grey rather than anything neutral: the material being exposed is the same
-// soil, just broken and shadowed at grain scale, so it desaturates toward
-// brown-grey rather than toward black.
+// Churned regolith. A dark warm grey rather than anything neutral: the material
+// being exposed is the same soil, just broken and shadowed at grain scale, so it
+// desaturates toward brown-grey rather than toward black.
+//
+// Read as an ALBEDO, not as a colour to paint on — see AUTHORED_GROUND_TONE.
 const TONE = new THREE.Color('#5f584f')
 
 // ---------------------------------------------------------------------------
@@ -112,8 +114,46 @@ const SCOUR_PROFILE: { t: number; a: number }[] = [
 // less gas to do the work.
 const SCOUR_STREAK = 0.45
 
+// ---------------------------------------------------------------------------
+// Stains as albedo, not as paint
+//
+// The tones above are absolute colours, and they were correct while the terrain
+// was a baked image of a fixed brightness: an unlit stain drawn over an unlit
+// ground is a consistent pair. The terrain is computed now, and varies with the
+// sun and with its own relief, so an absolute colour is no longer a stain — it is
+// a light source. It holds its brightness into shadow, where a mark on the soil
+// cannot possibly be brighter than the soil, and it flattens the per-pixel relief
+// it covers.
+//
+// What a stain physically IS, is a patch of ground with a different albedo. So
+// that is what these become: a multiplicative factor on whatever the ground under
+// them is doing. In shadow the factor multiplies a dark value and stays dark; over
+// a craterlet it preserves the shading rather than averaging it away; and if the
+// sun moves, it follows for free.
+//
+// The reference below is what makes an absolute colour into a ratio. It is the
+// brightness of the unstained ground the tones were originally picked against —
+// the old bake read about sRGB 163, warmed to match the cast of the tones
+// themselves — so tone / reference recovers the relative change the artwork
+// intended, which is the part still worth keeping.
+const AUTHORED_GROUND_TONE = new THREE.Color('#a39c92')
+
+// Component-wise ratio in LINEAR light, which is the space three.Color already
+// holds these in. Values above 1 are expected and meaningful: blast-scoured ground
+// is genuinely brighter than what surrounds it.
+function albedoRatio(tone: THREE.Color): [number, number, number] {
+  return [
+    tone.r / AUTHORED_GROUND_TONE.r,
+    tone.g / AUTHORED_GROUND_TONE.g,
+    tone.b / AUTHORED_GROUND_TONE.b,
+  ]
+}
+
 type PatchStyle = {
   tone: THREE.Color
+  // The same tone expressed against the ground it is a mark ON, which is the form
+  // the shader consumes. Above 1 in any channel means this stain brightens.
+  ratio: [number, number, number]
   profile: { t: number; a: number }[]
   // Outer radius as a multiple of the installation's own footprint.
   spread: number
@@ -125,6 +165,7 @@ type PatchStyle = {
 
 const CHURN_STYLE: PatchStyle = {
   tone: TONE,
+  ratio: albedoRatio(TONE),
   profile: PROFILE,
   spread: SPREAD,
   streak: 0,
@@ -132,10 +173,47 @@ const CHURN_STYLE: PatchStyle = {
 
 const SCOUR_STYLE: PatchStyle = {
   tone: SCOUR_TONE,
+  ratio: albedoRatio(SCOUR_TONE),
   profile: SCOUR_PROFILE,
   spread: SCOUR_SPREAD,
   maxR: SCOUR_MAX_R,
   streak: SCOUR_STREAK,
+}
+
+// ---------------------------------------------------------------------------
+// Why one plain multiply is enough, and why it is exact
+//
+// A hardware multiply blend is normally a compromise, because it operates on
+// whatever is already in the framebuffer. In an ordinary 8-bit sRGB target that
+// means multiplying ENCODED values, which is only equivalent to multiplying light
+// for a pure power law — and sRGB has a linear toe near black, so the error grows
+// as the destination darkens. Measured, it would understate a stain by 0.13 stops
+// over ground at 0.02 and by 0.88 stops at 0.005, which are precisely the lit and
+// the shadowed regolith of this scene. It would also be unable to BRIGHTEN at all,
+// since a fragment above 1 would clamp, and the blast halo is genuinely brighter
+// than what surrounds it.
+//
+// None of that applies here, and the reason is worth recording rather than
+// rediscovering. This scene's tone curve is an EffectComposer pass rather than a
+// per-material one (see the gl.toneMapping comment in MoonGlobe), and
+// @react-three/postprocessing builds its buffers as HalfFloatType. postprocessing
+// only tags a buffer sRGB when it is UnsignedByteType, so this one stays linear,
+// and three resolves colorspace_fragment to an identity for any non-XR render
+// target anyway. The scene therefore reaches the blender in LINEAR light with no
+// clamp, which makes MultiplyBlending an exact multiply of radiance and lets a
+// factor above 1 brighten correctly. One code path covers both directions.
+//
+// That is a real dependency and not a coincidence to shrug at: rendering straight
+// to the canvas would put the blend back into encoded, clamped space, where the
+// churn would be understated in shadow and the halo would stop brightening.
+//
+// The patch itself lives in lib/lunar-atlas/regolithShader.ts, with the rest of the
+// string surgery on three's shaders, so it is unit-tested against three's real
+// source rather than trusted to keep matching.
+const STAIN_CACHE_KEY = () => 'stain-multiply-v1'
+
+function stainShader(shader: THREE.WebGLProgramParametersWithUniforms) {
+  shader.fragmentShader = applyShaderPatches(shader.fragmentShader, STAIN_FRAGMENT_PATCHES)
 }
 
 // Real clearance above the sampled ground, in meters. Small — this is a change
@@ -274,7 +352,10 @@ function addPatch(
       const seat = radiusAt(ll.lat, ll.lon) + LIFT_M * M_TO_UNITS
       const v = p.multiplyScalar(seat).sub(origin)
       out.positions.push(v.x, v.y, v.z)
-      out.colors.push(style.tone.r, style.tone.g, style.tone.b, alpha)
+      // The ratio, not the tone. A Float32 attribute so the scour's >1 channels
+      // survive — a normalized byte attribute would clamp them to 1 and silently
+      // turn the blast halo into a no-op.
+      out.colors.push(style.ratio[0], style.ratio[1], style.ratio[2], alpha)
     }
   }
 
@@ -318,7 +399,11 @@ export default function GroundDisturbance({
 
   const pieces = useMemo(() => {
     if (!radiusAt) return []
-    const out: { category: ProjectType; geometry: THREE.BufferGeometry }[] = []
+    const out: {
+      category: ProjectType
+      geometry: THREE.BufferGeometry
+      style: PatchStyle
+    }[] = []
 
     for (const tree of trees) {
       // A race whose hardware DRIVES never stands on its plots (see PATROL), so
@@ -362,7 +447,7 @@ export default function GroundDisturbance({
         new THREE.Float32BufferAttribute(buffers.colors, 4)
       )
       geometry.setIndex(buffers.index)
-      out.push({ category: tree.category, geometry })
+      out.push({ category: tree.category, geometry, style })
     }
     return out
   }, [trees, layout, radiusAt, origin])
@@ -378,25 +463,20 @@ export default function GroundDisturbance({
 
   return (
     <group position={origin}>
-      {pieces.map(({ category, geometry }) => {
+      {pieces.map(({ category, geometry, style }) => {
         const presence = siteOpacity?.get(category) ?? 1
         if (presence <= MODEL_PRESENCE) return null
         return (
           <mesh key={category} geometry={geometry} raycast={NO_RAYCAST}>
-            {/* UNLIT, and that premise has now inverted. It was correct while the
-                terrain was a baked hillshade on a MeshBasicMaterial: a lit stain
-                would have shaded against the sun while the ground under it did
-                not. The terrain is lit now (see SouthPoleTerrain), so it is this
-                stain that no longer shades with its own ground — it holds a fixed
-                brightness over a surface that varies, which reads worst in
-                shadow, where an albedo mark cannot be brighter than the soil it
-                is a mark on.
+            {/* Still unlit, and now correctly so. This material does not
+                represent a surface at all — it emits a FACTOR, and the ground it
+                multiplies has already been lit by the regolith BRDF. Giving it a
+                light response of its own would be the mistake: it would shade
+                against its own smooth geometric normal and average away the
+                per-pixel relief underneath it.
 
-                Left unlit for the moment because the fix is not "make it lit".
-                A stain is an albedo change, and the right shape for it is a
-                MULTIPLY against the ground rather than a surface with a light
-                response of its own — which is a blending change that wants to be
-                judged by eye next to the exposure question in MoonGlobe. */}
+                See STAIN_FACTOR_PATCH for how the factor is built and why the
+                two blend equations differ. */}
             <meshBasicMaterial
               vertexColors
               transparent
@@ -405,6 +485,15 @@ export default function GroundDisturbance({
               // only risks sorting artefacts against the terrain it lies a
               // hand's breadth over — the same call the roads make.
               depthWrite={false}
+              // Redundant while the composer is mounted, since it forces
+              // NoToneMapping and the chunk compiles out. Set anyway because it is
+              // the one line that would still be needed if the composer went away:
+              // tone mapping is not linear, so it would move this material's no-op
+              // factor off 1.0 and an absent stain would darken the ground.
+              toneMapped={false}
+              blending={THREE.MultiplyBlending}
+              onBeforeCompile={stainShader}
+              customProgramCacheKey={STAIN_CACHE_KEY}
             />
           </mesh>
         )
