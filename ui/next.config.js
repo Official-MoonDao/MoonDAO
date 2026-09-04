@@ -161,6 +161,11 @@ module.exports = withBundleAnalyzer(
             permanent: true,
           },
           {
+            source: '/mockups',
+            destination: '/mockups/index.html',
+            permanent: false,
+          },
+          {
             source: '/lunar-atlas',
             destination: '/moonbase',
             permanent: true,

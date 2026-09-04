@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 21 · Thesis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink: #111; --dim: #5c5c5c; --hair: #e6e6e6; --mark: #1d4ed8; --paper: #fff; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+    font-size: 16px; line-height: 1.5;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .nav {
+    display: flex; align-items: center; gap: 28px;
+    padding: 18px 28px 18px 20px;
+  }
+  .badge {
+    width: 42px; height: 42px; background: var(--mark); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 600; font-size: 11px; letter-spacing: 0.04em;
+  }
+  .nav a { font-size: 15px; }
+  .nav .end { margin-left: auto; color: var(--mark); font-weight: 500; }
+
+  .page {
+    max-width: 1180px; margin: 0 auto;
+    padding: 36px 28px 96px;
+    display: grid; grid-template-columns: 0.95fr 1.15fr; gap: 80px;
+  }
+
+  .thesis p { margin: 0 0 16px; color: var(--dim); max-width: 36ch; }
+  .thesis .line {
+    color: var(--ink); font-weight: 600; font-size: 20px; line-height: 1.35;
+    border-bottom: 1px solid #c9c9c9; display: inline; padding-bottom: 2px;
+  }
+
+  .feed h2 {
+    margin: 0 0 6px; font-size: 14px; font-weight: 500;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .feed h2 a { color: var(--mark); font-size: 13px; }
+  .row {
+    padding: 18px 0; border-top: 1px solid var(--hair);
+  }
+  .row:first-of-type { border-top: 1px solid var(--ink); }
+  .row .t { font-size: 22px; font-weight: 600; letter-spacing: -0.03em; }
+  .row .m { margin-top: 4px; color: var(--dim); font-size: 14px; }
+
+  footer {
+    max-width: 1180px; margin: 0 auto; padding: 0 28px 48px;
+    display: flex; justify-content: space-between; color: var(--dim); font-size: 13px;
+  }
+
+  @media (max-width: 860px) {
+    .page { grid-template-columns: 1fr; gap: 40px; padding-top: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="badge">MD</div>
+  <a href="#">About</a>
+  <a href="#">Missions</a>
+  <a href="#">Governance</a>
+  <a class="end" href="#">Join</a>
+</div>
+
+<div class="page">
+  <aside class="thesis">
+    <p>MoonDAO is a space program based on a public ledger.</p>
+    <p><span class="line">We send people, and stay pointed at the Moon, with money and votes anyone can inspect.</span></p>
+  </aside>
+
+  <section class="feed">
+    <h2>Record <a href="#">View all</a></h2>
+    <div class="row">
+      <div class="t">Cotton, by vote</div>
+      <div class="m">Coby Cotton · Blue Origin NS-22 · August 2022</div>
+    </div>
+    <div class="row">
+      <div class="t">Jahangir, by sweepstakes</div>
+      <div class="m">Dr. Eiman Jahangir · August 2024</div>
+    </div>
+    <div class="row">
+      <div class="t">Constitution, delivered</div>
+      <div class="m">Written by the members · lunar surface · 2025</div>
+    </div>
+    <div class="row">
+      <div class="t">Eight million, still public</div>
+      <div class="m">Raised · every vote that spent it is still there</div>
+    </div>
+    <div class="row">
+      <div class="t">Membership, open</div>
+      <div class="m">Lock $MOONEY to vote · or just show up</div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <span>MoonDAO</span>
+  <span>A public record, not a brochure</span>
+</footer>
+
+</body>
+</html>

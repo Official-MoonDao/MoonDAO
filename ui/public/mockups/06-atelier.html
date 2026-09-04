@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 06 · Atelier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c1a16;
+    --ink-2: #58534a;
+    --ink-3: #918a7d;
+    --hair: #e2ddd3;
+    --paper: #faf8f4;
+    --paper-2: #f2eee6;
+    --clay: #8a5a44;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 15.5px;
+    line-height: 1.7;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  .display {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 300;
+    font-optical-sizing: auto;
+    letter-spacing: -0.012em;
+    line-height: 1.1;
+  }
+  .cap {
+    font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500;
+  }
+
+  .nav {
+    position: sticky; top: 0; z-index: 40;
+    background: rgba(250,248,244,0.9); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--hair);
+  }
+  .nav-in {
+    max-width: 1080px; margin: 0 auto; padding: 0 40px; height: 64px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .wm { font-family: 'Fraunces', serif; font-weight: 400; font-size: 21px; }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links a { font-size: 13.5px; color: var(--ink-2); }
+  .nav-links a:hover { color: var(--clay); }
+  .nav .join { font-size: 13.5px; color: var(--clay); }
+
+  .hero { padding: 120px 40px 80px; text-align: center; }
+  .hero h1 { margin: 0 auto; font-size: clamp(36px, 5.2vw, 68px); max-width: 14ch; }
+  .hero h1 em { font-style: italic; }
+  .btn {
+    display: inline-flex; align-items: center; height: 46px; padding: 0 26px;
+    background: var(--ink); color: var(--paper); font-size: 13px; margin-top: 36px;
+  }
+  .btn:hover { background: var(--clay); }
+
+  .band-img img {
+    width: 100%; height: 520px; object-fit: cover; object-position: center 82%;
+    display: block; filter: saturate(0.55) contrast(0.96);
+  }
+
+  .nums { padding: 96px 40px; }
+  .nums-grid {
+    max-width: 1080px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; text-align: center;
+  }
+  .nums .n { font-family: 'Fraunces', serif; font-weight: 300; font-size: clamp(34px, 4vw, 52px); line-height: 1; }
+  .nums .l { margin-top: 12px; }
+
+  .said { background: var(--paper-2); padding: 96px 40px; text-align: center; }
+  .said p {
+    margin: 0 auto; max-width: 40ch; color: var(--ink-2); font-size: 17px;
+  }
+
+  .close { padding: 110px 40px 120px; text-align: center; }
+  .close h2 { margin: 0 auto; font-size: clamp(30px, 4vw, 52px); }
+
+  footer {
+    border-top: 1px solid var(--hair);
+    max-width: 1080px; margin: 0 auto; padding: 22px 40px 48px;
+    display: flex; justify-content: space-between;
+  }
+
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .nums-grid { grid-template-columns: 1fr; gap: 28px; }
+    .band-img img { height: 320px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-in">
+    <a class="wm" href="#">MoonDAO</a>
+    <div class="nav-links">
+      <a href="#">Missions</a>
+      <a href="#">Governance</a>
+      <a href="#">About</a>
+    </div>
+    <a class="join" href="#">Join</a>
+  </div>
+</div>
+
+<header class="hero">
+  <h1 class="display">A long project, <em>paid for in public.</em></h1>
+</header>
+
+<div class="band-img">
+  <img src="/assets/mockups/habitat-render.webp" alt="A lunar settlement" />
+</div>
+
+<section class="nums">
+  <div class="nums-grid">
+    <div><div class="n">Two</div><div class="cap l">Flown</div></div>
+    <div><div class="n">$8M</div><div class="cap l">Raised</div></div>
+    <div><div class="n">2025</div><div class="cap l">Landed</div></div>
+  </div>
+</section>
+
+<section class="said">
+  <p>Coby Cotton, 2022. Dr. Eiman Jahangir, 2024. A constitution on the Moon, 2025. Members voted on all of it.</p>
+</section>
+
+<section class="close">
+  <h2 class="display">Membership is open.</h2>
+  <div><a class="btn" href="#">Join</a></div>
+</section>
+
+<footer>
+  <span class="cap">© MoonDAO</span>
+  <span class="cap">Privacy</span>
+</footer>
+
+</body>
+</html>
