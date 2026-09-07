@@ -353,7 +353,7 @@ answer; an independent verifier vouches for the inputs.**
 | 4 | Occupied chamber volume (the convex envelope of the article as mounted) | **Verifier** (§9) |
 | 5 | Feedthrough inventory: every conductor through the panel and what it carries; how the article is mounted | **Verifier** (§9) |
 | 6 | The signed verification statement | **Verifier** (§9) |
-| 7 | Mid-run public telemetry URL, video URL, and log hash chain | **Verifier** (§9.5) |
+| 7 | Mid-run public telemetry URL, video URL, and log hash chain | **Verifier** (§9.4) |
 | 8 | The procurement document (§7) | Entrant |
 | 9 | All of the above under an open licence | Entrant |
 
@@ -447,7 +447,7 @@ files, and publishes them with a signed statement.
 Nothing between those two visits is physically attended. That is what keeps verification two
 person-days of travel instead of two weeks of standing watch.
 
-### 9.5 Mid-run evidence (corroboration, not the root of trust)
+### 9.4 Mid-run evidence (corroboration, not the root of trust)
 
 Between Day 0 and Day 15 the run publishes:
 
@@ -461,7 +461,7 @@ Between Day 0 and Day 15 the run publishes:
 
 A clean stream with no independent meters is not a Qualifying Run.
 
-### 9.4 Self-published and retroactive claims
+### 9.5 Self-published and retroactive claims
 
 A test MoonDAO did not organise still qualifies, **but only if independent custody was in place at
 the time.** An accredited laboratory's own test report generally satisfies this. A company's internal
