@@ -74,6 +74,15 @@ describe('lunar-atlas × DePrize binding', () => {
       'isro-barc-rhu',
     ])
     expect(nightShift!.category).to.equal(undefined)
+    expect(nightShift!.description).to.match(
+      /^Deliver at least 10 watts of electricity, continuously, for 354 hours/,
+    )
+    expect(nightShift!.description).to.match(/not a 9\.8 W waiver/)
+    const sustained = nightShift!.criteria?.find((c) => c.id === 'sustained-output')
+    expect(sustained?.threshold).to.match(/first hour/)
+    expect(sustained?.threshold).to.not.match(/over the window/)
+    expect(nightShift!.criteria?.some((c) => c.id === 'size-disclosure')).to.equal(true)
+    expect(nightShift!.criteria?.some((c) => c.id === 'independent-meters')).to.equal(true)
     expect(nightShift!.market?.status).to.equal('planned')
     expect(getDePrizeRaceBinding('sepolia', 22)).to.equal(undefined)
     for (const id of nightShift!.projectIds) {

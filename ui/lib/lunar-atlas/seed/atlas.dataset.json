@@ -3333,7 +3333,7 @@
     {
       "id": "shared-night-shift",
       "title": "Night Shift — first machine that works through a lunar night",
-      "description": "Who first delivers at least 10 watts of electricity, continuously, for 354 hours, in a vacuum chamber colder than 100 kelvin, with nothing plugged in — and is still delivering the same 10 watts at the end. The slot is the power system, not the host lander. Firefly, Intuitive Machines, and ispace are hosts or customers and sit in the Open Field only if they bring their own article. State plutonium does not clear the commercial procurement rule.",
+      "description": "Deliver at least 10 watts of electricity, continuously, for 354 hours, in a vacuum chamber colder than 100 kelvin, with nothing plugged in — and still be delivering the same 10 watts at the end. Publish the data. The 98% rule is a last-hour / first-hour slope limit, not a 9.8 W waiver: every rolling hour must stay ≥ 10.0 We. Unlike NASA Watts on the Moon (store and distribute night power), this is one unplugged article plus a commercial procurement rule. The slot is the power system, not the host lander. Firefly, Intuitive Machines, and ispace sit in the Open Field only if they bring their own article. State plutonium does not clear. Thermal wadis compete in the Open Field; mass and occupied volume are published so a warehouse-sized heat store cannot hide.",
       "projectIds": [
         "zeno-harmonia",
         "astrobotic-nite",
@@ -3362,7 +3362,17 @@
         {
           "id": "sustained-output",
           "statement": "Output is undiminished at the end of the night",
-          "threshold": "Mean power in the final hour ≥ 98% of mean power over the window"
+          "threshold": "Mean power in the last hour ≥ 98% of mean power in the first hour. This is a slope limit, not a 9.8 W waiver — the 10.0 We rolling-hour floor is separate"
+        },
+        {
+          "id": "size-disclosure",
+          "statement": "Publish article mass and occupied chamber volume",
+          "threshold": "Weigh-in and convex envelope as mounted. Not a cap — a thermal wadi must be visible on the scoreboard"
+        },
+        {
+          "id": "independent-meters",
+          "statement": "Independent instruments, two site visits",
+          "threshold": "Day 0: weigh, seal, install the verifier's sensors. Day 15: check seals and take the files. Live telemetry and clock-in-frame video corroborate; they do not replace the meters"
         },
         {
           "id": "procurable",
@@ -3397,6 +3407,11 @@
           "label": "NASA — Tipping Point partnerships",
           "url": "https://www.nasa.gov/news-release/nasa-partners-with-american-companies-on-key-moon-exploration-tech/",
           "retrievedAt": "2026-09-04"
+        },
+        {
+          "label": "NASA — Watts on the Moon Challenge",
+          "url": "https://www.nasa.gov/prizes-challenges-and-crowdsourcing/centennial-challenges/watts-on-the-moon-challenge/",
+          "retrievedAt": "2026-09-07"
         }
       ]
     },
