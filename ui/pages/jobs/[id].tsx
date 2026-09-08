@@ -17,6 +17,7 @@ import {
   getApplicationDeadline,
   getJobShareUrl,
   parseJobMetadata,
+  stripJobApplicationFields,
 } from '@/lib/jobs/jobMetadata'
 import { fetchJobPostingDoc } from '@/lib/jobs/jobPostingDoc'
 import { buildJobPostingJsonLd, serializeJsonLd } from '@/lib/jobs/jobPostingJsonLd'
@@ -69,15 +70,17 @@ export default function JobDetail({
 }: JobDetailProps) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
-  const { citizen } = useContext(CitizenContext)
+  const { citizen, isLoading: citizenLoading } = useContext(CitizenContext)
   useChainDefault()
 
   const isGated = !JOB_DETAIL_PUBLIC && !citizen
+  const canSeeApplication = Boolean(citizen)
   // Pages Router reuses this component across /jobs/[id] navigations, so a
   // fetched doc is tagged with its CID and ignored once the route moves on.
   const [clientDoc, setClientDoc] = useState<{ cid: string; doc: JobPostingDoc } | null>(null)
   const fetchedDoc = clientDoc && clientDoc.cid === metadata.cid ? clientDoc.doc : null
-  const posting = isGated ? null : doc || fetchedDoc
+  const fullPosting = isGated ? null : doc || fetchedDoc
+  const posting = canSeeApplication ? fullPosting : stripJobApplicationFields(fullPosting)
 
   // ISR can ship without the IPFS body (slow gateway). Retry in the browser
   // whenever the on-chain envelope has a CID but the server did not load it.
@@ -101,7 +104,7 @@ export default function JobDetail({
 
   const deadline = getApplicationDeadline(metadata, job.endTime)
   const summary = posting?.summary || job.description
-  const applyUrl = isGated ? undefined : posting?.applyUrl || job.contactInfo
+  const applyUrl = canSeeApplication ? fullPosting?.applyUrl || job.contactInfo : undefined
   const teamHref = team ? `/team/${team.id}` : undefined
   const shareUrl = getJobShareUrl(job)
   const ogFields = jobOgFieldsFrom({ job, envelope: metadata, doc: posting, teamName: team?.name })
@@ -330,6 +333,8 @@ export default function JobDetail({
                 {!isGated && (
                   <JobApplyPanel
                     applyUrl={applyUrl}
+                    canApply={canSeeApplication}
+                    citizenLoading={citizenLoading}
                     deadline={deadline}
                     postedAt={job.timestamp}
                     teamName={team?.name}
@@ -338,27 +343,6 @@ export default function JobDetail({
                     shareText={`${job.title}${team?.name ? ` at ${team.name}` : ' at MoonDAO'}`}
                     otherRolesCount={otherRolesCount}
                   />
-                )}
-
-                {!citizen && (
-                  <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <p className="font-GoodTimes text-white text-base leading-tight mb-2">
-                      New to MoonDAO?
-                    </p>
-                    <p className="text-sm text-slate-300 mb-4 leading-relaxed">
-                      Citizens of the Space Acceleration Network see every open role on the board,
-                      plus the teams and projects behind them.
-                    </p>
-                    <StandardButton
-                      className="w-full gradient-2 hover:opacity-90 transition-opacity"
-                      textColor="text-white"
-                      borderRadius="rounded-xl"
-                      hoverEffect={false}
-                      link="/citizen"
-                    >
-                      Become a Citizen
-                    </StandardButton>
-                  </div>
                 )}
               </aside>
             </div>
@@ -392,6 +376,20 @@ export default function JobDetail({
             Apply now
             <ArrowTopRightOnSquareIcon className="h-4 w-4" />
           </a>
+        </div>
+      )}
+
+      {!citizenLoading && !canSeeApplication && !isGated && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-slate-900/95 backdrop-blur px-4 py-3">
+          <StandardButton
+            className="w-full gradient-2 hover:opacity-90 transition-opacity"
+            textColor="text-white"
+            borderRadius="rounded-xl"
+            hoverEffect={false}
+            link="/citizen"
+          >
+            Become a Citizen to apply
+          </StandardButton>
         </div>
       )}
     </>

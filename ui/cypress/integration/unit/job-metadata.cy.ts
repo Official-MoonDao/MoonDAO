@@ -10,6 +10,7 @@ import {
   normalizeJobPostingDoc,
   parseJobMetadata,
   serializeJobMetadata,
+  stripJobApplicationFields,
 } from '@/lib/jobs/jobMetadata'
 
 const DAY = 86400
@@ -263,6 +264,30 @@ describe('normalizeJobPostingDoc', () => {
     })
 
     expect(doc?.body).to.equal('### The pitch\n\nOwn the account.')
+  })
+})
+
+describe('stripJobApplicationFields', () => {
+  it('removes apply URL, how-to-apply, and hiring process', () => {
+    const stripped = stripJobApplicationFields({
+      v: 1,
+      summary: 'Grow the account',
+      body: 'Own day-to-day posting.',
+      applyUrl: 'https://airtable.com/apply',
+      applicationRequirements: ['Send metrics'],
+      hiringProcess: [{ label: 'Intro call' }],
+    })
+
+    expect(stripped?.summary).to.equal('Grow the account')
+    expect(stripped?.body).to.equal('Own day-to-day posting.')
+    expect(stripped?.applyUrl).to.equal(undefined)
+    expect(stripped?.applicationRequirements).to.equal(undefined)
+    expect(stripped?.hiringProcess).to.equal(undefined)
+  })
+
+  it('returns null for a missing document', () => {
+    expect(stripJobApplicationFields(null)).to.equal(null)
+    expect(stripJobApplicationFields(undefined)).to.equal(null)
   })
 })
 

@@ -1,9 +1,10 @@
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import {
   formatDeadlineCountdown,
   getApplicationDeadline,
@@ -59,6 +60,8 @@ export default function Job({
   previewMode = false,
 }: JobProps) {
   const account = useActiveAccount()
+  const { citizen } = useContext(CitizenContext)
+  const canApply = Boolean(citizen || editable)
 
   const [enabledEditJobModal, setEnabledEditJobModal] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -103,7 +106,7 @@ export default function Job({
 
   const jobActions = (
     <div className="flex gap-2 items-center">
-      {job.contactInfo && !previewMode && (
+      {job.contactInfo && !previewMode && canApply && (
         <StandardButton
           className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-200 hover:scale-105"
           onClick={() => {
@@ -203,7 +206,7 @@ export default function Job({
           </p>
 
           <span className="text-xs text-blue-400 group-hover:text-blue-300 mt-3 transition-colors">
-            View role and apply →
+            {canApply ? 'View role and apply →' : 'View role →'}
           </span>
         </Link>
 

@@ -20,7 +20,7 @@ import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
-import StandardButton from '@/components/layout/StandardButton'
+import JobCitizenUpsell from '@/components/jobs/JobCitizenUpsell'
 import TeamABI from '../const/abis/Team.json'
 
 type JobsProps = {
@@ -269,74 +269,35 @@ export default function Jobs({ jobs }: JobsProps) {
           popOverEffect={false}
           isProfile
         >
-          <div className="relative">
-            {/* Blur overlay for non-citizens */}
-            {!citizen && (
-              <div className="absolute inset-0 z-10 bg-slate-900/40 backdrop-blur-[20px] rounded-2xl flex items-center justify-center">
-                <div className="text-center px-6 relative z-20">
-                  <div className="w-20 h-20 bg-blue-600/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg
-                      className="w-10 h-10 text-blue-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-2xl font-GoodTimes text-white mb-4 drop-shadow-lg">
-                    Citizens Only
-                  </h3>
-                  <p className="text-slate-300 mb-6 max-w-md mx-auto drop-shadow-md">
-                    Become a MoonDAO Citizen to access the jobs board and connect with teams
-                    building the future of space exploration.
-                  </p>
-                  <StandardButton
-                    className="gradient-2 hover:opacity-90 transition-opacity"
-                    textColor="text-white"
-                    borderRadius="rounded-xl"
-                    hoverEffect={false}
-                    link="/citizen"
+          <div className="flex flex-col gap-6">
+            {!citizen && <JobCitizenUpsell variant="banner" />}
+
+            {filteredJobs?.[0] ? (
+              <CardGridContainer>
+                {filteredJobs.map((job: JobType) => (
+                  <Job key={`job-${job.id}`} job={job} showTeam teamContract={teamContract} />
+                ))}
+              </CardGridContainer>
+            ) : (
+              <div className="mt-4 w-full h-[400px] flex flex-col gap-3 justify-center items-center">
+                <p>No jobs found.</p>
+                {hasFilters && (
+                  <button
+                    type="button"
+                    className="text-sm text-blue-400 hover:text-blue-300"
+                    onClick={() => {
+                      setInput('')
+                      setCategory(ALL)
+                      setCommitment(ALL)
+                      setLocation(ALL)
+                      setPaidOnly(false)
+                    }}
                   >
-                    Become a Citizen
-                  </StandardButton>
-                </div>
+                    Clear filters
+                  </button>
+                )}
               </div>
             )}
-
-            <div className={citizen ? '' : 'pointer-events-none select-none'}>
-              {filteredJobs?.[0] ? (
-                <CardGridContainer>
-                  {filteredJobs.map((job: JobType) => (
-                    <Job key={`job-${job.id}`} job={job} showTeam teamContract={teamContract} />
-                  ))}
-                </CardGridContainer>
-              ) : (
-                <div className="mt-4 w-full h-[400px] flex flex-col gap-3 justify-center items-center">
-                  <p>No jobs found.</p>
-                  {hasFilters && (
-                    <button
-                      type="button"
-                      className="text-sm text-blue-400 hover:text-blue-300"
-                      onClick={() => {
-                        setInput('')
-                        setCategory(ALL)
-                        setCommitment(ALL)
-                        setLocation(ALL)
-                        setPaidOnly(false)
-                      }}
-                    >
-                      Clear filters
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         </ContentLayout>
       </Container>

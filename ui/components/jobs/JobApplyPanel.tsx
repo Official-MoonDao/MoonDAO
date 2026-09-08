@@ -3,10 +3,13 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { formatDeadlineCountdown, formatPostedAt } from '@/lib/jobs/jobMetadata'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
+import JobCitizenUpsell from '@/components/jobs/JobCitizenUpsell'
 import ShareButtons from '@/components/layout/ShareButtons'
 
 type JobApplyPanelProps = {
   applyUrl?: string
+  canApply?: boolean
+  citizenLoading?: boolean
   deadline?: number
   postedAt?: number
   teamName?: string
@@ -18,6 +21,8 @@ type JobApplyPanelProps = {
 
 export default function JobApplyPanel({
   applyUrl,
+  canApply = true,
+  citizenLoading = false,
   deadline,
   postedAt,
   teamName,
@@ -39,7 +44,9 @@ export default function JobApplyPanel({
   return (
     <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-700/30 to-slate-800/40 backdrop-blur-xl p-5 flex flex-col gap-4">
       <div>
-        <p className="font-GoodTimes text-white text-lg leading-tight">Apply for this role</p>
+        <p className="font-GoodTimes text-white text-lg leading-tight">
+          {canApply ? 'Apply for this role' : 'This opportunity is open'}
+        </p>
         {countdown && (
           <p className={`text-sm mt-1 ${isClosed ? 'text-red-400' : 'text-blue-300'}`}>
             {countdown}
@@ -50,21 +57,30 @@ export default function JobApplyPanel({
         ) : null}
       </div>
 
-      {applyUrl ? (
-        <a
-          id="job-apply-button"
-          href={applyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
-        >
-          Apply now
-          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-        </a>
+      {citizenLoading ? (
+        <div
+          className="h-12 rounded-xl bg-white/5 border border-white/10 animate-pulse"
+          aria-hidden="true"
+        />
+      ) : canApply ? (
+        applyUrl ? (
+          <a
+            id="job-apply-button"
+            href={applyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
+          >
+            Apply now
+            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+          </a>
+        ) : (
+          <p className="text-sm text-slate-400">
+            No application link was provided for this role. Reach out to the team directly.
+          </p>
+        )
       ) : (
-        <p className="text-sm text-slate-400">
-          No application link was provided for this role. Reach out to the team directly.
-        </p>
+        <JobCitizenUpsell />
       )}
 
       <ShareButtons url={shareUrl} text={shareText} />
@@ -90,8 +106,9 @@ export default function JobApplyPanel({
       )}
 
       <p className="text-xs text-slate-500 leading-relaxed">
-        Applications are handled by the posting team. MoonDAO Citizens get the full board plus early
-        access to new roles.
+        {canApply
+          ? 'Applications are handled by the posting team. MoonDAO Citizens get early access to new roles.'
+          : 'Anyone can read the role. MoonDAO Citizens unlock how to apply.'}
       </p>
     </div>
   )

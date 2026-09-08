@@ -80,7 +80,7 @@ export const whyJoinPillars: WhyJoinPillar[] = [
     iconAlt: 'Jobs',
     header: 'Real Jobs, Real Teams',
     paragraph:
-      'Access a jobs board full of high-signal roles from teams already building in space — no mass-applicant noise, just people genuinely aligned with the mission.',
+      'Read every high-signal role from teams already building in space, then apply as a Citizen — no mass-applicant noise, just people genuinely aligned with the mission.',
   },
   {
     icon: '/assets/icon-astronaut.svg',
