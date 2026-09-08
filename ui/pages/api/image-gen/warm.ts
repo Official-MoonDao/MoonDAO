@@ -164,7 +164,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   let acquired: string | null = null
   try {
-    acquired = await redis.set(WARM_LOCK_KEY, Date.now(), {
+    // Stored as a string so the client's generic return type stays assignable.
+    acquired = await redis.set(WARM_LOCK_KEY, String(Date.now()), {
       nx: true,
       ex: WARM_LOCK_TTL_SECONDS,
     })
