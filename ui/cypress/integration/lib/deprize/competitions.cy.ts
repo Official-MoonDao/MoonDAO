@@ -115,6 +115,7 @@ describe('deprize competitions registry', () => {
     expect(findDePrizeIdForGoal('sepolia', 'shared-habitat')).to.equal(18)
     expect(findDePrizeIdForGoal('sepolia', 'shared-lunar-comms')).to.equal(19)
     expect(findDePrizeIdForGoal('sepolia', 'shared-next-landing')).to.equal(21)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', 'shared-mass-driver')).to.equal(undefined)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-fission-power')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', undefined)).to.equal(undefined)
@@ -127,6 +128,7 @@ describe('deprize competitions registry', () => {
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-habitat')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-lunar-comms')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-next-landing')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-night-shift')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-mass-driver')).to.equal(false)
     // Arbitrum has no binding at all, so there is no market to report.
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-fission-power')).to.equal(false)

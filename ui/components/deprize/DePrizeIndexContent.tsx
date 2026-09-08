@@ -40,9 +40,9 @@ export default function DePrizeIndexContent() {
   const [positionsMap, setPositionsMap] = useState<Record<string, boolean>>({})
 
   // Capability races Moon Base Zero tracks, plus any other market-bearing
-  // shared goal (Touchdown is a live landing prize, not the lander tech-tree
-  // site). The index stays atlas-sourced so it cannot drift into on-chain
-  // registry fixtures.
+  // shared goal (Touchdown is a live landing prize; Night Shift is a chamber
+  // night-power prize — neither is a tech-tree site). The index stays
+  // atlas-sourced so it cannot drift into on-chain registry fixtures.
   const races = useMemo(() => {
     return SEED_ATLAS.sharedGoals
       .filter((g) => !!g.category || !!g.market)
