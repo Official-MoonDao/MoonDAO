@@ -20,7 +20,7 @@ import { getWalletEthersProvider } from '../privy/getWalletEthersProvider'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 import client from '../thirdweb/client'
-import { resolveSafeExecutionOptions } from './executionGas'
+import { DEFAULT_SAFE_TX_GAS, resolveSafeExecutionOptions } from './executionGas'
 import useSafeApiKit from './useSafeApiKit'
 
 export type PendingTransaction =
@@ -199,7 +199,7 @@ export default function useSafe(
       value: '0',
       data: (contractManager.safeContract as any).encode(method, args),
       operation: 0,
-      safeTxGas: '1000000',
+      safeTxGas: DEFAULT_SAFE_TX_GAS,
       baseGas: '0',
       gasPrice: '0',
       gasToken: ethers.constants.AddressZero,
@@ -380,7 +380,7 @@ export default function useSafe(
         value: '0',
         data: '0x', // Empty data for rejection
         operation: 0,
-        safeTxGas: '1000000',
+        safeTxGas: DEFAULT_SAFE_TX_GAS,
         baseGas: '0',
         gasPrice: '0',
         gasToken: ethers.constants.AddressZero,
@@ -577,7 +577,7 @@ export default function useSafe(
         value: '0',
         data,
         operation: 0,
-        safeTxGas: '1000000',
+        safeTxGas: DEFAULT_SAFE_TX_GAS,
         baseGas: '0',
         gasPrice: '0',
         gasToken: ethers.constants.AddressZero,
@@ -601,7 +601,7 @@ export default function useSafe(
         value: amount,
         data: '0x',
         operation: 0,
-        safeTxGas: '1000000',
+        safeTxGas: DEFAULT_SAFE_TX_GAS,
         baseGas: '0',
         gasPrice: '0',
         gasToken: ethers.constants.AddressZero,

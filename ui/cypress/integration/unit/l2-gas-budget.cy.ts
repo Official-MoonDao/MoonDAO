@@ -11,6 +11,7 @@ import {
   buildSafeExecutionOptions,
   encodeExecTransactionData,
   estimateSafeExecutionGas,
+  minGasLimitForSafeTxGas,
   resolveSafeExecutionGasLimit,
 } from '@/lib/safe/executionGas'
 
@@ -111,6 +112,18 @@ describe('Safe execution gas', () => {
     expect(options.maxFeePerGas).to.equal('48033600')
   })
 
+  it('floors the outer limit so a queued 1M safeTxGas cannot GS010', () => {
+    const floor = minGasLimitForSafeTxGas(1_000_000n)
+    expect(floor > 1_000_000n).to.equal(true)
+    const limit = resolveSafeExecutionGasLimit({
+      isRejectionTx: false,
+      safeTxGas: 1_000_000n,
+    })
+    expect(limit).to.equal(floor)
+    const reserved = limit * computeMaxFeePerGas(ARBITRUM_GAS_PRICE_WEI, 0n)
+    expect(reserved < HAVE_WEI).to.equal(true)
+  })
+
   it('encodes execTransaction and estimates via the provider', async () => {
     const owner = '0x1111111111111111111111111111111111111111'
     const safeTx = {
@@ -130,12 +143,19 @@ describe('Safe execution gas', () => {
     const encoded = encodeExecTransactionData(safeTx)
     expect(encoded.slice(0, 10)).to.equal('0x6a761202')
 
-    let seen: { to?: string; data?: string; from?: string } = {}
+    let seen: {
+      to?: string
+      data?: string
+      from?: string
+      maxFeePerGas?: string
+    } = {}
     const estimated = await estimateSafeExecutionGas({
       safe: {
         getAddress: async () => '0x3333333333333333333333333333333333333333',
       },
       safeTx,
+      maxFeePerGas: 48_033_600n,
+      maxPriorityFeePerGas: 0n,
       provider: {
         getSigner: () => ({
           getAddress: async () => owner,
@@ -150,6 +170,7 @@ describe('Safe execution gas', () => {
     expect(seen.to).to.equal('0x3333333333333333333333333333333333333333')
     expect(seen.from).to.equal(owner)
     expect(seen.data).to.equal(encoded)
+    expect(seen.maxFeePerGas).to.equal('48033600')
   })
 })
 

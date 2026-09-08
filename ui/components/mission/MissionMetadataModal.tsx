@@ -13,6 +13,7 @@ import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { DEFAULT_SAFE_TX_GAS } from '@/lib/safe/executionGas'
 import useSafe from '@/lib/safe/useSafe'
 import useSafeApiKit from '@/lib/safe/useSafeApiKit'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -290,7 +291,7 @@ export default function MissionMetadataModal({
         to: jbControllerContract.address,
         data: txData,
         value: '0',
-        safeTxGas: '1000000',
+        safeTxGas: DEFAULT_SAFE_TX_GAS,
       })
 
       setSafeTxHash(txHash)

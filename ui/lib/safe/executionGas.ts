@@ -13,6 +13,11 @@ const MAX_GAS_LIMIT = 1_500_000n
 const REJECTION_MAX_GAS_LIMIT = 2_000_000n
 const MIN_GAS_LIMIT = 150_000n
 const ESTIMATE_BUFFER_BPS = 150n
+/** Signature checks + execTransaction overhead above the GS010 remaining-gas check. */
+const EXEC_TRANSACTION_OVERHEAD = 80_000n
+
+/** New Safe txs should leave this at 0 so the contract forwards all remaining gas. */
+export const DEFAULT_SAFE_TX_GAS = '0'
 
 const EXEC_TRANSACTION_IFACE = new ethers.utils.Interface([
   'function execTransaction(address to, uint256 value, bytes data, uint8 operation, uint256 safeTxGas, uint256 baseGas, uint256 gasPrice, address gasToken, address refundReceiver, bytes signatures)',
@@ -33,26 +38,55 @@ export type SafeExecTxLike = {
   confirmations?: Array<{ owner?: string; signature?: string }>
 }
 
+export function parseSafeTxGas(safeTx: unknown): bigint {
+  const raw = (safeTx as SafeExecTxLike | undefined)?.safeTxGas
+  if (raw == null || raw === '') return 0n
+  try {
+    const value = BigInt(raw)
+    return value > 0n ? value : 0n
+  } catch {
+    return 0n
+  }
+}
+
+/**
+ * Outer gas that must be supplied so Safe does not revert GS010
+ * (`gasleft() < max(safeTxGas * 64/63, safeTxGas + 2500) + 500`).
+ */
+export function minGasLimitForSafeTxGas(safeTxGas: bigint): bigint {
+  if (safeTxGas <= 0n) return 0n
+  const scaled = (safeTxGas * 64n) / 63n
+  const inner = scaled > safeTxGas + 2500n ? scaled : safeTxGas + 2500n
+  return inner + 500n + EXEC_TRANSACTION_OVERHEAD
+}
+
 export function resolveSafeExecutionGasLimit(params: {
   estimatedGas?: bigint | null
   isRejectionTx: boolean
+  safeTxGas?: bigint | null
 }): bigint {
   const fallback = params.isRejectionTx
     ? REJECTION_FALLBACK_GAS_LIMIT
     : FALLBACK_GAS_LIMIT
   const cap = params.isRejectionTx ? REJECTION_MAX_GAS_LIMIT : MAX_GAS_LIMIT
+  const safeFloor = minGasLimitForSafeTxGas(params.safeTxGas ?? 0n)
   const estimated = params.estimatedGas
-  if (estimated == null || estimated <= 0n) return fallback
 
-  const buffered = (estimated * ESTIMATE_BUFFER_BPS) / 100n
-  if (buffered < MIN_GAS_LIMIT) return MIN_GAS_LIMIT
-  if (buffered > cap) return cap
-  return buffered
+  let limit =
+    estimated == null || estimated <= 0n
+      ? fallback
+      : (estimated * ESTIMATE_BUFFER_BPS) / 100n
+  if (limit < MIN_GAS_LIMIT) limit = MIN_GAS_LIMIT
+  if (limit < safeFloor) limit = safeFloor
+  if (limit > cap && safeFloor <= cap) limit = cap
+  if (limit < safeFloor) limit = safeFloor
+  return limit
 }
 
 export function buildSafeExecutionOptions(params: {
   estimatedGas?: bigint | null
   isRejectionTx: boolean
+  safeTxGas?: bigint | null
   maxFeePerGas: bigint
   maxPriorityFeePerGas: bigint
 }): TransactionOptions {
@@ -120,11 +154,15 @@ export async function estimateSafeExecutionGas(params: {
     getEncodedTransaction?: (tx: unknown) => Promise<string>
   }
   safeTx: unknown
+  maxFeePerGas?: bigint
+  maxPriorityFeePerGas?: bigint
   provider: {
     estimateGas: (tx: {
       to: string
       from?: string
       data: string
+      maxFeePerGas?: string
+      maxPriorityFeePerGas?: string
     }) => Promise<{ toString(): string }>
     getSigner?: () => { getAddress: () => Promise<string> }
   }
@@ -136,10 +174,18 @@ export async function estimateSafeExecutionGas(params: {
     const from = params.provider.getSigner
       ? await params.provider.getSigner().getAddress()
       : undefined
+    const feeFields =
+      params.maxFeePerGas != null && params.maxFeePerGas > 0n
+        ? {
+            maxFeePerGas: params.maxFeePerGas.toString(),
+            maxPriorityFeePerGas: (params.maxPriorityFeePerGas ?? 0n).toString(),
+          }
+        : {}
     const est = await params.provider.estimateGas({
       to,
       data,
       ...(from ? { from } : {}),
+      ...feeFields,
     })
     const value = BigInt(est.toString())
     return value > 0n ? value : null
@@ -168,21 +214,27 @@ export async function resolveSafeExecutionOptions(params: {
       to: string
       from?: string
       data: string
+      maxFeePerGas?: string
+      maxPriorityFeePerGas?: string
     }) => Promise<{ toString(): string }>
     getSigner?: () => { getAddress: () => Promise<string> }
   }
 }): Promise<TransactionOptions> {
-  const [estimatedGas, fees] = await Promise.all([
-    estimateSafeExecutionGas({
-      safe: params.safe,
-      safeTx: params.safeTx,
-      provider: params.provider,
-    }),
-    resolveEip1559FeesFromProvider(params.provider),
-  ])
+  // Resolve fees first so estimateGas uses the same (non-inflated) cap the
+  // signed tx will. Passing `from` without fees can make the node apply
+  // wallet getFeeData() and reject the estimate as insufficient funds.
+  const fees = await resolveEip1559FeesFromProvider(params.provider)
+  const estimatedGas = await estimateSafeExecutionGas({
+    safe: params.safe,
+    safeTx: params.safeTx,
+    provider: params.provider,
+    maxFeePerGas: fees.maxFeePerGas,
+    maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+  })
   return buildSafeExecutionOptions({
     estimatedGas,
     isRejectionTx: params.isRejectionTx,
+    safeTxGas: parseSafeTxGas(params.safeTx),
     maxFeePerGas: fees.maxFeePerGas,
     maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
   })
