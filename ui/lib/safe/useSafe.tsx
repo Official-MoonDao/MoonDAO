@@ -9,7 +9,6 @@ import {
   SafeTransaction,
   SafeTransactionData,
   SafeTransactionDataPartial,
-  TransactionOptions,
 } from '@safe-global/safe-core-sdk-types'
 import ERC20ABI from 'const/abis/ERC20.json'
 import { ethers } from 'ethers'
@@ -21,6 +20,7 @@ import { getWalletEthersProvider } from '../privy/getWalletEthersProvider'
 import PrivyWalletContext from '../privy/privy-wallet-context'
 import ChainContextV5 from '../thirdweb/chain-context-v5'
 import client from '../thirdweb/client'
+import { resolveSafeExecutionOptions } from './executionGas'
 import useSafeApiKit from './useSafeApiKit'
 
 export type PendingTransaction =
@@ -287,21 +287,21 @@ export default function useSafe(
       )
     }
 
-    // Get current gas price
     const provider = await getWalletEthersProvider(wallets?.[selectedWallet])
     if (!provider) throw new Error('No provider available')
-    const gasPrice = await provider.getGasPrice()
 
-    // For rejection transactions, we need to ensure we have enough gas
+    // Rejection txs are empty/reject calls; still estimate instead of locking
+    // 2–3M gas * 3x gasPrice (that reserve alone has failed ~0.00009 ETH wallets).
     const isRejectionTx =
       safeTx.data === '0x' ||
       safeTx.dataDecoded?.method?.toLowerCase().includes('reject')
 
-    const options: TransactionOptions = {
-      gasLimit: isRejectionTx ? '3000000' : '2000000', // Higher gas limit for rejections
-      maxFeePerGas: gasPrice.mul(3).toString(), // Higher max fee for rejections
-      maxPriorityFeePerGas: gasPrice.mul(2).toString(), // Higher priority fee for rejections
-    }
+    const options = await resolveSafeExecutionOptions({
+      safe,
+      safeTx,
+      isRejectionTx,
+      provider,
+    })
 
     try {
       // Execute the existing transaction directly

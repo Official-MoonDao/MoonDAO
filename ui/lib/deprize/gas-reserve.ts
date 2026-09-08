@@ -1,3 +1,5 @@
+import { L2_GAS_BUDGET_WEI } from '@/lib/rpc/gasBudget'
+
 /**
  * Native ETH held back from the "spendable" figure so placing a bet can never
  * consume the gas needed to send it.
@@ -11,8 +13,8 @@
 /** Conservative default for L1-style gas markets. */
 export const DEFAULT_GAS_RESERVE_WEI = 10n ** 15n // 0.001 ETH
 
-/** ~8x a measured Arbitrum bet, so it still covers a busy-network spike. */
-export const L2_GAS_RESERVE_WEI = 2n * 10n ** 14n // 0.0002 ETH
+/** Shared L2 budget — covers the observed ~0.00012 ETH wallet lock. */
+export const L2_GAS_RESERVE_WEI = L2_GAS_BUDGET_WEI
 
 const GAS_RESERVE_WEI_BY_CHAIN: Record<number, bigint> = {
   42161: L2_GAS_RESERVE_WEI, // Arbitrum One

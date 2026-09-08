@@ -1,6 +1,7 @@
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { computeMaxFeePerGas } from '@/lib/rpc/eip1559Fees'
 import { cacheGet, cacheSet } from '@/lib/rpc/rpcCache'
 import {
   isSupportedRpcChain,
@@ -109,11 +110,9 @@ export async function handler(
       }
 
       // If both base fee and priority fee are available, calculate max fee
-      // Max fee = base fee * 2 + priority fee (standard wallet formula)
+      // Max fee = base fee * 2.4 + priority fee (2× standard + 20% drift buffer)
       if (baseFeePerGas && maxPriorityFeePerGas) {
-        // Add 20% buffer to account for base fee fluctuations
-        maxFeePerGas =
-          (baseFeePerGas * BigInt(240)) / BigInt(100) + maxPriorityFeePerGas
+        maxFeePerGas = computeMaxFeePerGas(baseFeePerGas, maxPriorityFeePerGas)
       }
     } catch (eip1559Error) {
       // EIP-1559 not supported or failed

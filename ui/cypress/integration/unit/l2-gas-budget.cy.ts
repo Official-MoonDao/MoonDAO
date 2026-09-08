@@ -1,0 +1,125 @@
+import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
+import {
+  applyFeeOverrides,
+  computeMaxFeePerGas,
+  feesFromProviderSnapshot,
+  parseGasPriceApiPayload,
+} from '@/lib/rpc/eip1559Fees'
+import { L2_GAS_BUDGET_ETH, L2_GAS_BUDGET_WEI } from '@/lib/rpc/gasBudget'
+import {
+  buildSafeExecutionOptions,
+  resolveSafeExecutionGasLimit,
+} from '@/lib/safe/executionGas'
+
+// Reported production failure:
+// insufficient funds for gas * price + value
+// have 93794013200000 want 120084000000000
+const HAVE_WEI = 93794013200000n
+const WANT_WEI = 120084000000000n
+// 2_000_000 gas * 3 * 20_014_000 wei = 120_084_000_000_000
+const ARBITRUM_GAS_PRICE_WEI = 20_014_000n
+
+describe('L2 gas budget', () => {
+  it('is larger than the observed wallet lock and the failed balance', () => {
+    expect(L2_GAS_BUDGET_WEI > WANT_WEI).to.equal(true)
+    expect(L2_GAS_BUDGET_WEI > HAVE_WEI).to.equal(true)
+    expect(L2_GAS_BUDGET_ETH).to.be.closeTo(0.00025, 1e-12)
+  })
+})
+
+describe('EIP-1559 fee math', () => {
+  it('uses 2.4× base + priority', () => {
+    expect(computeMaxFeePerGas(10n, 2n)).to.equal(26n)
+  })
+
+  it('prefers block base fee over inflated provider maxFee', () => {
+    const fees = feesFromProviderSnapshot(
+      {
+        maxFeePerGas: 1_000_000_000n,
+        maxPriorityFeePerGas: 0n,
+        gasPrice: ARBITRUM_GAS_PRICE_WEI,
+      },
+      { baseFeePerGas: ARBITRUM_GAS_PRICE_WEI }
+    )
+    expect(fees.maxFeePerGas).to.equal(computeMaxFeePerGas(ARBITRUM_GAS_PRICE_WEI, 0n))
+    expect(fees.maxFeePerGas < 1_000_000_000n).to.equal(true)
+  })
+
+  it('parses the gas-price API payload', () => {
+    const parsed = parseGasPriceApiPayload({
+      maxFeePerGas: '0x2e90edd',
+      maxPriorityFeePerGas: '0x1',
+    })
+    expect(parsed?.maxFeePerGas).to.equal(0x2e90eddn)
+    expect(parsed?.maxPriorityFeePerGas).to.equal(1n)
+  })
+
+  it('stamps API fees onto a prepared tx', () => {
+    const decorated = applyFeeOverrides(
+      { to: '0x1', gas: 200000n, maxFeePerGas: 1_000_000_000n },
+      { maxFeePerGas: 48_033_600n, maxPriorityFeePerGas: 0n }
+    )
+    expect(decorated.maxFeePerGas).to.equal(48_033_600n)
+    expect(decorated.gas).to.equal(200000n)
+  })
+})
+
+describe('Safe execution gas', () => {
+  it('reproduces the reported want amount from the old 2M * 3x gasPrice lock', () => {
+    const oldWant = 2_000_000n * 3n * ARBITRUM_GAS_PRICE_WEI
+    expect(oldWant).to.equal(WANT_WEI)
+    expect(HAVE_WEI < oldWant).to.equal(true)
+  })
+
+  it('falls back well below the reported wallet balance', () => {
+    const gasLimit = resolveSafeExecutionGasLimit({ isRejectionTx: false })
+    const maxFee = computeMaxFeePerGas(ARBITRUM_GAS_PRICE_WEI, 0n)
+    const reserved = gasLimit * maxFee
+    expect(reserved < HAVE_WEI).to.equal(true)
+    expect(reserved < WANT_WEI).to.equal(true)
+  })
+
+  it('buffers an estimate without returning to the 2M default', () => {
+    const gasLimit = resolveSafeExecutionGasLimit({
+      estimatedGas: 200_000n,
+      isRejectionTx: false,
+    })
+    expect(gasLimit).to.equal(300_000n)
+  })
+
+  it('builds string options the Safe SDK accepts', () => {
+    const options = buildSafeExecutionOptions({
+      isRejectionTx: false,
+      maxFeePerGas: 48_033_600n,
+      maxPriorityFeePerGas: 0n,
+    })
+    expect(options.gasLimit).to.equal('500000')
+    expect(options.maxFeePerGas).to.equal('48033600')
+  })
+})
+
+describe('computeContributionMaxUsd L2 reserve', () => {
+  it('leaves the shared L2 budget behind on Arbitrum', () => {
+    const maxUsd = computeContributionMaxUsd({
+      balanceWei: 10n ** 16n, // 0.01 ETH
+      selectedChainId: 42161,
+      chainSlug: 'arbitrum',
+      defaultChainSlug: 'arbitrum',
+      ethUsdPrice: 3000,
+    })
+    // (0.01 - 0.00025) ETH * $3000 = $29.25
+    expect(maxUsd).to.equal(29.25)
+  })
+
+  it('does not treat 0.00015 ETH as spendable (old 0.0001 reserve would have)', () => {
+    expect(
+      computeContributionMaxUsd({
+        balanceWei: 150000000000000n,
+        selectedChainId: 42161,
+        chainSlug: 'arbitrum',
+        defaultChainSlug: 'arbitrum',
+        ethUsdPrice: 3000,
+      })
+    ).to.equal(null)
+  })
+})

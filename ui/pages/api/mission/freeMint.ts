@@ -19,6 +19,7 @@ import { CitizenInvite, consumeInvite, peekInvite, restoreInvite } from '@/lib/c
 import { enforceRegionNotRestricted } from '@/lib/geo'
 import { createHSMWallet, sendEthFromHSM } from '@/lib/google/hsm-signer'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
+import { L2_GAS_BUDGET_WEI } from '@/lib/rpc/gasBudget'
 import { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -356,11 +357,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       })
       mintSucceeded = true
 
-      // Send a small gas stipend (~$0.05 worth of ETH) so new citizens can
-      // interact on-chain right away without needing to fund their wallet first.
-      // 0.00002 ETH ≈ $0.06 at $3 000/ETH on Arbitrum.
-      const GAS_STIPEND_WEI = BigInt('20000000000000') // 0.00002 ETH
-      sendEthFromHSM(address, GAS_STIPEND_WEI).catch((err) =>
+      // Send enough ETH to cover a conservative wallet gas lock
+      // (`gasLimit * maxFeePerGas`), not just the expected L2 execution cost.
+      // 0.00002 ETH was below observed Arbitrum locks (~0.00012 ETH).
+      sendEthFromHSM(address, L2_GAS_BUDGET_WEI).catch((err) =>
         console.error('Gas stipend transfer failed (non-critical):', err)
       )
 
