@@ -250,9 +250,9 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         'Sepolia DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
       questionId: '0xe6430ff8d51a6e5389d1c23cfa5dcab4682407f866a208ef3ea60120b271d5cf',
     },
-    // Touchdown — next successful lunar landing (robotic/commercial).
+    // Touchdown gen 1 — incomplete: synthetic JB 3003, no real prize pool.
+    // Superseded off-chain by #22 (real Juicebox mission 14 / project 268).
     // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.
-    // Synthetic JB 3003; LMSR 0xA669CC2dAf08EED1f3F2af93C720DB884B2899dC.
     21: {
       title: 'Touchdown',
       tagline:
@@ -262,6 +262,28 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       questionId: '0x18f9e4f8e5b291580b00bd23299194b169a66c3513229c5e16240e05d8520f17',
       sharedGoalId: 'shared-next-landing',
       raceLabel: 'Next lunar landing',
+      supersededBy: 22,
+      outcomes: [
+        { projectId: 'astrobotic-griffin', teamId: 601 },
+        { projectId: 'im-nova-c', teamId: 602 },
+        { projectId: 'firefly-blue-ghost', teamId: 603 },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604 },
+        { projectId: 'cnsa-change-7', teamId: 605 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    // Touchdown gen 2 — shareable live tip (PR 1527). Real JB 268, LMSR
+    // 0x9d3b999B347c6F9dc6cB314707397A4B505826D0, question v2 (v1 is #21).
+    22: {
+      title: 'Touchdown',
+      tagline:
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
+      questionId: '0x1ba1808c0a0d8a2bbc48462cd3a490e306695713e0cafd362d365c9db3f43513',
+      sharedGoalId: 'shared-next-landing',
+      raceLabel: 'Next lunar landing',
+      supersedes: 21,
       outcomes: [
         { projectId: 'astrobotic-griffin', teamId: 601 },
         { projectId: 'im-nova-c', teamId: 602 },
@@ -275,7 +297,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     // Not registered yet: `register` on the Sepolia registry is onlyOwner
     // (0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011). After
     // `GOAL_ID=shared-night-shift yarn tsx scripts/provision-sepolia-races.ts`
-    // paste the generated block here as the next id (expected 22) with
+    // paste the generated block here as the next id (expected 23) with
     // teams 611–617 + field 24. questionId is
     // keccak256("deprize:sepolia:shared-night-shift:v1") =
     // 0x6058f2c9f314734e1f1ecf8c34c8d8835fff5d8fb5e075d8044823e1717f00d4.

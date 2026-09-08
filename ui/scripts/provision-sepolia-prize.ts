@@ -1,13 +1,17 @@
 /**
- * Stand up one unbound Sepolia DePrize end to end:
+ * Stand up one Sepolia DePrize end to end:
  * Juicebox mission → payhook latch → CTF condition → LMSR → register/open →
  * mint + FeeRouter wiring → market ownership.
  *
  * Default competition is the Sepolia twin of Arbitrum #1
- * ("The Moon Is A Harsh Mistress").
+ * ("The Moon Is A Harsh Mistress"). Set PRIZE=touchdown for the next
+ * successful lunar landing (PR 1527). Touchdown uses question version v2
+ * because Sepolia #21 already consumed shared-next-landing:v1 with a
+ * synthetic Juicebox id.
  *
  *   source ../prediction/.env   # DEPLOYER_PK
  *   yarn tsx --tsconfig tsconfig.json scripts/provision-sepolia-prize.ts
+ *   PRIZE=touchdown yarn tsx --tsconfig tsconfig.json scripts/provision-sepolia-prize.ts
  */
 import { writeFileSync } from 'node:fs'
 import {
@@ -38,16 +42,50 @@ const FEE = 10_000_000_000_000_000n // 1%
 const SUNSET = BigInt(Math.floor(Date.now() / 1000) + 2 * 365 * 24 * 3600)
 const OUT = '/tmp/sepolia-prize.json'
 
-const PRIZE = {
-  slug: 'harsh-mistress',
-  title: 'The Moon Is A Harsh Mistress',
-  tagline:
-    'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
-  metaDescription:
-    'Sepolia DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
-  teamIds: [2n, 6n, 7n, 8n],
-  tokenName: 'DePrize Harsh',
-  tokenSymbol: 'DHMS',
+type PrizeSpec = {
+  slug: string
+  questionVersion: string
+  title: string
+  tagline: string
+  metaDescription: string
+  teamIds: bigint[]
+  tokenName: string
+  tokenSymbol: string
+}
+
+const PRIZES: Record<string, PrizeSpec> = {
+  'harsh-mistress': {
+    slug: 'harsh-mistress',
+    questionVersion: 'v1',
+    title: 'The Moon Is A Harsh Mistress',
+    tagline:
+      'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
+    metaDescription:
+      'Sepolia DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
+    teamIds: [2n, 6n, 7n, 8n],
+    tokenName: 'DePrize Harsh',
+    tokenSymbol: 'DHMS',
+  },
+  // PR 1527 — next Qualifying Landing. Same roster as incomplete #21 so the
+  // atlas names stay aligned; new condition + real Juicebox mission.
+  touchdown: {
+    slug: 'shared-next-landing',
+    questionVersion: 'v2',
+    title: 'Touchdown',
+    tagline:
+      'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+    metaDescription:
+      'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
+    teamIds: [601n, 602n, 603n, 604n, 605n, 24n],
+    tokenName: 'DePrize Touchdown',
+    tokenSymbol: 'DTCH',
+  },
+}
+
+const selected = (process.env.PRIZE || 'harsh-mistress').toLowerCase()
+const PRIZE = PRIZES[selected]
+if (!PRIZE) {
+  throw new Error(`Unknown PRIZE=${selected}. Use ${Object.keys(PRIZES).join('|')}`)
 }
 
 const registryAbi = parseAbi([
@@ -139,7 +177,9 @@ async function main() {
 
   const n = BigInt(PRIZE.teamIds.length)
   const funding = FUNDING_PER_OUTCOME * n
-  const questionId = keccak256(toBytes(`deprize:sepolia:${PRIZE.slug}:v1`))
+  const questionId = keccak256(
+    toBytes(`deprize:sepolia:${PRIZE.slug}:${PRIZE.questionVersion}`)
+  )
 
   console.log('deployer', account.address)
   console.log('prize', PRIZE.title)
