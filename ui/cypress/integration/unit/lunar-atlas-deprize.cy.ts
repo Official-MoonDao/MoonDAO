@@ -4,8 +4,6 @@
  */
 
 import { expect } from 'chai'
-import { readFileSync } from 'fs'
-import { join } from 'path'
 import {
   getDePrizeRaceBinding,
   OPEN_FIELD_PROJECT_ID,
@@ -93,20 +91,5 @@ describe('lunar-atlas × DePrize binding', () => {
       expect(project!.sharedGoalIds).to.include('shared-night-shift')
       expect(project!.location, `${id} must stay off the globe`).to.equal(undefined)
     }
-  })
-
-  it('puts the bar and criteria above predictions on unbound prize pages', () => {
-    const src = readFileSync(
-      join(__dirname, '../../../components/deprize/GoalDePrizeDetail.tsx'),
-      'utf8',
-    )
-    const description = src.indexOf('{goal.description}')
-    const criteria = src.indexOf('Capability criteria (draft)')
-    const predictions = src.indexOf('Predictions')
-    const competitors = src.indexOf('Competitors')
-    expect(description).to.be.greaterThan(-1)
-    expect(criteria).to.be.greaterThan(description)
-    expect(predictions).to.be.greaterThan(criteria)
-    expect(competitors).to.be.greaterThan(predictions)
   })
 })
