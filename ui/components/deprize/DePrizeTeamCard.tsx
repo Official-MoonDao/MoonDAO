@@ -1,6 +1,7 @@
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
+import EthUsd from '@/components/deprize/EthUsd'
 import StandardButton from '@/components/layout/StandardButton'
 
 type DePrizeTeamCardProps = {
@@ -43,6 +44,8 @@ type DePrizeTeamCardProps = {
    * listing never reads as an endorsement. See ROSTER_DISCLAIMER.
    */
   unclaimed?: boolean
+  /** Official = claimed listing; unofficial = MoonDAO-listed, not confirmed. */
+  participation?: 'official' | 'unofficial'
 }
 
 /** Dashed-circle mark for the Open Field slot, which has no Team NFT. */
@@ -56,8 +59,8 @@ function PnlSuffix({ pnl }: { pnl: number | undefined }) {
   if (pnl === undefined) return null
   return (
     <span className={`ml-1.5 font-medium ${pnl >= 0 ? 'text-emerald-400/80' : 'text-rose-400/80'}`}>
-      ({pnl >= 0 ? '+' : ''}
-      {fmt(pnl)} ETH)
+      (
+      <EthUsd eth={pnl} signed usdClassName="opacity-80 font-normal" />)
     </span>
   )
 }
@@ -86,6 +89,7 @@ export default function DePrizeTeamCard({
   nameOverride,
   imageOverride,
   unclaimed = false,
+  participation,
 }: DePrizeTeamCardProps) {
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
   const realizedValue = resolved ? redeemValueEth : sellQuoteEth
@@ -95,15 +99,29 @@ export default function DePrizeTeamCard({
       : undefined
   const canCashOut = holding && !tradingHalted && !resolved
   const showWinSubtitle = holding && !resolved
+  const participationTone =
+    participation === 'official'
+      ? 'from-emerald-950/55 border-emerald-400/25'
+      : participation === 'unofficial'
+        ? 'from-zinc-950/80 border-zinc-400/20'
+        : 'from-slate-900/90 border-white/[0.08]'
 
   return (
     <div
-      className={`p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border shadow-lg ${
+      className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border shadow-lg ${participationTone} ${
         resolved && isWinningSlot
           ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
-          : 'border-white/[0.08]'
+          : ''
       }`}
     >
+      {participation && (
+        <span
+          aria-hidden
+          className={`absolute inset-y-0 left-0 w-1 ${
+            participation === 'official' ? 'bg-emerald-400' : 'bg-zinc-400'
+          }`}
+        />
+      )}
       {/* Top row: chance/result · team (+ if-wins subtitle) · bet CTA */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-3 min-w-[96px]">
@@ -173,7 +191,7 @@ export default function DePrizeTeamCard({
             <p className="text-xs text-gray-500 pl-12">
               If wins ·{' '}
               <span className="text-emerald-400/90 font-medium tabular-nums">
-                {fmt(outcome.balance)} ETH
+                <EthUsd eth={outcome.balance} usdClassName="text-emerald-400/70 font-normal" />
               </span>
             </p>
           )}
@@ -201,7 +219,7 @@ export default function DePrizeTeamCard({
               {resolved ? (
                 redeemValueEth !== undefined ? (
                   <>
-                    {fmt(redeemValueEth)} ETH
+                    <EthUsd eth={redeemValueEth} />
                     <PnlSuffix pnl={pnl} />
                   </>
                 ) : (
@@ -211,7 +229,7 @@ export default function DePrizeTeamCard({
                 '—'
               ) : sellQuoteEth !== undefined ? (
                 <>
-                  ≈ {fmt(sellQuoteEth)} ETH
+                  <EthUsd eth={sellQuoteEth} approx />
                   <PnlSuffix pnl={pnl} />
                 </>
               ) : (

@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
 import {
+  deprizeDetailHref,
   findDePrizeIdForGoal,
   getDePrizeRaceBinding,
   isCompetitiveRace,
@@ -278,7 +279,10 @@ export default function RaceMarketCard({
   const poolEth = bound ? realPoolEth : demo.pool
   const poolLoading = bound && live.jbProjectId !== undefined && isLoadingFunding
 
-  const detailHref = bound ? `/deprize/${deprizeId}` : `/moonbase?race=${goal.id}`
+  // Always the prize page. Bound races resolve the slug to the live DePrize;
+  // unbound ones render the atlas detail at the same URL. Never moonbase —
+  // the globe is a secondary link from the prize page, not the destination.
+  const detailHref = deprizeDetailHref(goal.id)
 
   const ranked = useMemo(
     () => [...outcomes].sort((a, b) => (b.probability || 0) - (a.probability || 0)),

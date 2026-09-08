@@ -36,6 +36,12 @@ describe('citizen profile og:image', () => {
   it('leaves non-IPFS absolute URLs alone', () => {
     expect(normalizeOgImageUrl('https://example.com/a.png')).to.equal('https://example.com/a.png')
   })
+
+  it('rewrites apex moondao.com image URLs to www so crawlers skip the 307', () => {
+    expect(normalizeOgImageUrl('https://moondao.com/api/og/job?title=Role')).to.equal(
+      'https://www.moondao.com/api/og/job?title=Role'
+    )
+  })
 })
 
 describe('new citizen Discord announcement', () => {

@@ -87,6 +87,11 @@ export const GENERIC_DEPRIZE_COMPETITION: DePrizeCompetition = {
     'Back the team you think will win — live odds, payout when a winner is declared.',
 }
 
+/** Stable prize-page path for a Moon Base Zero race. Resolves live or atlas. */
+export function deprizeDetailHref(sharedGoalId: string): string {
+  return `/deprize/${sharedGoalId}`
+}
+
 /** chainSlug → deprizeId → competition */
 const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> = {
   arbitrum: {
@@ -132,6 +137,150 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         },
       ],
     },
+    // 10–16 were registered OPEN on Sepolia with Team 24 as the Open Field
+    // slot. Bind the three whose roster length matches a capability race
+    // (named competitors + field). Pads / habitat / comms are 17–19
+    // (provision-sepolia-races.ts).
+    10: {
+      title: 'First commercial crewed lunar landing',
+      tagline:
+        'Which crewed lander puts astronauts on the lunar surface first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first commercial crewed lunar landing. SpaceX Starship HLS vs Blue Origin Blue Moon MK2.',
+      sharedGoalId: 'shared-crewed-lander',
+      raceLabel: 'Crewed lunar landing',
+      outcomes: [
+        { projectId: 'spacex-starship-hls', teamId: 22 },
+        { projectId: 'blue-origin-blue-moon-mk2', teamId: 23 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    12: {
+      title: 'First crewed lunar terrain vehicle in service',
+      tagline:
+        'Which LTV is driving on the lunar surface first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first crewed lunar terrain vehicle. Astrolab, Lunar Outpost, and Intuitive Machines.',
+      sharedGoalId: 'shared-lunar-rover',
+      raceLabel: 'Crewed lunar rover',
+      outcomes: [
+        { projectId: 'astrolab-flex', teamId: 27 },
+        { projectId: 'lunar-outpost-lunar-dawn', teamId: 28 },
+        { projectId: 'im-moon-racer', teamId: 29 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    15: {
+      title: 'First sustained oxygen and metals from lunar regolith',
+      tagline:
+        'Which ISRU plant makes oxygen from regolith first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first sustained lunar ISRU plant. Blue Alchemist, Sierra Space, Lunar Resources, and Cislune.',
+      sharedGoalId: 'shared-isru-oxygen',
+      raceLabel: 'ISRU oxygen',
+      outcomes: [
+        { projectId: 'blue-origin-blue-alchemist', teamId: 36 },
+        { projectId: 'sierra-space-carbothermal', teamId: 37 },
+        { projectId: 'lunar-resources-mre', teamId: 38 },
+        { projectId: 'cislune-lunar-isru', teamId: 39 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    17: {
+      title: 'First demonstrated lunar landing-pad construction system',
+      tagline:
+        'Which team hardens a lunar landing pad first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first demonstrated lunar landing-pad construction system. ICON, Redwire, Astroport, AI SpaceFactory, and Astrobotic.',
+      questionId: '0x8cea9bc514c3b1f069f68b62046ab8679c2d8aaffcf91fdfd071b40399c1ab9b',
+      sharedGoalId: 'shared-landing-pads',
+      raceLabel: 'Landing pads',
+      outcomes: [
+        { projectId: 'icon-project-olympus', teamId: 501 },
+        { projectId: 'redwire-mason', teamId: 502 },
+        { projectId: 'astroport-lunatron', teamId: 503 },
+        { projectId: 'ai-spacefactory-react', teamId: 504 },
+        { projectId: 'astrobotic-additive-construction', teamId: 505 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    18: {
+      title: 'First pressurized habitat occupied on the lunar surface',
+      tagline:
+        'Which habitat houses crew on the Moon first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first pressurized lunar habitat. Artemis Base Camp, ILRS, Thales MPH, Sierra Space LIFE, and JAXA Lunar Cruiser.',
+      questionId: '0xb450b8b519b564b86a2ded23034b5e808080705e2567f0fc947676cb39cebc72',
+      sharedGoalId: 'shared-habitat',
+      raceLabel: 'Pressurized habitat',
+      outcomes: [
+        { projectId: 'nasa-artemis-base-camp', teamId: 511 },
+        { projectId: 'ilrs', teamId: 512 },
+        { projectId: 'thales-mph', teamId: 513 },
+        { projectId: 'sierra-space-life', teamId: 514 },
+        { projectId: 'jaxa-lunar-cruiser', teamId: 515 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    19: {
+      title: 'First operational lunar communications and navigation service',
+      tagline:
+        'Which network sells lunar comms first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first operational lunar communications and navigation service. Modul8, Intuitive Machines, ESA Moonlight, Crescent Parsec, and Solstar.',
+      questionId: '0xb97bc9385d44cda940b222c2027923496c034d44348931be525acf34970db986',
+      sharedGoalId: 'shared-lunar-comms',
+      raceLabel: 'Lunar comms',
+      outcomes: [
+        { projectId: 'nokia-lunar-lte', teamId: 521 },
+        { projectId: 'im-near-space-network', teamId: 522 },
+        { projectId: 'esa-lunar-pathfinder', teamId: 523 },
+        { projectId: 'crescent-parsec', teamId: 524 },
+        { projectId: 'solstar-lunar-wifi', teamId: 525 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    // Sepolia twin of Arbitrum #1. Unbound featured prize — roster is Team
+    // NFTs [2, 6, 7, 8]. Oracle at prepareCondition = deployer 0x3c5e…E011.
+    20: {
+      title: 'The Moon Is A Harsh Mistress',
+      tagline:
+        'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
+      questionId: '0xe6430ff8d51a6e5389d1c23cfa5dcab4682407f866a208ef3ea60120b271d5cf',
+    },
+    // Touchdown — next successful lunar landing (robotic/commercial).
+    // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.
+    // Synthetic JB 3003; LMSR 0xA669CC2dAf08EED1f3F2af93C720DB884B2899dC.
+    21: {
+      title: 'Touchdown',
+      tagline:
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
+      questionId: '0x18f9e4f8e5b291580b00bd23299194b169a66c3513229c5e16240e05d8520f17',
+      sharedGoalId: 'shared-next-landing',
+      raceLabel: 'Next lunar landing',
+      outcomes: [
+        { projectId: 'astrobotic-griffin', teamId: 601 },
+        { projectId: 'im-nova-c', teamId: 602 },
+        { projectId: 'firefly-blue-ghost', teamId: 603 },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604 },
+        { projectId: 'cnsa-change-7', teamId: 605 },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    // Night Shift — first 10 We through a 354-hour lunar night (chamber).
+    // Not registered yet: `register` on the Sepolia registry is onlyOwner
+    // (0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011). After
+    // `GOAL_ID=shared-night-shift yarn tsx scripts/provision-sepolia-races.ts`
+    // paste the generated block here as the next id (expected 22) with
+    // teams 611–617 + field 24. questionId is
+    // keccak256("deprize:sepolia:shared-night-shift:v1") =
+    // 0x6058f2c9f314734e1f1ecf8c34c8d8835fff5d8fb5e075d8044823e1717f00d4.
+    // Until then `/deprize/shared-night-shift` renders the atlas
+    // GoalDePrizeDetail (planned market).
   },
 }
 
@@ -147,8 +296,8 @@ export function isKnownDePrizeCompetition(
 /**
  * Live on-chain DePrize to feature at the top of /deprize — the first registered
  * competition on this chain that is NOT bound to a Moon Base Zero race. Today
- * that is Arbitrum #1 (The Moon Is A Harsh Mistress). Race-bound entries stay
- * on their RaceMarketCard; unbound ones have nowhere else to show up.
+ * that is Arbitrum #1 / Sepolia #20 (The Moon Is A Harsh Mistress). Race-bound
+ * entries stay on their RaceMarketCard; unbound ones have nowhere else to show up.
  */
 export function getFeaturedLiveDePrizeId(chainSlug: string): number | undefined {
   const entries = DEPRIZE_COMPETITIONS[chainSlug]

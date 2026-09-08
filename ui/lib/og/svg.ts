@@ -1,5 +1,7 @@
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH } from './preview'
 
+const OG_FONT_FAMILY = 'Lato, sans-serif'
+
 export type OgSvgFields = {
   eyebrow: string
   title: string
@@ -52,7 +54,7 @@ function chipRow(chips: string[], startX: number, y: number): string {
         <rect x="${x}" y="${y}" rx="22" ry="22" width="${width}" height="44"
           fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)"/>
         <text x="${x + width / 2}" y="${y + 29}" text-anchor="middle"
-          font-size="20" fill="#e2e8f0" font-family="sans-serif">${escapeXml(chip)}</text>
+          font-size="20" fill="#e2e8f0" font-family="${OG_FONT_FAMILY}">${escapeXml(chip)}</text>
       </g>`
       x += width + 12
       return svg
@@ -109,18 +111,18 @@ export function renderOgSvg({
   <rect width="100%" height="100%" fill="url(#bg)"/>
   <circle cx="65" cy="78" r="9" fill="url(#moon)"/>
   <text x="86" y="86" font-size="22" letter-spacing="3" fill="#93c5fd"
-    font-family="sans-serif" font-weight="600">${escapeXml(eyebrow.toUpperCase())}</text>
-  <text x="56" y="200" font-size="${titleSize}" fill="#ffffff" font-family="sans-serif"
+    font-family="${OG_FONT_FAMILY}" font-weight="600">${escapeXml(eyebrow.toUpperCase())}</text>
+  <text x="56" y="200" font-size="${titleSize}" fill="#ffffff" font-family="${OG_FONT_FAMILY}"
     font-weight="700">${titleTspans}</text>
   ${
     subtitleLine
       ? `<text x="56" y="${
           200 + titleLines.length * (titleSize + 8) + 20
-        }" font-size="28" fill="#cbd5e1" font-family="sans-serif">${subtitleLine}</text>`
+        }" font-size="28" fill="#cbd5e1" font-family="${OG_FONT_FAMILY}">${subtitleLine}</text>`
       : ''
   }
   ${chipRow(visibleChips, 56, 478)}
-  <text x="56" y="568" font-size="22" fill="#94a3b8" font-family="sans-serif">${escapeXml(
+  <text x="56" y="568" font-size="22" fill="#94a3b8" font-family="${OG_FONT_FAMILY}">${escapeXml(
     footer
   )}</text>
   ${media}

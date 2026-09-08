@@ -5,13 +5,15 @@ import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { DEPRIZE_TERMS_URL, UNIT } from '@/lib/deprize/constants'
-import { fmt, formatPrizeTokenLabel, toEth, toWei } from '@/lib/deprize/format'
+import { fmt, fmtEthWithUsd, fmtUsdFromEth, formatPrizeTokenLabel, toEth, toWei } from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import EthUsd from '@/components/deprize/EthUsd'
 import client from '@/lib/thirdweb/client'
 import Modal from '@/components/layout/Modal'
 import StandardButton from '@/components/layout/StandardButton'
@@ -59,6 +61,7 @@ export default function BetModal({
   const [busy, setBusy] = useState(false)
   const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
     useDePrizeChainGuard(chain)
+  const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
   const prizeToken = formatPrizeTokenLabel(launchpad.symbol)
@@ -155,7 +158,7 @@ export default function BetModal({
       const qtyNum = Number(qty) / Number(UNIT)
       fireDePrizeConfetti()
       toast.success(
-        `Backed ${teamName} with ${fmt(betAmountNum)} ETH. To win ≈ ${fmt(qtyNum)} ETH if it wins.`,
+        `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ≈ ${fmtEthWithUsd(qtyNum, ethPrice)} if it wins.`,
         { style: toastStyle, duration: 8000 }
       )
       onDone(outcomeIndex, betAmountNum, qtyNum)
@@ -197,6 +200,11 @@ export default function BetModal({
             placeholder="e.g. 0.01"
             className="mt-1 w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+          {betAmountNum > 0 && fmtUsdFromEth(betAmountNum, ethPrice) && (
+            <p className="text-white/55 text-xs mt-1 tabular-nums">
+              ≈ {fmtUsdFromEth(betAmountNum, ethPrice)}
+            </p>
+          )}
           <div className="flex gap-2 mt-2 flex-wrap">
             {['0.01', '0.05', '0.1'].map((a) => (
               <button
@@ -205,6 +213,9 @@ export default function BetModal({
                 className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs"
               >
                 {a} ETH
+                {fmtUsdFromEth(Number(a), ethPrice)
+                  ? ` (${fmtUsdFromEth(Number(a), ethPrice)})`
+                  : ''}
               </button>
             ))}
             {spendableEth > 0 && (
@@ -212,7 +223,7 @@ export default function BetModal({
                 onClick={() => setBetAmount(String(Math.floor(spendableEth * 1e6) / 1e6))}
                 className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs"
               >
-                Max ({fmt(spendableEth)})
+                Max ({fmtEthWithUsd(spendableEth, ethPrice, { prize: true })})
               </button>
             )}
           </div>
@@ -226,7 +237,7 @@ export default function BetModal({
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">To win if it wins</span>
                   <span className="text-moon-green text-lg font-bold">
-                    ≈ {fmt(quote.qty)} ETH
+                    <EthUsd eth={quote.qty} approx usdClassName="text-moon-green/70 font-normal text-sm" />
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -245,7 +256,9 @@ export default function BetModal({
               <span className="text-gray-500 text-xs">
                 Prize contribution (5% → {prizeToken})
               </span>
-              <span className="text-gray-300 text-xs">{fmt(sliceEth)} ETH</span>
+              <span className="text-gray-300 text-xs">
+                <EthUsd eth={sliceEth} prize usdClassName="text-gray-400 font-normal" />
+              </span>
             </div>
           </div>
         )}
@@ -302,8 +315,8 @@ export default function BetModal({
           </div>
         ) : insufficient ? (
           <p className="text-amber-300 text-sm">
-            You only have ≈ {fmt(spendableEth)} ETH available (a little is kept back for gas). Lower
-            your bet or add funds.
+            You only have ≈ {fmtEthWithUsd(spendableEth, ethPrice, { prize: true })} available (a
+            little is kept back for gas). Lower your bet or add funds.
           </p>
         ) : (
           <StandardButton
@@ -315,7 +328,7 @@ export default function BetModal({
             {busy
               ? 'Placing bet…'
               : betAmountNum > 0
-                ? `Bet ${fmt(betAmountNum)} ETH`
+                ? `Bet ${fmtEthWithUsd(betAmountNum, ethPrice)}`
                 : 'Enter an amount'}
           </StandardButton>
         )}

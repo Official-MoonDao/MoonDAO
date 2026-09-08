@@ -103,7 +103,7 @@ const infoCards = [
 const Info: React.FC = () => {
   const title = 'Information Center'
   const description = "Learn More About The Internet's Space Program"
-  const image = '/assets/moondao-og.jpg'
+  const image = '/assets/MoonDAO-OG.png'
 
   useChainDefault()
 

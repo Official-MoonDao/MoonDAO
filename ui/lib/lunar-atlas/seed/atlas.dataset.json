@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-26",
+  "updatedAt": "2026-09-04",
   "organizations": [
     {
       "id": "nasa",
@@ -427,6 +427,102 @@
           "label": "Solstar Space Company",
           "url": "https://solstarspace.com/",
           "retrievedAt": "2026-08-25"
+        }
+      ]
+    },
+    {
+      "id": "zeno-power",
+      "name": "Zeno Power",
+      "kind": "company",
+      "country": "USA",
+      "website": "https://www.zenopower.com/",
+      "brandColor": "#F59E0B",
+      "summary": "A radioisotope power company using Sr-90 and Am-241. Harmonia is a NASA Tipping Point lunar night-power product; Zeno also supplies a 5 W thermal Am-241 RHU for Firefly's CLPS CS-8 Survive-the-Night package.",
+      "sources": [
+        {
+          "label": "Zeno Power",
+          "url": "https://www.zenopower.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "venturi-space",
+      "name": "Venturi Space",
+      "kind": "company",
+      "country": "Monaco",
+      "website": "https://www.venturi.com/",
+      "brandColor": "#DC2626",
+      "summary": "Venturi Space builds lunar-cycle batteries qualified from −240 °C to +130 °C and is the strategic partner of Venturi Astrolab, whose CLV-1 NASA selected in May 2026 as a crewed lunar vehicle.",
+      "sources": [
+        {
+          "label": "Venturi",
+          "url": "https://www.venturi.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "perpetual-atomics",
+      "name": "Perpetual Atomics",
+      "kind": "company",
+      "country": "United Kingdom",
+      "website": "https://perpetualatomics.com/",
+      "brandColor": "#0EA5E9",
+      "summary": "University of Leicester spin-out leading European americium radioisotope power under ESA's ENDURE programme, with an Orano Am-241 offtake and the first full-scale americium RHU core in 2026.",
+      "sources": [
+        {
+          "label": "Perpetual Atomics",
+          "url": "https://perpetualatomics.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "cnnc",
+      "name": "CNNC / CIAE",
+      "kind": "agency",
+      "country": "China",
+      "website": "https://en.cnnc.com.cn/",
+      "brandColor": "#B91C1C",
+      "summary": "China National Nuclear Corporation and the China Institute of Atomic Energy supplied the Pu-238 RTGs and RHUs that have kept Chang'e-3 and Chang'e-4 producing electricity through lunar nights — the only flight-proven lunar night electricity besides Apollo.",
+      "sources": [
+        {
+          "label": "CNNC",
+          "url": "https://en.cnnc.com.cn/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "rosatom",
+      "name": "Rosatom",
+      "kind": "agency",
+      "country": "Russia",
+      "website": "https://www.rosatom.ru/en/",
+      "brandColor": "#166534",
+      "summary": "Russia's state nuclear corporation, with Krasnaya Zvezda and the Kurchatov Institute, holds Lunokhod-era radioisotope heritage and is developing both small RTG plants and the much larger Selena lunar reactor with Roscosmos.",
+      "sources": [
+        {
+          "label": "Rosatom",
+          "url": "https://www.rosatom.ru/en/",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "isro",
+      "name": "ISRO",
+      "kind": "agency",
+      "country": "India",
+      "website": "https://www.isro.gov.in/",
+      "brandColor": "#EA580C",
+      "summary": "The Indian Space Research Organisation, with BARC, is developing Am-241 RHU heating to extend lander life from 14 days toward 100–200 days after Chandrayaan-3 died at first sunset. LUPEX with JAXA is the named night-survival demonstrator.",
+      "sources": [
+        {
+          "label": "ISRO",
+          "url": "https://www.isro.gov.in/",
+          "retrievedAt": "2026-09-04"
         }
       ]
     }
@@ -1033,7 +1129,10 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Blue Origin — Blue Moon",
@@ -1482,7 +1581,10 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Firefly Aerospace — Blue Ghost",
@@ -1549,7 +1651,10 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Astrobotic — Lunar Delivery",
@@ -1686,12 +1791,76 @@
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
         {
           "label": "Intuitive Machines — Lunar Access",
           "url": "https://www.intuitivemachines.com/lunaraccess",
           "retrievedAt": "2026-07-27"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "cnsa-change-7",
+      "orgId": "cnsa-roscosmos",
+      "name": "Chang'e-7",
+      "type": "lander",
+      "summary": "CNSA's next South Pole robotic scout — orbiter, lander, rover, and hopper. Four Chang'e landings have succeeded in a row; this is the first ILRS reconnaissance flight and cannot be the next landing of 2026 after the August 2026 stand-down.",
+      "location": {
+        "lat": -85.5,
+        "lon": 31.5
+      },
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole (Chang'e-7 reconnaissance)",
+      "milestones": [
+        {
+          "id": "change7-standdown",
+          "title": "2026 launch window stood down; retargeted to 2027",
+          "targetDate": "2026-08",
+          "datePrecision": "month",
+          "status": "delayed",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Wikipedia — Chang'e 7",
+              "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        },
+        {
+          "id": "change7-landing",
+          "title": "South Pole landing after a ~90-day orbital scout",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "Wikipedia — Chang'e 7",
+              "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+              "retrievedAt": "2026-09-04"
+            },
+            {
+              "label": "Wikipedia — International Lunar Research Station",
+              "url": "https://en.wikipedia.org/wiki/International_Lunar_Research_Station",
+              "retrievedAt": "2026-07-28"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Wikipedia — Chang'e 7",
+          "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+          "retrievedAt": "2026-09-04"
         }
       ],
       "visibility": "public"
@@ -2697,6 +2866,270 @@
         }
       ],
       "visibility": "public"
+    },
+    {
+      "id": "zeno-harmonia",
+      "orgId": "zeno-power",
+      "name": "Harmonia",
+      "type": "other",
+      "summary": "The only named commercial lunar night-power product: a NASA 2023 Tipping Point radioisotope system using Am-241 and Sr-90 rather than plutonium. FDR completed April 2026 at 3.5× the original power specification; a terrestrial TVAC demonstration is planned for early 2027.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "harmonia-fdr",
+          "title": "Harmonia final design review complete at 3.5× original power spec",
+          "targetDate": "2026-04",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Zeno Power",
+              "url": "https://www.zenopower.com/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Zeno Power",
+          "url": "https://www.zenopower.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "astrobotic-nite",
+      "orgId": "astrobotic",
+      "name": "NITE",
+      "type": "other",
+      "summary": "Astrobotic's non-nuclear lunar night power system — chemical and fuel-cell based — funded by a ~$2.8M NASA Tipping Point award. Thermal-vacuum testing at Penn State encountered leakage and an oxidizer pump failure under vacuum; assessed at roughly TRL 4.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "nite-tipping-point",
+          "title": "NASA Tipping Point award for non-nuclear night power",
+          "targetDate": "2023",
+          "datePrecision": "year",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Astrobotic — Lunar Delivery",
+              "url": "https://www.astrobotic.com/lunar-delivery/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Astrobotic — Lunar Delivery",
+          "url": "https://www.astrobotic.com/lunar-delivery/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "venturi-lunar-battery",
+      "orgId": "venturi-space",
+      "name": "Lunar-cycle battery",
+      "type": "other",
+      "summary": "Venturi Space packs qualified across −240 °C to +130 °C, already endurance-tested over lunar cycles under vacuum. The 98% sustained-output rule forces oversizing; the scoreboard then shows what that costs in kilograms.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "venturi-lunar-cycle",
+          "title": "Vacuum lunar-cycle endurance testing inside qualification flow",
+          "targetDate": "2026",
+          "datePrecision": "year",
+          "status": "in_progress",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Venturi",
+              "url": "https://www.venturi.com/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Venturi",
+          "url": "https://www.venturi.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "perpetual-atomics-endure",
+      "orgId": "perpetual-atomics",
+      "name": "ENDURE Am-241 RHU",
+      "type": "other",
+      "summary": "ESA ENDURE americium radioisotope work spun out of Leicester. April 2026 produced the first full-scale Am-241 RHU core with QSA Global; a Generation 5 structural thermal model passed 25 G sine / 28 Grms vibration. An RHU is heat — they still need a convertor for watts electric.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "endure-am-core",
+          "title": "First americium-fuelled RHU full-scale core",
+          "targetDate": "2026-04",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Perpetual Atomics",
+              "url": "https://perpetualatomics.com/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Perpetual Atomics",
+          "url": "https://perpetualatomics.com/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "cnnc-lunar-rtg",
+      "orgId": "cnnc",
+      "name": "Chang'e lunar RTG",
+      "type": "other",
+      "summary": "The only organization besides Apollo with flight-proven lunar night electricity. Chang'e-4's Pu-238 RTG delivers 2.5 We plus 120 W thermal while the bus sleeps. State plutonium does not clear the prize's commercial procurement rule.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "change-4-rtg",
+          "title": "Chang'e-4 far-side landing with Pu-238 RTG still producing night electricity",
+          "targetDate": "2019-01",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "CNNC",
+              "url": "https://en.cnnc.com.cn/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "CNNC",
+          "url": "https://en.cnnc.com.cn/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "rosatom-lunar-rtg",
+      "orgId": "rosatom",
+      "name": "Rosatom lunar RTG",
+      "type": "other",
+      "summary": "Small RTG-based plants described for ILRS infrastructure, plus the much larger Selena 5–10 kWe reactor (prototype 2032). Real heritage and a legitimate Sr-90 / Am-241 supply route; nothing at watt scale on a near timeline.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "selena-contract",
+          "title": "NPO Lavochkin signs Selena lunar reactor build contract",
+          "targetDate": "2025-12",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Rosatom",
+              "url": "https://www.rosatom.ru/en/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Rosatom",
+          "url": "https://www.rosatom.ru/en/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "isro-barc-rhu",
+      "orgId": "isro",
+      "name": "BARC / LUPEX night survival",
+      "type": "other",
+      "summary": "A BARC- and ISRO-developed RHU flew on Chandrayaan-3's propulsion module, not the lander. The funded night programme is aimed at heat, not watts; LUPEX (NET 2028) is the named lunar-night-survival demonstrator.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth thermal-vacuum chamber (no committed lunar site)",
+      "milestones": [
+        {
+          "id": "chandrayaan3-rhu",
+          "title": "RHU technology demonstrator flew on Chandrayaan-3 propulsion module",
+          "targetDate": "2023-08",
+          "datePrecision": "month",
+          "status": "achieved",
+          "sources": [
+            {
+              "label": "ISRO",
+              "url": "https://www.isro.gov.in/",
+              "retrievedAt": "2026-09-04"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [
+        "shared-night-shift"
+      ],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "ISRO",
+          "url": "https://www.isro.gov.in/",
+          "retrievedAt": "2026-09-04"
+        }
+      ],
+      "visibility": "public"
     }
   ],
   "sharedGoals": [
@@ -2818,6 +3251,167 @@
           "label": "NASA — Blue Origin selected for Artemis V lander",
           "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-as-second-artemis-lunar-lander-provider/",
           "retrievedAt": "2026-07-20"
+        }
+      ]
+    },
+    {
+      "id": "shared-next-landing",
+      "title": "Touchdown — next successful lunar landing",
+      "description": "Which landing-vehicle operator after market open first lands upright on the Moon and returns surface data for at least 24 hours. The slot is the vehicle operator, not the payload or launch provider. Win tests are binary and public: touchdown UTC after OPEN, controlled powered descent, stable planned orientation, ≥24 h surface data, and independent confirmation. Tip-overs (IM-1, IM-2, SLIM) do not count. ispace, ISRO, and later flights sit in the Open Field.",
+      "projectIds": [
+        "astrobotic-griffin",
+        "im-nova-c",
+        "firefly-blue-ghost",
+        "blue-origin-blue-moon-mk1",
+        "cnsa-change-7"
+      ],
+      "location": {
+        "lat": -85.5,
+        "lon": -10
+      },
+      "regionLabel": "Next attempted lunar landing site",
+      "criteria": [
+        {
+          "id": "after-open",
+          "statement": "Touchdown UTC is after this market opens",
+          "threshold": "Landing timestamp > OPEN"
+        },
+        {
+          "id": "powered-descent",
+          "statement": "Controlled powered descent to the surface",
+          "threshold": "Not a crash or uncontrolled impact"
+        },
+        {
+          "id": "upright",
+          "statement": "Vehicle comes to rest in its planned orientation",
+          "threshold": "Excludes tip-overs such as IM-1, IM-2, and SLIM"
+        },
+        {
+          "id": "surface-data",
+          "statement": "Return surface data after landing",
+          "threshold": "≥ 24 hours of post-touchdown data"
+        },
+        {
+          "id": "independent-confirm",
+          "statement": "Independent confirmation of the landing",
+          "threshold": "Agency statement, third-party orbital imagery, or independently received telemetry"
+        }
+      ],
+      "targetWindow": {
+        "from": "2026",
+        "to": "2028"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "firefly-blue-ghost": 0.28,
+          "im-nova-c": 0.22,
+          "cnsa-change-7": 0.2,
+          "astrobotic-griffin": 0.18,
+          "blue-origin-blue-moon-mk1": 0.12
+        }
+      },
+      "sources": [
+        {
+          "label": "NASA — Firefly's Blue Ghost lands on the Moon",
+          "url": "https://www.nasa.gov/news-release/nasa-science-tech-lands-on-moon-aboard-firefly-blue-ghost/",
+          "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "NASA — Moon Base cargo landers and tech demonstrations update",
+          "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+          "retrievedAt": "2026-08-28"
+        },
+        {
+          "label": "Wikipedia — Chang'e 7",
+          "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+          "retrievedAt": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "id": "shared-night-shift",
+      "title": "Night Shift — first machine that works through a lunar night",
+      "description": "Deliver at least 10 watts of electricity, continuously, for 354 hours, in a vacuum chamber colder than 100 kelvin, with nothing plugged in — and still be delivering the same 10 watts at the end. Publish the data. The 98% rule is a last-hour / first-hour slope limit, not a 9.8 W waiver: every rolling hour must stay ≥ 10.0 We. Unlike NASA Watts on the Moon (store and distribute night power), this is one unplugged article plus a commercial procurement rule. The slot is the power system, not the host lander. Firefly, Intuitive Machines, and ispace sit in the Open Field only if they bring their own article. State plutonium does not clear. Thermal wadis compete in the Open Field; mass and occupied volume are published so a warehouse-sized heat store cannot hide.",
+      "projectIds": [
+        "zeno-harmonia",
+        "astrobotic-nite",
+        "venturi-lunar-battery",
+        "perpetual-atomics-endure",
+        "cnnc-lunar-rtg",
+        "rosatom-lunar-rtg",
+        "isro-barc-rhu"
+      ],
+      "criteria": [
+        {
+          "id": "unplug",
+          "statement": "Nothing crosses the chamber boundary into the article except data",
+          "threshold": "No wall power, heat, propellant, coolant, gas, or mass during the window"
+        },
+        {
+          "id": "environment",
+          "statement": "Run in a lunar-night thermal-vacuum environment",
+          "threshold": "≤ 1×10⁻⁵ torr and ≤ 100 K shroud throughout, with published excursion limits"
+        },
+        {
+          "id": "ten-watts",
+          "statement": "Deliver useful electrical work continuously",
+          "threshold": "≥ 10.0 We averaged over every rolling 60-minute window for 354 hours"
+        },
+        {
+          "id": "sustained-output",
+          "statement": "Output is undiminished at the end of the night",
+          "threshold": "Mean power in the last hour ≥ 98% of mean power in the first hour. This is a slope limit, not a 9.8 W waiver — the 10.0 We rolling-hour floor is separate"
+        },
+        {
+          "id": "size-disclosure",
+          "statement": "Publish article mass and occupied chamber volume",
+          "threshold": "Weigh-in and convex envelope as mounted. Not a cap — a thermal wadi must be visible on the scoreboard"
+        },
+        {
+          "id": "independent-meters",
+          "statement": "Independent instruments, two site visits",
+          "threshold": "Day 0: weigh, seal, install the verifier's sensors. Day 15: check seals and take the files. Live telemetry and clock-in-frame video corroborate; they do not replace the meters"
+        },
+        {
+          "id": "procurable",
+          "statement": "The energy source can be bought",
+          "threshold": "Invoice or published price for the fuel or stored energy used in the run"
+        }
+      ],
+      "targetWindow": {
+        "from": "2026",
+        "to": "2030"
+      },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "zeno-harmonia": 0.32,
+          "venturi-lunar-battery": 0.22,
+          "astrobotic-nite": 0.16,
+          "perpetual-atomics-endure": 0.12,
+          "cnnc-lunar-rtg": 0.08,
+          "isro-barc-rhu": 0.05,
+          "rosatom-lunar-rtg": 0.05
+        }
+      },
+      "sources": [
+        {
+          "label": "Zeno Power",
+          "url": "https://www.zenopower.com/",
+          "retrievedAt": "2026-09-04"
+        },
+        {
+          "label": "NASA — Tipping Point partnerships",
+          "url": "https://www.nasa.gov/news-release/nasa-partners-with-american-companies-on-key-moon-exploration-tech/",
+          "retrievedAt": "2026-09-04"
+        },
+        {
+          "label": "NASA — Watts on the Moon Challenge",
+          "url": "https://www.nasa.gov/prizes-challenges-and-crowdsourcing/centennial-challenges/watts-on-the-moon-challenge/",
+          "retrievedAt": "2026-09-07"
         }
       ]
     },

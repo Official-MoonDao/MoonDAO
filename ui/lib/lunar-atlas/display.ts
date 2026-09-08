@@ -55,20 +55,30 @@ export const PROJECT_TYPE_COLOR: Record<ProjectType, string> = {
   other: '#d1d5db', // gray
 }
 
-// Roster status of a DePrize competitor. Wording is deliberately honest:
-// "listed" is MoonDAO's curatorial judgment, not the company's commitment.
-export const ROSTER_STATUS_LABEL: Record<RosterStatus, string> = {
-  listed: 'Listed competitor — participation not confirmed',
-  invited: 'Invited — awaiting response',
-  consented: 'Confirmed competitor',
+// How a roster status reads to a visitor. "Listed" was curator jargon and
+// looked like a confirmed entry; official / unofficial is the actual split.
+export type ParticipationKind = 'official' | 'unofficial' | 'declined'
+
+export function participationKind(
+  status?: RosterStatus
+): ParticipationKind | undefined {
+  if (!status) return undefined
+  if (status === 'consented') return 'official'
+  if (status === 'declined') return 'declined'
+  return 'unofficial'
+}
+
+export const PARTICIPATION_LABEL: Record<ParticipationKind, string> = {
+  official: 'Official participant',
+  unofficial: 'Unofficial — listed by MoonDAO, not confirmed',
   declined: 'Declined to participate',
 }
 
-export const ROSTER_STATUS_CLASSES: Record<RosterStatus, string> = {
-  listed: 'text-white/60 bg-white/5 border-white/15',
-  invited: 'text-amber-200 bg-amber-500/15 border-amber-400/30',
-  consented: 'text-emerald-200 bg-emerald-500/15 border-emerald-400/30',
-  declined: 'text-rose-200 bg-rose-500/15 border-rose-400/30',
+export const ROSTER_STATUS_LABEL: Record<RosterStatus, string> = {
+  listed: PARTICIPATION_LABEL.unofficial,
+  invited: 'Unofficial — invited, awaiting a response',
+  consented: PARTICIPATION_LABEL.official,
+  declined: PARTICIPATION_LABEL.declined,
 }
 
 export const MILESTONE_STATUS_LABEL: Record<MilestoneStatus, string> = {
@@ -105,4 +115,21 @@ export const LOCATION_PRECISION_LABEL: Record<string, string> = {
   exact: 'Exact location',
   approximate: 'Approximate location',
   region: 'Regional (target area)',
+}
+
+export function formatPlace(n: number): string {
+  const v = Math.abs(n)
+  const mod100 = v % 100
+  const mod10 = v % 10
+  const suffix =
+    mod100 >= 11 && mod100 <= 13
+      ? 'th'
+      : mod10 === 1
+        ? 'st'
+        : mod10 === 2
+          ? 'nd'
+          : mod10 === 3
+            ? 'rd'
+            : 'th'
+  return `${n}${suffix}`
 }

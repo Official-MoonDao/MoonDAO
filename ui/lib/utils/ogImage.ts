@@ -2,6 +2,7 @@ import { DEPLOYED_ORIGIN, IPFS_GATEWAY } from 'const/config'
 
 // Served from our own origin rather than an IPFS gateway: link-preview crawlers
 // abandon the image after a couple of seconds, and ipfs.io 504s on MoonDAO CIDs.
+// Apex moondao.com 307s to www; crawlers often drop og:image on that redirect.
 export const DEFAULT_OG_IMAGE_PATH = '/metadata-image.png'
 
 /**
@@ -13,11 +14,19 @@ export const DEFAULT_OG_IMAGE_PATH = '/metadata-image.png'
  * pre-building a public-gateway URL at the call site looks like an
  * already-resolved https URL here and gets passed through untouched.
  */
+function preferWww(url: string): string {
+  if (url === 'https://moondao.com') return 'https://www.moondao.com'
+  if (url.startsWith('https://moondao.com/')) {
+    return `https://www.moondao.com/${url.slice('https://moondao.com/'.length)}`
+  }
+  return url
+}
+
 export function normalizeOgImageUrl(image?: string): string {
-  if (!image) return `${DEPLOYED_ORIGIN}${DEFAULT_OG_IMAGE_PATH}`
+  if (!image) return preferWww(`${DEPLOYED_ORIGIN}${DEFAULT_OG_IMAGE_PATH}`)
 
   if (image.startsWith('http://') || image.startsWith('https://')) {
-    return image
+    return preferWww(image)
   }
 
   if (image.startsWith('ipfs://')) {
@@ -25,7 +34,7 @@ export function normalizeOgImageUrl(image?: string): string {
   }
 
   if (image.startsWith('/')) {
-    return `${DEPLOYED_ORIGIN}${image}`
+    return preferWww(`${DEPLOYED_ORIGIN}${image}`)
   }
 
   return `${IPFS_GATEWAY}${image}`

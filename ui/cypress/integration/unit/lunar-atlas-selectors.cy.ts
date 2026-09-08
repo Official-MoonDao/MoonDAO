@@ -7,6 +7,11 @@
  */
 
 import { expect } from 'chai'
+import {
+  PARTICIPATION_LABEL,
+  formatPlace,
+  participationKind,
+} from '../../../lib/lunar-atlas/display'
 import { SEED_ATLAS } from '../../../lib/lunar-atlas/seed'
 import {
   atlasYear,
@@ -19,6 +24,8 @@ import {
   projectDateRange,
   projectStateAtYear,
   raceArrivalYear,
+  raceStandingForProject,
+  sharedGoalById,
 } from '../../../lib/lunar-atlas/selectors'
 import type {
   Milestone,
@@ -471,6 +478,15 @@ describe('lunar-atlas selectors', () => {
         }
       }
     })
+    it('maps roster status to official / unofficial instead of curator jargon', () => {
+      expect(participationKind(undefined)).to.equal(undefined)
+      expect(participationKind('consented')).to.equal('official')
+      expect(participationKind('listed')).to.equal('unofficial')
+      expect(participationKind('invited')).to.equal('unofficial')
+      expect(participationKind('declined')).to.equal('declined')
+      expect(PARTICIPATION_LABEL.unofficial).to.match(/Unofficial/i)
+      expect(PARTICIPATION_LABEL.unofficial).to.not.match(/^listed$/i)
+    })
     it('capability criteria are well-formed and goals with criteria are sourced', () => {
       for (const g of SEED_ATLAS.sharedGoals) {
         if (!g.criteria) continue
@@ -512,6 +528,24 @@ describe('lunar-atlas selectors', () => {
           `goal ${g.id} has no ${g.category} competitor`
         ).to.be.greaterThan(0)
       }
+    })
+    it('surfaces a competitor\'s place and odds from a race goal', () => {
+      expect(formatPlace(1)).to.equal('1st')
+      expect(formatPlace(2)).to.equal('2nd')
+      expect(formatPlace(3)).to.equal('3rd')
+      expect(formatPlace(11)).to.equal('11th')
+      expect(formatPlace(12)).to.equal('12th')
+      const lander = sharedGoalById(SEED_ATLAS, 'shared-crewed-lander')
+      expect(lander).to.exist
+      const blue = raceStandingForProject('blue-origin-blue-moon-mk2', lander!)
+      expect(blue?.place).to.equal(2)
+      expect(blue?.fieldSize).to.equal(2)
+      expect(Math.round((blue?.probability ?? 0) * 100)).to.equal(36)
+      const starship = raceStandingForProject('spacex-starship-hls', lander!)
+      expect(starship?.place).to.equal(1)
+      expect(raceStandingForProject('not-a-competitor', lander!)).to.equal(
+        undefined
+      )
     })
     it('at most one goal declares each race category', () => {
       const seen = new Map<string, string>()

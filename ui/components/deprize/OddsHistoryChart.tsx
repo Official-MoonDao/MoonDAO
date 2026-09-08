@@ -65,8 +65,8 @@ export default function OddsHistoryChart({
         className="flex items-center justify-center text-gray-500 text-xs text-center px-4"
         style={{ height }}
       >
-        Live odds will plot here as the market updates. Leave this open (or place
-        a bet) and the chart fills in over time.
+        Odds history will plot here as the market moves. Samples persist across
+        visits, so the line grows from market open to now.
       </div>
     )
   }
