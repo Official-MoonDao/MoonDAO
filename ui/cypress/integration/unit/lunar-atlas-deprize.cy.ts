@@ -5,6 +5,7 @@
 
 import { expect } from 'chai'
 import {
+  findDePrizeIdForGoal,
   getDePrizeRaceBinding,
   OPEN_FIELD_PROJECT_ID,
 } from '../../../lib/deprize/competitions'
@@ -84,7 +85,7 @@ describe('lunar-atlas × DePrize binding', () => {
     expect(nightShift!.criteria?.some((c) => c.id === 'size-disclosure')).to.equal(true)
     expect(nightShift!.criteria?.some((c) => c.id === 'independent-meters')).to.equal(true)
     expect(nightShift!.market?.status).to.equal('planned')
-    expect(getDePrizeRaceBinding('sepolia', 22)).to.equal(undefined)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
     for (const id of nightShift!.projectIds) {
       const project = SEED_ATLAS.projects.find((p) => p.id === id)
       expect(project, id).to.exist
