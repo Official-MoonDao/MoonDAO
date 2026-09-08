@@ -2,6 +2,7 @@ import {
   MAX_METADATA_BYTES,
   buildJobMetadata,
   extractPublicJobBody,
+  stripApplicationSectionsFromBody,
   formatCommitment,
   formatCompensation,
   formatDeadlineCountdown,
@@ -267,19 +268,68 @@ describe('normalizeJobPostingDoc', () => {
   })
 })
 
+describe('stripApplicationSectionsFromBody', () => {
+  it('removes how-to-apply and hiring process, keeps the role', () => {
+    const stripped = stripApplicationSectionsFromBody(
+      [
+        '### The pitch',
+        '',
+        'Own the account.',
+        '',
+        '### How to apply',
+        '',
+        'Send a package with metrics and 2–3 posts.',
+        '',
+        '### Hiring process and timeline',
+        '',
+        '| Stage | What happens |',
+        '|---|---|',
+        '| Interview | A conversation about prior results. |',
+        '',
+        '### About MoonDAO',
+        '',
+        "The Internet's Space Program.",
+        '',
+        'Worth reading before you apply:',
+      ].join('\n')
+    )
+
+    expect(stripped).to.include('Own the account.')
+    expect(stripped).to.include('About MoonDAO')
+    expect(stripped).to.include('Worth reading before you apply')
+    expect(stripped).to.not.include('How to apply')
+    expect(stripped).to.not.include('Send a package')
+    expect(stripped).to.not.include('Hiring process')
+    expect(stripped).to.not.include('Interview')
+  })
+
+  it('leaves a posting without apply sections untouched', () => {
+    const body = '### The pitch\n\nOwn the account.'
+    expect(stripApplicationSectionsFromBody(body)).to.equal(body)
+  })
+})
+
 describe('stripJobApplicationFields', () => {
   it('removes apply URL, how-to-apply, and hiring process', () => {
     const stripped = stripJobApplicationFields({
       v: 1,
       summary: 'Grow the account',
-      body: 'Own day-to-day posting.',
+      body: [
+        '### The pitch',
+        '',
+        'Own day-to-day posting.',
+        '',
+        '### How to apply',
+        '',
+        'Email the team with your X metrics.',
+      ].join('\n'),
       applyUrl: 'https://airtable.com/apply',
       applicationRequirements: ['Send metrics'],
       hiringProcess: [{ label: 'Intro call' }],
     })
 
     expect(stripped?.summary).to.equal('Grow the account')
-    expect(stripped?.body).to.equal('Own day-to-day posting.')
+    expect(stripped?.body).to.equal('### The pitch\n\nOwn day-to-day posting.')
     expect(stripped?.applyUrl).to.equal(undefined)
     expect(stripped?.applicationRequirements).to.equal(undefined)
     expect(stripped?.hiringProcess).to.equal(undefined)

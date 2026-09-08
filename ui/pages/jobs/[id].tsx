@@ -79,22 +79,28 @@ export default function JobDetail({
   // fetched doc is tagged with its CID and ignored once the route moves on.
   const [clientDoc, setClientDoc] = useState<{ cid: string; doc: JobPostingDoc } | null>(null)
   const fetchedDoc = clientDoc && clientDoc.cid === metadata.cid ? clientDoc.doc : null
-  const fullPosting = isGated ? null : doc || fetchedDoc
+  const fullPosting = isGated ? null : fetchedDoc || doc
   const posting = canSeeApplication ? fullPosting : stripJobApplicationFields(fullPosting)
 
-  // ISR can ship without the IPFS body (slow gateway). Retry in the browser
-  // whenever the on-chain envelope has a CID but the server did not load it.
+  // ISR ships a guest-safe doc (apply sections already stripped). Citizens load
+  // the full IPFS posting so how-to-apply stays off the public HTML. Guests only
+  // retry when the server missed the body entirely, and that retry is stripped.
   useEffect(() => {
     const cid = metadata.cid
-    if (doc || !cid || isGated) return
+    if (!cid || isGated) return
+    const shouldFetch = canSeeApplication || !doc
+    if (!shouldFetch) return
     let cancelled = false
     fetchJobPostingDoc(cid).then((loaded) => {
-      if (!cancelled && loaded) setClientDoc({ cid, doc: loaded })
+      if (!cancelled && loaded) {
+        const next = canSeeApplication ? loaded : stripJobApplicationFields(loaded)
+        if (next) setClientDoc({ cid, doc: next })
+      }
     })
     return () => {
       cancelled = true
     }
-  }, [doc, metadata.cid, isGated])
+  }, [doc, metadata.cid, isGated, canSeeApplication])
 
   const teamContract = useContract({
     chain: selectedChain,
@@ -427,7 +433,9 @@ export const getStaticProps: GetStaticProps<JobDetailProps> = async ({ params })
       props: {
         job,
         metadata,
-        doc,
+        // Apply instructions stay off the public ISR payload / View Source.
+        // Citizens re-fetch the full IPFS document in the browser.
+        doc: stripJobApplicationFields(doc),
         team,
         relatedJobs: related.jobs,
         otherRolesCount: related.otherCount,
