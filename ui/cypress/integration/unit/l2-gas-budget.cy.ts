@@ -3,11 +3,14 @@ import {
   applyFeeOverrides,
   computeMaxFeePerGas,
   feesFromProviderSnapshot,
+  hasFeeValue,
   parseGasPriceApiPayload,
 } from '@/lib/rpc/eip1559Fees'
 import { L2_GAS_BUDGET_ETH, L2_GAS_BUDGET_WEI } from '@/lib/rpc/gasBudget'
 import {
   buildSafeExecutionOptions,
+  encodeExecTransactionData,
+  estimateSafeExecutionGas,
   resolveSafeExecutionGasLimit,
 } from '@/lib/safe/executionGas'
 
@@ -54,6 +57,17 @@ describe('EIP-1559 fee math', () => {
     expect(parsed?.maxPriorityFeePerGas).to.equal(1n)
   })
 
+  it('treats a 0 tip as present and recovers maxFee from baseFee', () => {
+    expect(hasFeeValue(0n)).to.equal(true)
+    expect(hasFeeValue(undefined)).to.equal(false)
+    const parsed = parseGasPriceApiPayload({
+      baseFeePerGas: '0x1312d00',
+      maxPriorityFeePerGas: '0x0',
+    })
+    expect(parsed?.maxPriorityFeePerGas).to.equal(0n)
+    expect(parsed?.maxFeePerGas).to.equal(computeMaxFeePerGas(0x1312d00n, 0n))
+  })
+
   it('stamps API fees onto a prepared tx', () => {
     const decorated = applyFeeOverrides(
       { to: '0x1', gas: 200000n, maxFeePerGas: 1_000_000_000n },
@@ -95,6 +109,47 @@ describe('Safe execution gas', () => {
     })
     expect(options.gasLimit).to.equal('500000')
     expect(options.maxFeePerGas).to.equal('48033600')
+  })
+
+  it('encodes execTransaction and estimates via the provider', async () => {
+    const owner = '0x1111111111111111111111111111111111111111'
+    const safeTx = {
+      to: '0x2222222222222222222222222222222222222222',
+      value: '0',
+      data: '0xabcdef',
+      operation: 0,
+      safeTxGas: '0',
+      baseGas: '0',
+      gasPrice: '0',
+      gasToken: '0x0000000000000000000000000000000000000000',
+      refundReceiver: '0x0000000000000000000000000000000000000000',
+      confirmations: [
+        { owner, signature: '0x' + 'ab'.repeat(65) },
+      ],
+    }
+    const encoded = encodeExecTransactionData(safeTx)
+    expect(encoded.slice(0, 10)).to.equal('0x6a761202')
+
+    let seen: { to?: string; data?: string; from?: string } = {}
+    const estimated = await estimateSafeExecutionGas({
+      safe: {
+        getAddress: async () => '0x3333333333333333333333333333333333333333',
+      },
+      safeTx,
+      provider: {
+        getSigner: () => ({
+          getAddress: async () => owner,
+        }),
+        estimateGas: async (tx) => {
+          seen = tx
+          return { toString: () => '220000' }
+        },
+      },
+    })
+    expect(estimated).to.equal(220000n)
+    expect(seen.to).to.equal('0x3333333333333333333333333333333333333333')
+    expect(seen.from).to.equal(owner)
+    expect(seen.data).to.equal(encoded)
   })
 })
 

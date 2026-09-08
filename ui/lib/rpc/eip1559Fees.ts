@@ -77,26 +77,41 @@ export async function resolveEip1559FeesFromProvider(provider: {
   return feesFromProviderSnapshot(fee, block)
 }
 
+export function parseOptionalHexBigInt(value: unknown): bigint | undefined {
+  if (typeof value !== 'string' && typeof value !== 'number') return undefined
+  try {
+    return BigInt(value)
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * `0n` is a valid Arbitrum tip. Treat only `undefined` as missing so we still
+ * emit / consume fee fields when `eth_maxPriorityFeePerGas` returns 0.
+ */
+export function hasFeeValue(value: bigint | undefined): value is bigint {
+  return value !== undefined
+}
+
 export function parseGasPriceApiPayload(
   data: Record<string, unknown> | null | undefined
 ): Eip1559FeeOverrides | null {
   if (!data) return null
-  const maxFeeRaw = data.maxFeePerGas
-  const priorityRaw = data.maxPriorityFeePerGas
-  if (typeof maxFeeRaw !== 'string' && typeof maxFeeRaw !== 'number') {
-    return null
+  const priority = parseOptionalHexBigInt(data.maxPriorityFeePerGas) ?? 0n
+  const maxFee = parseOptionalHexBigInt(data.maxFeePerGas)
+  if (maxFee !== undefined && maxFee > 0n) {
+    return { maxFeePerGas: maxFee, maxPriorityFeePerGas: priority }
   }
-  if (typeof priorityRaw !== 'string' && typeof priorityRaw !== 'number') {
-    return null
+  // Recover when the API omitted maxFee/priority because 0n is falsy.
+  const baseFee = parseOptionalHexBigInt(data.baseFeePerGas)
+  if (baseFee !== undefined && baseFee > 0n) {
+    return {
+      maxFeePerGas: computeMaxFeePerGas(baseFee, priority),
+      maxPriorityFeePerGas: priority,
+    }
   }
-  try {
-    const maxFeePerGas = BigInt(maxFeeRaw)
-    const maxPriorityFeePerGas = BigInt(priorityRaw)
-    if (maxFeePerGas <= 0n) return null
-    return { maxFeePerGas, maxPriorityFeePerGas }
-  } catch {
-    return null
-  }
+  return null
 }
 
 export async function fetchClientFeeOverrides(

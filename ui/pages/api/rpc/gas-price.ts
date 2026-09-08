@@ -1,7 +1,7 @@
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { computeMaxFeePerGas } from '@/lib/rpc/eip1559Fees'
+import { computeMaxFeePerGas, hasFeeValue } from '@/lib/rpc/eip1559Fees'
 import { cacheGet, cacheSet } from '@/lib/rpc/rpcCache'
 import {
   isSupportedRpcChain,
@@ -105,14 +105,20 @@ export async function handler(
         'eth_maxPriorityFeePerGas',
         []
       )
-      if (priorityFee) {
+      if (priorityFee !== undefined && priorityFee !== null && priorityFee !== '') {
         maxPriorityFeePerGas = BigInt(priorityFee)
       }
 
-      // If both base fee and priority fee are available, calculate max fee
-      // Max fee = base fee * 2.4 + priority fee (2× standard + 20% drift buffer)
-      if (baseFeePerGas && maxPriorityFeePerGas) {
-        maxFeePerGas = computeMaxFeePerGas(baseFeePerGas, maxPriorityFeePerGas)
+      // 0 is a valid L2 tip. `if (maxPriorityFeePerGas)` is false for 0n and
+      // would skip the max-fee field, leaving Privy on inflated wallet fees.
+      if (hasFeeValue(baseFeePerGas)) {
+        maxFeePerGas = computeMaxFeePerGas(
+          baseFeePerGas,
+          maxPriorityFeePerGas ?? 0n
+        )
+        if (maxPriorityFeePerGas === undefined) {
+          maxPriorityFeePerGas = 0n
+        }
       }
     } catch (eip1559Error) {
       // EIP-1559 not supported or failed
@@ -125,19 +131,19 @@ export async function handler(
       chainId: chainIdNum,
     }
 
-    if (maxFeePerGas) {
+    if (hasFeeValue(maxFeePerGas)) {
       response.maxFeePerGas = `0x${maxFeePerGas.toString(16)}`
       response.maxFeePerGasGwei = (Number(maxFeePerGas) / 1e9).toFixed(2)
     }
 
-    if (maxPriorityFeePerGas) {
+    if (hasFeeValue(maxPriorityFeePerGas)) {
       response.maxPriorityFeePerGas = `0x${maxPriorityFeePerGas.toString(16)}`
       response.maxPriorityFeePerGasGwei = (
         Number(maxPriorityFeePerGas) / 1e9
       ).toFixed(2)
     }
 
-    if (baseFeePerGas) {
+    if (hasFeeValue(baseFeePerGas)) {
       response.baseFeePerGas = `0x${baseFeePerGas.toString(16)}`
       response.baseFeePerGasGwei = (Number(baseFeePerGas) / 1e9).toFixed(2)
     }
