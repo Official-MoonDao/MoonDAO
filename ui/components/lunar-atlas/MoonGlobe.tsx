@@ -522,7 +522,7 @@ export default function MoonGlobe({
     for (const t of trees ?? []) byCategory.set(t.category, siteOpacity(t, getProjectStyle))
     return byCategory
   }, [trees, getProjectStyle])
-  // The built environment — graded roads, the hardstand, street lighting, the
+  // The built environment — graded roads, street lighting, the
   // roadside cargo, the parked excavators, the vault dig — is the work of the
   // surface construction fleet, so it arrives when that fleet does and not when
   // the first lander touches down. Keying it to the loudest district on the
@@ -615,8 +615,8 @@ export default function MoonGlobe({
         // A LOGARITHMIC depth buffer is the obvious choice for a scene that
         // spans orbit to millimeters, and it was used here, and it was the
         // wrong call — it is the direct cause of the shimmer that has been
-        // chased around this scene with lift hacks (the pit halo, the plaza
-        // hardstand, the excavator) and of vault interiors that boiled.
+        // chased around this scene with lift hacks (the pit halo, the
+        // excavator) and of vault interiors that boiled.
         //
         // Three computes log depth as log2(1.0 + gl_Position.w). One scene unit
         // here is 868 km, so `w` eight meters from the eye is 9.2e-6, and that
