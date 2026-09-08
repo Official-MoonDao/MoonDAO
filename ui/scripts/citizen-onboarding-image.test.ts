@@ -7,7 +7,13 @@ import {
   isUsableAiPortrait,
   restoredCitizenImageLooksLikeAi,
 } from '../lib/image-generator/citizenOnboardingImage'
-import { comfyJobStatusUrl, parseComfyJobStatus } from '../lib/image-generator/pollComfyImageJob'
+import {
+  classifyComfyJobStatus,
+  comfyJobStatusUrl,
+  isComfyJobGenerating,
+  isComfyJobPending,
+  parseComfyJobStatus,
+} from '../lib/image-generator/pollComfyImageJob'
 
 function mockFile(name: string): File {
   return new File(['x'], name, { type: 'image/png' })
@@ -293,6 +299,33 @@ describe('citizenOnboardingImage', () => {
         throw err
       }
     }
+  })
+
+  it('keeps polling through RUNNING and unknown in-progress statuses', () => {
+    for (const status of ['QUEUED', 'STARTED', 'INIT', 'PENDING', 'RUNNING']) {
+      expectEqual(classifyComfyJobStatus(status), 'pending', status)
+      expectTruthy(isComfyJobPending(status), `${status} is pending`)
+    }
+    expectTruthy(isComfyJobGenerating('STARTED'), 'STARTED generating')
+    expectTruthy(isComfyJobGenerating('RUNNING'), 'RUNNING generating')
+    expectFalsy(isComfyJobGenerating('QUEUED'), 'QUEUED not generating')
+
+    // Production outage: Comfy.icu canary workers emit RUNNING. The old
+    // allow-list treated that as a terminal failure and discarded the portrait.
+    expectTruthy(isComfyJobPending('RUNNING'), 'RUNNING must not fail the job')
+    expectEqual(classifyComfyJobStatus('COMPLETED'), 'completed', 'COMPLETED')
+    expectEqual(
+      classifyComfyJobStatus('INSUFFICIENT_CREDIT'),
+      'insufficient_credit',
+      'credits'
+    )
+    expectEqual(classifyComfyJobStatus('ERROR'), 'failed', 'ERROR')
+    expectEqual(classifyComfyJobStatus('TIMEOUT'), 'failed', 'TIMEOUT')
+    expectEqual(
+      classifyComfyJobStatus('PREPARING'),
+      'pending',
+      'unknown status stays pending'
+    )
   })
 
   it('Privy-return regression: stale full-size citizenImage must not win over crop', () => {

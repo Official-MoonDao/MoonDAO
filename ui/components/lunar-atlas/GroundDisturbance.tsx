@@ -21,7 +21,7 @@
 // a meter out at its rim. No lift value fixes that — raise it until the uphill
 // edge stops z-fighting and the downhill edge is visibly flying.
 //
-// So the stains are built the way the roads and the hardstand are (see BaseRoads):
+// So the stains are built the way the roads themselves are (see BaseRoads):
 // tessellated on their own stations and seated per vertex on the rendered
 // terrain, so they follow the ground instead of approximating it. Every patch
 // then also gets a seeded, wandering outline rather than a true circle, and
@@ -155,7 +155,7 @@ const SCOUR_STYLE: PatchStyle = {
 const LIFT_M = 0.16
 
 // Radial station spacing, in meters, for the same reason the roads and the
-// hardstand have one: a patch only clears the ground by LIFT_M where it has a
+// roads have one: a patch only clears the ground by LIFT_M where it has a
 // vertex, so it has to sample the terrain often enough that the straight run in
 // between never rises through that clearance. Same spacing the roads use, and
 // the sweep above is what says it's enough at this lift.

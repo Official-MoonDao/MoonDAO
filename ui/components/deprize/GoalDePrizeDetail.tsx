@@ -190,6 +190,51 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
               </div>
             </div>
 
+            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
+              <p className="text-gray-300 text-sm">{goal.description}</p>
+              {goal.regionLabel && (
+                <p className="text-gray-500 text-xs mt-2">{goal.regionLabel}</p>
+              )}
+              {hasRace && (
+                <p className="text-gray-500 text-xs leading-relaxed mt-3">
+                  {ROSTER_DISCLAIMER}
+                </p>
+              )}
+              <p className="text-gray-500 text-xs mt-3">
+                {hasRace
+                  ? 'Switch to Sepolia to view the live on-chain market for this race. '
+                  : 'No funded developer has entered this capability yet, so there is no market. '}
+                <Link
+                  href={`/moonbase?race=${goal.id}`}
+                  className="text-indigo-300/90 underline-offset-2 hover:underline"
+                >
+                  See this race on Moon Base Zero
+                </Link>
+                .
+              </p>
+            </div>
+
+            {goal.criteria && goal.criteria.length > 0 && (
+              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
+                <h3 className="text-white font-semibold text-sm mb-3">
+                  Capability criteria (draft)
+                </h3>
+                <ol className="flex flex-col gap-2.5">
+                  {goal.criteria.map((c, i) => (
+                    <li key={c.id} className="text-sm text-gray-300">
+                      <span className="text-gray-500 mr-2">{i + 1}</span>
+                      {c.statement}
+                      {c.threshold && (
+                        <p className="text-xs text-gray-500 mt-0.5 pl-5">
+                          {c.threshold}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
             {hasRace && (
               <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
                 <p className="text-white font-semibold mb-3">Predictions</p>
@@ -275,30 +320,6 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
               })}
             </div>
 
-            <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
-              <p className="text-gray-300 text-sm">{goal.description}</p>
-              {goal.regionLabel && (
-                <p className="text-gray-500 text-xs mt-2">{goal.regionLabel}</p>
-              )}
-              {hasRace && (
-                <p className="text-gray-500 text-xs leading-relaxed mt-3">
-                  {ROSTER_DISCLAIMER}
-                </p>
-              )}
-              <p className="text-gray-500 text-xs mt-3">
-                {hasRace
-                  ? 'Switch to Sepolia to view the live on-chain market for this race. '
-                  : 'No funded developer has entered this capability yet, so there is no market. '}
-                <Link
-                  href={`/moonbase?race=${goal.id}`}
-                  className="text-indigo-300/90 underline-offset-2 hover:underline"
-                >
-                  See this race on Moon Base Zero
-                </Link>
-                .
-              </p>
-            </div>
-
             {!userAddress && hasRace && (
               <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-indigo-100 text-sm font-medium">
@@ -310,27 +331,6 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
                 >
                   Connect Wallet
                 </button>
-              </div>
-            )}
-
-            {goal.criteria && goal.criteria.length > 0 && (
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
-                <h3 className="text-white font-semibold text-sm mb-3">
-                  Capability criteria (draft)
-                </h3>
-                <ol className="flex flex-col gap-2.5">
-                  {goal.criteria.map((c, i) => (
-                    <li key={c.id} className="text-sm text-gray-300">
-                      <span className="text-gray-500 mr-2">{i + 1}</span>
-                      {c.statement}
-                      {c.threshold && (
-                        <p className="text-xs text-gray-500 mt-0.5 pl-5">
-                          {c.threshold}
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ol>
               </div>
             )}
 
