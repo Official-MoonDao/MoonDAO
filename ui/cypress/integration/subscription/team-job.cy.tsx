@@ -1,11 +1,35 @@
-import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { CYPRESS_CHAIN_SLUG, CYPRESS_CHAIN_V5 } from '@/cypress/mock/config'
 import JobTableABI from 'const/abis/JobBoardTable.json'
 import { JOBS_TABLE_ADDRESSES } from 'const/config'
 import { getContract } from 'thirdweb'
+import { ThirdwebProvider } from 'thirdweb/react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import { serverClient } from '@/lib/thirdweb/serverClient'
 import { daysFromNowTimestamp } from '@/lib/utils/timestamp'
 import Job, { Job as JobType } from '@/components/jobs/Job'
+
+function JobProviders({
+  citizen = false,
+  children,
+}: {
+  citizen?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <ThirdwebProvider>
+      <CitizenContext.Provider
+        value={{
+          citizen: citizen ? { metadata: { id: '1' } } : undefined,
+          setCitizen: () => {},
+          seedCitizen: () => {},
+          isLoading: false,
+        }}
+      >
+        {children}
+      </CitizenContext.Provider>
+    </ThirdwebProvider>
+  )
+}
 
 describe('<Job />', () => {
   let job: JobType
@@ -39,9 +63,9 @@ describe('<Job />', () => {
     const timestamp = daysFromNowTimestamp(0)
 
     cy.mount(
-      <TestnetProviders>
+      <JobProviders citizen>
         <Job {...props} job={{ ...job, timestamp }} />
-      </TestnetProviders>
+      </JobProviders>
     )
 
     cy.contains(job.title).should('be.visible')
@@ -56,11 +80,26 @@ describe('<Job />', () => {
     cy.contains('Posted today').should('be.visible')
   })
 
+  it('hides the apply button for guests and still shows the role', () => {
+    const timestamp = daysFromNowTimestamp(0)
+
+    cy.mount(
+      <JobProviders>
+        <Job {...props} job={{ ...job, timestamp }} />
+      </JobProviders>
+    )
+
+    cy.contains(job.title).should('be.visible')
+    cy.contains(job.description).should('be.visible')
+    cy.contains('View role →').should('be.visible')
+    cy.contains('Apply').should('not.exist')
+  })
+
   it('Shows edit and delete buttons when editable', () => {
     cy.mount(
-      <TestnetProviders>
+      <JobProviders>
         <Job {...props} editable />
-      </TestnetProviders>
+      </JobProviders>
     )
 
     cy.get('#edit-job-button').should('exist')
@@ -69,9 +108,9 @@ describe('<Job />', () => {
 
   it('Deletes the job', () => {
     cy.mount(
-      <TestnetProviders>
+      <JobProviders>
         <Job {...props} editable />
-      </TestnetProviders>
+      </JobProviders>
     )
 
     cy.get('#delete-job-button').click()
@@ -80,9 +119,9 @@ describe('<Job />', () => {
   it("Hides the job if it's expired", () => {
     const endTime = daysFromNowTimestamp(-1)
     cy.mount(
-      <TestnetProviders>
+      <JobProviders>
         <Job {...props} job={{ ...job, endTime }} />
-      </TestnetProviders>
+      </JobProviders>
     )
 
     cy.contains(job.title).should('not.exist')
@@ -91,9 +130,9 @@ describe('<Job />', () => {
   it("Shows 'expired' message if the job is expired and editable", () => {
     const endTime = daysFromNowTimestamp(-1)
     cy.mount(
-      <TestnetProviders>
+      <JobProviders>
         <Job {...props} job={{ ...job, endTime }} editable />
-      </TestnetProviders>
+      </JobProviders>
     )
 
     cy.contains('This job post has expired').should('be.visible')

@@ -23,9 +23,9 @@ import { bytesOfString } from '@/lib/utils/strings'
 export const JOB_METADATA_VERSION = 1
 
 /**
- * The `/jobs` index stays a Citizen perk, but an individual role is publicly
- * readable so a link shared on X isn't a dead end behind a blur overlay. Flip
- * this to `false` to gate single roles the same way the index is gated.
+ * Role descriptions are public so a link shared on X is not a dead end.
+ * Application details (apply URL, how-to-apply, hiring process) stay a
+ * Citizen perk. Flip this to `false` to also hide the description body.
  */
 export const JOB_DETAIL_PUBLIC = true
 
@@ -494,6 +494,53 @@ export function normalizeJobPostingDoc(raw: any): JobPostingDoc | null {
 
   const hasContent = Object.keys(doc).some((key) => key !== 'v')
   return hasContent ? doc : null
+}
+
+/**
+ * Headings that are the apply path, not the opportunity. Several live postings
+ * keep these in the markdown body rather than the structured fields, so guests
+ * would otherwise read how to apply while the apply button is hidden.
+ */
+const APPLICATION_SECTION_HEADING =
+  /^#{1,3}\s+(?:how\s+to\s+apply|to\s+apply|hiring\s+process|applications?|application\s+(?:requirements|instructions|process|details|steps)|apply(?:ing)?(?:\s+here|\s+now)?)\b/i
+
+/** Remove how-to-apply / hiring-process markdown sections; leave the role intact. */
+export function stripApplicationSectionsFromBody(markdown: string): string {
+  if (!markdown || !markdown.trim()) return markdown || ''
+
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n')
+  const out: string[] = []
+  let i = 0
+
+  while (i < lines.length) {
+    const heading = lines[i].match(/^(#{1,3})\s+\S/)
+    if (heading && APPLICATION_SECTION_HEADING.test(lines[i].trim())) {
+      const level = heading[1].length
+      i += 1
+      while (i < lines.length) {
+        const next = lines[i].match(/^(#{1,3})\s+\S/)
+        if (next && next[1].length <= level) break
+        i += 1
+      }
+      continue
+    }
+    out.push(lines[i])
+    i += 1
+  }
+
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+/** Drop apply-only fields so guests can read the role without the contact path. */
+export function stripJobApplicationFields(
+  doc: JobPostingDoc | null | undefined
+): JobPostingDoc | null {
+  if (!doc) return null
+  const { applyUrl: _applyUrl, applicationRequirements: _reqs, hiringProcess: _process, ...rest } =
+    doc
+  if (!rest.body) return rest
+  const body = stripApplicationSectionsFromBody(rest.body)
+  return body ? { ...rest, body } : { ...rest, body: undefined }
 }
 
 /** True when a posting carries more than the four original fields. */
