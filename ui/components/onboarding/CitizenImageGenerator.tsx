@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { clearAiPortraitReady } from '@/lib/image-generator/citizenOnboardingImage'
 import { markPendingImageJobUploading } from '@/lib/image-generator/pendingImageJob'
+import { warmImageModels } from '@/lib/image-generator/warmImageModels'
 import { cropImageWithCoordinates } from '@/lib/utils/images'
 import FileInput from '../layout/FileInput'
 import IPFSRenderer from '../layout/IPFSRenderer'
@@ -119,6 +120,12 @@ export function ImageGenerator({
   // The working image is an AI result only when it differs from the user's own
   // cropped upload (which is what "Use my photo" / the error fallback set).
   const hasGeneratedImage = !!image && image !== croppedImage
+
+  // Wake the portrait models up now, while the user still has to choose and
+  // crop a photo. A cold comfy.icu worker roughly triples the first run.
+  useEffect(() => {
+    warmImageModels()
+  }, [])
 
   // Store original image when first uploaded
   useEffect(() => {

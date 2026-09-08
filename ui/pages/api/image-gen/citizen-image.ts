@@ -1,25 +1,17 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { v4 } from 'uuid'
 import { enforceRegionNotRestricted } from '@/lib/geo'
-
-const COMFY_WORKFLOW_ID = '8BYQ3mpiFVlTjWOatIUAc'
-const COMFY_WORKFLOW_URL = `https://comfy.icu/api/v1/workflows/${COMFY_WORKFLOW_ID}/runs`
+import {
+  COMFY_ACCELERATOR,
+  COMFY_REQUEST_TIMEOUT_MS,
+  COMFY_WORKFLOW_URL,
+  JUGGERNAUT_CHECKPOINT_NAME,
+  JUGGERNAUT_CHECKPOINT_PATH,
+  JUGGERNAUT_CHECKPOINT_URL,
+} from '@/lib/image-generator/comfyModels'
 
 // Comfy.icu run ids look like `VE52rnl_BVdbgou9tQbEF` / `3AIdyeK1zmdW9NaWw-46u`.
 const COMFY_RUN_ID_RE = /^[A-Za-z0-9_-]{8,64}$/
-
-// Comfy.icu's API can occasionally take a while to accept a job, so give it
-// plenty of time before we abort the request.
-const COMFY_REQUEST_TIMEOUT_MS = 45_000
-
-// The comfy.icu API workers don't have the Juggernaut Lightning checkpoint
-// pre-installed, so we supply it via the `files` map. The worker downloads it on
-// first use and caches it for subsequent runs. Public, ungated HF repo (no token
-// required); the destination filename below must match node 4's `ckpt_name`.
-const JUGGERNAUT_CHECKPOINT_PATH =
-  '/models/checkpoints/juggernautXL_v9Rdphoto2Lighting.safetensors'
-const JUGGERNAUT_CHECKPOINT_URL =
-  'https://huggingface.co/RunDiffusion/Juggernaut-XL-Lightning/resolve/main/Juggernaut_RunDiffusionPhoto2_Lightning_4Steps.safetensors?download=true'
 
 async function fetchComfy(
   init: RequestInit & { method: 'POST' | 'GET'; url?: string }
@@ -96,7 +88,7 @@ export default async function handler(
               class_type: 'KSampler',
             },
             '4': {
-              inputs: { ckpt_name: 'juggernautXL_v9Rdphoto2Lighting.safetensors' },
+              inputs: { ckpt_name: JUGGERNAUT_CHECKPOINT_NAME },
               class_type: 'CheckpointLoaderSimple',
             },
             '5': {
@@ -158,7 +150,7 @@ export default async function handler(
             },
           },
           files,
-          accelerator: 'L40S',
+          accelerator: COMFY_ACCELERATOR,
         }),
       })
 
