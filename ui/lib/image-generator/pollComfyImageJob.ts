@@ -16,7 +16,44 @@ const POLL_MAX_ATTEMPTS = 150
 const POLL_TRANSIENT_ERROR_LIMIT = 6
 const GET_IMAGE_MAX_RETRIES = 3
 
-const PENDING_STATUSES = new Set(['QUEUED', 'STARTED', 'INIT', 'PENDING'])
+const COMFY_SUCCESS_STATUS = 'COMPLETED'
+const COMFY_CREDIT_STATUS = 'INSUFFICIENT_CREDIT'
+const COMFY_FAILURE_STATUSES = new Set([
+  'ERROR',
+  'FAILED',
+  'CANCELLED',
+  'CANCELED',
+  'TIMEOUT',
+])
+const COMFY_GENERATING_STATUSES = new Set(['STARTED', 'RUNNING'])
+
+export type ComfyJobClass =
+  | 'pending'
+  | 'completed'
+  | 'insufficient_credit'
+  | 'failed'
+
+/**
+ * Classify a comfy.icu run status. Only known terminal statuses stop polling.
+ * In-progress and unknown statuses stay pending so a provider change (e.g.
+ * adding RUNNING on canary workers) cannot mark a live job as failed.
+ */
+export function classifyComfyJobStatus(status: unknown): ComfyJobClass {
+  if (status === COMFY_SUCCESS_STATUS) return 'completed'
+  if (status === COMFY_CREDIT_STATUS) return 'insufficient_credit'
+  if (typeof status === 'string' && COMFY_FAILURE_STATUSES.has(status)) {
+    return 'failed'
+  }
+  return 'pending'
+}
+
+export function isComfyJobPending(status: unknown): boolean {
+  return classifyComfyJobStatus(status) === 'pending'
+}
+
+export function isComfyJobGenerating(status: unknown): boolean {
+  return typeof status === 'string' && COMFY_GENERATING_STATUSES.has(status)
+}
 
 const inFlightJobIds = new Set<string>()
 const inFlightPromises = new Map<string, Promise<void>>()
@@ -136,8 +173,8 @@ export async function pollComfyImageJob(
           continue
         }
 
-        if (PENDING_STATUSES.has(job.status)) {
-          setPhase(job.status === 'STARTED' ? 'generating' : 'queued')
+        if (isComfyJobPending(job.status)) {
+          setPhase(isComfyJobGenerating(job.status) ? 'generating' : 'queued')
           await sleep(POLL_INTERVAL_MS)
           continue
         }
@@ -145,11 +182,11 @@ export async function pollComfyImageJob(
         break
       }
 
-      if (!job || PENDING_STATUSES.has(job?.status)) {
+      if (!job || isComfyJobPending(job?.status)) {
         throw new Error('Image generation timed out')
       }
 
-      if (job.status === 'COMPLETED') {
+      if (classifyComfyJobStatus(job.status) === 'completed') {
         const outputUrl = job?.output?.[0]?.url
         if (!outputUrl) {
           throw new Error('Job completed without an output image')
@@ -193,7 +230,7 @@ export async function pollComfyImageJob(
         throw lastErr ?? new Error('Failed to download generated image')
       }
 
-      if (job.status === 'INSUFFICIENT_CREDIT') {
+      if (classifyComfyJobStatus(job.status) === 'insufficient_credit') {
         setError?.('There was an error generating your image, please contact support.')
       } else {
         console.error('Job failed with status:', job.status)
