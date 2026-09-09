@@ -634,7 +634,7 @@ export default function MoonGlobe({
         // The original objection was that exposure is global while half the ground
         // was unlit materials carrying colours authored as final screen values, so
         // scaling the curve would blow those to white while doing nothing for the
-        // physics. Most of that is gone now. The road crust, the hardstand and the
+        // physics. Most of that is gone now. The road crust, the spoil and the
         // rubble are lit by the same BRDF as the terrain (see BaseRoads), so they
         // track exposure exactly as the ground does. The stains no longer carry
         // absolute values at all — they are multiplicative albedo factors, so they

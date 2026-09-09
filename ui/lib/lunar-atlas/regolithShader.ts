@@ -110,7 +110,8 @@ ${extra}${HAPKE_GLSL}`,
   }
 }
 
-// Graded regolith — roads, hardstand, pads, rubble. These already carry their own
+// Graded regolith — the road bed and its crust, wheel tracks, blade scuff, spoil
+// heaps, and the boulders turned out alongside. These already carry their own
 // albedo and normal maps describing the worked surface, so they need none of the
 // terrain's normal machinery; they only need to reflect light like soil rather
 // than like painted plaster.
