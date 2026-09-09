@@ -49,6 +49,7 @@ import {
 } from '@/lib/lunar-atlas/regolithShader'
 import { SUN_INTENSITY, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import { loadInnerField } from './useTerrainSampler'
+import { bindOcclusionUniforms, primeRegolithOcclusion } from './regolithOcclusion'
 
 // A pointer that travels farther than this between down and up is a drag
 // (camera tumble), not a click.
@@ -146,6 +147,10 @@ export default function SouthPoleTerrain({
 
   useEffect(() => {
     let cancelled = false
+    // Kicked off here rather than awaited: the skyline field takes ~148 ms to sweep
+    // and the ground should not wait on it, since the placeholders it starts with are
+    // chosen to render identically to an open, level horizon.
+    void primeRegolithOcclusion()
     loadInnerField().then((field) => {
       if (cancelled) return
       setInnerGeo(toBufferGeometry(field, CAP_GRID))
@@ -179,6 +184,10 @@ export default function SouthPoleTerrain({
       shader.uniforms.detailSlopeMap = { value: detail }
       shader.uniforms.mapXDir = { value: new THREE.Vector3(...MAP_X_DIR) }
       shader.uniforms.bounceRadiance = { value: SHADOW_BOUNCE_RADIANCE }
+      // The skyline field and the sun that is tested against it. Shared boxes, not
+      // copies — see regolithOcclusion.ts — so the roads across this ground are
+      // always in the same shadow as the ground.
+      bindOcclusionUniforms(shader.uniforms)
 
       // The patches themselves, and the reasoning for each anchor, live in
       // lib/lunar-atlas/regolithShader.ts — they are string surgery on shader
@@ -216,7 +225,9 @@ export default function SouthPoleTerrain({
           The terrain deliberately does NOT cast. Its own relief is in the normal
           map, not the geometry, so a shadow map rendered from this mesh would
           only know about the 15.6 m mesh and would fight the per-pixel normals.
-          Terrain self-shadowing is Phase 2's horizon map. */}
+          Terrain self-shadowing comes from the skyline field instead, which is
+          O(1) per fragment and reaches the whole 16 km patch rather than the
+          hundred metres a shadow map covers. */}
       <meshLambertMaterial
         color={REGOLITH_TINT}
         defines={{ USE_UV: '' }}

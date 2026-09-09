@@ -77,8 +77,10 @@ import {
 import { litGroundRadiance, shadowFillRadiance } from '@/lib/lunar-atlas/regolith'
 import {
   GRADED_SURFACE_FRAGMENT_PATCHES,
+  GRADED_SURFACE_VERTEX_PATCHES,
   applyShaderPatches,
 } from '@/lib/lunar-atlas/regolithShader'
+import { bindOcclusionUniforms } from './regolithOcclusion'
 import { capOffsetLatLon, M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import { SUN_INTENSITY, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
@@ -106,6 +108,15 @@ const GRADED_BOUNCE_RADIANCE = shadowFillRadiance(
 
 function gradedRegolithShader(shader: THREE.WebGLProgramParametersWithUniforms) {
   shader.uniforms.bounceRadiance = { value: GRADED_BOUNCE_RADIANCE }
+  // The skyline field, so a road inside a terrain shadow goes dark with the ground
+  // it crosses. At the real sun 57% of the patch is in that shadow, and a road left
+  // out of it would be the most conspicuous error in the frame. Shared uniform boxes
+  // rather than copies — see regolithOcclusion.ts.
+  bindOcclusionUniforms(shader.uniforms)
+  // The vertex half is not optional: the fragment patches reference a world-position
+  // varying, and this is what declares and fills it. It also carries the instancing
+  // branch the rubble field needs.
+  shader.vertexShader = applyShaderPatches(shader.vertexShader, GRADED_SURFACE_VERTEX_PATCHES)
   shader.fragmentShader = applyShaderPatches(
     shader.fragmentShader,
     GRADED_SURFACE_FRAGMENT_PATCHES
@@ -114,7 +125,10 @@ function gradedRegolithShader(shader: THREE.WebGLProgramParametersWithUniforms) 
 
 // onBeforeCompile is not part of three's own program cache key, so without this
 // the patched and unpatched variants collide and whichever compiled first wins.
-const GRADED_CACHE_KEY = () => 'regolith-graded-v1'
+//
+// Bumped when the patches change shape, since a cached program from a previous
+// version would otherwise survive a hot reload and render without the new lookup.
+const GRADED_CACHE_KEY = () => 'regolith-graded-v2'
 
 // Multiplied against the surface texture. The sintered crust runs a little
 // lighter than the regolith it was fused from; the spoil is darker because it

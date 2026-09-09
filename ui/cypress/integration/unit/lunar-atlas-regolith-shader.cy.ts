@@ -23,9 +23,11 @@
 import { expect } from 'chai'
 import { ShaderChunk, ShaderLib } from 'three'
 import { SINGLE_SCATTERING_ALBEDO } from '../../../lib/lunar-atlas/regolith'
+import { HORIZON_AZIMUTHS } from '../../../lib/lunar-atlas/horizon'
 import {
   DETAIL_OCTAVES,
   GRADED_SURFACE_FRAGMENT_PATCHES,
+  GRADED_SURFACE_VERTEX_PATCHES,
   STAIN_FRAGMENT_PATCHES,
   TERRAIN_FRAGMENT_PATCHES,
   TERRAIN_VERTEX_PATCHES,
@@ -109,9 +111,19 @@ describe('terrain shader patches against three s real Lambert source', () => {
       // sun puts everything.
       const body = src.slice(src.indexOf('void RE_Direct_Hapke('))
       const accumulation = body.slice(0, body.indexOf('#define RE_Direct'))
-      expect(accumulation).to.contain('directLight.color * r * material.diffuseColor')
+      expect(accumulation).to.contain('r * material.diffuseColor')
       expect(accumulation).to.not.contain('BRDF_Lambert')
       expect(accumulation).to.not.contain('dotNL')
+    })
+
+    it('attenuates the direct term by the skyline test as well as the shadow map', () => {
+      // The two occlude different things — a habitat's own shadow, and a ridge 6 km
+      // away that no shadow map covers — so a point can be in both and they multiply.
+      // Dropping either would light 57% of the patch that should be dark at the real
+      // sun, or lose every cast shadow on the base.
+      const body = src.slice(src.indexOf('void RE_Direct_Hapke('))
+      const accumulation = body.slice(0, body.indexOf('#define RE_Direct'))
+      expect(accumulation).to.contain('directLight.color * regolithDirectOcclusion')
     })
 
     it('depends on USE_UV for the varying it samples with', () => {
@@ -186,14 +198,25 @@ describe('terrain shader patches against three s real Lambert source', () => {
     const src = applyShaderPatches(lambert.vertexShader, TERRAIN_VERTEX_PATCHES)
 
     it('declares and fills the world-position varying', () => {
-      expect(src).to.contain('varying vec3 vTerrainWorldPos;')
-      expect(src).to.contain('vTerrainWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;')
+      expect(src).to.contain('varying vec3 vRegolithWorldPos;')
+      expect(src).to.contain('vRegolithWorldPos = (modelMatrix * regolithWorld).xyz;')
     })
 
     it('fills it after the position is established', () => {
-      expect(src.indexOf('vTerrainWorldPos =')).to.be.greaterThan(
+      expect(src.indexOf('vRegolithWorldPos =')).to.be.greaterThan(
         src.indexOf('#include <begin_vertex>')
       )
+    })
+
+    it('applies the instance transform, for the surfaces that are instanced', () => {
+      // The terrain is not instanced, but this is the SAME patch the graded surfaces
+      // use, and BaseRoads draws its boulders as an InstancedMesh. three applies
+      // instanceMatrix inside project_vertex, so `transformed` alone is
+      // instance-local: without this every boulder would look up the skyline at the
+      // patch origin instead of at itself, and a rubble field 3 km away would be lit
+      // by the wrong shadow.
+      expect(src).to.contain('#ifdef USE_INSTANCING')
+      expect(src).to.contain('regolithWorld = instanceMatrix * regolithWorld;')
     })
 
     it('keeps three s shadow plumbing intact', () => {
@@ -279,7 +302,22 @@ describe('graded surface patches against three s real Standard source', () => {
 
   it('fills its shadows, so a road cannot go black where the ground does not', () => {
     expect(program).to.match(/uniform\s+float\s+bounceRadiance\s*;/)
-    expect(src).to.contain('reflectedLight.indirectDiffuse += bounceRadiance * diffuseColor.rgb;')
+    expect(src).to.contain(
+      'reflectedLight.indirectDiffuse += bounceRadiance * (0.5 + 0.5 * regolithSkyView) * diffuseColor.rgb;'
+    )
+  })
+
+  it('leaves open ground exactly as bright as it was before sky visibility existed', () => {
+    // The factor has to be 1 at skyView = 1, or adding per-texel occlusion silently
+    // re-darkens every open shadow in the scene and the existing calibration of
+    // bounceRadiance stops meaning what regolith.ts says it means. Checked as
+    // arithmetic on the actual coefficients rather than by reading the line, because
+    // "0.5 + 0.5 * x" is easy to mistype as something that is 0.5 at x = 1.
+    const m = src.match(/bounceRadiance \* \(([\d.]+) \+ ([\d.]+) \* regolithSkyView\)/)
+    expect(m, 'bounce factor must be an affine function of skyView').to.not.equal(null)
+    const [a, b] = [Number(m![1]), Number(m![2])]
+    expect(a + b, 'factor at skyView = 1').to.equal(1)
+    expect(a, 'factor at skyView = 0').to.be.greaterThan(0)
   })
 
   it('keeps the maps and vertex colours the surface is authored with', () => {
@@ -310,13 +348,144 @@ describe('graded surface patches against three s real Standard source', () => {
     expect(uses.length).to.equal(1)
   })
 
-  it('does not carry the terrain s uniforms, which it has no geometry for', () => {
+  it('does not carry the terrain s own relief uniforms, which it has no geometry for', () => {
     // The graded surfaces have their own normal maps in the map frame of the road,
     // not the patch. Declaring the terrain's uniforms here would compile and then
     // sample an unbound sampler.
+    //
+    // The skyline uniforms are deliberately NOT in this list: those are shared, and
+    // the whole argument for sharing them is that a road and the ground it crosses
+    // are in the same shadow.
     expect(src).to.not.contain('terrainNormalMap')
     expect(src).to.not.contain('detailSlopeMap')
-    expect(src).to.not.contain('vTerrainWorldPos')
+  })
+
+  it('reconstructs its place in the skyline field from the world, not from its own UVs', () => {
+    // A road's UVs run ALONG the road so the crust and wheel tracks tile down it.
+    // Feeding those to the skyline lookup would sample the horizon field as though
+    // the road were the whole patch, which would light it by the shadow of somewhere
+    // else entirely — and would still look like plausible lighting.
+    expect(src).to.contain('regolithApplyOcclusion(regolithPatchUv(vRegolithWorldPos)')
+    expect(src).to.not.contain('regolithApplyOcclusion(vUv')
+  })
+})
+
+// The skyline lookup is shared by both material classes above, and it is the one
+// piece of this file whose failure mode is not "wrong brightness" but "lit by the
+// shadow of the wrong place". It also has to be a provable no-op at the sun the
+// scene currently uses, or landing it ahead of that sun would change the render.
+describe('the shared skyline occlusion', () => {
+  const terrain = applyShaderPatches(lambert.fragmentShader, TERRAIN_FRAGMENT_PATCHES)
+  const graded = applyShaderPatches(ShaderLib.physical.fragmentShader, GRADED_SURFACE_FRAGMENT_PATCHES)
+
+  it('supplies the world position to BOTH material classes vertex shaders', () => {
+    // The fragment patches reference vRegolithWorldPos, so a material that gets them
+    // without the vertex half does not compile at all. applyShaderPatches throws on a
+    // missed anchor, which is the good outcome, but it throws at MOUNT — inside
+    // onBeforeCompile — where it blanks the roads rather than failing a build. This is
+    // the case that was missing coverage: the terrain's vertex patches were tested
+    // against Lambert, and the identical patches then went onto Standard untested.
+    for (const [name, vertexSrc, patches] of [
+      ['lambert', lambert.vertexShader, TERRAIN_VERTEX_PATCHES],
+      ['physical', ShaderLib.physical.vertexShader, GRADED_SURFACE_VERTEX_PATCHES],
+      ['standard', ShaderLib.standard.vertexShader, GRADED_SURFACE_VERTEX_PATCHES],
+    ] as [string, string, typeof TERRAIN_VERTEX_PATCHES][]) {
+      expect(() => applyShaderPatches(vertexSrc, patches), name).to.not.throw()
+      const out = applyShaderPatches(vertexSrc, patches)
+      expect(out, `${name} declares it`).to.contain('varying vec3 vRegolithWorldPos;')
+      expect(out, `${name} fills it`).to.contain('vRegolithWorldPos = (modelMatrix * regolithWorld).xyz;')
+    }
+  })
+
+  it('declares the varying on both sides of every regolith material', () => {
+    // Declared in the fragment shader by the shared declarations and in the vertex
+    // shader by the patches above. A varying present on only one side compiles on some
+    // drivers and not others, which is the worst way to find out.
+    for (const [name, src] of [
+      ['terrain', terrain],
+      ['graded', graded],
+    ] as [string, string][]) {
+      expect(src, name).to.contain('varying vec3 vRegolithWorldPos;')
+    }
+  })
+
+  it('runs before the light loop that reads it', () => {
+    for (const [name, src] of [
+      ['terrain', terrain],
+      ['graded', graded],
+    ] as [string, string][]) {
+      const call = src.indexOf('regolithApplyOcclusion(')
+      const lights = src.indexOf('#include <lights_fragment_begin>')
+      expect(call, `${name} must call it`).to.be.greaterThan(-1)
+      expect(call, `${name} must call it before the lights`).to.be.lessThan(lights)
+    }
+  })
+
+  it('defaults to fully lit and fully open', () => {
+    // Any material that gets the declarations but never calls the function must
+    // behave exactly as it did before this existed. That is what makes the shared
+    // declarations safe to put in front of every regolith material at once.
+    expect(terrain).to.contain('float regolithDirectOcclusion = 1.0;')
+    expect(terrain).to.contain('float regolithSkyView = 1.0;')
+  })
+
+  it('reads every azimuth bin the builder writes', () => {
+    // A mismatch here does not fail: the shader would interpolate across the bins it
+    // knows about and quietly ignore the rest, so a quarter of the compass would be
+    // lit by its neighbour's skyline.
+    const textures = Math.ceil(HORIZON_AZIMUTHS / 4)
+    for (let t = 0; t < textures; t++) {
+      expect(terrain, `horizonMap${t}`).to.match(
+        new RegExp(`uniform\\s+sampler2D\\s+horizonMap${t}\\s*;`)
+      )
+      expect(terrain).to.contain(`dot(texture2D(horizonMap${t}, uv), w${t})`)
+    }
+    // And no more than that, or a sampler goes unbound.
+    expect(terrain).to.not.contain(`horizonMap${textures}`)
+    const tents = terrain.match(/hzTent\(a, [\d.]+\)/g) ?? []
+    expect(tents.length).to.equal(HORIZON_AZIMUTHS)
+  })
+
+  it('wraps the azimuth tent, so the sun crossing bin 0 is not a discontinuity', () => {
+    // Without the wrap the sun would get no skyline at all between the last bin and
+    // the first, which is a 22.5-degree wedge of the compass that the terrain stops
+    // shadowing once a month.
+    expect(terrain).to.contain(`d = min(d, ${HORIZON_AZIMUTHS.toFixed(1)} - d);`)
+    expect(terrain).to.contain(`a = mod(a, ${HORIZON_AZIMUTHS.toFixed(1)});`)
+  })
+
+  it('compares tangents, and softens by the sun s own angular size', () => {
+    // Tangents because that is what horizon.ts stores, and because it avoids a trig
+    // call per fragment. The softness is the sun's disc rather than a chosen radius,
+    // which is the same argument MoonGlobe's shadow softness makes.
+    expect(terrain).to.contain(
+      'smoothstep(horizonTan - sunDiscTan, horizonTan + sunDiscTan, sunTan)'
+    )
+  })
+
+  it('takes the sun in each fragment s own local frame, not the patch s', () => {
+    // The local vertical turns through about 0.5 degrees across 16 km, which is a
+    // quarter of the real sun's entire elevation. A single patch-wide elevation would
+    // therefore be wrong by more than the thing being measured at the patch edges.
+    expect(terrain).to.contain('vec3 up = normalize(worldPos);')
+    expect(terrain).to.contain('float sunUp = dot(sunWorldDir, up);')
+  })
+
+  it('declares every uniform the components must bind', () => {
+    // An unbound sampler in WebGL quietly reads texture unit 0, so a missed binding
+    // here samples whatever happened to be bound last rather than failing.
+    for (const name of [
+      'skyViewMap',
+      'sunWorldDir',
+      'patchOrigin',
+      'patchEast',
+      'patchNorth',
+      'patchInvExtent',
+      'sunDiscTan',
+    ]) {
+      expect(terrain, name).to.match(new RegExp(`uniform\\s+\\w+\\s+${name}\\s*;`))
+      expect(graded, name).to.match(new RegExp(`uniform\\s+\\w+\\s+${name}\\s*;`))
+    }
   })
 })
 
