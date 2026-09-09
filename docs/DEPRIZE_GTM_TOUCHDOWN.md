@@ -20,9 +20,9 @@ can. So they go first, and nothing in the phase plan (§6) starts until they are
 | # | Gate | Why it is a gate | Fails if |
 |---|---|---|---|
 | **G1** | **The prize is not already void** | Griffin-1 is on the Q4 2026 calendar. §Part IV.5 of the spec: a landing *before* `open` voids the prize on arrival | Griffin is inside a landing window on the morning we register |
-| **G2** | **A written legal position exists** | We would be taking money from US residents on a real-money event market, unlicensed, three months after a federal appeals court told Kalshi that federal preemption does not cover it | No counsel memo naming the theory, the jurisdictions, and the disclosures |
+| **G2** | **A written legal position exists, and the controls we already promised ourselves are built** | `DEPRIZE.md`'s own regulatory risk register names "geo-block US + selected jurisdictions" and "click-through ToS" as the mitigations. **Neither was implemented.** Nor is there an age gate or sanctions screening (both exist only as things the *user* asserts in the Terms), nor the contract-level insider blocklist the conflict-of-interest policy specifies | No counsel memo, or the memo's controls are still unbuilt |
 | **G3** | **Terms are published and reachable** | `DEPRIZE_QA.md` E5b: the Terms URL is a **404** today. The BetModal links to a page that does not exist | Any live link in the bet flow 404s |
-| **G4** | **Resolution authority is not one person** | On Arbitrum the CTF oracle *and* the registry owner are both the deployer EOA `0x3c5e…E011`. `const/config.ts` says in its own comment to move the oracle to the admin Safe *before a public prize*, and that doing so requires preparing a **new condition**, because the oracle is immutable once set | Either the oracle or the registry owner on mainnet is an EOA |
+| **G4** | **No single key controls the money** | On Arbitrum the CTF oracle *and* the registry proxy owner are both the deployer EOA `0x3c5e…E011`, and `DePrizeRegistry.sol` records that the timelocked upgrade path is still "a later milestone." So one key can resolve the market *and* upgrade the contract holding the pool, with no delay. `const/config.ts` says to move the oracle to the admin Safe before a public prize, and that this requires preparing a **new condition** because the oracle is immutable once set | Oracle, registry owner, or an untimelocked upgrade sits behind a single EOA |
 | **G5** | **The win condition has survived an outside attack** | The spec's Part V is an explicit request for criticism that has not yet been answered. Test 3 (stable planned orientation) and Test 5 (confirmation for a CNSA landing) are the two clauses that decide who gets paid | Fewer than three qualified external reviewers have walked the last seven attempts against the five tests |
 | **G6** | **The purse exists, and we can say why** | $25,000 is **7.6% of MoonDAO's $327,851 unrestricted liquid assets** against ~10 months of runway. It also induces exactly zero behaviour from a company holding a $199.5M CLPS award | No funding source identified, or no answer to "so you're offering Blue Origin $25,000?" |
 | **G7** | **The contracts have been audited** | `DEPRIZE.md` names an external audit and a Sepolia bug-bounty period as Phase 3 production hardening, sets a coverage gate of ≥95% lines plus ≥10k fuzz iterations, and lists "external audit pre-launch" as *the* mitigation for smart-contract risk. It also warns that audit scope must cover the UUPS upgrade pattern, not just the implementation. I found no evidence any of this has happened | Real money is taken against an unaudited novel mechanism |
@@ -41,6 +41,15 @@ period does not fit inside the seven weeks to 1 November. **If the stack is genu
 unaudited, that is the finding that reshapes this plan** — either the target slips to
 Griffin's slip, or Touchdown opens with a capped position size and says so plainly. Find
 out before anything else in P1 is scheduled.
+
+To be fair to the work already done: the internal testing is unusually good for a project
+this size. 178 of 178 contract tests pass, `DePrizeRedeem` is at 100% line coverage, and
+M4 ran a throwaway harness against real Gnosis CTF bytecode across nine adversarial
+scenarios and a 2,000-run fuzz with no issues found. That is not nothing, and it is worth
+saying publicly. It is still not a third-party audit, and the distinction matters most
+precisely where we would want to lean on it — in the sentence that persuades a stranger to
+send money to a novel mechanism. "We tested it ourselves" is the weakest possible version
+of that sentence.
 
 ### Two of these deserve to be argued about now, not later
 
@@ -65,6 +74,18 @@ My recommendation is **(a) plus (b)**: a small seed, a growing pool, and a purse
 at the people who did the work. It is cheaper, more defensible against a ten-month runway,
 and it makes the pool chart — the thing we want people to look at — the actual headline.
 
+One more reason to settle this now rather than per-prize: the Night Shift draft also
+carries a **$25,000** purse. Two prizes at that number is $50,000 against $327,851 of
+unrestricted liquid assets, or roughly one-sixth of the treasury committed to purses
+before either has proven it moves anything. The seed-small-and-grow decision is really a
+decision about the whole prize programme, and Touchdown is just where it surfaces first.
+
+Encouragingly, Night Shift has already reached for the same answer: its budget table shows
+a **$5,000 seed against a $25,000 target**, exactly the structure recommended in (a). The
+argument for Touchdown is that this should be the default posture rather than a per-prize
+negotiation — and that Touchdown, where the purse provably induces nothing, is the safest
+place to establish it.
+
 **G2 has a specific shape worth naming.** The geo gate blocks the EU, EEA and UK
 (`ui/lib/geo/index.ts`, 35 jurisdictions, on the order of 500M people) and default-denies
 unknown countries. **The United States is fully open.** That list was written for GDPR — for
@@ -76,6 +97,24 @@ contracts, which sit outside the contested gaming definition in the CFTC's June 
 proposed rule. A lunar landing is not a sporting event and nobody on the roster can throw
 the game. That is a real argument. It is not a substitute for having counsel write it
 down, and it does not answer why an unlicensed DAO may take the other side.
+
+The sharper version of the problem is that **we already told ourselves to do this and did
+not.** `DEPRIZE.md`'s regulatory risk table lists geo-blocking the US and a click-through
+ToS as the mitigations. Neither shipped. Alongside them, three more controls exist only as
+sentences in the Terms that the *user* is made to assert: that they are 18 or older, that
+they are not a sanctioned person, and — separately — a conflict-of-interest policy under
+which admin Safe signers and team admins are meant to be blocklisted from `DePrizeMint.bet`
+at the contract level. None are enforced anywhere in `DePrizeMint.sol` or the bet flow.
+The betting gate is also **client-side only**: the
+server enforces region restrictions with an HTTP 451 on the personal-data routes, but
+`DePrizeMint.bet()` will accept a transaction from any address with ETH. `BetModal` shows
+disclosure text and a Terms link, but there is no checkbox and no recorded acceptance, so
+today we cannot prove any given bettor agreed to anything.
+
+None of that is hard to build, and most of it is UI. The reason it belongs in the gate
+rather than the backlog is that the missing insider blocklist is the one with a headline
+attached — *the people who decide the winner are allowed to bet on it* — and it is far
+cheaper to close before launch than to answer afterwards.
 
 ---
 
@@ -196,7 +235,7 @@ a hackathon, not an inducement prize.
 |---|---|
 | "You're offering Blue Origin twenty-five thousand dollars?" | *(Answer depends on the G6 decision — this is why G6 is a gate.)* Under (a)+(b): "We're not paying them to land. The purse is built by the people watching, and it goes to the flight team that pulls it off. The product is the odds board." |
 | "This is just gambling on spaceflight." | It is an event market on a scientific outcome, in the same category a CFTC-regulated exchange files Artemis and Starship contracts under. No participant can influence the result and nobody bets against a mission succeeding — you back who gets there first. |
-| "Why would I use this instead of Polymarket?" | Because on Polymarket the fee goes to Polymarket. Here 5% of it becomes a prize for the winner. Same bet, different destination. |
+| "Why would I use this instead of Polymarket?" | Because on Polymarket the fee goes to Polymarket. Here 5% of it becomes a prize for the winner. Same bet, different destination — and if all you want is the best possible price, go to Polymarket. We should say that out loud rather than pretend otherwise. |
 | "Isn't it ghoulish to bet on a mission that might crash?" | Every outcome is somebody succeeding. There is no "it fails" contract. The Open Field slot exists precisely so the market can express "none of these five." |
 | "How do I know you won't just pick a winner?" | The five tests are published before the market opens and frozen at `open`. Resolution is a public checklist scored against public evidence, ratified by a Senate vote, executed by a Safe. *(True only once G4 closes.)* |
 | "What if it's ambiguous, like IM-1?" | Then it does not qualify, and we said so in advance, by name, with that exact case written into the rules. |
@@ -206,6 +245,16 @@ position): say *prize, purse, back a team, fund the prize, odds board*. Never *i
 returns, wager, sportsbook, guaranteed*. Never imply bettors are paid out of the prize
 pool — they are paid from CTF collateral by other bettors, and that distinction has to
 survive contact with a headline.
+
+**On the price we are actually charging.** The 5% prize slice plus the 1% LMSR fee means
+the effective cost to a bettor is around 7% if the `$OVERVIEW` tokens received for the
+slice turn out to be worthless, and closer to 1.5% if they hold value — against roughly
+0.2% on Polymarket. The internal docs already put this plainly: DePrize is competing with
+*doing nothing*, not with Polymarket. Nobody arrives here hunting for a better price; they
+arrive because they want the purse to exist. That is a narrower audience than a prediction
+market normally addresses, and it is the reason the free game in §5.2 is not a
+nice-to-have. The people who will never accept a 7% spread are still worth having, and the
+game is the only asset that captures them.
 
 ---
 
@@ -260,11 +309,29 @@ posts, not a thread on our account.
 
 ### 5.2 Call the Landing — a free, global, no-wallet prediction game
 
-Pick who lands next, and the date. Email address, no wallet, no deposit, no jurisdiction
-check. Public leaderboard. A referral link that shows your position moving. Small prize —
+Pick who lands next, and the date. Email address, no wallet, no deposit, no wallet-gating.
+Public leaderboard. A referral link that shows your position moving. Small prize —
 a Citizen pass, merch, a share of a modest pot — run as a **no-purchase-necessary
 sweepstakes**, the same legal shape as Bracket Madness and the same shape MoonDAO already
 executed with Ticket to Space.
+
+Three caveats on reuse. First, the published Ticket to Space and Zero-G sweepstakes rules
+survive in `ui/content/docs/Legal/` and are a genuine reusable template, but the
+**sweepstakes UI was archived in November 2025**, so this is a rebuild rather than a
+re-enable — budget it as build work, not configuration.
+
+Second, MoonDAO has already run this experiment twice with opposite results. The free,
+ungated Ticket to Space draw pulled entries by the thousand; the later Zero-G sweepstakes,
+which required holding one of 162 NFTs, barely moved. That gap is the entire argument for
+keeping this one free, wallet-free and ungated. The moment it requires owning something,
+it stops working.
+
+Third, "no jurisdiction check" is not quite right and the prior rules say so: both previous
+sweepstakes were **void in Florida, New York and Puerto Rico**, which have registration and
+bonding requirements above a prize-value threshold. Keeping the prize value modest and
+excluding those three is the well-trodden path, and it is already written down in our own
+filings. The point stands that this reaches the ~500M people the betting market cannot —
+it just is not literally unrestricted.
 
 It does five jobs no other asset does:
 
@@ -327,7 +394,7 @@ opening early. Plan for the tight case.
 | Phase | Window | Work | Gate to proceed |
 |---|---|---|---|
 | **P0 — Can this run at all** | Sep 9 – Sep 23 | Counsel engaged (G2). Griffin pad watch stood up as a standing daily check (G1). **Establish the audit status (G7) — this is the first phone call, because it is the only gate that can move the date.** G6 decision made and written down. Terms drafted for publication (G3) | **Counsel has given a written position, G6 is decided, and audit status is known. If the first two fail, stop — the prize does not open.** |
-| **P1 — Freeze the irreversible** | Sep 23 – Oct 14 | Public review round on the rules (G5, §5.4). Rules v1.0 frozen and pinned. New CTF condition prepared with the **Safe** as oracle (G4). Mainnet deploy + funded Juicebox project (G8). Terms live (G3). Roster notified under embargo (G10) | Rules frozen, oracle is the Safe, mainnet registered in `DRAFT`, Terms return 200, audit resolved or position size capped |
+| **P1 — Freeze the irreversible** | Sep 23 – Oct 14 | Public review round on the rules (G5, §5.4). Rules v1.0 frozen and pinned. New CTF condition prepared with the **Safe** as oracle, upgrade path timelocked (G4). Mainnet deploy + funded Juicebox project (G8). Open Field team NFT minted. Terms live (G3). Compliance controls built: click-through acceptance, 18+ attestation, insider blocklist, whatever geo the counsel memo requires (G2). Roster notified under embargo (G10) | Rules frozen, oracle is the Safe, no single EOA can upgrade, mainnet registered in `DRAFT`, Terms return 200, the memo's controls are shipped and testable, audit resolved or position size capped |
 | **P2 — Build the two assets** *(parallel with P1)* | Sep 23 – Oct 21 | The Board (§5.1) and Call the Landing (§5.2). Scorecard page. Odds wire. **Wire the existing onramp into `BetModal`** — see §8 | Board renders from mainnet data; a stranger can complete a free pick in under 60 seconds; a stranger holding no ETH can place a bet without leaving the site |
 | **P3 — Seed distribution under embargo** | Oct 14 – Oct 28 | Board given to 10–15 space writers and 3–5 creators *before* it is public, with the scorecard as the story. Outsider mainnet rehearsal (G9). Community soft-open | ≥5 embeds committed; one outsider has completed bet → resolve → redeem on Arbitrum |
 | **P4 — Open** | ~Nov 1 | Remove the access gate. Board goes public and embeddable. Free game opens. Press. First bets | Griffin is not inside a landing window that morning (**recheck the pad — G1 is a daily check, not a one-time one**) |
@@ -344,6 +411,16 @@ as much.
 ---
 
 ## 7. Metrics
+
+Calibrated against what MoonDAO actually converts today, which is a much smaller number
+than the follower counts suggest. On-chain membership is **250 Citizens and 26 Teams**.
+The most recent comparable campaign — the Frank White / Overview raise, which ran March to
+April 2026 — drew **157 contributions** totalling ~$172k against a ~$2M goal, or about 9%.
+The 2022 Ticket to Space raise (~2,600 ETH) came from a different market at a different
+point in the cycle and should not be used to set expectations here. So "150 unique bettors"
+is not a soft floor; it is roughly the entire existing on-chain membership converting, and
+it will not be hit from the existing audience alone. That is the arithmetic case for §5.1
+and §5.2 being the primary build rather than supporting assets.
 
 | Metric | Must-hit | Target | Stretch |
 |---|---|---|---|
@@ -387,7 +464,10 @@ large and nobody cites us, we ran a raffle.
 | Terms page | Draft at `ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md`; published URL **404s** | Publish (G3) |
 | Mainnet Touchdown | Arbitrum registry/mint/fee-router/redeem deployed; no Touchdown | Register, new condition with Safe oracle, JB project, seed LMSR (G4, G8) |
 | **Onramp in the bet flow** | Coinbase Onramp and MoonPay both exist (`lib/coinbase/`, `lib/privy/hooks/useMoonPay`) and the Launchpad already uses `lib/mission/useOnrampFlow`. **`BetModal` uses none of them** — an underfunded user is told "Lower your bet or add funds" and the funnel ends there | **Wire the existing onramp into `BetModal`.** Everything acquired by §5.1 and §5.2 arrives without ETH on Arbitrum, so this dead end is where the campaign leaks. The pattern is already proven one flow over |
-| Atlas binding | `shared-next-landing` bound to Sepolia #22 | Rebind to the mainnet id |
+| **Compliance controls in the bet flow** | None. No age attestation, no sanctions screen, no insider blocklist, and no recorded Terms acceptance — `BetModal` links the Terms but has no checkbox | **Add the click-through the design doc already promised**, plus an 18+ attestation and an admin/Senate blocklist in `DePrizeMint`. Mostly UI; the blocklist is contract work (G2) |
+| Competitor claim path | No self-service flow. Claiming is manual: the org emails `info@moondao.com` and someone edits `consented` in `competitions.ts` | A one-page "claim your listing" form. All six Touchdown outcomes are currently unclaimed, so every logo is a neutral monogram (G10) |
+| Atlas binding | `shared-next-landing` bound to Sepolia #22, and the atlas still marks the market **`planned`** rather than `live`. Atlas curator priors (Firefly 28%, IM 22%, CNSA 20%, Astrobotic 18%, Blue Origin 12%) also disagree with the on-chain seed | Rebind to the mainnet id, flip the status, and decide which number is canonical before both are on screen at once |
+| Open Field team | Canonical Team NFT `999` is **unminted**; Sepolia uses Team 24 as a placeholder | Mint before mainnet registration — the field slot is one of six outcomes and cannot ship as a placeholder |
 
 ---
 
@@ -425,10 +505,11 @@ before P1 starts.
 |---|---|---|
 | **Griffin lands before we open** | Any landing attempt inside a week of registration | **Do not open.** The prize is void on arrival (spec §IV.5). Pad check is a daily standing item from P0, not a one-time gate |
 | **No legal position** | Sep 23 with no counsel memo | **Kill, or restrict to the free game only.** The free pick game is legally clean, globally available, and still builds the list — it is a genuine fallback, not a consolation |
-| **The stack is unaudited** | P0 finding | Slip to Griffin's slip, or open with a capped per-wallet position and say so on the page. Do not quietly take uncapped money against an unaudited novel mechanism to hit a date |
+| **The stack is unaudited** | P0 finding | Slip to Griffin's slip, or open with a capped per-wallet position and say so on the page. `DEPRIZE.md` already specifies a **10 ETH per-wallet pilot cap** as a blast-radius limit, so the control is designed and only needs enforcing — set it far lower for an unaudited launch. Do not quietly take uncapped money against an unaudited novel mechanism to hit a date |
 | **The market resolves in three weeks** | Griffin launches early and sticks the landing | Accept it and lean in — a fast, clean, undisputed first resolution is the best possible outcome for the mechanism. Have P7 and the Night Shift handoff ready *before* open, not after |
 | **Nothing lands for eighteen months** | Everything slips, as it has before | Rolling sunset with `setSunset`. Manufacture beats from launches and slips, not just landings. This is a real risk: five attempts, all historically slippery |
 | **A tipped lander, and everyone argues** | The likeliest resolution scenario on 2024–25 form | This is a feature if the rules held and a catastrophe if they did not — which is the entire reason G5 exists. Publish the scored checklist within 24 hours, before the argument sets |
+| **"The people who resolve it were betting on it"** | Any journalist checking wallets after settlement | The policy is already written — blocklist admin Safe signers and team admins at the contract level; Senate members may bet but must disclose before the vote opens and abstain above a materiality threshold. **None of it is implemented**, in contract or in UI. Build the blocklist and a public disclosure register before open (G2). This matters more than it looks: a 72h dispute window was explicitly rejected on the grounds that the Senate vote *is* the on-chain check, and that reasoning only holds if Senate positions are visible and bounded |
 | **Open Field runs away with the odds** | Field implied odds above ~⅓ | `supersede` onto a new named roster (spec §V.7). Registry generations are a launch dependency |
 | **A named operator objects publicly** | Any | Roster disclaimer + the claim flow + the fact that listing is editorial. Having notified them first (G10) turns this from a story into a non-story |
 | **"MoonDAO is a gambling site" takes hold** | Press cycle | Lead every single piece with the scorecard and the seven-attempt record, never with the market. The board is the product; the market is a feature of the board |
@@ -455,3 +536,12 @@ nine-figure contracts — it makes MoonDAO look like it does not understand its 
 industry. That risk is entirely in our control, it is decided by the G6 choice and the
 words in §3, and it is the single thing in this document most worth getting right before
 anything ships.
+
+**One conflict to resolve before any of this is announced.** `DEPRIZE.md` still describes
+the *first* DePrize as the Overview Effect Flight prize — betting on which provider flies
+Frank White — seeded by the ~$172k currently sitting in the Juicebox launchpad, and
+contingent on a three-way `$OVERVIEW` holder vote. Touchdown is a different prize on a
+different race. Both cannot be "the first DePrize" in public, and the Overview one has a
+seed roughly seven times larger than anything proposed here. Whichever goes first, the
+other's messaging has to be rewritten, and that is a decision for the same conversation
+that settles G6 rather than something to discover mid-campaign.
