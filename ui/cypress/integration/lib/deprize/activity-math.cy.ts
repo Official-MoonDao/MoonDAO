@@ -23,7 +23,9 @@ function bet(p: Partial<BetRow> & { bettor: string; outcomeIndex: number; qty: n
     ...p,
   }
 }
-function sell(p: Partial<SellRow> & { seller: string; outcomeIndex: number; qty: number }): SellRow {
+function sell(
+  p: Partial<SellRow> & { seller: string; outcomeIndex: number; qty: number }
+): SellRow {
   return {
     proceedsEth: 0,
     blockNumber: 2n,
@@ -43,7 +45,10 @@ describe('deprize activity math', () => {
   ]
 
   it('counts unique backers case-insensitively', () => {
-    const mixed = [...bets, bet({ bettor: A.toUpperCase().replace('0X', '0x'), outcomeIndex: 0, qty: 1 })]
+    const mixed = [
+      ...bets,
+      bet({ bettor: A.toUpperCase().replace('0X', '0x'), outcomeIndex: 0, qty: 1 }),
+    ]
     expect(uniqueBackers(mixed)).to.equal(2)
   })
 
@@ -84,8 +89,20 @@ describe('deprize activity math', () => {
     expect(s.netPnlEth).to.be.closeTo(3.0 + 0.9 - 3.5, 1e-12)
   })
 
+  it('userSummary includes on-chain holdings that never appear in events', () => {
+    const value = new Map<number, number>([[4, 1.25]])
+    const s = userSummary([], [], A, value)
+    expect(s.totalSpentEth).to.equal(0)
+    expect(s.realizedEth).to.equal(0)
+    expect(s.heldCostEth).to.equal(0)
+    expect(s.currentValueEth).to.equal(1.25)
+    expect(s.netPnlEth).to.equal(1.25)
+  })
+
   it('userSummary is negative after a losing cash-out', () => {
-    const only: BetRow[] = [bet({ bettor: A, outcomeIndex: 0, qty: 1, costEth: 0.95, sliceEth: 0.05 })]
+    const only: BetRow[] = [
+      bet({ bettor: A, outcomeIndex: 0, qty: 1, costEth: 0.95, sliceEth: 0.05 }),
+    ]
     const sells: SellRow[] = [sell({ seller: A, outcomeIndex: 0, qty: 1, proceedsEth: 0.7 })]
     const s = userSummary(only, sells, A, new Map())
     expect(s.netPnlEth).to.be.closeTo(-0.3, 1e-12)

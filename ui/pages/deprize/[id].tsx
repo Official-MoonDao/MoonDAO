@@ -378,10 +378,14 @@ function DePrizeDetailContent() {
     if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return
     const idx = Number(raw)
     if (idx < 0 || idx >= numOutcomes) return
+    // Wallet hydrate and the geo check usually finish after the chart. Latch
+    // only once those gates can open the modal; otherwise a later ready pass
+    // would no-op and `?outcome=N` would scroll without auto-opening.
+    if (!userAddress || !bettingAllowed) return
     setDeepLinkHandled(true)
     const el = document.getElementById(`deprize-outcome-${idx}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    if (userAddress && bettingAllowed) setBetIndex(idx)
+    setBetIndex(idx)
   }, [
     deepLinkHandled,
     router.isReady,

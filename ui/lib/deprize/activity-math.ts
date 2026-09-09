@@ -31,9 +31,7 @@ export type SellRow = {
   timestampMs: number
 }
 
-export type ActivityRow =
-  | ({ kind: 'bet' } & BetRow)
-  | ({ kind: 'sell' } & SellRow)
+export type ActivityRow = ({ kind: 'bet' } & BetRow) | ({ kind: 'sell' } & SellRow)
 
 export type OutcomePosition = {
   outcomeIndex: number
@@ -75,7 +73,7 @@ export function userPosition(
   bets: BetRow[],
   sells: SellRow[],
   user: string,
-  outcomeIndex: number,
+  outcomeIndex: number
 ): OutcomePosition {
   const u = user.toLowerCase()
   let qtyBought = 0
@@ -118,19 +116,22 @@ export function userActiveOutcomes(bets: BetRow[], sells: SellRow[], user: strin
 /**
  * Wallet-level summary. `currentValueByIndex` is what the user's held tokens
  * are worth right now (live sell quote while trading, redeem value once
- * resolved). Outcomes missing from the map contribute 0 current value.
+ * resolved). Map keys are included even with no Bet/sell events (transfers,
+ * missed logs). Outcomes missing from the map contribute 0 current value.
  */
 export function userSummary(
   bets: BetRow[],
   sells: SellRow[],
   user: string,
-  currentValueByIndex: Map<number, number>,
+  currentValueByIndex: Map<number, number>
 ): UserSummary {
   let totalSpentEth = 0
   let realizedEth = 0
   let heldCostEth = 0
   let currentValueEth = 0
-  for (const idx of userActiveOutcomes(bets, sells, user)) {
+  const indexes = new Set(userActiveOutcomes(bets, sells, user))
+  for (const idx of currentValueByIndex.keys()) indexes.add(idx)
+  for (const idx of indexes) {
     const p = userPosition(bets, sells, user, idx)
     totalSpentEth += p.spentEth
     realizedEth += p.proceedsEth

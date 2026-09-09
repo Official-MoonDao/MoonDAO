@@ -1,10 +1,15 @@
 import { DEPRIZE_MINT_ADDRESSES } from 'const/config'
 import { useEffect, useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
-import { fetchDePrizeBets, fetchMarketTrades, sellsFromTrades, type TradeRow } from './activity-fetch'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import {
+  fetchDePrizeBets,
+  fetchMarketTrades,
+  sellsFromTrades,
+  type TradeRow,
+} from './activity-fetch'
 import { totalStaked, uniqueBackers, type BetRow, type SellRow } from './activity-math'
 import type { FundingLike } from './lmsr-history'
-import { getChainSlug } from '@/lib/thirdweb/chain'
 
 export type DePrizeActivity = {
   bets: BetRow[]
@@ -42,12 +47,20 @@ export function useDePrizeActivity(args: {
   const chainSlug = getChainSlug(chain)
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug]
   const [data, setData] = useState<Omit<DePrizeActivity, 'loading' | 'error'>>(EMPTY)
-  const [loading, setLoading] = useState(false)
+  const [dataKey, setDataKey] = useState('')
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | undefined>()
+  const requestKey =
+    deprizeId !== undefined && marketAddress && !/^0x0+$/.test(marketAddress)
+      ? `${chain.id}:${deprizeId}:${marketAddress.toLowerCase()}`
+      : ''
 
   useEffect(() => {
     if (deprizeId === undefined || !marketAddress || /^0x0+$/.test(marketAddress)) {
       setData(EMPTY)
+      setDataKey('')
+      setLoading(true)
+      setError(undefined)
       return
     }
     let cancelled = false
@@ -75,9 +88,12 @@ export function useDePrizeActivity(args: {
           backers: uniqueBackers(bets),
           totalStakedEth: totalStaked(bets),
         })
+        setDataKey(requestKey)
       } catch (e: any) {
         if (cancelled) return
         console.warn('[deprize] activity load failed', e)
+        setData(EMPTY)
+        setDataKey(requestKey)
         setError(e?.shortMessage || e?.message || 'Failed to load activity')
       } finally {
         if (!cancelled) setLoading(false)
@@ -86,7 +102,15 @@ export function useDePrizeActivity(args: {
     return () => {
       cancelled = true
     }
-  }, [deprizeId, marketAddress, chain, chainSlug, mintAddress, refreshNonce])
+  }, [requestKey, deprizeId, marketAddress, chain, chainSlug, mintAddress, refreshNonce])
 
-  return useMemo(() => ({ ...data, loading, error }), [data, loading, error])
+  const stale = dataKey !== requestKey
+  return useMemo(
+    () => ({
+      ...(stale ? EMPTY : data),
+      loading: loading || stale,
+      error: stale ? undefined : error,
+    }),
+    [data, loading, error, stale]
+  )
 }
