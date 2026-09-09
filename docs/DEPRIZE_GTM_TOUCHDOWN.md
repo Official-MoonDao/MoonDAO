@@ -58,7 +58,7 @@ at the people who did the work. It is cheaper, more defensible against a ten-mon
 and it makes the pool chart — the thing we want people to look at — the actual headline.
 
 **G2 has a specific shape worth naming.** The geo gate blocks the EU, EEA and UK
-(`ui/lib/geo/index.ts`, 33 jurisdictions, ~450M people) and default-denies unknown
+(`ui/lib/geo/index.ts`, 35 jurisdictions, on the order of 500M people) and default-denies unknown
 countries. **The United States is fully open.** That list was written for GDPR — for
 on-chain personal-data storage — and it is now doing duty as a gambling-restriction list.
 Those are different legal questions and their overlap is a coincidence. The good news is
@@ -141,7 +141,7 @@ copy is our filing. Language discipline is not brand tone here, it is legal post
 **3. FanDuel / NCAA: the free contest has no geography and is not betting.** FanDuel's
 Bracket Madness is "open to people everywhere because it's a free contest and, thus, not
 considered betting," and it exists to acquire users who cannot or will not deposit. We
-geo-block 33 jurisdictions and ~450M people, and the overwhelming majority of everyone
+geo-block 35 jurisdictions and on the order of 500M people, and the overwhelming majority of everyone
 else will never connect a wallet. **A free, no-purchase-necessary pick game reaches all of
 them.** MoonDAO has already run a legally-structured, verifiably-random public sweepstakes
 at consumer scale — 9,060 free Ticket to Space mints, drawn on Chainlink VRF. That
@@ -213,7 +213,7 @@ simplification the other two plans do not get, and we should spend the surplus o
 | **Landing-broadcast audience** | IM-1 1.46M views; Artemis II 3.66M peak concurrent, 23.9M total | "You're already watching. Here's what's at stake for each of them" | Co-stream, clips, live odds overlay | Some |
 | **MoonDAO community** | ~38–39k on X, tens of thousands of token holders, Discord | "Our first real prize is live" | Discord, ConvertKit, town halls, `@OfficialMoonDAO` | Yes |
 | **Prediction-market natives** | Polymarket 865k MAU; Kalshi onboarded 3M during the World Cup | A market with a mechanism they have not seen and no correlation to sports or politics | r/PredictionMarkets, crypto X, Polymarket/Kalshi community spaces | Yes |
-| **The geo-blocked and the wallet-averse** | ~450M people in 33 jurisdictions, plus most of everyone else | The free pick game — no wallet, no deposit, global | Same channels, different call to action | **No — and this is exactly why §5.2 exists** |
+| **The geo-blocked and the wallet-averse** | roughly 500M people across 35 jurisdictions, plus most of everyone else | The free pick game — no wallet, no deposit, global | Same channels, different call to action | **No — and this is exactly why §5.2 exists** |
 | **Local press in operator cities** | Pittsburgh (Astrobotic/CMU), Houston (IM), Cedar Park/Austin (Firefly) | "The Pittsburgh company favoured to be next on the Moon" | Regional TV, city papers, university comms | Some |
 | **The five operators** | — | Claim your listing; the purse goes to your flight team | Direct, pre-launch, courtesy | n/a |
 
@@ -260,7 +260,7 @@ executed with Ticket to Space.
 
 It does five jobs no other asset does:
 
-1. Reaches the ~450M people we geo-block and the far larger number who will never connect
+1. Reaches the ~500M people we geo-block and the far larger number who will never connect
    a wallet.
 2. Builds an owned email list, which is the only durable output of this whole campaign.
 3. Creates the Robinhood queue dynamic — a position, a leaderboard, a reason to share.
