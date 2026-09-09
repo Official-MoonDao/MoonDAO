@@ -26,7 +26,14 @@ import {
   sunAt,
   trueSunDirection,
 } from '../../../lib/lunar-atlas/sunpath'
-import { SUN_LOCAL_ELEV_DEG } from '../../../lib/lunar-atlas/sun'
+import {
+  DESIGN_EXPOSURE,
+  MIN_EXPOSURE_ELEV_DEG,
+  SUN_INTENSITY,
+  SUN_LOCAL_ELEV_DEG,
+  exposureFor,
+} from '../../../lib/lunar-atlas/sun'
+import { litGroundRadiance, shadowFillRadiance } from '../../../lib/lunar-atlas/regolith'
 import { capCenterLatLon, capLocalDirection } from '../../../lib/lunar-atlas/southpole'
 
 const DEG = Math.PI / 180
@@ -216,5 +223,109 @@ describe('lunar sun path: which way round the sky', () => {
       buckets.add(Math.floor(sunAt({ lunarDay: i / 720, season: 0 }).bearingDeg / 22.5))
     }
     expect(buckets.size).to.equal(16)
+  })
+})
+
+describe('exposing for the sun that is actually up', () => {
+  // The reason exposure stopped being a constant. These are the assertions that let
+  // the change ship: the first one is the promise that nothing about the current
+  // frame moves, and the rest are the reason a constant could not have survived.
+
+  it('reproduces the shipped exposure EXACTLY at the design sun', () => {
+    // Not "close to" 1.05. The anchor is defined as the value that makes this
+    // identity hold, so any drift means the anchor and the renderer's default have
+    // come apart and the scene has silently re-exposed itself.
+    expect(exposureFor(SUN_LOCAL_ELEV_DEG)).to.be.closeTo(DESIGN_EXPOSURE, 1e-12)
+  })
+
+  it('opens up 3.6 stops for the real sun, which is the whole argument', () => {
+    // The number that makes a fixed exposure indefensible rather than merely dark:
+    // the real sun on the design exposure is not "a bit dim", it is 12x under.
+    const real = maxElevationDeg()
+    const ratio = exposureFor(real) / exposureFor(SUN_LOCAL_ELEV_DEG)
+    expect(ratio).to.be.closeTo(12.5, 0.3)
+    expect(Math.log2(ratio)).to.be.closeTo(3.64, 0.05)
+  })
+
+  it('opens up LESS than Lambert would, because the Moon does not limb-darken', () => {
+    // Worth its own test because the intuitive answer is wrong in a way that matters.
+    // Reasoning from albedo * cos(incidence), the ratio would be sin(44.46)/sin(2.08)
+    // = 19.3, i.e. 4.3 stops. The real BRDF gives 12.5, and the gap is physics rather
+    // than error: Hapke's shadow-hiding and multiple-scattering terms hold a
+    // particulate surface's brightness up at grazing incidence, which is exactly why
+    // the full moon reads as a flat disc instead of a shaded ball.
+    //
+    // regolith.ts already warns that the Lambertian shorthand is 4x wrong at this
+    // scene's phase angles and has caused three bugs. This is the same trap in its
+    // derivative: using sines to predict how much exposure a lower sun needs
+    // overstates it by half a stop, which is a visible over-exposure.
+    const real = maxElevationDeg()
+    const ratio = exposureFor(real) / exposureFor(SUN_LOCAL_ELEV_DEG)
+    const lambert = Math.sin(SUN_LOCAL_ELEV_DEG * DEG) / Math.sin(real * DEG)
+    expect(lambert).to.be.closeTo(19.3, 0.3)
+    expect(ratio).to.be.lessThan(lambert * 0.8)
+    // Not unboundedly flatter, though — it is still mostly the cosine. If this ever
+    // drops below about half of Lambert the BRDF has stopped darkening with elevation
+    // in a way that would read as a sun that does not set.
+    expect(ratio).to.be.greaterThan(lambert * 0.4)
+  })
+
+  it('stays finite and monotone across every sun the scene can be shown under', () => {
+    // A reciprocal with a clamp is exactly the shape that hides a divide-by-zero
+    // until someone scrubs to a sunset. Sweeping the real path, including the ~39% of
+    // the year the sun is BELOW local horizontal and elevation goes negative.
+    let prev = Infinity
+    for (let season = 0; season < 1; season += 0.05) {
+      for (let i = 0; i < 60; i++) {
+        const e = sunAt({ lunarDay: i / 60, season }).elevationDeg
+        const x = exposureFor(e)
+        expect(Number.isFinite(x), `finite at elev ${e.toFixed(3)}`).to.equal(true)
+        expect(x, `positive at elev ${e.toFixed(3)}`).to.be.greaterThan(0)
+      }
+    }
+    // Monotone non-increasing in elevation: a higher sun always needs less exposure.
+    for (let e = -2; e <= 2.2; e += 0.01) {
+      const x = exposureFor(e)
+      expect(x, `monotone at ${e.toFixed(2)}`).to.be.at.most(prev + 1e-9)
+      prev = x
+    }
+  })
+
+  it('clamps below the horizon instead of running away', () => {
+    // Every elevation at or under the floor collapses to one value, and that value is
+    // bounded. Without the clamp this is a division by sin(0) the moment the sun sets.
+    const floor = exposureFor(MIN_EXPOSURE_ELEV_DEG)
+    for (const e of [0, -0.5, -1.9, -90]) {
+      expect(exposureFor(e), `elev ${e}`).to.equal(floor)
+    }
+    // Bounded by something meaningful rather than just finite: under ~160x the design
+    // exposure, so the fixed-brightness annotation layer is overexposed at sunset but
+    // not by an unbounded amount.
+    expect(floor / DESIGN_EXPOSURE).to.be.lessThan(160)
+  })
+
+  it('renders a shadow at the same screen brightness under either sun', () => {
+    // Falls out of the two derivations agreeing, and worth pinning because it says
+    // what true-sun mode will actually look like. shadowFillRadiance is linear in the
+    // lit ground and exposure is inversely proportional to it, so the product is
+    // exactly invariant: a shadow is the same grey at 2° as at 44°.
+    //
+    // Which means the difference in true-sun mode is entirely GEOMETRIC — 57% of the
+    // patch falls inside a terrain shadow instead of 0%, and shadows run hundreds of
+    // metres instead of metres — and not a global darkening. If this test ever fails,
+    // one of the two has stopped tracking the sun and the scene will be dimming or
+    // blowing out as it is scrubbed.
+    const onScreen = (elev: number) =>
+      shadowFillRadiance(litGroundRadiance(SUN_INTENSITY, elev)) * exposureFor(elev)
+    const design = onScreen(SUN_LOCAL_ELEV_DEG)
+    for (const e of [maxElevationDeg(), 1.5, 1, 0.5, MIN_EXPOSURE_ELEV_DEG]) {
+      expect(onScreen(e) / design, `elev ${e}`).to.be.closeTo(1, 1e-9)
+    }
+  })
+
+  it('puts the floor outside the range the scene is looked at', () => {
+    // The clamp is only defensible if it never engages while the sun is up. The real
+    // sun's maximum is ~2.1°, so the floor must sit well below that.
+    expect(MIN_EXPOSURE_ELEV_DEG).to.be.lessThan(maxElevationDeg() / 4)
   })
 })

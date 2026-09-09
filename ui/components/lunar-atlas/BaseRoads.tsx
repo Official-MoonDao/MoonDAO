@@ -74,7 +74,6 @@ import {
   type Centreline,
   type Junction,
 } from '@/lib/lunar-atlas/junctions'
-import { litGroundRadiance, shadowFillRadiance } from '@/lib/lunar-atlas/regolith'
 import {
   GRADED_SURFACE_FRAGMENT_PATCHES,
   GRADED_SURFACE_VERTEX_PATCHES,
@@ -82,7 +81,6 @@ import {
 } from '@/lib/lunar-atlas/regolithShader'
 import { bindOcclusionUniforms } from './regolithOcclusion'
 import { capOffsetLatLon, M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
-import { SUN_INTENSITY, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { MODEL_PRESENCE } from './MarkerLayer'
 import type { RadiusAt } from './useTerrainSampler'
@@ -102,16 +100,15 @@ import type { RadiusAt } from './useTerrainSampler'
 //
 // Everything else in three's light loop is kept, deliberately — most importantly
 // the shadow attenuation, which arrives already folded into directLight.color.
-const GRADED_BOUNCE_RADIANCE = shadowFillRadiance(
-  litGroundRadiance(SUN_INTENSITY, SUN_LOCAL_ELEV_DEG)
-)
-
 function gradedRegolithShader(shader: THREE.WebGLProgramParametersWithUniforms) {
-  shader.uniforms.bounceRadiance = { value: GRADED_BOUNCE_RADIANCE }
-  // The skyline field, so a road inside a terrain shadow goes dark with the ground
-  // it crosses. At the real sun 57% of the patch is in that shadow, and a road left
-  // out of it would be the most conspicuous error in the frame. Shared uniform boxes
-  // rather than copies — see regolithOcclusion.ts.
+  // The skyline field, so a road inside a terrain shadow goes dark with the ground it
+  // crosses. At the real sun 57% of the patch is in that shadow, and a road left out
+  // of it would be the most conspicuous error in the frame.
+  //
+  // This also carries bounceRadiance, which used to be derived here from the same
+  // expression the terrain used. Shared uniform boxes rather than copies, so the road
+  // and the ground cannot end up at different shadow depths under a moving sun — see
+  // regolithOcclusion.ts.
   bindOcclusionUniforms(shader.uniforms)
   // The vertex half is not optional: the fragment patches reference a world-position
   // varying, and this is what declares and fills it. It also carries the instancing

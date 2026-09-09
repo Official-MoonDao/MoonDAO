@@ -23,7 +23,13 @@ import {
 } from '@/lib/lunar-atlas/horizon'
 import { CAP_EXTENT_M, MAP_X_DIR, M_TO_UNITS, capCenterDirection } from '@/lib/lunar-atlas/southpole'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
-import { SUN_ANGULAR_RADIUS_RAD, SUN_DIR } from '@/lib/lunar-atlas/sun'
+import {
+  SUN_ANGULAR_RADIUS_RAD,
+  SUN_DIR,
+  SUN_INTENSITY,
+  SUN_LOCAL_ELEV_DEG,
+} from '@/lib/lunar-atlas/sun'
+import { litGroundRadiance, shadowFillRadiance } from '@/lib/lunar-atlas/regolith'
 import { loadInnerField } from './useTerrainSampler'
 
 const HORIZON_TEXTURES = Math.ceil(HORIZON_AZIMUTHS / 4)
@@ -70,6 +76,14 @@ export type OcclusionUniforms = Record<string, THREE.IUniform>
 function initialUniforms(): OcclusionUniforms {
   const u: OcclusionUniforms = {
     skyViewMap: { value: OPEN_SKY },
+    // The fill in every shadow, and now shared rather than computed twice.
+    //
+    // SouthPoleTerrain and BaseRoads each used to derive this from the same
+    // expression, with a comment in each explaining that they had to agree — a road
+    // in shadow cannot sit at a different depth from the ground it crosses. Agreeing
+    // by duplication is the weakest form of agreeing, and it also could not survive a
+    // sun that moves, since the fill scales with the sun's elevation.
+    bounceRadiance: { value: 0 },
     // The DESIGN sun, so that landing this changes nothing. tan(44.46°) is 0.98
     // against a measured maximum skyline tangent of 0.51 anywhere on the patch, so
     // every fragment resolves to "lit" and the occlusion is a provable no-op until
@@ -90,11 +104,32 @@ function initialUniforms(): OcclusionUniforms {
 
 export const REGOLITH_OCCLUSION_UNIFORMS = initialUniforms()
 
-// Point the scene at a sun. The only mutation any caller needs: every regolith
-// material reads this same box.
-export function setOcclusionSun(dir: readonly [number, number, number]): void {
+// Start on the design sun, so the module's initial state is the scene as it ships and
+// bounceRadiance is never briefly zero. setRegolithSun is a hoisted declaration, so
+// this runs after the boxes above exist.
+setRegolithSun(SUN_DIR, SUN_LOCAL_ELEV_DEG)
+
+// Point the whole scene at a sun. The only mutation any caller needs, and the only
+// place the sun's elevation turns into a shadow depth.
+//
+// Everything here scales with the sun rather than being pinned to it, which is what
+// makes a moving sun cost nothing: litGroundRadiance and shadowFillRadiance have been
+// functions of elevation since the Hapke work, precisely so this call could exist.
+export function setRegolithSun(
+  dir: readonly [number, number, number],
+  elevationDeg: number
+): void {
   ;(REGOLITH_OCCLUSION_UNIFORMS.sunWorldDir.value as THREE.Vector3).set(dir[0], dir[1], dir[2])
+  // Below the horizontal there is no lit ground in view to bounce anything, so the
+  // fill goes to zero rather than negative. The DIRECT term is still allowed through
+  // by the skyline test, which is the case a crest at dawn depends on.
+  const lit = elevationDeg > 0 ? litGroundRadiance(SUN_INTENSITY, elevationDeg) : 0
+  REGOLITH_OCCLUSION_UNIFORMS.bounceRadiance.value = shadowFillRadiance(lit)
 }
+
+// Exposure lives in lib/lunar-atlas/sun.ts — it is a fact about the sun rather than
+// about the ground, and keeping it out of a module that imports THREE is what makes it
+// testable. MoonGlobe imports it from there directly.
 
 // ---------------------------------------------------------------------------
 // Building the textures
