@@ -24,15 +24,22 @@ and nothing in Part III starts until they are closed.
 | **G4** | **Resolution authority is not one person** | On Arbitrum the CTF oracle *and* the registry owner are both the deployer EOA `0x3c5e…E011`. `const/config.ts` says in its own comment to move the oracle to the admin Safe *before a public prize*, and that doing so requires preparing a **new condition**, because the oracle is immutable once set | Either the oracle or the registry owner on mainnet is an EOA |
 | **G5** | **The win condition has survived an outside attack** | The spec's Part V is an explicit request for criticism that has not yet been answered. Test 3 (stable planned orientation) and Test 5 (confirmation for a CNSA landing) are the two clauses that decide who gets paid | Fewer than three qualified external reviewers have walked the last seven attempts against the five tests |
 | **G6** | **The purse exists, and we can say why** | $25,000 is **7.6% of MoonDAO's $327,851 unrestricted liquid assets** against ~10 months of runway. It also induces exactly zero behaviour from a company holding a $199.5M CLPS award | No funding source identified, or no answer to "so you're offering Blue Origin $25,000?" |
-| **G7** | **It is on mainnet and the money is real** | Touchdown is Sepolia-only. Pool: **0.0002 ETH.** Arbitrum has the registry, mint, fee router and redeem deployed but no Touchdown | Registered on a testnet, or a mainnet Juicebox project that has not been paid into |
-| **G8** | **One full mainnet rehearsal, by an outsider** | Every DePrize flow has been proved on Sepolia. None has been proved end-to-end with real money by someone who does not work here | No outsider has completed bet → sweep → resolve → redeem on Arbitrum |
-| **G9** | **The roster is notified, not asked** | Five real companies are market outcomes. Listing is editorial and does not require consent — but them learning about it from a journalist is an avoidable own goal | Any named operator's comms team is surprised |
+| **G7** | **The contracts have been audited** | `DEPRIZE.md` names an external audit and a Sepolia bug-bounty period as Phase 3 production hardening, sets a coverage gate of ≥95% lines plus ≥10k fuzz iterations, and lists "external audit pre-launch" as *the* mitigation for smart-contract risk. It also warns that audit scope must cover the UUPS upgrade pattern, not just the implementation. I found no evidence any of this has happened | Real money is taken against an unaudited novel mechanism |
+| **G8** | **It is on mainnet and the money is real** | Touchdown is Sepolia-only. Pool: **0.0002 ETH.** Arbitrum has the registry, mint, fee router and redeem deployed but no Touchdown | Registered on a testnet, or a mainnet Juicebox project that has not been paid into |
+| **G9** | **One full mainnet rehearsal, by an outsider** | Every DePrize flow has been proved on Sepolia. None has been proved end-to-end with real money by someone who does not work here | No outsider has completed bet → sweep → resolve → redeem on Arbitrum |
+| **G10** | **The roster is notified, not asked** | Five real companies are market outcomes. Listing is editorial and does not require consent — `competitions.ts` removed the consent gate deliberately, on the grounds that it was stricter than the disclosure it stood in for — but them learning about it from a journalist is an avoidable own goal | Any named operator's comms team is surprised |
 
 **The order matters, and it is not the order of effort.** G1 and G2 can kill the prize;
-they run first and in parallel. G4 and G5 are load-bearing on an immutable artifact, so
-they must close before G7 registers anything on-chain. G3, G6, G8 and G9 are gating but
-not blocking — they run alongside. Marketing spend before G7 is spend against a page
-people cannot use.
+they run first and in parallel. G4, G5 and G7 are load-bearing on artifacts that cannot be
+changed afterwards, so all three must close before G8 registers anything on-chain. G3, G6,
+G9 and G10 are gating but not blocking — they run alongside. Marketing spend before G8 is
+spend against a page people cannot use.
+
+G7 is the one gate with a lead time we do not control. An audit engagement plus a bounty
+period does not fit inside the seven weeks to 1 November. **If the stack is genuinely
+unaudited, that is the finding that reshapes this plan** — either the target slips to
+Griffin's slip, or Touchdown opens with a capped position size and says so plainly. Find
+out before anything else in Part I is scheduled.
 
 ### Two of these deserve to be argued about now, not later
 
@@ -318,10 +325,10 @@ opening early. Plan for the tight case.
 
 | Phase | Window | Work | Gate to proceed |
 |---|---|---|---|
-| **P0 — Can this run at all** | Sep 9 – Sep 23 | Counsel engaged (G2). Griffin pad watch stood up as a standing daily check (G1). G6 decision made and written down. Terms drafted for publication (G3) | **Counsel has given a written position and G6 is decided. If either fails, stop — the prize does not open.** |
-| **P1 — Freeze the irreversible** | Sep 23 – Oct 14 | Public review round on the rules (G5, §5.4). Rules v1.0 frozen and pinned. New CTF condition prepared with the **Safe** as oracle (G4). Mainnet deploy + funded Juicebox project (G7). Terms live (G3). Roster notified under embargo (G9) | Rules frozen, oracle is the Safe, mainnet registered in `DRAFT`, Terms return 200 |
+| **P0 — Can this run at all** | Sep 9 – Sep 23 | Counsel engaged (G2). Griffin pad watch stood up as a standing daily check (G1). **Establish the audit status (G7) — this is the first phone call, because it is the only gate that can move the date.** G6 decision made and written down. Terms drafted for publication (G3) | **Counsel has given a written position, G6 is decided, and audit status is known. If the first two fail, stop — the prize does not open.** |
+| **P1 — Freeze the irreversible** | Sep 23 – Oct 14 | Public review round on the rules (G5, §5.4). Rules v1.0 frozen and pinned. New CTF condition prepared with the **Safe** as oracle (G4). Mainnet deploy + funded Juicebox project (G8). Terms live (G3). Roster notified under embargo (G10) | Rules frozen, oracle is the Safe, mainnet registered in `DRAFT`, Terms return 200, audit resolved or position size capped |
 | **P2 — Build the two assets** *(parallel with P1)* | Sep 23 – Oct 21 | The Board (§5.1) and Call the Landing (§5.2). Scorecard page. Odds wire. **Wire the existing onramp into `BetModal`** — see §8 | Board renders from mainnet data; a stranger can complete a free pick in under 60 seconds; a stranger holding no ETH can place a bet without leaving the site |
-| **P3 — Seed distribution under embargo** | Oct 14 – Oct 28 | Board given to 10–15 space writers and 3–5 creators *before* it is public, with the scorecard as the story. Outsider mainnet rehearsal (G8). Community soft-open | ≥5 embeds committed; one outsider has completed bet → resolve → redeem on Arbitrum |
+| **P3 — Seed distribution under embargo** | Oct 14 – Oct 28 | Board given to 10–15 space writers and 3–5 creators *before* it is public, with the scorecard as the story. Outsider mainnet rehearsal (G9). Community soft-open | ≥5 embeds committed; one outsider has completed bet → resolve → redeem on Arbitrum |
 | **P4 — Open** | ~Nov 1 | Remove the access gate. Board goes public and embeddable. Free game opens. Press. First bets | Griffin is not inside a landing window that morning (**recheck the pad — G1 is a daily check, not a one-time one**) |
 | **P5 — The race** | Open → landing | Odds wire on every slip and every launch. A content beat per launch, not just per landing. Weekly scorecard updates. Creator co-streams booked in advance of each landing attempt | Odds move at least weekly; if the chart flatlines for 30 days, pull an event forward |
 | **P6 — Landing night** | The attempt | Co-stream with the board on screen. Not our broadcast — a layer on somebody else's. Live "what has to happen in the next six minutes" | — |
@@ -377,7 +384,7 @@ large and nobody cites us, we ran a raffle.
 | Odds history chart | `OddsHistoryChart.tsx` exists | Annotate with launch/slip markers so the chart narrates the race |
 | Access gate removal | `lib/gate/access.ts`, `middleware.ts` | Drop the `/deprize` prefix at P4 — **this is the literal launch action** |
 | Terms page | Draft at `ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md`; published URL **404s** | Publish (G3) |
-| Mainnet Touchdown | Arbitrum registry/mint/fee-router/redeem deployed; no Touchdown | Register, new condition with Safe oracle, JB project, seed LMSR (G4, G7) |
+| Mainnet Touchdown | Arbitrum registry/mint/fee-router/redeem deployed; no Touchdown | Register, new condition with Safe oracle, JB project, seed LMSR (G4, G8) |
 | **Onramp in the bet flow** | Coinbase Onramp and MoonPay both exist (`lib/coinbase/`, `lib/privy/hooks/useMoonPay`) and the Launchpad already uses `lib/mission/useOnrampFlow`. **`BetModal` uses none of them** — an underfunded user is told "Lower your bet or add funds" and the funnel ends there | **Wire the existing onramp into `BetModal`.** Everything acquired by §5.1 and §5.2 arrives without ETH on Arbitrum, so this dead end is where the campaign leaks. The pattern is already proven one flow over |
 | Atlas binding | `shared-next-landing` bound to Sepolia #22 | Rebind to the mainnet id |
 
@@ -404,6 +411,11 @@ both compound without ongoing spend.
 Legal is the one line that should not be cut. It is cheaper than the alternative and it is
 the difference between G2 being closed and being hoped about.
 
+**Not costed here:** the external audit and bug bounty in G7. That belongs to the contract
+programme rather than to this campaign, but it is a real number with a real lead time and
+it sits on the critical path, so whoever owns the DePrize contracts needs to answer for it
+before P1 starts.
+
 ---
 
 ## 10. Risks and kill criteria
@@ -412,11 +424,12 @@ the difference between G2 being closed and being hoped about.
 |---|---|---|
 | **Griffin lands before we open** | Any landing attempt inside a week of registration | **Do not open.** The prize is void on arrival (spec §IV.5). Pad check is a daily standing item from P0, not a one-time gate |
 | **No legal position** | Sep 23 with no counsel memo | **Kill, or restrict to the free game only.** The free pick game is legally clean, globally available, and still builds the list — it is a genuine fallback, not a consolation |
+| **The stack is unaudited** | P0 finding | Slip to Griffin's slip, or open with a capped per-wallet position and say so on the page. Do not quietly take uncapped money against an unaudited novel mechanism to hit a date |
 | **The market resolves in three weeks** | Griffin launches early and sticks the landing | Accept it and lean in — a fast, clean, undisputed first resolution is the best possible outcome for the mechanism. Have P7 and the Night Shift handoff ready *before* open, not after |
 | **Nothing lands for eighteen months** | Everything slips, as it has before | Rolling sunset with `setSunset`. Manufacture beats from launches and slips, not just landings. This is a real risk: five attempts, all historically slippery |
 | **A tipped lander, and everyone argues** | The likeliest resolution scenario on 2024–25 form | This is a feature if the rules held and a catastrophe if they did not — which is the entire reason G5 exists. Publish the scored checklist within 24 hours, before the argument sets |
 | **Open Field runs away with the odds** | Field implied odds above ~⅓ | `supersede` onto a new named roster (spec §V.7). Registry generations are a launch dependency |
-| **A named operator objects publicly** | Any | Roster disclaimer + the claim flow + the fact that listing is editorial. Having notified them first (G9) turns this from a story into a non-story |
+| **A named operator objects publicly** | Any | Roster disclaimer + the claim flow + the fact that listing is editorial. Having notified them first (G10) turns this from a story into a non-story |
 | **"MoonDAO is a gambling site" takes hold** | Press cycle | Lead every single piece with the scorecard and the seven-attempt record, never with the market. The board is the product; the market is a feature of the board |
 | **Nobody embeds the board** | 14 days after P3 with fewer than 3 commitments | The distribution thesis is wrong. Fall back to the co-stream and the free game, and do not spend further on the market |
 | **We win the audience and lose it** | Settlement | P8 is not optional. An audience acquired for a prize that has resolved is worthless by the following month |
