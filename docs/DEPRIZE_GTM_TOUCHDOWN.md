@@ -320,7 +320,7 @@ opening early. Plan for the tight case.
 |---|---|---|---|
 | **P0 — Can this run at all** | Sep 9 – Sep 23 | Counsel engaged (G2). Griffin pad watch stood up as a standing daily check (G1). G6 decision made and written down. Terms drafted for publication (G3) | **Counsel has given a written position and G6 is decided. If either fails, stop — the prize does not open.** |
 | **P1 — Freeze the irreversible** | Sep 23 – Oct 14 | Public review round on the rules (G5, §5.4). Rules v1.0 frozen and pinned. New CTF condition prepared with the **Safe** as oracle (G4). Mainnet deploy + funded Juicebox project (G7). Terms live (G3). Roster notified under embargo (G9) | Rules frozen, oracle is the Safe, mainnet registered in `DRAFT`, Terms return 200 |
-| **P2 — Build the two assets** *(parallel with P1)* | Sep 23 – Oct 21 | The Board (§5.1) and Call the Landing (§5.2). Scorecard page. Odds wire. Onboarding path smoke-tested end to end | Board renders from mainnet data; a stranger can complete a free pick in under 60 seconds |
+| **P2 — Build the two assets** *(parallel with P1)* | Sep 23 – Oct 21 | The Board (§5.1) and Call the Landing (§5.2). Scorecard page. Odds wire. **Wire the existing onramp into `BetModal`** — see §8 | Board renders from mainnet data; a stranger can complete a free pick in under 60 seconds; a stranger holding no ETH can place a bet without leaving the site |
 | **P3 — Seed distribution under embargo** | Oct 14 – Oct 28 | Board given to 10–15 space writers and 3–5 creators *before* it is public, with the scorecard as the story. Outsider mainnet rehearsal (G8). Community soft-open | ≥5 embeds committed; one outsider has completed bet → resolve → redeem on Arbitrum |
 | **P4 — Open** | ~Nov 1 | Remove the access gate. Board goes public and embeddable. Free game opens. Press. First bets | Griffin is not inside a landing window that morning (**recheck the pad — G1 is a daily check, not a one-time one**) |
 | **P5 — The race** | Open → landing | Odds wire on every slip and every launch. A content beat per launch, not just per landing. Weekly scorecard updates. Creator co-streams booked in advance of each landing attempt | Odds move at least weekly; if the chart flatlines for 30 days, pull an event forward |
@@ -378,7 +378,7 @@ large and nobody cites us, we ran a raffle.
 | Access gate removal | `lib/gate/access.ts`, `middleware.ts` | Drop the `/deprize` prefix at P4 — **this is the literal launch action** |
 | Terms page | Draft at `ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md`; published URL **404s** | Publish (G3) |
 | Mainnet Touchdown | Arbitrum registry/mint/fee-router/redeem deployed; no Touchdown | Register, new condition with Safe oracle, JB project, seed LMSR (G4, G7) |
-| Onboarding | Privy; bets in ETH on Arbitrum | **Test the cold-start path end to end.** If a new user needs to already hold ETH on Arbitrum, most of the funnel dies at the last step — this is the highest-risk unknown in the plan |
+| **Onramp in the bet flow** | Coinbase Onramp and MoonPay both exist (`lib/coinbase/`, `lib/privy/hooks/useMoonPay`) and the Launchpad already uses `lib/mission/useOnrampFlow`. **`BetModal` uses none of them** — an underfunded user is told "Lower your bet or add funds" and the funnel ends there | **Wire the existing onramp into `BetModal`.** Everything acquired by §5.1 and §5.2 arrives without ETH on Arbitrum, so this dead end is where the campaign leaks. The pattern is already proven one flow over |
 | Atlas binding | `shared-next-landing` bound to Sepolia #22 | Rebind to the mainnet id |
 
 ---
