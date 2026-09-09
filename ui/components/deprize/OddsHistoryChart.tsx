@@ -3,6 +3,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceDot,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -18,6 +19,8 @@ import {
 
 export type { OddsSample }
 
+export type OddsMarker = { t: number; index: number }
+
 type Props = {
   history: OddsSample[]
   labels: string[]
@@ -25,6 +28,10 @@ type Props = {
   height?: number
   /** Anchor the X domain to the market open time (ms since epoch). */
   domainStartMs?: number
+  /** One dot per on-chain trade, drawn on the traded outcome's line. */
+  markers?: OddsMarker[]
+  /** True while the on-chain history is still loading. */
+  loading?: boolean
 }
 
 export default function OddsHistoryChart({
@@ -33,10 +40,12 @@ export default function OddsHistoryChart({
   colors,
   height = 220,
   domainStartMs,
+  markers = [],
+  loading = false,
 }: Props) {
   const outcomeCount = labels.length
 
-  const { data, tMin, tMax, ticks, spanMs } = useMemo(() => {
+  const { data, tMin, tMax, ticks, spanMs, dots } = useMemo(() => {
     if (!history.length) {
       return {
         data: [] as Record<string, number>[],
@@ -44,6 +53,7 @@ export default function OddsHistoryChart({
         tMax: 0,
         ticks: [] as number[],
         spanMs: 0,
+        dots: [] as { t: number; v: number; index: number }[],
       }
     }
 
@@ -56,8 +66,24 @@ export default function OddsHistoryChart({
       return row
     })
 
-    return { data: rows, ...domain }
-  }, [history, outcomeCount, domainStartMs])
+    // Marker y-value = the traded outcome's probability right after the trade
+    // (the latest sample at or before the marker time).
+    const sorted = [...history].sort((a, b) => a.t - b.t)
+    const dots = markers
+      .map((m) => {
+        let v: number | undefined
+        for (const s of sorted) {
+          if (s.t <= m.t) v = s.p[m.index]
+          else break
+        }
+        return v === undefined || !Number.isFinite(v)
+          ? null
+          : { t: Math.max(m.t, domain.tMin), v, index: m.index }
+      })
+      .filter((d): d is { t: number; v: number; index: number } => d !== null)
+
+    return { data: rows, dots, ...domain }
+  }, [history, outcomeCount, domainStartMs, markers])
 
   if (data.length < 2) {
     return (
@@ -65,8 +91,7 @@ export default function OddsHistoryChart({
         className="flex items-center justify-center text-gray-500 text-xs text-center px-4"
         style={{ height }}
       >
-        Odds history will plot here as the market moves. Samples persist across
-        visits, so the line grows from market open to now.
+        {loading ? 'Loading odds…' : 'No trades yet.'}
       </div>
     )
   }
@@ -120,6 +145,18 @@ export default function OddsHistoryChart({
             dot={false}
             isAnimationActive={false}
             connectNulls
+          />
+        ))}
+        {dots.map((d, i) => (
+          <ReferenceDot
+            key={`m${i}`}
+            x={d.t}
+            y={d.v}
+            r={3.5}
+            fill={colors[d.index % colors.length]}
+            stroke="#0b1220"
+            strokeWidth={1.5}
+            isFront
           />
         ))}
       </LineChart>

@@ -36,15 +36,17 @@ import {
   shouldSurfaceResolution,
   UNIT,
 } from '@/lib/deprize/constants'
-import { fmt } from '@/lib/deprize/format'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { buildAmounts } from '@/lib/deprize/quote'
+import { rankOutcomes } from '@/lib/deprize/rank-outcomes'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 import { formatBettingCloses, isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
+import { useDePrizeActivity } from '@/lib/deprize/useDePrizeActivity'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
-import EthUsd from '@/components/deprize/EthUsd'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
+import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
+import EthUsd from '@/components/deprize/EthUsd'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -56,6 +58,8 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import BetModal from '@/components/deprize/BetModal'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DePrizeAdminPanel from '@/components/deprize/DePrizeAdminPanel'
+import DePrizePositionPanel from '@/components/deprize/DePrizePositionPanel'
+import DePrizeQuestionCard from '@/components/deprize/DePrizeQuestionCard'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import DePrizeTeamLink, {
   useDePrizeTeamName,
@@ -66,6 +70,15 @@ import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryChart'), {
   ssr: false,
 })
+
+const CARD =
+  'p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg'
+
+const EXPLORER_TX: Record<string, string> = {
+  sepolia: 'https://sepolia.etherscan.io/tx/',
+  arbitrum: 'https://arbiscan.io/tx/',
+  'arbitrum-sepolia': 'https://sepolia.arbiscan.io/tx/',
+}
 
 function outcomeDisplayName(
   index: number,
@@ -133,13 +146,7 @@ function DePrizeDetailContent() {
   // build-time default — otherwise switching networks never re-queries DePrize.
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
-  const namedRaceOutcomes = raceBinding?.outcomes.filter((o) => !o.field) ?? []
-  const anyOfficialCompetitor = namedRaceOutcomes.some((o) =>
-    isCompetitorClaimed(o)
-  )
-  const anyUnofficialCompetitor = namedRaceOutcomes.some(
-    (o) => !isCompetitorClaimed(o)
-  )
+  const raceGoal = raceBinding ? sharedGoalById(SEED_ATLAS, raceBinding.sharedGoalId) : undefined
   const generationNumber = getDePrizeGenerationNumber(chainSlug, deprizeId)
   const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
@@ -164,6 +171,15 @@ function DePrizeDetailContent() {
     registryState: deprize?.state,
   })
 
+  const [refreshNonce, setRefreshNonce] = useState(0)
+  const activity = useDePrizeActivity({
+    deprizeId,
+    marketAddress: market.marketAddress,
+    chain,
+    refreshNonce,
+  })
+  const odds = useOddsHistory({ market, activity })
+
   const region = useRegionRestriction()
   // Pass a plain number: useRead JSON.stringify's its params for memoization,
   // which throws on bigint. JB project ids are small, so Number() is safe.
@@ -177,10 +193,8 @@ function DePrizeDetailContent() {
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
 
-  const [refreshNonce, setRefreshNonce] = useState(0)
   const [nativeBalance, setNativeBalance] = useState<number | undefined>()
   const [sellQuotes, setSellQuotes] = useState<Map<number, number>>(new Map())
-  const [costBasis, setCostBasis] = useState<Record<number, number>>({})
   const [betIndex, setBetIndex] = useState<number | null>(null)
   const [exitIndex, setExitIndex] = useState<number | null>(null)
 
@@ -271,78 +285,16 @@ function DePrizeDetailContent() {
     }
   }, [userAddress, readChain, refreshNonce])
 
-  // Cost basis (per market + wallet) for profit display.
-  const costStorageKey = useMemo(
-    () =>
-      market.marketAddress && userAddress
-        ? `deprize:costBasis:v1:${market.marketAddress}:${userAddress}`
-        : null,
-    [market.marketAddress, userAddress],
-  )
-  useEffect(() => {
-    if (!costStorageKey || typeof window === 'undefined') {
-      setCostBasis({})
-      return
-    }
-    try {
-      const raw = window.localStorage.getItem(costStorageKey)
-      setCostBasis(raw ? (JSON.parse(raw) as Record<number, number>) : {})
-    } catch {
-      setCostBasis({})
-    }
-  }, [costStorageKey])
-  const persistCostBasis = useCallback(
-    (next: Record<number, number>) => {
-      if (costStorageKey && typeof window !== 'undefined') {
-        try {
-          window.localStorage.setItem(costStorageKey, JSON.stringify(next))
-        } catch {
-          /* ignore */
-        }
-      }
-    },
-    [costStorageKey],
-  )
-  const addCostBasis = useCallback(
-    (index: number, deltaEth: number) => {
-      setCostBasis((prev) => {
-        const next = { ...prev, [index]: Math.max(0, (prev[index] ?? 0) + deltaEth) }
-        persistCostBasis(next)
-        return next
-      })
-    },
-    [persistCostBasis],
-  )
-  const resetCostBasis = useCallback(
-    (index: number) => {
-      setCostBasis((prev) => {
-        const next = { ...prev, [index]: 0 }
-        persistCostBasis(next)
-        return next
-      })
-    },
-    [persistCostBasis],
-  )
-  const clearCostBasis = useCallback(() => {
-    setCostBasis({})
-    if (costStorageKey && typeof window !== 'undefined') {
-      try {
-        window.localStorage.removeItem(costStorageKey)
-      } catch {
-        /* ignore */
-      }
-    }
-  }, [costStorageKey])
-
+  // After a tx, events land a block or two later: refresh now, soon, and later.
   const refreshAll = useCallback(() => {
-    market.refresh()
-    refreshRegistry()
-    setRefreshNonce((n) => n + 1)
-    setTimeout(() => {
+    const tick = () => {
       market.refresh()
       refreshRegistry()
       setRefreshNonce((n) => n + 1)
-    }, 2500)
+    }
+    tick()
+    setTimeout(tick, 2500)
+    setTimeout(tick, 8000)
   }, [market, refreshRegistry])
 
   // Live sell quotes for held outcomes while the market is trading.
@@ -404,20 +356,39 @@ function DePrizeDetailContent() {
     !tradingHalted &&
     market.stage === MarketStage.Running
 
-  // Moon Base Zero "Back this team" deep-links here with ?outcome=N.
+  // The Back button is also the connect entry point.
+  const handleBet = useCallback(
+    (index: number) => {
+      if (!userAddress) {
+        login()
+        return
+      }
+      setBetIndex(index)
+    },
+    [userAddress, login],
+  )
+
+  // Moon Base Zero "Back this team" deep-links here with ?outcome=N. Wait for
+  // the market + chart to settle so the layout above the card stops shifting.
+  const [deepLinkHandled, setDeepLinkHandled] = useState(false)
   useEffect(() => {
-    if (!router.isReady || numOutcomes <= 0) return
+    if (deepLinkHandled || !router.isReady || numOutcomes <= 0) return
+    if (market.loading || odds.loading) return
     const raw = router.query.outcome
     if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return
     const idx = Number(raw)
     if (idx < 0 || idx >= numOutcomes) return
+    setDeepLinkHandled(true)
     const el = document.getElementById(`deprize-outcome-${idx}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     if (userAddress && bettingAllowed) setBetIndex(idx)
   }, [
+    deepLinkHandled,
     router.isReady,
     router.query.outcome,
     numOutcomes,
+    market.loading,
+    odds.loading,
     userAddress,
     bettingAllowed,
   ])
@@ -434,7 +405,7 @@ function DePrizeDetailContent() {
     })
   const showRefundVector = showResolved && market.isRefundVector
 
-  const { effectiveDescription, statusLabelOverride } = deprize
+  const { bettingBlockedReason, statusLabelOverride } = deprize
     ? reconcileBettingStatus({
         bettingOpen: deprize.bettingOpen,
         marketStage: market.stage,
@@ -442,7 +413,7 @@ function DePrizeDetailContent() {
         registryState: deprize.state,
         marketBound,
       })
-    : { effectiveDescription: undefined, statusLabelOverride: undefined }
+    : { bettingBlockedReason: undefined, statusLabelOverride: undefined }
 
   // Prefer the registry's winning team id (NFT id); fall back to the CTF
   // payout slot → teamIds mapping once resolution is surfaced.
@@ -462,6 +433,52 @@ function DePrizeDetailContent() {
     if (!bound.startsWith('Team #')) return bound
     return rosterNames[o.index] || bound
   })
+
+  // One color per outcome, shared by cards, chart lines and the position panel.
+  // Claimed listings get their brand color; everything else gets a distinct
+  // palette color (consent gates branding, not legibility — the cards are the
+  // chart's legend).
+  const outcomeColors = useMemo(
+    () =>
+      Array.from({ length: numOutcomes }, (_, i) => {
+        const binding = raceBinding?.outcomes[i]
+        const fallback = OUTCOME_COLORS[i % OUTCOME_COLORS.length]
+        if (binding?.field || !binding || !isCompetitorClaimed(binding)) return fallback
+        const project = binding.projectId ? projectById(SEED_ATLAS, binding.projectId) : undefined
+        const org = project ? orgById(SEED_ATLAS, project.orgId) : undefined
+        return orgColor(org) || fallback
+      }),
+    [numOutcomes, raceBinding],
+  )
+
+  // Display order only — `market.outcomes` stays contract-index aligned.
+  const rankedOutcomes = useMemo(
+    () =>
+      rankOutcomes(market.outcomes, {
+        isField: (i) => !!raceBinding?.outcomes[i]?.field,
+        winningIndex: showResolved && market.winningIndex >= 0 ? market.winningIndex : undefined,
+      }),
+    [market.outcomes, raceBinding, showResolved, market.winningIndex],
+  )
+
+  const redeemValues = useMemo(() => {
+    const m = new Map<number, number>()
+    if (!showResolved) return m
+    for (const o of market.outcomes) {
+      if (o.balanceWei === undefined) continue
+      m.set(
+        o.index,
+        Number(
+          positionRedeemValue(
+            o.balanceWei,
+            market.payoutNums[o.index] ?? 0n,
+            market.payoutDen ?? 0n,
+          ),
+        ) / Number(UNIT),
+      )
+    }
+    return m
+  }, [showResolved, market.outcomes, market.payoutNums, market.payoutDen])
 
   const shellTitle =
     knownCompetition && deprizeId !== undefined
@@ -527,43 +544,56 @@ function DePrizeDetailContent() {
     )
   }
 
+  // "Open" next to a live market says nothing; badge only when something is off.
+  const abnormalStatus = !!bettingBlockedReason && !bettingBlockedReason.startsWith('Loading')
+  const showBadge = abnormalStatus || deprize.state !== DePrizeState.OPEN
+  const explorerTxBase = EXPLORER_TX[chainSlug] ?? 'https://etherscan.io/tx/'
+  const hasLineage =
+    deprize.state === DePrizeState.SUPERSEDED || competition.supersedes !== undefined
+
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
       <div className="flex flex-col gap-4 w-full max-w-[860px] mx-auto">
-        {/* Compact header — title + prize stats only. Copy lives below the fold. */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
+        {/* Header — name, id, status only when it isn't the normal OPEN state, stats. */}
+        <div className={CARD}>
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
               <h1 className="text-white font-GoodTimes text-lg sm:text-xl">
-                {knownCompetition
-                  ? `DePrize #${deprizeId} — ${competition.title}`
-                  : `DePrize #${deprizeId}`}
+                {knownCompetition ? competition.title : `DePrize #${deprizeId}`}
               </h1>
-              {deprize && (
+              {knownCompetition && (
+                <span className="text-xs font-mono text-gray-500">#{deprizeId}</span>
+              )}
+              {showBadge && (
                 <StateBadge
                   state={deprize.state}
-                  labelOverride={statusLabelOverride}
-                  toneOverride={statusLabelOverride ? 'amber' : undefined}
+                  labelOverride={abnormalStatus ? statusLabelOverride : undefined}
+                  toneOverride={abnormalStatus ? 'amber' : undefined}
                 />
               )}
-              {knownCompetition && generationNumber > 1 && (
-                <span className="px-3 py-1 rounded-full text-xs font-medium border bg-white/10 text-gray-200 border-white/20">
-                  Generation {generationNumber}
-                </span>
-              )}
             </div>
-            <Link
-              href="/deprize"
-              className="shrink-0 text-sm text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded"
-            >
-              ← All prizes
-            </Link>
+            <div className="flex items-center gap-4 shrink-0 text-sm">
+              {raceGoal && (
+                <Link
+                  href={`/moonbase?race=${raceGoal.id}`}
+                  className="text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded"
+                >
+                  Open in Moon Base Zero
+                </Link>
+              )}
+              <Link
+                href="/deprize"
+                className="text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded"
+              >
+                ← All prizes
+              </Link>
+            </div>
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-3">
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat
-              label="Prize pool"
+              label="Prize pool · to winner"
               href={launchpad.missionHref}
-              title={launchpad.missionHref ? 'Open the launchpad prize pool' : undefined}
+              title="Paid to the winning team when the race settles. Separate from what bettors win — bettor payouts come from the betting market."
             >
               {jbProjectId !== undefined && !isLoadingFunding ? (
                 <EthUsd eth={Number(totalFunding) / Number(UNIT)} prize />
@@ -571,12 +601,39 @@ function DePrizeDetailContent() {
                 '—'
               )}
             </Stat>
-            <Stat label="Providers">{numOutcomes || '—'}</Stat>
+            <Stat
+              label="Total staked"
+              title="ETH bettors have put into the market. Winning shares are paid from this plus the market's seed funding."
+            >
+              {activity.loading && !activity.bets.length ? (
+                '…'
+              ) : activity.error ? (
+                '—'
+              ) : (
+                <EthUsd eth={activity.totalStakedEth} approx />
+              )}
+            </Stat>
+            <Stat label="Backers" title="Unique wallets that have backed a team.">
+              {activity.loading && !activity.bets.length ? (
+                '…'
+              ) : activity.error ? (
+                '—'
+              ) : (
+                <>
+                  {activity.backers}
+                  {activity.bets.length > 0 && (
+                    <span className="ml-1.5 text-xs font-normal text-gray-500">
+                      · {activity.bets.length} {activity.bets.length === 1 ? 'bet' : 'bets'}
+                    </span>
+                  )}
+                </>
+              )}
+            </Stat>
             <Stat
               label="Betting closes"
               title="After this time the market can be locked and moved to winner determination. Until then, betting stays open."
             >
-              {deprize && deprize.sunset > 0n ? formatBettingCloses(deprize.sunset) : '—'}
+              {deprize.sunset > 0n ? formatBettingCloses(deprize.sunset) : '—'}
             </Stat>
           </div>
           {winningTeamId > 0n && (
@@ -607,79 +664,61 @@ function DePrizeDetailContent() {
             )}
         </div>
 
-        {deprize?.cancellationPending && (
-          <Notice tone="red">
-            A cancellation has been announced for this DePrize. New bets are paused during the 7-day
-            notice window. If the cancellation goes through, all positions are refunded.
-          </Notice>
+        {/* Actionable status only (paused / no market / cancelling). */}
+        {bettingBlockedReason && !bettingBlockedReason.startsWith('Loading') && (
+          <Notice tone="amber">{bettingBlockedReason}</Notice>
         )}
 
-        {market.error && (
-          <Notice tone="red">
-            Couldn&apos;t fully load market data: {market.error}. Reload the page and try again.
-          </Notice>
+        {market.error && <Notice tone="red">Couldn&apos;t load market data — reload.</Notice>}
+
+        <DePrizeQuestionCard
+          tagline={competition.tagline}
+          description={raceGoal?.description}
+          criteria={raceGoal?.criteria}
+          moonbaseHref={raceGoal ? `/moonbase?race=${raceGoal.id}` : undefined}
+        />
+
+        {userAddress && numOutcomes > 0 && (
+          <DePrizePositionPanel
+            outcomes={market.outcomes}
+            labels={predictionLabels}
+            colors={outcomeColors}
+            bets={activity.bets}
+            sells={activity.sells}
+            user={userAddress}
+            sellQuotes={sellQuotes}
+            redeemValues={redeemValues}
+            resolved={showResolved}
+            isRefundVector={showRefundVector}
+            winningIndex={market.winningIndex}
+            tradingHalted={tradingHalted}
+            explorerTxBase={explorerTxBase}
+            onCashOut={(i) => setExitIndex(i)}
+            loading={activity.loading}
+          />
         )}
 
-        {/* Predictions — first thing after the title so the history is above the fold. */}
+        {/* Odds — the ranked cards below are the legend (same colors). */}
         {numOutcomes > 0 && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
-            <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-              <div>
-                <p className="text-white font-semibold">Predictions</p>
-                <p className="text-gray-500 text-xs">
-                  Implied chance since the market opened
-                  {market.marketStartMs !== undefined
-                    ? ` (${new Date(market.marketStartMs).toLocaleDateString()})`
-                    : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 flex-wrap">
-                {market.outcomes.map((o) => (
-                  <div key={o.index} className="flex items-center gap-1.5">
-                    <span
-                      className="inline-block w-2.5 h-2.5 rounded-full"
-                      style={{ background: OUTCOME_COLORS[o.index % OUTCOME_COLORS.length] }}
-                    />
-                    <span className="text-gray-300 text-xs">
-                      {predictionLabels[o.index]}
-                      {Number.isNaN(o.probability) ? '' : ` · ${fmt(o.probability, 0)}%`}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className={CARD}>
+            <p className="text-white font-semibold mb-3">Odds</p>
             <OddsHistoryChart
-              history={market.oddsHistory}
+              history={odds.history}
               labels={predictionLabels}
-              colors={OUTCOME_COLORS}
+              colors={outcomeColors}
               domainStartMs={market.marketStartMs}
+              markers={odds.markers}
+              loading={odds.loading}
             />
           </div>
         )}
 
-        {/* Competitors */}
+        {/* Competitors, ranked by chance; Open Field last. */}
         {numOutcomes > 0 && (
           <div className="flex flex-col gap-3">
             <h3 className="title-text-colors text-lg font-GoodTimes">Competitors</h3>
-            {(anyOfficialCompetitor || anyUnofficialCompetitor) && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 -mt-1">
-                {anyOfficialCompetitor && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-3 w-1 rounded-full bg-emerald-400" />
-                    Official participant
-                  </span>
-                )}
-                {anyUnofficialCompetitor && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="h-3 w-1 rounded-full bg-zinc-400" />
-                    Unofficial — not confirmed
-                  </span>
-                )}
-              </div>
-            )}
-            {market.outcomes.map((o) => {
-              const teamId = deprize?.teamIds[o.index] ?? 0n
-              const invested = costBasis[o.index] ?? 0
+            {rankedOutcomes.map((o) => {
+              const teamId = deprize.teamIds[o.index] ?? 0n
               const outcomeBinding = raceBinding?.outcomes[o.index]
               const isField = !!outcomeBinding?.field
               const atlasProject =
@@ -690,129 +729,50 @@ function DePrizeDetailContent() {
                 ? orgById(SEED_ATLAS, atlasProject.orgId)
                 : undefined
               const claimed = isCompetitorClaimed(outcomeBinding)
-              const redeemValueEth =
-                showResolved && o.balanceWei !== undefined
-                  ? Number(
-                      positionRedeemValue(
-                        o.balanceWei,
-                        market.payoutNums[o.index] ?? 0n,
-                        market.payoutDen ?? 0n,
-                      ),
-                    ) / Number(UNIT)
-                  : undefined
               return (
                 <div id={`deprize-outcome-${o.index}`} key={o.index}>
-                <DePrizeTeamCard
-                  outcome={o}
-                  teamId={teamId}
-                  teamContract={teamContract}
-                  color={
-                    isField
-                      ? OUTCOME_COLORS[o.index % OUTCOME_COLORS.length]
-                      : claimed
-                        ? orgColor(atlasOrg)
-                        : '#9ca3af'
-                  }
-                  loading={market.loading}
-                  resolved={showResolved}
-                  isRefundVector={showRefundVector}
-                  isWinningSlot={showResolved && o.index === market.winningIndex}
-                  redeemValueEth={redeemValueEth}
-                  sellQuoteEth={sellQuotes.get(o.index)}
-                  investedEth={invested}
-                  bettingOpen={bettingAllowed}
-                  tradingHalted={tradingHalted}
-                  busy={false}
-                  userConnected={!!userAddress}
-                  onBet={(i) => setBetIndex(i)}
-                  onCashOut={(i) => setExitIndex(i)}
-                  isField={isField}
-                  withdrawn={!!withdrawnByTeamId[teamId.toString()]}
-                  hrefOverride={
-                    outcomeBinding?.projectId
-                      ? `/moonbase/${outcomeBinding.projectId}`
-                      : undefined
-                  }
-                  nameOverride={atlasOrg?.name || atlasProject?.name}
-                  imageOverride={claimed ? atlasOrg?.logoURI : undefined}
-                  unclaimed={!isField && !!outcomeBinding && !claimed}
-                  participation={
-                    isField || !outcomeBinding
-                      ? undefined
-                      : claimed
-                        ? 'official'
-                        : 'unofficial'
-                  }
-                />
+                  <DePrizeTeamCard
+                    outcome={o}
+                    teamId={teamId}
+                    teamContract={teamContract}
+                    color={outcomeColors[o.index]}
+                    loading={market.loading}
+                    resolved={showResolved}
+                    isRefundVector={showRefundVector}
+                    isWinningSlot={showResolved && o.index === market.winningIndex}
+                    bettingOpen={bettingAllowed}
+                    tradingHalted={tradingHalted}
+                    busy={false}
+                    userConnected={!!userAddress}
+                    onBet={handleBet}
+                    isField={isField}
+                    withdrawn={!!withdrawnByTeamId[teamId.toString()]}
+                    hrefOverride={
+                      outcomeBinding?.projectId
+                        ? `/moonbase/${outcomeBinding.projectId}`
+                        : undefined
+                    }
+                    nameOverride={atlasOrg?.name || atlasProject?.name}
+                    imageOverride={claimed ? atlasOrg?.logoURI : undefined}
+                    unclaimed={!isField && !!outcomeBinding && !claimed}
+                    participation={
+                      isField || !outcomeBinding
+                        ? undefined
+                        : claimed
+                          ? 'official'
+                          : 'unofficial'
+                    }
+                  />
                 </div>
               )
             })}
           </div>
         )}
 
-        {/* Description — below the predictions and competitors. */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
-          <p className="text-gray-300 text-sm">{competition.tagline}</p>
-          {effectiveDescription && (
-            <p className="text-gray-500 text-sm mt-2">{effectiveDescription}</p>
-          )}
-          {deprize?.state === DePrizeState.SUPERSEDED && (
-            <p className="text-amber-200/90 text-sm mt-2">
-              This generation was superseded
-              {competition.supersededBy
-                ? ` by DePrize #${competition.supersededBy}`
-                : ''}
-              . New bets are closed; you can still sell your position at the market price. Odds for
-              this race live on the current generation.
-              {competition.supersededBy && (
-                <>
-                  {' '}
-                  <Link
-                    href={`/deprize/${competition.supersededBy}`}
-                    className="underline underline-offset-2 hover:text-amber-100"
-                  >
-                    Open generation {generationNumber + 1}
-                  </Link>
-                </>
-              )}
-            </p>
-          )}
-          {competition.supersedes !== undefined && deprize?.state !== DePrizeState.SUPERSEDED && (
-            <p className="text-gray-500 text-xs mt-2">
-              Continues from{' '}
-              <Link
-                href={`/deprize/${competition.supersedes}`}
-                className="text-indigo-300/90 underline underline-offset-2 hover:text-indigo-200"
-              >
-                generation {generationNumber - 1} (DePrize #{competition.supersedes})
-              </Link>
-              . Legacy positions remain sellable there until the race settles.
-            </p>
-          )}
-          {isRaceBindingComplete(raceBinding?.outcomes) && (
-            <p className="text-gray-500 text-xs leading-relaxed mt-3">{ROSTER_DISCLAIMER}</p>
-          )}
-        </div>
-
         {(region.isRestricted || (!region.isLoading && !region.isError && !region.country)) && (
           <Notice tone="amber">
-            Betting isn&apos;t available in your region. You can still view live odds and, if you
-            hold a position, claim or cash out.
+            Betting isn&apos;t available in your region. You can view odds, cash out and claim.
           </Notice>
-        )}
-
-        {!userAddress && bettingAllowed && (
-          <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between gap-3 flex-wrap">
-            <p className="text-indigo-100 text-sm font-medium">
-              Connect a wallet to back a team, cash out, or claim.
-            </p>
-            <button
-              onClick={() => login()}
-              className="px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-semibold transition-all"
-            >
-              Connect Wallet
-            </button>
-          </div>
         )}
 
         {/* Claim / refund */}
@@ -824,36 +784,68 @@ function DePrizeDetailContent() {
             resolved={showResolved}
             isRefundVector={showRefundVector}
             winningTeamName={winningTeamName || undefined}
-            jbProjectId={deprize?.jbProjectId}
+            jbProjectId={deprize.jbProjectId}
             refreshNonce={refreshNonce}
-            onDone={() => {
-              clearCostBasis()
-              refreshAll()
-            }}
+            onDone={refreshAll}
           />
         )}
 
-        {/* Admin */}
-        {deprize && (
-          <DePrizeAdminPanel
-            deprizeId={deprizeId}
-            chain={chain}
-            account={account}
-            state={deprize.state}
-            teamIds={deprize.teamIds}
-            cancellationPending={deprize.cancellationPending}
-            marketAddress={market.marketAddress}
-            numOutcomes={numOutcomes}
-            stage={market.stage}
-            resolved={market.resolved}
-            marketFeesWei={market.marketFeesWei}
-            onDone={refreshAll}
-          />
+        {/* Admin (renders nothing for non-admins) */}
+        <DePrizeAdminPanel
+          deprizeId={deprizeId}
+          chain={chain}
+          account={account}
+          state={deprize.state}
+          teamIds={deprize.teamIds}
+          cancellationPending={deprize.cancellationPending}
+          marketAddress={market.marketAddress}
+          numOutcomes={numOutcomes}
+          stage={market.stage}
+          resolved={market.resolved}
+          marketFeesWei={market.marketFeesWei}
+          onDone={refreshAll}
+        />
+
+        {/* Lineage + roster footnote */}
+        {(hasLineage || isRaceBindingComplete(raceBinding?.outcomes)) && (
+          <div className="flex flex-col gap-1.5 px-1">
+            {deprize.state === DePrizeState.SUPERSEDED && (
+              <p className="text-xs text-amber-200/90">
+                Superseded
+                {competition.supersededBy ? (
+                  <>
+                    {' '}by{' '}
+                    <Link
+                      href={`/deprize/${competition.supersededBy}`}
+                      className="underline underline-offset-2 hover:text-amber-100"
+                    >
+                      DePrize #{competition.supersededBy}
+                    </Link>
+                  </>
+                ) : null}
+                {' '}— new bets happen there. You can still sell here.
+              </p>
+            )}
+            {competition.supersedes !== undefined && deprize.state !== DePrizeState.SUPERSEDED && (
+              <p className="text-xs text-gray-500">
+                Generation {generationNumber} · continues from{' '}
+                <Link
+                  href={`/deprize/${competition.supersedes}`}
+                  className="text-indigo-300/90 underline underline-offset-2 hover:text-indigo-200"
+                >
+                  #{competition.supersedes}
+                </Link>
+              </p>
+            )}
+            {isRaceBindingComplete(raceBinding?.outcomes) && (
+              <p className="text-[11px] text-gray-600 leading-relaxed">{ROSTER_DISCLAIMER}</p>
+            )}
+          </div>
         )}
       </div>
 
       {/* Bet modal */}
-      {betIndex !== null && deprize && market.marketAddress && account && (
+      {betIndex !== null && market.marketAddress && account && (
         <BetModal
           deprizeId={deprizeId}
           outcomeIndex={betIndex}
@@ -867,10 +859,7 @@ function DePrizeDetailContent() {
           account={account}
           spendableEth={spendable}
           onClose={() => setBetIndex(null)}
-          onDone={(index, costEth) => {
-            addCostBasis(index, costEth)
-            refreshAll()
-          }}
+          onDone={refreshAll}
         />
       )}
 
@@ -887,10 +876,7 @@ function DePrizeDetailContent() {
           chain={chain}
           account={account}
           onClose={() => setExitIndex(null)}
-          onDone={() => {
-            resetCostBasis(exitIndex)
-            refreshAll()
-          }}
+          onDone={refreshAll}
         />
       )}
     </Shell>
