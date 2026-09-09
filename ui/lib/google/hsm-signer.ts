@@ -11,7 +11,7 @@
  * - Proxies unknown JSON-RPC methods to the configured RPC node
  */
 import { KeyManagementServiceClient } from '@google-cloud/kms'
-import { utils, providers } from 'ethers'
+import { BigNumber, providers, utils } from 'ethers'
 import {
   arrayify,
   hexlify,
@@ -19,6 +19,7 @@ import {
   toUtf8Bytes,
   joinSignature,
 } from 'ethers/lib/utils'
+import { resolveEip1559FeesFromProvider } from '@/lib/rpc/eip1559Fees'
 import { arbitrum, sepolia } from '../rpc/chains'
 
 // -----------------------------
@@ -324,6 +325,7 @@ export async function sendTransaction(
   const nonce = await provider.getTransactionCount(from)
   const fee = await provider.getFeeData()
   const network = await provider.getNetwork()
+  const eip1559 = await resolveHsmEip1559Fees(provider, tx, fee)
 
   // Estimate gas if not provided
   let gasLimit = tx.gasLimit
@@ -350,8 +352,8 @@ export async function sendTransaction(
     type: 2,
     chainId: network.chainId,
     gasLimit,
-    maxFeePerGas: tx.maxFeePerGas ?? fee.maxFeePerGas ?? fee.gasPrice,
-    maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? fee.maxPriorityFeePerGas,
+    maxFeePerGas: eip1559.maxFeePerGas,
+    maxPriorityFeePerGas: eip1559.maxPriorityFeePerGas,
   }
 
   console.log('HSM sendTransaction - Final transaction:', {
@@ -412,6 +414,41 @@ function getHSMProvider(): providers.JsonRpcProvider {
   )
 }
 
+function toFeeBigNumber(value: bigint): BigNumber {
+  return BigNumber.from(value.toString())
+}
+
+async function resolveHsmEip1559Fees(
+  provider: providers.Provider,
+  tx: { maxFeePerGas?: unknown; maxPriorityFeePerGas?: unknown },
+  fee: providers.FeeData
+): Promise<{ maxFeePerGas: BigNumber; maxPriorityFeePerGas?: BigNumber }> {
+  try {
+    const resolved = await resolveEip1559FeesFromProvider(provider)
+    if (resolved.maxFeePerGas > 0n) {
+      return {
+        maxFeePerGas: toFeeBigNumber(resolved.maxFeePerGas),
+        maxPriorityFeePerGas: toFeeBigNumber(resolved.maxPriorityFeePerGas),
+      }
+    }
+  } catch (error) {
+    console.warn(
+      'HSM EIP-1559 fee resolve failed, falling back to provider fee data:',
+      error
+    )
+  }
+  return {
+    maxFeePerGas: (tx.maxFeePerGas as BigNumber | undefined) ??
+      fee.maxFeePerGas ??
+      fee.gasPrice ??
+      BigNumber.from(0),
+    maxPriorityFeePerGas:
+      (tx.maxPriorityFeePerGas as BigNumber | undefined) ??
+      fee.maxPriorityFeePerGas ??
+      undefined,
+  }
+}
+
 // Sign a fully-populated EIP-1559 tx object with the KMS key and return the
 // serialized raw tx, recovering the correct `v`. Shared by the single-send
 // and batch-send paths so their signing logic can't drift apart.
@@ -461,6 +498,7 @@ export async function sendTransactionBatch(
   const from = (await getPublicKey(cfg)).address
   const fee = await provider.getFeeData()
   const network = await provider.getNetwork()
+  const eip1559 = await resolveHsmEip1559Fees(provider, {}, fee)
   let nonce = await provider.getTransactionCount(from, 'pending')
 
   const hashes: string[] = []
@@ -491,8 +529,8 @@ export async function sendTransactionBatch(
         type: 2,
         chainId: network.chainId,
         gasLimit,
-        maxFeePerGas: fee.maxFeePerGas ?? fee.gasPrice,
-        maxPriorityFeePerGas: fee.maxPriorityFeePerGas ?? undefined,
+        maxFeePerGas: eip1559.maxFeePerGas,
+        maxPriorityFeePerGas: eip1559.maxPriorityFeePerGas,
       }
 
       const raw = await signSerializedTx(cfg, finalTx, from)
