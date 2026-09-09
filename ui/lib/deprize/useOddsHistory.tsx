@@ -47,9 +47,14 @@ export function useOddsHistory(args: {
       .filter((t) => Number.isFinite(t.timestampMs))
       .map((t) => ({ timestampMs: t.timestampMs, amounts: t.amounts }))
     const fundingChanges = activity.fundingChanges.filter((f) => Number.isFinite(f.timestampMs))
+    // `market.fundingEth` is the funding *now*. The replayed changes are the
+    // ones inside the scanned window, so back them out to get the funding at
+    // the start of the window; otherwise each change would count twice.
+    const replayedDelta = fundingChanges.reduce((s, f) => s + f.deltaEth, 0)
+    const initialFundingEth = Math.max(0, (market.fundingEth as number) - replayedDelta)
     const { history, markers } = rebuildOddsHistory({
       marketStartMs: market.marketStartMs as number,
-      initialFundingEth: market.fundingEth as number,
+      initialFundingEth,
       trades,
       fundingChanges,
       numOutcomes: market.outcomes.length,
