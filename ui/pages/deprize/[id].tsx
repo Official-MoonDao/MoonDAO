@@ -597,7 +597,7 @@ function DePrizeDetailContent() {
             <Stat
               label="Prize pool · to winner"
               href={launchpad.missionHref}
-              title="Paid to the winning team when the race settles. Separate from what bettors win — bettor payouts come from the betting market."
+              title="Paid to the winning competitor when the race settles. Separate from what bettors win — bettor payouts come from the betting market."
             >
               {jbProjectId !== undefined && !isLoadingFunding ? (
                 <EthUsd eth={Number(totalFunding) / Number(UNIT)} prize />
@@ -617,7 +617,7 @@ function DePrizeDetailContent() {
                 <EthUsd eth={activity.totalStakedEth} approx />
               )}
             </Stat>
-            <Stat label="Backers" title="Unique wallets that have backed a team.">
+            <Stat label="Backers" title="Unique wallets that have backed a competitor.">
               {activity.loading && !activity.bets.length ? (
                 '…'
               ) : activity.error ? (
@@ -705,7 +705,11 @@ function DePrizeDetailContent() {
         {/* Odds — the ranked cards below are the legend (same colors). */}
         {numOutcomes > 0 && (
           <div className={CARD}>
-            <p className="text-white font-semibold mb-3">Odds</p>
+            <p className="text-white font-semibold mb-3">
+              {!activity.loading && !activity.error && activity.bets.length === 0
+                ? 'Starting odds — no bets yet'
+                : 'Odds'}
+            </p>
             <OddsHistoryChart
               history={odds.history}
               labels={predictionLabels}
@@ -757,6 +761,14 @@ function DePrizeDetailContent() {
                         : undefined
                     }
                     nameOverride={atlasOrg?.name || atlasProject?.name}
+                    vehicleLabel={outcomeBinding?.vehicleLabel}
+                    backLabel={
+                      isField
+                        ? 'Back the field'
+                        : atlasOrg?.name || atlasProject?.name
+                          ? `Back ${atlasOrg?.name || atlasProject?.name}`
+                          : undefined
+                    }
                     imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                     unclaimed={!isField && !!outcomeBinding && !claimed}
                     participation={

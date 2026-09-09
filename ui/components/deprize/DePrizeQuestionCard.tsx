@@ -28,44 +28,38 @@ function CriteriaList({ criteria }: { criteria: CapabilityCriterion[] }) {
 }
 
 /**
- * What the prize is about, above the fold: the question, the one-paragraph
- * description, and the criteria a competitor must meet to win.
+ * One-line question above the fold. Description + win criteria sit in a
+ * single collapsed accordion so the odds chart and competitors stay visible.
  */
 export default function DePrizeQuestionCard({ tagline, description, criteria, moonbaseHref }: Props) {
   const hasCriteria = !!criteria && criteria.length > 0
-  // Taglines carry a trailing call to action ("Back a team — every bet grows
-  // the prize pool."). Only the question belongs here.
+  const hasDetails = !!description || hasCriteria
+  // Taglines carry a trailing call to action ("Back a competitor — every bet
+  // grows the prize pool."). Only the question belongs here.
   const q = tagline.indexOf('?')
   const question = q >= 0 ? tagline.slice(0, q + 1) : tagline
   return (
     <div className={CARD}>
       <p className="text-white text-base font-semibold leading-snug">{question}</p>
-      {description && <p className="text-gray-400 text-sm mt-2">{description}</p>}
 
-      {hasCriteria && (
-        <>
-          {/* Always expanded on sm+; collapsible on phones to keep odds in view. */}
-          <div className="hidden sm:block mt-4">
-            <p className="text-white text-sm font-semibold mb-2">What counts as winning</p>
-            <CriteriaList criteria={criteria!} />
+      {hasDetails && (
+        <details className="mt-3 group">
+          <summary className="cursor-pointer list-none text-sm font-semibold text-white flex items-center justify-between gap-3">
+            <span>{hasCriteria ? 'What counts as winning' : 'About this prize'}</span>
+            <span className="text-gray-500 text-xs font-normal shrink-0">
+              {hasCriteria ? `${criteria!.length} criteria` : null}
+              <span className="ml-1 inline-block transition-transform group-open:rotate-180">▾</span>
+            </span>
+          </summary>
+          <div className="mt-3 flex flex-col gap-3">
+            {description && <p className="text-gray-400 text-sm">{description}</p>}
+            {hasCriteria && <CriteriaList criteria={criteria!} />}
           </div>
-          <details className="sm:hidden mt-3 group">
-            <summary className="cursor-pointer list-none text-sm font-semibold text-white flex items-center justify-between">
-              What counts as winning
-              <span className="text-gray-500 text-xs font-normal">
-                {criteria!.length} criteria
-                <span className="ml-1 inline-block transition-transform group-open:rotate-180">▾</span>
-              </span>
-            </summary>
-            <div className="mt-2">
-              <CriteriaList criteria={criteria!} />
-            </div>
-          </details>
-        </>
+        </details>
       )}
 
       {moonbaseHref && (
-        <p className="mt-4 text-xs">
+        <p className="mt-3 text-xs">
           <Link
             href={moonbaseHref}
             className="text-indigo-300/90 underline-offset-2 hover:underline hover:text-indigo-200"

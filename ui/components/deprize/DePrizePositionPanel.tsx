@@ -28,6 +28,16 @@ type Props = {
 const CARD =
   'p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg'
 
+function PnlSuffix({ pnl }: { pnl: number | undefined }) {
+  if (pnl === undefined || !Number.isFinite(pnl)) return null
+  return (
+    <span className={`ml-1.5 font-medium ${pnl >= 0 ? 'text-emerald-400/80' : 'text-rose-400/80'}`}>
+      (
+      <EthUsd eth={pnl} signed usdClassName="opacity-80 font-normal" />)
+    </span>
+  )
+}
+
 function Mini({ label, title, children }: { label: string; title?: string; children: React.ReactNode }) {
   return (
     <div>
@@ -141,7 +151,7 @@ export default function DePrizePositionPanel({
         </Mini>
         <Mini
           label={resolved ? 'Result' : 'If your pick wins'}
-          title={resolved ? undefined : 'Each share pays 1 ETH if its team is selected as the winner. Paid from the betting market, not the prize pool.'}
+          title={resolved ? undefined : 'Each share pays 1 ETH if this competitor is selected as the winner. Paid from the betting market, not the prize pool.'}
         >
           {resolved ? (
             isRefundVector ? 'Refund' : heldIdx.includes(winningIndex) ? 'Won' : 'Lost'
@@ -168,11 +178,26 @@ export default function DePrizePositionPanel({
                 />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{labels[index]}</p>
-                  <p className="text-xs text-gray-500 tabular-nums">
-                    {fmt(held, 4)} shares
-                    {pos.qtyBought > 0 && (
+                  <p className="text-xs text-gray-400 tabular-nums">
+                    {held > 0 && pos.heldCostEth > 0 ? (
                       <>
-                        {' · '}avg {fmt(pos.avgCostEth, 3)} ETH/share
+                        Your bet <EthUsd eth={pos.heldCostEth} />
+                        {value !== undefined && (
+                          <>
+                            {' · '}
+                            {resolved ? 'Claim' : 'Cash out'} <EthUsd eth={value} approx={!resolved} />
+                            <PnlSuffix pnl={value - pos.heldCostEth} />
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {fmt(held, 4)} shares
+                        {pos.qtyBought > 0 && (
+                          <>
+                            {' · '}avg {fmt(pos.avgCostEth, 3)} ETH/share
+                          </>
+                        )}
                       </>
                     )}
                   </p>

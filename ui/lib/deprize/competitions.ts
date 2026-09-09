@@ -48,6 +48,12 @@ export type DePrizeRaceOutcome = {
    * `fieldOdds`, never in `oddsByProjectId`.
    */
   field?: boolean
+  /**
+   * Optional vehicle / article name shown under the org on the live prize
+   * page (e.g. "Griffin Mission One"). Atlas `project.name` is often a
+   * family label ("Peregrine & Griffin Landers") and is the wrong line here.
+   */
+  vehicleLabel?: string
 }
 
 export type DePrizeRaceBinding = {
@@ -256,7 +262,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     21: {
       title: 'Touchdown',
       tagline:
-        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
       questionId: '0x18f9e4f8e5b291580b00bd23299194b169a66c3513229c5e16240e05d8520f17',
@@ -264,11 +270,11 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       raceLabel: 'Next lunar landing',
       supersededBy: 22,
       outcomes: [
-        { projectId: 'astrobotic-griffin', teamId: 601 },
-        { projectId: 'im-nova-c', teamId: 602 },
-        { projectId: 'firefly-blue-ghost', teamId: 603 },
-        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604 },
-        { projectId: 'cnsa-change-7', teamId: 605 },
+        { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
+        { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
+        { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
+        { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
@@ -277,7 +283,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     22: {
       title: 'Touchdown',
       tagline:
-        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
       questionId: '0x1ba1808c0a0d8a2bbc48462cd3a490e306695713e0cafd362d365c9db3f43513',
@@ -285,11 +291,11 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       raceLabel: 'Next lunar landing',
       supersedes: 21,
       outcomes: [
-        { projectId: 'astrobotic-griffin', teamId: 601 },
-        { projectId: 'im-nova-c', teamId: 602 },
-        { projectId: 'firefly-blue-ghost', teamId: 603 },
-        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604 },
-        { projectId: 'cnsa-change-7', teamId: 605 },
+        { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
+        { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
+        { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
+        { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },

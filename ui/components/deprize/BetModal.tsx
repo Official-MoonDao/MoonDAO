@@ -268,8 +268,9 @@ export default function BetModal({
             void/cancel; final resolution). Full detail in the DePrize Terms. */}
         <div className="text-amber-300/90 text-[11px] leading-snug space-y-1.5">
           <p>
-            You are buying outcome tokens for this team. If the team wins, they redeem for their
-            full share; if it loses, they are <span className="font-semibold">worth $0</span>. Only
+            You are buying outcome tokens for this competitor. If this competitor wins, they redeem
+            for their full share; if it loses, they are <span className="font-semibold">worth $0</span>.
+            Only
             bet what you can afford to lose. Read this DePrize&apos;s rules before betting —
             resolution is final and cannot be reversed.
           </p>

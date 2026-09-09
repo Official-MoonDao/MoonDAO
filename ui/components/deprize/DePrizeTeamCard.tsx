@@ -41,6 +41,13 @@ type DePrizeTeamCardProps = {
   hrefOverride?: string
   /** Atlas org display name, for competitors with no Team NFT. */
   nameOverride?: string
+  /** Vehicle / article shown under the org name (live prize page). */
+  vehicleLabel?: string
+  /**
+   * Live-page Back button copy, e.g. "Back Voyager Lunar Systems".
+   * Demo cards omit this and keep "Back this team".
+   */
+  backLabel?: string
   /** Atlas org logo. Suppressed when `unclaimed`. */
   imageOverride?: string
   /**
@@ -91,6 +98,8 @@ export default function DePrizeTeamCard({
   withdrawn = false,
   hrefOverride,
   nameOverride,
+  vehicleLabel,
+  backLabel,
   imageOverride,
   unclaimed = false,
   participation,
@@ -170,6 +179,9 @@ export default function DePrizeTeamCard({
             )}
           </div>
           {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
+          {!isField && vehicleLabel && (
+            <p className="text-xs text-gray-400 pl-12">{vehicleLabel}</p>
+          )}
           {withdrawn && !isField && (
             <p className="text-xs text-amber-400/90 pl-12">Withdrawn — sell only</p>
           )}
@@ -192,7 +204,9 @@ export default function DePrizeTeamCard({
             disabled={busy}
             className="rounded-xl shadow-purple-500/10"
           >
-            {!userConnected ? 'Connect to back' : isField ? 'Back the field' : 'Back this team'}
+            {!userConnected
+              ? 'Connect to back'
+              : backLabel ?? (isField ? 'Back the field' : 'Back this team')}
           </StandardButton>
         )}
       </div>
