@@ -10,11 +10,12 @@
 
 ## 0. The question asked first: what has to be true before we go public
 
-Nine things. Six of them are irreversible, and that is the whole reason for the ordering
-below. **Rules freeze at `open`. The CTF oracle is immutable once the condition is
-prepared. The outcome set can never be resized. A named roster cannot be un-named.** Every
-reversible marketing decision can be fixed next week; none of these can. So they go first,
-and nothing in Part III starts until they are closed.
+Ten things. Five of them can never be undone once the market opens, and that is the whole
+reason for the ordering below. **Rules freeze at `open`. The CTF oracle is immutable once
+the condition is prepared. The outcome set is frozen at `prepareCondition` and can never be
+resized. A named roster cannot be un-named. A prize that was already void when it opened
+stays void.** Every reversible marketing decision can be fixed next week; none of these
+can. So they go first, and nothing in the phase plan (§6) starts until they are closed.
 
 | # | Gate | Why it is a gate | Fails if |
 |---|---|---|---|
@@ -39,7 +40,7 @@ G7 is the one gate with a lead time we do not control. An audit engagement plus 
 period does not fit inside the seven weeks to 1 November. **If the stack is genuinely
 unaudited, that is the finding that reshapes this plan** — either the target slips to
 Griffin's slip, or Touchdown opens with a capped position size and says so plainly. Find
-out before anything else in Part I is scheduled.
+out before anything else in P1 is scheduled.
 
 ### Two of these deserve to be argued about now, not later
 
@@ -65,8 +66,8 @@ at the people who did the work. It is cheaper, more defensible against a ten-mon
 and it makes the pool chart — the thing we want people to look at — the actual headline.
 
 **G2 has a specific shape worth naming.** The geo gate blocks the EU, EEA and UK
-(`ui/lib/geo/index.ts`, 35 jurisdictions, on the order of 500M people) and default-denies unknown
-countries. **The United States is fully open.** That list was written for GDPR — for
+(`ui/lib/geo/index.ts`, 35 jurisdictions, on the order of 500M people) and default-denies
+unknown countries. **The United States is fully open.** That list was written for GDPR — for
 on-chain personal-data storage — and it is now doing duty as a gambling-restriction list.
 Those are different legal questions and their overlap is a coincidence. The good news is
 that the category is defensible: Kalshi self-certifies "Will Artemis II launch before…"
