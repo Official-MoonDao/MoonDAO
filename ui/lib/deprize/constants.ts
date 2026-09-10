@@ -64,7 +64,7 @@ export const ODDS_POLL_MS = 30000
 // DePrize legal documents. Terms / risk routes are published under
 // content/docs/Legal/DePrize/; privacy currently uses the site-wide policy.
 export const DEPRIZE_TERMS_URL = '/docs/Legal/DePrize/DePrize-Terms-and-Conditions'
-export const DEPRIZE_PRIVACY_URL = '/docs/privacy-policy'
+export const DEPRIZE_PRIVACY_URL = '/docs/Legal/Website-Privacy-Policy'
 export const DEPRIZE_RISK_DISCLOSURES_URL =
   '/docs/Legal/DePrize/DePrize-Risk-Disclosures-and-Disclaimers'
 // Bump when the published Terms change materially so the bet flow re-prompts.
