@@ -6,6 +6,8 @@ fee-hook/lib/
 xp/lib/contracts/
 contracts/lib/
 
-# Local audit notes — never commit
-AUDIT_FIXES_PROOF.local.md
-**/AUDIT_FIXES_PROOF.local.md
+# Local / private notes — never commit. Includes audit proofs and
+# counsel-style memos that must not land in this public repo.
+*.local.md
+**/*.local.md
+docs/DEPRIZE_LEGAL_ANALYSIS.md
