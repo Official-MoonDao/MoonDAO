@@ -25,7 +25,7 @@ can. So they go first, and nothing in the phase plan (§6) starts until they are
 | **G4** | **No single key controls the money** | **The top technical gate.** Verified on Arbitrum mainnet: `0x3c5e…E011` is simultaneously the CTF oracle, the `DePrizeRegistry` proxy owner, the `DePrizeMint` proxy owner, and — via `DePrizeFeeRouter`, which owns each LMSR market — the market owner. Both registries are UUPS proxies and `DePrizeRegistry.sol` records that the timelocked upgrade path is still "a later milestone." So one key can report the payout, upgrade either contract with no delay, and reach `withdrawFees`/`close` on the market. `const/config.ts` says to move the oracle to the admin Safe before a public prize, and that this requires preparing a **new condition** because the oracle is immutable once set | Any of oracle, registry owner, mint owner, or fee-router owner is still an EOA, or upgrades are untimelocked |
 | **G5** | **The win condition has survived an outside attack** | The spec's Part V is an explicit request for criticism that has not yet been answered. Test 3 (stable planned orientation) and Test 5 (confirmation for a CNSA landing) are the two clauses that decide who gets paid | Fewer than three qualified external reviewers have walked the last seven attempts against the five tests |
 | **G6** | **The purse exists, and we can say why** | $25,000 is **7.6% of MoonDAO's $327,851 unrestricted liquid assets** against ~10 months of runway. It also induces exactly zero behaviour from a company holding a $199.5M CLPS award | No funding source identified, or no answer to "so you're offering Blue Origin $25,000?" |
-| **G7** | **Exposure is bounded, by an audit or by a cap** | The pricing and custody math is **unmodified Gnosis CTF**, and the LMSR TWAP subclass is purely additive — it does not touch `trade()`, `calcNetCost()`, or collateral handling (§0.1). So the dependency argument mostly holds and a full audit is disproportionate. What is left is ~1,400 lines of our own routing and lifecycle glue, reviewed but not independently audited. That is a cap-it problem, not a stop-the-launch problem | Uncapped money is taken against unaudited glue **and** no per-wallet limit is enforced |
+| **G7** | **Exposure is bounded, by an audit or by a cap** | The pricing and custody math is **unmodified Gnosis CTF**, and the LMSR TWAP subclass is purely additive — it does not touch `trade()`, `calcNetCost()`, or collateral handling (§0.1). So the dependency argument mostly holds and a full audit is disproportionate. A focused audit of the glue ([`DEPRIZE_SECURITY_AUDIT.md`](./DEPRIZE_SECURITY_AUDIT.md)) found and fixed exactly one exploitable bug — a High in the `tradeWithTWAP` wrapper — which validates that the residual risk is our ~1,400 lines of glue, not the money-movers. **The fix requires redeploying the market from the fixed implementation** (the live clone is immutable). Still a cap-it problem, not a stop-the-launch problem, once redeployed | Uncapped money is taken against the glue **and** no per-wallet limit is enforced, **or the market is opened on the pre-fix clone** |
 | **G8** | **It is on mainnet and the money is real** | Touchdown is Sepolia-only. Pool: **0.0002 ETH.** Arbitrum has the registry, mint, fee router and redeem deployed but no Touchdown | Registered on a testnet, or a mainnet Juicebox project that has not been paid into |
 | **G9** | **One full mainnet rehearsal, by an outsider** | Every DePrize flow has been proved on Sepolia. None has been proved end-to-end with real money by someone who does not work here | No outsider has completed bet → sweep → resolve → redeem on Arbitrum |
 | **G10** | **The roster is notified, not asked** | Five real companies are market outcomes. Listing is editorial and does not require consent — `competitions.ts` removed the consent gate deliberately, on the grounds that it was stricter than the disclosure it stood in for — but them learning about it from a journalist is an avoidable own goal | Any named operator's comms team is surprised |
@@ -86,15 +86,24 @@ maker, both unmodified; the prize pool is Juicebox; the roughly 1,400 lines we w
 linked here; positions are capped while the market is young; and this Safe controls it.* Every clause of that is true today except the last one,
 which is G4 again. Fix G4 and the trust story writes itself.
 
-**One thing to actually check** before open, worth an hour rather than an engagement:
-`tradeWithTWAP()` is public on the deployed market and uses `this.trade(...)`, an external
-self-call that makes the market itself `msg.sender`. The router deliberately routes around
-it — calling `updateCumulativeTWAP()` and then `trade()` separately, as the interface
-comments note. That leaves a public, unused entry point on a live money contract whose
-behaviour nobody has characterised. It is most likely inert or self-reverting, but the
-question worth answering is whether it lets a caller shift `calcMarginalPrice` for the cost
-of gas — because the odds board is the product, and free odds manipulation would damage the
-thing we are marketing even if not a penny moves.
+**One thing we actually checked — and it was not inert.** `tradeWithTWAP()` is public on the
+deployed market and used `this.trade(...)`, an external self-call that makes the market
+itself `msg.sender`. The router deliberately routes around it — calling
+`updateCumulativeTWAP()` and then `trade()` separately, as the interface comments note — so
+it sat as a public, unused entry point on a live money contract. Characterising it (the
+focused audit in [`DEPRIZE_SECURITY_AUDIT.md`](./DEPRIZE_SECURITY_AUDIT.md)) showed it is
+worse than inert: on the sell path the self-call makes the market its own counterparty, so
+**any caller, supplying no collateral, can force the market to merge its own escrowed backing
+into loose WETH — which `DePrizeFeeRouter.sweepFees` then extracts as if it were fees, for
+the price of gas.** Reproduced against live Arbitrum One and rated **High** (permissionless,
+zero-cost, breaks the market's collateralisation invariant and bricks the AMM sell-side —
+though the funds land in MoonDAO-controlled destinations rather than the attacker's, which
+holds it below Critical). Fixed at source by making the wrapper call `trade()` internally.
+**Because the deployed market is an immutable EIP-1167 clone, the fix only protects future
+deployments:** the Touchdown mainnet market must be deployed from the fixed implementation,
+and the existing DePrize-1 test market treated as disposable. The finding *confirms* this
+section's thesis — the money-movers were fine; the one exploitable bug was in our own glue,
+exactly where the residual risk was said to live.
 
 ### Two of these deserve to be argued about now, not later
 
@@ -439,7 +448,7 @@ opening early. Plan for the tight case.
 
 | Phase | Window | Work | Gate to proceed |
 |---|---|---|---|
-| **P0 — Can this run at all** | Sep 9 – Sep 23 | Counsel engaged (G2). Griffin pad watch stood up as a standing daily check (G1). G6 decision made and written down. Terms drafted for publication (G3). Per-wallet cap chosen (G7) and the `tradeWithTWAP` question answered | **Counsel has given a written position and G6 is decided. If either fails, stop — the prize does not open.** |
+| **P0 — Can this run at all** | Sep 9 – Sep 23 | Counsel engaged (G2). Griffin pad watch stood up as a standing daily check (G1). G6 decision made and written down. Terms drafted for publication (G3). Per-wallet cap chosen (G7); the `tradeWithTWAP` finding is fixed at source (§0.1, [`DEPRIZE_SECURITY_AUDIT.md`](./DEPRIZE_SECURITY_AUDIT.md)) and the market must be redeployed from the fixed implementation before open | **Counsel has given a written position and G6 is decided. If either fails, stop — the prize does not open.** |
 | **P1 — Freeze the irreversible** | Sep 23 – Oct 14 | Public review round on the rules (G5, §5.4). Rules v1.0 frozen and pinned. **G4 is the technical critical path here:** new CTF condition prepared with the **Safe** as oracle, registry/mint/fee-router ownership transferred off the deployer EOA, upgrades timelocked. Mainnet deploy + funded Juicebox project (G8). Open Field team NFT minted. `questionId` escrowed in two places. Terms live (G3). Compliance controls built: click-through acceptance, 18+ attestation, insider blocklist, whatever geo the counsel memo requires (G2). Roster notified under embargo (G10) | Rules frozen, **no contract in the value path answers to an EOA**, per-wallet cap live, mainnet registered in `DRAFT`, Terms return 200, the memo's controls shipped and testable |
 | **P2 — Build the two assets** *(parallel with P1)* | Sep 23 – Oct 21 | The Board (§5.1) and Call the Landing (§5.2). Scorecard page. Odds wire. **Wire the existing onramp into `BetModal`** — see §8 | Board renders from mainnet data; a stranger can complete a free pick in under 60 seconds; a stranger holding no ETH can place a bet without leaving the site |
 | **P3 — Seed distribution under embargo** | Oct 14 – Oct 28 | Board given to 10–15 space writers and 3–5 creators *before* it is public, with the scorecard as the story. Outsider mainnet rehearsal (G9). Community soft-open | ≥5 embeds committed; one outsider has completed bet → resolve → redeem on Arbitrum |
@@ -554,7 +563,7 @@ hole, and unlocks the trust story the audit badge was going to provide.
 |---|---|---|
 | **Griffin lands before we open** | Any landing attempt inside a week of registration | **Do not open.** The prize is void on arrival (spec §IV.5). Pad check is a daily standing item from P0, not a one-time gate |
 | **No legal position** | Sep 23 with no counsel memo | **Kill, or restrict to the free game only.** The free pick game is legally clean, globally available, and still builds the list — it is a genuine fallback, not a consolation |
-| **A bug in our glue code** | Any | Bounded, not eliminated. Pricing and custody are unmodified Gnosis CTF (§0.1); the exposure is ~1,400 lines of routing. Enforce the per-wallet cap `DEPRIZE.md` already specifies, set well below 10 ETH for generation 1, and raise it after a clean resolution. Do not take uncapped money to hit a date |
+| **A bug in our glue code** | Any | Bounded, not eliminated. Pricing and custody are unmodified Gnosis CTF (§0.1); the exposure is ~1,400 lines of routing. The focused audit ([`DEPRIZE_SECURITY_AUDIT.md`](./DEPRIZE_SECURITY_AUDIT.md)) already found and fixed one High here (`tradeWithTWAP` self-call) — proof the class is real, and a reason to **deploy the mainnet market from the fixed implementation**. Enforce the per-wallet cap `DEPRIZE.md` already specifies, set well below 10 ETH for generation 1, and raise it after a clean resolution. Do not take uncapped money to hit a date |
 | **One key is compromised or misused** | Any | **The largest technical risk, and larger than the audit question.** Verified on Arbitrum: one EOA is oracle, both proxy owners, and market owner via the fee router, on untimelocked proxies. Close G4 before mainnet. Until then, treat every "the contracts are safe" claim in launch copy as unsupportable |
 | **The `questionId` is lost** | Any time before resolution | `reportPayouts` becomes impossible and the pool is stranded — `DEPRIZE_ARBITRUM_ADDRESSES.md` notes the value is deliberately **not on-chain**. Escrow it in at least two places under different control before open. No audit catches this; it is a filing-cabinet problem with a total-loss outcome |
 | **The market resolves in three weeks** | Griffin launches early and sticks the landing | Accept it and lean in — a fast, clean, undisputed first resolution is the best possible outcome for the mechanism. Have P7 and the Night Shift handoff ready *before* open, not after |
