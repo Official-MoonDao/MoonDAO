@@ -6,7 +6,9 @@
 
 ---
 
-> Internally, the system described here is called "DePrize." This document is titled "Overview Prize" to reflect its tight coupling with the `$OVERVIEW` token and the existing Overview Effect Flight mission. The two names refer to the same mechanism.
+> Internally, the system described here is called "DePrize." This document is titled "Overview Prize" because the **first** DePrize is bound to the existing Overview Effect Flight mission. The two names refer to the same mechanism.
+
+> **Terminology — the mission token.** DePrize is **mission-agnostic**. Each DePrize is bound to exactly one MoonDAO launchpad mission, recorded on-chain as that DePrize's `jbProjectId` in `DePrizeRegistry`. The 5% bet slice pays into **that** mission's Juicebox project with the bettor as beneficiary, so the token a bettor receives is **whatever project token that mission issues** — referred to throughout this doc as the **mission token**. `$OVERVIEW` is the mission token *only for the first DePrize*, because that one retrofits the Overview Effect launchpad; a DePrize bound to a different mission mints that mission's token (e.g. `$FRANKT` on the Sepolia fixtures) and nothing about the mechanism changes. Nothing in the contracts or the UI hardcodes `$OVERVIEW`: `DePrizeMint` pays the slice to the registry's `jbProjectId`, and the front end resolves the symbol at runtime via `useDePrizeLaunchpadToken` → `JBV5Tokens.tokenOf(projectId)`, falling back to a generic label. Where this doc names `$OVERVIEW`, it is describing the first DePrize's specific campaign — the migration, the existing holders, and the 3-way holder vote — not a property of the mechanism.
 
 > **Implementation note (2026-06-05).** Milestones 1–3 are built and tested. During implementation the market layer changed from the speculative "per-team Uniswap v4 pools + treasury-as-LP + `DePrizeFeeHook`" design to **reusing MoonDAO's existing Gnosis Conditional Tokens (CTF) + `LMSRWithTWAP` prediction-market stack**, with the **1% fee implemented as the LMSR market-maker's built-in `fee` parameter** rather than a Uniswap swap-fee hook. Sections that still describe the Uniswap/LP model are kept for design-rationale history and are flagged inline; the authoritative as-built description is in [Part III §Implementation status](#implementation-status-as-built) and the per-milestone docs [`DEPRIZE_M1.md`](./DEPRIZE_M1.md), [`DEPRIZE_M2.md`](./DEPRIZE_M2.md), [`DEPRIZE_M3.md`](./DEPRIZE_M3.md).
 
@@ -44,10 +46,10 @@ DePrize lets the MoonDAO community bet on which of several competing providers w
 
 The recommended design is a **simplified ETH-based prediction market** with two key MoonDAO-specific properties:
 
-1. **Every bet routes 5% to the launchpad prize pool**, growing the prize alongside betting interest. Bettors receive `$OVERVIEW` (the mission's project token) as a receipt for this contribution.
+1. **Every bet routes 5% to the launchpad prize pool**, growing the prize alongside betting interest. Bettors receive the **mission token** — the project token of whichever launchpad mission that DePrize is bound to — as a receipt for this contribution.
 2. **A small trade fee (1%)** on every trade underwrites the market maker that provides live odds and liquidity.
 
-Bettors interact in ETH end-to-end. `$OVERVIEW` exists as a participation receipt with downstream utility but isn't required to think about. The as-built market layer reuses MoonDAO's existing Gnosis CTF + `LMSRWithTWAP` stack; the new on-chain surface is three small contracts (`DePrizeRegistry`, registry-aware `LaunchPadPayHook`, `DePrizeMint`), with resolution/redemption/escrow planned for later milestones.
+Bettors interact in ETH end-to-end. The mission token exists as a participation receipt with downstream utility but isn't required to think about. The as-built market layer reuses MoonDAO's existing Gnosis CTF + `LMSRWithTWAP` stack; the new on-chain surface is three small contracts (`DePrizeRegistry`, registry-aware `LaunchPadPayHook`, `DePrizeMint`), with resolution/redemption/escrow planned for later milestones.
 
 **Whether the first DePrize launches on the Overview Effect Flight depends on a 3-way vote of existing `$OVERVIEW` holders.** The community will choose between:
 
@@ -88,7 +90,7 @@ The full path a participant takes:
 | 2 | **Browse** | Visits the DePrize page | Three team cards with live ETH-denominated odds (e.g. Stratos 40%, Helios 40%, Aurora 20%) |
 | 3 | **Decide** | Picks a team they believe in | "Back Stratos" button highlighted |
 | 4 | **Connect** | Connects wallet via Privy | Wallet address displayed |
-| 5 | **Bet** | Enters ETH amount, clicks "Back Stratos" | Modal shows: "You'll pay 1 ETH. You'll receive ~2.32 winning tokens. Max payout if Stratos wins: ~2.32 ETH. You'll also receive 50 `$OVERVIEW` (loyalty receipt)." |
+| 5 | **Bet** | Enters ETH amount, clicks "Back Stratos" | Modal shows: "You'll pay 1 ETH. You'll receive ~2.32 winning tokens. Max payout if Stratos wins: ~2.32 ETH. You'll also receive 50 mission tokens (loyalty receipt)." The modal renders the bound mission's real symbol, resolved on-chain — `$OVERVIEW` for the first DePrize. |
 | 6 | **Confirm** | Signs transaction in wallet | Confirmation: "Bet placed. Track your position on the My Bets page." |
 | 7 | **Wait** | Periodically checks the market | Live odds shift as news arrives. Position value updates in real time. |
 | 8 | **(Optional) Exit** | Decides to sell mid-campaign | "Exit" button: "Sell your 2.32 Stratos tokens for ~0.95 ETH at current market price?" |
@@ -121,9 +123,9 @@ Four scenarios at a glance. Setup: 100 ETH prize pool, three teams at equilibriu
 
 | Scenario | Outcome | Bettor net |
 |---|---|---|
-| Alice bets 1 ETH on Stratos. **Stratos wins.** | Receives ~2.32 ETH from CTF parimutuel + 50 `$OVERVIEW`. | **+1.32 ETH** (plus `$OVERVIEW` value) |
-| Bob bets 1 ETH on Helios. **Helios loses.** | Helios_YES worthless. Holds 50 `$OVERVIEW`. | **−1.0 ETH** (plus `$OVERVIEW` value) |
-| Carol bets 1 ETH on Aurora at 0.20, exits when price drops to 0.05. | Sells ~4.62 Aurora_YES → ~0.226 ETH + 50 `$OVERVIEW`. | **−0.77 ETH** |
+| Alice bets 1 ETH on Stratos. **Stratos wins.** | Receives ~2.32 ETH from CTF parimutuel + 50 mission tokens. | **+1.32 ETH** (plus mission-token value) |
+| Bob bets 1 ETH on Helios. **Helios loses.** | Helios_YES worthless. Holds 50 mission tokens. | **−1.0 ETH** (plus mission-token value) |
+| Carol bets 1 ETH on Aurora at 0.20, exits when price drops to 0.05. | Sells ~4.62 Aurora_YES → ~0.226 ETH + 50 mission tokens. | **−0.77 ETH** |
 | Cancellation: Senate declares "no winner." | CTF pays 1/N per token + JB cashOut activates per Overview Effect Terms Section 8. | Concentrated bettors recover **~80–95%**; balanced bettors recover **100%**. |
 
 Cancellation loss for concentrated bettors is mathematically unavoidable with CTF parimutuel once secondary trading happens — disclosed in UI before any bet.
@@ -139,26 +141,26 @@ Comparison of effective house edge for a 1 ETH bet at 40% market-implied odds:
 | **Do nothing** (hold ETH) | 0% | 0% (baseline) | No upside, no downside, no mission contribution |
 | Fair coin flip | 0% | 0% | Theoretical betting baseline |
 | Polymarket | ~0.2% | −0.2% per bet | LP fee only, no protocol take |
-| **DePrize (assuming `$OVERVIEW` worthless)** | **~7%** | **−7% per bet** | If mission completely fails |
-| **DePrize (`$OVERVIEW` recovers 50%)** | **~4%** | −4% per bet | Modest mission success |
-| **DePrize (`$OVERVIEW` recovers 100%)** | **~1.5%** | −1.5% per bet | Strong mission success |
-| **DePrize (`$OVERVIEW` recovers 200%)** | **~+3% (positive EV!)** | +3% per bet | Strong post-mission token appreciation |
+| **DePrize (assuming mission token worthless)** | **~7%** | **−7% per bet** | If mission completely fails |
+| **DePrize (mission token recovers 50%)** | **~4%** | −4% per bet | Modest mission success |
+| **DePrize (mission token recovers 100%)** | **~1.5%** | −1.5% per bet | Strong mission success |
+| **DePrize (mission token recovers 200%)** | **~+3% (positive EV!)** | +3% per bet | Strong post-mission token appreciation |
 | Sportsbook (mainstream) | 5–10% | −5–10% per bet | Standard vig |
 | Lottery | 30–50% | −30–50% per bet | Worst common gambling |
 
-**For a pure profit-seeking Polymarket native:** DePrize is slightly negative EV unless they value `$OVERVIEW` exposure. Competitive enough that some Polymarket bettors may still participate if the odds are mispriced.
+**For a pure profit-seeking Polymarket native:** DePrize is slightly negative EV unless they value mission-token exposure. Competitive enough that some Polymarket bettors may still participate if the odds are mispriced.
 
-**For a community member who cares about Frank reaching space:** DePrize is approximately break-even because the friction includes a small contribution to a cause they value plus `$OVERVIEW` exposure tied to mission success. The 1.5–7% edge is comparable to low-vig sportsbooks.
+**For a community member who cares about Frank reaching space:** DePrize is approximately break-even because the friction includes a small contribution to a cause they value plus mission-token exposure tied to mission success. The 1.5–7% edge is comparable to low-vig sportsbooks.
 
 **For an arbitrageur seeing genuinely mispriced odds:** positive EV if the mispricing is >7%. Standard sophisticated bettor math.
 
-**For a holder who just wants exposure to `$OVERVIEW` upside:** primary minting is the cheapest way to acquire `$OVERVIEW` post-launch (50 `$OVERVIEW` per ETH at 5% slice = 0.001 ETH per `$OVERVIEW`). If you believe `$OVERVIEW` will trade above this floor post-mission, betting on any team is positive EV — the bet itself is the cost of acquiring discounted tokens.
+**For a holder who just wants exposure to the mission token's upside:** primary minting is the cheapest way to acquire it post-launch (50 tokens per ETH at a 5% slice = 0.001 ETH per token). If you believe the mission token will trade above this floor post-mission, betting on any team is positive EV — the bet itself is the cost of acquiring discounted tokens.
 
 **Doing nothing is a real option.** For most people, holding ETH and not participating is a perfectly rational choice. DePrize must compete with "do nothing" not just with Polymarket. The honest pitch: if you care about the mission, the friction is low enough to participate; if you don't care, this isn't the prediction market for you.
 
 ### The honest positioning
 
-DePrize is a prediction market for people who care about the mission. If you only want the absolute best odds, go to Polymarket. If you want to back a team you believe in AND have skin in the game on the prize pool itself, DePrize is for you. You'll pay sportsbook-grade vig (or better, if `$OVERVIEW` retains value) in exchange for funding the prize and getting `$OVERVIEW` exposure.
+DePrize is a prediction market for people who care about the mission. If you only want the absolute best odds, go to Polymarket. If you want to back a team you believe in AND have skin in the game on the prize pool itself, DePrize is for you. You'll pay sportsbook-grade vig (or better, if the mission token retains value) in exchange for funding the prize and getting mission-token exposure.
 
 This is more defensible than pretending DePrize is competitive with Polymarket on pure EV. Positive-sum dynamics ("your bet helps fund the prize") resonate with the right audience.
 
@@ -168,36 +170,38 @@ The mechanics are complex. The UI must hide that complexity from anyone who does
 
 - **Single primary button** at every decision point. Advanced settings disclosed only on demand.
 - **Plain English for outcomes**, not jargon. "If Virgin wins" not "if Virgin_YES token resolves to 1." Show odds as a single percentage, not as a token price.
-- **`$OVERVIEW` as a receipt, not a primary asset.** Visible but not central. Most bettors won't engage with it directly.
+- **The mission token as a receipt, not a primary asset.** Visible but not central. Most bettors won't engage with it directly. Render the bound mission's real symbol; never hardcode one.
 - **Milestone escrow is invisible to bettors.** Bettors see "you won, claim X ETH" at M1; M1/M2 distinction only matters for the winning provider.
 - **Candidate pledging is separate** from betting (different mental model). Clear visual separation.
 - **Cancellation losses disclosed upfront.** Refund estimate shown on every bet preview.
 
 → See [Appendix F](#appendix-f--ux-flows-end-to-end) for end-to-end flows (bet placement, browse, position management, exit, claim, cancellation refund, Candidate pledging), MVP-cut analysis, and cognitive-load lessons from walking the flows.
 
-## What `$OVERVIEW` does
+## What the mission token does
 
-`$OVERVIEW` is the mission's project token. The right way to think about it: **`$OVERVIEW` is a participation receipt with downstream utility — it's a bonus, not the primary thing your bet is buying.** Your bet primarily buys outcome tokens (your stake in the prediction market). The `$OVERVIEW` you receive is a small additional allocation tied to the prize-pool contribution portion of your bet.
+A bettor receives the project token of **the launchpad mission this DePrize is bound to** — not a DePrize-specific token, and not `$OVERVIEW` unless that is the bound mission. The binding is the `jbProjectId` recorded in `DePrizeRegistry` at registration; the 5% slice pays into that Juicebox project with the bettor as beneficiary, so the project's own ruleset decides which token is minted and at what rate. For the first DePrize that project is the Overview Effect launchpad, so the mission token is `$OVERVIEW`; for a DePrize bound to some other mission it is that mission's token, with identical mechanics.
 
-Bettors receive 50 `$OVERVIEW` per ETH bet (from the 5% slice flowing through Juicebox). What it does for the holder:
+The right way to think about it: **the mission token is a participation receipt with downstream utility — it's a bonus, not the primary thing your bet is buying.** Your bet primarily buys outcome tokens (your stake in the prediction market). The mission tokens you receive are a small additional allocation tied to the prize-pool contribution portion of your bet.
 
-1. **Voting rights** in `$OVERVIEW` governance — including the 3-way migration vote and any post-settlement governance votes per Overview Effect Terms.
-2. **CashOut floor at cancellation.** If the DePrize cancels, `$OVERVIEW` can be redeemed pro-rata for ETH from the JB project. During the active campaign, cashOut is gated (off) to prevent bettors from extracting their 5% slice as an exploit.
-3. **Post-mission market value.** After the mission completes, the existing launchpad's `PoolDeployer` creates a `$OVERVIEW/ETH` Uniswap pool. `$OVERVIEW` then trades against ETH at whatever market value emerges from the team's post-mission performance.
-4. **Standard launchpad benefits.** Whatever utility the team builds around `$OVERVIEW` post-mission (governance, perks, drops, etc.) — same as any other launchpad mission.
+Bettors receive 50 mission tokens per ETH bet (from the 5% slice flowing through Juicebox, at the bound project's current issuance rate). What that does for the holder:
 
-A bettor doesn't need to do anything with `$OVERVIEW` to benefit. It sits in their wallet. They can sell it post-mission for ETH or hold it for utility.
+1. **Voting rights** in the bound mission's token governance — for the first DePrize, that includes the 3-way migration vote and any post-settlement governance votes per the Overview Effect Terms.
+2. **CashOut floor at cancellation.** If the DePrize cancels, the mission token can be redeemed pro-rata for ETH from its JB project. During the active campaign, cashOut is gated (off) to prevent bettors from extracting their 5% slice as an exploit.
+3. **Post-mission market value.** After the mission completes, the launchpad's `PoolDeployer` creates a `<mission token>/ETH` Uniswap pool, and the token trades against ETH at whatever market value emerges from the team's post-mission performance.
+4. **Standard launchpad benefits.** Whatever utility the mission's team builds around its token post-mission (governance, perks, drops, etc.) — same as any other launchpad mission.
+
+A bettor doesn't need to do anything with the mission token to benefit. It sits in their wallet. They can sell it post-mission for ETH or hold it for utility.
 
 ### About the "20× rate difference" vs original launchpad contributors
 
-Existing pre-DePrize contributors received 1,000 `$OVERVIEW` per ETH; new DePrize bettors receive 50 `$OVERVIEW` per ETH. This sounds like a 20× disparity but it's an artifact of comparing two different products:
+Rates are the bound mission's, not DePrize's; the numbers below are the first DePrize's. Existing pre-DePrize contributors to the Overview Effect launchpad received 1,000 `$OVERVIEW` per ETH; new DePrize bettors receive 50 `$OVERVIEW` per ETH. This sounds like a 20× disparity but it's an artifact of comparing two different products:
 
 - **Pre-DePrize contributors paid 100% of their ETH to fund the mission.** They received the full launchpad token allocation as compensation. Their "yield" comes from the mission succeeding (`$OVERVIEW` retaining value post-mission).
 - **DePrize bettors pay 5% of their bet to the prize, 95% to the prediction market.** They receive 5%'s worth of launchpad token allocation (which is exactly 1/20th the rate) PLUS parimutuel upside on the 95% that's in the prediction market.
 
 It's not "DePrize bettors get a worse deal." It's "DePrize bettors get a different deal." A bettor putting 1 ETH on the eventual winner at 40% odds can take home ~2.32 ETH from the parimutuel — a return profile that doesn't exist for pre-DePrize contributors. The 50 `$OVERVIEW` is a small bonus on top.
 
-Communicating this clearly is a UI responsibility. The bet preview should foreground the parimutuel payout and treat `$OVERVIEW` as a secondary receipt.
+Communicating this clearly is a UI responsibility. The bet preview should foreground the parimutuel payout and treat the mission token as a secondary receipt.
 
 ---
 
@@ -210,7 +214,7 @@ A formal decision matrix comparing four alternatives across 11 criteria and 3 we
 The alternatives considered (and why they fall short):
 
 - **Pure ETH market without the 1% swap fee** (Option A in Appendix A): Simpler, but the prize pool only grows from one-time primary contributions. Loses the "betting volume grows the prize" property.
-- **`$OVERVIEW`-as-collateral market** (Option B): Maximum prize efficiency (100% to prize) but compounded volatility, two-hop exit, and higher contract surface. Lost on 3 of 4 criteria scored.
+- **Mission-token-as-collateral market** (Option B): Maximum prize efficiency (100% to prize) but compounded volatility, two-hop exit, and higher contract surface. Lost on 3 of 4 criteria scored.
 - **USDC market** (Option C): Best public legibility but introduces Circle as a centralized counterparty and weakens MoonDAO's ETH-native culture fit. Reasonable for a general prediction market product separate from MoonDAO.
 
 ---
@@ -258,7 +262,7 @@ Refundable terminals: `CANCELLED`, `NO_WINNER`, `M2_FAILED`. Success terminal: `
 
 | System | Role | Status |
 |---|---|---|
-| Juicebox V5 + `MissionCreator` | Prize pool custody, `$OVERVIEW` issuance | Exists |
+| Juicebox V5 + `MissionCreator` | Prize pool custody, mission-token issuance | Exists |
 | Gnosis ConditionalTokens (CTF) | Outcome token accounting, settlement | **Reused as built.** Externally-deployed Solidity `0.5.x` contract; the `0.8` router calls it via `IConditionalTokens`. Testnet deployments already exist (`ui/const/config.ts` → `CONDITIONAL_TOKEN_ADDRESSES`). |
 | `LMSRWithTWAP` market maker | Per-DePrize AMM / live odds / liquidity | **Reused as built.** MoonDAO's existing `prediction/` LMSR variant (Solidity `0.5.x`), one market per DePrize, treasury-seeded; called via `ILMSRWithTWAP`. Replaces the planned Uniswap v4 pools. |
 | ~~Uniswap v4 + `PoolDeployer`~~ | ~~Per-team pool creation~~ | **Superseded** by CTF + `LMSRWithTWAP` (see §Implementation status). |
@@ -319,7 +323,7 @@ As built (M3), `DePrizeMint.bet(deprizeId, outcomeIndex, outcomeTokenAmount, max
 
 1. requires `registry.bettingOpen(deprizeId)`;
 2. splits `msg.value` into a 5% slice and 95% budget;
-3. pays the slice into the DePrize's JB project with the bettor as beneficiary (mints `$OVERVIEW`);
+3. pays the slice into the DePrize's JB project with the bettor as beneficiary (mints that mission's token — `$OVERVIEW` for the first DePrize);
 4. prices the trade on the LMSR market: `cost = market.calcNetCost(amounts) + market.calcMarketFee(net)` (the Gnosis `MarketMaker.trade` pulls `netCost + fee`, so `calcNetCost` **excludes** the 1% fee), and reverts if `cost > budget || cost > maxCost`;
 5. wraps `cost` to WETH, approves the market, calls `market.updateCumulativeTWAP()` then `market.trade()` **directly** (not `tradeWithTWAP`, which self-calls and would make the market the trader);
 6. captures the minted ERC-1155 outcome tokens via the receiver hooks, forwards them to the bettor, and refunds any leftover ETH.
@@ -363,13 +367,13 @@ The 30/70 split means a winning provider has meaningful liquid funds at demonstr
 **No-winner declared:**
 
 1. Reporter calls `CTF.reportPayouts(condition, [1, 1, 1, ...])` (each token type pays 1/N).
-2. `DePrizeMilestoneEscrow.refundToJB(deprizeId)` returns escrow ETH to JB project, raising `$OVERVIEW` cashOut value.
+2. `DePrizeMilestoneEscrow.refundToJB(deprizeId)` returns escrow ETH to JB project, raising the mission token's cashOut value.
 3. JB refund payhook activates per existing Overview Effect Terms Section 8 (28-day refund claim window after activation).
-4. Bettors call `DePrizeRefund.refundAll(deprizeId)`: redeems all outcome tokens for ETH + burns `$OVERVIEW` for JB cashOut → all converted to ETH and returned to bettor.
+4. Bettors call `DePrizeRefund.refundAll(deprizeId)`: redeems all outcome tokens for ETH + burns the mission token for JB cashOut → all converted to ETH and returned to bettor.
 
-## `$OVERVIEW` cashOut: gated
+## Mission-token cashOut: gated
 
-`$OVERVIEW` cashOut is gated to prevent the 5% slice from being trivially extracted:
+Mission-token cashOut is gated to prevent the 5% slice from being trivially extracted:
 
 | DePrize state | JB cashOut |
 |---|---|
@@ -377,7 +381,7 @@ The 30/70 split means a winning provider has meaningful liquid funds at demonstr
 | `CANCELLED`, `NO_WINNER`, `M2_FAILED` | Enabled (cash-out tax = 0%, linear pro-rata) |
 | `M2_COMPLETE` (post-mission) | Enabled per standard launchpad rules |
 
-During the active campaign, `$OVERVIEW` is still tradeable on whatever Uniswap pools exist (initially none in this simplified design; the existing launchpad `PoolDeployer` creates the `$OVERVIEW/ETH` pool only after mission completion).
+During the active campaign, the mission token is still tradeable on whatever Uniswap pools exist (initially none in this simplified design; the launchpad `PoolDeployer` creates the `<mission token>/ETH` pool only after mission completion).
 
 ## Senate vote integration
 
@@ -485,7 +489,7 @@ At moderate activity ($5M swap volume), treasury earns ~15 ETH in LP fees agains
 
 ## Fee structure: why 5% slice + 1% swap fee
 
-The protocol takes revenue in two places: a one-time 5% slice on primary mints (routes to JB project, mints `$OVERVIEW` to the bettor), and a 1% fee on every trade. The split between these two mechanisms is deliberate.
+The protocol takes revenue in two places: a one-time 5% slice on primary mints (routes to the bound mission's JB project, minting that mission's token to the bettor), and a 1% fee on every trade. The split between these two mechanisms is deliberate.
 
 > **As built:** the 1% fee is the `LMSRWithTWAP` market-maker's built-in `fee` parameter (`1e16`), charged on every `trade()` and accrued inside the market (which the treasury seeds) — **not** a Uniswap LP fee + protocol fee split. There is a single 1% trade fee, not the "1% LP + 1% protocol = 2%" structure described in the original draft below. With the optional `DePrizeFeeRouter` deployed, that single 1% fee is swept into the prize pool while the DePrize is live — so the design's "1% routes to the prize" property is preserved through a different mechanism (fee sweep) rather than a Uniswap protocol-fee hook. The revenue tables below remain directionally valid for the 5%-slice-vs-trade-fee tradeoff but should be read with that single-1%-fee correction.
 
@@ -523,7 +527,7 @@ A sophisticated bettor can avoid most of the 5% slice by waiting for others to p
 
 This is a 3.5× asymmetry favoring secondary buyers (smaller than the 5× under the original 1.3% LP fee, because bumping LP fee to 1.0% raised both sides but raised secondary friction more). Implications:
 
-- Primary minting is dominated by community believers (who want `$OVERVIEW` and want to fund the prize directly).
+- Primary minting is dominated by community believers (who want the mission token and want to fund the prize directly).
 - Secondary trading attracts speculators who want pure prediction-market exposure.
 - The slice falls disproportionately on believers; speculators free-ride on the prize.
 
@@ -549,7 +553,7 @@ Before any migration happens, existing `$OVERVIEW` holders vote on a proposal wi
   - Zephalto: ~€360k ≈ $390k (2 × €180k per seat).
   - Virgin Galactic: ~$1.5M (2 × $750k per seat).
 - Prize pool grows from: existing seed, 5% slice of every new bet, 1% of every swap (primary routing + secondary trades), plus optional direct contributions.
-- `$OVERVIEW` cashOut gated during campaign; re-enabled at settlement or cancellation.
+- Mission-token cashOut gated during campaign; re-enabled at settlement or cancellation.
 - Senate votes at sunset among eligible providers (with a pre-committed preference order to remove ambiguity).
 - Timeline: 12–18 months.
 - Winning provider delivers **two seats**: Frank + community-selected Candidate (per existing 4-round Selection Process).
@@ -677,7 +681,7 @@ The permanent-eligibility edge case above is fundamentally a **denomination mism
 
 | Ship ETH (current spec) | Ship USDC (alternative) |
 |---|---|
-| ETH-native UX, no Circle counterparty risk, `$OVERVIEW` cashOut floor stays ETH-backed | Stable pool value, eligibility maps 1:1 to ability-to-pay, more stable cashOut floor |
+| ETH-native UX, no Circle counterparty risk, mission-token cashOut floor stays ETH-backed | Stable pool value, eligibility maps 1:1 to ability-to-pay, more stable cashOut floor |
 | Bettors exposed to ETH/USD swings; eligibility edge case is real | Circle freeze risk + regulatory surface (esp. US geo restrictions) |
 | **Recommended mitigation**: if ETH/USD moves >25% in any 90-day window, open a `$OVERVIEW` vote to migrate mid-campaign (migration contract ~150 LoC, ~1 week of work) | Worth a brief Senate / EB discussion before contract development begins |
 
@@ -767,7 +771,7 @@ Deploy plan: ship the upgraded hook on Sepolia first, audit specifically for cas
 
 → See [Appendix H](#appendix-h--contract-code-stubs) for the full `stage(...)` function.
 
-### `$OVERVIEW` dilution over the DePrize campaign
+### Mission-token dilution over the DePrize campaign (first DePrize figures)
 
 Existing contributors got 1,000 `$OVERVIEW` per ETH (full launchpad rate). New bettors get 50 `$OVERVIEW` per ETH (5% slice routed through JB at the same 1,000-per-ETH rate). That's a 20× advantage for existing holders.
 
@@ -818,10 +822,10 @@ At M2 disbursement the prize pool flows to the winning provider; `$OVERVIEW` is 
 
 | Risk | Mitigation |
 |---|---|
-| **`$OVERVIEW` cashOut during campaign drains prize pool.** Bettor primary-mints, cashes out, extracts the 5% slice. | Gate JB cashOut: disabled during campaign, enabled only at `CANCELLED`. |
+| **Mission-token cashOut during campaign drains prize pool.** Bettor primary-mints, cashes out, extracts the 5% slice. | Gate JB cashOut: disabled during campaign, enabled only at `CANCELLED`. |
 | **CTF cancellation refunds are lossy for concentrated bets** (~80–95% recovery). | Disclose in UI before any bet. Mathematically unavoidable with CTF parimutuel. |
 | **House edge (1.5–7%) might surprise users.** | Honest positioning: this is for community members, not pure profit-seekers. Document EV analysis publicly. |
-| **`$OVERVIEW` post-mission value is uncertain.** | Make clear it depends on what the team does with the mission. Not guaranteed. |
+| **Mission-token post-mission value is uncertain.** | Make clear it depends on what the team does with the mission. Not guaranteed. |
 
 ## Smart contract
 
@@ -847,7 +851,7 @@ At M2 disbursement the prize pool flows to the winning provider; `$OVERVIEW` is 
 
 | Risk | Mitigation |
 |---|---|
-| **`$OVERVIEW` shows up as mystery token in non-UI wallets.** | Rich token metadata (name, symbol, description). Etherscan listing. |
+| **The mission token shows up as a mystery token in non-UI wallets.** | Rich token metadata (name, symbol, description). Etherscan listing. |
 | **Treasury seed for team pools is meaningful capital.** | ~3 ETH per 3-team DePrize. Recoverable LP position. |
 | **Many parameters at launch.** | Document explicit defaults (5% slice, 1% hook fee, 1.0% LP fee, 30/70 milestone split, 30-day TWAP, 18-month sunset). |
 
@@ -965,7 +969,7 @@ Bettors opt in at bet time to "cancellation insurance" by paying an extra 1% pre
 - **Holder vote thresholds.** Default proposal: plurality with 40% minimum; runoff between top two if no option clears 40%; 2% tiebreak window favors lower-numbered option. Open for input.
 - **Concrete terms confirmed for vote.** Final Zephalto 2-seat deposit + total + funding gap for Option 2. Provider consent letters from Virgin, Zephalto, and the third provider (publicly named) for Option 1.
 - **Third provider's deposit terms.** Currently "takes the whole amount." Migration to standard deposit + balance-at-flight may be requested. Open for negotiation with provider.
-- **Prize denomination: ETH vs USDC for v1.** Current spec is ETH. USDC eliminates the ETH/USD volatility edge case at the cost of Circle centralization and slightly weaker `$OVERVIEW` cashOut floor. See Part III §Eligibility vs ability-to-pay at settlement. Requires Senate / EB decision before contract development begins.
+- **Prize denomination: ETH vs USDC for v1.** Current spec is ETH. USDC eliminates the ETH/USD volatility edge case at the cost of Circle centralization and a slightly weaker mission-token cashOut floor. See Part III §Eligibility vs ability-to-pay at settlement. Requires Senate / EB decision before contract development begins.
 - **Eligibility Review Committee membership.** 5 members (3 astronauts + 2 aerospace engineers) per current spec. Specific nominees to be proposed via Senate vote at DePrize-open.
 - **Terms amendment for parallel Candidate Round 1.** Existing Terms Section 7.1 says "Round 1 closes 14 days after a carrier is secured." DePrize design runs Round 1 in parallel with betting. Terms amendment + public comment period required before launch.
 - **Upgrade path immutability commitments.** Current proposal: UUPS upgradeable with 7-day timelock under Admin Safe. Senate should review and confirm before contract deployment.
@@ -1054,7 +1058,7 @@ See Part V for full design discussion. Items considered:
 | 3 | Frank prize funding |
 | 4 | Bettor UX |
 | 5 | Manipulation resistance |
-| 6 | `$OVERVIEW` value capture |
+| 6 | Mission-token value capture |
 | 7 | Community alignment |
 | 8 | Cross-chain accessibility |
 | 9 | Legal risk |
@@ -1063,21 +1067,21 @@ See Part V for full design discussion. Items considered:
 
 ## Raw scores (1–10)
 
-| Criterion | A (no hook) | B ($OVERVIEW coll.) | C (USDC) | **D (this design)** |
+| Criterion | A (no hook) | B (mission-token coll.) | C (USDC) | **D (this design)** |
 |---|---|---|---|---|
 | 1. Public communication | 9 | 5 | 10 | 9 |
 | 2. Code complexity | 9 | 5 | 7 | 7 |
 | 3. Frank prize funding | 6 | 9 | 6 | 8 |
 | 4. Bettor UX | 9 | 6 | 9 | 9 |
 | 5. Manipulation resistance | 7 | 7 | 8 | 7 |
-| 6. `$OVERVIEW` value capture | 4 | 10 | 4 | 5 |
+| 6. Mission-token value capture | 4 | 10 | 4 | 5 |
 | 7. Community alignment | 5 | 9 | 4 | 6 |
 | 8. Cross-chain | 7 | 6 | 9 | 7 |
 | 9. Legal risk | 6 | 6 | 4 | 6 |
 | 10. Maintenance | 9 | 5 | 7 | 8 |
 | 11. Scalability | 8 | 6 | 8 | 8 |
 
-Note: D's scores reflect the **simplified** design (post-Appendix D cuts). The original elaborate D scored higher on `$OVERVIEW` value capture and community alignment (8 and 7) but lower on code complexity and maintenance. The simplified D trades some of those for less surface area.
+Note: D's scores reflect the **simplified** design (post-Appendix D cuts). The original elaborate D scored higher on mission-token value capture and community alignment (8 and 7) but lower on code complexity and maintenance. The simplified D trades some of those for less surface area.
 
 ## Scheme 1 — Frank pilot weighting
 
@@ -1153,17 +1157,17 @@ Same as D but without the 1% swap fee routing to PrizeEscrow. Prize pool only gr
 
 A is the right fallback if Phase 1 hits unexpected delays. The downgrade is minor.
 
-## Option B — `$OVERVIEW`-as-collateral market
+## Option B — mission-token-as-collateral market
 
-CTF collateral and per-team pool currency are both `$OVERVIEW` (not ETH). 100% of launchpad contributions flow to prize pool; betting layer operates entirely in `$OVERVIEW`.
+CTF collateral and per-team pool currency are both the bound mission's token (not ETH). 100% of launchpad contributions flow to prize pool; betting layer operates entirely in the mission token.
 
-**Why D was preferred:** Two-hop exit (`Team_X_YES` → `$OVERVIEW` → ETH), compounded volatility risk, ~1,800 LoC, worse maintenance profile. The 100% prize efficiency was its strongest property; D's 1% perpetual swap fee narrows that gap substantially while preserving clean single-asset UX.
+**Why D was preferred:** Two-hop exit (`Team_X_YES` → mission token → ETH), compounded volatility risk, ~1,800 LoC, worse maintenance profile. The 100% prize efficiency was its strongest property; D's 1% perpetual swap fee narrows that gap substantially while preserving clean single-asset UX.
 
 ## Option C — USDC market
 
 CTF collateral is USDC, team pools paired against USDC, JB multi-terminal accepts both ETH and USDC, cross-chain via Circle CCTP.
 
-**Why D was preferred:** Circle is a centralized counterparty (can freeze accounts). USDC introduces regulatory surface. `$OVERVIEW` becomes nearly vestigial. Best fit for a general prediction market product separate from MoonDAO; wrong for a community-aligned mission.
+**Why D was preferred:** Circle is a centralized counterparty (can freeze accounts). USDC introduces regulatory surface. The mission token becomes nearly vestigial. Best fit for a general prediction market product separate from MoonDAO; wrong for a community-aligned mission.
 
 ---
 
@@ -1171,7 +1175,8 @@ CTF collateral is USDC, team pools paired against USDC, JB multi-terminal accept
 
 | Term | Definition |
 |---|---|
-| `$OVERVIEW` | The mission's project token, minted by Juicebox when bettors pay the 5% slice. A receipt with downstream utility (cashOut floor + post-mission market value). |
+| Mission token | The project token of the launchpad mission a DePrize is bound to (its registry `jbProjectId`), minted by Juicebox to the bettor when they pay the 5% slice. A receipt with downstream utility (cashOut floor + post-mission market value). Which token this is depends entirely on the bound mission. |
+| `$OVERVIEW` | The mission token **of the first DePrize only**, because that DePrize retrofits the Overview Effect launchpad. Not a DePrize-wide token: a DePrize bound to another mission mints that mission's token instead. |
 | Outcome token (`Team_X_YES`) | An ERC-1155 token from Gnosis ConditionalTokens. Each represents a claim on 1 ETH if team X wins. |
 | Split set | A complete set of outcome tokens (1 of each team). Always burns back to 1 ETH. |
 | Back a team | Increase your holding of one team's outcome tokens; the high-level user action. |
@@ -1207,17 +1212,17 @@ Cuts made from earlier drafts of this design:
 | Mechanism | Reason cut |
 |---|---|
 | **`BoostVault` (early bettor rewards)** | Bettors will participate without it; rising prize from FeeHook provides natural FOMO. Could be re-added in v2 if data shows we need it. |
-| **`OverviewStakingVault` (stake `$OVERVIEW` for swap fees)** | `$OVERVIEW` already has utility via cashOut floor + post-mission market value. Staking is a flourish. |
-| **Senate `$OVERVIEW` bonus weight** | Adds complexity to `Proposals.sol`. vMOONEY voters are already MoonDAO-aligned. Marginal benefit. |
+| **Mission-token staking vault (stake for swap fees)** | The mission token already has utility via cashOut floor + post-mission market value. Staking is a flourish. |
+| **Senate mission-token bonus weight** | Adds complexity to `Proposals.sol`. vMOONEY voters are already MoonDAO-aligned. Marginal benefit. |
 | **Dynamic fee curve (0.1% / 1% / 5%)** | Markets handle whales naturally via price shifts. Manipulation only affects market prices, not Senate outcomes. Constant 1% fee is simpler and equivalent. |
 | **70/30 protocol fee split (PrizeEscrow / MoonDAO Safe)** | DAO revenue should come from elsewhere; routing 100% to PrizeEscrow is more generous to bettors and simpler. |
-| **Early `$OVERVIEW/ETH` pool deployment** | With cashOut gated to cancellation, this pool isn't critical during the campaign. Standard `PoolDeployer` handles it post-mission. |
+| **Early `<mission token>/ETH` pool deployment** | With cashOut gated to cancellation, this pool isn't critical during the campaign. Standard `PoolDeployer` handles it post-mission. |
 | **72h dispute window + emergency override** | Senate vote is already on-chain governance. Adding another override layer is governance theater. If Senate is wrong, the broader Senate process can re-vote. |
 | **TWAP-based settlement** | DePrize settles via Senate vote (binary outcome), not via pool price. Not applicable. |
-| **Revnet exit tax on `$OVERVIEW` cashOut** | JB's bonding curve formula penalizes small holders disproportionately. Anti-community. |
-| **Burn `$OVERVIEW` on swap** | Added complexity without clear benefit. |
+| **Revnet exit tax on mission-token cashOut** | JB's bonding curve formula penalizes small holders disproportionately. Anti-community. |
+| **Burn the mission token on swap** | Added complexity without clear benefit. |
 | **Cross-chain LayerZero entry (v1)** | Deferred to v2. Arbitrum-only for pilot is fine. Doesn't block launch. |
-| **Multi-currency entry (ETH + `$OVERVIEW` parallel pools)** | Liquidity fragmentation. Optionality not worth the cost. |
+| **Multi-currency entry (ETH + mission-token parallel pools)** | Liquidity fragmentation. Optionality not worth the cost. |
 
 Per Musk's heuristic: I should be reverting roughly 10% of cuts. The likely revert is `BoostVault` — there's a real argument that early-bettor FOMO matters for bootstrapping. Holding it on the shelf as a v2 add if pilot data shows we need it.
 
@@ -1243,7 +1248,7 @@ The cuts don't affect the bettor experience. They affect contract surface, audit
 | Mission prize pool (hypothetical) | 100 ETH |
 | Competitors | Stratos, Helios, Aurora |
 | Equilibrium market prices | Stratos = 0.40 ETH, Helios = 0.40 ETH, Aurora = 0.20 ETH |
-| `$OVERVIEW` issuance rate (JB project) | 1,000 `$OVERVIEW` per ETH contributed |
+| Mission-token issuance rate (bound JB project) | 1,000 tokens per ETH contributed — the Overview Effect launchpad's rate, since the worked examples use the first DePrize; another mission's rate would differ |
 | LP fee on swaps | 1.0% (paid to LPs — treasury, in v1) |
 | DePrize hook fee on swaps | 1.0% (goes to prize pool escrow) |
 | Total swap cost | 2.0% (1.0% LP + 1.0% protocol) |
@@ -1352,7 +1357,7 @@ The minimum number of steps for a bettor to back a provider.
 3. **Modal opens**: enter ETH amount. The modal shows in real-time:
    - "You pay: 1 ETH"
    - "You receive if Virgin wins: ~2.32 ETH" (parimutuel payout estimate)
-   - "Plus 50 `$OVERVIEW` tokens (mission receipts)" (small, secondary line)
+   - "Plus 50 mission tokens (mission receipts)" — rendered with the bound mission's real symbol (small, secondary line)
    - "5% (~0.05 ETH) goes to the prize pool. Thanks for funding the mission."
    - One clear primary button: "Bet 1 ETH on Virgin Galactic"
 4. **Confirm in wallet**. One transaction.
@@ -1428,7 +1433,7 @@ This MVP cuts UI surface by ~60% and still delivers a working DePrize. Useful sa
 ### Cognitive-load lessons from walking the flows
 
 1. **The 2-pool concept is genuinely confusing.** Bettors will ask "where does my money go?" and the answer involves two different pools. The UI must use plain language ("5% funds the mission, 95% is your bet against other bettors") and not expose CTF / JB / FeeHook nomenclature.
-2. **`$OVERVIEW` is the most confusing element.** It's a receipt, a governance token, AND has a cashOut floor — three roles. Most bettors won't engage with it. The UI should treat it like a printed receipt: visible but not central.
+2. **The mission token is the most confusing element.** It's a receipt, a governance token, AND has a cashOut floor — three roles. Most bettors won't engage with it. The UI should treat it like a printed receipt: visible but not central.
 3. **Live odds make the bet feel like trading.** Show odds as a single number ("Virgin Galactic: 40% chance"), not a price ("Virgin_YES = 0.40 ETH"). Hide AMM mechanics.
 4. **The milestone escrow is invisible to bettors.** Bettors don't need to know about M1/M2; they just see "you won, claim X ETH" at M1. Only the provider's UI surfaces milestones.
 5. **Candidate selection feels disconnected.** The `/deprize/frank` page should have a secondary CTA: "Backed a provider? You can also pledge to a community Candidate."
@@ -1540,7 +1545,7 @@ function bet(uint256 deprizeId, uint256 outcomeIndex, uint256 outcomeTokenAmount
     uint256 slice  = msg.value / SLICE_DENOMINATOR; // 5%
     uint256 budget = msg.value - slice;             // 95%
 
-    // 5% slice -> Juicebox; bettor is beneficiary (receives $OVERVIEW).
+    // 5% slice -> Juicebox; bettor is beneficiary (receives the bound mission's token).
     jbTerminal.pay{value: slice}(
         registry.getDePrize(deprizeId).jbProjectId,
         JBConstants.NATIVE_TOKEN, slice, msg.sender, 0, "DePrize bet", ""
@@ -1593,7 +1598,9 @@ So every path keeps its **exact original behavior** unless a registry is set *an
 
 `fundingTurnedOff` remains an emergency owner override that wins over everything. Finer milestone-gated staging (a `2` stage tied to `DePrizeMilestoneEscrow`) was **deliberately deferred** to keep M2 free of the escrow dependency — `SETTLED`/`M2_COMPLETE` return `1` for now. The refund-supply math (`currentFunding × rulesetWeight / 2e18`) is unchanged from the original hook. See [`DEPRIZE_M2.md`](./DEPRIZE_M2.md).
 
-# Appendix I — `$OVERVIEW` dilution math
+# Appendix I — mission-token dilution math (first DePrize)
+
+The numbers below are specific to the first DePrize, whose bound mission is the Overview Effect launchpad and whose mission token is therefore `$OVERVIEW`. The shape of the math — existing contributors minted at the full rate, DePrize bettors minted at 5% of it — applies to any mission a DePrize is bound to; the rates and balances do not.
 
 **Pre-DePrize state** (current):
 

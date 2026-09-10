@@ -33,8 +33,9 @@ DePrize combines three legally distinct activities in one product:
    Token Framework, priced by an LMSR automated market maker, denominated in ETH/WETH).
 2. **A prize competition** (a milestone-based cash prize paid from a Juicebox/Launchpad
    pool to whichever team the MoonDAO Senate declares the winner).
-3. **A token distribution** (5% of every bet buys the bettor a Launchpad governance token,
-   currently $OVERVIEW).
+3. **A token distribution** (5% of every bet buys the bettor the governance token of the
+   Launchpad mission that DePrize is bound to — the "**mission token**"; $OVERVIEW for the
+   first DePrize, a different token for any other bound mission).
 
 Each activity has its own regulatory regime, and the combination creates issues that
 neither a plain prediction market nor a plain prize competition would face on its own.
@@ -47,7 +48,7 @@ neither a plain prediction market nor a plain prize competition would face on it
 | 2 | **Several non-U.S. regulators now treat prediction markets as unlicensed betting.** UK Gambling Commission (Feb. 4, 2026 statement: a prediction market is a "betting intermediary"; operating without a licence is a criminal offence), Australia (ACMA warning Aug. 4, 2026; ISP blocking under the Interactive Gambling Act 2001), New Zealand (DIA: "bookmaking"/remote interactive gambling), Singapore (site blocking since Jan. 2025), Canada (CSA/CIRO: event contracts are derivatives; provincial gaming law), and multiple EU member states. | Criminal exposure for the operator; enforcement via ISP blocks and payment/marketing bans. | Adopt a **Restricted Jurisdictions schedule** at least as broad as the block lists used by the largest offshore prediction market, and refuse trades from those locations. |
 | 3 | **MoonDAO is not a neutral venue.** The treasury seeds the LMSR (so MoonDAO is the counterparty to net bettor profits), MoonDAO sweeps the 1% market fee, the MoonDAO Safe is the on-chain oracle, and vMOONEY holders (some with disclosed financial interests, e.g. the Overview Effect Organizing Entity) vote on the winner. | This is the profile regulators describe as a "house" or "bookmaker," and it is the conflict-of-interest fact pattern the CFTC's June 2026 proposed rule flags (settlement must be "clear, objective, and publicly verifiable"; insider/"concentration of insight" risk). | Disclose every role plainly; publish objective resolution criteria; adopt a **trading blackout for insiders**; add a pre-resolution **public challenge window** (because `reportPayouts` is write-once); put a **timelock** on `DePrizeRegistry` upgrades. |
 | 4 | **Market resolution and prize eligibility are coupled.** Competitors are listed without consent; a government agency (NASA, CNSA, ESA, JAXA) or a sanctioned/embargoed entity could "win" the market. MoonDAO cannot lawfully pay a prize to a sanctioned person, and government agencies generally cannot accept it. | OFAC strict liability on payment; contract impossibility; bettor disputes if the market resolves one way and the prize goes another. | **Decouple**: the market resolves on the published objective event; the prize is paid only to a *Prize-Eligible Winner* that passes KYC/sanctions screening and signs a Prize Acceptance Agreement. Define what happens to the pool otherwise. |
-| 5 | **The 5% slice sells a governance token with a contingent redemption right.** $OVERVIEW holders can `cashOut` against the ETH pool in refund-terminal states. A token that conveys a claim on a pool of assets managed by others sits uneasily inside the SEC's March 2026 non-security categories (digital commodities / collectibles / tools), which are defined by the *absence* of "rights to future income, profits, or assets" of an enterprise. | Unregistered securities-offering risk (Howey still governs; the SEC's August 2026 Proposed Regulation Crypto Assets is not yet effective). | Keep U.S. persons out; re-frame the 5% as a non-refundable **prize contribution**; consider making bettors' $OVERVIEW non-transferable or omitting the token distribution; obtain securities counsel sign-off on the Launchpad token before launch. |
+| 5 | **The 5% slice sells a governance token with a contingent redemption right.** The token is the bound mission's own project token (the "mission token" — $OVERVIEW for the first DePrize, something else for any other mission), and its holders can `cashOut` against the ETH pool in refund-terminal states. A token that conveys a claim on a pool of assets managed by others sits uneasily inside the SEC's March 2026 non-security categories (digital commodities / collectibles / tools), which are defined by the *absence* of "rights to future income, profits, or assets" of an enterprise. | Unregistered securities-offering risk (Howey still governs; the SEC's August 2026 Proposed Regulation Crypto Assets is not yet effective). | Keep U.S. persons out; re-frame the 5% as a non-refundable **prize contribution**; consider making bettors' mission tokens non-transferable or omitting the token distribution; obtain securities counsel sign-off on each bound mission's token before launch. |
 | 6 | **The Terms are browse-wrap and unenforceable as written.** `BetModal` links to a Terms URL that returns 404, and nothing requires assent. Courts routinely refuse to enforce terms without conspicuous notice plus an affirmative act (*Nguyen v. Barnes & Noble*, *Berman v. Freedom Financial*, *Meyer v. Uber*). | Arbitration clause, class waiver, liability cap, and jurisdictional representations would all be at risk. | **Click-wrap** at the point of bet (checkbox + versioned Terms link), with server-side logging of wallet, Terms version, timestamp and IP-derived country. Implemented in this PR. |
 | 7 | **The Website Privacy Policy is inaccurate for this product.** It states MoonDAO uses no cookies or tracking; the site uses Google Analytics (gtag, consent mode), Vercel Analytics, a cookie-consent banner, Privy authentication, and IP-geolocation via `ipapi.co` cached in Upstash Redis. | Deceptive-practice exposure (FTC Act § 5, state UDAP), and it undermines the "consent" the cookie banner purports to collect. | Publish a **DePrize Privacy Notice** (this PR) and correct the Website Privacy Policy (recommendation; not edited here). |
 
@@ -68,9 +69,13 @@ The analysis depends on how money and decisions flow. The following is drawn fro
 ### 1.1 Money flows
 
 - A bettor calls `DePrizeMint.bet()` with ETH.
-  - **5%** is paid to the DePrize's Juicebox/Launchpad project (the prize pool). The
-    bettor receives that project's governance token ($OVERVIEW) at a materially lower rate
-    than original campaign contributors (50 per ETH versus 1,000 per ETH).
+  - **5%** is paid to the Juicebox/Launchpad project of the mission that DePrize is bound
+    to (the prize pool), identified by the `jbProjectId` recorded in `DePrizeRegistry`. The
+    bettor receives **that project's** governance token — the "mission token" — at a
+    materially lower rate than the campaign's original contributors (for the first DePrize,
+    whose bound mission is the Overview Effect launchpad, 50 $OVERVIEW per ETH versus
+    1,000). Neither the contracts nor the UI hardcode a token: the front end resolves the
+    symbol from the project at runtime.
   - **95%** is wrapped to WETH and used to buy Gnosis CTF outcome tokens (ERC-1155) from
     an `LMSRWithTWAP` market. The LMSR charges a built-in ~1% fee.
 - **Fee sweep.** `DePrizeFeeRouter` sweeps the LMSR fee to the prize pool while the market
@@ -81,8 +86,8 @@ The analysis depends on how money and decisions flow. The following is drawn fro
 - **Prize payout.** On a winner declaration the Safe disburses the Juicebox pool in two
   tranches (30% at Milestone 1, 70% at Milestone 2) to the winner's `providerPayoutAddress`.
   Milestone 2 has an 18-month deadline (extendable by 6 months).
-- **$OVERVIEW cashOut** is gated (100% tax) while the campaign is live and enabled only in
-  refund-terminal states.
+- **Mission-token cashOut** is gated (100% tax) while the campaign is live and enabled only
+  in refund-terminal states.
 
 ### 1.2 Decision flows
 
@@ -366,7 +371,13 @@ securities, so the primary federal regime is the CEA (§ 2). If a DePrize ever r
 security or a company's financial metrics, it would become a security-based swap under
 SEC jurisdiction — avoid.
 
-### 6.2 The 5% slice and $OVERVIEW
+### 6.2 The 5% slice and the mission token
+
+The token a bettor receives is not a DePrize token: it is the project token of whichever
+Launchpad mission the DePrize is bound to (its `jbProjectId` in `DePrizeRegistry`). For the
+first DePrize that is $OVERVIEW. The analysis below therefore has to be run **per bound
+mission**, against that mission's actual token terms and issuance rate — the conclusions are
+not transferable from one campaign to the next.
 
 - The SEC's Interpretive Release 33-11412 (March 2026) sorts crypto assets into five
   categories — digital commodities, digital collectibles, digital tools, stablecoins, and
@@ -374,29 +385,33 @@ SEC jurisdiction — avoid.
   "intrinsic economic properties or rights, such as generating a passive yield or conveying
   rights to future income, profits, or assets of a business enterprise or other entity,
   promisor, or obligor."
-- $OVERVIEW carries a **contingent redemption right against a pool of ETH** (Launchpad
-  `cashOut`, enabled in refund-terminal states) and is minted to bettors as consideration
-  for a payment. A right to a share of pooled assets on the occurrence of a condition is an
+- The mission token carries a **contingent redemption right against a pool of ETH**
+  (Launchpad `cashOut`, enabled in refund-terminal states) and is minted to bettors as
+  consideration for a payment. A right to a share of pooled assets on the occurrence of a condition is an
   economic right, and the bettor's 5% is a payment of money into a common enterprise whose
   outcome depends on MoonDAO's and the Organizing Entity's efforts — the *Howey* elements.
   The Overview Effect Terms' statement that the token "is not a security" is a conclusion,
   not an analysis.
-- Bettors receive $OVERVIEW at a 20x worse rate than campaign contributors; if the token
-  has any economic value, that disparity invites a consumer-protection claim.
+- Bettors receive the mission token at a worse rate than the campaign's own contributors
+  (20x worse for the first DePrize, because only the 5% slice reaches the project at its
+  full issuance rate); if the token has any economic value, that disparity invites a
+  consumer-protection claim.
 - The SEC's Proposed Regulation Crypto Assets (Rel. 33-11434; Aug. 18, 2026; comments due
   Oct. 20, 2026) would create exemptions and an investment-contract safe harbor, but it is
   **proposed**, not effective.
 
 ### 6.3 Recommendations
 
-1. Obtain securities counsel's written analysis of $OVERVIEW (and any successor Launchpad
-   token) **before** DePrize distributes it to bettors.
+1. Obtain securities counsel's written analysis of the mission token **before** DePrize
+   distributes it to bettors, and repeat it for **each** mission a future DePrize binds to
+   rather than relying on the first campaign's clearance.
 2. Prefer one of: (a) route the 5% to the prize pool **without** minting a token to the
    bettor (a pure, non-refundable prize contribution); (b) mint a **non-transferable**
    governance-only token with no `cashOut` right; or (c) mint the token only to
    non-U.S. persons under the same gate as betting, with the Terms making clear the token
    is governance-only and that any `cashOut` is governed by the campaign terms.
-3. Never describe the 5% slice as an investment or as "getting $OVERVIEW at a discount."
+3. Never describe the 5% slice as an investment or as "getting the mission token at a
+   discount."
 
 ---
 
@@ -642,7 +657,7 @@ self-exclusion request channel, cooling-off on request, and links to help resour
    (governance).
 5. Adopt and publish the Insider and Conflict-of-Interest Policy; obtain Senator/ERC
    disclosures (governance).
-6. Securities counsel sign-off on the $OVERVIEW distribution to bettors, or remove/modify
+6. Securities counsel sign-off on the mission-token distribution to bettors, or remove/modify
    the token distribution (legal + engineering).
 7. Correct the Website Privacy Policy (legal).
 
@@ -671,7 +686,7 @@ self-exclusion request channel, cooling-off on request, and links to help resour
 
 1. Does MoonDAO's role as LMSR liquidity provider and fee recipient change the FinCEN
    non-custodial analysis?
-2. Does distributing $OVERVIEW to bettors constitute an offer of securities under *Howey*
+2. Does distributing a bound mission's token to bettors constitute an offer of securities under *Howey*
    as applied through Release 33-11412? Would a non-transferable variant cure it?
 3. Are there jurisdictions where a **skill-based prize competition** with a MoonDAO-selected
    roster requires registration or bonding?
