@@ -8,11 +8,13 @@ import {
   restoredCitizenImageLooksLikeAi,
 } from '../lib/image-generator/citizenOnboardingImage'
 import {
+  canFetchComfyOutputDirectly,
   classifyComfyJobStatus,
   comfyJobStatusUrl,
   isComfyJobGenerating,
   isComfyJobPending,
   parseComfyJobStatus,
+  pollIntervalForStatus,
 } from '../lib/image-generator/pollComfyImageJob'
 
 function mockFile(name: string): File {
@@ -326,6 +328,33 @@ describe('citizenOnboardingImage', () => {
       'pending',
       'unknown status stays pending'
     )
+  })
+
+  it('polls faster once a run is actually generating', () => {
+    // A queued run cannot produce an image, so there is nothing to gain from
+    // checking it often; an active one can finish at any moment.
+    expectEqual(pollIntervalForStatus('QUEUED'), 3000, 'queued interval')
+    expectEqual(pollIntervalForStatus('INIT'), 3000, 'init interval')
+    expectEqual(pollIntervalForStatus('PENDING'), 3000, 'pending interval')
+    expectEqual(pollIntervalForStatus('STARTED'), 1000, 'started interval')
+    expectEqual(pollIntervalForStatus('RUNNING'), 1000, 'running interval')
+    expectEqual(pollIntervalForStatus(undefined), 3000, 'unknown interval')
+  })
+
+  it('only fetches portraits directly from the comfy CDN over https', () => {
+    expectTruthy(
+      canFetchComfyOutputDirectly('https://r2.comfy.icu/workflows/a/output/b/ComfyUI_00001_.png'),
+      'comfy cdn allowed'
+    )
+    expectFalsy(canFetchComfyOutputDirectly('http://r2.comfy.icu/image.png'), 'http rejected')
+    expectFalsy(canFetchComfyOutputDirectly('https://r2.comfy.icu:8443/image.png'), 'port rejected')
+    expectFalsy(
+      canFetchComfyOutputDirectly('https://r2.comfy.icu.evil.com/image.png'),
+      'subdomain spoof rejected'
+    )
+    expectFalsy(canFetchComfyOutputDirectly('https://evil.com/image.png'), 'other host rejected')
+    expectFalsy(canFetchComfyOutputDirectly('not a url'), 'garbage rejected')
+    expectFalsy(canFetchComfyOutputDirectly(undefined), 'missing url rejected')
   })
 
   it('Privy-return regression: stale full-size citizenImage must not win over crop', () => {
