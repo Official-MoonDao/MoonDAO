@@ -1,10 +1,11 @@
+import { authMiddleware } from 'middleware/authMiddleware'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getAddress } from 'viem'
 import { hashIp, recordTermsAcceptance } from '@/lib/deprize/acceptanceLog'
 import { DEPRIZE_TERMS_VERSION } from '@/lib/deprize/constants'
-import { eligibilityMessage, isHexAddress } from '@/lib/deprize/eligibility'
+import { eligibilityMessage } from '@/lib/deprize/eligibility'
+import { walletFromSession } from '@/lib/deprize/sessionWallet'
 import { getClientIp, getCountryFromHeaders } from '@/lib/geo'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -12,21 +13,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const walletRaw = typeof req.body?.wallet === 'string' ? req.body.wallet.trim() : ''
-  const termsVersion =
-    typeof req.body?.termsVersion === 'string' && req.body.termsVersion.trim()
-      ? req.body.termsVersion.trim()
-      : DEPRIZE_TERMS_VERSION
+  const claimedWallet = typeof req.body?.wallet === 'string' ? req.body.wallet.trim() : ''
+  const wallet = await walletFromSession(req, res, claimedWallet)
+  const requestedTermsVersion =
+    typeof req.body?.termsVersion === 'string' ? req.body.termsVersion.trim() : ''
   const accepted = req.body?.accepted === true
 
-  if (!isHexAddress(walletRaw)) {
+  if (!wallet) {
     return res.status(400).json({
       ok: false,
       reason: 'invalid-wallet',
       message: eligibilityMessage('invalid-wallet'),
     })
   }
-  if (!accepted) {
+  if (!accepted || requestedTermsVersion !== DEPRIZE_TERMS_VERSION) {
     return res.status(400).json({
       ok: false,
       reason: 'terms-not-accepted',
@@ -34,7 +34,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const wallet = getAddress(walletRaw)
+  const termsVersion = DEPRIZE_TERMS_VERSION
   const logged = await recordTermsAcceptance({
     wallet,
     termsVersion,
@@ -55,4 +55,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   return res.status(200).json({ ok: true, wallet, termsVersion })
 }
 
-export default withMiddleware(handler, rateLimit)
+export default withMiddleware(handler, authMiddleware, rateLimit)
