@@ -561,7 +561,7 @@ export function isCompetitorClaimed(outcome: DePrizeRaceOutcome | undefined): bo
  * Shown wherever named competitors appear next to a market. This is the control
  * that replaced the consent gate, so it must render on any surface that lists
  * outcomes: the DePrize detail roster and the Moon Base Zero race panel.
- * Mirrors section 5.3 of the Terms.
+ * Mirrors section 6 of the DePrize Terms and Conditions.
  */
 export const ROSTER_DISCLAIMER =
   'Competitors are listed at MoonDAO’s editorial discretion. Listing does not mean the organization has entered, endorsed, or is affiliated with this prize. Bets are on outcomes, not on any affiliation.'
