@@ -188,7 +188,7 @@ export default function DePrizeTeamCard({
           {showHoldings && !resolved && (
             <p
               className="text-xs text-gray-500 pl-12"
-              title="Each share you hold pays 1 ETH if this team is selected as the winner. Paid from the betting market, not from the prize pool."
+              title="Each share you hold pays 1 ETH if this competitor is selected as the winner. Paid from the betting market, not from the prize pool."
             >
               Your payout if wins ·{' '}
               <span className="text-emerald-400/90 font-medium tabular-nums">

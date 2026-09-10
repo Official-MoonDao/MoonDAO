@@ -320,7 +320,20 @@ function DePrizeDetailContent() {
               method: 'calcNetCost' as string,
               params: [amounts],
             })
-            return [o.index, Number(-net) / Number(UNIT)] as [number, number]
+            // Net cost excludes the market-maker fee; realized sells record
+            // proceeds as -netCost - fees, so quote the same here. If the fee
+            // read fails, fall back to the net-only quote rather than no quote.
+            let fee = 0n
+            try {
+              fee = await rpcRead<bigint>({
+                contract: lmsrRead,
+                method: 'calcMarketFee' as string,
+                params: [net],
+              })
+            } catch {
+              fee = 0n
+            }
+            return [o.index, Number(-net - fee) / Number(UNIT)] as [number, number]
           } catch {
             return null
           }

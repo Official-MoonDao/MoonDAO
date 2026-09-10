@@ -75,7 +75,12 @@ export async function fetchEventsViaExplorer<T>(args: {
     const body = await r.json().catch(() => ({}))
     throw new Error(body?.error || `logs api ${r.status}`)
   }
-  const { logs } = (await r.json()) as { logs: ExplorerLog[] }
+  const { logs, truncated } = (await r.json()) as { logs: ExplorerLog[]; truncated?: boolean }
+  if (truncated) {
+    console.warn(
+      `[deprize] explorer logs truncated at ${logs.length} rows; history is partial and snaps to live`
+    )
+  }
   const out: RawLog<T>[] = []
   for (const l of logs) {
     try {

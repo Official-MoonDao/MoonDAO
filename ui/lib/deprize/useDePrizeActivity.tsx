@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import {
+  eventsFromBlock,
   fetchDePrizeBets,
   fetchMarketTrades,
   sellsFromTrades,
@@ -76,6 +77,7 @@ export function useDePrizeActivity(args: {
               chain,
               marketAddress,
               fromBlock: firstBetBlock,
+              fundingFromBlock: eventsFromBlock(chainSlug),
               gen: refreshNonce,
             })
           : { trades: [] as TradeRow[], fundingChanges: [] as FundingLike[] }

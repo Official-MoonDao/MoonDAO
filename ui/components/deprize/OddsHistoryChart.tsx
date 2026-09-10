@@ -19,7 +19,7 @@ import {
 
 export type { OddsSample }
 
-export type OddsMarker = { t: number; index: number }
+export type OddsMarker = { t: number; index: number; buy?: boolean }
 
 type Props = {
   history: OddsSample[]
@@ -53,7 +53,7 @@ export default function OddsHistoryChart({
         tMax: 0,
         ticks: [] as number[],
         spanMs: 0,
-        dots: [] as { t: number; v: number; index: number }[],
+        dots: [] as { t: number; v: number; index: number; buy: boolean }[],
       }
     }
 
@@ -67,7 +67,8 @@ export default function OddsHistoryChart({
     })
 
     // Marker y-value = the traded outcome's probability right after the trade
-    // (the latest sample at or before the marker time).
+    // (the latest sample at or before the marker time). Buys render filled;
+    // cash-outs render hollow so sells read differently from bets.
     const sorted = [...history].sort((a, b) => a.t - b.t)
     const dots = markers
       .map((m) => {
@@ -78,9 +79,9 @@ export default function OddsHistoryChart({
         }
         return v === undefined || !Number.isFinite(v)
           ? null
-          : { t: Math.max(m.t, domain.tMin), v, index: m.index }
+          : { t: Math.max(m.t, domain.tMin), v, index: m.index, buy: m.buy !== false }
       })
-      .filter((d): d is { t: number; v: number; index: number } => d !== null)
+      .filter((d): d is { t: number; v: number; index: number; buy: boolean } => d !== null)
 
     return { data: rows, dots, ...domain }
   }, [history, outcomeCount, domainStartMs, markers])
@@ -153,8 +154,8 @@ export default function OddsHistoryChart({
             x={d.t}
             y={d.v}
             r={3.5}
-            fill={colors[d.index % colors.length]}
-            stroke="#0b1220"
+            fill={d.buy ? colors[d.index % colors.length] : '#0b1220'}
+            stroke={colors[d.index % colors.length]}
             strokeWidth={1.5}
             isFront
           />

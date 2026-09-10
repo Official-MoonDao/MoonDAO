@@ -11,7 +11,9 @@ import type { NextApiRequest, NextApiResponse } from 'next'
  * 1000 logs and includes block timestamps.
  *
  * GET /api/deprize/logs?chainId=11155111&address=0x…&fromBlock=N&topic0=0x…[&topic1=0x…]
- * → { logs: [{ address, topics, data, blockNumber, timeStamp, logIndex, transactionHash }] }
+ * → { logs: [{ address, topics, data, blockNumber, timeStamp, logIndex, transactionHash }], truncated: boolean }
+ * `truncated` is true when the result hit the page cap (MAX_PAGES full pages),
+ * so the chart treats the rebuilt history as partial and snaps to live prices.
  */
 
 export type EtherscanLog = {
@@ -55,6 +57,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const logs: EtherscanLog[] = []
+  let truncated = false
   for (let page = 1; page <= MAX_PAGES; page++) {
     const params = new URLSearchParams({
       chainid: String(chainId),
@@ -87,12 +90,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const batch = Array.isArray(json.result) ? (json.result as EtherscanLog[]) : []
     logs.push(...batch)
     if (batch.length < PAGE) break
+    if (page === MAX_PAGES) truncated = true
   }
 
   // Short CDN cache: the page refetches after its own transactions with a
   // cache-busting `gen` query param, so a brief TTL is safe.
   setCDNCacheHeaders(res, 15, 60)
-  return res.status(200).json({ logs })
+  return res.status(200).json({ logs, truncated })
 }
 
 export default withMiddleware(handler, rateLimit)

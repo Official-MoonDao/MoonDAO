@@ -146,16 +146,20 @@ export function fetchDePrizeBets(args: {
  * All LMSR trades (buys routed through the mint + direct sells) and funding
  * changes for one market. `fromBlock` should be the first Bet block for the
  * DePrize when known (trades cannot precede the first bet), else the registry
- * deploy block.
+ * deploy block. Funding changes are scanned from `fundingFromBlock` (defaults
+ * to `fromBlock`): seed funding lands at market creation, before the first
+ * bet, so funding must start at deployment to catch early changes.
  */
 export function fetchMarketTrades(args: {
   chain: Chain
   marketAddress: string
   fromBlock: bigint
+  fundingFromBlock?: bigint
   gen: number
 }): Promise<MarketTrades> {
   const { chain, marketAddress, fromBlock, gen } = args
-  const key = `trades:${chain.id}:${marketAddress.toLowerCase()}`
+  const fundingFrom = args.fundingFromBlock ?? fromBlock
+  const key = `trades:${chain.id}:${marketAddress.toLowerCase()}:${fromBlock}:${fundingFrom}`
   return cached(key, gen, async () => {
     const [tradeLogs, fundingLogs] = await Promise.all([
       fetchLogs<TradeArgs>({
@@ -173,7 +177,7 @@ export function fetchMarketTrades(args: {
         abi: LMSRWithTWAP.abi,
         signature: FUNDING_EVENT_SIGNATURE,
         event: fundingEvent(),
-        fromBlock,
+        fromBlock: fundingFrom,
         gen,
       }).catch(() => [] as RawLog<FundingArgs>[]),
     ])
