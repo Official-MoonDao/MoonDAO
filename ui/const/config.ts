@@ -480,6 +480,13 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
   'arbitrum-sepolia': '',
   arbitrum: '0xf8B2244634c6eCeF32de10BFe0D7436413A59924',
 }
+// First block worth scanning for DePrize events per chain: the block in which
+// DePrizeRegistry was deployed (Etherscan `getcontractcreation`). Every DePrize
+// mint router, market and trade was created after this block.
+export const DEPRIZE_EVENTS_FROM_BLOCK: Record<string, number> = {
+  sepolia: 11068914,
+  arbitrum: 495964196,
+}
 // DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
 // per chain once `script/deprize/DePrizeMint.s.sol` has deployed the router and
 // `setMarket(deprizeId, lmsr)` has bound the market. Empty until then — the

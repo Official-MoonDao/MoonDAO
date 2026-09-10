@@ -48,6 +48,12 @@ export type DePrizeRaceOutcome = {
    * `fieldOdds`, never in `oddsByProjectId`.
    */
   field?: boolean
+  /**
+   * Optional vehicle / article name shown under the org on the live prize
+   * page (e.g. "Griffin Mission One"). Atlas `project.name` is often a
+   * family label ("Peregrine & Griffin Landers") and is the wrong line here.
+   */
+  vehicleLabel?: string
 }
 
 export type DePrizeRaceBinding = {
@@ -82,9 +88,9 @@ export type DePrizeCompetition = {
 
 export const GENERIC_DEPRIZE_COMPETITION: DePrizeCompetition = {
   title: 'DePrize',
-  tagline: 'Back the team you think will win — live odds, payout when a winner is declared.',
+  tagline: 'Back the competitor you think will win — live odds, payout when a winner is declared.',
   metaDescription:
-    'Back the team you think will win — live odds, payout when a winner is declared.',
+    'Back the competitor you think will win — live odds, payout when a winner is declared.',
 }
 
 /** Stable prize-page path for a Moon Base Zero race. Resolves live or atlas. */
@@ -102,7 +108,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     1: {
       title: 'The Moon Is A Harsh Mistress',
       tagline:
-        'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
+        'Which team posts “The Moon is a harsh mistress” first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Arbitrum DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
       questionId: '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
@@ -144,7 +150,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     10: {
       title: 'First commercial crewed lunar landing',
       tagline:
-        'Which crewed lander puts astronauts on the lunar surface first? Back a team — every bet grows the prize pool.',
+        'Which crewed lander puts astronauts on the lunar surface first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the first commercial crewed lunar landing. SpaceX Starship HLS vs Blue Origin Blue Moon MK2.',
       sharedGoalId: 'shared-crewed-lander',
@@ -158,7 +164,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     12: {
       title: 'First crewed lunar terrain vehicle in service',
       tagline:
-        'Which LTV is driving on the lunar surface first? Back a team — every bet grows the prize pool.',
+        'Which LTV is driving on the lunar surface first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the first crewed lunar terrain vehicle. Astrolab, Lunar Outpost, and Intuitive Machines.',
       sharedGoalId: 'shared-lunar-rover',
@@ -173,7 +179,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     15: {
       title: 'First sustained oxygen and metals from lunar regolith',
       tagline:
-        'Which ISRU plant makes oxygen from regolith first? Back a team — every bet grows the prize pool.',
+        'Which ISRU plant makes oxygen from regolith first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the first sustained lunar ISRU plant. Blue Alchemist, Sierra Space, Lunar Resources, and Cislune.',
       sharedGoalId: 'shared-isru-oxygen',
@@ -189,7 +195,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     17: {
       title: 'First demonstrated lunar landing-pad construction system',
       tagline:
-        'Which team hardens a lunar landing pad first? Back a team — every bet grows the prize pool.',
+        'Which team hardens a lunar landing pad first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the first demonstrated lunar landing-pad construction system. ICON, Redwire, Astroport, AI SpaceFactory, and Astrobotic.',
       questionId: '0x8cea9bc514c3b1f069f68b62046ab8679c2d8aaffcf91fdfd071b40399c1ab9b',
@@ -207,7 +213,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     18: {
       title: 'First pressurized habitat occupied on the lunar surface',
       tagline:
-        'Which habitat houses crew on the Moon first? Back a team — every bet grows the prize pool.',
+        'Which habitat houses crew on the Moon first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the first pressurized lunar habitat. Artemis Base Camp, ILRS, Thales MPH, Sierra Space LIFE, and JAXA Lunar Cruiser.',
       questionId: '0xb450b8b519b564b86a2ded23034b5e808080705e2567f0fc947676cb39cebc72',
@@ -225,7 +231,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     19: {
       title: 'First operational lunar communications and navigation service',
       tagline:
-        'Which network sells lunar comms first? Back a team — every bet grows the prize pool.',
+        'Which network sells lunar comms first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the first operational lunar communications and navigation service. Modul8, Intuitive Machines, ESA Moonlight, Crescent Parsec, and Solstar.',
       questionId: '0xb97bc9385d44cda940b222c2027923496c034d44348931be525acf34970db986',
@@ -245,7 +251,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     20: {
       title: 'The Moon Is A Harsh Mistress',
       tagline:
-        'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
+        'Which team posts “The Moon is a harsh mistress” first? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
       questionId: '0xe6430ff8d51a6e5389d1c23cfa5dcab4682407f866a208ef3ea60120b271d5cf',
@@ -256,7 +262,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     21: {
       title: 'Touchdown',
       tagline:
-        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
       questionId: '0x18f9e4f8e5b291580b00bd23299194b169a66c3513229c5e16240e05d8520f17',
@@ -264,11 +270,11 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       raceLabel: 'Next lunar landing',
       supersededBy: 22,
       outcomes: [
-        { projectId: 'astrobotic-griffin', teamId: 601 },
-        { projectId: 'im-nova-c', teamId: 602 },
-        { projectId: 'firefly-blue-ghost', teamId: 603 },
-        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604 },
-        { projectId: 'cnsa-change-7', teamId: 605 },
+        { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
+        { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
+        { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
+        { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
@@ -277,7 +283,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     22: {
       title: 'Touchdown',
       tagline:
-        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
       metaDescription:
         'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
       questionId: '0x1ba1808c0a0d8a2bbc48462cd3a490e306695713e0cafd362d365c9db3f43513',
@@ -285,11 +291,11 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       raceLabel: 'Next lunar landing',
       supersedes: 21,
       outcomes: [
-        { projectId: 'astrobotic-griffin', teamId: 601 },
-        { projectId: 'im-nova-c', teamId: 602 },
-        { projectId: 'firefly-blue-ghost', teamId: 603 },
-        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604 },
-        { projectId: 'cnsa-change-7', teamId: 605 },
+        { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
+        { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
+        { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
+        { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
