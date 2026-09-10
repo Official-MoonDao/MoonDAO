@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
-import { DEPRIZE_TERMS_URL, UNIT } from '@/lib/deprize/constants'
+import {
+  DEPRIZE_PRIVACY_URL,
+  DEPRIZE_RISK_DISCLOSURES_URL,
+  DEPRIZE_TERMS_URL,
+  DEPRIZE_TERMS_VERSION,
+  UNIT,
+} from '@/lib/deprize/constants'
 import { fmt, fmtEthWithUsd, fmtUsdFromEth, formatPrizeTokenLabel, toEth, toWei } from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
@@ -59,6 +65,9 @@ export default function BetModal({
   const [quote, setQuote] = useState<{ qty: number } | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Click-wrap: the Terms are only enforceable with an affirmative act, so the
+  // box starts unchecked on every open and gates the Bet button.
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
     useDePrizeChainGuard(chain)
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
@@ -128,6 +137,10 @@ export default function BetModal({
     if (!account || !mint) return
     if (betAmountWei <= 0n) {
       toast.error('Enter an amount to bet.', { style: toastStyle })
+      return
+    }
+    if (!termsAccepted) {
+      toast.error('Please accept the DePrize Terms to continue.', { style: toastStyle })
       return
     }
     // Re-checked here as well as in the button: the wallet can be switched
@@ -278,21 +291,66 @@ export default function BetModal({
             5% of every bet funds this DePrize&apos;s launchpad prize pool
             {launchpad.name ? ` (${launchpad.name})` : ''} — you receive {prizeToken} for that
             slice. If the DePrize is cancelled or ends with no winner, it resolves on an
-            equal-payout basis —{' '}
-            <span className="font-semibold">every token redeems for 1/N</span>, not your original
-            stake — so a bet placed at odds above the average (1/N) may redeem for less than you put
-            in. See the{' '}
+            equal-payout basis — <span className="font-semibold">every token redeems for 1/N</span>,
+            not your original stake — so a bet placed at odds above the average (1/N) may redeem for
+            less than you put in.
+          </p>
+          <p>
+            MoonDAO funds the market maker, receives the market fee, reports the result and sponsors
+            the prize. DePrize is{' '}
+            <span className="font-semibold">not available to U.S. persons</span> or in restricted
+            jurisdictions. See the{' '}
             <a
-              href={DEPRIZE_TERMS_URL}
+              href={DEPRIZE_RISK_DISCLOSURES_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="underline hover:text-amber-200"
             >
-              DePrize Terms &amp; Conditions
+              Risk Disclosures
             </a>
             .
           </p>
         </div>
+
+        <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+          />
+          <span>
+            I have read and agree to the{' '}
+            <a
+              href={DEPRIZE_TERMS_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white"
+            >
+              DePrize Terms &amp; Conditions
+            </a>{' '}
+            (v{DEPRIZE_TERMS_VERSION}),{' '}
+            <a
+              href={DEPRIZE_PRIVACY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white"
+            >
+              Privacy Notice
+            </a>{' '}
+            and{' '}
+            <a
+              href={DEPRIZE_RISK_DISCLOSURES_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-white"
+            >
+              Risk Disclosures
+            </a>
+            , and I confirm that I am not a U.S. person, am not located in a restricted
+            jurisdiction, and am not an insider for this DePrize.
+          </span>
+        </label>
 
         {!canBet ? (
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
@@ -322,15 +380,17 @@ export default function BetModal({
         ) : (
           <StandardButton
             onClick={placeBet}
-            disabled={busy || betAmountWei <= 0n}
+            disabled={busy || betAmountWei <= 0n || !termsAccepted}
             className="rounded-full w-full"
             backgroundColor="bg-moon-green"
           >
             {busy
               ? 'Placing bet…'
-              : betAmountNum > 0
-                ? `Bet ${fmtEthWithUsd(betAmountNum, ethPrice)}`
-                : 'Enter an amount'}
+              : betAmountNum <= 0
+              ? 'Enter an amount'
+              : !termsAccepted
+              ? 'Accept the Terms to bet'
+              : `Bet ${fmtEthWithUsd(betAmountNum, ethPrice)}`}
           </StandardButton>
         )}
       </div>

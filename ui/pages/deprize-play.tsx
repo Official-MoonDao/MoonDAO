@@ -177,10 +177,10 @@ const toWei = (v: string): bigint => {
  * wraps). It exists to validate the market layer end-to-end with a real wallet
  * before we build the full DePrize bet/positions/claim UI on top.
  *
- * NOTE: a real DePrize bet additionally routes a 5% prize slice into the
- * mission's Juicebox project (minting $OVERVIEW) and refunds leftover ETH — that
- * wrapper is `DePrizeMint.bet`, exercised by the M3 fork test. This page is the
- * underlying market only.
+ * NOTE: a real DePrize bet additionally routes a 5% prize slice into the bound
+ * mission's Juicebox project (minting that mission's token) and refunds leftover
+ * ETH — that wrapper is `DePrizeMint.bet`, exercised by the M3 fork test. This
+ * page is the underlying market only.
  */
 export default function DePrizePlay() {
   const account = useActiveAccount()
