@@ -112,6 +112,14 @@ describe('deprize competitions registry', () => {
       601, 602, 603, 604, 605, 24,
     ])
     expect(binding!.outcomes[5].field).to.equal(true)
+    expect(binding!.outcomes.map((o) => o.vehicleLabel)).to.deep.equal([
+      'Griffin Mission One',
+      'Nova-C IM-3',
+      'Blue Ghost M2',
+      'Blue Moon MK1',
+      "Chang'e-7",
+      undefined,
+    ])
   })
 
   it('registers Sepolia DePrize 20 as the unbound Harsh Mistress featured prize', () => {

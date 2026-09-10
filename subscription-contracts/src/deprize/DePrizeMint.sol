@@ -22,7 +22,8 @@ import {IWETH} from "./interfaces/IWETH.sol";
 /// @notice The DePrize "bet router". A single `bet` call:
 ///         1. splits the incoming ETH into a 5% prize slice and 95% collateral;
 ///         2. pays the 5% slice into the DePrize's Juicebox project, so the bettor
-///            receives $OVERVIEW (the cash-out floor) for that portion;
+///            receives that bound mission's project token (the cash-out floor) for
+///            that portion — whichever token the project issues, not a fixed one;
 ///         3. wraps the 95% to WETH and buys the chosen team's outcome tokens on
 ///            the team's Gnosis CTF + LMSRWithTWAP market;
 ///         4. forwards the minted ERC-1155 outcome tokens to the bettor and refunds
@@ -210,7 +211,8 @@ contract DePrizeMint is
         uint256 slice = msg.value / SLICE_DENOMINATOR; // 5%
         uint256 budget = msg.value - slice; // 95%
 
-        // 1. Prize slice -> Juicebox; bettor is the beneficiary (receives $OVERVIEW).
+        // 1. Prize slice -> Juicebox; bettor is the beneficiary (receives the
+        //    bound mission's project token, per that project's ruleset).
         jbTerminal.pay{value: slice}(
             registry.getDePrize(deprizeId).jbProjectId,
             JBConstants.NATIVE_TOKEN,

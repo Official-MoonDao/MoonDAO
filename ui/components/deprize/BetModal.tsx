@@ -73,6 +73,8 @@ export default function BetModal({
   const [quote, setQuote] = useState<{ qty: number } | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Click-wrap: the Terms are only enforceable with an affirmative act, so the
+  // box starts unchecked on every open and gates the Bet button.
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [eligibility, setEligibility] = useState<{
     status: 'loading' | 'ready' | 'error'
@@ -382,10 +384,11 @@ export default function BetModal({
             void/cancel; final resolution). Full detail in the DePrize Terms. */}
         <div className="text-amber-300/90 text-[11px] leading-snug space-y-1.5">
           <p>
-            You are buying outcome tokens for this team. If the team wins, they redeem for their
-            full share; if it loses, they are <span className="font-semibold">worth $0</span>. Only
-            bet what you can afford to lose. Read this DePrize&apos;s rules before betting —
-            resolution is final and cannot be reversed.
+            You are buying outcome tokens for this competitor. If this competitor wins, they redeem
+            for their full share; if it loses, they are{' '}
+            <span className="font-semibold">worth $0</span>. Only bet what you can afford to lose.
+            Read this DePrize&apos;s rules before betting — resolution is final and cannot be
+            reversed.
           </p>
           <p>
             5% of every bet funds this DePrize&apos;s launchpad prize pool
@@ -393,7 +396,11 @@ export default function BetModal({
             slice. If the DePrize is cancelled or ends with no winner, it resolves on an
             equal-payout basis — <span className="font-semibold">every token redeems for 1/N</span>,
             not your original stake — so a bet placed at odds above the average (1/N) may redeem for
-            less than you put in. DePrize is{' '}
+            less than you put in.
+          </p>
+          <p>
+            MoonDAO funds the market maker, receives the market fee, reports the result and sponsors
+            the prize. DePrize is{' '}
             <span className="font-semibold">not available to U.S. persons</span> or in restricted
             jurisdictions. See the{' '}
             <a
@@ -440,7 +447,7 @@ export default function BetModal({
               rel="noopener noreferrer"
               className="underline hover:text-white"
             >
-              Privacy Policy
+              Privacy Notice
             </a>{' '}
             and{' '}
             <a

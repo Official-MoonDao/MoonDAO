@@ -302,10 +302,11 @@ Remaining work on `Official-MoonDao/documentation`:
 5. Optionally set `openLinksInNewTab: true` if the Quartz site stays up
    behind an iframe anywhere.
 
-`DEPRIZE_TERMS_URL` now points at `/docs/Legal/DePrize-Terms-and-Conditions`,
-which is **not in the imported vault**. The old Quartz URL was also absent
-from `contentIndex.json`. The draft still lives at
-`ui/docs/DEPRIZE_TERMS_AND_CONDITIONS.md`.
+`DEPRIZE_TERMS_URL` now points at
+`/docs/Legal/DePrize/DePrize-Terms-and-Conditions`, published from
+`ui/content/docs/Legal/DePrize/`. The earlier
+`/docs/Legal/DePrize-Terms-and-Conditions` path is kept as a frontmatter alias.
+The old Quartz URL was never in `contentIndex.json`.
 
 ---
 

@@ -61,11 +61,14 @@ export const ODDS_SAMPLE_MIN_MS = 8000
 export const ODDS_HISTORY_MAX = 1000
 export const ODDS_POLL_MS = 30000
 
-// DePrize legal documents. Terms / risk routes are published under
-// content/docs/Legal/DePrize/; privacy currently uses the site-wide policy.
+// DePrize legal documents, published under MoonDAO's Legal docs from
+// content/docs/Legal/DePrize/*.md (same host/pattern as the Website Terms &
+// Privacy Policy).
 export const DEPRIZE_TERMS_URL = '/docs/Legal/DePrize/DePrize-Terms-and-Conditions'
-export const DEPRIZE_PRIVACY_URL = '/docs/Legal/Website-Privacy-Policy'
+export const DEPRIZE_PRIZE_RULES_URL = '/docs/Legal/DePrize/DePrize-Official-Prize-Rules'
+export const DEPRIZE_PRIVACY_URL = '/docs/Legal/DePrize/DePrize-Privacy-Notice'
 export const DEPRIZE_RISK_DISCLOSURES_URL =
   '/docs/Legal/DePrize/DePrize-Risk-Disclosures-and-Disclaimers'
-// Bump when the published Terms change materially so the bet flow re-prompts.
+// Bump whenever the published Terms change materially; the bet flow keys the
+// user's acceptance on this so a new version re-prompts them.
 export const DEPRIZE_TERMS_VERSION = '1.0'

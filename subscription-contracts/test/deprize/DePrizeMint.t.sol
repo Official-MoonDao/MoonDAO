@@ -19,7 +19,7 @@ import {MintPermitHelper} from "./MintPermitHelper.sol";
 
 /// @dev Records the 5% prize-slice routing. Signature matches IJBTerminal.pay so
 ///      the router's interface call dispatches here. Returns a 1:1 token count to
-///      stand in for the $OVERVIEW the bettor would receive.
+///      stand in for the bound mission's token the bettor would receive.
 contract MockJBTerminal {
     uint256 public lastProjectId;
     address public lastBeneficiary;
@@ -396,7 +396,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         vm.prank(bettor);
         mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline1, signature1);
 
-        // 5% slice -> Juicebox, bettor as beneficiary (receives $OVERVIEW).
+        // 5% slice -> Juicebox, bettor as beneficiary (receives the mission's token).
         assertEq(terminal.lastValue(), expectedSlice, "slice value");
         assertEq(terminal.lastBeneficiary(), bettor, "beneficiary");
         assertEq(terminal.lastProjectId(), JB_PROJECT, "project id");

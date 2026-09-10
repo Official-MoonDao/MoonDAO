@@ -14,18 +14,22 @@ type DePrizeTeamCardProps = {
   resolved: boolean
   isRefundVector: boolean
   isWinningSlot: boolean
-  // Value display (ETH). redeemValue set once resolved; sellQuote while trading.
+  /**
+   * Inline holdings (payout line + cash-out quote). Only rendered when
+   * `onCashOut` is provided — the live prize page shows holdings in the
+   * position panel instead and omits these.
+   */
   redeemValueEth?: number
   sellQuoteEth?: number
-  investedEth: number
+  investedEth?: number
+  onCashOut?: (index: number) => void
   // Actions + gating
   bettingOpen: boolean
   tradingHalted: boolean
   busy: boolean
   userConnected: boolean
   onBet: (index: number) => void
-  onCashOut: (index: number) => void
-  /** Open Field slot — render overrides + tooltip instead of a Team NFT. */
+  /** Open Field slot — render overrides instead of a Team NFT. */
   isField?: boolean
   /** Disclosure: competitor marked withdrawn on-chain. Slot stays tradable. */
   withdrawn?: boolean
@@ -37,6 +41,13 @@ type DePrizeTeamCardProps = {
   hrefOverride?: string
   /** Atlas org display name, for competitors with no Team NFT. */
   nameOverride?: string
+  /** Vehicle / article shown under the org name (live prize page). */
+  vehicleLabel?: string
+  /**
+   * Live-page Back button copy, e.g. "Back Voyager Lunar Systems".
+   * Demo cards omit this and keep "Back this team".
+   */
+  backLabel?: string
   /** Atlas org logo. Suppressed when `unclaimed`. */
   imageOverride?: string
   /**
@@ -76,7 +87,7 @@ export default function DePrizeTeamCard({
   isWinningSlot,
   redeemValueEth,
   sellQuoteEth,
-  investedEth,
+  investedEth = 0,
   bettingOpen,
   tradingHalted,
   busy,
@@ -87,42 +98,26 @@ export default function DePrizeTeamCard({
   withdrawn = false,
   hrefOverride,
   nameOverride,
+  vehicleLabel,
+  backLabel,
   imageOverride,
   unclaimed = false,
   participation,
 }: DePrizeTeamCardProps) {
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
+  const showHoldings = !!onCashOut && holding
   const realizedValue = resolved ? redeemValueEth : sellQuoteEth
   const pnl =
-    realizedValue !== undefined && investedEth > 0
-      ? realizedValue - investedEth
-      : undefined
-  const canCashOut = holding && !tradingHalted && !resolved
-  const showWinSubtitle = holding && !resolved
-  const participationTone =
-    participation === 'official'
-      ? 'from-emerald-950/55 border-emerald-400/25'
-      : participation === 'unofficial'
-        ? 'from-zinc-950/80 border-zinc-400/20'
-        : 'from-slate-900/90 border-white/[0.08]'
+    realizedValue !== undefined && investedEth > 0 ? realizedValue - investedEth : undefined
+  const canCashOut = showHoldings && !tradingHalted && !resolved
 
   return (
     <div
-      className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border shadow-lg ${participationTone} ${
-        resolved && isWinningSlot
-          ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
-          : ''
+      className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
+        resolved && isWinningSlot ? 'border-emerald-400/40 ring-1 ring-emerald-400/20' : ''
       }`}
     >
-      {participation && (
-        <span
-          aria-hidden
-          className={`absolute inset-y-0 left-0 w-1 ${
-            participation === 'official' ? 'bg-emerald-400' : 'bg-zinc-400'
-          }`}
-        />
-      )}
-      {/* Top row: chance/result · team (+ if-wins subtitle) · bet CTA */}
+      {/* Top row: chance/result · team · bet CTA */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-3 min-w-[96px]">
           <span
@@ -160,36 +155,42 @@ export default function DePrizeTeamCard({
         </div>
 
         <div className="flex-1 min-w-[150px] flex flex-col gap-1">
-          <DePrizeTeamLink
-            teamId={teamId}
-            teamContract={teamContract}
-            color={color}
-            size={40}
-            className="text-base font-semibold text-white hover:text-indigo-200"
-            nameOverride={isField ? 'Open Field' : nameOverride}
-            imageOverride={isField ? FIELD_AVATAR : imageOverride}
-            hrefOverride={isField ? '/deprize#open-field' : hrefOverride}
-            // The field slot is not an organization, so its own placeholder mark
-            // must survive the unclaimed logo suppression.
-            unclaimed={!isField && unclaimed}
-          />
-          {isField && (
-            <p
-              className="text-xs text-gray-400 pl-12"
-              title="Pays if any qualifying entrant not listed above is selected as the winner. The Senate names the entity; the admin Safe records the payout address in the same settlement batch."
-            >
-              Any qualifying entrant not listed above
-            </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <DePrizeTeamLink
+              teamId={teamId}
+              teamContract={teamContract}
+              color={color}
+              size={40}
+              className="text-base font-semibold text-white hover:text-indigo-200"
+              nameOverride={isField ? 'Open Field' : nameOverride}
+              imageOverride={isField ? FIELD_AVATAR : imageOverride}
+              hrefOverride={isField ? '/deprize#open-field' : hrefOverride}
+              // The field slot is not an organization, so its own placeholder mark
+              // must survive the unclaimed logo suppression.
+              unclaimed={!isField && unclaimed}
+            />
+            {participation === 'unofficial' && !isField && (
+              <span
+                className="text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 border border-zinc-500/40 text-zinc-300"
+                title="Listed by MoonDAO; this organization has not confirmed participation."
+              >
+                Unconfirmed
+              </span>
+            )}
+          </div>
+          {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
+          {!isField && vehicleLabel && (
+            <p className="text-xs text-gray-400 pl-12">{vehicleLabel}</p>
           )}
           {withdrawn && !isField && (
-            <p className="text-xs text-amber-400/90 pl-12">
-              Withdrawn — you can still sell your position
-            </p>
+            <p className="text-xs text-amber-400/90 pl-12">Withdrawn — sell only</p>
           )}
-          {showWinSubtitle && (
-            // Align under the team name (avatar 40px + gap-2 8px).
-            <p className="text-xs text-gray-500 pl-12">
-              If wins ·{' '}
+          {showHoldings && !resolved && (
+            <p
+              className="text-xs text-gray-500 pl-12"
+              title="Each share you hold pays 1 ETH if this competitor is selected as the winner. Paid from the betting market, not from the prize pool."
+            >
+              Your payout if wins ·{' '}
               <span className="text-emerald-400/90 font-medium tabular-nums">
                 <EthUsd eth={outcome.balance} usdClassName="text-emerald-400/70 font-normal" />
               </span>
@@ -200,16 +201,17 @@ export default function DePrizeTeamCard({
         {bettingOpen && !tradingHalted && (
           <StandardButton
             onClick={() => onBet(outcome.index)}
-            disabled={busy || !userConnected}
+            disabled={busy}
             className="rounded-xl shadow-purple-500/10"
           >
-            {isField ? 'Back the field' : 'Back this team'}
+            {!userConnected
+              ? 'Connect to back'
+              : backLabel ?? (isField ? 'Back the field' : 'Back this team')}
           </StandardButton>
         )}
       </div>
 
-      {/* Single holdings line — one exit quote + action (Polymarket-style) */}
-      {holding && (
+      {showHoldings && (
         <div className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5">
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-gray-500">
@@ -240,7 +242,7 @@ export default function DePrizeTeamCard({
           {canCashOut && (
             <button
               type="button"
-              onClick={() => onCashOut(outcome.index)}
+              onClick={() => onCashOut?.(outcome.index)}
               disabled={busy || !userConnected || sellQuoteEth === undefined}
               className="shrink-0 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wide
                 bg-white/5 hover:bg-indigo-500/15 text-white border border-white/10 hover:border-indigo-400/35
