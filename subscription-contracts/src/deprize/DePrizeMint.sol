@@ -7,6 +7,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {IJBTerminal} from "@nana-core-v5/interfaces/IJBTerminal.sol";
 import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
@@ -65,11 +66,24 @@ contract DePrizeMint is
     /// @dev Appended in the fee-router upgrade; takes one reserved gap slot.
     address public feeRouter;
 
-    /// @dev Storage gap for future upgrades (50 slots - 9 used = 41).
-    uint256[41] private __gap;
+    /// @notice Backend signer that must EIP-712-attest a wallet before `bet`.
+    ///         Unset (`address(0)`) rejects every bet — there is no unsigned path.
+    /// @dev Appended in the compliance-permit upgrade; takes one reserved gap slot.
+    address public complianceSigner;
+
+    /// @dev Storage gap for future upgrades (50 slots - 10 used = 40).
+    uint256[40] private __gap;
+
+    bytes32 private constant EIP712_DOMAIN_TYPEHASH =
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 private constant COMPLIANCE_PERMIT_TYPEHASH =
+        keccak256("CompliancePermit(address wallet,uint256 deprizeId,uint256 deadline)");
+    bytes32 private constant EIP712_NAME_HASH = keccak256(bytes("DePrizeMint"));
+    bytes32 private constant EIP712_VERSION_HASH = keccak256(bytes("1"));
 
     event MarketSet(uint256 indexed deprizeId, address indexed market);
     event FeeRouterSet(address indexed feeRouter);
+    event ComplianceSignerSet(address indexed complianceSigner);
     event Bet(
         uint256 indexed deprizeId,
         address indexed bettor,
@@ -93,6 +107,9 @@ contract DePrizeMint is
     error UnexpectedERC1155();
     error NoOutcomeTokensReceived();
     error OutcomeTokenAmountMismatch(uint256 expected, uint256 received);
+    error ComplianceSignerUnset();
+    error PermitExpired(uint256 deadline);
+    error InvalidPermit(address recovered);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -146,6 +163,22 @@ contract DePrizeMint is
         emit FeeRouterSet(feeRouter_);
     }
 
+    /// @notice Set the backend key that must sign a `CompliancePermit` for each bet.
+    ///         Passing `address(0)` disables betting entirely (no unsigned fallback).
+    function setComplianceSigner(address complianceSigner_) external onlyOwner {
+        complianceSigner = complianceSigner_;
+        emit ComplianceSignerSet(complianceSigner_);
+    }
+
+    /// @notice EIP-712 digest the backend (and tests) sign for `wallet` + `deprizeId`.
+    function hashPermit(address wallet, uint256 deprizeId, uint256 deadline) public view returns (bytes32) {
+        bytes32 domainSeparator = keccak256(
+            abi.encode(EIP712_DOMAIN_TYPEHASH, EIP712_NAME_HASH, EIP712_VERSION_HASH, block.chainid, address(this))
+        );
+        bytes32 structHash = keccak256(abi.encode(COMPLIANCE_PERMIT_TYPEHASH, wallet, deprizeId, deadline));
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    }
+
     // ---------------------------------------------------------------------
     // Betting
     // ---------------------------------------------------------------------
@@ -154,12 +187,18 @@ contract DePrizeMint is
     ///         `outcomeTokenAmount` outcome tokens (cost capped by `maxCost`).
     /// @dev The bettor specifies a token quantity (the frontend derives it from a
     ///      desired ETH amount via `calcNetCost`); unspent ETH is refunded. msg.value
-    ///      must cover the 5% slice plus the trade cost.
-    function bet(uint256 deprizeId, uint256 outcomeIndex, uint256 outcomeTokenAmount, uint256 maxCost)
-        external
-        payable
-        nonReentrant
-    {
+    ///      must cover the 5% slice plus the trade cost. `deadline` + `signature`
+    ///      are an EIP-712 `CompliancePermit` from `complianceSigner` over
+    ///      `(msg.sender, deprizeId, deadline)` — the UI gate is not enough.
+    function bet(
+        uint256 deprizeId,
+        uint256 outcomeIndex,
+        uint256 outcomeTokenAmount,
+        uint256 maxCost,
+        uint256 deadline,
+        bytes calldata signature
+    ) external payable nonReentrant {
+        _verifyPermit(deprizeId, deadline, signature);
         if (!registry.bettingOpen(deprizeId)) revert BettingClosed(deprizeId);
 
         uint256[] memory teams = registry.teamIds(deprizeId);
@@ -244,6 +283,14 @@ contract DePrizeMint is
         if (feeRouter != address(0)) {
             try IDePrizeFeeRouter(feeRouter).sweepFees(deprizeId) {} catch {}
         }
+    }
+
+    function _verifyPermit(uint256 deprizeId, uint256 deadline, bytes calldata signature) internal view {
+        address signer = complianceSigner;
+        if (signer == address(0)) revert ComplianceSignerUnset();
+        if (block.timestamp > deadline) revert PermitExpired(deadline);
+        address recovered = ECDSA.recover(hashPermit(msg.sender, deprizeId, deadline), signature);
+        if (recovered != signer) revert InvalidPermit(recovered);
     }
 
     function _flushOutcomeTokens(address to) private {
