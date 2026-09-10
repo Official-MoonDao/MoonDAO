@@ -32,13 +32,13 @@ import {IWETH} from "./interfaces/IWETH.sol";
 ///         Routing policy:
 ///         - While the DePrize is live (NOT terminal AND no cancellation notice
 ///           pending): fees -> `jbTerminal.pay` into the DePrize's Juicebox
-///           project (the prize pool). $OVERVIEW minted for the payment goes to
-///           the treasury (`owner()`), since fees have no single attributable
-///           bettor.
+///           project (the prize pool). The mission tokens minted for the payment
+///           go to the treasury (`owner()`), since fees have no single
+///           attributable bettor.
 ///         - Once the DePrize IS terminal OR a cancellation notice is pending:
 ///           fees -> `owner()` (treasury). On refundable terminals (and during
 ///           the 7-day cancel notice that precedes CANCELLED), topping up the
-///           JB pot would silently inflate the $OVERVIEW cash-out floor and
+///           JB pot would silently inflate the mission token's cash-out floor and
 ///           distort the disclosed refund; on M2_COMPLETE the prize has already
 ///           been disbursed.
 ///
@@ -134,7 +134,7 @@ contract DePrizeFeeRouter is Ownable, ReentrancyGuard, IERC1155Receiver, IDePriz
         // Cancellation notice leaves the DePrize non-terminal (often still OPEN)
         // while betting is already closed and sells can still accrue LMSR fees.
         // Route those to treasury so the pending refund path cannot inflate the
-        // $OVERVIEW cash-out floor via trade-fee top-ups (same guard as terminal).
+        // mission token's cash-out floor via trade-fee top-ups (same guard as terminal).
         bool toPrizePool =
             !registry.isTerminal(deprizeId) && !registry.cancellationPending(deprizeId);
         if (toPrizePool) {

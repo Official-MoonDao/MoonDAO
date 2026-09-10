@@ -8,7 +8,7 @@ import "base/Config.sol";
 /// @dev Minimal Juicebox V5 terminal surface used to return prize ETH to the
 ///      mission project on the M2-failed refund path. `addToBalanceOf` is
 ///      permissionless and mints no tokens — it just raises the project balance
-///      (and therefore the `$OVERVIEW` cashOut floor). See DEPRIZE_M5.md.
+///      (and therefore the mission token's cashOut floor). See DEPRIZE_M5.md.
 interface IJBTerminalLike {
     function addToBalanceOf(
         uint256 projectId,
@@ -26,7 +26,7 @@ interface IJBTerminalLike {
 ///         demonstrated) and 70% at M2 (mission delivered) — to the winning
 ///         provider's payout Safe recorded in the registry. On `M2_FAILED` the
 ///         undistributed 70% is returned to the Juicebox project (`addToBalanceOf`),
-///         raising the `$OVERVIEW` cashOut floor for refundable bettors.
+///         raising the mission token's cashOut floor for refundable bettors.
 ///
 /// Why a script and not a contract: the mission's Juicebox payout splits are
 /// permanently locked (treasury / poolDeployer / owner-Safe), so an escrow can
@@ -142,7 +142,7 @@ contract DePrizeDisburse is Script, Config {
         console.log("Prize snapshot wei:", prizeWei);
         console.log("");
         if (d.milestone == REFUND) {
-            console.log("Tx 1 (return 70% to Juicebox - raises $OVERVIEW cashOut floor):");
+            console.log("Tx 1 (return 70% to Juicebox - raises mission-token cashOut floor):");
             console.log("  to:        ", d.registry);
             console.log("  value:     ", d.payoutValue);
             console.log("  jbProject: ", d.jbProjectId);

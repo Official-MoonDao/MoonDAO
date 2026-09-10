@@ -33,7 +33,8 @@ import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
 //       - non-terminal states: contributions allowed, cashOut (refunds) disabled
 //         so the prize slice and betting collateral stay protected;
 //       - refundable terminals (CANCELLED / NO_WINNER / M2_FAILED): cashOut
-//         re-enabled with no expiry so $OVERVIEW holders can reclaim their floor.
+//         re-enabled with no expiry so the mission's token holders can reclaim
+//         their floor.
 contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     uint256 public immutable fundingGoal;
