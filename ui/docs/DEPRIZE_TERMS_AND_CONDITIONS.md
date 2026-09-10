@@ -11,10 +11,6 @@ linked from the bet flow via the constants in `ui/lib/deprize/constants.ts`:
 | DePrize Privacy Notice | `DePrize Privacy Notice.md` | `DEPRIZE_PRIVACY_URL` |
 | DePrize Risk Disclosures and Disclaimers | `DePrize Risk Disclosures and Disclaimers.md` | `DEPRIZE_RISK_DISCLOSURES_URL` |
 
-The legal analysis that produced them — regulatory characterization, the reasoning behind
-the U.S.-person and Restricted Jurisdiction exclusions, the market/prize separation, and the
-prioritized engineering and governance follow-ups — is in `docs/DEPRIZE_LEGAL_ANALYSIS.md`.
-
 Edit the published documents, not this file. Bump `DEPRIZE_TERMS_VERSION` and the version
 table in the Terms whenever the Terms change materially, then run `yarn docs:generate` so the
 committed nav tree and search index stay in sync.

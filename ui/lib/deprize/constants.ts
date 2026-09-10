@@ -63,7 +63,7 @@ export const ODDS_POLL_MS = 30000
 
 // DePrize legal documents, published under MoonDAO's Legal docs from
 // content/docs/Legal/DePrize/*.md (same host/pattern as the Website Terms &
-// Privacy Policy). The analysis behind them is docs/DEPRIZE_LEGAL_ANALYSIS.md.
+// Privacy Policy).
 export const DEPRIZE_TERMS_URL = '/docs/Legal/DePrize/DePrize-Terms-and-Conditions'
 export const DEPRIZE_PRIZE_RULES_URL = '/docs/Legal/DePrize/DePrize-Official-Prize-Rules'
 export const DEPRIZE_PRIVACY_URL = '/docs/Legal/DePrize/DePrize-Privacy-Notice'
