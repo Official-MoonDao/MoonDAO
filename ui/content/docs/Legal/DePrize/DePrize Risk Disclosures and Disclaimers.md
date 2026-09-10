@@ -38,7 +38,7 @@ This document is incorporated into the [DePrize Terms and Conditions](/docs/Lega
 
 **5. Whether the prize is actually paid does not affect your tokens.** The market resolves on the real-world event. If the winner cannot or does not accept the prize (for example, a government agency, a sanctioned entity, or a team that never claims), your tokens still pay as winning tokens, and the prize pool is handled under the Prize Rules. You have no claim on the prize pool. (Section 7.4)
 
-**6. 5% of every bet goes to the prize, not to your position.** About 5% of the ETH you send is a **non-refundable contribution** to the prize pool. It is not held in the market and is not returned if the DePrize is cancelled. You may receive the prize campaign's governance token for that contribution, at a rate that may be much lower than earlier campaign contributors received; that token is governed by the campaign's own terms, carries no expectation of profit, and is not a reason to bet. (Section 10)
+**6. 5% of every bet goes to the prize, not to your position.** About 5% of the ETH you send is a **non-refundable contribution** to the prize pool. It is not held in the market and is not returned if the DePrize is cancelled. You may receive a governance token for that contribution — **the token of the launchpad mission this particular DePrize funds**, not a DePrize-wide token, so it differs between DePrizes — at a rate that may be much lower than earlier contributors to that campaign received. That token is governed by the bound campaign's own terms, carries no expectation of profit, and is not a reason to bet. (Section 10)
 
 **7. Fees, slippage, and gas reduce what you get.** The market charges roughly a 1% fee on trades. Large orders move the price, so your average price can be worse than the displayed odds. Every on-chain action costs gas. Displayed odds, payouts, and multiples are estimates. (Section 11)
 
@@ -92,7 +92,7 @@ The following disclaimers apply to the Site, to all DePrize communications, and 
 
 **Prize amounts.** Any prize figure is approximate, denominated in ETH, fluctuates continuously, is subject to milestone conditions and eligibility, and may never be paid. Fiat equivalents are conversions at the time shown.
 
-**Governance tokens.** $MOONEY, vMOONEY, and Launchpad project tokens (including $OVERVIEW) are governance tokens issued for participation in MoonDAO governance. They are not offered as investments, carry no expectation of profit, and their regulatory status may differ by jurisdiction.
+**Governance tokens.** $MOONEY, vMOONEY, and the Launchpad project token of whichever mission a DePrize is bound to ($OVERVIEW in the case of the Overview Effect Flight) are governance tokens issued for participation in MoonDAO or mission governance. They are not offered as investments, carry no expectation of profit, and their regulatory status may differ by jurisdiction.
 
 **No warranty.** The Service, the Site, and all information are provided "as is" and "as available" without warranty of any kind. See the Terms, Section 16, and the Website Terms and Conditions, Sections 19 and 20.
 
