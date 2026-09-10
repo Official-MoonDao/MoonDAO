@@ -325,10 +325,12 @@ function DePrizeDetailContent() {
             // read fails, fall back to the net-only quote rather than no quote.
             let fee = 0n
             try {
+              // calcMarketFee is uint256(|net|); a signed sell net is out of range.
+              const absNet = net < 0n ? -net : net
               fee = await rpcRead<bigint>({
                 contract: lmsrRead,
                 method: 'calcMarketFee' as string,
-                params: [net],
+                params: [absNet],
               })
             } catch {
               fee = 0n
