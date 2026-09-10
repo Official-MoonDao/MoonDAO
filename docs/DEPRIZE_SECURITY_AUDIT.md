@@ -105,20 +105,56 @@ executable PoCs are the verifier**. This audit followed that discipline:
 7. **Corroborate LLM output with static analysis** (Slither) and treat any
    disagreement as a prompt to dig, not to trust either blindly.
 
-### Tooling used
+### Why this discipline — what the evidence actually supports
 
-| Tool | Version | Use |
+The methodology above is not folklore; it tracks the measured state of the art as
+of 2026:
+
+- **Detection, not exploitation or repair, is the bottleneck.** On OpenAI/Paradigm's
+  EVMbench the best model scored ~46% on *detect* vs ~72% on *exploit*; an
+  independent re-evaluation reproduced a ~47% detection ceiling and generated
+  **0/110** real-incident exploits without hints. The classes models miss most are
+  exactly this system's hard parts: rounding, multi-step state, and
+  protocol-specific logic (LMSR math, the CTF state machine, Juicebox semantics).
+  The classes they find reliably are missing access control and textbook
+  reentrancy. **Implication:** do not trust an LLM "all clear"; spend the effort on
+  the seams and invariants, and treat every lead as unproven until executed.
+- **False positives are the dominant failure mode, and benchmarks do not penalise
+  them.** The techniques with measured FP reductions were all adopted here: static
+  confirmation of LLM output (GPTScan-style filtering), a separate critic/judge
+  stage (GPTLens/iAudit), one scoped pass per bug class rather than one broad pass
+  (LLM-SmartAudit/AuditGPT), and invariant/property framing before pattern-matching
+  (PropertyGPT).
+- **A finding without a runnable PoC is a lead, not a finding.** This mirrors the
+  Code4rena rule (coded PoC required for every High/Medium; a reverting PoC must
+  show the exact revert) and Sherlock's "invalid without a PoC if not clearly
+  understandable". Practitioner tooling encodes the same split — Trail of Bits'
+  `fp-check` gates and Pashov's `FINDING` (requires `proof:`) vs `LEAD`. The single
+  finding here (H-01) carries a PoC that executes against **live deployed
+  bytecode**; no unproven leads are reported as findings.
+- **Consensus is human/tool-in-the-loop, not autonomous.** OpenZeppelin, Trail of
+  Bits and Pashov all run agents to *complement* human review, and Code4rena treats
+  autonomous-scanner output as "known issues", not as the audit. This report is
+  written in that posture.
+
+### Tooling
+
+| Tool | Version | Status in this audit |
 |---|---|---|
-| Foundry (`forge`) | current | Compile, run 350-test suite, write & run the fork PoC |
-| Slither | 0.11.6 | Static analysis of the 0.8 glue contracts |
-| solc | 0.5.1 (via `solc-select`) | Compile the fixed 0.5 `LMSRWithTWAP` |
-| `cast` | current | Live Arbitrum One state queries |
-| Public Arbitrum One RPC | — | Fork execution of the PoC against production state |
+| Foundry (`forge` / `cast`) | current | **Ran** — compile, 350-test suite, live-fork PoC, on-chain queries |
+| Slither | 0.11.6 | **Ran** — static analysis of the 0.8 glue |
+| solc (via `solc-select`) | 0.5.1 / 0.8.26 | **Ran** — compiled the fixed 0.5 `LMSRWithTWAP` and the 0.8 suite |
+| Public Arbitrum One RPC | — | **Ran** — PoC executed against production state |
+| Aderyn / 4naly3er | — | Recommended second-opinion static/QA sweep (not run; Slither + manual + fork PoC judged sufficient for a bounded glue audit) |
+| Echidna / Medusa (property fuzzing) | — | **Recommended next depth increment** — fuzz LMSR pricing/fee round-trips and refund accounting (the rounding/multi-step classes LLMs miss) |
+| Halmos / Certora (bounded proof / formal) | — | **Recommended** for the refund-math, fee-conservation and upgrade-authorisation invariants if budget allows |
 
-> The broader survey of AI-auditing SOTA (agentic auditing frameworks, LLM+fuzzer
-> pipelines, and the academic literature on LLM auditor precision/recall) informs
-> the methodology above; the operative, non-negotiable takeaway adopted here is
-> **"model proposes, tools + PoC dispose."**
+> The operative, non-negotiable takeaway adopted throughout: **model proposes,
+> tools + PoC dispose.** The fuzzing/formal rows are honestly out of the depth of
+> this bounded pass; they are the recommended next step if the glue is to carry
+> significant value beyond the per-wallet cap. SOTA references and reusable prompt
+> templates are in [Appendix B](#appendix-b); the per-stack pitfall checklist with
+> DePrize verdicts is in [Appendix C](#appendix-c).
 
 ---
 
@@ -280,6 +316,33 @@ treasury — silently distorting the very refund math the router tries to protec
   needs no preconditions, and defeats a core accounting invariant, so it is not
   shippable as-is on a market holding real value.
 
+#### Severity mapping (per-platform, exact criteria)
+
+Rated against the three standard rubrics, because "High" means different things on
+each and this finding sits on a boundary (no theft *to* the attacker, but a
+zero-cost, replayable break of a core invariant + DoS):
+
+| Platform | Rating | Governing criterion |
+|---|---|---|
+| **Code4rena** | **High** | "Assets can be … lost/compromised indirectly if there is a valid attack path that does not have hand-wavy hypotheticals." The path is proven on live bytecode; the market's backing is compromised. |
+| **Sherlock** | **Medium** | "Breaks core contract functionality, rendering the contract useless" (the AMM sell-side); the loss stays within the protocol so it is not "direct loss of funds … significant" to a third party. Note Sherlock's replay clause: a small per-call loss "replayed indefinitely … considered a 100% loss." |
+| **Immunefi (v2.3)** | **Medium** | "Smart contract unable to operate due to lack of token funds" / griefing — the attacker has no profit motive but damages the protocol. |
+
+**Reported severity: High**, taking the Code4rena reading as primary (a
+permissionless, zero-cost, proven path that compromises escrowed backing and bricks
+core functionality), while flagging honestly that a strict Sherlock/Immunefi reading
+lands at Medium because the funds do not leave MoonDAO's control. Either way it is
+above the "ship it" line for a market holding real value.
+
+**Independent corroboration:** the SOTA system-specific pitfall checklist compiled
+for this audit ([Appendix C](#appendix-c)) flags this exact class from two
+directions without reference to the code — **§E8** ("external self-calls `this.f()`
+and `msg.sender` confusion": *"any function intended for self-call only must
+`require(msg.sender == address(this))` or it is a public entry point"*) and **§E2**
+(the Gnosis `withdrawFees()` sweeps the market's entire collateral balance, so any
+transiently-loose collateral is treated as fees). H-01 is the intersection of the
+two.
+
 #### Proof of concept (reproduced on live Arbitrum One)
 
 `subscription-contracts/test/deprize/AuditTradeWithTWAP.t.sol` (RPC-gated; no-ops
@@ -412,7 +475,7 @@ Recommended actions before the Touchdown mainnet launch:
   `DEPRIZE_FORK_RPC=<arbitrum-one rpc> forge test --match-contract AuditTradeWithTWAP -vvv`
 - **Run the suite:** `forge test` from `subscription-contracts/`.
 
-### Appendix: on-chain facts (Arbitrum One, at audit time)
+### Appendix A — on-chain facts (Arbitrum One, at audit time)
 
 | Item | Value |
 |---|---|
@@ -424,3 +487,76 @@ Recommended actions before the Touchdown mainnet launch:
 | Collateral (WETH) | `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1` |
 | Market `whitelist` | `0x0000…0000` (unset → no gate) |
 | Market `stage` / `funding` / `fee` / outcomes | Running / `0.04` WETH / 1% / 4 |
+
+---
+
+<a name="appendix-b"></a>
+## Appendix B — AI-auditing SOTA: references and prompt templates
+
+Curated for MoonDAO's own future passes. The load-bearing rule is that a model
+proposes and **tools + a runnable PoC dispose**; everything below serves that.
+
+**Evidence / benchmarks:** EVMbench (OpenAI/Paradigm) and its independent
+re-evaluation (detection is the bottleneck; FPs are unpenalised); GPTScan (static
+confirmation cut ~66% of LLM FPs); GPTLens and iAudit (a critic/ranker stage);
+LLM-SmartAudit and AuditGPT (one scoped pass per bug class); PropertyGPT (invariant/
+property framing + a prover); LLM4Vuln (knowledge retrieval ≈ doubles F1 for
+non-reasoning models).
+
+**Practitioner tooling to copy:** Trail of Bits skills (`fp-check`,
+`audit-context-building`, `entry-point-analyzer`, `differential-review`,
+`variant-analysis`) and `slither-mcp`; Pashov's open `solidity-auditor` (nine
+single-lens agents + gap-hunters; `FINDING` requires `proof:`, else it is a `LEAD`);
+OpenZeppelin's in-house AI Auditor + Contracts MCP; Code4rena's V12 known-issues
+policy and PoC-required submission rules.
+
+**Checklists for retrieval:** Solcurity, OWASP Smart Contract Top 10 (2025),
+Secureum Pitfalls 101/201 and Audit Findings 101/201, the Cyfrin/Solodit checklist,
+and the ToB token-integration checklist. (SWC registry is unmaintained — use as
+vocabulary only.)
+
+**Condensed prompt templates** (fill `<>`; run each per-contract):
+
+*Per-class pass (one class only):*
+> ROLE: senior Solidity auditor, ONE bug class only: `<class>`. SCOPE `<files>`,
+> ENTRY POINTS `<…>`, TRUST MODEL `<who is trusted>`, INVARIANTS `<…>`. Paste the
+> exact external functions you may rely on (CTF/LMSR/WETH/JB) — do not invent
+> signatures. For each candidate: restate the bug in one plain sentence, quote the
+> `file:line` that enables or prevents it, verdict TRUE/FALSE/UNKNOWN. Emit only
+> TRUE/UNKNOWN as `FINDING|LEAD | path | preconditions | attack (tx#, actor,
+> calldata, msg.value, state delta) | impact | proof (Foundry sketch; if absent →
+> LEAD) | fix`. Reject anything requiring a compromised admin unless an
+> **unprivileged** actor amplifies it.
+
+*Critic / judge (run cold, on a different model):* PASS/FAIL each gate with
+`file:line` evidence — (1) every step callable by the stated actor, (2)
+preconditions reachable without admin error, (3) precise revert selector or balance
+delta shown, (4) impact quantified and above dust, (5) no existing guard
+(`nonReentrant`, WETH 2300-gas stipend, `try/catch`) fully blocks it, (6) not a
+duplicate. Then give severity under Code4rena/Sherlock/Immunefi with the exact
+criterion quoted.
+
+*PoC writer:* write a Foundry fork test at a pinned block using the **real** CTF,
+WETH and JB addresses; `vm.prank` each actor; assert the concrete loss as balance
+deltas (or `vm.expectRevert(<selector>)`); the test must pass on current code and
+fail after the fix.
+
+---
+
+<a name="appendix-c"></a>
+## Appendix C — system-specific pitfall checklist, with DePrize verdicts
+
+Each row is a known hazard class for this exact stack (Gnosis CTF + LMSR + UUPS +
+WETH + Juicebox + ERC-1155 callbacks), with the status **verified in the DePrize
+code** during this audit. This is the per-class coverage record.
+
+| # | Hazard | DePrize status |
+|---|---|---|
+| **E1** | CTF `reportPayouts` trusts the oracle absolutely, is single-shot, and accepts **non-one-hot** payout vectors; `redeemPositions` rounds down per position | **OK.** `DePrizeRedeem.redeem` redeems every nonzero position (`indexSet = 1<<i`) and lets the CTF floor-divide per position; `previewRedeem` mirrors it (`stake * payoutNumerators / den`). Handles split resolutions, not just winner-takes-all. Oracle authority is a key-mgmt (G4) assumption, not a code defect. |
+| **E2** | Gnosis `withdrawFees()` sweeps the market's **entire** collateral balance as "fees"; unbounded `changeFee`; `close()` requires the owner to be an ERC-1155 receiver | **One High (H-01)** — the entire-balance sweep is what turns the forced merge into a loss. **Otherwise OK:** `changeFee`/`changeFunding` have no router passthrough (unreachable unless ownership is moved to an EOA); creation fee is bounded by the factory (`_fee < FEE_RANGE`); `DePrizeFeeRouter` implements the ERC-1155 receiver gated by `_inClose`, so `close()` succeeds. |
+| **E3** | UUPS: unprotected implementation `initialize`, two-tx init front-running, unrestricted `_authorizeUpgrade`, storage-layout drift | **OK.** `DePrizeMint` and `DePrizeRegistry` call `_disableInitializers()` in the constructor and gate `_authorizeUpgrade` with `onlyOwner`; `DePrizeRedeem`/`DePrizeFeeRouter` are non-upgradeable by design. Upgrade authority is a G4 concern (untimelocked owner), not a code defect. |
+| **E4** | WETH `withdraw` uses a 2300-gas `transfer`; the caller's `receive()` must not `SSTORE` | **OK.** All three ETH-handlers (`FeeRouter`, `Mint`, `Redeem`) have an empty `receive() external payable {}` (no storage writes). Target is canonical Arbitrum WETH. |
+| **E5** | JB `pay{value}` overrides `amount` with `msg.value`, **mints project tokens to the beneficiary** (who can cash out), and can revert synchronously (paused ruleset, reverting data hook) | **OK, with one liveness note.** `sweepFees` sets `beneficiary = owner()` (treasury), so no unprivileged caller receives mintable tokens. `DePrizeMint.bet` wraps its `sweepFees` call in `try/catch`. *Note:* a **direct** `sweepFees` call has no `try/catch` around `jbTerminal.pay`, so a paused JB ruleset would revert it until unpaused (fees simply accrue). Liveness only — no fund loss; optional to harden. |
+| **E6** | Your ERC-1155 receiver runs during CTF split / transfers-in / LMSR `close()` — an external re-entry point | **OK.** Every receiver is restricted (`msg.sender == ctf` and a transient `_inBet`/`_inClose`/`_inRedeem` flag) and does no value logic; all value-moving entry points are `nonReentrant`. |
+| **E7** | ETH refunds via `.call` and gas griefing; never compute refunds from `address(this).balance` | **OK.** Payouts/refunds are scoped to a measured **balance delta** (`wethBefore`/`before`), not `address(this).balance`; ETH is sent with checked `.call` and reverts on failure. Recipients are EOAs/the caller, so a reverting `receive()` only self-DoSes. |
+| **E8** | External self-calls `this.f()` set `msg.sender = address(this)` and `msg.value = 0`; a self-call-only function with no `require(msg.sender == address(this))` is a public entry point | **Root cause of H-01** — `tradeWithTWAP` used `this.trade(...)`. **Fixed** to an internal call. No other `this.`-self-calls in the DePrize glue. |
