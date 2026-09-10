@@ -1,5 +1,3 @@
-import { getClientIp } from '@/lib/geo'
-
 export type VpnCheckResult = {
   isVpnOrProxy: boolean
   failed: boolean
@@ -116,11 +114,4 @@ export async function checkVpnOrProxy(ip: string): Promise<VpnCheckResult> {
     console.error('[deprize] vpn check failed', err)
     return { isVpnOrProxy: false, failed: true }
   }
-}
-
-export function clientIpFromRequest(req: {
-  headers: any
-  socket?: { remoteAddress?: string }
-}): string {
-  return getClientIp(req as any)
 }
