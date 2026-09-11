@@ -349,7 +349,7 @@ describe('lunar-atlas selectors', () => {
       const construction = trees.find((t) => t.category === 'construction')
       expect(construction?.goal?.id).to.equal('shared-landing-pads')
       const lander = trees.find((t) => t.category === 'lander')
-      expect(lander?.goal?.id).to.equal('shared-crewed-lander')
+      expect(lander?.goal?.id).to.equal('shared-next-landing')
     })
 
     it('falls back to a goal listing a member when no category race exists', () => {
