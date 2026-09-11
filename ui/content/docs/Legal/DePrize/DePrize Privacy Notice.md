@@ -13,6 +13,8 @@ slug: /deprize-privacy-notice
 
 **Privacy Notice**
 
+> Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+
 Organized by MoonDAO  
 moondao.com/deprize
 

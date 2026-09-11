@@ -72,3 +72,12 @@ export const DEPRIZE_RISK_DISCLOSURES_URL =
 // Bump whenever the published Terms change materially; the bet flow keys the
 // user's acceptance on this so a new version re-prompts them.
 export const DEPRIZE_TERMS_VERSION = '1.1'
+
+export const DEPRIZE_AVAILABILITY_LEGEND =
+  'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'
+
+export function deprizeOgDescription(specific?: string): string {
+  const extra = specific?.trim()
+  if (!extra) return DEPRIZE_AVAILABILITY_LEGEND
+  return `${DEPRIZE_AVAILABILITY_LEGEND} ${extra}`
+}

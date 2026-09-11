@@ -6,7 +6,7 @@ import {
   ROSTER_DISCLAIMER,
   isCompetitiveRace,
 } from '@/lib/deprize/competitions'
-import { OUTCOME_COLORS } from '@/lib/deprize/constants'
+import { deprizeOgDescription, OUTCOME_COLORS } from '@/lib/deprize/constants'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
@@ -20,6 +20,7 @@ import type { SharedGoal } from '@/lib/lunar-atlas/types'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import Container from '@/components/layout/Container'
+import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
@@ -110,7 +111,7 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
     <div className="animate-fadeIn flex flex-col items-center">
       <Head
         title={goal.title}
-        description={goal.description.slice(0, 160)}
+        description={deprizeOgDescription(goal.description.slice(0, 160))}
       />
       <Container>
         <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
@@ -355,6 +356,7 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
             )}
           </div>
         </div>
+        <DePrizeAvailabilityLegend />
         <NoticeFooter />
       </Container>
 

@@ -41,6 +41,7 @@ import {
   positionRedeemValue,
   shouldSurfaceResolution,
   UNIT,
+  deprizeOgDescription,
 } from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { buildAmounts } from '@/lib/deprize/quote'
@@ -52,6 +53,7 @@ import { useDePrizeActivity } from '@/lib/deprize/useDePrizeActivity'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
+import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import EthUsd from '@/components/deprize/EthUsd'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
@@ -938,11 +940,12 @@ function Shell({
 }) {
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head title={title} description={description} />
+      <Head title={title} description={deprizeOgDescription(description)} />
       <Container>
         <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
           {children}
         </div>
+        <DePrizeAvailabilityLegend />
         <NoticeFooter />
       </Container>
     </div>
