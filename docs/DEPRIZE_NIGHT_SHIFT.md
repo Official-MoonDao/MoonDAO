@@ -11,15 +11,31 @@ milestone**. You either cleared it or you didn't.
 
 The 98% retention rule is a **slope limit**, not a waiver on ten watts. Every rolling hour must
 stay ≥ 10.0 We. A run that starts at 10.0 W and finishes at 9.8 W **fails the floor**. 98% exists
-so a battery cannot start fat (20 W) and "still be at 10 W" at dawn.
+so a battery cannot start fat (20 W) and "still be at 10 W" at dawn. It does **not** stop a battery
+that was regulated flat at 10.05 W from the beginning and is empty an hour after the Window closes —
+§6 and Appendix B.7 are explicit about that, and it is the one substantive thing v0.7 leaves open.
 
 > **CONFIDENTIAL — INTERNAL / NDA**
 > Draft for advisor and expert review. Not for publication, quotation, or distribution
 > outside the review list.
-> **Version** 0.6-draft · **Date** 7 Sep 2026 · **Owner** MoonDAO · **Status** pre-registration,
+> **Version** 0.7-draft · **Date** 11 Sep 2026 · **Owner** MoonDAO · **Status** pre-registration,
 > nothing on-chain.
 > Competitor listings are editorial and based solely on public sources. No listed organization
 > has been contacted, has consented, or is affiliated with this prize.
+
+**Changes from v0.6**, from advisor review (Long / Jensen). This round found the first hole that
+is genuinely ours rather than a wording problem: **the rules never said how good the meter has to
+be.** Everything below follows from that.
+
+| | v0.6 | v0.7 |
+|---|---|---|
+| Meter quality | Unspecified. The verifier owned the meters; nothing said how accurate they were | **§5.1** — traceable calibration, ≤ 0.5% expanded uncertainty, budget published |
+| The floor and uncertainty | `P ≥ 10.0 W` on the reported number | **`P − U ≥ 10.0 W`.** You clear the floor on the bottom of your own error bar |
+| Non-DC output | `power_w = voltage_v × current_a`, sampled at 1 Hz | **Simultaneous sampling and true power.** A 1 Hz product aliases a switching converter |
+| Environment at T0 | §2 and §4 say the spec binds at T0; Appendix B gave a one-hour grace | **Contradiction removed.** The grace is gone, so the retention baseline is not measured in an unspecified hour |
+| Sustained Output Rule | Presented as the rule that retires consumables | **Honest about its limit.** It retires *unregulated* decay. A regulated consumable sized to exactly 354 h passes it — see B.7 and the reopened question in Part VII |
+| Size cap | "Not a cap" | Still not a rule, but the **chamber is a de facto cap** and we now say so — it is why the absence of a written cap is safe |
+| Chamber cost | "The binding constraint is not money" | **Corrected.** True if you own the vessel; false if you rent one, where 15 days exceeds the purse by itself |
 
 **Changes from v0.5**, from advisor review:
 
@@ -175,6 +191,7 @@ instrument station*. It is not the difference between a lander and a base.
 | **Milestones** | **One** |
 | **Purse** | **$25,000**, growing with 5% of betting volume |
 | **Judged by** | A published validator script. An independent verifier **owns the meters**, not the answer |
+| **Measurement** | Traceable calibration, ≤ 0.5% expanded uncertainty, published budget. The floor is cleared on `P − U`, so a 0.5% meter needs ~10.05 We (§5.1) |
 | **Attendance** | **Day 0 and Day 15 only** — weigh, seal, install *their* sensors, start the log; then check seals and take the files. Nobody stands watch for 48 hours or 354 hours |
 | **Mid-run** | Live public telemetry, continuous video with a clock in frame, hash-chained logs. Optional remote human check-in every ~72 h. Video corroborates; it does not replace the meters |
 | **Verification default** | **Route A**: ISO/IEC 17025 lab's own test report. Route C (MoonDAO sealed kit) funded for Open Field. Route B (DNV / TÜV site visits) only if a real quote exists |
@@ -185,7 +202,7 @@ instrument station*. It is not the difference between a lander and a base.
 
 ---
 
-# PART II — PRIZE RULES v0.6
+# PART II — PRIZE RULES v0.7
 
 ## 1. The prize in one sentence
 
@@ -243,7 +260,28 @@ have been aboard at T0 and included in its declared mass.
 **Note on accessibility.** LN₂ satisfying the shroud spec is deliberate. A qualifying chamber can be
 a dewar-jacketed bell jar. Boil-off for a small article runs roughly 20–60 L/day — on the order of
 $300–1,800 of nitrogen for the full 354 hours. **We want this winnable outside a national
-laboratory.** The binding constraint is not money, it is holding a chamber for fifteen days.
+laboratory.**
+
+**Correcting v0.6 on what that costs.** v0.6 said "the binding constraint is not money, it is
+holding a chamber for fifteen days." That is true only for an entrant who already owns a suitable
+vessel, and it is the sentence that made the $300–1,800 nitrogen figure look like the cost of an
+attempt. If you have to rent, Part VI's own numbers apply: a commercial thermal-vacuum lab runs
+**$2–10k/day**, so fifteen continuous days is **$30–150k** before the article, the fuel, or the
+verifier — which exceeds the $25,000 purse on its own. The two figures were both in this document
+and they were not reconciled anywhere.
+
+So the constraint is money *and* availability, and there is a third thing underneath both, raised
+in review: an organisation with a cryoshrouded chamber almost always has a higher-value use for
+fifteen days of it than a $25k prize. **The purse does not currently cover the chamber time it
+asks for.** Consequences we are not going to paper over:
+
+- The realistic first clearance comes from an entrant who **owns** the vessel, or who is running
+  a cold-soak they were going to run anyway and adds our instrumentation to it. §8.3 and §9.5
+  exist precisely so that counts.
+- Route C's funded metrology package is the wrong subsidy if chamber time is the binding cost.
+  A **chamber-time grant** is the right one, and it is not currently in the budget.
+- This is the strongest argument for the Part VI trials event, which converts fifteen days of
+  chamber time from a per-entrant cost into a fixed cost shared across a field.
 
 ## 5. Output
 
@@ -263,6 +301,63 @@ doing work* — a real radio, a real computer, a heated instrument. The test is 
 makes a higher watt number look tempting. Raising the floor without a size cap just rewards a
 bigger chamber and a bigger thermal mass — the thermal-wadi exploit. Ten watts stays. Mass and
 occupied volume are published so the scoreboard, not the win condition, does the size work.
+
+**Why the absence of a written size cap is safe, which v0.6 never said.** Raised in review: the
+chamber *is* the cap. A latent-heat store has to hold 3.54 kWh of delivered electrical energy plus
+its conversion losses, and it has to do that inside a vessel somebody will cryoshroud and hold
+under vacuum for fifteen days. Storing that much energy in sensible heat means a volume that
+stops fitting in an affordable chamber long before it stops being physically possible — and the
+larger the vessel, the more it costs per day and the fewer of them exist, which is §4's problem
+compounding. So the thermal-wadi exploit is not unbounded; it is bounded by the same scarce
+resource that bounds everybody, and it pays for its size in the one currency this prize is short
+of. That is a better argument for "no cap" than the scoreboard is, and it is the reason a written
+volume limit would be redundant rather than merely unpopular.
+
+It is also the honest reason not to raise the floor: a higher bar tightens that implicit cap
+against the consumables and leaves it slack against the isotopes, which is the field-emptying
+outcome, not a size-discipline one.
+
+## 5.1 Measurement integrity
+
+v0.6 required that the verifier own the meters (§9) and said nothing whatsoever about how good
+those meters had to be. That is a real hole, not a wording problem, and it is the cheapest way to
+beat the validator that we know of: **you do not have to forge a file if your instrument reads
+high.** An honest 9.8 We article on a legitimately calibrated meter with +2% bias produces a
+truthful CSV that passes every check in §8.2. Nothing in v0.6 excluded it.
+
+| Requirement | Value |
+|---|---|
+| Calibration | Every official sensor traceable to a national standard, certificate current for the whole Window, published |
+| Power uncertainty | Expanded uncertainty `U` (k = 2) on delivered power **≤ 0.5% of reading**, over the full temperature range the meter actually sees |
+| Uncertainty budget | Published as a document, not a single number — how V, I, shunt temperature coefficient, ADC gain and timebase combine |
+| Sampling | Voltage and current sampled **simultaneously** from one trigger. Round-robin or independently-clocked channels do not qualify |
+| Non-DC buses | If the load bus is not DC, delivered power is the **synchronous product** `mean(v(t)·i(t))` at ≥ 10 kHz, averaged into the 1 Hz record. The product of separately averaged V and I is not power |
+| Meter location | At the load, on the load side of any conditioning the article provides (§5) |
+| Redundancy | A second independent power measurement, logged. It does not have to agree to 0.5%; it has to exist, so a single failed channel is visible |
+
+**How uncertainty meets the floor.** The floor is cleared on the **lower bound**, not the reading:
+
+```
+min(rolling_60min_mean(P) - U)  >= 10.0 W
+```
+
+An entrant with a 0.5% meter therefore needs about **10.05 We** to clear 10.0. This is the only
+place in the rules where a team is asked to hold margin, and it is deliberate: it converts meter
+quality from something an entrant would want to be sloppy about into something they want to be
+good at, because a worse meter costs them watts. A team that shows up with a 3% instrument has
+to build a 10.3 We article to pass — which is a fair trade and requires no judgment from anyone.
+
+**Why not simply tighten the floor to 10.05 and skip this.** Because that answers the wrong
+question. A fixed margin assumes an uncertainty we have not specified; this makes each entrant
+declare theirs and then be held to it. It also means the number on the scoreboard is comparable
+between entries, which a fixed fudge factor would not deliver.
+
+**Related question this does not settle.** Whether 98% is the right slope was asked in review as
+"is it harmless to have a 2% margin, is it harmful to have zero?" — which is the right way to put
+it. The answer is that the slope and the floor are now measuring different things: the floor
+absorbs *instrument* uncertainty explicitly, above, so 98% no longer has to double as noise
+tolerance. What 98% is for is the shape of the discharge curve, and §6 is honest about the limit
+of that.
 
 ## 6. The Sustained Output Rule
 
@@ -300,8 +395,36 @@ Any chemistry can pass it. Consumables simply have to be oversized enough that 3
 bite out of their inventory — which is precisely the property we want, and it costs them mass,
 which the scoreboard then reports.
 
+**What this rule does not catch, stated plainly because v0.6 overclaimed it.** The table above is
+a table of *unregulated* sources. Every one of those decay curves is what you get when the source
+is wired to the load. Put a buck converter between them and the slope test stops seeing the
+chemistry at all: a battery holding exactly 3.54 kWh, regulated flat at 10.05 We, reports a first
+hour of 10.05 W and a final hour of 10.05 W, a ratio of 1.000, and passes both the floor and the
+slope while being **completely empty at hour 355**. Regulating output is a $4 part and standard
+practice, so this is not an exotic attack — it is the default way anyone would build the article.
+
+So §6 does not retire "a consumable with a fortnight of runway." It retires a consumable whose
+*power electronics* let the decay reach the load. That is a much weaker claim than v0.6 made, and
+the gap matters because a battery sized to exactly one night is the specific thing this prize was
+written to exclude.
+
+The reason it survives is structural: **every quantity the rule looks at is inside the Window, and
+the difference between a 354-hour battery and an isotope is entirely outside it.** No test confined
+to T0..T0+354h can separate them. The candidate fix is an *endurance tail* — keep the meters
+running past the Window with the floor no longer applying, and publish the hour at which output
+actually falls below 10.0 We. An isotope reports "still running at cutoff." The regulated battery
+reports 355. Identical pass/fail, but the scoreboard finally carries the number that distinguishes
+them, and it needs no audit of anybody's energy inventory, which is what got the Decade Rule
+retired in the first place.
+
+We have **not** adopted it, because it costs the one thing §4 says entrants cannot spare: a 72-hour
+tail is three more days on a fifteen-day chamber booking, roughly 20% more of the scarcest and most
+expensive input, to produce one number. That trade is a judgment call rather than a physics
+question, so it goes to reviewers instead of being decided here. See Part VII and Appendix B.7.
+
 **This replaces the Decade Rule from v0.3.** That rule required an expert to audit a proprietary
-energy inventory. This one is two numbers from the same file the validator already reads.
+energy inventory. This one is two numbers from the same file the validator already reads — and,
+per the paragraphs above, two numbers that see less than we said they did.
 
 ## 7. The Procurement Rule
 
@@ -356,27 +479,39 @@ answer; an independent verifier vouches for the inputs.**
 | 7 | Mid-run public telemetry URL, video URL, and log hash chain | **Verifier** (§9.4) |
 | 8 | The procurement document (§7) | Entrant |
 | 9 | All of the above under an open licence | Entrant |
+| 10 | Calibration certificates and the §5.1 uncertainty budget for every official sensor | **Verifier** (§5.1) |
+| 11 | The redundant power channel's log (§5.1) | **Verifier** (§5.1) |
 
 ### 8.2 What the validator checks
 
 Entirely from items 1 and 2:
 
 ```
-min(rolling_60min_mean(P))      >= 10.0 W
-min(P)                          >= 5.0 W
+min(rolling_60min_mean(P) - U)  >= 10.0 W      # §5.1: the lower bound, not the reading
+min(P - U)                      >= 5.0 W
 max_contiguous_seconds(P < 5.0) <= 60
 mean(P[-1h]) / mean(P[0:1h])    >= 0.98
 duration                        >= 354 h, contiguous
-max(shroud_T, all sensors)      <= 100 K
+max(shroud_T, all sensors)      <= 100 K       # from T0, no grace hour
 max(pressure)                   <= 1e-5 torr, except <= 60 min cumulative up to 1e-4
 ```
+
+**The environment binds from T0, with no grace period.** v0.6's Appendix B said the shroud and
+pressure limits applied "after t0+1h", which contradicted both §2 (T0 *is* the instant §4 is first
+satisfied) and §4 ("≤ 1×10⁻⁵ torr throughout"). The grace hour is deleted. It mattered more than a
+typo: the retention baseline in §6 is the mean of the **first** hour, so a one-hour environmental
+grace put the denominator of the only trend test in the rules inside the one hour where the
+environment was unconstrained — and shroud temperature moves the output of any thermally-coupled
+converter. Pre-cool to spec, then start the clock; that is what T0 always meant.
 
 If the script passes and the checklist in §8.1 is complete, the claim is good. The Senate's role is
 to confirm the checklist is complete and the script was run — clerical, not technical.
 
-The canonical column schema, a passing fixture, and two failing attacks (looped recording; sag to
-9.8 W) are in [Appendix B](#appendix-b--validator-schema-and-adversarial-fixtures). The highest-value
-review is still: describe a file that passes every check alongside hardware that shouldn't count.
+The canonical column schema, a passing fixture, and the adversarial fixtures — looped recording,
+sag to 9.8 W, biased meter, aliased switching bus, and the regulated consumable that legitimately
+passes — are in [Appendix B](#appendix-b--validator-schema-and-adversarial-fixtures). The
+highest-value review is still: describe a file that passes every check alongside hardware that
+shouldn't count. B.5 through B.7 are the ones review has produced so far.
 
 ### 8.3 Any chamber, any country
 
@@ -817,7 +952,8 @@ reopen them by accident.
 empties the field. Raise it when the prize is ready to pay for industrialization, not before.
 
 **Closed: the 98% slope.** Stays a last-hour / first-hour ratio. It is not a 9.8 W waiver. The
-rolling-hour floor is still 10.0 We.
+rolling-hour floor is still 10.0 We. *What the slope is claimed to accomplish* is reopened below;
+its definition is not in question.
 
 **Closed: the attendance rule.** Two site visits (Day 0 and Day 15), not 48 hours of standing watch.
 The mid-run evidence is live telemetry, clock-in-frame video, and hash-chained logs. Optional
@@ -826,18 +962,56 @@ The mid-run evidence is live telemetry, clock-in-frame video, and hash-chained l
 **Closed: Route A is the default.** Route C is funded for Open Field. Route B exists only if a real
 quote lands below Route A.
 
-**Still open: the validator.** The most useful thing you can do with this brief is try to beat it.
-If you can describe an article that passes every test in Part II and Appendix B and is not a
-night-shift power plant, the tests are wrong. Send the description. A verbal cheat is useful; a CSV
-that actually passes is the thing that changes the brief.
+**Closed in v0.7: meter quality.** §5.1. Traceable calibration, ≤ 0.5% expanded uncertainty, a
+published budget, simultaneous sampling, true power on non-DC buses, and a floor scored on the
+lower bound. This closes B.5 and B.6, which both passed v0.6 without anybody lying.
 
-**Still open: chamber access.** The facilities in Part VI are listed, not booked.
+**Closed in v0.7: the environment grace hour.** Deleted. It contradicted §2 and §4, and it put the
+retention baseline inside the only hour where the shroud was unconstrained.
+
+**Reopened in v0.7: what the Sustained Output Rule actually excludes.** v0.6 listed this as closed
+and it should not have been. The rule retires *unregulated* decay, not consumables — a battery
+holding exactly one night's energy behind a buck converter posts a retention ratio of 1.000 and
+passes everything (Appendix B.7). No test confined to the Window can separate it from an isotope,
+because the difference between them is entirely outside the Window.
+
+The question for reviewers is not whether the hole is real; it is whether to pay for the fix. The
+candidate is an **endurance tail**: keep the meters running past T0 + 354 h with the floor lifted,
+and publish the hour at which output actually drops below 10.0 We. It is observable rather than
+audited, so it does not reintroduce the Decade Rule's referee. It costs roughly three extra days on
+a fifteen-day chamber booking, which is 20% more of the input Part VI calls the real barrier to
+entry. Three ways to go:
+
+1. **Adopt the tail.** The prize measures the property it claims to measure. Attempts get more
+   expensive, and the field gets smaller, in the exact dimension we can least afford.
+2. **Ship as is** and let mass and occupied volume do the work on the scoreboard, accepting that
+   the first winner may be a one-night battery and that §6's language has to stop claiming
+   otherwise.
+3. **Tail only to break a tie**, or only for a claimed record, so the ordinary case stays fifteen
+   days. Cheapest, but it means the headline number and the interesting number are different
+   tests, which cuts against "one milestone, one script."
+
+**Still open: the validator.** B.5 and B.6 came from review and are now fixed; B.7 came from review
+and is not. That is the pattern we want. If you can describe an article that passes every test in
+Part II and Appendix B and is not a night-shift power plant, the tests are wrong. A verbal cheat is
+useful; a CSV that actually passes is the thing that changes the brief.
+
+**Still open: chamber access, and now more sharply.** The facilities in Part VI are listed, not
+booked — and per §4 the purse does not cover fifteen days of any of them at commercial rates. The
+most useful single contribution a reviewer can make is a named person at a facility who would
+consider hosting, or an entrant who already owns a vessel.
 
 **Still open: who did we miss?** Especially outside the US and Europe, and especially non-nuclear
-approaches that are a product, not a paper.
+approaches that are a product, not a paper. Review has so far confirmed the existing coverage
+rather than adding to it: thermal wadis and latent-heat stores are Open Field (Slot 7), JAXA is
+excluded with a stated reason and listed as a neutral chamber host, and Australian capability
+appears as ANSTO in Part VI. If a named non-nuclear *product* outside the US and Europe exists, we
+still have not found it.
 
-**Still open: the purse.** $25k is roughly 50–100% of the cheapest credible attempt, ~10–25% of a
-corporate one, and ~1% of a nuclear one.
+**Still open: the purse, and whether it is aimed at the right cost.** $25k is roughly 50–100% of the
+cheapest credible attempt if the entrant owns a chamber, and a rounding error against renting one.
+Route C subsidises metrology, which §5.1 has just made more expensive but which was never the
+binding cost. A **chamber-time grant** would be better targeted than a larger purse.
 
 Decisions that look closed and are physics: the 354-hour duration (14.75 × 24), the vacuum floor
 (1×10⁻⁵ torr), the 100 K shroud. Do not argue with those unless you have a different Moon.
@@ -872,12 +1046,19 @@ stated.
 | `t_unix` | seconds | UTC unix time. Monotonic. No gaps longer than 2 seconds. |
 | `voltage_v` | V | Load-bus voltage at the official meter. |
 | `current_a` | A | Load-bus current at the official meter. Positive = power delivered to the load. |
-| `power_w` | W | `voltage_v * current_a`. The validator recomputes this; a stored value that disagrees with the product fails the row. |
-| `shroud_t_k_1` | K | Shroud thermocouple 1. All four must stay ≤ 100 K after t0+1 h. |
+| `power_w` | W | Delivered power. On a DC bus the validator recomputes `voltage_v * current_a` and a stored value that disagrees with the product fails the row. On a non-DC bus this is the §5.1 synchronous product `mean(v·i)` over the sample interval, `bus_type` is `ac` or `switched`, and the recompute check is skipped because the product of averages is not power. |
+| `power_u_w` | W | **New in v0.7.** Expanded uncertainty (k = 2) on `power_w` for this row, from the §5.1 budget. The floor tests use `power_w - power_u_w`. A file without this column fails. |
+| `power_w_b` | W | **New in v0.7.** The redundant §5.1 power channel. Not required to agree; required to be present. |
+| `bus_type` | — | **New in v0.7.** `dc`, `ac`, or `switched`. Selects the recompute rule above. |
+| `shroud_t_k_1` | K | Shroud thermocouple 1. All four must stay ≤ 100 K from t0. |
 | `shroud_t_k_2` | K | Shroud thermocouple 2. |
 | `shroud_t_k_3` | K | Shroud thermocouple 3. |
 | `shroud_t_k_4` | K | Shroud thermocouple 4. |
-| `pressure_torr` | torr | Chamber pressure. Must stay ≤ 1×10⁻⁵ after t0+1 h, except the §8.2 excursion budget. |
+| `pressure_torr` | torr | Chamber pressure. Must stay ≤ 1×10⁻⁵ from t0, except the §8.2 excursion budget. |
+
+The four v0.7 columns are why the schema version is pinned alongside the validator (§10). A v0.6
+file cannot be scored by a v0.7 validator, and should not be: it does not carry the uncertainty
+that the floor test now depends on.
 
 Optional columns the validator ignores but the scoreboard may use later: `article_mass_kg`,
 `occupied_volume_m3`, `hash_prev`, `hash_self`. Hash columns, if present, must form a chain:
@@ -885,18 +1066,24 @@ Optional columns the validator ignores but the scoreboard may use later: `articl
 
 ### B.2 Passing fixture (excerpt)
 
-A honest 10.2 We chemical article. First hour mean 10.21 W. Last hour mean 10.05 W. Ratio 0.984.
-Every rolling hour ≥ 10.0 W. Shroud 88–92 K. Pressure 3×10⁻⁷ torr.
+An honest chemical article on a 0.4% meter. First hour mean 10.29 W. Last hour mean 10.13 W. Ratio
+0.984. Every rolling hour clears the floor **on the lower bound**: 10.13 − 0.04 = 10.09 ≥ 10.0.
+Shroud 88–92 K from T0. Pressure 3×10⁻⁷ torr.
 
 ```
-t_unix,voltage_v,current_a,power_w,shroud_t_k_1,shroud_t_k_2,shroud_t_k_3,shroud_t_k_4,pressure_torr
-1710000000,28.00,0.3650,10.220,90.1,89.8,90.4,89.6,3.1e-7
-1710000001,28.00,0.3648,10.214,90.1,89.8,90.4,89.6,3.1e-7
+t_unix,voltage_v,current_a,power_w,power_u_w,power_w_b,bus_type,shroud_t_k_1,shroud_t_k_2,shroud_t_k_3,shroud_t_k_4,pressure_torr
+1710000000,28.00,0.3675,10.290,0.041,10.271,dc,90.1,89.8,90.4,89.6,3.1e-7
+1710000001,28.00,0.3673,10.284,0.041,10.280,dc,90.1,89.8,90.4,89.6,3.1e-7
 ...
-1710012740,27.95,0.3596,10.051,91.2,90.9,91.4,90.7,2.9e-7
+1710012740,27.95,0.3625,10.132,0.041,10.119,dc,91.2,90.9,91.4,90.7,2.9e-7
 ```
 
-Expected validator output: `PASS last_hour/first_hour=0.984 min_rolling_hour=10.04`.
+Expected validator output:
+`PASS last_hour/first_hour=0.984 min_rolling_hour_lower_bound=10.09 u=0.4%`.
+
+Note the article got bigger between v0.6 and v0.7. The same hardware that was a 10.2 We entry is a
+10.29 We entry now, because §5.1 makes it clear the floor was never really 10.0 W for anyone who
+could not measure to zero.
 
 ### B.3 Failing fixture — looped recording
 
@@ -920,7 +1107,98 @@ mean is < 10.0 W).
 
 The slope test is not reached. The floor fails first. That is the point of the two tests.
 
-### B.5 What "beat the validator" means
+### B.5 Beat v0.6 — the biased meter
+
+**This one passed v0.6.** It is the reason v0.7 exists, and it is worth stating that no forgery is
+involved at any point: every row is an honest reading of a real instrument, the verifier owns the
+meter, the seals hold, the video is unbroken, and the hash chain is perfect.
+
+A genuine **9.85 We** article. The verifier installs a current shunt with a valid calibration
+certificate whose expanded uncertainty is ±2% — a perfectly ordinary industrial instrument, and
+nothing in v0.6 said it was not good enough. It happens to read **+1.8% high** at the operating
+point, which is inside its stated accuracy and therefore not a defect.
+
+```
+t_unix,voltage_v,current_a,power_w,shroud_t_k_1,...
+1710000000,28.00,0.3583,10.032,90.1,...
+```
+
+Under v0.6: `PASS min_rolling_hour=10.02`. The article does not clear ten watts and never did.
+
+Under v0.7 the same run must declare `power_u_w = 0.201` and is scored on 10.032 − 0.201 = **9.83**:
+`FAIL rolling_hour_floor_lower_bound=9.83`. To pass with that instrument the team needs a genuine
+10.24 We article, which is the correct answer — and if they want the cheaper article instead, they
+buy a better shunt. Either way the prize gets what it asked for.
+
+**Why this was the important hole.** Every other attack in this appendix requires someone to lie.
+This one requires nobody to lie, which makes it the only one that would have survived contact with
+an honest accredited lab, a signed report, and a journalist checking the file.
+
+### B.6 Beat v0.6 — the aliased switching bus
+
+Also a v0.6 pass, and aimed squarely at the favourite's architecture: a free-piston Stirling
+convertor's alternator output is not DC, and it reaches the load through a switching regulator.
+
+v0.6 defined power as `voltage_v * current_a` sampled at 1 Hz with no requirement that the two
+channels be sampled together. On a bus with ripple at the convertor's operating frequency — tens of
+hertz to low kilohertz — a 1 Hz sample of each channel is aliased, and the product of two
+independently aliased samples has no fixed relationship to real power. If voltage happens to be
+sampled near ripple peaks and current near its own, the reported product runs high by whatever the
+form factor allows; a 15% error needs no conspiracy, just two data loggers that were never
+synchronised.
+
+```
+# reported at 1 Hz, channels not co-triggered
+1710000000,28.4,0.372,10.565,...     # true mean(v*i) over the second: 9.21 W
+```
+
+Under v0.6: `PASS`. The load received 9.21 W.
+
+Under v0.7 the bus is `switched`, so `power_w` must be `mean(v·i)` computed at ≥ 10 kHz and the
+row reads 9.21 W: `FAIL rolling_hour_floor`. Simultaneous sampling from one trigger is also now
+mandatory, which kills the unsynchronised-logger version of the same error.
+
+This is the fixture we would most like an electrical metrologist to attack, because the fix is
+stated in one line of §5.1 and the failure mode is a genuinely easy mistake to make in good faith.
+
+### B.7 Beats v0.7 — the regulated consumable, which passes and we cannot currently exclude
+
+Unlike B.5 and B.6 this is **not fixed** in v0.7. It passes every check in §8.2 as written, and it
+is the open question in Part VII.
+
+A lithium primary battery pack holding **3.6 kWh** usable at 90 K, feeding a buck converter
+regulated to a flat **10.06 We** into the load. Mass roughly 12–16 kg. Every number honest, meter
+inside 0.3%.
+
+```
+t_unix,voltage_v,current_a,power_w,power_u_w,power_w_b,bus_type,...
+1710000000,28.00,0.3593,10.060,0.030,10.058,dc,...
+1710636400,28.00,0.3593,10.060,0.030,10.061,dc,...     # T0 + 353h 59m
+```
+
+- Rolling-hour lower bound: 10.03 ≥ 10.0. **Passes.**
+- Instantaneous floor: passes.
+- `mean(P[-1h]) / mean(P[0:1h])` = 10.060 / 10.060 = **1.000.** Passes the slope outright — better
+  than any isotope, because a regulator is flatter than radioactive decay.
+- Duration 354 h contiguous. **Passes.**
+- Environment, custody, video, hash chain, procurement (cells are off the shelf). **All pass.**
+
+Validator output: `PASS last_hour/first_hour=1.000 min_rolling_hour_lower_bound=10.03`.
+
+At T0 + 355 h the pack is flat and the article is dead. It is precisely "a consumable with a
+fortnight of runway" — the thing §6 says it retires — and it clears the bar with the best retention
+figure in the field.
+
+What it costs the entrant is mass and volume, which §8.1 publishes, and that is the whole of the
+current defence: the scoreboard shows 14 kg against an isotope's 4 kg and a reader is expected to
+draw the conclusion. Whether that is sufficient is a real question. The candidate fix is the
+endurance tail in §6 — keep logging past the Window with the floor lifted and publish the hour
+output actually fails. This fixture reports 355; an isotope reports "still running." It costs
+about three more days of chamber time, which §4 says is the scarcest input there is.
+
+**We would rather ship a prize with this hole documented than pretend the slope test closes it.**
+
+### B.8 What "beat the validator" means
 
 Send a CSV that:
 
