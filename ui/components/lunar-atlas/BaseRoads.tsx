@@ -116,18 +116,24 @@ function gradedRegolithShader(shader: THREE.WebGLProgramParametersWithUniforms) 
 // the patched and unpatched variants collide and whichever compiled first wins.
 const GRADED_CACHE_KEY = () => 'regolith-graded-v1'
 
-// Multiplied against the surface texture. The sintered crust runs a little
-// lighter than the regolith it was fused from; the spoil is darker because it
-// is broken rock rather than fused dust.
-const BED = new THREE.Color('#aaa69d')
-const TRACK = new THREE.Color('#9b978f')
+// Multiplied against the surface texture. The sintered crust runs a LITTLE
+// lighter than the regolith it was fused from — and "a little" was re-learned
+// the hard way: the first tones sat far enough above the terrain that every
+// road read as a pale ribbon PAINTED on the plan, which is the exact failure
+// this module's header promises to avoid. Sintering fuses the same dust that is
+// lying everywhere else; it changes texture far more than it changes colour. So
+// the value gap to the surrounding regolith is kept to a few percent and the
+// road's identity is carried by what this module already does well — the
+// smoothness contrast, the ruts, and the windrows.
+const BED = new THREE.Color('#a19d94')
+const TRACK = new THREE.Color('#918d85')
 const RUBBLE = new THREE.Color('#8b8781')
-const SPOIL = new THREE.Color('#95918a')
+const SPOIL = new THREE.Color('#94908a')
 // The blade's cut line is scuffed crust rather than tipped rock, so it sits
 // nearer the bed than the heap does. Keeping the dark tone to the heap PROPER is
 // what stops the shoulder reading as a wide dark band ruled down each side of
 // the road, which is half of what makes a road look drawn rather than built.
-const SCUFF = new THREE.Color('#a09c94')
+const SCUFF = new THREE.Color('#99958d')
 
 type Lane = {
   off: number
@@ -165,10 +171,12 @@ const TOE_OFF_M = ROAD_HALF_M
 const HALF_SECTION: Lane[] = [
   { off: 0.4, rise: 0.162, tone: BED, alpha: 1 },
   // A wheel rut is a trough with lips, not a stripe of darker paint. Two
-  // vertices to a side and 5 cm deep is enough to catch the sun on one wall and
-  // shade the other, which is the whole reason it reads as a rut at all.
+  // vertices to a side and ~8 cm deep is enough to catch the sun on one wall
+  // and shade the other, which is the whole reason it reads as a rut at all.
+  // (Deepened from 5 cm when the tones above were pulled toward the terrain's:
+  // with less colour doing the work, the geometry has to carry more of it.)
   { off: 1.15, rise: 0.15, tone: BED, alpha: 1 },
-  { off: 1.6, rise: 0.098, tone: TRACK, alpha: 1 },
+  { off: 1.6, rise: 0.072, tone: TRACK, alpha: 1 },
   { off: 2.05, rise: 0.15, tone: BED, alpha: 1 },
   { off: 2.6, rise: 0.156, tone: BED, alpha: 1 },
   { off: BED_HALF_M, rise: 0.132, tone: BED, alpha: 1, wander: true },
@@ -380,8 +388,8 @@ function makeSurfaceMaps(): Surface | null {
       // height to it at all.
       height[i] = streak[x] * 0.55 + chatter[y] + grit * 0.02
       const mottle =
-        (noise2(x / SIZE, y / SIZE, 4, 3.1) - 0.5) * 0.055 +
-        (noise2(x / SIZE, y / SIZE, 11, 8.7) - 0.5) * 0.035
+        (noise2(x / SIZE, y / SIZE, 4, 3.1) - 0.5) * 0.075 +
+        (noise2(x / SIZE, y / SIZE, 11, 8.7) - 0.5) * 0.05
       // The chatter is weighted DOWN in albedo and left at full strength in the
       // relief above, which is where it belongs: a blade ripple is a shape the
       // sun rakes across, not a change of colour. It is also the one periodic
@@ -444,7 +452,7 @@ function makeSurfaceMaps(): Surface | null {
   return { albedo, normal }
 }
 
-const NORMAL_SCALE = new THREE.Vector2(0.42, 0.42)
+const NORMAL_SCALE = new THREE.Vector2(0.5, 0.5)
 
 // A point on the plan, as a unit direction in scene space.
 function planDir(eastM: number, northM: number) {
@@ -605,11 +613,11 @@ function buildStreet(
     const bedAlpha = bedAt(i)
     const bermLevel = bermAt(i)
     // A stretch of crust does not take the sinter as evenly as the stretch
-    // before it. Very slight, and the reason it is here rather than in the
+    // before it. Slight, and the reason it is here rather than in the
     // texture is that the texture tiles every 5 m: this is the variation at the
     // scale of a whole length of road, which is what stops it reading as an
     // extruded ribbon.
-    const patch = 1 + (hash(streetIdx * 149 + wrap(i) * 1.7) - 0.5) * 0.055
+    const patch = 1 + (hash(streetIdx * 149 + wrap(i) * 1.7) - 0.5) * 0.09
     // One draw of the jitter per side, shared by every lane on it — the whole
     // windrow has to move together or its own lanes cross each other.
     const jitter = [crest(i, -1), crest(i, 1)]
