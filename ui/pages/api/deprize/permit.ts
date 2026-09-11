@@ -3,6 +3,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getAddress, type Hex } from 'viem'
 import { hashIp, recordTermsAcceptance } from '@/lib/deprize/acceptanceLog'
+import { areAttestationsAccepted } from '@/lib/deprize/attestations'
 import {
   mintAddressForChain,
   permitTtlSeconds,
@@ -40,7 +41,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!Number.isInteger(chainId) || chainId <= 0) {
     return res.status(400).json({ error: 'Invalid chainId' })
   }
-  if (!accepted) {
+  if (!accepted || !areAttestationsAccepted(req.body?.attestations)) {
     return res.status(400).json({
       allowed: false,
       reason: 'terms-not-accepted',
@@ -73,6 +74,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     country: decision.country ?? getCountryFromHeaders(req),
     userAgent: String(req.headers['user-agent'] || '').slice(0, 180),
     ipHash: hashIp(getClientIp(req)),
+    attestations: req.body.attestations,
   })
   if (!logged && !isNonProdBypassEnabled()) {
     return res.status(503).json({

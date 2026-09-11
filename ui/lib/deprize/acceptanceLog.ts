@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis'
 import { createHash } from 'crypto'
+import type { DePrizeAttestations } from './attestations'
 
 export type AcceptanceRecord = {
   wallet: string
@@ -8,6 +9,7 @@ export type AcceptanceRecord = {
   country: string | null
   userAgent: string
   ipHash: string | null
+  attestations: DePrizeAttestations
 }
 
 function redis(): Redis | null {

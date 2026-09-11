@@ -16,11 +16,11 @@ slug: /deprize-privacy-notice
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.0  
+Version 1.1  
 Effective Date: September 10, 2026  
-Last Updated: September 10, 2026
+Last Updated: September 11, 2026
 
-> **Review status.** Version 1.0 of this Notice was prepared on September 10, 2026 and is pending review by MoonDAO's counsel before DePrize opens to the public. MoonDAO may update this document before or at launch.
+> **Review status.** Version 1.1 of this Notice was prepared on September 11, 2026 and is pending review by MoonDAO's counsel before DePrize opens to the public. MoonDAO may update this document before or at launch.
 
 > **Summary.** Everything you do on a blockchain is public and permanent. When you use DePrize we also process your IP address and approximate location (to enforce jurisdiction rules), your login details if you sign in through our authentication provider, analytics data (with your consent where required), and — if you are a competitor claiming a prize — identity, ownership, and tax information. We do not sell personal data. DePrize is not offered in the European Union, the European Economic Area, or the United Kingdom.
 
@@ -38,13 +38,13 @@ MoonDAO DAO LLC is the controller of personal data described in this Notice. Con
 
 **2.1 Data you provide.**
 - **Authentication data.** If you sign in through our authentication provider (Privy), the identifier you use — a wallet address, email address, phone number, or a Google, X/Twitter, Discord, or GitHub account identifier — and any embedded wallet address created for you.
-- **Acceptance and eligibility records.** Your confirmation that you accept the Terms (including the version accepted), and your representations that you are not a U.S. Person, are not located in a Restricted Jurisdiction, are not a sanctioned person, and are not an Insider.
+- **Acceptance and eligibility records.** Your confirmation that you accept the Terms (including the version accepted); your separate attestations that you are not a U.S. resident and are not located in the United States, that you are not acting for a U.S.-organized or U.S.-headquartered entity, and that you are not an Insider and are not betting on behalf of anyone else; and the eligibility decision associated with that acceptance.
 - **Communications.** Messages you send us (support, self-exclusion requests, misconduct reports, listing corrections), and any information they contain.
 - **Prize claim data (competitors only).** If you claim a listing or a Prize under the Prize Rules: the legal name, registration details, and address of your organization; the names, roles, dates of birth, government identification, and contact details of authorized representatives and of beneficial owners of 25% or more; sanctions-screening results; IRS Forms W-9 or W-8 and taxpayer identification numbers; payout wallet addresses; and the contents of evidence submissions.
 
 **2.2 Data we collect automatically.**
 - **Blockchain data.** Your wallet address and every transaction it makes with the DePrize contracts — bets, cash-outs, redemptions, the amounts, the outcomes backed, and timestamps. This data is written to a public blockchain (currently Arbitrum One) by you, not by us, and is readable by anyone.
-- **Network and location data.** Your IP address, the country/region/state derived from it (using request headers supplied by our hosting and CDN providers and, where needed, a third-party IP-geolocation service), device and browser type, operating system, language, referring URL, and the pages and actions you take on the Site.
+- **Network and location data.** Your IP address (stored only as a truncated cryptographic hash, never in the clear), the country and region derived from it (using request headers supplied by our hosting and CDN providers and, where needed, a third-party IP-geolocation service), a wallet-to-country association used to enforce eligibility, connection-type signals (for example whether a request appears to come from a VPN, proxy, Tor exit, hosting network, or location-preserving relay), device and browser type (user agent), operating system, language, referring URL, and the pages and actions you take on the Site.
 - **Analytics and cookies.** With your consent where required, we use Google Analytics (via Google Tag with consent mode) and Vercel Analytics to understand how the Site is used. These tools use cookies, local storage, and similar technologies and collect pseudonymous identifiers, page views, events, and approximate location. A `cookie_consent` value is stored in your browser to remember your choice. An access-control cookie is set when you enter a password-gated area of the Site.
 - **Wallet-screening data.** Results of screening your wallet address against sanctions and risk lists, where we perform such screening.
 
@@ -114,8 +114,8 @@ MoonDAO DAO LLC is organized in the Republic of the Marshall Islands, operates t
 | Data | Retention |
 |---|---|
 | Blockchain data | Permanent (outside our control) |
-| Acceptance and eligibility records, wallet-screening results | For as long as you use the Service and **at least seven (7) years** thereafter, to evidence compliance and defend claims |
-| Network and location logs | Up to **13 months**, unless retained longer for an investigation or legal hold |
+| Acceptance, attestation, permit-issuance, eligibility, and wallet-country records; hashed IPs; user agent; wallet-screening results | For as long as you use the Service and **at least five (5) years** thereafter (MoonDAO currently retains these for **seven (7) years**), to evidence compliance and defend claims |
+| Transient network and location logs not stored as acceptance or eligibility records | Up to **13 months**, unless retained longer for an investigation or legal hold |
 | Analytics data | Per the analytics provider's retention settings (Google Analytics: up to 14 months for user-level data) |
 | Authentication data | For the life of your account and a reasonable period after deletion |
 | Prize claim, verification, and tax data | **Seven (7) years** after the final Prize payment or the closing of the claim, or longer where required by tax or sanctions law |

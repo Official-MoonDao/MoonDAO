@@ -3,6 +3,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getAddress } from 'viem'
 import { hashIp, recordTermsAcceptance } from '@/lib/deprize/acceptanceLog'
+import { areAttestationsAccepted } from '@/lib/deprize/attestations'
 import { DEPRIZE_TERMS_VERSION } from '@/lib/deprize/constants'
 import { eligibilityMessage, isHexAddress } from '@/lib/deprize/eligibility'
 import { getClientIp, getCountryFromHeaders } from '@/lib/geo'
@@ -26,7 +27,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       message: eligibilityMessage('invalid-wallet'),
     })
   }
-  if (!accepted) {
+  if (!accepted || !areAttestationsAccepted(req.body?.attestations)) {
     return res.status(400).json({
       ok: false,
       reason: 'terms-not-accepted',
@@ -42,6 +43,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     country: getCountryFromHeaders(req),
     userAgent: String(req.headers['user-agent'] || '').slice(0, 180),
     ipHash: hashIp(getClientIp(req)),
+    attestations: req.body.attestations,
   })
 
   if (!logged) {
