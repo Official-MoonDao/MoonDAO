@@ -120,6 +120,24 @@ export const MIN_EXPOSURE_ELEV_DEG = 0.25
 // nothing at all, by design, so it can be depended on from anywhere without a cycle.
 const EXPOSURE_ANCHOR = DESIGN_EXPOSURE * litGroundRadiance(SUN_INTENSITY, SUN_LOCAL_ELEV_DEG)
 
+// Scale factor for anything authored as a fixed SCREEN brightness rather than as a
+// physical radiance — the backdrop colour, the starfield, the marker beacons and
+// labels. Multiply their linear values by this and they hold still while the exposure
+// moves underneath them.
+//
+// Exposure multiplies linear values on the way to the screen, so holding the product
+// constant means dividing by it: at the design sun this is exactly 1.0 and nothing
+// changes, and at the real sun's 12.5x it is 0.08.
+//
+// This is the fix for the whole class, and the class is bigger than it looks. It first
+// showed up as a NAVY SKY: the backdrop is #03040a, a near-black that reads as black
+// at the shipped exposure and as visible blue at 12.5x. On a world with no atmosphere
+// the sky is black, so that was not a small artifact — it was the single most
+// unphysical thing in the frame.
+export function screenAnchoredScale(elevationDeg: number): number {
+  return DESIGN_EXPOSURE / exposureFor(elevationDeg)
+}
+
 export function exposureFor(elevationDeg: number): number {
   return (
     EXPOSURE_ANCHOR /

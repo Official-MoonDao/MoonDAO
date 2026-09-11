@@ -32,6 +32,7 @@ import {
   SUN_INTENSITY,
   SUN_LOCAL_ELEV_DEG,
   exposureFor,
+  screenAnchoredScale,
 } from '../../../lib/lunar-atlas/sun'
 import { litGroundRadiance, shadowFillRadiance } from '../../../lib/lunar-atlas/regolith'
 import { capCenterLatLon, capLocalDirection } from '../../../lib/lunar-atlas/southpole'
@@ -321,6 +322,33 @@ describe('exposing for the sun that is actually up', () => {
     for (const e of [maxElevationDeg(), 1.5, 1, 0.5, MIN_EXPOSURE_ELEV_DEG]) {
       expect(onScreen(e) / design, `elev ${e}`).to.be.closeTo(1, 1e-9)
     }
+  })
+
+  it('leaves screen-anchored things EXACTLY alone at the design sun', () => {
+    // The guarantee that the shipped frame does not move. Anything authored as a screen
+    // value — the backdrop, the starfield, MarkerLayer's beacons — is multiplied by
+    // this, so a scale of anything but exactly 1 here silently re-grades the default
+    // scene. Not "closeTo": exactly.
+    expect(screenAnchoredScale(SUN_LOCAL_ELEV_DEG)).to.equal(1)
+  })
+
+  it('cancels the exposure it is paired with, at every sun', () => {
+    // The property that makes it correct rather than merely small: scale x exposure is
+    // constant, so a screen-anchored colour lands on the same pixel value under any
+    // sun. This is what turned the navy sky back to black.
+    const design = screenAnchoredScale(SUN_LOCAL_ELEV_DEG) * exposureFor(SUN_LOCAL_ELEV_DEG)
+    for (const e of [maxElevationDeg(), 2, 1, 0.5, 0, -1.5]) {
+      expect(screenAnchoredScale(e) * exposureFor(e), `elev ${e}`).to.be.closeTo(design, 1e-9)
+    }
+  })
+
+  it('darkens screen-anchored things by the same 12.5x the exposure lifts', () => {
+    // Stated as a magnitude so the size of the correction is on the record: the
+    // backdrop has to be authored 12.5x darker in linear terms at the real sun to come
+    // out the same colour. That is the whole reason it read as navy before.
+    const scale = screenAnchoredScale(maxElevationDeg())
+    expect(scale).to.be.closeTo(1 / 12.5, 0.02)
+    expect(scale).to.be.lessThan(1)
   })
 
   it('puts the floor outside the range the scene is looked at', () => {

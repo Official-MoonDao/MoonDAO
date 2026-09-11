@@ -46,6 +46,7 @@ import {
   SUN_LOCAL_ELEV_DEG,
   DESIGN_EXPOSURE,
   exposureFor,
+  screenAnchoredScale,
 } from '@/lib/lunar-atlas/sun'
 import {
   localElevationDeg,
@@ -438,7 +439,23 @@ const SHADOW_NORMAL_BIAS_MAX = 0.6 * M_TO_UNITS
 // regolith BRDF against this light per pixel rather than displaying a hillshade
 // baked from a private copy of its direction, which also retired the separate
 // pass that used to exist only to catch shadows on the terrain.
-function Sun({ sunPhase }: { sunPhase?: SunPhase }) {
+// Where the sun is, resolved once. Undefined phase means the design sun, and then this
+// is exactly SUN_DIR and the scene that shipped.
+//
+// Hoisted out of Sun because the SKY needs the elevation too — a backdrop and a light
+// that disagree about the sun is the kind of inconsistency nothing catches, and it
+// already bit once (see screenAnchoredScale). One resolution, one source.
+type ResolvedSun = { dir: THREE.Vector3; elevationDeg: number }
+
+function useResolvedSun(sunPhase?: SunPhase): ResolvedSun {
+  return useMemo(() => {
+    if (!sunPhase) return { dir: SUN_DIR, elevationDeg: SUN_LOCAL_ELEV_DEG }
+    const v = trueSunDirection(sunPhase)
+    return { dir: new THREE.Vector3(...v), elevationDeg: localElevationDeg(v) }
+  }, [sunPhase])
+}
+
+function Sun({ dir, elevationDeg }: ResolvedSun) {
   // A directional light aims at its `target` object, which must be in the
   // scene for its world matrix to update.
   const target = useMemo(() => {
@@ -446,14 +463,6 @@ function Sun({ sunPhase }: { sunPhase?: SunPhase }) {
     o.position.copy(HOME_TARGET)
     return o
   }, [])
-
-  // Where the sun actually is, and how high above this ridge's own horizontal.
-  // Undefined phase means the design sun, and then this is exactly SUN_DIR.
-  const { dir, elevationDeg } = useMemo(() => {
-    if (!sunPhase) return { dir: SUN_DIR, elevationDeg: SUN_LOCAL_ELEV_DEG }
-    const v = trueSunDirection(sunPhase)
-    return { dir: new THREE.Vector3(...v), elevationDeg: localElevationDeg(v) }
-  }, [sunPhase])
 
   const lightPos = useMemo(
     () => HOME_TARGET.clone().addScaledVector(dir, SHADOW_LIGHT_DIST),
@@ -540,6 +549,87 @@ function Sun({ sunPhase }: { sunPhase?: SunPhase }) {
   )
 }
 
+// The starfield, held at a constant screen brightness for the same reason as the sky.
+//
+// Worth saying what the STRICTLY correct answer would be, because this is not it: a
+// camera exposed for sunlit regolith records no stars at all. That is why every Apollo
+// surface photograph has a completely empty black sky, and it is the most-argued-about
+// fact in all of lunar photography. Physically, these should vanish the moment the
+// ground is properly exposed.
+//
+// They are kept because they are load-bearing for something else — this same camera
+// pulls back to orbit, where a starless void reads as a broken render rather than as an
+// airless one. So the conservative choice: hold them exactly where they are today and
+// stop them blowing up. Under true-sun exposure the unanchored version bloomed into
+// fat white blobs, which is worse than either principled answer.
+//
+// drei's Stars leaves exactly one lever for this. Its material is a ShaderMaterial
+// whose fragment stage writes vec4(vColor, dotFalloff), so material.opacity is inert
+// and vColor — the geometry's colour attribute — is the only thing that reaches the
+// output. Scaled from a pristine copy rather than in place, so repeated scrubbing
+// cannot compound.
+function ScreenAnchoredStars({ elevationDeg }: { elevationDeg: number }) {
+  const group = useRef<THREE.Group>(null)
+  const pristine = useRef<Float32Array | null>(null)
+  const scale = screenAnchoredScale(elevationDeg)
+
+  useEffect(() => {
+    let attr: THREE.BufferAttribute | undefined
+    group.current?.traverse((o) => {
+      const g = (o as THREE.Points).geometry
+      const a = g?.getAttribute?.('color')
+      if (a) attr = a as THREE.BufferAttribute
+    })
+    if (!attr) return
+    const dst = attr.array as Float32Array
+    if (!pristine.current || pristine.current.length !== dst.length) {
+      pristine.current = Float32Array.from(dst)
+    }
+    const src = pristine.current
+    for (let i = 0; i < dst.length; i++) dst[i] = src[i] * scale
+    attr.needsUpdate = true
+  }, [scale])
+
+  return (
+    <group ref={group}>
+      <Stars
+        radius={GLOBE_RADIUS * 14}
+        depth={GLOBE_RADIUS * 6}
+        count={6000}
+        factor={GLOBE_RADIUS * 0.9}
+        saturation={0}
+        fade
+        speed={0.3}
+      />
+    </group>
+  )
+}
+
+// The sky, which on an airless world is simply the absence of one.
+//
+// SKY_COLOR is not black, and that is a deliberate authored choice rather than physics:
+// a hair of blue in the backdrop keeps the frame from reading as a dead region of the
+// page. The catch is that it is authored as a SCREEN value, so it only means what it
+// says at the exposure it was picked under. Under true-sun exposure the unmodified
+// colour came out visibly navy — the most unphysical thing in the whole frame, since
+// the one thing everybody knows about the lunar sky is that it is black.
+//
+// So it is held at a constant screen brightness instead of a constant radiance. At the
+// design sun the scale is exactly 1 and this is the same #03040a it always was.
+const SKY_COLOR = '#03040a'
+
+function SkyBackdrop({ elevationDeg }: { elevationDeg: number }) {
+  const scene = useThree((s) => s.scene)
+  useEffect(() => {
+    const c = new THREE.Color(SKY_COLOR).multiplyScalar(screenAnchoredScale(elevationDeg))
+    scene.background = c
+    return () => {
+      scene.background = null
+    }
+  }, [scene, elevationDeg])
+  return null
+}
+
 // The indirect half of the lighting, and the only fill in the scene.
 //
 // Two jobs at once, which is why one texture can replace both a studio
@@ -595,6 +685,9 @@ export default function MoonGlobe({
   children,
 }: MoonGlobeProps) {
   const controlsRef = useRef<any>(null)
+  // Resolved once here so the light, the sky and the starfield are all reading the same
+  // sun. See useResolvedSun.
+  const sun = useResolvedSun(sunPhase)
   // CPU-side copy of the height maps so markers, models, and the camera sit
   // on the terrain the GPU actually renders.
   const radiusAt = useTerrainSampler()
@@ -766,21 +859,13 @@ export default function MoonGlobe({
       }}
       onWheel={handleWheel}
     >
-      <color attach="background" args={['#03040a']} />
+      <SkyBackdrop elevationDeg={sun.elevationDeg} />
 
-      <Sun sunPhase={sunPhase} />
+      <Sun {...sun} />
       <LunarEnvironment />
       <EarthGlobe />
 
-      <Stars
-        radius={GLOBE_RADIUS * 14}
-        depth={GLOBE_RADIUS * 6}
-        count={6000}
-        factor={GLOBE_RADIUS * 0.9}
-        saturation={0}
-        fade
-        speed={0.3}
-      />
+      <ScreenAnchoredStars elevationDeg={sun.elevationDeg} />
 
       <SouthPoleTerrain onReady={onReady} onSurfaceClick={onBackgroundClick} />
 
