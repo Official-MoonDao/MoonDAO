@@ -1,5 +1,5 @@
 import type { NextApiRequest } from 'next'
-import { getClientIp, getCountryFromHeaders, getStateFromHeaders } from '@/lib/geo'
+import { getClientIp, getCountryFromHeaders, getRegionFromHeaders } from '@/lib/geo'
 import {
   evaluateEligibility,
   isHexAddress,
@@ -7,31 +7,30 @@ import {
   type EligibilityDecision,
 } from './eligibility'
 import { screenWallet } from './sanctions'
-import { checkVpnOrProxy } from './vpnCheck'
+import { checkVpnOrProxy, type ConnectionKind } from './vpnCheck'
 
-function regionFromHeaders(req: NextApiRequest): string | null {
-  const h = req.headers
-  const vercel = (h['x-vercel-ip-country-region'] as string | undefined)?.trim()
-  if (vercel) return vercel
-  const cf = (h['cf-region-code'] as string | undefined)?.trim()
-  if (cf) return cf
-  return getStateFromHeaders(req)
+export type EligibilityRunResult = EligibilityDecision & {
+  region: string | null
+  connectionKind: ConnectionKind
 }
 
 export async function runEligibilityChecks(
   req: NextApiRequest,
   wallet?: string | null
-): Promise<EligibilityDecision> {
+): Promise<EligibilityRunResult> {
+  const country = getCountryFromHeaders(req)
+  const region = getRegionFromHeaders(req)
+
   if (isNonProdBypassEnabled()) {
     return {
       allowed: true,
       reason: 'dev-bypass',
-      country: getCountryFromHeaders(req),
+      country,
+      region,
+      connectionKind: 'clear',
     }
   }
 
-  const country = getCountryFromHeaders(req)
-  const region = regionFromHeaders(req)
   const ip = getClientIp(req)
   const vpn = await checkVpnOrProxy(ip)
   const sanctions =
@@ -39,7 +38,7 @@ export async function runEligibilityChecks(
       ? await screenWallet(wallet)
       : { isSanctioned: false, failed: false }
 
-  return evaluateEligibility({
+  const decision = evaluateEligibility({
     country,
     region,
     wallet: wallet || null,
@@ -47,4 +46,10 @@ export async function runEligibilityChecks(
     isSanctioned: sanctions.isSanctioned,
     screeningFailed: vpn.failed || sanctions.failed,
   })
+
+  return {
+    ...decision,
+    region,
+    connectionKind: vpn.kind,
+  }
 }

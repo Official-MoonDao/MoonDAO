@@ -11,6 +11,7 @@ import {
 } from '@/lib/deprize/compliancePermit'
 import { DEPRIZE_TERMS_VERSION } from '@/lib/deprize/constants'
 import { eligibilityMessage, isHexAddress, isNonProdBypassEnabled } from '@/lib/deprize/eligibility'
+import { buildPermitIssuanceRecord, recordPermitIssuance } from '@/lib/deprize/permitLog'
 import { runEligibilityChecks } from '@/lib/deprize/runEligibility'
 import { getClientIp, getCountryFromHeaders } from '@/lib/geo'
 
@@ -67,14 +68,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const wallet = getAddress(walletRaw)
+  const ipHash = hashIp(getClientIp(req))
   const logged = await recordTermsAcceptance({
     wallet,
     termsVersion,
     timestamp: new Date().toISOString(),
     country: decision.country ?? getCountryFromHeaders(req),
+    region: decision.region,
     userAgent: String(req.headers['user-agent'] || '').slice(0, 180),
-    ipHash: hashIp(getClientIp(req)),
+    ipHash,
     attestations: req.body.attestations,
+    surface: 'permit',
   })
   if (!logged && !isNonProdBypassEnabled()) {
     return res.status(503).json({
@@ -84,7 +88,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
+  const country = decision.country
+  if (!country || !ipHash) {
+    return res.status(503).json({
+      allowed: false,
+      reason: 'screening-unavailable',
+      message: eligibilityMessage('screening-unavailable'),
+    })
+  }
+
   const deadline = BigInt(Math.floor(Date.now() / 1000) + permitTtlSeconds())
+  const issuedAt = new Date().toISOString()
   try {
     const signature = await signCompliancePermit({
       wallet: wallet as Hex,
@@ -93,6 +107,29 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       chainId,
       mintAddress: mintAddress as Hex,
     })
+    const issuance = buildPermitIssuanceRecord({
+      wallet: wallet as Hex,
+      deprizeId: BigInt(deprizeId),
+      deadline,
+      chainId,
+      mintAddress: mintAddress as Hex,
+      issuedAt,
+      country,
+      region: decision.region,
+      ipHash,
+      connectionKind: decision.connectionKind,
+      eligibilityReason: decision.reason,
+      termsVersion,
+      attestations: req.body.attestations,
+    })
+    const recorded = await recordPermitIssuance(issuance)
+    if (!recorded && !isNonProdBypassEnabled()) {
+      return res.status(503).json({
+        allowed: false,
+        reason: 'screening-unavailable',
+        message: 'Could not record the permit. Try again shortly.',
+      })
+    }
     return res.status(200).json({
       allowed: true,
       reason: decision.reason,
@@ -100,6 +137,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       deadline: deadline.toString(),
       signature,
       mintAddress,
+      permitHash: issuance.permitHash,
     })
   } catch (err) {
     console.error('[deprize] permit sign failed', err)

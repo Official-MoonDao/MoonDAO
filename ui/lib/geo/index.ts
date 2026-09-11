@@ -123,6 +123,16 @@ export function enforceRegionNotRestricted(
   return true
 }
 
+// Country-subdivision from edge headers (US state, UA oblast, etc.).
+export function getRegionFromHeaders(req: NextApiRequest): string | null {
+  const h = req.headers
+  const vercel = (h['x-vercel-ip-country-region'] as string | undefined)?.trim()
+  if (vercel) return vercel.toUpperCase()
+  const cf = (h['cf-region-code'] as string | undefined)?.trim()
+  if (cf) return cf.toUpperCase()
+  return getStateFromHeaders(req)
+}
+
 // Extract US state from request headers (Vercel/Cloudflare geolocation)
 export function getStateFromHeaders(req: NextApiRequest): string | null {
   const h = req.headers
