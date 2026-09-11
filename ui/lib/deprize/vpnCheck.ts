@@ -1,8 +1,30 @@
+export type ConnectionKind =
+  | 'clear'
+  | 'vpn'
+  | 'proxy'
+  | 'tor'
+  | 'relay'
+  | 'hosting'
+  | 'unknown'
+
 export type VpnCheckResult = {
   isVpnOrProxy: boolean
+  isLocationPreservingRelay: boolean
+  kind: ConnectionKind
   failed: boolean
 }
 
+export type PrivacyFlags = {
+  vpn?: boolean
+  proxy?: boolean
+  tor?: boolean
+  relay?: boolean
+  hosting?: boolean
+}
+
+// Unambiguous hosting / anonymizer names. Short tokens (aws, ovh) are matched
+// with word boundaries so "laws" / "ovhene" do not false-positive. Akamai is
+// omitted: it carries Apple Private Relay egress.
 const HOSTING_HINTS = [
   'vpn',
   'proxy',
@@ -19,7 +41,6 @@ const HOSTING_HINTS = [
   'hetzner',
   'ovh',
   'linode',
-  'akamai',
   'vultr',
   'm247',
   'datacamp',
@@ -46,23 +67,75 @@ export function isPrivateOrLocalIp(ip: string): boolean {
   return false
 }
 
+function hintNeedsWordBoundary(hint: string): boolean {
+  return hint.length <= 4 && !hint.includes(' ') && !hint.includes('.') && !hint.includes('-')
+}
+
 export function hostingLooksLikeProxy(orgOrAsn: string | null | undefined): boolean {
   if (!orgOrAsn) return false
   const hay = orgOrAsn.toLowerCase()
-  return HOSTING_HINTS.some((hint) => hay.includes(hint))
+  return HOSTING_HINTS.some((hint) => {
+    if (hintNeedsWordBoundary(hint)) {
+      const escaped = hint.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`).test(hay)
+    }
+    return hay.includes(hint)
+  })
 }
 
-type PrivacyFlags = {
-  vpn?: boolean
-  proxy?: boolean
-  tor?: boolean
-  relay?: boolean
-  hosting?: boolean
+export function classifyPrivacyFlags(flags: PrivacyFlags | undefined): {
+  isVpnOrProxy: boolean
+  isLocationPreservingRelay: boolean
+  kind: ConnectionKind
+} {
+  if (!flags) {
+    return { isVpnOrProxy: false, isLocationPreservingRelay: false, kind: 'unknown' }
+  }
+  if (flags.vpn) {
+    return { isVpnOrProxy: true, isLocationPreservingRelay: false, kind: 'vpn' }
+  }
+  if (flags.proxy) {
+    return { isVpnOrProxy: true, isLocationPreservingRelay: false, kind: 'proxy' }
+  }
+  if (flags.tor) {
+    return { isVpnOrProxy: true, isLocationPreservingRelay: false, kind: 'tor' }
+  }
+  // Relays (Apple Private Relay, WARP, Google One) preserve country. Allow
+  // even when the provider also marks the egress as hosting.
+  if (flags.relay) {
+    return { isVpnOrProxy: false, isLocationPreservingRelay: true, kind: 'relay' }
+  }
+  if (flags.hosting) {
+    return { isVpnOrProxy: true, isLocationPreservingRelay: false, kind: 'hosting' }
+  }
+  return { isVpnOrProxy: false, isLocationPreservingRelay: false, kind: 'clear' }
 }
 
-function flagsAreProxy(flags: PrivacyFlags | undefined): boolean {
-  if (!flags) return false
-  return Boolean(flags.vpn || flags.proxy || flags.tor || flags.relay || flags.hosting)
+export function classifyLocalIp(isProd: boolean): VpnCheckResult {
+  if (isProd) {
+    return {
+      isVpnOrProxy: false,
+      isLocationPreservingRelay: false,
+      kind: 'unknown',
+      failed: true,
+    }
+  }
+  return {
+    isVpnOrProxy: false,
+    isLocationPreservingRelay: false,
+    kind: 'clear',
+    failed: false,
+  }
+}
+
+function isProduction(): boolean {
+  return process.env.NEXT_PUBLIC_ENV === 'prod'
+}
+
+function resultFromClassification(
+  classified: ReturnType<typeof classifyPrivacyFlags>
+): VpnCheckResult {
+  return { ...classified, failed: false }
 }
 
 async function checkIpinfo(ip: string): Promise<PrivacyFlags | null> {
@@ -97,21 +170,39 @@ async function checkIpapi(
 
 export async function checkVpnOrProxy(ip: string): Promise<VpnCheckResult> {
   if (isPrivateOrLocalIp(ip)) {
-    return { isVpnOrProxy: false, failed: false }
+    return classifyLocalIp(isProduction())
   }
   try {
     const ipinfo = await checkIpinfo(ip)
     if (ipinfo) {
-      return { isVpnOrProxy: flagsAreProxy(ipinfo), failed: false }
+      return resultFromClassification(classifyPrivacyFlags(ipinfo))
     }
     const ipapi = await checkIpapi(ip)
     if (ipapi.flags) {
-      return { isVpnOrProxy: flagsAreProxy(ipapi.flags), failed: false }
+      return resultFromClassification(classifyPrivacyFlags(ipapi.flags))
     }
     const hinted = hostingLooksLikeProxy(ipapi.org) || hostingLooksLikeProxy(ipapi.asn)
-    return { isVpnOrProxy: hinted, failed: false }
+    if (hinted) {
+      return {
+        isVpnOrProxy: true,
+        isLocationPreservingRelay: false,
+        kind: 'hosting',
+        failed: false,
+      }
+    }
+    return {
+      isVpnOrProxy: false,
+      isLocationPreservingRelay: false,
+      kind: 'clear',
+      failed: false,
+    }
   } catch (err) {
     console.error('[deprize] vpn check failed', err)
-    return { isVpnOrProxy: false, failed: true }
+    return {
+      isVpnOrProxy: false,
+      isLocationPreservingRelay: false,
+      kind: 'unknown',
+      failed: true,
+    }
   }
 }

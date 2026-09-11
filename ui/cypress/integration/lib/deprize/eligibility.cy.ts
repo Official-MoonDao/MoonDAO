@@ -1,7 +1,12 @@
 import { evaluateEligibility } from '@/lib/deprize/eligibility'
 import { isRestrictedJurisdiction } from '@/lib/deprize/restrictedJurisdictions'
 import { parseOfacEthList } from '@/lib/deprize/sanctions'
-import { hostingLooksLikeProxy, isPrivateOrLocalIp } from '@/lib/deprize/vpnCheck'
+import {
+  classifyLocalIp,
+  classifyPrivacyFlags,
+  hostingLooksLikeProxy,
+  isPrivateOrLocalIp,
+} from '@/lib/deprize/vpnCheck'
 
 describe('deprize restricted jurisdictions', () => {
   it('blocks the United States and territories', () => {
@@ -103,5 +108,42 @@ describe('deprize vpn heuristics', () => {
     expect(hostingLooksLikeProxy('M247 LTD VPN')).to.equal(true)
     expect(hostingLooksLikeProxy('DigitalOcean, LLC')).to.equal(true)
     expect(hostingLooksLikeProxy('Comcast Cable')).to.equal(false)
+  })
+
+  it('does not treat an Akamai org name alone as hosting', () => {
+    expect(hostingLooksLikeProxy('Akamai Technologies')).to.equal(false)
+  })
+
+  it('does not match short tokens inside unrelated words', () => {
+    expect(hostingLooksLikeProxy('Laws & Associates')).to.equal(false)
+    expect(hostingLooksLikeProxy('Amazon Web Services')).to.equal(false)
+    expect(hostingLooksLikeProxy('AWS')).to.equal(true)
+  })
+
+  it('blocks VPN, proxy, and Tor flags', () => {
+    expect(classifyPrivacyFlags({ vpn: true }).kind).to.equal('vpn')
+    expect(classifyPrivacyFlags({ vpn: true }).isVpnOrProxy).to.equal(true)
+    expect(classifyPrivacyFlags({ proxy: true }).kind).to.equal('proxy')
+    expect(classifyPrivacyFlags({ proxy: true }).isVpnOrProxy).to.equal(true)
+    expect(classifyPrivacyFlags({ tor: true }).kind).to.equal('tor')
+    expect(classifyPrivacyFlags({ tor: true }).isVpnOrProxy).to.equal(true)
+  })
+
+  it('allows Apple Private Relay even when hosting is also set', () => {
+    const result = classifyPrivacyFlags({ relay: true, hosting: true })
+    expect(result.kind).to.equal('relay')
+    expect(result.isVpnOrProxy).to.equal(false)
+    expect(result.isLocationPreservingRelay).to.equal(true)
+  })
+
+  it('blocks bare hosting egress', () => {
+    const result = classifyPrivacyFlags({ relay: false, hosting: true })
+    expect(result.kind).to.equal('hosting')
+    expect(result.isVpnOrProxy).to.equal(true)
+  })
+
+  it('fails closed on a private IP in production and allows it in development', () => {
+    expect(classifyLocalIp(true)).to.include({ failed: true, kind: 'unknown' })
+    expect(classifyLocalIp(false)).to.include({ failed: false, kind: 'clear', isVpnOrProxy: false })
   })
 })
