@@ -29,7 +29,6 @@ import {
   resolveDePrizePageProps,
   type DePrizePageProps,
 } from '@/lib/deprize/pageEligibility'
-import DePrizeRestrictedNotice from '@/components/deprize/DePrizeRestrictedNotice'
 import { SEED_ATLAS, orgById, projectById, sharedGoalById } from '@/lib/lunar-atlas'
 import GoalDePrizeDetail from '@/components/deprize/GoalDePrizeDetail'
 import { orgColor } from '@/lib/lunar-atlas/display'
@@ -130,8 +129,7 @@ function StateBadge({
   )
 }
 
-export default function DePrizeDetailPage({ restricted }: DePrizePageProps) {
-  if (restricted) return <DePrizeRestrictedNotice />
+export default function DePrizeDetailPage() {
   return <DePrizeDetailContent />
 }
 

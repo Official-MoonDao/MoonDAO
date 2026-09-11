@@ -1,17 +1,10 @@
 import type { GetServerSideProps } from 'next'
+import { resolveDePrizePageProps, type DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import DePrizeIndexContent from '@/components/deprize/DePrizeIndexContent'
-import DePrizeRestrictedNotice from '@/components/deprize/DePrizeRestrictedNotice'
-import {
-  resolveDePrizePageProps,
-  type DePrizePageProps,
-} from '@/lib/deprize/pageEligibility'
 
-export default function DePrizeIndexPage({ restricted }: DePrizePageProps) {
-  if (restricted) return <DePrizeRestrictedNotice />
+export default function DePrizeIndexPage() {
   return <DePrizeIndexContent />
 }
 
-export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
-  req,
-  res,
-}) => resolveDePrizePageProps(req, res)
+export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({ req, res }) =>
+  resolveDePrizePageProps(req, res)

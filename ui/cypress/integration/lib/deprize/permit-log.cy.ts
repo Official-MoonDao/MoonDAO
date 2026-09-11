@@ -1,14 +1,12 @@
 import { getAddress } from 'viem'
-import {
-  acceptanceHistoryKey,
-  acceptanceLatestKey,
-} from '@/lib/deprize/acceptanceLog'
+import { acceptanceHistoryKey, acceptanceLatestKey } from '@/lib/deprize/acceptanceLog'
 import {
   DEFAULT_PERMIT_TTL_SECONDS,
   hashCompliancePermit,
   permitTtlSeconds,
 } from '@/lib/deprize/compliancePermit'
 import {
+  PERMIT_MATCH_CLOCK_SKEW_SECONDS,
   buildPermitIssuanceRecord,
   permitByHashKey,
   permitCoversBet,
@@ -29,9 +27,7 @@ describe('deprize compliance records', () => {
     expect(acceptanceLatestKey(wallet, '1.1')).to.equal(
       `deprize:accept:latest:${wallet.toLowerCase()}:1.1`
     )
-    expect(acceptanceHistoryKey(wallet)).to.equal(
-      `deprize:accept:history:${wallet.toLowerCase()}`
-    )
+    expect(acceptanceHistoryKey(wallet)).to.equal(`deprize:accept:history:${wallet.toLowerCase()}`)
   })
 
   it('defaults the permit TTL to 120 seconds', () => {
@@ -66,9 +62,7 @@ describe('deprize compliance records', () => {
     expect(permitByHashKey(record.permitHash)).to.equal(
       `deprize:permit:by-hash:${record.permitHash.toLowerCase()}`
     )
-    expect(permitRecordKey(record.recordId)).to.equal(
-      `deprize:permit:record:${record.recordId}`
-    )
+    expect(permitRecordKey(record.recordId)).to.equal(`deprize:permit:record:${record.recordId}`)
   })
 
   it('matches a bet only inside the issued permit window', () => {
@@ -90,6 +84,24 @@ describe('deprize compliance records', () => {
         blockTimestampSec: issuedAtSec + 30,
       })
     ).to.equal(true)
+    expect(
+      permitCoversBet({
+        record,
+        wallet,
+        deprizeId: 1,
+        chainId: 42161,
+        blockTimestampSec: issuedAtSec - 30,
+      })
+    ).to.equal(true)
+    expect(
+      permitCoversBet({
+        record,
+        wallet,
+        deprizeId: 1,
+        chainId: 42161,
+        blockTimestampSec: issuedAtSec - PERMIT_MATCH_CLOCK_SKEW_SECONDS - 1,
+      })
+    ).to.equal(false)
     expect(
       permitCoversBet({
         record,

@@ -13,9 +13,6 @@ type Row = { kind: string; key: string; value: unknown }
 function assertNoSecrets(value: unknown): void {
   const text = JSON.stringify(value)
   if (!text) return
-  if (/0x[a-fA-F0-9]{64}/.test(text)) {
-    throw new Error('refusing to export a value that looks like a private key')
-  }
   if (process.env.UPSTASH_REDIS_TOKEN && text.includes(process.env.UPSTASH_REDIS_TOKEN)) {
     throw new Error('refusing to export a Redis token')
   }

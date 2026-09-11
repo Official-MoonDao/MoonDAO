@@ -1,6 +1,6 @@
 import { getAddress } from 'viem'
 import { complianceAlertPayload } from '@/lib/deprize/complianceAlerts'
-import { permitCoversBet } from '@/lib/deprize/permitLog'
+import { PERMIT_MATCH_CLOCK_SKEW_SECONDS, permitCoversBet } from '@/lib/deprize/permitLog'
 import {
   authorizeCronRequest,
   betHasMatchingPermit,
@@ -87,6 +87,22 @@ describe('deprize bet permit matching', () => {
         blockTimestampSec: issuedAtSec + 30,
       })
     ).to.equal(true)
+    expect(
+      betHasMatchingPermit([record], {
+        wallet: user,
+        deprizeId: 1,
+        chainId: 42161,
+        blockTimestampSec: issuedAtSec - 30,
+      })
+    ).to.equal(true)
+    expect(
+      betHasMatchingPermit([record], {
+        wallet: user,
+        deprizeId: 1,
+        chainId: 42161,
+        blockTimestampSec: issuedAtSec - PERMIT_MATCH_CLOCK_SKEW_SECONDS - 1,
+      })
+    ).to.equal(false)
   })
 
   it('leaves a bet unmatched when wallet, DePrize, chain, or window disagree', () => {

@@ -90,6 +90,9 @@ export async function recordPermitIssuance(record: PermitIssuanceRecord): Promis
   })
 }
 
+/** Chain timestamps can lag the server clock that stamped `issuedAt`. */
+export const PERMIT_MATCH_CLOCK_SKEW_SECONDS = 60
+
 export function permitCoversBet(args: {
   record: Pick<PermitIssuanceRecord, 'wallet' | 'deprizeId' | 'chainId' | 'issuedAt' | 'deadline'>
   wallet: string
@@ -103,7 +106,10 @@ export function permitCoversBet(args: {
   const issuedAtSec = Math.floor(Date.parse(args.record.issuedAt) / 1000)
   const deadlineSec = Number(args.record.deadline)
   if (!Number.isFinite(issuedAtSec) || !Number.isFinite(deadlineSec)) return false
-  return issuedAtSec <= args.blockTimestampSec && args.blockTimestampSec <= deadlineSec
+  return (
+    issuedAtSec - PERMIT_MATCH_CLOCK_SKEW_SECONDS <= args.blockTimestampSec &&
+    args.blockTimestampSec <= deadlineSec
+  )
 }
 
 export async function getPermitRecordsForWallet(wallet: string): Promise<{
