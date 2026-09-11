@@ -1,9 +1,12 @@
 import { evaluateEligibility } from '@/lib/deprize/eligibility'
+import { shouldCreatePermanentDenial } from '@/lib/deprize/walletObservations'
 import { isRestrictedJurisdiction } from '@/lib/deprize/restrictedJurisdictions'
 import { parseOfacEthList } from '@/lib/deprize/sanctions'
-import { selectSessionWallet } from '@/lib/deprize/sessionWallet'
+import { selectSessionWallet } from '@/lib/deprize/selectSessionWallet'
 import {
   checkVpnOrProxy,
+  classifyLocalIp,
+  classifyPrivacyFlags,
   hostingLooksLikeProxy,
   isPrivateOrLocalIp,
   vpnResultFromIpapiBody,
@@ -82,6 +85,26 @@ describe('deprize eligibility decision', () => {
       'invalid-wallet'
     )
   })
+
+  it('rejects a denied wallet even when screening is unavailable', () => {
+    expect(
+      evaluateEligibility({ ...base, isDeniedWallet: true, screeningFailed: true }).reason
+    ).to.equal('wallet-denied')
+    expect(evaluateEligibility({ ...base, isDeniedWallet: true }).reason).to.equal(
+      'wallet-denied'
+    )
+  })
+})
+
+describe('deprize permanent denial triggers', () => {
+  it('creates a denial only for restricted-country and sanctioned wallets', () => {
+    expect(shouldCreatePermanentDenial('restricted-jurisdiction')).to.equal(true)
+    expect(shouldCreatePermanentDenial('sanctioned-wallet')).to.equal(true)
+    expect(shouldCreatePermanentDenial('vpn-or-proxy')).to.equal(false)
+    expect(shouldCreatePermanentDenial('country-unknown')).to.equal(false)
+    expect(shouldCreatePermanentDenial('screening-unavailable')).to.equal(false)
+    expect(shouldCreatePermanentDenial('ok')).to.equal(false)
+  })
 })
 
 describe('deprize sanctions list parsing', () => {
@@ -112,32 +135,71 @@ describe('deprize vpn heuristics', () => {
     expect(hostingLooksLikeProxy('Comcast Cable')).to.equal(false)
   })
 
-  it('fails closed for private or missing client IPs', async () => {
-    expect(await checkVpnOrProxy('0.0.0.0')).to.deep.equal({
+  it('does not treat an Akamai org name alone as hosting', () => {
+    expect(hostingLooksLikeProxy('Akamai Technologies')).to.equal(false)
+  })
+
+  it('does not match short tokens inside unrelated words', () => {
+    expect(hostingLooksLikeProxy('Laws & Associates')).to.equal(false)
+    expect(hostingLooksLikeProxy('Amazon Web Services')).to.equal(false)
+    expect(hostingLooksLikeProxy('AWS')).to.equal(true)
+  })
+
+  it('blocks VPN, proxy, and Tor flags', () => {
+    expect(classifyPrivacyFlags({ vpn: true }).kind).to.equal('vpn')
+    expect(classifyPrivacyFlags({ vpn: true }).isVpnOrProxy).to.equal(true)
+    expect(classifyPrivacyFlags({ proxy: true }).kind).to.equal('proxy')
+    expect(classifyPrivacyFlags({ proxy: true }).isVpnOrProxy).to.equal(true)
+    expect(classifyPrivacyFlags({ tor: true }).kind).to.equal('tor')
+    expect(classifyPrivacyFlags({ tor: true }).isVpnOrProxy).to.equal(true)
+  })
+
+  it('allows Apple Private Relay even when hosting is also set', () => {
+    const result = classifyPrivacyFlags({ relay: true, hosting: true })
+    expect(result.kind).to.equal('relay')
+    expect(result.isVpnOrProxy).to.equal(false)
+    expect(result.isLocationPreservingRelay).to.equal(true)
+  })
+
+  it('blocks bare hosting egress', () => {
+    const result = classifyPrivacyFlags({ relay: false, hosting: true })
+    expect(result.kind).to.equal('hosting')
+    expect(result.isVpnOrProxy).to.equal(true)
+  })
+
+  it('fails closed on a private IP in production and allows it in development', () => {
+    expect(classifyLocalIp(true)).to.include({ failed: true, kind: 'unknown' })
+    expect(classifyLocalIp(false)).to.include({ failed: false, kind: 'clear', isVpnOrProxy: false })
+  })
+
+  it('fails closed on a missing client IP', async () => {
+    expect(await checkVpnOrProxy('')).to.include({
       isVpnOrProxy: false,
       failed: true,
+      kind: 'unknown',
     })
-    expect(await checkVpnOrProxy('127.0.0.1')).to.deep.equal({
-      isVpnOrProxy: false,
-      failed: true,
-    })
-    expect(await checkVpnOrProxy('')).to.deep.equal({ isVpnOrProxy: false, failed: true })
   })
 
   it('fails closed on ipapi error bodies and missing signals', () => {
-    expect(vpnResultFromIpapiBody({ error: true })).to.deep.equal({
+    expect(vpnResultFromIpapiBody({ error: true })).to.include({
       isVpnOrProxy: false,
       failed: true,
     })
-    expect(vpnResultFromIpapiBody({})).to.deep.equal({
+    expect(vpnResultFromIpapiBody({})).to.include({
       isVpnOrProxy: false,
       failed: true,
     })
     expect(
       vpnResultFromIpapiBody({ security: { vpn: true, proxy: false, tor: false, hosting: false } })
-    ).to.include({ isVpnOrProxy: true, failed: false })
-    expect(vpnResultFromIpapiBody({ org: 'Comcast Cable' })).to.deep.equal({
+    ).to.include({ isVpnOrProxy: true, failed: false, kind: 'vpn' })
+    expect(vpnResultFromIpapiBody({ org: 'Comcast Cable' })).to.include({
       isVpnOrProxy: false,
+      failed: false,
+      kind: 'clear',
+    })
+    expect(vpnResultFromIpapiBody({ security: { relay: true, hosting: true } })).to.include({
+      isVpnOrProxy: false,
+      kind: 'relay',
       failed: false,
     })
   })

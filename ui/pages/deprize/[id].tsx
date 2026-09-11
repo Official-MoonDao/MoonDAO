@@ -1,3 +1,4 @@
+import type { GetServerSideProps } from 'next'
 import DePrizeRegistryABI from 'const/abis/DePrizeRegistry.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import TeamABI from 'const/abis/Team.json'
@@ -24,6 +25,10 @@ import {
   isKnownDePrizeCompetition,
   isRaceBindingComplete,
 } from '@/lib/deprize/competitions'
+import {
+  resolveDePrizePageProps,
+  type DePrizePageProps,
+} from '@/lib/deprize/pageEligibility'
 import { SEED_ATLAS, orgById, projectById, sharedGoalById } from '@/lib/lunar-atlas'
 import GoalDePrizeDetail from '@/components/deprize/GoalDePrizeDetail'
 import { orgColor } from '@/lib/lunar-atlas/display'
@@ -35,6 +40,7 @@ import {
   positionRedeemValue,
   shouldSurfaceResolution,
   UNIT,
+  deprizeOgDescription,
 } from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { buildAmounts } from '@/lib/deprize/quote'
@@ -46,6 +52,7 @@ import { useDePrizeActivity } from '@/lib/deprize/useDePrizeActivity'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
+import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import EthUsd from '@/components/deprize/EthUsd'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
@@ -125,6 +132,11 @@ function StateBadge({
 export default function DePrizeDetailPage() {
   return <DePrizeDetailContent />
 }
+
+export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
+  req,
+  res,
+}) => resolveDePrizePageProps(req, res)
 
 function DePrizeDetailContent() {
   const router = useRouter()
@@ -926,11 +938,12 @@ function Shell({
 }) {
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head title={title} description={description} />
+      <Head title={title} description={deprizeOgDescription(description)} />
       <Container>
         <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
           {children}
         </div>
+        <DePrizeAvailabilityLegend />
         <NoticeFooter />
       </Container>
     </div>

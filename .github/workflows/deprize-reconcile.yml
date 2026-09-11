@@ -1,0 +1,22 @@
+name: DePrize compliance reconciliation
+
+# Polls on-chain Bet and LMSR trade logs and alerts when a buy bypasses the
+# website permit path. Dedup / cursor state lives in Upstash Redis.
+on:
+  schedule:
+    - cron: '*/10 * * * *' # every 10 minutes
+  workflow_dispatch:
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger DePrize reconciliation
+        env:
+          SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          BASE="${SITE_URL:-https://moondao.com}"
+          curl -fsS -X POST "$BASE/api/cron/deprize-reconcile" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json"

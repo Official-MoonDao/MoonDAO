@@ -12,6 +12,13 @@ import {
   DEPRIZE_TERMS_VERSION,
   UNIT,
 } from '@/lib/deprize/constants'
+import {
+  areAttestationsAccepted,
+  canSubmitDePrizeBet,
+  EMPTY_ATTESTATIONS,
+  type AcceptanceSubmitState,
+  type DePrizeAttestations,
+} from '@/lib/deprize/attestations'
 import { eligibilityMessage, type EligibilityReason } from '@/lib/deprize/eligibility'
 import {
   fmt,
@@ -77,6 +84,8 @@ export default function BetModal({
   // Click-wrap: the Terms are only enforceable with an affirmative act, so the
   // box starts unchecked on every open and gates the Bet button.
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [attestations, setAttestations] = useState<DePrizeAttestations>(EMPTY_ATTESTATIONS)
+  const [acceptanceState, setAcceptanceState] = useState<AcceptanceSubmitState>('idle')
   const [eligibility, setEligibility] = useState<{
     status: 'loading' | 'ready' | 'error'
     allowed: boolean
@@ -188,12 +197,18 @@ export default function BetModal({
     }
   }, [wallet])
 
-  const onToggleTerms = (checked: boolean) => {
-    setTermsAccepted(checked)
-    if (!checked || !wallet) return
+  const allAttested = areAttestationsAccepted(attestations)
+
+  useEffect(() => {
+    if (!wallet || !termsAccepted || !allAttested) {
+      setAcceptanceState('idle')
+      return
+    }
+    let cancelled = false
+    setAcceptanceState('saving')
     ;(async () => {
       const accessToken = await getAccessToken().catch(() => null)
-      await fetch('/api/deprize/accept-terms', {
+      const res = await fetch('/api/deprize/accept-terms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -203,10 +218,20 @@ export default function BetModal({
           wallet,
           accepted: true,
           termsVersion: DEPRIZE_TERMS_VERSION,
+          attestations,
         }),
       })
-    })().catch((err) => console.warn('[deprize] accept-terms failed', err))
-  }
+      if (cancelled) return
+      if (!res.ok) throw new Error('accept-terms failed')
+      setAcceptanceState('saved')
+    })().catch((err) => {
+      console.warn('[deprize] accept-terms failed', err)
+      if (!cancelled) setAcceptanceState('error')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [wallet, termsAccepted, allAttested, attestations])
 
   const placeBet = async () => {
     if (!account || !mint) return
@@ -214,8 +239,19 @@ export default function BetModal({
       toast.error('Enter an amount to bet.', { style: toastStyle })
       return
     }
-    if (!termsAccepted) {
-      toast.error('Please accept the DePrize Terms to continue.', { style: toastStyle })
+    if (!canSubmitDePrizeBet({
+      termsAccepted,
+      attestations,
+      eligibilityAllowed: eligibility.allowed,
+      eligibilityReady: eligibility.status === 'ready',
+      acceptanceState,
+    })) {
+      toast.error(
+        acceptanceState === 'error'
+          ? 'Could not record your acceptance. Recheck the boxes and try again.'
+          : 'Please accept the DePrize Terms and attestations to continue.',
+        { style: toastStyle }
+      )
       return
     }
     if (!eligibility.allowed) {
@@ -249,6 +285,7 @@ export default function BetModal({
           chainId: chain.id,
           accepted: true,
           termsVersion: DEPRIZE_TERMS_VERSION,
+          attestations,
         }),
       })
       const permit = await permitRes.json()
@@ -436,45 +473,96 @@ export default function BetModal({
           </p>
         ) : null}
 
-        <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={termsAccepted}
-            onChange={(e) => onToggleTerms(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
-          />
-          <span>
-            I have read and agree to the{' '}
-            <a
-              href={DEPRIZE_TERMS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-white"
-            >
-              DePrize Terms &amp; Conditions
-            </a>{' '}
-            (v{DEPRIZE_TERMS_VERSION}),{' '}
-            <a
-              href={DEPRIZE_PRIVACY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-white"
-            >
-              Privacy Notice
-            </a>{' '}
-            and{' '}
-            <a
-              href={DEPRIZE_RISK_DISCLOSURES_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-white"
-            >
-              Risk Disclosures
-            </a>
-            , and I confirm that I am not a U.S. person, am not located in a restricted
-            jurisdiction, and am not an insider for this DePrize.
-          </span>
-        </label>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+            />
+            <span>
+              I have read and agree to the{' '}
+              <a
+                href={DEPRIZE_TERMS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-white"
+              >
+                DePrize Terms &amp; Conditions
+              </a>{' '}
+              (v{DEPRIZE_TERMS_VERSION}),{' '}
+              <a
+                href={DEPRIZE_PRIVACY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-white"
+              >
+                Privacy Notice
+              </a>{' '}
+              and{' '}
+              <a
+                href={DEPRIZE_RISK_DISCLOSURES_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-white"
+              >
+                Risk Disclosures
+              </a>
+              .
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={attestations.notUsResident}
+              onChange={(e) =>
+                setAttestations((prev) => ({ ...prev, notUsResident: e.target.checked }))
+              }
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+            />
+            <span>
+              I am not a resident of the United States, and I am not currently located in the
+              United States or any of its territories.
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={attestations.notUsEntityOrRepresentative}
+              onChange={(e) =>
+                setAttestations((prev) => ({
+                  ...prev,
+                  notUsEntityOrRepresentative: e.target.checked,
+                }))
+              }
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+            />
+            <span>
+              I am not acting for or on behalf of an entity organized in, or with its principal
+              place of business in, the United States.
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={attestations.notInsiderOrProxy}
+              onChange={(e) =>
+                setAttestations((prev) => ({ ...prev, notInsiderOrProxy: e.target.checked }))
+              }
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+            />
+            <span>
+              I am not an insider for this DePrize, and I am not placing this bet on behalf of
+              anyone else.
+            </span>
+          </label>
+          {acceptanceState === 'error' && (
+            <p className="text-amber-300 text-[11px]">
+              We could not record your acceptance. Recheck the boxes to try again.
+            </p>
+          )}
+        </div>
 
         {!canBet ? (
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
@@ -507,9 +595,13 @@ export default function BetModal({
             disabled={
               busy ||
               betAmountWei <= 0n ||
-              !termsAccepted ||
-              !eligibility.allowed ||
-              eligibility.status !== 'ready'
+              !canSubmitDePrizeBet({
+                termsAccepted,
+                attestations,
+                eligibilityAllowed: eligibility.allowed,
+                eligibilityReady: eligibility.status === 'ready',
+                acceptanceState,
+              })
             }
             className="rounded-full w-full"
             backgroundColor="bg-moon-green"
@@ -522,8 +614,12 @@ export default function BetModal({
               ? 'Betting unavailable'
               : betAmountNum <= 0
               ? 'Enter an amount'
-              : !termsAccepted
+              : !termsAccepted || !allAttested
               ? 'Accept the Terms to bet'
+              : acceptanceState === 'saving'
+              ? 'Recording acceptance…'
+              : acceptanceState === 'error'
+              ? 'Acceptance failed — retry'
               : `Bet ${fmtEthWithUsd(betAmountNum, ethPrice)}`}
           </StandardButton>
         )}
