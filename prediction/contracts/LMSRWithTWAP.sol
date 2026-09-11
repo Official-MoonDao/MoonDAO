@@ -47,7 +47,15 @@ contract LMSRWithTWAP is LMSRMarketMaker {
         // Update TWAP before trade.
         updateCumulativeTWAP();
         require(outcomeTokenAmounts.length == cumulativeProbabilities.length, "Mismatched array lengths");
-        this.trade(outcomeTokenAmounts, collateralLimit);
+        // Call `trade` INTERNALLY (not `this.trade(...)`). An external self-call
+        // would set msg.sender to this market, making the market trade against
+        // itself: a caller supplying no collateral could drive the sell/merge
+        // path to convert the market's own escrowed backing into loose collateral
+        // (which DePrizeFeeRouter.sweepFees then treats as fees) and to drain the
+        // LMSR's outcome-token inventory, bricking the sell side — all for gas.
+        // An internal call preserves the real caller as the trader, so the caller
+        // funds their own trade exactly as a direct `trade` would require.
+        trade(outcomeTokenAmounts, collateralLimit);
     }
 
     /**

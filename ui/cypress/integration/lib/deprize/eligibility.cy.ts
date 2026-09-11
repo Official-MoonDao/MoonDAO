@@ -2,11 +2,14 @@ import { evaluateEligibility } from '@/lib/deprize/eligibility'
 import { shouldCreatePermanentDenial } from '@/lib/deprize/walletObservations'
 import { isRestrictedJurisdiction } from '@/lib/deprize/restrictedJurisdictions'
 import { parseOfacEthList } from '@/lib/deprize/sanctions'
+import { selectSessionWallet } from '@/lib/deprize/sessionWallet'
 import {
+  checkVpnOrProxy,
   classifyLocalIp,
   classifyPrivacyFlags,
   hostingLooksLikeProxy,
   isPrivateOrLocalIp,
+  vpnResultFromIpapiBody,
 } from '@/lib/deprize/vpnCheck'
 
 describe('deprize restricted jurisdictions', () => {
@@ -116,6 +119,7 @@ describe('deprize sanctions list parsing', () => {
 
 describe('deprize vpn heuristics', () => {
   it('treats RFC1918 and loopback as local', () => {
+    expect(isPrivateOrLocalIp('0.0.0.0')).to.equal(true)
     expect(isPrivateOrLocalIp('127.0.0.1')).to.equal(true)
     expect(isPrivateOrLocalIp('10.0.0.8')).to.equal(true)
     expect(isPrivateOrLocalIp('192.168.1.10')).to.equal(true)
@@ -166,5 +170,55 @@ describe('deprize vpn heuristics', () => {
   it('fails closed on a private IP in production and allows it in development', () => {
     expect(classifyLocalIp(true)).to.include({ failed: true, kind: 'unknown' })
     expect(classifyLocalIp(false)).to.include({ failed: false, kind: 'clear', isVpnOrProxy: false })
+  })
+
+  it('fails closed on a missing client IP', async () => {
+    expect(await checkVpnOrProxy('')).to.include({
+      isVpnOrProxy: false,
+      failed: true,
+      kind: 'unknown',
+    })
+  })
+
+  it('fails closed on ipapi error bodies and missing signals', () => {
+    expect(vpnResultFromIpapiBody({ error: true })).to.include({
+      isVpnOrProxy: false,
+      failed: true,
+    })
+    expect(vpnResultFromIpapiBody({})).to.include({
+      isVpnOrProxy: false,
+      failed: true,
+    })
+    expect(
+      vpnResultFromIpapiBody({ security: { vpn: true, proxy: false, tor: false, hosting: false } })
+    ).to.include({ isVpnOrProxy: true, failed: false, kind: 'vpn' })
+    expect(vpnResultFromIpapiBody({ org: 'Comcast Cable' })).to.include({
+      isVpnOrProxy: false,
+      failed: false,
+      kind: 'clear',
+    })
+    expect(vpnResultFromIpapiBody({ security: { relay: true, hosting: true } })).to.include({
+      isVpnOrProxy: false,
+      kind: 'relay',
+      failed: false,
+    })
+  })
+})
+
+describe('deprize session wallet binding', () => {
+  const a = '0x1234567890123456789012345678901234567890'
+  const b = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
+
+  it('rejects a claimed wallet that is not in the session', () => {
+    expect(selectSessionWallet([a], b)).to.equal(null)
+  })
+
+  it('returns the claimed session wallet even when several are linked', () => {
+    expect(selectSessionWallet([a, b], `0x${b.slice(2).toUpperCase()}`)?.toLowerCase()).to.equal(b)
+  })
+
+  it('uses the only session wallet when none is claimed', () => {
+    expect(selectSessionWallet([a])?.toLowerCase()).to.equal(a)
+    expect(selectSessionWallet([a, b])).to.equal(null)
   })
 })

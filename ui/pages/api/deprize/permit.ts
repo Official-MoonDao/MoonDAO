@@ -1,7 +1,8 @@
+import { authMiddleware } from 'middleware/authMiddleware'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { getAddress, type Hex } from 'viem'
+import type { Hex } from 'viem'
 import { hashIp, recordTermsAcceptance } from '@/lib/deprize/acceptanceLog'
 import { areAttestationsAccepted } from '@/lib/deprize/attestations'
 import {
@@ -10,9 +11,10 @@ import {
   signCompliancePermit,
 } from '@/lib/deprize/compliancePermit'
 import { DEPRIZE_TERMS_VERSION } from '@/lib/deprize/constants'
-import { eligibilityMessage, isHexAddress, isNonProdBypassEnabled } from '@/lib/deprize/eligibility'
+import { eligibilityMessage, isNonProdBypassEnabled } from '@/lib/deprize/eligibility'
 import { buildPermitIssuanceRecord, recordPermitIssuance } from '@/lib/deprize/permitLog'
 import { runEligibilityChecks } from '@/lib/deprize/runEligibility'
+import { walletFromSession } from '@/lib/deprize/sessionWallet'
 import { getClientIp, getCountryFromHeaders } from '@/lib/geo'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -20,16 +22,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const walletRaw = typeof req.body?.wallet === 'string' ? req.body.wallet.trim() : ''
+  const claimedWallet = typeof req.body?.wallet === 'string' ? req.body.wallet.trim() : ''
+  const wallet = await walletFromSession(req, res, claimedWallet)
   const deprizeId = Number(req.body?.deprizeId)
   const chainId = Number(req.body?.chainId)
   const accepted = req.body?.accepted === true
-  const termsVersion =
-    typeof req.body?.termsVersion === 'string' && req.body.termsVersion.trim()
-      ? req.body.termsVersion.trim()
-      : DEPRIZE_TERMS_VERSION
+  const requestedTermsVersion =
+    typeof req.body?.termsVersion === 'string' ? req.body.termsVersion.trim() : ''
 
-  if (!isHexAddress(walletRaw)) {
+  if (!wallet) {
     return res.status(400).json({
       allowed: false,
       reason: 'invalid-wallet',
@@ -42,7 +43,11 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!Number.isInteger(chainId) || chainId <= 0) {
     return res.status(400).json({ error: 'Invalid chainId' })
   }
-  if (!accepted || !areAttestationsAccepted(req.body?.attestations)) {
+  if (
+    !accepted ||
+    requestedTermsVersion !== DEPRIZE_TERMS_VERSION ||
+    !areAttestationsAccepted(req.body?.attestations)
+  ) {
     return res.status(400).json({
       allowed: false,
       reason: 'terms-not-accepted',
@@ -59,7 +64,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const decision = await runEligibilityChecks(req, walletRaw, { surface: 'permit' })
+  const decision = await runEligibilityChecks(req, wallet, { surface: 'permit' })
   if (!decision.allowed) {
     return res.status(403).json({
       ...decision,
@@ -67,7 +72,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const wallet = getAddress(walletRaw)
+  const termsVersion = DEPRIZE_TERMS_VERSION
   const ipHash = hashIp(getClientIp(req))
   const logged = await recordTermsAcceptance({
     wallet,
@@ -149,4 +154,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withMiddleware(handler, rateLimit)
+export default withMiddleware(handler, authMiddleware, rateLimit)

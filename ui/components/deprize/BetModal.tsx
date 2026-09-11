@@ -1,3 +1,4 @@
+import { getAccessToken } from '@privy-io/react-auth'
 import DePrizeMintABI from 'const/abis/DePrizeMint.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import { useEffect, useMemo, useState } from 'react'
@@ -169,26 +170,28 @@ export default function BetModal({
     }
     let cancelled = false
     setEligibility({ status: 'loading', allowed: false })
-    fetch(`/api/deprize/eligibility?wallet=${encodeURIComponent(wallet)}`)
-      .then(async (res) => {
-        const data = await res.json()
-        if (cancelled) return
-        setEligibility({
-          status: 'ready',
-          allowed: Boolean(data.allowed),
-          reason: data.reason,
-          message: data.message || eligibilityMessage(data.reason || 'screening-unavailable'),
-        })
+    ;(async () => {
+      const accessToken = await getAccessToken().catch(() => null)
+      const res = await fetch(`/api/deprize/eligibility?wallet=${encodeURIComponent(wallet)}`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       })
-      .catch(() => {
-        if (cancelled) return
-        setEligibility({
-          status: 'error',
-          allowed: false,
-          reason: 'screening-unavailable',
-          message: eligibilityMessage('screening-unavailable'),
-        })
+      const data = await res.json()
+      if (cancelled) return
+      setEligibility({
+        status: 'ready',
+        allowed: Boolean(data.allowed),
+        reason: data.reason,
+        message: data.message || eligibilityMessage(data.reason || 'screening-unavailable'),
       })
+    })().catch(() => {
+      if (cancelled) return
+      setEligibility({
+        status: 'error',
+        allowed: false,
+        reason: 'screening-unavailable',
+        message: eligibilityMessage('screening-unavailable'),
+      })
+    })
     return () => {
       cancelled = true
     }
@@ -203,25 +206,28 @@ export default function BetModal({
     }
     let cancelled = false
     setAcceptanceState('saving')
-    fetch('/api/deprize/accept-terms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        wallet,
-        accepted: true,
-        termsVersion: DEPRIZE_TERMS_VERSION,
-        attestations,
-      }),
+    ;(async () => {
+      const accessToken = await getAccessToken().catch(() => null)
+      const res = await fetch('/api/deprize/accept-terms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          wallet,
+          accepted: true,
+          termsVersion: DEPRIZE_TERMS_VERSION,
+          attestations,
+        }),
+      })
+      if (cancelled) return
+      if (!res.ok) throw new Error('accept-terms failed')
+      setAcceptanceState('saved')
+    })().catch((err) => {
+      console.warn('[deprize] accept-terms failed', err)
+      if (!cancelled) setAcceptanceState('error')
     })
-      .then(async (res) => {
-        if (cancelled) return
-        if (!res.ok) throw new Error('accept-terms failed')
-        setAcceptanceState('saved')
-      })
-      .catch((err) => {
-        console.warn('[deprize] accept-terms failed', err)
-        if (!cancelled) setAcceptanceState('error')
-      })
     return () => {
       cancelled = true
     }
@@ -266,9 +272,13 @@ export default function BetModal({
       if (qty <= 0n) throw new Error('Bet too small for this market.')
       toast.dismiss('quote')
       toast.loading('Checking eligibility…', { id: 'permit', style: toastStyle })
+      const accessToken = await getAccessToken().catch(() => null)
       const permitRes = await fetch('/api/deprize/permit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           wallet,
           deprizeId,
