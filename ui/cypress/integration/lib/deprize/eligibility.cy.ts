@@ -1,4 +1,5 @@
 import { evaluateEligibility } from '@/lib/deprize/eligibility'
+import { shouldCreatePermanentDenial } from '@/lib/deprize/walletObservations'
 import { isRestrictedJurisdiction } from '@/lib/deprize/restrictedJurisdictions'
 import { parseOfacEthList } from '@/lib/deprize/sanctions'
 import {
@@ -80,6 +81,26 @@ describe('deprize eligibility decision', () => {
     expect(evaluateEligibility({ ...base, wallet: 'not-an-address' }).reason).to.equal(
       'invalid-wallet'
     )
+  })
+
+  it('rejects a denied wallet even when screening is unavailable', () => {
+    expect(
+      evaluateEligibility({ ...base, isDeniedWallet: true, screeningFailed: true }).reason
+    ).to.equal('wallet-denied')
+    expect(evaluateEligibility({ ...base, isDeniedWallet: true }).reason).to.equal(
+      'wallet-denied'
+    )
+  })
+})
+
+describe('deprize permanent denial triggers', () => {
+  it('creates a denial only for restricted-country and sanctioned wallets', () => {
+    expect(shouldCreatePermanentDenial('restricted-jurisdiction')).to.equal(true)
+    expect(shouldCreatePermanentDenial('sanctioned-wallet')).to.equal(true)
+    expect(shouldCreatePermanentDenial('vpn-or-proxy')).to.equal(false)
+    expect(shouldCreatePermanentDenial('country-unknown')).to.equal(false)
+    expect(shouldCreatePermanentDenial('screening-unavailable')).to.equal(false)
+    expect(shouldCreatePermanentDenial('ok')).to.equal(false)
   })
 })
 

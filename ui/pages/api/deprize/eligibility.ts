@@ -20,7 +20,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const decision = await runEligibilityChecks(req, wallet)
+  const decision = await runEligibilityChecks(req, wallet, { surface: 'eligibility' })
   return res.status(200).json({
     ...decision,
     message: eligibilityMessage(decision.reason),

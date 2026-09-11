@@ -6,6 +6,7 @@ import { hashIp, recordTermsAcceptance } from '@/lib/deprize/acceptanceLog'
 import { areAttestationsAccepted } from '@/lib/deprize/attestations'
 import { DEPRIZE_TERMS_VERSION } from '@/lib/deprize/constants'
 import { eligibilityMessage, isHexAddress } from '@/lib/deprize/eligibility'
+import { runEligibilityChecks } from '@/lib/deprize/runEligibility'
 import { getClientIp, getCountryFromHeaders, getRegionFromHeaders } from '@/lib/geo'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -36,6 +37,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const wallet = getAddress(walletRaw)
+  const decision = await runEligibilityChecks(req, wallet, { surface: 'accept-terms' })
+  if (!decision.allowed) {
+    return res.status(403).json({
+      ok: false,
+      ...decision,
+      message: eligibilityMessage(decision.reason),
+    })
+  }
+
   const logged = await recordTermsAcceptance({
     wallet,
     termsVersion,

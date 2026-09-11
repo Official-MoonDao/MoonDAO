@@ -59,7 +59,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const decision = await runEligibilityChecks(req, walletRaw)
+  const decision = await runEligibilityChecks(req, walletRaw, { surface: 'permit' })
   if (!decision.allowed) {
     return res.status(403).json({
       ...decision,

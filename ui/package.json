@@ -41,7 +41,8 @@
     "cleanup:offchain-prune": "ts-node -r tsconfig-paths/register scripts/cleanup/offchain-prune.ts",
     "verify:mail": "node scripts/verify-nodemailer.cjs",
     "verify:new-citizen-discord-image": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/verify-new-citizen-discord-image.ts",
-    "export:deprize-compliance": "tsx --tsconfig tsconfig.json scripts/export-deprize-compliance-log.ts"
+    "export:deprize-compliance": "tsx --tsconfig tsconfig.json scripts/export-deprize-compliance-log.ts",
+    "deprize:deny": "tsx --tsconfig tsconfig.json scripts/deprize-wallet-deny.ts"
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.3.3",
