@@ -1,3 +1,4 @@
+import type { GetServerSideProps } from 'next'
 import DePrizeRegistryABI from 'const/abis/DePrizeRegistry.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import TeamABI from 'const/abis/Team.json'
@@ -24,6 +25,11 @@ import {
   isKnownDePrizeCompetition,
   isRaceBindingComplete,
 } from '@/lib/deprize/competitions'
+import {
+  resolveDePrizePageProps,
+  type DePrizePageProps,
+} from '@/lib/deprize/pageEligibility'
+import DePrizeRestrictedNotice from '@/components/deprize/DePrizeRestrictedNotice'
 import { SEED_ATLAS, orgById, projectById, sharedGoalById } from '@/lib/lunar-atlas'
 import GoalDePrizeDetail from '@/components/deprize/GoalDePrizeDetail'
 import { orgColor } from '@/lib/lunar-atlas/display'
@@ -122,9 +128,15 @@ function StateBadge({
   )
 }
 
-export default function DePrizeDetailPage() {
+export default function DePrizeDetailPage({ restricted }: DePrizePageProps) {
+  if (restricted) return <DePrizeRestrictedNotice />
   return <DePrizeDetailContent />
 }
+
+export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
+  req,
+  res,
+}) => resolveDePrizePageProps(req, res)
 
 function DePrizeDetailContent() {
   const router = useRouter()
