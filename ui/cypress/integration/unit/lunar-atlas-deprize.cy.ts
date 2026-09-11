@@ -84,6 +84,21 @@ describe('lunar-atlas × DePrize binding', () => {
     expect(sustained?.threshold).to.not.match(/over the window/)
     expect(nightShift!.criteria?.some((c) => c.id === 'size-disclosure')).to.equal(true)
     expect(nightShift!.criteria?.some((c) => c.id === 'independent-meters')).to.equal(true)
+  })
+
+  // v0.7 closed the hole that owning the meters does not make the meters good
+  // enough: a legitimately calibrated instrument reading high turns a 9.85 We
+  // article into an honest file that passes every other check. The public
+  // criteria have to carry it, or the site advertises a bar the rules no longer
+  // set.
+  it('states the measurement-uncertainty rule on the criteria the site renders', () => {
+    const tenWatts = nightShift!.criteria?.find((c) => c.id === 'ten-watts')
+    expect(tenWatts?.threshold).to.match(/lower bound/)
+    expect(tenWatts?.threshold).to.match(/uncertainty/)
+
+    const meters = nightShift!.criteria?.find((c) => c.id === 'independent-meters')
+    expect(meters?.threshold).to.match(/0\.5% expanded uncertainty/)
+    expect(meters?.threshold).to.match(/traceably calibrated/)
     expect(nightShift!.market?.status).to.equal('planned')
     expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
     for (const id of nightShift!.projectIds) {

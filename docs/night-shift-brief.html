@@ -166,8 +166,8 @@
 
   <div class="grow"></div>
   <div class="meta">
-    <b>Document</b> Prize brief, v0.6-draft<br>
-    <b>Date</b> 7 September 2026<br>
+    <b>Document</b> Prize brief, v0.7-draft<br>
+    <b>Date</b> 11 September 2026<br>
     <b>Owner</b> MoonDAO<br>
     <b>Status</b> Pre-registration. Nothing is on-chain and no rules are final.<br>
     <b>Purpose</b> Structured expert feedback before launch.
@@ -278,7 +278,9 @@
 
   <p>The 98% retention rule is a <strong>slope limit</strong>, not a waiver on ten watts. Every
   rolling hour must stay ≥ 10.0 We. A run that starts at 10.0 W and finishes at 9.8 W
-  <strong>fails the floor</strong>.</p>
+  <strong>fails the floor</strong>. It is 98% rather than 100% because zero margin on a slope makes
+  thermocouple noise and calibration drift into a disqualification; <em>instrument</em> error is
+  handled separately and explicitly, below.</p>
 
   <table class="spec">
     <tr><th style="width:32%">Parameter</th><th>Requirement</th></tr>
@@ -288,10 +290,11 @@
     <tr><td>Pressure</td><td>≤ 1×10⁻⁵ torr</td></tr>
     <tr><td>Energy source</td><td>Entirely onboard at T0</td></tr>
     <tr><td>Output retention</td><td>Final hour ≥ 98% of <em>first</em> hour — not a 9.8 W waiver</td></tr>
+    <tr><td>Measurement</td><td>≤ 0.5% expanded uncertainty, traceable, budget published. Floor cleared on <em>P − U</em>, so a 0.5% meter needs ~10.05 We</td></tr>
     <tr><td>Size disclosure</td><td>Article mass and occupied volume published (no cap)</td></tr>
     <tr><td>Attendance</td><td>Day 0 and Day 15 only — two site visits, not a standing watch</td></tr>
     <tr><td>Verification default</td><td>Route A: ISO 17025 lab report. Route C funded for Open Field</td></tr>
-    <tr><td>Purse</td><td>$25,000, growing with betting volume</td></tr>
+    <tr><td>Purse</td><td>$25,000, growing with betting volume. Does not cover fifteen days of rented chamber — see page 5</td></tr>
     <tr><td>Deadline</td><td>None — open until solved</td></tr>
   </table>
 
@@ -315,6 +318,12 @@
     passes the slope without trying: americium-241 decays 0.007% over 354 hours. Any consumable
     must be oversized, which costs mass and occupied volume, which the public scoreboard then
     reports.</p>
+    <p><strong>Its known limit, since v0.6 overclaimed this.</strong> Those are the decay curves of
+    <em>unregulated</em> sources. A battery holding exactly one night's energy behind a buck
+    converter reports a retention ratio of 1.000 — flatter than any isotope — and is empty an hour
+    after the window closes. Nothing measurable inside 354 hours separates it from a real one,
+    because the difference is entirely outside the window. Mass and volume disclosure is the only
+    thing currently against it. This is question 2 on page 5.</p>
   </div>
 
   <div class="rule-box">
@@ -345,10 +354,33 @@
     <tr><td>Maximum chamber pressure</td><td class="num">≤ 1×10⁻⁵ torr</td></tr>
   </table>
 
+  <p>Note the first two are scored on <strong>P − U</strong> — the bottom of the entrant's own error
+  bar, not the reading.</p>
+
+  <div class="callout">
+    <p><strong>What changed in v0.7, and why.</strong> v0.6 required that the verifier own the
+    meters and said nothing about how good they had to be. That is the cheapest way to beat this
+    prize, and it needs nobody to lie: a real 9.85 We article, read by a legitimately calibrated
+    ±2% shunt that happens to sit +1.8% high, produces an honest file that passed every check
+    above. So the rules now specify traceable calibration, ≤ 0.5% expanded uncertainty, a published
+    uncertainty budget, simultaneously sampled V and I, and true power on any non-DC bus — that
+    last one matters because a Stirling convertor behind a switching regulator, sampled at 1 Hz,
+    can report 10.5 W while delivering 9.2 W.</p>
+  </div>
+
   <p>That only works if the files are trustworthy, so a second rule governs custody:
   <strong>an entrant may own the chamber and the article, but never the instruments or the
   data.</strong> Whoever calibrates, installs, seals, and reads the measurement chain must be
   independent of the entrant.</p>
+
+  <p><strong>Why video does not remove the need for a verifier</strong> — a fair challenge, and the
+  answer is that they prove different things. An unbroken stream with a clock in frame proves
+  <em>continuity</em>: that this is one run, not a splice or a loop. It cannot show that the shunt
+  was calibrated, that the meter belonged to somebody other than the entrant, that the feedthrough
+  panel carried no undeclared conductor, or that the file published afterwards came off those
+  sensors unaltered. Every attack worth defending against — a hidden wire, a wall-powered heater
+  standing in for an isotope, a favourable meter — is invisible on camera and decided at Day 0.
+  Video is corroboration; custody is the root of trust.</p>
 
   <p>Crucially, <strong>observation is not judgment</strong>. The verifier decides nothing about
   whether an entry counts and needs no opinion about lunar power systems. They attest to facts a
@@ -356,8 +388,11 @@
   panel, whose calibrated sensors these were, and that the seals held. Verification is
   <strong>two site visits</strong> — Day 0 (weigh, seal, install <em>their</em> meters) and Day 15
   (check seals, take the files) — not 48 hours of standing watch. Mid-run evidence is live
-  telemetry, clock-in-frame video, and hash-chained logs. The default path is an ISO 17025 lab
-  report (Route A). Route C is funded for Open Field. Route B exists only if a real quote lands.
+  telemetry, clock-in-frame video, hash-chained logs, and an optional remote check-in about every
+  72 hours where a person steps into frame or the verifier pings the live stream. That last one is
+  not a third site visit, and it is what defeats a loop with forged timestamps: the inspector's
+  live reading has to match the log at that instant. The default path is an ISO 17025 lab
+  report (Route A). Route C is funded for Open Field. Route B exists only if a real quote lands.</p>
 </section>
 
 <!-- ============ PAGE 4 ============ -->
@@ -458,7 +493,9 @@
   <h3>Closed in v0.6 — do not reopen by accident</h3>
 
   <p class="q"><b>10 watts</b> stays. Raising it without a size cap crowns the RTG and rewards a
-  bigger thermal mass.</p>
+  bigger thermal mass. There is no written volume cap because <em>the chamber is one</em>: a
+  latent-heat store has to hold a night's energy inside a vessel somebody will cryoshroud for
+  fifteen days, which is the same scarce resource that constrains everyone.</p>
   <p class="q"><b>98%</b> is a last-hour / first-hour slope, not a 9.8 W waiver. The rolling-hour
   floor is still 10.0 We.</p>
   <p class="q"><b>Attendance</b> is Day 0 and Day 15 — two site visits, not 48 hours of standing
@@ -466,21 +503,43 @@
   <p class="q"><b>Route A</b> (ISO 17025 lab report) is the default. Route C is funded for Open
   Field. Route B exists only if a real quote lands.</p>
 
+  <h3>Closed in v0.7 by review, for the record</h3>
+
+  <p class="q"><b>Meter quality</b> was unspecified, and that was a real hole rather than a wording
+  problem — see the box on page 3. Now ≤ 0.5% traceable, budget published, floor scored on
+  <em>P − U</em>.</p>
+  <p class="q"><b>The environment grace hour</b> in the validator schema is deleted. It contradicted
+  the definition of T0, and it put the retention baseline inside the one hour where shroud
+  temperature was unconstrained.</p>
+
   <h3>The questions that would still change the design</h3>
 
-  <p class="q"><b>1.</b> <strong>Can you beat the validator?</strong> Describe a data file that
-  passes every check on page 3 alongside hardware that shouldn't count. The full rules document
-  now has a CSV schema and two failing fixtures (looped recording; sag to 9.8 W). A verbal cheat
-  is useful; a CSV that actually passes is the thing that changes the brief.</p>
+  <p class="q"><b>1.</b> <strong>Can you still beat the validator?</strong> Review has produced three
+  attacks: a biased meter and an aliased switching bus, both now fixed, and a regulated consumable
+  that we cannot currently exclude. The rules document carries all of them as fixtures with
+  expected outputs. A verbal cheat is useful; a CSV that actually passes is the thing that changes
+  the brief.</p>
 
-  <p class="q"><b>2.</b> <strong>Who runs a chamber for fifteen continuous days?</strong> This is
-  still the largest unpriced risk. ESTEC, DLR, CSA David Florida, JAXA/ISAS, KARI, ISRO/IIT, and
-  ANSTO are listed as starting points, not bookings.</p>
+  <p class="q"><b>2.</b> <strong>Should we pay for an endurance tail?</strong> This is the live
+  question. A battery sized to exactly 354 hours, regulated flat, posts a perfect retention figure
+  and dies at hour 355 — and nothing measurable inside the window separates it from an isotope. The
+  fix is to keep logging past the window with the floor lifted and publish the hour output actually
+  fails. It costs about three more days on a fifteen-day chamber booking, which is 20% more of the
+  scarcest input we have. Adopt it, ship without it, or use it only to break ties?</p>
 
-  <p class="q"><b>3.</b> <strong>Who have we missed?</strong> Particularly outside the United States
-  and Europe, and particularly non-nuclear approaches that are a product, not a paper.</p>
+  <p class="q"><b>3.</b> <strong>Who runs a chamber for fifteen continuous days, and who would
+  fund it?</strong> Still the largest unpriced risk, and now stated honestly: at commercial rates
+  fifteen days is $30–150k, so <em>the purse does not cover the chamber time the prize asks for.</em>
+  A named person at a facility is worth more than any other contribution on this page. So is the
+  answer to whether a chamber-time grant beats a larger purse.</p>
 
-  <p class="q"><b>4.</b> <strong>Is the framing too modest?</strong> We still claim an
+  <p class="q"><b>4.</b> <strong>Who have we missed?</strong> Particularly outside the United States
+  and Europe, and particularly non-nuclear approaches that are a product, not a paper. Review has so
+  far confirmed the roster rather than extended it — thermal wadis and latent-heat stores are Open
+  Field, JAXA is excluded with a reason and listed as a neutral host, Australia appears as ANSTO
+  among the chambers. We have still not found a named non-nuclear product outside the US and Europe.</p>
+
+  <p class="q"><b>5.</b> <strong>Is the framing too modest?</strong> We still claim an
   industrialization milestone rather than a physics breakthrough. Is that worth a prize at all?</p>
 
   <h3>What happens with your feedback</h3>
@@ -502,7 +561,7 @@
   </div>
 
   <div class="foot">
-    <strong>Night Shift — Prize Brief v0.6-draft · 7 September 2026 · MoonDAO</strong><br>
+    <strong>Night Shift — Prize Brief v0.7-draft · 11 September 2026 · MoonDAO</strong><br>
     Confidential, circulated under NDA. Competitor listings are editorial and drawn from public
     sources; listing does not imply participation, endorsement, or affiliation. Figures for
     plutonium-238 production and cost are from US Department of Energy and Government
