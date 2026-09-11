@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto'
 import type { Hex } from 'viem'
 import type { DePrizeAttestations } from './attestations'
 import { hashCompliancePermit } from './compliancePermit'
-import { execCompliancePipeline } from './complianceStore'
+import { execCompliancePipeline, getComplianceRedis } from './complianceStore'
 import type { EligibilityReason } from './eligibility'
 import type { ConnectionKind } from './vpnCheck'
 
@@ -104,4 +104,25 @@ export function permitCoversBet(args: {
   const deadlineSec = Number(args.record.deadline)
   if (!Number.isFinite(issuedAtSec) || !Number.isFinite(deadlineSec)) return false
   return issuedAtSec <= args.blockTimestampSec && args.blockTimestampSec <= deadlineSec
+}
+
+export async function getPermitRecordsForWallet(wallet: string): Promise<{
+  records: PermitIssuanceRecord[]
+  failed: boolean
+}> {
+  const cache = getComplianceRedis()
+  if (!cache) return { records: [], failed: true }
+  try {
+    const ids = await cache.lrange<string>(permitByWalletKey(wallet), 0, -1)
+    const records: PermitIssuanceRecord[] = []
+    for (const id of ids ?? []) {
+      if (!id) continue
+      const record = await cache.get<PermitIssuanceRecord>(permitRecordKey(id))
+      if (record) records.push(record)
+    }
+    return { records, failed: false }
+  } catch (err) {
+    console.error('[deprize] permit lookup failed', err)
+    return { records: [], failed: true }
+  }
 }

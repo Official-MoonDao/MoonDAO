@@ -9,6 +9,7 @@ import {
 } from './eligibility'
 import { screenWallet } from './sanctions'
 import { checkVpnOrProxy, type ConnectionKind } from './vpnCheck'
+import { sendComplianceAlert } from './complianceAlerts'
 import {
   denyWallet,
   getWalletDenial,
@@ -76,7 +77,17 @@ export async function runEligibilityChecks(
       observedAt: new Date().toISOString(),
     }
     if (shouldCreatePermanentDenial(decision.reason)) {
-      await denyWallet(validWallet, decision.reason, observation)
+      const denial = await denyWallet(validWallet, decision.reason, observation)
+      if (denial.created) {
+        await sendComplianceAlert({
+          kind: 'wallet-denied',
+          wallet: validWallet,
+          country: decision.country,
+          connectionKind: vpn.kind,
+          reason: decision.reason,
+          timestamp: observation.observedAt,
+        })
+      }
     }
     await recordObservation(observation)
   }
