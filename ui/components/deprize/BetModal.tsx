@@ -20,6 +20,7 @@ import {
   type DePrizeAttestations,
 } from '@/lib/deprize/attestations'
 import { eligibilityMessage, type EligibilityReason } from '@/lib/deprize/eligibility'
+import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
 import {
   fmt,
   fmtEthWithUsd,
@@ -105,6 +106,8 @@ export default function BetModal({
 
   const canBet = /^0x[0-9a-fA-F]{40}$/.test(mintAddress)
   const insufficient = betAmountNum > 0 && betAmountNum > spendableEth + 1e-12
+  const overCap = betExceedsCap(betAmountWei)
+  const maxBetEth = Number(DEPRIZE_MAX_BET_WEI) / Number(UNIT)
 
   // Quote reads go through the batching-disabled read client on the thirdweb
   // RPC edge (RPC batching silently breaks decodes in this thirdweb version).
@@ -237,6 +240,10 @@ export default function BetModal({
     if (!account || !mint) return
     if (betAmountWei <= 0n) {
       toast.error('Enter an amount to bet.', { style: toastStyle })
+      return
+    }
+    if (overCap) {
+      toast.error(eligibilityMessage('over-cap'), { style: toastStyle })
       return
     }
     if (!canSubmitDePrizeBet({
@@ -589,12 +596,18 @@ export default function BetModal({
             You only have ≈ {fmtEthWithUsd(spendableEth, ethPrice, { prize: true })} available (a
             little is kept back for gas). Lower your bet or add funds.
           </p>
+        ) : overCap ? (
+          <p className="text-amber-300 text-sm">
+            Generation-1 bets are capped at {fmtEthWithUsd(maxBetEth, ethPrice, { prize: true })} per
+            transaction. Lower the amount to continue.
+          </p>
         ) : (
           <StandardButton
             onClick={placeBet}
             disabled={
               busy ||
               betAmountWei <= 0n ||
+              overCap ||
               !canSubmitDePrizeBet({
                 termsAccepted,
                 attestations,

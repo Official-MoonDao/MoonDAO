@@ -279,7 +279,8 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       ],
     },
     // Touchdown gen 2 — shareable live tip (PR 1527). Real JB 268, LMSR
-    // 0x9d3b999B347c6F9dc6cB314707397A4B505826D0, question v2 (v1 is #21).
+    // 0xC717D9ac121E2f7882f007FA046009501Fe0B43C (H-01 replacement;
+    // pre-fix clone was 0x9d3b999B…826D0), question v2 (v1 is #21).
     22: {
       title: 'Touchdown',
       tagline:

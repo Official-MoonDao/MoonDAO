@@ -12,6 +12,8 @@ export type EligibilityReason =
   | 'terms-not-accepted'
   | 'permit-unavailable'
   | 'wallet-denied'
+  | 'insider-wallet'
+  | 'over-cap'
 
 export type EligibilityInput = {
   country: string | null
@@ -21,6 +23,7 @@ export type EligibilityInput = {
   isSanctioned: boolean
   screeningFailed: boolean
   isDeniedWallet?: boolean
+  isInsiderWallet?: boolean
 }
 
 export type EligibilityDecision = {
@@ -40,6 +43,9 @@ export function evaluateEligibility(input: EligibilityInput): EligibilityDecisio
 
   if (input.wallet && !isHexAddress(input.wallet)) {
     return { allowed: false, reason: 'invalid-wallet', country }
+  }
+  if (input.isInsiderWallet) {
+    return { allowed: false, reason: 'insider-wallet', country }
   }
   if (input.isDeniedWallet) {
     return { allowed: false, reason: 'wallet-denied', country }
@@ -77,6 +83,10 @@ export function eligibilityMessage(reason: EligibilityReason): string {
       return 'Turn off any VPN, proxy, or Tor connection and try again.'
     case 'wallet-denied':
       return 'This wallet is not eligible to place new bets.'
+    case 'insider-wallet':
+      return 'This wallet is associated with prize administration and cannot place bets.'
+    case 'over-cap':
+      return 'This bet is above the generation-1 per-bet limit.'
     case 'sanctioned-wallet':
       return 'This wallet cannot participate.'
     case 'screening-unavailable':

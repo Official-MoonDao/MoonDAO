@@ -442,16 +442,24 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string = polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
-  // sepolia: fresh self-serve market (oracle + owner = pmoncada.eth), DePrize id 3.
-  // Prior test markets: 0x48de28... (id 2, resolved), 0x11DCe8... (oracle
-  // jaderiverstokes.eth). Kept for reference only.
+  // sepolia: play-harness market (oracle + owner = pmoncada.eth), DePrize id 3.
+  // Production markets resolve via DePrizeMint.marketOf(id). H-01 Touchdown
+  // (#22) is 0xC717D9ac121E2f7882f007FA046009501Fe0B43C.
   sepolia: '0x36da9d41b673b4115df0e06cefb4c665e2289dd0',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
-  // DePrize 1 ("The Moon is a harsh mistress"), Phase 4 on 2026-08-25.
-  // 4 outcomes, 0.04 ETH seed, 1% fee, owned by DEPRIZE_FEE_ROUTER_ADDRESSES.
-  // Per-DePrize markets resolve on-chain via DePrizeMint.marketOf(id); this
-  // scalar is the first-market fallback only.
-  arbitrum: '0x351aF5AcfBC4Df750B7BD58b4c4cbE94147aF211',
+  // DePrize 1 H-01 replacement (2026-09-11). Same condition as the disposable
+  // pre-fix clone 0x351aF5…F211. Per-DePrize markets resolve on-chain via
+  // DePrizeMint.marketOf(id); this scalar is the first-market fallback only.
+  arbitrum: '0xB7fE1530D300C505295B42268e127ceea5aDe703',
+}
+
+// Factories whose implementationMaster includes the H-01 tradeWithTWAP fix.
+// Do not create new markets from the Phase 2 factory 0xb40d77bD… (Arbitrum)
+// or 0x8787Dc3c… (Sepolia) — those still clone the vulnerable implementation.
+export const LMSR_WITH_TWAP_FACTORY_ADDRESSES: Index = {
+  sepolia: '0x18778032c44Cd0a7dF81eF9bF3f5aF1b03471a7a',
+  // Same 20-byte value as the Sepolia DePrizeRegistry — different chain.
+  arbitrum: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
 }
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8',
