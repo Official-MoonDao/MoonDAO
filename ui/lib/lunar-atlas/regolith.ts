@@ -12,8 +12,9 @@
 // surface brightens sharply. At exact opposition none of them are visible at
 // all. Hapke's approximation is B(g) = 1 + B0 / (1 + tan(g/2)/h), where g is
 // the phase angle (sun-surface-viewer) and B0/h are the amplitude and angular
-// width of the surge. This is a VIEW-DEPENDENT term, which is precisely why
-// the terrain's baked hillshade cannot contain it — a bake has no viewer.
+// width of the surge. This is a VIEW-DEPENDENT term, which is precisely why a
+// baked hillshade could never contain it — a bake has no viewer — and one of the
+// reasons the terrain stopped being one.
 //
 // LOMMEL-SEELIGER (no limb darkening). A single-scattering, semi-infinite
 // particulate layer reflects mu0/(mu0+mu) rather than Lambert's mu0, so it
@@ -21,15 +22,20 @@
 // foreshortening that darkens a Lambertian limb. On the ground it is why the
 // lunar horizon reads as a bright band rather than fading off.
 //
-// Only the first of the two is applied to the rendered terrain, and the
-// reason is worth keeping: the Lommel-Seeliger correction to an existing
-// Lambertian bake goes as 1/(mu0+mu), which diverges as the view goes grazing
-// — and grazing is exactly where this scene's camera spends its time, three
-// metres off the deck looking out across a ridge. Applying it there blows the
-// distant ground to white, which is the same class of failure as the flat
-// ambient "pond" documented at the top of SouthPoleTerrain.tsx. It IS applied
-// to the regolith environment map (lunarEnvironment.ts), where mu0 is a
-// constant and mu is bounded by construction, so the term cannot run away.
+// Both are now applied to the terrain, through the full Hapke BRDF at the
+// bottom of this file. That is a reversal of what this comment used to say,
+// and the reason is worth recording because it looks like a contradiction.
+//
+// The old objection was that Lommel-Seeliger "diverges as the view goes
+// grazing", which is true of the shape it takes as a CORRECTION FACTOR applied
+// on top of an existing Lambertian bake: dividing a Lambert lobe by (mu0+mu)
+// leaves a 1/(mu0+mu) that runs away as both cosines go to zero, and grazing
+// is where this scene's camera lives. But that divergence is an artifact of
+// the factorization, not of the physics. In the real BRDF the term appears as
+// mu0/(mu0+mu), which is bounded above by 1 for every geometry there is — it
+// cannot exceed unity no matter how grazing the view gets. Evaluating the BRDF
+// directly instead of patching a bake therefore gets the bright horizon band
+// for free and cannot blow out.
 
 // Normal albedo of south-polar highland regolith. The Moon is a genuinely dark
 // object — closer to worn asphalt than to the white it reads as against a black
@@ -70,3 +76,168 @@ export function oppositionSurge(gRad: number): number {
 export function normalizedSurge(gRad: number): number {
   return oppositionSurge(gRad) / oppositionSurge((PHASE_REF_DEG * Math.PI) / 180)
 }
+
+// ---------------------------------------------------------------------------
+// The full Hapke BRDF
+//
+// Everything above is one term of a scattering law; this is the law. It is what
+// the terrain is shaded with now that shading is computed per pixel rather than
+// baked, and it is deliberately the textbook form rather than a lookalike:
+//
+//   r(mu0, mu, g) = w/(4 pi) * mu0/(mu0 + mu)
+//                   * [ (1 + B(g)) p(g) + H(mu0) H(mu) - 1 ]
+//
+// with mu0 = cos(incidence), mu = cos(emergence), g = phase angle. Term by
+// term: w/(4 pi) is the scattering strength, mu0/(mu0 + mu) is Lommel-Seeliger,
+// (1 + B(g)) is the opposition surge already defined above, p(g) is the
+// single-particle phase function, and H(mu0)H(mu) - 1 is Hapke's isotropic
+// multiple-scattering correction (the "- 1" removes the single-scattering part
+// that p(g) already counted).
+//
+// Macroscopic roughness (Hapke's theta-bar) is NOT modelled. On a real polar
+// slope it matters, but it costs a shadowing/tilt integral per pixel and its
+// main visible effect — darkening at high phase — is small next to the two
+// terms that are here. Worth revisiting only if the render is ever compared to
+// photometry rather than to imagery.
+//
+// The GLSL mirror of this lives in HAPKE_GLSL at the bottom. It exists so the
+// shader and these functions are read as one thing; if you change one, change
+// the other, and the tests that pin the TypeScript are the specification.
+// ---------------------------------------------------------------------------
+
+// Single-particle phase function asymmetry, single-term Henyey-Greenstein.
+//
+// NEGATIVE means backscattering under the convention used by hgPhase below, and
+// regolith is strongly backscattering — this is the second reason (after the
+// opposition surge) that a full moon is so much brighter than a half moon.
+// -0.29 sits in the middle of the published lunar range.
+export const HG_ASYMMETRY = -0.29
+
+// Single-scattering albedo: the probability that a photon hitting one grain
+// survives it. This is NOT the same quantity as REGOLITH_ALBEDO, which is the
+// normal albedo of the whole surface — a bulk optical property that emerges
+// from w after single and multiple scattering are summed over the layer.
+//
+// So it is not independently dialled. It is the w that makes the BRDF above
+// reproduce REGOLITH_ALBEDO exactly at normal incidence and zero phase, solved
+// numerically; `hapkeNormalAlbedo` recovers 0.12 from it and a test asserts
+// that round trip. Change REGOLITH_ALBEDO and this must be re-solved, which is
+// what that test is there to catch.
+export const SINGLE_SCATTERING_ALBEDO = 0.191559
+
+// Single-term Henyey-Greenstein, in the planetary-photometry convention where
+// g is the PHASE angle (0 = looking straight down-sun, at full moon) and a
+// negative asymmetry parameter backscatters.
+export function hgPhase(gRad: number, xi = HG_ASYMMETRY): number {
+  const d = 1 + 2 * xi * Math.cos(gRad) + xi * xi
+  return (1 - xi * xi) / (d * Math.sqrt(d))
+}
+
+// Hapke's analytic approximation to Chandrasekhar's H-function, which is what
+// carries multiple scattering between grains. Exact to about a percent, and one
+// square root instead of an integral equation.
+export function chandrasekharH(mu: number, w = SINGLE_SCATTERING_ALBEDO): number {
+  return (1 + 2 * mu) / (1 + 2 * mu * Math.sqrt(1 - w))
+}
+
+// Bidirectional reflectance, per steradian. Multiply by the irradiance measured
+// PERPENDICULAR TO THE BEAM (not by the irradiance on the surface) to get
+// radiance: the cosine falloff is already inside, carried by mu0/(mu0 + mu).
+//
+// Returns 0 for geometry facing away from the sun or away from the eye, so
+// callers do not have to guard the terminator themselves.
+export function hapkeReflectance(
+  mu0: number,
+  mu: number,
+  gRad: number,
+  w = SINGLE_SCATTERING_ALBEDO
+): number {
+  if (mu0 <= 0 || mu <= 0) return 0
+  const multi = chandrasekharH(mu0, w) * chandrasekharH(mu, w) - 1
+  const single = oppositionSurge(gRad) * hgPhase(gRad)
+  return ((w / (4 * Math.PI)) * (mu0 / (mu0 + mu)) * (single + multi))
+}
+
+// Normal albedo the BRDF actually produces: the radiance factor (I/F) straight
+// down onto flat ground at zero phase, which is pi * r / mu0 at mu0 = mu = 1.
+// This is the bridge between w and REGOLITH_ALBEDO, and the reason w is not a
+// free parameter.
+export function hapkeNormalAlbedo(w = SINGLE_SCATTERING_ALBEDO): number {
+  return Math.PI * hapkeReflectance(1, 1, 0, w)
+}
+
+// ---------------------------------------------------------------------------
+// Derived scene radiances
+//
+// Functions of the sun rather than constants, for two reasons. It keeps this
+// module free of scene imports, so the BRDF stays independently testable; and it
+// is what a moving sun will need, since both quantities scale with elevation.
+// ---------------------------------------------------------------------------
+
+// Radiance of flat sunlit ground, viewed head-on, at a given sun elevation.
+//
+// The one thing to know about this function is that it is roughly a QUARTER of
+// what the Lambertian shorthand albedo * E / pi gives at this scene's phase
+// angles. That is not a small discrepancy to absorb silently: anything derived as
+// "about as bright as the ground" and built on the Lambertian form comes out 4x
+// too bright, which has now happened three times in this codebase — in the
+// environment map, in the shadow fill below, and in the graded road surfaces. Use
+// this, not the shorthand.
+export function litGroundRadiance(
+  sunIntensity: number,
+  sunElevDeg: number,
+  phaseDeg = PHASE_REF_DEG
+): number {
+  const mu0 = Math.sin((sunElevDeg * Math.PI) / 180)
+  return sunIntensity * hapkeReflectance(mu0, 1, (phaseDeg * Math.PI) / 180)
+}
+
+// The light left in a lunar shadow, as radiance.
+//
+// There is no atmosphere, so nothing fills a shadow except sunlight that already
+// bounced off regolith nearby: the ground's own radiance, times the fraction of
+// its sky that is filled by lit ground, times its own albedo on the way back out.
+// It lands near 6% of the lit ground.
+//
+// skyFraction is the crude part, and deliberately the only crude part — a single
+// number standing in for how much lit ground a point can actually see. Phase 2
+// replaces it with real per-texel sky visibility from a horizon map. Until then
+// every shadow is equally deep, which is too bright in narrow crevices and too
+// dark under overhangs.
+export function shadowFillRadiance(litRadiance: number, skyFraction = 0.5): number {
+  return litRadiance * REGOLITH_ALBEDO * skyFraction
+}
+
+// The same law as GLSL, for the terrain shader. Kept as a string beside the
+// TypeScript rather than in the component so there is exactly one place to look
+// when the two are compared, and so the constants below cannot drift from the
+// exported ones — they are interpolated from them.
+export const HAPKE_GLSL = /* glsl */ `
+  const float HAPKE_W = ${SINGLE_SCATTERING_ALBEDO};
+  const float HAPKE_XI = ${HG_ASYMMETRY};
+  const float HAPKE_B0 = ${OPPOSITION_B0};
+  const float HAPKE_H = ${OPPOSITION_H};
+  const float HAPKE_GAMMA = ${Math.sqrt(1 - SINGLE_SCATTERING_ALBEDO)};
+
+  float hgPhase(float cosG) {
+    float d = 1.0 + 2.0 * HAPKE_XI * cosG + HAPKE_XI * HAPKE_XI;
+    return (1.0 - HAPKE_XI * HAPKE_XI) / (d * sqrt(max(d, 1e-6)));
+  }
+
+  float chandrasekharH(float mu) {
+    return (1.0 + 2.0 * mu) / (1.0 + 2.0 * mu * HAPKE_GAMMA);
+  }
+
+  // cosG is dot(toSun, toEye); gRad is passed in too because the surge needs
+  // tan(g/2) and recovering it from the cosine costs an acos anyway.
+  float hapkeReflectance(float mu0, float mu, float cosG, float gRad) {
+    if (mu0 <= 0.0 || mu <= 0.0) return 0.0;
+    // Held off exact opposition, where tan(g/2) overflows. The surge is
+    // asymptotically 1 there anyway, so the clamp costs nothing visible and
+    // keeps drivers that turn inf into NaN from punching black pixels.
+    float surge = 1.0 + HAPKE_B0 / (1.0 + tan(0.5 * min(gRad, 3.14)) / HAPKE_H);
+    float multi = chandrasekharH(mu0) * chandrasekharH(mu) - 1.0;
+    return (HAPKE_W / (4.0 * ${Math.PI})) * (mu0 / (mu0 + mu))
+      * (surge * hgPhase(cosG) + multi);
+  }
+`
