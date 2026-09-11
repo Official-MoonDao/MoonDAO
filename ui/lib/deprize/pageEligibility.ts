@@ -1,6 +1,8 @@
-import type { IncomingHttpHeaders } from 'http'
-import type { GetServerSidePropsResult } from 'next'
-import { getCountryFromHeaders, getRegionFromHeaders } from '@/lib/geo'
+import {
+  getCountryFromHeaders,
+  getRegionFromHeaders,
+  type GeoHeaderRequest,
+} from '@/lib/geo/headers'
 import { isNonProdBypassEnabled } from './eligibility'
 import { isRestrictedJurisdiction, normalizeCountry } from './restrictedJurisdictions'
 
@@ -13,7 +15,7 @@ export type DePrizePageProps = {
   restricted: boolean
 }
 
-type HeaderRequest = { headers: IncomingHttpHeaders }
+type HeaderRequest = GeoHeaderRequest
 
 /** Browser + Vercel CDN must not cache a country-specific DePrize page. */
 export const DEPRIZE_PAGE_CACHE_CONTROL = 'private, no-store'
@@ -34,12 +36,8 @@ export function setDePrizePageNoStoreHeaders(res: {
  * or sanctions providers — those still run before acceptance and permits.
  */
 export function getDePrizePageEligibility(req: HeaderRequest): DePrizePageEligibility {
-  const country = normalizeCountry(
-    getCountryFromHeaders(req as Parameters<typeof getCountryFromHeaders>[0])
-  )
-  const region = getRegionFromHeaders(
-    req as Parameters<typeof getRegionFromHeaders>[0]
-  )
+  const country = normalizeCountry(getCountryFromHeaders(req))
+  const region = getRegionFromHeaders(req)
 
   if (isNonProdBypassEnabled()) {
     return { restricted: false, country }
@@ -56,7 +54,7 @@ export function getDePrizePageEligibility(req: HeaderRequest): DePrizePageEligib
 export function resolveDePrizePageProps(
   req: HeaderRequest,
   res: { setHeader: (name: string, value: string) => void }
-): GetServerSidePropsResult<DePrizePageProps> {
+): { props: DePrizePageProps } {
   setDePrizePageNoStoreHeaders(res)
   return { props: { restricted: getDePrizePageEligibility(req).restricted } }
 }

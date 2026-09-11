@@ -1,3 +1,7 @@
+/**
+ * Mocha-only: Next's Cypress webpack cannot load a spec that imports the
+ * getServerSideProps helper (`ChunkLoadError: Loading chunk spec-N`).
+ */
 import {
   DEPRIZE_PAGE_CACHE_CONTROL,
   getDePrizePageEligibility,

@@ -2,7 +2,7 @@ import { evaluateEligibility } from '@/lib/deprize/eligibility'
 import { shouldCreatePermanentDenial } from '@/lib/deprize/walletObservations'
 import { isRestrictedJurisdiction } from '@/lib/deprize/restrictedJurisdictions'
 import { parseOfacEthList } from '@/lib/deprize/sanctions'
-import { selectSessionWallet } from '@/lib/deprize/sessionWallet'
+import { selectSessionWallet } from '@/lib/deprize/selectSessionWallet'
 import {
   checkVpnOrProxy,
   classifyLocalIp,

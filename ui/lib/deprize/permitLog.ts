@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto'
 import type { Hex } from 'viem'
 import type { DePrizeAttestations } from './attestations'
 import { hashCompliancePermit } from './compliancePermit'
@@ -63,7 +62,7 @@ export function buildPermitIssuanceRecord(args: {
     mintAddress: args.mintAddress,
   })
   return {
-    recordId: randomUUID(),
+    recordId: newRecordId(),
     permitHash,
     wallet: args.wallet,
     deprizeId: Number(args.deprizeId),
@@ -131,4 +130,12 @@ export async function getPermitRecordsForWallet(wallet: string): Promise<{
     console.error('[deprize] permit lookup failed', err)
     return { records: [], failed: true }
   }
+}
+
+function newRecordId(): string {
+  const cryptoApi = globalThis.crypto
+  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
+    return cryptoApi.randomUUID()
+  }
+  return `permit-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
