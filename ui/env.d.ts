@@ -34,5 +34,13 @@ namespace NodeJS {
     // docs/ACCESS_GATE.md.
     MOONBASE_GATE_PASSWORD: string // what a person types into the form
     MOONBASE_GATE_TOKEN: string // random string that becomes the cookie
+    // DePrize eligibility / compliance permit. Server-only — never NEXT_PUBLIC_.
+    DEPRIZE_COMPLIANCE_SIGNER_KEY?: string
+    DEPRIZE_PERMIT_TTL_SECONDS?: string
+    DEPRIZE_ELIGIBILITY_BYPASS?: string
+    DEPRIZE_SANCTIONS_EXTRA_ADDRESSES?: string
+    IPINFO_TOKEN?: string
+    IPAPI_KEY?: string
+    CHAINALYSIS_API_KEY?: string
   }
 }

@@ -15,6 +15,7 @@ import {ILMSRWithTWAP} from "../../src/deprize/interfaces/ILMSRWithTWAP.sol";
 import {IWETH} from "../../src/deprize/interfaces/IWETH.sol";
 import {DePrizeResolve} from "../../script/deprize/DePrizeResolve.s.sol";
 import {MockWETH, MockJBTerminal} from "./DePrizeMint.t.sol";
+import {MintPermitHelper} from "./MintPermitHelper.sol";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -815,7 +816,7 @@ interface ILMSRWithTWAPFactory {
 ///   DEPRIZE_FORK_RPC=<arb-sepolia rpc> forge test --match-contract DePrizeM4ForkTest -vvv
 /// The full bet→resolve→redeem→unwind loop additionally needs the LMSR factory:
 ///   DEPRIZE_FORK_FACTORY=0x<LMSRWithTWAPFactory> (skipped when unset)
-contract DePrizeM4ForkTest is Test {
+contract DePrizeM4ForkTest is Test, MintPermitHelper {
     // Arbitrum-Sepolia deployments (mirror ui/const/config.ts).
     address constant WETH = 0xA441f20115c868dc66bC1977E1c17D4B9A0189c7;
     address constant CTF = 0xa0B1b14515C26acb193cb45Be5508A8A46109a27;
@@ -1007,6 +1008,7 @@ contract DePrizeM4ForkTest is Test {
         );
         vm.prank(owner);
         mint.setMarket(deprizeId, market);
+        _initCompliance(mint, owner);
 
         uint256 ctfWethBefore = IWETH(WETH).balanceOf(CTF);
 
@@ -1069,8 +1071,9 @@ contract DePrizeM4ForkTest is Test {
         uint256 cost = net + ILMSRWithTWAP(market).calcMarketFee(net);
         uint256 value = cost * 2 + 1 ether;
         uint256 before = bettor.balance;
+        (uint256 deadline1, bytes memory signature1) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, slot, qty, cost);
+        mint.bet{value: value}(deprizeId, slot, qty, cost, deadline1, signature1);
         spent = before - bettor.balance; // slice + cost
     }
 

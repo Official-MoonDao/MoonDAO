@@ -8,7 +8,7 @@ sidebar_label: Privacy Policy
 sidebar_position: 1
 slug: /privacy-policy
 ---
-**Last Updated: June 2nd, 2022**
+**Last Updated: September 10, 2026**
 
 ## **MoonDAO™ Website Privacy Policy**
 
@@ -84,21 +84,27 @@ _IP Addresses/Browser Type_
 
 We may collect certain non-personally identifiable information about you and your desktop computer and/or mobile device when you visit many of the pages of the Site. This non-personally identifiable information includes, without limitation, the type of browser that you use (e.g., Safari, Chrome, Internet Explorer), your IP address, the type of operating system that you use (e.g., Windows or iOS) and the domain name of your Internet service provider. We use the non-personally identifiable information that we collect to improve the design and content of the MoonDAO™ Offerings and to enable us to personalize your Internet experience. We also may use this information in the aggregate to analyze usage of the MoonDAO™ Offerings.
 
-_Cookies_ A cookie (“Cookie”) is a piece of data stored on your hard drive containing non-personally identifiable information about you. To find out more about Cookies, please visit www.cookiecentral.com. We do not use Cookies on the Site.
+_Cookies_ A cookie (“Cookie”) is a piece of data stored on your device containing information about your visit. To find out more about Cookies, please visit www.cookiecentral.com. The Site uses Cookies and similar technologies as described below.
 
 Cookies are generally divided into the following categories:
 
-1. _Essential Cookies_: Essential Cookies are Cookies that are required for the operation of our Site, such as Cookies that enable you to log into secure areas. The Site does not employ essential Cookies.
+1. _Essential Cookies_: Essential Cookies are Cookies that are required for the operation of our Site, such as Cookies that enable you to stay signed in or to access a password-gated area. The Site uses essential Cookies for authentication (including our wallet/login provider, Privy) and for access-control on gated pages.
 
-2. _Analytics Cookies_: Analytics Cookies are Cookies that automatically collect information about your use of the Site. The Site does not employ analytics Cookies.
+2. _Analytics Cookies_: Analytics Cookies automatically collect information about your use of the Site. With your consent where required, the Site uses Google Analytics (via Google Tag, with consent mode) and Vercel Analytics. These tools may set Cookies or use local storage and collect page views, events, approximate location, and a pseudonymous identifier.
 
-3. _Functional Cookies_: Functional Cookies are Cookies that remember choices that you make when you visit the Site, such as language options. The Site does not employ functional Cookies.
+3. _Functional Cookies_: Functional Cookies remember choices that you make when you visit the Site. The Site stores a `cookie_consent` value in local storage so we can remember whether you granted or denied analytics consent, and uses a cookie-consent banner except where consent is not required.
 
-Most Internet browsers are initially set up to accept Cookies, but you can reset your browser to refuse all Cookies or to indicate when a Cookie is being sent. To disable and reject certain Cookies, follow the instructions associated with your Internet browser.
+Most Internet browsers are initially set up to accept Cookies, but you can reset your browser to refuse all Cookies or to indicate when a Cookie is being sent. To disable and reject certain Cookies, follow the instructions associated with your Internet browser. You can also change your analytics choice by clearing the Site’s stored consent and reloading the page.
 
 _Behavioral Tracking_
 
-Neither MoonDAO™, nor any third party, use Cookies, pixels or other tracking technology (collectively, “Tracking Technology”) in connection with the Site.
+MoonDAO™ and its service providers use Cookies, local storage, pixels, and similar technologies in connection with the Site for the essential, analytics, and functional purposes described above. We do not use these technologies to serve third-party advertising on the Site.
+
+_Location and eligibility data_
+
+When you visit the Site we may derive your country or region from request headers supplied by our hosting and CDN providers and, where needed, from a third-party IP-geolocation service. We use this information to apply regional product limits (including data-protection restrictions on on-chain profile creation) and, for DePrize, to enforce eligibility rules. We may also screen wallet addresses against sanctions lists before a DePrize bet is authorized.
+
+If you use DePrize, we also record your acceptance of the applicable Terms (wallet, version, time, and derived country) and screen your wallet as described above.
 
 In general, users may also be able to disable some, or all, Internet tracking activity by utilizing the “Do Not Track” setting or similar options within most major Internet browsers. In addition, users may be able to opt-out of Internet tracking utilizing the options made available by the [Network Advertising Initiative](http://www.networkadvertising.org/choices/) or [Digital Advertising Alliance](http://www.aboutads.info/choices/).
 

@@ -11,6 +11,7 @@ import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 import {ILMSRWithTWAP} from "../../src/deprize/interfaces/ILMSRWithTWAP.sol";
 import {IWETH} from "../../src/deprize/interfaces/IWETH.sol";
+import {MintPermitHelper} from "./MintPermitHelper.sol";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -297,8 +298,15 @@ contract RevertingBettor {
         mint = m;
     }
 
-    function placeBet(uint256 deprizeId, uint256 outcomeIndex, uint256 qty, uint256 maxCost) external payable {
-        mint.bet{value: msg.value}(deprizeId, outcomeIndex, qty, maxCost);
+    function placeBet(
+        uint256 deprizeId,
+        uint256 outcomeIndex,
+        uint256 qty,
+        uint256 maxCost,
+        uint256 deadline,
+        bytes calldata signature
+    ) external payable {
+        mint.bet{value: msg.value}(deprizeId, outcomeIndex, qty, maxCost, deadline, signature);
     }
 }
 
@@ -306,7 +314,7 @@ contract RevertingBettor {
 // Tests
 // ---------------------------------------------------------------------------
 
-contract DePrizeMintTest is Test {
+contract DePrizeMintTest is Test, MintPermitHelper {
     DePrizeMint mint;
     DePrizeRegistry registry;
     MockJBTerminal terminal;
@@ -363,6 +371,7 @@ contract DePrizeMintTest is Test {
         mint.setMarket(deprizeId, address(market));
         vm.stopPrank();
 
+        _initCompliance(mint, owner);
         vm.deal(bettor, 100 ether);
     }
 
@@ -382,9 +391,10 @@ contract DePrizeMintTest is Test {
         uint256 expectedRefund = value - expectedSlice - expectedCost;
 
         uint256 balBefore = bettor.balance;
+        (uint256 deadline1, bytes memory signature1) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline1, signature1);
 
         // 5% slice -> Juicebox, bettor as beneficiary (receives the mission's token).
         assertEq(terminal.lastValue(), expectedSlice, "slice value");
@@ -410,9 +420,10 @@ contract DePrizeMintTest is Test {
         uint256 outcomeCost = (qty * PRICE) / 1e18; // 0.5 ETH
         uint256 expectedFee = (outcomeCost * 1e16) / 1e18; // 1% = 0.005 ETH
         assertGt(expectedFee, 0, "fee should be non-zero");
+        (uint256 deadline2, bytes memory signature2) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, 0, qty, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, qty, type(uint256).max, deadline2, signature2);
 
         // The market pulls outcomeCost + fee (not just outcomeCost). If the router
         // under-funded by the fee, the trade would have reverted instead.
@@ -421,8 +432,9 @@ contract DePrizeMintTest is Test {
 
     function testBetUpdatesTwapBeforeTrade() public {
         assertFalse(market.twapUpdated(), "precondition");
+        (uint256 deadline3, bytes memory signature3) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline3, signature3);
         // The router calls updateCumulativeTWAP() (it uses trade(), not the
         // self-calling tradeWithTWAP, so it must update TWAP itself).
         assertTrue(market.twapUpdated(), "TWAP must be updated on every bet");
@@ -438,9 +450,10 @@ contract DePrizeMintTest is Test {
         uint256 value = 20 ether; // slice = 1, budget = 19
         uint256 qty = 19 ether; // cost = 19 (no fee) == budget
         uint256 balBefore = bettor.balance;
+        (uint256 deadline4, bytes memory signature4) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline4, signature4);
 
         assertEq(weth.balanceOf(address(m)), 19 ether, "market collateral == budget");
         assertEq(address(mint).balance, 0, "no stuck ETH");
@@ -460,9 +473,10 @@ contract DePrizeMintTest is Test {
         uint256 value = 1 ether;
         uint256 slice = value / 20;
         uint256 balBefore = bettor.balance;
+        (uint256 deadline5, bytes memory signature5) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline5, signature5);
 
         // Market kept cost - underpull; router holds no WETH or ETH.
         assertEq(weth.balanceOf(address(market)), cost - underpull, "market kept net of underpull");
@@ -491,9 +505,10 @@ contract DePrizeMintTest is Test {
         uint256 cost = outcomeCost + (outcomeCost * 1e16) / 1e18; // 0.505
         uint256 slice = value / 20;
         uint256 balBefore = bettor.balance;
+        (uint256 deadline6, bytes memory signature6) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline6, signature6);
 
         // The stray 1 WETH is untouched by the bet ...
         assertEq(weth.balanceOf(address(mint)), 1 ether, "stray WETH left in the router");
@@ -506,32 +521,36 @@ contract DePrizeMintTest is Test {
     function testBetDeliversViaSingleTransfer() public {
         // Exercises onERC1155Received (single) instead of the batch hook.
         market.setSingleTransfer(true);
+        (uint256 deadline7, bytes memory signature7) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline7, signature7);
         assertEq(ctf.balanceOf(bettor, _positionId(0)), 1 ether, "single-transfer delivery");
     }
 
     function testBetWithNoMintedTokens() public {
         // Market mints nothing: should revert with NoOutcomeTokensReceived.
         market.setSkipMint(true);
+        (uint256 deadline8, bytes memory signature8) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(DePrizeMint.NoOutcomeTokensReceived.selector);
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline8, signature8);
     }
 
     function testBetRevertsNonPositiveCost() public {
         // qty == 0 -> calcNetCost == 0 -> NonPositiveCost.
+        (uint256 deadline9, bytes memory signature9) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(DePrizeMint.NonPositiveCost.selector);
-        mint.bet{value: 1 ether}(deprizeId, 0, 0, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 0, type(uint256).max, deadline9, signature9);
     }
 
     function testBetRevertsWhenRefundFails() public {
         RevertingBettor rb = new RevertingBettor(mint);
         vm.deal(address(rb), 10 ether);
         // leftover refund to rb fails because rb has no payable receive.
+        (uint256 deadline10, bytes memory signature10) = _permit(mint, address(rb), deprizeId);
         vm.expectRevert(DePrizeMint.RefundFailed.selector);
-        rb.placeBet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        rb.placeBet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline10, signature10);
     }
 
     // -- upgradeability -----------------------------------------------------
@@ -552,8 +571,9 @@ contract DePrizeMintTest is Test {
 
     function testBetOnSecondOutcome() public {
         uint256 qty = 2 ether; // cost = 1 ETH
+        (uint256 deadline11, bytes memory signature11) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: 2 ether}(deprizeId, 1, qty, type(uint256).max);
+        mint.bet{value: 2 ether}(deprizeId, 1, qty, type(uint256).max, deadline11, signature11);
         assertEq(ctf.balanceOf(bettor, _positionId(1)), qty);
         assertEq(ctf.balanceOf(bettor, _positionId(0)), 0);
     }
@@ -563,43 +583,48 @@ contract DePrizeMintTest is Test {
     function testBetRevertsWhenBettingClosed() public {
         vm.prank(owner);
         registry.lock(deprizeId); // OPEN -> LOCKED, betting no longer open
+        (uint256 deadline12, bytes memory signature12) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline12, signature12);
     }
 
     function testBetRevertsWhenCancellationPending() public {
         vm.prank(owner);
         registry.announceCancellation(deprizeId); // bettingOpen becomes false
+        (uint256 deadline13, bytes memory signature13) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline13, signature13);
     }
 
     function testBetRevertsBadOutcomeIndex() public {
+        (uint256 deadline14, bytes memory signature14) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BadOutcomeIndex.selector, deprizeId, uint8(3)));
-        mint.bet{value: 1 ether}(deprizeId, 3, 1 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 3, 1 ether, type(uint256).max, deadline14, signature14);
     }
 
     function testBetRevertsMaxCostExceeded() public {
         uint256 qty = 1 ether; // outcome cost 0.5 + 1% fee = 0.505 ETH total
         uint256 cap = 0.4 ether; // below total cost
+        (uint256 deadline15, bytes memory signature15) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.505 ether, 0.95 ether, cap));
-        mint.bet{value: 1 ether}(deprizeId, 0, qty, cap);
+        mint.bet{value: 1 ether}(deprizeId, 0, qty, cap, deadline15, signature15);
     }
 
     function testBetRevertsWhenCostExceedsBudget() public {
         // qty needs 0.505 ETH total cost but only 0.095 ETH budget from 0.1 ETH value.
         uint256 qty = 1 ether;
+        (uint256 deadline16, bytes memory signature16) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(
             abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.505 ether, 0.095 ether, type(uint256).max)
         );
-        mint.bet{value: 0.1 ether}(deprizeId, 0, qty, type(uint256).max);
+        mint.bet{value: 0.1 ether}(deprizeId, 0, qty, type(uint256).max, deadline16, signature16);
     }
 
     function testBetRevertsMarketNotSet() public {
@@ -608,10 +633,11 @@ contract DePrizeMintTest is Test {
         registry.setCondition(other, keccak256("c2"));
         registry.open(other);
         vm.stopPrank();
+        (uint256 deadline17, bytes memory signature17) = _permit(mint, bettor, other);
 
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketNotSet.selector, other));
-        mint.bet{value: 1 ether}(other, 0, 1 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(other, 0, 1 ether, type(uint256).max, deadline17, signature17);
     }
 
     // -- admin: setMarket validations --------------------------------------
@@ -701,6 +727,42 @@ contract DePrizeMintTest is Test {
         assertTrue(mint.supportsInterface(type(IERC165).interfaceId), "ERC165");
         assertFalse(mint.supportsInterface(0xffffffff), "unknown");
     }
+
+    // -- compliance permit --------------------------------------------------
+
+    function testBetRevertsWhenComplianceSignerUnset() public {
+        vm.prank(owner);
+        mint.setComplianceSigner(address(0));
+        (uint256 deadline, bytes memory signature) = _permit(mint, bettor, deprizeId);
+        vm.prank(bettor);
+        vm.expectRevert(DePrizeMint.ComplianceSignerUnset.selector);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, signature);
+    }
+
+    function testBetRevertsOnExpiredPermit() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        bytes32 digest = mint.hashPermit(bettor, deprizeId, deadline);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(COMPLIANCE_PK, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+        vm.warp(deadline + 1);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.PermitExpired.selector, deadline));
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, signature);
+    }
+
+    function testBetRevertsOnWrongWalletPermit() public {
+        address other = address(0xBEEF);
+        (uint256 deadline, bytes memory signature) = _permit(mint, other, deprizeId);
+        vm.prank(bettor);
+        vm.expectRevert();
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, signature);
+    }
+
+    function testSetComplianceSignerOnlyOwner() public {
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", bettor));
+        mint.setComplianceSigner(bettor);
+    }
 }
 
 /// @notice Optional integration test against the real, already-deployed Gnosis CTF
@@ -710,7 +772,7 @@ contract DePrizeMintTest is Test {
 ///         `DEPRIZE_FORK_RPC` is set, so CI without an RPC is unaffected.
 ///
 /// Run with: DEPRIZE_FORK_RPC=<arb-sepolia rpc> forge test --match-contract DePrizeMintForkTest -vvv
-contract DePrizeMintForkTest is Test {
+contract DePrizeMintForkTest is Test, MintPermitHelper {
     // Arbitrum-Sepolia deployments (mirror ui/const/config.ts).
     address constant WETH = 0xA441f20115c868dc66bC1977E1c17D4B9A0189c7;
     address constant CTF = 0xa0B1b14515C26acb193cb45Be5508A8A46109a27;
@@ -764,6 +826,7 @@ contract DePrizeMintForkTest is Test {
         mint.setMarket(deprizeId, MARKET); // validates pmSystem()/collateralToken()/slots
         vm.stopPrank();
 
+        _initCompliance(mint, owner);
         vm.deal(bettor, 100 ether);
     }
 
@@ -787,8 +850,9 @@ contract DePrizeMintForkTest is Test {
 
         // Outcome tokens are delivered to the bettor via the ERC-1155 acceptance
         // callbacks (position-id math handled inside the live CTF).
+        (uint256 deadline, bytes memory signature) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, cost); // maxCost = exact quote
+        mint.bet{value: value}(deprizeId, 0, qty, cost, deadline, signature);
 
         // 5% routed to the (mock) Juicebox terminal.
         assertEq(terminal.lastValue(), expectedSlice, "slice");
@@ -811,17 +875,19 @@ contract DePrizeMintForkTest is Test {
 
         uint256 value = cost * 2 + 1 ether;
         uint256 cap = cost - 1; // just below the quote
+        (uint256 deadline18, bytes memory signature18) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, cost, value - value / 20, cap));
-        mint.bet{value: value}(deprizeId, 0, qty, cap);
+        mint.bet{value: value}(deprizeId, 0, qty, cap, deadline18, signature18);
     }
 
     function testForkBettingClosedGate() public {
         if (!_forkEnabled()) return;
         vm.prank(owner);
         registry.lock(deprizeId);
+        (uint256 deadline19, bytes memory signature19) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, 0, 0.01 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 0.01 ether, type(uint256).max, deadline19, signature19);
     }
 }
