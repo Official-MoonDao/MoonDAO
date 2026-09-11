@@ -1,3 +1,4 @@
+import { getAccessToken } from '@privy-io/react-auth'
 import DePrizeMintABI from 'const/abis/DePrizeMint.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import { useEffect, useMemo, useState } from 'react'
@@ -11,7 +12,15 @@ import {
   DEPRIZE_TERMS_VERSION,
   UNIT,
 } from '@/lib/deprize/constants'
-import { fmt, fmtEthWithUsd, fmtUsdFromEth, formatPrizeTokenLabel, toEth, toWei } from '@/lib/deprize/format'
+import { eligibilityMessage, type EligibilityReason } from '@/lib/deprize/eligibility'
+import {
+  fmt,
+  fmtEthWithUsd,
+  fmtUsdFromEth,
+  formatPrizeTokenLabel,
+  toEth,
+  toWei,
+} from '@/lib/deprize/format'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
@@ -19,8 +28,8 @@ import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import EthUsd from '@/components/deprize/EthUsd'
 import client from '@/lib/thirdweb/client'
+import EthUsd from '@/components/deprize/EthUsd'
 import Modal from '@/components/layout/Modal'
 import StandardButton from '@/components/layout/StandardButton'
 
@@ -68,6 +77,12 @@ export default function BetModal({
   // Click-wrap: the Terms are only enforceable with an affirmative act, so the
   // box starts unchecked on every open and gates the Bet button.
   const [termsAccepted, setTermsAccepted] = useState(false)
+  const [eligibility, setEligibility] = useState<{
+    status: 'loading' | 'ready' | 'error'
+    allowed: boolean
+    reason?: EligibilityReason
+    message?: string
+  }>({ status: 'loading', allowed: false })
   const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
     useDePrizeChainGuard(chain)
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
@@ -80,8 +95,7 @@ export default function BetModal({
   const sliceEth = toEth(betSlice(betAmountWei)) ?? 0
 
   const canBet = /^0x[0-9a-fA-F]{40}$/.test(mintAddress)
-  const insufficient =
-    betAmountNum > 0 && betAmountNum > spendableEth + 1e-12
+  const insufficient = betAmountNum > 0 && betAmountNum > spendableEth + 1e-12
 
   // Quote reads go through the batching-disabled read client on the thirdweb
   // RPC edge (RPC batching silently breaks decodes in this thirdweb version).
@@ -133,6 +147,67 @@ export default function BetModal({
     }
   }, [betAmountWei, lmsr, outcomeIndex, numOutcomes])
 
+  const wallet = typeof account?.address === 'string' ? account.address : ''
+
+  useEffect(() => {
+    if (!wallet) {
+      setEligibility({
+        status: 'ready',
+        allowed: false,
+        reason: 'invalid-wallet',
+        message: eligibilityMessage('invalid-wallet'),
+      })
+      return
+    }
+    let cancelled = false
+    setEligibility({ status: 'loading', allowed: false })
+    ;(async () => {
+      const accessToken = await getAccessToken().catch(() => null)
+      const res = await fetch(`/api/deprize/eligibility?wallet=${encodeURIComponent(wallet)}`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      })
+      const data = await res.json()
+      if (cancelled) return
+      setEligibility({
+        status: 'ready',
+        allowed: Boolean(data.allowed),
+        reason: data.reason,
+        message: data.message || eligibilityMessage(data.reason || 'screening-unavailable'),
+      })
+    })().catch(() => {
+      if (cancelled) return
+      setEligibility({
+        status: 'error',
+        allowed: false,
+        reason: 'screening-unavailable',
+        message: eligibilityMessage('screening-unavailable'),
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [wallet])
+
+  const onToggleTerms = (checked: boolean) => {
+    setTermsAccepted(checked)
+    if (!checked || !wallet) return
+    ;(async () => {
+      const accessToken = await getAccessToken().catch(() => null)
+      await fetch('/api/deprize/accept-terms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          wallet,
+          accepted: true,
+          termsVersion: DEPRIZE_TERMS_VERSION,
+        }),
+      })
+    })().catch((err) => console.warn('[deprize] accept-terms failed', err))
+  }
+
   const placeBet = async () => {
     if (!account || !mint) return
     if (betAmountWei <= 0n) {
@@ -141,6 +216,12 @@ export default function BetModal({
     }
     if (!termsAccepted) {
       toast.error('Please accept the DePrize Terms to continue.', { style: toastStyle })
+      return
+    }
+    if (!eligibility.allowed) {
+      toast.error(eligibility.message || eligibilityMessage('screening-unavailable'), {
+        style: toastStyle,
+      })
       return
     }
     // Re-checked here as well as in the button: the wallet can be switched
@@ -154,16 +235,45 @@ export default function BetModal({
       const qty = await quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes)
       if (qty <= 0n) throw new Error('Bet too small for this market.')
       toast.dismiss('quote')
+      toast.loading('Checking eligibility…', { id: 'permit', style: toastStyle })
+      const accessToken = await getAccessToken().catch(() => null)
+      const permitRes = await fetch('/api/deprize/permit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          wallet,
+          deprizeId,
+          chainId: chain.id,
+          accepted: true,
+          termsVersion: DEPRIZE_TERMS_VERSION,
+        }),
+      })
+      const permit = await permitRes.json()
+      if (!permitRes.ok || !permit.signature || !permit.deadline) {
+        throw new Error(permit.message || eligibilityMessage(permit.reason || 'permit-unavailable'))
+      }
+      toast.dismiss('permit')
       toast.loading('Placing bet…', { id: 'bet', style: toastStyle })
       // The router splits msg.value (5% slice -> this DePrize's Juicebox project
       // / project token, 95% -> market) and caps the trade cost at the 95%
-      // budget (maxCost), refunding any unspent ETH.
+      // budget (maxCost), refunding any unspent ETH. deadline + signature are
+      // the server-issued CompliancePermit that the contract verifies.
       await sendDePrizeTx(
         account,
         prepareContractCall({
           contract: mint,
           method: 'bet' as string,
-          params: [BigInt(deprizeId), BigInt(outcomeIndex), qty, budget],
+          params: [
+            BigInt(deprizeId),
+            BigInt(outcomeIndex),
+            qty,
+            budget,
+            BigInt(permit.deadline),
+            permit.signature,
+          ],
           value: betAmountWei,
         })
       )
@@ -171,13 +281,17 @@ export default function BetModal({
       const qtyNum = Number(qty) / Number(UNIT)
       fireDePrizeConfetti()
       toast.success(
-        `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ≈ ${fmtEthWithUsd(qtyNum, ethPrice)} if it wins.`,
+        `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ≈ ${fmtEthWithUsd(
+          qtyNum,
+          ethPrice
+        )} if it wins.`,
         { style: toastStyle, duration: 8000 }
       )
       onDone(outcomeIndex, betAmountNum, qtyNum)
       onClose()
     } catch (err: any) {
       toast.dismiss('quote')
+      toast.dismiss('permit')
       toast.dismiss('bet')
       console.error('[deprize] bet failed', err)
       toast.error(err?.shortMessage || err?.message || 'Bet failed.', {
@@ -250,7 +364,11 @@ export default function BetModal({
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">To win if it wins</span>
                   <span className="text-moon-green text-lg font-bold">
-                    <EthUsd eth={quote.qty} approx usdClassName="text-moon-green/70 font-normal text-sm" />
+                    <EthUsd
+                      eth={quote.qty}
+                      approx
+                      usdClassName="text-moon-green/70 font-normal text-sm"
+                    />
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -266,9 +384,7 @@ export default function BetModal({
               </p>
             )}
             <div className="flex items-center justify-between mt-1">
-              <span className="text-gray-500 text-xs">
-                Prize contribution (5% → {prizeToken})
-              </span>
+              <span className="text-gray-500 text-xs">Prize contribution (5% → {prizeToken})</span>
               <span className="text-gray-300 text-xs">
                 <EthUsd eth={sliceEth} prize usdClassName="text-gray-400 font-normal" />
               </span>
@@ -282,10 +398,10 @@ export default function BetModal({
         <div className="text-amber-300/90 text-[11px] leading-snug space-y-1.5">
           <p>
             You are buying outcome tokens for this competitor. If this competitor wins, they redeem
-            for their full share; if it loses, they are <span className="font-semibold">worth $0</span>.
-            Only
-            bet what you can afford to lose. Read this DePrize&apos;s rules before betting —
-            resolution is final and cannot be reversed.
+            for their full share; if it loses, they are{' '}
+            <span className="font-semibold">worth $0</span>. Only bet what you can afford to lose.
+            Read this DePrize&apos;s rules before betting — resolution is final and cannot be
+            reversed.
           </p>
           <p>
             5% of every bet funds this DePrize&apos;s launchpad prize pool
@@ -312,11 +428,19 @@ export default function BetModal({
           </p>
         </div>
 
+        {eligibility.status === 'loading' ? (
+          <p className="text-gray-400 text-sm">Checking eligibility…</p>
+        ) : !eligibility.allowed ? (
+          <p className="text-amber-300 text-sm">
+            {eligibility.message || eligibilityMessage('screening-unavailable')}
+          </p>
+        ) : null}
+
         <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
           <input
             type="checkbox"
             checked={termsAccepted}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
+            onChange={(e) => onToggleTerms(e.target.checked)}
             className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
           />
           <span>
@@ -380,12 +504,22 @@ export default function BetModal({
         ) : (
           <StandardButton
             onClick={placeBet}
-            disabled={busy || betAmountWei <= 0n || !termsAccepted}
+            disabled={
+              busy ||
+              betAmountWei <= 0n ||
+              !termsAccepted ||
+              !eligibility.allowed ||
+              eligibility.status !== 'ready'
+            }
             className="rounded-full w-full"
             backgroundColor="bg-moon-green"
           >
             {busy
               ? 'Placing bet…'
+              : eligibility.status === 'loading'
+              ? 'Checking eligibility…'
+              : !eligibility.allowed
+              ? 'Betting unavailable'
               : betAmountNum <= 0
               ? 'Enter an amount'
               : !termsAccepted

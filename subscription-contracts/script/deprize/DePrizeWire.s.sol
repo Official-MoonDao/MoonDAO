@@ -102,6 +102,16 @@ contract DePrizeWire is Script {
             if (doWire && mint.feeRouter() != address(feeRouter)) {
                 mint.setFeeRouter(address(feeRouter));
             }
+
+            address signer = vm.envOr("DEPRIZE_COMPLIANCE_SIGNER", address(0));
+            if (signer != address(0)) {
+                bytes memory setSigner = abi.encodeCall(DePrizeMint.setComplianceSigner, (signer));
+                console.log("5.8 mint.setComplianceSigner");
+                console.logBytes(setSigner);
+                if (doWire && mint.complianceSigner() != signer) {
+                    mint.setComplianceSigner(signer);
+                }
+            }
         }
 
         address lmsrOwner = ILMSRWithTWAP(market).owner();

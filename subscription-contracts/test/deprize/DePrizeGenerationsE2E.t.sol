@@ -14,6 +14,7 @@ import {IConditionalTokens} from "../../src/deprize/interfaces/IConditionalToken
 import {DePrizeResolve} from "../../script/deprize/DePrizeResolve.s.sol";
 import {MockResolvingCTF} from "./DePrizeRedeem.t.sol";
 import {MockWETH, MockJBTerminal} from "./DePrizeMint.t.sol";
+import {MintPermitHelper} from "./MintPermitHelper.sol";
 
 /// @dev LMSR stand-in that supports BOTH directions. Buys mint outcome tokens and
 ///      deliver them through the ERC-1155 acceptance hook (mirroring the real
@@ -142,7 +143,7 @@ contract GenMarket is IERC1155Receiver {
 ///         real redeem helper, faithful CTF. Money goes in as bets on generation 1,
 ///         the roster forks, and every holder either sells out or redeems against a
 ///         lineage-resolved payout vector. Nothing is stranded.
-contract DePrizeGenerationsE2ETest is Test {
+contract DePrizeGenerationsE2ETest is Test, MintPermitHelper {
     DePrizeRegistry registry;
     DePrizeMint mint;
     DePrizeRedeem redeemer;
@@ -193,6 +194,7 @@ contract DePrizeGenerationsE2ETest is Test {
             )
         );
 
+        _initCompliance(mint, owner);
         redeemer = new DePrizeRedeem(address(registry), address(ctf), address(weth));
 
         // Collateral backing for redemptions (the real CTF holds it from splitPosition).
@@ -262,8 +264,9 @@ contract DePrizeGenerationsE2ETest is Test {
     }
 
     function _bet(address who, uint256 deprizeId, uint256 outcomeIndex) internal {
+        (uint256 deadline1, bytes memory signature1) = _permit(mint, who, deprizeId);
         vm.prank(who);
-        mint.bet{value: 3 ether}(deprizeId, outcomeIndex, QTY, 3 ether);
+        mint.bet{value: 3 ether}(deprizeId, outcomeIndex, QTY, 3 ether, deadline1, signature1);
     }
 
     /// @dev Push the resolve script's payout vector on-chain as the oracle.
@@ -306,9 +309,10 @@ contract DePrizeGenerationsE2ETest is Test {
         assertFalse(registry.isRefundable(g1), "supersede must not open refunds");
 
         // New bets on the old generation are refused...
+        (uint256 deadline2, bytes memory signature2) = _permit(mint, carol, g1);
         vm.prank(carol);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, g1));
-        mint.bet{value: 3 ether}(g1, 0, QTY, 3 ether);
+        mint.bet{value: 3 ether}(g1, 0, QTY, 3 ether, deadline2, signature2);
 
         // ...but the old market is still Running, so holders can exit at will.
         assertEq(m1.stage(), 0, "old market stays running as a sell-only venue");

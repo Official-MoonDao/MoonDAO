@@ -11,6 +11,7 @@ import {DePrizeMint} from "../../src/deprize/DePrizeMint.sol";
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 import {MockJBTerminal, MockWETH, MockCTF} from "./DePrizeMint.t.sol";
+import {MintPermitHelper} from "./MintPermitHelper.sol";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -474,7 +475,7 @@ contract DePrizeFeeRouterTest is Test {
 // DePrizeMint integration: auto-sweep on every bet
 // ---------------------------------------------------------------------------
 
-contract DePrizeMintFeeRouterIntegrationTest is Test {
+contract DePrizeMintFeeRouterIntegrationTest is Test, MintPermitHelper {
     DePrizeFeeRouter router;
     DePrizeMint mint;
     DePrizeRegistry registry;
@@ -533,6 +534,7 @@ contract DePrizeMintFeeRouterIntegrationTest is Test {
         mint.setFeeRouter(address(router));
         vm.stopPrank();
 
+        _initCompliance(mint, owner);
         market.transferOwnership(address(router));
 
         vm.deal(bettor, 100 ether);
@@ -550,9 +552,10 @@ contract DePrizeMintFeeRouterIntegrationTest is Test {
         uint256 slice = value / 20; // 5% -> JB
         uint256 net = (qty * PRICE) / 1e18; // 0.5 ETH
         uint256 fee = (net * 1e16) / 1e18; // 1% -> swept to JB
+        (uint256 deadline1, bytes memory signature1) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline1, signature1);
 
         // JB received the 5% slice AND the swept 1% trade fee.
         assertEq(terminal.totalReceived(), slice + fee);
@@ -570,8 +573,9 @@ contract DePrizeMintFeeRouterIntegrationTest is Test {
         market.transferOwnership(address(0xDEAD));
 
         uint256 value = 1 ether;
+        (uint256 deadline2, bytes memory signature2) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, 1 ether, type(uint256).max);
+        mint.bet{value: value}(deprizeId, 0, 1 ether, type(uint256).max, deadline2, signature2);
 
         // Bet went through; only the 5% slice reached JB (fee sweep failed quietly).
         assertEq(terminal.totalReceived(), value / 20);
@@ -583,9 +587,10 @@ contract DePrizeMintFeeRouterIntegrationTest is Test {
     function testBetWithoutFeeRouterLeavesFeesOnMarket() public {
         vm.prank(owner);
         mint.setFeeRouter(address(0));
+        (uint256 deadline3, bytes memory signature3) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline3, signature3);
 
         assertEq(terminal.totalReceived(), uint256(1 ether) / 20);
         uint256 net = (uint256(1 ether) * PRICE) / 1e18;
