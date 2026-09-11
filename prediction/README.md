@@ -66,7 +66,7 @@ deployment:
 INPUT_FILE=LMSRWithTWAPFactory.etherscan.json \
 CONTRACT_NAME_OVERRIDE=contracts/LMSRWithTWAPFactory.sol:LMSRWithTWAPFactory \
 ETHERSCAN_API_KEY=... node scripts/verify-on-arbiscan.js \
-  LMSRWithTWAPFactory 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8 \
+  LMSRWithTWAPFactory 0x299F163705AbBFa1A8DE7670F33171730F828F3D \
   Fixed192x64Math=0x6cc53E9158aeFd3aB65B1B053844D083C4b7C53b
 ```
 

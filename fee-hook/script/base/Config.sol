@@ -198,7 +198,12 @@ contract Config is Script {
 
         LMSR_MARKET_ADDRESSES[SEP] = 0x11DCe86c804ca088A0d9036eeE368e4055b235dE;
         LMSR_MARKET_ADDRESSES[ARB_SEP] = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
-        LMSR_FACTORY_ADDRESSES[ARBITRUM] = 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8;
+        // H-01 replacement for DePrize 1. Pre-fix clone: 0x351aF5…F211.
+        LMSR_MARKET_ADDRESSES[ARBITRUM] = 0xB7fE1530D300C505295B42268e127ceea5aDe703;
+        // H-01-fixed factories. Phase 2 factory 0xb40d77bD… still exists and
+        // must not be used to create new markets.
+        LMSR_FACTORY_ADDRESSES[SEP] = 0x18778032c44Cd0a7dF81eF9bF3f5aF1b03471a7a;
+        LMSR_FACTORY_ADDRESSES[ARBITRUM] = 0x299F163705AbBFa1A8DE7670F33171730F828F3D;
     }
 
     /// @notice Resolve WETH + ConditionalTokens for `chainId`, or revert with a

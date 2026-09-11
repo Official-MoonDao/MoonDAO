@@ -32,7 +32,7 @@ import { sepolia } from 'viem/chains'
 const REGISTRY = '0x299F163705AbBFa1A8DE7670F33171730F828F3D' as const
 const MINT = '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8' as const
 const FEE_ROUTER = '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a' as const
-const FACTORY = '0x8787Dc3c2b48b19D3Cbd25226Cd6cEAff3398de1' as const
+const FACTORY = '0x18778032c44Cd0a7dF81eF9bF3f5aF1b03471a7a' as const
 const CTF = '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8' as const
 const WETH = '0x8cfF28F922AeEe80d3a0663e735681469F7374c6' as const
 const MISSION_CREATOR = '0xa692eEd67c4D2C1C73DC0515240d27cf7d6fF9D1' as const

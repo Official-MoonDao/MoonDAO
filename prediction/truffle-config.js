@@ -23,12 +23,15 @@ require("dotenv").config();
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 function hd(rpcEnv, fallbackRpc) {
-  const key = process.env.PRIVATE_KEY;
+  const key = process.env.PRIVATE_KEY || process.env.DEPLOYER_PK;
   if (!key) {
     throw new Error("PRIVATE_KEY is required for this Truffle network");
   }
-  return () =>
-    new HDWalletProvider(key.replace(/^0x/i, ""), process.env[rpcEnv] || fallbackRpc);
+  const rpc =
+    process.env[rpcEnv] ||
+    (rpcEnv === "SEPOLIA_RPC_URL" ? process.env.SEPOLIA_RPC : undefined) ||
+    fallbackRpc;
+  return () => new HDWalletProvider(key.replace(/^0x/i, ""), rpc);
 }
 
 module.exports = {
@@ -66,6 +69,14 @@ module.exports = {
       confirmations: 1,
       timeoutBlocks: 200,
       skipDryRun: true,
+    },
+    sepolia: {
+      provider: hd("SEPOLIA_RPC_URL", "https://ethereum-sepolia-rpc.publicnode.com"),
+      network_id: 11155111,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+      gas: 8_000_000,
     },
   },
   compilers: {

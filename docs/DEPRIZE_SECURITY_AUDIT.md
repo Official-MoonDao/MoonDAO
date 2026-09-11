@@ -464,6 +464,11 @@ Recommended actions before the Touchdown mainnet launch:
    markets so `trade`/`tradeWithTWAP` are gated even if a future subclass regresses,
    and keep `DePrizeMint`'s pattern of calling `trade` directly.
 
+**Done 2026-09-11.** New factories and replacement markets (same CTF conditions)
+are recorded in [`DEPRIZE_ARBITRUM_ADDRESSES.md`](./DEPRIZE_ARBITRUM_ADDRESSES.md).
+The pre-fix Arbitrum clone `0x351aF5…F211` and Sepolia clones remain disposable.
+The PoC below still targets that Arbitrum clone.
+
 ---
 
 ## 8. Reproduction & artifacts
