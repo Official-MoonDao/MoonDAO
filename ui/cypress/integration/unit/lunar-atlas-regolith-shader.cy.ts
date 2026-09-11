@@ -28,6 +28,8 @@ import {
   DETAIL_OCTAVES,
   GRADED_SURFACE_FRAGMENT_PATCHES,
   GRADED_SURFACE_VERTEX_PATCHES,
+  HARDWARE_OCCLUSION_FRAGMENT_PATCHES,
+  HARDWARE_OCCLUSION_VERTEX_PATCHES,
   STAIN_FRAGMENT_PATCHES,
   TERRAIN_FRAGMENT_PATCHES,
   TERRAIN_VERTEX_PATCHES,
@@ -539,5 +541,82 @@ describe('stain patches against three s real Basic source', () => {
     const chunkCount = src.match(/#include <colorspace_fragment>/g) ?? []
     expect(chunkCount.length).to.equal(1)
     expect(src.slice(src.indexOf('#include <colorspace_fragment>'))).to.not.contain('gl_FragColor.rgb =')
+  })
+})
+
+describe('hardware occlusion patches against three s real Standard and Physical sources', () => {
+  // The patches that stop a lander parked inside a kilometre-long terrain shadow
+  // from rendering in full sun. They are applied to whatever material a model
+  // shipped with — GLB imports and hand-built meshes both — so they have to hold
+  // against BOTH standard and physical, and a missed anchor here is a model going
+  // black at mount, inside onBeforeCompile, where no build step sees it.
+  for (const key of ['standard', 'physical'] as const) {
+    it(`applies cleanly to ShaderLib.${key}`, () => {
+      const shader = ShaderLib[key]
+      expect(() =>
+        applyShaderPatches(shader.vertexShader, HARDWARE_OCCLUSION_VERTEX_PATCHES)
+      ).to.not.throw()
+      expect(() =>
+        applyShaderPatches(shader.fragmentShader, HARDWARE_OCCLUSION_FRAGMENT_PATCHES)
+      ).to.not.throw()
+    })
+  }
+
+  const frag = resolveIncludes(
+    applyShaderPatches(ShaderLib.physical.fragmentShader, HARDWARE_OCCLUSION_FRAGMENT_PATCHES)
+  )
+  const vert = resolveIncludes(
+    applyShaderPatches(ShaderLib.physical.vertexShader, HARDWARE_OCCLUSION_VERTEX_PATCHES)
+  )
+
+  it('declares the world-position varying on both sides of the pipe', () => {
+    expect(vert).to.contain('varying vec3 vRegolithWorldPos')
+    expect(frag).to.contain('varying vec3 vRegolithWorldPos')
+  })
+
+  it('evaluates the occlusion before the light loop and from the world position', () => {
+    // Hardware UVs mean whatever the modeller meant by them, so the skyline lookup
+    // must reconstruct the patch UV from the world — anchoring on the mesh's own uv
+    // would sample the horizon at a texture coordinate, not at a place.
+    const evalAt = frag.indexOf('regolithApplyOcclusion(regolithPatchUv(vRegolithWorldPos)')
+    expect(evalAt).to.be.greaterThan(-1)
+    expect(evalAt).to.be.lessThan(frag.indexOf('RE_Direct('))
+  })
+
+  it('gates ONLY the direct terms, after the loop', () => {
+    // Equivalent to attenuating the light itself precisely because the scene has
+    // one direct light — and it must leave indirect alone: the environment map IS
+    // the regolith bounce, which is exactly what still reaches a shadowed lander.
+    const dd = frag.indexOf('reflectedLight.directDiffuse *= regolithDirectOcclusion')
+    const ds = frag.indexOf('reflectedLight.directSpecular *= regolithDirectOcclusion')
+    expect(dd).to.be.greaterThan(-1)
+    expect(ds).to.be.greaterThan(-1)
+    expect(frag).to.not.contain('indirectDiffuse *= regolithDirectOcclusion')
+    expect(frag).to.not.contain('indirectSpecular *= regolithDirectOcclusion')
+    // And it keeps the material's own BRDF: this is a gate, not the Hapke swap the
+    // regolith surfaces get.
+    expect(frag).to.not.contain('RE_Direct_Hapke')
+  })
+
+  it('defaults to fully lit, so the design sun cannot be changed by mounting it', () => {
+    // The declaration initialises to 1.0 and tan(44.46°) beats every skyline tangent
+    // on the patch, so at the design sun this whole mechanism is a provable no-op.
+    expect(frag).to.contain('float regolithDirectOcclusion = 1.0')
+  })
+
+  it('fades the site floodlighting in by exactly what it fades the sun out by', () => {
+    // The base's own lighting, so hardware in a terrain shadow is readable rather
+    // than a silhouette. The (1.0 - occlusion) weight is what makes it safe: it is
+    // identically zero wherever the sun reaches, and the sun reaches everywhere at
+    // the design sun, so this cannot alter the shipped view. A constant fill, or one
+    // weighted any other way, would wash out the daylight frame.
+    expect(frag).to.contain('uniform vec3 siteLight')
+    expect(frag).to.contain(
+      'reflectedLight.indirectDiffuse += siteLight * (1.0 - regolithDirectOcclusion)'
+    )
+    // Indirect, not direct: added to the direct term it would be multiplied by the
+    // very occlusion it is derived from and vanish. Anchored on the full member
+    // expression because "indirectDiffuse" ends with the string "directDiffuse".
+    expect(frag).to.not.contain('reflectedLight.directDiffuse += siteLight')
   })
 })

@@ -373,6 +373,63 @@ export const TERRAIN_VERTEX_PATCHES: ShaderPatch[] = worldPosVertexPatches('vReg
 export const GRADED_SURFACE_VERTEX_PATCHES: ShaderPatch[] =
   worldPosVertexPatches('vRegolithWorldPos')
 
+// ---------------------------------------------------------------------------
+// Hardware under the skyline
+//
+// The landers, habitats, panels and rovers are NOT regolith — they keep their own
+// PBR in full, specular lobe and all. But they stand on the same ground under the
+// same sun, and until these patches existed they ignored the skyline field
+// entirely: a Starship parked inside a kilometre-long terrain shadow rendered in
+// full sunlight, because the only shadows it knew about were the shadow map's, and
+// the ridge casting on it is kilometres outside the shadow camera. At the design
+// sun that is invisible (the skyline shadows 0.00% of the patch); at the real sun
+// it made half the hardware glow in the dark.
+//
+// So this is the minimal intervention: evaluate the same occlusion the terrain
+// evaluates, and gate the DIRECT light with it. Multiplying reflectedLight's direct
+// terms after the light loop is exactly equivalent to attenuating the light,
+// because this scene has exactly one direct light — the no-ambient/no-hemisphere
+// decision documented in MoonGlobe is what makes this three-line patch sufficient.
+// Indirect (the environment map) is left alone on purpose: it is the regolith
+// bounce, and a shadowed lander really is still lit faintly by lit ground nearby.
+// Emissive is untouched too, which is what keeps beacon lights alive in shadow.
+// ---------------------------------------------------------------------------
+export const HARDWARE_OCCLUSION_VERTEX_PATCHES: ShaderPatch[] =
+  worldPosVertexPatches('vRegolithWorldPos')
+
+export const HARDWARE_OCCLUSION_FRAGMENT_PATCHES: ShaderPatch[] = [
+  {
+    label: 'declare the skyline occlusion (hardware)',
+    find: '#include <common>',
+    insert: `#include <common>
+uniform vec3 siteLight;
+${REGOLITH_OCCLUSION_GLSL}`,
+  },
+  // Hardware UVs mean whatever the modeller meant by them, so its position in the
+  // skyline field is reconstructed from the world, exactly as the roads do it.
+  occlusionPatch('regolithPatchUv(vRegolithWorldPos)', 'vRegolithWorldPos'),
+  {
+    label: 'gate the direct sun on hardware with the skyline test',
+    find: '#include <lights_fragment_end>',
+    insert: `#include <lights_fragment_end>
+reflectedLight.directDiffuse *= regolithDirectOcclusion;
+reflectedLight.directSpecular *= regolithDirectOcclusion;
+// The base's own floodlighting, standing in for lighting design we have not
+// done. Faded in by exactly what the sun is faded out by, so it is IDENTICALLY
+// ZERO wherever the sun reaches — which is everywhere at the design sun, making
+// this term provably invisible in the shipped view — and full only inside a
+// terrain shadow. Any surface facing any direction gets it, because a lot lit by
+// a ring of masts genuinely is flat-lit; giving it a direction would mean
+// choosing a fixture position per district, which is the design work this is
+// deliberately not pretending to do.
+//
+// Added to indirect rather than direct so it cannot be re-gated by the skyline
+// test it is derived from, and so the shadow map still shades hardware's own
+// self-shadowed faces on top of it.
+reflectedLight.indirectDiffuse += siteLight * (1.0 - regolithDirectOcclusion) * diffuseColor.rgb;`,
+  },
+]
+
 export const TERRAIN_FRAGMENT_PATCHES: ShaderPatch[] = [
   regolithDeclarationsPatch(`uniform sampler2D terrainNormalMap;
 uniform sampler2D detailSlopeMap;

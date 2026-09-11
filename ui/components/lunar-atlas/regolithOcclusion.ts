@@ -30,9 +30,21 @@ import {
   SUN_LOCAL_ELEV_DEG,
 } from '@/lib/lunar-atlas/sun'
 import { litGroundRadiance, shadowFillRadiance } from '@/lib/lunar-atlas/regolith'
+import {
+  HARDWARE_OCCLUSION_FRAGMENT_PATCHES,
+  HARDWARE_OCCLUSION_VERTEX_PATCHES,
+  applyShaderPatches,
+} from '@/lib/lunar-atlas/regolithShader'
 import { loadInnerField } from './useTerrainSampler'
 
 const HORIZON_TEXTURES = Math.ceil(HORIZON_AZIMUTHS / 4)
+
+// The colour and strength of the base's own working lights. Cool white, because
+// every surface fixture flown or proposed is an LED array — and slightly blue
+// against the warm-grey sun, which is what makes a lit lot read as artificially
+// lit rather than as underexposed daylight.
+const SITE_LIGHT_COLOR = '#cdd8ff'
+const SITE_LIGHT_RADIANCE = 0.045
 
 // ---------------------------------------------------------------------------
 // The patch's tangent frame, for surfaces that have to find themselves in the
@@ -97,17 +109,41 @@ function initialUniforms(): OcclusionUniforms {
     // The sun's own angular radius: at these elevations tan and the angle agree to
     // better than a part in a thousand, so no correction is worth making.
     sunDiscTan: { value: SUN_ANGULAR_RADIUS_RAD },
+    // The base's own floodlighting on its hardware, applied only where the
+    // skyline has taken the sun away (see the hardware patches). Linear radiance
+    // in the same units as everything else here: 0.045 against a white hull's
+    // ~0.6 albedo lands a shadowed structure near sRGB 55 under the real sun —
+    // clearly readable, well under the ~130 the same hull renders in sunlight.
+    siteLight: {
+      value: new THREE.Color(SITE_LIGHT_COLOR).multiplyScalar(SITE_LIGHT_RADIANCE),
+    },
   }
   for (let t = 0; t < HORIZON_TEXTURES; t++) u[`horizonMap${t}`] = { value: LEVEL_SKYLINE }
   return u
 }
 
-export const REGOLITH_OCCLUSION_UNIFORMS = initialUniforms()
+// ONE SET PER PROCESS, guarded against Fast Refresh — not just one per module.
+//
+// Every regolith material captures these boxes by reference inside its
+// onBeforeCompile closure, and those materials outlive this module: in dev, editing
+// anything in the sun's import chain re-evaluates this file while the compiled
+// terrain lives on. Without the guard that re-evaluation minted a FRESH set of boxes
+// and split the scene's brain — new components dutifully updating uniforms nothing
+// reads, old materials frozen on the last sun the dead boxes ever saw. It rendered as
+// half the map black under the design sun, with the frozen terrain shadows refusing
+// to follow the scrubber. Production cannot hit this (modules evaluate once); the
+// guard exists so a hot edit cannot manufacture that bug on a dev's screen either.
+const hmr = globalThis as { __moonbaseOcclusionUniforms?: OcclusionUniforms }
+const firstEvaluation = !hmr.__moonbaseOcclusionUniforms
+export const REGOLITH_OCCLUSION_UNIFORMS = (hmr.__moonbaseOcclusionUniforms ??=
+  initialUniforms())
 
-// Start on the design sun, so the module's initial state is the scene as it ships and
-// bounceRadiance is never briefly zero. setRegolithSun is a hoisted declaration, so
-// this runs after the boxes above exist.
-setRegolithSun(SUN_DIR, SUN_LOCAL_ELEV_DEG)
+// Start on the design sun, so the initial state is the scene as it ships and
+// bounceRadiance is never briefly zero. Only on the FIRST evaluation: a re-evaluation
+// while a real sun is up must not yank the survivors' shared boxes back to the design
+// sun behind the mounted Sun component's back. (setRegolithSun is a hoisted
+// declaration, so this runs after the boxes above exist.)
+if (firstEvaluation) setRegolithSun(SUN_DIR, SUN_LOCAL_ELEV_DEG)
 
 // Point the whole scene at a sun. The only mutation any caller needs, and the only
 // place the sun's elevation turns into a shadow depth.
@@ -201,6 +237,38 @@ export function primeRegolithOcclusion(): Promise<void> {
 // Everything the shader needs, ready to merge into a material's uniforms.
 export function bindOcclusionUniforms(uniforms: OcclusionUniforms): void {
   for (const [name, box] of Object.entries(REGOLITH_OCCLUSION_UNIFORMS)) uniforms[name] = box
+}
+
+// Put a piece of HARDWARE under the skyline: same occlusion the terrain evaluates,
+// gating only the direct sun, leaving the material's own PBR/emissive/indirect alone
+// (see the patch definitions for the argument). Safe on shared materials — the
+// occlusion is computed per fragment from the fragment's own world position, so one
+// material serving fifty rovers shades each of them by where it actually stands.
+//
+// Idempotent via the userData flag, because the traversal that calls this re-runs as
+// GLB children stream in, and re-wrapping onBeforeCompile on each pass would stack
+// the patches until an anchor missed and threw. Basic/unlit materials are skipped:
+// they are markers and decals, not lit hardware.
+export function occludeHardwareMaterial(mat: THREE.Material): void {
+  if (!(mat as THREE.MeshStandardMaterial).isMeshStandardMaterial) return
+  if (mat.userData.regolithOccluded) return
+  mat.userData.regolithOccluded = true
+  const prior = mat.onBeforeCompile
+  mat.onBeforeCompile = (shader, renderer) => {
+    prior?.(shader, renderer)
+    bindOcclusionUniforms(shader.uniforms as OcclusionUniforms)
+    shader.vertexShader = applyShaderPatches(
+      shader.vertexShader,
+      HARDWARE_OCCLUSION_VERTEX_PATCHES
+    )
+    shader.fragmentShader = applyShaderPatches(
+      shader.fragmentShader,
+      HARDWARE_OCCLUSION_FRAGMENT_PATCHES
+    )
+  }
+  // The material may already be compiled by the time the traversal reaches it —
+  // GLB subtrees mount through Suspense after their anchor's first render.
+  mat.needsUpdate = true
 }
 
 export const HORIZON_TEXTURE_COUNT = HORIZON_TEXTURES
