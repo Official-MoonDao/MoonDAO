@@ -474,9 +474,9 @@ function Sun({ dir, elevationDeg }: ResolvedSun) {
   // occlusion uniforms following would put shadows at yesterday's azimuth, which is
   // invisible in a still frame and obvious the moment it is scrubbed.
   //
-  // Exposure travels with it for the reason in sun.ts: at 2° the lit ground is a
-  // twelfth as bright as at 45°, so a fixed exposure renders the real sun 3.6 stops
-  // under. Set on the renderer rather than the effect because @r3f/postprocessing
+  // Exposure travels with it for the reason in sun.ts: it opens up as the sun drops,
+  // anchored to the highlights so a grazing sun reads as sidelight rather than as
+  // chalky noon. Set on the renderer rather than the effect because @r3f/postprocessing
   // takes over gl.toneMapping but the AgX chunk still reads gl.toneMappingExposure.
   const gl = useThree((s) => s.gl)
   useEffect(() => {
@@ -800,8 +800,8 @@ export default function MoonGlobe({
         // stop of separation between white metal and lunar soil is most of why
         // this scene kept being described as grey plastic.
         //
-        // So this is deliberately NOT multiplied by 17 to put the ground back
-        // where it was — but the reason has changed, and shrunk.
+        // So this is deliberately NOT multiplied by 17 to put the ground back where
+        // the bake had it — that was tried, and it re-graded the whole shipped view.
         //
         // The original objection was that exposure is global while half the ground
         // was unlit materials carrying colours authored as final screen values, so
@@ -818,13 +818,18 @@ export default function MoonGlobe({
         // rather than objects in it, which means the re-anchor is now a decision
         // about them specifically rather than a scene-wide re-authoring pass.
         //
-        // RESOLVED, by making it a derivation rather than a judgement — see
-        // exposureFor() in lib/lunar-atlas/sun.ts. A sun that moves settles the
-        // argument: the real sun lights this ground at a twelfth of what the design
-        // sun does, so no single constant can serve both, and exposure has to be a
-        // function of the sun the way a photographer's is. The function is anchored so
-        // the DESIGN sun reproduces exactly this number, which is why it is still
-        // written here and still 1.05.
+        // RESOLVED: this stays exactly the shipped 1.05 at the design sun, and
+        // exposureFor() in lib/lunar-atlas/sun.ts opens up from it as the sun drops —
+        // but anchored to the HIGHLIGHTS (a slope facing the sun), not to flat ground.
+        //
+        // The distinction was learned the expensive way, twice in one day. Re-anchoring
+        // to put flat ground back at the bake's 0.366 re-graded this entire default
+        // view four stops brighter; and tracking flat ground at all sends the real sun
+        // to 220x, where every sun-facing bump on the patch clips white and grazing
+        // midnight light renders as chalky noon. Exposing for the highlights costs
+        // ~1.6x at the real sun instead, holds the brightest terrain at the same level
+        // under every sun, and lets flat ground fall away dark — which is what grazing
+        // light is. The full argument and both failed policies: sun.ts.
         toneMappingExposure: DESIGN_EXPOSURE,
         // A LOGARITHMIC depth buffer is the obvious choice for a scene that
         // spans orbit to millimeters, and it was used here, and it was the

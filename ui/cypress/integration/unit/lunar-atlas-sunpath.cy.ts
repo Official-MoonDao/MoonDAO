@@ -28,6 +28,7 @@ import {
 } from '../../../lib/lunar-atlas/sunpath'
 import {
   DESIGN_EXPOSURE,
+  HIGHLIGHT_SLOPE_DEG,
   MIN_EXPOSURE_ELEV_DEG,
   SUN_INTENSITY,
   SUN_LOCAL_ELEV_DEG,
@@ -228,47 +229,63 @@ describe('lunar sun path: which way round the sky', () => {
 })
 
 describe('exposing for the sun that is actually up', () => {
-  // The reason exposure stopped being a constant. These are the assertions that let
-  // the change ship: the first one is the promise that nothing about the current
-  // frame moves, and the rest are the reason a constant could not have survived.
+  // The exposure POLICY is what these tests pin, because two wrong ones already
+  // shipped and each looked reasonable on paper (see the header in sun.ts). The
+  // policy is a photographer's: expose for the HIGHLIGHTS — a slope leaning
+  // HIGHLIGHT_SLOPE_DEG into the sun — and let flat ground fall away dark as the sun
+  // drops, because dark is what grazing light is.
 
   it('reproduces the shipped exposure EXACTLY at the design sun', () => {
-    // Not "close to" 1.05. The anchor is defined as the value that makes this
-    // identity hold, so any drift means the anchor and the renderer's default have
-    // come apart and the scene has silently re-exposed itself.
-    expect(exposureFor(SUN_LOCAL_ELEV_DEG)).to.be.closeTo(DESIGN_EXPOSURE, 1e-12)
+    // Not "close to". The design frame is the shipped scene and it must not move —
+    // this was violated once, by re-anchoring exposure to the old bake's 0.366, which
+    // re-graded the entire default view 4 stops brighter. equal(), so it cannot
+    // happen quietly again.
+    expect(DESIGN_EXPOSURE).to.equal(1.05)
+    expect(exposureFor(SUN_LOCAL_ELEV_DEG)).to.equal(DESIGN_EXPOSURE)
   })
 
-  it('opens up 3.6 stops for the real sun, which is the whole argument', () => {
-    // The number that makes a fixed exposure indefensible rather than merely dark:
-    // the real sun on the design exposure is not "a bit dim", it is 12x under.
-    const real = maxElevationDeg()
-    const ratio = exposureFor(real) / exposureFor(SUN_LOCAL_ELEV_DEG)
-    expect(ratio).to.be.closeTo(12.5, 0.3)
-    expect(Math.log2(ratio)).to.be.closeTo(3.64, 0.05)
+  it('holds the highlights at the same screen brightness under every sun', () => {
+    // The invariant that defines the policy: what a sun-facing slope renders at does
+    // not depend on where the sun is. Everything else in the frame is ALLOWED to move
+    // — flat ground darkens, shadows deepen — but the brightest ordinary terrain is
+    // pinned, which is what stops a grazing sun from ever reading as overexposed.
+    const highlight = (e: number) =>
+      litGroundRadiance(SUN_INTENSITY, Math.min(90, e + HIGHLIGHT_SLOPE_DEG)) * exposureFor(e)
+    const design = highlight(SUN_LOCAL_ELEV_DEG)
+    for (const e of [maxElevationDeg(), 1.65, 1, MIN_EXPOSURE_ELEV_DEG]) {
+      expect(highlight(e) / design, `elev ${e}`).to.be.closeTo(1, 1e-9)
+    }
   })
 
-  it('opens up LESS than Lambert would, because the Moon does not limb-darken', () => {
-    // Worth its own test because the intuitive answer is wrong in a way that matters.
-    // Reasoning from albedo * cos(incidence), the ratio would be sin(44.46)/sin(2.08)
-    // = 19.3, i.e. 4.3 stops. The real BRDF gives 12.5, and the gap is physics rather
-    // than error: Hapke's shadow-hiding and multiple-scattering terms hold a
-    // particulate surface's brightness up at grazing incidence, which is exactly why
-    // the full moon reads as a flat disc instead of a shaded ball.
+  it('opens up well under a stop for the real sun, not the 12.5x flat tracking wants', () => {
+    // The magnitude on the record, because it is the whole difference between the
+    // policies. Holding FLAT ground constant demands 12.5x more exposure at 2.08°
+    // than at 44.46° — and at a grazing sun a 25° slope is several times brighter
+    // than the flat ground beside it, so paying that 12.5x sends every sun-facing
+    // bump on the patch to white. Chalky noon, at midnight-grazing incidence.
     //
-    // regolith.ts already warns that the Lambertian shorthand is 4x wrong at this
-    // scene's phase angles and has caused three bugs. This is the same trap in its
-    // derivative: using sines to predict how much exposure a lower sun needs
-    // overstates it by half a stop, which is a visible over-exposure.
+    // Holding the highlight constant costs ~1.6x instead: incidence on the reference
+    // slope only moves from 69.5° to 27.1° as the sun drops, and Hapke is far flatter
+    // across that range than at the grazing extreme.
     const real = maxElevationDeg()
     const ratio = exposureFor(real) / exposureFor(SUN_LOCAL_ELEV_DEG)
-    const lambert = Math.sin(SUN_LOCAL_ELEV_DEG * DEG) / Math.sin(real * DEG)
-    expect(lambert).to.be.closeTo(19.3, 0.3)
-    expect(ratio).to.be.lessThan(lambert * 0.8)
-    // Not unboundedly flatter, though — it is still mostly the cosine. If this ever
-    // drops below about half of Lambert the BRDF has stopped darkening with elevation
-    // in a way that would read as a sun that does not set.
-    expect(ratio).to.be.greaterThan(lambert * 0.4)
+    expect(ratio).to.be.greaterThan(1) // a lower sun always opens up, never stops down
+    expect(ratio).to.be.lessThan(2.5) // and modestly — nowhere near flat tracking
+    const flatTracking =
+      litGroundRadiance(SUN_INTENSITY, SUN_LOCAL_ELEV_DEG) / litGroundRadiance(SUN_INTENSITY, real)
+    expect(flatTracking).to.be.closeTo(12.5, 0.3)
+    expect(ratio).to.be.lessThan(flatTracking / 4)
+  })
+
+  it('lets flat ground fall away dark at a grazing sun, on purpose', () => {
+    // The negative space of the highlight invariant, pinned so nobody "fixes" it: at
+    // the real sun, level ground renders several times darker than at the design sun.
+    // That is not underexposure, it is what 2° of incidence looks like — the frame is
+    // carried by rims, slopes and hardware, exactly like a sidelit photograph.
+    const flatOnScreen = (e: number) => litGroundRadiance(SUN_INTENSITY, e) * exposureFor(e)
+    const ratio = flatOnScreen(maxElevationDeg()) / flatOnScreen(SUN_LOCAL_ELEV_DEG)
+    expect(ratio).to.be.lessThan(0.35)
+    expect(ratio).to.be.greaterThan(0.02)
   })
 
   it('stays finite and monotone across every sun the scene can be shown under', () => {
@@ -299,36 +316,31 @@ describe('exposing for the sun that is actually up', () => {
     for (const e of [0, -0.5, -1.9, -90]) {
       expect(exposureFor(e), `elev ${e}`).to.equal(floor)
     }
-    // Bounded by something meaningful rather than just finite: under ~160x the design
-    // exposure, so the fixed-brightness annotation layer is overexposed at sunset but
-    // not by an unbounded amount.
-    expect(floor / DESIGN_EXPOSURE).to.be.lessThan(160)
+    // Bounded by something meaningful rather than just finite: within a stop of the
+    // design exposure, because the highlight reference keeps the whole function tame —
+    // even a sun ON the horizon only moves the reference slope's incidence to 25°.
+    expect(floor / DESIGN_EXPOSURE).to.be.lessThan(2)
   })
 
-  it('renders a shadow at the same screen brightness under either sun', () => {
-    // Falls out of the two derivations agreeing, and worth pinning because it says
-    // what true-sun mode will actually look like. shadowFillRadiance is linear in the
-    // lit ground and exposure is inversely proportional to it, so the product is
-    // exactly invariant: a shadow is the same grey at 2° as at 44°.
-    //
-    // Which means the difference in true-sun mode is entirely GEOMETRIC — 57% of the
-    // patch falls inside a terrain shadow instead of 0%, and shadows run hundreds of
-    // metres instead of metres — and not a global darkening. If this test ever fails,
-    // one of the two has stopped tracking the sun and the scene will be dimming or
-    // blowing out as it is scrubbed.
-    const onScreen = (elev: number) =>
-      shadowFillRadiance(litGroundRadiance(SUN_INTENSITY, elev)) * exposureFor(elev)
-    const design = onScreen(SUN_LOCAL_ELEV_DEG)
-    for (const e of [maxElevationDeg(), 1.5, 1, 0.5, MIN_EXPOSURE_ELEV_DEG]) {
-      expect(onScreen(e) / design, `elev ${e}`).to.be.closeTo(1, 1e-9)
-    }
+  it('darkens shadows as the sun drops, which is the policy and not a bug', () => {
+    // Under flat-ground tracking the shadow fill rendered at an invariant grey, and
+    // there was a test here proudly pinning that. Under highlight anchoring the fill
+    // tracks the (darkening) flat ground instead, so shadows slide toward true black
+    // as the sun grazes — which is what an airless-world shadow does; Apollo surface
+    // photography's shadows are famously bottomless. Pinned as an inequality so a
+    // future exposure change that quietly re-brightens grazing shadows fails a test
+    // rather than a reviewer's eye.
+    const fillOnScreen = (e: number) =>
+      shadowFillRadiance(litGroundRadiance(SUN_INTENSITY, e)) * exposureFor(e)
+    expect(fillOnScreen(maxElevationDeg())).to.be.lessThan(
+      fillOnScreen(SUN_LOCAL_ELEV_DEG) * 0.35
+    )
   })
 
   it('leaves screen-anchored things EXACTLY alone at the design sun', () => {
-    // The guarantee that the shipped frame does not move. Anything authored as a screen
-    // value — the backdrop, the starfield, MarkerLayer's beacons — is multiplied by
-    // this, so a scale of anything but exactly 1 here silently re-grades the default
-    // scene. Not "closeTo": exactly.
+    // Anything authored as a screen value — the backdrop, the starfield — is
+    // multiplied by this, so anything but exactly 1 here silently re-grades the
+    // default scene. Not "closeTo": exactly.
     expect(screenAnchoredScale(SUN_LOCAL_ELEV_DEG)).to.equal(1)
   })
 
@@ -342,12 +354,14 @@ describe('exposing for the sun that is actually up', () => {
     }
   })
 
-  it('darkens screen-anchored things by the same 12.5x the exposure lifts', () => {
-    // Stated as a magnitude so the size of the correction is on the record: the
-    // backdrop has to be authored 12.5x darker in linear terms at the real sun to come
-    // out the same colour. That is the whole reason it read as navy before.
+  it('darkens screen-anchored things by exactly what the exposure opens up', () => {
+    // ~1/1.6 at the real sun. Small now, but the mechanism is what the test pins: the
+    // backdrop has to be authored darker in linear terms by exactly the exposure ratio
+    // to come out the same colour. That is the whole reason the sky read as navy under
+    // the first exposure function.
     const scale = screenAnchoredScale(maxElevationDeg())
-    expect(scale).to.be.closeTo(1 / 12.5, 0.02)
+    const opened = exposureFor(maxElevationDeg()) / DESIGN_EXPOSURE
+    expect(scale).to.be.closeTo(1 / opened, 1e-12)
     expect(scale).to.be.lessThan(1)
   })
 
