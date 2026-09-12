@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 03 · Editorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #16150f;
+    --ink-2: #4e4c44;
+    --ink-3: #8a877c;
+    --hair: #ddd9cf;
+    --paper: #fffefb;
+    --accent: #7c1d12;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Newsreader', Georgia, serif;
+    font-optical-sizing: auto;
+    font-size: 19px;
+    line-height: 1.6;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  .sans {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 32px; }
+
+  .masthead { padding: 28px 0 0; }
+  .wordmark {
+    text-align: center; padding: 20px 0 22px;
+    font-size: clamp(32px, 4.6vw, 52px); font-weight: 400;
+    letter-spacing: 0.02em; line-height: 1;
+  }
+  .rule { border-top: 1px solid var(--ink); }
+  nav.sections {
+    display: flex; justify-content: center; gap: 32px;
+    padding: 12px 0; border-bottom: 1px solid var(--ink);
+  }
+  nav.sections a {
+    font-family: 'Inter', sans-serif; font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-2);
+  }
+  nav.sections a.join { color: var(--accent); }
+
+  .lead { padding: 64px 0 48px; }
+  .lead h1 {
+    margin: 0;
+    font-size: clamp(36px, 5.4vw, 68px);
+    font-weight: 300; line-height: 1.04; letter-spacing: -0.02em;
+  }
+  .lead h1 em { font-style: italic; font-weight: 300; }
+  .standfirst {
+    margin: 28px 0 0; font-size: 21px; line-height: 1.5; color: var(--ink-2); font-weight: 300;
+    max-width: 36ch;
+  }
+
+  .bleed img { width: 100%; height: 380px; object-fit: cover; object-position: center 88%; display: block; }
+
+  .figures {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); margin: 48px 0 0;
+  }
+  .figures > div { padding: 22px 20px 20px 0; border-right: 1px solid var(--hair); }
+  .figures > div:last-child { border-right: 0; }
+  .figures .n { font-size: 36px; line-height: 1; font-weight: 300; letter-spacing: -0.02em; }
+  .figures .l { margin-top: 8px; color: var(--ink-3); }
+
+  article { padding: 56px 0 8px; max-width: 62ch; }
+  article p { margin: 0 0 18px; color: var(--ink-2); }
+  article p:first-of-type::first-letter {
+    float: left; font-size: 68px; line-height: 0.78; padding: 6px 10px 0 0; font-weight: 400; color: var(--ink);
+  }
+
+  .items { padding: 8px 0 56px; }
+  .item {
+    display: grid; grid-template-columns: 140px 1fr; gap: 28px;
+    padding: 22px 0; border-bottom: 1px solid var(--hair); align-items: baseline;
+  }
+  .item:first-child { border-top: 1px solid var(--hair); }
+  .item h3 { margin: 0; font-size: 22px; font-weight: 400; }
+  .item p { margin: 0; font-size: 17px; color: var(--ink-2); }
+
+  .close { padding: 72px 0 88px; text-align: center; border-top: 1px solid var(--ink); }
+  .close h2 {
+    margin: 0; font-size: clamp(28px, 3.8vw, 48px); font-weight: 300; letter-spacing: -0.02em;
+  }
+  .btn {
+    font-family: 'Inter', sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    display: inline-flex; align-items: center; height: 44px; padding: 0 24px;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper); margin-top: 28px;
+  }
+  .btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  footer {
+    border-top: 1px solid var(--hair); padding: 20px 0 40px;
+    display: flex; justify-content: space-between;
+  }
+
+  @media (max-width: 720px) {
+    nav.sections a:not(.join) { display: none; }
+    .figures { grid-template-columns: 1fr; }
+    .item { grid-template-columns: 1fr; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="rule"></div>
+    <div class="wordmark">MoonDAO</div>
+    <div class="rule"></div>
+    <nav class="sections">
+      <a href="#">Missions</a>
+      <a href="#">Governance</a>
+      <a href="#">About</a>
+      <a class="join" href="#">Join</a>
+    </nav>
+  </div>
+
+  <div class="lead">
+    <h1>The Moon is an <em>organizational</em> problem.</h1>
+    <p class="standfirst">Rockets exist. Coordination that lasts is rarer. MoonDAO is a space program run by its members.</p>
+  </div>
+</div>
+
+<div class="bleed">
+  <img src="/assets/mockups/earth-limb.webp" alt="Earth seen from a distance" />
+</div>
+
+<div class="wrap">
+  <div class="figures">
+    <div><div class="n">Two</div><div class="sans l">People flown</div></div>
+    <div><div class="n">$8M</div><div class="sans l">Raised</div></div>
+    <div><div class="n">2025</div><div class="sans l">Constitution landed</div></div>
+  </div>
+
+  <article>
+    <p>Coby Cotton flew in 2022, chosen by a vote of the members. Dr. Eiman Jahangir flew in 2024, chosen by open sweepstakes. A constitution written by the same membership reached the lunar surface the following year.</p>
+    <p>The money that paid for this was raised in public. So were the votes that spent it.</p>
+  </article>
+
+  <div class="close">
+    <h2>Membership is open.</h2>
+    <a class="btn" href="#">Join</a>
+  </div>
+
+  <footer>
+    <span class="sans">© MoonDAO</span>
+    <span class="sans">Privacy</span>
+  </footer>
+</div>
+
+</body>
+</html>

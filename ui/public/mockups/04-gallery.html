@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 04 · Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #14140f;
+    --ink-2: #5d5d55;
+    --ink-3: #9a9a92;
+    --hair: #e6e5e0;
+    --paper: #fcfcfa;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  .label {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 500;
+  }
+
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 48px;
+  }
+  .nav .wm { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 500; }
+  .nav .menu { display: flex; gap: 26px; }
+  .nav .menu a { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-2); }
+  .nav .menu a:hover { color: var(--ink); }
+
+  .opening {
+    min-height: 88vh;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    text-align: center; padding: 140px 48px 80px;
+  }
+  .opening h1 {
+    margin: 0;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-weight: 300;
+    font-size: clamp(36px, 5.2vw, 76px);
+    line-height: 1.1;
+    max-width: 14ch;
+  }
+  .opening h1 em { font-style: italic; }
+
+  .plate { padding: 0 48px; }
+  .plate img { width: 100%; max-width: 1180px; margin: 0 auto; display: block; }
+  .wall {
+    max-width: 1180px; margin: 18px auto 0;
+    display: flex; justify-content: space-between;
+    padding-top: 12px; border-top: 1px solid var(--hair);
+  }
+
+  .air { height: 160px; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 48px; }
+
+  .numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+  .numbers .n {
+    font-family: 'Cormorant Garamond', serif; font-weight: 300;
+    font-size: clamp(36px, 4.4vw, 58px); line-height: 1;
+  }
+  .numbers .l { margin-top: 14px; }
+
+  .idx { border-top: 1px solid var(--hair); }
+  .idx-row {
+    display: grid; grid-template-columns: 1fr 1.4fr; gap: 40px;
+    padding: 26px 0; border-bottom: 1px solid var(--hair); align-items: baseline;
+  }
+  .idx-row h3 {
+    margin: 0; font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 26px;
+  }
+  .idx-row p { margin: 0; color: var(--ink-2); font-size: 13.5px; line-height: 1.75; }
+
+  .closing { text-align: center; padding: 0 48px; }
+  .closing h2 {
+    margin: 0 auto; font-family: 'Cormorant Garamond', serif; font-weight: 300;
+    font-size: clamp(28px, 4vw, 52px); line-height: 1.12;
+  }
+  .underline-link {
+    display: inline-block; margin-top: 36px;
+    font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+    padding-bottom: 6px; border-bottom: 1px solid var(--ink);
+  }
+
+  footer {
+    margin-top: 140px; border-top: 1px solid var(--hair);
+    padding: 28px 48px 44px;
+    display: flex; justify-content: space-between;
+  }
+
+  @media (max-width: 720px) {
+    .nav { padding: 22px 24px; }
+    .nav .menu a:not(.join) { display: none; }
+    .opening, .plate, .wrap, .closing, footer { padding-left: 24px; padding-right: 24px; }
+    .numbers, .idx-row { grid-template-columns: 1fr; gap: 10px; }
+    .air { height: 96px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a class="wm" href="#">MoonDAO</a>
+  <div class="menu">
+    <a href="#">Missions</a>
+    <a href="#">Governance</a>
+    <a href="#">About</a>
+    <a class="join" href="#">Join</a>
+  </div>
+</div>
+
+<section class="opening">
+  <h1>Paid for <em>in public.</em></h1>
+</section>
+
+<div class="plate">
+  <img src="/assets/mockups/moon-plate.webp" alt="The Moon" />
+  <div class="wall">
+    <span class="label">The Moon</span>
+  </div>
+</div>
+
+<div class="air"></div>
+
+<div class="wrap">
+  <div class="numbers">
+    <div><div class="n">Two</div><div class="label l">Flown</div></div>
+    <div><div class="n">$8M</div><div class="label l">Raised</div></div>
+    <div><div class="n">2025</div><div class="label l">Landed</div></div>
+  </div>
+</div>
+
+<div class="air"></div>
+
+<div class="wrap">
+  <div class="idx">
+    <div class="idx-row">
+      <h3>Coby Cotton</h3>
+      <p>Flew 2022. Selected by vote.</p>
+    </div>
+    <div class="idx-row">
+      <h3>Dr. Eiman Jahangir</h3>
+      <p>Flew 2024. Selected by sweepstakes.</p>
+    </div>
+    <div class="idx-row">
+      <h3>The constitution</h3>
+      <p>Written by members. On the Moon, 2025.</p>
+    </div>
+  </div>
+</div>
+
+<div class="air"></div>
+
+<div class="closing">
+  <h2>Membership is open.</h2>
+  <a class="underline-link" href="#">Join</a>
+</div>
+
+<footer>
+  <span class="label">© MoonDAO</span>
+  <span class="label">Privacy</span>
+</footer>
+
+</body>
+</html>

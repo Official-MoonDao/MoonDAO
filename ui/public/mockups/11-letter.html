@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 11 · Letter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #2a241c;
+    --ink-2: #5c5348;
+    --rule: #d7cfc3;
+    --paper: #f3eee4;
+    --sheet: #faf6ee;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: var(--paper); color: var(--ink);
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 22px; line-height: 1.55;
+  }
+  a { color: inherit; text-decoration: none; }
+  .sans { font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500; color: #8a8174; }
+
+  .nav {
+    max-width: 720px; margin: 0 auto; padding: 28px 28px 0;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .nav a { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--ink-2); }
+  .nav .join { color: var(--ink); }
+
+  .sheet {
+    max-width: 720px; margin: 36px auto 80px; padding: 72px 72px 80px;
+    background: var(--sheet);
+    box-shadow: 0 1px 0 rgba(42,36,28,0.06), 0 30px 80px -48px rgba(42,36,28,0.45);
+  }
+  .date { margin-bottom: 48px; }
+  p { margin: 0 0 1.15em; }
+  p.indent { text-indent: 1.6em; }
+  .sig { margin-top: 48px; }
+  .sig .name { font-size: 28px; font-style: italic; }
+  .sig .who { margin-top: 6px; }
+
+  .after {
+    max-width: 720px; margin: 0 auto 80px; padding: 0 28px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .join-link {
+    font-size: 22px; border-bottom: 1px solid var(--ink); padding-bottom: 2px;
+  }
+  .join-link:hover { opacity: 0.55; }
+
+  @media (max-width: 720px) {
+    .sheet { margin: 20px 16px 48px; padding: 44px 28px 52px; }
+    body { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span class="sans">MoonDAO</span>
+  <a class="join" href="#">Join</a>
+</div>
+
+<article class="sheet">
+  <div class="sans date">2026</div>
+  <p>We sent two of our own to space.</p>
+  <p class="indent">Coby Cotton in 2022, chosen by a vote. Dr. Eiman Jahangir in 2024, chosen by sweepstakes. A constitution the members wrote is on the Moon.</p>
+  <p class="indent">Eight million dollars paid for this. The votes that spent it are still there, if you want to look.</p>
+  <p>If you want to come, the door is open.</p>
+  <div class="sig">
+    <div class="name">MoonDAO</div>
+    <div class="sans who">The members</div>
+  </div>
+</article>
+
+<div class="after">
+  <span class="sans">A letter, not a pitch</span>
+  <a class="join-link" href="#">Join</a>
+</div>
+
+</body>
+</html>

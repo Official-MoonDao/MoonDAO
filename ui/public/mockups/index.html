@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Homepage directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #101216;
+    --ink-2: #565b64;
+    --ink-3: #8f949c;
+    --hair: #e4e6ea;
+    --paper: #fbfbfc;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px; line-height: 1.6; letter-spacing: -0.01em;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .m {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3);
+  }
+
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 0 40px; }
+
+  header {
+    border-bottom: 1px solid var(--hair);
+    padding: 64px 0 44px;
+  }
+  header h1 {
+    margin: 20px 0 0; font-size: clamp(30px, 3.6vw, 48px); font-weight: 600;
+    letter-spacing: -0.04em; line-height: 1.04; max-width: 20ch;
+  }
+  header p { margin: 20px 0 0; max-width: 68ch; color: var(--ink-2); font-size: 16.5px; }
+  .brief { margin-top: 26px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 900px; }
+  .brief div { border-top: 1px solid var(--hair); padding-top: 12px; }
+  .brief .v { font-size: 14px; color: var(--ink-2); margin-top: 4px; }
+
+  .grid {
+    padding: 44px 0 90px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 40px;
+  }
+
+  .card {
+    border: 1px solid var(--hair); background: #fff;
+    border-radius: 14px; overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
+  }
+  .card:hover { border-color: #c9ccd2; box-shadow: 0 24px 60px -34px rgba(16,18,22,0.42); transform: translateY(-2px); }
+
+  .thumb {
+    position: relative; height: 430px; overflow: hidden;
+    border-bottom: 1px solid var(--hair); background: #fff;
+  }
+  .thumb img {
+    display: block; width: 100%; height: auto;
+    transition: transform 9s cubic-bezier(0.32, 0, 0.5, 1);
+  }
+  /* On hover the preview travels the full length of the page it represents,
+     so the whole composition can be judged without opening it. */
+  .card:hover .thumb img { transform: translateY(calc(430px - 100%)); }
+  .thumb .fade {
+    position: absolute; inset: auto 0 0 0; height: 70px; pointer-events: none;
+    background: linear-gradient(to top, rgba(255,255,255,0.92), rgba(255,255,255,0));
+  }
+  .thumb .hint {
+    position: absolute; right: 12px; bottom: 12px;
+    background: rgba(255,255,255,0.86); border: 1px solid var(--hair);
+    border-radius: 6px; padding: 3px 8px;
+    opacity: 1; transition: opacity 0.3s ease;
+  }
+  .card:hover .thumb .hint { opacity: 0; }
+
+  .meta { padding: 22px 24px 24px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .meta .top { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .meta h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.03em; }
+  .meta p { margin: 0; color: var(--ink-2); font-size: 14.5px; flex: 1; }
+
+  .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; padding-top: 12px; border-top: 1px solid var(--hair); }
+  .facts .k { display: block; }
+  .facts .v { font-size: 13.5px; color: var(--ink-2); }
+
+  .swatches { display: flex; gap: 5px; align-items: center; }
+  .sw { width: 15px; height: 15px; border-radius: 3px; border: 1px solid rgba(16,18,22,0.12); }
+
+  .open {
+    margin-top: 4px; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 500; color: var(--ink);
+  }
+  .open::after { content: '→'; color: var(--ink-3); transition: transform 0.2s ease; }
+  .card:hover .open::after { transform: translateX(4px); }
+
+  .set {
+    padding: 8px 0 18px; margin: 20px 0 0;
+    display: flex; justify-content: space-between; align-items: baseline;
+    border-top: 1px solid var(--ink);
+  }
+  .set h3 { margin: 16px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -0.03em; }
+  .set p { margin: 16px 0 0; max-width: 62ch; color: var(--ink-2); font-size: 14.5px; }
+
+  footer { border-top: 1px solid var(--hair); padding: 30px 0 60px; display: flex; justify-content: space-between; }
+
+  @media (max-width: 1080px) {
+    .grid { grid-template-columns: 1fr; }
+    .brief { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="m">MoonDAO · Design exploration · 2026</span>
+    <h1>Twenty-three directions. The last five stop dressing a template.</h1>
+    <p>
+      Taste on Sequoia, Founders Fund, SpaceX, Vast, USV, Slow, Varda, Rocket Lab
+      is not a theme. It is a structure only that organization would choose —
+      a program log, a matted photograph, a living thesis, a factory floor, a
+      color world. 19–23 try those structures, not another costume on the same bones.
+    </p>
+    <div class="brief">
+      <div><span class="m">Constant</span><div class="v">Content &amp; structure</div></div>
+      <div><span class="m">Variable</span><div class="v">Type, palette, layout</div></div>
+      <div><span class="m">Imagery</span><div class="v">Shared studio set</div></div>
+      <div><span class="m">Status</span><div class="v">Mockups, not shipped</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="set">
+    <div>
+      <span class="m">Set one · systems</span>
+      <h3>Polished. Possibly too polished.</h3>
+    </div>
+  </div>
+  <div class="grid">
+
+    <a class="card" href="01-cupertino.html">
+      <div class="thumb"><img src="thumbs/01-cupertino.webp" alt="Cupertino preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>01 · Cupertino</h2><span class="m">Inter Tight</span></div>
+        <p>Apple's grammar, stripped further. Two words, the Moon, three figures, three named facts. No cards, no second image, no caption.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">apple.com</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#f5f5f7"></i><i class="sw" style="background:#1d1d1f"></i><i class="sw" style="background:#0f4c9e"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="02-swiss.html">
+      <div class="thumb"><img src="thumbs/02-swiss.webp" alt="Swiss Technical preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>02 · Swiss Technical</h2><span class="m">IBM Plex</span></div>
+        <p>A spec, not a brochure. Visible grid, four dated lines, three figures. Nothing that cannot be checked.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A published spec</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#dcdee1"></i><i class="sw" style="background:#111214"></i><i class="sw" style="background:#a83c2c"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="03-editorial.html">
+      <div class="thumb"><img src="thumbs/03-editorial.webp" alt="Editorial preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>03 · Editorial</h2><span class="m">Newsreader</span></div>
+        <p>A short essay. Masthead, one thesis, two paragraphs, no invented quotation. The argument is that the hard problem is organizational.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A quarterly journal</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fffefb"></i><i class="sw" style="background:#ddd9cf"></i><i class="sw" style="background:#16150f"></i><i class="sw" style="background:#7c1d12"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="04-gallery.html">
+      <div class="thumb"><img src="thumbs/04-gallery.webp" alt="Gallery preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>04 · Gallery</h2><span class="m">Cormorant Garamond</span></div>
+        <p>One plate. Three names. The confidence is still in what is left out.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A gallery catalogue</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fcfcfa"></i><i class="sw" style="background:#e6e5e0"></i><i class="sw" style="background:#14140f"></i><i class="sw" style="background:#9a9a92"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="05-blueprint.html">
+      <div class="thumb"><img src="thumbs/05-blueprint.webp" alt="Blueprint preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>05 · Blueprint</h2><span class="m">Geist · JetBrains Mono</span></div>
+        <p>The drawing is the page. Four waypoints, no photograph, no fake drawing number.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A drawing sheet</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fcfcfa"></i><i class="sw" style="background:#dfe1e4"></i><i class="sw" style="background:#101318"></i><i class="sw" style="background:#1f4e79"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="06-atelier.html">
+      <div class="thumb"><img src="thumbs/06-atelier.webp" alt="Atelier preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>06 · Atelier</h2><span class="m">Fraunces</span></div>
+        <p>Warm paper, one sentence, one image, three figures. No overlay text on the photograph.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A quiet luxury brand</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#faf8f4"></i><i class="sw" style="background:#f2eee6"></i><i class="sw" style="background:#1c1a16"></i><i class="sw" style="background:#8a5a44"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="07-rational.html">
+      <div class="thumb"><img src="thumbs/07-rational.webp" alt="Rational preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>07 · Rational</h2><span class="m">Archivo</span></div>
+        <p>Three verbs, three figures, three dated lines. Still the loudest — now only as loud as the type.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A transit poster</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#cfcfcf"></i><i class="sw" style="background:#000"></i><i class="sw" style="background:#a32b1c"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="08-softlight.html">
+      <div class="thumb"><img src="thumbs/08-softlight.webp" alt="Softlight preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>08 · Softlight</h2><span class="m">DM Sans</span></div>
+        <p>A product site without the gradient, the aurora, or the six feature cards. The headline is the only claim: anyone can join.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A polished product site</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#f4f6f9"></i><i class="sw" style="background:#14161a"></i><i class="sw" style="background:#2b5fd9"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="09-monolith.html">
+      <div class="thumb"><img src="thumbs/09-monolith.webp" alt="Monolith preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>09 · Monolith</h2><span class="m">Geist</span></div>
+        <p>One sentence fills the viewport. No subhead. The photograph comes after, then the record.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A statement, then silence</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fdfdfd"></i><i class="sw" style="background:#e8e9eb"></i><i class="sw" style="background:#0c0d0e"></i><i class="sw" style="background:#9ca0a6"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="10-institutional.html">
+      <div class="thumb"><img src="thumbs/10-institutional.webp" alt="Institutional preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>10 · Institutional</h2><span class="m">EB Garamond · Public Sans</span></div>
+        <p>A letterhead and a table. No fake volume number, no footnotes citing nothing.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A national laboratory</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#f7f8fa"></i><i class="sw" style="background:#14171d"></i><i class="sw" style="background:#1b3358"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="set" style="margin-top:64px">
+    <div>
+      <span class="m">Set two · character</span>
+      <h3>One irregularity each.</h3>
+      <p>Drawn from awarded work that isn’t a template: Stripe Press (the page as a letter), The Pages Project (marginalia), Niccolò Miranda’s Paperfolio (a physical object), ARETE (a system you read), and documentary portraiture instead of studio renders.</p>
+    </div>
+  </div>
+  <div class="grid">
+
+    <a class="card" href="11-letter.html">
+      <div class="thumb"><img src="thumbs/11-letter.webp" alt="Letter preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>11 · Letter</h2><span class="m">Instrument Serif</span></div>
+        <p>A letter from the members, on a sheet of paper. First person. Signed. No navigation to hide behind.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">Something you open</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#f3eee4"></i><i class="sw" style="background:#faf6ee"></i><i class="sw" style="background:#2a241c"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="12-marginalia.html">
+      <div class="thumb"><img src="thumbs/12-marginalia.webp" alt="Marginalia preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>12 · Marginalia</h2><span class="m">Baskerville · Caveat</span></div>
+        <p>A typeset argument with a second hand in the gutter. The printed voice is formal. The pencil is a person.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A borrowed book</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#f7f4ec"></i><i class="sw" style="background:#1b1914"></i><i class="sw" style="background:#7a4a2b"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="13-faces.html">
+      <div class="thumb"><img src="thumbs/13-faces.webp" alt="Faces preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>13 · Faces</h2><span class="m">Newsreader</span></div>
+        <p>Coby in the flight suit. The members at the rocket. No renders. The thing nobody else has is these people.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A documentary still</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#faf8f4"></i><i class="sw" style="background:#161512"></i><i class="sw" style="background:#3d6cb0"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="14-instrument.html">
+      <div class="thumb"><img src="thumbs/14-instrument.webp" alt="Instrument preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>14 · Instrument</h2><span class="m">IBM Plex Mono</span></div>
+        <p>The whole page is a readout: 384,400 km. The number is the personality. Everything else is a caption.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A bench instrument</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#f7f8f6"></i><i class="sw" style="background:#101214"></i><i class="sw" style="background:#c45c2a"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="15-minutes.html">
+      <div class="thumb"><img src="thumbs/15-minutes.webp" alt="Minutes preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>15 · Minutes</h2><span class="m">Courier Prime</span></div>
+        <p>The homepage as extracted minutes. Motions, carried. Character comes from procedure, not decoration.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">A meeting you can read</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#efeae0"></i><i class="sw" style="background:#1e1c18"></i><i class="sw" style="background:#cfc8bb"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="16-ticket.html">
+      <div class="thumb"><img src="thumbs/16-ticket.webp" alt="Ticket preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>16 · Ticket</h2><span class="m">Special Elite</span></div>
+        <p>Two boarding passes. Cotton, NS-22. Jahangir, 2024. A physical object standing in for the whole story.</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">Something in a wallet</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#e8e2d6"></i><i class="sw" style="background:#f4efe6"></i><i class="sw" style="background:#9c2b1c"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="17-notes.html">
+      <div class="thumb"><img src="thumbs/17-notes.webp" alt="Notes preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>17 · Notes</h2><span class="m">Literata · Caveat</span></div>
+        <p>A notebook with a red margin. Dated, slightly crooked, in a human tense. “He wore a flight suit with his name on it.”</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">Someone kept this</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#f4efe6"></i><i class="sw" style="background:#221e18"></i><i class="sw" style="background:#8d3b28"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="18-questions.html">
+      <div class="thumb"><img src="thumbs/18-questions.webp" alt="Questions preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>18 · Questions</h2><span class="m">IBM Plex Serif</span></div>
+        <p>The homepage is the skeptical conversation. Including the one that matters: crypto thing that likes space, or space program that uses crypto?</p>
+        <div class="facts">
+          <div><span class="m k">Feels like</span><span class="v">Someone honest</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#191919"></i><i class="sw" style="background:#1f4d8f"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="set" style="margin-top:64px">
+    <div>
+      <span class="m">Set three · taste</span>
+      <h3>Borrow the structure, not the look.</h3>
+      <p>SpaceX is a dated log. Slow is one photograph taken seriously. USV is a thesis plus a feed. Vast is evidence at industrial scale. Varda is an invented color world. None of them are “headline, three stats, Join.”</p>
+    </div>
+  </div>
+  <div class="grid">
+
+    <a class="card" href="19-program.html">
+      <div class="thumb"><img src="thumbs/19-program.webp" alt="Program preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>19 · Program</h2><span class="m">Anybody</span></div>
+        <p>SpaceX’s structure: a dated reel. Cotton flew. The members, on the ground. Jahangir flew. The constitution landed. Now is open. One verb per fold.</p>
+        <div class="facts">
+          <div><span class="m k">Learned from</span><span class="v">SpaceX · Stoke</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#000"></i><i class="sw" style="background:#f4f2ec"></i><i class="sw" style="background:#fff"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="20-mat.html">
+      <div class="thumb"><img src="thumbs/20-mat.webp" alt="Mat preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>20 · Mat</h2><span class="m">Newsreader · Geist</span></div>
+        <p>Slow’s confidence: one photograph, matted, as if it were the collection. The cowboy hats are the taste. No space company would run this picture. That is the point.</p>
+        <div class="facts">
+          <div><span class="m k">Learned from</span><span class="v">Slow Ventures</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#efe8dc"></i><i class="sw" style="background:#1a1713"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="21-thesis.html">
+      <div class="thumb"><img src="thumbs/21-thesis.webp" alt="Thesis preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>21 · Thesis</h2><span class="m">Schibsted Grotesk</span></div>
+        <p>USV’s structure: a one-sentence thesis, underlined, and a public record as the feed. The organization is a publication of decisions, not a brochure.</p>
+        <div class="facts">
+          <div><span class="m k">Learned from</span><span class="v">USV · Sequoia</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#111"></i><i class="sw" style="background:#1d4ed8"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="22-station.html">
+      <div class="thumb"><img src="thumbs/22-station.webp" alt="Station preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>22 · Station</h2><span class="m">Anybody</span></div>
+        <p>Vast’s confidence: the photograph is the page, type sits in the corner like architecture, then a spec table of the actual program — not features, evidence.</p>
+        <div class="facts">
+          <div><span class="m k">Learned from</span><span class="v">Vast · Relativity</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#fff"></i><i class="sw" style="background:#101114"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+    <a class="card" href="23-world.html">
+      <div class="thumb"><img src="thumbs/23-world.webp" alt="World preview" /><div class="fade"></div><span class="m hint">Hover to scroll</span></div>
+      <div class="meta">
+        <div class="top"><h2>23 · World</h2><span class="m">Anybody · Plex Mono</span></div>
+        <p>Varda’s lesson: invent a color world and a visible construction, then live in it. Copper on navy. The distance as geography, not a slogan.</p>
+        <div class="facts">
+          <div><span class="m k">Learned from</span><span class="v">Varda · Rocket Lab</span></div>
+          <div><span class="m k">Palette</span>
+            <span class="swatches"><i class="sw" style="background:#0b1830"></i><i class="sw" style="background:#d4783a"></i><i class="sw" style="background:#e7d3b0"></i></span>
+          </div>
+        </div>
+        <span class="open">Open direction</span>
+      </div>
+    </a>
+
+  </div>
+</div>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;width:100%">
+    <span class="m">MoonDAO · Twenty-three directions · Static mockups</span>
+    <span class="m">Same facts. Different structures.</span>
+  </div>
+</footer>
+
+</body>
+</html>

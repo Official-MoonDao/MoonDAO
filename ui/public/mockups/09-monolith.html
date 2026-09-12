@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 09 · Monolith</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0c0d0e;
+    --ink-2: #63666b;
+    --ink-3: #9ca0a6;
+    --hair: #e8e9eb;
+    --paper: #fdfdfd;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Geist', 'Inter', system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.55;
+    letter-spacing: -0.012em;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  h1, h2 { margin: 0; font-weight: 500; letter-spacing: -0.05em; line-height: 0.96; }
+
+  .mono {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3);
+  }
+
+  .col-wide { max-width: 1180px; margin: 0 auto; padding: 0 32px; }
+
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 34px;
+    background: linear-gradient(to bottom, rgba(253,253,253,0.96), rgba(253,253,253,0));
+  }
+  .nav .wm { font-weight: 600; font-size: 15px; letter-spacing: -0.03em; }
+  .nav .links { display: flex; gap: 22px; }
+  .nav .links a { font-size: 14px; color: var(--ink-2); }
+  .nav .cta {
+    font-size: 13px; font-weight: 500;
+    border: 1px solid var(--hair); border-radius: 7px; padding: 7px 14px;
+  }
+  .nav .cta:hover { border-color: var(--ink); }
+
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 140px 0 72px;
+  }
+  .hero h1 { font-size: clamp(44px, 8.4vw, 120px); }
+  .hero h1 .dim { color: var(--ink-3); }
+  .hero .under {
+    margin-top: 48px; padding-top: 22px; border-top: 1px solid var(--hair);
+    max-width: 46ch; color: var(--ink-2); font-size: 16px;
+  }
+  .hero .under p { margin: 0; }
+
+  .bleed img { width: 100%; height: 70vh; min-height: 420px; object-fit: cover; display: block; }
+
+  .figs {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px;
+    border-top: 1px solid var(--hair); padding: 36px 0 0; margin-top: 0;
+  }
+  section.facts { padding: 100px 0 0; }
+  .figs .n { font-size: clamp(32px, 3.8vw, 48px); font-weight: 500; letter-spacing: -0.055em; line-height: 1; }
+  .figs .l { margin-top: 10px; }
+
+  .list { padding: 80px 0 0; }
+  .item {
+    display: grid; grid-template-columns: 88px 1fr; gap: 28px;
+    padding: 22px 0; border-top: 1px solid var(--hair); align-items: baseline;
+  }
+  .item:last-child { border-bottom: 1px solid var(--hair); }
+  .item p { margin: 0; font-size: 18px; letter-spacing: -0.02em; }
+
+  .close { padding: 140px 0 160px; }
+  .close h2 { font-size: clamp(32px, 5.6vw, 80px); }
+  .close a { display: inline-block; margin-top: 36px; font-size: 16px; }
+  .close a::after { content: ' →'; color: var(--ink-3); }
+
+  footer { border-top: 1px solid var(--hair); padding: 22px 0 48px; display: flex; justify-content: space-between; }
+
+  @media (max-width: 800px) {
+    .nav .links { display: none; }
+    .figs { grid-template-columns: 1fr; }
+    .item { grid-template-columns: 1fr; gap: 6px; }
+    .hero { min-height: auto; padding: 120px 0 56px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a class="wm" href="#">MoonDAO</a>
+  <div class="links">
+    <a href="#">Missions</a>
+    <a href="#">Governance</a>
+    <a href="#">About</a>
+  </div>
+  <a class="cta" href="#">Join</a>
+</div>
+
+<header class="hero">
+  <div class="col-wide">
+    <h1>Every decision<br /><span class="dim">is public.</span></h1>
+  </div>
+</header>
+
+<div class="bleed">
+  <img src="/assets/mockups/ascent.webp" alt="A launch" />
+</div>
+
+<section class="facts">
+  <div class="col-wide">
+    <div class="figs">
+      <div><div class="n">2</div><div class="mono l">Flown</div></div>
+      <div><div class="n">$8M</div><div class="mono l">Raised</div></div>
+      <div><div class="n">2025</div><div class="mono l">Landed</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="list">
+  <div class="col-wide">
+    <div class="item"><span class="mono">2022</span><p>Coby Cotton flown. Selected by vote.</p></div>
+    <div class="item"><span class="mono">2024</span><p>Dr. Eiman Jahangir flown. Selected by sweepstakes.</p></div>
+    <div class="item"><span class="mono">2025</span><p>Constitution delivered to the lunar surface.</p></div>
+  </div>
+</section>
+
+<div class="close">
+  <div class="col-wide">
+    <h2><a href="#">Join.</a></h2>
+  </div>
+</div>
+
+<div class="col-wide">
+  <footer>
+    <span class="mono">© MoonDAO</span>
+    <span class="mono">Privacy</span>
+  </footer>
+</div>
+
+</body>
+</html>

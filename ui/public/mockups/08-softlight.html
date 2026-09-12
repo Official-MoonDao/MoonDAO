@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 08 · Softlight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #14161a;
+    --ink-2: #5b6069;
+    --ink-3: #9096a0;
+    --hair: #e6e8ec;
+    --paper: #ffffff;
+    --pearl: #f4f6f9;
+    --r: 22px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    letter-spacing: -0.008em;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  h1, h2 { margin: 0; font-weight: 500; letter-spacing: -0.034em; line-height: 1.06; }
+
+  .nav {
+    position: sticky; top: 14px; z-index: 50;
+    max-width: 720px; margin: 14px auto 0; padding: 0 8px 0 20px;
+    height: 56px; display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: saturate(180%) blur(18px);
+    border: 1px solid rgba(20,22,26,0.07);
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(20,22,26,0.04), 0 16px 40px -24px rgba(20,22,26,0.3);
+  }
+  .nav .wm { font-weight: 600; font-size: 15.5px; letter-spacing: -0.02em; }
+  .nav .links { display: flex; gap: 22px; }
+  .nav .links a { font-size: 14px; color: var(--ink-2); }
+  .nav .links a:hover { color: var(--ink); }
+  .pill {
+    display: inline-flex; align-items: center; height: 40px; padding: 0 18px;
+    background: var(--ink); color: #fff; border-radius: 999px;
+    font-size: 14px; font-weight: 500;
+  }
+
+  .hero { padding: 88px 24px 0; text-align: center; }
+  .hero h1 { font-size: clamp(40px, 5.6vw, 72px); max-width: 14ch; margin: 0 auto; }
+  .hero-card {
+    margin: 56px auto 0; max-width: 1040px;
+    border-radius: 28px; overflow: hidden;
+    border: 1px solid rgba(20,22,26,0.08);
+    box-shadow: 0 2px 6px rgba(20,22,26,0.05), 0 44px 90px -50px rgba(20,22,26,0.45);
+  }
+  .hero-card img { width: 100%; height: 460px; object-fit: cover; object-position: center 78%; display: block; }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+
+  .stats { padding: 72px 0 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat {
+    background: var(--pearl); border: 1px solid var(--hair); border-radius: var(--r);
+    padding: 24px 22px;
+  }
+  .stat .n { font-size: 34px; font-weight: 500; letter-spacing: -0.045em; line-height: 1; }
+  .stat .l { margin-top: 8px; font-size: 13.5px; color: var(--ink-3); }
+
+  .note { padding: 72px 0; text-align: center; }
+  .note p { margin: 0 auto; max-width: 42ch; font-size: 18px; color: var(--ink-2); }
+
+  .cta-shell { padding: 0 24px 96px; }
+  .cta {
+    max-width: 1040px; margin: 0 auto;
+    border-radius: 28px; padding: 72px 32px; text-align: center;
+    background: #111318; color: #fff;
+  }
+  .cta h2 { font-size: clamp(28px, 3.6vw, 44px); }
+  .cta .pill { margin-top: 28px; background: #fff; color: var(--ink); }
+
+  footer {
+    border-top: 1px solid var(--hair);
+    max-width: 1040px; margin: 0 auto; padding: 22px 24px 48px;
+    display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-3);
+  }
+
+  @media (max-width: 720px) {
+    .nav .links { display: none; }
+    .stats { grid-template-columns: 1fr; }
+    .hero-card img { height: 280px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a class="wm" href="#">MoonDAO</a>
+  <div class="links">
+    <a href="#">Missions</a>
+    <a href="#">Governance</a>
+    <a href="#">About</a>
+  </div>
+  <a class="pill" href="#">Join</a>
+</div>
+
+<header class="hero">
+  <h1>The space program anyone can join.</h1>
+  <div class="hero-card">
+    <img src="/assets/mockups/habitat-render.webp" alt="A lunar settlement" />
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="n">2</div><div class="l">People flown</div></div>
+    <div class="stat"><div class="n">$8M</div><div class="l">Raised</div></div>
+    <div class="stat"><div class="n">2025</div><div class="l">Constitution on the Moon</div></div>
+  </div>
+</div>
+
+<section class="note">
+  <div class="wrap">
+    <p>Coby Cotton, 2022. Dr. Eiman Jahangir, 2024. A constitution on the Moon, 2025.</p>
+  </div>
+</section>
+
+<div class="cta-shell">
+  <div class="cta">
+    <h2>Membership is open.</h2>
+    <div><a class="pill" href="#">Join</a></div>
+  </div>
+</div>
+
+<footer>
+  <span>© MoonDAO</span>
+  <span>Privacy</span>
+</footer>
+
+</body>
+</html>

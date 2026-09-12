@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 19 · Program</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@75..200,400;75..200,600;75..200,800&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink: #0b0c0e; --paper: #f4f2ec; --line: rgba(255,255,255,0.22); }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+  body {
+    margin: 0; background: #000; color: #fff;
+    font-family: 'Anybody', system-ui, sans-serif;
+    font-variation-settings: 'wdth' 110;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 28px;
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+    font-variation-settings: 'wdth' 125;
+  }
+  .nav .mid { display: flex; gap: 28px; opacity: 0.72; }
+  .nav .join { border: 1px solid #fff; padding: 7px 12px; letter-spacing: 0.18em; }
+  .nav .join:hover { background: #fff; color: #000; }
+
+  .reel { min-height: 100vh; position: relative; display: flex; align-items: flex-end; }
+  .reel img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block;
+  }
+  .reel .veil {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.08) 46%, rgba(0,0,0,0.2) 100%);
+  }
+  .reel.blank { background: var(--paper); color: var(--ink); min-height: 86vh; }
+  .reel.blank .veil { display: none; }
+
+  .card {
+    position: relative; z-index: 2;
+    padding: 0 28px 56px;
+    max-width: 920px;
+  }
+  .when {
+    font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase;
+    font-variation-settings: 'wdth' 130; margin-bottom: 12px; opacity: 0.8;
+  }
+  h1 {
+    margin: 0; font-size: clamp(42px, 7.4vw, 92px); font-weight: 800;
+    letter-spacing: -0.03em; line-height: 0.92;
+    font-variation-settings: 'wdth' 145; text-transform: uppercase;
+  }
+  .verb {
+    display: inline-flex; align-items: center; gap: 10px; margin-top: 22px;
+    border: 1px solid currentColor; padding: 10px 16px;
+    font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+    font-variation-settings: 'wdth' 130;
+  }
+  .verb:hover { background: #fff; color: #000; }
+  .reel.blank .verb:hover { background: var(--ink); color: var(--paper); }
+
+  .note { margin: 14px 0 0; max-width: 36ch; font-size: 16px; line-height: 1.45; font-weight: 400; opacity: 0.78; font-variation-settings: 'wdth' 105; }
+
+  @media (max-width: 800px) {
+    .nav .mid { display: none; }
+    h1 { font-size: 42px; }
+    .reel { min-height: 92vh; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <span>MoonDAO</span>
+  <div class="mid">
+    <a href="#">Missions</a>
+    <a href="#">Governance</a>
+    <a href="#">About</a>
+  </div>
+  <a class="join" href="#">Join</a>
+</div>
+
+<section class="reel">
+  <img src="/assets/astronaut-coby.png" alt="Coby Cotton in a Blue Origin flight suit" />
+  <div class="veil"></div>
+  <div class="card">
+    <div class="when">August 2022 · NS-22</div>
+    <h1>Cotton<br>flew.</h1>
+    <p class="note">Selected by a member vote. Blue Origin. Suborbital.</p>
+    <a class="verb" href="#">The record →</a>
+  </div>
+</section>
+
+<section class="reel">
+  <img src="/assets/coby-cotton.png" alt="MoonDAO members in front of a rocket" />
+  <div class="veil"></div>
+  <div class="card">
+    <div class="when">The members · West Texas</div>
+    <h1>This is<br>the program.</h1>
+    <p class="note">Not a contractor photo. The people who paid, and voted.</p>
+  </div>
+</section>
+
+<section class="reel blank">
+  <div class="card">
+    <div class="when">August 2024</div>
+    <h1>Jahangir<br>flew.</h1>
+    <p class="note">Selected by open sweepstakes. Same ledger. Same operator.</p>
+  </div>
+</section>
+
+<section class="reel blank">
+  <div class="card">
+    <div class="when">2025 · Lunar surface</div>
+    <h1>The constitution<br>landed.</h1>
+    <p class="note">Written by the members. Delivered. Still public, as the votes are.</p>
+  </div>
+</section>
+
+<section class="reel blank">
+  <div class="card">
+    <div class="when">Now · Open</div>
+    <h1>New business<br>is in order.</h1>
+    <p class="note">Eight million dollars raised. Membership open. Lock $MOONEY to vote.</p>
+    <a class="verb" href="#">Join</a>
+  </div>
+</section>
+
+</body>
+</html>

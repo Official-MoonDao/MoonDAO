@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 10 · Institutional</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #14171d;
+    --ink-2: #4d535d;
+    --ink-3: #878d97;
+    --hair: #d9dce1;
+    --paper: #ffffff;
+    --paper-2: #f7f8fa;
+    --navy: #1b3358;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Public Sans', system-ui, sans-serif;
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  .g { font-family: 'EB Garamond', Georgia, serif; }
+  .small {
+    font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 600;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 40px; }
+
+  .masthead { padding: 40px 0 0; text-align: center; }
+  .seal { display: block; margin: 0 auto 12px; }
+  .inst {
+    font-family: 'EB Garamond', serif; font-size: clamp(28px, 3.8vw, 42px);
+    font-weight: 400; letter-spacing: 0.01em; line-height: 1.1;
+  }
+  .nav {
+    margin-top: 24px;
+    border-top: 1px solid var(--ink); border-bottom: 1px solid var(--hair);
+    display: flex; justify-content: center;
+  }
+  .nav a {
+    padding: 11px 20px; font-size: 13px; font-weight: 500; color: var(--ink-2);
+    border-right: 1px solid var(--hair);
+  }
+  .nav a:first-child { border-left: 1px solid var(--hair); }
+  .nav a.join { color: var(--navy); }
+  .nav a:hover { color: var(--navy); }
+
+  .report { padding: 56px 0 44px; }
+  .report h1 {
+    margin: 0;
+    font-family: 'EB Garamond', serif; font-weight: 400;
+    font-size: clamp(30px, 4.2vw, 48px); line-height: 1.12; letter-spacing: -0.01em;
+  }
+  .report h1 em { font-style: italic; }
+  .abstract { margin: 22px 0 0; max-width: 46ch; color: var(--ink-2); font-size: 16px; }
+
+  .kf { border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+  .kf-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .kf-grid > div { padding: 20px 20px 18px 0; border-right: 1px solid var(--hair); }
+  .kf-grid > div:last-child { border-right: 0; }
+  .kf .n {
+    font-family: 'EB Garamond', serif; font-size: 34px; line-height: 1; color: var(--navy);
+  }
+  .kf .l { margin-top: 8px; }
+
+  section { padding: 48px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); font-weight: 600; padding: 0 12px 8px 0;
+    border-bottom: 1px solid var(--ink);
+  }
+  td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--hair); font-size: 15px; }
+  td.year { width: 72px; font-weight: 600; }
+
+  .notice {
+    background: var(--paper-2); border: 1px solid var(--hair);
+    padding: 36px 40px; display: flex; align-items: center; justify-content: space-between; gap: 28px;
+  }
+  .notice h3 { margin: 0; font-family: 'EB Garamond', serif; font-weight: 400; font-size: 26px; }
+  .btn {
+    display: inline-flex; align-items: center; height: 42px; padding: 0 22px;
+    background: var(--navy); color: #fff; font-size: 13.5px; font-weight: 500; white-space: nowrap;
+  }
+  .btn:hover { background: var(--ink); }
+
+  footer {
+    background: var(--navy); color: rgba(255,255,255,0.7);
+    margin-top: 56px; padding: 22px 0 36px;
+  }
+  .sig { display: flex; justify-content: space-between; }
+  .sig .small { color: rgba(255,255,255,0.5); }
+
+  @media (max-width: 720px) {
+    .nav a:not(.join) { display: none; }
+    .kf-grid { grid-template-columns: 1fr; }
+    .notice { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <svg class="seal" width="52" height="52" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <circle cx="32" cy="32" r="30.5" stroke="#1b3358" stroke-width="1"/>
+      <circle cx="32" cy="32" r="13" stroke="#1b3358" stroke-width="1"/>
+      <path d="M32 19a13 13 0 0 0 0 26 9.6 9.6 0 0 1 0-26Z" fill="#1b3358"/>
+    </svg>
+    <div class="inst">MoonDAO</div>
+    <nav class="nav">
+      <a href="#">Missions</a>
+      <a href="#">Governance</a>
+      <a href="#">About</a>
+      <a class="join" href="#">Join</a>
+    </nav>
+  </div>
+
+  <div class="report">
+    <h1 class="g">Financed and governed <em>by its members.</em></h1>
+  </div>
+
+  <div class="kf">
+    <div class="kf-grid">
+      <div><div class="n">2</div><div class="small l">Flown</div></div>
+      <div><div class="n">$8M</div><div class="small l">Raised</div></div>
+      <div><div class="n">2025</div><div class="small l">Landed</div></div>
+    </div>
+  </div>
+
+  <section>
+    <table>
+      <thead><tr><th>Year</th><th>Record</th></tr></thead>
+      <tbody>
+        <tr><td class="year">2022</td><td>Coby Cotton flown, selected by vote</td></tr>
+        <tr><td class="year">2024</td><td>Dr. Eiman Jahangir flown, selected by sweepstakes</td></tr>
+        <tr><td class="year">2025</td><td>Constitution delivered to the lunar surface</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="notice">
+    <h3 class="g">Membership is open.</h3>
+    <a class="btn" href="#">Join</a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="sig">
+      <span class="small">© MoonDAO</span>
+      <span class="small">Privacy</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
