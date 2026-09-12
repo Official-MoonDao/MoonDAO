@@ -753,19 +753,22 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // no air to slow it, plume-thrown regolith travels ballistic arcs that stay
   // dangerous for hundreds of meters, so what a pad wants is the longest clear
   // sightline on the plan and two ways out of it, not a dead end 80 m from the
-  // nearest building. So the haul road runs BETWEEN the two pads and carries
-  // straight on out to the end of the spine.
-  //
-  // At 62 m across, the Starship's apron is most of a city block on its own,
-  // which is the other half of it: there is no branch on this plan long enough
-  // to make that a terminus rather than a blockage.
+  // nearest building. So the haul road runs BETWEEN the pads and carries
+  // straight on out to the end of the spine. (When this district hosted the
+  // crewed-lander race, Starship's 62 m apron was the other half of the
+  // argument — no branch was long enough to make it a terminus rather than a
+  // blockage. Touchdown's CLPS-class pads no longer force that, but the
+  // cul-de-sac argument alone still does.)
   lander: district(-280, {
     turn: 0,
     front: 'flank',
     flankSide: 1,
-    // The Starship pad's own 31.2 m footprint plus its frontage off the spine,
-    // which is why this is more than twice any other district's.
-    block: 71,
+    // Blue Moon MK1's 4.8 m pad plus its frontage off the spine, with the
+    // other four Touchdown pads packed down both flanks. Far smaller than the
+    // 71 m the Starship-era crewed race needed: the landing race here is now
+    // Touchdown (shared-next-landing), whose biggest entrant is an 8 m
+    // cargo lander rather than a 52 m Starship.
+    block: 20,
   }),
 
   // ISRU YARD, 200 m southwest, out on an 80 m branch to the northwest. The
