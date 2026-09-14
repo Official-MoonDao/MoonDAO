@@ -163,6 +163,30 @@ softgoods module uses for its own power feed.
   docking hatch, two open lattice bays exposing the propellant tanks, and a
   tapered ascent hull and nose, built off NASA's own Artemis renders of the
   selected lander. `spacex-starship-hls` still uses its GLB.
+- `blue-origin-blue-moon-mk1` used to render `viking-lander.glb`, which was
+  close to the inverse silhouette — a Mars lander is a low tripod deck, MK1 is
+  a tall barrel that is mostly tankage. It now renders `BlueMoonMk1`, built off
+  Blue Origin's full-scale mockup: a ring-seamed white cargo barrel under a
+  chamfered top deck, two gold MLI pressurant pods on the shoulders with a
+  harness run down to the skirt, a faceted gold MLI adapter skirt with an arch
+  cut in the front, four white ovoid tanks round the BE-7 under it, and four
+  splayed legs whose gold bipod turns bare metal at the knee. Note that
+  **dropping the `modelURI` from the dataset entry is half the change**:
+  `ProjectModel` branches on `modelURI` before it reaches `ProceduralModel`, so
+  a `PROJECT_MODEL` entry alone would have rendered nothing. The GLB file itself
+  is left in `public/` unreferenced, the same as `insight-lander.glb`.
+
+### The landing zone — Touchdown (1 of 5 done)
+
+`shared-next-landing` is the newest race and the least differentiated. Only
+`blue-origin-blue-moon-mk1` has its own model; `astrobotic-griffin`,
+`im-nova-c`, `firefly-blue-ghost` and `cnsa-change-7` all still fall through to
+the generic `Lander`, so four of the five vehicles on the pad are the same squat
+four-legged bus. They are not interchangeable hardware — Griffin is a wide flat
+cargo deck, Nova-C is a tall narrow hexagonal column (height is its largest
+dimension, not its span), Blue Ghost is a low wide disc, and Chang'e-7 is a
+Chang'e-3/4 heritage bus with a rover ramp — and all four already have their
+real sizes in `PROJECT_SIZE_M`, so only the geometry is missing.
 
 ### The habitat district — the two flagship programs (2 of 2 done)
 
