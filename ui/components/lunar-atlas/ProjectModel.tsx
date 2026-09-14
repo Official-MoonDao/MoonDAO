@@ -1130,6 +1130,508 @@ function BlueMoonMk2({ accent }: { accent: string }) {
   )
 }
 
+// ---------------------------------------------------------------------------
+// Blue Origin Blue Moon MK1 — uncrewed cargo lander
+// ---------------------------------------------------------------------------
+//
+// Replaces the Viking-lander stand-in (viking-lander.glb), which was close to
+// the opposite silhouette: a Mars lander is a low tripod deck, and MK1 is a
+// tall barrel that is mostly tankage. Built from Blue Origin's own full-scale
+// mockup and its surface render — a white ring-seamed cargo barrel under a
+// chamfered top deck, two gold MLI pods standing off the shoulders, a faceted
+// gold MLI adapter skirt with an arch open at the front, four white ovoid
+// propellant tanks clustered round the BE-7 beneath it, and four splayed legs
+// whose gold upper bipod turns bare metal at the knee.
+//
+// It shares nothing but livery with BlueMoonMk2 above, which is exactly why it
+// needs its own model rather than MK2's: MK2 is a crewed stack that is mostly
+// ascent hull above its crew module, and the two race in different goals
+// (shared-crewed-lander vs shared-next-landing), so they are never a stand-in
+// for one another even though both are Blue Moon.
+//
+// No feather, no wordmarks. The reference carries both, but a competitor's
+// marks are withheld until it claims its listing (isCompetitorClaimed in
+// lib/deprize/competitions), and per the house rule livery is one accent band
+// rather than a logo — here the collar ring under the top deck.
+const MK1_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['blue-origin-blue-moon-mk1'] ?? 8)
+
+const MK1_GOLD = '#c79a3c' // kapton MLI over the adapter skirt and the upper gear
+const MK1_FOIL = '#cbd0d6' // brighter aluminized foil on the pressurant pods
+
+// Stations up the stack, in meters above the regolith. Sized so the total
+// (footpad to top deck) lands on PROJECT_SIZE_M's 8 m exactly, which is also
+// why the 6.4 m leg span below stays under it: height has to be the largest
+// dimension or projectSizeM is describing the wrong axis.
+const MK1_FOOT_R = 3.2 // footpad splay radius
+const MK1_FOOT_Y = 0.14
+const MK1_KNEE_Y = 1.5
+const MK1_HIP_R = 1.95 // gear attaches at the skirt's lower rim
+const MK1_HIP_Y = 3.0
+const MK1_NOZZLE_Y = 0.72 // BE-7 exit plane, held well clear of the ground
+const MK1_THROAT_Y = 1.9
+const MK1_TANK_BOT = 1.25
+const MK1_TANK_TOP = 3.6
+const MK1_SKIRT_BOT = 2.9
+const MK1_SKIRT_TOP = 4.25
+const MK1_BARREL_TOP = 7.1
+const MK1_COLLAR_TOP = 7.55
+const MK1_DECK_TOP = 8.0
+const MK1_BARREL_R = 1.72
+const MK1_SKIRT_R = 2.05 // widest point on the vehicle
+const MK1_DECK_R = 1.15 // the chamfer's top rim
+const MK1_TANK_R = 0.78
+const MK1_TANK_RING_R = 1.22 // tanks just kiss the skirt's own width, as in the mockup
+
+// Half-width of the arch left open in the skirt, centred on the front. Small
+// enough that the skirt still reads as a closed structural adapter with a door
+// in it rather than as an open bay.
+const MK1_ARCH_HALF = Math.PI / 8
+
+// The skirt is a frustum, so anything mounted on its flank at a flat radius is
+// half-buried at one end of its run and standing off at the other — the same
+// z-fighting seam bm2HullR exists to avoid. Sample the radius at the fitting's
+// own height first.
+function mk1SkirtR(y: number): number {
+  const t = (y - MK1_SKIRT_BOT) / (MK1_SKIRT_TOP - MK1_SKIRT_BOT)
+  return MK1_SKIRT_R + (MK1_BARREL_R - MK1_SKIRT_R) * t
+}
+
+// Shared by Mk1Leg and the cross bracing between adjacent legs, which is drawn
+// by the parent — put the bracing inside the leg and every member gets drawn
+// twice, once from each end.
+function mk1Knee(angle: number): [number, number, number] {
+  const kneeR = (MK1_HIP_R + MK1_FOOT_R) * 0.5
+  return [Math.cos(angle) * kneeR, MK1_KNEE_Y, Math.sin(angle) * kneeR]
+}
+
+// One leg: a gold-wrapped bipod off the skirt's lower rim onto a knee, bare
+// metal from there down to the footpad, and a drag brace back up under the tank
+// bay. The gold/metal split is the other way round from Bm2Leg on purpose —
+// MK1's blankets stop at the knee and the reference's lower gear is bare.
+function Mk1Leg({ angle }: { angle: number }) {
+  const hip1: [number, number, number] = [
+    Math.cos(angle - 0.2) * MK1_HIP_R,
+    MK1_HIP_Y,
+    Math.sin(angle - 0.2) * MK1_HIP_R,
+  ]
+  const hip2: [number, number, number] = [
+    Math.cos(angle + 0.2) * MK1_HIP_R,
+    MK1_HIP_Y,
+    Math.sin(angle + 0.2) * MK1_HIP_R,
+  ]
+  const knee = mk1Knee(angle)
+  const foot: [number, number, number] = [
+    Math.cos(angle) * MK1_FOOT_R,
+    MK1_FOOT_Y,
+    Math.sin(angle) * MK1_FOOT_R,
+  ]
+  // Inboard anchor for the drag brace, which is what closes the visible
+  // triangle under each leg in the mockup and stops the bipod folding sideways.
+  const brace: [number, number, number] = [
+    Math.cos(angle) * MK1_HIP_R * 0.72,
+    MK1_TANK_BOT,
+    Math.sin(angle) * MK1_HIP_R * 0.72,
+  ]
+  return (
+    <group>
+      <Strut from={hip1} to={knee} r={0.085} color={MK1_GOLD} />
+      <Strut from={hip2} to={knee} r={0.085} color={MK1_GOLD} />
+      <Strut from={knee} to={foot} r={0.07} color={METAL} />
+      <Strut from={foot} to={brace} r={0.04} color={METAL} />
+      <mesh position={knee}>
+        <sphereGeometry args={[0.13, 10, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.35} />
+      </mesh>
+      {/* Footpad: a shallow dish bedded a few cm below grade, so it cannot lift
+          clear of a hollow it lands over. Smaller than MK2's — a third of the
+          landed mass on the same number of feet. */}
+      <mesh position={[foot[0], foot[1] - 0.08, foot[2]]}>
+        <cylinderGeometry args={[0.5, 0.36, 0.18, 16]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.3} roughness={0.6} />
+      </mesh>
+      <mesh position={[foot[0], foot[1] + 0.03, foot[2]]}>
+        <sphereGeometry args={[0.42, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={METAL} metalness={0.4} roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+// The BE-7 in the middle of the tank cluster: a bell hung high in the
+// structure rather than down at the footpads, which is what leaves the space
+// under the vehicle that its cargo comes down into.
+function Mk1Engine() {
+  const h = MK1_THROAT_Y - MK1_NOZZLE_Y
+  return (
+    <group>
+      <mesh position={[0, MK1_NOZZLE_Y + h / 2, 0]}>
+        <cylinderGeometry args={[0.16, 0.5, h, 20, 1, true]} />
+        <meshStandardMaterial
+          color={DARK}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.35}
+        />
+      </mesh>
+      <mesh position={[0, MK1_THROAT_Y + 0.18, 0]}>
+        <sphereGeometry args={[0.26, 14, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+      </mesh>
+      {/* Gimbal ring, proud of the throat so it reads as a joint. */}
+      <mesh position={[0, MK1_THROAT_Y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.22, 0.04, 8, 16]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.5} roughness={0.45} />
+      </mesh>
+    </group>
+  )
+}
+
+// One propellant tank: a white ovoid with a proud girth band and a feed line
+// running inboard to the engine. Four of these ARE the lower half of the
+// vehicle in the reference — they are not faired over, so they have to read as
+// separate pressure vessels rather than one lobed shell.
+function Mk1Tank({ angle }: { angle: number }) {
+  const yMid = (MK1_TANK_BOT + MK1_TANK_TOP) / 2
+  const half = (MK1_TANK_TOP - MK1_TANK_BOT) / 2
+  const x = Math.cos(angle) * MK1_TANK_RING_R
+  const z = Math.sin(angle) * MK1_TANK_RING_R
+  return (
+    <group>
+      <mesh position={[x, yMid, z]} scale={[1, half / MK1_TANK_R, 1]}>
+        <sphereGeometry args={[MK1_TANK_R, 18, 12]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.28} />
+      </mesh>
+      {/* Girth band on the ovoid's equator, where its horizontal radius is
+          exactly MK1_TANK_R (the mesh is stretched in y only) — offset a clear
+          3 cm rather than a percentage, which at this radius is under a
+          centimetre and strobes like a flush decal. */}
+      <mesh position={[x, yMid, z]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[MK1_TANK_R + 0.03, 0.04, 8, 24]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.55} metalness={0.3} />
+      </mesh>
+      <Strut
+        from={[x * 0.72, MK1_TANK_BOT + 0.1, z * 0.72]}
+        to={[x * 0.2, MK1_THROAT_Y + 0.1, z * 0.2]}
+        r={0.05}
+        color={HULL_DARK}
+      />
+    </group>
+  )
+}
+
+// The gold MLI adapter between the tank bay and the cargo barrel, and the one
+// element that fixes the vehicle's identity from any angle: the widest thing on
+// it, faceted, with an arch cut in the front that the forward tank shows
+// through. Drawn as an arc rather than a full frustum to leave that arch —
+// three.js puts thetaStart = 0 on +Z (confirmed numerically, per the house rule
+// on signs), so sweeping from +MK1_ARCH_HALF for the remaining 7/8 leaves the
+// gap centred on the front, which is the side a procedural model presents.
+function Mk1Skirt() {
+  const h = MK1_SKIRT_TOP - MK1_SKIRT_BOT
+  // Where the arch's edges land: azimuth a maps to theta = pi/2 - a, so the
+  // open theta span (-MK1_ARCH_HALF, +MK1_ARCH_HALF) is the azimuth span
+  // centred on +Z, and its edges sit at cos/sin of that half-angle off it.
+  const jx = Math.sin(MK1_ARCH_HALF)
+  const jz = Math.cos(MK1_ARCH_HALF)
+  return (
+    <group>
+      <mesh position={[0, MK1_SKIRT_BOT + h / 2, 0]}>
+        <cylinderGeometry
+          args={[
+            MK1_BARREL_R,
+            MK1_SKIRT_R,
+            h,
+            7,
+            1,
+            true,
+            MK1_ARCH_HALF,
+            Math.PI * 2 - MK1_ARCH_HALF * 2,
+          ]}
+        />
+        <meshStandardMaterial
+          color={MK1_GOLD}
+          side={THREE.DoubleSide}
+          metalness={0.55}
+          roughness={0.42}
+        />
+      </mesh>
+      {/* Lintel over the arch, plus a jamb down each edge. */}
+      <mesh position={[0, MK1_SKIRT_TOP - 0.14, jz * MK1_BARREL_R]}>
+        <boxGeometry args={[jx * MK1_BARREL_R * 2, 0.28, 0.18]} />
+        <meshStandardMaterial color={MK1_GOLD} metalness={0.5} roughness={0.45} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[s * jx * MK1_BARREL_R, MK1_SKIRT_TOP, jz * MK1_BARREL_R]}
+          to={[s * jx * MK1_SKIRT_R, MK1_SKIRT_BOT, jz * MK1_SKIRT_R]}
+          r={0.07}
+          color={MK1_GOLD}
+        />
+      ))}
+      {/* Structural rims top and bottom, each proud by its own tube radius. */}
+      <mesh position={[0, MK1_SKIRT_TOP, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[MK1_BARREL_R, 0.07, 8, 28]} />
+        <meshStandardMaterial color={MK1_GOLD} metalness={0.5} roughness={0.45} />
+      </mesh>
+      <mesh position={[0, MK1_SKIRT_BOT, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[MK1_SKIRT_R, 0.06, 8, 28]} />
+        <meshStandardMaterial color={MK1_GOLD} metalness={0.5} roughness={0.45} />
+      </mesh>
+      {/* The avionics box the mockup carries on the skirt's flank, seated on
+          the frustum's radius at its own height rather than the rim's. */}
+      <mesh position={[mk1SkirtR(MK1_SKIRT_TOP - 0.3) + 0.14, MK1_SKIRT_TOP - 0.3, 0]}>
+        <boxGeometry args={[0.34, 0.44, 0.52]} />
+        <meshStandardMaterial color={MK1_GOLD} metalness={0.45} roughness={0.5} />
+      </mesh>
+      <mesh position={[mk1SkirtR(MK1_SKIRT_TOP - 0.3) + 0.32, MK1_SKIRT_TOP - 0.3, 0]}>
+        <boxGeometry args={[0.06, 0.2, 0.3]} />
+        <meshStandardMaterial color={DARK} metalness={0.5} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The cargo barrel: a white cylinder built up from ring segments, with the
+// stacked seams standing proud so they catch the light as built courses rather
+// than strobing as flush decals. Two dark access panels face the front, and a
+// spherical service tank stands off the upper flank on a bracket.
+function Mk1Barrel({ accent }: { accent: string }) {
+  const y0 = MK1_SKIRT_TOP
+  const h = MK1_BARREL_TOP - y0
+  const seams = [0.25, 0.5, 0.75].map((f) => y0 + h * f)
+  // Service tank, out on the front-left flank where the render carries it.
+  const az = 2.2
+  const tx = Math.cos(az) * MK1_BARREL_R
+  const tz = Math.sin(az) * MK1_BARREL_R
+  return (
+    <group>
+      <mesh position={[0, y0 + h / 2, 0]}>
+        <cylinderGeometry args={[MK1_BARREL_R, MK1_BARREL_R, h, 24]} />
+        <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.25} />
+      </mesh>
+      {seams.map((y) => (
+        <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[MK1_BARREL_R, 0.05, 8, 28]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.6} metalness={0.3} />
+        </mesh>
+      ))}
+      {/* Access panels: sunk a centimetre into the wall so their corners bed
+          into the curve instead of lifting off it (a 0.66 m panel on a 1.72 m
+          radius stands off 3 cm at the corner if laid flat on the tangent). */}
+      {[-0.62, 0.62].map((x) => (
+        <mesh key={x} position={[x, y0 + h * 0.56, MK1_BARREL_R - 0.01]}>
+          <boxGeometry args={[0.66, 1.25, 0.08]} />
+          <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+        </mesh>
+      ))}
+      <mesh position={[tx * 1.24, MK1_BARREL_TOP - 0.5, tz * 1.24]}>
+        <sphereGeometry args={[0.24, 14, 10]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.45} metalness={0.4} />
+      </mesh>
+      <Strut
+        from={[tx * 0.99, MK1_BARREL_TOP - 0.5, tz * 0.99]}
+        to={[tx * 1.16, MK1_BARREL_TOP - 0.5, tz * 1.16]}
+        r={0.045}
+        color={METAL}
+      />
+      <mesh position={[0, y0 + h * 0.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[MK1_BARREL_R + 0.02, 0.035, 8, 28]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={0.5}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// One of the two pressurant pods standing off the barrel's shoulders — a foil
+// capsule on a pair of brackets, with a harness run down to the skirt's rim.
+// Those pods and the cables between them are most of what makes the upper half
+// read as MK1 rather than as a plain drum.
+function Mk1ShoulderPod({ side }: { side: number }) {
+  const x = side * (MK1_BARREL_R + 0.44)
+  const yMid = 6.1
+  const half = 0.62
+  return (
+    <group>
+      <mesh position={[x, yMid, 0]}>
+        <cylinderGeometry args={[0.3, 0.3, half * 2, 14]} />
+        <meshStandardMaterial color={MK1_FOIL} metalness={0.6} roughness={0.32} />
+      </mesh>
+      {/* A bare hemisphere always caps upward, so the lower one is turned over
+          about +X rather than mirrored by a negative scale — a negative scale
+          reverses the winding and the cap renders inside-out. */}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={[x, yMid + s * half, 0]}
+          rotation={[s < 0 ? Math.PI : 0, 0, 0]}
+        >
+          <sphereGeometry args={[0.3, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color={MK1_FOIL} metalness={0.6} roughness={0.32} />
+        </mesh>
+      ))}
+      {[-0.34, 0.34].map((dy) => (
+        <Strut
+          key={dy}
+          from={[side * MK1_BARREL_R * 0.99, yMid + dy, 0]}
+          to={[x - side * 0.28, yMid + dy, 0]}
+          r={0.04}
+          color={METAL}
+        />
+      ))}
+      <Strut
+        from={[x, yMid - half, 0]}
+        to={[side * MK1_BARREL_R * 0.96, MK1_SKIRT_TOP + 0.1, 0]}
+        r={0.022}
+        color={DARK}
+      />
+    </group>
+  )
+}
+
+// Crew access ladder on the front, left of the skirt's arch: a pair of rails
+// that lean out as they drop, with rungs between. The head is set a little
+// inside the skirt's own face at that height so it beds into the structure
+// instead of hanging a few cm off it, and the foot runs below grade.
+function Mk1Ladder() {
+  const x = -0.92
+  const yTop = MK1_SKIRT_BOT + 0.1
+  const yBot = -0.06
+  const zTop = mk1SkirtR(yTop) * 0.86
+  const zBot = zTop + 0.3
+  const rungCount = 8
+  return (
+    <group>
+      {[-0.17, 0.17].map((dx) => (
+        <Strut
+          key={dx}
+          from={[x + dx, yTop, zTop]}
+          to={[x + dx, yBot, zBot]}
+          r={0.035}
+          color={MK1_GOLD}
+        />
+      ))}
+      {Array.from({ length: rungCount }, (_, i) => {
+        const t = (i + 0.5) / rungCount
+        const y = yTop + (yBot - yTop) * t
+        const z = zTop + (zBot - zTop) * t
+        return (
+          <Strut key={i} from={[x - 0.17, y, z]} to={[x + 0.17, y, z]} r={0.022} color={METAL} />
+        )
+      })}
+    </group>
+  )
+}
+
+// The chamfered top deck the barrel ends in, with the lifting fittings the
+// mockup carries on its rim, the one accent livery band on the collar below it,
+// and a beacon on the front. The deck plate is the vehicle's 8 m ceiling, so
+// the chamfer stops a plate-thickness short of it.
+function Mk1TopDeck({ accent }: { accent: string }) {
+  const plate = 0.06
+  const chamferTop = MK1_DECK_TOP - plate
+  const lugAz = [0.35, 1.05, -0.35, -1.05].map((d) => Math.PI / 2 + d)
+  return (
+    <group>
+      <mesh position={[0, (MK1_BARREL_TOP + MK1_COLLAR_TOP) / 2, 0]}>
+        <cylinderGeometry
+          args={[MK1_BARREL_R, MK1_BARREL_R, MK1_COLLAR_TOP - MK1_BARREL_TOP, 12]}
+        />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.28} />
+      </mesh>
+      <mesh position={[0, (MK1_COLLAR_TOP + chamferTop) / 2, 0]}>
+        <cylinderGeometry args={[MK1_DECK_R, MK1_BARREL_R, chamferTop - MK1_COLLAR_TOP, 12]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.28} />
+      </mesh>
+      <mesh position={[0, chamferTop + plate / 2, 0]}>
+        <cylinderGeometry args={[MK1_DECK_R * 0.97, MK1_DECK_R * 0.97, plate, 12]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.6} metalness={0.3} />
+      </mesh>
+      {lugAz.map((a) => (
+        <mesh
+          key={a}
+          position={[
+            Math.cos(a) * MK1_DECK_R * 0.84,
+            chamferTop + plate + 0.05,
+            Math.sin(a) * MK1_DECK_R * 0.84,
+          ]}
+          rotation={[0, Math.PI / 2 - a, 0]}
+        >
+          <boxGeometry args={[0.16, 0.14, 0.12]} />
+          <meshStandardMaterial color={MK1_GOLD} metalness={0.5} roughness={0.45} />
+        </mesh>
+      ))}
+      {/* Livery: a band on the collar, standing proud of it, where the
+          reference carries the wordmark. See the note on the model above. */}
+      <mesh
+        position={[0, MK1_BARREL_TOP + (MK1_COLLAR_TOP - MK1_BARREL_TOP) * 0.5, 0]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <torusGeometry args={[MK1_BARREL_R + 0.02, 0.055, 8, 28]} />
+        <meshStandardMaterial color={accent} metalness={0.3} roughness={0.5} />
+      </mesh>
+      <mesh position={[0, MK1_COLLAR_TOP - 0.12, MK1_BARREL_R * 0.94]}>
+        <sphereGeometry args={[0.06, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function BlueMoonMk1({ accent }: { accent: string }) {
+  // Gear on the diagonals, tanks on the axes. That is the mockup's own
+  // arrangement, and it is also what a procedural model needs: frontAz is
+  // always 0 for one (see MODEL_FRONT_AZ), so +Z is what the camera gets, and
+  // this puts the forward tank centred in the skirt's arch with no leg standing
+  // in front of the access panels.
+  const legAngles = [0, 1, 2, 3].map((i) => (i / 4) * Math.PI * 2 + Math.PI / 4)
+  const tankAngles = [0, 1, 2, 3].map((i) => (i / 4) * Math.PI * 2 + Math.PI / 2)
+  return (
+    <group>
+      {/* gradedDeckRadiusM already declares 0.6 x 8 m = 4.8 m of pad deck for a
+          lander, which is almost exactly one local unit at MK1_M — so a unit
+          radius draws the deck the terrain seater is already seating this on,
+          and it clears the 3.2 m leg splay with room over. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={MK1_M}>
+        {legAngles.map((a) => (
+          <Mk1Leg key={a} angle={a} />
+        ))}
+        {legAngles.map((a, i) => (
+          <Strut
+            key={`brace-${a}`}
+            from={mk1Knee(a)}
+            to={mk1Knee(legAngles[(i + 1) % legAngles.length])}
+            r={0.032}
+            color={METAL}
+          />
+        ))}
+        <Mk1Engine />
+        {tankAngles.map((a) => (
+          <Mk1Tank key={a} angle={a} />
+        ))}
+        <Mk1Skirt />
+        <Mk1Barrel accent={accent} />
+        {[-1, 1].map((s) => (
+          <Mk1ShoulderPod key={s} side={s} />
+        ))}
+        <Mk1Ladder />
+        <Mk1TopDeck accent={accent} />
+      </group>
+    </group>
+  )
+}
+
 // Rover body reused standalone and parked in the base compound.
 function RoverBody({ accent }: { accent: string }) {
   const wheels: [number, number][] = [
@@ -12463,6 +12965,13 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // The crewed-lander race's second competitor, replacing the InSight-lander
   // stand-in. See BlueMoonMk2. `spacex-starship-hls` keeps its GLB.
   'blue-origin-blue-moon-mk2': BlueMoonMk2,
+  // Touchdown's largest entrant, replacing a Viking-lander GLB. Its `modelURI`
+  // had to come off the dataset entry as well: ProjectModel below branches on
+  // modelURI BEFORE it ever reaches ProceduralModel, so registering the
+  // component while the GLB stayed would have changed nothing on screen. The
+  // other four in that race still fall through to the generic `Lander`.
+  // See BlueMoonMk1.
+  'blue-origin-blue-moon-mk1': BlueMoonMk1,
 }
 
 export function ProceduralModel({
