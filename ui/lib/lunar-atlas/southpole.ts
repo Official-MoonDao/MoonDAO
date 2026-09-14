@@ -37,7 +37,7 @@ const RAD2DEG = 180 / Math.PI
 export const M_TO_UNITS = GLOBE_RADIUS / MOON_RADIUS_M
 
 // Vertical scale of terrain heights. 1 = true scale: the models are real
-// size, so the ground must be too. BAKED into the albedo hillshade.
+// size, so the ground must be too.
 export const HEIGHT_EXAGGERATION = 1
 
 // The patch: 16 km square centered on the Connecting Ridge, in south polar
@@ -53,7 +53,15 @@ export const CAP_HEIGHT_MAX_M = 1959.5
 export const CAP_CENTER_HEIGHT_M = 1944.8
 
 // Patch mesh tessellation (grid cells per side): 1024 cells over 16 km is a
-// ~15.6 m polygon pitch (~2.1 M triangles — fine for a single unlit mesh).
+// ~15.6 m polygon pitch (~2.1 M triangles), which is now one mesh in one pass —
+// the separate shadow-catching pass over the same geometry went away when the
+// terrain became lit and could receive shadows itself.
+//
+// This no longer limits how fine the SHADING is. Relief below 15.6 m is carried
+// per pixel by the normal field further down, so this number only has to be
+// right about silhouette and parallax, and it can drop on a weak device without
+// changing how the ground is lit.
+//
 // The CPU sampler mirrors this lattice, so seated objects agree with the
 // rendered ground.
 export const CAP_GRID = 1024
@@ -275,6 +283,96 @@ export function capRadiusAt(
 ): number {
   const { s, t } = latLonToST(lat, lon)
   return heightToRadius(meshHeightMeters(field, grid, s, t))
+}
+
+// ---------------------------------------------------------------------------
+// Surface normals
+//
+// Shading is per pixel, and it is per pixel for a hard reason: geometry cannot
+// carry this relief. A mesh fine enough to resolve the DEM's 5 m posts over a
+// 16 km patch is 20.5 M triangles and about 550 MB of vertex buffers, which is
+// not a thing a browser tab can hold. So the mesh stays at CAP_GRID and only
+// has to be right about SILHOUETTE and parallax, while the normal that actually
+// gets lit is sampled from a texture built here at the full height-field
+// resolution. That is the trade that makes physical lighting affordable, and it
+// is why `computeVertexNormals` must NOT also be feeding the shader: the mesh's
+// own normals and these would double-count the same slope.
+//
+// Normals are stored in the MAP TANGENT FRAME — components along map-east
+// (+X, image right) and map-north (+Y, image up), with the third component
+// along the local outward vertical. That frame is chosen because the height
+// field is a function of exactly those two map coordinates, so the normal is
+// just its gradient, with no projection math per pixel. The shader rebuilds the
+// frame per fragment from MAP_X_DIR/MAP_Y_DIR and the fragment's own position,
+// which keeps the sphere's curvature across the patch exact rather than
+// assuming the 16 km square is flat: at the far corner the local vertical has
+// tilted 0.9° off the pole's, and under the grazing polar sun a 0.9° normal
+// error is a large fraction of the incidence cosine.
+// ---------------------------------------------------------------------------
+
+function normalize3(v: Vec3): Vec3 {
+  const l = Math.hypot(v[0], v[1], v[2])
+  return [v[0] / l, v[1] / l, v[2] / l]
+}
+
+// Scene direction of a point given directly in map coordinates (meters).
+function mapDirection(xM: number, yM: number): Vec3 {
+  const ll = stToLatLon((xM - CAP_CENTER_X_M) / CAP_EXTENT_M, (yM - CAP_CENTER_Y_M) / CAP_EXTENT_M)
+  return latLonToVector3(ll.lat, ll.lon, 1)
+}
+
+// World directions of the map frame's +X and +Y axes, taken at the pole where
+// the projection is tangent to the sphere. Derived from the projection and the
+// geo convention rather than written down, so a change to either is caught by
+// the round-trip test instead of silently rotating every terrain normal.
+function mapAxis(dx: number, dy: number): Vec3 {
+  const step = 1000 // meters; only the direction survives the normalize
+  const a = mapDirection(dx * step, dy * step)
+  const b = mapDirection(-dx * step, -dy * step)
+  return normalize3([a[0] - b[0], a[1] - b[1], a[2] - b[2]])
+}
+
+export const MAP_X_DIR: Vec3 = mapAxis(1, 0)
+export const MAP_Y_DIR: Vec3 = mapAxis(0, 1)
+
+// (nx, ny) pairs, row-major, matching the height field's layout. The third
+// component is always positive — terrain is a height field, so its normal can
+// never point at or below the horizontal — and is reconstructed as
+// sqrt(1 - nx^2 - ny^2) rather than stored.
+export type PolarNormalField = {
+  size: number
+  data: Float32Array
+}
+
+// Central-difference the height field into map-frame normals.
+export function buildNormalField(field: PolarHeightField): PolarNormalField {
+  const { size, data } = field
+  const spacingM = CAP_EXTENT_M / size
+  // Raw counts to meters. Only the SCALE matters here: minM is a constant
+  // offset and cancels in every difference below.
+  const kM = ((field.maxM - field.minM) / 65535) * HEIGHT_EXAGGERATION
+  const out = new Float32Array(size * size * 2)
+  const cl = (v: number) => Math.max(0, Math.min(size - 1, v))
+
+  for (let y = 0; y < size; y++) {
+    const yUp = cl(y - 1) // one row up in the image is +Y in the map frame
+    const yDn = cl(y + 1)
+    for (let x = 0; x < size; x++) {
+      const xL = cl(x - 1)
+      const xR = cl(x + 1)
+      // Central differences, halved by the two-pixel baseline. Edge pixels get
+      // a clamped one-sided difference over a shortened baseline; the patch rim
+      // is 8 km from anything anyone looks at.
+      const dhdx = (kM * (data[y * size + xR] - data[y * size + xL])) / ((xR - xL) * spacingM)
+      const dhdy = (kM * (data[yUp * size + x] - data[yDn * size + x])) / ((yDn - yUp) * spacingM)
+      const inv = 1 / Math.sqrt(dhdx * dhdx + dhdy * dhdy + 1)
+      const i2 = (y * size + x) * 2
+      out[i2] = -dhdx * inv
+      out[i2 + 1] = -dhdy * inv
+    }
+  }
+
+  return { size, data: out }
 }
 
 // ---------------------------------------------------------------------------

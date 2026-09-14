@@ -1,28 +1,36 @@
 // The one sun over Moon Base Zero.
 //
 // This used to live in MoonGlobe.tsx, which was fine while the sun was only a
-// light. It is now four different things that have to agree exactly — the
-// directional light, the hillshade already baked into the terrain albedo, the
-// craterlet detail tile's own hillshade, and the regolith environment the
-// metal reflects — and three of those four had their own private copy of the
-// azimuth. One of the copies was already wrong: MoonGlobe's comment claimed
-// bearing 40°, which is the MAP-frame azimuth in the bake script, not the
-// bearing a person standing on the ridge would measure (50°). Both numbers are
-// below, named for which frame each belongs to, so the next person does not
-// have to work out which one a call site meant.
+// light. It then became four different things that had to agree exactly — the
+// directional light, the hillshade baked into the terrain albedo, the craterlet
+// detail tile's own hillshade, and the regolith environment the metal reflects —
+// and three of those four had their own private copy of the azimuth. One of the
+// copies was already wrong: MoonGlobe's comment claimed bearing 40°, which is
+// the MAP-frame azimuth in the bake script, not the bearing a person standing on
+// the ridge would measure (50°). Both numbers are below, named for which frame
+// each belongs to, so the next person does not have to work out which one a call
+// site meant.
+//
+// Two of those four are now gone. The terrain evaluates the regolith BRDF
+// against this direction instead of displaying a hillshade, and the detail tile
+// stores slopes instead of shading, so neither holds a sun of its own any more.
+// What remains is a light and an environment map, both reading the vector below.
 import { latLonToVector3, type Vec3 } from './geo'
 
-// The bake's own numbers (SUN_AZ_DEG / SUN_EL_DEG in build-southpole-assets.py),
-// in the south-polar MAP frame the DEM is projected into. Changing either means
-// re-running the bake — the terrain albedo IS a hillshade from this direction,
-// so a light that disagrees with it reads instantly as fake.
+// The MAP-frame numbers, in the south-polar frame the DEM is projected into.
+//
+// These no longer drive a bake — nothing is baked from a sun any more — but they
+// are still where SUN_DIR comes from, because the whole point of this module is
+// that one direction is written down once. 45° is where a cartographic hillshade
+// puts its sun, and the scene inherited it as an artistic choice for legibility;
+// the real sun over the connecting ridge never gets more than ~2° above the
+// horizon. See docs/MOONBASE_MODEL_HANDOFF.md.
 export const SUN_MAP_AZ_DEG = 40
 export const SUN_MAP_EL_DEG = 45
 
 // The same direction as a unit vector from the Moon's center, which is what
 // the scene actually needs. The map frame's azimuth is the lon argument and
-// its elevation the (negated) lat — that identity is the whole reason the bake
-// and the light can be kept in step by construction rather than by hand.
+// its elevation the (negated) lat.
 export const SUN_DIR: Vec3 = (() => {
   const v = latLonToVector3(-SUN_MAP_EL_DEG, SUN_MAP_AZ_DEG, 1)
   const l = Math.hypot(v[0], v[1], v[2])

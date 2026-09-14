@@ -36,7 +36,7 @@
 // Radiances are in the renderer's own units, derived from SUN_INTENSITY rather
 // than dialled in, so scene.environmentIntensity can sit at 1 and mean it.
 import * as THREE from 'three'
-import { REGOLITH_ALBEDO, normalizedSurge } from '@/lib/lunar-atlas/regolith'
+import { hapkeReflectance } from '@/lib/lunar-atlas/regolith'
 import { capCenterDirection, capLocalDirection } from '@/lib/lunar-atlas/southpole'
 import { SUN_DIR, SUN_INTENSITY, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 // The same Earth the user can see, not a second one that happens to agree
@@ -86,11 +86,9 @@ export function buildLunarEnvironmentTexture(): THREE.DataTexture {
   const cosEarth = Math.cos(EARTH_ANGULAR_RADIUS_RAD)
 
   // Cosine of the sun's incidence on flat ground — constant across the whole
-  // ground hemisphere, which is what keeps the Lommel-Seeliger term bounded
-  // here when it would run away on real terrain.
+  // ground hemisphere, since this is an environment map of an idealised plain
+  // rather than of the actual relief.
   const mu0 = Math.sin((SUN_LOCAL_ELEV_DEG * Math.PI) / 180)
-  // Lambertian radiance of that ground, before either regolith term.
-  const groundBase = (REGOLITH_ALBEDO * SUN_INTENSITY * mu0) / Math.PI
 
   // Soften the horizon across a single texel of elevation. A truly hard step
   // would alias into a staircase in the sharpest mip, which reads as a jagged
@@ -126,19 +124,28 @@ export function buildLunarEnvironmentTexture(): THREE.DataTexture {
       // Ground, blended in below the horizon.
       const groundMix = THREE.MathUtils.smoothstep(-elev, -horizonSoften, horizonSoften)
       if (groundMix > 0) {
-        // Cosine of the view angle off the ground's own normal. At the horizon
-        // this goes to zero (grazing); straight down it is one.
-        const mu = Math.max(0, -s)
-        // Lommel-Seeliger, normalized so that looking straight down is 1.
-        // Bounded above by (mu0 + 1)/mu0 = 2.43 at grazing view, which is the
-        // bright horizon band and not a divergence.
-        const ls = (mu0 + 1) / (mu0 + mu)
-        // The opposition surge, measured on the ground patch this texel looks
-        // at: the direction back to the eye is -d, and the phase angle is what
-        // that makes with the sun. Peaks in the antisolar direction, which is
-        // below the horizon here because the sun is 44° up.
+        // Cosine of the view angle off the ground's own normal: one straight
+        // down, approaching zero at the horizon.
+        //
+        // Floored just above zero rather than clamped to it, because
+        // hapkeReflectance returns 0 at mu = 0 and that would paint the horizon
+        // BLACK — the exact opposite of what happens there. The guard in the BRDF
+        // is about projected AREA vanishing edge-on, which is the right answer
+        // when shading a surface; an environment map stores RADIANCE, and
+        // radiance does not vanish at grazing emergence, it peaks.
+        const mu = Math.max(1e-3, -s)
+        // Phase angle of the ground patch this texel looks at: the direction back
+        // to the eye is -d, and the phase angle is what that makes with the sun.
         const g = Math.acos(Math.max(-1, Math.min(1, -dot3(d, SUN_DIR))))
-        const L = groundBase * ls * normalizedSurge(g)
+        // The same BRDF the terrain is shaded with, called rather than
+        // re-derived. It used to be a Lambertian base times a normalized
+        // Lommel-Seeliger times a normalized surge, which was the best available
+        // approximation while the ground itself was a hillshade with no absolute
+        // radiance to agree with. Now that the ground has one, this must BE that
+        // number: metal reflecting a plain 4x brighter than the plain it is
+        // standing on is precisely the class of disagreement this file's header
+        // promises the scene does not have.
+        const L = SUN_INTENSITY * hapkeReflectance(mu0, mu, g)
         cr += groundMix * (REGOLITH_TINT[0] * L - cr)
         cg += groundMix * (REGOLITH_TINT[1] * L - cg)
         cb += groundMix * (REGOLITH_TINT[2] * L - cb)

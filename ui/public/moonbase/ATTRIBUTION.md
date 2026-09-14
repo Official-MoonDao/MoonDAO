@@ -64,7 +64,21 @@ Source: [PGDA product 78](https://pgda.gsfc.nasa.gov/products/78)
 | File | Derivation |
 |---|---|
 | `height_rg.png` | 16-bit heights split across the R (high byte) / G (low byte) channels, normalized to the patch's height range. True vertical scale (no exaggeration) — the moonbase on it is 1:1. |
-| `albedo.jpg` | Synthesized neutral-regolith albedo with the hillshade lighting baked in at the DEM's native 5 m/px, plus cavity shading and grain (lunar regolith is near-uniform albedo; there is no usable optical imagery of the mostly-shadowed pole). |
+
+Heights are the only shipped asset, and everything visible about the ground is
+derived from them: the renderer builds surface normals from this file at load
+and shades them with the regolith BRDF (`ui/lib/lunar-atlas/regolith.ts`).
+
+There used to be a second file here, `albedo.jpg`, a synthesized regolith albedo
+with hillshade lighting baked in. It was removed rather than regenerated, for a
+reason that belongs in an attribution file specifically: most of its apparent
+realism came from a randomly generated power-law crater population, and at the
+top of that distribution it was painting hundreds of craters over 100 m across
+onto a real, published, checkable DEM of a real place. Synthetic detail below the
+source's resolution is honest gap-filling. Synthetic landforms at that scale are
+not, and they have no business in an asset presented as LOLA-derived. Detail finer
+than the DEM is now generated procedurally at runtime, where it is unambiguously
+not data.
 
 Rebuild with `ui/scripts/build-southpole-assets.py` (documents the exact
 pipeline and the constants shared with `ui/lib/lunar-atlas/southpole.ts`).
