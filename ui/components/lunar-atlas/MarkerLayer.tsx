@@ -86,6 +86,7 @@ import ProjectModel, {
   RoverDepotYard,
   RoverGasStation,
   SparePartsPallet,
+  DistrictFloodPool,
   StreetLight,
   SurfaceAnchor,
   UndergroundConstructionSite,
@@ -757,10 +758,17 @@ const BOULDER_ALONG_STEPS = 34
 const BOULDER_ACROSS_STEPS = 20
 const BOULDER_KEEP_FRACTION = 0.34
 
-// A post every ~40 m of pavement, just outside the windrow — close enough
+// A post every ~26 m of pavement, just outside the windrow — close enough
 // together to actually read as street lighting, far enough apart that 730 m of
 // spine doesn't need dozens of them.
-const STREET_LIGHT_SPACING_M = 40
+//
+// Tightened from 40 m once the fixtures started throwing real pools of light on
+// the ground. At 40 m the lit patches did not touch, so under the true sun the
+// spine read as a dotted line of circles with black road between them; at 26 m,
+// against the 11 m pool radius in StreetLight, consecutive pools just overlap
+// and the road reads as continuously lit. The two numbers are a pair — moving
+// either one alone reopens the gaps or doubles the post count for nothing.
+const STREET_LIGHT_SPACING_M = 26
 
 // Roads narrower than this are left dark. A lit street is a street with traffic
 // on it, and a rover track out to four relay masts has none — see `width` in
@@ -1172,6 +1180,33 @@ function InterDistrictFiller({
     return out
   }, [radiusAt, built])
 
+  // One broad floodlit pool over each district's ground, and one over the solar
+  // farm. Placed from BASE_PLAN's own district centres rather than from a second
+  // list, so a district that moves takes its lighting with it.
+  //
+  // This exists because of an asymmetry the true sun exposed: the hardware in a
+  // terrain shadow is lit (by the site fill in regolithShader) and the GROUND it
+  // stands on is not, since that fill only reaches materials the model traversal
+  // patches. Lit buildings on black ground reads worse than either extreme.
+  const districtPools = useMemo(() => {
+    const out: { dir: Vec3; seat: number; radiusM: number; key: string }[] = []
+    if (!built) return out
+    for (const [site, plan] of Object.entries(BASE_PLAN)) {
+      if (!plan) continue
+      const ll = capOffsetLatLon(plan.east, plan.north)
+      const dir = latLonToVector3(ll.lat, ll.lon, 1)
+      out.push({
+        dir,
+        seat: radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS,
+        // The landing zone's apron is 62 m across on its own, so it gets a
+        // wider pool than a district whose plots line one short branch.
+        radiusM: site === 'lander' ? 46 : 28,
+        key: site,
+      })
+    }
+    return out
+  }, [radiusAt, built])
+
   const excavators = useMemo(() => {
     const out: { dir: Vec3; seat: number; noseAlong: Vec3; seed: number }[] = []
     if (!built) return out
@@ -1249,6 +1284,18 @@ function InterDistrictFiller({
           interactive={false}
         >
           <StreetLight />
+        </SurfaceAnchor>
+      ))}
+      {districtPools.map((p) => (
+        <SurfaceAnchor
+          key={`flood:${p.key}`}
+          dir={p.dir}
+          surfaceRadius={p.seat}
+          scale={M_TO_UNITS}
+          castShadows={false}
+          interactive={false}
+        >
+          <DistrictFloodPool radiusM={p.radiusM} />
         </SurfaceAnchor>
       ))}
       {roadsideCargo.map((c, i) => (

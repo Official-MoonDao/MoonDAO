@@ -43,10 +43,20 @@ import {
   SUN_COLOR,
   SUN_DIR as SUN_DIR_ARR,
   SUN_INTENSITY,
+  SUN_LOCAL_ELEV_DEG,
+  DESIGN_EXPOSURE,
+  exposureFor,
+  screenAnchoredScale,
 } from '@/lib/lunar-atlas/sun'
+import {
+  localElevationDeg,
+  trueSunDirection,
+  type SunPhase,
+} from '@/lib/lunar-atlas/sunpath'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { Organization, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import BaseRoads from './BaseRoads'
+import { setRegolithSun } from './regolithOcclusion'
 import EarthGlobe from './EarthGlobe'
 import GroundDisturbance from './GroundDisturbance'
 import MarkerLayer, { ColonyLayout, MarkerStyle, siteOpacity } from './MarkerLayer'
@@ -106,6 +116,17 @@ export type MoonGlobeProps = {
   // Strips every beacon, tether and floating name out of the scene, leaving
   // only what would physically be there. See MarkerLayerProps.
   cinematic?: boolean
+  // A moment in the lunar year, or undefined for the sun the base was DESIGNED
+  // around — a 44.46° sun that exists to make the layout legible and does not exist
+  // on the Moon, where this ridge never sees one above ~2.1°. See lib/sun.ts for why
+  // that choice was made and sunpath.ts for what the real sun does instead.
+  //
+  // A prop rather than a control inside the canvas, and undefined rather than a
+  // boolean plus a default, for the same reason: this component should not hold an
+  // opinion about which sun is being looked at. The page owns the scrubber, the
+  // default is byte-for-byte the scene that shipped, and true-sun mode is
+  // unreachable unless something explicitly asks for it.
+  sunPhase?: SunPhase
   children?: ReactNode
 }
 
@@ -407,12 +428,34 @@ const SUN_PENUMBRA_PER_M = 2 * Math.tan(SUN_ANGULAR_RADIUS_RAD)
 // for, and it puts contact shadows back against the things casting them.
 const SHADOW_NORMAL_BIAS = 0.12 * M_TO_UNITS
 
+// The ceiling on the grazing-sun scaling above. 60 cm is five times the 44° value and
+// three shadow texels of lateral slide — the point past which a footpad's shadow
+// visibly leaves the footpad, which is the artifact this whole number exists to
+// avoid. See the derivation at its use site.
+const SHADOW_NORMAL_BIAS_MAX = 0.6 * M_TO_UNITS
+
 // The scene's sun, and now genuinely the only one. It shades the installations,
 // casts their shadows, and lights the ground: SouthPoleTerrain evaluates the
 // regolith BRDF against this light per pixel rather than displaying a hillshade
 // baked from a private copy of its direction, which also retired the separate
 // pass that used to exist only to catch shadows on the terrain.
-function Sun() {
+// Where the sun is, resolved once. Undefined phase means the design sun, and then this
+// is exactly SUN_DIR and the scene that shipped.
+//
+// Hoisted out of Sun because the SKY needs the elevation too — a backdrop and a light
+// that disagree about the sun is the kind of inconsistency nothing catches, and it
+// already bit once (see screenAnchoredScale). One resolution, one source.
+type ResolvedSun = { dir: THREE.Vector3; elevationDeg: number }
+
+function useResolvedSun(sunPhase?: SunPhase): ResolvedSun {
+  return useMemo(() => {
+    if (!sunPhase) return { dir: SUN_DIR, elevationDeg: SUN_LOCAL_ELEV_DEG }
+    const v = trueSunDirection(sunPhase)
+    return { dir: new THREE.Vector3(...v), elevationDeg: localElevationDeg(v) }
+  }, [sunPhase])
+}
+
+function Sun({ dir, elevationDeg }: ResolvedSun) {
   // A directional light aims at its `target` object, which must be in the
   // scene for its world matrix to update.
   const target = useMemo(() => {
@@ -420,10 +463,54 @@ function Sun() {
     o.position.copy(HOME_TARGET)
     return o
   }, [])
+
   const lightPos = useMemo(
-    () => HOME_TARGET.clone().addScaledVector(SUN_DIR, SHADOW_LIGHT_DIST),
-    []
+    () => HOME_TARGET.clone().addScaledVector(dir, SHADOW_LIGHT_DIST),
+    [dir]
   )
+
+  // Everything the ground needs from the sun, in one call, because the shading and
+  // the skyline test have to be looking at the same sun — a light moved without the
+  // occlusion uniforms following would put shadows at yesterday's azimuth, which is
+  // invisible in a still frame and obvious the moment it is scrubbed.
+  //
+  // Exposure travels with it for the reason in sun.ts: it opens up as the sun drops,
+  // anchored to the highlights so a grazing sun reads as sidelight rather than as
+  // chalky noon. Set on the renderer rather than the effect because @r3f/postprocessing
+  // takes over gl.toneMapping but the AgX chunk still reads gl.toneMappingExposure.
+  const gl = useThree((s) => s.gl)
+  useEffect(() => {
+    setRegolithSun([dir.x, dir.y, dir.z], elevationDeg)
+    gl.toneMappingExposure = exposureFor(elevationDeg)
+  }, [dir, elevationDeg, gl])
+
+  // Shadow-map bias, and the one number that genuinely cannot stay fixed across a
+  // sun this low.
+  //
+  // Acne is a depth-quantisation artifact whose size is the light-space texel
+  // footprint projected onto the receiver: a ground plane at grazing incidence spans
+  // texel/tan(elevation) of depth within ONE texel, so the same 12 cm that is ample
+  // at 44° is 1/19th of what 2° needs, and the ground stripes itself. Paying it in
+  // full is not an option either — normalBias slides the shadow laterally by exactly
+  // its own value, so metres of it would detach every footpad from its own shadow,
+  // which is the failure this number was tuned down to 12 cm to fix in the first
+  // place.
+  //
+  // So it is capped, and the cap is the honest half of this: past about 12° the bias
+  // needed exceeds what the shadow can afford, and the artifact is accepted rather
+  // than traded for peter-panning. It is the right trade here specifically because
+  // at those elevations the shadow map is no longer doing the important work — the
+  // skyline field is, at terrain scale, and it has no depth buffer to quantise.
+  // ANCHORED at the design sun, like the exposure, and for a sharper reason: the naive
+  // form is bias/sin(elevation), which at 44.46° is bias/0.70 = 1.43x — so writing it
+  // that way would have quietly moved the default scene's shadows 5 cm, undoing the
+  // tuning this constant records. Ratios against the design sun, so the design sun is
+  // exactly 1.0x by construction.
+  const shadowNormalBias = useMemo(() => {
+    const design = Math.sin((SUN_LOCAL_ELEV_DEG * Math.PI) / 180)
+    const graze = Math.max(Math.sin((elevationDeg * Math.PI) / 180), 0.02)
+    return Math.min((SHADOW_NORMAL_BIAS * design) / graze, SHADOW_NORMAL_BIAS_MAX)
+  }, [elevationDeg])
 
   return (
     <>
@@ -442,7 +529,7 @@ function Sun() {
         shadow-camera-bottom={-SHADOW_EXTENT}
         shadow-camera-near={SHADOW_LIGHT_DIST * 0.6}
         shadow-camera-far={SHADOW_LIGHT_DIST * 1.6}
-        shadow-normalBias={SHADOW_NORMAL_BIAS}
+        shadow-normalBias={shadowNormalBias}
       />
       {/* No hemisphere light and no ambient light, on purpose.
           
@@ -460,6 +547,87 @@ function Sun() {
           See LunarEnvironment below. */}
     </>
   )
+}
+
+// The starfield, held at a constant screen brightness for the same reason as the sky.
+//
+// Worth saying what the STRICTLY correct answer would be, because this is not it: a
+// camera exposed for sunlit regolith records no stars at all. That is why every Apollo
+// surface photograph has a completely empty black sky, and it is the most-argued-about
+// fact in all of lunar photography. Physically, these should vanish the moment the
+// ground is properly exposed.
+//
+// They are kept because they are load-bearing for something else — this same camera
+// pulls back to orbit, where a starless void reads as a broken render rather than as an
+// airless one. So the conservative choice: hold them exactly where they are today and
+// stop them blowing up. Under true-sun exposure the unanchored version bloomed into
+// fat white blobs, which is worse than either principled answer.
+//
+// drei's Stars leaves exactly one lever for this. Its material is a ShaderMaterial
+// whose fragment stage writes vec4(vColor, dotFalloff), so material.opacity is inert
+// and vColor — the geometry's colour attribute — is the only thing that reaches the
+// output. Scaled from a pristine copy rather than in place, so repeated scrubbing
+// cannot compound.
+function ScreenAnchoredStars({ elevationDeg }: { elevationDeg: number }) {
+  const group = useRef<THREE.Group>(null)
+  const pristine = useRef<Float32Array | null>(null)
+  const scale = screenAnchoredScale(elevationDeg)
+
+  useEffect(() => {
+    let attr: THREE.BufferAttribute | undefined
+    group.current?.traverse((o) => {
+      const g = (o as THREE.Points).geometry
+      const a = g?.getAttribute?.('color')
+      if (a) attr = a as THREE.BufferAttribute
+    })
+    if (!attr) return
+    const dst = attr.array as Float32Array
+    if (!pristine.current || pristine.current.length !== dst.length) {
+      pristine.current = Float32Array.from(dst)
+    }
+    const src = pristine.current
+    for (let i = 0; i < dst.length; i++) dst[i] = src[i] * scale
+    attr.needsUpdate = true
+  }, [scale])
+
+  return (
+    <group ref={group}>
+      <Stars
+        radius={GLOBE_RADIUS * 14}
+        depth={GLOBE_RADIUS * 6}
+        count={6000}
+        factor={GLOBE_RADIUS * 0.9}
+        saturation={0}
+        fade
+        speed={0.3}
+      />
+    </group>
+  )
+}
+
+// The sky, which on an airless world is simply the absence of one.
+//
+// SKY_COLOR is not black, and that is a deliberate authored choice rather than physics:
+// a hair of blue in the backdrop keeps the frame from reading as a dead region of the
+// page. The catch is that it is authored as a SCREEN value, so it only means what it
+// says at the exposure it was picked under. Under true-sun exposure the unmodified
+// colour came out visibly navy — the most unphysical thing in the whole frame, since
+// the one thing everybody knows about the lunar sky is that it is black.
+//
+// So it is held at a constant screen brightness instead of a constant radiance. At the
+// design sun the scale is exactly 1 and this is the same #03040a it always was.
+const SKY_COLOR = '#03040a'
+
+function SkyBackdrop({ elevationDeg }: { elevationDeg: number }) {
+  const scene = useThree((s) => s.scene)
+  useEffect(() => {
+    const c = new THREE.Color(SKY_COLOR).multiplyScalar(screenAnchoredScale(elevationDeg))
+    scene.background = c
+    return () => {
+      scene.background = null
+    }
+  }, [scene, elevationDeg])
+  return null
 }
 
 // The indirect half of the lighting, and the only fill in the scene.
@@ -513,9 +681,13 @@ export default function MoonGlobe({
   layout,
   onBackgroundClick,
   cinematic,
+  sunPhase,
   children,
 }: MoonGlobeProps) {
   const controlsRef = useRef<any>(null)
+  // Resolved once here so the light, the sky and the starfield are all reading the same
+  // sun. See useResolvedSun.
+  const sun = useResolvedSun(sunPhase)
   // CPU-side copy of the height maps so markers, models, and the camera sit
   // on the terrain the GPU actually renders.
   const radiusAt = useTerrainSampler()
@@ -628,8 +800,8 @@ export default function MoonGlobe({
         // stop of separation between white metal and lunar soil is most of why
         // this scene kept being described as grey plastic.
         //
-        // So this is deliberately NOT multiplied by 17 to put the ground back
-        // where it was — but the reason has changed, and shrunk.
+        // So this is deliberately NOT multiplied by 17 to put the ground back where
+        // the bake had it — that was tried, and it re-graded the whole shipped view.
         //
         // The original objection was that exposure is global while half the ground
         // was unlit materials carrying colours authored as final screen values, so
@@ -646,10 +818,19 @@ export default function MoonGlobe({
         // rather than objects in it, which means the re-anchor is now a decision
         // about them specifically rather than a scene-wide re-authoring pass.
         //
-        // Until it is taken, the frame is physically consistent but darker than it
-        // was, and how much of that darkness to buy back is a judgement about the
-        // photograph rather than about the Moon.
-        toneMappingExposure: 1.05,
+        // RESOLVED: this stays exactly the shipped 1.05 at the design sun, and
+        // exposureFor() in lib/lunar-atlas/sun.ts opens up from it as the sun drops —
+        // but anchored to the HIGHLIGHTS (a slope facing the sun), not to flat ground.
+        //
+        // The distinction was learned the expensive way, twice in one day. Re-anchoring
+        // to put flat ground back at the bake's 0.366 re-graded this entire default
+        // view four stops brighter; and tracking flat ground at all sends the real sun
+        // to 220x, where every sun-facing bump on the patch clips white and grazing
+        // midnight light renders as chalky noon. Exposing for the highlights costs
+        // ~1.6x at the real sun instead, holds the brightest terrain at the same level
+        // under every sun, and lets flat ground fall away dark — which is what grazing
+        // light is. The full argument and both failed policies: sun.ts.
+        toneMappingExposure: DESIGN_EXPOSURE,
         // A LOGARITHMIC depth buffer is the obvious choice for a scene that
         // spans orbit to millimeters, and it was used here, and it was the
         // wrong call — it is the direct cause of the shimmer that has been
@@ -683,21 +864,13 @@ export default function MoonGlobe({
       }}
       onWheel={handleWheel}
     >
-      <color attach="background" args={['#03040a']} />
+      <SkyBackdrop elevationDeg={sun.elevationDeg} />
 
-      <Sun />
+      <Sun {...sun} />
       <LunarEnvironment />
       <EarthGlobe />
 
-      <Stars
-        radius={GLOBE_RADIUS * 14}
-        depth={GLOBE_RADIUS * 6}
-        count={6000}
-        factor={GLOBE_RADIUS * 0.9}
-        saturation={0}
-        fade
-        speed={0.3}
-      />
+      <ScreenAnchoredStars elevationDeg={sun.elevationDeg} />
 
       <SouthPoleTerrain onReady={onReady} onSurfaceClick={onBackgroundClick} />
 

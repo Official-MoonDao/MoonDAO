@@ -56,6 +56,8 @@ import {
 } from '@/lib/lunar-atlas/selectors'
 import type { Project, ProjectType, SharedGoal } from '@/lib/lunar-atlas/types'
 import type { GlobeFocus } from '@/components/lunar-atlas/MoonGlobe'
+import SunScrubber from '@/components/lunar-atlas/SunScrubber'
+import type { SunPhase } from '@/lib/lunar-atlas/sunpath'
 import type {
   ColonyLayout,
   MarkerStyle,
@@ -191,6 +193,29 @@ export default function MoonBaseZeroIndex() {
   // a usable image, and there was no way to get one without one.
   const [cinematic, setCinematic] = useState(false)
 
+  // Which sun the scene is lit by. null is the design sun — the 44.46° one the base
+  // was drawn around for legibility — and it is the default, so this page renders
+  // exactly the scene that shipped until someone asks for the other one.
+  const [sunPhase, setSunPhase] = useState<SunPhase | null>(null)
+
+  // The real sun and the clean view are deliberately welded together, and this is a
+  // TEMPORARY coupling with a specific reason.
+  //
+  // Exposure is global: lighting the ground with a 2° sun needs 12.5x the exposure a
+  // 44° sun does (see exposureFor in lib/lunar-atlas/sun.ts), and MarkerLayer's
+  // beacons, pin lines and labels are authored as fixed screen brightnesses, so they
+  // blow out at that multiplier. Cinematic mode strips exactly those. So rather than
+  // let the known-broken combination be reachable and warn about it, it is unreachable
+  // — turning the real sun on turns the furniture off, and turning the furniture back
+  // on returns to the design sun.
+  //
+  // Undo this once the annotation materials track exposure inversely; the physics does
+  // not need it.
+  const setRealSun = (phase: SunPhase | null) => {
+    setSunPhase(phase)
+    setCinematic(phase !== null)
+  }
+
   // This is a fixed, fullscreen scene — it must never scroll. The shared Layout
   // gives <main> `pt-16` on top of `min-h-screen`, making the document ~4rem
   // taller than the viewport, so a two-finger scroll over the HUD (the globe
@@ -215,7 +240,12 @@ export default function MoonBaseZeroIndex() {
   useEffect(() => {
     if (!cinematic) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setCinematic(false)
+      // Escape leaves both at once, for the coupling's sake: dropping the furniture
+      // back in under true-sun exposure is the one combination that looks broken.
+      if (e.key === 'Escape') {
+        setCinematic(false)
+        setSunPhase(null)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -791,7 +821,13 @@ export default function MoonBaseZeroIndex() {
           layout={layout}
           onBackgroundClick={handleBackgroundClick}
           cinematic={cinematic}
+          sunPhase={sunPhase ?? undefined}
         />
+
+        {/* Bottom LEFT, opposite the clean-view button, and like it outside the HUD
+            fade so it stays reachable in cinematic mode — which is the only mode it
+            can currently be used in anyway. */}
+        <SunScrubber phase={sunPhase} onChange={setRealSun} />
 
         {/* The one control that survives cinematic mode, since it is the only
             way back out of it besides Escape. Bottom right, where nothing else
@@ -799,7 +835,13 @@ export default function MoonBaseZeroIndex() {
             nothing while it's the only thing in it. */}
         <button
           type="button"
-          onClick={() => setCinematic((c) => !c)}
+          onClick={() => {
+            // Leaving the clean view also returns to the design sun — the same
+            // coupling as Escape and the scrubber, so there is no way in through any
+            // door to furniture lit at 12.5x exposure. See setRealSun.
+            if (cinematic) setRealSun(null)
+            else setCinematic(true)
+          }}
           title={
             cinematic
               ? 'Show the map furniture again (Esc)'

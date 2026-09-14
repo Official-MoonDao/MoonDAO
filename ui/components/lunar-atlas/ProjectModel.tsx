@@ -3030,6 +3030,122 @@ function ChargeBollard({ accent }: { accent: string }) {
   )
 }
 
+// What a lamp on an airless world actually produces, drawn instead of simulated.
+//
+// There are only two visible consequences of a light source with no atmosphere
+// around it: the fixture itself is bright, and the ground within its throw is
+// lit. No beam, no halo, no fog cone — nothing exists between the two to
+// scatter. So the pool is a POOL: a soft-edged patch of extra radiance laid on
+// the ground under the boom head, additive because light adds, and falling off
+// roughly inverse-square from directly beneath the head.
+//
+// A decal rather than a THREE.PointLight, deliberately. Three is a forward
+// renderer: every point light in the scene widens the light loop in every lit
+// material's fragment shader — the terrain's, every road's, every one of the
+// hundreds of materials on the hardware — whether or not the lamp is anywhere
+// near it. Dozens of lamps would be paid for by every fragment on screen. The
+// decal costs one small additive quad each and nothing else, and because the
+// pool's radiance is authored in the same linear units the sun's is, it behaves
+// correctly under both suns WITHOUT any coupling to the exposure machinery: at
+// the 44° design sun the crust it lands on is ~2x brighter than the pool's
+// peak, so the lamps read as switched off in daylight (they would be); inside a
+// true-sun terrain shadow the ground under a lamp is ~10x darker than the pool,
+// and the road lights up in little islands. That contrast inversion is free —
+// it is just what fixed radiances do when the light around them moves.
+// The pool is scenery in the strictest sense — a patch of light — so it must
+// never swallow a click aimed at the road or the Moon beneath it.
+const NO_RAYCAST_MODEL = () => {}
+
+let lightPoolTexture: THREE.Texture | null = null
+function getLightPoolTexture(): THREE.Texture | null {
+  if (lightPoolTexture) return lightPoolTexture
+  const SIZE = 128
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = SIZE
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  // Stops approximate 1/(1+(r/r0)^2) — a photometric falloff, not a Gaussian
+  // blob. The hard zero at the rim matters: an additive texture that does not
+  // reach exactly 0 draws its own quad as a faint grey square.
+  const g = ctx.createRadialGradient(SIZE / 2, SIZE / 2, 0, SIZE / 2, SIZE / 2, SIZE / 2)
+  g.addColorStop(0, 'rgba(255,255,255,1)')
+  g.addColorStop(0.25, 'rgba(255,255,255,0.62)')
+  g.addColorStop(0.5, 'rgba(255,255,255,0.28)')
+  g.addColorStop(0.75, 'rgba(255,255,255,0.09)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, SIZE, SIZE)
+  lightPoolTexture = new THREE.CanvasTexture(canvas)
+  return lightPoolTexture
+}
+
+// Peak radiance added at the centre of a pool, linear, in the same unitless
+// radiance the sun and the regolith BRDF trade in. Sized against the two
+// grounds it has to sit on: design-sun crust renders at ~0.021 and a true-sun
+// terrain shadow at ~0.0001, which is a ratio of two hundred. So there is no
+// value that is invisible by day AND bright by night, and this one is chosen for
+// the case that needs it: comfortably over the shadow (reads about sRGB 40),
+// about half of daylight (a visible but unobtrusive pool at the design sun).
+const LIGHT_POOL_RADIANCE = 0.013
+const LIGHT_POOL_COLOR = new THREE.Color('#cdd8ff').multiplyScalar(LIGHT_POOL_RADIANCE)
+
+// A patch of lit ground. `stretch` is how much longer the pool is along the
+// fixture's boom axis than across it — a tilted head throws long, a ring of
+// floods around a lot throws round.
+function LightPool({
+  x = 0,
+  radiusM,
+  stretch = 1.25,
+  intensity = 1,
+}: {
+  x?: number
+  radiusM: number
+  stretch?: number
+  intensity?: number
+}) {
+  const tex = useMemo(getLightPoolTexture, [])
+  const color = useMemo(
+    () => LIGHT_POOL_COLOR.clone().multiplyScalar(intensity),
+    [intensity]
+  )
+  if (!tex) return null
+  return (
+    // A few hand-widths above grade: over the road's own lift and camber
+    // (~0.3 m) but under every wheel. Drawn after the road (renderOrder), since
+    // both are transparent and the road does not write depth for it to test.
+    <mesh
+      position={[x, 0.45, 0]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      renderOrder={2}
+      raycast={NO_RAYCAST_MODEL}
+    >
+      <planeGeometry args={[radiusM * 2 * stretch, radiusM * 2]} />
+      <meshBasicMaterial
+        map={tex}
+        color={color}
+        blending={THREE.AdditiveBlending}
+        transparent
+        depthWrite={false}
+      />
+    </mesh>
+  )
+}
+
+// The lit ground a whole district's own floodlighting throws — one broad, soft
+// pool over the lot rather than a fixture per building.
+//
+// Worth being explicit that this is scenery standing in for lighting design we
+// have not done: the districts have no modelled floodlights, and every real
+// surface installation is lit for the simple reason that crews cannot work in a
+// two-week night. Without it, the true-sun view puts hardware that IS lit (see
+// the site fill in regolithShader) on ground that is pitch black, which reads
+// worse than either extreme.
+export function DistrictFloodPool({ radiusM = 26 }: { radiusM?: number }) {
+  // Dimmer and much wider than a street light's: this is the sum of many
+  // fixtures seen from outside, so it has no hot centre.
+  return <LightPool radiusM={radiusM} stretch={1} intensity={0.55} />
+}
+
 // A yard light, boom cranked out over the aisle rather than run straight up
 // its own pole — the way an actual lot light leans its fixture in over what
 // it's lighting instead of down onto itself. Parameterized (rather than a
@@ -3041,10 +3157,13 @@ function DepotLightMast({
   accent,
   height = 4.2,
   boomLen = 1.1,
+  poolRadiusM = 0,
 }: {
   accent: string
   height?: number
   boomLen?: number
+  // Radius of the lit pool this fixture throws on the ground; 0 for none.
+  poolRadiusM?: number
 }) {
   const h = height
   const boomOut = boomLen * 0.5
@@ -3074,6 +3193,16 @@ function DepotLightMast({
           />
         </mesh>
       </group>
+      {/* Under where the head actually hangs — the boom's reach in its own
+          frame, tilted down 0.55 rad — not under the pole. A pool centred on
+          the pole is the tell that the light was placed by a renderer. */}
+      {poolRadiusM > 0 && (
+        <LightPool
+          x={headOut * Math.cos(0.55) + 0.35}
+          radiusM={poolRadiusM}
+          stretch={1.35}
+        />
+      )}
     </group>
   )
 }
@@ -3088,7 +3217,14 @@ function DepotLightMast({
 // baseplan.ts) — the one piece of infrastructure in this file with no
 // district or competitor tied to it at all.
 export function StreetLight() {
-  return <DepotLightMast accent="#eef2ff" height={5.4} boomLen={1.5} />
+  // Pool radius roughly twice the mount height, which with the ~26 m spacing in
+  // MarkerLayer puts consecutive pools just into each other and leaves the road
+  // as a continuous lit ribbon rather than a dotted line. Sized up from 5.2 m,
+  // where the lamps lit tidy circles 40 m apart and the road between them was
+  // still black — which is not what a lit street looks like.
+  return (
+    <DepotLightMast accent="#eef2ff" height={5.4} boomLen={1.5} poolRadiusM={11} />
+  )
 }
 
 // The one piece of built shelter on the lot: an open-sided canopy over a
@@ -4011,13 +4147,13 @@ export function RoverDepotYard({ accent }: { accent: string }) {
       </group>
 
       <group position={[-DEPOT_HALF_W + 0.9, 0, DEPOT_HALF_D - 0.9]}>
-        <DepotLightMast accent={accent} />
+        <DepotLightMast accent={accent} poolRadiusM={3.6} />
       </group>
       <group
         position={[DEPOT_HALF_W - 0.9, 0, DEPOT_HALF_D - 0.9]}
         rotation={[0, Math.PI, 0]}
       >
-        <DepotLightMast accent={accent} />
+        <DepotLightMast accent={accent} poolRadiusM={3.6} />
       </group>
 
       {/* A mechanic making rounds of the bay rather than standing frozen at
