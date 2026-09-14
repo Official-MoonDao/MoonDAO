@@ -1,20 +1,19 @@
-import { Redis } from '@upstash/redis'
 import { createHash } from 'crypto'
+import type { DePrizeAttestations } from './attestations'
+import { execCompliancePipeline } from './complianceStore'
+
+export type AcceptanceSurface = 'accept-terms' | 'permit'
 
 export type AcceptanceRecord = {
   wallet: string
   termsVersion: string
   timestamp: string
   country: string | null
+  region: string | null
   userAgent: string
   ipHash: string | null
-}
-
-function redis(): Redis | null {
-  const url = process.env.UPSTASH_REDIS_URL
-  const token = process.env.UPSTASH_REDIS_TOKEN
-  if (!url || !token) return null
-  return new Redis({ url, token })
+  attestations: DePrizeAttestations
+  surface: AcceptanceSurface
 }
 
 export function hashIp(ip: string | null): string | null {
@@ -22,21 +21,17 @@ export function hashIp(ip: string | null): string | null {
   return createHash('sha256').update(ip).digest('hex').slice(0, 16)
 }
 
-function key(wallet: string, termsVersion: string): string {
-  return `deprize:accept:${wallet.toLowerCase()}:${termsVersion}`
+export function acceptanceLatestKey(wallet: string, termsVersion: string): string {
+  return `deprize:accept:latest:${wallet.toLowerCase()}:${termsVersion}`
+}
+
+export function acceptanceHistoryKey(wallet: string): string {
+  return `deprize:accept:history:${wallet.toLowerCase()}`
 }
 
 export async function recordTermsAcceptance(record: AcceptanceRecord): Promise<boolean> {
-  const cache = redis()
-  if (!cache) {
-    console.error('[deprize] acceptance log skipped: redis is not configured')
-    return false
-  }
-  try {
-    await cache.set(key(record.wallet, record.termsVersion), record)
-    return true
-  } catch (err) {
-    console.error('[deprize] acceptance log write failed', err)
-    return false
-  }
+  return execCompliancePipeline((pipeline) => {
+    pipeline.set(acceptanceLatestKey(record.wallet, record.termsVersion), record)
+    pipeline.lpush(acceptanceHistoryKey(record.wallet), record)
+  })
 }

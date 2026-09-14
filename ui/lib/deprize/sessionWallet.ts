@@ -4,6 +4,8 @@ import { getPrivyUserData } from '@/lib/privy'
 import { authOptions } from '@/pages/api/auth/[...nextauth]'
 import { selectSessionWallet } from './selectSessionWallet'
 
+export { selectSessionWallet }
+
 function accessTokenFromRequest(req: NextApiRequest): string | null {
   const authHeader = req.headers.authorization
   if (authHeader?.startsWith('Bearer ')) {

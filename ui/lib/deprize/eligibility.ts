@@ -11,6 +11,7 @@ export type EligibilityReason =
   | 'screening-unavailable'
   | 'terms-not-accepted'
   | 'permit-unavailable'
+  | 'wallet-denied'
 
 export type EligibilityInput = {
   country: string | null
@@ -19,6 +20,7 @@ export type EligibilityInput = {
   isVpnOrProxy: boolean
   isSanctioned: boolean
   screeningFailed: boolean
+  isDeniedWallet?: boolean
 }
 
 export type EligibilityDecision = {
@@ -38,6 +40,9 @@ export function evaluateEligibility(input: EligibilityInput): EligibilityDecisio
 
   if (input.wallet && !isHexAddress(input.wallet)) {
     return { allowed: false, reason: 'invalid-wallet', country }
+  }
+  if (input.isDeniedWallet) {
+    return { allowed: false, reason: 'wallet-denied', country }
   }
   if (input.screeningFailed) {
     return { allowed: false, reason: 'screening-unavailable', country }
@@ -69,7 +74,9 @@ export function eligibilityMessage(reason: EligibilityReason): string {
     case 'restricted-jurisdiction':
       return 'DePrize is not available in your location.'
     case 'vpn-or-proxy':
-      return 'Turn off any VPN, proxy, or relay and try again.'
+      return 'Turn off any VPN, proxy, or Tor connection and try again.'
+    case 'wallet-denied':
+      return 'This wallet is not eligible to place new bets.'
     case 'sanctioned-wallet':
       return 'This wallet cannot participate.'
     case 'screening-unavailable':

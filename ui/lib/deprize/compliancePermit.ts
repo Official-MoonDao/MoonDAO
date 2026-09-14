@@ -11,7 +11,7 @@ export const COMPLIANCE_PERMIT_TYPES = {
   ],
 } as const
 
-export const DEFAULT_PERMIT_TTL_SECONDS = 5 * 60
+export const DEFAULT_PERMIT_TTL_SECONDS = 2 * 60
 
 export function mintAddressForChain(chainId: number): string {
   const chain = getChainById(chainId)

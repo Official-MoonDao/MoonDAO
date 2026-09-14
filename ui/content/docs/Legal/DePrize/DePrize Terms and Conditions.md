@@ -14,14 +14,16 @@ aliases: [Legal/DePrize-Terms-and-Conditions]
 
 **Terms and Conditions**
 
+> Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.
+
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.0  
+Version 1.1  
 Effective Date: September 10, 2026  
-Last Updated: September 10, 2026
+Last Updated: September 11, 2026
 
-> **Review status.** Version 1.0 of these Terms was prepared on September 10, 2026 and is pending review by MoonDAO's counsel before DePrize opens to the public. MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies to you.
+> **Review status.** Version 1.1 of these Terms was prepared on September 11, 2026 and is pending review by MoonDAO's counsel before DePrize opens to the public. MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies to you.
 
 > **Read this first.** DePrize is a real-money prediction market. Outcome tokens can become worthless. MoonDAO is the market maker, the fee recipient, the oracle that reports results, and the sponsor of the prize. **DePrize is not available to U.S. persons or to anyone located in a Restricted Jurisdiction (Schedule A).** Resolution is final and cannot be reversed. If a DePrize is cancelled or ends with no winner, every outcome token redeems for an equal share (1/N) of the market's collateral — **not** for what you paid. The 5% prize contribution taken from every bet is not refundable through the market.
 
@@ -97,11 +99,11 @@ Last Updated: September 10, 2026
 
 **3.4 Sanctions.** You may not use the Service if you are (a) a person or entity listed on, or owned 50% or more by persons listed on, the U.S. Treasury Department's Specially Designated Nationals and Blocked Persons List or any other sanctions list maintained by the United States, the United Nations, the United Kingdom, or the European Union; (b) located in or ordinarily resident in a jurisdiction subject to comprehensive sanctions; or (c) otherwise the target of sanctions that would prohibit MoonDAO from dealing with you. MoonDAO may screen wallet addresses and may refuse, freeze at the interface level, or report activity as required by law.
 
-**3.5 No circumvention.** You may not use a virtual private network, proxy, relay, or other method to disguise your location or identity for the purpose of accessing the Service from the United States or a Restricted Jurisdiction, and you may not assist anyone else in doing so.
+**3.5 No circumvention.** You may not use a virtual private network, proxy, Tor exit, or other method to **misrepresent** your location or identity for the purpose of accessing the Service from the United States or a Restricted Jurisdiction, and you may not assist anyone else in doing so. A location-preserving privacy relay that continues to report your actual country (for example Apple iCloud Private Relay) is not, by itself, a violation of this Section.
 
 **3.6 Insiders.** You may not use the Service if you are an Insider (Section 9.2) with respect to the DePrize you are transacting in.
 
-**3.7 Your representations, repeated with every bet.** Each time you access the Service and each time you place a bet, sell, or redeem, you represent and warrant that: (a) you meet the age and capacity requirements in Section 3.1; (b) you are not a U.S. Person and are not located in the United States; (c) you are not located in, resident of, or organized under the laws of a Restricted Jurisdiction; (d) you are not a sanctioned person under Section 3.4; (e) you are not an Insider; (f) you are acting for your own account and not on behalf of any person who could not make these representations; (g) your participation is lawful in every jurisdiction that applies to you; and (h) the funds you use were lawfully obtained.
+**3.7 Your representations, repeated with every bet.** Each time you access the Service and each time you place a bet, sell, or redeem, you represent and warrant that: (a) you meet the age and capacity requirements in Section 3.1; (b) you are not a resident of the United States and you are not currently located in the United States or any of its territories; (c) you are not acting for or on behalf of any entity organized in, or with its principal place of business in, the United States; (d) you are not a U.S. Person as defined in Section 2; (e) you are not located in, resident of, or organized under the laws of a Restricted Jurisdiction; (f) you are not a sanctioned person under Section 3.4; (g) you are not an Insider and you are not placing the transaction on behalf of anyone else; (h) you are not using a service to misrepresent your location; (i) your participation is lawful in every jurisdiction that applies to you; and (j) the funds you use were lawfully obtained.
 
 **3.8 Your responsibility for local law.** Prediction markets, betting on future events, and dealing in crypto assets are regulated or prohibited in many places. Consistent with Section 14 of the Agreement, determining whether your participation is lawful where you are is **your sole responsibility**, and MoonDAO is not responsible if Applicable Law restricts or prohibits your access. MoonDAO makes no representation that the Service is appropriate or lawful in any particular jurisdiction outside the exclusions in this Section 3.
 
@@ -362,3 +364,4 @@ Where a jurisdiction appears in more than one category, every listed basis appli
 | Version | Date | Summary |
 |---|---|---|
 | 1.0 | September 10, 2026 | Initial published version. Supersedes the unpublished internal draft. Adds U.S. Person and Restricted Jurisdiction exclusions, MoonDAO role and conflict disclosures, insider and market-integrity rules, the market/prize separation, the challenge window, and click-through acceptance. |
+| 1.1 | September 11, 2026 | Splits the Section 3.7 representations into separate residency, entity, and insider attestations. Clarifies that Section 3.5 prohibits location misrepresentation, not every privacy relay. |

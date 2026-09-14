@@ -4,7 +4,7 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { getFeaturedLiveDePrizeId } from '@/lib/deprize/competitions'
-import { UNIT } from '@/lib/deprize/constants'
+import { deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { resetMockData } from '@/lib/deprize/mockMarket'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
@@ -15,6 +15,7 @@ import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
+import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
 import Container from '@/components/layout/Container'
@@ -138,7 +139,9 @@ export default function DePrizeIndexContent() {
     <div className="animate-fadeIn flex flex-col items-center">
       <Head
         title="DePrize"
-        description="Back a team in open capability races — live odds, growing prize pools, payouts when a winner is declared."
+        description={deprizeOgDescription(
+          'Back a team in open capability races — live odds, growing prize pools, payouts when a winner is declared.'
+        )}
       />
       <Container>
         <ContentLayout
@@ -150,7 +153,12 @@ export default function DePrizeIndexContent() {
           centerHeader
           centerHeaderWidth="72rem"
           description="Open capability races with live odds. Back the team you think will win — every bet grows the prize pool."
-          preFooter={<NoticeFooter />}
+          preFooter={
+            <>
+              <DePrizeAvailabilityLegend />
+              <NoticeFooter />
+            </>
+          }
         >
           <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
             {bettingBlockedReason && (
