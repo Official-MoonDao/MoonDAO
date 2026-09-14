@@ -197,7 +197,13 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // is the largest, so it is what sets this district's `reach` — and at 47 m
   // that is the longest branch on the plan.
   habitat: plots(19, 12.86, 13.937, 14.056, 3.3),
-  lander: plots(31.2, 9.6),
+  // The Touchdown roster (shared-next-landing) — the landing race the zone
+  // hosts now that the lander category moved off the crewed-lander goal. Pad
+  // decks at 0.6 of each vehicle's size (GRADED_DECK_FRACTION.lander): Blue
+  // Moon MK1 (8 m), Chang'e-7 (4.8), Griffin (4.5), Nova-C (4), Blue Ghost
+  // (3.5). Five CLPS-class pads instead of the Starship-era two, which is
+  // what exercises the flank case's along-the-spine stepping.
+  lander: plots(4.8, 2.88, 2.7, 2.4, 2.1),
   // eVinci radiator wall, IX's radiator canopy, Lockheed's radiator mast — the
   // three fission bids, and three very different amounts of ground.
   power: plots(11, 6.5, 4),

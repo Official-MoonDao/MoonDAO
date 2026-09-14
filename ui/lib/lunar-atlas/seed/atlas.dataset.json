@@ -3218,7 +3218,6 @@
     {
       "id": "shared-crewed-lander",
       "title": "First commercial crewed lunar landing",
-      "category": "lander",
       "description": "NASA's Human Landing System program put two competing landers under contract: SpaceX's Starship HLS (Artemis III) and Blue Origin's Blue Moon MK2 (Artemis V). Which system puts crew on the lunar surface first is the defining near-term race in the lander tech tree — schedules on both sides have moved, and each vehicle still has major flight-test milestones ahead.",
       "projectIds": [
         "spacex-starship-hls",
@@ -3257,6 +3256,7 @@
     {
       "id": "shared-next-landing",
       "title": "Touchdown — next successful lunar landing",
+      "category": "lander",
       "description": "Which landing-vehicle operator after market open first lands upright on the Moon and returns surface data for at least 24 hours. The slot is the vehicle operator, not the payload or launch provider. Win tests are binary and public: touchdown UTC after OPEN, controlled powered descent, stable planned orientation, ≥24 h surface data, and independent confirmation. Tip-overs (IM-1, IM-2, SLIM) do not count. ispace, ISRO, and later flights sit in the Open Field.",
       "projectIds": [
         "astrobotic-griffin",

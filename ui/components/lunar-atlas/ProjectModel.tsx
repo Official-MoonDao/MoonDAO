@@ -89,6 +89,15 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // whole camp rendered at 11/38 of its real size instead.
   'nasa-artemis-base-camp': 38,
   'blue-origin-blue-moon-mk1': 8,
+  // The rest of the Touchdown roster (shared-next-landing), which is the race
+  // that stands on the landing zone. CLPS-class hardware, so without entries
+  // here each one would render at TYPE_SIZE_M.lander's 16 m — Blue Moon MK2
+  // class, three to four times its real size. Public figures / honest
+  // estimates, largest dimension:
+  'astrobotic-griffin': 4.5, // ~4.5 m across the splayed legs, ~2 m deck
+  'im-nova-c': 4, // 4 m tall on a 1.6 m hexagonal bus — height is the max
+  'firefly-blue-ghost': 3.5, // ~3.5 m across the legs, ~2 m tall
+  'cnsa-change-7': 4.8, // Chang'e-3/4 heritage bus, 4.8 m leg span
   // Footpad to nose tip — NASA's own Artemis III renders show a tall stack:
   // splayed legs, a windowed crew module with a deployable crew ladder, two
   // open lattice bays exposing the propellant tanks, then a smooth ascent
