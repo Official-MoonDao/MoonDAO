@@ -3357,7 +3357,7 @@
         {
           "id": "ten-watts",
           "statement": "Deliver useful electrical work continuously",
-          "threshold": "≥ 10.0 We averaged over every rolling 60-minute window for 354 hours"
+          "threshold": "≥ 10.0 We averaged over every rolling 60-minute window for 354 hours, scored on the lower bound of the entrant's own measurement uncertainty rather than the raw reading"
         },
         {
           "id": "sustained-output",
@@ -3372,7 +3372,7 @@
         {
           "id": "independent-meters",
           "statement": "Independent instruments, two site visits",
-          "threshold": "Day 0: weigh, seal, install the verifier's sensors. Day 15: check seals and take the files. Live telemetry and clock-in-frame video corroborate; they do not replace the meters"
+          "threshold": "Day 0: weigh, seal, install the verifier's sensors. Day 15: check seals and take the files. Sensors must be traceably calibrated to ≤ 0.5% expanded uncertainty with the budget published, because a legitimately calibrated meter reading high is the cheapest way to pass without clearing the bar. Live telemetry and clock-in-frame video corroborate; they do not replace the meters"
         },
         {
           "id": "procurable",

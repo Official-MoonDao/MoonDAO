@@ -11,3 +11,10 @@ contracts/lib/
 *.local.md
 **/*.local.md
 docs/DEPRIZE_LEGAL_ANALYSIS.md
+
+# Night Shift prize drafts. These carry an NDA notice and editorial
+# assessments of named companies that have not been contacted and have not
+# consented, so a public repo is the wrong home for them.
+docs/DEPRIZE_NIGHT_SHIFT.md
+docs/night-shift-brief.html
+docs/Night_Shift_Prize_Brief.pdf
