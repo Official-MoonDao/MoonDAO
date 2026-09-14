@@ -15,10 +15,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import { getContract, readContract, waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
-import {
-  createInvite,
-  generateInviteToken,
-} from '@/lib/citizen/inviteTokens'
+import { createInvite, generateInviteToken } from '@/lib/citizen/inviteTokens'
 import { validateGiftPurchase } from '@/lib/marketplace/giftPurchase'
 import {
   extractEmailFromTypeformAnswers,
@@ -52,10 +49,7 @@ const citizenContract = getContract({
   abi: CitizenABI as any,
 })
 
-async function fetchTypeformEmail(
-  formIds: string[],
-  responseId: string
-): Promise<string | null> {
+async function fetchTypeformEmail(formIds: string[], responseId: string): Promise<string | null> {
   if (!formIds.length || !responseId) return null
   const data = await fetchResponseFromFormIds(formIds, responseId)
   return extractEmailFromTypeformAnswers(data?.items?.[0]?.answers)
@@ -151,22 +145,12 @@ const generateHTML = (htmlData: any) => {
 
 const generateVendorEmailContent = (data: any) => {
   const stringData = Object.entries(data).reduce(
-    (str, [key, val]) =>
-      (str += `${MARKETPLACE_VENDOR_PURHCASE_FIELDS[key]}: \n${val} \n \n`),
+    (str, [key, val]) => (str += `${MARKETPLACE_VENDOR_PURHCASE_FIELDS[key]}: \n${val} \n \n`),
     ''
   )
 
-  const {
-    address,
-    email,
-    item,
-    value,
-    currency,
-    quantity,
-    shipping,
-    txLink,
-    isCitizen,
-  } = JSON.parse(data)
+  const { address, email, item, value, currency, quantity, shipping, txLink, isCitizen } =
+    JSON.parse(data)
 
   const htmlData = `
     <div>
@@ -180,9 +164,7 @@ const generateVendorEmailContent = (data: any) => {
     <p>${value} ${currency}</p>
     <label for="citizenship"><strong>Citizenship</strong></label>
     <p>${
-      isCitizen
-        ? 'Buyer is a citizen (regular price)'
-        : 'Buyer is not a citizen (10% markup)'
+      isCitizen ? 'Buyer is a citizen (regular price)' : 'Buyer is not a citizen (10% markup)'
     }</p>
     <label for="quantity"><strong>Quantity</strong></label>
     <p>${quantity}</p>
@@ -202,13 +184,11 @@ const generateVendorEmailContent = (data: any) => {
 
 const generateCitizenEmailContent = (data: any) => {
   const stringData = Object.entries(data).reduce(
-    (str, [key, val]) =>
-      (str += `${MARKETPLACE_CITIZEN_PURHCASE_FIELDS[key]}: \n${val} \n \n`),
+    (str, [key, val]) => (str += `${MARKETPLACE_CITIZEN_PURHCASE_FIELDS[key]}: \n${val} \n \n`),
     ''
   )
 
-  const { item, value, currency, quantity, txLink, teamLink, giftLink } =
-    JSON.parse(data)
+  const { item, value, currency, quantity, txLink, teamLink, giftLink } = JSON.parse(data)
 
   const giftSection = giftLink
     ? `
@@ -247,8 +227,7 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'Bad request' })
     }
 
-    const { email, txHash, accessToken, isGift, listingId, teamId } =
-      JSON.parse(data)
+    const { email, txHash, accessToken, isGift, listingId, teamId } = JSON.parse(data)
 
     // Verify the Privy access token
     const privyUserData = await getPrivyUserData(accessToken)
@@ -264,8 +243,7 @@ async function handler(req: any, res: any) {
     // Check if transaction has already been used for email sending
     if (usedTransactions.has(txHash)) {
       return res.status(400).send({
-        message:
-          'Transaction has already been processed for marketplace purchase',
+        message: 'Transaction has already been processed for marketplace purchase',
       })
     }
 
@@ -286,9 +264,7 @@ async function handler(req: any, res: any) {
     }
 
     if (!txIsFromUsersWallet) {
-      return res
-        .status(400)
-        .send({ message: "Transaction is not from the user's wallet" })
+      return res.status(400).send({ message: "Transaction is not from the user's wallet" })
     }
 
     // Check if transaction is recent (within 10 minutes)
@@ -368,9 +344,7 @@ async function handler(req: any, res: any) {
       // paid the EB team and not some other address. validateGiftPurchase
       // makes the authoritative accept/reject decision.
       const giftListing =
-        listingRow &&
-        String(listingRow.teamId) === EB_TEAM_ID &&
-        String(teamTokenId) === EB_TEAM_ID
+        listingRow && String(listingRow.teamId) === EB_TEAM_ID && String(teamTokenId) === EB_TEAM_ID
           ? listingRow
           : undefined
 
@@ -452,9 +426,7 @@ async function handler(req: any, res: any) {
     const vendorNotifyEmail = teamTypeformEmail || opEmail
 
     // Inject the server-generated gift link into the buyer's email payload.
-    const buyerEmailData = giftLink
-      ? JSON.stringify({ ...JSON.parse(data), giftLink })
-      : data
+    const buyerEmailData = giftLink ? JSON.stringify({ ...JSON.parse(data), giftLink }) : data
 
     // Send the buyer's receipt first since it's the critical deliverable for
     // every purchase (the gift link, if any, is embedded in it above).

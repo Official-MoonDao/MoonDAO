@@ -92,10 +92,7 @@ export function safeTransactionApiUrl(chainSlug: string): string | null {
 
 export type VendorEmailLookupDeps = {
   getTeamFormId: (teamId: string) => Promise<string | null>
-  fetchTypeformEmail: (
-    formIds: string[],
-    responseId: string
-  ) => Promise<string | null>
+  fetchTypeformEmail: (formIds: string[], responseId: string) => Promise<string | null>
   getTeamOwner: (teamId: string) => Promise<string | null>
   getSafeOwners: (address: string) => Promise<string[]>
   getCitizenFormId: (wallet: string) => Promise<string | null>
@@ -117,10 +114,7 @@ export async function lookupVendorEmail(
   try {
     const teamFormId = await deps.getTeamFormId(normalizedTeamId)
     if (teamFormId) {
-      const teamEmail = await deps.fetchTypeformEmail(
-        deps.teamFormIds,
-        teamFormId
-      )
+      const teamEmail = await deps.fetchTypeformEmail(deps.teamFormIds, teamFormId)
       if (teamEmail) return teamEmail
     }
   } catch {
@@ -147,10 +141,7 @@ export async function lookupVendorEmail(
     try {
       const citizenFormId = await deps.getCitizenFormId(wallet)
       if (!citizenFormId) continue
-      const citizenEmail = await deps.fetchTypeformEmail(
-        deps.citizenFormIds,
-        citizenFormId
-      )
+      const citizenEmail = await deps.fetchTypeformEmail(deps.citizenFormIds, citizenFormId)
       if (citizenEmail) return citizenEmail
     } catch {
       continue

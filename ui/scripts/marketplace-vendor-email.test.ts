@@ -132,7 +132,11 @@ describe('safeTransactionApiUrl', () => {
       'https://safe-transaction-arbitrum.safe.global',
       'arbitrum'
     )
-    expectEqual(safeTransactionApiUrl('sepolia'), 'https://safe-transaction-sepolia.safe.global', 'sepolia')
+    expectEqual(
+      safeTransactionApiUrl('sepolia'),
+      'https://safe-transaction-sepolia.safe.global',
+      'sepolia'
+    )
     expectEqual(safeTransactionApiUrl('unknown'), null, 'unknown')
   })
 })
