@@ -9,6 +9,7 @@
     "scripts/citizen-onboarding-image.test.ts",
     "scripts/typeform-parse-body.test.ts",
     "scripts/gift-purchase-validation.test.ts",
+    "scripts/marketplace-vendor-email.test.ts",
     "scripts/tableland-clean-data.test.ts",
     "scripts/new-citizen-discord-notification-source.test.ts",
     "scripts/new-team-discord-notification-source.test.ts",
