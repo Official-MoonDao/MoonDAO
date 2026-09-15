@@ -176,17 +176,39 @@ softgoods module uses for its own power feed.
   a `PROJECT_MODEL` entry alone would have rendered nothing. The GLB file itself
   is left in `public/` unreferenced, the same as `insight-lander.glb`.
 
-### The landing zone — Touchdown (1 of 5 done)
+### The landing zone — Touchdown (2 of 5 done)
 
-`shared-next-landing` is the newest race and the least differentiated. Only
-`blue-origin-blue-moon-mk1` has its own model; `astrobotic-griffin`,
-`im-nova-c`, `firefly-blue-ghost` and `cnsa-change-7` all still fall through to
-the generic `Lander`, so four of the five vehicles on the pad are the same squat
+`shared-next-landing` is the newest race and the least differentiated.
+`blue-origin-blue-moon-mk1` and `cnsa-change-7` have their own models;
+`astrobotic-griffin`, `im-nova-c` and `firefly-blue-ghost` still fall through to
+the generic `Lander`, so three of the five vehicles on the pad are the same squat
 four-legged bus. They are not interchangeable hardware — Griffin is a wide flat
 cargo deck, Nova-C is a tall narrow hexagonal column (height is its largest
-dimension, not its span), Blue Ghost is a low wide disc, and Chang'e-7 is a
-Chang'e-3/4 heritage bus with a rover ramp — and all four already have their
-real sizes in `PROJECT_SIZE_M`, so only the geometry is missing.
+dimension, not its span), and Blue Ghost is a low wide disc — and all three
+already have their real sizes in `PROJECT_SIZE_M`, so only the geometry is
+missing.
+
+`ChangE7` is defined next to `ILRSBase` rather than up with the Blue Moons, and
+deliberately: it is the same agency's hardware and reuses `ILRS_GOLD`, so
+keeping the two blocks together is what stops the CNSA gold being written out as
+two hexes 8000 lines apart that then drift. A low boxy gold-MLI bus on splayed
+four-leg gear, two solar wings deployed near-flat off the flanks, a deck
+carrying a steerable Earth dish / omni whip / mast camera / propellant pair, a
+science boom out over the regolith, and the rover ramp down off the front.
+
+Two things about it are worth knowing before touching the next lander:
+
+- **Its `PROJECT_SIZE_M` figure is a horizontal span, not a height.** The 4.8 m
+  is the deployed wing span tip to tip, with the 4.2 m leg span inside it. Every
+  other model on this list is sized by its height, so this is the one where
+  getting the axis wrong would silently scale the whole vehicle. Only the
+  comment changed; the number did not, so footprints and the `ROSTERS` rosters
+  were untouched.
+- **Its wings are NOT sun-raked**, which looks like a violation of the solar
+  array house rule above and is not. That rule exists for `VerticalSolarArray`,
+  which is a *tracker* and is therefore drawn wrong if it ignores the sun. A
+  fixed deployable on a vehicle that landed where it landed has no such
+  obligation, and both references show Chang'e wings flat.
 
 ### The habitat district — the two flagship programs (2 of 2 done)
 

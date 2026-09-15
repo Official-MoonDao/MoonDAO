@@ -97,7 +97,12 @@ const PROJECT_SIZE_M: Record<string, number> = {
   'astrobotic-griffin': 4.5, // ~4.5 m across the splayed legs, ~2 m deck
   'im-nova-c': 4, // 4 m tall on a 1.6 m hexagonal bus — height is the max
   'firefly-blue-ghost': 3.5, // ~3.5 m across the legs, ~2 m tall
-  'cnsa-change-7': 4.8, // Chang'e-3/4 heritage bus, 4.8 m leg span
+  // Chang'e-3/4 heritage bus. The figure is the DEPLOYED SOLAR WING SPAN, tip
+  // to tip, which is what ChangE7 below is authored against — the 4.2 m leg
+  // span sits inside it, and both references show the wings reaching past the
+  // footpads. Chang'e-3's own published figures put the two within a few cm of
+  // each other at ~4.76 m, so the number did not move when the model landed.
+  'cnsa-change-7': 4.8,
   // Footpad to nose tip — NASA's own Artemis III renders show a tall stack:
   // splayed legs, a windowed crew module with a deployable crew ladder, two
   // open lattice bays exposing the propellant tanks, then a smooth ascent
@@ -9126,6 +9131,457 @@ function ILRSBase({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Chang'e-7 — CNSA's South Pole robotic scout
+// ---------------------------------------------------------------------------
+//
+// Sits HERE, next to ILRS, rather than beside the other Touchdown landers up
+// top, because it is the same agency's hardware and reuses ILRS_GOLD: the gold
+// MLI is the family cue that separates this program from Artemis's
+// white/aluminum hulls (see the note on those constants), and writing the same
+// hex out twice in two blocks 8000 lines apart is how the two drift apart.
+//
+// Replaces the generic `Lander` stand-in, which is a compact drum on a pad and
+// has nothing in common with this. Built from the Chang'e-4 surface photography
+// and CNSA's own Chang'e-7 renders — the same Chang'e-3 heritage bus in both: a
+// low boxy body wrapped in gold MLI on a splayed four-leg gear, two solar wings
+// deployed nearly flat off the flanks, and a top deck crowded with a steerable
+// Earth dish, a whip, a mast camera and a pair of gold propellant spheres. The
+// rover ramp is down off the front: Chang'e-7 flies an orbiter, lander, rover
+// AND hopper (see its dataset summary), and the ramp is the one thing on the
+// vehicle that says it delivers something rather than just arriving.
+//
+// NO FLAG, though the reference carries one on the bus's front face. Livery is a
+// band rather than a roundel by house rule — and it costs nothing here, because
+// this org's own brandColor IS that flag's red (#C8102E, the one colour note
+// both partners' flags share), so `accent` puts the same red in the same place
+// as a stripe. The same treatment ILRS_RED already documents above.
+//
+// SIZE: the 4.8 m in PROJECT_SIZE_M is the DEPLOYED WING SPAN, tip to tip, with
+// the 4.2 m leg span inside it. Chang'e-3's published figures put both at about
+// 4.76 m, and both references show the wings reaching well past the footpads.
+const CE7_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['cnsa-change-7'] ?? 4.8)
+
+// Bus, in meters. Wider than it is tall, which is most of why this reads as a
+// different class of vehicle from the Blue Moons: they are barrels, this is a
+// table.
+const CE7_BUS_HX = 0.82 // half-width, across the flanks the wings hinge on
+const CE7_BUS_HZ = 0.75 // half-depth, front to back
+const CE7_BUS_BOT = 0.78
+const CE7_BUS_TOP = 1.62
+const CE7_PAYLOAD_TOP = 2.05 // the raised box on the deck
+
+// Gear. Footpads on the diagonals, so 4.2 m corner to corner — inside the wing
+// span above, which is what keeps PROJECT_SIZE_M describing the widest axis.
+const CE7_FOOT_R = 2.1
+const CE7_FOOT_Y = 0.1
+const CE7_HIP_Y = 0.92 // the gear picks up on the bus's lower corners
+
+// Wings. CE7_WING_TIP is half the span, so it sets the vehicle's size outright.
+const CE7_WING_ROOT = 0.9
+const CE7_WING_TIP = 2.4
+const CE7_WING_HZ = 0.52
+const CE7_WING_Y = 1.34
+// ~11 degrees of dihedral. Deliberately NOT raked onto the sun the way the
+// base's own arrays are (see VerticalSolarArray): those are trackers, aimed,
+// and the house rule about raking them exists because a tracker that ignores
+// the sun is drawn wrong. This is a fixed deployable on a vehicle that landed
+// where it landed — its wings are flat because they unfolded flat, and both
+// references show them that way.
+const CE7_WING_DIHEDRAL = 0.2
+
+const CE7_DISH_D = 0.62
+const CE7_DISH_THETA = 0.92 // rim half-angle of the reflector cap
+const CE7_DISH_R = CE7_DISH_D / 2 / Math.sin(CE7_DISH_THETA)
+// Swung off the wing axis so the reflector is never seen face-on — a dish
+// square to the eye is a disc, the same reasoning as SAT_DISH_YAW.
+const CE7_DISH_YAW = 0.7
+
+// Rover ramp, as the two points it spans: down off the front of the bus to the
+// regolith. Its length and rake are derived from these rather than written
+// down, so the foot cannot drift off the ground when the bus height changes.
+const CE7_RAMP_X = 0.34
+const CE7_RAMP_TOP: [number, number] = [CE7_BUS_BOT - 0.02, CE7_BUS_HZ * 0.8]
+const CE7_RAMP_FOOT: [number, number] = [0.02, 1.86]
+
+// One leg: a thick gold-wrapped primary from the bus corner out to the footpad
+// with a thinner brace picking up higher and inboard, which is how every
+// Chang'e leg is braced in the surface photography. The gold runs all the way
+// to the pad on this vehicle — unlike the Blue Moons, whose blankets stop at
+// the knee.
+function Ce7Leg({ angle }: { angle: number }) {
+  const hip: [number, number, number] = [
+    Math.cos(angle) * CE7_BUS_HX * 0.9,
+    CE7_HIP_Y,
+    Math.sin(angle) * CE7_BUS_HZ * 0.9,
+  ]
+  const braceTop: [number, number, number] = [
+    Math.cos(angle) * CE7_BUS_HX * 0.5,
+    CE7_BUS_TOP - 0.1,
+    Math.sin(angle) * CE7_BUS_HZ * 0.5,
+  ]
+  const foot: [number, number, number] = [
+    Math.cos(angle) * CE7_FOOT_R,
+    CE7_FOOT_Y,
+    Math.sin(angle) * CE7_FOOT_R,
+  ]
+  // Where the brace meets the primary — partway down the run, not at the pad,
+  // so the two members form a visible triangle rather than a single thick line.
+  const mid: [number, number, number] = [
+    hip[0] + (foot[0] - hip[0]) * 0.55,
+    hip[1] + (foot[1] - hip[1]) * 0.55,
+    hip[2] + (foot[2] - hip[2]) * 0.55,
+  ]
+  return (
+    <group>
+      <Strut from={hip} to={foot} r={0.055} color={ILRS_GOLD} />
+      <Strut from={braceTop} to={mid} r={0.032} color={ILRS_GOLD_DARK} />
+      {/* Footpad: a shallow dish bedded below grade, so it cannot lift clear of
+          a hollow it lands over. */}
+      <mesh position={[foot[0], foot[1] - 0.07, foot[2]]}>
+        <cylinderGeometry args={[0.26, 0.2, 0.14, 14]} />
+        <meshStandardMaterial color={ILRS_HULL} metalness={0.3} roughness={0.6} />
+      </mesh>
+      <mesh position={[foot[0], foot[1] + 0.01, foot[2]]}>
+        <sphereGeometry args={[0.22, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={METAL} metalness={0.4} roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+// The descent engine and its attitude quads, under the deck. Held well above
+// the footpads: this vehicle lands on a throttled main, and the bell is tucked
+// up inside the bay rather than hanging at ground level.
+function Ce7Thrusters() {
+  const quads = [0, 1, 2, 3].map((i) => (i / 4) * Math.PI * 2 + Math.PI / 4)
+  return (
+    <group>
+      <mesh position={[0, CE7_BUS_BOT - 0.16, 0]}>
+        <cylinderGeometry args={[0.1, 0.24, 0.32, 16, 1, true]} />
+        <meshStandardMaterial
+          color={DARK}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.35}
+        />
+      </mesh>
+      {quads.map((a) => (
+        <group key={a}>
+          <mesh
+            position={[
+              Math.cos(a) * CE7_BUS_HX * 0.72,
+              CE7_BUS_BOT - 0.07,
+              Math.sin(a) * CE7_BUS_HZ * 0.72,
+            ]}
+          >
+            <cylinderGeometry args={[0.045, 0.075, 0.14, 10, 1, true]} />
+            <meshStandardMaterial
+              color={ILRS_HULL}
+              side={THREE.DoubleSide}
+              metalness={0.5}
+              roughness={0.4}
+            />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+// The bus: gold MLI over a lighter lower bay, with the dark instrument panel and
+// the livery band on the front face. Panels stand proud of the wall rather than
+// flush, per the house rule on coplanar detail.
+function Ce7Bus({ accent }: { accent: string }) {
+  const h = CE7_BUS_TOP - CE7_BUS_BOT
+  return (
+    <group>
+      {/* Lower bay, set in slightly so the gold body above reads as a separate
+          course rather than one extruded block. */}
+      <mesh position={[0, CE7_BUS_BOT + 0.13, 0]}>
+        <boxGeometry args={[CE7_BUS_HX * 1.86, 0.26, CE7_BUS_HZ * 1.86]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.55} metalness={0.25} />
+      </mesh>
+      <mesh position={[0, CE7_BUS_BOT + 0.2 + (h - 0.2) / 2, 0]}>
+        <boxGeometry args={[CE7_BUS_HX * 2, h - 0.2, CE7_BUS_HZ * 2]} />
+        <meshStandardMaterial color={ILRS_GOLD} roughness={0.4} metalness={0.38} />
+      </mesh>
+      {/* Deck plate, proud of the body so the top reads as a lid. */}
+      <mesh position={[0, CE7_BUS_TOP + 0.02, 0]}>
+        <boxGeometry args={[CE7_BUS_HX * 1.94, 0.05, CE7_BUS_HZ * 1.94]} />
+        <meshStandardMaterial color={ILRS_GOLD_DARK} roughness={0.5} metalness={0.35} />
+      </mesh>
+      {/* Dark instrument panel, front-left, as in the surface photography. */}
+      <mesh position={[-CE7_BUS_HX * 0.42, CE7_BUS_TOP - 0.28, CE7_BUS_HZ + 0.02]}>
+        <boxGeometry args={[CE7_BUS_HX * 0.72, 0.4, 0.05]} />
+        <meshStandardMaterial color={DARK} roughness={0.45} metalness={0.4} />
+      </mesh>
+      {/* Livery band, front and upper, where the reference carries the flag.
+          See the note on this model. */}
+      <mesh position={[CE7_BUS_HX * 0.4, CE7_BUS_TOP - 0.14, CE7_BUS_HZ + 0.02]}>
+        <boxGeometry args={[CE7_BUS_HX * 0.6, 0.09, 0.04]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.2} />
+      </mesh>
+      {/* A payload box on the front face and a radiator on the rear, so the two
+          long sides are not the same blank gold. */}
+      <mesh position={[CE7_BUS_HX * 0.38, CE7_BUS_TOP - 0.46, CE7_BUS_HZ + 0.04]}>
+        <boxGeometry args={[0.24, 0.24, 0.1]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.5} metalness={0.3} />
+      </mesh>
+      <mesh position={[0, CE7_BUS_TOP - 0.34, -(CE7_BUS_HZ + 0.02)]}>
+        <boxGeometry args={[CE7_BUS_HX * 1.2, 0.44, 0.04]} />
+        <meshStandardMaterial color={DARK} roughness={0.75} metalness={0.2} />
+      </mesh>
+    </group>
+  )
+}
+
+// One solar wing. The face is the shared module map the base's arrays use — a
+// flat blue quad is the one thing that reliably reads as cardboard at this size
+// (see makeSolarFaceMaps), and the roughness contrast between matte rail and
+// glossy laminate is what sells it as glass.
+//
+// Built along +X and swung to the far side by a half turn about Y rather than a
+// negative scale, which would reverse the winding and show the face's backside.
+// Euler order is XYZ, so the dihedral about Z applies FIRST, in the wing's own
+// frame, and the half turn carries the already-tilted wing across — the tip
+// comes up on both sides. Confirmed numerically rather than reasoned about.
+function Ce7Wing({ side }: { side: 1 | -1 }) {
+  const maps = solarFaceMaps()
+  const len = CE7_WING_TIP - CE7_WING_ROOT
+  const midX = (CE7_WING_ROOT + CE7_WING_TIP) / 2
+  return (
+    <group rotation={[0, side > 0 ? 0 : Math.PI, CE7_WING_DIHEDRAL]}>
+      {/* Hinge and yoke out to the panel root. */}
+      <mesh position={[CE7_BUS_HX + 0.04, CE7_WING_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.09, 0.09, 0.16, 12]} />
+        <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.5} />
+      </mesh>
+      <Strut
+        from={[CE7_BUS_HX + 0.04, CE7_WING_Y, 0]}
+        to={[CE7_WING_ROOT + 0.02, CE7_WING_Y, 0]}
+        r={0.035}
+        color={SOLAR_STEEL}
+      />
+      {/* Substrate. The face plane below is single-sided, so this is also what
+          the wing looks like from underneath. */}
+      <mesh position={[midX, CE7_WING_Y, 0]}>
+        <boxGeometry args={[len, 0.03, CE7_WING_HZ * 2]} />
+        <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+      </mesh>
+      {/* Cells, standing proud of the substrate and facing up. A plane's normal
+          is +Z, so -PI/2 about X turns it onto +Y. */}
+      <mesh position={[midX, CE7_WING_Y + 0.022, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[len, CE7_WING_HZ * 2]} />
+        <meshPhysicalMaterial
+          map={maps?.albedo ?? null}
+          roughnessMap={maps?.rough ?? null}
+          color={maps ? '#ffffff' : '#16294f'}
+          metalness={0.04}
+          roughness={maps ? 1 : 0.22}
+          clearcoat={1}
+          clearcoatRoughness={0.18}
+        />
+      </mesh>
+      {/* Outboard rib, which is what the eye reads the wing's thickness by. */}
+      <mesh position={[CE7_WING_TIP - 0.02, CE7_WING_Y, 0]}>
+        <boxGeometry args={[0.05, 0.06, CE7_WING_HZ * 2]} />
+        <meshStandardMaterial color={SOLAR_RAIL} roughness={0.55} metalness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// Everything on the lid: the raised payload box, the propellant pair, the Earth
+// link, the omni whip, and a mast camera.
+function Ce7Deck({ accent }: { accent: string }) {
+  const deck = CE7_BUS_TOP + 0.05
+  const boxH = CE7_PAYLOAD_TOP - deck
+  return (
+    <group>
+      <mesh position={[-0.12, deck + boxH / 2, -0.14]}>
+        <boxGeometry args={[0.62, boxH, 0.5]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.5} metalness={0.3} />
+      </mesh>
+      {/* The propellant pair, high and central — a pair of gold spheres is one
+          of the most recognizable things on the render. */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * 0.3, deck + 0.22, 0.24]}>
+          <sphereGeometry args={[0.21, 16, 12]} />
+          <meshStandardMaterial color={ILRS_GOLD} roughness={0.35} metalness={0.45} />
+        </mesh>
+      ))}
+
+      {/* Earth link. Yawed on an outer group and tipped on an inner one, so the
+          boresight elevation is exactly SAT_DISH_EL at any yaw — combining the
+          two on one Euler loses elevation as the yaw grows. Earth sits within a
+          few degrees of the horizon from here, so this is very nearly
+          horizontal; the reference photo's steeply tilted dish was shot from a
+          mid-latitude landing site, not the pole. */}
+      <group position={[0.3, deck + 0.06, -0.3]} rotation={[0, CE7_DISH_YAW, 0]}>
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.08, 0.1, 0.2, 12]} />
+          <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.5} />
+        </mesh>
+        <group position={[0, 0.24, 0]} rotation={[-SAT_DISH_EL, 0, 0]}>
+          {/* Sunk by its own sphere radius so the cap's VERTEX lands on the
+              gimbal — placed by its centre it floats a whole radius off. */}
+          <mesh position={[0, 0, CE7_DISH_R]} rotation={[-Math.PI / 2, 0, 0]}>
+            <sphereGeometry
+              args={[CE7_DISH_R, 24, 14, 0, Math.PI * 2, 0, CE7_DISH_THETA]}
+            />
+            <meshStandardMaterial
+              color={ILRS_HULL}
+              side={THREE.DoubleSide}
+              roughness={0.34}
+              metalness={0.3}
+            />
+          </mesh>
+          {/* Feed on a tripod at the focus — the detail that says "antenna"
+              rather than "bowl", and unmistakable in photographs of one. */}
+          {[0, 1, 2].map((i) => {
+            const fa = (i / 3) * Math.PI * 2
+            return (
+              <Strut
+                key={i}
+                from={[Math.cos(fa) * CE7_DISH_D * 0.34, Math.sin(fa) * CE7_DISH_D * 0.34, 0.02]}
+                to={[0, 0, CE7_DISH_R / 2]}
+                r={0.012}
+                color={METAL}
+              />
+            )
+          })}
+          <mesh position={[0, 0, CE7_DISH_R / 2]}>
+            <cylinderGeometry args={[0.04, 0.05, 0.08, 10]} />
+            <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+          </mesh>
+        </group>
+      </group>
+
+      {/* Omni whip: what carries telemetry when the dish is off target, and the
+          reason the silhouette reads as a spacecraft from a distance. Thin
+          decorative antennas are allowed to overshoot the body's own height,
+          the same as the Blue Moon MK2's. */}
+      <mesh position={[-0.6, deck + 0.44, 0.3]}>
+        <cylinderGeometry args={[0.012, 0.016, 0.88, 6]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.4} metalness={0.5} />
+      </mesh>
+      {/* Mast camera: a pan/tilt head on a short post, looking out over the
+          front of the deck. */}
+      <mesh position={[0.16, deck + 0.26, 0.06]}>
+        <cylinderGeometry args={[0.03, 0.036, 0.52, 8]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.45} metalness={0.4} />
+      </mesh>
+      <mesh position={[0.16, deck + 0.56, 0.06]}>
+        <boxGeometry args={[0.17, 0.11, 0.13]} />
+        <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh position={[0.16, deck + 0.56, 0.14]}>
+        <sphereGeometry args={[0.035, 10, 8]} />
+        <meshStandardMaterial color={PANEL_EDGE} roughness={0.3} metalness={0.5} />
+      </mesh>
+      {/* A couple of small monopoles, and the beacon in the operator's colour. */}
+      {[-0.34, 0.52].map((x) => (
+        <mesh key={x} position={[x, deck + 0.2, -0.36]}>
+          <cylinderGeometry args={[0.008, 0.01, 0.4, 6]} />
+          <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.5} />
+        </mesh>
+      ))}
+      <mesh position={[-0.5, deck + 0.06, 0.3]}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The science boom: a long thin arm out over the regolith with a sensor head at
+// the tip, angled down off the front-left flank. In the render this is the one
+// thing that breaks the vehicle's boxy outline, so it is worth its four meshes.
+function Ce7Boom() {
+  const root: [number, number, number] = [-CE7_BUS_HX * 0.94, CE7_BUS_TOP - 0.3, CE7_BUS_HZ * 0.5]
+  const elbow: [number, number, number] = [-1.35, CE7_BUS_TOP - 0.26, 1.0]
+  const tip: [number, number, number] = [-1.86, 0.42, 1.38]
+  return (
+    <group>
+      <Strut from={root} to={elbow} r={0.026} color={ILRS_HULL} />
+      <Strut from={elbow} to={tip} r={0.02} color={ILRS_HULL} />
+      <mesh position={elbow}>
+        <sphereGeometry args={[0.045, 10, 8]} />
+        <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.45} />
+      </mesh>
+      {/* Sensor head, held just off the ground rather than resting on it. */}
+      <mesh position={[tip[0], tip[1] - 0.04, tip[2]]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.03, 14]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} metalness={0.35} />
+      </mesh>
+    </group>
+  )
+}
+
+// The rover ramp, deployed. Rake and length come out of the two endpoints
+// rather than being written down, so the foot stays on the regolith if the bus
+// height ever moves. A positive rotation about +X carries +Z down, which is the
+// sign that puts the far (outboard) end on the ground rather than in the air —
+// the mistake this house rule exists for.
+function Ce7Ramp() {
+  const [y0, z0] = CE7_RAMP_TOP
+  const [y1, z1] = CE7_RAMP_FOOT
+  const len = Math.hypot(z1 - z0, y1 - y0)
+  const rake = Math.atan2(y0 - y1, z1 - z0)
+  const w = 0.44
+  return (
+    <group position={[CE7_RAMP_X, (y0 + y1) / 2, (z0 + z1) / 2]} rotation={[rake, 0, 0]}>
+      <mesh>
+        <boxGeometry args={[w, 0.035, len]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.6} metalness={0.3} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[(s * w) / 2, 0.045, 0]}>
+          <boxGeometry args={[0.035, 0.06, len]} />
+          <meshStandardMaterial color={ILRS_GOLD_DARK} roughness={0.5} metalness={0.4} />
+        </mesh>
+      ))}
+      {/* Cleats, so it reads as a ramp a wheel can climb and not a plank. */}
+      {Array.from({ length: 6 }, (_, i) => (
+        <mesh key={i} position={[0, 0.03, len * ((i + 0.5) / 6 - 0.5)]}>
+          <boxGeometry args={[w * 0.86, 0.02, 0.03]} />
+          <meshStandardMaterial color={METAL} roughness={0.6} metalness={0.4} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function ChangE7({ accent }: { accent: string }) {
+  const legAngles = [0, 1, 2, 3].map((i) => (i / 4) * Math.PI * 2 + Math.PI / 4)
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 4.8 m = 2.88 m of deck for a lander,
+          which is almost exactly one local unit at CE7_M — and a unit radius
+          clears the 2.4 m wing tips, the 2.1 m footpads and the ramp foot. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={CE7_M}>
+        {legAngles.map((a) => (
+          <Ce7Leg key={a} angle={a} />
+        ))}
+        <Ce7Thrusters />
+        <Ce7Bus accent={accent} />
+        <Ce7Wing side={1} />
+        <Ce7Wing side={-1} />
+        <Ce7Deck accent={accent} />
+        <Ce7Boom />
+        <Ce7Ramp />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Moon RACER LTV — Intuitive Machines
 // ---------------------------------------------------------------------------
 
@@ -12972,6 +13428,12 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // other four in that race still fall through to the generic `Lander`.
   // See BlueMoonMk1.
   'blue-origin-blue-moon-mk1': BlueMoonMk1,
+  // Touchdown's CNSA entrant, and nothing like the compact drum the generic
+  // `lander` model is: a low boxy bus on splayed gold gear, with the widest
+  // thing on it being a pair of deployed solar wings. Defined next to ILRSBase
+  // rather than up with the Blue Moons because it shares that model's gold.
+  // See ChangE7.
+  'cnsa-change-7': ChangE7,
 }
 
 export function ProceduralModel({
