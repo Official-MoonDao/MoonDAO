@@ -176,21 +176,46 @@ softgoods module uses for its own power feed.
   a `PROJECT_MODEL` entry alone would have rendered nothing. The GLB file itself
   is left in `public/` unreferenced, the same as `insight-lander.glb`.
 
-### The landing zone — Touchdown (3 of 5 done)
+### The landing zone — Touchdown (4 of 5 done)
 
 `shared-next-landing` is the newest race and was the least differentiated.
-`blue-origin-blue-moon-mk1`, `cnsa-change-7` and `astrobotic-griffin` have their
-own models; `im-nova-c` and `firefly-blue-ghost` still fall through to the
-generic `Lander`. They are not interchangeable with it — Nova-C is a tall narrow
-hexagonal column (height is its largest dimension, not its span) and Blue Ghost
-is a low wide disc — and both already have their real sizes in
-`PROJECT_SIZE_M`, so only the geometry is missing.
+`blue-origin-blue-moon-mk1`, `cnsa-change-7`, `astrobotic-griffin` and
+`im-nova-c` have their own models. **Only `firefly-blue-ghost` still falls
+through to the generic `Lander`** — it is a low wide disc, nothing like that
+drum, and it already has its real size in `PROJECT_SIZE_M`, so only the geometry
+is missing.
 
-**All four legs, on all four landers.** Every vehicle in this race stands on four
-splayed legs, so the gear's *finish* is doing real work telling them apart at a
-glance: the Blue Moons' gold bipods stop at the knee, Chang'e-7's gold tubes run
-all the way to the pad, and Griffin's are bare aluminium with no gold anywhere.
-Do not "tidy" one of those toward another.
+**The gear is what tells these apart.** Three of the four stand on four splayed
+legs, so the *finish* is doing real work: the Blue Moons' gold bipods stop at the
+knee, Chang'e-7's gold tubes run all the way to the pad, and Griffin's are bare
+aluminium with no gold anywhere. Nova-C is the exception and breaks the pattern
+usefully — **six** legs, and a lattice of thin polished tubes rather than struts.
+Do not "tidy" any of these toward another.
+
+`NovaC` is the one vehicle here **whose largest dimension is its height**: a 4 m
+column on a 1.56 m hexagonal bus, famously about the size of a phone box. The
+generic drum it replaced had both the proportion and the axis wrong. Its
+silhouette is the taper — a straight hexagonal prism that narrows into a cone at
+the bottom with the engine emerging from the point.
+
+Three notes before touching it:
+
+- **It does not reuse `RACER_BLUE`**, even though Moon RACER is the same operator
+  and is defined directly below it. That constant is the blue RACER is *painted*;
+  Nova-C is a white bus over a dark grey lower body. Sharing a hex between
+  vehicles only earns its keep when the colour is the cue (`ILRS_GOLD`).
+- **`NOVAC_APOTHEM` is not `NOVAC_BODY_R`.** Fittings mounted on a hexagonal
+  *face* seat on the apothem; only the corner seam strips seat on the
+  circumradius. On a 0.9 m body those differ by 12 cm, so confusing them buries a
+  panel.
+- **The panels live on the straight prism only.** A flat panel spanning the taper
+  is half-buried at one end of its run and standing off at the other — the same
+  failure `mk1SkirtR` and `novacConeR` exist to prevent.
+
+Its accent lands on the solar panels' inboard edge rails, because IM's own
+`brandColor` is `#F97316` and the reference panels carry a bright orange stripe
+down exactly that edge. The house rule and the real hardware wanted the same
+paint in the same place, as with `ILRS_RED` and Chang'e-7's flag red.
 
 `Griffin` draws **Griffin, not Peregrine.** The project's dataset name is the
 family label "Peregrine & Griffin Landers" and those are two genuinely different
