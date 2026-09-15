@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 12 · Marginalia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Caveat:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1b1914;
+    --ink-2: #4e4a40;
+    --pencil: #7a4a2b;
+    --rule: #e4dfd4;
+    --paper: #f7f4ec;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 18px; line-height: 1.7;
+  }
+  a { color: inherit; text-decoration: none; }
+  .sans { font-family: 'Inter', sans-serif; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; }
+
+  .nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 36px; border-bottom: 1px solid var(--rule);
+  }
+  .nav .wm { font-weight: 700; letter-spacing: 0; text-transform: none; font-family: 'Libre Baskerville', serif; font-size: 16px; }
+  .nav a { color: var(--ink-2); font-size: 13px; letter-spacing: 0; text-transform: none; font-weight: 400; }
+
+  .page {
+    max-width: 1080px; margin: 0 auto; padding: 72px 36px 100px;
+    display: grid; grid-template-columns: 200px 1fr 200px; gap: 36px;
+  }
+  .gutter .note {
+    font-family: 'Caveat', cursive;
+    font-size: 20px; line-height: 1.35; color: var(--pencil);
+    transform: rotate(-1.2deg); margin-top: 8px;
+  }
+  .gutter .note.later { margin-top: 210px; transform: rotate(1.4deg); }
+  .gutter .note.right { transform: rotate(1.8deg); margin-top: 86px; text-align: left; }
+
+  h1 { margin: 0 0 28px; font-size: clamp(28px, 3.6vw, 42px); font-weight: 700; line-height: 1.2; letter-spacing: -0.015em; }
+  p { margin: 0 0 1em; color: var(--ink-2); }
+  p strong { color: var(--ink); font-weight: 700; }
+
+  .facts { margin-top: 40px; border-top: 1px solid var(--ink); }
+  .facts div { display: grid; grid-template-columns: 70px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--rule); align-items: baseline; }
+  .facts .y { font-size: 13px; }
+
+  .join {
+    display: inline-block; margin-top: 36px;
+    font-family: 'Inter', sans-serif; font-size: 13px;
+    border-bottom: 1px solid var(--ink); padding-bottom: 3px;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; }
+    .gutter.left .note { margin-top: 0; }
+    .gutter.right { order: 3; }
+    .gutter .note.later { margin-top: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a class="wm" href="#">MoonDAO</a>
+  <a class="sans" href="#">Join</a>
+</div>
+
+<div class="page">
+  <aside class="gutter left">
+    <div class="note">not a slogan — they actually went</div>
+    <div class="note later">the interesting part</div>
+  </aside>
+
+  <main>
+    <h1>A space program is a coordination problem that someone has to pay for.</h1>
+    <p>Most of them are paid for by a government. This one is paid for by its members. <strong>Coby Cotton flew in 2022.</strong> The members voted him up. <strong>Dr. Eiman Jahangir flew in 2024.</strong> The members ran a sweepstakes.</p>
+    <p>The same people wrote a constitution and sent it to the Moon. Eight million dollars is on the ledger. So is every vote.</p>
+
+    <div class="facts">
+      <div><span class="y">2022</span><span>Cotton, by vote</span></div>
+      <div><span class="y">2024</span><span>Jahangir, by sweepstakes</span></div>
+      <div><span class="y">2025</span><span>Constitution, on the Moon</span></div>
+    </div>
+
+    <a class="join" href="#">If that sounds like you — join</a>
+  </main>
+
+  <aside class="gutter right">
+    <div class="note right">$8M, still public.<br>you can look it up.</div>
+  </aside>
+</div>
+
+</body>
+</html>

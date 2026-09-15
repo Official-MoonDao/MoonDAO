@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 23 · World</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@80..180,400;80..180,700;80..180,800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0b1830;
+    --navy-2: #13264a;
+    --copper: #d4783a;
+    --sand: #e7d3b0;
+    --ink: #f3eadc;
+    --dim: #b7c0ce;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; background: var(--navy); color: var(--ink);
+    font-family: 'Anybody', system-ui, sans-serif;
+    font-variation-settings: 'wdth' 115;
+  }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .sheet {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 80px 80px;
+    background-position: -1px -1px;
+  }
+
+  header {
+    display: grid; grid-template-columns: 200px 1fr 200px;
+    border-bottom: 1px solid rgba(231,211,176,0.18);
+  }
+  header > * { padding: 16px 20px; }
+  header .mid {
+    border-left: 1px solid rgba(231,211,176,0.18);
+    border-right: 1px solid rgba(231,211,176,0.18);
+    display: flex; gap: 22px; align-items: center; color: var(--dim);
+  }
+  header .end { text-align: right; }
+  .join {
+    color: var(--navy); background: var(--copper); padding: 8px 12px;
+    font-weight: 700; font-variation-settings: 'wdth' 130;
+  }
+
+  .hero {
+    display: grid; grid-template-columns: 1.15fr 0.85fr;
+  }
+  .hero .left { padding: 48px 28px 40px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .hero h1 {
+    margin: 10px 0 0; font-size: clamp(44px, 6.6vw, 84px);
+    font-weight: 800; line-height: 0.9; letter-spacing: -0.04em;
+    font-variation-settings: 'wdth' 150; color: var(--copper);
+  }
+  .hero .right {
+    border-left: 1px solid rgba(231,211,176,0.18);
+    padding: 48px 28px 40px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .hero .right p { margin: 0; color: var(--sand); font-size: 17px; line-height: 1.45; max-width: 28ch; font-variation-settings: 'wdth' 105; }
+  .links { margin-top: 28px; display: flex; flex-direction: column; gap: 8px; }
+  .links a { color: var(--copper); font-size: 14px; }
+
+  .map {
+    position: relative;
+    border-top: 1px solid rgba(231,211,176,0.18);
+    padding: 28px 20px 22px;
+  }
+  .rule {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;
+  }
+  .rule .end {
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace; color: var(--sand);
+  }
+  .rule .track { height: 1px; background: rgba(212,120,58,0.55); position: relative; }
+  .rule .track i {
+    position: absolute; top: -4px; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--copper);
+  }
+  .rule .track i.a { left: 0; }
+  .rule .track i.b { right: 0; }
+  .map .label { margin-top: 14px; color: var(--dim); }
+
+  .band {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid rgba(231,211,176,0.18);
+  }
+  .band > div { padding: 22px 20px; border-right: 1px solid rgba(231,211,176,0.18); }
+  .band > div:last-child { border-right: 0; }
+  .band .n {
+    font-size: 28px; font-weight: 700; color: var(--copper);
+    font-variation-settings: 'wdth' 140; margin-top: 6px;
+  }
+
+  @media (max-width: 800px) {
+    header, .hero, .band { grid-template-columns: 1fr; }
+    header .mid, .hero .right { border-left: 0; border-top: 1px solid rgba(231,211,176,0.18); }
+    header .end { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <header>
+    <div class="mono">MoonDAO · sheet 01</div>
+    <div class="mid mono">
+      <a href="#">Missions</a>
+      <a href="#">Governance</a>
+      <a href="#">About</a>
+    </div>
+    <div class="end"><a class="join" href="#">Join</a></div>
+  </header>
+
+  <div class="hero">
+    <div class="left">
+      <div class="mono">Mean distance · Earth–Moon</div>
+      <h1>384,400 km is a civic problem.</h1>
+    </div>
+    <div class="right">
+      <p>Two crossings so far, as people. One as a document. Paid for in public. Chosen by the members — a vote, then a sweepstakes.</p>
+      <div class="links">
+        <a href="#">Cotton, 2022 ↗</a>
+        <a href="#">Jahangir, 2024 ↗</a>
+        <a href="#">Constitution, 2025 ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="map">
+      <div class="rule">
+        <span class="end">Earth</span>
+        <span class="track" aria-hidden="true"><i class="a"></i><i class="b"></i></span>
+        <span class="end">Moon</span>
+      </div>
+      <div class="label mono">A distance anyone can measure. A program anyone can join.</div>
+    </div>
+    <div class="band">
+      <div><div class="mono">2022 · Vote</div><div class="n">Cotton</div></div>
+      <div><div class="mono">2024 · Sweepstakes</div><div class="n">Jahangir</div></div>
+      <div><div class="mono">2025 · Surface</div><div class="n">Constitution</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
