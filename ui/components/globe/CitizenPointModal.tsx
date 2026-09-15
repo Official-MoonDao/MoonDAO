@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import Modal from '../layout/Modal'
 
@@ -41,29 +42,36 @@ export default function CitizenPointModal({ selectedPoint, setEnabled }: Citizen
 
         <div className="w-full bg-slate-600/20 backdrop-blur-sm rounded-xl border border-slate-500/30 p-5 overflow-hidden">
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8 max-h-[50vh] md:max-h-[60vh] overflow-y-auto overflow-x-hidden pr-2 py-2">
-            {selectedPoint?.citizens.map((c: any) => (
-              <Link
-                className="group"
-                href={`/citizen/${generatePrettyLinkWithId(c.name, c.id)}`}
-                key={c.id}
-                passHref
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className="relative rounded-full overflow-hidden border-2 border-slate-500/50 group-hover:border-moon-gold transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-moon-gold/30">
-                    <Image
-                      className="rounded-full"
-                      src={`https://ipfs.io/ipfs/${c.image.split('ipfs://')[1]}`}
-                      alt={c.name}
-                      width={80}
-                      height={80}
-                    />
+            {selectedPoint?.citizens.map((c: any) => {
+              const imageSrc = getIPFSGateway(c.image)
+              return (
+                <Link
+                  className="group"
+                  href={`/citizen/${generatePrettyLinkWithId(c.name, c.id)}`}
+                  key={c.id}
+                  passHref
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="relative rounded-full overflow-hidden border-2 border-slate-500/50 group-hover:border-moon-gold transition-all duration-300 group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-moon-gold/30">
+                      {imageSrc ? (
+                        <Image
+                          className="rounded-full"
+                          src={imageSrc}
+                          alt={c.name}
+                          width={80}
+                          height={80}
+                        />
+                      ) : (
+                        <div className="w-20 h-20 bg-slate-600/40" aria-hidden="true" />
+                      )}
+                    </div>
+                    <p className="w-full text-center break-words text-xs text-slate-300 group-hover:text-white transition-colors line-clamp-2">
+                      {c.name}
+                    </p>
                   </div>
-                  <p className="w-full text-center break-words text-xs text-slate-300 group-hover:text-white transition-colors line-clamp-2">
-                    {c.name}
-                  </p>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              )
+            })}
           </div>
         </div>
       </div>

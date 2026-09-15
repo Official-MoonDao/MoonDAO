@@ -315,6 +315,15 @@ function extractCountryFromAddress(formattedAddress: string): string {
   return countryMappings[country] || country
 }
 
+// Geocoders return slightly different city-center coords for the same place
+// (and legacy text locations use a 4-decimal lookup). Exact lat/lng keys then
+// create overlapping globe pins — e.g. Washington, DC shows Antonio + Amanda
+// at the legacy point while Kirby sits ~10m away on a second pin. 3 decimals
+// is ~111m, enough to merge that jitter without collapsing distinct cities.
+export function locationGroupKey(lat: number, lng: number): string {
+  return `${lat.toFixed(3)},${lng.toFixed(3)}`
+}
+
 /**
  * Group citizens by location coordinates
  */
@@ -324,7 +333,7 @@ function groupCitizensByLocation(
   const locationMap = new Map<string, GroupedLocationData>()
 
   for (const citizen of citizensLocationData) {
-    const key = `${citizen.lat},${citizen.lng}`
+    const key = locationGroupKey(citizen.lat, citizen.lng)
 
     if (!locationMap.has(key)) {
       locationMap.set(key, {
