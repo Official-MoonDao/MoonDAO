@@ -94,7 +94,12 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // here each one would render at TYPE_SIZE_M.lander's 16 m — Blue Moon MK2
   // class, three to four times its real size. Public figures / honest
   // estimates, largest dimension:
-  'astrobotic-griffin': 4.5, // ~4.5 m across the splayed legs, ~2 m deck
+  // Astrobotic's own dimensioned scale drawing: 4.5 m across the splayed legs
+  // by 2.0 m tall. Width is the largest dimension, and Griffin below is
+  // authored so opposite footpads span exactly this. The figure is GRIFFIN's,
+  // not Peregrine's — the project's name is a family label covering both, and
+  // Peregrine is under half this wide (see the note on the model).
+  'astrobotic-griffin': 4.5,
   'im-nova-c': 4, // 4 m tall on a 1.6 m hexagonal bus — height is the max
   'firefly-blue-ghost': 3.5, // ~3.5 m across the legs, ~2 m tall
   // Chang'e-3/4 heritage bus. The figure is the DEPLOYED SOLAR WING SPAN, tip
@@ -9582,6 +9587,433 @@ function ChangE7({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Griffin — Astrobotic's large CLPS cargo lander
+// ---------------------------------------------------------------------------
+//
+// Sits after ChangE7 for the same mechanical reason that one sits after ILRS:
+// its panel skirt reuses solarFaceMaps() above, so it has to be defined below
+// it. The two Touchdown landers that carry photovoltaics are therefore
+// neighbours, which is convenient rather than accidental.
+//
+// GRIFFIN, NOT PEREGRINE. The project is `astrobotic-griffin` and its dataset
+// name is the family label "Peregrine & Griffin Landers" — two genuinely
+// different vehicles, Peregrine being roughly a quarter the payload class and
+// under half this wide. The race is on the OPERATOR (see the shared goal's own
+// win test), which is why one project covers both, but a model can only draw
+// one silhouette and Griffin is the right one: PROJECT_SIZE_M already describes
+// Griffin's dimensions, the DePrize outcome names "Griffin Mission One", and
+// Peregrine's single flight was a propellant leak that never landed.
+//
+// Replaces the generic `Lander`, which is a compact drum — Griffin is a table.
+// Built from Astrobotic's own dimensioned scale drawing plus three renders:
+//
+//   - A hexagonal basket of body-mounted solar panels, which is the whole
+//     identity of the vehicle. It FLARES OUTWARD AS IT RISES, so the cells face
+//     outward and slightly DOWN. That was read off the plan view rather than
+//     assumed, and it is the opposite of the pyramid a lander skirt is usually
+//     drawn as, so GRF_SKIRT_RAKE is derived from the two radii below rather
+//     than written down independently of them.
+//   - Four big gold MLI propellant spheres standing proud of the panel rim,
+//     crinkled foil rather than smooth — hence the low segment count and flat
+//     shading, which reads as creased blanket instead of chrome.
+//   - Two open-lattice payload ramps deployed up and outboard.
+//   - Four BARE ALUMINIUM legs on wide dished footpads. No gold anywhere on the
+//     gear, which is what separates it at a glance from Chang'e-7's gold tubes
+//     and the Blue Moons' gold bipods — all four Touchdown landers stand on
+//     four legs, so the gear's finish is doing real work telling them apart.
+//
+// SIZE: 4.5 m is the leg span and 2.0 m the height, both off Astrobotic's own
+// dimension arrows. Width is therefore the largest dimension, as it was for
+// Chang'e-7 and unlike the Blue Moons.
+const GRF_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['astrobotic-griffin'] ?? 4.5)
+
+const GRF_GOLD = '#b99a3f' // creased MLI over the propellant spheres
+const GRF_GOLD_DK = '#8a7028' // the shadowed side of a crease
+
+// Gear. Four legs at 90 degrees, the front one under the front face's centre as
+// the plan view shows, so opposite footpads span the full 4.5 m.
+const GRF_FOOT_R = 2.25
+const GRF_FOOT_Y = 0.05
+const GRF_HIP_R = 1.12
+const GRF_HIP_Y = 0.62 // the deck underside the gear picks up on
+
+// Deck and skirt. The skirt's top radius is the larger of the two: the basket
+// opens upward.
+const GRF_DECK_Y = 0.66
+const GRF_SKIRT_BOT_Y = 0.6
+const GRF_SKIRT_TOP_Y = 1.3
+const GRF_SKIRT_BOT_R = 1.34
+const GRF_SKIRT_TOP_R = 1.56
+const GRF_FACES = 6
+
+// Tanks, standing proud of the panel rim.
+const GRF_TANK_R = 0.46
+const GRF_TANK_RING_R = 0.7
+const GRF_TANK_Y = 1.24
+
+// Total height, off the dimension arrow. The instrument mast is what reaches
+// it, so nothing else may.
+const GRF_TOP = 2.0
+
+// Ramps: length along the run and how far up off horizontal they sit. Kept short
+// enough that their tips stay inside both the footpad span and GRF_TOP — on a
+// vehicle this flat the ramps are the one part that could quietly become the
+// widest or tallest thing on it.
+const GRF_RAMP_LEN = 0.85
+const GRF_RAMP_PITCH = 0.58
+
+// Azimuth of each panel face. Face 0 is centred on +Z, which is the side a
+// procedural model presents (see MODEL_FRONT_AZ), so the front of the vehicle is
+// a panel rather than a corner.
+function grfFaceAz(i: number): number {
+  return Math.PI / 2 + (i / GRF_FACES) * Math.PI * 2
+}
+
+// The skirt's rake, as the angle its outward normal is tipped DOWN from
+// horizontal. Derived from the two radii so it cannot disagree with the basket
+// they describe: bottom to top the surface moves out by dR and up by dY, so its
+// outward normal leans down by atan(dR/dY).
+const GRF_SKIRT_RAKE = Math.atan2(
+  GRF_SKIRT_TOP_R - GRF_SKIRT_BOT_R,
+  GRF_SKIRT_TOP_Y - GRF_SKIRT_BOT_Y
+)
+const GRF_SKIRT_SLANT = Math.hypot(
+  GRF_SKIRT_TOP_R - GRF_SKIRT_BOT_R,
+  GRF_SKIRT_TOP_Y - GRF_SKIRT_BOT_Y
+)
+
+// One panel of the skirt. Yawed onto its face, then raked about the yawed X
+// axis — a POSITIVE rotation about +X carries +Z toward -Y, which is the sign
+// that tips the cells outward and down rather than up into the tanks.
+//
+// A hexagon's side length equals its circumradius, so the face width comes off
+// the mid radius directly, less a little for the corner joints.
+function GrfPanel({ i }: { i: number }) {
+  const maps = solarFaceMaps()
+  const rMid = (GRF_SKIRT_BOT_R + GRF_SKIRT_TOP_R) / 2
+  const yMid = (GRF_SKIRT_BOT_Y + GRF_SKIRT_TOP_Y) / 2
+  const w = rMid * 0.94
+  return (
+    <group rotation={[0, Math.PI / 2 - grfFaceAz(i), 0]}>
+      <group position={[0, yMid, rMid]} rotation={[GRF_SKIRT_RAKE, 0, 0]}>
+        {/* Substrate, which is also what the panel looks like from inside the
+            basket — the cell plane in front of it is single-sided. */}
+        <mesh>
+          <boxGeometry args={[w, GRF_SKIRT_SLANT, 0.03]} />
+          <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, 0, 0.024]}>
+          <planeGeometry args={[w * 0.96, GRF_SKIRT_SLANT * 0.94]} />
+          <meshPhysicalMaterial
+            map={maps?.albedo ?? null}
+            roughnessMap={maps?.rough ?? null}
+            color={maps ? '#ffffff' : '#16294f'}
+            metalness={0.04}
+            roughness={maps ? 1 : 0.22}
+            clearcoat={1}
+            clearcoatRoughness={0.18}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// One leg: a tapered aluminium tube from under the deck out to a wide dished
+// footpad, with a drag link back up to the deck. TaperedMast rather than Strut
+// because the reference's legs are visibly thicker at the hip than at the ankle.
+function GrfLeg({ az }: { az: number }) {
+  const hip: [number, number, number] = [
+    Math.cos(az) * GRF_HIP_R,
+    GRF_HIP_Y,
+    Math.sin(az) * GRF_HIP_R,
+  ]
+  const foot: [number, number, number] = [
+    Math.cos(az) * GRF_FOOT_R,
+    GRF_FOOT_Y + 0.12,
+    Math.sin(az) * GRF_FOOT_R,
+  ]
+  const linkTop: [number, number, number] = [
+    Math.cos(az) * GRF_HIP_R * 0.55,
+    GRF_DECK_Y + 0.06,
+    Math.sin(az) * GRF_HIP_R * 0.55,
+  ]
+  const linkFoot: [number, number, number] = [
+    hip[0] + (foot[0] - hip[0]) * 0.62,
+    hip[1] + (foot[1] - hip[1]) * 0.62,
+    hip[2] + (foot[2] - hip[2]) * 0.62,
+  ]
+  return (
+    <group>
+      <TaperedMast from={hip} to={foot} r0={0.075} r1={0.045} color={HULL} />
+      <Strut from={linkTop} to={linkFoot} r={0.026} color={HULL_DARK} />
+      {/* Ankle joint, then the pad. The pad plate runs 3 cm BELOW grade so it
+          cannot lift clear of a hollow it lands over, and the dish over it is
+          seated inside the plate rather than resting on top of it — set flush
+          they leave a centimetres-wide gap that reads as a floating pad. The
+          dish's apex is where the ankle sits, so the leg emerges from it. */}
+      <mesh position={foot}>
+        <sphereGeometry args={[0.06, 10, 8]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.4} />
+      </mesh>
+      <mesh position={[foot[0], GRF_FOOT_Y - 0.05, foot[2]]}>
+        <cylinderGeometry args={[0.3, 0.24, 0.06, 18]} />
+        <meshStandardMaterial color={HULL} metalness={0.35} roughness={0.5} />
+      </mesh>
+      <mesh position={[foot[0], GRF_FOOT_Y - 0.03, foot[2]]}>
+        <sphereGeometry args={[0.24, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.6]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.4} roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+// One deployed payload ramp: two rails with zigzag web bracing between them,
+// which is what makes it read as an open truss rather than a plank. Built along
+// its own +X and then placed — Euler order is XYZ, so the pitch about Z is
+// applied first in the ramp's own frame and the yaw about Y carries the already
+// pitched ramp round to its face. Same composition as Ce7Wing, confirmed
+// numerically.
+function GrfRamp({ az }: { az: number }) {
+  const bays = 6
+  const halfW = 0.15
+  const rise = 0.11 // depth of the truss, root to tip
+  return (
+    <group
+      position={[
+        Math.cos(az) * GRF_SKIRT_TOP_R * 0.96,
+        GRF_SKIRT_TOP_Y - 0.06,
+        Math.sin(az) * GRF_SKIRT_TOP_R * 0.96,
+      ]}
+      rotation={[0, Math.PI / 2 - az, GRF_RAMP_PITCH]}
+    >
+      {[-1, 1].map((s) => (
+        <group key={s}>
+          <Strut
+            from={[0, 0, s * halfW]}
+            to={[GRF_RAMP_LEN, 0, s * halfW]}
+            r={0.022}
+            color={HULL}
+          />
+          <Strut
+            from={[0, rise, s * halfW]}
+            to={[GRF_RAMP_LEN, rise, s * halfW]}
+            r={0.018}
+            color={HULL}
+          />
+          {/* The web: alternating diagonals between the two rails. */}
+          {Array.from({ length: bays }, (_, b) => {
+            const x0 = (GRF_RAMP_LEN * b) / bays
+            const x1 = (GRF_RAMP_LEN * (b + 1)) / bays
+            const up = b % 2 === 0
+            return (
+              <Strut
+                key={b}
+                from={[x0, up ? 0 : rise, s * halfW]}
+                to={[x1, up ? rise : 0, s * halfW]}
+                r={0.011}
+                color={HULL_DARK}
+              />
+            )
+          })}
+        </group>
+      ))}
+      {/* Cross ties, so the two sides read as one structure. */}
+      {Array.from({ length: 4 }, (_, b) => {
+        const x = (GRF_RAMP_LEN * (b + 0.5)) / 4
+        return (
+          <Strut
+            key={b}
+            from={[x, rise, -halfW]}
+            to={[x, rise, halfW]}
+            r={0.011}
+            color={HULL_DARK}
+          />
+        )
+      })}
+    </group>
+  )
+}
+
+// The propulsion bay under the deck: the gold-blanketed underbelly the renders
+// show between the panel bottom and the regolith, a main bell, and four
+// attitude quads out at the deck's corners.
+function GrfPropulsion() {
+  const quads = [0, 1, 2, 3].map((i) => Math.PI / 4 + (i / 4) * Math.PI * 2)
+  return (
+    <group>
+      <mesh position={[0, GRF_HIP_Y - 0.04, 0]}>
+        <cylinderGeometry args={[1.0, 0.86, 0.22, GRF_FACES]} />
+        <meshStandardMaterial
+          color={GRF_GOLD}
+          roughness={0.44}
+          metalness={0.42}
+          flatShading
+        />
+      </mesh>
+      <mesh position={[0, 0.36, 0]}>
+        <cylinderGeometry args={[0.12, 0.22, 0.28, 16, 1, true]} />
+        <meshStandardMaterial
+          color={DARK}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.35}
+        />
+      </mesh>
+      {quads.map((a) => (
+        <group key={a}>
+          <mesh
+            position={[Math.cos(a) * 0.92, GRF_HIP_Y - 0.02, Math.sin(a) * 0.92]}
+            rotation={[0, Math.PI / 2 - a, 0]}
+          >
+            <boxGeometry args={[0.2, 0.16, 0.16]} />
+            <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.35} />
+          </mesh>
+          <mesh position={[Math.cos(a) * 0.92, GRF_HIP_Y - 0.14, Math.sin(a) * 0.92]}>
+            <cylinderGeometry args={[0.035, 0.06, 0.1, 10, 1, true]} />
+            <meshStandardMaterial
+              color={HULL_DARK}
+              side={THREE.DoubleSide}
+              metalness={0.5}
+              roughness={0.4}
+            />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+// The deck itself, plus everything standing on it: the four propellant spheres,
+// the hexagonal payload adapter funnel in the middle, a flat disc antenna, and
+// the instrument mast that reaches GRF_TOP.
+function GrfDeck({ accent }: { accent: string }) {
+  const tanks = [0, 1, 2, 3].map((i) => Math.PI / 4 + (i / 4) * Math.PI * 2)
+  const mastBase = GRF_SKIRT_TOP_Y - 0.1
+  return (
+    <group>
+      <mesh position={[0, GRF_DECK_Y, 0]}>
+        <cylinderGeometry args={[GRF_SKIRT_BOT_R * 0.97, GRF_SKIRT_BOT_R * 0.97, 0.07, GRF_FACES]} />
+        <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.3} />
+      </mesh>
+
+      {/* Creased MLI spheres. Low segment counts plus flat shading on purpose:
+          a smooth high-poly gold sphere reads as a chrome ball bearing, and
+          what these actually are is a blanket with folds in it. */}
+      {tanks.map((a, i) => (
+        <group key={a}>
+          <mesh
+            position={[
+              Math.cos(a) * GRF_TANK_RING_R,
+              GRF_TANK_Y,
+              Math.sin(a) * GRF_TANK_RING_R,
+            ]}
+            rotation={[0, a, 0]}
+          >
+            <sphereGeometry args={[GRF_TANK_R, 11, 8]} />
+            <meshStandardMaterial
+              color={i % 2 ? GRF_GOLD : GRF_GOLD_DK}
+              roughness={0.5}
+              metalness={0.45}
+              flatShading
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Payload adapter: a hexagonal funnel opening upward out of the middle of
+          the tank cluster, which is the one thing in the plan view that is not
+          a tank or a panel. Double-sided — you see down into it from above. */}
+      <mesh position={[0, GRF_TANK_Y + 0.2, 0]}>
+        <cylinderGeometry args={[0.54, 0.26, 0.42, GRF_FACES, 1, true]} />
+        <meshStandardMaterial
+          color={HULL}
+          side={THREE.DoubleSide}
+          roughness={0.4}
+          metalness={0.35}
+        />
+      </mesh>
+      <mesh position={[0, GRF_TANK_Y + 0.41, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.54, 0.03, 8, GRF_FACES * 3]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+
+      {/* Flat disc antenna on a short post, out at the skirt's rim. */}
+      <group position={[-GRF_SKIRT_TOP_R * 0.82, GRF_SKIRT_TOP_Y - 0.14, 0.3]}>
+        <mesh position={[0, 0.16, 0]}>
+          <cylinderGeometry args={[0.022, 0.028, 0.32, 8]} />
+          <meshStandardMaterial color={HULL} roughness={0.45} metalness={0.45} />
+        </mesh>
+        <mesh position={[0, 0.34, 0]} rotation={[0, 0, 0.35]}>
+          <cylinderGeometry args={[0.26, 0.26, 0.022, 20]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.4} metalness={0.4} />
+        </mesh>
+      </group>
+
+      {/* Instrument mast. This is what sets the vehicle's 2.0 m height, so its
+          tip lands exactly on GRF_TOP rather than wherever the parts add up. */}
+      <mesh position={[0.16, (mastBase + GRF_TOP - 0.12) / 2, -0.34]}>
+        <cylinderGeometry args={[0.02, 0.026, GRF_TOP - 0.12 - mastBase, 8]} />
+        <meshStandardMaterial color={HULL} roughness={0.45} metalness={0.45} />
+      </mesh>
+      <mesh position={[0.16, GRF_TOP - 0.08, -0.34]}>
+        <boxGeometry args={[0.18, 0.12, 0.14]} />
+        <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh position={[0.16, GRF_TOP - 0.08, -0.26]}>
+        <sphereGeometry args={[0.035, 10, 8]} />
+        <meshStandardMaterial color={PANEL_EDGE} roughness={0.3} metalness={0.5} />
+      </mesh>
+
+      {/* Livery band and beacon in the operator's colour, on the front face's
+          upper rail — a stripe, per the house rule on marks. */}
+      <mesh position={[0, GRF_SKIRT_TOP_Y + 0.02, GRF_SKIRT_TOP_R * 0.99]}>
+        <boxGeometry args={[GRF_SKIRT_TOP_R * 0.5, 0.05, 0.05]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={[0.44, GRF_SKIRT_TOP_Y + 0.04, GRF_SKIRT_TOP_R * 0.9]}>
+        <sphereGeometry args={[0.036, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function Griffin({ accent }: { accent: string }) {
+  // Legs at 90 degrees with one under the front face's centre, as the plan view
+  // shows — so opposite footpads span the full 4.5 m and the front leg stands
+  // under the panel the camera sees rather than off a corner.
+  const legAz = [0, 1, 2, 3].map((i) => Math.PI / 2 + (i / 4) * Math.PI * 2)
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 4.5 m = 2.7 m of deck for a lander,
+          just over one local unit at GRF_M — and a unit radius clears both the
+          2.25 m footpads and the ramp tips. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={GRF_M}>
+        {legAz.map((az) => (
+          <GrfLeg key={az} az={az} />
+        ))}
+        <GrfPropulsion />
+        <GrfDeck accent={accent} />
+        {Array.from({ length: GRF_FACES }, (_, i) => (
+          <GrfPanel key={i} i={i} />
+        ))}
+        {/* Ramps off the two faces either side of the front, which is how the
+            renders carry them — symmetric about the presented face. */}
+        <GrfRamp az={grfFaceAz(1)} />
+        <GrfRamp az={grfFaceAz(GRF_FACES - 1)} />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Moon RACER LTV — Intuitive Machines
 // ---------------------------------------------------------------------------
 
@@ -13434,6 +13866,11 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // rather than up with the Blue Moons because it shares that model's gold.
   // See ChangE7.
   'cnsa-change-7': ChangE7,
+  // Touchdown's Astrobotic entrant — a hexagonal basket of solar panels on four
+  // bare aluminium legs, which the generic `lander` drum is nothing like. Draws
+  // GRIFFIN specifically: the project name is a family label covering Peregrine
+  // too, and the two are different vehicles. See Griffin.
+  'astrobotic-griffin': Griffin,
 }
 
 export function ProceduralModel({
