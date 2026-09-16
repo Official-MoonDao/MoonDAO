@@ -100,7 +100,10 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // not Peregrine's — the project's name is a family label covering both, and
   // Peregrine is under half this wide (see the note on the model).
   'astrobotic-griffin': 4.5,
-  'im-nova-c': 4, // 4 m tall on a 1.6 m hexagonal bus — height is the max
+  // 4 m tall on a 1.56 m hexagonal bus, so HEIGHT is the max here — the only
+  // Touchdown lander of which that is true. NovaC below is authored so the
+  // antenna tips land on this figure and the 3.44 m leg span stays under it.
+  'im-nova-c': 4,
   'firefly-blue-ghost': 3.5, // ~3.5 m across the legs, ~2 m tall
   // Chang'e-3/4 heritage bus. The figure is the DEPLOYED SOLAR WING SPAN, tip
   // to tip, which is what ChangE7 below is authored against — the 4.2 m leg
@@ -10014,6 +10017,482 @@ function Griffin({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Nova-C — Intuitive Machines' CLPS lander
+// ---------------------------------------------------------------------------
+//
+// Placed between Griffin and Moon RACER for two reasons that happen to agree:
+// its solar panels reuse solarFaceMaps() so it must sit below that, and RACER
+// below is the SAME OPERATOR, so the two IM vehicles are neighbours.
+//
+// It does NOT reuse RACER_BLUE. That constant is the blue RACER is painted, and
+// Nova-C is not painted blue — it is a white bus over a dark grey lower body.
+// Sharing a hex between two vehicles is only worth it when the colour is the
+// cue (see ILRS_GOLD and ChangE7); here it would just be wrong.
+//
+// Replaces the generic `Lander`, and this is the substitution that mattered
+// most: the generic model is a squat drum, and Nova-C is the one vehicle in
+// this race whose LARGEST DIMENSION IS ITS HEIGHT. It is a 4 m column on a
+// 1.56 m bus — famously about the size of a phone box — so a drum standing in
+// for it got both the proportion and the axis wrong. Built from the IM-1
+// flight article, IM's annotated IM-1 diagram and their 3/4 render:
+//
+//   - A tall hexagonal prism that TAPERS INTO A CONE at the bottom, with the
+//     engine emerging from the point. That narrowing base is the silhouette.
+//   - Gear that is a LATTICE OF THIN POLISHED TUBES, not struts: six legs, one
+//     per face, each a bipod converging on its footpad off a hard point high on
+//     the cone, plus a third member off a wide flange at the base. Counted off
+//     an upscaled crop rather than guessed. The other three Touchdown landers
+//     all stand on four comparatively chunky legs, so this reads as a different
+//     class of machine from across the pad.
+//   - A big creased olive-gold MLI tank bulging out of the front face.
+//   - Two tall narrow solar panels on the faces either side of it.
+//
+// LIVERY: the accent goes on the panels' edge rails, because IM's own
+// brandColor is #F97316 and the reference panels carry a bright ORANGE stripe
+// down exactly that edge. So the house rule's one-accent-band and the real
+// hardware want the same paint in the same place — as with ILRS_RED and
+// Chang'e-7's flag red. No wordmark and no flag, though the references carry
+// both.
+const NOVAC_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['im-nova-c'] ?? 4)
+
+// Olive-gold rather than brass: the tank's colour varies a lot across the
+// references (copper on the flight article, brighter gold in the older render),
+// and IM's own IM-1 diagram is the tiebreaker.
+const NOVAC_GOLD = '#9a8f4e'
+const NOVAC_GOLD_DK = '#6f6634'
+const NOVAC_GREY = '#4c525b' // the tapered lower body the wordmark sits on
+const NOVAC_POD = '#1b1e23' // the black shoulder instrument pods
+const NOVAC_FACES = 6
+
+// Stations up the column, in meters above the regolith, scaled off IM's
+// annotated elevation. The total lands on PROJECT_SIZE_M's 4 m at the antenna
+// tips, and the 3.44 m leg span below stays under it — height has to be the
+// largest dimension here or the figure is describing the wrong axis.
+const NOVAC_FOOT_R = 1.72 // six pads, so 3.44 m across opposite ones
+const NOVAC_FOOT_Y = 0.05
+const NOVAC_ANKLE_Y = 0.17
+const NOVAC_NOZZLE_Y = 0.6 // engine exit plane, clear of the ground
+const NOVAC_THROAT_Y = 1.02
+const NOVAC_RING_Y = 1.08 // the wide flange the lower gear members pick up on
+const NOVAC_RING_R = 0.98
+const NOVAC_CONE_BOT_Y = 1.06
+const NOVAC_CONE_BOT_R = 0.44
+const NOVAC_BODY_BOT_Y = 1.92 // where the taper reaches full width
+const NOVAC_BODY_R = 0.9 // hexagon circumradius; 1.56 m across the flats
+const NOVAC_BODY_TOP_Y = 3.62
+const NOVAC_CHAMFER_TOP_Y = 3.86
+const NOVAC_CHAMFER_TOP_R = 0.6
+const NOVAC_DECK_TOP_Y = 3.92
+const NOVAC_TOP = 4.0 // the antenna tips, and the figure PROJECT_SIZE_M holds
+
+// The upper gear members pick up on the cone's FLANK, well up the vehicle.
+const NOVAC_HIP_Y = 1.72
+
+// Panels, on the straight prism only — a flat panel spanning the taper would be
+// buried at one end of its run and standing off at the other.
+const NOVAC_PANEL_BOT_Y = 1.98
+const NOVAC_PANEL_TOP_Y = 3.5
+
+// Front face on +Z, which is the side a procedural model presents (see
+// MODEL_FRONT_AZ), so the gold tank and the flanking panels face the camera.
+function novacFaceAz(i: number): number {
+  return Math.PI / 2 + (i / NOVAC_FACES) * Math.PI * 2
+}
+
+// A hexagon's flat is closer to the axis than its corner, so anything mounted on
+// a FACE seats on the apothem, not the circumradius. Getting this wrong buries
+// panels by 12 cm on a 0.9 m body.
+const NOVAC_APOTHEM = NOVAC_BODY_R * Math.cos(Math.PI / NOVAC_FACES)
+
+// The lower body is a cone, so a fitting on its flank at a flat radius is
+// half-buried at one end of its run and floating at the other — sample the
+// radius at the fitting's own height, as mk1SkirtR does.
+function novacConeR(y: number): number {
+  const t = (y - NOVAC_CONE_BOT_Y) / (NOVAC_BODY_BOT_Y - NOVAC_CONE_BOT_Y)
+  return NOVAC_CONE_BOT_R + (NOVAC_BODY_R - NOVAC_CONE_BOT_R) * t
+}
+
+// One leg. Three thin tubes converging on one footpad: a bipod off a hard point
+// on the cone's flank, splayed a little in azimuth so it reads as two members
+// rather than one thick one, and a third off the base flange at a much steeper
+// angle. A spreader between the bipod's legs is what makes the whole thing read
+// as truss instead of as wire.
+function NovacLeg({ az }: { az: number }) {
+  const hipR = novacConeR(NOVAC_HIP_Y)
+  const foot: [number, number, number] = [
+    Math.cos(az) * NOVAC_FOOT_R,
+    NOVAC_ANKLE_Y,
+    Math.sin(az) * NOVAC_FOOT_R,
+  ]
+  const hips: [number, number, number][] = [-0.14, 0.14].map((d) => [
+    Math.cos(az + d) * hipR,
+    NOVAC_HIP_Y,
+    Math.sin(az + d) * hipR,
+  ])
+  const ringFoot: [number, number, number] = [
+    Math.cos(az) * NOVAC_RING_R,
+    NOVAC_RING_Y,
+    Math.sin(az) * NOVAC_RING_R,
+  ]
+  // Spreader ends, partway down each primary.
+  const spread = hips.map(
+    (h) =>
+      [
+        h[0] + (foot[0] - h[0]) * 0.55,
+        h[1] + (foot[1] - h[1]) * 0.55,
+        h[2] + (foot[2] - h[2]) * 0.55,
+      ] as [number, number, number]
+  )
+  return (
+    <group>
+      {hips.map((h, i) => (
+        <Strut key={i} from={h} to={foot} r={0.032} color={METAL} />
+      ))}
+      <Strut from={ringFoot} to={foot} r={0.026} color={METAL} />
+      <Strut from={spread[0]} to={spread[1]} r={0.015} color={HULL_DARK} />
+
+      {/* Footpad: a wide, thin, polished plate — the reference's pads are much
+          flatter than the dished cups on the other landers. It runs 3 cm BELOW
+          grade so it cannot lift clear of a hollow it lands over, and a short
+          post carries the ankle up off it rather than leaving the struts
+          converging in mid air above the plate. */}
+      <mesh position={[foot[0], NOVAC_FOOT_Y - 0.055, foot[2]]}>
+        <cylinderGeometry args={[0.24, 0.2, 0.05, 20]} />
+        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.3} />
+      </mesh>
+      <mesh position={[foot[0], NOVAC_FOOT_Y - 0.035, foot[2]]}>
+        <sphereGeometry args={[0.085, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.45} roughness={0.4} />
+      </mesh>
+      <Strut
+        from={[foot[0], NOVAC_FOOT_Y - 0.02, foot[2]]}
+        to={foot}
+        r={0.028}
+        color={METAL}
+      />
+      <mesh position={foot}>
+        <sphereGeometry args={[0.045, 10, 8]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.5} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The tapered lower body, the base flange the gear picks up on, and the engine
+// hung in the point of the cone.
+function NovacLowerBody() {
+  const coneH = NOVAC_BODY_BOT_Y - NOVAC_CONE_BOT_Y
+  const bellH = NOVAC_THROAT_Y - NOVAC_NOZZLE_Y
+  return (
+    <group>
+      <mesh position={[0, NOVAC_CONE_BOT_Y + coneH / 2, 0]}>
+        <cylinderGeometry
+          args={[NOVAC_BODY_R, NOVAC_CONE_BOT_R, coneH, NOVAC_FACES]}
+        />
+        <meshStandardMaterial color={NOVAC_GREY} roughness={0.5} metalness={0.35} />
+      </mesh>
+
+      {/* Base flange: wider than the cone it sits on by a long way, which is
+          what makes the bottom of the vehicle read as a machined ring rather
+          than a taper running to nothing. */}
+      <mesh position={[0, NOVAC_RING_Y, 0]}>
+        <cylinderGeometry args={[NOVAC_RING_R, NOVAC_RING_R, 0.05, 28]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, NOVAC_RING_Y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[NOVAC_RING_R, 0.035, 8, 32]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.5} roughness={0.4} />
+      </mesh>
+
+      <mesh position={[0, NOVAC_NOZZLE_Y + bellH / 2, 0]}>
+        <cylinderGeometry args={[0.1, 0.2, bellH, 20, 1, true]} />
+        <meshStandardMaterial
+          color={METAL}
+          side={THREE.DoubleSide}
+          metalness={0.75}
+          roughness={0.25}
+        />
+      </mesh>
+      <mesh position={[0, NOVAC_THROAT_Y + 0.06, 0]}>
+        <sphereGeometry args={[0.14, 14, 10]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.55} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The straight white prism, its vertical seam strips, the gold tank bulging out
+// of the front face, and the flat panels the front carries.
+function NovacUpperBody() {
+  const h = NOVAC_BODY_TOP_Y - NOVAC_BODY_BOT_Y
+  const front = novacFaceAz(0)
+  return (
+    <group>
+      <mesh position={[0, NOVAC_BODY_BOT_Y + h / 2, 0]}>
+        <cylinderGeometry args={[NOVAC_BODY_R, NOVAC_BODY_R, h, NOVAC_FACES]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.2} />
+      </mesh>
+
+      {/* Seam strips down the six vertical CORNERS — so these seat on the
+          circumradius, unlike everything else here, which seats on the apothem.
+          Standing proud, per the house rule on coplanar detail. */}
+      {Array.from({ length: NOVAC_FACES }, (_, i) => {
+        const a = novacFaceAz(i) + Math.PI / NOVAC_FACES
+        return (
+          <mesh
+            key={i}
+            position={[
+              Math.cos(a) * (NOVAC_BODY_R - 0.02),
+              NOVAC_BODY_BOT_Y + h / 2,
+              Math.sin(a) * (NOVAC_BODY_R - 0.02),
+            ]}
+            rotation={[0, Math.PI / 2 - a, 0]}
+          >
+            <boxGeometry args={[0.07, h * 0.98, 0.06]} />
+            <meshStandardMaterial color={HULL_DARK} roughness={0.45} metalness={0.45} />
+          </mesh>
+        )
+      })}
+
+      {/* Everything on the front face, in ONE yawed group with local +Z pointing
+          out of that face — the same composition NovacPanel and NovacPod use.
+          Note the yaw is PI/2 - az and NOT az: mounting these by the azimuth
+          itself turns each fitting a quarter turn, which on the radiator plate
+          below means burying its 0.5 m width in the wall and standing its 5 cm
+          thickness out on the face. */}
+      <group rotation={[0, Math.PI / 2 - front, 0]}>
+        {/* Creased MLI tank, bulging OUT of the face. Its centre sits outboard
+            of the wall so the sphere is CUT by it — the reference tank is a
+            bulge in the bus, not a ball parked beside it. Low segment counts and
+            flat shading for the creases, as Griffin's spheres. */}
+        <mesh position={[0, 2.62, NOVAC_APOTHEM + 0.1]} scale={[1, 0.86, 1]}>
+          <sphereGeometry args={[0.4, 11, 8]} />
+          <meshStandardMaterial
+            color={NOVAC_GOLD}
+            roughness={0.45}
+            metalness={0.45}
+            flatShading
+          />
+        </mesh>
+        {/* The collar where the blanket is clamped to the wall. */}
+        <mesh position={[0, 2.62, NOVAC_APOTHEM + 0.02]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.34, 0.34, 0.06, 12]} />
+          <meshStandardMaterial color={NOVAC_GOLD_DK} roughness={0.5} metalness={0.4} />
+        </mesh>
+
+        {/* Radiator plate and a paddle antenna above the tank, both standing
+            proud of the wall rather than flush. */}
+        <mesh position={[0, 3.2, NOVAC_APOTHEM + 0.03]}>
+          <boxGeometry args={[0.5, 0.34, 0.05]} />
+          <meshStandardMaterial color={NOVAC_POD} roughness={0.6} metalness={0.3} />
+        </mesh>
+        <mesh position={[0.3, 3.42, NOVAC_APOTHEM + 0.04]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.016, 0.016, 0.16, 8]} />
+          <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.5} />
+        </mesh>
+        <mesh position={[0.38, 3.46, NOVAC_APOTHEM + 0.04]} rotation={[0.5, 0, 0]}>
+          <cylinderGeometry args={[0.13, 0.13, 0.02, 16]} />
+          <meshStandardMaterial color={HULL} roughness={0.4} metalness={0.4} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// One solar panel, on a face either side of the front. Tall and narrow, standing
+// off the wall on a pair of brackets, with the accent down its inboard edge —
+// see the note on livery above.
+function NovacPanel({ side, accent }: { side: 1 | -1; accent: string }) {
+  const maps = solarFaceMaps()
+  const az = novacFaceAz(0) + (side * Math.PI * 2) / NOVAC_FACES
+  const hp = NOVAC_PANEL_TOP_Y - NOVAC_PANEL_BOT_Y
+  const yMid = (NOVAC_PANEL_BOT_Y + NOVAC_PANEL_TOP_Y) / 2
+  const w = 0.78
+  const standoff = 0.07
+  return (
+    <group rotation={[0, Math.PI / 2 - az, 0]}>
+      {/* Brackets start slightly INSIDE the wall rather than tangent to it, so
+          the root beds into the face instead of just touching it. */}
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[s * w * 0.36, yMid + s * hp * 0.3, NOVAC_APOTHEM - 0.02]}
+          to={[s * w * 0.36, yMid + s * hp * 0.3, NOVAC_APOTHEM + standoff]}
+          r={0.022}
+          color={METAL}
+        />
+      ))}
+      <group position={[0, yMid, NOVAC_APOTHEM + standoff]}>
+        {/* Substrate, which is also the panel's back face — the cell plane in
+            front of it is single-sided. */}
+        <mesh>
+          <boxGeometry args={[w, hp, 0.03]} />
+          <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, 0, 0.024]}>
+          <planeGeometry args={[w * 0.9, hp * 0.97]} />
+          <meshPhysicalMaterial
+            map={maps?.albedo ?? null}
+            roughnessMap={maps?.rough ?? null}
+            color={maps ? '#ffffff' : '#16294f'}
+            metalness={0.04}
+            roughness={maps ? 1 : 0.22}
+            clearcoat={1}
+            clearcoatRoughness={0.18}
+          />
+        </mesh>
+        {/* The accent stripe, on the inboard edge the reference paints orange.
+            Proud of the laminate so it catches light as a rail, not a decal. */}
+        <mesh position={[-side * w * 0.47, 0, 0.03]}>
+          <boxGeometry args={[w * 0.06, hp, 0.04]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.45}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// One black shoulder pod with its attitude thrusters, on the face outboard of a
+// panel. These are what break the column's outline at the top.
+function NovacPod({ side }: { side: 1 | -1 }) {
+  const az = novacFaceAz(0) + (side * Math.PI * 4) / NOVAC_FACES
+  return (
+    <group rotation={[0, Math.PI / 2 - az, 0]}>
+      <mesh position={[0, 3.24, NOVAC_APOTHEM + 0.13]}>
+        <boxGeometry args={[0.44, 0.62, 0.28]} />
+        <meshStandardMaterial color={NOVAC_POD} roughness={0.55} metalness={0.35} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[s * 0.15, 3.24, NOVAC_APOTHEM]}
+          to={[s * 0.15, 3.24, NOVAC_APOTHEM + 0.06]}
+          r={0.026}
+          color={METAL}
+        />
+      ))}
+      {/* Two quads: one firing outward, one down. A cone's mouth is its WIDE
+          end, which cylinderGeometry puts at -Y (radiusBottom is the second
+          arg), so pointing it outward at +Z takes -PI/2 about X and not +PI/2 —
+          the positive turn aims the mouth back into the hull. The downward one
+          needs no turn at all, since -Y is already where it thrusts. */}
+      <mesh position={[0, 3.44, NOVAC_APOTHEM + 0.3]} rotation={[-Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.05, 0.085, 0.14, 12, 1, true]} />
+        <meshStandardMaterial
+          color={METAL}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.3}
+        />
+      </mesh>
+      <mesh position={[0, 2.85, NOVAC_APOTHEM + 0.13]}>
+        <cylinderGeometry args={[0.05, 0.085, 0.14, 12, 1, true]} />
+        <meshStandardMaterial
+          color={METAL}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.3}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The chamfered top: a dark cap over the prism, a deck plate, and the antennas
+// that reach NOVAC_TOP.
+function NovacTopDeck({ accent }: { accent: string }) {
+  const chH = NOVAC_CHAMFER_TOP_Y - NOVAC_BODY_TOP_Y
+  return (
+    <group>
+      <mesh position={[0, NOVAC_BODY_TOP_Y + chH / 2, 0]}>
+        <cylinderGeometry
+          args={[NOVAC_CHAMFER_TOP_R, NOVAC_BODY_R, chH, NOVAC_FACES]}
+        />
+        <meshStandardMaterial color={NOVAC_GOLD_DK} roughness={0.45} metalness={0.45} />
+      </mesh>
+      <mesh position={[0, (NOVAC_CHAMFER_TOP_Y + NOVAC_DECK_TOP_Y) / 2, 0]}>
+        <cylinderGeometry
+          args={[
+            NOVAC_CHAMFER_TOP_R * 0.96,
+            NOVAC_CHAMFER_TOP_R * 0.96,
+            NOVAC_DECK_TOP_Y - NOVAC_CHAMFER_TOP_Y,
+            NOVAC_FACES,
+          ]}
+        />
+        <meshStandardMaterial color={NOVAC_POD} roughness={0.6} metalness={0.3} />
+      </mesh>
+
+      {/* Camera heads on two of the top corners, and the omni whips that set the
+          vehicle's 4 m height — so their tips land on NOVAC_TOP exactly rather
+          than wherever the parts happen to add up. */}
+      {[1, NOVAC_FACES - 1].map((i) => {
+        const a = novacFaceAz(i) + Math.PI / NOVAC_FACES
+        const r = NOVAC_CHAMFER_TOP_R * 0.8
+        const post = (NOVAC_TOP - 0.08 + NOVAC_DECK_TOP_Y) / 2
+        return (
+          <group key={i}>
+            <mesh position={[Math.cos(a) * r, post, Math.sin(a) * r]}>
+              <cylinderGeometry
+                args={[0.016, 0.02, NOVAC_TOP - 0.08 - NOVAC_DECK_TOP_Y, 8]}
+              />
+              <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.5} />
+            </mesh>
+            <mesh
+              position={[Math.cos(a) * r, NOVAC_TOP - 0.05, Math.sin(a) * r]}
+              rotation={[0, Math.PI / 2 - a, 0]}
+            >
+              <boxGeometry args={[0.13, 0.1, 0.11]} />
+              <meshStandardMaterial color={NOVAC_POD} roughness={0.5} metalness={0.4} />
+            </mesh>
+          </group>
+        )
+      })}
+      <mesh position={[0, NOVAC_DECK_TOP_Y + 0.1, -0.18]}>
+        <boxGeometry args={[0.3, 0.16, 0.2]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.35} />
+      </mesh>
+      <mesh position={[0.2, NOVAC_DECK_TOP_Y + 0.05, 0.18]}>
+        <sphereGeometry args={[0.038, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function NovaC({ accent }: { accent: string }) {
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 4 m = 2.4 m of pad deck for a lander,
+          just under one local unit at NOVAC_M — and a unit radius clears the
+          1.72 m footpads with room over. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={NOVAC_M}>
+        {Array.from({ length: NOVAC_FACES }, (_, i) => (
+          <NovacLeg key={i} az={novacFaceAz(i)} />
+        ))}
+        <NovacLowerBody />
+        <NovacUpperBody />
+        <NovacPanel side={1} accent={accent} />
+        <NovacPanel side={-1} accent={accent} />
+        <NovacPod side={1} />
+        <NovacPod side={-1} />
+        <NovacTopDeck accent={accent} />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Moon RACER LTV — Intuitive Machines
 // ---------------------------------------------------------------------------
 
@@ -13871,6 +14350,11 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // GRIFFIN specifically: the project name is a family label covering Peregrine
   // too, and the two are different vehicles. See Griffin.
   'astrobotic-griffin': Griffin,
+  // The one Touchdown lander that is taller than it is wide — a 4 m hexagonal
+  // column on lattice gear, which the generic `lander` drum got backwards in
+  // both proportion and axis. Defined next to Moon RACER, the same operator's
+  // other vehicle. See NovaC.
+  'im-nova-c': NovaC,
 }
 
 export function ProceduralModel({
