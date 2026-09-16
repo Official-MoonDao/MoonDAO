@@ -4,6 +4,7 @@ import {
   batchCheckSubscriptions,
   fetchCitizensWithLocation,
   getDummyCitizenLocationData,
+  locationGroupKey,
 } from '@/lib/citizen/citizenDataService'
 import * as queryTableModule from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -228,6 +229,80 @@ describe('citizenDataService', () => {
       })
     })
 
+    it('Groups Washington DC citizens whose geocoded coords differ by meters', () => {
+      // Mirrors production Tableland: legacy text locations use the 4-decimal
+      // lookup, while newer rows store Google's city-center lat/lng. Those
+      // used to render as overlapping pins ("only two citizens" vs Kirby).
+      const dcRows = [
+        {
+          id: 26,
+          name: 'Antonio Peronace',
+          description: '',
+          image: 'ipfs://QmAntonio',
+          location: 'Washington, D.C.',
+          website: '',
+          discord: '',
+          twitter: '',
+          view: 'public',
+          formId: '',
+          owner: '0x1111111111111111111111111111111111111111',
+        },
+        {
+          id: 45,
+          name: 'Amanda Nguyen',
+          description: '',
+          image: 'ipfs://QmAmanda',
+          location: 'Washington, DC',
+          website: '',
+          discord: '',
+          twitter: '',
+          view: 'public',
+          formId: '',
+          owner: '0x2222222222222222222222222222222222222222',
+        },
+        {
+          id: 40,
+          name: 'justinpark01',
+          description: '',
+          image: 'ipfs://QmJustin',
+          location: { lat: 38.9071923, lng: -77.0368707, name: 'Washington, DC, USA' },
+          website: '',
+          discord: '',
+          twitter: '',
+          view: 'public',
+          formId: '',
+          owner: '0x3333333333333333333333333333333333333333',
+        },
+        {
+          id: 207,
+          name: 'Kirby Runyon',
+          description: '',
+          image: 'ipfs://QmKirby',
+          location: { lat: 38.9072873, lng: -77.0369274, name: 'Washington, DC, USA' },
+          website: '',
+          discord: '',
+          twitter: '',
+          view: 'public',
+          formId: '',
+          owner: '0x4444444444444444444444444444444444444444',
+        },
+      ]
+
+      cy.stub(queryTableModule, 'default').resolves(dcRows)
+
+      fetchCitizensWithLocation(chain).then((results) => {
+        const dcPins = results.filter((loc) =>
+          String(loc.formattedAddress).toLowerCase().includes('washington')
+        )
+        expect(dcPins.length).to.equal(1)
+        expect(dcPins[0].citizens.length).to.equal(4)
+        expect(dcPins[0].names).to.include('Kirby Runyon')
+        expect(dcPins[0].names).to.include('Antonio Peronace')
+        expect(dcPins[0].names).to.include('Amanda Nguyen')
+        expect(dcPins[0].names).to.include('justinpark01')
+      })
+    })
+
     it('Assigns colors based on citizen count', () => {
       fetchCitizensWithLocation(chain).then((results) => {
         results.forEach((location) => {
@@ -289,6 +364,24 @@ describe('citizenDataService', () => {
         const hasBlockedCitizen = allCitizens.some((c) => c.id === 999)
         expect(hasBlockedCitizen).to.be.false
       })
+    })
+  })
+
+  describe('locationGroupKey', () => {
+    it('collapses Washington DC geocoder jitter onto one key', () => {
+      const legacy = locationGroupKey(38.9072, -77.0369)
+      const justin = locationGroupKey(38.9071923, -77.0368707)
+      const kirby = locationGroupKey(38.9072873, -77.0369274)
+      expect(legacy).to.equal(justin)
+      expect(legacy).to.equal(kirby)
+    })
+
+    it('keeps distinct cities on different keys', () => {
+      const dc = locationGroupKey(38.9072, -77.0369)
+      const saoPaulo = locationGroupKey(-23.5557714, -46.6395571)
+      const saoJose = locationGroupKey(-23.2198396, -45.8915658)
+      expect(dc).to.not.equal(saoPaulo)
+      expect(saoPaulo).to.not.equal(saoJose)
     })
   })
 
