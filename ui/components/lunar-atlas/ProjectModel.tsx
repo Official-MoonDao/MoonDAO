@@ -104,7 +104,11 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // Touchdown lander of which that is true. NovaC below is authored so the
   // antenna tips land on this figure and the 3.44 m leg span stays under it.
   'im-nova-c': 4,
-  'firefly-blue-ghost': 3.5, // ~3.5 m across the legs, ~2 m tall
+  // ~3.5 m across the legs on a ~2 m stack, so width is the max. BlueGhost is
+  // authored so opposite footpads span exactly this, and its instrument booms
+  // are held inside it — the real electrodes deploy far past the pads, but the
+  // footprint radius comes off this figure.
+  'firefly-blue-ghost': 3.5,
   // Chang'e-3/4 heritage bus. The figure is the DEPLOYED SOLAR WING SPAN, tip
   // to tip, which is what ChangE7 below is authored against — the 4.2 m leg
   // span sits inside it, and both references show the wings reaching past the
@@ -10017,6 +10021,432 @@ function Griffin({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Blue Ghost — Firefly's CLPS lander
+// ---------------------------------------------------------------------------
+//
+// Last of the five Touchdown landers, and the only one that had still not been
+// replaced. Kept with the other panelled landers because it too reuses
+// solarFaceMaps() and so has to sit below it; NovaC stays directly above Moon
+// RACER, which is the same operator.
+//
+// Where the generic `Lander` drum was wrong here is the reverse of Nova-C: this
+// is a SQUAT vehicle, 3.5 m across on a 2 m height, and its body is an
+// OCTAGONAL TRUNCATED PYRAMID that narrows going up with a chimney standing on
+// top of it. Built from Firefly's two surface renders and the Mission 1 flight
+// article:
+//
+//   - The pyramid, whose sloped faces are the whole silhouette.
+//   - A tapered chimney off the top deck under a dark overhanging cap. Nothing
+//     else in the atlas has that, and it is what identifies the vehicle at
+//     distance far more than the livery does.
+//   - Solar panels FLUSH ON THE SLOPED FACES, following the slope, which is the
+//     house rule about fittings on a non-vertical hull doing real work: the
+//     pyramid already tips its faces up about 33 degrees, so a flush panel is
+//     also a well-aimed one under a 44.5 degree sun. Note this is the exact
+//     OPPOSITE sign to Griffin's basket, which opens upward and therefore tips
+//     its cells down — so BG_RAKE is derived from the two radii and its sign is
+//     asserted, as GRF_SKIRT_RAKE is.
+//   - A big central engine bell hung low, ringed by eight small descent
+//     thrusters under the deck.
+//   - Four long thin instrument booms out over the regolith.
+//
+// GEAR: gold-wrapped down to a knee, then bare metal to the pad — which is the
+// SAME scheme as the Blue Moons, so unlike the other three this vehicle is NOT
+// told apart by its gear finish (the handoff doc is corrected to say so). What
+// separates it is that each leg is one thick tube rather than a bipod, the pads
+// are flat oval skids rather than round dishes, and above all the body: no other
+// lander here is a squat pyramid with a chimney.
+//
+// LIVERY: no Firefly mark, no NASA insignia and no flag, though the references
+// carry all three — a competitor's marks are withheld until it claims its
+// listing, and by house rule livery is one accent band. Here that is the collar
+// at the chimney's base.
+const BG_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['firefly-blue-ghost'] ?? 3.5)
+
+// Copper-leaning rather than the brassy gold of the renders: the flight article
+// is distinctly orange-copper, and it is the one reference that is a photograph.
+const BG_GOLD = '#c98a3e'
+const BG_GOLD_DK = '#8f5f28'
+const BG_CAP = '#23262b' // the dark cap overhanging the chimney
+const BG_FACES = 8
+
+// Stations, in meters above the regolith. Width is the largest dimension here,
+// so the 3.5 m span is what PROJECT_SIZE_M holds and the 2 m stack stays under
+// it — the opposite arrangement to Nova-C directly below.
+const BG_FOOT_R = 1.75 // four pads on the diagonals, so 3.5 m across
+const BG_FOOT_Y = 0.06
+const BG_ANKLE_Y = 0.2
+const BG_NOZZLE_Y = 0.18 // the main bell hangs LOW, as the renders show
+const BG_THROAT_Y = 0.42
+const BG_DECK_Y = 0.44 // the underside deck, and the body's widest point
+const BG_DECK_R = 1.15 // octagon circumradius at the deck
+const BG_BODY_TOP_Y = 1.24
+const BG_BODY_TOP_R = 0.64
+const BG_HIP_Y = 1.14 // gear picks up high on the pyramid, near the top deck
+const BG_TOWER_TOP_Y = 1.86
+const BG_TOWER_BOT_R = 0.32
+const BG_TOWER_TOP_R = 0.27
+const BG_CAP_TOP_Y = 2.0
+const BG_CAP_R = 0.32 // wider than the chimney, so the cap overhangs it
+
+// Panels run most of the face's slant, inset from both ends.
+const BG_PANEL_BOT_Y = 0.58
+const BG_PANEL_TOP_Y = 1.14
+
+// Booms reach outboard but stay INSIDE the footpad span. The real electrodes
+// deploy to tens of meters, which cannot be drawn and must not be: the footprint
+// radius comes off PROJECT_SIZE_M, so a boom past the pads would have this model
+// overlapping its neighbours on the pad.
+const BG_BOOM_R = 1.6
+
+// Face 0 on +Z, the side a procedural model presents (see MODEL_FRONT_AZ).
+function bgFaceAz(i: number): number {
+  return Math.PI / 2 + (i / BG_FACES) * Math.PI * 2
+}
+
+// Legs sit on the CORNERS either side of the front face and of the back face —
+// which is where the flight article carries them, running down the body's
+// corner edges — so the presented face stays clear of gear.
+const BG_LEG_AZ = [
+  Math.PI / 2 - Math.PI / BG_FACES,
+  Math.PI / 2 + Math.PI / BG_FACES,
+  Math.PI / 2 + Math.PI - Math.PI / BG_FACES,
+  Math.PI / 2 + Math.PI + Math.PI / BG_FACES,
+]
+
+// The pyramid tapers, so a fitting mounted at a flat radius is buried at one end
+// of its run and floating at the other — sample the radius at the fitting's own
+// height, as novacConeR and mk1SkirtR do.
+function bgFrustumR(y: number): number {
+  const t = (y - BG_DECK_Y) / (BG_BODY_TOP_Y - BG_DECK_Y)
+  return BG_DECK_R + (BG_BODY_TOP_R - BG_DECK_R) * t
+}
+
+// The slope, as the angle the sloped faces' outward normals are tipped UP from
+// horizontal. Derived from the two radii so it cannot disagree with the pyramid
+// they describe: bottom to top the surface moves IN by dR and up by dY, so the
+// normal leans up by atan(dR/dY). Griffin's basket does the same arithmetic with
+// dR the other way round and gets a normal tipped down.
+const BG_RAKE = Math.atan2(BG_DECK_R - BG_BODY_TOP_R, BG_BODY_TOP_Y - BG_DECK_Y)
+const BG_SLANT_PER_Y = Math.hypot(BG_DECK_R - BG_BODY_TOP_R, BG_BODY_TOP_Y - BG_DECK_Y) /
+  (BG_BODY_TOP_Y - BG_DECK_Y)
+
+// A cylinderGeometry's radius argument is the CIRCUMRADIUS, so anything on a
+// face rather than a corner seats further in by this factor. On a 1.15 m octagon
+// that is 9 cm — enough that confusing them beds a panel into the blanket.
+const BG_FACE_IN = Math.cos(Math.PI / BG_FACES)
+
+// One leg: a thick gold-wrapped tube from a hard point high on the pyramid's
+// corner down to a knee, bare metal from there to a flat oval skid, plus a drag
+// brace back up under the deck. One tube rather than a bipod, which together
+// with the skids is what distinguishes this gear from the Blue Moons' — the gold
+// over metal is common to both.
+function BgLeg({ az }: { az: number }) {
+  const hipR = bgFrustumR(BG_HIP_Y)
+  const hip: [number, number, number] = [
+    Math.cos(az) * hipR,
+    BG_HIP_Y,
+    Math.sin(az) * hipR,
+  ]
+  const foot: [number, number, number] = [
+    Math.cos(az) * BG_FOOT_R,
+    BG_ANKLE_Y,
+    Math.sin(az) * BG_FOOT_R,
+  ]
+  const knee: [number, number, number] = [
+    hip[0] + (foot[0] - hip[0]) * 0.6,
+    hip[1] + (foot[1] - hip[1]) * 0.6,
+    hip[2] + (foot[2] - hip[2]) * 0.6,
+  ]
+  // Inboard anchor for the drag brace, up under the deck.
+  const brace: [number, number, number] = [
+    Math.cos(az) * BG_DECK_R * 0.62,
+    BG_DECK_Y - 0.02,
+    Math.sin(az) * BG_DECK_R * 0.62,
+  ]
+  return (
+    <group>
+      <TaperedMast from={hip} to={knee} r0={0.075} r1={0.058} color={BG_GOLD} />
+      <TaperedMast from={knee} to={foot} r0={0.052} r1={0.038} color={METAL} />
+      <Strut from={brace} to={knee} r={0.028} color={BG_GOLD_DK} />
+      <mesh position={knee}>
+        <sphereGeometry args={[0.075, 12, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.35} />
+      </mesh>
+
+      {/* Flat oval skid, long axis running radially — so it is built in a group
+          yawed onto the leg's azimuth and stretched along local X. It runs about
+          3 cm BELOW grade so it cannot lift clear of a hollow it lands over, and
+          a short post carries the ankle up off it rather than leaving the tube
+          ending in mid air above the plate. */}
+      <group
+        position={[foot[0], 0, foot[2]]}
+        rotation={[0, Math.PI / 2 - az, 0]}
+      >
+        <mesh position={[0, BG_FOOT_Y - 0.065, 0]} scale={[1, 1, 1.4]}>
+          <cylinderGeometry args={[0.2, 0.17, 0.045, 18]} />
+          <meshStandardMaterial color={BG_GOLD} metalness={0.5} roughness={0.42} />
+        </mesh>
+        <mesh position={[0, BG_FOOT_Y - 0.048, 0]} scale={[1, 1, 1.4]}>
+          <cylinderGeometry args={[0.14, 0.14, 0.03, 14]} />
+          <meshStandardMaterial color={BG_GOLD_DK} metalness={0.45} roughness={0.45} />
+        </mesh>
+      </group>
+      {/* The post starts INSIDE the skid plate, not on top of it — flush leaves
+          a centimetre of daylight that reads as a floating pad. */}
+      <Strut
+        from={[foot[0], BG_FOOT_Y - 0.06, foot[2]]}
+        to={foot}
+        r={0.035}
+        color={METAL}
+      />
+      <mesh position={foot}>
+        <sphereGeometry args={[0.05, 10, 8]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.5} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The pyramid, its deck plate, the main bell hung low beneath it and the ring of
+// small descent thrusters round it.
+function BgBody() {
+  const h = BG_BODY_TOP_Y - BG_DECK_Y
+  const bellH = BG_THROAT_Y - BG_NOZZLE_Y
+  return (
+    <group>
+      <mesh position={[0, BG_DECK_Y + h / 2, 0]}>
+        <cylinderGeometry args={[BG_BODY_TOP_R, BG_DECK_R, h, BG_FACES]} />
+        <meshStandardMaterial
+          color={BG_GOLD}
+          roughness={0.42}
+          metalness={0.45}
+          flatShading
+        />
+      </mesh>
+      {/* Deck plate under the pyramid, standing proud of it so the bottom reads
+          as a machined floor rather than a taper cut off. */}
+      <mesh position={[0, BG_DECK_Y - 0.03, 0]}>
+        <cylinderGeometry args={[BG_DECK_R * 1.02, BG_DECK_R * 0.98, 0.07, BG_FACES]} />
+        <meshStandardMaterial color={BG_GOLD_DK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      {/* Seam strips down the eight corners, where the blanket is taped over the
+          structure. These seat on the CIRCUMRADIUS, unlike the face fittings. */}
+      {Array.from({ length: BG_FACES }, (_, i) => {
+        const a = bgFaceAz(i) + Math.PI / BG_FACES
+        const yMid = (BG_DECK_Y + BG_BODY_TOP_Y) / 2
+        return (
+          <Strut
+            key={i}
+            from={[
+              Math.cos(a) * BG_DECK_R * 0.99,
+              BG_DECK_Y,
+              Math.sin(a) * BG_DECK_R * 0.99,
+            ]}
+            to={[
+              Math.cos(a) * BG_BODY_TOP_R * 0.99,
+              BG_BODY_TOP_Y,
+              Math.sin(a) * BG_BODY_TOP_R * 0.99,
+            ]}
+            r={0.028}
+            color={BG_GOLD_DK}
+          />
+        )
+      })}
+
+      <mesh position={[0, BG_NOZZLE_Y + bellH / 2, 0]}>
+        <cylinderGeometry args={[0.11, 0.24, bellH, 20, 1, true]} />
+        <meshStandardMaterial
+          color={METAL}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.3}
+        />
+      </mesh>
+      {/* Eight descent thrusters round the deck's underside. A cone's mouth is
+          its wide end, which cylinderGeometry puts at -Y — already where these
+          thrust, so they need no rotation at all. */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = bgFaceAz(i) + Math.PI / BG_FACES
+        return (
+          <mesh
+            key={i}
+            position={[Math.cos(a) * BG_DECK_R * 0.72, 0.31, Math.sin(a) * BG_DECK_R * 0.72]}
+          >
+            <cylinderGeometry args={[0.05, 0.085, 0.16, 12, 1, true]} />
+            <meshStandardMaterial
+              color={HULL_DARK}
+              side={THREE.DoubleSide}
+              metalness={0.6}
+              roughness={0.35}
+            />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// One solar panel, flush on a sloped face. Yawed onto the face, then raked about
+// the yawed X axis — a NEGATIVE rotation about +X carries +Z toward +Y, which is
+// the sign that tips the cells UP off the pyramid. Griffin's basket needs the
+// positive one, and the difference is the whole reason both are derived from
+// their radii instead of written down.
+function BgPanel({ i }: { i: number }) {
+  const maps = solarFaceMaps()
+  const az = bgFaceAz(i)
+  const yMid = (BG_PANEL_BOT_Y + BG_PANEL_TOP_Y) / 2
+  // Along the slope, not along y — the panel lies on the face, so its length is
+  // the slant of the run it covers.
+  const len = (BG_PANEL_TOP_Y - BG_PANEL_BOT_Y) * BG_SLANT_PER_Y
+  // Seats on the face, so in from the circumradius, and sampled at its own mid
+  // height because the pyramid is tapering the whole way up.
+  const rMid = bgFrustumR(yMid) * BG_FACE_IN
+  const w = bgFrustumR(yMid) * 2 * Math.sin(Math.PI / BG_FACES) * 0.86
+  return (
+    <group rotation={[0, Math.PI / 2 - az, 0]}>
+      <group position={[0, yMid, rMid]} rotation={[-BG_RAKE, 0, 0]}>
+        {/* Substrate, which is also what the panel looks like from behind — the
+            cell plane in front of it is single-sided. Standing proud of the
+            blanket rather than flush with it, per the house rule. */}
+        <mesh position={[0, 0, 0.03]}>
+          <boxGeometry args={[w, len, 0.03]} />
+          <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, 0, 0.054]}>
+          <planeGeometry args={[w * 0.95, len * 0.96]} />
+          <meshPhysicalMaterial
+            map={maps?.albedo ?? null}
+            roughnessMap={maps?.rough ?? null}
+            color={maps ? '#ffffff' : '#16294f'}
+            metalness={0.04}
+            roughness={maps ? 1 : 0.22}
+            clearcoat={1}
+            clearcoatRoughness={0.18}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// One instrument boom: a long thin rod out over the regolith with a small flat
+// electrode plate at the tip, on a chamfer face so it clears both the legs and
+// the panels.
+function BgBoom({ i }: { i: number }) {
+  const az = bgFaceAz(i)
+  const y = 0.52
+  const root = bgFrustumR(y) * BG_FACE_IN
+  return (
+    <group rotation={[0, Math.PI / 2 - az, 0]}>
+      <mesh position={[0, y + 0.02, root - 0.04]}>
+        <boxGeometry args={[0.12, 0.1, 0.12]} />
+        <meshStandardMaterial color={BG_GOLD_DK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <Strut
+        from={[0, y, root - 0.04]}
+        to={[0, y, BG_BOOM_R]}
+        r={0.014}
+        color={METAL}
+      />
+      {/* Tip plate, lying near-flat as the renders show. */}
+      <mesh position={[0, y - 0.01, BG_BOOM_R - 0.04]} rotation={[0.3, 0, 0]}>
+        <boxGeometry args={[0.2, 0.015, 0.16]} />
+        <meshStandardMaterial color={HULL} roughness={0.45} metalness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The top deck, the chimney, its overhanging dark cap, and the deck clutter. The
+// chimney is the vehicle's signature, so it is worth its handful of meshes.
+function BgTower({ accent }: { accent: string }) {
+  const towerH = BG_TOWER_TOP_Y - BG_BODY_TOP_Y
+  return (
+    <group>
+      <mesh position={[0, BG_BODY_TOP_Y + 0.02, 0]}>
+        <cylinderGeometry args={[BG_BODY_TOP_R, BG_BODY_TOP_R, 0.05, BG_FACES]} />
+        <meshStandardMaterial color={BG_GOLD_DK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh position={[0, BG_BODY_TOP_Y + towerH / 2, 0]}>
+        <cylinderGeometry args={[BG_TOWER_TOP_R, BG_TOWER_BOT_R, towerH, BG_FACES]} />
+        <meshStandardMaterial
+          color={BG_GOLD}
+          roughness={0.42}
+          metalness={0.45}
+          flatShading
+        />
+      </mesh>
+      {/* Cap, overhanging the chimney it sits on. */}
+      <mesh position={[0, (BG_TOWER_TOP_Y + BG_CAP_TOP_Y) / 2, 0]}>
+        <cylinderGeometry args={[BG_CAP_R, BG_CAP_R, BG_CAP_TOP_Y - BG_TOWER_TOP_Y, 20]} />
+        <meshStandardMaterial color={BG_CAP} roughness={0.45} metalness={0.4} />
+      </mesh>
+      <mesh position={[0, BG_CAP_TOP_Y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[BG_CAP_R, 0.02, 8, 24]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.45} />
+      </mesh>
+
+      {/* Livery: the collar at the chimney's base, standing proud of it. See the
+          note on this model. */}
+      <mesh position={[0, BG_BODY_TOP_Y + 0.1, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[BG_TOWER_BOT_R + 0.02, 0.035, 8, 20]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.25} />
+      </mesh>
+
+      {/* Deck clutter: a radiator plate standing up at the back, a payload box,
+          and a whip. All kept under the cap so it stays the highest thing. */}
+      <mesh position={[-0.3, BG_BODY_TOP_Y + 0.26, -0.28]} rotation={[0, 0.4, 0]}>
+        <boxGeometry args={[0.44, 0.44, 0.035]} />
+        <meshStandardMaterial color={BG_GOLD} roughness={0.45} metalness={0.45} />
+      </mesh>
+      <mesh position={[0.34, BG_BODY_TOP_Y + 0.13, 0.2]}>
+        <boxGeometry args={[0.26, 0.22, 0.24]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.3} />
+      </mesh>
+      <mesh position={[-0.4, BG_BODY_TOP_Y + 0.2, 0.26]}>
+        <cylinderGeometry args={[0.01, 0.013, 0.36, 6]} />
+        <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.5} />
+      </mesh>
+      <mesh position={[0.42, BG_BODY_TOP_Y + 0.08, -0.22]}>
+        <sphereGeometry args={[0.036, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function BlueGhost({ accent }: { accent: string }) {
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 3.5 m = 2.1 m of pad deck for a
+          lander, just over one local unit at BG_M — and a unit radius clears
+          both the 1.75 m footpads and the 1.6 m booms. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={BG_M}>
+        {BG_LEG_AZ.map((az) => (
+          <BgLeg key={az} az={az} />
+        ))}
+        <BgBody />
+        {/* Panels on the two faces square to the front, booms on the four
+            chamfers between the legs — so nothing shares a face with the gear. */}
+        <BgPanel i={2} />
+        <BgPanel i={6} />
+        {[1, 3, 5, 7].map((i) => (
+          <BgBoom key={i} i={i} />
+        ))}
+        <BgTower accent={accent} />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Nova-C — Intuitive Machines' CLPS lander
 // ---------------------------------------------------------------------------
 //
@@ -14355,6 +14785,10 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // both proportion and axis. Defined next to Moon RACER, the same operator's
   // other vehicle. See NovaC.
   'im-nova-c': NovaC,
+  // The last Touchdown lander off the generic `lander`: a squat octagonal
+  // pyramid with a chimney on top, panels flush on its sloped faces. See
+  // BlueGhost.
+  'firefly-blue-ghost': BlueGhost,
 }
 
 export function ProceduralModel({
