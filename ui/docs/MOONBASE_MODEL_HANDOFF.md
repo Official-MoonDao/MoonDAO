@@ -176,21 +176,55 @@ softgoods module uses for its own power feed.
   a `PROJECT_MODEL` entry alone would have rendered nothing. The GLB file itself
   is left in `public/` unreferenced, the same as `insight-lander.glb`.
 
-### The landing zone — Touchdown (4 of 5 done)
+### The landing zone — Touchdown (DONE — 5 of 5)
 
-`shared-next-landing` is the newest race and was the least differentiated.
-`blue-origin-blue-moon-mk1`, `cnsa-change-7`, `astrobotic-griffin` and
-`im-nova-c` have their own models. **Only `firefly-blue-ghost` still falls
-through to the generic `Lander`** — it is a low wide disc, nothing like that
-drum, and it already has its real size in `PROJECT_SIZE_M`, so only the geometry
-is missing.
+`shared-next-landing` was the newest race and the least differentiated. **All
+five vehicles now have their own models**: `blue-origin-blue-moon-mk1`,
+`cnsa-change-7`, `astrobotic-griffin`, `im-nova-c` and `firefly-blue-ghost`.
+Nothing in this race falls through to the generic `Lander` any more.
 
-**The gear is what tells these apart.** Three of the four stand on four splayed
-legs, so the *finish* is doing real work: the Blue Moons' gold bipods stop at the
-knee, Chang'e-7's gold tubes run all the way to the pad, and Griffin's are bare
-aluminium with no gold anywhere. Nova-C is the exception and breaks the pattern
-usefully — **six** legs, and a lattice of thin polished tubes rather than struts.
-Do not "tidy" any of these toward another.
+**What tells them apart, in priority order.** This matters because five
+four-to-six-legged landers on one pad is exactly the situation where a later
+edit "harmonises" two of them back into looking alike:
+
+| | Body | Gear |
+|---|---|---|
+| Blue Moon MK1 | tall barrel, mostly tankage | 4 gold bipods, gold stops at the knee |
+| Chang'e-7 | low boxy bus, two flat wings | 4 gold tubes, gold runs to the pad |
+| Griffin | hexagonal basket of solar panels | 4 bare aluminium, no gold at all |
+| Nova-C | 4 m column tapering to a cone | **6** legs, lattice of thin tubes |
+| Blue Ghost | squat octagonal pyramid + chimney | 4 single thick tubes, flat oval skids |
+
+Earlier revisions of this doc claimed the *gear finish* was what separated
+these. **That is no longer true and should not be relied on:** Blue Ghost is
+gold-over-bare-metal at the knee, the same scheme as the Blue Moons. Body shape
+is the reliable discriminator; on gear, use leg count and topology (bipod vs
+single tube vs lattice) and pad type (round dish vs flat oval skid).
+
+`BlueGhost` is the squat one — 3.5 m across on a 2 m stack, so **width is its
+largest dimension**, the opposite arrangement to Nova-C directly below it in the
+file. Its silhouette is an octagonal truncated pyramid that narrows going up with
+a tapered chimney and an overhanging dark cap on top; nothing else in the atlas
+has that, and it identifies the vehicle at distance far better than livery does.
+
+Two things worth knowing before touching it:
+
+- **Its solar panels sit flush on the sloped faces, and that is load-bearing.**
+  The pyramid already tips its faces up ~33°, so flush is *also* well-aimed under
+  this scene's 44.5° sun. `BG_RAKE` is derived from the two body radii, and its
+  sign is the **exact opposite of Griffin's** (`+32.5°` up here versus `-17.4°`
+  down there) because Griffin's basket opens upward while this pyramid narrows
+  upward. Both are derived rather than written down precisely so that pair cannot
+  drift into agreeing.
+- **Its instrument booms are deliberately short.** The real electrodes deploy
+  tens of metres; the booms here stop at 1.6 m, inside the 1.75 m footpads,
+  because the footprint radius comes off `PROJECT_SIZE_M` and anything past the
+  pads would have this model overlapping its neighbours on the pad.
+
+Its accent is the collar at the chimney's base. Firefly's `brandColor` is
+`#FB7185`, which is not a colour the real hardware carries anywhere, so unlike
+Nova-C and Chang'e-7 this one is a pure house-rule band rather than a happy
+match — the references' Firefly mark, NASA insignia and flag are all withheld.
 
 `NovaC` is the one vehicle here **whose largest dimension is its height**: a 4 m
 column on a 1.56 m hexagonal bus, famously about the size of a phone box. The
