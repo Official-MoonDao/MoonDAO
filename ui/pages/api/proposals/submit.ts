@@ -16,6 +16,7 @@ import {
   getSubmissionTargetCycle,
   shiftQuarter,
 } from '@/lib/projectCycle/cycleQuarters'
+import { endOfConfigDeadline } from '@/lib/utils/dates'
 import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import { ethers } from 'ethers'
 import { rateLimit } from 'middleware/rateLimit'
@@ -544,7 +545,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       if (
         PROJECT_CYCLE.enforceSubmissionDeadline &&
         livePhase === 'intake' &&
-        Date.now() > new Date(PROJECT_CYCLE.submissionDeadline).getTime()
+        Date.now() > endOfConfigDeadline(PROJECT_CYCLE.submissionDeadline).getTime()
       ) {
         const next = shiftQuarter(getProposalCycle(), 1)
         return res.status(422).json({

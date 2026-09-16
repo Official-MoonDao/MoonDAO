@@ -1,10 +1,16 @@
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
+import { getLivePhaseOverride, resolveLivePhase } from '@/lib/operator/cyclePhase'
 import { getSubmissionCycleInfo } from 'lib/utils/dates'
+import type { ProjectCyclePhase } from 'const/config'
 
-const generateHTML = (proposalId: string, proposalTitle: string) => {
-  const { quarterLabel, deadlineFormatted } = getSubmissionCycleInfo()
+const generateHTML = (
+  proposalId: string,
+  proposalTitle: string,
+  phase: ProjectCyclePhase
+) => {
+  const { quarterLabel, deadlineFormatted } = getSubmissionCycleInfo(phase)
   const proposalUrl = `https://moondao.com/project/${proposalId}`
   const townHallCalendar = 'https://lu.ma/moondao'
   const ideationChannel =
@@ -175,11 +181,12 @@ async function handler(req: any, res: any) {
     }
 
     try {
+      const livePhase = resolveLivePhase(await getLivePhaseOverride())
       await getMoonDaoGmailTransport().sendMail({
         from: opEmail,
         to: email,
         subject: `MoonDAO | Your Proposal (MDP-${proposalId}) Has Been Submitted`,
-        html: generateHTML(proposalId, proposalTitle),
+        html: generateHTML(proposalId, proposalTitle, livePhase),
         bcc: [opEmail],
       })
 

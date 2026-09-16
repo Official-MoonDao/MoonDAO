@@ -1,6 +1,7 @@
 import { PROJECT_CYCLE } from 'const/config'
+import type { ProjectCyclePhase } from 'const/config'
 import { BigNumber } from 'ethers'
-import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
+import { getSubmissionTargetCycle } from '@/lib/projectCycle/cycleQuarters'
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -158,16 +159,27 @@ export function formatLongDate(date: Date) {
   })
 }
 
-export function getSubmissionCycleInfo() {
-  const { quarter, year } = getProposalCycle()
+// Display dates like `October 8, 2026` parse as midnight at the start of
+// that day (UTC in production). Use the last millisecond so the advertised
+// calendar day stays inclusive.
+export function endOfConfigDeadline(displayDate: string): Date {
+  return new Date(`${displayDate} 23:59:59.999 UTC`)
+}
+
+export function getSubmissionCycleInfo(phase: ProjectCyclePhase) {
+  const { quarter, year } = getSubmissionTargetCycle(phase)
   const deadline = getSecondThursdayOfQuarter(quarter, year)
   const quarterLabel = formatQuarterCycleLabel(quarter, year)
+  const isCurrentSlate =
+    quarter === PROJECT_CYCLE.quarter && year === PROJECT_CYCLE.year
 
   return {
     quarter,
     year,
     quarterLabel,
     deadline,
-    deadlineFormatted: PROJECT_CYCLE.submissionDeadline,
+    deadlineFormatted: isCurrentSlate
+      ? PROJECT_CYCLE.submissionDeadline
+      : formatLongDate(deadline),
   }
 }

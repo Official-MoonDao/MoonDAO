@@ -27,6 +27,7 @@ import {
   setLivePhaseOverride,
 } from '@/lib/operator/cyclePhase'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
+import { endOfConfigDeadline } from '@/lib/utils/dates'
 import { getPrivyUserData } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -407,7 +408,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   // intake → Senate: UI flip only. No on-chain work.
   if (currentPhase === 'intake' && nextPhase === 'senate') {
-    const editingDeadline = new Date(PROJECT_CYCLE.editingDeadline)
+    const editingDeadline = endOfConfigDeadline(PROJECT_CYCLE.editingDeadline)
     const tooEarly = Date.now() < editingDeadline.getTime()
     const blockers = tooEarly
       ? [
