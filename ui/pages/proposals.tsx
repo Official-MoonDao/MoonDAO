@@ -17,7 +17,7 @@ import { NANCE_API_URL } from '../lib/nance/constants'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useLivePhase } from '@/lib/operator/useLivePhase'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { daysUntilDate } from '@/lib/utils/dates'
+import { daysUntilDate, endOfConfigDeadline } from '@/lib/utils/dates'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -34,7 +34,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
   useChainDefault()
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
   const { phase, isIntake } = useLivePhase()
-  const submissionDeadline = new Date(PROJECT_CYCLE.submissionDeadline)
+  const submissionDeadline = endOfConfigDeadline(PROJECT_CYCLE.submissionDeadline)
   const daysLeft = daysUntilDate(submissionDeadline)
   const submissionsClosed =
     PROJECT_CYCLE.enforceSubmissionDeadline &&

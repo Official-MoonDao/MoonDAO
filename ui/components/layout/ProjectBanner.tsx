@@ -4,6 +4,7 @@ import {
   NEXT_QUARTER_BUDGET_USD,
   MAX_BUDGET_USD,
 } from 'const/config'
+import { endOfConfigDeadline } from '@/lib/utils/dates'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -24,7 +25,7 @@ const PROJECT_PAGES = [
 const FULLSCREEN_PAGES = ['/moonbase']
 
 // Check if deadline has passed (computed once on module load)
-const SUBMISSION_DEADLINE = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
+const SUBMISSION_DEADLINE = endOfConfigDeadline(PROJECT_SYSTEM_CONFIG.submissionDeadline)
 
 export default function ProjectBanner() {
   const router = useRouter()
