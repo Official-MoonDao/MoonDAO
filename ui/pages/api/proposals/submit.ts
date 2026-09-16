@@ -6,12 +6,18 @@ import {
   PROJECT_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   PROJECT_CREATOR_ADDRESSES,
+  PROJECT_CYCLE,
 } from 'const/config'
 import { getPrivyUserData } from '@/lib/privy'
 import { isProposalAuthor } from '@/lib/proposals/isProposalAuthor'
+import { getLivePhaseOverride, resolveLivePhase } from '@/lib/operator/cyclePhase'
+import {
+  getProposalCycle,
+  getSubmissionTargetCycle,
+  shiftQuarter,
+} from '@/lib/projectCycle/cycleQuarters'
 import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import { ethers } from 'ethers'
-import { getSubmissionQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -534,7 +540,18 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         const { cid: hatMetadataIpfsHash } = await pinBlobOrFile(hatMetadataBlob, name)
         return 'ipfs://' + hatMetadataIpfsHash
       }
-      const { quarter, year } = getSubmissionQuarter()
+      const livePhase = resolveLivePhase(await getLivePhaseOverride())
+      if (
+        PROJECT_CYCLE.enforceSubmissionDeadline &&
+        livePhase === 'intake' &&
+        Date.now() > new Date(PROJECT_CYCLE.submissionDeadline).getTime()
+      ) {
+        const next = shiftQuarter(getProposalCycle(), 1)
+        return res.status(422).json({
+          error: `The Q${PROJECT_CYCLE.quarter} ${PROJECT_CYCLE.year} submission deadline (${PROJECT_CYCLE.submissionDeadline}) has passed. New proposals will open for Q${next.quarter} ${next.year} after this cycle's Senate Vote begins.`,
+        })
+      }
+      const { quarter, year } = getSubmissionTargetCycle(livePhase)
       const upfrontPayment = ''
       const [adminHatMetadataIpfs, managerHatMetadataIpfs, memberHatMetadataIpfs] =
         await Promise.allSettled([

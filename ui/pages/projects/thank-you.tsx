@@ -12,7 +12,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { getRelativeQuarter } from '@/lib/utils/dates'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -36,7 +36,7 @@ export default function RewardsThankYou() {
   const account = useActiveAccount()
   const address = account?.address
 
-  const { quarter: fallbackQuarter, year: fallbackYear } = getRelativeQuarter(-1)
+  const { quarter: fallbackQuarter, year: fallbackYear } = getRetroCohort()
 
   // Pull the quarter / year / submission type from the redirect URL. The
   // member-vote and retro-distribution flows live in different Tableland

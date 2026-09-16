@@ -37,6 +37,7 @@ export function useLivePhase() {
 
   return {
     phase,
+    isIntake: flags.isIntake,
     isSenateVote: flags.isSenateVote,
     isMemberVote: flags.isMemberVote,
     isRewardsCycle: flags.isRewardsCycle,

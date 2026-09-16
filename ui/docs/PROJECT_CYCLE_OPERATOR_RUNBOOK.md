@@ -18,13 +18,15 @@ does **not** need contract ownership.
 
 | Phase | What’s live | How you get there |
 |---|---|---|
-| **Senate Vote** | Pending proposals; senators vote Yes/No | Edit `PROJECT_CYCLE` + deploy (start of quarter) |
+| **Intake** | Proposal submission + Senate review/edits. No voting UI. | Edit `PROJECT_CYCLE` + deploy (start of quarter) |
+| **Senate Vote** | Pending proposals; senators vote Yes/No | One click: **Open Senate Vote** (after Townhall) |
 | **Member Vote + Retro** | Member Vote distribute UI; retroactive rewards for prior quarter | One click: **Close Senate & Open Member Vote** |
 | **Idle** | Neither voting UI is active | One click: **Wrap Up Cycle** (after member tally) |
 
 Member Vote and Retroactive Rewards run **at the same time**. Advancing into
-the *next* quarter’s Senate Vote is a config edit (new budget/deadlines/retro
-pool), not a runtime button.
+the *next* quarter’s intake is a config edit (new budget/deadlines/retro
+pool), not a runtime button. Once the live phase leaves intake, new
+proposals are tagged to the *next* cycle.
 
 ---
 
@@ -34,9 +36,10 @@ Do this once when opening a new cycle. Requires a PR + deploy.
 
 1. Open `ui/const/config.ts` and edit **`PROJECT_CYCLE` only**:
    - `quarter` / `year` → the new proposal quarter
-   - `phase` → `'senate'`
+   - `phase` → `'intake'`
+   - `enforceSubmissionDeadline` → `true`
    - `submissionDeadline` / `editingDeadline` / `votingDate`
-   - `budgetUSD` → new quarterly budget
+   - `budgetUSD` → new quarterly pot (`node scripts/calculate-budget.mjs --year Y --quarter Q`; 3% of official liquid AUM, nearest $500)
    - `memberVoteSubmissionsOpen` → `false` until Member Vote opens (or leave false; Advance will open the phase, and you can set this `true` in the same PR if you want submissions ready when Member Vote starts)
    - `memberVoteExcludedAddresses` → `[]`
    - `retro` → pool for the **prior** quarter’s completed projects:
@@ -44,14 +47,33 @@ Do this once when opening a new cycle. Requires a PR + deploy.
      - `usdBudget` or `ethBudget` (post-upfront remainder for projects)
      - `communityCirclePrimary` = **10% of the prior quarter’s own budget** (not the new `budgetUSD`)
 2. Open a PR, merge, wait for production deploy.
-3. Confirm `/projects` shows Senate Vote (Temperature Check proposals).
+3. Confirm `/projects` shows **Intake** for the new quarter. A leftover
+   override from the previous cycle is ignored automatically (overrides are
+   stamped to `quarter`/`year`). Use **Reset to config default** if you
+   need to clear a same-cycle override.
 
 ---
 
-## 1. During Senate Vote
+## 1. During Intake
+
+Proposers submit until `submissionDeadline`. Authors can still edit until
+`editingDeadline`. The banner and `/proposals` show the countdown.
+
+After the Townhall (typically `votingDate`):
+
+1. Go to `/projects` → **Operator Panel** → **Cycle Phase**.
+2. Click **Preview (dry run)** if you want to confirm the transition.
+3. Click **Open Senate Vote**. If the editing deadline has not passed, the
+   server returns 409 — wait, or **Force advance past blockers** if you
+   intentionally want to open Senate Vote early.
+4. Live phase flips to **Senate Vote**. No on-chain txs.
+
+---
+
+## 2. During Senate Vote
 
 Senators vote on each proposal page. Operators can close a single proposal via
-the per-proposal **Close Senate Vote** control, or wait and batch-close in step 2.
+the per-proposal **Close Senate Vote** control, or wait and batch-close in the next step.
 
 Optional prep while senators vote:
 
@@ -61,7 +83,7 @@ Optional prep while senators vote:
 
 ---
 
-## 2. Close Senate → open Member Vote + Retro
+## 3. Close Senate → open Member Vote + Retro
 
 When senators have voted (quorum met on the proposals you intend to advance):
 
@@ -95,7 +117,7 @@ and click Advance again — already-closed MDPs are skipped.
 
 ---
 
-## 3. During Member Vote + Retro
+## 4. During Member Vote + Retro
 
 ### Member Vote
 
@@ -113,7 +135,7 @@ and click Advance again — already-closed MDPs are skipped.
 
 ---
 
-## 4. Close Member Vote (on-chain tally)
+## 5. Close Member Vote (on-chain tally)
 
 > **Q3 2026 / Q2 Retro close:** use the concrete click-path in
 > [`Q3_2026_CYCLE_CLOSE_CHECKLIST.md`](./Q3_2026_CYCLE_CLOSE_CHECKLIST.md).
@@ -137,7 +159,7 @@ If the API returns “Voting period has not ended,” wait until the window is o
 
 ---
 
-## 5. Wrap up the cycle (UI)
+## 6. Wrap up the cycle (UI)
 
 After the member tally (and after retro is settled):
 
@@ -149,10 +171,12 @@ After the member tally (and after retro is settled):
 
 ---
 
-## 6. Next quarter
+## 7. Next quarter
 
 Return to **§0**. Edit `PROJECT_CYCLE` (new quarter, budget, retro for the
-cohort you just closed, `phase: 'senate'`), PR, deploy.
+cohort you just closed, `phase: 'intake'`), PR, deploy. A leftover `idle`
+override from wrap-up is ignored automatically because it is stamped to
+the previous cycle.
 
 ---
 
@@ -167,7 +191,8 @@ cohort you just closed, `phase: 'senate'`), PR, deploy.
 | A withdrawn/resubmitted proposal shows as a blocker | It isn't in `BLOCKED_MDPS`/`BLOCKED_PROJECTS` yet | Add it to `const/whitelist.ts` and deploy; it will then be skipped |
 | An author-deleted proposal shows as a blocker | Its IPFS JSON is missing `deleted: true`, or the IPFS fetch failed open | Confirm the author-delete re-pin landed; advance skips any proposal whose JSON has `deleted: true` |
 | UI still on Senate after Advance | Stale ISR / cache | Wait ~60s or hard-refresh; panel polls `/api/operator/phase-status` |
-| Phase stuck / wrong after deploy | Live KV override still set | Expected — override wins over `PROJECT_CYCLE.phase`. Wrap up or advance, or clear the Redis key `moondao:operator:cycle_phase` |
+| Phase stuck / wrong after deploy | Same-cycle live KV override still set | Click **Reset to config default**, or wrap up / advance. A leftover override from a *previous* cycle is ignored automatically. |
+| Open Senate Vote 409 | Editing deadline has not passed | Wait until `editingDeadline`, or Force if intentional |
 
 ---
 
@@ -176,18 +201,23 @@ cohort you just closed, `phase: 'senate'`), PR, deploy.
 ```
 [Edit PROJECT_CYCLE + deploy]
         ↓
-   Senate Vote  ──(Advance: tallyVotes + flip)──►  Member Vote + Retro
-                                                         │
-                                              (Run Member Vote Tally)
-                                                         │
-                                              (Wrap Up Cycle)
-                                                         ↓
-                                                       Idle
-                                                         │
-                                              [Edit PROJECT_CYCLE + deploy]
-                                                         ↓
-                                                  next Senate Vote
+      Intake  ──(Open Senate Vote)──►  Senate Vote
+                                              │
+                         (Advance: tallyVotes + flip)
+                                              ↓
+                                    Member Vote + Retro
+                                              │
+                                 (Run Member Vote Tally)
+                                              │
+                                     (Wrap Up Cycle)
+                                              ↓
+                                            Idle
+                                              │
+                                 [Edit PROJECT_CYCLE + deploy]
+                                              ↓
+                                         next Intake
 ```
 
-Runtime advances (Senate → Member → Idle) = button + HSM txs + Redis phase.
-Starting a new quarter = edit `PROJECT_CYCLE` + deploy.
+Runtime advances (intake → Senate → Member → Idle) = button + (HSM txs
+from Senate onward) + Redis phase. Starting a new quarter = edit
+`PROJECT_CYCLE` + deploy.

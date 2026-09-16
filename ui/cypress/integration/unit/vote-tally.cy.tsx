@@ -13,17 +13,11 @@
  *
  *        "Once the Senate has approved proposals, voting members
  *         distribute their voting power across the approved proposals
- *         as percentages. The top 50% by voting power are funded,
- *         capped so total project budgets stay under 3/4 of the
- *         quarterly budget. Contributors cannot vote on their own
- *         project."
+ *         as percentages. The top three by voting power are funded
+ *         at min(ask, ¼ of the pot). Contributors cannot vote on
+ *         their own project."
  *
- *   2. `ui/pages/projects-overview.tsx`:
- *
- *        "Members vote to allocate funding. Top 50% of proposals get
- *         funded (budget permitting)."
- *        "Budget must be ≤20% of quarterly rewards." (per-proposal cap,
- *         enforced at submit time, not at tally time — out of scope.)
+ *   2. MDP-267 Project System Update (v9.0), approved Member Vote.
  *
  *   3. Public docs (linked from `/project-system-docs`):
  *      https://docs.moondao.com/Projects/Project-System
@@ -35,38 +29,23 @@
  *   S3. Each voter's allocation is treated as percentages summing to 100.
  *   S4. Per-project outcome % = sum(voter_percentage × voter_power) /
  *                                 sum(voter_power), then normalized.
- *   S5. The top 50% of projects (by outcome %) are funded.
- *   S6. The total budget of approved projects must be ≤ 3/4 of the
- *       quarterly budget.
+ *   S5. The top three projects (by outcome %) are funded.
+ *   S6. Each funded project receives min(ask, ¼ pot). An over-cap ask
+ *       does not lose funding; the grant is capped.
  *
  * ============================================================================
  * IMPLEMENTATION DETAILS (spec is silent or terse — explicit intent
  * confirmed and locked down by the tests below)
  * ============================================================================
  *
- *   D1 — Floor of 3 approved projects.            [CONFIRMED INTENTIONAL]
- *        `getApprovedProjects` uses
- *            numApproved = min(max(ceil(n/2), 3), n)
- *        So for n < 6 the "top 50%" rule is overridden by a minimum of 3
- *        (3-proj cycle → 3 approved, 4-proj cycle → 3, 5-proj cycle → 3).
- *        Avoids reducing the senate-approved set to 1–2 winners by
- *        rounding alone in small cycles. The 50% rule kicks in cleanly
- *        for n ≥ 6.
+ *   D1 — Fewer than three Senate-passed proposals: fund all of them.
+ *        Unused ¼-slices stay in the retro pool (not a tally concern).
  *
- *   D2 — Budget cap is knapsack-style, not greedy. [SPEC]
- *        Walking projects in rank order, each project is approved iff its
- *        budget *fits* under the remaining cap; projects that would push
- *        the cumulative total over 3/4 of the pool are SKIPPED, and the
- *        loop keeps checking smaller projects below them in the ranking.
- *        Net effect:
- *          - A small popular project below a large rejected one CAN still
- *            be approved.
- *          - A rank-1 project whose budget alone exceeds 3/4 is rejected,
- *            but the rest of the cycle is evaluated normally.
+ *   D2 — A tie for third is broken by an optional `senateTieBreak`
+ *        project-id order. Without it, sort is stable.
  *
- *   D3 — A rank-1 project whose budget alone exceeds 3/4 of the pool is
- *        rejected, but smaller subsequent projects can still be approved.
- *        (Resolved by D2's knapsack rule.)
+ *   D3 — Historical v8 (top 50% + 3/4 knapsack) is still callable via
+ *        `{ rules: 'v8' }` so Q2/Q3 audits stay reproducible.
  *
  *   D4 — Author "cannot vote on own project" is implemented as
  *        per-project stripping, not full vote disqualification.
@@ -109,8 +88,7 @@
  *        50/50). Documented in the spec ("as percentages") but worth a
  *        test so the behavior isn't silently changed.
  *
- *   D9 — Budget-cap comparison is `<= 3/4`, exact equality counts as
- *        approved. Boundary case worth pinning.
+ *   D9 — Default rules are v9. Pass `{ rules: 'v8' }` for closed cycles.
  *
  * ============================================================================
  * TEST SCOPE (per the user's "all_with_mocks" choice)
@@ -418,14 +396,13 @@ describe('Vote tally / Layer 1 — author self-vote stripping', () => {
 })
 
 // =============================================================================
-// LAYER 1 — getApprovedProjects (top-50% + budget-cap rules)
+// LAYER 1 — getApprovedProjects (MDP-267 top-three)
 // =============================================================================
 
-describe('Vote tally / Layer 1 — getApprovedProjects: SPEC S5 (top 50%)', () => {
-  it('SPEC: 6 projects, ceil(6/2) = 3 approved by index alone', () => {
+describe('Vote tally / Layer 1 — getApprovedProjects: SPEC S5 (top three)', () => {
+  it('SPEC: 6 projects, top 3 approved', () => {
     const projects = [1, 2, 3, 4, 5, 6]
     const outcome = { 1: 30, 2: 25, 3: 20, 4: 15, 5: 7, 6: 3 }
-    // All budgets tiny so the budget cap never bites.
     const usdBudgets = { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1 }
     const approved = getApprovedProjects(projects, outcome, usdBudgets, 1000)
     expect(approved[1]).to.be.true
@@ -437,13 +414,10 @@ describe('Vote tally / Layer 1 — getApprovedProjects: SPEC S5 (top 50%)', () =
   })
 
   it('SPEC: ranking is by outcome %, descending', () => {
-    // Insert projects in deliberate "wrong" order; outcome should still
-    // pick the top by percentage.
     const projects = [1, 2, 3, 4, 5, 6]
     const outcome = { 1: 5, 2: 10, 3: 50, 4: 15, 5: 12, 6: 8 }
     const usdBudgets = { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1 }
     const approved = getApprovedProjects(projects, outcome, usdBudgets, 1000)
-    // Top 3 by outcome are projects 3 (50), 4 (15), 5 (12).
     expect(approved[3]).to.be.true
     expect(approved[4]).to.be.true
     expect(approved[5]).to.be.true
@@ -452,35 +426,26 @@ describe('Vote tally / Layer 1 — getApprovedProjects: SPEC S5 (top 50%)', () =
     expect(approved[1]).to.be.false
   })
 
-  it('SPEC: 8 projects, ceil(8/2) = 4 approved (50% rule kicks in cleanly)', () => {
+  it('SPEC: 8 projects still fund only 3 (no top-50% rule)', () => {
     const projects = [1, 2, 3, 4, 5, 6, 7, 8]
     const outcome = { 1: 30, 2: 20, 3: 15, 4: 10, 5: 9, 6: 8, 7: 5, 8: 3 }
     const usdBudgets = Object.fromEntries(projects.map((p) => [p, 1]))
     const approved = getApprovedProjects(projects, outcome, usdBudgets, 1000)
-    expect(Object.values(approved).filter(Boolean).length).to.equal(4)
+    expect(Object.values(approved).filter(Boolean).length).to.equal(3)
     expect(approved[1]).to.be.true
     expect(approved[2]).to.be.true
     expect(approved[3]).to.be.true
-    expect(approved[4]).to.be.true
-    expect(approved[5]).to.be.false
+    expect(approved[4]).to.be.false
   })
 })
 
-describe('Vote tally / Layer 1 — getApprovedProjects: D1 (floor of 3 — CONFIRMED INTENTIONAL)', () => {
-  // Spec says "top 50%". Implementation forces a minimum of 3 approved
-  // when n ≥ 3 — confirmed intentional so small cycles aren't reduced
-  // to 1–2 winners by rounding.
-  it('1 project → 1 approved (capped at n)', () => {
-    const approved = getApprovedProjects(
-      [1],
-      { 1: 100 },
-      { 1: 1 },
-      1000
-    )
+describe('Vote tally / Layer 1 — getApprovedProjects: D1 (n < 3 funds all)', () => {
+  it('1 project → 1 approved', () => {
+    const approved = getApprovedProjects([1], { 1: 100 }, { 1: 1 }, 1000)
     expect(approved[1]).to.be.true
   })
 
-  it('2 projects → 2 approved (max(ceil(1), 3) = 3, capped at n=2)', () => {
+  it('2 projects → 2 approved', () => {
     const approved = getApprovedProjects(
       [1, 2],
       { 1: 60, 2: 40 },
@@ -491,7 +456,7 @@ describe('Vote tally / Layer 1 — getApprovedProjects: D1 (floor of 3 — CONFI
     expect(approved[2]).to.be.true
   })
 
-  it('3 projects → 3 approved (100% funded — floor wins over 50%)', () => {
+  it('3 projects → 3 approved', () => {
     const approved = getApprovedProjects(
       [1, 2, 3],
       { 1: 50, 2: 30, 3: 20 },
@@ -503,7 +468,7 @@ describe('Vote tally / Layer 1 — getApprovedProjects: D1 (floor of 3 — CONFI
     expect(approved[3]).to.be.true
   })
 
-  it('4 projects → 3 approved (75%, not 50% — floor wins over 50%)', () => {
+  it('4 projects → 3 approved', () => {
     const approved = getApprovedProjects(
       [1, 2, 3, 4],
       { 1: 40, 2: 30, 3: 20, 4: 10 },
@@ -514,35 +479,23 @@ describe('Vote tally / Layer 1 — getApprovedProjects: D1 (floor of 3 — CONFI
     expect(approved[4]).to.be.false
   })
 
-  it('5 projects → 3 approved (60%, not 50% — floor wins over 50%)', () => {
-    const approved = getApprovedProjects(
-      [1, 2, 3, 4, 5],
-      { 1: 30, 2: 25, 3: 20, 4: 15, 5: 10 },
-      { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 },
-      1000
-    )
-    expect(Object.values(approved).filter(Boolean).length).to.equal(3)
-  })
-
-  it('7 projects → 4 approved (ceil(7/2)=4, exceeds floor of 3)', () => {
+  it('7 projects → 3 approved (not ceil(7/2)=4)', () => {
     const approved = getApprovedProjects(
       [1, 2, 3, 4, 5, 6, 7],
       { 1: 20, 2: 18, 3: 16, 4: 14, 5: 12, 6: 11, 7: 9 },
       { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1 },
       1000
     )
-    expect(Object.values(approved).filter(Boolean).length).to.equal(4)
+    expect(Object.values(approved).filter(Boolean).length).to.equal(3)
   })
 })
 
-describe('Vote tally / Layer 1 — getApprovedProjects: SPEC S6 (3/4 budget cap)', () => {
-  it('SPEC: cap is exactly 3/4 of the quarterly budget (≤, not <)', () => {
-    // 3 projects, each $25, pool $100. Cumulative reaches exactly $75 at
-    // rank 3. Cap is `<=` so all three should be approved.
+describe('Vote tally / Layer 1 — getApprovedProjects: SPEC S6 (no knapsack)', () => {
+  it('SPEC: an over-cap ask is still funded (grant is capped elsewhere)', () => {
     const approved = getApprovedProjects(
       [1, 2, 3],
       { 1: 50, 2: 30, 3: 20 },
-      { 1: 25, 2: 25, 3: 25 },
+      { 1: 80, 2: 5, 3: 5 },
       100
     )
     expect(approved[1]).to.be.true
@@ -550,29 +503,7 @@ describe('Vote tally / Layer 1 — getApprovedProjects: SPEC S6 (3/4 budget cap)
     expect(approved[3]).to.be.true
   })
 
-  it('SPEC: cumulative budget over 3/4 stops further approvals', () => {
-    // 6 projects each $20, pool $100. Cap = $75. Approved by index = top 3.
-    // Cumulative at rank 3 = $60 ≤ $75 ✓. Rank 4 would push to $80, but
-    // index already disqualifies it. So all top-3 approved by index AND
-    // budget; bottom-3 rejected by index.
-    const approved = getApprovedProjects(
-      [1, 2, 3, 4, 5, 6],
-      { 1: 25, 2: 22, 3: 20, 4: 18, 5: 10, 6: 5 },
-      { 1: 20, 2: 20, 3: 20, 4: 20, 5: 20, 6: 20 },
-      100
-    )
-    expect(approved[1]).to.be.true
-    expect(approved[2]).to.be.true
-    expect(approved[3]).to.be.true
-    expect(approved[4]).to.be.false
-    expect(approved[5]).to.be.false
-    expect(approved[6]).to.be.false
-  })
-
-  it('SPEC: budget cap can be the binding constraint, not just index', () => {
-    // 6 projects each $30 (so two together = $60, three together = $90).
-    // Pool = $100, cap = $75. Index allows top 3, but budget allows only
-    // top 2 ($60 ≤ $75). Rank 3 would push to $90 > $75 → rejected.
+  it('SPEC: large asks do not knock a top-3 project out', () => {
     const approved = getApprovedProjects(
       [1, 2, 3, 4, 5, 6],
       { 1: 30, 2: 25, 3: 20, 4: 15, 5: 7, 6: 3 },
@@ -581,114 +512,45 @@ describe('Vote tally / Layer 1 — getApprovedProjects: SPEC S6 (3/4 budget cap)
     )
     expect(approved[1]).to.be.true
     expect(approved[2]).to.be.true
-    expect(approved[3]).to.be.false // budget-rejected
+    expect(approved[3]).to.be.true
     expect(approved[4]).to.be.false
   })
 
-  it('IMPL DELTA D9: boundary — cumulative === 0.75 * pool is approved', () => {
-    // 3 projects of $25 each, pool $100. Cumulative at rank-3 = $75
-    // exactly. Comparison is `<=` so rank-3 must be approved.
+  it('D2: a voting-power tie for third is broken by senateTieBreak', () => {
     const approved = getApprovedProjects(
-      [1, 2, 3],
-      { 1: 50, 2: 30, 3: 20 },
-      { 1: 25, 2: 25, 3: 25 },
-      100
+      [1, 2, 3, 4],
+      { 1: 40, 2: 30, 3: 15, 4: 15 },
+      { 1: 1, 2: 1, 3: 1, 4: 1 },
+      1000,
+      { senateTieBreak: ['4'] }
     )
-    expect(approved[3]).to.be.true
+    expect(approved[1]).to.be.true
+    expect(approved[2]).to.be.true
+    expect(approved[4]).to.be.true
+    expect(approved[3]).to.be.false
   })
 })
 
-describe('Vote tally / Layer 1 — getApprovedProjects: SPEC D2 (knapsack budget cap)', () => {
-  it('SPEC D2: a smaller popular project below a rejected larger one is still approved', () => {
-    // 3 projects, budgets [50, 30, 5], pool $100, cap $75.
-    // Rank 1: cum $0+50 = 50 ≤ 75 ✓ APPROVED (cum → 50)
-    // Rank 2: cum 50+30 = 80 > 75 ✗ SKIP (cum stays at 50)
-    // Rank 3: cum 50+5  = 55 ≤ 75 ✓ APPROVED (cum → 55)
-    //
-    // The previous greedy implementation rejected projects 2 AND 3
-    // because rank 2 pushed it over and the running total never
-    // recovered. Knapsack keeps checking smaller projects that still fit.
-    const approved = getApprovedProjects(
-      [1, 2, 3],
-      { 1: 50, 2: 30, 3: 20 },
-      { 1: 50, 2: 30, 3: 5 },
-      100
-    )
-    expect(approved[1]).to.be.true
-    expect(approved[2]).to.be.false
-    expect(approved[3]).to.be.true
+describe('Vote tally / Layer 1 — getApprovedProjects: historical v8 still works', () => {
+  it('v8: 8 projects fund 4 (top 50%)', () => {
+    const projects = [1, 2, 3, 4, 5, 6, 7, 8]
+    const outcome = { 1: 30, 2: 20, 3: 15, 4: 10, 5: 9, 6: 8, 7: 5, 8: 3 }
+    const usdBudgets = Object.fromEntries(projects.map((p) => [p, 1]))
+    const approved = getApprovedProjects(projects, outcome, usdBudgets, 1000, {
+      rules: 'v8',
+    })
+    expect(Object.values(approved).filter(Boolean).length).to.equal(4)
   })
 
-  it('SPEC D3: a single rank-1 project whose budget alone exceeds 3/4 is rejected, but smaller projects can still be approved', () => {
-    // 3 projects, budgets [80, 5, 5], pool $100, cap $75.
-    // Rank 1: cum 0+80 = 80 > 75 ✗ SKIP (rank-1 budget alone exceeds cap)
-    // Rank 2: cum 0+5  = 5  ≤ 75 ✓ APPROVED (cum → 5)
-    // Rank 3: cum 5+5  = 10 ≤ 75 ✓ APPROVED (cum → 10)
-    //
-    // This is the most-corrected scenario vs. the old greedy
-    // implementation (which rejected the entire quarter when rank-1
-    // alone exceeded the cap).
+  it('v8: knapsack still skips an over-cap rank-1 and funds smaller ones', () => {
     const approved = getApprovedProjects(
       [1, 2, 3],
       { 1: 50, 2: 30, 3: 20 },
       { 1: 80, 2: 5, 3: 5 },
-      100
+      100,
+      { rules: 'v8' }
     )
     expect(approved[1]).to.be.false
-    expect(approved[2]).to.be.true
-    expect(approved[3]).to.be.true
-  })
-
-  it('SPEC D2: count cap is applied to ACCEPTED projects only, not visited rank slots', () => {
-    // 6 projects, numApproved = max(ceil(6/2), 3) = 3.
-    // Budgets [80, 10, 10, 10, 10, 10], pool $100, cap $75.
-    // Rank 1: 0+80=80 > 75 SKIP. count=0.
-    // Rank 2: 0+10=10 ≤ 75 APPROVE. count=1, cum=10.
-    // Rank 3: 10+10=20 ≤ 75 APPROVE. count=2, cum=20.
-    // Rank 4: 20+10=30 ≤ 75 APPROVE. count=3, cum=30.  ← hits the count cap
-    // Rank 5: count=3 already → SKIP regardless of cap.
-    // Rank 6: SKIP regardless of cap.
-    //
-    // Pin the spec'd interpretation: the "top 50%" cap counts approved
-    // winners, not visited slots. Otherwise a rank-1 over-cap project
-    // would burn one of the approval slots without funding anything.
-    const approved = getApprovedProjects(
-      [1, 2, 3, 4, 5, 6],
-      { 1: 30, 2: 25, 3: 20, 4: 15, 5: 7, 6: 3 },
-      { 1: 80, 2: 10, 3: 10, 4: 10, 5: 10, 6: 10 },
-      100
-    )
-    expect(approved[1]).to.be.false
-    expect(approved[2]).to.be.true
-    expect(approved[3]).to.be.true
-    expect(approved[4]).to.be.true
-    expect(approved[5]).to.be.false
-    expect(approved[6]).to.be.false
-  })
-
-  it('IMPL DETAIL: NaN / undefined budgets are coerced to 0 (don\'t count toward cap)', () => {
-    const approved = getApprovedProjects(
-      [1, 2, 3],
-      { 1: 50, 2: 30, 3: 20 },
-      { 1: NaN, 2: undefined as any, 3: 25 },
-      100
-    )
-    // All three should be approved (sum of usable budgets = $25 ≤ $75).
-    expect(approved[1]).to.be.true
-    expect(approved[2]).to.be.true
-    expect(approved[3]).to.be.true
-  })
-
-  it('IMPL DETAIL: outcome entries with no matching budget map to 0 budget', () => {
-    // Project 4 in outcome but absent from usdBudgets map.
-    const approved = getApprovedProjects(
-      [1, 2, 3, 4, 5, 6],
-      { 1: 30, 2: 25, 3: 20, 4: 15, 5: 7, 6: 3 },
-      { 1: 10, 2: 10, 3: 10, 5: 10, 6: 10 }, // 4 missing
-      100
-    )
-    // 4 has 0 budget so it doesn't change the cap; index still picks top 3.
-    expect(approved[1]).to.be.true
     expect(approved[2]).to.be.true
     expect(approved[3]).to.be.true
   })
@@ -710,7 +572,7 @@ describe('Vote tally / Layer 2 — full in-memory pipeline', () => {
   //   (3) iterative normalization: NaN cells get the column average of
   //       OTHER voters; row-renormalize to 100, repeat 20×.
   //   (4) quadratic voting: power-weighted average, then normalize to 100.
-  //   (5) approval: top-N (with floor of 3) AND cumulative budget ≤ 3/4.
+  //   (5) approval: top three (v9).
 
   function runFullPipeline({
     rawVotes,
@@ -883,10 +745,7 @@ describe('Vote tally / Layer 2 — full in-memory pipeline', () => {
     expect(outcome['2']).to.be.lessThan(40)
   })
 
-  it('end-to-end: budget cap can knock approved-by-vote projects out', () => {
-    // 6 projects, all popular but expensive. Top 3 by % would cost $600
-    // ($200 each), but pool is only $400 (cap = $300). So only top 1
-    // ($200) fits; rank 2 would push to $400 > $300.
+  it('end-to-end: large asks do not knock a top-3 project out', () => {
     const projects = [
       { id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }, { id: '5' }, { id: '6' },
     ]
@@ -905,8 +764,8 @@ describe('Vote tally / Layer 2 — full in-memory pipeline', () => {
       quarterlyBudget: 400,
     })
     expect(projectIdToApproved['1']).to.be.true
-    expect(projectIdToApproved['2']).to.be.false // budget-rejected
-    expect(projectIdToApproved['3']).to.be.false
+    expect(projectIdToApproved['2']).to.be.true
+    expect(projectIdToApproved['3']).to.be.true
     expect(projectIdToApproved['4']).to.be.false
     expect(projectIdToApproved['5']).to.be.false
     expect(projectIdToApproved['6']).to.be.false

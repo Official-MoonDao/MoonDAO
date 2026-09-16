@@ -20,11 +20,13 @@ import {
 import { createHSMWallet, isHSMAvailable } from '@/lib/google/hsm-signer'
 import { PROJECT_PENDING } from '@/lib/nance/types'
 import {
+  clearLivePhaseOverride,
   getLivePhaseOverride,
   getNextPhase,
   resolveLivePhase,
   setLivePhaseOverride,
 } from '@/lib/operator/cyclePhase'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import { getPrivyUserData } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -93,7 +95,8 @@ async function tallySenateForCurrentCycle(
     chain,
   })
 
-  const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE quarter = ${PROJECT_CYCLE.quarter} AND year = ${PROJECT_CYCLE.year}`
+  const { quarter, year } = getProposalCycle()
+  const projectStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE quarter = ${quarter} AND year = ${year}`
   const projects = (await queryTable(chain, projectStatement)) || []
 
   // Only pending proposals with an MDP can be in Senate Vote. Proposals that
@@ -309,8 +312,12 @@ async function tallySenateForCurrentCycle(
 /**
  * One-click phase advance for the project cycle.
  *
- * Body: { dryRun?: boolean, force?: boolean }
+ * Body: { dryRun?: boolean, force?: boolean, reset?: boolean }
  *
+ * - reset: true — clears the live override so the site follows
+ *   PROJECT_CYCLE.phase. No on-chain work.
+ * - intake → Senate: writes the live override only (no on-chain work).
+ *   Refuses (409) before `editingDeadline` unless `force: true`.
  * - Senate → Member: closes the Senate Vote on-chain (tallyVotes per pending
  *   MDP), then flips the live phase to 'member' (opens Member Vote + Retro).
  *   Refuses (409) if any proposal is still below quorum or errored, unless
@@ -322,7 +329,7 @@ async function tallySenateForCurrentCycle(
  *   (`POST /api/proposals/vote`, surfaced in the operator panel) with its
  *   voting-window + snapshot safeguards, so this route does NOT run it.
  *
- * Advancing from 'idle' into the next cycle's Senate Vote is not a runtime
+ * Advancing from 'idle' into the next cycle's intake is not a runtime
  * flip — it requires editing PROJECT_CYCLE (new quarter/budget/retro), a
  * reviewed config change.
  */
@@ -334,15 +341,54 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const dryRun = req.body?.dryRun === true
   const force = req.body?.force === true
+  const reset = req.body?.reset === true
 
   const override = await getLivePhaseOverride()
   const currentPhase = resolveLivePhase(override)
+
+  if (reset) {
+    if (dryRun) {
+      return res.status(200).json({
+        dryRun: true,
+        currentPhase,
+        nextPhase: PROJECT_CYCLE.phase,
+        note: 'Would clear the live override and follow PROJECT_CYCLE.phase.',
+        wouldAdvance: true,
+      })
+    }
+    let saved: Awaited<ReturnType<typeof clearLivePhaseOverride>>
+    try {
+      saved = await clearLivePhaseOverride()
+    } catch (err) {
+      console.error('[advance-phase] reset failed:', err)
+      return res.status(500).json({
+        error:
+          err instanceof Error
+            ? err.message
+            : 'Failed to clear the live phase override.',
+        currentPhase,
+        phaseOverrideFailed: true,
+      })
+    }
+    try {
+      await res.revalidate('/projects')
+    } catch (err) {
+      console.warn('[advance-phase] failed to revalidate /projects:', err)
+    }
+    return res.status(200).json({
+      success: true,
+      currentPhase,
+      newPhase: PROJECT_CYCLE.phase,
+      override: saved,
+    })
+  }
+
   const nextPhase = getNextPhase(currentPhase)
 
   if (!nextPhase) {
     return res.status(400).json({
       error:
-        'Cycle is idle — nothing to advance to. Start the next cycle by editing PROJECT_CYCLE in const/config.ts (new quarter, budget, retro pool) and deploying.',
+        'Cycle is idle — nothing to advance to. Start the next cycle by editing PROJECT_CYCLE in const/config.ts (new quarter, budget, retro pool, phase: intake) and deploying.',
       currentPhase,
     })
   }
@@ -357,6 +403,75 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
   } catch (err) {
     console.warn('[advance-phase] could not derive setBy address:', err)
+  }
+
+  // intake → Senate: UI flip only. No on-chain work.
+  if (currentPhase === 'intake' && nextPhase === 'senate') {
+    const editingDeadline = new Date(PROJECT_CYCLE.editingDeadline)
+    const tooEarly = Date.now() < editingDeadline.getTime()
+    const blockers = tooEarly
+      ? [
+          {
+            mdp: 0,
+            projectId: 0,
+            name: 'Editing window still open',
+            status: 'error' as const,
+            error: `Proposals can still be edited until ${PROJECT_CYCLE.editingDeadline}.`,
+          },
+        ]
+      : []
+
+    if (dryRun) {
+      return res.status(200).json({
+        dryRun: true,
+        currentPhase,
+        nextPhase,
+        blockers,
+        wouldAdvance: blockers.length === 0 || force,
+      })
+    }
+
+    if (blockers.length > 0 && !force) {
+      return res.status(409).json({
+        error: `Proposals are still editable until ${PROJECT_CYCLE.editingDeadline}. Wait, or retry with force to open Senate Vote anyway.`,
+        currentPhase,
+        nextPhase,
+        blockers,
+      })
+    }
+
+    let saved: Awaited<ReturnType<typeof setLivePhaseOverride>>
+    try {
+      saved = await setLivePhaseOverride({
+        phase: 'senate',
+        setBy,
+        note: `Advanced intake → Senate${force ? ' (forced)' : ''} from operator panel`,
+      })
+    } catch (err) {
+      console.error('[advance-phase] phase override failed (intake → senate):', err)
+      return res.status(500).json({
+        error:
+          err instanceof Error
+            ? err.message
+            : 'Failed to set live phase to senate.',
+        currentPhase,
+        nextPhase,
+        phaseOverrideFailed: true,
+      })
+    }
+
+    try {
+      await res.revalidate('/projects')
+    } catch (err) {
+      console.warn('[advance-phase] failed to revalidate /projects:', err)
+    }
+
+    return res.status(200).json({
+      success: true,
+      currentPhase,
+      newPhase: saved.phase,
+      override: saved,
+    })
   }
 
   // Senate → Member requires the on-chain Senate tally.

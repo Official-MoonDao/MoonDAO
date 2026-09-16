@@ -8,7 +8,7 @@ import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { getRelativeQuarter } from '@/lib/utils/dates'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -105,7 +105,7 @@ export async function getStaticProps() {
       method: 'getTableName',
     })
 
-    const { quarter, year } = getRelativeQuarter(-1)
+    const { quarter, year } = getRetroCohort()
 
     const statement = `SELECT * FROM ${projectTableName} WHERE quarter = ${quarter} AND year = ${year}`
     const projectsFromLastQuarter = await queryTable(chain, statement)

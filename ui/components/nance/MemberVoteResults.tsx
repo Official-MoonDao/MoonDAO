@@ -40,7 +40,7 @@ export default function MemberVoteResults({ quarter, year }: Props) {
   const approvedCount = outcome.results.filter((r) => r.approved).length
   const totalApprovedBudget = outcome.results
     .filter((r) => r.approved)
-    .reduce((sum, r) => sum + (r.budget || 0), 0)
+    .reduce((sum, r) => sum + (r.grant || r.budget || 0), 0)
   // Source the pool size from the outcome itself rather than a separately-
   // passed prop so the header can never disagree with the budget cap the
   // tally pipeline actually applied (`getApprovedProjects` uses
@@ -133,7 +133,9 @@ export default function MemberVoteResults({ quarter, year }: Props) {
                   </p>
                 )}
                 <p className="text-[11px] text-gray-500">
-                  Budget: ${r.budget.toLocaleString()}
+                  {r.approved && r.grant != null && r.grant !== r.budget
+                    ? `Grant: $${r.grant.toLocaleString()} (asked $${r.budget.toLocaleString()})`
+                    : `Ask: $${r.budget.toLocaleString()}`}
                 </p>
               </div>
               <div className="text-right flex-shrink-0 min-w-[72px]">

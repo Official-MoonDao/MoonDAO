@@ -8,9 +8,9 @@
  * normalization, and per-project ETH/USDC + MOONEY pool shares
  * instead of approve/fail badges.
  *
- * Defaults to the previous calendar quarter (the one whose projects
- * are typically being retro-tallied right now). `?quarter=` and
- * `?year=` let auditors pin a past cycle.
+ * Defaults to the retro cohort of the live proposal cycle (the quarter
+ * before `PROJECT_CYCLE`). `?quarter=` and `?year=` let auditors pin a
+ * past cycle.
  */
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -22,7 +22,7 @@ import type {
   RetroactiveAudit,
   RetroactiveOutcome,
 } from '@/lib/proposals/computeRetroactiveOutcome'
-import { getRelativeQuarter } from '@/lib/utils/dates'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -55,10 +55,9 @@ const formatMooney = (amount: number) =>
 
 export default function ProjectsRetroAuditPage() {
   const router = useRouter()
-  // Default to the previous calendar quarter — the cohort currently
-  // in the retro-distribution window. Older cycles can be pinned via
-  // the URL params.
-  const fallback = getRelativeQuarter(-1)
+  // Default to the prior-of-PROJECT_CYCLE cohort. Older cycles can be
+  // pinned via the URL params.
+  const fallback = getRetroCohort()
 
   const { quarter, year } = useMemo(() => {
     if (!router.isReady)

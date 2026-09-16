@@ -755,21 +755,24 @@ export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
 // Rolling to the NEXT cycle (once, by editing this object):
 //   1. Bump `quarter` / `year` and the three deadline strings.
 //   2. Set `budgetUSD` to the new quarterly budget.
-//   3. Set `phase` to 'senate' (Senate Vote opens first).
+//   3. Set `phase` to 'intake' (proposal submission opens first).
 //   4. Update `retro` for the cohort being paid out this cycle (the prior
 //      quarter's completed projects) — see the field comments below.
 //   5. Reset `memberVoteExcludedAddresses` to [].
 //
-// Advancing WITHIN a cycle (Senate -> Member -> idle) no longer requires a
-// redeploy: an operator clicks "Advance Phase" on /projects, which runs the
-// required on-chain calls and flips a live phase override stored in Upstash
-// KV (see `lib/operator/cyclePhase.ts`). `phase` here is the deploy-time
-// DEFAULT / fallback the live override layers on top of.
-export type ProjectCyclePhase = 'senate' | 'member' | 'idle'
+// Advancing WITHIN a cycle (intake -> Senate -> Member -> idle) no longer
+// requires a redeploy: an operator clicks "Advance Phase" on /projects, which
+// runs the required on-chain calls and flips a live phase override stored in
+// Upstash KV (see `lib/operator/cyclePhase.ts`). `phase` here is the
+// deploy-time DEFAULT / fallback the live override layers on top of.
+// Overrides are stamped to this object's quarter/year, so a leftover
+// wrap-up from the previous cycle is ignored automatically.
+export type ProjectCyclePhase = 'intake' | 'senate' | 'member' | 'idle'
 
 export interface ProjectCycleConfig {
-  // Deploy-time default phase. 'senate' = Senate Vote, 'member' = Member Vote
-  // + Retroactive rewards (they run concurrently), 'idle' = nothing active
+  // Deploy-time default phase. 'intake' = proposal submission + Senate
+  // review/edits, 'senate' = Senate Vote, 'member' = Member Vote +
+  // Retroactive rewards (they run concurrently), 'idle' = nothing active
   // (between cycles / wrapped up). The operator "Advance Phase" button moves
   // the LIVE phase forward without a redeploy.
   phase: ProjectCyclePhase
@@ -777,6 +780,10 @@ export interface ProjectCycleConfig {
   // vote cohort). The retro cohort is always the PRIOR quarter.
   quarter: number
   year: number
+  // When true, POST /api/proposals/submit rejects *new* proposals after
+  // `submissionDeadline` while the live phase is still `intake`. Author
+  // edits stay open through `editingDeadline`.
+  enforceSubmissionDeadline: boolean
   // When false, the Member Vote phase is still on (results panel, badge, etc.
   // still render) but the submit/edit Distribution UI is hidden — used to
   // close member-vote submissions while keeping the rest of the cycle intact.
@@ -790,8 +797,9 @@ export interface ProjectCycleConfig {
   submissionDeadline: string // second Thursday of the quarter
   editingDeadline: string // 48 hours before the third Thursday
   votingDate: string // third Thursday of the quarter
-  // Quarterly project budget in USD (stablecoins): 5% of liquid non-MOONEY
-  // assets. Per-proposal max is 1/5 of this. See docs Projects/Project-System.
+  // Quarterly project pot in USD (stablecoins): 3% of official liquid AUM
+  // (MDP-267 / v9.0), rounded to the nearest $500. Per-proposal grant cap
+  // is ¼ of this. See docs Projects/Project-System.
   budgetUSD: number
   // Retroactive rewards pool for the cohort being paid THIS cycle — i.e. the
   // PRIOR quarter's completed projects. These are pinned to the retro cohort's
@@ -812,28 +820,34 @@ export interface ProjectCycleConfig {
 }
 
 export const PROJECT_CYCLE: ProjectCycleConfig = {
-  // Q4 2026 Senate Vote. If a leftover Upstash override from Q3 Wrap Up
-  // is still `idle`, clear `moondao:operator:cycle_phase` so this default
-  // takes effect after deploy.
-  phase: 'senate',
+  // Q4 2026 intake. A leftover Upstash override stamped to a previous
+  // cycle (or unstamped, from before cycle-stamping shipped) is ignored
+  // automatically — see `resolveLivePhase`.
+  phase: 'intake',
   quarter: 4,
   year: 2026,
+  enforceSubmissionDeadline: true,
   memberVoteSubmissionsOpen: false,
   memberVoteExcludedAddresses: [],
   // Q4 2026 deadlines (second Thursday / 48h before third Thursday / third Thursday).
   submissionDeadline: 'October 8, 2026',
   editingDeadline: 'October 13, 2026',
   votingDate: 'October 15, 2026',
-  // Q4 2026: $20,029 = 5% of NMA at 2026-07-01 00:00 UTC (ETH $1,569.94).
-  // Per-proposal max $4,006. From `scripts/calculate-budget.mjs`.
-  budgetUSD: 20029,
+  // Q4 2026 (MDP-267 / v9.0): $8,500 = 3% of official liquid AUM
+  // ($288,847) at 2026-07-01 00:00 UTC (ETH $1,569.94), rounded to the
+  // nearest $500. Grant cap $2,125 (¼ pot). Official AUM = eight
+  // designated Safes + Uniswap V3 WETH; exclude MOONEY and staked ETH.
+  // Recalculated 2026-09-16 via
+  // `scripts/calculate-budget.mjs --year 2026 --quarter 4`.
+  budgetUSD: 8500,
   retro: {
-    // Q3 2026 retroactives (the cohort paid out this cycle), USDC-paid:
+    // Q3 2026 retroactives (the cohort paid out this cycle), USDC-paid
+    // under the v8 rules that cycle actually ran:
     //   - $4,427 for projects = ($24,310 * 0.9) - $17,452 upfront to the
     //     5 Member-Vote winners (MDP-260 $4,640 + MDP-265 $1,100 +
     //     MDP-259 $2,430 + MDP-262 $4,600 + MDP-258 $4,682).
     //   - $2,431 community circle = 10% of Q3's $24,310 budget (pinned to
-    //     the cohort's own quarter, NOT the current $20,029 budget).
+    //     the cohort's own quarter, NOT the current $8,500 pot).
     // The prior ETH cycle (Q1 2026) kept 2.215 ETH here for reference.
     payoutToken: 'USDC',
     usdBudget: 4427,
@@ -861,6 +875,7 @@ export const PROJECT_SYSTEM_CONFIG = {
 // (or a server-resolved live phase prop), not these constants.
 // Member Vote and the Retroactive rewards window run concurrently, so both
 // derive from the 'member' phase.
+export const IS_INTAKE = PROJECT_CYCLE.phase === 'intake'
 export const IS_SENATE_VOTE = PROJECT_CYCLE.phase === 'senate'
 export const IS_MEMBER_VOTE = PROJECT_CYCLE.phase === 'member'
 export const IS_REWARDS_CYCLE = PROJECT_CYCLE.phase === 'member'
@@ -880,13 +895,12 @@ export const NEXT_QUARTER_BUDGET_USD = PROJECT_CYCLE.budgetUSD
 // (budgetPercentMinusCommunityFund = 90), so this stays equal to the full budget.
 export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
 
-// Per the docs: "Proposal budgets must be less than or equal to 1/5 of the
-// total quarterly rewards."
-export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
+// Per MDP-267: each funded project receives min(ask, ¼ of the pot).
+export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 4)
 
-// Public UI that prints NEXT_QUARTER_BUDGET_USD / MAX_BUDGET_USD. Off until
-// the next-quarter figure is confirmed so we don't advertise a stale pool.
-export const ANNOUNCE_PROJECT_BUDGET = false
+// Public UI that prints NEXT_QUARTER_BUDGET_USD / MAX_BUDGET_USD.
+// Q4 2026 figure is confirmed and pinned ($8,500 / max $2,125).
+export const ANNOUNCE_PROJECT_BUDGET = true
 
 // Addresses that have manager-level access on ALL teams (can add jobs and
 // marketplace listings on behalf of any team). Lowercase for comparison.

@@ -9,17 +9,17 @@
  * the resulting per-project pool share — without rerunning the
  * tally locally.
  *
- * GET only. Quarter/year default to the previous calendar quarter
- * (matches `/api/proposals/retro-results`); override with
- * `?quarter=&year=` for older cycles.
+ * GET only. Quarter/year default to the retro cohort of the live
+ * proposal cycle (matches `/api/proposals/retro-results`); override
+ * with `?quarter=&year=` for older cycles.
  */
 import { DEFAULT_CHAIN_V5 } from 'const/config'
-import { getRelativeQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { computeRetroactiveOutcome } from '@/lib/proposals/computeRetroactiveOutcome'
 import { parseCycleParams } from '@/lib/proposals/parseCycleParams'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 
 const chain = DEFAULT_CHAIN_V5
 
@@ -28,7 +28,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const fallback = getRelativeQuarter(-1)
+  const fallback = getRetroCohort()
   const parsed = parseCycleParams(req, fallback)
   if (!parsed.ok) {
     return res.status(400).json({ error: parsed.error })

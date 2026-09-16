@@ -1,4 +1,6 @@
+import { PROJECT_CYCLE } from 'const/config'
 import { BigNumber } from 'ethers'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -109,24 +111,6 @@ export function isRewardsCycle(date: Date, override?: boolean) {
   return date >= endOfQuarter && date <= firstTuesdayAfterFourteenDays
 }
 
-export function isApprovalActive(date: Date) {
-  if (true) return true
-  const lastQuarter = getRelativeQuarter(-1)
-  const endOfQuarter = new Date(lastQuarter.year, lastQuarter.quarter * 3, 0)
-  const nextQuarterStart = new Date(lastQuarter.year, lastQuarter.quarter * 3, 1)
-
-  const twentyOneDaysIntoNextQuarter = new Date(nextQuarterStart)
-  twentyOneDaysIntoNextQuarter.setDate(twentyOneDaysIntoNextQuarter.getDate() + 21)
-
-  const firstThursdayAfterTwentyOneDays = new Date(twentyOneDaysIntoNextQuarter)
-  const daysUntilThursday = daysUntilDay(twentyOneDaysIntoNextQuarter, 'Thursday')
-  firstThursdayAfterTwentyOneDays.setDate(
-    firstThursdayAfterTwentyOneDays.getDate() + daysUntilThursday
-  )
-
-  return date >= endOfQuarter && date <= firstThursdayAfterTwentyOneDays
-}
-
 export function getSubmissionQuarter() {
   const lastQuarter = getRelativeQuarter(-1)
   const thisQuarter = getRelativeQuarter(0)
@@ -175,7 +159,7 @@ export function formatLongDate(date: Date) {
 }
 
 export function getSubmissionCycleInfo() {
-  const { quarter, year } = getSubmissionQuarter()
+  const { quarter, year } = getProposalCycle()
   const deadline = getSecondThursdayOfQuarter(quarter, year)
   const quarterLabel = formatQuarterCycleLabel(quarter, year)
 
@@ -184,6 +168,6 @@ export function getSubmissionCycleInfo() {
     year,
     quarterLabel,
     deadline,
-    deadlineFormatted: formatLongDate(deadline),
+    deadlineFormatted: PROJECT_CYCLE.submissionDeadline,
   }
 }

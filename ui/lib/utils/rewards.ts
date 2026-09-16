@@ -3,6 +3,7 @@ import { utils } from 'ethers'
 import lodashCloneDeep from 'lodash/cloneDeep'
 import lodashSum from 'lodash/sum'
 import { Distribution } from '@/components/nance/ProjectRewards'
+import type { ProjectFundingRules } from '@/lib/projectCycle/projectBudget'
 
 // Function to minimize L1 distance
 function minimizeL1Distance(D: number[], V: number[][]) {
@@ -487,46 +488,66 @@ export function getPayouts(
   }
 }
 
-export function getApprovedProjects(
-  projects: any[],
+export type GetApprovedProjectsOptions = {
+  /** v9 from Q4 2026 (MDP-267). v8 for historical audits of earlier cycles. */
+  rules?: ProjectFundingRules
+  /** Project IDs in Senate-chosen order; used only to break a voting-power tie. */
+  senateTieBreak?: Array<string | number>
+}
+
+function rankedMemberVoteProjects(
   outcome: { [key: string]: number },
   usdBudgets: { [key: string]: number },
-  usdBudget: number
-): { [key: string]: boolean } {
-  const sortedOutcome = Object.keys(outcome)
+  senateTieBreak: Array<string | number> = []
+) {
+  const tieBreak = senateTieBreak.map(String)
+  return Object.keys(outcome)
     .map((projectId: string) => {
       const budget = usdBudgets[projectId]
       return {
-        projectId: projectId,
+        projectId,
         percent: outcome[projectId] || 0,
-        budget: isNaN(budget) || budget === undefined || budget === null ? 0 : budget,
+        budget:
+          isNaN(budget) || budget === undefined || budget === null ? 0 : budget,
       }
     })
     .sort((a, b) => {
-      return b.percent - a.percent
+      if (b.percent !== a.percent) return b.percent - a.percent
+      const aIdx = tieBreak.indexOf(a.projectId)
+      const bIdx = tieBreak.indexOf(b.projectId)
+      if (aIdx === -1 && bIdx === -1) return 0
+      if (aIdx === -1) return 1
+      if (bIdx === -1) return -1
+      return aIdx - bIdx
     })
-  // Spec: "Top 50% of proposals get funded, capped so total project budgets
-  // stay under 3/4 of the quarterly budget."
-  // - "Top 50%": ceil(n/2), with a minimum floor of 3 (intentional — small
-  //   cycles always fund at least 3 projects so the senate-approved set
-  //   isn't reduced to 1–2 entries by rounding alone).
-  // - "Capped at 3/4 of the budget": evaluated knapsack-style. We walk
-  //   projects in rank order and approve each one whose budget *fits*
-  //   under the remaining cap; projects that would push the cumulative
-  //   total over 3/4 are skipped, but we KEEP CHECKING smaller projects
-  //   below them in the ranking. The previous greedy implementation
-  //   stopped as soon as one project pushed the total over the cap, which
-  //   could reject a popular small project just because a larger
-  //   higher-ranked one came first (and in the worst case rejected an
-  //   entire quarter when the rank-1 project alone exceeded 3/4).
-  const numApprovedProjects = Math.min(Math.max(Math.ceil(projects.length / 2), 3), projects.length)
+}
+
+function approveTopThree(ranked: Array<{ projectId: string }>) {
+  const funded = Math.min(3, ranked.length)
+  const projectIdToApproved: { [key: string]: boolean } = {}
+  for (let i = 0; i < ranked.length; i++) {
+    projectIdToApproved[ranked[i].projectId] = i < funded
+  }
+  return projectIdToApproved
+}
+
+function approveV8TopHalfKnapsack(
+  ranked: Array<{ projectId: string; budget: number }>,
+  senatePassedCount: number,
+  usdBudget: number
+) {
+  // Historical v8: top 50% (ceil n/2, floor 3) + knapsack under 3/4 of pot.
+  const numApprovedProjects = Math.min(
+    Math.max(Math.ceil(senatePassedCount / 2), 3),
+    senatePassedCount
+  )
   const budgetCap = (usdBudget * 3) / 4
   let approvedBudget = 0
   let approvedCount = 0
   const projectIdToApproved: { [key: string]: boolean } = {}
-  for (let i = 0; i < sortedOutcome.length; i++) {
-    const projectId = sortedOutcome[i].projectId
-    const projectBudget = sortedOutcome[i].budget
+  for (let i = 0; i < ranked.length; i++) {
+    const projectId = ranked[i].projectId
+    const projectBudget = ranked[i].budget
     const fitsUnderCap = approvedBudget + projectBudget <= budgetCap
     const fitsUnderCount = approvedCount < numApprovedProjects
     const approved = fitsUnderCap && fitsUnderCount
@@ -537,4 +558,26 @@ export function getApprovedProjects(
     projectIdToApproved[projectId] = approved
   }
   return projectIdToApproved
+}
+
+export function getApprovedProjects(
+  projects: any[],
+  outcome: { [key: string]: number },
+  usdBudgets: { [key: string]: number },
+  usdBudget: number,
+  options: GetApprovedProjectsOptions = {}
+): { [key: string]: boolean } {
+  const rules = options.rules ?? 'v9'
+  const ranked = rankedMemberVoteProjects(
+    outcome,
+    usdBudgets,
+    options.senateTieBreak
+  )
+  if (rules === 'v8') {
+    return approveV8TopHalfKnapsack(ranked, projects.length, usdBudget)
+  }
+  // MDP-267 v9.0: fund the top three Senate-passed proposals. Asks above
+  // ¼ pot are still funded; the grant is capped separately via
+  // `projectGrantUSD`. Unused ¼-slices (n < 3) stay in the retro pool.
+  return approveTopThree(ranked)
 }

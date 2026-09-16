@@ -17,7 +17,7 @@
  *
  * Keep this in sync with `pages/api/proposals/vote.ts` if the tally math
  * changes — it intentionally mirrors that file's normalization → quadratic
- * voting → top-half-with-budget-cap pipeline.
+ * voting → top-three (v9) / top-half-with-budget-cap (v8) pipeline.
  */
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
@@ -33,6 +33,11 @@ import {
 import { readContract, getContract } from 'thirdweb'
 import { getThirdThursdayOfQuarterTimestamp } from '@/lib/utils/dates'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import {
+  projectFundingRulesForCycle,
+  projectGrantUSD,
+  projectPotForCycle,
+} from '@/lib/projectCycle/projectBudget'
 import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import {
@@ -59,7 +64,10 @@ export type MemberVoteResult = {
   name: string
   percentage: number
   approved: boolean
+  /** Requested ask (from the proposal). */
   budget: number
+  /** Amount paid if funded: min(ask, pot/4) under v9; the ask under v8. */
+  grant: number
 }
 
 export type MemberVoteOutcome = {
@@ -249,8 +257,8 @@ export async function computeMemberVoteOutcome({
   if (passedProjects.length === 0) return null
 
   // Each proposal's IPFS payload is the source of truth for both the USD
-  // budget (used by the budget-cap inside `getApprovedProjects`) and the
-  // author address (used to strip self-votes). Fetch the payload once per
+  // ask (used as the grant input) and the author address (used to strip
+  // self-votes). Fetch the payload once per
   // project, derive both in the same pass, and batch in small groups so
   // we don't fan a hundred-plus concurrent requests at the IPFS gateway —
   // bursts there used to rate-limit us and surface as zeroed-out budgets
@@ -288,9 +296,8 @@ export async function computeMemberVoteOutcome({
     await Promise.all(
       batch.map(async (project: any) => {
         const projectId = String(project.id)
-        // Default the budget to 0 so a missing IPFS payload doesn't drop
-        // the project out of `getApprovedProjects`'s budget-cap loop —
-        // it'll just count as $0 toward the cap (same behavior as before).
+        // Default the ask to 0 so a missing IPFS payload still ranks;
+        // v9 funds the top three regardless of ask size.
         usdBudgets[projectId] = 0
         if (!project.proposalIPFS) return
         try {
@@ -443,11 +450,14 @@ export async function computeMemberVoteOutcome({
   )
   if (totalVotingPower === 0 || Object.keys(outcome).length === 0) return null
 
+  const rules = projectFundingRulesForCycle(quarter, year)
+  const potUSD = projectPotForCycle(quarter, year, NEXT_QUARTER_BUDGET_USD)
   const projectIdToApproved = getApprovedProjects(
     passedProjects,
     outcome,
     usdBudgets,
-    NEXT_QUARTER_BUDGET_USD
+    potUSD,
+    { rules }
   )
 
   const projectMeta = Object.fromEntries(
@@ -469,6 +479,9 @@ export async function computeMemberVoteOutcome({
         percentage: Number(percentage) || 0,
         approved: !!projectIdToApproved[projectId],
         budget: usdBudgets[projectId] || 0,
+        grant: projectIdToApproved[projectId]
+          ? projectGrantUSD(usdBudgets[projectId] || 0, potUSD, rules)
+          : 0,
         MDP: project?.MDP ?? null,
         name: displayName,
         rank: 0,
@@ -568,7 +581,7 @@ export async function computeMemberVoteOutcome({
     voteOpenTimestamp,
     voteCloseTimestamp,
     totalVotingPower,
-    quarterBudgetUsd: NEXT_QUARTER_BUDGET_USD,
+    quarterBudgetUsd: potUSD,
     results,
     computedAt: Math.floor(Date.now() / 1000),
     ...(audit ? { audit } : {}),

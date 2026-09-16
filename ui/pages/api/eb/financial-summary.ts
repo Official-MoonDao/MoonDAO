@@ -291,7 +291,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           quarterlyBudgetUSD: PROJECT_CYCLE.budgetUSD,
           quarter: PROJECT_CYCLE.quarter,
           year: PROJECT_CYCLE.year,
-          note: '5% of liquid non-MOONEY assets per quarter, restated each cycle.',
+          note: '3% of official liquid AUM per quarter (MDP-267), rounded to the nearest $500.',
         },
       },
       runway: {

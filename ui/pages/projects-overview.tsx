@@ -18,7 +18,7 @@ import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
-import { getRelativeQuarter } from '@/lib/utils/dates'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import { getBudget } from '@/lib/utils/rewards'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
@@ -105,7 +105,7 @@ const ProjectsOverview: React.FC<{
   const description =
     'Quarterly grants for lunar-settlement work. See what we fund and how to submit a strong proposal.'
 
-  const { quarter, year } = getRelativeQuarter(0)
+  const { quarter, year } = getProposalCycle()
   const reduceMotion = useReducedMotion()
 
   const { tokens: mainnetTokens } = useAssets()
@@ -258,7 +258,7 @@ const ProjectsOverview: React.FC<{
                     <p className="mt-2 font-GoodTimes text-4xl text-white md:text-5xl">
                       ${MAX_BUDGET_USD.toLocaleString()}
                     </p>
-                    <p className="mt-2 text-sm text-white/45">1/5 of the quarterly project budget</p>
+                    <p className="mt-2 text-sm text-white/45">¼ of the quarterly project pot</p>
                   </div>
                 )}
                 <div>

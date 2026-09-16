@@ -1,7 +1,6 @@
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
   DEFAULT_CHAIN_V5,
-  PROJECT_CYCLE,
   PROJECT_TABLE_NAMES,
   DISTRIBUTION_TABLE_NAMES,
   PROPOSALS_TABLE_NAMES,
@@ -25,7 +24,7 @@ import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
+import { getProposalCycle, getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
 
 export default function Projects({
@@ -70,7 +69,6 @@ export async function getStaticProps() {
     livePhase,
     livePhaseOverride
   )
-  const rewardsActive = livePhase === 'member'
 
   const emptyProps = {
     proposals: [] as Project[],
@@ -83,9 +81,7 @@ export async function getStaticProps() {
   }
 
   try {
-    const { quarter, year } = getRelativeQuarter(
-      isRewardsCycle(new Date(), rewardsActive) ? -1 : 0
-    )
+    const { quarter, year } = getRetroCohort()
 
     // The projects table is the one genuinely required read. If it fails
     // there is nothing to render, so fall back to the empty state. Every
@@ -109,10 +105,7 @@ export async function getStaticProps() {
     // of MDPs than the proposals shown on the page. Also avoid
     // getSubmissionQuarter(): past its ~3-week cutoff it advances to the
     // *next* quarter and would make in-flight Q{n} proposals vanish.
-    const activeProposalQuarter = {
-      quarter: PROJECT_CYCLE.quarter,
-      year: PROJECT_CYCLE.year,
-    }
+    const activeProposalQuarter = getProposalCycle()
     const proposals: Project[] = []
     const currentProjects: Project[] = []
     const pastProjects: Project[] = []

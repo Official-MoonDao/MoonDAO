@@ -63,8 +63,8 @@ export function getEbCoreMonthlyUSD(): number {
 }
 
 /**
- * Monthly equivalent of the quarterly projects budget. The projects line is
- * 5% of liquid non-MOONEY assets per quarter, so it is a third of that per
+ * Monthly equivalent of the quarterly projects pot. The pot is 3% of
+ * official liquid AUM per quarter (MDP-267), so it is a third of that per
  * month. Defaults to the configured cycle budget.
  */
 export function getProjectsMonthlyUSD(

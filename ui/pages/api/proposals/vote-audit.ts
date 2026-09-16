@@ -6,15 +6,16 @@
  * `/projects/audit` page so anyone can verify the tally without rerunning
  * the standalone `audit-q2-2026-votes.mjs` script.
  *
- * GET only. Quarter/year default to the current calendar quarter, but can
- * be overridden via `?quarter=&year=` for past-quarter audits.
+ * GET only. Quarter/year default to the live proposal cycle
+ * (`PROJECT_CYCLE`), but can be overridden via `?quarter=&year=` for
+ * past-quarter audits.
  */
 import { DEFAULT_CHAIN_V5 } from 'const/config'
-import { getCurrentQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { computeMemberVoteOutcome } from '@/lib/proposals/computeMemberVoteOutcome'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 
 const chain = DEFAULT_CHAIN_V5
 
@@ -23,7 +24,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const current = getCurrentQuarter()
+  const current = getProposalCycle()
   const quarter = req.query.quarter
     ? Number(req.query.quarter)
     : current.quarter

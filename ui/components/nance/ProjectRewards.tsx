@@ -43,17 +43,18 @@ import { fetchProposalJsonCached } from '@/lib/ipfs/fetchProposalJsonCached'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
+import {
+  getProposalCycle,
+  getRetroCohort,
+  shiftQuarter,
+} from '@/lib/projectCycle/cycleQuarters'
 import { Project } from '@/lib/project/useProjectData'
 import { ethereum } from '@/lib/rpc/chains'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVP, useTotalVPs } from '@/lib/tokens/hooks/useTotalVP'
-import {
-  getRelativeQuarter,
-  isRewardsCycle,
-  isApprovalActive,
-} from '@/lib/utils/dates'
+import { isRewardsCycle } from '@/lib/utils/dates'
 import { getBudget, getPayouts, computeRewardPercentages } from '@/lib/utils/rewards'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -308,7 +309,6 @@ export function ProjectRewards({
   const [rewardVotingActive, setRewardVotingActive] = useState(
     livePhase === 'member'
   )
-  const [approvalVotingActive, setApprovalVotingActive] = useState(false)
   // Member-vote submissions are gated separately so we can keep the rest
   // of the Member Vote UI (badge, results panel, phase callout) live while
   // closing off new distribution submits/edits at the end of the window.
@@ -354,14 +354,10 @@ export function ProjectRewards({
   }, [router])
   // Derive the retro cohort from livePhase synchronously so we don't lag a
   // render behind the rewardVotingActive effect when the poll flips to member.
-  const { quarter, year } = getRelativeQuarter(
-    isRewardsCycle(new Date(), livePhase === 'member') ? -1 : 0
-  )
-  const { quarter: currentQuarter, year: currentYear } = getRelativeQuarter(0)
+  const { quarter, year } = getRetroCohort()
   // Proposal cohort matches PROJECT_CYCLE (and advance-phase / getStaticProps),
   // not the calendar quarter — keeps distribute keys aligned with listed MDPs.
-  const proposalQuarter = PROJECT_CYCLE.quarter
-  const proposalYear = PROJECT_CYCLE.year
+  const { quarter: proposalQuarter, year: proposalYear } = getProposalCycle()
 
   const [edit, setEdit] = useState(false)
   const [distribution, setDistribution] = useState<{ [key: string]: number }>({})
@@ -450,15 +446,6 @@ export function ProjectRewards({
 
   // Proposals contract owner (only they can close voting)
   const [proposalsContractOwner, setProposalsContractOwner] = useState<string | null>(null)
-
-  //Check if its the approval cycle
-  useEffect(() => {
-    setApprovalVotingActive(isApprovalActive(new Date()))
-    const interval = setInterval(() => {
-      setApprovalVotingActive(isApprovalActive(new Date()))
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [])
 
   //Check if its the rewards cycle. The live `member` phase acts as a
   // force-on switch; otherwise we fall through to the date-based default.
@@ -665,8 +652,9 @@ export function ProjectRewards({
   const tallyVotes = async () => {
     const res = await fetch(`/api/proposals/vote`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
-        'Content-Type': 'application/json', // Important: Specify the content type
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         quarter: proposalQuarter,
@@ -884,8 +872,8 @@ export function ProjectRewards({
   // shifts back to the prior quarter — that gives the correct retro pool but
   // the wrong number for the upcoming-proposals view.
   const { mooneyBudget: proposalsMooneyBudget } = useMemo(
-    () => getBudget(tokens, currentYear, currentQuarter),
-    [tokens, currentYear, currentQuarter]
+    () => getBudget(tokens, proposalYear, proposalQuarter),
+    [tokens, proposalYear, proposalQuarter]
   )
 
   // Cache the live MOONEY/USD price so we can convert both the retro and the
@@ -1236,7 +1224,7 @@ export function ProjectRewards({
                       subtitle: 'Proposal',
                       active: !isSenateVote && !isMemberVote,
                       tooltip:
-                        "Anyone can submit a project proposal through the proposal portal. Each proposal lays out the problem, the solution, the team, and a budget capped at 1/5 of the quarterly rewards. Proposals can be edited at any time leading up to the Townhall.",
+                        "Anyone can submit a project proposal through the proposal portal. Each proposal lays out the problem, the solution, the team, and a requested budget. A winner receives min(their ask, ¼ of the quarterly pot). Proposals can be edited at any time leading up to the Townhall.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -1305,7 +1293,7 @@ export function ProjectRewards({
                       subtitle: 'Vote',
                       active: isMemberVote,
                       tooltip:
-                        "Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top 50% by voting power are funded, capped so total project budgets stay under 3/4 of the quarterly budget. Contributors cannot vote on their own project.",
+                        "Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top three by voting power are funded at min(ask, ¼ of the pot). If fewer than three Senate-passed proposals are considered, all of them are funded. Contributors cannot vote on their own project.",
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -1622,7 +1610,7 @@ export function ProjectRewards({
                     lives in the Retroactive Rewards tab. */}
                 <div className="mb-4 sm:mb-6 px-1 sm:px-0">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4">
-                    <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${currentQuarter}: ${currentYear} Rewards`}</h1>
+                    <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${proposalQuarter}: ${proposalYear} Rewards`}</h1>
                     {/* "Close voting" triggers the Member Vote tally
                         (`POST /api/proposals/vote`), which is the call that
                         flips approved proposals to PROJECT_ACTIVE on the
@@ -1755,13 +1743,13 @@ export function ProjectRewards({
                             project={project}
                             projectContract={projectContract}
                             hatsContract={hatsContract}
-                            distribute={approvalVotingActive && (isSenateVote || memberVoteSubmissionsOpen)}
+                            distribute={isSenateVote || memberVoteSubmissionsOpen}
                             distribution={userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen) ? proposalDistribution : undefined}
                             handleDistributionChange={
                               userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen) ? handleProposalDistributionChange : undefined
                             }
                             userHasVotingPower={userHasVotingPower}
-                            isVotingPeriod={approvalVotingActive && (isSenateVote || memberVoteSubmissionsOpen)}
+                            isVotingPeriod={isSenateVote || memberVoteSubmissionsOpen}
                             active={false}
                             isSenateVote={isSenateVote}
                           />
@@ -1775,7 +1763,7 @@ export function ProjectRewards({
                       </p>
                     </div>
                   )}
-                  {approvalVotingActive && memberVoteSubmissionsOpen && proposals && proposals.length > 0 && (() => {
+                  {memberVoteSubmissionsOpen && proposals && proposals.length > 0 && (() => {
                     const proposalAllocatedPct = lodashSum(
                       Object.entries(proposalDistribution)
                         .filter(([id]) => validProposalIds.has(id))
@@ -2135,18 +2123,12 @@ export function ProjectRewards({
                     current-cycle block, regardless of whether the current
                     cycle has any projects yet. Self-hides on loading /
                     error / empty so it doesn't flicker on cold cache.
-                    The (quarter, year) is one cohort behind whatever's
-                    being shown above:
-                      - voting active  → shown cohort = Q-1, prev = Q-2
-                      - between cycles → shown cohort = Q0,  prev = Q-1
+                    The (quarter, year) is one cohort behind the live
+                    retro cohort (`getRetroCohort()`).
                     `RetroactiveResults` already links out to the public
                     audit page (`/projects/retro-audit`). */}
                 {(() => {
-                  const prev = getRelativeQuarter(
-                    isRewardsCycle(new Date(), livePhase === 'member')
-                      ? -2
-                      : -1
-                  )
+                  const prev = shiftQuarter(getRetroCohort(), -1)
                   return (
                     <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10">
                       <div className="px-1 sm:px-0 mb-3 sm:mb-4">

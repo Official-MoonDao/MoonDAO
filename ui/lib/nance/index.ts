@@ -11,8 +11,8 @@ export function formatNumberUSStyle(n: string | number | bigint, compact: boolea
 export function getProposalTemplate(maxBudgetUsd: number = MAX_BUDGET_USD): string {
   const maxFormatted = maxBudgetUsd.toLocaleString('en-US')
   const maxAskBlurb = ANNOUNCE_PROJECT_BUDGET
-    ? `*Total ask must be ≤ **$${maxFormatted}** (1/5 of this quarter’s project budget — confirm the live figure on moondao.com/propose). Classify every dollar.*`
-    : `*Total ask must be ≤ the posted quarterly max (1/5 of this quarter’s project budget). Classify every dollar.*`
+    ? `*Total ask must be ≤ **$${maxFormatted}** (¼ of this quarter’s project pot — confirm the live figure on moondao.com/propose). Classify every dollar.*`
+    : `*Total ask must be ≤ the posted quarterly max (¼ of this quarter’s project pot). Classify every dollar.*`
   const maxTotalCell = ANNOUNCE_PROJECT_BUDGET
     ? `*≤ $${maxFormatted}*`
     : `*≤ posted quarterly max*`

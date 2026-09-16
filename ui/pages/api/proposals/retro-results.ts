@@ -7,17 +7,17 @@
  * + MOONEY shares) — works as both a live preview during the rewards
  * cycle and a permanent record once the cycle has closed.
  *
- * GET only. Quarter/year default to the previous calendar quarter
- * (the one whose projects are typically being retro-tallied right now),
- * but can be overridden via `?quarter=&year=` for backfills / audits.
+ * GET only. Quarter/year default to the retro cohort of the live
+ * proposal cycle (the quarter before `PROJECT_CYCLE`), but can be
+ * overridden via `?quarter=&year=` for backfills / audits.
  */
 import { DEFAULT_CHAIN_V5 } from 'const/config'
-import { getRelativeQuarter } from 'lib/utils/dates'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { computeRetroactiveOutcome } from '@/lib/proposals/computeRetroactiveOutcome'
 import { parseCycleParams } from '@/lib/proposals/parseCycleParams'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 
 const chain = DEFAULT_CHAIN_V5
 
@@ -26,12 +26,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  // Default to the *previous* calendar quarter — that's the cohort
-  // currently in the retro-distribution window. The member-vote results
-  // endpoint defaults to the current quarter because that's the cycle
-  // being voted on; for retros the cycle being voted on belongs to the
-  // prior quarter. Override with `?quarter=&year=` for older audits.
-  const fallback = getRelativeQuarter(-1)
+  // Default to the prior-of-PROJECT_CYCLE cohort — that's the retro
+  // window for the live cycle. Override with `?quarter=&year=` for
+  // older audits.
+  const fallback = getRetroCohort()
   const parsed = parseCycleParams(req, fallback)
   if (!parsed.ok) {
     return res.status(400).json({ error: parsed.error })
