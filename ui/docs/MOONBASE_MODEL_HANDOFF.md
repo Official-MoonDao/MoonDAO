@@ -176,17 +176,48 @@ softgoods module uses for its own power feed.
   a `PROJECT_MODEL` entry alone would have rendered nothing. The GLB file itself
   is left in `public/` unreferenced, the same as `insight-lander.glb`.
 
-### The landing zone — Touchdown (2 of 5 done)
+### The landing zone — Touchdown (3 of 5 done)
 
-`shared-next-landing` is the newest race and the least differentiated.
-`blue-origin-blue-moon-mk1` and `cnsa-change-7` have their own models;
-`astrobotic-griffin`, `im-nova-c` and `firefly-blue-ghost` still fall through to
-the generic `Lander`, so three of the five vehicles on the pad are the same squat
-four-legged bus. They are not interchangeable hardware — Griffin is a wide flat
-cargo deck, Nova-C is a tall narrow hexagonal column (height is its largest
-dimension, not its span), and Blue Ghost is a low wide disc — and all three
-already have their real sizes in `PROJECT_SIZE_M`, so only the geometry is
-missing.
+`shared-next-landing` is the newest race and was the least differentiated.
+`blue-origin-blue-moon-mk1`, `cnsa-change-7` and `astrobotic-griffin` have their
+own models; `im-nova-c` and `firefly-blue-ghost` still fall through to the
+generic `Lander`. They are not interchangeable with it — Nova-C is a tall narrow
+hexagonal column (height is its largest dimension, not its span) and Blue Ghost
+is a low wide disc — and both already have their real sizes in
+`PROJECT_SIZE_M`, so only the geometry is missing.
+
+**All four legs, on all four landers.** Every vehicle in this race stands on four
+splayed legs, so the gear's *finish* is doing real work telling them apart at a
+glance: the Blue Moons' gold bipods stop at the knee, Chang'e-7's gold tubes run
+all the way to the pad, and Griffin's are bare aluminium with no gold anywhere.
+Do not "tidy" one of those toward another.
+
+`Griffin` draws **Griffin, not Peregrine.** The project's dataset name is the
+family label "Peregrine & Griffin Landers" and those are two genuinely different
+vehicles — Peregrine is roughly a quarter the payload class and under half as
+wide. One project covers both because the shared goal's win test makes the slot
+the *operator*, not the vehicle; splitting them would hand one company two
+outcomes in the same market and churn the on-chain `teamIds`. A model can only
+draw one silhouette, and three things already pointed at Griffin: the
+`PROJECT_SIZE_M` figure is Griffin's, the DePrize outcome names "Griffin Mission
+One", and Peregrine's one flight never landed.
+
+Its geometry is a hexagonal basket of body-mounted solar panels that **flares
+outward as it rises**, so the cells face outward and slightly *down*. That was
+read off the plan-view render, not assumed — it is the opposite of the inward
+taper a lander skirt is usually drawn with, and `GRF_SKIRT_RAKE` is derived from
+the two basket radii rather than written down separately so the two cannot
+disagree. Four creased gold MLI spheres stand proud of the panel rim (low segment
+counts plus `flatShading` on purpose: a smooth high-poly gold sphere reads as a
+chrome ball bearing, and what these are is a blanket with folds in it), with a
+hexagonal payload funnel in the middle of them and two open-lattice ramps
+deployed up and outboard.
+
+Griffin is also the second model whose `PROJECT_SIZE_M` figure is a **horizontal**
+span rather than a height (4.5 m across the legs by 2.0 m tall, both off
+Astrobotic's own dimension arrows). On a vehicle this flat the ramps are the one
+part that could quietly become the widest *or* the tallest thing on it, so both
+are asserted.
 
 `ChangE7` is defined next to `ILRSBase` rather than up with the Blue Moons, and
 deliberately: it is the same agency's hardware and reuses `ILRS_GOLD`, so
@@ -195,6 +226,8 @@ two hexes 8000 lines apart that then drift. A low boxy gold-MLI bus on splayed
 four-leg gear, two solar wings deployed near-flat off the flanks, a deck
 carrying a steerable Earth dish / omni whip / mast camera / propellant pair, a
 science boom out over the regolith, and the rover ramp down off the front.
+`Griffin` is defined immediately after it, for a second mechanical reason on top
+of that one: both reuse `solarFaceMaps()`, so both have to sit below it.
 
 Two things about it are worth knowing before touching the next lander:
 
