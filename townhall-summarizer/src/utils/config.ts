@@ -5,6 +5,13 @@ export interface SpellingCorrection {
   replacement: string;
 }
 
+// Applied to the transcript before summarization and to the summary after, so
+// the model reads corrected names rather than inventing spellings from them.
+//
+// These matter more than cosmetics: speech recognition mangles "MoonDAO" inside
+// spoken URLs too, and an uncaught variant ships a live summary telling readers
+// to visit "mundow.com/frank". Order is significant — the domain rule at the
+// end tidies up after the name rules have run.
 export const SPELLING_CORRECTIONS: SpellingCorrection[] = [
   // MoonDAO variations
   { pattern: /\bMoondow\b/gi, replacement: "MoonDAO" },
@@ -14,8 +21,22 @@ export const SPELLING_CORRECTIONS: SpellingCorrection[] = [
   { pattern: /\bMoon Dow\b/gi, replacement: "MoonDAO" },
   { pattern: /\bMoon D A O\b/gi, replacement: "MoonDAO" },
   { pattern: /\bMoon D\.A\.O\.\b/gi, replacement: "MoonDAO" },
+  // Variants observed in September 2026 town hall captions, which produced
+  // "mundow.com/frank" and "moonow.com/contributions" in published summaries.
+  { pattern: /\bMundow\b/gi, replacement: "MoonDAO" },
+  { pattern: /\bMoonundow\b/gi, replacement: "MoonDAO" },
+  { pattern: /\bMoonow\b/gi, replacement: "MoonDAO" },
+  { pattern: /\bMoonDow\b/gi, replacement: "MoonDAO" },
+  { pattern: /\bMoon Doe\b/gi, replacement: "MoonDAO" },
   // Name corrections
   { pattern: /\bIman\b/gi, replacement: "Eiman" },
+  { pattern: /\bJahangir\b/gi, replacement: "Jahangir" },
+  { pattern: /\bJiongir\b/gi, replacement: "Jahangir" },
+  { pattern: /\bJunger\b/gi, replacement: "Jahangir" },
+  { pattern: /\bHegel\b/g, replacement: "Hagle" },
+  // Restore the lowercase domain after the name rules above have turned
+  // "mundow.com" into "MoonDAO.com".
+  { pattern: /\bMoonDAO\.com\b/gi, replacement: "moondao.com" },
 ];
 
 export const DEFAULT_MODELS = {
