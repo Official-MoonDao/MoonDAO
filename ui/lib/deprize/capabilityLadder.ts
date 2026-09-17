@@ -5,8 +5,15 @@ export type DePrizeLadderKey = 'touchdown' | 'first-tracks' | 'ice' | 'night-shi
 /** Three states, each with exactly one producer — see getLadderForCompetition. */
 export type DePrizeLadderStatus = 'live' | 'planned' | 'achieved'
 
+/**
+ * Git ref for GitHub blob links to docs/. `main` in production; the deployed
+ * branch on previews (wired in next.config.js from VERCEL_GIT_COMMIT_REF).
+ * A hardcoded `main` 404s whenever the docs only exist on a stacked branch.
+ */
+const DOCS_REF = process.env.NEXT_PUBLIC_DOCS_REF || 'main'
+
 const SPEC = (file: string) =>
-  `https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/${file}`
+  `https://github.com/Official-MoonDao/MoonDAO/blob/${DOCS_REF}/docs/${file}`
 
 /** Single public spec URL for the ladder page. Empty rung specHrefs must not 404. */
 export const CAPABILITY_LADDER_SPEC_HREF = SPEC('DEPRIZE_CAPABILITY_LADDER.md')

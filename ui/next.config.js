@@ -31,6 +31,11 @@ module.exports = withBundleAnalyzer(
     nextTranslate({
       reactStrictMode: true,
       swcMinify: true,
+      env: {
+        // Branch-aware GitHub blob links (capabilityLadder SPEC()). Vercel sets
+        // VERCEL_GIT_COMMIT_REF at build time; production builds on main.
+        NEXT_PUBLIC_DOCS_REF: process.env.VERCEL_GIT_COMMIT_REF || 'main',
+      },
       compiler: {
         removeConsole: false,
       },
