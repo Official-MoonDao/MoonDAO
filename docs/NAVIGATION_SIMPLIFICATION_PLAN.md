@@ -10,7 +10,7 @@
 
 The app's primary navigation presents **9 top-level groups and 41 links**. Eight destinations are reachable from two or more places under different names, three of the nine top-level slots are taken by time-bound campaigns, and every item that has a dropdown requires a double-click to actually visit its page.
 
-This proposal reduces the bar to **5 top-level groups and 26 links**, moves per-user items into an account menu behind the avatar, and consolidates the three hand-maintained copies of the navigation structure into one config file.
+This proposal reduces the bar to **5 top-level groups and 23 links**, moves per-user items into an account menu behind the avatar, and consolidates the three hand-maintained copies of the navigation structure into one config file.
 
 The work is sequenced into five steps. The first two change no visible structure and can ship immediately; the two that change the information architecture ship together once the plumbing is in place.
 
@@ -90,17 +90,17 @@ Any change to the navigation currently requires three coordinated edits, and not
 **Network** → `/network`
 Citizens · Teams · Map · Jobs · Marketplace
 
-**Projects** → `/projects`
-Explore Projects · Propose a Project · Submit a Contribution · How the project system works
+**Projects** → `/projects-overview`
+Explore Projects · Propose a Project · Submit a Contribution
 
 **$MOONEY** → `/mooney`
-Get $MOONEY · Lock & vote · Bridge · Governance
+Get $MOONEY · Lock & vote · Bridge
 
 **Missions** → `/launch`
 Send Frank to Space · Moon Base Zero · DePrize
 
 **Learn** → `/info`
-Documentation · News & Updates · Town Hall · Roadmap · Constitution
+Documentation · News & Updates · Governance · Roadmap
 
 ### Account menu — behind the avatar, next to the wallet
 
@@ -118,7 +118,13 @@ Signed-out visitors see a single primary **Join** button in that slot instead of
 
 **Every duplicate child is removed.** Each destination gets exactly one canonical entry point with one canonical name.
 
-**Deep reference material moves to search and the footer.** Press, Resources, Proposal Template, and Projects Overview stay fully reachable — through the footer, through in-page links, and through global search — but stop occupying top-bar real estate.
+**Deep reference material moves to search and the footer.** Press, Resources, Proposal Template, Constitution, Governance Proposals, and Treasury stay fully reachable — through the footer, through in-page links, and through global search — but stop occupying top-bar real estate.
+
+**Projects lands on the overview, not the list.** Someone clicking "Projects" cold usually wants to know what the project system is before they want forty rows of it. The list is one click away, named "Explore Projects".
+
+**Governance moves from $MOONEY to Learn.** Reading how the DAO decides things is a different errand from acquiring, locking, or bridging the token. Governance Proposals — where you actually vote — stays with $MOONEY in the footer.
+
+**Town Hall is unlinked entirely.** Not demoted to the footer: removed from the bar, the footer, and the search index. The page reads its summaries from ConvertKit, and `getTownHallBroadcasts` swallows every API failure into an empty array, so a bad key renders "No town hall summaries available yet. Check back soon!" rather than an error. It has shown that for months. The link should come back when the feed does.
 
 ---
 

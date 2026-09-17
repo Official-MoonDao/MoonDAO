@@ -246,16 +246,10 @@ const searchMappings = [
     link: '/info',
     category: 'Learn',
   },
-  {
-    keywords: [
-      'townhall', 'town hall', 'town hall meeting', 'weekly meeting', 'community call',
-      'meeting recording', 'meeting summary', 'watch meeting', 'town hall video',
-    ],
-    title: 'Town Hall Summaries',
-    description: 'Watch recordings and read AI summaries of MoonDAO weekly town hall meetings',
-    link: '/townhall',
-    category: 'Learn',
-  },
+  // Town Hall is unlisted here and in the nav while its ConvertKit feed is
+  // down — the page renders "No town hall summaries available yet" for every
+  // API failure, so searching for it only finds an empty page. Restore this
+  // entry together with the nav link once summaries are publishing again.
   {
     keywords: [
       'roadmap', 'milestones', 'phases', 'timeline', 'future plans', 'upcoming', 'schedule',

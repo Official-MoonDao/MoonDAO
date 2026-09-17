@@ -64,13 +64,16 @@ export const NAV_GROUPS: NavGroup[] = [
     ownedPaths: ['/network', '/map', '/jobs', '/marketplace', '/citizen', '/team', '/join'],
   },
   {
+    // Lands on the overview rather than the list. Someone clicking "Projects"
+    // cold usually wants to know what the project system *is* before they want
+    // 40 rows of it; the list is one click away and named for what it does.
     name: 'Projects',
-    href: '/projects',
+    href: '/projects-overview',
     icon: WrenchScrewdriverIcon,
     children: [
+      { name: 'Explore Projects', href: '/projects' },
       { name: 'Propose a Project', href: '/proposals' },
       { name: 'Submit a Contribution', href: '/contributions' },
-      { name: 'How the project system works', href: '/projects-overview' },
     ],
     footerOnly: [
       { name: 'Proposal Template', href: '/proposal-template' },
@@ -91,11 +94,12 @@ export const NAV_GROUPS: NavGroup[] = [
     name: '$MOONEY',
     href: '/mooney',
     icon: CircleStackIcon,
+    // Governance lives under Learn: reading how the DAO decides things is a
+    // different errand from acquiring, locking or bridging the token.
     children: [
       { name: 'Get $MOONEY', href: '/get-mooney' },
       { name: 'Lock & vote', href: '/lock' },
       { name: 'Bridge', href: '/bridge' },
-      { name: 'Governance', href: '/governance' },
     ],
     footerOnly: [
       { name: 'Governance Proposals', href: '/governance-proposals' },
@@ -106,7 +110,6 @@ export const NAV_GROUPS: NavGroup[] = [
       '/get-mooney',
       '/lock',
       '/bridge',
-      '/governance',
       '/governance-proposals',
       '/treasury',
     ],
@@ -121,10 +124,10 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: RocketLaunchIcon,
     children: [
       // `/frank` is only a redirect to `/mission/4` (see next.config.js), so
-      // both of these address the mission page directly rather than paying for
-      // a round trip through it.
+      // this addresses the mission page directly rather than paying for a round
+      // trip through it. The leaderboard is a tab on that same page, so it is
+      // not listed separately here.
       { name: 'Send Frank to Space', href: '/mission/4' },
-      { name: 'Fly with Frank Leaderboard', href: '/mission/4?tab=leaderboard' },
       { name: 'Moon Base Zero', href: '/moonbase' },
       { name: 'DePrize', href: '/deprize' },
     ],
@@ -145,11 +148,16 @@ export const NAV_GROUPS: NavGroup[] = [
     children: [
       { name: 'Documentation', href: '/docs' },
       { name: 'News & Updates', href: '/news' },
-      { name: 'Town Hall', href: '/townhall' },
+      { name: 'Governance', href: '/governance' },
       { name: 'Roadmap', href: '/roadmap' },
-      { name: 'Constitution', href: '/constitution' },
     ],
+    // Town Hall is deliberately absent, from the bar and from here. The page
+    // reads its summaries from ConvertKit, and `getTownHallBroadcasts` swallows
+    // every API failure into an empty array — so a bad key renders a cheerful
+    // "No town hall summaries available yet. Check back soon!" instead of an
+    // error. It has shown that for months. Relink it once the feed is fixed.
     footerOnly: [
+      { name: 'Constitution', href: '/constitution' },
       { name: 'Updates', href: '/updates' },
       { name: 'Press', href: '/press' },
       { name: 'Resources', href: '/resources' },
@@ -162,7 +170,7 @@ export const NAV_GROUPS: NavGroup[] = [
       '/news',
       '/updates',
       '/press',
-      '/townhall',
+      '/governance',
       '/roadmap',
       '/constitution',
       '/resources',

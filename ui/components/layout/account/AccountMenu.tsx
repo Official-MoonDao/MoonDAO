@@ -56,11 +56,16 @@ export default function AccountMenu() {
   // Signed out, this slot is the one call to action the bar makes. "Join" was
   // previously the first of nine nav items, competing with eight peers; here it
   // has nothing to compete with.
+  //
+  // Sized and filled to match the Sign in button it stands next to (see
+  // PrivyConnectWallet): same `md:text-[18px]`, same `rounded-full px-4 py-1`,
+  // same `gradient-2`. It was a 14px outline before, which read as the lesser
+  // of the two when it is the more important one.
   if (!isSignedIn) {
     return (
       <NavLink
         href="/join"
-        className="whitespace-nowrap rounded-lg bg-gradient-to-r from-blue-500/30 to-purple-500/30 border border-white/30 px-4 py-2 text-sm font-medium text-white hover:from-blue-500/50 hover:to-purple-500/50 transition-all duration-200"
+        className="gradient-2 whitespace-nowrap rounded-full px-4 py-1 text-[12px] md:text-[18px] text-white hover:opacity-90 transition-opacity duration-150"
       >
         Join
       </NavLink>
