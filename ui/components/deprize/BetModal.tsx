@@ -1,7 +1,7 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import DePrizeMintABI from 'const/abis/DePrizeMint.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
@@ -20,6 +20,18 @@ import {
   type DePrizeAttestations,
 } from '@/lib/deprize/attestations'
 import { eligibilityMessage, type EligibilityReason } from '@/lib/deprize/eligibility'
+import {
+  DEPRIZE_ONRAMP_JWT_KEY,
+  ELIGIBILITY_TIMEOUT_MS,
+  ONRAMP_SUGGESTED_PURCHASE_ETH,
+  getFundingStrategy,
+} from '@/lib/deprize/fundingStrategy'
+import {
+  buildOnrampReturnUrl,
+  jwtSnapshotId,
+  writeOnrampSnapshot,
+} from '@/lib/deprize/onrampReturn'
+import { trackOnrampEvent } from '@/lib/deprize/onrampTelemetryClient'
 import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
 import {
   fmt,
@@ -29,18 +41,23 @@ import {
   toEth,
   toWei,
 } from '@/lib/deprize/format'
-import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
+import {
+  payloadCopy,
+  payloadCopyMode,
+} from '@/lib/deprize/payloadPurse'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
+import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import client from '@/lib/thirdweb/client'
 import EthUsd from '@/components/deprize/EthUsd'
 import Modal from '@/components/layout/Modal'
 import StandardButton from '@/components/layout/StandardButton'
+import { FundOnramp } from '@/components/onramp/FundOnramp'
 
 type BetModalProps = {
   deprizeId: number
@@ -55,6 +72,8 @@ type BetModalProps = {
   chain: Chain
   account: any
   spendableEth: number
+  initialAmountEth?: string
+  fundsArrived?: boolean
   onClose: () => void
   onDone: (index: number, costEth: number, qtyEth: number) => void
 }
@@ -76,10 +95,17 @@ export default function BetModal({
   chain,
   account,
   spendableEth,
+  initialAmountEth,
+  fundsArrived,
   onClose,
   onDone,
 }: BetModalProps) {
-  const [betAmount, setBetAmount] = useState('')
+  const [betAmount, setBetAmount] = useState(initialAmountEth ?? '')
+  const [showFunding, setShowFunding] = useState(false)
+  const ctaShown = useRef(false)
+  const headingRef = useRef<HTMLHeadingElement | null>(null)
+  const { generateJWT, clearJWT } = useOnrampJWT(DEPRIZE_ONRAMP_JWT_KEY)
+  const fundingStrategy = getFundingStrategy(chain.id)
   const [quote, setQuote] = useState<{ qty: number } | null>(null)
   const [quoting, setQuoting] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -94,6 +120,7 @@ export default function BetModal({
     reason?: EligibilityReason
     message?: string
   }>({ status: 'loading', allowed: false })
+  const [eligibilityRetry, setEligibilityRetry] = useState(0)
   const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
     useDePrizeChainGuard(chain)
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
@@ -161,6 +188,37 @@ export default function BetModal({
   }, [betAmountWei, lmsr, outcomeIndex, numOutcomes])
 
   const wallet = typeof account?.address === 'string' ? account.address : ''
+  const needsFunding =
+    eligibility.allowed && (insufficient || spendableEth === 0)
+  async function persistOnrampSession(): Promise<boolean> {
+    if (!wallet || fundingStrategy.kind !== 'onramp') return false
+    const jwt = await generateJWT({
+      address: wallet,
+      chainSlug: fundingStrategy.chainSlug,
+      context: 'deprize',
+    })
+    if (!jwt) {
+      trackOnrampEvent('jwt_generate_error')
+      toast.error('Could not start add-funds. Try again.', { style: toastStyle })
+      return false
+    }
+    writeOnrampSnapshot(jwtSnapshotId(jwt), {
+      spendableEthAtReturn: spendableEth,
+      consumed: false,
+    })
+    return true
+  }
+
+  useEffect(() => {
+    if (fundsArrived) headingRef.current?.focus()
+  }, [fundsArrived])
+
+  useEffect(() => {
+    if (!needsFunding || ctaShown.current) return
+    if (fundingStrategy.kind === 'none') return
+    ctaShown.current = true
+    trackOnrampEvent('cta_shown')
+  }, [needsFunding, fundingStrategy.kind])
 
   useEffect(() => {
     if (!wallet) {
@@ -174,6 +232,15 @@ export default function BetModal({
     }
     let cancelled = false
     setEligibility({ status: 'loading', allowed: false })
+    const timeout = setTimeout(() => {
+      if (cancelled) return
+      setEligibility({
+        status: 'error',
+        allowed: false,
+        reason: 'screening-unavailable',
+        message: eligibilityMessage('screening-unavailable'),
+      })
+    }, ELIGIBILITY_TIMEOUT_MS)
     ;(async () => {
       const accessToken = await getAccessToken().catch(() => null)
       const res = await fetch(`/api/deprize/eligibility?wallet=${encodeURIComponent(wallet)}`, {
@@ -181,6 +248,7 @@ export default function BetModal({
       })
       const data = await res.json()
       if (cancelled) return
+      clearTimeout(timeout)
       setEligibility({
         status: 'ready',
         allowed: Boolean(data.allowed),
@@ -189,6 +257,7 @@ export default function BetModal({
       })
     })().catch(() => {
       if (cancelled) return
+      clearTimeout(timeout)
       setEligibility({
         status: 'error',
         allowed: false,
@@ -198,8 +267,9 @@ export default function BetModal({
     })
     return () => {
       cancelled = true
+      clearTimeout(timeout)
     }
-  }, [wallet])
+  }, [wallet, eligibilityRetry])
 
   const allAttested = areAttestationsAccepted(attestations)
 
@@ -324,6 +394,8 @@ export default function BetModal({
       )
       toast.dismiss('bet')
       const qtyNum = Number(qty) / Number(UNIT)
+      clearJWT()
+      trackOnrampEvent('bet_placed_within_session')
       fireDePrizeConfetti()
       toast.success(
         `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ≈ ${fmtEthWithUsd(
@@ -353,6 +425,19 @@ export default function BetModal({
   return (
     <Modal id="deprize-bet" setEnabled={(v) => !v && onClose()} title={`Back ${teamName}`}>
       <div className="flex flex-col gap-4 w-full">
+        <h2
+          ref={headingRef}
+          tabIndex={-1}
+          id="deprize-bet-heading"
+          className="sr-only"
+        >
+          Back {teamName}
+        </h2>
+        {fundsArrived && (
+          <p role="status" className="text-moon-green text-sm">
+            Funds arrived. You can place your bet.
+          </p>
+        )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-400">Chance to win</span>
           <span className="text-white font-semibold">
@@ -366,7 +451,7 @@ export default function BetModal({
             type="number"
             min="0"
             step="any"
-            autoFocus
+            autoFocus={!fundsArrived}
             value={betAmount}
             onChange={(e) => setBetAmount(e.target.value)}
             placeholder="e.g. 0.01"
@@ -572,11 +657,28 @@ export default function BetModal({
           )}
         </div>
 
-        {!canBet ? (
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
-            Betting isn&apos;t live yet on this network — the bet router is not deployed. Check back
-            soon.
+        {eligibility.status === 'loading' ? (
+          <p className="text-gray-300 text-sm">Checking eligibility…</p>
+        ) : eligibility.status === 'error' || !eligibility.allowed ? (
+          <div className="space-y-2">
+            <p className="text-amber-300 text-sm">
+              {eligibility.message || 'Betting unavailable'}
+            </p>
+            {eligibility.status === 'error' && (
+              <button
+                type="button"
+                className="text-sm text-indigo-300 underline"
+                onClick={() => setEligibilityRetry((n) => n + 1)}
+              >
+                Retry eligibility check
+              </button>
+            )}
           </div>
+        ) : overCap ? (
+          <p className="text-amber-300 text-sm">
+            Generation-1 bets are capped at {fmtEthWithUsd(maxBetEth, ethPrice, { prize: true })} per
+            transaction. Lower the amount to continue.
+          </p>
         ) : wrongNetwork ? (
           <div className="space-y-3">
             <p className="text-amber-300 text-sm">
@@ -592,16 +694,92 @@ export default function BetModal({
               {switching ? 'Switching…' : `Switch wallet to ${chainLabel}`}
             </StandardButton>
           </div>
-        ) : insufficient ? (
-          <p className="text-amber-300 text-sm">
-            You only have ≈ {fmtEthWithUsd(spendableEth, ethPrice, { prize: true })} available (a
-            little is kept back for gas). Lower your bet or add funds.
-          </p>
-        ) : overCap ? (
-          <p className="text-amber-300 text-sm">
-            Generation-1 bets are capped at {fmtEthWithUsd(maxBetEth, ethPrice, { prize: true })} per
-            transaction. Lower the amount to continue.
-          </p>
+        ) : !canBet ? (
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
+            Betting isn&apos;t live yet on this network — the bet router is not deployed. Check back
+            soon.
+          </div>
+        ) : needsFunding ? (
+          <div className="space-y-3">
+            <p className="text-amber-300 text-sm">
+              You only have ≈ {fmtEthWithUsd(spendableEth, ethPrice, { prize: true })} available (a
+              little is kept back for gas).
+            </p>
+            {spendableEth > 0 && (
+              <button
+                type="button"
+                className="text-sm text-moon-green underline"
+                onClick={() => setBetAmount(String(Math.floor(spendableEth * 1e6) / 1e6))}
+              >
+                Bet {fmtEthWithUsd(spendableEth, ethPrice, { prize: true })} instead
+              </button>
+            )}
+            {fundingStrategy.kind === 'none' ? (
+              <p className="text-amber-300 text-sm">Lower your bet or add funds.</p>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="w-full rounded-full border border-white/25 px-4 py-2 text-sm text-white"
+                  onClick={() => {
+                    setShowFunding(true)
+                    trackOnrampEvent('cta_clicked')
+                    if (fundingStrategy.kind === 'faucet') {
+                      trackOnrampEvent('provider_selected:faucet')
+                    }
+                  }}
+                >
+                  Add funds to your wallet
+                </button>
+                {showFunding && (
+                  <div className="space-y-2">
+                    <p className="text-gray-400 text-xs leading-relaxed">
+                      This buys ETH into your own wallet. It is not a bet, MoonDAO never holds
+                      it, and MoonDAO cannot reverse it. You may still be unable to bet afterwards.
+                    </p>
+                    {fundingStrategy.kind === 'faucet' ? (
+                      <p className="text-gray-300 text-sm">
+                        Get Sepolia ETH from a faucet (e.g.{' '}
+                        <a
+                          href={fundingStrategy.faucetUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="underline text-indigo-300"
+                        >
+                          sepoliafaucet.com
+                        </a>
+                        ), then come back — your balance will refresh.
+                      </p>
+                    ) : (
+                      <FundOnramp
+                        address={wallet}
+                        selectedChain={chain}
+                        ethAmount={betAmountNum || ONRAMP_SUGGESTED_PURCHASE_ETH}
+                        defaultProvider={fundingStrategy.defaultProvider}
+                        coinbaseRedirectUrl={buildOnrampReturnUrl({
+                          origin: typeof window !== 'undefined' ? window.location.origin : '',
+                          deprizeId,
+                          outcomeIndex,
+                          amountEth: betAmountNum > 0 ? String(betAmountNum) : undefined,
+                          capEth: String(maxBetEth),
+                        })}
+                        onCoinbaseBeforeNavigate={async () => {
+                          const ok = await persistOnrampSession()
+                          if (!ok) throw new Error('jwt_generate_error')
+                          trackOnrampEvent('provider_selected:coinbase')
+                        }}
+                        onMoonPayBeforeOpen={async () => {
+                          const ok = await persistOnrampSession()
+                          if (!ok) throw new Error('jwt_generate_error')
+                          trackOnrampEvent('provider_selected:moonpay')
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         ) : (
           <StandardButton
             onClick={placeBet}
@@ -622,10 +800,6 @@ export default function BetModal({
           >
             {busy
               ? 'Placing bet…'
-              : eligibility.status === 'loading'
-              ? 'Checking eligibility…'
-              : !eligibility.allowed
-              ? 'Betting unavailable'
               : betAmountNum <= 0
               ? 'Enter an amount'
               : !termsAccepted || !allAttested

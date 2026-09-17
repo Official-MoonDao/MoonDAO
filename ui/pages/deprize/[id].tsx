@@ -37,6 +37,10 @@ import {
   deprizeOgDescription,
 } from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
+import { marketAcceptsBets } from '@/lib/deprize/marketGates'
+import { parseOnrampReturn } from '@/lib/deprize/onrampReturn'
+import { DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
+import { useDePrizeOnrampReturn } from '@/lib/deprize/useDePrizeOnrampReturn'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { rankOutcomes } from '@/lib/deprize/rank-outcomes'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
@@ -352,15 +356,26 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
       : market.loading
         ? undefined
         : false
+  const acceptsBets = marketAcceptsBets({
+    bettingOpen: !!deprize?.bettingOpen,
+    mintBound: market.mintBound,
+    mintConfigured,
+    tradingHalted,
+    stage: market.stage,
+  })
   // Default-deny when country is unknown: the SSR `restricted` prop is true
-  // for a missing geo header (getDePrizePageEligibility), which must not open betting.
-  const bettingAllowed =
-    !!deprize?.bettingOpen &&
-    market.mintBound &&
-    mintConfigured &&
-    !restricted &&
-    !tradingHalted &&
-    market.stage === MarketStage.Running
+  // when the country header is missing (getDePrizePageEligibility).
+  // Onramp return bypasses only the restricted term; market terms stay.
+  const bettingAllowed = acceptsBets && !restricted
+  const onrampReturn = useDePrizeOnrampReturn({
+    userAddress,
+    numOutcomes,
+    marketLoading: market.loading,
+    acceptsBets,
+    spendableEthNow: spendable,
+    capEth: Number(DEPRIZE_MAX_BET_WEI) / Number(UNIT),
+  })
+  const onrampQueryActive = parseOnrampReturn(router.query).active
 
   // The Back button is also the connect entry point.
   const handleBet = useCallback(
@@ -378,7 +393,12 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   // the market + chart to settle so the layout above the card stops shifting.
   const [deepLinkHandled, setDeepLinkHandled] = useState(false)
   useEffect(() => {
+    if (onrampReturn.betIndex != null) setBetIndex(onrampReturn.betIndex)
+  }, [onrampReturn.betIndex])
+
+  useEffect(() => {
     if (deepLinkHandled || !router.isReady || numOutcomes <= 0) return
+    if (onrampQueryActive) return
     if (market.loading || odds.loading) return
     const raw = router.query.outcome
     if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return
@@ -401,6 +421,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     odds.loading,
     userAddress,
     bettingAllowed,
+    onrampQueryActive,
   ])
 
   // CTF may already have a payout vector on a still-OPEN/paused test market —
@@ -593,6 +614,18 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         >
           Betting isn&apos;t available in your region. You can view odds, cash out and claim.
         </RegionBanner>
+        {onrampReturn.notice?.kind === 'wrong-wallet' && (
+          <Notice tone="amber">
+            Connect the wallet you funded ({onrampReturn.notice.fundedAddress}) to continue. The ETH
+            is in that wallet.
+          </Notice>
+        )}
+        {onrampReturn.notice?.kind === 'connect-wallet' && (
+          <Notice tone="amber">Connect the wallet you funded to continue.</Notice>
+        )}
+        {onrampReturn.notice?.kind === 'market-closed' && (
+          <Notice tone="amber">{onrampReturn.notice.message}</Notice>
+        )}
         <MarketErrorNotice error={market.error} />
         <PrizeQuestion
           tagline={competition.tagline}
@@ -702,6 +735,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           chain={chain}
           account={account}
           spendableEth={spendable}
+          initialAmountEth={onrampReturn.prefillEth}
+          fundsArrived={onrampReturn.fundsArrived}
           onClose={() => setBetIndex(null)}
           onDone={refreshAll}
         />

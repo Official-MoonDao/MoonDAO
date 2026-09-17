@@ -31,20 +31,22 @@ export interface UseOnrampJWTReturn {
   error: string | null
 }
 
-export default function useOnrampJWT(): UseOnrampJWTReturn {
+export default function useOnrampJWT(
+  storageKey = 'onrampJWT'
+): UseOnrampJWTReturn {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [storedJWT, setStoredJWT] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  const STORAGE_KEY = 'onrampJWT'
+  const STORAGE_KEY = storageKey
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setStoredJWT(localStorage.getItem(STORAGE_KEY))
     }
-  }, [])
+  }, [STORAGE_KEY])
 
   const generateJWT = useCallback(async (payload: Omit<OnrampJwtPayload, 'timestamp'>) => {
     setIsGenerating(true)
@@ -90,7 +92,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     } finally {
       setIsGenerating(false)
     }
-  }, [])
+  }, [STORAGE_KEY])
 
   const verifyJWT = useCallback(
     async (
@@ -153,7 +155,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     localStorage.removeItem(STORAGE_KEY)
     setStoredJWT(null)
     setError(null)
-  }, [])
+  }, [STORAGE_KEY])
 
   const getStoredJWT = useCallback(() => {
     if (typeof window === 'undefined') return null
