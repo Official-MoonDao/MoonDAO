@@ -11,6 +11,12 @@ export function forecastPseudonym(userId: string): string {
   return `Forecaster ${hex}`
 }
 
+/** Opaque Tableland row key. Never the raw Privy id or a wallet. */
+export function forecastTableHandle(userId: string): string {
+  const pepper = process.env.FORECAST_ID_PEPPER || ''
+  return createHash('sha256').update(`${userId}${pepper}`).digest('hex').slice(0, 16)
+}
+
 export function publicDisplayName(profile: {
   displayName?: string
   optIn?: boolean

@@ -11,7 +11,7 @@ import {
   FORECAST_MAX_ENTRIES_PER_UTC_DAY,
   forecastChainId,
 } from '@/lib/forecasts/constants'
-import { sanitizeDisplayName } from '@/lib/forecasts/displayName'
+import { publicDisplayName, sanitizeDisplayName } from '@/lib/forecasts/displayName'
 import { privyUserIdFromRequest } from '@/lib/forecasts/identity'
 import { UnknownForecastSchemaError } from '@/lib/forecasts/schema'
 import {
@@ -20,10 +20,12 @@ import {
   readHistory,
   readLatest,
   readVoid,
+  readProfile,
   writeForecast,
   writeProfile,
   writeVoid,
 } from '@/lib/forecasts/store'
+import { mirrorForecastToTableland } from '@/lib/forecasts/tablelandMirror'
 import { serializeLatest, validateWeights } from '@/lib/forecasts/weights'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -143,6 +145,23 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       optIn: req.body?.profileOptIn === true,
       updatedAt: at,
     })
+  }
+
+  if (chainId != null) {
+    try {
+      const profile = await readProfile(redis, userId)
+      await mirrorForecastToTableland({
+        chainSlug: book.chainSlug,
+        chainId,
+        deprizeId: book.deprizeId,
+        userId,
+        vector: stored.vector,
+        displayName: publicDisplayName(profile, userId),
+        updatedAtMs: now.getTime(),
+      })
+    } catch (err) {
+      console.error('[forecasts] tableland mirror skipped', err)
+    }
   }
 
   return res.status(200).json({
