@@ -38,15 +38,15 @@ export default function FundPrizeModal(props: {
   const [confirmedLarge, setConfirmedLarge] = useState(false)
   const restricted = useDePrizeRestricted()
   const { wrongNetwork, chainLabel, switching, switchToChain } = useDePrizeChainGuard(chain)
-  if (!(FUND_GEO_OPEN || !restricted)) return null
   const { ethPrice } = useETHPrice(1)
   const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
-  const wallet = typeof account?.address === 'string' ? account.address : ''
-
   const amountWei = useMemo(() => toWei(amount), [amount])
+  const wallet = typeof account?.address === 'string' ? account.address : ''
   const belowMin = amountWei > 0n && amountWei < FUND_MIN_WEI
   const needsConfirm = amountWei >= FUND_CONFIRM_ABOVE_WEI
   const minEth = Number(FUND_MIN_WEI) / Number(UNIT)
+
+  if (!(FUND_GEO_OPEN || !restricted)) return null
 
   async function submit() {
     if (!wallet || amountWei < FUND_MIN_WEI || wrongNetwork) return
