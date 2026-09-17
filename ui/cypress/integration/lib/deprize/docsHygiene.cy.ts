@@ -31,12 +31,12 @@ const A_PRIME_ALLOWLIST = [
 ]
 
 const SKIP_DIR = new Set(['node_modules', '.next', 'archive', 'public', '.git'])
+const SKIP_FILE = new Set(['yarn.lock', 'package-lock.json', 'docsHygiene.cy.ts'])
 
 function walkFiles(dir: string, acc: string[] = []): string[] {
   if (!fs.existsSync(dir)) return acc
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP_DIR.has(entry.name)) continue
-    if (entry.name === 'docsHygiene.cy.ts') continue
+    if (SKIP_DIR.has(entry.name) || SKIP_FILE.has(entry.name)) continue
     const full = path.join(dir, entry.name)
     if (entry.isDirectory()) walkFiles(full, acc)
     else acc.push(full)
@@ -67,20 +67,35 @@ function ndaHitsViaWalk(): { file: string; line: number; text: string }[] {
   return hits
 }
 
+function parseGrepHits(out: string): { file: string; line: number; text: string }[] {
+  return out
+    .split('\n')
+    .filter(Boolean)
+    .map((row) => {
+      const match = row.match(/^(.*?):(\d+):(.*)$/)
+      if (!match) return { file: row, line: 0, text: row }
+      return { file: match[1], line: Number(match[2]), text: match[3].slice(0, 200) }
+    })
+}
+
 function ndaHits(): { file: string; line: number; text: string }[] {
+  // git grep is on every Actions runner and only scans tracked files. rg is
+  // optional; a missing binary used to fall through to a 2s-timeout walk of ui/.
+  try {
+    const out = execSync(
+      `git grep -n -E '${NDA_NEEDLE_A}|${NDA_NEEDLE_B}' -- docs ui`,
+      { cwd: REPO_ROOT, encoding: 'utf8' }
+    )
+    return parseGrepHits(out)
+  } catch (err: any) {
+    if (err?.status === 1) return []
+  }
   try {
     const out = execSync(
       `rg -n -g '!node_modules/**' -g '!.next/**' -g '!archive/**' '${NDA_NEEDLE_A}|${NDA_NEEDLE_B}' docs ui`,
       { cwd: REPO_ROOT, encoding: 'utf8' }
     )
-    return out
-      .split('\n')
-      .filter(Boolean)
-      .map((row) => {
-        const match = row.match(/^(.*?):(\d+):(.*)$/)
-        if (!match) return { file: row, line: 0, text: row }
-        return { file: match[1], line: Number(match[2]), text: match[3].slice(0, 200) }
-      })
+    return parseGrepHits(out)
   } catch (err: any) {
     if (err?.status === 1) return []
     return ndaHitsViaWalk()
@@ -103,7 +118,8 @@ function relativeMarkdownTargets(markdown: string, fromFile: string): string[] {
 }
 
 describe('A′ docs hygiene', () => {
-  it('gate 1 — no withdrawn chamber-spec filenames under docs/ or ui/', () => {
+  it('gate 1 — no withdrawn chamber-spec filenames under docs/ or ui/', function () {
+    this.timeout(15_000)
     const hits = ndaHits()
     expect(hits, JSON.stringify(hits, null, 2)).to.deep.equal([])
   })
