@@ -34,9 +34,9 @@ operators. First Tracks slots will be rover operators — not a crewed LTV race.
 Touchdown's six outcomes onto any other rung.
 
 Touchdown rules of record: [DEPRIZE_TOUCHDOWN.md](DEPRIZE_TOUCHDOWN.md). GTM context (read-only):
-[DEPRIZE_GTM_TOUCHDOWN.md](DEPRIZE_GTM_TOUCHDOWN.md). Payload-purse runbook (draft):
-[DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md). First Tracks and Ice are plain text on
-this page until A2 publishes their specs.
+[DEPRIZE_GTM_TOUCHDOWN.md](DEPRIZE_GTM_TOUCHDOWN.md). The payload-purse runbook ships in PR-C as
+`docs/DEPRIZE_PAYLOAD_PURSE.md` and is not linked from this page until that file exists. First
+Tracks and Ice are plain text on this page until A2 publishes their specs.
 
 ```
 ⚠ NOT IN FORCE — PRODUCT INTENT ONLY. Terms v1.1 and Prize Rules 1.0 still say the prize is
