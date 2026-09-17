@@ -14,10 +14,6 @@ import { getContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
-  CAPABILITY_LADDER_SPEC_HREF,
-  getLadderForCompetition,
-} from '@/lib/deprize/capabilityLadder'
-import {
   findDePrizeIdForGoal,
   getDePrizeCompetition,
   getDePrizeGenerationNumber,
@@ -55,7 +51,6 @@ import { useDePrizeActivity } from '@/lib/deprize/useDePrizeActivity'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
-import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
@@ -70,16 +65,16 @@ import ClaimPanel from '@/components/deprize/ClaimPanel'
 import AdminSection from '@/components/deprize/detail/AdminSection'
 import ClaimSection from '@/components/deprize/detail/ClaimSection'
 import CompetitorsSection from '@/components/deprize/detail/CompetitorsSection'
+import FinePrint from '@/components/deprize/detail/FinePrint'
 import ForecastSlot from '@/components/deprize/detail/ForecastSlot'
-import MarketErrorNotice from '@/components/deprize/detail/MarketErrorNotice'
+import LadderLine from '@/components/deprize/detail/LadderLine'
 import OddsSection from '@/components/deprize/detail/OddsSection'
 import PositionSection from '@/components/deprize/detail/PositionSection'
 import PrizeHeader from '@/components/deprize/detail/PrizeHeader'
 import PrizePoolSlot from '@/components/deprize/detail/PrizePoolSlot'
 import PrizeQuestion from '@/components/deprize/detail/PrizeQuestion'
 import ProvenanceFooter from '@/components/deprize/detail/ProvenanceFooter'
-import RegionBanner from '@/components/deprize/detail/RegionBanner'
-import { Notice } from '@/components/deprize/detail/primitives'
+import { Notice, NoticeStack, type NoticeItem } from '@/components/deprize/detail/primitives'
 import {
   useDePrizeTeamName,
   useDePrizeTeamNames,
@@ -595,6 +590,41 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const abnormalStatus = !!bettingBlockedReason && !bettingBlockedReason.startsWith('Loading')
   const showBadge = abnormalStatus || deprize.state !== DePrizeState.OPEN
   const explorerTxBase = EXPLORER_TX[chainSlug] ?? 'https://etherscan.io/tx/'
+  const pageNotices = useMemo<NoticeItem[]>(() => {
+    const items: NoticeItem[] = []
+    if (market.error) {
+      items.push({
+        id: 'market-error',
+        tone: 'red',
+        priority: 0,
+        body: "Couldn't load market data — reload.",
+      })
+    }
+    const notice = onrampReturn.notice
+    if (notice?.kind === 'wrong-wallet') {
+      items.push({
+        id: 'onramp-wrong-wallet',
+        tone: 'amber',
+        priority: 1,
+        body: `Connect the wallet you funded (${notice.fundedAddress}) to continue. The ETH is in that wallet.`,
+      })
+    } else if (notice?.kind === 'connect-wallet') {
+      items.push({
+        id: 'onramp-connect',
+        tone: 'amber',
+        priority: 2,
+        body: 'Connect the wallet you funded to continue.',
+      })
+    } else if (notice?.kind === 'market-closed') {
+      items.push({
+        id: 'onramp-closed',
+        tone: 'amber',
+        priority: 3,
+        body: notice.message,
+      })
+    }
+    return items
+  }, [market.error, onrampReturn.notice])
   const hasLineage =
     deprize.state === DePrizeState.SUPERSEDED || competition.supersedes !== undefined
 
@@ -608,6 +638,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           showBadge={showBadge}
           state={deprize.state}
           statusLabelOverride={statusLabelOverride}
+          badgeTitle={abnormalStatus ? bettingBlockedReason : undefined}
           abnormalStatus={abnormalStatus}
           raceGoal={raceGoal}
           jbProjectId={jbProjectId}
@@ -624,49 +655,14 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           teamContract={teamContract}
           showResolved={showResolved}
         />
-        <RegionBanner
-          restricted={restricted}
-          bettingBlockedReason={bettingBlockedReason}
-        >
-          Betting isn&apos;t available in your region. You can view odds, cash out and claim.
-        </RegionBanner>
-        {onrampReturn.notice?.kind === 'wrong-wallet' && (
-          <Notice tone="amber">
-            Connect the wallet you funded ({onrampReturn.notice.fundedAddress}) to continue. The ETH
-            is in that wallet.
-          </Notice>
-        )}
-        {onrampReturn.notice?.kind === 'connect-wallet' && (
-          <Notice tone="amber">Connect the wallet you funded to continue.</Notice>
-        )}
-        {onrampReturn.notice?.kind === 'market-closed' && (
-          <Notice tone="amber">{onrampReturn.notice.message}</Notice>
-        )}
-        <MarketErrorNotice error={market.error} />
+        <NoticeStack items={pageNotices} />
         <PrizeQuestion
           tagline={competition.tagline}
           description={raceGoal?.description}
           criteria={raceGoal?.criteria}
           moonbaseHref={raceGoal ? `/moonbase?race=${raceGoal.id}` : undefined}
         />
-        {(() => {
-          const ladder = getLadderForCompetition(chainSlug, deprizeId)
-          const current = ladder.rungs.find((r) => r.current)
-          if (!ladder.currentKey || !current) return null
-          return (
-            <p className="text-sm text-gray-300">
-              Rung {current.rung} of {ladder.rungs.length} · {current.label} — {current.bar} ·{' '}
-              <a
-                href={CAPABILITY_LADDER_SPEC_HREF}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-indigo-300/90 underline-offset-2 hover:underline hover:text-indigo-200"
-              >
-                Read the capability ladder →
-              </a>
-            </p>
-          )
-        })()}
+        <LadderLine chainSlug={chainSlug} deprizeId={deprizeId} />
         <PositionSection
           userAddress={userAddress}
           numOutcomes={numOutcomes}
@@ -769,12 +765,12 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         />
         <ProvenanceFooter
           hasLineage={hasLineage}
-          raceBinding={raceBinding}
           state={deprize.state}
           supersededBy={competition.supersededBy}
           supersedes={competition.supersedes}
           generationNumber={generationNumber}
         />
+        <FinePrint poolUsd={poolUsd} asOf={poolAsOf} raceBinding={raceBinding} />
       </div>
 
       {/* Bet modal */}
@@ -835,7 +831,6 @@ function Shell({
         <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
           {children}
         </div>
-        <DePrizeAvailabilityLegend />
         <NoticeFooter />
       </Container>
     </div>

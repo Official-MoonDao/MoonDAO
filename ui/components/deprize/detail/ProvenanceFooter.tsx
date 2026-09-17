@@ -1,16 +1,14 @@
 import Link from 'next/link'
 import { DePrizeState } from '@/lib/deprize/constants'
-import { isRaceBindingComplete, ROSTER_DISCLAIMER } from '@/lib/deprize/competitions'
 
 export default function ProvenanceFooter(props: {
   hasLineage: boolean
-  raceBinding: ReturnType<typeof import('@/lib/deprize/competitions').getDePrizeRaceBinding>
   state: DePrizeState
   supersededBy?: number
   supersedes?: number
   generationNumber: number
 }) {
-  if (!props.hasLineage && !isRaceBindingComplete(props.raceBinding?.outcomes)) return null
+  if (!props.hasLineage) return null
   return (
     <div className="flex flex-col gap-1.5 px-1">
       {props.state === DePrizeState.SUPERSEDED && (
@@ -40,9 +38,6 @@ export default function ProvenanceFooter(props: {
             #{props.supersedes}
           </Link>
         </p>
-      )}
-      {isRaceBindingComplete(props.raceBinding?.outcomes) && (
-        <p className="text-[11px] text-gray-600 leading-relaxed">{ROSTER_DISCLAIMER}</p>
       )}
     </div>
   )

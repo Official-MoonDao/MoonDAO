@@ -5,17 +5,10 @@ import FundPrizeModal from '@/components/deprize/FundPrizeModal'
 import {
   DEPRIZE_FUND_ENABLED,
   DEPRIZE_PATRONS_ENABLED,
-  DEPRIZE_TERMS_VERSION,
   FUND_GEO_OPEN,
   PATRONS_PENDING_TTL_MS,
 } from '@/lib/deprize/constants'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
-import {
-  describePayloadTier,
-  payloadCopy,
-  payloadCopyMode,
-  payloadTierExplainer,
-} from '@/lib/deprize/payloadPurse'
 import { usePrizePatrons } from '@/lib/deprize/usePrizePatrons'
 
 export default function PrizePoolSlot(props: {
@@ -30,13 +23,6 @@ export default function PrizePoolSlot(props: {
   refreshNonce?: number
   onFunded?: () => void
 }) {
-  const mode = payloadCopyMode(DEPRIZE_TERMS_VERSION)
-  const tier = describePayloadTier(props.poolUsd)
-  const explainer = payloadTierExplainer({
-    mode,
-    poolUsd: props.poolUsd,
-    asOf: props.asOf,
-  })
   const restricted = useDePrizeRestricted()
   const fundAllowed = FUND_GEO_OPEN || !restricted
   const [fundOpen, setFundOpen] = useState(false)
@@ -69,18 +55,9 @@ export default function PrizePoolSlot(props: {
       id="deprize-prize-pool"
       className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 space-y-4"
     >
-      <p className="text-gray-400 text-sm leading-relaxed">
-        {payloadCopy('disclosureSentence', mode)}
-      </p>
-      <p className="text-gray-400 text-sm leading-relaxed">{explainer}</p>
-      {tier.id !== 'unknown' && props.asOf ? (
-        <p className="text-gray-500 text-xs font-mono">asOf {props.asOf}</p>
-      ) : null}
-
       {DEPRIZE_PATRONS_ENABLED && (
         <DePrizePatrons
           patrons={patrons}
-          poolEth={props.poolEth}
           pendingOwn={Boolean(pendingPayer)}
         />
       )}

@@ -20,6 +20,7 @@ export default function PrizeHeader(props: {
   showBadge: boolean
   state: DePrizeState
   statusLabelOverride?: string
+  badgeTitle?: string
   abnormalStatus: boolean
   raceGoal: { id: string } | undefined
   jbProjectId: number | undefined
@@ -45,6 +46,7 @@ export default function PrizeHeader(props: {
     showBadge,
     state,
     statusLabelOverride,
+    badgeTitle,
     abnormalStatus,
     raceGoal,
     jbProjectId,
@@ -79,6 +81,7 @@ export default function PrizeHeader(props: {
               state={state}
               labelOverride={abnormalStatus ? statusLabelOverride : undefined}
               toneOverride={abnormalStatus ? 'amber' : undefined}
+              title={badgeTitle}
             />
           )}
         </div>
