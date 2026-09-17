@@ -3,7 +3,7 @@
 |---|---|
 | Roster / named slots / outcome labels (Parts I–V) | Frozen at `prepareCondition` |
 | Win tests, parameters, tie-break (Parts I–V) | Frozen at `open` |
-| Purse / waterfall | `never` in force from this file — Terms v1.1 until PR-C |
+| Purse / waterfall | `never` in force from this file — Terms v1.2 / [DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md) |
 | Part VI interpretation, evidence standards, Senate checklist | `always` editable as interpretation only |
 | Field discussion, source map, editorial framing | `always` editable |
 
@@ -568,26 +568,16 @@ This paragraph is the canonical Test 4 wording.
 
 ## (e) Purse = payload purchase, with waterfall
 
-```
-⚠ NOT IN FORCE — PRODUCT INTENT ONLY. Terms v1.1 and Prize Rules 1.0 still say the prize is
-paid in ETH to the Winner's wallet. The waterfall below is what product intends to negotiate;
-it becomes contract speech only if counsel approves PR-C. Owner: *unassigned — product*.
-Counsel gate: PR-C. Do not quote this block in live UI as in-force terms.
-```
-
 The purse is **not** a cheque to a CLPS operator and **not** a cash transfer to Voyager / IM /
 Firefly corporate treasury. It buys a **community payload** on a future flight, in this order:
 
 1. **Winner's next qualifying flight** — a payload slot on the winning landing-vehicle operator's
    next vehicle that can carry it.
-2. If (1) cannot be contracted within **24 months** of resolution: **any roster member's next
-   qualifying flight** in that window (named slots first, then Open Field winner if that is who won).
-3. If (2) fails: a **flight-team-named recipient** (the people who flew the attempt — a scholarship,
-   a student payload, or a named lab), not the parent company's general treasury.
+2. If the Winner does not claim that payload, the Winner may **designate a nonprofit**.
+3. If there is **no response**, the Prize Pool is **rolled into a future prize**.
 
-If the Winner is a public body that cannot accept a payload agreement, skip to (2), then (3). Market
-resolution is unaffected (Terms §7.4 / Prize Rules §5). The $25k figure is a **seed / target**, not a
-wire to the operator.
+Market resolution is unaffected (Terms §7.4 / Prize Rules §5). The $25k figure is a **seed / target**,
+not a wire to the operator. See [DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md).
 
 ## (f) Nine-step supersede procedure
 
