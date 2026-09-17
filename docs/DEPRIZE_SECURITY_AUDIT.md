@@ -11,6 +11,34 @@ Arbitrum One state.
 
 ---
 
+## v2 addendum (2026-09-17) — surface reduction
+
+The glue this audit covered was replaced by **DePrize v2** (`cursor/deprize-contracts-v2`). The change is structural, not a patch, and it is what §1 recommended for "the residual risk lives in the bespoke glue and in the seams":
+
+| v1 (audited above) | v2 |
+|---|---|
+| `LMSRWithTWAP` subclass + custom 0.5 factory | **Removed.** Markets are stock Gnosis `LMSRMarketMaker` clones from the stock factory. The H-01 class (`this.trade` self-call) cannot exist: there is no MoonDAO code inside the market. |
+| `DePrizeFeeRouter` owns the market; permissionless `sweepFees`; `try/catch` sweep in `bet` | **Removed.** The admin Safe owns every market. Fee routing is a Safe batch printed by `DePrizeSweepFees.s.sol`; the live-vs-terminal rule is pinned by `DePrizeSweepFeesTest`. |
+| UUPS `DePrizeRegistry` / `DePrizeMint`, single-key upgrade authority (G4) | **Immutable**, `Ownable2Step`, `renounceOwnership` disabled. No `initialize`, no `upgradeToAndCall`. |
+| 11 registry states incl. `VOTING`, `M1_RELEASED`, `M2_*`; `setProviderPayoutAddress`; `markWithdrawn` | 7 states; `SETTLED` is the success terminal; prize payment is off-chain. |
+| `bet` sweeps residual WETH back to the bettor | `bet` **fails closed**: `trade` must report and pull exactly `cost`, and the mint must receive exactly `outcomeTokenAmount` of exactly the expected position id. The ERC-1155 hooks accept only the CTF, only mid-bet, only that id. |
+| Hand-rolled EIP-712 domain | OZ `EIP712` (same `DePrizeMint` / `1` domain, so the backend signer is unchanged). |
+| `setMarket` re-bindable | `setMarket` **write-once** per DePrize. |
+
+**Surface:** 21 external functions on the mint (of which `bet` is the only money path), 31 on the registry (all `onlyOwner` except views), 8 on the redeem helper. `test/deprize/SurfaceAllowlist.t.sol` fails CI if any selector is added or removed without updating `test/deprize/surface/*.txt`, and asserts the v1 selectors (`setFeeRouter`, `releaseM1`, `upgradeToAndCall`, …) never return.
+
+**Evidence now in CI** (`subscription-contracts.yml`, Sepolia + Arbitrum anvil forks):
+
+- `DePrizeMintInvariant.t.sol` — fuzzed bets / direct sells / signer rotation; invariants: the mint never holds ETH, WETH, allowance or tokens; every slice reaches Juicebox; market collateral equals bets in minus sells out; outstanding tokens equal net issuance. This is the property H-01 violated (collateral appearing from nowhere).
+- `StockLmsrFork.t.sol` — the stock factory deployed from the committed 0.5.1 bytecode against the **live** CTF + WETH: bets settle exactly, the market has no TWAP selectors, `withdrawFees` moves exactly what the sweep planner computed, and the full close-out loop conserves ETH to the wei. These fork tests caught two mock/real mismatches during the rewrite (batch delivery shape; `collateralLimit` semantics on sells) that the v1 mocks had encoded incorrectly.
+- Slither 0.11.6 (`slither.config.json`, fail on medium) — 0 findings after two code changes (use `trade`'s return value; explicit local init) and three inline triages (payout to `msg.sender`, intentional pre/post balance read under `nonReentrant`, transient flags read by the ERC-1155 hooks).
+
+**What did not change:** the trust in Gnosis CTF / LMSR math and Juicebox custody (§1), and the top residual risk being **key authority** — now narrowed to the Safe itself, since no EOA and no contract holds oracle, owner or upgrade power.
+
+The remainder of this document is the v1 audit, kept as the record of why v2 looks the way it does.
+
+---
+
 ## 0. TL;DR
 
 - **One exploitable bug found, fixed, and proven.** `LMSRWithTWAP.tradeWithTWAP`

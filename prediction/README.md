@@ -1,7 +1,10 @@
 # Prediction Markets
 
-Gnosis ConditionalTokens + `LMSRWithTWAP` (Solidity 0.5). Used by DePrize as the
-external market layer. Deployed addresses are in
+Gnosis ConditionalTokens + the **unmodified** Gnosis `LMSRMarketMaker` /
+`LMSRMarketMakerFactory` (Solidity 0.5, `@gnosis.pm/conditional-tokens-market-makers`
+1.8.1). Used by DePrize v2 as the external market layer. There is no MoonDAO
+market-maker subclass: the 0.8 glue in `subscription-contracts/src/deprize/`
+only calls these audited contracts through interfaces. Deployed addresses are in
 `docs/DEPRIZE_ARBITRUM_ADDRESSES.md`.
 
 ## Setup
@@ -36,7 +39,7 @@ npm run truffle -- migrate --network arbitrumSepolia
 npm run truffle -- migrate -f 2 --to 4 --network arbitrum
 ```
 
-After Phase 2, record ConditionalTokens + LMSRWithTWAPFactory and fill
+After Phase 2, record ConditionalTokens + LMSRMarketMakerFactory and fill
 `fee-hook/script/base/Config.sol` / `ui/const/config.ts`.
 
 The three Phase 2 artifacts in `build/contracts/` are committed on purpose:
@@ -63,10 +66,10 @@ rather than in the JSON, so the compiled metadata still matches the unlinked
 deployment:
 
 ```shell
-INPUT_FILE=LMSRWithTWAPFactory.etherscan.json \
-CONTRACT_NAME_OVERRIDE=contracts/LMSRWithTWAPFactory.sol:LMSRWithTWAPFactory \
+INPUT_FILE=LMSRMarketMakerFactory.etherscan.json \
+CONTRACT_NAME_OVERRIDE=@gnosis.pm/conditional-tokens-market-makers/contracts/LMSRMarketMakerFactory.sol:LMSRMarketMakerFactory \
 ETHERSCAN_API_KEY=... node scripts/verify-on-arbiscan.js \
-  LMSRWithTWAPFactory 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8 \
+  LMSRMarketMakerFactory 0x<stock-factory> \
   Fixed192x64Math=0x6cc53E9158aeFd3aB65B1B053844D083C4b7C53b
 ```
 
@@ -75,7 +78,7 @@ identifier on its first colon and Truffle names project-local sources
 `project:/contracts/…`. Stripping that prefix changes only the appended
 metadata hashes; the build script asserts nothing else moved.
 
-## Provision a DePrize market (Phase 4)
+## Provision a DePrize market (v2)
 
 ```shell
 DEPRIZE_ORACLE=0x<admin-safe> \
@@ -88,10 +91,19 @@ DEPRIZE_FUNDING_PER_OUTCOME=<wei> \
 npm run truffle -- migrate -f 8 --to 8 --network arbitrum
 ```
 
-Migration 08 prints `conditionId` + LMSR address. **Record `questionId`** — it
-is not stored on-chain and resolution cannot be constructed without it.
-Then transfer LMSR ownership to the `DePrizeFeeRouter`.
+`DEPRIZE_ORACLE` must be the **admin Safe**: it is baked into the conditionId as
+the only address that can `reportPayouts`, and migration 08 also transfers the
+market's ownership to it (`pause` / `close` / `withdrawFees` are onlyOwner). No
+contract sits between the Safe and the market in v2.
 
-Note: DePrize 1 was provisioned with direct `cast` calls while the `npx truffle`
-breakage above was unresolved, so migration 08 has not yet been exercised
-against Arbitrum mainnet. Dry-run it on Sepolia before relying on it.
+Migration 08 prints `conditionId` + LMSR address. **Record `questionId`** — it
+is not stored on-chain and resolution cannot be constructed without it. Then
+wire the 0.8 side with `subscription-contracts/script/deprize/DePrizeWire.s.sol`
+and verify with `DePrizeVerify.s.sol`.
+
+The fee sweep that `DePrizeFeeRouter` used to perform on-chain is now a Safe
+batch built by `subscription-contracts/script/deprize/DePrizeSweepFees.s.sol`.
+
+Note: the v1 `LMSRWithTWAP` subclass and its factory were removed with DePrize
+v2 (see `docs/DEPRIZE_SECURITY_AUDIT.md`, H-01). Markets created by the old
+factory are not compatible with the v2 mint and must not be bound to it.

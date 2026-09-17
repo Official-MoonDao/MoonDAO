@@ -1,6 +1,6 @@
 /**
  * Committed Truffle network config for the DePrize prediction stack
- * (Gnosis ConditionalTokens + LMSRWithTWAPFactory, Solidity 0.5).
+ * (Gnosis ConditionalTokens + stock LMSRMarketMakerFactory, Solidity 0.5).
  *
  * AUDIT[plan 1.2]: `prediction/.gitignore` ignores `truffle.js`, so this
  * filename (`truffle-config.js`) is the reproducible, reviewable config.

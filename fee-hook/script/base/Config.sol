@@ -40,11 +40,13 @@ contract Config is Script {
     mapping(uint256 => address) public CITIZEN_TABLE_ADDRESSES;
     mapping(uint256 => address) public CITIZEN_NFT_ADDRESSES;
 
-    // DePrize / prediction-market stack (Gnosis Conditional Tokens + LMSRWithTWAP).
-    // These are externally-deployed Solidity 0.5 contracts that the 0.8 DePrizeMint
-    // router calls via interfaces. WETH is the CTF collateral. LMSR_MARKET is an
-    // already-deployed market instance reused by DePrize fork tests; LMSR_FACTORY is
-    // populated after the factory is deployed (used to provision new markets).
+    // DePrize / prediction-market stack (Gnosis Conditional Tokens + stock Gnosis
+    // LMSRMarketMaker). These are externally-deployed Solidity 0.5 contracts that
+    // the 0.8 DePrizeMint router calls via interfaces. WETH is the CTF collateral.
+    // LMSR_MARKET_ADDRESSES are v1 LMSRWithTWAP markets kept only for read-only
+    // fork checks; they must NOT be bound to the v2 mint. LMSR_FACTORY_ADDRESSES
+    // currently holds the v1 LMSRWithTWAPFactory; replace it with the stock
+    // LMSRMarketMakerFactory address once prediction/ migration 04 is run for v2.
     mapping(uint256 => address) public WETH_ADDRESSES;
     mapping(uint256 => address) public CONDITIONAL_TOKENS_ADDRESSES;
     mapping(uint256 => address) public LMSR_MARKET_ADDRESSES;
@@ -203,7 +205,7 @@ contract Config is Script {
 
     /// @notice Resolve WETH + ConditionalTokens for `chainId`, or revert with a
     ///         chain-id in the message so a mainnet run cannot silently pick
-    ///         address(0) and deploy a broken Mint/Redeem/FeeRouter.
+    ///         address(0) and deploy a broken Mint/Redeem.
     /// @dev AUDIT[plan 1.3]: replaces the generic "not configured" requires.
     function requireDePrizeCollateral(uint256 chainId) public view returns (address weth, address ctf) {
         weth = WETH_ADDRESSES[chainId];
