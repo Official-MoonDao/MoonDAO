@@ -681,7 +681,22 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           onBet={handleBet}
         />
         <ForecastSlot />
-        <PrizePoolSlot poolUsd={poolUsd} asOf={poolAsOf} />
+        <PrizePoolSlot
+          poolUsd={poolUsd}
+          asOf={poolAsOf}
+          poolEth={
+            jbProjectId !== undefined && !isLoadingFunding
+              ? Number(totalFunding) / Number(UNIT)
+              : null
+          }
+          deprizeId={deprizeId}
+          jbProjectId={jbProjectId}
+          prizeTitle={competition.title}
+          chain={chain}
+          account={account}
+          refreshNonce={refreshNonce}
+          onFunded={refreshAll}
+        />
         <ClaimSection>
           {showResolved && (
             <ClaimPanel

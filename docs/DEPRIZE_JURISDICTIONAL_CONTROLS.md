@@ -31,6 +31,7 @@ announcements. The source of truth in code is `DEPRIZE_AVAILABILITY_LEGEND` in
 | Compliance export | Engineering | `ui/scripts/export-deprize-compliance-log.ts` (`yarn export:deprize-compliance`) |
 | Circumvention alerts | Operations | `ui/lib/deprize/complianceAlerts.ts` |
 | On-chain reconciliation | Operations | `ui/lib/deprize/runReconcile.ts`, `/api/cron/deprize-reconcile` |
+| Fund-the-prize geo posture | Product / counsel | `FUND_GEO_OPEN` in `ui/lib/deprize/constants.ts`. **Geo-open until counsel says otherwise.** The Fund CTA still reads `useDePrizeRestricted()` so reversal is `FUND_GEO_OPEN \|\| !restricted`, not a new data path and not `useRegionRestriction`. Direct `pay` is new money into the pool; it is not a bet and does not call `evaluateEligibility`. |
 
 Sell (`ExitPositionModal`) and redeem (`ClaimPanel`) are not gated by these
 controls. They remain available so an existing holder can close or redeem a

@@ -73,6 +73,15 @@ export const DEPRIZE_RISK_DISCLOSURES_URL =
 // user's acceptance on this so a new version re-prompts them.
 export const DEPRIZE_TERMS_VERSION = '1.1'
 
+/** Counsel question: fund is geo-open until this flips. Uses PR-0's restricted signal. */
+export const FUND_GEO_OPEN = true
+export const FUND_MIN_WEI = 10n ** 15n
+export const FUND_CONFIRM_ABOVE_WEI = 10n ** 18n
+export const PATRONS_STALE_AFTER_MS = 5 * 60 * 1000
+export const PATRONS_PENDING_TTL_MS = 60_000
+export const DEPRIZE_PATRONS_ENABLED = process.env.NEXT_PUBLIC_DEPRIZE_PATRONS_ENABLED !== 'false'
+export const DEPRIZE_FUND_ENABLED = process.env.NEXT_PUBLIC_DEPRIZE_FUND_ENABLED !== 'false'
+
 export const DEPRIZE_AVAILABILITY_LEGEND =
   'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'
 
