@@ -73,7 +73,7 @@ export const DEPRIZE_RISK_DISCLOSURES_URL =
 // user's acceptance on this so a new version re-prompts them.
 export const DEPRIZE_TERMS_VERSION = '1.2'
 
-/** Counsel question: fund is geo-open until this flips. Uses PR-0's restricted signal. */
+/** Fund is geo-open until this flips. Uses PR-0's restricted signal. */
 export const FUND_GEO_OPEN = true
 export const FUND_MIN_WEI = 10n ** 15n
 export const FUND_CONFIRM_ABOVE_WEI = 10n ** 18n
