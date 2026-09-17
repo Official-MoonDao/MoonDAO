@@ -8,6 +8,10 @@ import Groq from "groq-sdk";
 import { rateLimiter } from "./rate-limiter";
 import { fetchYouTubeCaptionsTranscript } from "./captions";
 import {
+  OwnerCaptionsError,
+  fetchOwnerCaptionsTranscript,
+} from "./youtube-oauth-captions";
+import {
   SPELLING_CORRECTIONS,
   DEFAULT_MODELS,
   AUDIO_CONFIG,
@@ -22,17 +26,22 @@ import {
 const execAsync = promisify(exec);
 
 /**
- * Resolve the transcript for a video, preferring YouTube auto-captions over
- * an audio download + Whisper transcription.
+ * Resolve the transcript for a video.
  *
- * Source selection (controlled by `TRANSCRIPT_SOURCE` env var):
- *   - `auto` (default): try captions first, fall back to audio if no track.
- *   - `captions`:       captions only; throw if none are available.
- *   - `audio`:          legacy yt-dlp + GROQ Whisper path (requires cookies).
+ * Three strategies, tried in descending order of how well they survive
+ * YouTube's anti-bot measures:
  *
- * The captions path requires no auth, no cookies, no PO tokens, no IP-flagged
- * Cloud Run egress, no GROQ Whisper minutes — it just hits the public
- * `timedtext` endpoint that the YouTube web player uses for closed captions.
+ *   1. `owner`    — YouTube Data API `captions.download`, authenticated as the
+ *                   channel owner. MoonDAO owns these videos, so this is the
+ *                   supported way to read their captions: no cookies, no PO
+ *                   tokens, nothing that rots after a week.
+ *   2. `captions` — the public `timedtext` endpoint via `youtube-transcript`.
+ *                   Works from a laptop, blocked from Cloud Run's IP ranges.
+ *   3. `audio`    — yt-dlp download + GROQ Whisper. Needs cookies that expire
+ *                   within days; kept only as a last resort.
+ *
+ * `TRANSCRIPT_SOURCE` pins one strategy (`owner` / `captions` / `audio`) for
+ * debugging; the default `auto` walks the list.
  *
  * Returns the plain-text transcript, already spelling-corrected.
  */
@@ -48,7 +57,35 @@ export async function getTranscript(
     return transcribeAudio(videoId, groq, whisperModel);
   }
 
-  // captions or auto
+  // 1. Owner-authenticated captions.
+  if (source === "owner" || source === "auto") {
+    let ownerError: Error | null = null;
+    try {
+      const owned = await fetchOwnerCaptionsTranscript(videoId);
+      if (owned) {
+        console.log(
+          `Using owner-API transcript (${owned.trackKind || "unknown"} track, ${
+            owned.language || "unknown language"
+          }, ${owned.transcript.length} chars).`
+        );
+        return correctSpellings(owned.transcript);
+      }
+    } catch (error) {
+      ownerError = error instanceof Error ? error : new Error(String(error));
+      const hint = error instanceof OwnerCaptionsError && error.hint ? ` ${error.hint}` : "";
+      console.warn(`Owner caption fetch failed: ${ownerError.message}.${hint}`);
+    }
+
+    if (source === "owner") {
+      if (ownerError) throw ownerError;
+      throw new Error(
+        `No owner caption track available for video ${videoId} and TRANSCRIPT_SOURCE=owner. ` +
+          `Auto-captions usually appear a few hours after a live stream ends.`
+      );
+    }
+  }
+
+  // 2. Public timedtext endpoint.
   let captionFetchError: Error | null = null;
   try {
     const captions = await fetchYouTubeCaptionsTranscript(videoId);
@@ -76,6 +113,7 @@ export async function getTranscript(
     );
   }
 
+  // 3. Audio.
   console.warn(
     `Falling back to audio transcription for ${videoId} (no caption track available).`
   );
