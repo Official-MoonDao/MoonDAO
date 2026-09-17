@@ -8,6 +8,9 @@ type NumberStepperProps = {
   max?: number
   min?: number
   isDisabled?: boolean
+  id?: string
+  suffix?: string
+  ariaLabel?: string
 }
 
 export default function NumberStepper({
@@ -17,6 +20,9 @@ export default function NumberStepper({
   max,
   min,
   isDisabled,
+  id,
+  suffix = '%',
+  ariaLabel,
 }: NumberStepperProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [displayValue, setDisplayValue] = useState<string>(String(number))
@@ -105,8 +111,11 @@ export default function NumberStepper({
       <div className="relative flex items-center">
         <input
           ref={inputRef}
-          id="number-stepper"
-          className={`w-[56px] sm:w-[50px] h-8 sm:h-7 bg-white/[0.07] text-white text-center rounded-lg border transition-all duration-150 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-sm font-medium tabular-nums tracking-tight pr-5 ${
+          id={id}
+          aria-label={ariaLabel}
+          className={`w-[56px] sm:w-[50px] h-8 sm:h-7 bg-white/[0.07] text-white text-center rounded-lg border transition-all duration-150 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-sm font-medium tabular-nums tracking-tight ${
+            suffix ? 'pr-5' : ''
+          } ${
             isFocused
               ? 'border-blue-500/60 bg-white/10 ring-1 ring-blue-500/20'
               : 'border-white/10 hover:border-white/20'
@@ -119,9 +128,11 @@ export default function NumberStepper({
           step={0}
           disabled={isDisabled}
         />
-        <span className="absolute right-2 text-white/40 text-xs font-medium pointer-events-none">
-          %
-        </span>
+        {suffix ? (
+          <span className="absolute right-2 text-white/40 text-xs font-medium pointer-events-none">
+            {suffix}
+          </span>
+        ) : null}
       </div>
 
       {/* Increase button */}

@@ -23,6 +23,7 @@ import {
   getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
   isKnownDePrizeCompetition,
+  resolveLiveDePrizeId,
 } from '@/lib/deprize/competitions'
 import {
   resolveDePrizePageProps,
@@ -702,7 +703,14 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
         />
-        <ForecastSlot />
+        <ForecastSlot
+          chainSlug={chainSlug}
+          deprizeId={deprizeId as number}
+          labels={predictionLabels}
+          marketPercents={market.outcomes.map((o) => o.probability)}
+          liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
+          reported={!!market.payoutDen && market.payoutDen > 0n}
+        />
         <PrizePoolSlot
           poolUsd={poolUsd}
           asOf={poolAsOf}
