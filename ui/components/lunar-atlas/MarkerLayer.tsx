@@ -181,13 +181,19 @@ type MarkerLayerProps = {
 // Offsets above the local terrain (which the sampler provides per marker),
 // in REAL METERS — the base is true-to-scale on the 16 km ridge patch.
 const SEAT_LIFT = 0.5 * M_TO_UNITS // clears z-fighting with the terrain
-// Pins are sized to the district they mark: the reticle floats clear of the
-// tallest thing on the lot (a rover depot gets a ~25 m pin, the landing zone
-// with its 52 m Starship a ~68 m one). One fixed height either buried the
-// reticle inside tall models or dwarfed the small ones.
-const MIN_PIN_HEIGHT_M = 25
-const pinHeightUnits = (modelSizeM: number) =>
-  Math.max(MIN_PIN_HEIGHT_M, modelSizeM * 1.3) * M_TO_UNITS
+// Every district's reticle floats at the SAME height above its own ground, so
+// the beacons read as one instrument scale laid over the base. Sizing each pin
+// to the tallest model on its lot made a beacon's altitude a fact about the
+// hardware under it, which is not what a map marker says: the rover depot's
+// ~25 m pin and the landing zone's ~68 m one sat a district apart in the sky
+// and read as a ranking of the races rather than as markers on the same map.
+//
+// Set to clear the tallest thing standing on the base — the 52 m Starship on
+// the landing zone — with room to spare, so no reticle is ever buried in the
+// models it points at. The mass driver is not the exception it looks like:
+// almost all of its 600 m is guideway running away from its lot, and its deck
+// stands only a few meters over the breach works the pin actually marks.
+const PIN_HEIGHT_UNITS = 70 * M_TO_UNITS
 // Beacon dimensions, in REAL METERS. These are deliberately hairline: at true
 // scale the old pin was a 1.4 m-thick opaque rod under a 6 m emissive ball —
 // a plastic lollipop the size of a small building, which is what made the
@@ -1308,7 +1314,6 @@ function DistrictBeacon({
   dir,
   color,
   label,
-  pinModelSizeM,
   selected,
   hovered,
   style,
@@ -1319,8 +1324,6 @@ function DistrictBeacon({
   dir: Vec3
   color: string
   label: string
-  // The tallest model on the lot, so the reticle floats clear of all of them.
-  pinModelSizeM: number
   selected: boolean
   hovered: boolean
   style: MarkerStyle
@@ -1342,10 +1345,10 @@ function DistrictBeacon({
     const seat = ground + SEAT_LIFT
     return {
       base: d.clone().multiplyScalar(seat),
-      tip: d.clone().multiplyScalar(seat + pinHeightUnits(pinModelSizeM)),
+      tip: d.clone().multiplyScalar(seat + PIN_HEIGHT_UNITS),
       ndir: d,
     }
-  }, [dir, radiusAt, pinModelSizeM])
+  }, [dir, radiusAt])
 
   useFrame((_, delta) => {
     const g = groupRef.current
@@ -1616,8 +1619,6 @@ export default function MarkerLayer({
                 tree.goal ? 'competitor' : 'project'
               }${count === 1 ? '' : 's'}`
 
-        // The pin has to clear the tallest thing on the lot, not the average.
-        const tallestM = Math.max(...members.map((p) => projectSizeM(p)))
         // The whole field drives, if this race's hardware is vehicles. Spread
         // evenly along the run rather than sent out as a convoy: three rovers
         // nose to tail is one moving object, where a third of a run apart puts
@@ -1690,7 +1691,6 @@ export default function MarkerLayer({
                 dir={districtDir}
                 color={color}
                 label={label}
-                pinModelSizeM={tallestM}
                 selected={isOpen}
                 hovered={hoveredCategory === tree.category}
                 style={{ opacity: districtOpacity * dim, visible: true }}
