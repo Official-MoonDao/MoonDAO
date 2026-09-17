@@ -1,10 +1,23 @@
+<!-- deprize:freeze-table -->
+| Block | Lifecycle |
+|---|---|
+| Phase plan and G1–G10 | `always` — this PR does not rewrite them |
+| §0 v0.2 pointer | `always` editorial |
+
 # Go-to-Market — "Touchdown" DePrize
 
 **Status:** Draft for discussion
 **Prize spec:** [`DEPRIZE_TOUCHDOWN.md`](./DEPRIZE_TOUCHDOWN.md) v0.1 (PR #1527) — the rules of record
 **Live market:** Sepolia DePrize **#22**, bound to `shared-next-landing` (PR #1566). Nothing on mainnet.
-**Companion plans:** [`DEPRIZE_GTM_SURVIVE_THE_NIGHT.md`](./DEPRIZE_GTM_SURVIVE_THE_NIGHT.md) · [`DEPRIZE_GTM_SIX_SECONDS_LATE.md`](./DEPRIZE_GTM_SIX_SECONDS_LATE.md)
-**Last updated:** 2026-09-09
+**Companion plans:** not published (Survive-the-Night / Six Seconds Late drafts are out of scope; do not create them in this PR).
+**Last updated:** 2026-09-16
+
+> **v0.2 pointer (2026-09-16).** The capability ladder is
+> [DEPRIZE_CAPABILITY_LADDER.md](DEPRIZE_CAPABILITY_LADDER.md). Touchdown remains rung 0; First
+> Tracks and Ice are named rungs with no spec published yet; surface night survival is 2028+
+> (placeholder only). The G6 purse decision is now **product intent**: a **payload purchase** with the
+> waterfall in [DEPRIZE_TOUCHDOWN.md](DEPRIZE_TOUCHDOWN.md) Part VI, not a cheque to a CLPS operator.
+> Terms v1.1 still govern until counsel. This GTM's phase plan is unchanged.
 
 ---
 
