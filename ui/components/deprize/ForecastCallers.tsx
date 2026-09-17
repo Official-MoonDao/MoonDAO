@@ -1,6 +1,7 @@
 import { FORECASTS_TABLE_NAMES } from 'const/config'
 import { useMemo } from 'react'
 import { CARD } from '@/components/deprize/detail/primitives'
+import { snapshotBrier } from '@/lib/forecasts/brier'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 
 type CallerRow = {
@@ -27,10 +28,12 @@ export default function ForecastCallers({
   chainSlug,
   deprizeId,
   labels,
+  resolvedVector,
 }: {
   chainSlug: string
   deprizeId: number
   labels: string[]
+  resolvedVector?: number[] | null
 }) {
   const table = FORECASTS_TABLE_NAMES[chainSlug] ?? ''
   const statement = useMemo(() => {
@@ -56,6 +59,7 @@ export default function ForecastCallers({
           {rows.map((row, i) => {
             const vector = parseVector(row.vector, labels.length)
             const name = row.displayName?.trim() || `Caller ${i + 1}`
+            const brier = snapshotBrier(vector, resolvedVector)
             return (
               <li key={`${name}-${row.updatedAt ?? i}`} className="text-sm">
                 <p className="text-white truncate">{name}</p>
@@ -63,6 +67,7 @@ export default function ForecastCallers({
                   {labels
                     .map((label, idx) => `${label} ${Math.round((vector[idx] ?? 0) * 100)}%`)
                     .join(' · ')}
+                  {brier != null ? ` · Brier ${brier.toFixed(2)}` : ''}
                 </p>
               </li>
             )
