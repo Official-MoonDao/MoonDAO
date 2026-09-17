@@ -71,7 +71,7 @@ export const DEPRIZE_RISK_DISCLOSURES_URL =
   '/docs/Legal/DePrize/DePrize-Risk-Disclosures-and-Disclaimers'
 // Bump whenever the published Terms change materially; the bet flow keys the
 // user's acceptance on this so a new version re-prompts them.
-export const DEPRIZE_TERMS_VERSION = '1.1'
+export const DEPRIZE_TERMS_VERSION = '1.2'
 
 export const DEPRIZE_AVAILABILITY_LEGEND =
   'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'

@@ -14,9 +14,15 @@ import {
 const UI_ROOT = path.resolve(__dirname, '../../../../')
 
 describe('payloadCopyMode', () => {
-  it('is proposed for the live Terms constant', () => {
-    expect(DEPRIZE_TERMS_VERSION).to.equal('1.1')
-    expect(payloadCopyMode(DEPRIZE_TERMS_VERSION)).to.equal('proposed')
+  it('is in-force for the live Terms constant', () => {
+    expect(DEPRIZE_TERMS_VERSION).to.equal('1.2')
+    expect(payloadCopyMode(DEPRIZE_TERMS_VERSION)).to.equal('in-force')
+  })
+
+  it('in-force copy describes a community payload', () => {
+    expect(payloadCopy('poolStatLabel', 'in-force')).to.match(/payload/i)
+    expect(payloadCopy('disclosureSentence', 'in-force')).to.match(/community payload/i)
+    expect(payloadCopy('fivePercentLine', 'in-force')).to.match(/community payload/i)
   })
 
   it('compares versions by numeric segment, not lexicographically', () => {
