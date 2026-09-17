@@ -16,6 +16,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
 import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
+import DePrizeLadderStrip from '@/components/deprize/DePrizeLadderStrip'
 import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
 import Container from '@/components/layout/Container'
@@ -161,6 +162,8 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                 {bettingBlockedReason}
               </div>
             )}
+
+            <DePrizeLadderStrip chainSlug={chainSlug} />
 
             {/* Search */}
             <div className="relative w-full max-w-md">
