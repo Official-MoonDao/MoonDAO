@@ -6,7 +6,7 @@
   ],
   "extensions": ["ts", "tsx"],
   "spec": [
-    "cypress/integration/lib/deprize/*.cy.ts",
-    "cypress/integration/lib/deprize/*.mocha.ts"
+    "cypress/integration/lib/{deprize,forecasts,discord}/**/*.cy.ts",
+    "cypress/integration/lib/{deprize,forecasts,discord}/**/*.mocha.ts"
   ]
 }
