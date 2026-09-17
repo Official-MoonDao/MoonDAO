@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { DePrizeState, UNIT } from '@/lib/deprize/constants'
+import { DEPRIZE_TERMS_VERSION, DePrizeState, UNIT } from '@/lib/deprize/constants'
+import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
 import { formatBettingCloses } from '@/lib/deprize/status'
 import EthUsd from '@/components/deprize/EthUsd'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
@@ -51,6 +52,7 @@ export default function PrizeHeader(props: {
     teamContract,
     showResolved,
   } = props
+  const copyMode = payloadCopyMode(DEPRIZE_TERMS_VERSION)
 
   return (
     <div className={CARD}>
@@ -89,9 +91,9 @@ export default function PrizeHeader(props: {
       </div>
       <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat
-          label="Prize pool · to winner"
+          label={payloadCopy('poolStatLabel', copyMode)}
           href={launchpadMissionHref}
-          title="Paid to the winning competitor when the race settles. Separate from what bettors win — bettor payouts come from the betting market."
+          title={payloadCopy('poolStatTooltip', copyMode)}
         >
           {jbProjectId !== undefined && !isLoadingFunding ? (
             <EthUsd eth={Number(totalFunding) / Number(UNIT)} prize />

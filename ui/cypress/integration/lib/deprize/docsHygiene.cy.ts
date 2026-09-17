@@ -147,7 +147,8 @@ describe('A′ docs hygiene', () => {
     expect(text).to.match(/PLANNED — name and bar only/)
     expect(text).to.not.match(/^\| Roster \|/m)
     expect(text).to.not.match(/^1\.\s+\*\*Egress/m)
-    expect(text).to.include('NOT IN FORCE')
+    expect(text).to.include('community payload purchase')
+    expect(text).to.not.include('NOT IN FORCE')
   })
 
   it('gate 3 — A′ allowlist files exist and no tracked *.local.md', () => {

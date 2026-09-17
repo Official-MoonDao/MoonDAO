@@ -48,6 +48,7 @@ import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
 import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -171,6 +172,17 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   // settles on-chain with the mint router), not the build-time default.
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
   const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId, chain)
+  const { ethPrice } = useETHPrice(1)
+  const poolUsd = useMemo(() => {
+    if (jbProjectId === undefined || isLoadingFunding || ethPrice == null) return null
+    const eth = Number(totalFunding) / Number(UNIT)
+    if (!Number.isFinite(eth)) return null
+    return eth * ethPrice
+  }, [jbProjectId, isLoadingFunding, totalFunding, ethPrice])
+  const poolAsOf = useMemo(() => {
+    if (ethPrice == null) return null
+    return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
+  }, [ethPrice])
   const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
@@ -636,7 +648,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           onBet={handleBet}
         />
         <ForecastSlot />
-        <PrizePoolSlot />
+        <PrizePoolSlot poolUsd={poolUsd} asOf={poolAsOf} />
         <ClaimSection>
           {showResolved && (
             <ClaimPanel

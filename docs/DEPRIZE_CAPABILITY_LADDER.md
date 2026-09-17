@@ -3,13 +3,13 @@
 |---|---|
 | Rung names and one-line bars | `always` editable until that rung registers (`prepareCondition` then freezes its roster) |
 | LIVE / PLANNED status | `always` editorial until a market exists |
-| Purse language | `never` in force from this file — see the fenced block |
+| Purse language | `open` — see [DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md) |
 | Night Shift placeholder paragraph | `always` — no public spec href |
 
 # DePrize capability ladder
 
 **Owner:** *unassigned — product*  
-**Last updated:** 2026-09-16
+**Last updated:** 2026-09-17
 
 Rungs 1–3 have **no pool, no registration, and no committed date**. Nothing on this page is
 an offer to award a prize.
@@ -34,16 +34,13 @@ operators. First Tracks slots will be rover operators — not a crewed LTV race.
 Touchdown's six outcomes onto any other rung.
 
 Touchdown rules of record: [DEPRIZE_TOUCHDOWN.md](DEPRIZE_TOUCHDOWN.md). GTM context (read-only):
-[DEPRIZE_GTM_TOUCHDOWN.md](DEPRIZE_GTM_TOUCHDOWN.md). The payload-purse runbook ships in PR-C as
-`docs/DEPRIZE_PAYLOAD_PURSE.md` and is not linked from this page until that file exists. First
-Tracks and Ice are plain text on this page until A2 publishes their specs.
+[DEPRIZE_GTM_TOUCHDOWN.md](DEPRIZE_GTM_TOUCHDOWN.md). Purse destination:
+[DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md). First Tracks and Ice are plain text on
+this page until A2 publishes their specs.
 
-```
-⚠ NOT IN FORCE — PRODUCT INTENT ONLY. Terms v1.1 and Prize Rules 1.0 still say the prize is
-paid in ETH to the Winner's wallet. Product intent is that every rung's purse is a payload
-purchase via the Touchdown v0.2 (e) waterfall, not a cheque to a CLPS operator. Owner:
-*unassigned — product*. Counsel gate: PR-C. Do not quote this block in live UI as in-force terms.
-```
+The purse for every rung is a **community payload purchase** on a future flight — the winner's next
+qualifying flight, or a nonprofit the Winner names if they do not claim, or the next prize if
+there is no response. It is not a cheque to a CLPS operator.
 
 ## Frozen editorial defaults
 
@@ -52,4 +49,4 @@ purchase via the Touchdown v0.2 (e) waterfall, not a cheque to a CLPS operator. 
 | Rung order Touchdown → First Tracks → Ice → Night Shift | *unassigned — product* | A rung's capability is demonstrated before the rung below it |
 | Four rungs, not three or five | *unassigned — product* | A fifth capability acquires a credible 2027–28 attempt |
 | Night Shift stays a public placeholder with no spec | *unassigned — product* | An RHU-equipped lander with a published night-survival objective enters a 12-month window |
-| Purse = payload purchase | *unassigned — product* | Counsel rules the payload agreement unworkable, or PR-C lands |
+| Purse = payload purchase | *unassigned — product* | A later change replaces the payload waterfall |
