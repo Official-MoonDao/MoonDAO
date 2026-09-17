@@ -16,6 +16,10 @@
 import 'dotenv/config'
 import { createServer } from 'http'
 import { AddressInfo } from 'net'
+import {
+  getAuthenticatedChannel,
+  getExpectedChannelId,
+} from './utils/youtube-oauth-captions'
 
 // captions.download needs full read/write scope; the read-only scope is not
 // sufficient, which is a common and confusing dead end.
@@ -103,6 +107,7 @@ async function main() {
 
   const body = (await tokenResponse.json()) as {
     refresh_token?: string
+    access_token?: string
     error?: string
     error_description?: string
   }
@@ -121,6 +126,36 @@ async function main() {
       )
     }
     process.exit(1)
+  }
+
+  // Confirm which channel was picked before anyone pastes this into CI.
+  if (body.access_token) {
+    try {
+      const channel = await getAuthenticatedChannel(body.access_token)
+      const expected = getExpectedChannelId()
+
+      if (!channel) {
+        console.warn('\nWarning: this token is not associated with any YouTube channel.')
+      } else {
+        console.log(`\nAuthorised as channel: ${channel.title} (${channel.id})`)
+        if (expected && channel.id !== expected) {
+          console.warn(
+            `\nWARNING: that is NOT the configured channel (${expected}).\n` +
+              'You almost certainly picked a personal channel at the account chooser.\n' +
+              'This token will authenticate fine and then fail on every town hall.\n' +
+              'Re-run `yarn oauth:setup` and select the MoonDAO channel instead.'
+          )
+        } else if (expected) {
+          console.log('This matches the configured channel.')
+        }
+      }
+    } catch (error) {
+      console.warn(
+        `\nCould not confirm the channel: ${
+          error instanceof Error ? error.message : error
+        }`
+      )
+    }
   }
 
   console.log('\nRefresh token:\n')

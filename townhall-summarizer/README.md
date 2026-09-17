@@ -246,23 +246,29 @@ Since MoonDAO owns these videos, the `owner` path asks for them through the fron
 
    > This step is not optional. While the consent screen is in **Testing**, Google expires refresh tokens after **7 days**, and the pipeline starts failing with `invalid_grant`. This is the "the key keeps expiring" problem — it is a consent-screen setting, not something to work around in code.
 
-3. Put the client ID and secret in `townhall-summarizer/.env`, then, signed into the Google account that **owns the @officialmoondao channel**:
+3. You need an account that can act for the channel. You do **not** have to be the owner — a Brand Account **Manager** works. An existing owner grants this at [YouTube Settings → Permissions → Invite](https://www.youtube.com/account_sharing) by inviting your Google account as **Manager** (not Editor; Editor cannot complete this OAuth flow).
+
+4. Put the client ID and secret in `townhall-summarizer/.env`, then, signed into that account:
 
    ```bash
    yarn oauth:setup
    ```
 
-   Open the printed URL, authorise, and copy the refresh token it prints.
+   Open the printed URL and authorise.
 
-4. Verify against a real town hall before trusting it:
+   > **At the account chooser, pick the MoonDAO channel, not your personal one.** A manager is offered both. Choosing the personal channel mints a token that authenticates perfectly and then fails on every town hall, because it doesn't own them. `oauth:setup` prints which channel it ended up as and warns loudly on a mismatch, so read that line before copying the token.
+
+   Copy the refresh token it prints.
+
+5. Verify against a real town hall before trusting it:
 
    ```bash
    yarn captions:check f_jXiCdzIxQ ELcZETA5yzw
    ```
 
-   It reports each step separately — credentials, token exchange, `captions.list`, `captions.download` — so a failure tells you which one broke, and exits non-zero if nothing could be read.
+   It reports each step separately — credentials, token exchange, authenticated channel, `captions.list`, `captions.download` — so a failure tells you which one broke, and exits non-zero if nothing could be read.
 
-5. Add all three values as **repository secrets** (`YOUTUBE_OAUTH_CLIENT_ID`, `YOUTUBE_OAUTH_CLIENT_SECRET`, `YOUTUBE_OAUTH_REFRESH_TOKEN`) so the workflow can use them, and to Cloud Run if you run the service there.
+6. Add all three values as **repository secrets** (`YOUTUBE_OAUTH_CLIENT_ID`, `YOUTUBE_OAUTH_CLIENT_SECRET`, `YOUTUBE_OAUTH_REFRESH_TOKEN`) so the workflow can use them, and to Cloud Run if you run the service there.
 
 To backfill the summaries missed since May, run the workflow manually (**Actions** → **Townhall Summarizer** → **Run workflow**) with the video IDs, or use `yarn missing --days=180` to list them.
 

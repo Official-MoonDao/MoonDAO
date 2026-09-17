@@ -121,6 +121,45 @@ export async function getAccessToken(config: OAuthConfig): Promise<string> {
   return body.access_token
 }
 
+/**
+ * Reports which channel the token actually acts as.
+ *
+ * This matters more than it looks. A Brand Account manager going through the
+ * consent flow is shown a channel picker, and choosing their personal channel
+ * mints a token that authenticates perfectly and then 403s on every town hall,
+ * because it does not own them. Checking the channel up front turns that into
+ * one clear message instead of a confusing permissions hunt.
+ */
+export async function getAuthenticatedChannel(
+  accessToken: string
+): Promise<{ id: string; title: string } | null> {
+  const response = await fetch(
+    'https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true',
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  )
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new OwnerCaptionsError(
+      `channels.list failed: HTTP ${response.status} ${text.slice(0, 300)}`
+    )
+  }
+
+  const data = (await response.json()) as {
+    items?: Array<{ id?: string; snippet?: { title?: string } }>
+  }
+
+  const channel = data.items?.[0]
+  if (!channel?.id) return null
+
+  return { id: channel.id, title: channel.snippet?.title ?? '' }
+}
+
+/** The channel the pipeline is supposed to be reading, if configured. */
+export function getExpectedChannelId(): string | undefined {
+  return process.env.ALLOWED_YOUTUBE_CHANNEL_ID || process.env.YOUTUBE_CHANNEL_ID
+}
+
 /** Lists the caption tracks YouTube holds for a video the token can see. */
 export async function listCaptionTracks(
   videoId: string,

@@ -15,6 +15,8 @@ import {
   OwnerCaptionsError,
   downloadCaptionTrack,
   getAccessToken,
+  getAuthenticatedChannel,
+  getExpectedChannelId,
   getOAuthConfig,
   listCaptionTracks,
   selectBestTrack,
@@ -58,10 +60,33 @@ async function main() {
     process.exit(1)
   }
 
+  console.log('\n3. Authenticated channel')
+  try {
+    const channel = await getAuthenticatedChannel(accessToken)
+    const expected = getExpectedChannelId()
+    if (!channel) {
+      console.log('  WARNING: this token has no associated YouTube channel')
+    } else {
+      console.log(`  ${channel.title} (${channel.id})`)
+      if (expected && channel.id !== expected) {
+        console.log(`  WARNING: expected ${expected}`)
+        console.log(
+          '  HINT:   the token was minted against the wrong channel — most likely a\n' +
+            '          personal one picked at the account chooser. Re-run `yarn oauth:setup`\n' +
+            '          and select the MoonDAO channel.'
+        )
+      } else if (expected) {
+        console.log('  ok — matches the configured channel')
+      }
+    }
+  } catch (error) {
+    report(error)
+  }
+
   let succeeded = 0
   for (const input of inputs) {
     const videoId = extractVideoId(input)
-    console.log(`\n3. ${input}`)
+    console.log(`\n4. ${input}`)
     if (!videoId) {
       console.error('  FAILED: could not parse a video id out of that')
       continue
