@@ -176,17 +176,131 @@ softgoods module uses for its own power feed.
   a `PROJECT_MODEL` entry alone would have rendered nothing. The GLB file itself
   is left in `public/` unreferenced, the same as `insight-lander.glb`.
 
-### The landing zone — Touchdown (1 of 5 done)
+### The landing zone — Touchdown (DONE — 5 of 5)
 
-`shared-next-landing` is the newest race and the least differentiated. Only
-`blue-origin-blue-moon-mk1` has its own model; `astrobotic-griffin`,
-`im-nova-c`, `firefly-blue-ghost` and `cnsa-change-7` all still fall through to
-the generic `Lander`, so four of the five vehicles on the pad are the same squat
-four-legged bus. They are not interchangeable hardware — Griffin is a wide flat
-cargo deck, Nova-C is a tall narrow hexagonal column (height is its largest
-dimension, not its span), Blue Ghost is a low wide disc, and Chang'e-7 is a
-Chang'e-3/4 heritage bus with a rover ramp — and all four already have their
-real sizes in `PROJECT_SIZE_M`, so only the geometry is missing.
+`shared-next-landing` was the newest race and the least differentiated. **All
+five vehicles now have their own models**: `blue-origin-blue-moon-mk1`,
+`cnsa-change-7`, `astrobotic-griffin`, `im-nova-c` and `firefly-blue-ghost`.
+Nothing in this race falls through to the generic `Lander` any more.
+
+**What tells them apart, in priority order.** This matters because five
+four-to-six-legged landers on one pad is exactly the situation where a later
+edit "harmonises" two of them back into looking alike:
+
+| | Body | Gear |
+|---|---|---|
+| Blue Moon MK1 | tall barrel, mostly tankage | 4 gold bipods, gold stops at the knee |
+| Chang'e-7 | low boxy bus, two flat wings | 4 gold tubes, gold runs to the pad |
+| Griffin | hexagonal basket of solar panels | 4 bare aluminium, no gold at all |
+| Nova-C | 4 m column tapering to a cone | **6** legs, lattice of thin tubes |
+| Blue Ghost | squat octagonal pyramid + chimney | 4 single thick tubes, flat oval skids |
+
+Earlier revisions of this doc claimed the *gear finish* was what separated
+these. **That is no longer true and should not be relied on:** Blue Ghost is
+gold-over-bare-metal at the knee, the same scheme as the Blue Moons. Body shape
+is the reliable discriminator; on gear, use leg count and topology (bipod vs
+single tube vs lattice) and pad type (round dish vs flat oval skid).
+
+`BlueGhost` is the squat one — 3.5 m across on a 2 m stack, so **width is its
+largest dimension**, the opposite arrangement to Nova-C directly below it in the
+file. Its silhouette is an octagonal truncated pyramid that narrows going up with
+a tapered chimney and an overhanging dark cap on top; nothing else in the atlas
+has that, and it identifies the vehicle at distance far better than livery does.
+
+Two things worth knowing before touching it:
+
+- **Its solar panels sit flush on the sloped faces, and that is load-bearing.**
+  The pyramid already tips its faces up ~33°, so flush is *also* well-aimed under
+  this scene's 44.5° sun. `BG_RAKE` is derived from the two body radii, and its
+  sign is the **exact opposite of Griffin's** (`+32.5°` up here versus `-17.4°`
+  down there) because Griffin's basket opens upward while this pyramid narrows
+  upward. Both are derived rather than written down precisely so that pair cannot
+  drift into agreeing.
+- **Its instrument booms are deliberately short.** The real electrodes deploy
+  tens of metres; the booms here stop at 1.6 m, inside the 1.75 m footpads,
+  because the footprint radius comes off `PROJECT_SIZE_M` and anything past the
+  pads would have this model overlapping its neighbours on the pad.
+
+Its accent is the collar at the chimney's base. Firefly's `brandColor` is
+`#FB7185`, which is not a colour the real hardware carries anywhere, so unlike
+Nova-C and Chang'e-7 this one is a pure house-rule band rather than a happy
+match — the references' Firefly mark, NASA insignia and flag are all withheld.
+
+`NovaC` is the one vehicle here **whose largest dimension is its height**: a 4 m
+column on a 1.56 m hexagonal bus, famously about the size of a phone box. The
+generic drum it replaced had both the proportion and the axis wrong. Its
+silhouette is the taper — a straight hexagonal prism that narrows into a cone at
+the bottom with the engine emerging from the point.
+
+Three notes before touching it:
+
+- **It does not reuse `RACER_BLUE`**, even though Moon RACER is the same operator
+  and is defined directly below it. That constant is the blue RACER is *painted*;
+  Nova-C is a white bus over a dark grey lower body. Sharing a hex between
+  vehicles only earns its keep when the colour is the cue (`ILRS_GOLD`).
+- **`NOVAC_APOTHEM` is not `NOVAC_BODY_R`.** Fittings mounted on a hexagonal
+  *face* seat on the apothem; only the corner seam strips seat on the
+  circumradius. On a 0.9 m body those differ by 12 cm, so confusing them buries a
+  panel.
+- **The panels live on the straight prism only.** A flat panel spanning the taper
+  is half-buried at one end of its run and standing off at the other — the same
+  failure `mk1SkirtR` and `novacConeR` exist to prevent.
+
+Its accent lands on the solar panels' inboard edge rails, because IM's own
+`brandColor` is `#F97316` and the reference panels carry a bright orange stripe
+down exactly that edge. The house rule and the real hardware wanted the same
+paint in the same place, as with `ILRS_RED` and Chang'e-7's flag red.
+
+`Griffin` draws **Griffin, not Peregrine.** The project's dataset name is the
+family label "Peregrine & Griffin Landers" and those are two genuinely different
+vehicles — Peregrine is roughly a quarter the payload class and under half as
+wide. One project covers both because the shared goal's win test makes the slot
+the *operator*, not the vehicle; splitting them would hand one company two
+outcomes in the same market and churn the on-chain `teamIds`. A model can only
+draw one silhouette, and three things already pointed at Griffin: the
+`PROJECT_SIZE_M` figure is Griffin's, the DePrize outcome names "Griffin Mission
+One", and Peregrine's one flight never landed.
+
+Its geometry is a hexagonal basket of body-mounted solar panels that **flares
+outward as it rises**, so the cells face outward and slightly *down*. That was
+read off the plan-view render, not assumed — it is the opposite of the inward
+taper a lander skirt is usually drawn with, and `GRF_SKIRT_RAKE` is derived from
+the two basket radii rather than written down separately so the two cannot
+disagree. Four creased gold MLI spheres stand proud of the panel rim (low segment
+counts plus `flatShading` on purpose: a smooth high-poly gold sphere reads as a
+chrome ball bearing, and what these are is a blanket with folds in it), with a
+hexagonal payload funnel in the middle of them and two open-lattice ramps
+deployed up and outboard.
+
+Griffin is also the second model whose `PROJECT_SIZE_M` figure is a **horizontal**
+span rather than a height (4.5 m across the legs by 2.0 m tall, both off
+Astrobotic's own dimension arrows). On a vehicle this flat the ramps are the one
+part that could quietly become the widest *or* the tallest thing on it, so both
+are asserted.
+
+`ChangE7` is defined next to `ILRSBase` rather than up with the Blue Moons, and
+deliberately: it is the same agency's hardware and reuses `ILRS_GOLD`, so
+keeping the two blocks together is what stops the CNSA gold being written out as
+two hexes 8000 lines apart that then drift. A low boxy gold-MLI bus on splayed
+four-leg gear, two solar wings deployed near-flat off the flanks, a deck
+carrying a steerable Earth dish / omni whip / mast camera / propellant pair, a
+science boom out over the regolith, and the rover ramp down off the front.
+`Griffin` is defined immediately after it, for a second mechanical reason on top
+of that one: both reuse `solarFaceMaps()`, so both have to sit below it.
+
+Two things about it are worth knowing before touching the next lander:
+
+- **Its `PROJECT_SIZE_M` figure is a horizontal span, not a height.** The 4.8 m
+  is the deployed wing span tip to tip, with the 4.2 m leg span inside it. Every
+  other model on this list is sized by its height, so this is the one where
+  getting the axis wrong would silently scale the whole vehicle. Only the
+  comment changed; the number did not, so footprints and the `ROSTERS` rosters
+  were untouched.
+- **Its wings are NOT sun-raked**, which looks like a violation of the solar
+  array house rule above and is not. That rule exists for `VerticalSolarArray`,
+  which is a *tracker* and is therefore drawn wrong if it ignores the sun. A
+  fixed deployable on a vehicle that landed where it landed has no such
+  obligation, and both references show Chang'e wings flat.
 
 ### The habitat district — the two flagship programs (2 of 2 done)
 

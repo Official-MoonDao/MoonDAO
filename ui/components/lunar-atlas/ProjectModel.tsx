@@ -94,10 +94,27 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // here each one would render at TYPE_SIZE_M.lander's 16 m — Blue Moon MK2
   // class, three to four times its real size. Public figures / honest
   // estimates, largest dimension:
-  'astrobotic-griffin': 4.5, // ~4.5 m across the splayed legs, ~2 m deck
-  'im-nova-c': 4, // 4 m tall on a 1.6 m hexagonal bus — height is the max
-  'firefly-blue-ghost': 3.5, // ~3.5 m across the legs, ~2 m tall
-  'cnsa-change-7': 4.8, // Chang'e-3/4 heritage bus, 4.8 m leg span
+  // Astrobotic's own dimensioned scale drawing: 4.5 m across the splayed legs
+  // by 2.0 m tall. Width is the largest dimension, and Griffin below is
+  // authored so opposite footpads span exactly this. The figure is GRIFFIN's,
+  // not Peregrine's — the project's name is a family label covering both, and
+  // Peregrine is under half this wide (see the note on the model).
+  'astrobotic-griffin': 4.5,
+  // 4 m tall on a 1.56 m hexagonal bus, so HEIGHT is the max here — the only
+  // Touchdown lander of which that is true. NovaC below is authored so the
+  // antenna tips land on this figure and the 3.44 m leg span stays under it.
+  'im-nova-c': 4,
+  // ~3.5 m across the legs on a ~2 m stack, so width is the max. BlueGhost is
+  // authored so opposite footpads span exactly this, and its instrument booms
+  // are held inside it — the real electrodes deploy far past the pads, but the
+  // footprint radius comes off this figure.
+  'firefly-blue-ghost': 3.5,
+  // Chang'e-3/4 heritage bus. The figure is the DEPLOYED SOLAR WING SPAN, tip
+  // to tip, which is what ChangE7 below is authored against — the 4.2 m leg
+  // span sits inside it, and both references show the wings reaching past the
+  // footpads. Chang'e-3's own published figures put the two within a few cm of
+  // each other at ~4.76 m, so the number did not move when the model landed.
+  'cnsa-change-7': 4.8,
   // Footpad to nose tip — NASA's own Artemis III renders show a tall stack:
   // splayed legs, a windowed crew module with a deployable crew ladder, two
   // open lattice bays exposing the propellant tanks, then a smooth ascent
@@ -9126,6 +9143,1786 @@ function ILRSBase({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Chang'e-7 — CNSA's South Pole robotic scout
+// ---------------------------------------------------------------------------
+//
+// Sits HERE, next to ILRS, rather than beside the other Touchdown landers up
+// top, because it is the same agency's hardware and reuses ILRS_GOLD: the gold
+// MLI is the family cue that separates this program from Artemis's
+// white/aluminum hulls (see the note on those constants), and writing the same
+// hex out twice in two blocks 8000 lines apart is how the two drift apart.
+//
+// Replaces the generic `Lander` stand-in, which is a compact drum on a pad and
+// has nothing in common with this. Built from the Chang'e-4 surface photography
+// and CNSA's own Chang'e-7 renders — the same Chang'e-3 heritage bus in both: a
+// low boxy body wrapped in gold MLI on a splayed four-leg gear, two solar wings
+// deployed nearly flat off the flanks, and a top deck crowded with a steerable
+// Earth dish, a whip, a mast camera and a pair of gold propellant spheres. The
+// rover ramp is down off the front: Chang'e-7 flies an orbiter, lander, rover
+// AND hopper (see its dataset summary), and the ramp is the one thing on the
+// vehicle that says it delivers something rather than just arriving.
+//
+// NO FLAG, though the reference carries one on the bus's front face. Livery is a
+// band rather than a roundel by house rule — and it costs nothing here, because
+// this org's own brandColor IS that flag's red (#C8102E, the one colour note
+// both partners' flags share), so `accent` puts the same red in the same place
+// as a stripe. The same treatment ILRS_RED already documents above.
+//
+// SIZE: the 4.8 m in PROJECT_SIZE_M is the DEPLOYED WING SPAN, tip to tip, with
+// the 4.2 m leg span inside it. Chang'e-3's published figures put both at about
+// 4.76 m, and both references show the wings reaching well past the footpads.
+const CE7_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['cnsa-change-7'] ?? 4.8)
+
+// Bus, in meters. Wider than it is tall, which is most of why this reads as a
+// different class of vehicle from the Blue Moons: they are barrels, this is a
+// table.
+const CE7_BUS_HX = 0.82 // half-width, across the flanks the wings hinge on
+const CE7_BUS_HZ = 0.75 // half-depth, front to back
+const CE7_BUS_BOT = 0.78
+const CE7_BUS_TOP = 1.62
+const CE7_PAYLOAD_TOP = 2.05 // the raised box on the deck
+
+// Gear. Footpads on the diagonals, so 4.2 m corner to corner — inside the wing
+// span above, which is what keeps PROJECT_SIZE_M describing the widest axis.
+const CE7_FOOT_R = 2.1
+const CE7_FOOT_Y = 0.1
+const CE7_HIP_Y = 0.92 // the gear picks up on the bus's lower corners
+
+// Wings. CE7_WING_TIP is half the span, so it sets the vehicle's size outright.
+const CE7_WING_ROOT = 0.9
+const CE7_WING_TIP = 2.4
+const CE7_WING_HZ = 0.52
+const CE7_WING_Y = 1.34
+// ~11 degrees of dihedral. Deliberately NOT raked onto the sun the way the
+// base's own arrays are (see VerticalSolarArray): those are trackers, aimed,
+// and the house rule about raking them exists because a tracker that ignores
+// the sun is drawn wrong. This is a fixed deployable on a vehicle that landed
+// where it landed — its wings are flat because they unfolded flat, and both
+// references show them that way.
+const CE7_WING_DIHEDRAL = 0.2
+
+const CE7_DISH_D = 0.62
+const CE7_DISH_THETA = 0.92 // rim half-angle of the reflector cap
+const CE7_DISH_R = CE7_DISH_D / 2 / Math.sin(CE7_DISH_THETA)
+// Swung off the wing axis so the reflector is never seen face-on — a dish
+// square to the eye is a disc, the same reasoning as SAT_DISH_YAW.
+const CE7_DISH_YAW = 0.7
+
+// Rover ramp, as the two points it spans: down off the front of the bus to the
+// regolith. Its length and rake are derived from these rather than written
+// down, so the foot cannot drift off the ground when the bus height changes.
+const CE7_RAMP_X = 0.34
+const CE7_RAMP_TOP: [number, number] = [CE7_BUS_BOT - 0.02, CE7_BUS_HZ * 0.8]
+const CE7_RAMP_FOOT: [number, number] = [0.02, 1.86]
+
+// One leg: a thick gold-wrapped primary from the bus corner out to the footpad
+// with a thinner brace picking up higher and inboard, which is how every
+// Chang'e leg is braced in the surface photography. The gold runs all the way
+// to the pad on this vehicle — unlike the Blue Moons, whose blankets stop at
+// the knee.
+function Ce7Leg({ angle }: { angle: number }) {
+  const hip: [number, number, number] = [
+    Math.cos(angle) * CE7_BUS_HX * 0.9,
+    CE7_HIP_Y,
+    Math.sin(angle) * CE7_BUS_HZ * 0.9,
+  ]
+  const braceTop: [number, number, number] = [
+    Math.cos(angle) * CE7_BUS_HX * 0.5,
+    CE7_BUS_TOP - 0.1,
+    Math.sin(angle) * CE7_BUS_HZ * 0.5,
+  ]
+  const foot: [number, number, number] = [
+    Math.cos(angle) * CE7_FOOT_R,
+    CE7_FOOT_Y,
+    Math.sin(angle) * CE7_FOOT_R,
+  ]
+  // Where the brace meets the primary — partway down the run, not at the pad,
+  // so the two members form a visible triangle rather than a single thick line.
+  const mid: [number, number, number] = [
+    hip[0] + (foot[0] - hip[0]) * 0.55,
+    hip[1] + (foot[1] - hip[1]) * 0.55,
+    hip[2] + (foot[2] - hip[2]) * 0.55,
+  ]
+  return (
+    <group>
+      <Strut from={hip} to={foot} r={0.055} color={ILRS_GOLD} />
+      <Strut from={braceTop} to={mid} r={0.032} color={ILRS_GOLD_DARK} />
+      {/* Footpad: a shallow dish bedded below grade, so it cannot lift clear of
+          a hollow it lands over. */}
+      <mesh position={[foot[0], foot[1] - 0.07, foot[2]]}>
+        <cylinderGeometry args={[0.26, 0.2, 0.14, 14]} />
+        <meshStandardMaterial color={ILRS_HULL} metalness={0.3} roughness={0.6} />
+      </mesh>
+      <mesh position={[foot[0], foot[1] + 0.01, foot[2]]}>
+        <sphereGeometry args={[0.22, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={METAL} metalness={0.4} roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+// The descent engine and its attitude quads, under the deck. Held well above
+// the footpads: this vehicle lands on a throttled main, and the bell is tucked
+// up inside the bay rather than hanging at ground level.
+function Ce7Thrusters() {
+  const quads = [0, 1, 2, 3].map((i) => (i / 4) * Math.PI * 2 + Math.PI / 4)
+  return (
+    <group>
+      <mesh position={[0, CE7_BUS_BOT - 0.16, 0]}>
+        <cylinderGeometry args={[0.1, 0.24, 0.32, 16, 1, true]} />
+        <meshStandardMaterial
+          color={DARK}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.35}
+        />
+      </mesh>
+      {quads.map((a) => (
+        <group key={a}>
+          <mesh
+            position={[
+              Math.cos(a) * CE7_BUS_HX * 0.72,
+              CE7_BUS_BOT - 0.07,
+              Math.sin(a) * CE7_BUS_HZ * 0.72,
+            ]}
+          >
+            <cylinderGeometry args={[0.045, 0.075, 0.14, 10, 1, true]} />
+            <meshStandardMaterial
+              color={ILRS_HULL}
+              side={THREE.DoubleSide}
+              metalness={0.5}
+              roughness={0.4}
+            />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+// The bus: gold MLI over a lighter lower bay, with the dark instrument panel and
+// the livery band on the front face. Panels stand proud of the wall rather than
+// flush, per the house rule on coplanar detail.
+function Ce7Bus({ accent }: { accent: string }) {
+  const h = CE7_BUS_TOP - CE7_BUS_BOT
+  return (
+    <group>
+      {/* Lower bay, set in slightly so the gold body above reads as a separate
+          course rather than one extruded block. */}
+      <mesh position={[0, CE7_BUS_BOT + 0.13, 0]}>
+        <boxGeometry args={[CE7_BUS_HX * 1.86, 0.26, CE7_BUS_HZ * 1.86]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.55} metalness={0.25} />
+      </mesh>
+      <mesh position={[0, CE7_BUS_BOT + 0.2 + (h - 0.2) / 2, 0]}>
+        <boxGeometry args={[CE7_BUS_HX * 2, h - 0.2, CE7_BUS_HZ * 2]} />
+        <meshStandardMaterial color={ILRS_GOLD} roughness={0.4} metalness={0.38} />
+      </mesh>
+      {/* Deck plate, proud of the body so the top reads as a lid. */}
+      <mesh position={[0, CE7_BUS_TOP + 0.02, 0]}>
+        <boxGeometry args={[CE7_BUS_HX * 1.94, 0.05, CE7_BUS_HZ * 1.94]} />
+        <meshStandardMaterial color={ILRS_GOLD_DARK} roughness={0.5} metalness={0.35} />
+      </mesh>
+      {/* Dark instrument panel, front-left, as in the surface photography. */}
+      <mesh position={[-CE7_BUS_HX * 0.42, CE7_BUS_TOP - 0.28, CE7_BUS_HZ + 0.02]}>
+        <boxGeometry args={[CE7_BUS_HX * 0.72, 0.4, 0.05]} />
+        <meshStandardMaterial color={DARK} roughness={0.45} metalness={0.4} />
+      </mesh>
+      {/* Livery band, front and upper, where the reference carries the flag.
+          See the note on this model. */}
+      <mesh position={[CE7_BUS_HX * 0.4, CE7_BUS_TOP - 0.14, CE7_BUS_HZ + 0.02]}>
+        <boxGeometry args={[CE7_BUS_HX * 0.6, 0.09, 0.04]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.2} />
+      </mesh>
+      {/* A payload box on the front face and a radiator on the rear, so the two
+          long sides are not the same blank gold. */}
+      <mesh position={[CE7_BUS_HX * 0.38, CE7_BUS_TOP - 0.46, CE7_BUS_HZ + 0.04]}>
+        <boxGeometry args={[0.24, 0.24, 0.1]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.5} metalness={0.3} />
+      </mesh>
+      <mesh position={[0, CE7_BUS_TOP - 0.34, -(CE7_BUS_HZ + 0.02)]}>
+        <boxGeometry args={[CE7_BUS_HX * 1.2, 0.44, 0.04]} />
+        <meshStandardMaterial color={DARK} roughness={0.75} metalness={0.2} />
+      </mesh>
+    </group>
+  )
+}
+
+// One solar wing. The face is the shared module map the base's arrays use — a
+// flat blue quad is the one thing that reliably reads as cardboard at this size
+// (see makeSolarFaceMaps), and the roughness contrast between matte rail and
+// glossy laminate is what sells it as glass.
+//
+// Built along +X and swung to the far side by a half turn about Y rather than a
+// negative scale, which would reverse the winding and show the face's backside.
+// Euler order is XYZ, so the dihedral about Z applies FIRST, in the wing's own
+// frame, and the half turn carries the already-tilted wing across — the tip
+// comes up on both sides. Confirmed numerically rather than reasoned about.
+function Ce7Wing({ side }: { side: 1 | -1 }) {
+  const maps = solarFaceMaps()
+  const len = CE7_WING_TIP - CE7_WING_ROOT
+  const midX = (CE7_WING_ROOT + CE7_WING_TIP) / 2
+  return (
+    <group rotation={[0, side > 0 ? 0 : Math.PI, CE7_WING_DIHEDRAL]}>
+      {/* Hinge and yoke out to the panel root. */}
+      <mesh position={[CE7_BUS_HX + 0.04, CE7_WING_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.09, 0.09, 0.16, 12]} />
+        <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.5} />
+      </mesh>
+      <Strut
+        from={[CE7_BUS_HX + 0.04, CE7_WING_Y, 0]}
+        to={[CE7_WING_ROOT + 0.02, CE7_WING_Y, 0]}
+        r={0.035}
+        color={SOLAR_STEEL}
+      />
+      {/* Substrate. The face plane below is single-sided, so this is also what
+          the wing looks like from underneath. */}
+      <mesh position={[midX, CE7_WING_Y, 0]}>
+        <boxGeometry args={[len, 0.03, CE7_WING_HZ * 2]} />
+        <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+      </mesh>
+      {/* Cells, standing proud of the substrate and facing up. A plane's normal
+          is +Z, so -PI/2 about X turns it onto +Y. */}
+      <mesh position={[midX, CE7_WING_Y + 0.022, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[len, CE7_WING_HZ * 2]} />
+        <meshPhysicalMaterial
+          map={maps?.albedo ?? null}
+          roughnessMap={maps?.rough ?? null}
+          color={maps ? '#ffffff' : '#16294f'}
+          metalness={0.04}
+          roughness={maps ? 1 : 0.22}
+          clearcoat={1}
+          clearcoatRoughness={0.18}
+        />
+      </mesh>
+      {/* Outboard rib, which is what the eye reads the wing's thickness by. */}
+      <mesh position={[CE7_WING_TIP - 0.02, CE7_WING_Y, 0]}>
+        <boxGeometry args={[0.05, 0.06, CE7_WING_HZ * 2]} />
+        <meshStandardMaterial color={SOLAR_RAIL} roughness={0.55} metalness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// Everything on the lid: the raised payload box, the propellant pair, the Earth
+// link, the omni whip, and a mast camera.
+function Ce7Deck({ accent }: { accent: string }) {
+  const deck = CE7_BUS_TOP + 0.05
+  const boxH = CE7_PAYLOAD_TOP - deck
+  return (
+    <group>
+      <mesh position={[-0.12, deck + boxH / 2, -0.14]}>
+        <boxGeometry args={[0.62, boxH, 0.5]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.5} metalness={0.3} />
+      </mesh>
+      {/* The propellant pair, high and central — a pair of gold spheres is one
+          of the most recognizable things on the render. */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * 0.3, deck + 0.22, 0.24]}>
+          <sphereGeometry args={[0.21, 16, 12]} />
+          <meshStandardMaterial color={ILRS_GOLD} roughness={0.35} metalness={0.45} />
+        </mesh>
+      ))}
+
+      {/* Earth link. Yawed on an outer group and tipped on an inner one, so the
+          boresight elevation is exactly SAT_DISH_EL at any yaw — combining the
+          two on one Euler loses elevation as the yaw grows. Earth sits within a
+          few degrees of the horizon from here, so this is very nearly
+          horizontal; the reference photo's steeply tilted dish was shot from a
+          mid-latitude landing site, not the pole. */}
+      <group position={[0.3, deck + 0.06, -0.3]} rotation={[0, CE7_DISH_YAW, 0]}>
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.08, 0.1, 0.2, 12]} />
+          <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.5} />
+        </mesh>
+        <group position={[0, 0.24, 0]} rotation={[-SAT_DISH_EL, 0, 0]}>
+          {/* Sunk by its own sphere radius so the cap's VERTEX lands on the
+              gimbal — placed by its centre it floats a whole radius off. */}
+          <mesh position={[0, 0, CE7_DISH_R]} rotation={[-Math.PI / 2, 0, 0]}>
+            <sphereGeometry
+              args={[CE7_DISH_R, 24, 14, 0, Math.PI * 2, 0, CE7_DISH_THETA]}
+            />
+            <meshStandardMaterial
+              color={ILRS_HULL}
+              side={THREE.DoubleSide}
+              roughness={0.34}
+              metalness={0.3}
+            />
+          </mesh>
+          {/* Feed on a tripod at the focus — the detail that says "antenna"
+              rather than "bowl", and unmistakable in photographs of one. */}
+          {[0, 1, 2].map((i) => {
+            const fa = (i / 3) * Math.PI * 2
+            return (
+              <Strut
+                key={i}
+                from={[Math.cos(fa) * CE7_DISH_D * 0.34, Math.sin(fa) * CE7_DISH_D * 0.34, 0.02]}
+                to={[0, 0, CE7_DISH_R / 2]}
+                r={0.012}
+                color={METAL}
+              />
+            )
+          })}
+          <mesh position={[0, 0, CE7_DISH_R / 2]}>
+            <cylinderGeometry args={[0.04, 0.05, 0.08, 10]} />
+            <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+          </mesh>
+        </group>
+      </group>
+
+      {/* Omni whip: what carries telemetry when the dish is off target, and the
+          reason the silhouette reads as a spacecraft from a distance. Thin
+          decorative antennas are allowed to overshoot the body's own height,
+          the same as the Blue Moon MK2's. */}
+      <mesh position={[-0.6, deck + 0.44, 0.3]}>
+        <cylinderGeometry args={[0.012, 0.016, 0.88, 6]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.4} metalness={0.5} />
+      </mesh>
+      {/* Mast camera: a pan/tilt head on a short post, looking out over the
+          front of the deck. */}
+      <mesh position={[0.16, deck + 0.26, 0.06]}>
+        <cylinderGeometry args={[0.03, 0.036, 0.52, 8]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.45} metalness={0.4} />
+      </mesh>
+      <mesh position={[0.16, deck + 0.56, 0.06]}>
+        <boxGeometry args={[0.17, 0.11, 0.13]} />
+        <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh position={[0.16, deck + 0.56, 0.14]}>
+        <sphereGeometry args={[0.035, 10, 8]} />
+        <meshStandardMaterial color={PANEL_EDGE} roughness={0.3} metalness={0.5} />
+      </mesh>
+      {/* A couple of small monopoles, and the beacon in the operator's colour. */}
+      {[-0.34, 0.52].map((x) => (
+        <mesh key={x} position={[x, deck + 0.2, -0.36]}>
+          <cylinderGeometry args={[0.008, 0.01, 0.4, 6]} />
+          <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.5} />
+        </mesh>
+      ))}
+      <mesh position={[-0.5, deck + 0.06, 0.3]}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The science boom: a long thin arm out over the regolith with a sensor head at
+// the tip, angled down off the front-left flank. In the render this is the one
+// thing that breaks the vehicle's boxy outline, so it is worth its four meshes.
+function Ce7Boom() {
+  const root: [number, number, number] = [-CE7_BUS_HX * 0.94, CE7_BUS_TOP - 0.3, CE7_BUS_HZ * 0.5]
+  const elbow: [number, number, number] = [-1.35, CE7_BUS_TOP - 0.26, 1.0]
+  const tip: [number, number, number] = [-1.86, 0.42, 1.38]
+  return (
+    <group>
+      <Strut from={root} to={elbow} r={0.026} color={ILRS_HULL} />
+      <Strut from={elbow} to={tip} r={0.02} color={ILRS_HULL} />
+      <mesh position={elbow}>
+        <sphereGeometry args={[0.045, 10, 8]} />
+        <meshStandardMaterial color={METAL} roughness={0.5} metalness={0.45} />
+      </mesh>
+      {/* Sensor head, held just off the ground rather than resting on it. */}
+      <mesh position={[tip[0], tip[1] - 0.04, tip[2]]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.03, 14]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} metalness={0.35} />
+      </mesh>
+    </group>
+  )
+}
+
+// The rover ramp, deployed. Rake and length come out of the two endpoints
+// rather than being written down, so the foot stays on the regolith if the bus
+// height ever moves. A positive rotation about +X carries +Z down, which is the
+// sign that puts the far (outboard) end on the ground rather than in the air —
+// the mistake this house rule exists for.
+function Ce7Ramp() {
+  const [y0, z0] = CE7_RAMP_TOP
+  const [y1, z1] = CE7_RAMP_FOOT
+  const len = Math.hypot(z1 - z0, y1 - y0)
+  const rake = Math.atan2(y0 - y1, z1 - z0)
+  const w = 0.44
+  return (
+    <group position={[CE7_RAMP_X, (y0 + y1) / 2, (z0 + z1) / 2]} rotation={[rake, 0, 0]}>
+      <mesh>
+        <boxGeometry args={[w, 0.035, len]} />
+        <meshStandardMaterial color={ILRS_HULL} roughness={0.6} metalness={0.3} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[(s * w) / 2, 0.045, 0]}>
+          <boxGeometry args={[0.035, 0.06, len]} />
+          <meshStandardMaterial color={ILRS_GOLD_DARK} roughness={0.5} metalness={0.4} />
+        </mesh>
+      ))}
+      {/* Cleats, so it reads as a ramp a wheel can climb and not a plank. */}
+      {Array.from({ length: 6 }, (_, i) => (
+        <mesh key={i} position={[0, 0.03, len * ((i + 0.5) / 6 - 0.5)]}>
+          <boxGeometry args={[w * 0.86, 0.02, 0.03]} />
+          <meshStandardMaterial color={METAL} roughness={0.6} metalness={0.4} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function ChangE7({ accent }: { accent: string }) {
+  const legAngles = [0, 1, 2, 3].map((i) => (i / 4) * Math.PI * 2 + Math.PI / 4)
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 4.8 m = 2.88 m of deck for a lander,
+          which is almost exactly one local unit at CE7_M — and a unit radius
+          clears the 2.4 m wing tips, the 2.1 m footpads and the ramp foot. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={CE7_M}>
+        {legAngles.map((a) => (
+          <Ce7Leg key={a} angle={a} />
+        ))}
+        <Ce7Thrusters />
+        <Ce7Bus accent={accent} />
+        <Ce7Wing side={1} />
+        <Ce7Wing side={-1} />
+        <Ce7Deck accent={accent} />
+        <Ce7Boom />
+        <Ce7Ramp />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Griffin — Astrobotic's large CLPS cargo lander
+// ---------------------------------------------------------------------------
+//
+// Sits after ChangE7 for the same mechanical reason that one sits after ILRS:
+// its panel skirt reuses solarFaceMaps() above, so it has to be defined below
+// it. The two Touchdown landers that carry photovoltaics are therefore
+// neighbours, which is convenient rather than accidental.
+//
+// GRIFFIN, NOT PEREGRINE. The project is `astrobotic-griffin` and its dataset
+// name is the family label "Peregrine & Griffin Landers" — two genuinely
+// different vehicles, Peregrine being roughly a quarter the payload class and
+// under half this wide. The race is on the OPERATOR (see the shared goal's own
+// win test), which is why one project covers both, but a model can only draw
+// one silhouette and Griffin is the right one: PROJECT_SIZE_M already describes
+// Griffin's dimensions, the DePrize outcome names "Griffin Mission One", and
+// Peregrine's single flight was a propellant leak that never landed.
+//
+// Replaces the generic `Lander`, which is a compact drum — Griffin is a table.
+// Built from Astrobotic's own dimensioned scale drawing plus three renders:
+//
+//   - A hexagonal basket of body-mounted solar panels, which is the whole
+//     identity of the vehicle. It FLARES OUTWARD AS IT RISES, so the cells face
+//     outward and slightly DOWN. That was read off the plan view rather than
+//     assumed, and it is the opposite of the pyramid a lander skirt is usually
+//     drawn as, so GRF_SKIRT_RAKE is derived from the two radii below rather
+//     than written down independently of them.
+//   - Four big gold MLI propellant spheres standing proud of the panel rim,
+//     crinkled foil rather than smooth — hence the low segment count and flat
+//     shading, which reads as creased blanket instead of chrome.
+//   - Two open-lattice payload ramps deployed up and outboard.
+//   - Four BARE ALUMINIUM legs on wide dished footpads. No gold anywhere on the
+//     gear, which is what separates it at a glance from Chang'e-7's gold tubes
+//     and the Blue Moons' gold bipods — all four Touchdown landers stand on
+//     four legs, so the gear's finish is doing real work telling them apart.
+//
+// SIZE: 4.5 m is the leg span and 2.0 m the height, both off Astrobotic's own
+// dimension arrows. Width is therefore the largest dimension, as it was for
+// Chang'e-7 and unlike the Blue Moons.
+const GRF_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['astrobotic-griffin'] ?? 4.5)
+
+const GRF_GOLD = '#b99a3f' // creased MLI over the propellant spheres
+const GRF_GOLD_DK = '#8a7028' // the shadowed side of a crease
+
+// Gear. Four legs at 90 degrees, the front one under the front face's centre as
+// the plan view shows, so opposite footpads span the full 4.5 m.
+const GRF_FOOT_R = 2.25
+const GRF_FOOT_Y = 0.05
+const GRF_HIP_R = 1.12
+const GRF_HIP_Y = 0.62 // the deck underside the gear picks up on
+
+// Deck and skirt. The skirt's top radius is the larger of the two: the basket
+// opens upward.
+const GRF_DECK_Y = 0.66
+const GRF_SKIRT_BOT_Y = 0.6
+const GRF_SKIRT_TOP_Y = 1.3
+const GRF_SKIRT_BOT_R = 1.34
+const GRF_SKIRT_TOP_R = 1.56
+const GRF_FACES = 6
+
+// Tanks, standing proud of the panel rim.
+const GRF_TANK_R = 0.46
+const GRF_TANK_RING_R = 0.7
+const GRF_TANK_Y = 1.24
+
+// Total height, off the dimension arrow. The instrument mast is what reaches
+// it, so nothing else may.
+const GRF_TOP = 2.0
+
+// Ramps: length along the run and how far up off horizontal they sit. Kept short
+// enough that their tips stay inside both the footpad span and GRF_TOP — on a
+// vehicle this flat the ramps are the one part that could quietly become the
+// widest or tallest thing on it.
+const GRF_RAMP_LEN = 0.85
+const GRF_RAMP_PITCH = 0.58
+
+// Azimuth of each panel face. Face 0 is centred on +Z, which is the side a
+// procedural model presents (see MODEL_FRONT_AZ), so the front of the vehicle is
+// a panel rather than a corner.
+function grfFaceAz(i: number): number {
+  return Math.PI / 2 + (i / GRF_FACES) * Math.PI * 2
+}
+
+// The skirt's rake, as the angle its outward normal is tipped DOWN from
+// horizontal. Derived from the two radii so it cannot disagree with the basket
+// they describe: bottom to top the surface moves out by dR and up by dY, so its
+// outward normal leans down by atan(dR/dY).
+const GRF_SKIRT_RAKE = Math.atan2(
+  GRF_SKIRT_TOP_R - GRF_SKIRT_BOT_R,
+  GRF_SKIRT_TOP_Y - GRF_SKIRT_BOT_Y
+)
+const GRF_SKIRT_SLANT = Math.hypot(
+  GRF_SKIRT_TOP_R - GRF_SKIRT_BOT_R,
+  GRF_SKIRT_TOP_Y - GRF_SKIRT_BOT_Y
+)
+
+// One panel of the skirt. Yawed onto its face, then raked about the yawed X
+// axis — a POSITIVE rotation about +X carries +Z toward -Y, which is the sign
+// that tips the cells outward and down rather than up into the tanks.
+//
+// A hexagon's side length equals its circumradius, so the face width comes off
+// the mid radius directly, less a little for the corner joints.
+function GrfPanel({ i }: { i: number }) {
+  const maps = solarFaceMaps()
+  const rMid = (GRF_SKIRT_BOT_R + GRF_SKIRT_TOP_R) / 2
+  const yMid = (GRF_SKIRT_BOT_Y + GRF_SKIRT_TOP_Y) / 2
+  const w = rMid * 0.94
+  return (
+    <group rotation={[0, Math.PI / 2 - grfFaceAz(i), 0]}>
+      <group position={[0, yMid, rMid]} rotation={[GRF_SKIRT_RAKE, 0, 0]}>
+        {/* Substrate, which is also what the panel looks like from inside the
+            basket — the cell plane in front of it is single-sided. */}
+        <mesh>
+          <boxGeometry args={[w, GRF_SKIRT_SLANT, 0.03]} />
+          <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, 0, 0.024]}>
+          <planeGeometry args={[w * 0.96, GRF_SKIRT_SLANT * 0.94]} />
+          <meshPhysicalMaterial
+            map={maps?.albedo ?? null}
+            roughnessMap={maps?.rough ?? null}
+            color={maps ? '#ffffff' : '#16294f'}
+            metalness={0.04}
+            roughness={maps ? 1 : 0.22}
+            clearcoat={1}
+            clearcoatRoughness={0.18}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// One leg: a tapered aluminium tube from under the deck out to a wide dished
+// footpad, with a drag link back up to the deck. TaperedMast rather than Strut
+// because the reference's legs are visibly thicker at the hip than at the ankle.
+function GrfLeg({ az }: { az: number }) {
+  const hip: [number, number, number] = [
+    Math.cos(az) * GRF_HIP_R,
+    GRF_HIP_Y,
+    Math.sin(az) * GRF_HIP_R,
+  ]
+  const foot: [number, number, number] = [
+    Math.cos(az) * GRF_FOOT_R,
+    GRF_FOOT_Y + 0.12,
+    Math.sin(az) * GRF_FOOT_R,
+  ]
+  const linkTop: [number, number, number] = [
+    Math.cos(az) * GRF_HIP_R * 0.55,
+    GRF_DECK_Y + 0.06,
+    Math.sin(az) * GRF_HIP_R * 0.55,
+  ]
+  const linkFoot: [number, number, number] = [
+    hip[0] + (foot[0] - hip[0]) * 0.62,
+    hip[1] + (foot[1] - hip[1]) * 0.62,
+    hip[2] + (foot[2] - hip[2]) * 0.62,
+  ]
+  return (
+    <group>
+      <TaperedMast from={hip} to={foot} r0={0.075} r1={0.045} color={HULL} />
+      <Strut from={linkTop} to={linkFoot} r={0.026} color={HULL_DARK} />
+      {/* Ankle joint, then the pad. The pad plate runs 3 cm BELOW grade so it
+          cannot lift clear of a hollow it lands over, and the dish over it is
+          seated inside the plate rather than resting on top of it — set flush
+          they leave a centimetres-wide gap that reads as a floating pad. The
+          dish's apex is where the ankle sits, so the leg emerges from it. */}
+      <mesh position={foot}>
+        <sphereGeometry args={[0.06, 10, 8]} />
+        <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.4} />
+      </mesh>
+      <mesh position={[foot[0], GRF_FOOT_Y - 0.05, foot[2]]}>
+        <cylinderGeometry args={[0.3, 0.24, 0.06, 18]} />
+        <meshStandardMaterial color={HULL} metalness={0.35} roughness={0.5} />
+      </mesh>
+      <mesh position={[foot[0], GRF_FOOT_Y - 0.03, foot[2]]}>
+        <sphereGeometry args={[0.24, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.6]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.4} roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+// One deployed payload ramp: two rails with zigzag web bracing between them,
+// which is what makes it read as an open truss rather than a plank. Built along
+// its own +X and then placed — Euler order is XYZ, so the pitch about Z is
+// applied first in the ramp's own frame and the yaw about Y carries the already
+// pitched ramp round to its face. Same composition as Ce7Wing, confirmed
+// numerically.
+function GrfRamp({ az }: { az: number }) {
+  const bays = 6
+  const halfW = 0.15
+  const rise = 0.11 // depth of the truss, root to tip
+  return (
+    <group
+      position={[
+        Math.cos(az) * GRF_SKIRT_TOP_R * 0.96,
+        GRF_SKIRT_TOP_Y - 0.06,
+        Math.sin(az) * GRF_SKIRT_TOP_R * 0.96,
+      ]}
+      rotation={[0, Math.PI / 2 - az, GRF_RAMP_PITCH]}
+    >
+      {[-1, 1].map((s) => (
+        <group key={s}>
+          <Strut
+            from={[0, 0, s * halfW]}
+            to={[GRF_RAMP_LEN, 0, s * halfW]}
+            r={0.022}
+            color={HULL}
+          />
+          <Strut
+            from={[0, rise, s * halfW]}
+            to={[GRF_RAMP_LEN, rise, s * halfW]}
+            r={0.018}
+            color={HULL}
+          />
+          {/* The web: alternating diagonals between the two rails. */}
+          {Array.from({ length: bays }, (_, b) => {
+            const x0 = (GRF_RAMP_LEN * b) / bays
+            const x1 = (GRF_RAMP_LEN * (b + 1)) / bays
+            const up = b % 2 === 0
+            return (
+              <Strut
+                key={b}
+                from={[x0, up ? 0 : rise, s * halfW]}
+                to={[x1, up ? rise : 0, s * halfW]}
+                r={0.011}
+                color={HULL_DARK}
+              />
+            )
+          })}
+        </group>
+      ))}
+      {/* Cross ties, so the two sides read as one structure. */}
+      {Array.from({ length: 4 }, (_, b) => {
+        const x = (GRF_RAMP_LEN * (b + 0.5)) / 4
+        return (
+          <Strut
+            key={b}
+            from={[x, rise, -halfW]}
+            to={[x, rise, halfW]}
+            r={0.011}
+            color={HULL_DARK}
+          />
+        )
+      })}
+    </group>
+  )
+}
+
+// The propulsion bay under the deck: the gold-blanketed underbelly the renders
+// show between the panel bottom and the regolith, a main bell, and four
+// attitude quads out at the deck's corners.
+function GrfPropulsion() {
+  const quads = [0, 1, 2, 3].map((i) => Math.PI / 4 + (i / 4) * Math.PI * 2)
+  return (
+    <group>
+      <mesh position={[0, GRF_HIP_Y - 0.04, 0]}>
+        <cylinderGeometry args={[1.0, 0.86, 0.22, GRF_FACES]} />
+        <meshStandardMaterial
+          color={GRF_GOLD}
+          roughness={0.44}
+          metalness={0.42}
+          flatShading
+        />
+      </mesh>
+      <mesh position={[0, 0.36, 0]}>
+        <cylinderGeometry args={[0.12, 0.22, 0.28, 16, 1, true]} />
+        <meshStandardMaterial
+          color={DARK}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.35}
+        />
+      </mesh>
+      {quads.map((a) => (
+        <group key={a}>
+          <mesh
+            position={[Math.cos(a) * 0.92, GRF_HIP_Y - 0.02, Math.sin(a) * 0.92]}
+            rotation={[0, Math.PI / 2 - a, 0]}
+          >
+            <boxGeometry args={[0.2, 0.16, 0.16]} />
+            <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.35} />
+          </mesh>
+          <mesh position={[Math.cos(a) * 0.92, GRF_HIP_Y - 0.14, Math.sin(a) * 0.92]}>
+            <cylinderGeometry args={[0.035, 0.06, 0.1, 10, 1, true]} />
+            <meshStandardMaterial
+              color={HULL_DARK}
+              side={THREE.DoubleSide}
+              metalness={0.5}
+              roughness={0.4}
+            />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+// The deck itself, plus everything standing on it: the four propellant spheres,
+// the hexagonal payload adapter funnel in the middle, a flat disc antenna, and
+// the instrument mast that reaches GRF_TOP.
+function GrfDeck({ accent }: { accent: string }) {
+  const tanks = [0, 1, 2, 3].map((i) => Math.PI / 4 + (i / 4) * Math.PI * 2)
+  const mastBase = GRF_SKIRT_TOP_Y - 0.1
+  return (
+    <group>
+      <mesh position={[0, GRF_DECK_Y, 0]}>
+        <cylinderGeometry args={[GRF_SKIRT_BOT_R * 0.97, GRF_SKIRT_BOT_R * 0.97, 0.07, GRF_FACES]} />
+        <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.3} />
+      </mesh>
+
+      {/* Creased MLI spheres. Low segment counts plus flat shading on purpose:
+          a smooth high-poly gold sphere reads as a chrome ball bearing, and
+          what these actually are is a blanket with folds in it. */}
+      {tanks.map((a, i) => (
+        <group key={a}>
+          <mesh
+            position={[
+              Math.cos(a) * GRF_TANK_RING_R,
+              GRF_TANK_Y,
+              Math.sin(a) * GRF_TANK_RING_R,
+            ]}
+            rotation={[0, a, 0]}
+          >
+            <sphereGeometry args={[GRF_TANK_R, 11, 8]} />
+            <meshStandardMaterial
+              color={i % 2 ? GRF_GOLD : GRF_GOLD_DK}
+              roughness={0.5}
+              metalness={0.45}
+              flatShading
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Payload adapter: a hexagonal funnel opening upward out of the middle of
+          the tank cluster, which is the one thing in the plan view that is not
+          a tank or a panel. Double-sided — you see down into it from above. */}
+      <mesh position={[0, GRF_TANK_Y + 0.2, 0]}>
+        <cylinderGeometry args={[0.54, 0.26, 0.42, GRF_FACES, 1, true]} />
+        <meshStandardMaterial
+          color={HULL}
+          side={THREE.DoubleSide}
+          roughness={0.4}
+          metalness={0.35}
+        />
+      </mesh>
+      <mesh position={[0, GRF_TANK_Y + 0.41, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.54, 0.03, 8, GRF_FACES * 3]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+
+      {/* Flat disc antenna on a short post, out at the skirt's rim. */}
+      <group position={[-GRF_SKIRT_TOP_R * 0.82, GRF_SKIRT_TOP_Y - 0.14, 0.3]}>
+        <mesh position={[0, 0.16, 0]}>
+          <cylinderGeometry args={[0.022, 0.028, 0.32, 8]} />
+          <meshStandardMaterial color={HULL} roughness={0.45} metalness={0.45} />
+        </mesh>
+        <mesh position={[0, 0.34, 0]} rotation={[0, 0, 0.35]}>
+          <cylinderGeometry args={[0.26, 0.26, 0.022, 20]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.4} metalness={0.4} />
+        </mesh>
+      </group>
+
+      {/* Instrument mast. This is what sets the vehicle's 2.0 m height, so its
+          tip lands exactly on GRF_TOP rather than wherever the parts add up. */}
+      <mesh position={[0.16, (mastBase + GRF_TOP - 0.12) / 2, -0.34]}>
+        <cylinderGeometry args={[0.02, 0.026, GRF_TOP - 0.12 - mastBase, 8]} />
+        <meshStandardMaterial color={HULL} roughness={0.45} metalness={0.45} />
+      </mesh>
+      <mesh position={[0.16, GRF_TOP - 0.08, -0.34]}>
+        <boxGeometry args={[0.18, 0.12, 0.14]} />
+        <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh position={[0.16, GRF_TOP - 0.08, -0.26]}>
+        <sphereGeometry args={[0.035, 10, 8]} />
+        <meshStandardMaterial color={PANEL_EDGE} roughness={0.3} metalness={0.5} />
+      </mesh>
+
+      {/* Livery band and beacon in the operator's colour, on the front face's
+          upper rail — a stripe, per the house rule on marks. */}
+      <mesh position={[0, GRF_SKIRT_TOP_Y + 0.02, GRF_SKIRT_TOP_R * 0.99]}>
+        <boxGeometry args={[GRF_SKIRT_TOP_R * 0.5, 0.05, 0.05]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={[0.44, GRF_SKIRT_TOP_Y + 0.04, GRF_SKIRT_TOP_R * 0.9]}>
+        <sphereGeometry args={[0.036, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function Griffin({ accent }: { accent: string }) {
+  // Legs at 90 degrees with one under the front face's centre, as the plan view
+  // shows — so opposite footpads span the full 4.5 m and the front leg stands
+  // under the panel the camera sees rather than off a corner.
+  const legAz = [0, 1, 2, 3].map((i) => Math.PI / 2 + (i / 4) * Math.PI * 2)
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 4.5 m = 2.7 m of deck for a lander,
+          just over one local unit at GRF_M — and a unit radius clears both the
+          2.25 m footpads and the ramp tips. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={GRF_M}>
+        {legAz.map((az) => (
+          <GrfLeg key={az} az={az} />
+        ))}
+        <GrfPropulsion />
+        <GrfDeck accent={accent} />
+        {Array.from({ length: GRF_FACES }, (_, i) => (
+          <GrfPanel key={i} i={i} />
+        ))}
+        {/* Ramps off the two faces either side of the front, which is how the
+            renders carry them — symmetric about the presented face. */}
+        <GrfRamp az={grfFaceAz(1)} />
+        <GrfRamp az={grfFaceAz(GRF_FACES - 1)} />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Blue Ghost — Firefly's CLPS lander
+// ---------------------------------------------------------------------------
+//
+// Last of the five Touchdown landers, and the only one that had still not been
+// replaced. Kept with the other panelled landers because it too reuses
+// solarFaceMaps() and so has to sit below it; NovaC stays directly above Moon
+// RACER, which is the same operator.
+//
+// Where the generic `Lander` drum was wrong here is the reverse of Nova-C: this
+// is a SQUAT vehicle, 3.5 m across on a 2 m height, and its body is an
+// OCTAGONAL TRUNCATED PYRAMID that narrows going up with a chimney standing on
+// top of it. Built from Firefly's two surface renders and the Mission 1 flight
+// article:
+//
+//   - The pyramid, whose sloped faces are the whole silhouette.
+//   - A tapered chimney off the top deck under a dark overhanging cap. Nothing
+//     else in the atlas has that, and it is what identifies the vehicle at
+//     distance far more than the livery does.
+//   - Solar panels FLUSH ON THE SLOPED FACES, following the slope, which is the
+//     house rule about fittings on a non-vertical hull doing real work: the
+//     pyramid already tips its faces up about 33 degrees, so a flush panel is
+//     also a well-aimed one under a 44.5 degree sun. Note this is the exact
+//     OPPOSITE sign to Griffin's basket, which opens upward and therefore tips
+//     its cells down — so BG_RAKE is derived from the two radii and its sign is
+//     asserted, as GRF_SKIRT_RAKE is.
+//   - A big central engine bell hung low, ringed by eight small descent
+//     thrusters under the deck.
+//   - Four long thin instrument booms out over the regolith.
+//
+// GEAR: gold-wrapped down to a knee, then bare metal to the pad — which is the
+// SAME scheme as the Blue Moons, so unlike the other three this vehicle is NOT
+// told apart by its gear finish (the handoff doc is corrected to say so). What
+// separates it is that each leg is one thick tube rather than a bipod, the pads
+// are flat oval skids rather than round dishes, and above all the body: no other
+// lander here is a squat pyramid with a chimney.
+//
+// LIVERY: no Firefly mark, no NASA insignia and no flag, though the references
+// carry all three — a competitor's marks are withheld until it claims its
+// listing, and by house rule livery is one accent band. Here that is the collar
+// at the chimney's base.
+const BG_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['firefly-blue-ghost'] ?? 3.5)
+
+// Copper-leaning rather than the brassy gold of the renders: the flight article
+// is distinctly orange-copper, and it is the one reference that is a photograph.
+const BG_GOLD = '#c98a3e'
+const BG_GOLD_DK = '#8f5f28'
+const BG_CAP = '#23262b' // the dark cap overhanging the chimney
+const BG_FACES = 8
+
+// Stations, in meters above the regolith. Width is the largest dimension here,
+// so the 3.5 m span is what PROJECT_SIZE_M holds and the 2 m stack stays under
+// it — the opposite arrangement to Nova-C directly below.
+const BG_FOOT_R = 1.75 // four pads on the diagonals, so 3.5 m across
+const BG_FOOT_Y = 0.06
+const BG_ANKLE_Y = 0.2
+const BG_NOZZLE_Y = 0.18 // the main bell hangs LOW, as the renders show
+const BG_THROAT_Y = 0.42
+const BG_DECK_Y = 0.44 // the underside deck, and the body's widest point
+const BG_DECK_R = 1.15 // octagon circumradius at the deck
+const BG_BODY_TOP_Y = 1.24
+const BG_BODY_TOP_R = 0.64
+const BG_HIP_Y = 1.14 // gear picks up high on the pyramid, near the top deck
+const BG_TOWER_TOP_Y = 1.86
+const BG_TOWER_BOT_R = 0.32
+const BG_TOWER_TOP_R = 0.27
+const BG_CAP_TOP_Y = 2.0
+const BG_CAP_R = 0.32 // wider than the chimney, so the cap overhangs it
+
+// Panels run most of the face's slant, inset from both ends.
+const BG_PANEL_BOT_Y = 0.58
+const BG_PANEL_TOP_Y = 1.14
+
+// Booms reach outboard but stay INSIDE the footpad span. The real electrodes
+// deploy to tens of meters, which cannot be drawn and must not be: the footprint
+// radius comes off PROJECT_SIZE_M, so a boom past the pads would have this model
+// overlapping its neighbours on the pad.
+const BG_BOOM_R = 1.6
+
+// Face 0 on +Z, the side a procedural model presents (see MODEL_FRONT_AZ).
+function bgFaceAz(i: number): number {
+  return Math.PI / 2 + (i / BG_FACES) * Math.PI * 2
+}
+
+// Legs sit on the CORNERS either side of the front face and of the back face —
+// which is where the flight article carries them, running down the body's
+// corner edges — so the presented face stays clear of gear.
+const BG_LEG_AZ = [
+  Math.PI / 2 - Math.PI / BG_FACES,
+  Math.PI / 2 + Math.PI / BG_FACES,
+  Math.PI / 2 + Math.PI - Math.PI / BG_FACES,
+  Math.PI / 2 + Math.PI + Math.PI / BG_FACES,
+]
+
+// The pyramid tapers, so a fitting mounted at a flat radius is buried at one end
+// of its run and floating at the other — sample the radius at the fitting's own
+// height, as novacConeR and mk1SkirtR do.
+function bgFrustumR(y: number): number {
+  const t = (y - BG_DECK_Y) / (BG_BODY_TOP_Y - BG_DECK_Y)
+  return BG_DECK_R + (BG_BODY_TOP_R - BG_DECK_R) * t
+}
+
+// The slope, as the angle the sloped faces' outward normals are tipped UP from
+// horizontal. Derived from the two radii so it cannot disagree with the pyramid
+// they describe: bottom to top the surface moves IN by dR and up by dY, so the
+// normal leans up by atan(dR/dY). Griffin's basket does the same arithmetic with
+// dR the other way round and gets a normal tipped down.
+const BG_RAKE = Math.atan2(BG_DECK_R - BG_BODY_TOP_R, BG_BODY_TOP_Y - BG_DECK_Y)
+const BG_SLANT_PER_Y = Math.hypot(BG_DECK_R - BG_BODY_TOP_R, BG_BODY_TOP_Y - BG_DECK_Y) /
+  (BG_BODY_TOP_Y - BG_DECK_Y)
+
+// A cylinderGeometry's radius argument is the CIRCUMRADIUS, so anything on a
+// face rather than a corner seats further in by this factor. On a 1.15 m octagon
+// that is 9 cm — enough that confusing them beds a panel into the blanket.
+const BG_FACE_IN = Math.cos(Math.PI / BG_FACES)
+
+// One leg: a thick gold-wrapped tube from a hard point high on the pyramid's
+// corner down to a knee, bare metal from there to a flat oval skid, plus a drag
+// brace back up under the deck. One tube rather than a bipod, which together
+// with the skids is what distinguishes this gear from the Blue Moons' — the gold
+// over metal is common to both.
+function BgLeg({ az }: { az: number }) {
+  const hipR = bgFrustumR(BG_HIP_Y)
+  const hip: [number, number, number] = [
+    Math.cos(az) * hipR,
+    BG_HIP_Y,
+    Math.sin(az) * hipR,
+  ]
+  const foot: [number, number, number] = [
+    Math.cos(az) * BG_FOOT_R,
+    BG_ANKLE_Y,
+    Math.sin(az) * BG_FOOT_R,
+  ]
+  const knee: [number, number, number] = [
+    hip[0] + (foot[0] - hip[0]) * 0.6,
+    hip[1] + (foot[1] - hip[1]) * 0.6,
+    hip[2] + (foot[2] - hip[2]) * 0.6,
+  ]
+  // Inboard anchor for the drag brace, up under the deck.
+  const brace: [number, number, number] = [
+    Math.cos(az) * BG_DECK_R * 0.62,
+    BG_DECK_Y - 0.02,
+    Math.sin(az) * BG_DECK_R * 0.62,
+  ]
+  return (
+    <group>
+      <TaperedMast from={hip} to={knee} r0={0.075} r1={0.058} color={BG_GOLD} />
+      <TaperedMast from={knee} to={foot} r0={0.052} r1={0.038} color={METAL} />
+      <Strut from={brace} to={knee} r={0.028} color={BG_GOLD_DK} />
+      <mesh position={knee}>
+        <sphereGeometry args={[0.075, 12, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.35} />
+      </mesh>
+
+      {/* Flat oval skid, long axis running radially — so it is built in a group
+          yawed onto the leg's azimuth and stretched along local X. It runs about
+          3 cm BELOW grade so it cannot lift clear of a hollow it lands over, and
+          a short post carries the ankle up off it rather than leaving the tube
+          ending in mid air above the plate. */}
+      <group
+        position={[foot[0], 0, foot[2]]}
+        rotation={[0, Math.PI / 2 - az, 0]}
+      >
+        <mesh position={[0, BG_FOOT_Y - 0.065, 0]} scale={[1, 1, 1.4]}>
+          <cylinderGeometry args={[0.2, 0.17, 0.045, 18]} />
+          <meshStandardMaterial color={BG_GOLD} metalness={0.5} roughness={0.42} />
+        </mesh>
+        <mesh position={[0, BG_FOOT_Y - 0.048, 0]} scale={[1, 1, 1.4]}>
+          <cylinderGeometry args={[0.14, 0.14, 0.03, 14]} />
+          <meshStandardMaterial color={BG_GOLD_DK} metalness={0.45} roughness={0.45} />
+        </mesh>
+      </group>
+      {/* The post starts INSIDE the skid plate, not on top of it — flush leaves
+          a centimetre of daylight that reads as a floating pad. */}
+      <Strut
+        from={[foot[0], BG_FOOT_Y - 0.06, foot[2]]}
+        to={foot}
+        r={0.035}
+        color={METAL}
+      />
+      <mesh position={foot}>
+        <sphereGeometry args={[0.05, 10, 8]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.5} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The pyramid, its deck plate, the main bell hung low beneath it and the ring of
+// small descent thrusters round it.
+function BgBody() {
+  const h = BG_BODY_TOP_Y - BG_DECK_Y
+  const bellH = BG_THROAT_Y - BG_NOZZLE_Y
+  return (
+    <group>
+      <mesh position={[0, BG_DECK_Y + h / 2, 0]}>
+        <cylinderGeometry args={[BG_BODY_TOP_R, BG_DECK_R, h, BG_FACES]} />
+        <meshStandardMaterial
+          color={BG_GOLD}
+          roughness={0.42}
+          metalness={0.45}
+          flatShading
+        />
+      </mesh>
+      {/* Deck plate under the pyramid, standing proud of it so the bottom reads
+          as a machined floor rather than a taper cut off. */}
+      <mesh position={[0, BG_DECK_Y - 0.03, 0]}>
+        <cylinderGeometry args={[BG_DECK_R * 1.02, BG_DECK_R * 0.98, 0.07, BG_FACES]} />
+        <meshStandardMaterial color={BG_GOLD_DK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      {/* Seam strips down the eight corners, where the blanket is taped over the
+          structure. These seat on the CIRCUMRADIUS, unlike the face fittings. */}
+      {Array.from({ length: BG_FACES }, (_, i) => {
+        const a = bgFaceAz(i) + Math.PI / BG_FACES
+        const yMid = (BG_DECK_Y + BG_BODY_TOP_Y) / 2
+        return (
+          <Strut
+            key={i}
+            from={[
+              Math.cos(a) * BG_DECK_R * 0.99,
+              BG_DECK_Y,
+              Math.sin(a) * BG_DECK_R * 0.99,
+            ]}
+            to={[
+              Math.cos(a) * BG_BODY_TOP_R * 0.99,
+              BG_BODY_TOP_Y,
+              Math.sin(a) * BG_BODY_TOP_R * 0.99,
+            ]}
+            r={0.028}
+            color={BG_GOLD_DK}
+          />
+        )
+      })}
+
+      <mesh position={[0, BG_NOZZLE_Y + bellH / 2, 0]}>
+        <cylinderGeometry args={[0.11, 0.24, bellH, 20, 1, true]} />
+        <meshStandardMaterial
+          color={METAL}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.3}
+        />
+      </mesh>
+      {/* Eight descent thrusters round the deck's underside. A cone's mouth is
+          its wide end, which cylinderGeometry puts at -Y — already where these
+          thrust, so they need no rotation at all. */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = bgFaceAz(i) + Math.PI / BG_FACES
+        return (
+          <mesh
+            key={i}
+            position={[Math.cos(a) * BG_DECK_R * 0.72, 0.31, Math.sin(a) * BG_DECK_R * 0.72]}
+          >
+            <cylinderGeometry args={[0.05, 0.085, 0.16, 12, 1, true]} />
+            <meshStandardMaterial
+              color={HULL_DARK}
+              side={THREE.DoubleSide}
+              metalness={0.6}
+              roughness={0.35}
+            />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// One solar panel, flush on a sloped face. Yawed onto the face, then raked about
+// the yawed X axis — a NEGATIVE rotation about +X carries +Z toward +Y, which is
+// the sign that tips the cells UP off the pyramid. Griffin's basket needs the
+// positive one, and the difference is the whole reason both are derived from
+// their radii instead of written down.
+function BgPanel({ i }: { i: number }) {
+  const maps = solarFaceMaps()
+  const az = bgFaceAz(i)
+  const yMid = (BG_PANEL_BOT_Y + BG_PANEL_TOP_Y) / 2
+  // Along the slope, not along y — the panel lies on the face, so its length is
+  // the slant of the run it covers.
+  const len = (BG_PANEL_TOP_Y - BG_PANEL_BOT_Y) * BG_SLANT_PER_Y
+  // Seats on the face, so in from the circumradius, and sampled at its own mid
+  // height because the pyramid is tapering the whole way up.
+  const rMid = bgFrustumR(yMid) * BG_FACE_IN
+  const w = bgFrustumR(yMid) * 2 * Math.sin(Math.PI / BG_FACES) * 0.86
+  return (
+    <group rotation={[0, Math.PI / 2 - az, 0]}>
+      <group position={[0, yMid, rMid]} rotation={[-BG_RAKE, 0, 0]}>
+        {/* Substrate, which is also what the panel looks like from behind — the
+            cell plane in front of it is single-sided. Standing proud of the
+            blanket rather than flush with it, per the house rule. */}
+        <mesh position={[0, 0, 0.03]}>
+          <boxGeometry args={[w, len, 0.03]} />
+          <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, 0, 0.054]}>
+          <planeGeometry args={[w * 0.95, len * 0.96]} />
+          <meshPhysicalMaterial
+            map={maps?.albedo ?? null}
+            roughnessMap={maps?.rough ?? null}
+            color={maps ? '#ffffff' : '#16294f'}
+            metalness={0.04}
+            roughness={maps ? 1 : 0.22}
+            clearcoat={1}
+            clearcoatRoughness={0.18}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// One instrument boom: a long thin rod out over the regolith with a small flat
+// electrode plate at the tip, on a chamfer face so it clears both the legs and
+// the panels.
+function BgBoom({ i }: { i: number }) {
+  const az = bgFaceAz(i)
+  const y = 0.52
+  const root = bgFrustumR(y) * BG_FACE_IN
+  return (
+    <group rotation={[0, Math.PI / 2 - az, 0]}>
+      <mesh position={[0, y + 0.02, root - 0.04]}>
+        <boxGeometry args={[0.12, 0.1, 0.12]} />
+        <meshStandardMaterial color={BG_GOLD_DK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <Strut
+        from={[0, y, root - 0.04]}
+        to={[0, y, BG_BOOM_R]}
+        r={0.014}
+        color={METAL}
+      />
+      {/* Tip plate, lying near-flat as the renders show. */}
+      <mesh position={[0, y - 0.01, BG_BOOM_R - 0.04]} rotation={[0.3, 0, 0]}>
+        <boxGeometry args={[0.2, 0.015, 0.16]} />
+        <meshStandardMaterial color={HULL} roughness={0.45} metalness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The top deck, the chimney, its overhanging dark cap, and the deck clutter. The
+// chimney is the vehicle's signature, so it is worth its handful of meshes.
+function BgTower({ accent }: { accent: string }) {
+  const towerH = BG_TOWER_TOP_Y - BG_BODY_TOP_Y
+  return (
+    <group>
+      <mesh position={[0, BG_BODY_TOP_Y + 0.02, 0]}>
+        <cylinderGeometry args={[BG_BODY_TOP_R, BG_BODY_TOP_R, 0.05, BG_FACES]} />
+        <meshStandardMaterial color={BG_GOLD_DK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh position={[0, BG_BODY_TOP_Y + towerH / 2, 0]}>
+        <cylinderGeometry args={[BG_TOWER_TOP_R, BG_TOWER_BOT_R, towerH, BG_FACES]} />
+        <meshStandardMaterial
+          color={BG_GOLD}
+          roughness={0.42}
+          metalness={0.45}
+          flatShading
+        />
+      </mesh>
+      {/* Cap, overhanging the chimney it sits on. */}
+      <mesh position={[0, (BG_TOWER_TOP_Y + BG_CAP_TOP_Y) / 2, 0]}>
+        <cylinderGeometry args={[BG_CAP_R, BG_CAP_R, BG_CAP_TOP_Y - BG_TOWER_TOP_Y, 20]} />
+        <meshStandardMaterial color={BG_CAP} roughness={0.45} metalness={0.4} />
+      </mesh>
+      <mesh position={[0, BG_CAP_TOP_Y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[BG_CAP_R, 0.02, 8, 24]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.45} />
+      </mesh>
+
+      {/* Livery: the collar at the chimney's base, standing proud of it. See the
+          note on this model. */}
+      <mesh position={[0, BG_BODY_TOP_Y + 0.1, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[BG_TOWER_BOT_R + 0.02, 0.035, 8, 20]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.25} />
+      </mesh>
+
+      {/* Deck clutter: a radiator plate standing up at the back, a payload box,
+          and a whip. All kept under the cap so it stays the highest thing. */}
+      <mesh position={[-0.3, BG_BODY_TOP_Y + 0.26, -0.28]} rotation={[0, 0.4, 0]}>
+        <boxGeometry args={[0.44, 0.44, 0.035]} />
+        <meshStandardMaterial color={BG_GOLD} roughness={0.45} metalness={0.45} />
+      </mesh>
+      <mesh position={[0.34, BG_BODY_TOP_Y + 0.13, 0.2]}>
+        <boxGeometry args={[0.26, 0.22, 0.24]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.3} />
+      </mesh>
+      <mesh position={[-0.4, BG_BODY_TOP_Y + 0.2, 0.26]}>
+        <cylinderGeometry args={[0.01, 0.013, 0.36, 6]} />
+        <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.5} />
+      </mesh>
+      <mesh position={[0.42, BG_BODY_TOP_Y + 0.08, -0.22]}>
+        <sphereGeometry args={[0.036, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function BlueGhost({ accent }: { accent: string }) {
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 3.5 m = 2.1 m of pad deck for a
+          lander, just over one local unit at BG_M — and a unit radius clears
+          both the 1.75 m footpads and the 1.6 m booms. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={BG_M}>
+        {BG_LEG_AZ.map((az) => (
+          <BgLeg key={az} az={az} />
+        ))}
+        <BgBody />
+        {/* Panels on the two faces square to the front, booms on the four
+            chamfers between the legs — so nothing shares a face with the gear. */}
+        <BgPanel i={2} />
+        <BgPanel i={6} />
+        {[1, 3, 5, 7].map((i) => (
+          <BgBoom key={i} i={i} />
+        ))}
+        <BgTower accent={accent} />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Nova-C — Intuitive Machines' CLPS lander
+// ---------------------------------------------------------------------------
+//
+// Placed between Griffin and Moon RACER for two reasons that happen to agree:
+// its solar panels reuse solarFaceMaps() so it must sit below that, and RACER
+// below is the SAME OPERATOR, so the two IM vehicles are neighbours.
+//
+// It does NOT reuse RACER_BLUE. That constant is the blue RACER is painted, and
+// Nova-C is not painted blue — it is a white bus over a dark grey lower body.
+// Sharing a hex between two vehicles is only worth it when the colour is the
+// cue (see ILRS_GOLD and ChangE7); here it would just be wrong.
+//
+// Replaces the generic `Lander`, and this is the substitution that mattered
+// most: the generic model is a squat drum, and Nova-C is the one vehicle in
+// this race whose LARGEST DIMENSION IS ITS HEIGHT. It is a 4 m column on a
+// 1.56 m bus — famously about the size of a phone box — so a drum standing in
+// for it got both the proportion and the axis wrong. Built from the IM-1
+// flight article, IM's annotated IM-1 diagram and their 3/4 render:
+//
+//   - A tall hexagonal prism that TAPERS INTO A CONE at the bottom, with the
+//     engine emerging from the point. That narrowing base is the silhouette.
+//   - Gear that is a LATTICE OF THIN POLISHED TUBES, not struts: six legs, one
+//     per face, each a bipod converging on its footpad off a hard point high on
+//     the cone, plus a third member off a wide flange at the base. Counted off
+//     an upscaled crop rather than guessed. The other three Touchdown landers
+//     all stand on four comparatively chunky legs, so this reads as a different
+//     class of machine from across the pad.
+//   - A big creased olive-gold MLI tank bulging out of the front face.
+//   - Two tall narrow solar panels on the faces either side of it.
+//
+// LIVERY: the accent goes on the panels' edge rails, because IM's own
+// brandColor is #F97316 and the reference panels carry a bright ORANGE stripe
+// down exactly that edge. So the house rule's one-accent-band and the real
+// hardware want the same paint in the same place — as with ILRS_RED and
+// Chang'e-7's flag red. No wordmark and no flag, though the references carry
+// both.
+const NOVAC_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['im-nova-c'] ?? 4)
+
+// Olive-gold rather than brass: the tank's colour varies a lot across the
+// references (copper on the flight article, brighter gold in the older render),
+// and IM's own IM-1 diagram is the tiebreaker.
+const NOVAC_GOLD = '#9a8f4e'
+const NOVAC_GOLD_DK = '#6f6634'
+const NOVAC_GREY = '#4c525b' // the tapered lower body the wordmark sits on
+const NOVAC_POD = '#1b1e23' // the black shoulder instrument pods
+const NOVAC_FACES = 6
+
+// Stations up the column, in meters above the regolith, scaled off IM's
+// annotated elevation. The total lands on PROJECT_SIZE_M's 4 m at the antenna
+// tips, and the 3.44 m leg span below stays under it — height has to be the
+// largest dimension here or the figure is describing the wrong axis.
+const NOVAC_FOOT_R = 1.72 // six pads, so 3.44 m across opposite ones
+const NOVAC_FOOT_Y = 0.05
+const NOVAC_ANKLE_Y = 0.17
+const NOVAC_NOZZLE_Y = 0.6 // engine exit plane, clear of the ground
+const NOVAC_THROAT_Y = 1.02
+const NOVAC_RING_Y = 1.08 // the wide flange the lower gear members pick up on
+const NOVAC_RING_R = 0.98
+const NOVAC_CONE_BOT_Y = 1.06
+const NOVAC_CONE_BOT_R = 0.44
+const NOVAC_BODY_BOT_Y = 1.92 // where the taper reaches full width
+const NOVAC_BODY_R = 0.9 // hexagon circumradius; 1.56 m across the flats
+const NOVAC_BODY_TOP_Y = 3.62
+const NOVAC_CHAMFER_TOP_Y = 3.86
+const NOVAC_CHAMFER_TOP_R = 0.6
+const NOVAC_DECK_TOP_Y = 3.92
+const NOVAC_TOP = 4.0 // the antenna tips, and the figure PROJECT_SIZE_M holds
+
+// The upper gear members pick up on the cone's FLANK, well up the vehicle.
+const NOVAC_HIP_Y = 1.72
+
+// Panels, on the straight prism only — a flat panel spanning the taper would be
+// buried at one end of its run and standing off at the other.
+const NOVAC_PANEL_BOT_Y = 1.98
+const NOVAC_PANEL_TOP_Y = 3.5
+
+// Front face on +Z, which is the side a procedural model presents (see
+// MODEL_FRONT_AZ), so the gold tank and the flanking panels face the camera.
+function novacFaceAz(i: number): number {
+  return Math.PI / 2 + (i / NOVAC_FACES) * Math.PI * 2
+}
+
+// A hexagon's flat is closer to the axis than its corner, so anything mounted on
+// a FACE seats on the apothem, not the circumradius. Getting this wrong buries
+// panels by 12 cm on a 0.9 m body.
+const NOVAC_APOTHEM = NOVAC_BODY_R * Math.cos(Math.PI / NOVAC_FACES)
+
+// The lower body is a cone, so a fitting on its flank at a flat radius is
+// half-buried at one end of its run and floating at the other — sample the
+// radius at the fitting's own height, as mk1SkirtR does.
+function novacConeR(y: number): number {
+  const t = (y - NOVAC_CONE_BOT_Y) / (NOVAC_BODY_BOT_Y - NOVAC_CONE_BOT_Y)
+  return NOVAC_CONE_BOT_R + (NOVAC_BODY_R - NOVAC_CONE_BOT_R) * t
+}
+
+// One leg. Three thin tubes converging on one footpad: a bipod off a hard point
+// on the cone's flank, splayed a little in azimuth so it reads as two members
+// rather than one thick one, and a third off the base flange at a much steeper
+// angle. A spreader between the bipod's legs is what makes the whole thing read
+// as truss instead of as wire.
+function NovacLeg({ az }: { az: number }) {
+  const hipR = novacConeR(NOVAC_HIP_Y)
+  const foot: [number, number, number] = [
+    Math.cos(az) * NOVAC_FOOT_R,
+    NOVAC_ANKLE_Y,
+    Math.sin(az) * NOVAC_FOOT_R,
+  ]
+  const hips: [number, number, number][] = [-0.14, 0.14].map((d) => [
+    Math.cos(az + d) * hipR,
+    NOVAC_HIP_Y,
+    Math.sin(az + d) * hipR,
+  ])
+  const ringFoot: [number, number, number] = [
+    Math.cos(az) * NOVAC_RING_R,
+    NOVAC_RING_Y,
+    Math.sin(az) * NOVAC_RING_R,
+  ]
+  // Spreader ends, partway down each primary.
+  const spread = hips.map(
+    (h) =>
+      [
+        h[0] + (foot[0] - h[0]) * 0.55,
+        h[1] + (foot[1] - h[1]) * 0.55,
+        h[2] + (foot[2] - h[2]) * 0.55,
+      ] as [number, number, number]
+  )
+  return (
+    <group>
+      {hips.map((h, i) => (
+        <Strut key={i} from={h} to={foot} r={0.032} color={METAL} />
+      ))}
+      <Strut from={ringFoot} to={foot} r={0.026} color={METAL} />
+      <Strut from={spread[0]} to={spread[1]} r={0.015} color={HULL_DARK} />
+
+      {/* Footpad: a wide, thin, polished plate — the reference's pads are much
+          flatter than the dished cups on the other landers. It runs 3 cm BELOW
+          grade so it cannot lift clear of a hollow it lands over, and a short
+          post carries the ankle up off it rather than leaving the struts
+          converging in mid air above the plate. */}
+      <mesh position={[foot[0], NOVAC_FOOT_Y - 0.055, foot[2]]}>
+        <cylinderGeometry args={[0.24, 0.2, 0.05, 20]} />
+        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.3} />
+      </mesh>
+      <mesh position={[foot[0], NOVAC_FOOT_Y - 0.035, foot[2]]}>
+        <sphereGeometry args={[0.085, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.45} roughness={0.4} />
+      </mesh>
+      <Strut
+        from={[foot[0], NOVAC_FOOT_Y - 0.02, foot[2]]}
+        to={foot}
+        r={0.028}
+        color={METAL}
+      />
+      <mesh position={foot}>
+        <sphereGeometry args={[0.045, 10, 8]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.5} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The tapered lower body, the base flange the gear picks up on, and the engine
+// hung in the point of the cone.
+function NovacLowerBody() {
+  const coneH = NOVAC_BODY_BOT_Y - NOVAC_CONE_BOT_Y
+  const bellH = NOVAC_THROAT_Y - NOVAC_NOZZLE_Y
+  return (
+    <group>
+      <mesh position={[0, NOVAC_CONE_BOT_Y + coneH / 2, 0]}>
+        <cylinderGeometry
+          args={[NOVAC_BODY_R, NOVAC_CONE_BOT_R, coneH, NOVAC_FACES]}
+        />
+        <meshStandardMaterial color={NOVAC_GREY} roughness={0.5} metalness={0.35} />
+      </mesh>
+
+      {/* Base flange: wider than the cone it sits on by a long way, which is
+          what makes the bottom of the vehicle read as a machined ring rather
+          than a taper running to nothing. */}
+      <mesh position={[0, NOVAC_RING_Y, 0]}>
+        <cylinderGeometry args={[NOVAC_RING_R, NOVAC_RING_R, 0.05, 28]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, NOVAC_RING_Y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[NOVAC_RING_R, 0.035, 8, 32]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.5} roughness={0.4} />
+      </mesh>
+
+      <mesh position={[0, NOVAC_NOZZLE_Y + bellH / 2, 0]}>
+        <cylinderGeometry args={[0.1, 0.2, bellH, 20, 1, true]} />
+        <meshStandardMaterial
+          color={METAL}
+          side={THREE.DoubleSide}
+          metalness={0.75}
+          roughness={0.25}
+        />
+      </mesh>
+      <mesh position={[0, NOVAC_THROAT_Y + 0.06, 0]}>
+        <sphereGeometry args={[0.14, 14, 10]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.55} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// The straight white prism, its vertical seam strips, the gold tank bulging out
+// of the front face, and the flat panels the front carries.
+function NovacUpperBody() {
+  const h = NOVAC_BODY_TOP_Y - NOVAC_BODY_BOT_Y
+  const front = novacFaceAz(0)
+  return (
+    <group>
+      <mesh position={[0, NOVAC_BODY_BOT_Y + h / 2, 0]}>
+        <cylinderGeometry args={[NOVAC_BODY_R, NOVAC_BODY_R, h, NOVAC_FACES]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.2} />
+      </mesh>
+
+      {/* Seam strips down the six vertical CORNERS — so these seat on the
+          circumradius, unlike everything else here, which seats on the apothem.
+          Standing proud, per the house rule on coplanar detail. */}
+      {Array.from({ length: NOVAC_FACES }, (_, i) => {
+        const a = novacFaceAz(i) + Math.PI / NOVAC_FACES
+        return (
+          <mesh
+            key={i}
+            position={[
+              Math.cos(a) * (NOVAC_BODY_R - 0.02),
+              NOVAC_BODY_BOT_Y + h / 2,
+              Math.sin(a) * (NOVAC_BODY_R - 0.02),
+            ]}
+            rotation={[0, Math.PI / 2 - a, 0]}
+          >
+            <boxGeometry args={[0.07, h * 0.98, 0.06]} />
+            <meshStandardMaterial color={HULL_DARK} roughness={0.45} metalness={0.45} />
+          </mesh>
+        )
+      })}
+
+      {/* Everything on the front face, in ONE yawed group with local +Z pointing
+          out of that face — the same composition NovacPanel and NovacPod use.
+          Note the yaw is PI/2 - az and NOT az: mounting these by the azimuth
+          itself turns each fitting a quarter turn, which on the radiator plate
+          below means burying its 0.5 m width in the wall and standing its 5 cm
+          thickness out on the face. */}
+      <group rotation={[0, Math.PI / 2 - front, 0]}>
+        {/* Creased MLI tank, bulging OUT of the face. Its centre sits outboard
+            of the wall so the sphere is CUT by it — the reference tank is a
+            bulge in the bus, not a ball parked beside it. Low segment counts and
+            flat shading for the creases, as Griffin's spheres. */}
+        <mesh position={[0, 2.62, NOVAC_APOTHEM + 0.1]} scale={[1, 0.86, 1]}>
+          <sphereGeometry args={[0.4, 11, 8]} />
+          <meshStandardMaterial
+            color={NOVAC_GOLD}
+            roughness={0.45}
+            metalness={0.45}
+            flatShading
+          />
+        </mesh>
+        {/* The collar where the blanket is clamped to the wall. */}
+        <mesh position={[0, 2.62, NOVAC_APOTHEM + 0.02]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.34, 0.34, 0.06, 12]} />
+          <meshStandardMaterial color={NOVAC_GOLD_DK} roughness={0.5} metalness={0.4} />
+        </mesh>
+
+        {/* Radiator plate and a paddle antenna above the tank, both standing
+            proud of the wall rather than flush. */}
+        <mesh position={[0, 3.2, NOVAC_APOTHEM + 0.03]}>
+          <boxGeometry args={[0.5, 0.34, 0.05]} />
+          <meshStandardMaterial color={NOVAC_POD} roughness={0.6} metalness={0.3} />
+        </mesh>
+        <mesh position={[0.3, 3.42, NOVAC_APOTHEM + 0.04]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.016, 0.016, 0.16, 8]} />
+          <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.5} />
+        </mesh>
+        <mesh position={[0.38, 3.46, NOVAC_APOTHEM + 0.04]} rotation={[0.5, 0, 0]}>
+          <cylinderGeometry args={[0.13, 0.13, 0.02, 16]} />
+          <meshStandardMaterial color={HULL} roughness={0.4} metalness={0.4} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// One solar panel, on a face either side of the front. Tall and narrow, standing
+// off the wall on a pair of brackets, with the accent down its inboard edge —
+// see the note on livery above.
+function NovacPanel({ side, accent }: { side: 1 | -1; accent: string }) {
+  const maps = solarFaceMaps()
+  const az = novacFaceAz(0) + (side * Math.PI * 2) / NOVAC_FACES
+  const hp = NOVAC_PANEL_TOP_Y - NOVAC_PANEL_BOT_Y
+  const yMid = (NOVAC_PANEL_BOT_Y + NOVAC_PANEL_TOP_Y) / 2
+  const w = 0.78
+  const standoff = 0.07
+  return (
+    <group rotation={[0, Math.PI / 2 - az, 0]}>
+      {/* Brackets start slightly INSIDE the wall rather than tangent to it, so
+          the root beds into the face instead of just touching it. */}
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[s * w * 0.36, yMid + s * hp * 0.3, NOVAC_APOTHEM - 0.02]}
+          to={[s * w * 0.36, yMid + s * hp * 0.3, NOVAC_APOTHEM + standoff]}
+          r={0.022}
+          color={METAL}
+        />
+      ))}
+      <group position={[0, yMid, NOVAC_APOTHEM + standoff]}>
+        {/* Substrate, which is also the panel's back face — the cell plane in
+            front of it is single-sided. */}
+        <mesh>
+          <boxGeometry args={[w, hp, 0.03]} />
+          <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, 0, 0.024]}>
+          <planeGeometry args={[w * 0.9, hp * 0.97]} />
+          <meshPhysicalMaterial
+            map={maps?.albedo ?? null}
+            roughnessMap={maps?.rough ?? null}
+            color={maps ? '#ffffff' : '#16294f'}
+            metalness={0.04}
+            roughness={maps ? 1 : 0.22}
+            clearcoat={1}
+            clearcoatRoughness={0.18}
+          />
+        </mesh>
+        {/* The accent stripe, on the inboard edge the reference paints orange.
+            Proud of the laminate so it catches light as a rail, not a decal. */}
+        <mesh position={[-side * w * 0.47, 0, 0.03]}>
+          <boxGeometry args={[w * 0.06, hp, 0.04]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.45}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// One black shoulder pod with its attitude thrusters, on the face outboard of a
+// panel. These are what break the column's outline at the top.
+function NovacPod({ side }: { side: 1 | -1 }) {
+  const az = novacFaceAz(0) + (side * Math.PI * 4) / NOVAC_FACES
+  return (
+    <group rotation={[0, Math.PI / 2 - az, 0]}>
+      <mesh position={[0, 3.24, NOVAC_APOTHEM + 0.13]}>
+        <boxGeometry args={[0.44, 0.62, 0.28]} />
+        <meshStandardMaterial color={NOVAC_POD} roughness={0.55} metalness={0.35} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[s * 0.15, 3.24, NOVAC_APOTHEM]}
+          to={[s * 0.15, 3.24, NOVAC_APOTHEM + 0.06]}
+          r={0.026}
+          color={METAL}
+        />
+      ))}
+      {/* Two quads: one firing outward, one down. A cone's mouth is its WIDE
+          end, which cylinderGeometry puts at -Y (radiusBottom is the second
+          arg), so pointing it outward at +Z takes -PI/2 about X and not +PI/2 —
+          the positive turn aims the mouth back into the hull. The downward one
+          needs no turn at all, since -Y is already where it thrusts. */}
+      <mesh position={[0, 3.44, NOVAC_APOTHEM + 0.3]} rotation={[-Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.05, 0.085, 0.14, 12, 1, true]} />
+        <meshStandardMaterial
+          color={METAL}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.3}
+        />
+      </mesh>
+      <mesh position={[0, 2.85, NOVAC_APOTHEM + 0.13]}>
+        <cylinderGeometry args={[0.05, 0.085, 0.14, 12, 1, true]} />
+        <meshStandardMaterial
+          color={METAL}
+          side={THREE.DoubleSide}
+          metalness={0.7}
+          roughness={0.3}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The chamfered top: a dark cap over the prism, a deck plate, and the antennas
+// that reach NOVAC_TOP.
+function NovacTopDeck({ accent }: { accent: string }) {
+  const chH = NOVAC_CHAMFER_TOP_Y - NOVAC_BODY_TOP_Y
+  return (
+    <group>
+      <mesh position={[0, NOVAC_BODY_TOP_Y + chH / 2, 0]}>
+        <cylinderGeometry
+          args={[NOVAC_CHAMFER_TOP_R, NOVAC_BODY_R, chH, NOVAC_FACES]}
+        />
+        <meshStandardMaterial color={NOVAC_GOLD_DK} roughness={0.45} metalness={0.45} />
+      </mesh>
+      <mesh position={[0, (NOVAC_CHAMFER_TOP_Y + NOVAC_DECK_TOP_Y) / 2, 0]}>
+        <cylinderGeometry
+          args={[
+            NOVAC_CHAMFER_TOP_R * 0.96,
+            NOVAC_CHAMFER_TOP_R * 0.96,
+            NOVAC_DECK_TOP_Y - NOVAC_CHAMFER_TOP_Y,
+            NOVAC_FACES,
+          ]}
+        />
+        <meshStandardMaterial color={NOVAC_POD} roughness={0.6} metalness={0.3} />
+      </mesh>
+
+      {/* Camera heads on two of the top corners, and the omni whips that set the
+          vehicle's 4 m height — so their tips land on NOVAC_TOP exactly rather
+          than wherever the parts happen to add up. */}
+      {[1, NOVAC_FACES - 1].map((i) => {
+        const a = novacFaceAz(i) + Math.PI / NOVAC_FACES
+        const r = NOVAC_CHAMFER_TOP_R * 0.8
+        const post = (NOVAC_TOP - 0.08 + NOVAC_DECK_TOP_Y) / 2
+        return (
+          <group key={i}>
+            <mesh position={[Math.cos(a) * r, post, Math.sin(a) * r]}>
+              <cylinderGeometry
+                args={[0.016, 0.02, NOVAC_TOP - 0.08 - NOVAC_DECK_TOP_Y, 8]}
+              />
+              <meshStandardMaterial color={METAL} roughness={0.45} metalness={0.5} />
+            </mesh>
+            <mesh
+              position={[Math.cos(a) * r, NOVAC_TOP - 0.05, Math.sin(a) * r]}
+              rotation={[0, Math.PI / 2 - a, 0]}
+            >
+              <boxGeometry args={[0.13, 0.1, 0.11]} />
+              <meshStandardMaterial color={NOVAC_POD} roughness={0.5} metalness={0.4} />
+            </mesh>
+          </group>
+        )
+      })}
+      <mesh position={[0, NOVAC_DECK_TOP_Y + 0.1, -0.18]}>
+        <boxGeometry args={[0.3, 0.16, 0.2]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.35} />
+      </mesh>
+      <mesh position={[0.2, NOVAC_DECK_TOP_Y + 0.05, 0.18]}>
+        <sphereGeometry args={[0.038, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function NovaC({ accent }: { accent: string }) {
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 4 m = 2.4 m of pad deck for a lander,
+          just under one local unit at NOVAC_M — and a unit radius clears the
+          1.72 m footpads with room over. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={NOVAC_M}>
+        {Array.from({ length: NOVAC_FACES }, (_, i) => (
+          <NovacLeg key={i} az={novacFaceAz(i)} />
+        ))}
+        <NovacLowerBody />
+        <NovacUpperBody />
+        <NovacPanel side={1} accent={accent} />
+        <NovacPanel side={-1} accent={accent} />
+        <NovacPod side={1} />
+        <NovacPod side={-1} />
+        <NovacTopDeck accent={accent} />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Moon RACER LTV — Intuitive Machines
 // ---------------------------------------------------------------------------
 
@@ -12972,6 +14769,26 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // other four in that race still fall through to the generic `Lander`.
   // See BlueMoonMk1.
   'blue-origin-blue-moon-mk1': BlueMoonMk1,
+  // Touchdown's CNSA entrant, and nothing like the compact drum the generic
+  // `lander` model is: a low boxy bus on splayed gold gear, with the widest
+  // thing on it being a pair of deployed solar wings. Defined next to ILRSBase
+  // rather than up with the Blue Moons because it shares that model's gold.
+  // See ChangE7.
+  'cnsa-change-7': ChangE7,
+  // Touchdown's Astrobotic entrant — a hexagonal basket of solar panels on four
+  // bare aluminium legs, which the generic `lander` drum is nothing like. Draws
+  // GRIFFIN specifically: the project name is a family label covering Peregrine
+  // too, and the two are different vehicles. See Griffin.
+  'astrobotic-griffin': Griffin,
+  // The one Touchdown lander that is taller than it is wide — a 4 m hexagonal
+  // column on lattice gear, which the generic `lander` drum got backwards in
+  // both proportion and axis. Defined next to Moon RACER, the same operator's
+  // other vehicle. See NovaC.
+  'im-nova-c': NovaC,
+  // The last Touchdown lander off the generic `lander`: a squat octagonal
+  // pyramid with a chimney on top, panels flush on its sloped faces. See
+  // BlueGhost.
+  'firefly-blue-ghost': BlueGhost,
 }
 
 export function ProceduralModel({
