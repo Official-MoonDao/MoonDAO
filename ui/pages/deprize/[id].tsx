@@ -54,7 +54,7 @@ import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
 import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import EthUsd from '@/components/deprize/EthUsd'
-import useRegionRestriction from '@/lib/geo/useRegionRestriction'
+import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -129,8 +129,12 @@ function StateBadge({
   )
 }
 
-export default function DePrizeDetailPage() {
-  return <DePrizeDetailContent />
+export default function DePrizeDetailPage({ restricted }: DePrizePageProps) {
+  return (
+    <DePrizeRestrictedProvider restricted={restricted}>
+      <DePrizeDetailContent restricted={restricted} />
+    </DePrizeRestrictedProvider>
+  )
 }
 
 export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
@@ -138,7 +142,7 @@ export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
   res,
 }) => resolveDePrizePageProps(req, res)
 
-function DePrizeDetailContent() {
+function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const router = useRouter()
   const rawId = router.query.id
   const numericId =
@@ -192,7 +196,6 @@ function DePrizeDetailContent() {
   })
   const odds = useOddsHistory({ market, activity })
 
-  const region = useRegionRestriction()
   // Pass a plain number: useRead JSON.stringify's its params for memoization,
   // which throws on bigint. JB project ids are small, so Number() is safe.
   // useTotalFunding returns BigInt(0) for a missing projectId / while reads are
@@ -370,16 +373,13 @@ function DePrizeDetailContent() {
       : market.loading
         ? undefined
         : false
-  // Default-deny when country is unknown: `/api/geo/country` reports
-  // restricted=false for a missing geo header, which must not open betting.
+  // Default-deny when country is unknown: the SSR `restricted` prop is true
+  // for a missing geo header (getDePrizePageEligibility), which must not open betting.
   const bettingAllowed =
     !!deprize?.bettingOpen &&
     market.mintBound &&
     mintConfigured &&
-    !!region.country &&
-    !region.isRestricted &&
-    !region.isLoading &&
-    !region.isError &&
+    !restricted &&
     !tradingHalted &&
     market.stage === MarketStage.Running
 
@@ -695,6 +695,12 @@ function DePrizeDetailContent() {
             )}
         </div>
 
+        {restricted && (
+          <Notice tone="amber">
+            Betting isn&apos;t available in your region. You can view odds, cash out and claim.
+          </Notice>
+        )}
+
         {/* Actionable status only (paused / no market / cancelling). */}
         {bettingBlockedReason && !bettingBlockedReason.startsWith('Loading') && (
           <Notice tone="amber">{bettingBlockedReason}</Notice>
@@ -810,12 +816,6 @@ function DePrizeDetailContent() {
               )
             })}
           </div>
-        )}
-
-        {(region.isRestricted || (!region.isLoading && !region.isError && !region.country)) && (
-          <Notice tone="amber">
-            Betting isn&apos;t available in your region. You can view odds, cash out and claim.
-          </Notice>
         )}
 
         {/* Claim / refund */}

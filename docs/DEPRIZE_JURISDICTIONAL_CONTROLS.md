@@ -2,7 +2,7 @@
 
 **Owner:** MoonDAO engineering (DePrize)  
 **Review:** quarterly, or whenever Schedule A / Terms change  
-**Last updated:** 2026-09-11
+**Last updated:** 2026-09-16
 
 This document lists the controls that restrict new DePrize participation. It is
 an operations record, not legal advice.
@@ -42,8 +42,8 @@ position.
 
 | Failure | Result |
 |---|---|
-| Unknown or missing country header | DePrize pages show the location notice. New bets are refused. |
-| Listed country or occupied Ukrainian region | Pages show the location notice. A screening request permanently denies the wallet for new participation. |
+| Unknown or missing country header | DePrize pages show the in-page region banner and withhold the Back CTA. New bets are refused. Sell, redeem, and claim stay available. |
+| Listed country or occupied Ukrainian region | Pages show the in-page region banner and withhold the Back CTA. A screening request permanently denies the wallet for new participation. Sell, redeem, and claim stay available. |
 | Commercial VPN, proxy, Tor, or non-relay hosting | That request is refused. The wallet is not permanently denied. |
 | Location-preserving relay (for example Apple Private Relay) | Allowed when the reported country is known and not listed. |
 | Redis, VPN provider, or sanctions provider outage | New bets are refused (`screening-unavailable`). The system does not fail open. |
@@ -82,6 +82,10 @@ operations confirm:
 5. The reconciliation cursor is advancing and the GitHub Actions workflow is
    green.
 6. The monthly archive owner and destination below are still correct.
+7. A request with `x-vercel-ip-country: US` against a live `/deprize/[id]`
+   returns `"restricted":true` in `__NEXT_DATA__`, renders the in-page region
+   banner, and does not render a Back CTA. Repeat for a permitted country
+   (Back CTA present) so the check cannot pass by rendering nothing.
 
 ## Monthly archive
 
