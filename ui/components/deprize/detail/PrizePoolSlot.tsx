@@ -45,6 +45,7 @@ export default function PrizePoolSlot(props: {
   const patrons = usePrizePatrons({
     deprizeId: props.deprizeId,
     chainId: props.chain?.id,
+    jbProjectId: props.jbProjectId,
     refreshNonce: props.refreshNonce,
     enabled: DEPRIZE_PATRONS_ENABLED && props.jbProjectId != null && props.deprizeId != null,
   })

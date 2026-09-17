@@ -10,6 +10,8 @@ export type PatronApiRow = {
   lastTs: number
 }
 
+export type PrizePatronsStatus = 'loading' | 'ready' | 'error' | 'incomplete'
+
 export type PrizePatronsState = {
   patrons: PatronApiRow[]
   totalDirectEth: number
@@ -17,13 +19,14 @@ export type PrizePatronsState = {
   otherRoutes: { count: number; totalEth: number }
   asOf: number | null
   complete: boolean
-  status: 'loading' | 'ready' | 'error'
+  status: PrizePatronsStatus
   refresh: (opts?: { fresh?: boolean }) => void
 }
 
 export function usePrizePatrons(opts: {
   deprizeId?: number
   chainId?: number
+  jbProjectId?: number
   refreshNonce?: number
   enabled?: boolean
 }): PrizePatronsState {
@@ -39,7 +42,7 @@ export function usePrizePatrons(opts: {
 
   const load = useCallback(
     async (fresh?: boolean) => {
-      if (!opts.enabled || !opts.deprizeId || !opts.chainId) {
+      if (!opts.enabled || !opts.deprizeId || !opts.chainId || !opts.jbProjectId) {
         setState((prev) => ({ ...prev, status: 'ready', patrons: [], patronCount: 0 }))
         return
       }
@@ -48,12 +51,17 @@ export function usePrizePatrons(opts: {
         const qs = new URLSearchParams({
           deprizeId: String(opts.deprizeId),
           chainId: String(opts.chainId),
+          jbProjectId: String(opts.jbProjectId),
         })
         if (fresh) qs.set('fresh', '1')
         const res = await fetch(`/api/deprize/patrons?${qs}`)
         const body = await res.json()
-        if (!res.ok || body.complete === false) {
-          setState((prev) => ({ ...prev, status: 'error', complete: false }))
+        if (!res.ok) {
+          setState((prev) => ({ ...prev, status: 'error', complete: true }))
+          return
+        }
+        if (body.complete === false) {
+          setState((prev) => ({ ...prev, status: 'incomplete', complete: false }))
           return
         }
         setState({
@@ -72,7 +80,7 @@ export function usePrizePatrons(opts: {
         setState((prev) => ({ ...prev, status: 'error' }))
       }
     },
-    [opts.enabled, opts.deprizeId, opts.chainId]
+    [opts.enabled, opts.deprizeId, opts.chainId, opts.jbProjectId]
   )
 
   useEffect(() => {

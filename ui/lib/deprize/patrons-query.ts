@@ -1,36 +1,54 @@
 export const PATRONS_MAX_PAGES = 20
 export const PATRONS_PAGE_SIZE = 1000
 
-/** Known Juicebox project ids, keyed by chainId then deprizeId. */
-export const DEPRIZE_JB_PROJECT_IDS: Record<number, Record<number, number>> = {
-  11155111: { 22: 268 },
-}
-
 export function parsePositiveInt(value: unknown): number | null {
   const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
   if (!Number.isInteger(n) || !Number.isFinite(n) || n <= 0) return null
   return n
 }
 
-export function resolveJbProjectId(chainId: number, deprizeId: number): number | null {
-  const projectId = DEPRIZE_JB_PROJECT_IDS[chainId]?.[deprizeId]
-  if (!projectId || !Number.isInteger(projectId) || projectId <= 0) return null
-  return projectId
+/** True when the caller-supplied Juicebox id matches the registry's jbProjectId. */
+export function claimedProjectMatchesRegistry(
+  claimedProjectId: number,
+  onChainProjectId: bigint | number | string
+): boolean {
+  try {
+    const claimed = BigInt(claimedProjectId)
+    const onChain = BigInt(onChainProjectId)
+    return claimed > 0n && claimed === onChain
+  } catch {
+    return false
+  }
+}
+
+export type RegistryProjectLookup =
+  | { ok: true; projectId: bigint }
+  | { ok: false; error: 'registry-unconfigured' | 'unknown-project' | 'registry-unavailable' }
+
+export function verifyClaimedJbProject(
+  claimedProjectId: number,
+  lookup: RegistryProjectLookup
+): { ok: true } | { ok: false; error: string } {
+  if (!lookup.ok) return lookup
+  if (!claimedProjectMatchesRegistry(claimedProjectId, lookup.projectId)) {
+    return { ok: false, error: 'project-mismatch' }
+  }
+  return { ok: true }
 }
 
 export function validatePatronsRequest(input: {
   deprizeId: unknown
   chainId: unknown
+  jbProjectId: unknown
 }):
   | { ok: false; error: string }
   | { ok: true; deprizeId: number; chainId: number; projectId: number } {
   const deprizeId = parsePositiveInt(input.deprizeId)
   const chainId = parsePositiveInt(input.chainId)
-  if (deprizeId == null || chainId == null) {
+  const projectId = parsePositiveInt(input.jbProjectId)
+  if (deprizeId == null || chainId == null || projectId == null) {
     return { ok: false, error: 'invalid-id' }
   }
-  const projectId = resolveJbProjectId(chainId, deprizeId)
-  if (projectId == null) return { ok: false, error: 'unknown-project' }
   return { ok: true, deprizeId, chainId, projectId }
 }
 

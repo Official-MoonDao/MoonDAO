@@ -31,7 +31,7 @@ export default function DePrizePatrons(props: {
     )
   }
 
-  if (patrons.status === 'error' || !patrons.complete) {
+  if (patrons.status === 'error') {
     return (
       <div className="space-y-2">
         <p className="text-amber-300 text-sm">Couldn&apos;t load patrons right now.</p>
@@ -39,6 +39,23 @@ export default function DePrizePatrons(props: {
           type="button"
           className="text-sm text-indigo-300 underline"
           onClick={() => patrons.refresh()}
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
+  if (patrons.status === 'incomplete' || !patrons.complete) {
+    return (
+      <div className="space-y-2">
+        <p className="text-amber-300 text-sm">
+          This prize has more contributions than we can list right now.
+        </p>
+        <button
+          type="button"
+          className="text-sm text-indigo-300 underline"
+          onClick={() => patrons.refresh({ fresh: true })}
         >
           Retry
         </button>

@@ -10,7 +10,9 @@ import {
   buildPatronPayEventsQuery,
   dedupeEventsById,
   validatePatronsRequest,
+  verifyClaimedJbProject,
 } from '@/lib/deprize/patrons-query'
+import { readRegistryJbProjectId } from '@/lib/deprize/readRegistryJbProjectId'
 
 const CHAIN_SLUG: Record<number, string> = {
   11155111: 'sepolia',
@@ -67,6 +69,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   const parsed = validatePatronsRequest({
     deprizeId: req.query.deprizeId,
     chainId: req.query.chainId,
+    jbProjectId: req.query.jbProjectId,
   })
   if (!parsed.ok) {
     return res.status(400).json({ error: parsed.error })
@@ -74,6 +77,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const slug = CHAIN_SLUG[parsed.chainId]
   if (!slug) return res.status(400).json({ error: 'unsupported-chain' })
+
+  const onChain = await readRegistryJbProjectId(slug, parsed.chainId, parsed.deprizeId)
+  const verified = verifyClaimedJbProject(parsed.projectId, onChain)
+  if (!verified.ok) {
+    const status = verified.error === 'registry-unavailable' ? 503 : 400
+    return res.status(status).json({ error: verified.error })
+  }
 
   const fresh = req.query.fresh === '1'
   if (fresh) {
