@@ -29,6 +29,7 @@ import {
   toEth,
   toWei,
 } from '@/lib/deprize/format'
+import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
@@ -448,7 +449,7 @@ export default function BetModal({
             reversed.
           </p>
           <p>
-            5% of every bet funds this DePrize&apos;s launchpad prize pool
+            {payloadCopy('fivePercentLine', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
             {launchpad.name ? ` (${launchpad.name})` : ''} — you receive {prizeToken} for that
             slice. If the DePrize is cancelled or ends with no winner, it resolves on an
             equal-payout basis — <span className="font-semibold">every token redeems for 1/N</span>,

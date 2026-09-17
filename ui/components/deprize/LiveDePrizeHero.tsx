@@ -7,7 +7,14 @@ import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import { getDePrizeCompetition } from '@/lib/deprize/competitions'
-import { DePrizeState, MarketStage, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
+import {
+  DEPRIZE_TERMS_VERSION,
+  DePrizeState,
+  MarketStage,
+  OUTCOME_COLORS,
+  UNIT,
+} from '@/lib/deprize/constants'
+import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
@@ -163,7 +170,9 @@ export default function LiveDePrizeHero({
               {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
               <span className="text-sm font-medium text-gray-400 ml-1.5">ETH</span>
             </p>
-            <p className="text-gray-500 text-[10px] uppercase tracking-wide">prize pool</p>
+            <p className="text-gray-500 text-[10px] uppercase tracking-wide">
+              {payloadCopy('heroPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
+            </p>
           </div>
         </div>
 

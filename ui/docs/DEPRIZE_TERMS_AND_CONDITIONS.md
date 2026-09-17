@@ -14,3 +14,6 @@ linked from the bet flow via the constants in `ui/lib/deprize/constants.ts`:
 Edit the published documents, not this file. Bump `DEPRIZE_TERMS_VERSION` and the version
 table in the Terms whenever the Terms change materially, then run `yarn docs:generate` so the
 committed nav tree and search index stay in sync.
+
+Proposed 1.2 (payload purse / waterfall) lives in `docs/DEPRIZE_PAYLOAD_PURSE.md`, not the
+click-wrap file, and **must not** change `DEPRIZE_TERMS_VERSION` until counsel approves.

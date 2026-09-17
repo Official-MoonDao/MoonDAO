@@ -20,7 +20,8 @@ import {
   isCompetitiveRace,
   isDePrizeGoalMarketBound,
 } from '@/lib/deprize/competitions'
-import { MarketStage, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
+import { DEPRIZE_TERMS_VERSION, MarketStage, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
+import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import { isMintConfigured } from '@/lib/deprize/status'
@@ -586,7 +587,9 @@ export default function RaceMarketCard({
                     <span className="text-sm font-medium text-gray-400 ml-1.5">ETH</span>
                   </p>
                   <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-                    {bound ? 'prize pool' : 'demo pool'}
+                    {bound
+                      ? payloadCopy('cardPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))
+                      : 'demo pool'}
                   </p>
                 </>
               ) : (
@@ -675,7 +678,9 @@ export default function RaceMarketCard({
                     <span className="text-xs font-medium text-gray-400 ml-1">ETH</span>
                   </p>
                   <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-                    {bound ? 'prize pool' : 'demo pool'}
+                    {bound
+                      ? payloadCopy('cardPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))
+                      : 'demo pool'}
                   </p>
                 </>
               ) : (
