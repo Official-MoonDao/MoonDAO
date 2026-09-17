@@ -67,7 +67,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     abi: CitizenABI as any,
   })
 
-  const navigation = useNavigation(citizen)
+  const navigation = useNavigation()
 
   useTranslation('common')
 
