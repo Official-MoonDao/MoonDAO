@@ -16,7 +16,8 @@ import {
   DAI_ADDRESSES,
   MEMBER_VOTE_EXCLUDED_ADDRESSES,
 } from 'const/config'
-import { getCurrentQuarter, getThirdThursdayOfQuarterTimestamp } from 'lib/utils/dates'
+import { getThirdThursdayOfQuarterTimestamp } from 'lib/utils/dates'
+import { isOperator } from 'middleware/isOperator'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import { NextApiRequest, NextApiResponse } from 'next'
@@ -24,6 +25,11 @@ import { readContract, prepareContractCall, sendAndConfirmTransaction, getContra
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
 import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
+import {
+  projectFundingRulesForCycle,
+  projectGrantUSD,
+} from '@/lib/projectCycle/projectBudget'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
@@ -47,6 +53,7 @@ interface VotingResultItem {
   projectInfo: { name: string; MDP: number } | undefined
   approved: boolean
   budget: number
+  grant: number
 }
 
 async function logVotingResults(
@@ -73,6 +80,9 @@ async function logVotingResults(
       projectInfo: projectIdToInfo[projectId],
       approved: projectIdToApproved[projectId],
       budget: usdBudgets[projectId] || 0,
+      grant: projectIdToApproved[projectId]
+        ? projectGrantUSD(usdBudgets[projectId] || 0, quarterBudget)
+        : 0,
     }))
 
   // Log voting results table
@@ -86,7 +96,7 @@ async function logVotingResults(
     const rank = String(index + 1).padStart(2, ' ')
     const pct = item.percentage.toFixed(2).padStart(6, ' ')
     const status = item.approved ? '✅ PASS' : '❌ FAIL'
-    const budget = `$${item.budget}`.padEnd(8, ' ')
+    const budget = `$${(item.approved ? item.grant : item.budget)}`.padEnd(8, ' ')
     const mdp = String(item.projectInfo?.MDP || '?').padStart(3, ' ')
     const name = (item.projectInfo?.name || `Unknown (ID: ${item.projectId})`).slice(0, 34)
     console.log(`║   ${rank}  │ ${pct}% │ ${status} │ ${budget} │ ${mdp} │ ${name.padEnd(34, ' ')} ║`)
@@ -95,7 +105,7 @@ async function logVotingResults(
   // Calculate and log summary
   const approvedProjects = sortedOutcome.filter((item) => item.approved)
   const rejectedProjects = sortedOutcome.filter((item) => !item.approved)
-  const totalApprovedBudget = approvedProjects.reduce((sum, item) => sum + item.budget, 0)
+  const totalApprovedBudget = approvedProjects.reduce((sum, item) => sum + item.grant, 0)
   const totalRejectedBudget = rejectedProjects.reduce((sum, item) => sum + item.budget, 0)
 
   console.log('╠════════════════════════════════════════════════════════════════════════════════╣')
@@ -163,7 +173,21 @@ async function logVotingResults(
 
 // Tally votes for projects and set approved projects to active
 async function POST(req: NextApiRequest, res: NextApiResponse) {
-  const { quarter, year } = getCurrentQuarter()
+  const expected = getProposalCycle()
+  const bodyQuarter = req.body?.quarter
+  const bodyYear = req.body?.year
+  if (bodyQuarter != null || bodyYear != null) {
+    if (
+      Number(bodyQuarter) !== expected.quarter ||
+      Number(bodyYear) !== expected.year
+    ) {
+      return res.status(409).json({
+        error: `Request cohort Q${bodyQuarter} ${bodyYear} does not match the live proposal cycle Q${expected.quarter} ${expected.year}.`,
+        expected,
+      })
+    }
+  }
+  const { quarter, year } = expected
 
   if (!Number.isInteger(quarter) || !Number.isInteger(year) || quarter < 1 || quarter > 4 || year < 2020) {
     return res.status(400).json({ error: 'Invalid quarter or year.' })
@@ -416,7 +440,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
           //     structured `budget[]`,
           //   - manual `BUDGET_OVERRIDES_USD` (keyed by MDP) take
           //     precedence — used when an author agrees post-submit to
-          //     trim their request to fit under the 3/4 budget cap.
+          //     revise their requested ask.
           const budget = extractUsdBudget(proposal, {
             stablecoinAddresses: stablecoinAddressSet,
             MDP: project.MDP,
@@ -667,7 +691,14 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       outcome,
     })
   }
-  const projectIdToApproved = getApprovedProjects(passedProjects, outcome, usdBudgets, NEXT_QUARTER_BUDGET_USD)
+  const rules = projectFundingRulesForCycle(quarter, year)
+  const projectIdToApproved = getApprovedProjects(
+    passedProjects,
+    outcome,
+    usdBudgets,
+    NEXT_QUARTER_BUDGET_USD,
+    { rules }
+  )
 
   console.log('[vote tally] Approval results:', projectIdToApproved)
 
@@ -722,4 +753,4 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     approvedMultisigFollowUps,
   })
 }
-export default withMiddleware(POST, rateLimit)
+export default withMiddleware(POST, rateLimit, isOperator)

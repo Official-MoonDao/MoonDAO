@@ -7,8 +7,8 @@
  * breakdown showing what each supporter contributed (raw → normalized →
  * weighted), with the final approval/budget on the right.
  *
- * Defaults to the current calendar quarter (the one being voted on right
- * now). `?quarter=` and `?year=` let auditors pin a past cycle (e.g.
+ * Defaults to the live proposal cycle (`PROJECT_CYCLE`). `?quarter=`
+ * and `?year=` let auditors pin a past cycle (e.g.
  * `/projects/audit?quarter=2&year=2026`).
  */
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
@@ -21,7 +21,7 @@ import type {
   MemberVoteAudit,
   MemberVoteOutcome,
 } from '@/lib/proposals/computeMemberVoteOutcome'
-import { getRelativeQuarter } from '@/lib/utils/dates'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -46,7 +46,7 @@ const formatNumber = (n: number, digits = 0) =>
 
 export default function ProjectsAuditPage() {
   const router = useRouter()
-  const fallback = getRelativeQuarter(0)
+  const fallback = getProposalCycle()
 
   // Resolve quarter/year strictly from the URL once `router.isReady` is
   // true. Pinning the URL means the audit is sharable / linkable per cycle
@@ -274,7 +274,7 @@ function AuditBody({
   const approvedCount = outcome.results.filter((r) => r.approved).length
   const approvedBudget = outcome.results
     .filter((r) => r.approved)
-    .reduce((sum, r) => sum + (r.budget || 0), 0)
+    .reduce((sum, r) => sum + (r.grant || r.budget || 0), 0)
 
   return (
     <>
@@ -582,7 +582,12 @@ function ProjectRow({
             {outcomeRow.name}
           </p>
           <p className="text-[11px] text-gray-500">
-            Budget: ${formatNumber(outcomeRow.budget, 0)} •{' '}
+            {outcomeRow.approved &&
+            outcomeRow.grant != null &&
+            outcomeRow.grant !== outcomeRow.budget
+              ? `Grant: $${formatNumber(outcomeRow.grant, 0)} (asked $${formatNumber(outcomeRow.budget, 0)})`
+              : `Ask: $${formatNumber(outcomeRow.budget, 0)}`}{' '}
+            •{' '}
             {contributions.length} supporter
             {contributions.length === 1 ? '' : 's'}
           </p>

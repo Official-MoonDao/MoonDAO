@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
+import { PROJECT_CYCLE } from 'const/config'
 import type { ProjectCyclePhase } from 'const/config'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
@@ -26,6 +28,7 @@ type PhaseInfo = {
   nextPhase: ProjectCyclePhase | null
   quarter: number
   year: number
+  overrideIsStale?: boolean
   override?: {
     phase: ProjectCyclePhase | null
     setBy?: string
@@ -48,6 +51,8 @@ type SenateTallyRow = {
 
 function phaseLabel(phase: ProjectCyclePhase | null | undefined): string {
   switch (phase) {
+    case 'intake':
+      return 'Intake (proposals open)'
     case 'senate':
       return 'Senate Vote'
     case 'member':
@@ -127,7 +132,9 @@ export default function OperatorPanel({
   const doAdvance = async (force = false) => {
     const phase = phaseInfo?.livePhase
     const confirmMsg =
-      phase === 'senate'
+      phase === 'intake'
+        ? 'Open the Senate Vote? Senators will be able to vote Yes/No on each proposal.'
+        : phase === 'senate'
         ? 'Close the Senate Vote ON-CHAIN (tally every pending proposal), then open the Member Vote + Retroactive rewards?'
         : phase === 'member'
         ? 'Wrap up the cycle (close the Member Vote UI)? Make sure the Member Vote on-chain tally has already been run.'
@@ -167,6 +174,39 @@ export default function OperatorPanel({
     }
   }
 
+  const resetToConfig = async () => {
+    if (
+      !window.confirm(
+        `Clear the live phase override and follow the config default (${phaseLabel(
+          phaseInfo?.configPhase
+        )})?`
+      )
+    )
+      return
+    setAdvancing(true)
+    try {
+      const res = await fetch('/api/operator/advance-phase', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset: true }),
+      })
+      const json = await res.json()
+      setAdvanceResult(json)
+      if (!res.ok) throw new Error(json?.error || 'Reset failed')
+      toast.success(`Phase reset to ${phaseLabel(json.newPhase)}.`, {
+        style: toastStyle,
+        duration: 5000,
+      })
+      loadPhase()
+      onAfterChange?.()
+    } catch (err: any) {
+      toast.error(err?.message || 'Reset failed.', { style: toastStyle })
+    } finally {
+      setAdvancing(false)
+    }
+  }
+
   const runMemberTally = async () => {
     if (
       !window.confirm(
@@ -176,11 +216,12 @@ export default function OperatorPanel({
       return
     setTallying(true)
     try {
+      const { quarter, year } = getProposalCycle()
       const res = await fetch('/api/proposals/vote', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ quarter, year }),
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json?.error || 'Tally failed')
@@ -357,6 +398,41 @@ export default function OperatorPanel({
                     : ''}
                 </p>
               )}
+              {phaseInfo.overrideIsStale && (
+                <p className="text-[11px] text-amber-300">
+                  A previous cycle&apos;s override is being ignored. Live
+                  phase follows the config default.
+                </p>
+              )}
+
+              {phaseInfo.livePhase === 'intake' && (
+                <>
+                  <p className="text-xs text-gray-400">
+                    Collecting Q{phaseInfo.quarter} {phaseInfo.year} proposals.
+                    Submit by {PROJECT_CYCLE.submissionDeadline}; edits close{' '}
+                    {PROJECT_CYCLE.editingDeadline}; Senate Vote opens{' '}
+                    {PROJECT_CYCLE.votingDate}.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={previewAdvance}
+                      disabled={advancing}
+                      className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {advancing ? 'Working…' : 'Preview (dry run)'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => doAdvance(false)}
+                      disabled={advancing}
+                      className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {advancing ? 'Advancing…' : 'Open Senate Vote'}
+                    </button>
+                  </div>
+                </>
+              )}
 
               {phaseInfo.livePhase === 'senate' && (
                 <>
@@ -420,8 +496,20 @@ export default function OperatorPanel({
                 <p className="text-xs text-gray-400">
                   Cycle is idle. Start the next cycle by editing{' '}
                   <code>PROJECT_CYCLE</code> in <code>const/config.ts</code>{' '}
-                  (new quarter, budget, retro pool) and deploying.
+                  (new quarter, budget, retro pool, phase: intake) and
+                  deploying.
                 </p>
+              )}
+
+              {phaseInfo.livePhase !== phaseInfo.configPhase && (
+                <button
+                  type="button"
+                  onClick={resetToConfig}
+                  disabled={advancing}
+                  className="self-start px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-gray-200 text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Reset to config default
+                </button>
               )}
 
               {advanceResult?.blockers?.length > 0 && (
@@ -443,7 +531,8 @@ export default function OperatorPanel({
                       </li>
                     ))}
                   </ul>
-                  {phaseInfo.livePhase === 'senate' && (
+                  {(phaseInfo.livePhase === 'intake' ||
+                    phaseInfo.livePhase === 'senate') && (
                     <button
                       type="button"
                       onClick={() => doAdvance(true)}

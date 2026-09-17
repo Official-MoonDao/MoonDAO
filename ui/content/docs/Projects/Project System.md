@@ -12,7 +12,7 @@ keywords:
 sidebar_label: Projects
 sidebar_position: 6
 ---
-# MoonDAO Projects v8.0  
+# MoonDAO Projects v9.0  
 
 MoonDAO Projects are the launch point for mission-aligned people to build on top of the foundation and network of MoonDAO.  
 
@@ -35,13 +35,13 @@ MoonDAO Projects consist of Project Contributors and a Project Lead.
 2.) Proposed solution.
 This is meant to help YOU get feedback from people on the idea, offer alternative solutions, and allow for informal coordination around ideas. Anyone can post about ideas regardless of their background in the DAO, even if they aren’t yet a part of our community.
 
-**Step 2: Proposal Submission.** A Project Proposal ([MoonDAO Project Proposal Template](https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit#heading=h.wq6048m686gd)) must be filled out and submitted [here](https://moondao.com/propose) **by the second Thursday of the Quarter.** Please read the Proposal Template for guidelines on proposal limits. Proposal budgets must be less than or equal to 1/5 of the total project rewards for the quarter. If you are looking for more budget than that, consider using our launchpad to help raise funds from the community.
+**Step 2: Proposal Submission.** A Project Proposal ([MoonDAO Project Proposal Template](https://docs.google.com/document/d/1p8rV9RlvFk6nAJzWh-tvroyPvasjjrvgKpyX8ibGX3I/edit#heading=h.wq6048m686gd)) must be filled out and submitted [here](https://moondao.com/propose) **by the second Thursday of the Quarter.** Please read the Proposal Template for guidelines on proposal limits. A winning project receives a grant of min(the amount requested in the proposal, ¼ of that quarter's project pot). State a requested amount in the proposal. Requests above ¼ of the pot will be capped if the project is funded. If you need more than the cap, use the launchpad or propose a later quarterly milestone.
 
 **Step 3: Senate Review.** The Senate will convene and review incoming proposals and provide feedback within a few days. Proposals may be edited up to **48 hours** before the third Thursday of the Quarter.
 
 **Step 4: Townhall Presentation.** Project contributors MUST be present during the townhall to pitch their project proposal to the community. Each project will have the opportunity to present their project. After the townhall is over, the Senate will approve or reject the proposals in accordance to the quorum and approval threshold in the Constitution. Proposals that pass will move on to the next step.
 
-**Step 5: Member House Vote.** Each voter will allocate their voting power, as defined in the Constitution, between proposals -- spreading their voting power on a percentage basis between proposals as they would like. The top 50% of proposals will be funded (rounded up if an odd number of proposals are considered -- e.g. 4 are approved if 7 are considered), ranked in order of voting power allocated to them. If less than six proposals are considered, the top three proposals will be funded. If the cumulative budget of accepted proposals surpasses 3/4 of the project budget for that quarter, then the lowest voted proposal will not be funded until the budget is less than 3/4 the project budget, iteratively removed from lowest to highest until the budget constraint is satisfied. Project contributors must abstain from voting on their own project.
+**Step 5: Member House Vote.** Each voter allocates their voting power between Senate-approved proposals on a percentage basis. The three proposals with the highest voting-power share are funded. Each receives min(its requested amount, ¼ of the quarterly project pot). If fewer than three proposals are considered, all of them are funded and any unissued ¼-slices are added to the retroactive pool. A tie for third is broken by the Senate. Project contributors must abstain from voting on their own project.
 
 
 ## Start
@@ -84,7 +84,13 @@ Each quarter, the projects that were completed will be eligible for Project Rewa
 
 The total amount of rewards each quarter is calculated as follows:
 
-**1. Stablecoin Reward:** 5% of the liquid non-MOONEY assets (NMA) (e.g. ETH, DAI, and other stables), minus the sum total of all the project budgets for that quarter (not including the Executive Branch Budget). Paid in the form of USD-pegged stablecoins. Assets with fluctuating prices will be priced at midnight UTC of the first day of the previous quarter, 
+**1. Stablecoin Reward:** Each quarter the project pot is 3% of official liquid AUM (designated treasury Safes plus the WETH side of the Uniswap V3 LP; exclude MOONEY), priced at midnight UTC on the first day of the quarter, rounded to the nearest $500. The 3% rate does not change unless this document is amended.
+
+That pot is split as follows:
+
+- 10% — Contributor Circle, in USDC, allocated as today.
+- Project grants. The three funded projects each receive min(their ask, ¼ of the pot) at the start of the quarter.
+- Retroactive rewards. Whatever remains after the three grants and the 10% community slice is allocated by Citizens and Voting Members among completed projects whose final reports the Executive Branch approved.
 
 **2. vMOONEY Reward:** A geometric series of MOONEY will be released as follows:
 1. Q4 2022: 15,000,000 MOONEY. 
@@ -101,11 +107,7 @@ At the end of the quarter, the Citizens and Voting Members are presented with al
 
 After all the members have input their distribution, we publish the results and run this [script](https://github.com/Official-MoonDao/MoonDAO/blob/main/ui/lib/utils/rewards.ts) to calculate the distribution for each project.
 
-The retroactive reward to each project is calculated as follows:
-
-![](https://gray-main-toad-36.mypinata.cloud/ipfs/bafkreib4zb6c22nu5q6cvcuze52222dj2lcm6me7ymawbuao2hz7oqgbqa)
-
-We multiply by 0.9 because 10% of the total rewards always goes to the Contributor Circle.  
+The retroactive reward to each project is 100% of the retro leftover (the pot minus the three grants and the 10% Contributor Circle). Members allocate that leftover among eligible final reports. The Contributor Circle's 10% is taken from the pot up front, not from the retro vote. The 0.9 multiplier on retro is no longer how the split works.
 
 **Contributor Reward Calculation**
 
@@ -142,7 +144,7 @@ Any budget going to contributors must be streamed over the period of the project
 
 **How much can I ask for?**
 
-Proposal budgets must be less than or equal to 1/5 of the total quarterly budget. If you are looking for more budget than that, consider using our launchpad to help raise funds from the community.
+Up to ¼ of that quarter's pot. Winners receive min(their ask, that cap). More than the cap → launchpad or a later milestone.
 
 **Can Leads be external to MoonDAO, or must they be members?**
 
@@ -154,7 +156,7 @@ If you are going over the originally intended timeline please notify the Senate 
 
 **What if my project will take multiple quarters to complete?**
 
-That is okay, however we recommend to break up the project into quarterly milestones, with budgets scoped out for that quarter, and separate proposals created for each new milestone -- especially if this is the first time you are submitting a proposal.
+Still fine as separate quarterly milestones. Each funded quarter is its own grant, not a custom multi-quarter envelope.
 
 **Who can be on the Project’s multisig?**
 
@@ -166,7 +168,7 @@ No, we will make a multisig for your project with the addresses you have listed 
 
 **What if a project requires a budget increase?**
 
-If a budget needs to be increased it must go through the full project proposal process with a justification for the budget increase.  
+It does not. Re-propose next quarter or use the launchpad.
 
 **How do we amend the project system?**
 

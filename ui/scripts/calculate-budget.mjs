@@ -1,45 +1,51 @@
 /**
- * Calculate the quarterly project budget for MoonDAO.
+ * Calculate the quarterly project pot for MoonDAO (MDP-267 / Project System v9.0).
  *
- * Budget = 5% of liquid non-MOONEY assets (NMA), rounded to the nearest USD.
- * MOONEY budget decays geometrically from 15M at 5% per quarter starting Q4 2022.
+ * Pot = 3% of official liquid AUM, rounded to the nearest $500.
  *
- * USD prices lock at 00:00 UTC on the first day of the quarter (see
- * ProjectRewards.tsx and docs Projects/Project-System). Live CoinGecko prints
- * are not used — that would make the budget drift with the market.
+ * Official liquid AUM (same set as the finance overview / aum-onchain.ts):
+ *   - The eight designated treasury Safes on their home chains
+ *   - The WETH side of the Ethereum Uniswap V3 MOONEY/WETH LP
+ *   - Exclude MOONEY
+ *   - Exclude Kiln-staked ETH (do not add it on top of Safe balances)
  *
- * Default run (no flags): upcoming quarter's budget, priced at the last
- * quarter-start that has already occurred. Example: in August 2026 this is
- * the Q4 2026 budget at 2026-07-01 00:00 UTC. Once the target quarter has
- * started, the lock date is the first day of that quarter.
+ * USD prices lock at 00:00 UTC on the first day of the quarter. Default run
+ * (no flags): upcoming quarter's pot, priced at the last quarter-start that
+ * has already occurred. Example: in September 2026 this is the Q4 2026 pot
+ * at 2026-07-01 00:00 UTC. Once the target quarter has started, the lock
+ * date is the first day of that quarter.
  *
  * Usage:
  *   node scripts/calculate-budget.mjs
  *   node scripts/calculate-budget.mjs --year 2026 --quarter 4
  *   node scripts/calculate-budget.mjs --price-date 2026-07-01
  *   node scripts/calculate-budget.mjs --live          # unofficial, current prints
- *
- * Treasuries (home-chain Safes only) + Kiln-staked ETH:
- *   - Ethereum mainnet
- *   - Arbitrum
- *   - Polygon
- *   - Base
  */
 
 const MAINNET_TREASURY = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
-const ARBITRUM_TREASURY = '0xAF26a002d716508b7e375f1f620338442F5470c0'
-const POLYGON_TREASURY = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
-const BASE_TREASURY = '0x871e232Eb935E54Eb90B812cf6fe0934D45e7354'
-const STAKED_ETH_ADDRESS = '0xbbb56e071f33e020daEB0A1dD2249B8Bbdb69fB8'
 
-// Known Kiln stake (3 deposits × 32 ETH) used when Etherscan is unavailable.
-const KNOWN_STAKED_ETH = 96
-
+// Official AUM set: home-chain Safes only. Same addresses as
+// `lib/treasury/aum-onchain.ts` COUNTED_SAFES.
 const SAFES = [
-  { name: 'Ethereum Mainnet', chainId: 1, address: MAINNET_TREASURY },
-  { name: 'Arbitrum', chainId: 42161, address: ARBITRUM_TREASURY },
-  { name: 'Polygon', chainId: 137, address: POLYGON_TREASURY },
-  { name: 'Base', chainId: 8453, address: BASE_TREASURY },
+  { name: 'ETH Treasury', chainId: 1, address: MAINNET_TREASURY },
+  { name: 'Arbitrum Treasury', chainId: 42161, address: '0xAF26a002d716508b7e375f1f620338442F5470c0' },
+  { name: 'Polygon Treasury', chainId: 137, address: '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a' },
+  { name: 'Base Treasury', chainId: 8453, address: '0x871e232Eb935E54Eb90B812cf6fe0934D45e7354' },
+  { name: 'Optimism Treasury', chainId: 10, address: '0x7CCa1d04C95e237d5C59DDFC6E8608F5E9cB45e4' },
+  { name: 'Arbitrum Multichain', chainId: 42161, address: '0x7CCa1d04C95e237d5C59DDFC6E8608F5E9cB4537' },
+  { name: 'Polygon Multichain', chainId: 137, address: '0x7CCa1d04C95e237d5C59DDFC6E8608F5E9cB4537' },
+  { name: 'Base Multichain', chainId: 8453, address: '0x7CCa1d04C95e237d5C59DDFC6E8608F5E9cB4537' },
+]
+
+// Ethereum Uniswap V3 MOONEY/WETH position held by the ETH treasury.
+// Official AUM counts the WETH side only (MOONEY is excluded throughout).
+const UNI_V3_NPM = '0xC36442b4a4522E871399CD717aBDD847Ab11FE88'
+const UNI_V3_FACTORY = '0x1F98431c8aD98523631AE4a59f267346ea31F984'
+const UNI_V3_POSITION_ID = 686147n
+const ETH_RPCS = [
+  'https://ethereum.publicnode.com',
+  'https://eth.llamarpc.com',
+  'https://cloudflare-eth.com',
 ]
 
 const SAFE_HEADERS = {
@@ -50,7 +56,6 @@ const SAFE_HEADERS = {
   Referer: 'https://app.safe.global/',
 }
 
-// DefiLlama / CoinGecko ids for every non-MOONEY asset the treasuries hold.
 const TOKEN_PRICE_IDS = {
   ETH: { llama: 'coingecko:ethereum', gecko: 'ethereum' },
   WETH: { llama: 'coingecko:weth', gecko: 'weth' },
@@ -64,7 +69,10 @@ const TOKEN_PRICE_IDS = {
   POL: { llama: 'coingecko:polygon-ecosystem-token', gecko: 'polygon-ecosystem-token' },
 }
 
-const STABLECOINS = new Set(['DAI', 'USDC', 'USDT', 'USDTB'])
+const STABLECOINS = new Set(['DAI', 'USDC', 'USDT', 'USDTB', 'USDC.e', 'USDT.e'])
+const EXCLUDED_SYMBOLS = new Set(['MOONEY'])
+const PROJECT_POT_AUM_RATE = 0.03
+const PROJECT_POT_ROUND_USD = 500
 
 function parseArgs(argv) {
   const args = {
@@ -73,14 +81,12 @@ function parseArgs(argv) {
     priceDate: null,
     live: false,
     help: false,
-    stakedEth: null,
   }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--year') args.year = Number(argv[++i])
     else if (a === '--quarter') args.quarter = Number(argv[++i])
     else if (a === '--price-date') args.priceDate = argv[++i]
-    else if (a === '--staked-eth') args.stakedEth = Number(argv[++i])
     else if (a === '--live') args.live = true
     else if (a === '--help' || a === '-h') args.help = true
     else {
@@ -190,6 +196,15 @@ function numQuartersPastQ4Y2022({ year, quarter }) {
   return (year - 2023) * 4 + quarter
 }
 
+function roundToNearest500(amountUSD) {
+  if (!Number.isFinite(amountUSD)) return 0
+  return Math.round(amountUSD / PROJECT_POT_ROUND_USD) * PROJECT_POT_ROUND_USD
+}
+
+function projectPotFromOfficialAum(officialLiquidAumUSD) {
+  return roundToNearest500(officialLiquidAumUSD * PROJECT_POT_AUM_RATE)
+}
+
 async function fetchJson(url, opts = {}, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -200,7 +215,7 @@ async function fetchJson(url, opts = {}, retries = 3) {
       })
       if (!res.ok) {
         const body = await res.text().catch(() => '')
-        if (attempt < retries && (res.status === 429 || res.status >= 500)) {
+        if (attempt < retries && (res.status === 429 || res.status >= 500 || res.status === 403)) {
           await new Promise((r) => setTimeout(r, attempt * 1500))
           continue
         }
@@ -252,7 +267,6 @@ async function getHistoricalPrices(priceLock) {
   )
   if (missing.length === 0) return prices
 
-  // CoinGecko /history uses dd-mm-yyyy and returns that calendar day's print.
   const [year, month, day] = formatYmd(priceLock).split('-')
   const geckoDate = `${day}-${month}-${year}`
   for (const [symbol, ids] of missing) {
@@ -274,10 +288,8 @@ function buildPriceMap(rawPrices) {
   const pol = rawPrices.POL || 0
   const map = {
     ETH: eth,
-    // Safe Client labels native ETH on Arbitrum as AETH.
     AETH: eth,
     WETH: rawPrices.WETH || eth,
-    stETH: eth,
     DAI: rawPrices.DAI || 1,
     USDC: rawPrices.USDC || 1,
     USDT: rawPrices.USDT || 1,
@@ -286,8 +298,8 @@ function buildPriceMap(rawPrices) {
     SAFE: rawPrices.SAFE || 0,
     GIV: rawPrices.GIV || 0,
     POL: pol,
-    // Safe Client may still label Polygon native as MATIC.
     MATIC: pol,
+    WPOL: pol,
   }
   for (const symbol of STABLECOINS) {
     if (!map[symbol]) map[symbol] = 1
@@ -331,6 +343,7 @@ async function fetchAssets(safe, retries = 3) {
           balance,
           symbol,
           address: isNative ? 'native' : info.address,
+          safe: safe.name,
         }
       })
       console.log(`  ✅ ${safe.name}: ${tokens.length} tokens found`)
@@ -351,88 +364,126 @@ async function fetchAssets(safe, retries = 3) {
   return []
 }
 
-async function fetchStakedEth(apiKey) {
-  // MoonDAO staked ETH via Kiln staking contract.
-  // Count Deposit events where the withdrawer is the MoonDAO treasury,
-  // then subtract any 32-ETH internals back to the treasury.
-  const DEPOSIT_EVENT_TOPIC =
-    '0xac1020908b5f7134d59c1580838eba6fc42dd8c28bae65bf345676bba1913f8e'
-  const MOONDAO_TREASURY_TOPIC =
-    '0x000000000000000000000000ce4a1e86a5c47cd677338f53da22a91d85cab2c9'
-  const INITIAL_STAKE_BLOCK = 21839730
-  const ETH_PER_DEPOSIT = 32
+function pad64(hex) {
+  return hex.replace(/^0x/, '').padStart(64, '0')
+}
 
-  if (!apiKey) {
-    console.warn(
-      `  ⚠️  No ETHERSCAN_API_KEY — using known stake of ${KNOWN_STAKED_ETH} ETH (3 × 32)`
-    )
-    return KNOWN_STAKED_ETH
+async function ethCall(to, data) {
+  const body = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'eth_call',
+    params: [{ to, data }, 'latest'],
+  }
+  let lastErr
+  for (const rpc of ETH_RPCS) {
+    try {
+      const json = await fetchJson(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (json?.result && json.result !== '0x') return json.result
+      lastErr = new Error(`empty result from ${rpc}`)
+    } catch (err) {
+      lastErr = err
+    }
+  }
+  throw lastErr || new Error('all Ethereum RPCs failed')
+}
+
+function signedInt24(value) {
+  return value >= 0x800000 ? value - 0x1000000 : value
+}
+
+function uniV3Amounts(liquidity, sqrtPriceX96, tickLower, tickUpper) {
+  const sqrtP = Number(sqrtPriceX96) / 2 ** 96
+  const sqrtPa = Math.pow(1.0001, tickLower / 2)
+  const sqrtPb = Math.pow(1.0001, tickUpper / 2)
+  const L = Number(liquidity)
+  let amount0 = 0
+  let amount1 = 0
+  if (sqrtP < sqrtPa) {
+    amount0 = (L * (sqrtPb - sqrtPa)) / (sqrtPa * sqrtPb)
+  } else if (sqrtP > sqrtPb) {
+    amount1 = L * (sqrtPb - sqrtPa)
+  } else {
+    amount0 = (L * (sqrtPb - sqrtP)) / (sqrtP * sqrtPb)
+    amount1 = L * (sqrtP - sqrtPa)
+  }
+  return { amount0, amount1 }
+}
+
+async function fetchUniV3Weth() {
+  // positions(uint256) → 0x99fbab88
+  const posSel = '0x99fbab88' + pad64(UNI_V3_POSITION_ID.toString(16))
+  const posHex = await ethCall(UNI_V3_NPM, posSel)
+  const raw = posHex.replace(/^0x/, '')
+  const word = (i) => raw.slice(i * 64, (i + 1) * 64)
+  const token0 = '0x' + word(2).slice(24)
+  const token1 = '0x' + word(3).slice(24)
+  const fee = parseInt(word(4), 16)
+  const tickLower = signedInt24(parseInt(word(5).slice(-6), 16))
+  const tickUpper = signedInt24(parseInt(word(6).slice(-6), 16))
+  const liquidity = BigInt('0x' + word(7))
+  if (liquidity === 0n) {
+    return { weth: 0, token0, token1, amount0: 0, amount1: 0 }
   }
 
-  try {
-    const url =
-      `https://api.etherscan.io/v2/api?chainid=1&module=logs&action=getLogs` +
-      `&address=${STAKED_ETH_ADDRESS}&fromBlock=${INITIAL_STAKE_BLOCK}&toBlock=99999999` +
-      `&topic0=${DEPOSIT_EVENT_TOPIC}&topic2=${MOONDAO_TREASURY_TOPIC}&topic0_2_opr=and` +
-      `&apikey=${apiKey}`
-    const res = await fetch(url)
-    const data = await res.json()
-    if (data.status !== '1' || !Array.isArray(data.result)) {
-      console.warn(
-        `  ⚠️  Could not fetch staked ETH deposit events, using known ${KNOWN_STAKED_ETH} ETH`
-      )
-      return KNOWN_STAKED_ETH
-    }
+  const getPoolSel =
+    '0x1698ee82' + pad64(token0) + pad64(token1) + pad64(fee.toString(16))
+  const poolHex = await ethCall(UNI_V3_FACTORY, getPoolSel)
+  const pool = '0x' + poolHex.slice(-40)
+  const slot0Hex = await ethCall(pool, '0x3850c7bd')
+  const sqrtPriceX96 = BigInt('0x' + slot0Hex.replace(/^0x/, '').slice(0, 64))
 
-    const numDeposits = data.result.length
-    console.log(`   Found ${numDeposits} deposit events`)
-
-    let withdrawnCount = 0
-    const withdrawalUrl =
-      `https://api.etherscan.io/v2/api?chainid=1&module=account&action=txlistinternal` +
-      `&address=${STAKED_ETH_ADDRESS}&startblock=${INITIAL_STAKE_BLOCK}&endblock=99999999` +
-      `&sort=asc&apikey=${apiKey}`
-    const wRes = await fetch(withdrawalUrl)
-    const wData = await wRes.json()
-
-    if (wData.status === '1' && Array.isArray(wData.result)) {
-      const treasuryLower = MAINNET_TREASURY.toLowerCase()
-      const stakingLower = STAKED_ETH_ADDRESS.toLowerCase()
-      for (const tx of wData.result) {
-        if (
-          tx.from.toLowerCase() === stakingLower &&
-          tx.to.toLowerCase() === treasuryLower
-        ) {
-          const ethReturned = parseInt(tx.value) / 1e18
-          if (ethReturned >= 32) {
-            withdrawnCount += Math.round(ethReturned / 32)
-          }
-        }
+  const decSel = '0x313ce567'
+  const [d0Hex, d1Hex, s0Hex, s1Hex] = await Promise.all([
+    ethCall(token0, decSel),
+    ethCall(token1, decSel),
+    ethCall(token0, '0x95d89b41'),
+    ethCall(token1, '0x95d89b41'),
+  ])
+  const d0 = Number(BigInt(d0Hex))
+  const d1 = Number(BigInt(d1Hex))
+  const decodeSymbol = (hex) => {
+    try {
+      const h = hex.replace(/^0x/, '')
+      // dynamic string: offset + length + data
+      const len = parseInt(h.slice(64, 128), 16)
+      if (len > 0 && len < 64) {
+        return Buffer.from(h.slice(128, 128 + len * 2), 'hex').toString('utf8')
       }
+      return Buffer.from(h.replace(/00+$/, ''), 'hex').toString('utf8').replace(/\0/g, '')
+    } catch {
+      return ''
     }
-
-    const stillStaked = numDeposits - withdrawnCount
-    const totalStaked = stillStaked * ETH_PER_DEPOSIT
-    if (withdrawnCount > 0) {
-      console.log(
-        `   ${withdrawnCount} validator(s) withdrawn, ${stillStaked} still staked`
-      )
-    }
-    console.log(
-      `   ${stillStaked} validators × ${ETH_PER_DEPOSIT} ETH = ${totalStaked} ETH`
-    )
-    return totalStaked
-  } catch (err) {
-    console.warn(
-      `  ⚠️  Staked ETH fetch failed (${err.message}), using known ${KNOWN_STAKED_ETH} ETH`
-    )
-    return KNOWN_STAKED_ETH
+  }
+  const symbol0 = decodeSymbol(s0Hex)
+  const symbol1 = decodeSymbol(s1Hex)
+  const { amount0, amount1 } = uniV3Amounts(liquidity, sqrtPriceX96, tickLower, tickUpper)
+  const human0 = amount0 / 10 ** d0
+  const human1 = amount1 / 10 ** d1
+  const weth =
+    symbol0 === 'WETH' ? human0 : symbol1 === 'WETH' ? human1 : 0
+  return {
+    weth,
+    token0,
+    token1,
+    symbol0,
+    symbol1,
+    amount0: human0,
+    amount1: human1,
+    pool,
+    fee,
   }
 }
 
 function printHelp() {
-  console.log(`MoonDAO quarterly project-budget calculator
+  console.log(`MoonDAO quarterly project-pot calculator (MDP-267 / v9.0)
 
+Official liquid AUM = designated treasury Safes + Uniswap V3 WETH.
+Exclude MOONEY and staked ETH. Pot = 3% of that AUM, rounded to $500.
 USD prices lock at 00:00 UTC on the first day of the quarter.
 
 Usage:
@@ -442,11 +493,7 @@ Options:
   --year YYYY --quarter N   Budget quarter (default: upcoming calendar quarter)
   --price-date YYYY-MM-DD   Override the UTC midnight used for historical prices
   --live                    Use current market prices (unofficial)
-  --staked-eth N            Override Kiln-staked ETH instead of querying Etherscan
   -h, --help                Show this help
-
-Environment:
-  ETHERSCAN_API_KEY         Optional. Without it the script uses the known 96 ETH stake.
 `)
 }
 
@@ -459,12 +506,10 @@ async function main() {
 
   const { target, priceLock, priceLockNote } = resolveTargetAndPriceLock(args)
   const quartersPast = numQuartersPastQ4Y2022(target)
-  const etherscanKey =
-    process.env.ETHERSCAN_API_KEY || process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
 
   console.log('╔═══════════════════════════════════════════════════════════════╗')
   console.log(
-    `║        MoonDAO Q${target.quarter} ${target.year} Budget Calculator`.padEnd(64) + '║'
+    `║        MoonDAO Q${target.quarter} ${target.year} Budget Calculator (v9)`.padEnd(64) + '║'
   )
   console.log('╚═══════════════════════════════════════════════════════════════╝')
   console.log()
@@ -474,14 +519,27 @@ async function main() {
   }
   console.log()
 
-  console.log('📡 Fetching treasury balances from all chains...')
+  console.log('📡 Fetching official AUM Safes (home chains, ex-MOONEY)...')
 
   const delay = (ms) => new Promise((r) => setTimeout(r, ms))
   const allTokens = []
   for (let i = 0; i < SAFES.length; i++) {
     const tokens = await fetchAssets(SAFES[i])
     allTokens.push(...tokens)
-    if (i < SAFES.length - 1) await delay(3000)
+    if (i < SAFES.length - 1) await delay(2500)
+  }
+
+  console.log()
+  console.log('📡 Reading Uniswap V3 WETH side (NFT #686147)...')
+  let lp = null
+  try {
+    lp = await fetchUniV3Weth()
+    console.log(
+      `  ✅ ${lp.symbol0}/${lp.symbol1}  ${lp.amount0.toFixed(4)} ${lp.symbol0} + ${lp.amount1.toFixed(4)} ${lp.symbol1}`
+    )
+    console.log(`     Official AUM counts WETH only: ${lp.weth.toFixed(4)} WETH`)
+  } catch (err) {
+    console.error(`  ❌ Uniswap V3 read failed: ${err.message}`)
   }
 
   console.log()
@@ -500,45 +558,47 @@ async function main() {
   console.log(`💰 ETH Price: $${ethPrice.toFixed(2)}`)
   if (priceLock) {
     for (const [symbol, price] of Object.entries(priceMap)) {
-      if (symbol === 'ETH' || symbol === 'stETH' || !price) continue
+      if (symbol === 'ETH' || !price) continue
       if (STABLECOINS.has(symbol) && Math.abs(price - 1) < 0.01) continue
-      console.log(`   ${symbol}: $${price}`)
+      console.log(`   ${symbol}: $${Number(price).toFixed(2)}`)
     }
   }
   console.log()
 
   const aggregated = {}
+  const perSafe = {}
   for (const t of allTokens) {
-    if (!aggregated[t.symbol]) {
-      aggregated[t.symbol] = { symbol: t.symbol, balance: 0 }
-    }
+    if (EXCLUDED_SYMBOLS.has(t.symbol)) continue
+    if (!aggregated[t.symbol]) aggregated[t.symbol] = { symbol: t.symbol, balance: 0 }
     aggregated[t.symbol].balance += t.balance
+    if (!perSafe[t.safe]) perSafe[t.safe] = 0
+    const px = STABLECOINS.has(t.symbol) ? 1 : priceMap[t.symbol] || 0
+    perSafe[t.safe] += t.balance * px
   }
 
-  console.log('🔒 Fetching staked ETH...')
-  const stakedEth =
-    args.stakedEth != null ? args.stakedEth : await fetchStakedEth(etherscanKey)
-  if (args.stakedEth != null) {
-    console.log(`   Using --staked-eth override: ${stakedEth} ETH`)
+  if (lp?.weth > 0) {
+    if (!aggregated.WETH) aggregated.WETH = { symbol: 'WETH', balance: 0 }
+    aggregated.WETH.balance += lp.weth
+    perSafe['Uniswap V3 LP (WETH)'] = lp.weth * (priceMap.WETH || ethPrice)
   }
-  console.log(
-    `   Staked ETH: ${stakedEth.toFixed(4)} ETH ($${(stakedEth * ethPrice).toFixed(2)})`
-  )
+
+  console.log('🏦 Official liquid AUM by custodian (ex-MOONEY, ex-staked ETH):')
+  console.log('─'.repeat(70))
+  let safeTotal = 0
+  for (const [name, usd] of Object.entries(perSafe)) {
+    safeTotal += usd
+    console.log(`  ${name.padEnd(28)} $${usd.toFixed(2).padStart(12)}`)
+  }
+  console.log('─'.repeat(70))
   console.log()
 
-  if (!aggregated['stETH']) {
-    aggregated['stETH'] = { symbol: 'stETH', balance: 0 }
-  }
-  aggregated['stETH'].balance += stakedEth
-
-  console.log('📊 Token Breakdown (non-MOONEY):')
+  console.log('📊 Token Breakdown (official liquid AUM):')
   console.log('─'.repeat(70))
 
   let totalUSD = 0
   const tokenEntries = Object.values(aggregated)
-    .filter((t) => t.symbol !== 'MOONEY')
     .map((t) => {
-      const price = priceMap[t.symbol] || 0
+      const price = STABLECOINS.has(t.symbol) ? 1 : priceMap[t.symbol] || 0
       const usd = t.balance * price
       return { ...t, price, usd }
     })
@@ -558,11 +618,10 @@ async function main() {
   )
   console.log()
 
-  // Budget = 5% of liquid non-MOONEY assets in USD (stablecoins)
-  // See: /docs/Projects/Project-System#quarterly-rewards
-  const usdBudget = Math.round(totalUSD * 0.05)
-  const maxPerProject = Math.round(usdBudget / 5)
-  const approvalCap = Math.round((usdBudget * 3) / 4)
+  const rawThreePercent = totalUSD * PROJECT_POT_AUM_RATE
+  const usdBudget = projectPotFromOfficialAum(totalUSD)
+  const maxPerProject = Math.round(usdBudget / 4)
+  const community = Math.round(usdBudget * 0.1)
 
   const MOONEY_INITIAL_BUDGET = 15_000_000
   const MOONEY_DECAY_RATE = 0.95
@@ -573,10 +632,10 @@ async function main() {
 
   const label = `Q${target.quarter} ${target.year}`
   console.log('╔═══════════════════════════════════════════════════════════════╗')
-  console.log(`║  ${label} BUDGET RESULTS`.padEnd(64) + '║')
+  console.log(`║  ${label} BUDGET RESULTS (MDP-267 / v9.0)`.padEnd(64) + '║')
   console.log('╠═══════════════════════════════════════════════════════════════╣')
   console.log(
-    `║  Total Assets (non-MOONEY):  $${totalUSD.toFixed(0).padStart(10)}`.padEnd(64) + '║'
+    `║  Official liquid AUM:        $${totalUSD.toFixed(0).padStart(10)}`.padEnd(64) + '║'
   )
   console.log(
     `║  ETH Price:                  $${ethPrice.toFixed(2).padStart(10)}`.padEnd(64) + '║'
@@ -588,22 +647,25 @@ async function main() {
   }
   console.log('║                                                              ║')
   console.log(
+    `║  3% of AUM (raw):            $${rawThreePercent.toFixed(0).padStart(10)}`.padEnd(64) + '║'
+  )
+  console.log(
     `║  📌 PROJECT_CYCLE.budgetUSD:  $${usdBudget.toLocaleString()}`.padEnd(64) + '║'
   )
-  console.log('║     (5% of liquid non-MOONEY assets)                         ║')
+  console.log('║     (3% of official liquid AUM, nearest $500)                ║')
   console.log('║                                                              ║')
   console.log(
-    `║  Max per Project (1/5):       $${maxPerProject.toLocaleString()}`.padEnd(64) + '║'
+    `║  Grant cap (¼ pot):          $${maxPerProject.toLocaleString()}`.padEnd(64) + '║'
   )
   console.log(
-    `║  Approval Cap (3/4):          $${approvalCap.toLocaleString()}`.padEnd(64) + '║'
+    `║  Community circle (10%):     $${community.toLocaleString()}`.padEnd(64) + '║'
   )
-  console.log('║                                                              ║')
   console.log(
-    `║  Retroactive Rewards:         $${usdBudget.toLocaleString()} - project budgets`.padEnd(64) +
-      '║'
+    `║  Max grants if 3 × cap:      $${(maxPerProject * 3).toLocaleString()}`.padEnd(64) + '║'
   )
-  console.log('║    10% of rewards → Community Circle                         ║')
+  console.log(
+    `║  Retro if 3 × full cap:      $${(usdBudget - maxPerProject * 3 - community).toLocaleString()}`.padEnd(64) + '║'
+  )
   console.log('║                                                              ║')
   console.log(
     `║  vMOONEY Budget:              ${mooneyFormatted} vMOONEY`.padEnd(64) + '║'
@@ -613,16 +675,17 @@ async function main() {
   console.log()
   console.log('👉 Update ui/const/config.ts PROJECT_CYCLE:')
   console.log(`   budgetUSD: ${usdBudget}`)
+  console.log('   MAX_BUDGET_USD is derived as budgetUSD / 4.')
 }
 
-// Exported for the inline self-check when run as `node --input-type=module`
-// against this file; the CLI always calls main().
 export {
   addQuarter,
   getCalendarQuarter,
   numQuartersPastQ4Y2022,
   quarterStartUtc,
   resolveTargetAndPriceLock,
+  roundToNearest500,
+  projectPotFromOfficialAum,
 }
 
 const isDirectRun =
