@@ -39,7 +39,7 @@ export function verifyClaimedJbProject(
 export function validatePatronsRequest(input: {
   deprizeId: unknown
   chainId: unknown
-  jbProjectId: unknown
+  jbProjectId?: unknown
 }):
   | { ok: false; error: string }
   | { ok: true; deprizeId: number; chainId: number; projectId: number } {
