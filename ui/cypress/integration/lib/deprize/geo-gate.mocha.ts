@@ -218,7 +218,7 @@ describe('PR-0 DePrize geo gate', () => {
     const panel = readUi('components/deprize/ForecastPanel.tsx')
     const detail = readUi('pages/deprize/[id].tsx')
     expect(panel).to.include("Betting isn&apos;t available in your region")
-    expect(panel).to.match(/you can still make a (call|prediction)/i)
+    expect(panel).to.match(/you can still make a prediction/i)
     expect(detail).to.not.include("Betting isn&apos;t available in your region")
     expect(
       fs.existsSync(path.join(UI_ROOT, 'components/deprize/DePrizeRestrictedNotice.tsx'))

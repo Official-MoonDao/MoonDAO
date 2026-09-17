@@ -35,6 +35,20 @@ describe('forecast route isolation and schema', () => {
     }
   })
 
+  it('mirrors to Tableland after Redis and after the reported / superseded guards', () => {
+    const submit = fs.readFileSync(path.join(API_DIR, 'submit.ts'), 'utf8')
+    const writeIdx = submit.indexOf('await writeForecast')
+    const mirrorIdx = submit.indexOf('await mirrorForecastToTableland')
+    const reportedIdx = submit.indexOf('snap.payoutDenominator > 0n')
+    const supersededIdx = submit.indexOf("error: 'superseded'")
+    expect(writeIdx).to.be.greaterThan(-1)
+    expect(mirrorIdx).to.be.greaterThan(writeIdx)
+    expect(reportedIdx).to.be.greaterThan(-1)
+    expect(reportedIdx).to.be.lessThan(writeIdx)
+    expect(supersededIdx).to.be.greaterThan(-1)
+    expect(supersededIdx).to.be.lessThan(writeIdx)
+  })
+
   it('unknown schema version refuses rather than guessing', () => {
     expect(() => assertForecastVersion({ v: 2 })).to.throw(UnknownForecastSchemaError)
     expect(() => assertForecastVersion({ v: 1 })).to.not.throw()
