@@ -172,17 +172,19 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   // settles on-chain with the mint router), not the build-time default.
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
   const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId, chain)
-  const { ethPrice } = useETHPrice(1)
+  const { ethPrice, quotedAt } = useETHPrice(1)
   const poolUsd = useMemo(() => {
-    if (jbProjectId === undefined || isLoadingFunding || ethPrice == null) return null
+    if (jbProjectId === undefined || isLoadingFunding || ethPrice == null || quotedAt == null) {
+      return null
+    }
     const eth = Number(totalFunding) / Number(UNIT)
     if (!Number.isFinite(eth)) return null
     return eth * ethPrice
-  }, [jbProjectId, isLoadingFunding, totalFunding, ethPrice])
+  }, [jbProjectId, isLoadingFunding, totalFunding, ethPrice, quotedAt])
   const poolAsOf = useMemo(() => {
-    if (ethPrice == null) return null
-    return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
-  }, [ethPrice])
+    if (quotedAt == null) return null
+    return new Date(quotedAt).toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
+  }, [quotedAt])
   const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''

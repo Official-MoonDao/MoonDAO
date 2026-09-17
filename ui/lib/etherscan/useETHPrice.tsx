@@ -77,28 +77,31 @@ export default function useETHPrice(
     return price
   }, [ethPriceData])
 
-  // Hold on to the last successfully-fetched price across renders so a
+  // Hold on to the last successfully-fetched price and its quote time so a
   // transient SWR error doesn't drop us back to null mid-typing.
   //
-  // Initialized lazily from localStorage (≤24h old) so the very first
-  // render on a slow network can already quote a contribution against the
-  // cached value rather than briefly showing 0. The lazy initializer runs
-  // exactly once per mount and keeps the render itself pure (no
-  // localStorage reads or ref mutations during render — that pattern
-  // misbehaves under React strict-mode double-invocation).
-  const [lastGoodPrice, setLastGoodPrice] = useState<number | null>(() => {
-    const cached = readCachedPrice()
-    return cached ? cached.price : null
-  })
+  // Seeded from localStorage (≤24h old) *after mount* so SSR and the first
+  // client render agree — `window` is missing on the server, and reading the
+  // cache in the useState initializer would hydrate a named USD tier against
+  // unknown-tier markup. The cache still carries its original `ts`.
+  const [lastGood, setLastGood] = useState<CachedPrice | null>(null)
 
   useEffect(() => {
-    if (fetchedPrice != null && fetchedPrice !== lastGoodPrice) {
-      setLastGoodPrice(fetchedPrice)
-      writeCachedPrice(fetchedPrice)
+    if (fetchedPrice != null) {
+      if (fetchedPrice !== lastGood?.price) {
+        setLastGood({ price: fetchedPrice, ts: Date.now() })
+        writeCachedPrice(fetchedPrice)
+      }
+      return
     }
-  }, [fetchedPrice, lastGoodPrice])
+    if (lastGood == null) {
+      const cached = readCachedPrice()
+      if (cached) setLastGood(cached)
+    }
+  }, [fetchedPrice, lastGood])
 
-  const ethPrice = fetchedPrice ?? lastGoodPrice ?? null
+  const ethPrice = fetchedPrice ?? lastGood?.price ?? null
+  const quotedAt = lastGood && lastGood.price === ethPrice ? lastGood.ts : null
 
   const convertedAmount = useMemo(() => {
     if (!ethPrice || !amount) return 0
@@ -116,5 +119,5 @@ export default function useETHPrice(
   // background.
   const isLoading = isLoadingPrice && ethPrice == null
 
-  return { data: convertedAmount, isLoading, error, ethPrice }
+  return { data: convertedAmount, isLoading, error, ethPrice, quotedAt }
 }
