@@ -4,7 +4,7 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { getFeaturedLiveDePrizeId } from '@/lib/deprize/competitions'
-import { deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
+import { DEPRIZE_RESTRICTED_PREDICT_COPY, deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
 import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { resetMockData } from '@/lib/deprize/mockMarket'
@@ -157,9 +157,9 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
           }
         >
           <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
-            {bettingBlockedReason && (
+            {restricted && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
-                {bettingBlockedReason}
+                {DEPRIZE_RESTRICTED_PREDICT_COPY}
               </div>
             )}
 
