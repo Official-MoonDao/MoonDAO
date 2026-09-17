@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Chain } from 'thirdweb'
+import EthUsd from '@/components/deprize/EthUsd'
 import DePrizePatrons from '@/components/deprize/DePrizePatrons'
 import FundPrizeModal from '@/components/deprize/FundPrizeModal'
 import {
@@ -57,6 +58,13 @@ export default function PrizePoolSlot(props: {
       id="deprize-prize-pool"
       className={`${CARD} space-y-4`}
     >
+      <div>
+        <h3 className="text-white text-sm font-semibold">Prize pool</h3>
+        <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
+          <EthUsd eth={props.poolEth} prize />
+        </p>
+      </div>
+
       {DEPRIZE_PATRONS_ENABLED && (
         <DePrizePatrons
           patrons={patrons}
