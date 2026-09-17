@@ -167,7 +167,7 @@ function checkTranscriptLength(
       )}%)`
     );
     console.warn(
-      `   Consider using a model with a larger context window (e.g., llama-3.3-70b-versatile)`
+      `   Consider using a model with a larger context window (e.g., openai/gpt-oss-120b)`
     );
   } else if (usagePercent > TOKEN_CONFIG.contextWindowWarningThreshold) {
     console.warn(

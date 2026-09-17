@@ -3,7 +3,7 @@
 A Google Cloud Run service that handles the complete townhall processing pipeline:
 1. Extracts audio URLs from YouTube videos using `yt-dlp`
 2. Transcribes audio using GROQ Whisper Large v3
-3. Summarizes transcripts using GROQ Llama-3.3-70b-versatile
+3. Summarizes transcripts using GROQ gpt-oss-120b
 4. Creates ConvertKit email broadcast drafts (requires manual review and sending)
 
 ## Credits
@@ -52,7 +52,7 @@ Processes a complete townhall: extracts audio, transcribes, summarizes, and crea
   "videoId": "dQw4w9WgXcQ",
   "videoTitle": "Town Hall - January 2024",
   "videoDate": "2024-01-15T00:00:00Z",
-  "groqModel": "llama-3.3-70b-versatile",
+  "groqModel": "openai/gpt-oss-120b",
   "whisperModel": "whisper-large-v3",
   "convertKitApiKey": "your-api-key",
   "convertKitTagId": "123456"
@@ -132,7 +132,7 @@ Returns `{ "status": "ok" }` if the service is running.
    The test script will:
    - Extract audio from the YouTube video
    - Transcribe using GROQ Whisper Large v3
-   - Summarize using GROQ Llama-3.3-70b-versatile
+   - Summarize using GROQ gpt-oss-120b
    - Format the summary for ConvertKit
    - **Skip sending the ConvertKit email** (test mode)
 

@@ -16,6 +16,7 @@
 
 import "dotenv/config";
 import { Agent } from "undici";
+import { DEFAULT_MODELS } from "./utils/config";
 
 interface ProcessResponse {
   success: boolean;
@@ -93,7 +94,7 @@ async function testPipeline(): Promise<void> {
         videoId: videoId,
         videoTitle: "Test Town Hall",
         videoDate: new Date().toISOString(),
-        groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+        groqModel: process.env.GROQ_MODEL || DEFAULT_MODELS.llm,
         whisperModel: process.env.WHISPER_MODEL || "whisper-large-v3",
         testMode: true,
         // convertKitApiKey and convertKitTagId not required in test mode

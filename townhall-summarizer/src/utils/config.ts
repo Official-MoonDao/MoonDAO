@@ -20,7 +20,12 @@ export const SPELLING_CORRECTIONS: SpellingCorrection[] = [
 
 export const DEFAULT_MODELS = {
   whisper: "whisper-large-v3",
-  llm: "llama-3.3-70b-versatile",
+  // GROQ retired the entire Llama family; `llama-3.3-70b-versatile` now 404s
+  // with model_not_found, which failed summarization for every town hall even
+  // once the transcript was in hand. gpt-oss-120b is the closest replacement
+  // still served — same 128k context, so the chunking maths below is unchanged.
+  // Check `GET /openai/v1/models` before changing this; GROQ deprecates often.
+  llm: "openai/gpt-oss-120b",
 } as const;
 
 export const AUDIO_CONFIG = {
@@ -59,7 +64,7 @@ export const CONTEXT_WINDOWS = {
 } as const;
 
 export const CONTEXT_WINDOW_MODELS = {
-  "128k": ["llama-3.3-70b", "llama-3.1-8b", "qwen", "kimi"],
+  "128k": ["gpt-oss", "llama-3.3-70b", "llama-3.1-8b", "qwen", "kimi"],
   "256k": ["kimi-k2"],
 } as const;
 
