@@ -10,6 +10,8 @@ import {
 } from '@/lib/deprize/constants'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { usePrizePatrons } from '@/lib/deprize/usePrizePatrons'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import { CARD } from './primitives'
 
 export default function PrizePoolSlot(props: {
   poolUsd?: number | null
@@ -53,12 +55,13 @@ export default function PrizePoolSlot(props: {
   return (
     <section
       id="deprize-prize-pool"
-      className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 space-y-4"
+      className={`${CARD} space-y-4`}
     >
       {DEPRIZE_PATRONS_ENABLED && (
         <DePrizePatrons
           patrons={patrons}
           pendingOwn={Boolean(pendingPayer)}
+          chainSlug={props.chain ? getChainSlug(props.chain) : undefined}
         />
       )}
 

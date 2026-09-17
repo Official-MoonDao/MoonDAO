@@ -631,7 +631,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
 
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
-      <div className="flex flex-col gap-4 w-full max-w-[860px] mx-auto">
+      <div className="flex flex-col gap-4 w-full lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+        <div className="flex flex-col gap-4 min-w-0 lg:col-start-1 lg:row-start-1">
         <PrizeHeader
           knownCompetition={knownCompetition}
           title={competition.title}
@@ -711,14 +712,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
         />
-        <ForecastSlot
-          chainSlug={chainSlug}
-          deprizeId={deprizeId as number}
-          labels={predictionLabels}
-          marketPercents={market.outcomes.map((o) => o.probability)}
-          liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
-          reported={!!market.payoutDen && market.payoutDen > 0n}
-        />
+        </div>
+        <aside className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-6">
         <PrizePoolSlot
           poolUsd={poolUsd}
           asOf={poolAsOf}
@@ -734,6 +729,16 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           account={account}
           refreshNonce={refreshNonce}
           onFunded={refreshAll}
+        />
+        </aside>
+        <div className="flex flex-col gap-4 min-w-0 lg:col-start-1 lg:row-start-2">
+        <ForecastSlot
+          chainSlug={chainSlug}
+          deprizeId={deprizeId as number}
+          labels={predictionLabels}
+          marketPercents={market.outcomes.map((o) => o.probability)}
+          liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
+          reported={!!market.payoutDen && market.payoutDen > 0n}
         />
         <ClaimSection>
           {showResolved && (
@@ -772,6 +777,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           generationNumber={generationNumber}
         />
         <FinePrint poolUsd={poolUsd} asOf={poolAsOf} raceBinding={raceBinding} />
+        </div>
       </div>
 
       {/* Bet modal */}
@@ -829,7 +835,7 @@ function Shell({
     <div className="animate-fadeIn flex flex-col items-center">
       <Head title={title} description={deprizeOgDescription(description)} />
       <Container>
-        <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
+        <div className="w-full max-w-6xl mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
           {children}
         </div>
         <NoticeFooter />

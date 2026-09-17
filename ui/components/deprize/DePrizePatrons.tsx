@@ -1,4 +1,6 @@
 import EthUsd from '@/components/deprize/EthUsd'
+import CitizenIdentity from '@/components/layout/CitizenIdentity'
+import { useCitizenRowsByOwners } from '@/lib/citizen/useCitizenRowsByOwners'
 import { PATRONS_STALE_AFTER_MS, UNIT } from '@/lib/deprize/constants'
 import type { PrizePatronsState } from '@/lib/deprize/usePrizePatrons'
 
@@ -12,8 +14,13 @@ function relativeAsOf(asOf: number): string {
 export default function DePrizePatrons(props: {
   patrons: PrizePatronsState
   pendingOwn?: boolean
+  chainSlug?: string
 }) {
-  const { patrons, pendingOwn } = props
+  const { patrons, pendingOwn, chainSlug = 'arbitrum' } = props
+  const citizens = useCitizenRowsByOwners(
+    patrons.patrons.map((row) => row.payer),
+    chainSlug
+  )
   const stale =
     patrons.status === 'ready' &&
     patrons.patronCount > 0 &&
@@ -92,8 +99,12 @@ export default function DePrizePatrons(props: {
       )}
       <ul className="space-y-1.5">
         {patrons.patrons.map((row) => (
-          <li key={row.payer} className="flex justify-between gap-3 text-sm">
-            <span className="text-gray-200 truncate">{row.displayName}</span>
+          <li key={row.payer} className="flex items-center justify-between gap-3 text-sm">
+            <CitizenIdentity
+              address={row.payer}
+              citizen={citizens.get(row.payer.toLowerCase())}
+              fallbackName={row.displayName}
+            />
             <EthUsd eth={Number(BigInt(row.totalWei)) / Number(UNIT)} prize />
           </li>
         ))}
