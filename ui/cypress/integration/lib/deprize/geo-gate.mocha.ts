@@ -214,13 +214,17 @@ describe('PR-0 DePrize geo gate', () => {
     expect(exitMount).to.not.include('bettingAllowed')
   })
 
-  it('keeps the existing region-notice sentence and deletes the full-page notice', () => {
+  it('keeps a region notice next to predictions and deletes the full-page notice', () => {
+    const panel = readUi('components/deprize/ForecastPanel.tsx')
     const detail = readUi('pages/deprize/[id].tsx')
-    expect(detail).to.include(
-      "Betting isn&apos;t available in your region. You can view odds, cash out and claim."
-    )
+    expect(panel).to.include("Betting isn&apos;t available in your region")
+    expect(panel).to.match(/you can still make a (call|prediction)/i)
+    expect(detail).to.not.include("Betting isn&apos;t available in your region")
     expect(
       fs.existsSync(path.join(UI_ROOT, 'components/deprize/DePrizeRestrictedNotice.tsx'))
+    ).to.equal(false)
+    expect(
+      fs.existsSync(path.join(UI_ROOT, 'components/deprize/detail/RegionBanner.tsx'))
     ).to.equal(false)
   })
 })

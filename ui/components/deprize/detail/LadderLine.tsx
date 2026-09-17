@@ -8,8 +8,9 @@ export default function LadderLine({
   deprizeId,
 }: {
   chainSlug: string
-  deprizeId: number
+  deprizeId?: number
 }) {
+  if (deprizeId == null) return null
   const ladder = getLadderForCompetition(chainSlug, deprizeId)
   const current = ladder.rungs.find((rung) => rung.current)
   if (!ladder.currentKey || !current) return null
