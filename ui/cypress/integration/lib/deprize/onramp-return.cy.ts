@@ -10,7 +10,7 @@ import {
   isSafeAmountString,
   parseOnrampReturn,
 } from '@/lib/deprize/onrampReturn'
-import { resolveOnrampReturn } from '@/lib/deprize/resolveOnrampReturn'
+import { resolveOnrampReturn, toJwtIssuedAtMs } from '@/lib/deprize/resolveOnrampReturn'
 
 const capEth = 1
 const baseResolve = {
@@ -93,9 +93,9 @@ describe('onramp return URL helpers', () => {
     expect(isSafeAmountString('1e-6')).to.equal(false)
     expect(isSafeAmountString(`0.${'1'.repeat(40)}`)).to.equal(false)
     expect(isSafeAmountString('1'.repeat(40))).to.equal(false)
-    expect(parseOnrampReturn({ onrampSuccess: 'true', outcome: '0', amount: '1e-6' })).to.deep.equal(
-      { active: false }
-    )
+    expect(
+      parseOnrampReturn({ onrampSuccess: 'true', outcome: '0', amount: '1e-6' })
+    ).to.deep.equal({ active: false })
   })
 })
 
@@ -106,9 +106,9 @@ describe('resolveOnrampReturn', () => {
       outcome: '3',
       amount: '0.99',
     })
-    expect(
-      resolveOnrampReturn({ ...baseResolve, parsed, jwtVerified: false }).action
-    ).to.equal('ignore')
+    expect(resolveOnrampReturn({ ...baseResolve, parsed, jwtVerified: false }).action).to.equal(
+      'ignore'
+    )
   })
 
   it('2 — JWT address mismatch strips and names the funded wallet', () => {
@@ -133,6 +133,19 @@ describe('resolveOnrampReturn', () => {
       nowMs: 60 * 60 * 1000 + 1,
     })
     expect(result).to.deep.equal({ action: 'strip' })
+  })
+
+  it('3b — Unix-second JWT timestamps are not treated as stale', () => {
+    const nowMs = Date.UTC(2026, 0, 1)
+    const issuedSec = Math.floor(nowMs / 1000) - 60
+    expect(toJwtIssuedAtMs(issuedSec)).to.equal(issuedSec * 1000)
+    const result = resolveOnrampReturn({
+      ...baseResolve,
+      parsed: { active: true, outcomeIndex: 1 },
+      jwtIssuedAtMs: issuedSec,
+      nowMs,
+    })
+    expect(result.action).to.equal('open')
   })
 
   it('4 — out-of-range outcome strips and never opens', () => {

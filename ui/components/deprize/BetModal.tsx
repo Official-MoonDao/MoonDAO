@@ -4,6 +4,14 @@ import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
+import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
+import {
+  areAttestationsAccepted,
+  canSubmitDePrizeBet,
+  EMPTY_ATTESTATIONS,
+  type AcceptanceSubmitState,
+  type DePrizeAttestations,
+} from '@/lib/deprize/attestations'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import {
   DEPRIZE_PRIVACY_URL,
@@ -12,27 +20,7 @@ import {
   DEPRIZE_TERMS_VERSION,
   UNIT,
 } from '@/lib/deprize/constants'
-import {
-  areAttestationsAccepted,
-  canSubmitDePrizeBet,
-  EMPTY_ATTESTATIONS,
-  type AcceptanceSubmitState,
-  type DePrizeAttestations,
-} from '@/lib/deprize/attestations'
 import { eligibilityMessage, type EligibilityReason } from '@/lib/deprize/eligibility'
-import {
-  DEPRIZE_ONRAMP_JWT_KEY,
-  ELIGIBILITY_TIMEOUT_MS,
-  ONRAMP_SUGGESTED_PURCHASE_ETH,
-  getFundingStrategy,
-} from '@/lib/deprize/fundingStrategy'
-import {
-  buildOnrampReturnUrl,
-  jwtSnapshotId,
-  writeOnrampSnapshot,
-} from '@/lib/deprize/onrampReturn'
-import { trackOnrampEvent } from '@/lib/deprize/onrampTelemetryClient'
-import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
 import {
   fmt,
   fmtEthWithUsd,
@@ -42,15 +30,26 @@ import {
   toWei,
 } from '@/lib/deprize/format'
 import {
-  payloadCopy,
-  payloadCopyMode,
-} from '@/lib/deprize/payloadPurse'
+  DEPRIZE_ONRAMP_JWT_KEY,
+  ELIGIBILITY_TIMEOUT_MS,
+  ONRAMP_SUGGESTED_PURCHASE_ETH,
+  getFundingStrategy,
+  pollWindowMs,
+} from '@/lib/deprize/fundingStrategy'
+import {
+  buildOnrampReturnUrl,
+  jwtSnapshotId,
+  writeOnrampSnapshot,
+} from '@/lib/deprize/onrampReturn'
+import { trackOnrampEvent } from '@/lib/deprize/onrampTelemetryClient'
+import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
+import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
 import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
+import { type ReturnNotice } from '@/lib/deprize/resolveOnrampReturn'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
-import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import client from '@/lib/thirdweb/client'
@@ -74,6 +73,8 @@ type BetModalProps = {
   spendableEth: number
   initialAmountEth?: string
   fundsArrived?: boolean
+  returnNotice?: ReturnNotice
+  onRefreshSpendable?: () => Promise<number | undefined>
   onClose: () => void
   onDone: (index: number, costEth: number, qtyEth: number) => void
 }
@@ -97,11 +98,14 @@ export default function BetModal({
   spendableEth,
   initialAmountEth,
   fundsArrived,
+  returnNotice,
+  onRefreshSpendable,
   onClose,
   onDone,
 }: BetModalProps) {
   const [betAmount, setBetAmount] = useState(initialAmountEth ?? '')
   const [showFunding, setShowFunding] = useState(false)
+  const [localFundsArrived, setLocalFundsArrived] = useState(!!fundsArrived)
   const ctaShown = useRef(false)
   const headingRef = useRef<HTMLHeadingElement | null>(null)
   const { generateJWT, clearJWT } = useOnrampJWT(DEPRIZE_ONRAMP_JWT_KEY)
@@ -188,8 +192,7 @@ export default function BetModal({
   }, [betAmountWei, lmsr, outcomeIndex, numOutcomes])
 
   const wallet = typeof account?.address === 'string' ? account.address : ''
-  const needsFunding =
-    eligibility.allowed && (insufficient || spendableEth === 0)
+  const needsFunding = eligibility.allowed && (insufficient || spendableEth === 0)
   async function persistOnrampSession(): Promise<boolean> {
     if (!wallet || fundingStrategy.kind !== 'onramp') return false
     const jwt = await generateJWT({
@@ -210,8 +213,14 @@ export default function BetModal({
   }
 
   useEffect(() => {
-    if (fundsArrived) headingRef.current?.focus()
+    if (fundsArrived) setLocalFundsArrived(true)
   }, [fundsArrived])
+
+  useEffect(() => {
+    if (fundsArrived || localFundsArrived) headingRef.current?.focus()
+  }, [fundsArrived, localFundsArrived])
+
+  const fundsReady = fundsArrived || localFundsArrived
 
   useEffect(() => {
     if (!needsFunding || ctaShown.current) return
@@ -317,13 +326,15 @@ export default function BetModal({
       toast.error(eligibilityMessage('over-cap'), { style: toastStyle })
       return
     }
-    if (!canSubmitDePrizeBet({
-      termsAccepted,
-      attestations,
-      eligibilityAllowed: eligibility.allowed,
-      eligibilityReady: eligibility.status === 'ready',
-      acceptanceState,
-    })) {
+    if (
+      !canSubmitDePrizeBet({
+        termsAccepted,
+        attestations,
+        eligibilityAllowed: eligibility.allowed,
+        eligibilityReady: eligibility.status === 'ready',
+        acceptanceState,
+      })
+    ) {
       toast.error(
         acceptanceState === 'error'
           ? 'Could not record your acceptance. Recheck the boxes and try again.'
@@ -425,17 +436,18 @@ export default function BetModal({
   return (
     <Modal id="deprize-bet" setEnabled={(v) => !v && onClose()} title={`Back ${teamName}`}>
       <div className="flex flex-col gap-4 w-full">
-        <h2
-          ref={headingRef}
-          tabIndex={-1}
-          id="deprize-bet-heading"
-          className="sr-only"
-        >
+        <h2 ref={headingRef} tabIndex={-1} id="deprize-bet-heading" className="sr-only">
           Back {teamName}
         </h2>
-        {fundsArrived && (
+        {fundsReady && (
           <p role="status" className="text-moon-green text-sm">
             Funds arrived. You can place your bet.
+          </p>
+        )}
+        {returnNotice?.kind === 'shortfall' && (
+          <p role="status" className="text-amber-300 text-sm">
+            Some funds arrived, but you still need {returnNotice.shortfallEth} ETH to place the bet
+            you typed. Lower your bet or add the rest.
           </p>
         )}
         <div className="flex items-center justify-between text-sm">
@@ -451,7 +463,7 @@ export default function BetModal({
             type="number"
             min="0"
             step="any"
-            autoFocus={!fundsArrived}
+            autoFocus={!fundsReady}
             value={betAmount}
             onChange={(e) => setBetAmount(e.target.value)}
             placeholder="e.g. 0.01"
@@ -615,8 +627,8 @@ export default function BetModal({
               className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
             />
             <span>
-              I am not a resident of the United States, and I am not currently located in the
-              United States or any of its territories.
+              I am not a resident of the United States, and I am not currently located in the United
+              States or any of its territories.
             </span>
           </label>
           <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
@@ -661,9 +673,7 @@ export default function BetModal({
           <p className="text-gray-300 text-sm">Checking eligibility…</p>
         ) : eligibility.status === 'error' || !eligibility.allowed ? (
           <div className="space-y-2">
-            <p className="text-amber-300 text-sm">
-              {eligibility.message || 'Betting unavailable'}
-            </p>
+            <p className="text-amber-300 text-sm">{eligibility.message || 'Betting unavailable'}</p>
             {eligibility.status === 'error' && (
               <button
                 type="button"
@@ -676,8 +686,8 @@ export default function BetModal({
           </div>
         ) : overCap ? (
           <p className="text-amber-300 text-sm">
-            Generation-1 bets are capped at {fmtEthWithUsd(maxBetEth, ethPrice, { prize: true })} per
-            transaction. Lower the amount to continue.
+            Generation-1 bets are capped at {fmtEthWithUsd(maxBetEth, ethPrice, { prize: true })}{' '}
+            per transaction. Lower the amount to continue.
           </p>
         ) : wrongNetwork ? (
           <div className="space-y-3">
@@ -734,8 +744,8 @@ export default function BetModal({
                 {showFunding && (
                   <div className="space-y-2">
                     <p className="text-gray-400 text-xs leading-relaxed">
-                      This buys ETH into your own wallet. It is not a bet, MoonDAO never holds
-                      it, and MoonDAO cannot reverse it. You may still be unable to bet afterwards.
+                      This buys ETH into your own wallet. It is not a bet, MoonDAO never holds it,
+                      and MoonDAO cannot reverse it. You may still be unable to bet afterwards.
                     </p>
                     {fundingStrategy.kind === 'faucet' ? (
                       <p className="text-gray-300 text-sm">
@@ -756,6 +766,20 @@ export default function BetModal({
                         selectedChain={chain}
                         ethAmount={betAmountNum || ONRAMP_SUGGESTED_PURCHASE_ETH}
                         defaultProvider={fundingStrategy.defaultProvider}
+                        pollIntervalMs={fundingStrategy.pollIntervalMs}
+                        pollMaxMinutes={pollWindowMs(fundingStrategy, 'moonpay') / 60_000}
+                        refetchBalance={async () => {
+                          await onRefreshSpendable?.()
+                        }}
+                        checkBalanceSufficient={async () => {
+                          const now = (await onRefreshSpendable?.()) ?? spendableEth
+                          const need = betAmountNum > 0 ? betAmountNum : 0
+                          return need > 0 ? now + 1e-12 >= need : now > 0
+                        }}
+                        onBalanceSufficient={() => setLocalFundsArrived(true)}
+                        onCoinbaseSuccessInApp={() => {
+                          void onRefreshSpendable?.()
+                        }}
                         coinbaseRedirectUrl={buildOnrampReturnUrl({
                           origin: typeof window !== 'undefined' ? window.location.origin : '',
                           deprizeId,

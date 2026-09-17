@@ -1,13 +1,9 @@
-import type { GetServerSideProps } from 'next'
+import { useLogin } from '@privy-io/react-auth'
 import DePrizeRegistryABI from 'const/abis/DePrizeRegistry.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import TeamABI from 'const/abis/Team.json'
-import {
-  DEPRIZE_MINT_ADDRESSES,
-  DEPRIZE_REGISTRY_ADDRESSES,
-  TEAM_ADDRESSES,
-} from 'const/config'
-import { useLogin } from '@privy-io/react-auth'
+import { DEPRIZE_MINT_ADDRESSES, DEPRIZE_REGISTRY_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import type { GetServerSideProps } from 'next'
 import { useRouter } from 'next/router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { getContract } from 'thirdweb'
@@ -21,13 +17,6 @@ import {
   isKnownDePrizeCompetition,
 } from '@/lib/deprize/competitions'
 import {
-  resolveDePrizePageProps,
-  type DePrizePageProps,
-} from '@/lib/deprize/pageEligibility'
-import { SEED_ATLAS, orgById, projectById, sharedGoalById } from '@/lib/lunar-atlas'
-import GoalDePrizeDetail from '@/components/deprize/GoalDePrizeDetail'
-import { orgColor } from '@/lib/lunar-atlas/display'
-import {
   DePrizeState,
   MarketStage,
   OUTCOME_COLORS,
@@ -36,11 +25,12 @@ import {
   UNIT,
   deprizeOgDescription,
 } from '@/lib/deprize/constants'
+import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { marketAcceptsBets } from '@/lib/deprize/marketGates'
 import { parseOnrampReturn } from '@/lib/deprize/onrampReturn'
+import { resolveDePrizePageProps, type DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
-import { useDePrizeOnrampReturn } from '@/lib/deprize/useDePrizeOnrampReturn'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { rankOutcomes } from '@/lib/deprize/rank-outcomes'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
@@ -49,19 +39,21 @@ import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeActivity } from '@/lib/deprize/useDePrizeActivity'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
+import { useDePrizeOnrampReturn } from '@/lib/deprize/useDePrizeOnrampReturn'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
-import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
-import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
+import { SEED_ATLAS, orgById, projectById, sharedGoalById } from '@/lib/lunar-atlas'
+import { orgColor } from '@/lib/lunar-atlas/display'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import Container from '@/components/layout/Container'
-import Head from '@/components/layout/Head'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import BetModal from '@/components/deprize/BetModal'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
+import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
+import { useDePrizeTeamName, useDePrizeTeamNames } from '@/components/deprize/DePrizeTeamLink'
+import ExitPositionModal from '@/components/deprize/ExitPositionModal'
+import GoalDePrizeDetail from '@/components/deprize/GoalDePrizeDetail'
 import AdminSection from '@/components/deprize/detail/AdminSection'
 import ClaimSection from '@/components/deprize/detail/ClaimSection'
 import CompetitorsSection from '@/components/deprize/detail/CompetitorsSection'
@@ -75,11 +67,9 @@ import PrizeQuestion from '@/components/deprize/detail/PrizeQuestion'
 import ProvenanceFooter from '@/components/deprize/detail/ProvenanceFooter'
 import RegionBanner from '@/components/deprize/detail/RegionBanner'
 import { Notice } from '@/components/deprize/detail/primitives'
-import {
-  useDePrizeTeamName,
-  useDePrizeTeamNames,
-} from '@/components/deprize/DePrizeTeamLink'
-import ExitPositionModal from '@/components/deprize/ExitPositionModal'
+import Container from '@/components/layout/Container'
+import Head from '@/components/layout/Head'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 const EXPLORER_TX: Record<string, string> = {
   sepolia: 'https://sepolia.etherscan.io/tx/',
@@ -109,25 +99,20 @@ export default function DePrizeDetailPage({ restricted }: DePrizePageProps) {
   )
 }
 
-export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
-  req,
-  res,
-}) => resolveDePrizePageProps(req, res)
+export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({ req, res }) =>
+  resolveDePrizePageProps(req, res)
 
 function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const router = useRouter()
   const rawId = router.query.id
-  const numericId =
-    typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
+  const numericId = typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
   const goalFromSlug =
     typeof rawId === 'string' && !/^\d+$/.test(rawId)
       ? sharedGoalById(SEED_ATLAS, rawId)
       : undefined
   const { selectedChain: chain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(chain)
-  const boundFromSlug = goalFromSlug
-    ? findDePrizeIdForGoal(chainSlug, goalFromSlug.id)
-    : undefined
+  const boundFromSlug = goalFromSlug ? findDePrizeIdForGoal(chainSlug, goalFromSlug.id) : undefined
   const deprizeId = numericId ?? boundFromSlug
 
   // Follow the app's live selected chain (wallet / header dropdown), not the
@@ -185,7 +170,10 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   }, [jbProjectId, isLoadingFunding, totalFunding, ethPrice])
   const poolAsOf = useMemo(() => {
     if (ethPrice == null) return null
-    return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
+    return new Date()
+      .toISOString()
+      .replace('T', ' ')
+      .replace(/\.\d+Z$/, ' UTC')
   }, [ethPrice])
   const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
 
@@ -225,7 +213,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           } catch {
             return [teamId.toString(), false] as const
           }
-        }),
+        })
       )
       if (!cancelled) setWithdrawnByTeamId(Object.fromEntries(entries))
     })()
@@ -244,7 +232,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
             abi: TeamABI as any,
           })
         : undefined,
-    [chain, chainSlug],
+    [chain, chainSlug]
   )
 
   const lmsrRead = useMemo(
@@ -257,8 +245,23 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
             abi: LMSRWithTWAP.abi as any,
           })
         : undefined,
-    [market.marketAddress, readChain],
+    [market.marketAddress, readChain]
   )
+
+  const fetchNativeSpendable = useCallback(async (): Promise<number | undefined> => {
+    if (!userAddress) return undefined
+    try {
+      const b = await eth_getBalance(
+        getRpcClient({ client: deprizeReadClient, chain: readChain }),
+        { address: userAddress }
+      )
+      const eth = Number(b) / Number(UNIT)
+      setNativeBalance(eth)
+      return spendableFromBalanceEth(eth, chain.id)
+    } catch {
+      return undefined
+    }
+  }, [userAddress, readChain, chain.id])
 
   // Native ETH balance (spendable for bets).
   useEffect(() => {
@@ -271,7 +274,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
       try {
         const b = await eth_getBalance(
           getRpcClient({ client: deprizeReadClient, chain: readChain }),
-          { address: userAddress },
+          { address: userAddress }
         )
         if (!cancelled) setNativeBalance(Number(b) / Number(UNIT))
       } catch {
@@ -337,7 +340,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           } catch {
             return null
           }
-        }),
+        })
       )
       if (cancelled) return
       setSellQuotes(new Map(entries.filter((e): e is [number, number] => e !== null)))
@@ -354,8 +357,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     !!market.marketAddress && !/^0x0+$/.test(market.marketAddress)
       ? true
       : market.loading
-        ? undefined
-        : false
+      ? undefined
+      : false
   const acceptsBets = marketAcceptsBets({
     bettingOpen: !!deprize?.bettingOpen,
     mintBound: market.mintBound,
@@ -370,10 +373,12 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const onrampReturn = useDePrizeOnrampReturn({
     userAddress,
     numOutcomes,
-    marketLoading: market.loading,
+    marketLoading: market.loading || market.stage === undefined,
     acceptsBets,
-    spendableEthNow: spendable,
+    spendableEthNow: nativeBalance === undefined ? undefined : spendable,
     capEth: Number(DEPRIZE_MAX_BET_WEI) / Number(UNIT),
+    chainId: chain.id,
+    refetchSpendable: fetchNativeSpendable,
   })
   const onrampQueryActive = parseOnrampReturn(router.query).active
 
@@ -386,7 +391,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
       }
       setBetIndex(index)
     },
-    [userAddress, login],
+    [userAddress, login]
   )
 
   // Moon Base Zero "Back this team" deep-links here with ?outcome=N. Wait for
@@ -452,11 +457,11 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     deprize && deprize.winningTeamId > 0n
       ? deprize.winningTeamId
       : showResolved && market.winningIndex >= 0 && deprize?.teamIds[market.winningIndex]
-        ? deprize.teamIds[market.winningIndex]
-        : 0n
+      ? deprize.teamIds[market.winningIndex]
+      : 0n
   const winningTeamName = useDePrizeTeamName(
     winningTeamId > 0n ? winningTeamId : undefined,
-    teamContract,
+    teamContract
   )
   const rosterNames = useDePrizeTeamNames(deprize?.teamIds, teamContract)
   const predictionLabels = market.outcomes.map((o) => {
@@ -479,7 +484,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         const org = project ? orgById(SEED_ATLAS, project.orgId) : undefined
         return orgColor(org) || fallback
       }),
-    [numOutcomes, raceBinding],
+    [numOutcomes, raceBinding]
   )
 
   // Display order only — `market.outcomes` stays contract-index aligned.
@@ -489,7 +494,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         isField: (i) => !!raceBinding?.outcomes[i]?.field,
         winningIndex: showResolved && market.winningIndex >= 0 ? market.winningIndex : undefined,
       }),
-    [market.outcomes, raceBinding, showResolved, market.winningIndex],
+    [market.outcomes, raceBinding, showResolved, market.winningIndex]
   )
 
   const redeemValues = useMemo(() => {
@@ -503,9 +508,9 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           positionRedeemValue(
             o.balanceWei,
             market.payoutNums[o.index] ?? 0n,
-            market.payoutDen ?? 0n,
-          ),
-        ) / Number(UNIT),
+            market.payoutDen ?? 0n
+          )
+        ) / Number(UNIT)
       )
     }
     return m
@@ -515,8 +520,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     knownCompetition && deprizeId !== undefined
       ? `DePrize #${deprizeId} — ${competition.title}`
       : deprizeId !== undefined
-        ? `DePrize #${deprizeId}`
-        : competition.title
+      ? `DePrize #${deprizeId}`
+      : competition.title
 
   // --- Render states ---
   if (!router.isReady) {
@@ -608,10 +613,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           teamContract={teamContract}
           showResolved={showResolved}
         />
-        <RegionBanner
-          restricted={restricted}
-          bettingBlockedReason={bettingBlockedReason}
-        >
+        <RegionBanner restricted={restricted} bettingBlockedReason={bettingBlockedReason}>
           Betting isn&apos;t available in your region. You can view odds, cash out and claim.
         </RegionBanner>
         {onrampReturn.notice?.kind === 'wrong-wallet' && (
@@ -625,6 +627,12 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         )}
         {onrampReturn.notice?.kind === 'market-closed' && (
           <Notice tone="amber">{onrampReturn.notice.message}</Notice>
+        )}
+        {onrampReturn.notice?.kind === 'shortfall' && (
+          <Notice tone="amber">
+            Some funds arrived, but you still need {onrampReturn.notice.shortfallEth} ETH to place
+            the bet you typed. Lower your bet or add the rest. The ETH is in your own wallet.
+          </Notice>
         )}
         <MarketErrorNotice error={market.error} />
         <PrizeQuestion
@@ -737,6 +745,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           spendableEth={spendable}
           initialAmountEth={onrampReturn.prefillEth}
           fundsArrived={onrampReturn.fundsArrived}
+          returnNotice={onrampReturn.notice}
+          onRefreshSpendable={fetchNativeSpendable}
           onClose={() => setBetIndex(null)}
           onDone={refreshAll}
         />
@@ -785,4 +795,3 @@ function Shell({
     </div>
   )
 }
-

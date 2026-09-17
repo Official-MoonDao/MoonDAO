@@ -15,6 +15,11 @@ export type ResolveOnrampReturnResult = {
   notice?: ReturnNotice
 }
 
+/** `/api/coinbase/onramp-jwt` stores Unix seconds; some fixtures already use ms. */
+export function toJwtIssuedAtMs(timestamp: number): number {
+  return timestamp < 1e12 ? timestamp * 1000 : timestamp
+}
+
 export function resolveOnrampReturn(input: {
   parsed: ParsedOnrampReturn
   jwtVerified: boolean
@@ -43,7 +48,7 @@ export function resolveOnrampReturn(input: {
 
   if (
     input.jwtIssuedAtMs != null &&
-    input.nowMs - input.jwtIssuedAtMs > JWT_FRESHNESS_MS
+    input.nowMs - toJwtIssuedAtMs(input.jwtIssuedAtMs) > JWT_FRESHNESS_MS
   ) {
     return { action: 'strip' }
   }
@@ -62,11 +67,7 @@ export function resolveOnrampReturn(input: {
   }
 
   const { outcomeIndex, amountEth } = input.parsed
-  if (
-    !Number.isInteger(outcomeIndex) ||
-    outcomeIndex < 0 ||
-    outcomeIndex >= input.numOutcomes
-  ) {
+  if (!Number.isInteger(outcomeIndex) || outcomeIndex < 0 || outcomeIndex >= input.numOutcomes) {
     return { action: 'strip' }
   }
 
@@ -76,15 +77,13 @@ export function resolveOnrampReturn(input: {
 
   let fundsArrived: boolean | undefined
   let notice: ReturnNotice | undefined
-  const haveSnapshots =
-    input.spendableEthAtReturn != null && input.spendableEthNow != null
+  const haveSnapshots = input.spendableEthAtReturn != null && input.spendableEthNow != null
 
   if (haveSnapshots) {
     const delta = (input.spendableEthNow as number) - (input.spendableEthAtReturn as number)
     const now = input.spendableEthNow as number
     if (delta > 0) {
-      const enough =
-        prefillNum == null ? now > 0 : now + 1e-12 >= prefillNum
+      const enough = prefillNum == null ? now > 0 : now + 1e-12 >= prefillNum
       fundsArrived = enough
       if (!enough) {
         const shortfallEth = Math.max(0, Math.round(((prefillNum ?? 0) - now) * 1e12) / 1e12)
