@@ -127,9 +127,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   // Default-deny real betting from the SSR DePrize verdict. Unknown country
   // arrives as restricted=true (getDePrizePageEligibility). Demo markets are
   // unaffected — RaceMarketCard never gates them on this reason.
-  const bettingBlockedReason = restricted
-    ? "Betting on live on-chain markets isn't available in your region."
-    : undefined
+  const bettingBlockedReason = restricted ? DEPRIZE_RESTRICTED_PREDICT_COPY : undefined
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">

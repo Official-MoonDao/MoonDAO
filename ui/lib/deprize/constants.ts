@@ -87,7 +87,7 @@ export const DEPRIZE_AVAILABILITY_LEGEND =
 
 /** Index / hero copy when Schedule A blocks betting but predictions stay open. */
 export const DEPRIZE_RESTRICTED_PREDICT_COPY =
-  "Betting isn't available in your region. You can still make a free prediction — it's scored on the leaderboard and never touches the market."
+  "Predictions are open to everyone and scored on the leaderboard. Betting isn't available in your region."
 
 export const DEPRIZE_PREDICT_CTA = 'Predict — free'
 
