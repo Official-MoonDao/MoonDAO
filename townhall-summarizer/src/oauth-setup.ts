@@ -23,7 +23,29 @@ import {
 
 // captions.download needs full read/write scope; the read-only scope is not
 // sufficient, which is a common and confusing dead end.
-const SCOPE = 'https://www.googleapis.com/auth/youtube.force-ssl'
+//
+// `userinfo.email` is not needed by the pipeline. It is requested purely so
+// this script can report which account actually consented — when the resulting
+// token turns out to control no channel, the first question is always "which
+// account did the browser use?", and a signed-in Google session answers it
+// differently from what the operator expected more often than not.
+const SCOPE = [
+  'https://www.googleapis.com/auth/youtube.force-ssl',
+  'https://www.googleapis.com/auth/userinfo.email',
+].join(' ')
+
+async function getAuthorizingEmail(accessToken: string): Promise<string | null> {
+  try {
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!response.ok) return null
+    const body = (await response.json()) as { email?: string }
+    return body.email ?? null
+  } catch {
+    return null
+  }
+}
 
 async function main() {
   const clientId = process.env.YOUTUBE_OAUTH_CLIENT_ID
@@ -128,14 +150,27 @@ async function main() {
     process.exit(1)
   }
 
-  // Confirm which channel was picked before anyone pastes this into CI.
+  // Confirm who consented and which channel was picked, before anyone pastes
+  // this into CI.
   if (body.access_token) {
     try {
+      const email = await getAuthorizingEmail(body.access_token)
+      if (email) console.log(`\nAuthorised by account: ${email}`)
+
       const channel = await getAuthenticatedChannel(body.access_token)
       const expected = getExpectedChannelId()
 
       if (!channel) {
-        console.warn('\nWarning: this token is not associated with any YouTube channel.')
+        console.warn(
+          '\nWARNING: this token controls no YouTube channel, so it cannot read\n' +
+            'any town hall captions. Two things cause that:\n' +
+            '  1. The manager invitation has not been accepted yet. YouTube sends an\n' +
+            '     email with an "Accept invitation" link; access does not exist until\n' +
+            '     that is clicked.\n' +
+            '  2. The consent screen used a Google account with no channel — check the\n' +
+            '     "Authorised by account" line above is the invited address.\n' +
+            'Fix whichever applies and run `yarn oauth:setup` again.'
+        )
       } else {
         console.log(`\nAuthorised as channel: ${channel.title} (${channel.id})`)
         if (expected && channel.id !== expected) {
