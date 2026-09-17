@@ -5,10 +5,10 @@ import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { getFeaturedLiveDePrizeId } from '@/lib/deprize/competitions'
 import { deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
+import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { resetMockData } from '@/lib/deprize/mockMarket'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
-import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
 import { PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
@@ -23,7 +23,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
-export default function DePrizeIndexContent() {
+export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   // Follow the app's live selected chain (wallet / header dropdown), not the
   // build-time default — otherwise switching networks never re-queries DePrize.
   const { selectedChain: chain } = useContext(ChainContextV5)
@@ -31,7 +31,6 @@ export default function DePrizeIndexContent() {
   const account = useActiveAccount()
   const userAddress = account?.address
   const { login } = useLogin()
-  const region = useRegionRestriction()
 
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<ProjectType | 'all'>('all')
@@ -124,15 +123,11 @@ export default function DePrizeIndexContent() {
     }
   }, [account?.address, readChain, refreshNonce])
 
-  // Default-deny real betting when the region is unresolved: `/api/geo/country`
-  // reports restricted=false for a missing geo header, which must not open
-  // live betting. Demo markets are unaffected — no real value moves there.
-  const bettingBlockedReason = region.isRestricted
+  // Default-deny real betting from the SSR DePrize verdict. Unknown country
+  // arrives as restricted=true (getDePrizePageEligibility). Demo markets are
+  // unaffected — RaceMarketCard never gates them on this reason.
+  const bettingBlockedReason = restricted
     ? "Betting on live on-chain markets isn't available in your region."
-    : !region.isLoading && !region.isError && !region.country
-    ? "Can't verify your region — live betting is disabled until it resolves. Demo markets still work."
-    : region.isLoading
-    ? 'Checking your region…'
     : undefined
 
   return (

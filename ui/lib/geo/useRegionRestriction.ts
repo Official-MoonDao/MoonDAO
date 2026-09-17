@@ -27,7 +27,13 @@ export type RegionRestriction = {
 
 /**
  * Resolves whether the current visitor is in a GDPR-restricted (EU/EEA/UK)
- * region.
+ * region. `isRestricted` here is the **EU/EEA personal-data flag**
+ * (`isEUCountry`, 35 codes). It is **never** the DePrize Schedule A verdict.
+ *
+ * DePrize pages and components must not call this hook. Use
+ * `getDePrizePageEligibility` / the `restricted` prop on `DePrizePageProps`,
+ * or `useDePrizeRestricted()` from `@/lib/deprize/deprizeRestrictedContext`.
+ * An ESLint `no-restricted-imports` rule under DePrize paths enforces that.
  *
  * The previous behavior fully blocked these visitors at the edge. We now let
  * them browse and only gate the flows that write personal data on chain
@@ -45,8 +51,9 @@ export type RegionRestriction = {
  * incorrectly blocked non-EU/EEA visitors (e.g. Russia) whenever their geo
  * lookup happened to fail, even though they were never actually in a
  * restricted region. Flows with additional non-GDPR regulatory concerns
- * (e.g. DePrize betting, which also cares about unknown jurisdictions) may
- * still choose to fail closed on `isError` -- that's a per-flow decision.
+ * (e.g. DePrize betting, which also cares about unknown jurisdictions) must
+ * consume `getDePrizePageEligibility` / `useDePrizeRestricted()`, not this
+ * hook's `isError` branch.
  */
 export default function useRegionRestriction(): RegionRestriction {
   const { data, error, isLoading } = useSWR<GeoCountryResponse>(
