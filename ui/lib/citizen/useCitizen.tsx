@@ -7,6 +7,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { getChainSlug } from '../thirdweb/chain'
 import client from '../thirdweb/client'
+import { fetchCitizenExpiresAt, isSubscriptionExpired } from './citizenSubscription'
 
 export function useCitizen(
   selectedChain: any,
@@ -54,6 +55,18 @@ export function useCitizen(
           contract: contract,
           tokenId: BigInt(ownedTokenId),
         })
+
+        // Callers that omit `citizenAddress` are asking "is the connected
+        // wallet a citizen?" to gate a feature — a lapsed subscription has to
+        // answer no. Lookups for a specific address are display-only (member
+        // lists), so they skip the extra read.
+        if (!citizenAddress) {
+          const expiresAt = await fetchCitizenExpiresAt(ownedTokenId.toString())
+          if (isSubscriptionExpired(expiresAt)) {
+            setCitizenNFT(undefined)
+            return
+          }
+        }
 
         setCitizenNFT(nft)
       } catch (err: any) {
