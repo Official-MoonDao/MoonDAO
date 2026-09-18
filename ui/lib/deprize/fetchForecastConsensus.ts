@@ -1,6 +1,8 @@
-import { VOTES_TABLE_NAMES } from 'const/config'
+import { FORECASTS_TABLE_NAMES } from 'const/config'
+import { buildCitizenOwnerLookupStatement, citizenRowsByOwner } from '@/lib/citizen/citizenLookup'
 import { aggregateForecastVotes, filterToCitizens } from '@/lib/forecasts/aggregate'
 import { scoreAllocation } from '@/lib/forecasts/brier'
+import type { ForecastCaller, ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
 import {
   FORECAST_MAX_WEIGHT_SHARE,
@@ -9,17 +11,12 @@ import {
   resolveVmooney,
   votingWeight,
 } from '@/lib/forecasts/weighting'
-import { buildCitizenOwnerLookupStatement, citizenRowsByOwner } from '@/lib/citizen/citizenLookup'
 import queryTable from '@/lib/tableland/queryTable'
 import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import type { ForecastCaller, ForecastConsensus } from '@/lib/forecasts/consensusTypes'
-import {
-  deprizeForecastVoteId,
-  parseForecastVotes,
-} from './forecastVote'
+import { deprizeForecastVoteId, parseForecastVotes, type ParsedForecastVote } from './forecastVote'
 
-export type { ForecastCaller, ForecastConsensus }
+export type { ForecastCaller, ForecastConsensus, ParsedForecastVote }
 
 function emptyConsensus(deprizeId: number, voteId: number, nOutcomes: number): ForecastConsensus {
   return {
@@ -48,10 +45,10 @@ export async function fetchForecastConsensus(args: {
 
   try {
     const chain = v4SlugToV5Chain(chainSlug)
-    const votesTable = VOTES_TABLE_NAMES[chainSlug]
-    if (!chain || !votesTable) return emptyConsensus(deprizeId, voteId, outcomeCount)
+    const forecastsTable = FORECASTS_TABLE_NAMES[chainSlug]
+    if (!chain || !forecastsTable) return emptyConsensus(deprizeId, voteId, outcomeCount)
 
-    const rows = await queryTable(chain, `SELECT * FROM ${votesTable} WHERE voteId = ${voteId}`)
+    const rows = await queryTable(chain, `SELECT * FROM ${forecastsTable} WHERE voteId = ${voteId}`)
     const parsed = parseForecastVotes(rows, outcomeCount)
     if (parsed.length === 0) return emptyConsensus(deprizeId, voteId, outcomeCount)
 
@@ -109,6 +106,7 @@ export async function fetchForecastConsensus(args: {
           weight: rawWeights[i] ?? 0,
           storedVmooney: vote.storedVmooney,
           liveVmooney: liveByVoter.get(vote.voterAddress) ?? 0,
+          updatedAt: vote.timestamp,
           brier: scored?.brier ?? null,
           skill: scored?.skill ?? null,
         }
@@ -133,5 +131,3 @@ export async function fetchForecastConsensus(args: {
     return emptyConsensus(deprizeId, voteId, outcomeCount)
   }
 }
-
-export type { ParsedForecastVote }

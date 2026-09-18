@@ -1,9 +1,9 @@
 ---
 name: deprize vmooney consensus
-overview: 'Make predicting and betting the same gesture: back one or more outcomes, with vMOONEY if you cannot bet and with ETH if you can. Predictions become Citizen votes in the existing Votes.sol table, weighted live by sqrt(vMOONEY); bets become multi-outcome so a portfolio is a belief vector; both are Brier-scored and shown against each other as a bracket.'
+overview: 'Make predicting and betting the same gesture: back one or more outcomes, with vMOONEY if you cannot bet and with ETH if you can. Predictions become Citizen votes in a Votes-shaped Forecasts.sol table with a timestamp column, weighted live by sqrt(vMOONEY); bets become multi-outcome so a portfolio is a belief vector; both are Brier-scored and shown against each other as a bracket.'
 todos:
   - id: vote-encoding
-    content: 'Add ui/lib/deprize/forecastVote.ts: voteId derivation off DEPRIZE_FORECAST_VOTE_ID_BASE, allocation payload encode/decode/validate, and parseForecastVotes modeled on parseDelegations'
+    content: 'Add ui/lib/deprize/forecastVote.ts: voteId is the prize id on the dedicated Forecasts table, allocation payload encode/decode/validate, and parseForecastVotes modeled on parseDelegations'
     status: pending
   - id: weighting
     content: 'Add ui/lib/forecasts/weighting.ts with votingWeight (sqrt of live vMOONEY), capWeights, and the stored vp fallback used only when the balance read fails'
@@ -15,7 +15,7 @@ todos:
     content: 'Add ui/lib/deprize/fetchForecastConsensus.ts modeled on fetchOverviewLeaderboard (one Tableland SELECT, one batched vMOONEY read, one batched Citizen lookup) plus a CDN-cached ui/pages/api/forecasts/consensus.ts'
     status: pending
   - id: write-path
-    content: 'Write predictions through Votes.sol: SELECT preflight with cache-busting to choose insertIntoTable vs updateTableCol, user-signed sendAndConfirmTransaction, optimistic local update'
+    content: 'Write predictions through Forecasts.sol: SELECT preflight with cache-busting to choose insertIntoTable vs updateTableCol, user-signed sendAndConfirmTransaction, optimistic local update'
     status: pending
   - id: citizen-gate
     content: 'Gate the prediction UI on Citizen ownership via useCitizen and drop non-Citizen rows at aggregation time the way buildLeaderboard does'
@@ -33,7 +33,7 @@ todos:
     content: 'Score the normalized allocation with brierScore and rank on brierSkillScore; rebuild ForecastCallers as a Frank-style Citizen leaderboard'
     status: pending
   - id: teardown
-    content: 'Delete the Redis store, HSM mirror, Forecasts.sol and its script, identity/displayName/schema modules, the forecast API write routes, timeAveragedBrier, and the FORECASTS_TABLE_* and cooldown constants'
+    content: 'Delete the Redis store, HSM mirror, the relayer-era Forecasts writers, identity/displayName/schema modules, the forecast API write routes, timeAveragedBrier, and the cooldown constants'
     status: pending
 isProject: false
 ---
@@ -56,11 +56,11 @@ This supersedes the mirror design shipped in #1610.
 ```mermaid
 flowchart TD
   Row["Outcome row: tap to back"] --> Alloc["Allocation across outcomes"]
-  Alloc -->|"vMOONEY, Citizens"| Votes["Votes.sol insertIntoTable / updateTableCol"]
+  Alloc -->|"vMOONEY, Citizens"| Forecasts["Forecasts.sol insertIntoTable / updateTableCol"]
   Alloc -->|"ETH, where permitted"| Mint["DePrizeMint.bet with amounts array"]
-  Votes --> VotesTable[("Votes table")]
+  Forecasts --> ForecastsTable[("Forecasts table")]
   Mint --> LMSR["LMSR trade"]
-  Consensus["/api/forecasts/consensus"] -->|"SELECT WHERE voteId"| VotesTable
+  Consensus["/api/forecasts/consensus"] -->|"SELECT WHERE voteId"| ForecastsTable
   Consensus -->|"one batched balanceOf"| Engine["fetchTotalVMOONEYs"]
   Consensus -->|"one batched owner lookup"| CitizenTable[("Citizen table")]
   Consensus --> DAO["DAO distribution"]
@@ -69,17 +69,15 @@ flowchart TD
   Market --> Bracket
 ```
 
-## 1. Storage: reuse Votes.sol
+## 1. Storage: Forecasts.sol, modeled on Votes.sol
 
-No new contract. [subscription-contracts/src/tables/Votes.sol](subscription-contracts/src/tables/Votes.sol) is deployed on both chains DePrize uses and its schema already fits:
+A dedicated table, same contract as [subscription-contracts/src/tables/Votes.sol](subscription-contracts/src/tables/Votes.sol) plus a `timestamp` column. Self-custodial: `insertIntoTable` / `updateTableCol` / `deleteFromTable` key on `msg.sender`. No relayer, no `onlyWriter`, no `forecaster` string.
 
-```24:24:subscription-contracts/src/tables/Votes.sol
-        "id integer primary key, voteId integer, address text, vote text, unique(address, voteId)";
+```
+id integer primary key, voteId integer, address text, vote text, timestamp integer, unique(address, voteId)
 ```
 
-`unique(address, voteId)` gives one prediction per person per prize with overwrite-on-revise. `VOTES_TABLE_NAMES` in [ui/const/config.ts](ui/const/config.ts) is populated for `arbitrum` (`Votes_42161_146`) and `sepolia` (`Votes_11155111_1971`).
-
-`deprizeForecastVoteId(deprizeId)` returns `DEPRIZE_FORECAST_VOTE_ID_BASE + deprizeId` with the base at 1000. Ids 0 through 3 are taken (`WBA_VOTE_ID`, `BAIKONUR_VOTE_ID`, `OVERVIEW_DELEGATION_VOTE_ID`, `OVERVIEW_PATH_VOTE_ID`) and the table is shared across features.
+`unique(address, voteId)` gives one prediction per person per prize with overwrite-on-revise. `timestamp` is `block.timestamp`, written on insert and on every revise, so the table can prove when a call was made. `voteId` is the prize id — this table is not shared with WBA / Baikonur / Overview, so there is no reserved range. `FORECASTS_TABLE_ADDRESSES` and `FORECASTS_TABLE_NAMES` in [ui/const/config.ts](ui/const/config.ts) stay empty until `script/Forecasts.s.sol` is deployed per chain.
 
 Payload:
 
@@ -107,7 +105,7 @@ Scoring is `brierScore(normalizedAllocation, resolvedVector)` ranked by `brierSk
 
 New [ui/lib/deprize/fetchForecastConsensus.ts](ui/lib/deprize/fetchForecastConsensus.ts), a near-transcription of [ui/lib/overview-delegate/fetchLeaderboard.ts](ui/lib/overview-delegate/fetchLeaderboard.ts):
 
-1. One Tableland read: `SELECT * FROM ${votesTable} WHERE voteId = ${voteId}`.
+1. One Tableland read: `SELECT * FROM ${forecastsTable} WHERE voteId = ${voteId}`.
 2. `parseForecastVotes`, then dedupe voter addresses.
 3. One batched `fetchTotalVMOONEYs(addresses, now)`. On failure set the balance map to the `Infinity` sentinel so `Number.isFinite` falls through to each row's stored `vp`.
 4. One batched Citizen lookup via `buildCitizenOwnerLookupStatement`; unmatched addresses are dropped, the same `if (!citizen) continue` as `buildLeaderboard`.
@@ -121,7 +119,7 @@ Freeze a snapshot at resolution the way `closed-snapshot.json` freezes the path 
 
 Model on [ui/components/mission/OverviewDelegateVote.tsx](ui/components/mission/OverviewDelegateVote.tsx):
 
-1. Pre-submit `SELECT id FROM ${votesTable} WHERE voteId = ${voteId} AND address = '${addr}'` to choose insert vs update. [ui/components/nance/ProjectRewards.tsx](ui/components/nance/ProjectRewards.tsx) documents the footgun: Tableland *silently* rejects an insert that violates the unique constraint, so the transaction succeeds while the row never changes. Query on-chain state with cache-busting rather than trusting local state.
+1. Pre-submit `SELECT id FROM ${forecastsTable} WHERE voteId = ${voteId} AND address = '${addr}'` to choose insert vs update. [ui/components/nance/ProjectRewards.tsx](ui/components/nance/ProjectRewards.tsx) documents the footgun: Tableland *silently* rejects an insert that violates the unique constraint, so the transaction succeeds while the row never changes. Query on-chain state with cache-busting rather than trusting local state.
 2. `prepareContractCall` then `sendAndConfirmTransaction`, signed by the user.
 3. Optimistic local update rather than polling `waitForRow`.
 
@@ -165,7 +163,7 @@ On each outcome bar, render Market and DAO as the endpoints of a **bracket** wit
 
 ## 8. Teardown
 
-Delete: [ui/lib/forecasts/store.ts](ui/lib/forecasts/store.ts), [ui/lib/forecasts/identity.ts](ui/lib/forecasts/identity.ts), [ui/lib/forecasts/displayName.ts](ui/lib/forecasts/displayName.ts), [ui/lib/forecasts/tablelandMirror.ts](ui/lib/forecasts/tablelandMirror.ts), [ui/lib/forecasts/schema.ts](ui/lib/forecasts/schema.ts); `ui/pages/api/forecasts/submit.ts`, `mine.ts`, `me.ts`, `crowd.ts`; `subscription-contracts/src/tables/Forecasts.sol` and `script/Forecasts.s.sol`; `FORECASTS_TABLE_ADDRESSES` and `FORECASTS_TABLE_NAMES`; `FORECAST_COOLDOWN_MS`, `FORECAST_MAX_ENTRIES_PER_UTC_DAY`, `FORECAST_CROWD_MIN`, the `FORECAST_ID_PEPPER` env and the forecast dependency on Upstash; `timeAveragedBrier`.
+Delete: [ui/lib/forecasts/store.ts](ui/lib/forecasts/store.ts), [ui/lib/forecasts/identity.ts](ui/lib/forecasts/identity.ts), [ui/lib/forecasts/displayName.ts](ui/lib/forecasts/displayName.ts), [ui/lib/forecasts/tablelandMirror.ts](ui/lib/forecasts/tablelandMirror.ts), [ui/lib/forecasts/schema.ts](ui/lib/forecasts/schema.ts); `ui/pages/api/forecasts/submit.ts`, `mine.ts`, `me.ts`, `crowd.ts`; the relayer-era `onlyWriter` / `forecaster` Forecasts writers; `FORECAST_COOLDOWN_MS`, `FORECAST_MAX_ENTRIES_PER_UTC_DAY`, `FORECAST_CROWD_MIN`, the `FORECAST_ID_PEPPER` env and the forecast dependency on Upstash; `timeAveragedBrier`. The Votes-shaped [subscription-contracts/src/tables/Forecasts.sol](subscription-contracts/src/tables/Forecasts.sol) stays.
 
 Gas is the rate limit now, so the cooldown and daily cap are redundant.
 
@@ -191,10 +189,10 @@ When the multi-outcome `bet()` lands, its amounts-vector spec goes under `cypres
 
 ## Open items
 
-- The Votes schema has no timestamp column, so the table cannot prove when a call was made. A single standing allocation rewards predicting as late as possible; a cutoff window before expected resolution is the fix.
+- Forecasts.sol now records `block.timestamp` on every write. A cutoff window before expected resolution can use that column; without one, a standing allocation still rewards predicting as late as possible.
 - Unbacked outcomes are a probability-zero claim and cost a full point under Brier if one wins. Correct, but the UI should say so when everything sits on one row.
 - Sybil is much harder but not impossible: Citizen is one per address and non-transferable, yet someone holding two Citizens on two wallets still gains under a square root by splitting vMOONEY. The share cap bounds it.
 - Roster changes on a live prize invalidate stored allocations by index. Dropping mismatched rows is safe but silently shrinks the sample; consider voiding the book on roster change.
 - `deleteFromTable(voteId)` lets a user remove their own row, a better erasure story than the Redis epoch it replaces.
-- The Votes table is shared infrastructure, so the DePrize voteId range needs to be documented and reserved.
+- Forecasts is a dedicated table, so `voteId` is the prize id and no reserved range is needed.
 - Bettors express confidence twice, through the split and through how much ETH they commit; vMOONEY voters only through the split, since their total weight is whatever they hold.

@@ -7,6 +7,7 @@ export type ForecastCaller = {
   weight: number
   storedVmooney: number
   liveVmooney: number
+  updatedAt: number
   brier: number | null
   skill: number | null
 }

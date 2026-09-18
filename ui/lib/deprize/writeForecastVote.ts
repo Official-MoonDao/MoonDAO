@@ -2,12 +2,12 @@ import { TABLELAND_ENDPOINT } from 'const/config'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 
 export async function forecastVoteRowExists(args: {
-  votesTableName: string
+  forecastsTableName: string
   voteId: number
   address: string
 }): Promise<boolean> {
   const addr = args.address.toLowerCase()
-  const statement = `SELECT id FROM ${args.votesTableName} WHERE voteId = ${args.voteId} AND address = '${addr}'`
+  const statement = `SELECT id FROM ${args.forecastsTableName} WHERE voteId = ${args.voteId} AND address = '${addr}'`
   const url = `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(statement)}&t=${Date.now()}`
   const res = await fetch(url)
   if (!res.ok) return false
@@ -16,21 +16,21 @@ export async function forecastVoteRowExists(args: {
 }
 
 export async function writeForecastVote(args: {
-  votesContract: any
+  forecastsContract: any
   account: any
-  votesTableName: string
+  forecastsTableName: string
   voteId: number
   address: string
   vote: string
 }): Promise<void> {
   const exists = await forecastVoteRowExists({
-    votesTableName: args.votesTableName,
+    forecastsTableName: args.forecastsTableName,
     voteId: args.voteId,
     address: args.address,
   })
   const method = exists ? 'updateTableCol' : 'insertIntoTable'
   const transaction = prepareContractCall({
-    contract: args.votesContract,
+    contract: args.forecastsContract,
     method: method as string,
     params: [BigInt(args.voteId), args.vote],
   })

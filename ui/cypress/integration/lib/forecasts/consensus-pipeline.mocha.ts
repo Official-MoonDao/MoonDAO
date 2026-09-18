@@ -1,4 +1,5 @@
 /// <reference types="node" />
+
 /**
  * Acceptance: the consensus read follows the Fly with Frank pipeline.
  *
@@ -28,8 +29,9 @@ describe('deprize consensus pipeline', () => {
     src = readUi('lib/deprize/fetchForecastConsensus.ts')
   })
 
-  it('reads the votes for one prize out of the shared Votes table', () => {
-    expect(src).to.match(/VOTES_TABLE_NAMES/)
+  it('reads the votes for one prize out of the dedicated Forecasts table', () => {
+    expect(src).to.match(/FORECASTS_TABLE_NAMES/)
+    expect(src).to.not.match(/VOTES_TABLE_NAMES/)
     expect(src).to.match(/queryTable/)
     expect(src).to.match(/voteId/)
   })

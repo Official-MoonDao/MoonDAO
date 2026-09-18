@@ -1,6 +1,5 @@
-/** On-chain payload contract for a DePrize prediction stored in Votes.sol. */
+/** On-chain payload contract for a DePrize prediction stored in Forecasts.sol. */
 
-export const DEPRIZE_FORECAST_VOTE_ID_BASE = 1000
 export const FORECAST_VOTE_SCHEMA_VERSION = 1
 
 export type ForecastVotePayload = {
@@ -12,10 +11,12 @@ export type ParsedForecastVote = {
   voterAddress: string
   allocation: number[]
   storedVmooney: number
+  timestamp: number
 }
 
+/** Dedicated Forecasts table: voteId is the prize id. */
 export function deprizeForecastVoteId(deprizeId: number): number {
-  return DEPRIZE_FORECAST_VOTE_ID_BASE + deprizeId
+  return deprizeId
 }
 
 export function isValidAllocation(allocation: readonly number[]): boolean {
@@ -45,10 +46,16 @@ export function encodeForecastVote(allocation: number[], vmooney: number): strin
   })
 }
 
-export function decodeForecastVote(
-  raw: unknown,
-  nOutcomes: number
-): ForecastVotePayload | null {
+function parseTimestamp(raw: unknown): number {
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw >= 0) return raw
+  if (typeof raw === 'string' && raw.length > 0) {
+    const n = Number(raw)
+    if (Number.isFinite(n) && n >= 0) return n
+  }
+  return 0
+}
+
+export function decodeForecastVote(raw: unknown, nOutcomes: number): ForecastVotePayload | null {
   if (raw == null || !Number.isInteger(nOutcomes) || nOutcomes <= 0) return null
   try {
     const obj = typeof raw === 'string' ? JSON.parse(raw) : raw
@@ -87,6 +94,7 @@ export function parseForecastVotes(rows: unknown, nOutcomes: number): ParsedFore
       voterAddress: address.toLowerCase(),
       allocation: decoded.allocation,
       storedVmooney: decoded.vmooney,
+      timestamp: parseTimestamp((row as { timestamp?: unknown }).timestamp),
     })
   }
   return parsed

@@ -1,11 +1,13 @@
 /// <reference types="node" />
+
 /**
  * Acceptance: the old off-chain forecast stack is actually gone.
  *
- * Predictions are now Citizen votes in the deployed Votes.sol table. Redis, the
- * HSM relayer mirror, the pseudonymous handle and the revision history have no
- * role left, and a half-finished migration that leaves both paths alive is
- * worse than either one. These assertions exist to make that impossible to miss.
+ * Predictions are now Citizen rows in a Votes-shaped Forecasts.sol table.
+ * Redis, the HSM relayer mirror, the pseudonymous handle and the revision
+ * history have no role left, and a half-finished migration that leaves both
+ * paths alive is worse than either one. These assertions exist to make that
+ * impossible to miss.
  */
 import fs from 'fs'
 import path from 'path'
@@ -56,26 +58,31 @@ describe('deprize forecast teardown', () => {
     ).to.equal(true)
   })
 
-  it('drops the bespoke Forecasts contract in favour of Votes.sol', () => {
-    expect(fs.existsSync(repoPath('subscription-contracts/src/tables/Forecasts.sol'))).to.equal(
-      false
+  it('keeps a Votes-shaped Forecasts.sol and does not reuse the shared Votes table', () => {
+    const forecasts = fs.readFileSync(
+      repoPath('subscription-contracts/src/tables/Forecasts.sol'),
+      'utf8'
     )
-    expect(fs.existsSync(repoPath('subscription-contracts/script/Forecasts.s.sol'))).to.equal(false)
-    expect(
-      fs.existsSync(repoPath('subscription-contracts/src/tables/Votes.sol')),
-      'Votes.sol is the table predictions now live in'
-    ).to.equal(true)
+    const votes = fs.readFileSync(repoPath('subscription-contracts/src/tables/Votes.sol'), 'utf8')
+    expect(fs.existsSync(repoPath('subscription-contracts/script/Forecasts.s.sol'))).to.equal(true)
+
+    expect(forecasts).to.match(/function insertIntoTable\(uint256 voteId, string memory vote\)/)
+    expect(forecasts).to.match(/function updateTableCol\(uint256 voteId, string memory vote\)/)
+    expect(forecasts).to.match(/function deleteFromTable\(uint256 voteId\)/)
+    expect(forecasts).to.match(/Strings\.toHexString\(msg\.sender\)/)
+    expect(forecasts).to.match(/timestamp integer/)
+    expect(forecasts).to.match(/block\.timestamp/)
+    expect(forecasts, 'must not revive the relayer writer').to.not.match(
+      /onlyWriter|setWriter|insertRow/
+    )
+    expect(votes).to.not.match(/timestamp integer/)
   })
 
-  it('replaces the FORECASTS_TABLE_* config with a reserved voteId range', () => {
+  it('points config at the dedicated Forecasts table, not a reserved Votes range', () => {
     const config = readUi('const/config.ts')
-    expect(config).to.not.match(/FORECASTS_TABLE_ADDRESSES/)
-    expect(config).to.not.match(/FORECASTS_TABLE_NAMES/)
-    expect(config).to.match(/DEPRIZE_FORECAST_VOTE_ID_BASE/)
-
-    const base = config.match(/DEPRIZE_FORECAST_VOTE_ID_BASE\s*=\s*(\d+)/)
-    expect(base, 'DEPRIZE_FORECAST_VOTE_ID_BASE must be a literal number').to.not.equal(null)
-    expect(Number(base![1])).to.be.at.least(1000)
+    expect(config).to.match(/FORECASTS_TABLE_ADDRESSES/)
+    expect(config).to.match(/FORECASTS_TABLE_NAMES/)
+    expect(config).to.not.match(/DEPRIZE_FORECAST_VOTE_ID_BASE/)
   })
 
   it('retires the off-chain rate limiting that gas now provides', () => {

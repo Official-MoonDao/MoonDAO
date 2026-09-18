@@ -2,9 +2,10 @@
 /**
  * Acceptance: the on-chain payload contract for a DePrize prediction.
  *
- * A prediction is a row in the already-deployed Votes.sol table, keyed by
- * (address, voteId). The payload carries an allocation across outcomes plus the
- * voter's vMOONEY at write time, which is used only as an RPC-failure fallback.
+ * A prediction is a row in Forecasts.sol, keyed by (address, voteId). The
+ * payload carries an allocation across outcomes plus the voter's vMOONEY at
+ * write time, which is used only as an RPC-failure fallback. voteId is the
+ * prize id — Forecasts is a dedicated table, so there is no reserved range.
  */
 const REQUEST = '@/lib/deprize/forecastVote'
 const CLOSE = 1e-9
@@ -38,7 +39,6 @@ describe('deprize forecast vote encoding', () => {
   before(() => {
     mod = loadModule(REQUEST)
     requireExports(mod, REQUEST, [
-      'DEPRIZE_FORECAST_VOTE_ID_BASE',
       'FORECAST_VOTE_SCHEMA_VERSION',
       'deprizeForecastVoteId',
       'encodeForecastVote',
@@ -49,15 +49,10 @@ describe('deprize forecast vote encoding', () => {
     ])
   })
 
-  it('derives a voteId that cannot collide with the existing votes', () => {
-    const { DEPRIZE_FORECAST_VOTE_ID_BASE, deprizeForecastVoteId } = mod
-    // WBA=0, BAIKONUR=1, OVERVIEW_DELEGATION=2, OVERVIEW_PATH=3 share this table.
-    expect(DEPRIZE_FORECAST_VOTE_ID_BASE).to.be.at.least(1000)
-    expect(deprizeForecastVoteId(0)).to.equal(DEPRIZE_FORECAST_VOTE_ID_BASE)
-    expect(deprizeForecastVoteId(22)).to.equal(DEPRIZE_FORECAST_VOTE_ID_BASE + 22)
-    for (const taken of [0, 1, 2, 3]) {
-      expect(deprizeForecastVoteId(taken)).to.not.equal(taken)
-    }
+  it('uses the prize id as voteId, since Forecasts is a dedicated table', () => {
+    const { deprizeForecastVoteId } = mod
+    expect(deprizeForecastVoteId(22)).to.equal(22)
+    expect(deprizeForecastVoteId(0)).to.equal(0)
     expect(deprizeForecastVoteId(9)).to.not.equal(deprizeForecastVoteId(10))
   })
 
@@ -125,11 +120,19 @@ describe('deprize forecast vote encoding', () => {
     expect(decodeForecastVote(stale, 4)).to.equal(null)
   })
 
-  it('parses Votes rows, lowercasing addresses and skipping bad rows', () => {
+  it('parses Forecasts rows, lowercasing addresses and skipping bad rows', () => {
     const { encodeForecastVote, parseForecastVotes } = mod
     const rows = [
-      { address: '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', vote: encodeForecastVote([100, 0], 400) },
-      { address: '0xBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBb', vote: encodeForecastVote([25, 75], 900) },
+      {
+        address: '0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        vote: encodeForecastVote([100, 0], 400),
+        timestamp: 1_700_000_000,
+      },
+      {
+        address: '0xBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBb',
+        vote: encodeForecastVote([25, 75], 900),
+        timestamp: '1700000001',
+      },
       { address: '0xcccccccccccccccccccccccccccccccccccccccc', vote: '{{ not json' },
       { address: '0xdddddddddddddddddddddddddddddddddddddddd', vote: JSON.stringify({ v: 9 }) },
       { vote: encodeForecastVote([100, 0], 1) },
@@ -140,8 +143,10 @@ describe('deprize forecast vote encoding', () => {
     expect(parsed[0].voterAddress).to.equal('0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
     expect(parsed[0].allocation).to.deep.equal([100, 0])
     expect(parsed[0].storedVmooney).to.be.closeTo(400, CLOSE)
+    expect(parsed[0].timestamp).to.equal(1_700_000_000)
     expect(parsed[1].voterAddress).to.equal('0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
     expect(parsed[1].allocation).to.deep.equal([25, 75])
+    expect(parsed[1].timestamp).to.equal(1_700_000_001)
   })
 
   it('normalizes an allocation into a probability vector', () => {
