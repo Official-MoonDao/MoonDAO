@@ -225,15 +225,9 @@ export const VOTES_TABLE_NAMES: Index = {
   arbitrum: 'Votes_42161_146',
   sepolia: 'Votes_11155111_1971',
 }
-/** Empty until `script/Forecasts.s.sol` is deployed per chain. */
-export const FORECASTS_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '',
-}
-export const FORECASTS_TABLE_NAMES: Index = {
-  arbitrum: '',
-  sepolia: '',
-}
+// Reserved range for DePrize predictions in the shared Votes table.
+// Ids 0–3 are taken (WBA, Baikonur, Overview delegation, Overview path).
+export const DEPRIZE_FORECAST_VOTE_ID_BASE = 1000
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1
 export const OVERVIEW_DELEGATION_VOTE_ID = 2

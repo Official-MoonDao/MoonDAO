@@ -9,7 +9,9 @@ export {
   betSlice,
   betBudget,
   buildAmounts,
+  buildAmountsFromAllocation,
   searchMaxQtyWithinCost,
+  isGuaranteedLoss,
 } from './quote-math'
 
 import { buildAmounts } from './quote-math'

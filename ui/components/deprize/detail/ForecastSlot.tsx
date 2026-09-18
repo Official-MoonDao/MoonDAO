@@ -9,6 +9,8 @@ export default function ForecastSlot(props: {
   liveTipId?: number
   reported: boolean
   resolvedVector?: number[] | null
+  collateralEth?: number
+  liveMarket?: boolean
 }) {
   return (
     <div className="flex flex-col gap-4">

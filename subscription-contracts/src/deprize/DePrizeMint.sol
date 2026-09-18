@@ -97,6 +97,8 @@ contract DePrizeMint is
     error BettingClosed(uint256 deprizeId);
     error MarketNotSet(uint256 deprizeId);
     error BadOutcomeIndex(uint256 deprizeId, uint256 outcomeIndex);
+    error AmountsLengthMismatch(uint256 given, uint256 expected);
+    error EmptyBet();
     error NonPositiveCost();
     error CostTooHigh(uint256 cost, uint256 budget, uint256 maxCost);
     error RefundFailed();
@@ -184,17 +186,18 @@ contract DePrizeMint is
     // Betting
     // ---------------------------------------------------------------------
 
-    /// @notice Place a bet on `outcomeIndex` for `deprizeId`, buying exactly
-    ///         `outcomeTokenAmount` outcome tokens (cost capped by `maxCost`).
-    /// @dev The bettor specifies a token quantity (the frontend derives it from a
+    /// @notice Place a bet on one or more outcomes for `deprizeId`, buying the
+    ///         per-outcome quantities in `outcomeTokenAmounts` (cost capped by `maxCost`).
+    /// @dev The bettor specifies token quantities (the frontend derives them from a
     ///      desired ETH amount via `calcNetCost`); unspent ETH is refunded. msg.value
     ///      must cover the 5% slice plus the trade cost. `deadline` + `signature`
     ///      are an EIP-712 `CompliancePermit` from `complianceSigner` over
     ///      `(msg.sender, deprizeId, deadline)` — the UI gate is not enough.
+    ///      LMSR cost is not separable, so each `Bet` is attributed pro-rata by that
+    ///      leg's standalone `calcNetCost` at the pre-trade price.
     function bet(
         uint256 deprizeId,
-        uint256 outcomeIndex,
-        uint256 outcomeTokenAmount,
+        uint256[] calldata outcomeTokenAmounts,
         uint256 maxCost,
         uint256 deadline,
         bytes calldata signature
@@ -203,7 +206,9 @@ contract DePrizeMint is
         if (!registry.bettingOpen(deprizeId)) revert BettingClosed(deprizeId);
 
         uint256[] memory teams = registry.teamIds(deprizeId);
-        if (outcomeIndex >= teams.length) revert BadOutcomeIndex(deprizeId, outcomeIndex);
+        if (outcomeTokenAmounts.length != teams.length) {
+            revert AmountsLengthMismatch(outcomeTokenAmounts.length, teams.length);
+        }
 
         address market = marketOf[deprizeId];
         if (market == address(0)) revert MarketNotSet(deprizeId);
@@ -229,11 +234,37 @@ contract DePrizeMint is
         //    the same total (calcMarketFee uses identical integer math) and cap on it.
         ILMSRWithTWAP market_ = ILMSRWithTWAP(market);
         int256[] memory amounts = new int256[](teams.length);
-        amounts[outcomeIndex] = int256(outcomeTokenAmount);
+        uint256 totalRequested;
+        uint256 lastLeg = type(uint256).max;
+        for (uint256 i = 0; i < teams.length; i++) {
+            uint256 qty = outcomeTokenAmounts[i];
+            if (qty > 0) {
+                amounts[i] = int256(qty);
+                totalRequested += qty;
+                lastLeg = i;
+            }
+        }
+        if (totalRequested == 0) revert EmptyBet();
+
         int256 net = market_.calcNetCost(amounts);
         if (net <= 0) revert NonPositiveCost();
         uint256 cost = uint256(net) + market_.calcMarketFee(uint256(net));
         if (cost > budget || cost > maxCost) revert CostTooHigh(cost, budget, maxCost);
+
+        // Standalone costs are taken BEFORE the trade so attribution uses the
+        // same pre-trade book the joint quote was priced against.
+        uint256[] memory standalone = new uint256[](teams.length);
+        uint256 standaloneSum;
+        for (uint256 i = 0; i < teams.length; i++) {
+            if (outcomeTokenAmounts[i] == 0) continue;
+            int256[] memory one = new int256[](teams.length);
+            one[i] = int256(outcomeTokenAmounts[i]);
+            int256 oneNet = market_.calcNetCost(one);
+            if (oneNet > 0) {
+                standalone[i] = uint256(oneNet);
+                standaloneSum += uint256(oneNet);
+            }
+        }
 
         // 3. Wrap collateral and buy outcome tokens. We update TWAP then call `trade`
         //    DIRECTLY: `tradeWithTWAP` internally does `this.trade(...)`, which would
@@ -254,8 +285,8 @@ contract DePrizeMint is
         for (uint256 i = 0; i < _rcvValues.length; i++) {
             totalReceived += _rcvValues[i];
         }
-        if (totalReceived != outcomeTokenAmount) {
-            revert OutcomeTokenAmountMismatch(outcomeTokenAmount, totalReceived);
+        if (totalReceived != totalRequested) {
+            revert OutcomeTokenAmountMismatch(totalRequested, totalReceived);
         }
 
         // Defensive: sweep any collateral the trade didn't consume back to ETH so it
@@ -277,7 +308,23 @@ contract DePrizeMint is
             if (!ok) revert RefundFailed();
         }
 
-        emit Bet(deprizeId, msg.sender, outcomeIndex, outcomeTokenAmount, cost, slice);
+        uint256 costLeft = cost;
+        uint256 sliceLeft = slice;
+        for (uint256 i = 0; i < teams.length; i++) {
+            if (outcomeTokenAmounts[i] == 0) continue;
+            uint256 legCost;
+            uint256 legSlice;
+            if (i == lastLeg || standaloneSum == 0) {
+                legCost = costLeft;
+                legSlice = sliceLeft;
+            } else {
+                legCost = (cost * standalone[i]) / standaloneSum;
+                legSlice = (slice * standalone[i]) / standaloneSum;
+                costLeft -= legCost;
+                sliceLeft -= legSlice;
+            }
+            emit Bet(deprizeId, msg.sender, i, outcomeTokenAmounts[i], legCost, legSlice);
+        }
 
         // 5. Best-effort: sweep the market's accrued trade fees (including this
         //    bet's 1%) into the Juicebox prize pool. A failing/missing router

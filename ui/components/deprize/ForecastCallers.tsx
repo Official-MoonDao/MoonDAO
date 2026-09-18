@@ -1,28 +1,7 @@
-import { FORECASTS_TABLE_NAMES } from 'const/config'
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { CARD } from '@/components/deprize/detail/primitives'
-import { snapshotBrier } from '@/lib/forecasts/brier'
-import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-
-type CallerRow = {
-  displayName?: string
-  vector?: string | number[]
-  updatedAt?: number
-}
-
-function parseVector(raw: unknown, n: number): number[] {
-  if (Array.isArray(raw)) {
-    return raw.map((value) => (typeof value === 'number' && Number.isFinite(value) ? value : 0))
-  }
-  if (typeof raw === 'string') {
-    try {
-      return parseVector(JSON.parse(raw), n)
-    } catch {
-      return Array.from({ length: n }, () => 0)
-    }
-  }
-  return Array.from({ length: n }, () => 0)
-}
+import type { ForecastCaller, ForecastConsensus } from '@/lib/forecasts/consensusTypes'
+import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
 
 export default function ForecastCallers({
   chainSlug,
@@ -35,43 +14,65 @@ export default function ForecastCallers({
   labels: string[]
   resolvedVector?: number[] | null
 }) {
-  const table = FORECASTS_TABLE_NAMES[chainSlug] ?? ''
-  const statement = useMemo(() => {
-    if (!table || !Number.isInteger(deprizeId) || deprizeId <= 0) return null
-    if (!/^(sepolia|arbitrum|arbitrum-sepolia)$/.test(chainSlug)) return null
-    return `SELECT displayName, vector, updatedAt FROM ${table} WHERE chainSlug = '${chainSlug}' AND deprizeId = ${deprizeId} ORDER BY updatedAt DESC LIMIT 40`
-  }, [table, chainSlug, deprizeId])
+  const [rows, setRows] = useState<ForecastCaller[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [participants, setParticipants] = useState(0)
 
-  const { data, isLoading } = useTablelandQuery(statement, { revalidateOnFocus: false })
-  const rows = (Array.isArray(data) ? data : []) as CallerRow[]
-
-  if (!table) return null
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setIsLoading(true)
+      const qs = new URLSearchParams({
+        chain: chainSlug,
+        deprizeId: String(deprizeId),
+        outcomes: String(labels.length),
+      })
+      if (resolvedVector && resolvedVector.length === labels.length) {
+        qs.set('resolved', JSON.stringify(resolvedVector))
+      }
+      try {
+        const res = await fetch(`/api/forecasts/consensus?${qs}`)
+        if (!res.ok) return
+        const body = (await res.json()) as ForecastConsensus
+        if (cancelled) return
+        setRows(body.leaderboard ?? [])
+        setParticipants(body.participants ?? 0)
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [chainSlug, deprizeId, labels.length, resolvedVector])
 
   return (
     <section className={CARD}>
       <h3 className="text-white text-sm font-semibold">Who&apos;s called it</h3>
       {isLoading && <p className="mt-2 text-sm text-gray-400">Loading predictions…</p>}
       {!isLoading && rows.length === 0 && (
-        <p className="mt-2 text-sm text-gray-400">No public predictions yet.</p>
+        <p className="mt-2 text-sm text-gray-400">No Citizen predictions yet.</p>
+      )}
+      {participants > 0 && participants < FORECAST_DAO_MIN_PARTICIPANTS && (
+        <p className="mt-2 text-xs text-gray-400">
+          {participants} of {FORECAST_DAO_MIN_PARTICIPANTS} Citizens needed to reveal the DAO number.
+        </p>
       )}
       {rows.length > 0 && (
         <ul className="mt-3 space-y-2">
-          {rows.map((row, i) => {
-            const vector = parseVector(row.vector, labels.length)
-            const name = row.displayName?.trim() || `Caller ${i + 1}`
-            const brier = snapshotBrier(vector, resolvedVector)
-            return (
-              <li key={`${name}-${row.updatedAt ?? i}`} className="text-sm">
-                <p className="text-white truncate">{name}</p>
-                <p className="text-xs text-gray-400">
-                  {labels
-                    .map((label, idx) => `${label} ${Math.round((vector[idx] ?? 0) * 100)}%`)
-                    .join(' · ')}
-                  {brier != null ? ` · Brier ${brier.toFixed(2)}` : ''}
-                </p>
-              </li>
-            )
-          })}
+          {rows.map((row) => (
+            <li key={row.voterAddress} className="text-sm">
+              <p className="text-white truncate">{row.citizenName}</p>
+              <p className="text-xs text-gray-400">
+                {labels
+                  .map((label, idx) => `${label} ${Math.round(row.allocation[idx] ?? 0)}%`)
+                  .join(' · ')}
+                {row.skill != null ? ` · Skill ${row.skill.toFixed(2)}` : ''}
+                {row.brier != null ? ` · Brier ${row.brier.toFixed(2)}` : ''}
+              </p>
+            </li>
+          ))}
         </ul>
       )}
     </section>

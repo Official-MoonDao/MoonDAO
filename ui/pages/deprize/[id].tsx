@@ -750,6 +750,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
           reported={!!market.payoutDen && market.payoutDen > 0n}
           resolvedVector={resolvedVector}
+          collateralEth={activity.totalStakedEth}
+          liveMarket={!!market.marketAddress}
         />
         <ClaimSection>
           {showResolved && (

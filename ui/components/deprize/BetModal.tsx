@@ -45,7 +45,7 @@ import {
   payloadCopy,
   payloadCopyMode,
 } from '@/lib/deprize/payloadPurse'
-import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
+import { betBudget, betSlice, buildAmounts, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
@@ -383,8 +383,7 @@ export default function BetModal({
           method: 'bet' as string,
           params: [
             BigInt(deprizeId),
-            BigInt(outcomeIndex),
-            qty,
+            buildAmounts(outcomeIndex, qty, numOutcomes),
             budget,
             BigInt(permit.deadline),
             permit.signature,

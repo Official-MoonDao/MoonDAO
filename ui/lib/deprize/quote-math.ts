@@ -25,6 +25,36 @@ export function buildAmounts(
   return Array.from({ length: numOutcomes }, (_, j) => (j === index ? qty : 0n))
 }
 
+/** Split `total` across outcomes in allocation proportions. Leftover goes on the last nonzero leg. */
+export function buildAmountsFromAllocation(allocation: number[], total: bigint): bigint[] {
+  const n = allocation.length
+  const amounts = Array.from({ length: n }, () => 0n)
+  if (n === 0 || total <= 0n) return amounts
+
+  const scaled = allocation.map((value) =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0 ? BigInt(Math.round(value)) : 0n
+  )
+  const scaledSum = scaled.reduce((acc, value) => acc + value, 0n)
+  if (scaledSum <= 0n) return amounts
+
+  let assigned = 0n
+  let lastNonZero = -1
+  for (let i = 0; i < n; i++) {
+    if (scaled[i] === 0n) continue
+    lastNonZero = i
+    amounts[i] = (total * scaled[i]) / scaledSum
+    assigned += amounts[i]
+  }
+  if (lastNonZero >= 0) amounts[lastNonZero] += total - assigned
+  return amounts
+}
+
+/** True when every outcome token quantity is strictly less than the trade cost. */
+export function isGuaranteedLoss(qtys: readonly bigint[], cost: bigint): boolean {
+  if (qtys.length === 0) return false
+  return qtys.every((qty) => qty < cost)
+}
+
 // Largest `qty` whose cost (from a monotonic-increasing `costFn`) is still
 // <= `targetWei`. Cost is monotonic in qty and, for an LMSR, always <= qty
 // (marginal price <= 1), so qty for a given cost is >= cost. We grow an upper

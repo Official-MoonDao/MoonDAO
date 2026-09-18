@@ -5,8 +5,7 @@
     "stateMutability": "payable",
     "inputs": [
       { "name": "deprizeId", "type": "uint256" },
-      { "name": "outcomeIndex", "type": "uint256" },
-      { "name": "outcomeTokenAmount", "type": "uint256" },
+      { "name": "outcomeTokenAmounts", "type": "uint256[]" },
       { "name": "maxCost", "type": "uint256" },
       { "name": "deadline", "type": "uint256" },
       { "name": "signature", "type": "bytes" }
