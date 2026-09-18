@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "std/Script.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 import {IConditionalTokens} from "../../src/deprize/interfaces/IConditionalTokens.sol";
-import {ILMSRWithTWAP} from "../../src/deprize/interfaces/ILMSRWithTWAP.sol";
+import {ILMSRMarketMaker} from "../../src/deprize/interfaces/ILMSRMarketMaker.sol";
 import "base/Config.sol";
 
 /// @title DePrizeResolve
@@ -16,12 +16,10 @@ import "base/Config.sol";
 ///         the Safe — it never broadcasts anything.
 ///
 /// Checks (any failure aborts):
-///   1. registry state admits a report (SETTLED/M1_RELEASED/M2_COMPLETE ->
-///      winner vector; NO_WINNER/CANCELLED -> equal-payout vector;
-///      SUPERSEDED -> walk lineage to the settling generation and map the
-///      winner onto this generation's roster (named slot, else open-field
-///      slot, else 1/N); M2_FAILED -> refused, the CTF was already resolved
-///      at SETTLED);
+///   1. registry state admits a report (SETTLED -> winner vector;
+///      NO_WINNER/CANCELLED -> equal-payout vector; SUPERSEDED -> walk lineage
+///      to the settling generation and map the winner onto this generation's
+///      roster (named slot, else open-field slot, else 1/N));
 ///   2. the winner is one of the DePrize's outcome slots (or field/1N path);
 ///   3. keccak256(oracle, questionId, N) matches the registry's conditionId
 ///      (catches a wrong questionId, wrong oracle, or wrong slot count);
@@ -34,7 +32,7 @@ import "base/Config.sol";
 /// Usage:
 ///   DEPRIZE_REGISTRY=0x<registryProxy> DEPRIZE_ID=1 \
 ///   DEPRIZE_QUESTION_ID=0x... DEPRIZE_ORACLE=0x<safe> \
-///   DEPRIZE_MARKET=0x<lmsrWithTWAP> \
+///   DEPRIZE_MARKET=0x<lmsrMarketMaker> \
 ///   [DEPRIZE_WINNING_ENTITY=<teamId>] [DEPRIZE_OPEN_FIELD=<teamId>] \
 ///   forge script script/deprize/DePrizeResolve.s.sol --rpc-url $RPC
 ///
@@ -43,7 +41,6 @@ import "base/Config.sol";
 /// generation's Open Field team id so a field-only winner maps correctly.
 contract DePrizeResolve is Script, Config {
     error WrongState(uint256 deprizeId, IDePrizeRegistry.DePrizeState state);
-    error M2FailedCtfAlreadyFinal(uint256 deprizeId);
     error WinnerNotFound(uint256 deprizeId, uint256 winningTeamId);
     error ConditionMismatch(bytes32 computed, bytes32 registered);
     error AlreadyReported(bytes32 conditionId, uint256 payoutDenominator);
@@ -55,7 +52,7 @@ contract DePrizeResolve is Script, Config {
     /// @notice Abort if `market` is still tradable or settles a different
     ///         condition than the one about to be resolved.
     /// @dev LMSR stages: 0 = Running, 1 = Paused, 2 = Closed.
-    function assertMarketHalted(ILMSRWithTWAP market, bytes32 conditionId) public view {
+    function assertMarketHalted(ILMSRMarketMaker market, bytes32 conditionId) public view {
         bytes32 marketCondition = market.conditionIds(0);
         if (marketCondition != conditionId) revert MarketConditionMismatch(marketCondition, conditionId);
         if (market.stage() == 0) revert MarketStillRunning(address(market));
@@ -83,15 +80,7 @@ contract DePrizeResolve is Script, Config {
         uint256 n = dp.teamIds.length;
         payouts = new uint256[](n);
 
-        if (dp.state == IDePrizeRegistry.DePrizeState.M2_FAILED) {
-            revert M2FailedCtfAlreadyFinal(deprizeId);
-        }
-
-        if (
-            dp.state == IDePrizeRegistry.DePrizeState.SETTLED
-                || dp.state == IDePrizeRegistry.DePrizeState.M1_RELEASED
-                || dp.state == IDePrizeRegistry.DePrizeState.M2_COMPLETE
-        ) {
+        if (dp.state == IDePrizeRegistry.DePrizeState.SETTLED) {
             // Winner declared: [0,…,1,…,0] at the winner's outcome slot.
             bool found;
             for (uint256 i = 0; i < n; i++) {
@@ -165,8 +154,6 @@ contract DePrizeResolve is Script, Config {
         IDePrizeRegistry.DePrize memory tipDp = registry.getDePrize(tip);
         if (
             tipDp.state != IDePrizeRegistry.DePrizeState.SETTLED
-                && tipDp.state != IDePrizeRegistry.DePrizeState.M1_RELEASED
-                && tipDp.state != IDePrizeRegistry.DePrizeState.M2_COMPLETE
                 && tipDp.state != IDePrizeRegistry.DePrizeState.NO_WINNER
                 && tipDp.state != IDePrizeRegistry.DePrizeState.CANCELLED
         ) {
@@ -226,7 +213,7 @@ contract DePrizeResolve is Script, Config {
 
         address market = vm.envOr("DEPRIZE_MARKET", address(0));
         if (market != address(0)) {
-            assertMarketHalted(ILMSRWithTWAP(market), conditionId);
+            assertMarketHalted(ILMSRMarketMaker(market), conditionId);
             console.log("Market halted check: OK (stage != Running)", market);
         } else {
             console.log("WARNING: DEPRIZE_MARKET not set - could not verify the LMSR is paused/closed.");
@@ -247,5 +234,13 @@ contract DePrizeResolve is Script, Config {
         console.log("  data:");
         console.logBytes(callData);
         console.log("REMINDER: pause/close the LMSR market BEFORE submitting this.");
+        if (market != address(0)) {
+            console.log("Safe follow-up batch (market owner == Safe in v2):");
+            console.log("  market.close()        to:", market);
+            console.logBytes(abi.encodeCall(ILMSRMarketMaker.close, ()));
+            console.log("  market.withdrawFees() to:", market);
+            console.logBytes(abi.encodeCall(ILMSRMarketMaker.withdrawFees, ()));
+            console.log("  then route fees with script/deprize/DePrizeSweepFees.s.sol");
+        }
     }
 }

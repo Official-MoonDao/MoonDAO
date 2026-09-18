@@ -1,6 +1,6 @@
 /**
  * Committed Truffle network config for the DePrize prediction stack
- * (Gnosis ConditionalTokens + LMSRWithTWAPFactory, Solidity 0.5).
+ * (Gnosis ConditionalTokens + stock LMSRMarketMakerFactory, Solidity 0.5).
  *
  * AUDIT[plan 1.2]: `prediction/.gitignore` ignores `truffle.js`, so this
  * filename (`truffle-config.js`) is the reproducible, reviewable config.
@@ -64,6 +64,16 @@ module.exports = {
       provider: hd("ARB_SEPOLIA_RPC_URL", "https://sepolia-rollup.arbitrum.io/rpc"),
       network_id: 421614,
       confirmations: 1,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+    },
+    sepolia: {
+      provider: hd(
+        "SEPOLIA_RPC_URL",
+        process.env.SEPOLIA_RPC || "https://ethereum-sepolia-rpc.publicnode.com"
+      ),
+      network_id: 11155111,
+      confirmations: 2,
       timeoutBlocks: 200,
       skipDryRun: true,
     },

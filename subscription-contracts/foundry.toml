@@ -2,6 +2,8 @@
 src = 'src'
 out = 'out'
 libs = ['lib']
+# Pinned so DePrize v2 bytecode is reproducible; was the auto-selected version.
+solc_version = "0.8.26"
 evm_version = "cancun"
 via_ir = true
 optimizer = true
@@ -12,13 +14,25 @@ fs_permissions = [
     { access = "read", path = "../contracts/deployments/"},
     { access = "read", path = "./script/safe-tx-mission4-owner-only-payouts.json"},
     { access = "read", path = "./script/backfill/"},
-    { access = "read-write", path = "./script/safe-tx-reopen-batch.json"}
+    { access = "read-write", path = "./script/safe-tx-reopen-batch.json"},
+    # DePrize v2 surface allowlist: the test reads forge artifacts and the
+    # committed selector lists (write only when DEPRIZE_SURFACE_WRITE=true).
+    { access = "read", path = "./out/"},
+    { access = "read-write", path = "./test/deprize/surface/"},
+    # Stock Gnosis 0.5.1 creation bytecode for the fork suite.
+    { access = "read", path = "./test/deprize/fixtures/"}
 ]
 # for deterministic deploys
 bytecode_hash = "none"
 cbor_metadata = false
 always_use_create_2_factory = true
 
+
+# DePrize v2 invariant suite (test/deprize/DePrizeMintInvariant.t.sol).
+[invariant]
+runs = 128
+depth = 100
+fail_on_revert = false
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"

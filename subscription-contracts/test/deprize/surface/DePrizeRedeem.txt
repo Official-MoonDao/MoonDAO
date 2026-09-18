@@ -1,0 +1,8 @@
+ctf()
+onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)
+onERC1155Received(address,address,uint256,uint256,bytes)
+previewRedeem(uint256,address)
+redeem(uint256)
+registry()
+supportsInterface(bytes4)
+weth()

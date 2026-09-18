@@ -32,9 +32,8 @@ import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
 //     `deadline`/`fundingGoal` — governs contributions and cashOut:
 //       - non-terminal states: contributions allowed, cashOut (refunds) disabled
 //         so the prize slice and betting collateral stay protected;
-//       - refundable terminals (CANCELLED / NO_WINNER / M2_FAILED): cashOut
-//         re-enabled with no expiry so the mission's token holders can reclaim
-//         their floor.
+//       - refundable terminals (CANCELLED / NO_WINNER): cashOut re-enabled with
+//         no expiry so the mission's token holders can reclaim their floor.
 contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
 
     uint256 public immutable fundingGoal;
@@ -200,8 +199,8 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         uint256 deprizeId = _deprizeIdFor(projectId);
         if (deprizeId != 0) {
             // Refundable terminal → refund stage (no expiry); otherwise the campaign
-            // is active and cashOut stays disabled. Finer-grained milestone-gated
-            // staging for SETTLED/M2_COMPLETE arrives with the MilestoneEscrow.
+            // is active (or SETTLED, with the pool being spent by the Safe) and
+            // cashOut stays disabled.
             if (deprizeRegistry.isRefundable(deprizeId)) {
                 return 3; // Refund stage
             }

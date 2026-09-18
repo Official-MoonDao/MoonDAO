@@ -40,11 +40,13 @@ contract Config is Script {
     mapping(uint256 => address) public CITIZEN_TABLE_ADDRESSES;
     mapping(uint256 => address) public CITIZEN_NFT_ADDRESSES;
 
-    // DePrize / prediction-market stack (Gnosis Conditional Tokens + LMSRWithTWAP).
-    // These are externally-deployed Solidity 0.5 contracts that the 0.8 DePrizeMint
-    // router calls via interfaces. WETH is the CTF collateral. LMSR_MARKET is an
-    // already-deployed market instance reused by DePrize fork tests; LMSR_FACTORY is
-    // populated after the factory is deployed (used to provision new markets).
+    // DePrize / prediction-market stack (Gnosis Conditional Tokens + stock Gnosis
+    // LMSRMarketMaker). These are externally-deployed Solidity 0.5 contracts that
+    // the 0.8 DePrizeMint router calls via interfaces. WETH is the CTF collateral.
+    // LMSR_MARKET_ADDRESSES are v1 LMSRWithTWAP markets kept only for read-only
+    // fork checks; they must NOT be bound to the v2 mint. LMSR_FACTORY_ADDRESSES
+    // [SEP] is the stock Gnosis LMSRMarketMakerFactory (2026-09-18). [ARBITRUM]
+    // is still the v1 LMSRWithTWAPFactory until the stock factory is deployed.
     mapping(uint256 => address) public WETH_ADDRESSES;
     mapping(uint256 => address) public CONDITIONAL_TOKENS_ADDRESSES;
     mapping(uint256 => address) public LMSR_MARKET_ADDRESSES;
@@ -198,12 +200,13 @@ contract Config is Script {
 
         LMSR_MARKET_ADDRESSES[SEP] = 0x11DCe86c804ca088A0d9036eeE368e4055b235dE;
         LMSR_MARKET_ADDRESSES[ARB_SEP] = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
+        LMSR_FACTORY_ADDRESSES[SEP] = 0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674;
         LMSR_FACTORY_ADDRESSES[ARBITRUM] = 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8;
     }
 
     /// @notice Resolve WETH + ConditionalTokens for `chainId`, or revert with a
     ///         chain-id in the message so a mainnet run cannot silently pick
-    ///         address(0) and deploy a broken Mint/Redeem/FeeRouter.
+    ///         address(0) and deploy a broken Mint/Redeem.
     /// @dev AUDIT[plan 1.3]: replaces the generic "not configured" requires.
     function requireDePrizeCollateral(uint256 chainId) public view returns (address weth, address ctf) {
         weth = WETH_ADDRESSES[chainId];

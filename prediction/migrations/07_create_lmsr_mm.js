@@ -18,7 +18,7 @@ module.exports = function (deployer) {
     const collateralToken = await WETH9.deployed();
 
     const lmsrMarketMakerFactory = await artifacts
-      .require("LMSRWithTWAPFactory")
+      .require("LMSRMarketMakerFactory")
       .deployed();
 
     console.log("Collateral Token Address: ", collateralToken.address);
@@ -33,7 +33,7 @@ module.exports = function (deployer) {
 
     console.log("creating LMSR Market Maker");
     console.log("conditionIds: ", conditionIds);
-    const lmsrFactoryTx = await lmsrMarketMakerFactory.createLMSRWithTWAP(
+    const lmsrFactoryTx = await lmsrMarketMakerFactory.createLMSRMarketMaker(
       conditionalTokens.address,
       collateralToken.address,
       conditionIds,
@@ -44,18 +44,18 @@ module.exports = function (deployer) {
     console.log("LMSR Market Maker created");
 
     const creationLogEntry = lmsrFactoryTx.logs.find(
-      ({ event }) => event === "LMSRWithTWAPCreation"
+      ({ event }) => event === "LMSRMarketMakerCreation"
     );
 
     if (!creationLogEntry) {
       // eslint-disable-next-line
       console.error(JSON.stringify(lmsrFactoryTx, null, 2));
       throw new Error(
-        "No LMSRWithTWAPCreation Event fired. Please check the TX above.\nPossible causes for failure:\n- ABIs outdated. Delete the build/ folder\n- Transaction failure\n- Unfunded LMSR"
+        "No LMSRMarketMakerCreation Event fired. Please check the TX above.\nPossible causes for failure:\n- ABIs outdated. Delete the build/ folder\n- Transaction failure\n- Unfunded LMSR"
       );
     }
 
-    const lmsrAddress = creationLogEntry.args.lmsrWithTWAP;
+    const lmsrAddress = creationLogEntry.args.lmsrMarketMaker;
     console.log("LMSR Market Maker Address: ", lmsrAddress);
     console.log("Conditional Tokens Address: ", conditionalTokens.address);
   });

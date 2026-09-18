@@ -12,4 +12,4 @@ build/*
 build/contracts/*
 !build/contracts/ConditionalTokens.json
 !build/contracts/Fixed192x64Math.json
-!build/contracts/LMSRWithTWAPFactory.json
+!build/contracts/LMSRMarketMakerFactory.json
