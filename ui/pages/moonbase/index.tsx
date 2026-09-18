@@ -61,7 +61,7 @@ import type {
   MarkerStyle,
 } from '@/components/lunar-atlas/MarkerLayer'
 import { footprintRadiusM } from '@/components/lunar-atlas/ProjectModel'
-import { LIVE_PATROL_DIR, rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
+import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
 import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
 import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
 import ProjectPanel from '@/components/lunar-atlas/ProjectPanel'
@@ -121,13 +121,12 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       plan,
       tree.projects.map((p) => ({ id: p.id, radiusM: footprintRadiusM(p) }))
     )
-    // A race whose hardware DRIVES doesn't stand on its plots — it rests out on
-    // the spine, spread along the run by rank (see PATROL and the shuttle in
-    // MarkerLayer's CompetitorPlot). Precompute that road position here, in the
-    // same shared table the models and the camera both read, so a drill-in aims
-    // at the rover itself rather than at its own empty corner lot. Uses the
+    // A race whose hardware DRIVES is shown twice: parked on its plots like
+    // everyone else, and again out on the spine as a moving scenery copy,
+    // spread along the run by rank (see PATROL and the shuttle in MarkerLayer's
+    // CompetitorPlot). This is where that second copy starts from. Uses the
     // identical phase MarkerLayer does — rank index over count — and the same
-    // `shuttleAt`, so the two cannot disagree about where a rover comes to rest.
+    // `shuttleAt`, so the two cannot disagree about where a rover sets off.
     const patrol = PATROL[tree.category]
     const rankOf = patrol
       ? new Map(rankedMembers(tree).map((p, i) => [p.id, i]))
@@ -549,17 +548,14 @@ export default function MoonBaseZeroIndex() {
       return
     }
     const cat = siteCategory ?? selectedTreeCategory ?? project.type
-    // A driving competitor is out lapping the road, not parked on its plot, so
-    // aim at where it actually is right now (`LIVE_PATROL_DIR`, written each
-    // frame by its model) rather than teleporting to its empty corner lot.
-    // Falls back to its road start (`standDir`) before the first frame, then to
-    // the plot for anything that doesn't drive.
+    // Always the competitor's own plot, including for a rover — the vehicle
+    // lapping the spine is a second, scenery copy of a machine that is also
+    // parked on its lot (see the render in MarkerLayer), and the parked one is
+    // what a drill-in should frame. Chasing the moving copy used to be the only
+    // option, because the lot really was empty; it also meant the camera's
+    // subject was somewhere different every time you clicked it.
     const plot = layout.plots.get(project.id)
-    const dir =
-      LIVE_PATROL_DIR.get(project.id) ??
-      plot?.standDir ??
-      plot?.dir ??
-      siteDir(cat)
+    const dir = plot?.dir ?? siteDir(cat)
     const ll = dir ? vector3ToLatLon(dir) : project.location
     if (!ll) return
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
