@@ -429,6 +429,17 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     onrampQueryActive,
   ])
 
+  const [forecastHashHandled, setForecastHashHandled] = useState(false)
+  useEffect(() => {
+    if (forecastHashHandled || !router.isReady) return
+    if (typeof window === 'undefined') return
+    if (window.location.hash !== '#deprize-forecast') return
+    const el = document.getElementById('deprize-forecast')
+    if (!el) return
+    setForecastHashHandled(true)
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [forecastHashHandled, router.isReady, deprize, numOutcomes])
+
   // CTF may already have a payout vector on a still-OPEN/paused test market —
   // only show Refund/WON/claim when the registry lifecycle (or a Closed market)
   // says resolution should surface.

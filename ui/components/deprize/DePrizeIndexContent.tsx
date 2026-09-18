@@ -4,7 +4,7 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { getFeaturedLiveDePrizeId } from '@/lib/deprize/competitions'
-import { deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
+import { DEPRIZE_RESTRICTED_PREDICT_COPY, deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
 import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { resetMockData } from '@/lib/deprize/mockMarket'
@@ -127,9 +127,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   // Default-deny real betting from the SSR DePrize verdict. Unknown country
   // arrives as restricted=true (getDePrizePageEligibility). Demo markets are
   // unaffected — RaceMarketCard never gates them on this reason.
-  const bettingBlockedReason = restricted
-    ? "Betting on live on-chain markets isn't available in your region."
-    : undefined
+  const bettingBlockedReason = restricted ? DEPRIZE_RESTRICTED_PREDICT_COPY : undefined
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
@@ -157,9 +155,9 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
           }
         >
           <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
-            {bettingBlockedReason && (
+            {restricted && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
-                {bettingBlockedReason}
+                {DEPRIZE_RESTRICTED_PREDICT_COPY}
               </div>
             )}
 

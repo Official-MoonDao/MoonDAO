@@ -98,6 +98,11 @@ export function deprizeDetailHref(sharedGoalId: string): string {
   return `/deprize/${sharedGoalId}`
 }
 
+/** Prize-page path that lands on the free prediction panel. */
+export function deprizeForecastHref(deprizeId: number | string): string {
+  return `/deprize/${deprizeId}#deprize-forecast`
+}
+
 /** chainSlug → deprizeId → competition */
 const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> = {
   arbitrum: {

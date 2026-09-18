@@ -6,8 +6,9 @@ import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
-import { getDePrizeCompetition } from '@/lib/deprize/competitions'
+import { deprizeForecastHref, getDePrizeCompetition } from '@/lib/deprize/competitions'
 import {
+  DEPRIZE_PREDICT_CTA,
   DEPRIZE_TERMS_VERSION,
   DePrizeState,
   MarketStage,
@@ -131,7 +132,9 @@ export default function LiveDePrizeHero({
       : DEPRIZE_STATE_META_LABEL(deprize?.state)
 
   const detailHref = `/deprize/${deprizeId}`
+  const forecastHref = deprizeForecastHref(deprizeId)
   const betOutcome = betIndex !== null ? market.outcomes[betIndex] : undefined
+  const showPredict = !!bettingBlockedReason
 
   return (
     <div className="rounded-2xl bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-indigo-950/50 backdrop-blur-xl border border-indigo-400/25 shadow-xl overflow-hidden">
@@ -225,6 +228,15 @@ export default function LiveDePrizeHero({
                   >
                     Buy
                   </button>
+                ) : showPredict ? (
+                  <a
+                    href={forecastHref}
+                    className="relative z-10 shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold
+                      bg-white/10 hover:bg-white/15 text-white transition-all
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+                  >
+                    {DEPRIZE_PREDICT_CTA}
+                  </a>
                 ) : !account ? (
                   <button
                     type="button"
@@ -245,7 +257,7 @@ export default function LiveDePrizeHero({
           )}
         </div>
 
-        {bettingBlockedReason && (
+        {showPredict && (
           <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>
         )}
 

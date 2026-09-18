@@ -15,12 +15,19 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
 import {
   deprizeDetailHref,
+  deprizeForecastHref,
   findDePrizeIdForGoal,
   getDePrizeRaceBinding,
   isCompetitiveRace,
   isDePrizeGoalMarketBound,
 } from '@/lib/deprize/competitions'
-import { DEPRIZE_TERMS_VERSION, MarketStage, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
+import {
+  DEPRIZE_PREDICT_CTA,
+  DEPRIZE_TERMS_VERSION,
+  MarketStage,
+  OUTCOME_COLORS,
+  UNIT,
+} from '@/lib/deprize/constants'
 import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
@@ -78,6 +85,7 @@ function OutcomeBetRow({
   outcome,
   bettingEnabled,
   showOdds = true,
+  predictHref,
   onBet,
   onCashOut,
 }: {
@@ -85,6 +93,8 @@ function OutcomeBetRow({
   bettingEnabled: boolean
   /** False for a single-entrant non-race — see isCompetitiveRace. */
   showOdds?: boolean
+  /** When betting is geo-blocked, link to the free prediction panel. */
+  predictHref?: string
   onBet: () => void
   onCashOut?: () => void
 }) {
@@ -112,7 +122,7 @@ function OutcomeBetRow({
           {pct !== undefined ? `${pct}%` : '—'}
         </span>
       )}
-      {bettingEnabled && (
+      {bettingEnabled ? (
         <button
           type="button"
           onClick={onBet}
@@ -122,7 +132,16 @@ function OutcomeBetRow({
         >
           Buy
         </button>
-      )}
+      ) : predictHref ? (
+        <a
+          href={predictHref}
+          className="relative z-10 shrink-0 px-3 py-1 rounded-md text-xs font-semibold
+            bg-white/10 hover:bg-white/15 text-white transition-all
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+        >
+          {DEPRIZE_PREDICT_CTA}
+        </a>
+      ) : null}
       {onCashOut && (
         <button
           type="button"
@@ -255,6 +274,10 @@ export default function RaceMarketCard({
   // region rules must allow real bets (demo markets skip this entirely).
   const bettingOpenReal = marketTradable && !bettingBlockedReason
   const bettingEnabled = hasRace && (bound ? bettingOpenReal : true) // demo markets never gate
+  const forecastHref =
+    bound && !!bettingBlockedReason && deprizeId !== undefined
+      ? deprizeForecastHref(deprizeId)
+      : undefined
 
   const statusTone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept' = !hasRace
     ? 'concept'
@@ -501,7 +524,7 @@ export default function RaceMarketCard({
                     {pct !== undefined ? `${pct}%` : '—'}
                   </span>
                 )}
-                {bettingEnabled && (
+                {bettingEnabled ? (
                   <button
                     type="button"
                     onClick={() => handleBet(o)}
@@ -511,7 +534,16 @@ export default function RaceMarketCard({
                   >
                     Buy
                   </button>
-                )}
+                ) : forecastHref ? (
+                  <a
+                    href={forecastHref}
+                    className="relative z-10 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-semibold
+                      bg-white/10 hover:bg-white/15 text-white transition-all
+                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+                  >
+                    {DEPRIZE_PREDICT_CTA}
+                  </a>
+                ) : null}
               </div>
             )
           })}
@@ -618,6 +650,7 @@ export default function RaceMarketCard({
                 outcome={o}
                 bettingEnabled={bettingEnabled}
                 showOdds={hasRace}
+                predictHref={forecastHref}
                 onBet={() => handleBet(o)}
               />
             ))}
@@ -698,6 +731,7 @@ export default function RaceMarketCard({
                 outcome={o}
                 bettingEnabled={bettingEnabled}
                 showOdds={hasRace}
+                predictHref={forecastHref}
                 onBet={() => handleBet(o)}
               />
             ))}
