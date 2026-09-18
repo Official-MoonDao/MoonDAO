@@ -11,10 +11,9 @@ function relativeAsOf(asOf: number): string {
 
 export default function DePrizePatrons(props: {
   patrons: PrizePatronsState
-  poolEth?: number | null
   pendingOwn?: boolean
 }) {
-  const { patrons, poolEth, pendingOwn } = props
+  const { patrons, pendingOwn } = props
   const stale =
     patrons.status === 'ready' &&
     patrons.patronCount > 0 &&
@@ -77,11 +76,6 @@ export default function DePrizePatrons(props: {
     )
   }
 
-  const feeEth =
-    poolEth != null && Number.isFinite(poolEth)
-      ? Math.max(0, poolEth - patrons.totalDirectEth)
-      : null
-
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -104,19 +98,6 @@ export default function DePrizePatrons(props: {
           </li>
         ))}
       </ul>
-      {patrons.otherRoutes.count > 0 && (
-        <p className="text-gray-500 text-xs">
-          plus {patrons.otherRoutes.count} contributions via other routes ·{' '}
-          {patrons.otherRoutes.totalEth.toFixed(4)} ETH. Gift pays and smart-account
-          pays are counted in the pool but not attributed by name.
-        </p>
-      )}
-      {feeEth != null && (
-        <p className="text-gray-500 text-xs">
-          The prize pool also includes {feeEth.toFixed(4)} ETH from bet fees. Patrons
-          are direct contributions only.
-        </p>
-      )}
       {patrons.asOf != null && (
         <p className={`text-xs ${stale ? 'text-amber-300' : 'text-gray-500'}`}>
           Updated {relativeAsOf(patrons.asOf)}
