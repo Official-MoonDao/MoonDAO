@@ -5,14 +5,18 @@ export async function forecastVoteRowExists(args: {
   votesTableName: string
   voteId: number
   address: string
-}): Promise<boolean> {
+}): Promise<boolean | null> {
   const addr = args.address.toLowerCase()
   const statement = `SELECT id FROM ${args.votesTableName} WHERE voteId = ${args.voteId} AND address = '${addr}'`
   const url = `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(statement)}&t=${Date.now()}`
-  const res = await fetch(url)
-  if (!res.ok) return false
-  const data = await res.json()
-  return Array.isArray(data) && data.length > 0
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const data = await res.json()
+    return Array.isArray(data) && data.length > 0
+  } catch {
+    return null
+  }
 }
 
 export async function writeForecastVote(args: {
@@ -22,12 +26,17 @@ export async function writeForecastVote(args: {
   voteId: number
   address: string
   vote: string
+  knownExists?: boolean
 }): Promise<void> {
-  const exists = await forecastVoteRowExists({
+  const checked = await forecastVoteRowExists({
     votesTableName: args.votesTableName,
     voteId: args.voteId,
     address: args.address,
   })
+  const exists = checked != null ? checked : args.knownExists === true ? true : null
+  if (exists == null) {
+    throw new Error('Could not verify whether a prediction already exists.')
+  }
   const method = exists ? 'updateTableCol' : 'insertIntoTable'
   const transaction = prepareContractCall({
     contract: args.votesContract,

@@ -175,7 +175,11 @@ export async function fetchTotalVMOONEYsAtBlocks(
   }
 }
 
-export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number) {
+export async function fetchTotalVMOONEYs(
+  addresses: string[],
+  timestamp: number,
+  throwOnError = false
+) {
   try {
     const { engineBatchRead } = await import('@/lib/thirdweb/engine')
     const chains = [arbitrum, ethereum, base, polygon]
@@ -186,6 +190,10 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
     // total. Previously a single transient RPC failure on one chain would
     // quietly drop that chain's balance from the sum, which produced
     // intermittently-wrong voting power both in the UI and at tally time.
+    if (throwOnError && !process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET) {
+      throw new Error('Failed to fetch vMOONEY balances: missing thirdweb secret')
+    }
+
     const results = await Promise.all(
       chains.map(async (chain) => {
         const chainSlug = getChainSlug(chain)
@@ -227,6 +235,7 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
     return totals
   } catch (error) {
     console.error('Failed to fetch vMOONEY balances:', error)
+    if (throwOnError) throw error
     return addresses.map(() => 0)
   }
 }

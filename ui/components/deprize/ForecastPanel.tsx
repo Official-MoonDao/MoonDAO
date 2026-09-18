@@ -1,7 +1,7 @@
 import { useLogin } from '@privy-io/react-auth'
 import VotesTableABI from 'const/abis/Votes.json'
 import { VOTES_TABLE_ADDRESSES, VOTES_TABLE_NAMES } from 'const/config'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
@@ -11,8 +11,9 @@ import {
   encodeForecastVote,
   isValidAllocation,
 } from '@/lib/deprize/forecastVote'
-import { writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { normalizeProbabilities } from '@/lib/deprize/serverMarket'
+import { writeForecastVote } from '@/lib/deprize/writeForecastVote'
+import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
 import { daoEvidence, logLinearPool, marketEvidence } from '@/lib/forecasts/pool'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
@@ -22,7 +23,6 @@ import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { CARD } from '@/components/deprize/detail/primitives'
-import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 
 function pct(n: number): string {
   if (!Number.isFinite(n)) return '—'
@@ -40,9 +40,7 @@ function allocationFromSelected(selected: number[], n: number): number[] {
 }
 
 function selectedFromAllocation(allocation: number[]): number[] {
-  return allocation
-    .map((value, i) => (value > 0 ? i : -1))
-    .filter((i) => i >= 0)
+  return allocation.map((value, i) => (value > 0 ? i : -1)).filter((i) => i >= 0)
 }
 
 export default function ForecastPanel(props: {
@@ -63,6 +61,7 @@ export default function ForecastPanel(props: {
     marketPercents,
     liveTipId,
     reported,
+    resolvedVector,
     collateralEth = 0,
     liveMarket = false,
   } = props
@@ -88,34 +87,36 @@ export default function ForecastPanel(props: {
   })
   const votesTableName = VOTES_TABLE_NAMES[chainSlug] ?? ''
 
-  const marketNormalized = useMemo(
-    () => normalizeProbabilities(marketPercents),
-    [marketPercents]
-  )
+  const marketNormalized = useMemo(() => normalizeProbabilities(marketPercents), [marketPercents])
   const isLive = liveTipId == null || liveTipId === deprizeId
   const inputsLocked = !isLive || reported
   const canWrite = Boolean(account && citizen && votesContract && votesTableName)
   const submitDisabled = inputsLocked || saving || n < 2 || !isValidAllocation(percents)
 
+  const loadRequestId = useRef(0)
+
   const loadConsensus = useCallback(async () => {
+    const requestId = ++loadRequestId.current
     const qs = new URLSearchParams({
       chain: chainSlug,
       deprizeId: String(deprizeId),
       outcomes: String(n),
     })
+    if (resolvedVector && resolvedVector.length === n) {
+      qs.set('resolved', JSON.stringify(resolvedVector))
+    }
     const res = await fetch(`/api/forecasts/consensus?${qs}`)
     if (!res.ok) return
     const body = (await res.json()) as ForecastConsensus
+    if (requestId !== loadRequestId.current) return
     setConsensus(body)
     const mine = account?.address
-      ? body.leaderboard.find(
-          (row) => row.voterAddress === account.address.toLowerCase()
-        )
+      ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
       : undefined
     if (mine?.allocation?.length === n) {
       setSelected(selectedFromAllocation(mine.allocation))
     }
-  }, [account?.address, chainSlug, deprizeId, n])
+  }, [account?.address, chainSlug, deprizeId, n, resolvedVector])
 
   useEffect(() => {
     void loadConsensus()
@@ -127,6 +128,10 @@ export default function ForecastPanel(props: {
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
     )
   }
+
+  const mine = consensus?.leaderboard.find(
+    (row) => row.voterAddress === account?.address?.toLowerCase()
+  )
 
   async function save() {
     setError(null)
@@ -149,7 +154,9 @@ export default function ForecastPanel(props: {
         voteId: deprizeForecastVoteId(deprizeId),
         address: account.address,
         vote,
+        knownExists: Boolean(mine),
       })
+      loadRequestId.current += 1
       setConsensus((prev) => {
         if (!prev) return prev
         const row = {
@@ -164,13 +171,10 @@ export default function ForecastPanel(props: {
           brier: null,
           skill: null,
         }
-        const others = prev.leaderboard.filter(
-          (entry) => entry.voterAddress !== row.voterAddress
-        )
+        const others = prev.leaderboard.filter((entry) => entry.voterAddress !== row.voterAddress)
         return { ...prev, leaderboard: [row, ...others] }
       })
       toast.success('Prediction saved', { style: toastStyle })
-      void loadConsensus()
     } catch (err: any) {
       setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
     } finally {
@@ -202,16 +206,12 @@ export default function ForecastPanel(props: {
     return Math.max(max, Math.abs(market - dao))
   }, 0)
 
-  const mine = consensus?.leaderboard.find(
-    (row) => row.voterAddress === account?.address?.toLowerCase()
-  )
-
   return (
     <section id="deprize-forecast" className={CARD}>
       <h2 className="text-white text-base font-semibold">Back an outcome</h2>
       <p className="mt-1 text-sm text-gray-300">
-        Tap one or more competitors. Citizens write a vote weighted by √vMOONEY; where
-        betting is allowed, the same allocation is what you stake in ETH.
+        Tap one or more competitors. Citizens write a vote weighted by √vMOONEY; where betting is
+        allowed, the same allocation is what you stake in ETH.
       </p>
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">
@@ -246,9 +246,7 @@ export default function ForecastPanel(props: {
         </p>
       )}
       {mine?.skill != null && (
-        <p className="mt-3 text-sm text-gray-300">
-          Your skill score is {mine.skill.toFixed(2)}.
-        </p>
+        <p className="mt-3 text-sm text-gray-300">Your skill score is {mine.skill.toFixed(2)}.</p>
       )}
 
       <div className="mt-4 flex flex-col gap-4" aria-live="polite">
@@ -267,9 +265,7 @@ export default function ForecastPanel(props: {
               onClick={() => toggleOutcome(i)}
               disabled={inputsLocked}
               className={`flex flex-col gap-1.5 text-left rounded-xl border px-3 py-2 ${
-                backed
-                  ? 'border-indigo-400/60 bg-indigo-400/10'
-                  : 'border-white/10 bg-transparent'
+                backed ? 'border-indigo-400/60 bg-indigo-400/10' : 'border-white/10 bg-transparent'
               } disabled:opacity-60`}
             >
               <div className="flex items-center justify-between gap-3">
@@ -322,11 +318,7 @@ export default function ForecastPanel(props: {
           disabled={account ? submitDisabled || !canWrite : false}
           className="px-4 py-1.5 rounded-full text-sm border border-white/20 bg-white/10 text-white hover:bg-white/15 disabled:opacity-40"
         >
-          {saving
-            ? 'Saving…'
-            : account
-              ? 'Save prediction'
-              : 'Connect to predict'}
+          {saving ? 'Saving…' : account ? 'Save prediction' : 'Connect to predict'}
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-amber-200">{error}</p>}

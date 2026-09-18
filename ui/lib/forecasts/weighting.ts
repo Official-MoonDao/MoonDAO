@@ -28,8 +28,14 @@ export function capWeights(weights: readonly number[], maxShare: number): number
 
   const cleaned = weights.map((w) => (Number.isFinite(w) && w > 0 ? w : 0))
   const total = cleaned.reduce((acc, w) => acc + w, 0)
-  if (total <= 0 || !(maxShare > 0) || n * maxShare < 1 - 1e-12) {
-    return Array.from({ length: n }, () => 1 / n)
+  if (total <= 0) {
+    return cleaned.slice()
+  }
+
+  const positive = cleaned.filter((w) => w > 0).length
+  if (!(maxShare > 0) || positive * maxShare < 1 - 1e-12) {
+    const share = 1 / positive
+    return cleaned.map((w) => (w > 0 ? share : 0))
   }
 
   const capped = new Array<boolean>(n).fill(false)

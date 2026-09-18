@@ -1,6 +1,8 @@
 import { VOTES_TABLE_NAMES } from 'const/config'
+import { buildCitizenOwnerLookupStatement, citizenRowsByOwner } from '@/lib/citizen/citizenLookup'
 import { aggregateForecastVotes, filterToCitizens } from '@/lib/forecasts/aggregate'
 import { scoreAllocation } from '@/lib/forecasts/brier'
+import type { ForecastCaller, ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
 import {
   FORECAST_MAX_WEIGHT_SHARE,
@@ -9,15 +11,10 @@ import {
   resolveVmooney,
   votingWeight,
 } from '@/lib/forecasts/weighting'
-import { buildCitizenOwnerLookupStatement, citizenRowsByOwner } from '@/lib/citizen/citizenLookup'
 import queryTable from '@/lib/tableland/queryTable'
 import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import { fetchTotalVMOONEYs } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import type { ForecastCaller, ForecastConsensus } from '@/lib/forecasts/consensusTypes'
-import {
-  deprizeForecastVoteId,
-  parseForecastVotes,
-} from './forecastVote'
+import { deprizeForecastVoteId, parseForecastVotes, type ParsedForecastVote } from './forecastVote'
 
 export type { ForecastCaller, ForecastConsensus }
 
@@ -60,7 +57,7 @@ export async function fetchForecastConsensus(args: {
     const balanceMap: Record<string, number> = {}
     try {
       const now = Math.floor(Date.now() / 1000)
-      const balances = await fetchTotalVMOONEYs(uniqueVoters, now)
+      const balances = await fetchTotalVMOONEYs(uniqueVoters, now, true)
       for (let i = 0; i < uniqueVoters.length; i++) {
         balanceMap[uniqueVoters[i]] = balances[i] ?? 0
       }

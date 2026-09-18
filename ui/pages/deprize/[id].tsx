@@ -751,7 +751,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           reported={!!market.payoutDen && market.payoutDen > 0n}
           resolvedVector={resolvedVector}
           collateralEth={activity.totalStakedEth}
-          liveMarket={!!market.marketAddress}
+          liveMarket={chainSlug === 'arbitrum' && !!market.marketAddress}
         />
         <ClaimSection>
           {showResolved && (
