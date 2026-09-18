@@ -22,6 +22,6 @@ describe('deprize availability legend', () => {
   it('offers a prediction path in the restricted-region copy', () => {
     expect(DEPRIZE_RESTRICTED_PREDICT_COPY).to.match(/prediction/i)
     expect(DEPRIZE_RESTRICTED_PREDICT_COPY).to.match(/leaderboard/i)
-    expect(DEPRIZE_PREDICT_CTA).to.equal('Predict — free')
+    expect(DEPRIZE_PREDICT_CTA).to.equal('Predict')
   })
 })
