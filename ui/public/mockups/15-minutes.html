@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 15 · Minutes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root { --ink: #1e1c18; --dim: #6a655c; --rule: #cfc8bb; --paper: #efeae0; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Courier Prime', 'Courier New', monospace;
+    font-size: 16px; line-height: 1.65;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .top {
+    display: flex; justify-content: space-between; padding: 20px 32px;
+    border-bottom: 1px dashed var(--rule); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+
+  .mins { max-width: 720px; margin: 0 auto; padding: 56px 32px 80px; }
+  .mins h1 { margin: 0 0 8px; font-size: 15px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .mins .meta { color: var(--dim); font-size: 14px; margin-bottom: 40px; }
+
+  .item { margin: 0 0 36px; }
+  .item .hd { display: flex; justify-content: space-between; color: var(--dim); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  .item p { margin: 0; }
+  .item .res { margin-top: 8px; font-weight: 700; }
+
+  .join {
+    display: inline-block; margin-top: 12px;
+    border: 1px solid var(--ink); padding: 8px 14px;
+    font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .join:hover { background: var(--ink); color: var(--paper); }
+
+  @media (max-width: 600px) { .mins { padding: 40px 20px 64px; } }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <span>MoonDAO</span>
+  <a href="#">Join</a>
+</div>
+
+<main class="mins">
+  <h1>Minutes</h1>
+  <div class="meta">Extract. Public session. Membership open throughout.</div>
+
+  <div class="item">
+    <div class="hd"><span>2022 · August</span><span>Motion</span></div>
+    <p>That Coby Cotton fly on Blue Origin NS-22, the members having selected him by vote.</p>
+    <p class="res">Carried. He flew.</p>
+  </div>
+
+  <div class="item">
+    <div class="hd"><span>2024 · August</span><span>Motion</span></div>
+    <p>That Dr. Eiman Jahangir fly, the members having selected him by open sweepstakes.</p>
+    <p class="res">Carried. He flew.</p>
+  </div>
+
+  <div class="item">
+    <div class="hd"><span>2025</span><span>Delivery</span></div>
+    <p>That the constitution written by the members be delivered to the lunar surface.</p>
+    <p class="res">Done.</p>
+  </div>
+
+  <div class="item">
+    <div class="hd"><span>Money</span><span>Ledger</span></div>
+    <p>Eight million dollars raised. Still public. Every vote that spent it is still public.</p>
+  </div>
+
+  <div class="item">
+    <div class="hd"><span>Now</span><span>Open</span></div>
+    <p>New business may be proposed by any member.</p>
+    <a class="join" href="#">Join the meeting</a>
+  </div>
+</main>
+
+</body>
+</html>
