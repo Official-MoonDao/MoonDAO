@@ -60,7 +60,10 @@ import type {
   ColonyLayout,
   MarkerStyle,
 } from '@/components/lunar-atlas/MarkerLayer'
-import { footprintRadiusM } from '@/components/lunar-atlas/ProjectModel'
+import {
+  footprintRadiusM,
+  hasOwnModel,
+} from '@/components/lunar-atlas/ProjectModel'
 import { LIVE_PATROL_DIR, rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
 import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
 import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
@@ -183,7 +186,45 @@ export default function MoonBaseZeroIndex() {
   // sitting beside it offering the same cut twice.
   const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([])
 
-  const yearRange = useMemo(() => datasetYearRange(dataset), [dataset])
+  // What the timeline is allowed to talk about.
+  //
+  // A project the base cannot show — nothing placed for it and no model ever
+  // authored — has no hardware anywhere in the scene. Counting it puts a bar on
+  // the histogram and a name in the hover card for something the user then
+  // cannot find at any camera position, which is worse than omitting it: the
+  // scrubber's whole claim is that it describes the base. Today that is the
+  // seven-strong night-power field, which has no surface location in the
+  // dataset, plus Gateway (in orbit, never on the base) and ispace's HAKUTO-R.
+  //
+  // A project that IS placed stays even without a model of its own — standing
+  // as the generic shape for its type is a stand-in, not an absence. So does
+  // one that has a model but no lot yet, because the asset exists and the gap
+  // is in placement; hiding those would bury the fact that they need a home.
+  //
+  // Read off the unfiltered dataset on purpose: the year range and the bar
+  // heights are a property of the atlas, not of whichever orgs are filtered in,
+  // and having them reshuffle on a legend click would make the axis useless.
+  const timelineProjects = useMemo(() => {
+    const placed = new Set(
+      buildTechTrees(dataset.projects, dataset.sharedGoals)
+        .flatMap((t) =>
+          t.goal
+            ? t.projects.filter((p) => t.goal!.projectIds.includes(p.id))
+            : t.projects
+        )
+        .map((p) => p.id)
+    )
+    return dataset.projects.filter((p) => placed.has(p.id) || hasOwnModel(p))
+  }, [dataset.projects, dataset.sharedGoals])
+
+  const yearRange = useMemo(
+    () =>
+      datasetYearRange({
+        projects: timelineProjects,
+        sharedGoals: dataset.sharedGoals,
+      }),
+    [timelineProjects, dataset.sharedGoals]
+  )
   const [year, setYear] = useState(yearRange.max)
   const [playing, setPlaying] = useState(false)
   // Everything the base could not actually have — this page's own panels, the
@@ -255,7 +296,7 @@ export default function MoonBaseZeroIndex() {
       if (bucket) bucket.push(arrival)
       else byYear.set(at, [arrival])
     }
-    for (const p of dataset.projects) {
+    for (const p of timelineProjects) {
       const org = orgNames.get(p.orgId)
       let dated = false
       for (const m of p.milestones) {
@@ -286,7 +327,7 @@ export default function MoonBaseZeroIndex() {
     return Array.from(byYear.entries())
       .map(([year, arrivals]) => ({ year, count: arrivals.length, arrivals }))
       .sort((a, b) => a.year - b.year)
-  }, [dataset.projects, dataset.organizations, raceYears])
+  }, [timelineProjects, dataset.organizations, raceYears])
 
   // Auto-advance the year while playing; stop at the end.
   const yearRef = useRef(year)
