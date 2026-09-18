@@ -3,8 +3,10 @@ import { aggregatePatrons, applyPatronSuppression, isDirectPatronPay } from '@/l
 import {
   PATRONS_MAX_PAGES,
   buildPatronPayEventsQuery,
+  claimedProjectMatchesRegistry,
   dedupeEventsById,
   validatePatronsRequest,
+  verifyClaimedJbProject,
 } from '@/lib/deprize/patrons-query'
 import { buildJBPayParams } from '@/lib/juicebox/payProject'
 
@@ -149,14 +151,40 @@ describe('isDirectPatronPay / aggregatePatrons', () => {
 describe('patrons request validation and pagination helpers', () => {
   it('rejects non-integer, negative, NaN, and Infinity ids before any upstream read', () => {
     for (const bad of [1.5, -1, NaN, Infinity, 'abc', 0]) {
-      expect(validatePatronsRequest({ deprizeId: bad, chainId: 11155111 }).ok).to.equal(false)
-      expect(validatePatronsRequest({ deprizeId: 22, chainId: bad }).ok).to.equal(false)
+      expect(
+        validatePatronsRequest({ deprizeId: bad, chainId: 11155111, jbProjectId: 268 }).ok
+      ).to.equal(false)
+      expect(validatePatronsRequest({ deprizeId: 22, chainId: bad, jbProjectId: 268 }).ok).to.equal(
+        false
+      )
+      expect(
+        validatePatronsRequest({ deprizeId: 22, chainId: 11155111, jbProjectId: bad }).ok
+      ).to.equal(false)
     }
-    expect(validatePatronsRequest({ deprizeId: 22, chainId: 11155111 })).to.deep.equal({
+    expect(validatePatronsRequest({ deprizeId: 22, chainId: 11155111 }).ok).to.equal(false)
+    expect(
+      validatePatronsRequest({ deprizeId: 1, chainId: 42161, jbProjectId: 99 })
+    ).to.deep.equal({
       ok: true,
-      deprizeId: 22,
-      chainId: 11155111,
-      projectId: 268,
+      deprizeId: 1,
+      chainId: 42161,
+      projectId: 99,
+    })
+  })
+
+  it('only accepts a claimed project id that matches the registry', () => {
+    expect(claimedProjectMatchesRegistry(268, 268n)).to.equal(true)
+    expect(claimedProjectMatchesRegistry(268, 268)).to.equal(true)
+    expect(claimedProjectMatchesRegistry(268, 0n)).to.equal(false)
+    expect(claimedProjectMatchesRegistry(1, 268n)).to.equal(false)
+    expect(verifyClaimedJbProject(268, { ok: true, projectId: 268n })).to.deep.equal({ ok: true })
+    expect(verifyClaimedJbProject(99, { ok: true, projectId: 268n })).to.deep.equal({
+      ok: false,
+      error: 'project-mismatch',
+    })
+    expect(verifyClaimedJbProject(268, { ok: false, error: 'unknown-project' })).to.deep.equal({
+      ok: false,
+      error: 'unknown-project',
     })
   })
 
