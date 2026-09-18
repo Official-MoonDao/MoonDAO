@@ -131,7 +131,9 @@ contract MintHandler is Test {
     }
 }
 
-contract DePrizeMintInvariantTest is Test {
+/// @dev Shared mock deploy + property checks. The invariant runner and the
+///      coverage walk both drive the same handler against the same assertions.
+abstract contract DePrizeMintInvariantBase is Test {
     DePrizeMint mint;
     DePrizeRegistry registry;
     MockJBTerminal terminal;
@@ -144,7 +146,7 @@ contract DePrizeMintInvariantTest is Test {
     address oracle = address(0x5AFE);
     uint256 deprizeId;
 
-    function setUp() public {
+    function _deploy() internal {
         registry = new DePrizeRegistry(owner);
         terminal = new MockJBTerminal();
         weth = new MockWETH();
@@ -166,17 +168,10 @@ contract DePrizeMintInvariantTest is Test {
         vm.stopPrank();
 
         handler = new MintHandler(mint, registry, terminal, weth, ctf, market, owner, deprizeId);
-
-        targetContract(address(handler));
-        bytes4[] memory selectors = new bytes4[](3);
-        selectors[0] = MintHandler.bet.selector;
-        selectors[1] = MintHandler.sell.selector;
-        selectors[2] = MintHandler.rotateSigner.selector;
-        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
     /// @dev The router is a pass-through: it never holds ETH, WETH, allowance or tokens.
-    function invariant_mintHoldsNothing() public view {
+    function _assertMintHoldsNothing() internal view {
         assertEq(address(mint).balance, 0, "mint ETH");
         assertEq(weth.balanceOf(address(mint)), 0, "mint WETH");
         assertEq(weth.allowance(address(mint), address(market)), 0, "mint allowance");
@@ -186,7 +181,7 @@ contract DePrizeMintInvariantTest is Test {
     }
 
     /// @dev Every wei of prize slice landed in Juicebox, nowhere else.
-    function invariant_slicesReachJuicebox() public view {
+    function _assertSlicesReachJuicebox() internal view {
         assertEq(terminal.totalReceived(), handler.ghostSlices(), "JB received == sum of slices");
         assertEq(address(terminal).balance, handler.ghostSlices(), "JB balance == slices");
     }
@@ -196,7 +191,7 @@ contract DePrizeMintInvariantTest is Test {
     ///      standalone; the mock keeps principal in the market, so the identity is
     ///      the full flow. The property H-01 broke was collateral appearing from
     ///      nowhere: here it can only come from recorded bets.
-    function invariant_marketCollateralIsAccountedFor() public view {
+    function _assertMarketCollateralIsAccountedFor() internal view {
         assertEq(
             weth.balanceOf(address(market)),
             handler.ghostCostPaid() - handler.ghostSellProceeds(),
@@ -207,7 +202,7 @@ contract DePrizeMintInvariantTest is Test {
 
     /// @dev No actor can end up with tokens the market never issued; sold
     ///      tokens sit in the market's inventory.
-    function invariant_tokenSupplyMatchesMarketIssuance() public view {
+    function _assertTokenSupplyMatchesMarketIssuance() internal view {
         uint256 n = handler.actorCount();
         uint256 held;
         for (uint256 i = 0; i < n; i++) {
@@ -222,5 +217,71 @@ contract DePrizeMintInvariantTest is Test {
         }
         assertEq(held, handler.ghostTokensBought() - handler.ghostTokensSold(), "actors hold bought - sold");
         assertEq(marketHeld, handler.ghostTokensSold(), "market inventory == sold back");
+    }
+
+    function _assertAllInvariants() internal view {
+        _assertMintHoldsNothing();
+        _assertSlicesReachJuicebox();
+        _assertMarketCollateralIsAccountedFor();
+        _assertTokenSupplyMatchesMarketIssuance();
+    }
+}
+
+contract DePrizeMintInvariantTest is DePrizeMintInvariantBase {
+    function setUp() public {
+        // CI runs `forge coverage --fork-url` against Sepolia/Arbitrum anvil.
+        // Foundry's invariant runner then scrapes the forked state for its
+        // fuzz dictionary and issues `basic` RPCs for PUSH20 immediates
+        // (e.g. 0x…3472). Public RPCs flake with -32603 and abort setUp
+        // after several minutes (runs: 0). This suite is fully mocked.
+        if (block.chainid == 11_155_111 || block.chainid == 42_161) {
+            vm.skip(true);
+            return;
+        }
+
+        _deploy();
+
+        targetContract(address(handler));
+        bytes4[] memory selectors = new bytes4[](3);
+        selectors[0] = MintHandler.bet.selector;
+        selectors[1] = MintHandler.sell.selector;
+        selectors[2] = MintHandler.rotateSigner.selector;
+        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
+    }
+
+    function invariant_mintHoldsNothing() public view {
+        _assertMintHoldsNothing();
+    }
+
+    function invariant_slicesReachJuicebox() public view {
+        _assertSlicesReachJuicebox();
+    }
+
+    function invariant_marketCollateralIsAccountedFor() public view {
+        _assertMarketCollateralIsAccountedFor();
+    }
+
+    function invariant_tokenSupplyMatchesMarketIssuance() public view {
+        _assertTokenSupplyMatchesMarketIssuance();
+    }
+}
+
+/// @dev Same properties as the invariant campaign, as a regular test so
+///      `forge coverage --fork-url` still exercises them when the runner skips.
+contract DePrizeMintInvariantWalkTest is DePrizeMintInvariantBase {
+    function setUp() public {
+        _deploy();
+    }
+
+    function test_invariantsHoldAfterHandlerWalk() public {
+        handler.bet(0, uint96(1 ether), 0, 0);
+        handler.bet(1, uint96(5 ether), 1, uint96(0.5 ether));
+        handler.sell(0, 0, type(uint96).max / 2);
+        handler.rotateSigner(99);
+        handler.bet(2, uint96(2 ether), 2, 0);
+        handler.sell(1, 1, type(uint96).max / 3);
+
+        assertGt(handler.bets(), 0, "walk placed bets");
+        _assertAllInvariants();
     }
 }

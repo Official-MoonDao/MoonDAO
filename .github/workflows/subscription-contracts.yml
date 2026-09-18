@@ -135,6 +135,11 @@ jobs:
           FOUNDRY_DISABLE_NIGHTLY_WARNING: true
         run: |
           cd subscription-contracts
+          # Mock invariant suite must run on local anvil, not a live-network
+          # fork. Foundry's invariant runner scrapes the forked state for its
+          # fuzz dictionary and public RPCs flake with -32603 on PUSH20
+          # immediates (0x…3472), aborting setUp after ~400s with runs: 0.
+          forge test --via-ir --optimize --optimizer-runs 10000 --match-path test/deprize/DePrizeMintInvariant.t.sol -vvv
           forge coverage --via-ir --fork-url 127.0.0.1:8545 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file sepolia-coverge.info
           forge coverage --via-ir --fork-url 127.0.0.1:8546 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file arbitrum-coverge.info
           lcov -a sepolia-coverge.info -a arbitrum-coverge.info -o coverage.info
@@ -172,7 +177,7 @@ jobs:
         run: cd subscription-contracts && npm install --legacy-peer-deps
 
       - name: Slither
-        uses: crytic/slither-action@v0.4.1
+        uses: crytic/slither-action@v0.4.2
         with:
           target: subscription-contracts/
           slither-config: subscription-contracts/slither.config.json
