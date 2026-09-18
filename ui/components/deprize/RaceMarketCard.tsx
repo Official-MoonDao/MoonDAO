@@ -29,7 +29,7 @@ import {
   UNIT,
 } from '@/lib/deprize/constants'
 import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
-import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
+import { fmt } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import { isMintConfigured } from '@/lib/deprize/status'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
@@ -37,6 +37,7 @@ import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { PROJECT_TYPE_COLOR, PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
 import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import BetModal from '@/components/deprize/BetModal'
+import EthUsd from '@/components/deprize/EthUsd'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DemoBetModal from '@/components/deprize/DemoBetModal'
@@ -58,6 +59,61 @@ type OutcomeRowVM = {
   outcomeIndex: number | undefined
   positionId: bigint | undefined
   balanceWei: bigint | undefined
+}
+
+function PredictLink({ href }: { href: string }) {
+  return (
+    <a
+      href={href}
+      className="inline-flex px-3 py-1 rounded-full text-xs font-semibold
+        bg-white/10 hover:bg-white/15 text-white transition-all
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+    >
+      {DEPRIZE_PREDICT_CTA}
+    </a>
+  )
+}
+
+function PoolAmount({
+  eth,
+  loading,
+  size = 'card',
+}: {
+  eth: number | undefined
+  loading: boolean
+  size?: 'card' | 'hero' | 'footer'
+}) {
+  if (loading) return <>…</>
+  if (size === 'hero') {
+    return (
+      <EthUsd
+        eth={eth}
+        prize
+        layout="below"
+        className="text-white text-2xl sm:text-3xl font-bold tabular-nums"
+        usdClassName="text-gray-400 text-sm font-medium"
+      />
+    )
+  }
+  if (size === 'footer') {
+    return (
+      <EthUsd
+        eth={eth}
+        prize
+        className="text-gray-300 font-semibold tabular-nums"
+        usdClassName="text-gray-500 font-normal"
+      />
+    )
+  }
+  return (
+    <EthUsd
+      eth={eth}
+      prize
+      layout="below"
+      className="text-white text-base sm:text-lg font-bold tabular-nums"
+      usdClassName="text-gray-400 text-xs font-medium"
+    />
+  )
 }
 
 function StatusPill({
@@ -85,7 +141,6 @@ function OutcomeBetRow({
   outcome,
   bettingEnabled,
   showOdds = true,
-  predictHref,
   onBet,
   onCashOut,
 }: {
@@ -93,8 +148,6 @@ function OutcomeBetRow({
   bettingEnabled: boolean
   /** False for a single-entrant non-race — see isCompetitiveRace. */
   showOdds?: boolean
-  /** When betting is geo-blocked, link to the free prediction panel. */
-  predictHref?: string
   onBet: () => void
   onCashOut?: () => void
 }) {
@@ -132,15 +185,6 @@ function OutcomeBetRow({
         >
           Buy
         </button>
-      ) : predictHref ? (
-        <a
-          href={predictHref}
-          className="relative z-10 shrink-0 px-3 py-1 rounded-md text-xs font-semibold
-            bg-white/10 hover:bg-white/15 text-white transition-all
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
-        >
-          {DEPRIZE_PREDICT_CTA}
-        </a>
       ) : null}
       {onCashOut && (
         <button
@@ -534,15 +578,6 @@ export default function RaceMarketCard({
                   >
                     Buy
                   </button>
-                ) : forecastHref ? (
-                  <a
-                    href={forecastHref}
-                    className="relative z-10 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-semibold
-                      bg-white/10 hover:bg-white/15 text-white transition-all
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
-                  >
-                    {DEPRIZE_PREDICT_CTA}
-                  </a>
                 ) : null}
               </div>
             )
@@ -554,17 +589,16 @@ export default function RaceMarketCard({
           )}
         </div>
 
-        <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 truncate">
+        <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 flex items-center justify-between gap-2">
           {hasRace ? (
-            <>
-              <span className="text-gray-300 font-semibold tabular-nums">
-                {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-              </span>{' '}
-              ETH {bound ? 'pool' : 'demo'}
-            </>
+            <span className="min-w-0 truncate">
+              <PoolAmount eth={poolEth} loading={poolLoading} size="footer" />{' '}
+              {bound ? 'pool' : 'demo'}
+            </span>
           ) : (
-            'No committed developer — not an active competition'
+            <span>No committed developer — not an active competition</span>
           )}
+          {forecastHref && <PredictLink href={forecastHref} />}
         </div>
 
         {marketModals}
@@ -615,8 +649,7 @@ export default function RaceMarketCard({
               {hasRace ? (
                 <>
                   <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
-                    {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-                    <span className="text-sm font-medium text-gray-400 ml-1.5">ETH</span>
+                    <PoolAmount eth={poolEth} loading={poolLoading} size="hero" />
                   </p>
                   <p className="text-gray-500 text-[10px] uppercase tracking-wide">
                     {bound
@@ -650,7 +683,6 @@ export default function RaceMarketCard({
                 outcome={o}
                 bettingEnabled={bettingEnabled}
                 showOdds={hasRace}
-                predictHref={forecastHref}
                 onBet={() => handleBet(o)}
               />
             ))}
@@ -661,6 +693,11 @@ export default function RaceMarketCard({
             )}
           </div>
 
+          {forecastHref && (
+            <div className="mt-3">
+              <PredictLink href={forecastHref} />
+            </div>
+          )}
           {bound && marketTradable && bettingBlockedReason && (
             <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
           )}
@@ -707,8 +744,7 @@ export default function RaceMarketCard({
               {hasRace ? (
                 <>
                   <p className="text-white text-base sm:text-lg font-bold tabular-nums">
-                    {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-                    <span className="text-xs font-medium text-gray-400 ml-1">ETH</span>
+                    <PoolAmount eth={poolEth} loading={poolLoading} />
                   </p>
                   <p className="text-gray-500 text-[10px] uppercase tracking-wide">
                     {bound
@@ -731,7 +767,6 @@ export default function RaceMarketCard({
                 outcome={o}
                 bettingEnabled={bettingEnabled}
                 showOdds={hasRace}
-                predictHref={forecastHref}
                 onBet={() => handleBet(o)}
               />
             ))}
@@ -742,6 +777,11 @@ export default function RaceMarketCard({
             )}
           </div>
 
+          {forecastHref && (
+            <div className="mt-3">
+              <PredictLink href={forecastHref} />
+            </div>
+          )}
           {bound && marketTradable && bettingBlockedReason && (
             <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
           )}

@@ -16,13 +16,14 @@ import {
   UNIT,
 } from '@/lib/deprize/constants'
 import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
-import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
+import { fmt } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
+import EthUsd from '@/components/deprize/EthUsd'
 import { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 
 type Props = {
@@ -170,8 +171,17 @@ export default function LiveDePrizeHero({
           </div>
           <div className="text-right shrink-0">
             <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
-              {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-              <span className="text-sm font-medium text-gray-400 ml-1.5">ETH</span>
+              {poolLoading ? (
+                '…'
+              ) : (
+                <EthUsd
+                  eth={poolEth}
+                  prize
+                  layout="below"
+                  className="text-white text-2xl sm:text-3xl font-bold tabular-nums"
+                  usdClassName="text-gray-400 text-sm font-medium"
+                />
+              )}
             </p>
             <p className="text-gray-500 text-[10px] uppercase tracking-wide">
               {payloadCopy('heroPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
@@ -228,16 +238,7 @@ export default function LiveDePrizeHero({
                   >
                     Buy
                   </button>
-                ) : showPredict ? (
-                  <a
-                    href={forecastHref}
-                    className="relative z-10 shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold
-                      bg-white/10 hover:bg-white/15 text-white transition-all
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
-                  >
-                    {DEPRIZE_PREDICT_CTA}
-                  </a>
-                ) : !account ? (
+                ) : !account && !showPredict ? (
                   <button
                     type="button"
                     onClick={onConnectWallet}
@@ -261,12 +262,24 @@ export default function LiveDePrizeHero({
           <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>
         )}
 
-        <a
-          href={detailHref}
-          className="mt-4 inline-flex text-sm text-indigo-300 hover:text-indigo-200 transition-colors"
-        >
-          Open full market →
-        </a>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {showPredict && (
+            <a
+              href={forecastHref}
+              className="inline-flex px-4 py-1.5 rounded-full text-sm font-semibold
+                bg-white/10 hover:bg-white/15 text-white transition-all
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+            >
+              {DEPRIZE_PREDICT_CTA}
+            </a>
+          )}
+          <a
+            href={detailHref}
+            className="inline-flex text-sm text-indigo-300 hover:text-indigo-200 transition-colors"
+          >
+            Open full market →
+          </a>
+        </div>
       </div>
 
       {betOutcome && account && market.marketAddress && (

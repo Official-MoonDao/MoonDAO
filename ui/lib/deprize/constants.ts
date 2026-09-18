@@ -89,7 +89,7 @@ export const DEPRIZE_AVAILABILITY_LEGEND =
 export const DEPRIZE_RESTRICTED_PREDICT_COPY =
   "Predictions are open to everyone and scored on the leaderboard. Betting isn't available in your region."
 
-export const DEPRIZE_PREDICT_CTA = 'Predict — free'
+export const DEPRIZE_PREDICT_CTA = 'Predict'
 
 export function deprizeOgDescription(specific?: string): string {
   const extra = specific?.trim()
