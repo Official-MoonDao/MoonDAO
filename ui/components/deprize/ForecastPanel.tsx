@@ -1,6 +1,7 @@
 import { useLogin } from '@privy-io/react-auth'
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
@@ -214,9 +215,9 @@ export default function ForecastPanel(props: {
       {!isLive && (
         <p className="mt-3 text-sm text-amber-200">
           Forecasts are on the live generation.{' '}
-          <a href={`/deprize/${liveTipId}`} className="text-indigo-300 underline">
+          <Link href={`/deprize/${liveTipId}`} className="text-indigo-300 underline">
             Go to DePrize #{liveTipId}
-          </a>
+          </Link>
         </p>
       )}
       {reported && (
@@ -227,9 +228,9 @@ export default function ForecastPanel(props: {
       {account && !citizen && (
         <p className="mt-3 text-sm text-amber-200">
           Predictions count for Citizens.{' '}
-          <a href="/join" className="text-indigo-300 underline">
+          <Link href="/join" className="text-indigo-300 underline">
             Mint a Citizen
-          </a>
+          </Link>
         </p>
       )}
       {daoReady && divergence >= 10 && (
