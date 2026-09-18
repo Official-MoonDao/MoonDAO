@@ -60,14 +60,19 @@ import type {
   ColonyLayout,
   MarkerStyle,
 } from '@/components/lunar-atlas/MarkerLayer'
-import { footprintRadiusM } from '@/components/lunar-atlas/ProjectModel'
+import {
+  footprintRadiusM,
+  hasOwnModel,
+} from '@/components/lunar-atlas/ProjectModel'
 import { LIVE_PATROL_DIR, rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
 import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
 import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
 import ProjectPanel from '@/components/lunar-atlas/ProjectPanel'
 import SharedGoalPanel from '@/components/lunar-atlas/SharedGoalPanel'
 import TechTreePanel from '@/components/lunar-atlas/TechTreePanel'
-import TimelineScrubber from '@/components/lunar-atlas/TimelineScrubber'
+import TimelineScrubber, {
+  type YearArrival,
+} from '@/components/lunar-atlas/TimelineScrubber'
 import Head from '@/components/layout/Head'
 
 // The scene IS the Shackleton connecting ridge now — a single photorealistic
@@ -181,7 +186,45 @@ export default function MoonBaseZeroIndex() {
   // sitting beside it offering the same cut twice.
   const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([])
 
-  const yearRange = useMemo(() => datasetYearRange(dataset), [dataset])
+  // What the timeline is allowed to talk about.
+  //
+  // A project the base cannot show — nothing placed for it and no model ever
+  // authored — has no hardware anywhere in the scene. Counting it puts a bar on
+  // the histogram and a name in the hover card for something the user then
+  // cannot find at any camera position, which is worse than omitting it: the
+  // scrubber's whole claim is that it describes the base. Today that is the
+  // seven-strong night-power field, which has no surface location in the
+  // dataset, plus Gateway (in orbit, never on the base) and ispace's HAKUTO-R.
+  //
+  // A project that IS placed stays even without a model of its own — standing
+  // as the generic shape for its type is a stand-in, not an absence. So does
+  // one that has a model but no lot yet, because the asset exists and the gap
+  // is in placement; hiding those would bury the fact that they need a home.
+  //
+  // Read off the unfiltered dataset on purpose: the year range and the bar
+  // heights are a property of the atlas, not of whichever orgs are filtered in,
+  // and having them reshuffle on a legend click would make the axis useless.
+  const timelineProjects = useMemo(() => {
+    const placed = new Set(
+      buildTechTrees(dataset.projects, dataset.sharedGoals)
+        .flatMap((t) =>
+          t.goal
+            ? t.projects.filter((p) => t.goal!.projectIds.includes(p.id))
+            : t.projects
+        )
+        .map((p) => p.id)
+    )
+    return dataset.projects.filter((p) => placed.has(p.id) || hasOwnModel(p))
+  }, [dataset.projects, dataset.sharedGoals])
+
+  const yearRange = useMemo(
+    () =>
+      datasetYearRange({
+        projects: timelineProjects,
+        sharedGoals: dataset.sharedGoals,
+      }),
+    [timelineProjects, dataset.sharedGoals]
+  )
   const [year, setYear] = useState(yearRange.max)
   const [playing, setPlaying] = useState(false)
   // Everything the base could not actually have — this page's own panels, the
@@ -233,31 +276,58 @@ export default function MoonBaseZeroIndex() {
     return years
   }, [dataset.projects, dataset.sharedGoals])
 
-  // Density of arrivals at the Moon in a given year, on the same rule the
-  // markers use, so a tall bar means "a lot lands this year" — not "a lot of
-  // contracts were signed", and not "a lot was once hoped for this year".
-  // Milestones that failed, or whose date has slipped by, count at the year
-  // they can honestly be shown rather than the year they were promised.
+  // What arrives at the Moon in a given year, on the same rule the markers use,
+  // so a tall bar means "a lot lands this year" — not "a lot of contracts were
+  // signed", and not "a lot was once hoped for this year". Milestones that
+  // failed, or whose date has slipped by, count at the year they can honestly
+  // be shown rather than the year they were promised.
+  //
+  // The entries are carried alongside the count, not just the count, because
+  // the scrubber names them on hover (see TimelineScrubber). Built in the one
+  // pass so a bar's height and the card behind it can never disagree about
+  // what is in that year.
   const histogram = useMemo(() => {
-    const counts = new Map<number, number>()
     const now = atlasNowYear()
-    const bump = (y: number) =>
-      counts.set(Math.floor(y), (counts.get(Math.floor(y)) ?? 0) + 1)
-    for (const p of dataset.projects) {
-      const own = p.milestones
-        .map((m) => milestoneArrivalYear(m, now))
-        .filter((y): y is number => y != null)
-      if (own.length) own.forEach(bump)
-      else {
-        // Undated entrant: one bar, in the year its race expects the field.
-        const race = raceYears.get(p.id)
-        if (race != null) bump(race)
+    const orgNames = new Map(dataset.organizations.map((o) => [o.id, o.name]))
+    const byYear = new Map<number, YearArrival[]>()
+    const add = (y: number, arrival: YearArrival) => {
+      const at = Math.floor(y)
+      const bucket = byYear.get(at)
+      if (bucket) bucket.push(arrival)
+      else byYear.set(at, [arrival])
+    }
+    for (const p of timelineProjects) {
+      const org = orgNames.get(p.orgId)
+      let dated = false
+      for (const m of p.milestones) {
+        const y = milestoneArrivalYear(m, now)
+        if (y == null) continue
+        dated = true
+        add(y, {
+          projectId: p.id,
+          project: p.name,
+          org,
+          milestone: m.title,
+        })
+      }
+      if (dated) continue
+      // Undated entrant: one bar, in the year its race expects the field. It is
+      // named on the card as such — the date is the race's, not this project's,
+      // and presenting it as a landing would put words in a program's mouth.
+      const race = raceYears.get(p.id)
+      if (race != null) {
+        add(race, {
+          projectId: p.id,
+          project: p.name,
+          org,
+          expectedBy: PROJECT_TYPE_LABEL[p.type],
+        })
       }
     }
-    return Array.from(counts.entries())
-      .map(([y, count]) => ({ year: y, count }))
+    return Array.from(byYear.entries())
+      .map(([year, arrivals]) => ({ year, count: arrivals.length, arrivals }))
       .sort((a, b) => a.year - b.year)
-  }, [dataset.projects, raceYears])
+  }, [timelineProjects, dataset.organizations, raceYears])
 
   // Auto-advance the year while playing; stop at the end.
   const yearRef = useRef(year)
