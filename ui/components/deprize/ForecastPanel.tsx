@@ -1,10 +1,16 @@
 import { getAccessToken, useLogin, usePrivy } from '@privy-io/react-auth'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { normalizeProbabilities } from '@/lib/deprize/serverMarket'
-import { FORECAST_CROWD_MIN, FORECAST_WEIGHT_MAX } from '@/lib/forecasts/constants'
+import { FORECAST_CROWD_MIN } from '@/lib/forecasts/constants'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
-import { normalizeWeights } from '@/lib/forecasts/weights'
+import {
+  evenPercents,
+  percentsDiverged,
+  weightsToPercents,
+} from '@/lib/forecasts/weights'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import NumberStepper from '@/components/layout/NumberStepper'
 import { CARD } from '@/components/deprize/detail/primitives'
 
@@ -29,7 +35,7 @@ type MineResponse = {
 
 function pct(n: number): string {
   if (!Number.isFinite(n)) return '—'
-  return `${Math.round(n * 10) / 10}%`
+  return `${Math.round(n)}%`
 }
 
 function scoreCopy(state: string | undefined, liveTipId?: number): string | null {
@@ -49,24 +55,14 @@ function scoreCopy(state: string | undefined, liveTipId?: number): string | null
   return null
 }
 
-function Mark({
-  left,
-  symbol,
-  label,
-}: {
-  left: number
-  symbol: string
-  label: string
-}) {
+function Tick({ left, label, className }: { left: number; label: string; className: string }) {
   const clamped = Math.min(100, Math.max(0, left))
   return (
     <span
-      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 text-sm leading-none"
+      className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-4 w-0.5 ${className}`}
       style={{ left: `${clamped}%` }}
       title={label}
-    >
-      {symbol}
-    </span>
+    />
   )
 }
 
@@ -85,34 +81,25 @@ export default function ForecastPanel(props: {
   const { authenticated, ready } = usePrivy()
 
   const n = labels.length
-  const uniform = useMemo(() => (n > 0 ? Array.from({ length: n }, () => 1) : []), [n])
-  const [weights, setWeights] = useState<number[]>(uniform)
+  const uniform = useMemo(() => evenPercents(n), [n])
+  const [percents, setPercents] = useState<number[]>(uniform)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mine, setMine] = useState<MineResponse | null>(null)
   const [crowd, setCrowd] = useState<CrowdResponse | null>(null)
 
   useEffect(() => {
-    setWeights(uniform)
+    setPercents(uniform)
   }, [uniform])
-
-  const normalized = useMemo(() => {
-    if (!weights.length || !weights.some((w) => w > 0)) {
-      return weights.map(() => 0)
-    }
-    return normalizeWeights(weights)
-  }, [weights])
 
   const marketNormalized = useMemo(
     () => normalizeProbabilities(marketPercents),
     [marketPercents]
   )
-  const marketRawSum = marketPercents
-    .filter((p) => Number.isFinite(p) && p > 0)
-    .reduce((a, b) => a + b, 0)
-  const baselinePct = n > 0 ? 100 / n : 0
   const isLive = liveTipId == null || liveTipId === deprizeId
-  const submitDisabled = !isLive || reported || saving || n < 2
+  const inputsLocked = !isLive || reported
+  const submitDisabled = inputsLocked || saving || n < 2
+  const showEven = percentsDiverged(percents, n)
 
   const loadCrowd = useCallback(async () => {
     const token = authenticated ? await getAccessToken().catch(() => null) : null
@@ -145,7 +132,7 @@ export default function ForecastPanel(props: {
     if (!res.ok) return
     const body = (await res.json()) as MineResponse
     setMine(body)
-    if (body.weights?.length === n) setWeights(body.weights)
+    if (body.weights?.length === n) setPercents(weightsToPercents(body.weights))
   }, [authenticated, chainSlug, deprizeId, n])
 
   useEffect(() => {
@@ -174,7 +161,7 @@ export default function ForecastPanel(props: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ chainSlug, deprizeId, weights }),
+        body: JSON.stringify({ chainSlug, deprizeId, weights: percents }),
       })
       const body = await res.json().catch(() => ({}))
       if (res.status === 429) {
@@ -182,10 +169,17 @@ export default function ForecastPanel(props: {
         return
       }
       if (!res.ok) {
-        setError(body.error || 'Could not save your call.')
+        setError(body.error || 'Could not save your prediction.')
         return
       }
       await Promise.all([loadMine(), loadCrowd()])
+      const callers = Number(body.calls ?? crowd?.count ?? 0) || 1
+      const when = body.updatedAt
+        ? new Date(body.updatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        : 'just now'
+      toast.success(`Saved · you're 1 of ${callers} callers · ${when}`, {
+        style: toastStyle,
+      })
     } finally {
       setSaving(false)
     }
@@ -196,15 +190,15 @@ export default function ForecastPanel(props: {
 
   return (
     <section id="deprize-forecast" className={CARD}>
-      <h2 className="text-white text-base font-semibold">Call it — free.</h2>
+      <h2 className="text-white text-base font-semibold">Predict the winner — free</h2>
       <p className="mt-1 text-sm text-gray-300">
-        Set your odds for who lands next. You&apos;re scored against what actually happens and
-        ranked on the leaderboard. No wallet, no money, and your call doesn&apos;t move the
+        Set a percentage for each competitor. You&apos;re scored against what actually happens and
+        ranked on the leaderboard. No wallet, no money, and your prediction doesn&apos;t move the
         market.
       </p>
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">
-          Betting isn&apos;t available in your region — you can still make a call.
+          Betting isn&apos;t available in your region — you can still make a prediction.
         </p>
       )}
 
@@ -223,96 +217,89 @@ export default function ForecastPanel(props: {
       )}
       {stateLine && <p className="mt-3 text-sm text-gray-300">{stateLine}</p>}
 
-      <div className="mt-4 flex flex-col gap-3" aria-live="polite">
+      <div className="mt-4 flex flex-col gap-4" aria-live="polite">
         {labels.map((label, i) => (
           <div key={`${label}-${i}`} className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm text-white">{label}</span>
               <NumberStepper
                 id={`deprize-forecast-weight-${i}`}
-                ariaLabel={`${label} weight`}
-                number={weights[i] ?? 0}
+                ariaLabel={`${label} percent`}
+                number={percents[i] ?? 0}
                 setNumber={(value) =>
-                  setWeights((prev) => {
+                  setPercents((prev) => {
                     const next = prev.slice()
                     next[i] = value
                     return next
                   })
                 }
                 min={0}
-                max={FORECAST_WEIGHT_MAX}
+                max={100}
                 step={1}
-                suffix=""
-                isDisabled={submitDisabled && authenticated}
+                suffix="%"
+                isDisabled={inputsLocked}
               />
             </div>
-            <p className="text-xs text-gray-400">your call: {pct(normalized[i] * 100)}</p>
-            <div className="relative h-6 rounded-md bg-white/5 border border-white/10">
+            <div className="relative h-3 rounded-full bg-white/5 border border-white/10">
               <span
-                className="absolute top-0 bottom-0 w-px bg-white/40"
-                style={{ left: `${baselinePct}%` }}
-                title={`1/${n} = ${pct(baselinePct)} — no-information baseline`}
+                className="absolute inset-y-0 left-0 rounded-full bg-indigo-400/70"
+                style={{ width: `${Math.min(100, Math.max(0, percents[i] ?? 0))}%` }}
               />
-              {crowdReady && crowd && (
-                <span
-                  className="absolute top-1/2 -translate-y-1/2 h-2 bg-white/20 rounded-sm"
-                  style={{
-                    left: `${(crowd.p25[i] ?? 0) * 100}%`,
-                    width: `${Math.max(0, ((crowd.p75[i] ?? 0) - (crowd.p25[i] ?? 0)) * 100)}%`,
-                  }}
-                />
-              )}
-              <Mark
+              <Tick
                 left={marketNormalized[i] ?? 0}
-                symbol="◇"
-                label={`market, normalised ${pct(marketNormalized[i] ?? 0)}`}
+                label={`Market ${pct(marketNormalized[i] ?? 0)}`}
+                className="bg-white"
               />
               {crowdReady && crowd && (
-                <Mark
+                <Tick
                   left={(crowd.vector[i] ?? 0) * 100}
-                  symbol="△"
-                  label={`crowd ${pct((crowd.vector[i] ?? 0) * 100)}`}
+                  label={`Crowd ${pct((crowd.vector[i] ?? 0) * 100)}`}
+                  className="bg-amber-300"
                 />
               )}
-              <Mark
-                left={normalized[i] * 100}
-                symbol="●"
-                label={`you ${pct(normalized[i] * 100)}`}
-              />
             </div>
           </div>
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-gray-400">
-        ● you · ◇ market, normalised · △ crowd
-        {crowdReady && crowd ? ` (n=${crowd.count}, bar = middle 50%)` : ''}
-        . 1/{n || 'N'} = {pct(baselinePct)} — no-information baseline.
-        {marketRawSum > 0 && (
-          <> Market prices sum to {pct(marketRawSum)}.</>
-        )}
-      </p>
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
+        <li className="inline-flex items-center gap-1.5">
+          <span className="h-1.5 w-3 rounded-full bg-indigo-400/70" />
+          You
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-0.5 bg-white" />
+          Market
+        </li>
+        <li className="inline-flex items-center gap-1.5">
+          <span className="h-3 w-0.5 bg-amber-300" />
+          Crowd
+          {crowdReady && crowd ? ` (${crowd.count})` : ''}
+        </li>
+      </ul>
       {!crowdReady && (
         <p className="mt-1 text-xs text-gray-400">
-          Crowd shows once 5 people have called it ({crowd?.count ?? 0} so far).
+          Crowd shows once 5 people have predicted ({crowd?.count ?? 0} so far).
         </p>
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setWeights(uniform)}
-          className="px-3 py-1.5 rounded-full text-sm border border-white/20 bg-transparent text-gray-200 hover:bg-white/5"
-        >
-          Even it out
-        </button>
+        {showEven && (
+          <button
+            type="button"
+            onClick={() => setPercents(uniform)}
+            className="px-3 py-1.5 rounded-full text-sm border border-white/20 bg-transparent text-gray-200 hover:bg-white/5"
+          >
+            Even it out
+          </button>
+        )}
         <button
           type="button"
           onClick={save}
           disabled={authenticated ? submitDisabled : !ready}
           className="px-4 py-1.5 rounded-full text-sm border border-white/20 bg-white/10 text-white hover:bg-white/15 disabled:opacity-40"
         >
-          {saving ? 'Saving…' : 'Save my call.'}
+          {saving ? 'Saving…' : authenticated ? 'Save prediction' : 'Log in to predict'}
         </button>
       </div>
       {error && <p className="mt-2 text-xs text-amber-200">{error}</p>}

@@ -36,6 +36,28 @@ export function normalizeWeights(weights: number[]): number[] {
   return weights.map((w) => w / sum)
 }
 
+/** Integer percents that sum to 100. */
+export function evenPercents(n: number): number[] {
+  if (n <= 0) return []
+  const base = Math.floor(100 / n)
+  const out = Array.from({ length: n }, () => base)
+  out[n - 1] += 100 - base * n
+  return out
+}
+
+export function weightsToPercents(weights: number[]): number[] {
+  if (!weights.length || !weights.some((w) => w > 0)) {
+    return evenPercents(weights.length)
+  }
+  return normalizeWeights(weights).map((w) => Math.round(w * 100))
+}
+
+export function percentsDiverged(percents: number[], n: number): boolean {
+  const even = evenPercents(n)
+  if (percents.length !== even.length) return true
+  return percents.some((value, i) => value !== even[i])
+}
+
 export function serializeLatest(
   weights: number[],
   at: string
