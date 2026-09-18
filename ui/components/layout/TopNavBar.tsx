@@ -1,50 +1,22 @@
-import { NavLink } from './NavLink'
-import { useRouter } from 'next/router'
-import { useState, useEffect, useRef } from 'react'
-import useTranslation from 'next-translate/useTranslation'
-import Image from 'next/image'
-import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
-import CitizenProfileLink from '../subscription/CitizenProfileLink'
-import LanguageChange from './Sidebar/LanguageChange'
-import { TeamsNavDropdown } from './Sidebar/TeamsNavDropdown'
-import { ProjectsNavDropdown } from './Sidebar/ProjectsNavDropdown'
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
+import useTranslation from 'next-translate/useTranslation'
+import { useRouter } from 'next/router'
+import { useEffect, useRef, useState } from 'react'
+import { isGroupActive, type NavGroup } from '@/lib/navigation/nav-config'
 import { LogoSidebar } from '../assets'
+import { PrivyConnectWallet } from '../privy/PrivyConnectWallet'
+import AccountMenu from './account/AccountMenu'
+import { NavLink } from './NavLink'
+import LanguageChange from './Sidebar/LanguageChange'
 
 interface TopNavBarProps {
-  navigation: any[]
+  navigation: NavGroup[]
   lightMode: boolean
   setLightMode: (mode: boolean) => void
   citizenContract: any
 }
 
-// A nav item's icon, in a fixed box.
-//
-// The box exists because the icons do not agree with each other. Most are
-// heroicons that take a className, but Citizens' is a hand-rolled SVG that
-// accepts no props at all and hard-codes its own `mr-2 h-5 w-5` — so styling
-// them through `item.icon`'s className silently missed that one, which is how
-// the bar came to hide seven icons and leave the eighth showing at a size the
-// others were not. Sizing from the outside cannot be ignored by an icon, and
-// the child overrides win on specificity (two classes and an element beats the
-// icon's one class), so every item gets the same 16px mark either way.
-//
-// Below `navicons` they all go: eight of them cost 192px, and nothing is lost
-// that the label beside them was not already saying.
-function NavItemIcon({ icon: Icon }: { icon: any }) {
-  return (
-    <span className="hidden navicons:flex items-center justify-center w-4 h-4 mr-2 flex-shrink-0 [&>svg]:w-full [&>svg]:h-full [&>svg]:m-0">
-      <Icon />
-    </span>
-  )
-}
-
-const TopNavBar = ({
-  navigation,
-  lightMode,
-  setLightMode,
-  citizenContract,
-}: TopNavBarProps) => {
+const TopNavBar = ({ navigation, citizenContract }: TopNavBarProps) => {
   const router = useRouter()
   const { t } = useTranslation('common')
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
@@ -78,10 +50,18 @@ const TopNavBar = ({
     }
   }, [])
 
+  // Close any open menu once navigation actually happens, so the panel does not
+  // hang over the page the user just asked for.
+  useEffect(() => {
+    const close = () => setOpenDropdown(null)
+    router.events.on('routeChangeComplete', close)
+    return () => router.events.off('routeChangeComplete', close)
+  }, [router.events])
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY
-      
+
       if (currentScrollY < 10) {
         setIsVisible(true)
       } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
@@ -89,32 +69,31 @@ const TopNavBar = ({
       } else if (currentScrollY < lastScrollY) {
         setIsVisible(true)
       }
-      
+
       setLastScrollY(currentScrollY)
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll)
     }
   }, [lastScrollY])
 
   return (
-    <>
-      <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-transform duration-300 ease-in-out ${
+    <nav
+      className={`fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-transform duration-300 ease-in-out ${
         isVisible ? 'translate-y-0' : '-translate-y-full'
-      }`}>
-      {/* Steps at `navicons` and `navwide` (see tailwind.config), and at nothing
-          else: the md:/lg:/xl: steps this used to carry were dead code, because
-          Layout only mounts this bar from xl: up and hands everything narrower
-          to the mobile drawer. */}
+      }`}
+    >
+      {/* One step, at `navwide` (see tailwind.config): the md:/lg:/xl: steps this
+          used to carry were dead code, because Layout only mounts this bar from
+          xl: up and hands everything narrower to the mobile drawer. The
+          `navicons` step is gone with them — it existed to hide the icons below
+          1500px because eight of them cost 192px the row did not have. Five
+          items fit with room to spare. */}
       <div className="max-w-full mx-auto px-4 navwide:px-6">
         <div className="flex items-center justify-between h-16 lg:h-18 min-w-0">
-          {/* The gutter and this margin both stand the logo off the window edge,
-              so they are read together: 32px of clear space at the compact end,
-              48px at the wide one. It used to be 20px, which read as the mark
-              being cropped by the screen rather than placed on it. */}
           <NavLink
             href="/"
             className="flex-shrink-0 ml-4 mr-2 navwide:ml-6 navwide:mr-8 cursor-pointer"
@@ -126,135 +105,87 @@ const TopNavBar = ({
             </div>
           </NavLink>
 
-          {/* No max-width. It used to be capped at 1024px, which is 54px NARROWER
-              than the items it holds — so the row overflowed its own box at every
-              window size, including a 2560px one, and the spill landed on the
-              logo and the wallet because the box is centred. */}
           <div className="flex items-center gap-1 navwide:gap-2 flex-1 justify-center min-w-0">
-            {navigation.map((item, i) => {
-              if (!item) return null
-              const hasDropdown = item.children || item.dynamicChildren
-              const isNetworkTeams =
-                router.pathname === '/network' && router.query.tab === 'teams'
-              const isActive =
-                (!isNetworkTeams && router.pathname === item.href) ||
-                (!isNetworkTeams &&
-                  item.children?.some(
-                    (child: any) => router.pathname === child.href
-                  )) ||
-                (item.dynamicChildren === 'Teams' &&
-                  (router.pathname.startsWith('/team') ||
-                    router.pathname === '/join' ||
-                    router.pathname === '/jobs' ||
-                    router.pathname === '/marketplace' ||
-                    isNetworkTeams)) ||
-                (item.dynamicChildren === 'Projects' &&
-                  (router.pathname.startsWith('/project') ||
-                    router.pathname === '/projects' ||
-                    router.pathname === '/proposals' ||
-                    router.pathname === '/projects-overview'))
+            {navigation.map((item) => {
+              const isActive = isGroupActive(item, router.pathname)
+              const isOpen = openDropdown === item.name
 
               return (
                 <div
-                  key={i}
-                  className="relative dropdown-container w-fit"
-                  onMouseEnter={() => hasDropdown && handleDropdownEnter(item.name)}
-                  onMouseLeave={() => hasDropdown && handleDropdownLeave()}
+                  key={item.name}
+                  className="relative w-fit"
+                  onMouseEnter={() => handleDropdownEnter(item.name)}
+                  onMouseLeave={handleDropdownLeave}
                 >
-                  {hasDropdown ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        if (e.detail === 2 && item.href) {
-                          window.location.href = item.href
-                        } else {
-                          handleDropdownEnter(item.name)
-                        }
-                      }}
-                      title={item.href ? 'Single click: open menu. Double click: go to page.' : 'Click to open menu'}
-                      className={`flex items-center px-2 navwide:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg w-full text-left cursor-pointer
-                        border
-                        ${isActive
-                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30'
-                          : 'text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20 border-transparent'
-                        }`}
-                    >
-                      <NavItemIcon icon={item.icon} />
-                      {t(item.name)}
-                      <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform duration-200 ${openDropdown === item.name ? 'rotate-180' : ''}`} />
-                    </button>
-                  ) : (
+                  {/* The group name is a link and the chevron is a button, which
+                      is the whole of the fix for the old behaviour: this was a
+                      single <button> whose tooltip read "Single click: open
+                      menu. Double click: go to page." Nobody double-clicks a
+                      nav item, so five landing pages were unreachable from the
+                      bar except via a child link that duplicated the parent. */}
+                  <div
+                    className={`flex items-center rounded-lg border transition-all duration-200 ${
+                      isActive
+                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-white/30'
+                        : 'border-transparent hover:bg-white/10 hover:border-white/20'
+                    }`}
+                  >
                     <NavLink
                       href={item.href}
-                      className={`flex items-center px-2 navwide:px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap rounded-lg cursor-pointer border border-transparent hover:border-white/20 ${
-                        isActive
-                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border-white/30'
-                          : 'text-gray-300 hover:text-white hover:bg-white/10'
+                      className={`flex items-center pl-2 navwide:pl-3 py-2 text-sm font-medium whitespace-nowrap cursor-pointer ${
+                        isActive ? 'text-white' : 'text-gray-300 hover:text-white'
                       }`}
                     >
-                      <NavItemIcon icon={item.icon} />
+                      <span className="flex items-center justify-center w-4 h-4 mr-2 flex-shrink-0">
+                        <item.icon className="w-full h-full" />
+                      </span>
                       {t(item.name)}
                     </NavLink>
-                  )}
-
-                  {hasDropdown && (
-                    <>
-                      {openDropdown === item.name && (
-                        <div
-                          className="absolute top-full left-0 right-0 w-full -mt-1 h-48 z-40"
-                          onMouseEnter={() => handleDropdownEnter(item.name)}
-                          aria-hidden="true"
-                        />
-                      )}
-                      <div
-                        className={`absolute top-full left-0 right-0 z-50 pt-2 -mt-2 ${
-                          openDropdown === item.name
-                            ? ''
-                            : 'hidden pointer-events-none'
+                    <button
+                      type="button"
+                      onClick={() =>
+                        isOpen ? setOpenDropdown(null) : handleDropdownEnter(item.name)
+                      }
+                      aria-expanded={isOpen}
+                      aria-label={`${item.name} menu`}
+                      className={`pr-2 navwide:pr-3 pl-1 py-2 cursor-pointer ${
+                        isActive ? 'text-white' : 'text-gray-300 hover:text-white'
+                      }`}
+                    >
+                      <ChevronDownIcon
+                        className={`w-3 h-3 transition-transform duration-200 ${
+                          isOpen ? 'rotate-180' : ''
                         }`}
-                        onMouseEnter={() => handleDropdownEnter(item.name)}
-                        onMouseLeave={handleDropdownLeave}
-                      >
-                          <div className="min-w-56 max-w-xs w-full bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
-                          {/* Mount dynamic dropdowns only while open: their hooks
-                              (useTeamWearer / useProjectWearer) can trigger the
-                              on-chain role-hat index scan — hundreds of eth_calls —
-                              which must not run on every page load just because the
-                              nav bar exists. Results are cached (5 min TTL), so
-                              reopening is cheap. */}
-                          {item.dynamicChildren === 'Teams' ? (
-                            openDropdown === item.name ? (
-                              <TeamsNavDropdown variant="desktop" />
-                            ) : null
-                          ) : item.dynamicChildren === 'Projects' ? (
-                            openDropdown === item.name ? (
-                              <ProjectsNavDropdown variant="desktop" />
-                            ) : null
-                          ) : openDropdown === item.name ? (
-                            item.children?.map((child: any, j: number) => {
-                              if (!child.href) {
-                                return (
-                                  <div key={j} className="px-3 py-2 text-xs text-gray-400 font-medium uppercase tracking-wider">
-                                    {child.name}
-                                  </div>
-                                )
-                              }
-                              const isChildActive = router.pathname === child.href
-                              return (
-                                <NavLink
-                                  key={j}
-                                  href={child.href}
-                                  className={`block w-full text-left px-3 py-2 text-sm transition-all duration-200 rounded-lg ${
-                                    isChildActive
-                                      ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
-                                      : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
-                                  }`}
-                                >
-                                  {child.name}
-                                </NavLink>
-                              )
-                            })
-                          ) : null}
+                      />
+                    </button>
+                  </div>
+
+                  {isOpen && (
+                    <>
+                      {/* Bridges the gap between the item and the panel so the
+                          pointer can cross it without triggering mouseleave. */}
+                      <div
+                        className="absolute top-full left-0 right-0 w-full -mt-1 h-3 z-40"
+                        aria-hidden="true"
+                      />
+                      <div className="absolute top-full left-0 z-50 pt-2 -mt-2">
+                        <div className="min-w-56 bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 px-2 rounded-xl">
+                          {item.children.map((child) => {
+                            const isChildActive = router.asPath === child.href
+                            return (
+                              <NavLink
+                                key={child.href}
+                                href={child.href}
+                                className={`block w-full text-left px-3 py-2 text-sm whitespace-nowrap transition-all duration-200 rounded-lg ${
+                                  isChildActive
+                                    ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white'
+                                    : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
+                                }`}
+                              >
+                                {child.name}
+                              </NavLink>
+                            )
+                          })}
                         </div>
                       </div>
                     </>
@@ -278,7 +209,7 @@ const TopNavBar = ({
                 />
               </div>
               <div className="scale-100 navwide:scale-105 flex-shrink-0 flex items-center justify-center">
-                <CitizenProfileLink />
+                <AccountMenu />
               </div>
             </div>
 
@@ -289,7 +220,6 @@ const TopNavBar = ({
         </div>
       </div>
     </nav>
-    </>
   )
 }
 

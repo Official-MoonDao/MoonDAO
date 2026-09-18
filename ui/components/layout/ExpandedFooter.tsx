@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
+import { NAV_GROUPS } from '@/lib/navigation/nav-config'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import {
   DiscordIcon,
@@ -69,12 +70,22 @@ type LinkItem = {
 type LinkListProps = {
   title: string
   links: LinkItem[]
+  /** Makes the column heading itself the group's landing page. */
+  titleHref?: string
 }
 
-function LinkList({ title, links }: LinkListProps) {
+function LinkList({ title, links, titleHref }: LinkListProps) {
   return (
     <div className="flex flex-col space-y-2">
-      <h3 className="text-sm font-medium text-gray-400 uppercase mb-2">{title}</h3>
+      <h3 className="text-sm font-medium text-gray-400 uppercase mb-2">
+        {titleHref ? (
+          <Link href={titleHref} className="hover:text-purple-400 transition-colors">
+            {title}
+          </Link>
+        ) : (
+          title
+        )}
+      </h3>
       <ul className="space-y-2">
         {links.map((link, index) => (
           <li key={index}>
@@ -144,58 +155,6 @@ export function ExpandedFooter({
     hasCallToAction,
   ])
 
-  // Footer navigation mirrors the top nav structure 1:1 (see
-  // `ui/lib/navigation/useNavigation.tsx` and the Teams/Projects dropdown
-  // components). Six groups in the same order as the header, with the same
-  // child links — so users see a consistent IA in both places.
-  const citizensLinks = [
-    { text: 'Become a Citizen', href: '/citizen' },
-    { text: 'Submit a Contribution', href: '/contributions' },
-    { text: 'View Citizens', href: '/network?tab=citizens' },
-    { text: 'Explore the Map', href: '/map' },
-  ]
-
-  const teamsLinks = [
-    { text: 'Create a Team', href: '/join' },
-    { text: 'Explore Teams', href: '/network?tab=teams' },
-    { text: 'Jobs', href: '/jobs' },
-    { text: 'Marketplace', href: '/marketplace' },
-  ]
-
-  const projectsLinks = [
-    { text: 'Propose Project', href: '/proposals' },
-    { text: 'Proposal Template', href: '/proposal-template' },
-    { text: 'Explore Projects', href: '/projects' },
-    { text: 'Submit Contribution', href: '/contributions' },
-    { text: 'Projects Overview', href: '/projects-overview' },
-  ]
-
-  const mooneyLinks = [
-    { text: 'Get $MOONEY', href: '/get-mooney' },
-    { text: 'Lock $MOONEY', href: '/lock' },
-    { text: 'Bridge $MOONEY', href: '/bridge' },
-    { text: 'Token Overview', href: '/mooney' },
-    { text: 'Governance Overview', href: '/governance' },
-    { text: 'Governance Proposals', href: '/governance-proposals' },
-  ]
-
-  const launchpadLinks = [
-    { text: 'Launchpad Explainer', href: '/launch' },
-    { text: 'Overview Fundraiser', href: '/mission/4' },
-    { text: 'Fly with Frank Leaderboard', href: '/frank?tab=leaderboard' },
-  ]
-
-  const learnLinks = [
-    { text: 'Updates', href: '/updates' },
-    { text: 'News', href: '/news' },
-    { text: 'Press', href: '/press' },
-    { text: 'Town Hall', href: '/townhall' },
-    { text: 'Roadmap', href: '/roadmap' },
-    { text: 'Documentation', href: '/docs' },
-    { text: 'Resources', href: '/resources' },
-    { text: 'Constitution', href: '/constitution' },
-  ]
-
   return (
     <>
       {!disclaimerOnly && (
@@ -241,31 +200,32 @@ export function ExpandedFooter({
               </div>
             )}
 
+            {/* One column per top-nav group, in the same order, built from the
+                same `NAV_GROUPS` the bar reads. These columns used to be six
+                hand-written arrays kept in sync by hand, and they had drifted:
+                "Create a Team" pointed somewhere else than it did in the bar,
+                and Moon Base Zero and DePrize had no columns at all.
+
+                The footer is also where the long tail lives. Each group's
+                `footerOnly` entries — templates, archives, reference pages —
+                are appended here and nowhere else, which is what lets the bar
+                stay short without those pages becoming unreachable. */}
             <div
-              className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 order-1 lg:order-2 ${
+              className={`z-50 px-[2vw] pt-[2vh] md:pt-0 py-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 order-1 lg:order-2 ${
                 hasCallToAction && isFullwidth ? 'lg:col-span-4' : 'lg:col-span-6'
               }`}
             >
-              {/* Columns mirror the top-nav groups in order:
-                  Citizens → Teams → Projects → $MOONEY → Launchpad → Learn */}
-              <div>
-                <LinkList title="CITIZENS" links={citizensLinks} />
-              </div>
-              <div>
-                <LinkList title="TEAMS" links={teamsLinks} />
-              </div>
-              <div>
-                <LinkList title="PROJECTS" links={projectsLinks} />
-              </div>
-              <div>
-                <LinkList title="$MOONEY" links={mooneyLinks} />
-              </div>
-              <div>
-                <LinkList title="LAUNCHPAD" links={launchpadLinks} />
-              </div>
-              <div>
-                <LinkList title="LEARN" links={learnLinks} />
-              </div>
+              {NAV_GROUPS.map((group) => (
+                <div key={group.name}>
+                  <LinkList
+                    title={group.name.toUpperCase()}
+                    titleHref={group.href}
+                    links={[...group.children, ...(group.footerOnly ?? [])].map(
+                      (link) => ({ text: link.name, href: link.href })
+                    )}
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
