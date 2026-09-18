@@ -1,3 +1,15 @@
+export function snapshotBrier(
+  forecast: number[],
+  resolved: number[] | null | undefined
+): number | null {
+  if (!resolved || resolved.length !== forecast.length) return null
+  try {
+    return brierScore(forecast, resolved)
+  } catch {
+    return null
+  }
+}
+
 export function brierScore(forecast: number[], outcome: number[]): number {
   if (forecast.length !== outcome.length) {
     throw new Error('brier-length-mismatch')

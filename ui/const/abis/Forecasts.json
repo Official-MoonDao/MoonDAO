@@ -1,0 +1,72 @@
+{
+  "abi": [
+    {
+      "type": "constructor",
+      "inputs": [{ "name": "tablePrefix", "type": "string" }],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "insertRow",
+      "inputs": [
+        { "name": "chainSlug", "type": "string" },
+        { "name": "deprizeId", "type": "uint256" },
+        { "name": "forecaster", "type": "string" },
+        { "name": "vector", "type": "string" },
+        { "name": "displayName", "type": "string" },
+        { "name": "updatedAt", "type": "uint256" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "updateRow",
+      "inputs": [
+        { "name": "chainSlug", "type": "string" },
+        { "name": "deprizeId", "type": "uint256" },
+        { "name": "forecaster", "type": "string" },
+        { "name": "vector", "type": "string" },
+        { "name": "displayName", "type": "string" },
+        { "name": "updatedAt", "type": "uint256" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "deleteRow",
+      "inputs": [
+        { "name": "chainSlug", "type": "string" },
+        { "name": "deprizeId", "type": "uint256" },
+        { "name": "forecaster", "type": "string" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "setWriter",
+      "inputs": [
+        { "name": "account", "type": "address" },
+        { "name": "allowed", "type": "bool" }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "getTableId",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "uint256" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getTableName",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "string" }],
+      "stateMutability": "view"
+    }
+  ]
+}

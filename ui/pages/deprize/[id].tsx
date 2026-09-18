@@ -503,6 +503,16 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     [market.outcomes, raceBinding, showResolved, market.winningIndex],
   )
 
+  const resolvedVector = useMemo(() => {
+    if (!market.payoutDen || market.payoutDen <= 0n) return null
+    const den = Number(market.payoutDen)
+    if (!Number.isFinite(den) || den <= 0) return null
+    return market.outcomes.map((outcome) => {
+      const num = Number(market.payoutNums[outcome.index] ?? 0n)
+      return Number.isFinite(num) ? num / den : 0
+    })
+  }, [market.payoutDen, market.payoutNums, market.outcomes])
+
   const redeemValues = useMemo(() => {
     const m = new Map<number, number>()
     if (!showResolved) return m
@@ -739,6 +749,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           marketPercents={market.outcomes.map((o) => o.probability)}
           liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
           reported={!!market.payoutDen && market.payoutDen > 0n}
+          resolvedVector={resolvedVector}
         />
         <ClaimSection>
           {showResolved && (

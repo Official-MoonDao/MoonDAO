@@ -2,6 +2,7 @@ import {
   brierScore,
   brierSkillScore,
   crowdAggregate,
+  snapshotBrier,
   timeAveragedBrier,
   uniformBaselineBrier,
 } from '@/lib/forecasts/brier'
@@ -10,6 +11,9 @@ import { serializeLatest } from '@/lib/forecasts/weights'
 describe('brier math', () => {
   it('perfect forecast vs one-hot → Brier 0', () => {
     expect(brierScore([1, 0, 0], [1, 0, 0])).to.equal(0)
+    expect(snapshotBrier([1, 0, 0], [1, 0, 0])).to.equal(0)
+    expect(snapshotBrier([1, 0], null)).to.equal(null)
+    expect(snapshotBrier([1, 0], [1])).to.equal(null)
   })
 
   it('uniform on 3 outcomes vs one-hot is 2/3 (unnormalized Σ; do not fix to 1/N-averaged)', () => {
