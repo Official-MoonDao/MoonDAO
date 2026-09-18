@@ -176,10 +176,10 @@ jobs:
       - name: Install npm dependencies
         run: cd subscription-contracts && npm install --legacy-peer-deps
 
-      # slither-action's container re-runs `npm ci` (no legacy-peer-deps) and
-      # foundryup (1.5.1). The former dies on the ethers v5 / hardhat-toolbox
-      # peer conflict; the latter writes build-info that crytic-compile 0.4.2
-      # cannot parse. Compile here with the job's Foundry, then analyze only.
+      # Do not use slither-action's Docker image: it re-runs `npm ci` without
+      # --legacy-peer-deps, and `ignore-compile` skips foundryup so the
+      # container has no `forge` when crytic-compile later calls
+      # `forge config --json`. Compile and analyze on the runner instead.
       - name: Forge build
         run: |
           cd subscription-contracts
@@ -189,11 +189,13 @@ jobs:
           # already filters test/ and script/.
           FOUNDRY_DYNAMIC_TEST_LINKING=false forge build --build-info --deny never --skip test --skip script --force
 
-      - name: Slither
-        uses: crytic/slither-action@v0.4.2
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          target: subscription-contracts/
-          slither-config: subscription-contracts/slither.config.json
-          fail-on: medium
-          slither-version: 0.11.6
-          ignore-compile: true
+          python-version: "3.11"
+
+      - name: Slither
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install slither-analyzer==0.11.6
+          slither subscription-contracts/ --config-file subscription-contracts/slither.config.json --ignore-compile --fail-medium
