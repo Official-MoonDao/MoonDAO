@@ -522,6 +522,42 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     return m
   }, [showResolved, market.outcomes, market.payoutNums, market.payoutDen])
 
+  const pageNotices = useMemo<NoticeItem[]>(() => {
+    const items: NoticeItem[] = []
+    if (market.error) {
+      items.push({
+        id: 'market-error',
+        tone: 'red',
+        priority: 0,
+        body: "Couldn't load market data — reload.",
+      })
+    }
+    const notice = onrampReturn.notice
+    if (notice?.kind === 'wrong-wallet') {
+      items.push({
+        id: 'onramp-wrong-wallet',
+        tone: 'amber',
+        priority: 1,
+        body: `Connect the wallet you funded (${notice.fundedAddress}) to continue. The ETH is in that wallet.`,
+      })
+    } else if (notice?.kind === 'connect-wallet') {
+      items.push({
+        id: 'onramp-connect',
+        tone: 'amber',
+        priority: 2,
+        body: 'Connect the wallet you funded to continue.',
+      })
+    } else if (notice?.kind === 'market-closed') {
+      items.push({
+        id: 'onramp-closed',
+        tone: 'amber',
+        priority: 3,
+        body: notice.message,
+      })
+    }
+    return items
+  }, [market.error, onrampReturn.notice])
+
   const shellTitle =
     knownCompetition && deprizeId !== undefined
       ? `DePrize #${deprizeId} — ${competition.title}`
@@ -590,41 +626,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const abnormalStatus = !!bettingBlockedReason && !bettingBlockedReason.startsWith('Loading')
   const showBadge = abnormalStatus || deprize.state !== DePrizeState.OPEN
   const explorerTxBase = EXPLORER_TX[chainSlug] ?? 'https://etherscan.io/tx/'
-  const pageNotices = useMemo<NoticeItem[]>(() => {
-    const items: NoticeItem[] = []
-    if (market.error) {
-      items.push({
-        id: 'market-error',
-        tone: 'red',
-        priority: 0,
-        body: "Couldn't load market data — reload.",
-      })
-    }
-    const notice = onrampReturn.notice
-    if (notice?.kind === 'wrong-wallet') {
-      items.push({
-        id: 'onramp-wrong-wallet',
-        tone: 'amber',
-        priority: 1,
-        body: `Connect the wallet you funded (${notice.fundedAddress}) to continue. The ETH is in that wallet.`,
-      })
-    } else if (notice?.kind === 'connect-wallet') {
-      items.push({
-        id: 'onramp-connect',
-        tone: 'amber',
-        priority: 2,
-        body: 'Connect the wallet you funded to continue.',
-      })
-    } else if (notice?.kind === 'market-closed') {
-      items.push({
-        id: 'onramp-closed',
-        tone: 'amber',
-        priority: 3,
-        body: notice.message,
-      })
-    }
-    return items
-  }, [market.error, onrampReturn.notice])
   const hasLineage =
     deprize.state === DePrizeState.SUPERSEDED || competition.supersedes !== undefined
 
