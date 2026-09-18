@@ -20,9 +20,14 @@ function JobProviders({
       <CitizenContext.Provider
         value={{
           citizen: citizen ? { metadata: { id: '1' } } : undefined,
+          expiredCitizen: undefined,
+          isExpired: false,
           setCitizen: () => {},
           seedCitizen: () => {},
           isLoading: false,
+          isRenewalModalOpen: false,
+          openRenewalModal: () => {},
+          closeRenewalModal: () => {},
         }}
       >
         {children}

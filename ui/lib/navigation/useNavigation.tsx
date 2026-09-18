@@ -1,4 +1,5 @@
 import {
+  ArrowPathIcon,
   CircleStackIcon,
   FolderIcon,
   HomeIcon,
@@ -13,9 +14,16 @@ import { useMemo } from 'react'
 import IconOrg from '@/components/assets/IconOrg'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 
-export default function useNavigation(citizen: any) {
+// `isExpired` describes a wallet that owns a citizen NFT with a lapsed
+// subscription. It is not a citizen for gating purposes (so `citizen` is
+// undefined), but pointing it at the mint flow would be wrong — it needs the
+// renewal prompt, which /dashboard raises.
+export default function useNavigation(citizen: any, isExpired = false) {
   return useMemo(() => {
     const isCitizen = !!citizen?.metadata?.name
+    const joinLink = isExpired
+      ? { name: 'Renew Citizenship', href: '/dashboard' }
+      : { name: 'Become a Citizen', href: '/citizen' }
     const citizenshipChildren = [
       ...(isCitizen
         ? [
@@ -24,7 +32,7 @@ export default function useNavigation(citizen: any) {
               href: `/citizen/${generatePrettyLinkWithId(citizen.metadata.name, citizen.metadata.id)}`,
             },
           ]
-        : [{ name: 'Become a Citizen', href: '/citizen' }]),
+        : [joinLink]),
       ...(isCitizen
         ? [{ name: 'Create a Team', href: '/team' }]
         : [{ name: 'Join the Network', href: '/join' }]),
@@ -35,9 +43,9 @@ export default function useNavigation(citizen: any) {
 
     return [
       {
-        name: citizen ? 'Dashboard' : 'Join',
-        href: citizen ? '/' : '/citizen?create=true',
-        icon: citizen ? HomeIcon : PlusIcon,
+        name: citizen ? 'Dashboard' : isExpired ? 'Renew' : 'Join',
+        href: citizen ? '/' : isExpired ? '/dashboard' : '/citizen?create=true',
+        icon: citizen ? HomeIcon : isExpired ? ArrowPathIcon : PlusIcon,
       },
       {
         name: 'Citizens',
@@ -110,5 +118,5 @@ export default function useNavigation(citizen: any) {
         ],
       },
     ]
-  }, [citizen])
+  }, [citizen, isExpired])
 }

@@ -29,6 +29,7 @@ import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
+import CitizenExpiredPanel from '@/components/subscription/CitizenExpiredPanel'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
@@ -60,14 +61,15 @@ export default function Dashboard({
   citizensCount,
 }: any) {
   const router = useRouter()
-  const { citizen, isLoading } = useContext(CitizenContext)
+  const { citizen, expiredCitizen, isLoading } = useContext(CitizenContext)
 
-  // Redirect non-citizens to homepage
+  // Redirect non-citizens to homepage. Citizens with a lapsed subscription stay
+  // put — bouncing them to the landing page would hide the renewal prompt.
   useEffect(() => {
-    if (!isLoading && !citizen) {
+    if (!isLoading && !citizen && !expiredCitizen) {
       router.push('/')
     }
-  }, [citizen, isLoading, router])
+  }, [citizen, expiredCitizen, isLoading, router])
 
   // Show loading while checking citizen status
   if (isLoading) {
@@ -80,9 +82,20 @@ export default function Dashboard({
     )
   }
 
-  // Don't render if not a citizen (will redirect)
   if (!citizen) {
-    return null
+    // Expired citizenship: hide the dashboard behind the renewal prompt.
+    // Anyone else is mid-redirect.
+    return expiredCitizen ? (
+      <>
+        <WebsiteHead
+          title="Dashboard"
+          description="Renew your MoonDAO citizenship to regain access to your dashboard."
+        />
+        <Container>
+          <CitizenExpiredPanel feature="Your citizen dashboard" />
+        </Container>
+      </>
+    ) : null
   }
 
   return (
