@@ -176,6 +176,19 @@ jobs:
       - name: Install npm dependencies
         run: cd subscription-contracts && npm install --legacy-peer-deps
 
+      # slither-action's container re-runs `npm ci` (no legacy-peer-deps) and
+      # foundryup (1.5.1). The former dies on the ethers v5 / hardhat-toolbox
+      # peer conflict; the latter writes build-info that crytic-compile 0.4.2
+      # cannot parse. Compile here with the job's Foundry, then analyze only.
+      - name: Forge build
+        run: |
+          cd subscription-contracts
+          # Skip tests/scripts: Foundry 1.8 writes preprocessor paths
+          # (foundry-pp/*.sol) into build-info that crytic-compile cannot
+          # resolve. DePrize sources still compile; slither.config.json
+          # already filters test/ and script/.
+          FOUNDRY_DYNAMIC_TEST_LINKING=false forge build --build-info --deny never --skip test --skip script --force
+
       - name: Slither
         uses: crytic/slither-action@v0.4.2
         with:
@@ -183,3 +196,4 @@ jobs:
           slither-config: subscription-contracts/slither.config.json
           fail-on: medium
           slither-version: 0.11.6
+          ignore-compile: true
