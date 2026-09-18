@@ -1,8 +1,9 @@
 /**
- * Stand up the remaining Moon Base Zero capability races on Sepolia
- * (landing pads, habitat, comms, Touchdown, Night Shift) so `/deprize/{goalId}`
- * can load a live market. Crewed lander / rover / ISRU / fission already
- * exist (ids 10, 12, 15, 9). Night Shift needs the registry owner key.
+ * Stand up remaining Moon Base Zero capability races on Sepolia v2
+ * (landing pads, habitat, comms, Night Shift) so `/deprize/{goalId}` can
+ * load a live stock-LMSR market. Touchdown is already id 1 on the v2
+ * registry — skip it or it will create a second generation. Crewed lander /
+ * rover / ISRU / fission on the v1 registry stay there until the UI rebind.
  *
  *   source ../prediction/.env   # DEPLOYER_PK
  *   yarn tsx --tsconfig tsconfig.json scripts/provision-sepolia-races.ts
@@ -27,10 +28,24 @@ import { OPEN_FIELD_PROJECT_ID } from '../lib/deprize/competitions'
 import { SEED_ATLAS } from '../lib/lunar-atlas/seed'
 import { sharedGoalById } from '../lib/lunar-atlas/selectors'
 
-const REGISTRY = '0x299F163705AbBFa1A8DE7670F33171730F828F3D' as const
-const MINT = '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8' as const
-const FEE_ROUTER = '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a' as const
-const FACTORY = '0x8787Dc3c2b48b19D3Cbd25226Cd6cEAff3398de1' as const
+function envAddr(name: string, fallback: `0x${string}`): `0x${string}` {
+  const raw = process.env[name]
+  return (raw && raw.startsWith('0x') ? raw : fallback) as `0x${string}`
+}
+
+const REGISTRY = envAddr(
+  'DEPRIZE_REGISTRY',
+  '0x7208B0Ba9B1013000b8D30b60A462079300984E2'
+)
+const MINT = envAddr('DEPRIZE_MINT', '0x22E22C4135be93595f341e072321D18e7D4Ee0D0')
+const FACTORY = envAddr(
+  'DEPRIZE_FACTORY',
+  '0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674'
+)
+const COMPLIANCE_SIGNER = envAddr(
+  'DEPRIZE_COMPLIANCE_SIGNER',
+  '0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011'
+)
 const CTF = '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8' as const
 const WETH = '0x8cfF28F922AeEe80d3a0663e735681469F7374c6' as const
 const MISSION_CREATOR = '0xa692eEd67c4D2C1C73DC0515240d27cf7d6fF9D1' as const
@@ -96,10 +111,8 @@ const registryAbi = parseAbi([
 const mintAbi = parseAbi([
   'function setMarket(uint256 deprizeId, address market)',
   'function marketOf(uint256 deprizeId) view returns (address)',
-])
-
-const feeAbi = parseAbi([
-  'function setMarket(uint256 deprizeId, address market)',
+  'function setComplianceSigner(address complianceSigner)',
+  'function complianceSigner() view returns (address)',
 ])
 
 const ctfAbi = parseAbi([
@@ -109,8 +122,8 @@ const ctfAbi = parseAbi([
 ])
 
 const factoryAbi = parseAbi([
-  'function createLMSRWithTWAP(address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, address whitelist, uint256 funding) returns (address)',
-  'event LMSRWithTWAPCreation(address indexed creator, address lmsrWithTWAP, address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, uint256 funding)',
+  'function createLMSRMarketMaker(address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, address whitelist, uint256 funding) returns (address)',
+  'event LMSRMarketMakerCreation(address indexed creator, address lmsrMarketMaker, address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, uint256 funding)',
 ])
 
 const wethAbi = parseAbi([
@@ -353,7 +366,7 @@ async function main() {
     const lmsrReceipt = await send({
       address: FACTORY,
       abi: factoryAbi,
-      functionName: 'createLMSRWithTWAP',
+      functionName: 'createLMSRMarketMaker',
       args: [CTF, WETH, [conditionId], FEE, '0x0000000000000000000000000000000000000000', funding],
     })
     let market: Hex | undefined
@@ -364,14 +377,14 @@ async function main() {
           data: log.data,
           topics: log.topics,
         })
-        if (parsed.eventName === 'LMSRWithTWAPCreation') {
-          market = (parsed.args as { lmsrWithTWAP: Hex }).lmsrWithTWAP
+        if (parsed.eventName === 'LMSRMarketMakerCreation') {
+          market = (parsed.args as { lmsrMarketMaker: Hex }).lmsrMarketMaker
         }
       } catch {
         /* not this event */
       }
     }
-    if (!market) throw new Error('no LMSRWithTWAPCreation log')
+    if (!market) throw new Error('no LMSRMarketMakerCreation log')
     console.log('  market', market)
 
     const regReceipt = await send({
@@ -423,24 +436,26 @@ async function main() {
       functionName: 'setMarket',
       args: [deprizeId, market],
     })
-    await send({
-      address: FEE_ROUTER,
-      abi: feeAbi,
-      functionName: 'setMarket',
-      args: [deprizeId, market],
+    const signer = await publicClient.readContract({
+      address: MINT,
+      abi: mintAbi,
+      functionName: 'complianceSigner',
     })
+    if (signer.toLowerCase() !== COMPLIANCE_SIGNER.toLowerCase()) {
+      await send({
+        address: MINT,
+        abi: mintAbi,
+        functionName: 'setComplianceSigner',
+        args: [COMPLIANCE_SIGNER],
+      })
+    }
     const owner = await publicClient.readContract({
       address: market,
       abi: lmsrAbi,
       functionName: 'owner',
     })
-    if (owner.toLowerCase() === account.address.toLowerCase()) {
-      await send({
-        address: market,
-        abi: lmsrAbi,
-        functionName: 'transferOwnership',
-        args: [FEE_ROUTER],
-      })
+    if (owner.toLowerCase() !== account.address.toLowerCase()) {
+      throw new Error(`LMSR owner ${owner} is not the deployer ${account.address}`)
     }
 
     results.push({

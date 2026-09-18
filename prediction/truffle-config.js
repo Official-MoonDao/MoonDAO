@@ -67,6 +67,16 @@ module.exports = {
       timeoutBlocks: 200,
       skipDryRun: true,
     },
+    sepolia: {
+      provider: hd(
+        "SEPOLIA_RPC_URL",
+        process.env.SEPOLIA_RPC || "https://ethereum-sepolia-rpc.publicnode.com"
+      ),
+      network_id: 11155111,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true,
+    },
   },
   compilers: {
     solc: {

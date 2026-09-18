@@ -45,8 +45,8 @@ contract Config is Script {
     // the 0.8 DePrizeMint router calls via interfaces. WETH is the CTF collateral.
     // LMSR_MARKET_ADDRESSES are v1 LMSRWithTWAP markets kept only for read-only
     // fork checks; they must NOT be bound to the v2 mint. LMSR_FACTORY_ADDRESSES
-    // currently holds the v1 LMSRWithTWAPFactory; replace it with the stock
-    // LMSRMarketMakerFactory address once prediction/ migration 04 is run for v2.
+    // [SEP] is the stock Gnosis LMSRMarketMakerFactory (2026-09-18). [ARBITRUM]
+    // is still the v1 LMSRWithTWAPFactory until the stock factory is deployed.
     mapping(uint256 => address) public WETH_ADDRESSES;
     mapping(uint256 => address) public CONDITIONAL_TOKENS_ADDRESSES;
     mapping(uint256 => address) public LMSR_MARKET_ADDRESSES;
@@ -200,6 +200,7 @@ contract Config is Script {
 
         LMSR_MARKET_ADDRESSES[SEP] = 0x11DCe86c804ca088A0d9036eeE368e4055b235dE;
         LMSR_MARKET_ADDRESSES[ARB_SEP] = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
+        LMSR_FACTORY_ADDRESSES[SEP] = 0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674;
         LMSR_FACTORY_ADDRESSES[ARBITRUM] = 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8;
     }
 

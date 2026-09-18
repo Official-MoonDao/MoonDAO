@@ -4,7 +4,8 @@ Gnosis ConditionalTokens + the **unmodified** Gnosis `LMSRMarketMaker` /
 `LMSRMarketMakerFactory` (Solidity 0.5, `@gnosis.pm/conditional-tokens-market-makers`
 1.8.1). Used by DePrize v2 as the external market layer. There is no MoonDAO
 market-maker subclass: the 0.8 glue in `subscription-contracts/src/deprize/`
-only calls these audited contracts through interfaces. Deployed addresses are in
+only calls these audited contracts through interfaces. Sepolia v2 addresses are
+in `docs/DEPRIZE_SEPOLIA_ADDRESSES.md`; Arbitrum Phase 2 is in
 `docs/DEPRIZE_ARBITRUM_ADDRESSES.md`.
 
 ## Setup
@@ -30,6 +31,11 @@ but it also has no `arbitrum` network, so run mainnet from the committed config.
 ```shell
 # Local
 npm run truffle -- migrate --network development --reset
+
+# Ethereum Sepolia — stock factory only (CTF + WETH already live).
+# Prefer prediction/scripts/deploy-stock-factory.js; this network is for
+# migration 08 market provisioning.
+npm run truffle -- migrate -f 3 --to 4 --network sepolia
 
 # Arbitrum Sepolia (full stack including a test WETH9)
 npm run truffle -- migrate --network arbitrumSepolia
