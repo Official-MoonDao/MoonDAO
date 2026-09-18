@@ -10,7 +10,7 @@
 
 The app's primary navigation presents **9 top-level groups and 41 links**. Eight destinations are reachable from two or more places under different names, three of the nine top-level slots are taken by time-bound campaigns, and every item that has a dropdown requires a double-click to actually visit its page.
 
-This proposal reduces the bar to **5 top-level groups and 23 links**, moves per-user items into an account menu behind the avatar, and consolidates the three hand-maintained copies of the navigation structure into one config file.
+This proposal reduces the bar to **5 top-level groups and 24 links**, moves per-user items into an account menu behind the avatar, and consolidates the three hand-maintained copies of the navigation structure into one config file.
 
 The work is sequenced into five steps. The first two change no visible structure and can ship immediately; the two that change the information architecture ship together once the plumbing is in place.
 
@@ -100,7 +100,7 @@ Get $MOONEY · Lock & vote · Bridge
 Send Frank to Space · Moon Base Zero · DePrize
 
 **Learn** → `/info`
-Documentation · News & Updates · Governance · Roadmap
+Documentation · News & Updates · Town Hall · Governance · Roadmap
 
 ### Account menu — behind the avatar, next to the wallet
 
@@ -124,7 +124,7 @@ Signed-out visitors see a single primary **Join** button in that slot instead of
 
 **Governance moves from $MOONEY to Learn.** Reading how the DAO decides things is a different errand from acquiring, locking, or bridging the token. Governance Proposals — where you actually vote — stays with $MOONEY in the footer.
 
-**Town Hall is unlinked entirely.** Not demoted to the footer: removed from the bar, the footer, and the search index. The page reads its summaries from ConvertKit, and `getTownHallBroadcasts` swallows every API failure into an empty array, so a bad key renders "No town hall summaries available yet. Check back soon!" rather than an error. It has shown that for months. The link should come back when the feed does.
+**Town Hall stays in Learn.** An earlier draft of this plan unlinked it entirely, on the grounds that the page had been showing "No town hall summaries available yet" for months. That turned out to be a broken publishing pipeline rather than a dead feature — the weekly job had been failing silently since May. It was fixed and backfilled in #1603, so the page is current again and keeps its place in the dropdown.
 
 ---
 

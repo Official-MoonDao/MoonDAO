@@ -148,14 +148,10 @@ export const NAV_GROUPS: NavGroup[] = [
     children: [
       { name: 'Documentation', href: '/docs' },
       { name: 'News & Updates', href: '/news' },
+      { name: 'Town Hall', href: '/townhall' },
       { name: 'Governance', href: '/governance' },
       { name: 'Roadmap', href: '/roadmap' },
     ],
-    // Town Hall is deliberately absent, from the bar and from here. The page
-    // reads its summaries from ConvertKit, and `getTownHallBroadcasts` swallows
-    // every API failure into an empty array — so a bad key renders a cheerful
-    // "No town hall summaries available yet. Check back soon!" instead of an
-    // error. It has shown that for months. Relink it once the feed is fixed.
     footerOnly: [
       { name: 'Constitution', href: '/constitution' },
       { name: 'Updates', href: '/updates' },
@@ -170,6 +166,7 @@ export const NAV_GROUPS: NavGroup[] = [
       '/news',
       '/updates',
       '/press',
+      '/townhall',
       '/governance',
       '/roadmap',
       '/constitution',
