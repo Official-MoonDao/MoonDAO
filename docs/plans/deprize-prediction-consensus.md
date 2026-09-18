@@ -127,7 +127,12 @@ Model on [ui/components/mission/OverviewDelegateVote.tsx](ui/components/mission/
 
 The Citizen gate is enforced at read time, which is where it binds — anyone can write to a public table, only Citizens count. The write UI also gates on `useCitizen` for honesty, with a mint link when the connected wallet holds none. `ERC5643Citizen.sol` enforces one Citizen per address on-chain and makes them non-transferable. The Citizen join also supplies the display name and avatar, which is why the `displayName`, profile and peppered-handle layers disappear.
 
-## 6. Multi-outcome betting
+## 6. Multi-outcome betting — deferred
+
+Deferred to a follow-up. The ETH path stays single-outcome, so `DePrizeMint` and its ABI are
+untouched here and only the vMOONEY side takes an allocation across outcomes. The design below
+holds; it is the shape the follow-up implements, alongside the allocation UI that would give a
+multi-leg entry point something to call.
 
 `DePrizeMint.bet` is single-outcome only at its entry point; the body is already vector-shaped:
 
@@ -177,13 +182,12 @@ The suite is written first and is red by design. Baseline on the branch is **308
 - `cypress/integration/lib/forecasts/scoring.mocha.ts` — Brier on allocations, skill ranking, uniform scores zero
 - `cypress/integration/lib/forecasts/consensus-pipeline.mocha.ts` — the read follows the Frank pipeline
 - `cypress/integration/lib/forecasts/teardown.mocha.ts` — deleted modules, routes, constants and contracts stay deleted
-- `cypress/integration/lib/deprize/multi-outcome-bet.mocha.ts` — amounts vector, scalar search, guaranteed-loss detection
 
 Two conventions these specs rely on, both worth preserving when adding more. Each spec opens with `/// <reference types="node" />`, because `tsconfig.json` pins `types` to `cypress` and a spec importing only Node builtins otherwise fails to compile and gets retried as ESM. And modules that do not exist yet are pulled in through a local lazy `loadModule` helper inside `before()` rather than a static import, so a missing file fails one suite instead of aborting the whole run and hiding the other 308 tests.
 
 Note that `brier.cy.ts` imports `timeAveragedBrier` statically, so deleting that function without also updating that spec will break the run. The teardown spec checks for exactly this.
 
-A Foundry test for the multi-outcome `bet()` belongs in `subscription-contracts/test/deprize/DePrizeMint.t.sol` and is not covered by the mocha runner.
+When the multi-outcome `bet()` lands, its amounts-vector spec goes under `cypress/integration/lib/deprize/` and its Foundry test in `subscription-contracts/test/deprize/DePrizeMint.t.sol`, which the mocha runner does not cover. The Solidity suite is also invisible to this branch: `.github/workflows/subscription-contracts.yml` only triggers on pull requests based on `main`, so a stacked PR can break the contract build without a single check failing.
 
 ## Open items
 

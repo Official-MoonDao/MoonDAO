@@ -300,12 +300,13 @@ contract RevertingBettor {
 
     function placeBet(
         uint256 deprizeId,
-        uint256[] calldata outcomeTokenAmounts,
+        uint256 outcomeIndex,
+        uint256 qty,
         uint256 maxCost,
         uint256 deadline,
         bytes calldata signature
     ) external payable {
-        mint.bet{value: msg.value}(deprizeId, _amt(outcomeTokenAmounts, maxCost), deadline, signature);
+        mint.bet{value: msg.value}(deprizeId, outcomeIndex, qty, maxCost, deadline, signature);
     }
 }
 
@@ -378,12 +379,6 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         return uint256(keccak256(abi.encode("position", outcomeIndex)));
     }
 
-    function _amt(uint256 index, uint256 qty) internal pure returns (uint256[] memory amounts) {
-        amounts = new uint256[](3);
-        if (index < 3) amounts[index] = qty;
-    }
-    }
-
     // -- happy path ---------------------------------------------------------
 
     function testBetRoutesSliceWrapsAndForwardsOutcomeTokens() public {
@@ -399,7 +394,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline1, bytes memory signature1) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, _amt(0, qty), type(uint256).max, deadline1, signature1);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline1, signature1);
 
         // 5% slice -> Juicebox, bettor as beneficiary (receives the mission's token).
         assertEq(terminal.lastValue(), expectedSlice, "slice value");
@@ -428,7 +423,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline2, bytes memory signature2) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, qty), type(uint256).max, deadline2, signature2);
+        mint.bet{value: 1 ether}(deprizeId, 0, qty, type(uint256).max, deadline2, signature2);
 
         // The market pulls outcomeCost + fee (not just outcomeCost). If the router
         // under-funded by the fee, the trade would have reverted instead.
@@ -439,7 +434,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         assertFalse(market.twapUpdated(), "precondition");
         (uint256 deadline3, bytes memory signature3) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline3, signature3);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline3, signature3);
         // The router calls updateCumulativeTWAP() (it uses trade(), not the
         // self-calling tradeWithTWAP, so it must update TWAP itself).
         assertTrue(market.twapUpdated(), "TWAP must be updated on every bet");
@@ -458,7 +453,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline4, bytes memory signature4) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, _amt(0, qty), type(uint256).max, deadline4, signature4);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline4, signature4);
 
         assertEq(weth.balanceOf(address(m)), 19 ether, "market collateral == budget");
         assertEq(address(mint).balance, 0, "no stuck ETH");
@@ -481,7 +476,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline5, bytes memory signature5) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, _amt(0, qty), type(uint256).max, deadline5, signature5);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline5, signature5);
 
         // Market kept cost - underpull; router holds no WETH or ETH.
         assertEq(weth.balanceOf(address(market)), cost - underpull, "market kept net of underpull");
@@ -513,7 +508,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline6, bytes memory signature6) = _permit(mint, bettor, deprizeId);
 
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, _amt(0, qty), type(uint256).max, deadline6, signature6);
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline6, signature6);
 
         // The stray 1 WETH is untouched by the bet ...
         assertEq(weth.balanceOf(address(mint)), 1 ether, "stray WETH left in the router");
@@ -528,7 +523,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         market.setSingleTransfer(true);
         (uint256 deadline7, bytes memory signature7) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline7, signature7);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline7, signature7);
         assertEq(ctf.balanceOf(bettor, _positionId(0)), 1 ether, "single-transfer delivery");
     }
 
@@ -538,15 +533,15 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline8, bytes memory signature8) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(DePrizeMint.NoOutcomeTokensReceived.selector);
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline8, signature8);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline8, signature8);
     }
 
     function testBetRevertsNonPositiveCost() public {
-        // All-zero amounts never reach the LMSR — EmptyBet is the new guard.
+        // qty == 0 -> calcNetCost == 0 -> NonPositiveCost.
         (uint256 deadline9, bytes memory signature9) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        vm.expectRevert(DePrizeMint.EmptyBet.selector);
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 0), type(uint256).max, deadline9, signature9);
+        vm.expectRevert(DePrizeMint.NonPositiveCost.selector);
+        mint.bet{value: 1 ether}(deprizeId, 0, 0, type(uint256).max, deadline9, signature9);
     }
 
     function testBetRevertsWhenRefundFails() public {
@@ -555,7 +550,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         // leftover refund to rb fails because rb has no payable receive.
         (uint256 deadline10, bytes memory signature10) = _permit(mint, address(rb), deprizeId);
         vm.expectRevert(DePrizeMint.RefundFailed.selector);
-        rb.placeBet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline10, signature10);
+        rb.placeBet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline10, signature10);
     }
 
     // -- upgradeability -----------------------------------------------------
@@ -578,7 +573,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         uint256 qty = 2 ether; // cost = 1 ETH
         (uint256 deadline11, bytes memory signature11) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: 2 ether}(deprizeId, _amt(1, qty), type(uint256).max, deadline11, signature11);
+        mint.bet{value: 2 ether}(deprizeId, 1, qty, type(uint256).max, deadline11, signature11);
         assertEq(ctf.balanceOf(bettor, _positionId(1)), qty);
         assertEq(ctf.balanceOf(bettor, _positionId(0)), 0);
     }
@@ -592,7 +587,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
 
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline12, signature12);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline12, signature12);
     }
 
     function testBetRevertsWhenCancellationPending() public {
@@ -602,28 +597,14 @@ contract DePrizeMintTest is Test, MintPermitHelper {
 
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline13, signature13);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline13, signature13);
     }
 
     function testBetRevertsBadOutcomeIndex() public {
         (uint256 deadline14, bytes memory signature14) = _permit(mint, bettor, deprizeId);
-        uint256[] memory bad = new uint256[](4);
-        bad[0] = 1 ether;
         vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.AmountsLengthMismatch.selector, uint256(4), uint256(3)));
-        mint.bet{value: 1 ether}(deprizeId, bad, type(uint256).max, deadline14, signature14);
-    }
-
-    function testBetMultiOutcomeEmitsPerLeg() public {
-        uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 1 ether;
-        amounts[1] = 1 ether;
-        (uint256 deadline, bytes memory signature) = _permit(mint, bettor, deprizeId);
-        vm.prank(bettor);
-        mint.bet{value: 3 ether}(deprizeId, amounts, type(uint256).max, deadline, signature);
-        assertEq(ctf.balanceOf(bettor, _positionId(0)), 1 ether);
-        assertEq(ctf.balanceOf(bettor, _positionId(1)), 1 ether);
-        assertEq(ctf.balanceOf(bettor, _positionId(2)), 0);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BadOutcomeIndex.selector, deprizeId, uint8(3)));
+        mint.bet{value: 1 ether}(deprizeId, 3, 1 ether, type(uint256).max, deadline14, signature14);
     }
 
     function testBetRevertsMaxCostExceeded() public {
@@ -632,7 +613,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline15, bytes memory signature15) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.505 ether, 0.95 ether, cap));
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, qty), cap, deadline15, signature15);
+        mint.bet{value: 1 ether}(deprizeId, 0, qty, cap, deadline15, signature15);
     }
 
     function testBetRevertsWhenCostExceedsBudget() public {
@@ -643,7 +624,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         vm.expectRevert(
             abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.505 ether, 0.095 ether, type(uint256).max)
         );
-        mint.bet{value: 0.1 ether}(deprizeId, _amt(0, qty), type(uint256).max, deadline16, signature16);
+        mint.bet{value: 0.1 ether}(deprizeId, 0, qty, type(uint256).max, deadline16, signature16);
     }
 
     function testBetRevertsMarketNotSet() public {
@@ -656,7 +637,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
 
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketNotSet.selector, other));
-        mint.bet{value: 1 ether}(other, _amt(0, 1 ether), type(uint256).max, deadline17, signature17);
+        mint.bet{value: 1 ether}(other, 0, 1 ether, type(uint256).max, deadline17, signature17);
     }
 
     // -- admin: setMarket validations --------------------------------------
@@ -755,7 +736,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline, bytes memory signature) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(DePrizeMint.ComplianceSignerUnset.selector);
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline, signature);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, signature);
     }
 
     function testBetRevertsOnExpiredPermit() public {
@@ -766,7 +747,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         vm.warp(deadline + 1);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.PermitExpired.selector, deadline));
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline, signature);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, signature);
     }
 
     function testBetRevertsOnWrongWalletPermit() public {
@@ -774,7 +755,7 @@ contract DePrizeMintTest is Test, MintPermitHelper {
         (uint256 deadline, bytes memory signature) = _permit(mint, other, deprizeId);
         vm.prank(bettor);
         vm.expectRevert();
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 1 ether), type(uint256).max, deadline, signature);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, signature);
     }
 
     function testSetComplianceSignerOnlyOwner() public {
@@ -871,7 +852,7 @@ contract DePrizeMintForkTest is Test, MintPermitHelper {
         // callbacks (position-id math handled inside the live CTF).
         (uint256 deadline, bytes memory signature) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, _amt(0, qty), cost, deadline, signature);
+        mint.bet{value: value}(deprizeId, 0, qty, cost, deadline, signature);
 
         // 5% routed to the (mock) Juicebox terminal.
         assertEq(terminal.lastValue(), expectedSlice, "slice");
@@ -897,7 +878,7 @@ contract DePrizeMintForkTest is Test, MintPermitHelper {
         (uint256 deadline18, bytes memory signature18) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, cost, value - value / 20, cap));
-        mint.bet{value: value}(deprizeId, _amt(0, qty), cap, deadline18, signature18);
+        mint.bet{value: value}(deprizeId, 0, qty, cap, deadline18, signature18);
     }
 
     function testForkBettingClosedGate() public {
@@ -907,6 +888,6 @@ contract DePrizeMintForkTest is Test, MintPermitHelper {
         (uint256 deadline19, bytes memory signature19) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, _amt(0, 0.01 ether), type(uint256).max, deadline19, signature19);
+        mint.bet{value: 1 ether}(deprizeId, 0, 0.01 ether, type(uint256).max, deadline19, signature19);
     }
 }

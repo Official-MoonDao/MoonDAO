@@ -283,7 +283,7 @@ async function placeSkewBet(
       address: MINT,
       abi: MintABI,
       functionName: 'bet',
-      args: [DEPRIZE_ID, buildAmounts(0, qty, numOutcomes), maxCost, permit.deadline, permit.signature],
+      args: [DEPRIZE_ID, 0n, qty, maxCost, permit.deadline, permit.signature],
       value,
     })
     console.log(`  tx ${hash}`)
