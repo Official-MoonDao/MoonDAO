@@ -138,7 +138,14 @@ export async function getSummaries({
       id: broadcast.id,
       title: title,
       content: broadcast.content,
-      publishedAt: broadcast.published_at || broadcast.created_at,
+      // Date the town hall happened, not the date its summary was generated.
+      // The sort above already keys off the video date; showing the broadcast
+      // date here meant a backfilled batch displayed every town hall from the
+      // past five months as though it had aired the day the batch ran.
+      publishedAt:
+        extractVideoPublishedAt(broadcast) ||
+        broadcast.published_at ||
+        broadcast.created_at,
       url: broadcast.public_url,
       createdAt: broadcast.created_at,
       videoId: videoId,

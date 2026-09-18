@@ -18,6 +18,7 @@ import {
   ConvertKitBroadcast,
 } from "./utils/convertkit";
 import { getVideoMetadata, validateVideoChannel } from "./utils/youtube";
+import { DEFAULT_MODELS } from "./utils/config";
 import {
   sendDiscordNotification,
   sendDiscordErrorNotification,
@@ -200,7 +201,7 @@ app.post(
       videoId,
       videoTitle,
       videoDate,
-      groqModel = "llama-3.3-70b-versatile",
+      groqModel = DEFAULT_MODELS.llm,
       whisperModel = "whisper-large-v3",
       convertKitApiKey,
       testMode = false,

@@ -13,6 +13,7 @@ import {
   summarizeTranscript,
   formatSummaryForConvertKit,
 } from "./utils/processing";
+import { DEFAULT_MODELS } from "./utils/config";
 import Groq from "groq-sdk";
 
 const groq = new Groq({
@@ -140,7 +141,7 @@ async function main() {
   const youtubeApiKey = process.env.YOUTUBE_API_KEY;
   const convertKitApiKey =
     process.env.CONVERT_KIT_API_KEY || process.env.CONVERT_KIT_V4_API_KEY;
-  const groqModel = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const groqModel = process.env.GROQ_MODEL || DEFAULT_MODELS.llm;
   const whisperModel = process.env.WHISPER_MODEL || "whisper-large-v3";
 
   if (!youtubeApiKey) {
