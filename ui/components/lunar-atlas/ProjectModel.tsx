@@ -3446,43 +3446,26 @@ export function UndergroundConstructionSite({ seed = 0 }: { seed?: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Rover depot yard — the motor pool's own lot, not a competitor's model
+// Rover depot yard — NOT PLACED ANY MORE, kept for the geometry
 // ---------------------------------------------------------------------------
 //
-// The rover race's actual hardware never stands here: the whole field is out
-// shuttling the spine (see PATROL in baseplan.ts), so every
-// competitor's own plot in this district is bare regolith by design — "a
-// motor pool with its yard bare is a motor pool whose fleet is working," per
-// BASE_PLAN.rover's own comment. Left literally empty, though, that reads as
-// a gap in the map rather than as that story, because there is nothing built
-// there to read the absence against. This is the shared fix: a paved apron
-// with marked bays, charging points, and a service canopy — infrastructure
-// nobody's competitor owns.
+// NOTHING RENDERS THIS. `RoverDepotYard` and `RoverGasStation` below answered a
+// district whose every lot was bare: the rover race's field was out shuttling
+// the spine (see PATROL in baseplan.ts) and never parked, so the head of its
+// branch had nothing a per-project loop would draw. A paved apron with marked
+// bays, charging points and a service canopy filled that ground with something
+// built — infrastructure nobody's competitor owned.
 //
-// It takes a real LOT at the head of the depot's own branch, at the same
-// frontage off that road a competitor's plot would get, with the recharge
-// station facing it across the branch. `BASE_PLAN.rover.block` is sized for
-// these two rather than for the district's LTV-class roster, which is the
-// honest way round: nothing in that roster ever parks, and a district's ground
-// has to hold what actually stands on it. Kept a compact 13 x 10 m all the same, because a motor pool
-// whose apron dwarfs the vehicles using it reads as a car park — see
-// MarkerLayer's `RoverDepotSite`, which does the placement and picks the exact
-// setback this footprint needs.
+// The district now parks a copy of every entrant on its own lots and drives a
+// second copy down the spine (see BASE_PLAN.rover and the render in
+// MarkerLayer), so the ground these two stood on is the roster's, and the
+// placement that put them there is gone. They survive here only because this
+// section is interleaved with the solar array's own geometry; treat them as
+// unreferenced, and take the whole section out with that geometry rather than
+// wiring either of them back up to a lot that is now somebody's.
 //
-// Two of the three bays are filled, not three, and not zero: a full lot
-// reads as "nobody drives today," an empty one reads as "nothing was ever
-// built here," and two-of-three is the one count that reads as an active
-// yard with most of its fleet out. The parked units are `RoverBody` — the
-// generic, unbranded rover shape kept in this file as the fallback for a
-// future competitor with no custom model yet — painted a flat neutral tone
-// rather than any org's accent, since a spares/support buggy sitting idle at
-// the depot must never read as one team's actual race entry benched here.
-//
-// Authored directly in real meters like every model in this file, but with
-// no PROJECT_SIZE_M/TYPE_SIZE_M entry: it isn't a project, so MarkerLayer
-// anchors it straight off a hand-computed direction with a plain
-// meters-to-scene-units scale instead of going through projectScale's
-// per-project normalization.
+// Authored directly in real meters like every model in this file, with no
+// PROJECT_SIZE_M/TYPE_SIZE_M entry, because neither is a project.
 
 const DEPOT_STRIPE = '#e9e7df' // painted bay lines — brighter than any hardware on the lot
 const DEPOT_CURB = '#5f5c53'
@@ -4377,9 +4360,9 @@ function TerracedSkirt({
   )
 }
 
-// Half-extents of the station's own forecourt apron, in meters — exported so
-// MarkerLayer's `RoverGasStationSite` can compute the same footprint radius
-// and setback the depot yard's own site function uses.
+// Half-extents of the station's own forecourt apron, in meters. Was exported so
+// MarkerLayer could derive this lot's footprint radius and setback from it;
+// nothing places the station any more (see the section note above).
 export const GAS_STATION_HALF_W = 5.0
 export const GAS_STATION_HALF_D = 4.4
 
@@ -4390,11 +4373,10 @@ export const GAS_STATION_HALF_D = 4.4
 //
 // The depot yard is a parking apron; this is what refuels or recharges a
 // unit before or after that, and a real forecourt is its own lot with its
-// own frontage, not a corner of somebody else's — the reason `MarkerLayer`
-// stands this on the OPPOSITE side of the depot branch from
-// `RoverDepotYard` (see `RoverGasStationSite`), so the two face each other
-// across the one straight road they both front rather than sharing a single
-// footprint. Same authoring convention as the depot yard: real meters, open
+// own frontage, not a corner of somebody else's — which is why this stood on
+// the OPPOSITE side of the depot branch from `RoverDepotYard`, the two facing
+// each other across the one straight road they both fronted rather than
+// sharing a single footprint. Same authoring convention as the depot yard: real meters, open
 // (forecourt) side on local +Z, no `PROJECT_SIZE_M` entry since this isn't a
 // competitor's model.
 export function RoverGasStation({ accent }: { accent: string }) {

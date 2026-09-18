@@ -30,7 +30,6 @@
 
 import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
-import { PATROL } from '@/lib/lunar-atlas/baseplan'
 import { MOON_RADIUS_M, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
@@ -406,11 +405,6 @@ export default function GroundDisturbance({
     }[] = []
 
     for (const tree of trees) {
-      // A race whose hardware DRIVES never stands on its plots (see PATROL), so
-      // there is no installation here for a stain to belong to. Its ground gets
-      // worked over along the road it laps, which is the roads' business.
-      if (PATROL[tree.category]) continue
-
       const buffers: Buffers = { positions: [], colors: [], index: [] }
 
       // What a lander leaves is a bright, streaked blast halo, not the dark

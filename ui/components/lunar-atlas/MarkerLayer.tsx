@@ -26,7 +26,6 @@ import {
   PATROL,
   ROAD_HALF_M,
   ROAD_RUNS,
-  SETBACK_M,
   SOLAR_ARRAYS,
   SPINE_BEARING_DEG,
   SPINE_END_M,
@@ -79,12 +78,8 @@ import ProjectModel, {
   CargoCrate,
   CrateCluster,
   Excavator,
-  GAS_STATION_HALF_D,
-  GAS_STATION_HALF_W,
   gradedDeckRadiusM,
   projectSizeM,
-  RoverDepotYard,
-  RoverGasStation,
   SparePartsPallet,
   StreetLight,
   SurfaceAnchor,
@@ -112,15 +107,6 @@ const TURN = new THREE.Quaternion()
 // animation; one that rolls to a halt reads as a driver lifting off.
 const PATROL_EASE = 0.03
 
-// Live surface direction of each DRIVING competitor, keyed by project id and
-// rewritten every frame by its `CompetitorPlot`. A rover laps the road, so
-// where it actually is at any instant is runtime state, not something the
-// static layout table can know — the camera reads this when a rover is picked
-// from the list so it zooms to the vehicle where it stands on the road, rather
-// than teleporting it (or the camera) to its empty plot. Module-level because
-// it's a per-frame side channel, not part of the render tree's prop data.
-export const LIVE_PATROL_DIR = new Map<string, Vec3>()
-
 // How far down a district is taken while a DIFFERENT race is open. Heavy enough
 // that the open race is unmistakably the subject, light enough that the rest of
 // the base is still plainly there — which is the point of dimming rather than
@@ -143,10 +129,10 @@ export type ColonyLayout = {
   // to when a race is opened.
   districts: Map<ProjectType, Vec3>
   // Per-project plot: its surface direction and its slot in the district.
-  // `standDir` is set only for a competitor whose race DRIVES (see PATROL): the
-  // road position it rests at, out on the patrol loop rather than on `dir` (its
-  // own plot). The model stands here and the camera aims here, off one shared
-  // value, so the two cannot land in different places.
+  // `standDir` is set only for a competitor whose race DRIVES (see PATROL), and
+  // is where its MOVING copy sets off from on the patrol run. The competitor
+  // itself still stands on `dir`, its own plot, which is what the camera aims
+  // at.
   plots: Map<string, { dir: Vec3; slot: Slot; standDir?: Vec3 }>
 }
 
@@ -264,13 +250,14 @@ function CompetitorPlot({
   onHover,
   radiusAt,
   cinematic,
+  scenery,
 }: {
   project: Project
   slot: Slot
   dir: Vec3
-  // The road position a DRIVING competitor rests at, precomputed in the shared
-  // layout so the model and the camera agree (see ColonyLayout). Absent for a
-  // competitor that stands on its own plot, in which case `dir` is used.
+  // Where a DRIVING copy sets off from on the run, precomputed in the shared
+  // layout (see ColonyLayout). Absent on the parked rendering of the same
+  // competitor, which uses `dir`.
   standDir?: Vec3
   accent: string
   opacity: number
@@ -295,13 +282,19 @@ function CompetitorPlot({
   radiusAt?: RadiusAt | null
   // See MarkerLayerProps. Suppresses this plot's name card.
   cinematic?: boolean
+  // A SECOND rendering of a competitor that is already shown somewhere else on
+  // the base, and so must not be named or clicked: the rover race stands its
+  // field on its lots AND drives a copy of it down the spine (see the render
+  // below), and two name cards or two hit targets for one machine is a bug the
+  // user reads as duplicated data rather than as one fleet in two places.
+  scenery?: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
 
-  // Where this competitor actually stands. Normally its own plot — but a vehicle
-  // that drives starts OUT ON THE ROAD it laps rather than parked in its yard,
-  // spaced from its rivals by `phase` around that road so the whole depot can be
-  // out at once without one machine standing inside another.
+  // Where this rendering of the competitor stands. Normally its own plot — but
+  // the driving copy starts OUT ON THE ROAD it laps, spaced from its rivals by
+  // `phase` around that road so the whole fleet can be out at once without one
+  // machine standing inside another.
   const standAt = useMemo(() => {
     // The shared layout already worked this out for a driving competitor; fall
     // back to computing it here only if it wasn't handed down, and to the plot
@@ -425,10 +418,10 @@ function CompetitorPlot({
   useFrame((_, delta) => {
     const g = groupRef.current
     if (!g || !patrol) return
-    // Roll to a stand where it IS when this race is opened — the vehicle sits
-    // still while the user reads about it, but stays put on the road rather than
-    // teleporting back to a start line. The camera comes to the vehicle instead
-    // (see LIVE_PATROL_DIR, published below, and the page's flyToProject).
+    // Roll to a stand where it IS when this race is opened — the fleet sits
+    // still while the user reads about it, but stays put on the road rather
+    // than teleporting back to a start line. Nothing has to chase it: the
+    // camera drills in to this machine's PARKED copy on its own lot.
     const throttle = raceOpen ? 0 : 1
     const ease = 1 - Math.pow(PATROL_EASE, delta)
     throttleRef.current += (throttle - throttleRef.current) * ease
@@ -451,9 +444,6 @@ function CompetitorPlot({
     g.quaternion
       .setFromAxisAngle(p, (Math.PI * (1 - headingRef.current)) / 2)
       .multiply(TURN.setFromUnitVectors(ndir, p))
-    // Published so a drill-in can find it on the road, and reused just below to
-    // ride the road's rise and fall.
-    LIVE_PATROL_DIR.set(project.id, [p.x, p.y, p.z])
     // Every child is positioned in world space from the globe centre, so a
     // uniform scale IS a radial offset: the ratio of ground radii lifts the
     // vehicle by the height difference. The shape distortion is that same ratio
@@ -463,15 +453,6 @@ function CompetitorPlot({
       g.scale.setScalar(radiusAt(ll.lat, ll.lon) / seatRadius)
     }
   })
-
-  // Drop the live position when this vehicle leaves the scene (filtered out by
-  // the timeline, say), so a drill-in can never chase a stale spot.
-  useEffect(() => {
-    const id = project.id
-    return () => {
-      LIVE_PATROL_DIR.delete(id)
-    }
-  }, [project.id])
 
   if (opacity <= MODEL_PRESENCE) return null
 
@@ -484,15 +465,15 @@ function CompetitorPlot({
         turn={THREE.MathUtils.degToRad(slot.turn)}
         noseAlong={driveAlong ?? vaultAlong ?? track?.along}
         dim={dim}
-        onSelect={onSelect}
-        onHover={(id) => onHover?.(Boolean(id))}
+        onSelect={scenery ? undefined : onSelect}
+        onHover={scenery ? undefined : (id) => onHover?.(Boolean(id))}
         surfaceRadius={seatRadius}
         trackGround={track?.ground}
       />
 
       {/* The asset's own name. Shown on hover, and for the whole field while
           its race is open — which is how you tell three reactors apart. */}
-      {(called || raceOpen) && !cinematic && (
+      {(called || raceOpen) && !cinematic && !scenery && (
         <Html
           position={labelAt}
           center
@@ -521,202 +502,11 @@ function CompetitorPlot({
 }
 
 // ---------------------------------------------------------------------------
-// The rover district's own lot — shared infrastructure, not a competitor
-// ---------------------------------------------------------------------------
-//
-// Every other district's plots are populated by `CompetitorPlot` above, one
-// per project, placed by `districtSlots` with a setback that clears the street
-// it fronts. The rover race has no plots standing: its whole field is out
-// shuttling the spine (see PATROL), so the end of its branch has nothing a
-// per-project loop would ever draw there.
-//
-// `RoverDepotYard` and `RoverGasStation` (ProjectModel.tsx) are what stands
-// there instead, on the two lots either side of the head of the depot's own
-// branch — the same positions, at the same frontage, competitors would get.
-// Neither can stand at the district centre itself: that point is the middle of
-// the turning circle, which is what put the apron under the pavement the first
-// time this was tried.
-//
-// `BASE_PLAN.rover`'s `block` is sized for these two rather than for the
-// roster, which is the honest way round: at 2.3 m an LTV needs almost no
-// ground, and nothing in the roster ever parks.
-const DEPOT_FOOTPRINT_R = 9 // half-diagonal of the yard's 13 x 10 m apron, with room to spare
-
-// Half-diagonal of the gas station's own 10 x 8.8 m forecourt apron (see
-// `GAS_STATION_HALF_W`/`GAS_STATION_HALF_D`), with room to spare — the same
-// role `DEPOT_FOOTPRINT_R` plays for the yard.
-const GAS_STATION_FOOTPRINT_R =
-  Math.hypot(GAS_STATION_HALF_W, GAS_STATION_HALF_D) + 0.6
-
-// A lot beside the head of the depot's own branch, plus the point on that
-// branch it should face.
-//
-// The two stand on OPPOSITE sides of the branch, just short of its dead end, at
-// the same frontage a competitor's plot would get. That is what makes the pair
-// read as two sides of one street instead of two unrelated sheds: the yard's
-// aisle and the station's forecourt each open onto the road between them, and
-// therefore onto each other.
-//
-// Worth noticing how much simpler this got with each version of the plan. It
-// began as an arcsine swing and a radius solved against a circle, because the
-// two roads a district fronted were a circle and a radial. It became a pair of
-// flat offsets when those two roads became a spine and a perpendicular branch.
-// Now a district fronts ONE road, so it is a distance along that road and a
-// distance across it, in the road's own frame.
-function depotCorner(
-  footprintR: number,
-  side: 1 | -1
-): { here: { east: number; north: number }; faces: { east: number; north: number } } {
-  const plan = BASE_PLAN.rover!
-  const branch = plan.branch!
-  const [ue, un] = dirFor(branch.bearingDeg)
-  // Left of the branch's outbound direction.
-  const [ve, vn] = [-un, ue]
-  const across = side * (ROAD_HALF_M + SETBACK_M + footprintR)
-  // Back from the dead end by its own radius, so the apron's forward edge sits
-  // level with the district centre and the turning circle stays clear.
-  const along = -footprintR
-  return {
-    here: {
-      east: plan.east + ue * along + ve * across,
-      north: plan.north + un * along + vn * across,
-    },
-    faces: {
-      east: plan.east + ue * along,
-      north: plan.north + un * along,
-    },
-  }
-}
-
-function RoverDepotSite({
-  accent,
-  dim,
-  opacity,
-  radiusAt,
-}: {
-  accent: string
-  dim: number
-  opacity: number
-  radiusAt?: RadiusAt | null
-}) {
-  const { seat, ndir, noseAlong } = useMemo(() => {
-    // The left-hand lot at the head of the branch; the station takes the right.
-    const { here, faces } = depotCorner(DEPOT_FOOTPRINT_R, 1)
-
-    const ll = capOffsetLatLon(here.east, here.north)
-    const d = new THREE.Vector3(
-      ...latLonToVector3(ll.lat, ll.lon, 1)
-    ).normalize()
-    // A rigid 13 x 10 m apron cannot sink into a slope, so — exactly like
-    // the padded lander (see footprintSeatRadius's own comment) — it seats
-    // on the HIGHEST ground under its own footprint rather than the single
-    // point at its center, and RoverDepotYard grades a skirt down from
-    // there to hide whatever the downhill side leaves uncovered.
-    const ground = !radiusAt
-      ? GLOBE_RADIUS
-      : footprintSeatRadius(d, radiusAt, DEPOT_FOOTPRINT_R)
-
-    // The point on the branch it faces, so the yard's open (aisle) side looks
-    // down the road it is served by rather than at an arbitrary camera-relative
-    // default.
-    const backLl = capOffsetLatLon(faces.east, faces.north)
-    const backDir = new THREE.Vector3(
-      ...latLonToVector3(backLl.lat, backLl.lon, 1)
-    )
-    const face: Vec3 = backDir.sub(d).normalize().toArray() as Vec3
-
-    return { seat: ground + SEAT_LIFT, ndir: d, noseAlong: face }
-  }, [radiusAt])
-
-  if (opacity <= MODEL_PRESENCE) return null
-
-  return (
-    <SurfaceAnchor
-      dir={[ndir.x, ndir.y, ndir.z]}
-      surfaceRadius={seat}
-      scale={M_TO_UNITS}
-      dim={dim}
-      noseAlong={noseAlong}
-    >
-      {/* RoverDepotYard is authored with its open, aisle-facing side on
-          local +Z (stalls back toward -Z); `noseAlong` steers local +X (see
-          `headingYaw`), so this 90° turn hands it the axis that convention
-          expects without re-authoring the yard itself. */}
-      <group rotation={[0, Math.PI / 2, 0]}>
-        <RoverDepotYard accent={accent} />
-      </group>
-    </SurfaceAnchor>
-  )
-}
-
-// The rover district's recharge/propellant station: a second, freestanding
-// piece of shared infrastructure, on the OPPOSITE side of the depot branch
-// from `RoverDepotSite` — the same distance back from the dead end and the same
-// setback across the branch, just the other sign, so the two face each other
-// across the one straight road they both front rather than crowding one
-// footprint.
-function RoverGasStationSite({
-  accent,
-  dim,
-  opacity,
-  radiusAt,
-}: {
-  accent: string
-  dim: number
-  opacity: number
-  radiusAt?: RadiusAt | null
-}) {
-  const { seat, ndir, noseAlong } = useMemo(() => {
-    // The depot takes the left-hand lot; this takes the right, at whatever
-    // setback ITS OWN (smaller) footprint needs.
-    const { here, faces } = depotCorner(GAS_STATION_FOOTPRINT_R, -1)
-
-    const ll = capOffsetLatLon(here.east, here.north)
-    const d = new THREE.Vector3(
-      ...latLonToVector3(ll.lat, ll.lon, 1)
-    ).normalize()
-    const ground = !radiusAt
-      ? GLOBE_RADIUS
-      : footprintSeatRadius(d, radiusAt, GAS_STATION_FOOTPRINT_R)
-
-    // Face back toward the branch, same technique as RoverDepotSite — which,
-    // since the two sit on opposite sides of it, points this station's own
-    // forecourt entrance at the depot yard across the road rather than out
-    // into open regolith.
-    const backLl = capOffsetLatLon(faces.east, faces.north)
-    const backDir = new THREE.Vector3(
-      ...latLonToVector3(backLl.lat, backLl.lon, 1)
-    )
-    const face: Vec3 = backDir.sub(d).normalize().toArray() as Vec3
-
-    return { seat: ground + SEAT_LIFT, ndir: d, noseAlong: face }
-  }, [radiusAt])
-
-  if (opacity <= MODEL_PRESENCE) return null
-
-  return (
-    <SurfaceAnchor
-      dir={[ndir.x, ndir.y, ndir.z]}
-      surfaceRadius={seat}
-      scale={M_TO_UNITS}
-      dim={dim}
-      noseAlong={noseAlong}
-    >
-      {/* Same authoring convention as RoverDepotYard: forecourt entrance on
-          local +Z, so the same 90° turn hands it the noseAlong axis. */}
-      <group rotation={[0, Math.PI / 2, 0]}>
-        <RoverGasStation accent={accent} />
-      </group>
-    </SurfaceAnchor>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Base-wide filler — the open ground between districts
 // ---------------------------------------------------------------------------
 //
-// Everything above is either a competitor's plot or the depot's own shared
-// yard — one per district. This is the one layer that renders ONCE for the
+// Everything above is a competitor's plot, one district's worth at a time.
+// This is the one layer that renders ONCE for the
 // whole base rather than per-district, because most of the plan by area is
 // neither a district nor a road: it's the open regolith either side of the
 // spine, and the spine itself stitching the districts together. Left bare, that
@@ -1619,10 +1409,19 @@ export default function MarkerLayer({
                 tree.goal ? 'competitor' : 'project'
               }${count === 1 ? '' : 's'}`
 
-        // The whole field drives, if this race's hardware is vehicles. Spread
-        // evenly along the run rather than sent out as a convoy: three rovers
-        // nose to tail is one moving object, where a third of a run apart puts
-        // traffic somewhere on the street whichever way the camera is pointing.
+        // A race whose hardware is VEHICLES is shown twice over, and it is the
+        // only kind that is. Every competitor stands on its own lot like any
+        // other race's hardware, because four bids for the same contract are
+        // only a race the user can read if they can be lined up and compared;
+        // and a second copy of the whole field drives the spine, because a base
+        // where nothing ever moves reads as a diagram. The driving copies are
+        // scenery — no name card, no hit target — so the duplication never
+        // reaches the parts of the UI that count competitors.
+        //
+        // The fleet is spread evenly along the run rather than sent out as a
+        // convoy: four rovers nose to tail is one moving object, where a
+        // quarter of a run apart puts traffic somewhere on the street whichever
+        // way the camera is pointing.
         const patrol = PATROL[tree.category]
 
         return (
@@ -1638,48 +1437,48 @@ export default function MarkerLayer({
               const org = orgMap.get(project.orgId)
               const probability = tree.goal?.market?.impliedOdds?.[project.id]
               return (
-                <CompetitorPlot
-                  key={project.id}
-                  project={project}
-                  slot={plot.slot}
-                  dir={plot.dir}
-                  standDir={plot.standDir}
-                  accent={orgColor(org)}
-                  opacity={style.opacity}
-                  dim={dim}
-                  patrol={patrol}
-                  patrolPhase={i / count}
-                  raceOpen={isOpen}
-                  called={selectedProject?.id === project.id}
-                  standing={
-                    probability != null && Number.isFinite(probability)
-                      ? { place: i + 1, probability }
-                      : undefined
-                  }
-                  onSelect={() => onSelectProject?.(project.id)}
-                  onHover={(h) => onHoverTree?.(h ? tree.category : null)}
-                  radiusAt={radiusAt}
-                  cinematic={cinematic}
-                />
+                <group key={project.id}>
+                  <CompetitorPlot
+                    project={project}
+                    slot={plot.slot}
+                    dir={plot.dir}
+                    accent={orgColor(org)}
+                    opacity={style.opacity}
+                    dim={dim}
+                    raceOpen={isOpen}
+                    called={selectedProject?.id === project.id}
+                    standing={
+                      probability != null && Number.isFinite(probability)
+                        ? { place: i + 1, probability }
+                        : undefined
+                    }
+                    onSelect={() => onSelectProject?.(project.id)}
+                    onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+                    radiusAt={radiusAt}
+                    cinematic={cinematic}
+                  />
+
+                  {patrol && (
+                    <CompetitorPlot
+                      project={project}
+                      slot={plot.slot}
+                      dir={plot.dir}
+                      standDir={plot.standDir}
+                      accent={orgColor(org)}
+                      opacity={style.opacity}
+                      dim={dim}
+                      patrol={patrol}
+                      patrolPhase={i / count}
+                      raceOpen={isOpen}
+                      called={false}
+                      radiusAt={radiusAt}
+                      cinematic={cinematic}
+                      scenery
+                    />
+                  )}
+                </group>
               )
             })}
-
-            {tree.category === 'rover' && (
-              <>
-                <RoverDepotSite
-                  accent={color}
-                  dim={dim}
-                  opacity={districtOpacity}
-                  radiusAt={radiusAt}
-                />
-                <RoverGasStationSite
-                  accent={color}
-                  dim={dim}
-                  opacity={districtOpacity}
-                  radiusAt={radiusAt}
-                />
-              </>
-            )}
 
             {/* Dropped entirely rather than made invisible: the beacon owns
                 this district's oversized click target (see its hit sphere), and
