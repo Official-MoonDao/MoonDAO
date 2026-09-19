@@ -669,7 +669,7 @@ export default function BetModal({
             {eligibility.status === 'error' && (
               <button
                 type="button"
-                className="text-sm text-indigo-300 underline"
+                className={`inline-flex items-center text-sm text-indigo-300 underline ${TOUCH}`}
                 onClick={() => setEligibilityRetry((n) => n + 1)}
               >
                 Retry eligibility check
@@ -710,7 +710,7 @@ export default function BetModal({
             {spendableEth > 0 && (
               <button
                 type="button"
-                className="text-sm text-moon-green underline"
+                className={`inline-flex items-center text-sm text-moon-green underline ${TOUCH}`}
                 onClick={() => setBetAmount(String(Math.floor(spendableEth * 1e6) / 1e6))}
               >
                 Bet {fmtEthWithUsd(spendableEth, ethPrice, { prize: true })} instead

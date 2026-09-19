@@ -29,9 +29,11 @@ const TOUCH_CONSUMERS = [
   'components/deprize/ForecastPanel.tsx',
   'components/deprize/DePrizeTeamCard.tsx',
   'components/deprize/DePrizePositionPanel.tsx',
+  'components/deprize/DePrizePatrons.tsx',
   'components/deprize/BetModal.tsx',
   'components/deprize/LiveDePrizeHero.tsx',
   'components/deprize/DePrizeIndexContent.tsx',
+  'components/deprize/detail/PrizeHeader.tsx',
   'components/deprize/detail/PrizePoolSlot.tsx',
 ]
 
@@ -156,6 +158,21 @@ describe('deprize responsive layout', () => {
       if (!/type="checkbox"/.test(tag)) continue
       expect(tag, `a checkbox is under 20px:\n${tag}`).to.match(/h-5 w-5/)
     }
+  })
+
+  it('gives a text link that acts as a button a real hit area on a phone', () => {
+    // Measured at 390px before this change: "Fund the prize" was 16px tall and
+    // "All prizes" 20px, which is a miss more often than a hit.
+    const header = readUi('components/deprize/detail/PrizeHeader.tsx')
+    for (const anchor of header.split('<Link').concat(header.split('<a'))) {
+      if (!/\$\{TOUCH\}/.test(anchor)) continue
+      expect(anchor, 'a min-height needs a flex box to center in').to.match(
+        /inline-flex items-center/
+      )
+    }
+    expect(header.match(/\$\{TOUCH\}/g) ?? [], 'both header links and the fund CTA').to.have.length(
+      3
+    )
   })
 
   it('left-aligns the hero prize figure once it wraps under the title', () => {

@@ -1,5 +1,5 @@
 import EthUsd from '@/components/deprize/EthUsd'
-import { SCROLL_LIST } from '@/components/deprize/detail/primitives'
+import { SCROLL_LIST, TOUCH } from '@/components/deprize/detail/primitives'
 import CitizenIdentity from '@/components/layout/CitizenIdentity'
 import { useCitizenRowsByOwners } from '@/lib/citizen/useCitizenRowsByOwners'
 import { PATRONS_STALE_AFTER_MS, UNIT } from '@/lib/deprize/constants'
@@ -44,7 +44,7 @@ export default function DePrizePatrons(props: {
         <p className="text-amber-300 text-sm">Couldn&apos;t load patrons right now.</p>
         <button
           type="button"
-          className="text-sm text-indigo-300 underline"
+          className={`inline-flex items-center text-sm text-indigo-300 underline ${TOUCH}`}
           onClick={() => patrons.refresh()}
         >
           Retry
@@ -61,7 +61,7 @@ export default function DePrizePatrons(props: {
         </p>
         <button
           type="button"
-          className="text-sm text-indigo-300 underline"
+          className={`inline-flex items-center text-sm text-indigo-300 underline ${TOUCH}`}
           onClick={() => patrons.refresh({ fresh: true })}
         >
           Retry
