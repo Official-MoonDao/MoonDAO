@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
+import { isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import {
   deprizeForecastVoteId,
@@ -18,11 +19,13 @@ import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
 import { daoEvidence, logLinearPool, marketEvidence } from '@/lib/forecasts/pool'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
+import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { sepolia } from '@/lib/rpc/chains'
 import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import { CARD } from '@/components/deprize/detail/primitives'
 
 function pct(n: number): string {
@@ -30,18 +33,20 @@ function pct(n: number): string {
   return `${Math.round(n)}%`
 }
 
-function allocationFromSelected(selected: number[], n: number): number[] {
+/** One outcome carries the whole call. A prediction is a single pick, not a spread. */
+function allocationForPick(picked: number | null, n: number): number[] {
   const out = Array.from({ length: n }, () => 0)
-  if (selected.length === 0) return out
-  const ordered = [...selected].sort((a, b) => a - b)
-  const base = Math.floor(100 / ordered.length)
-  for (const idx of ordered) out[idx] = base
-  out[ordered[ordered.length - 1]] += 100 - base * ordered.length
+  if (picked == null || picked < 0 || picked >= n) return out
+  out[picked] = 100
   return out
 }
 
-function selectedFromAllocation(allocation: number[]): number[] {
-  return allocation.map((value, i) => (value > 0 ? i : -1)).filter((i) => i >= 0)
+function pickFromAllocation(allocation: number[]): number | null {
+  let best = -1
+  for (let i = 0; i < allocation.length; i++) {
+    if ((allocation[i] ?? 0) > (allocation[best] ?? 0)) best = i
+  }
+  return best >= 0 && (allocation[best] ?? 0) > 0 ? best : null
 }
 
 export default function ForecastPanel(props: {
@@ -54,6 +59,21 @@ export default function ForecastPanel(props: {
   resolvedVector?: number[] | null
   collateralEth?: number
   liveMarket?: boolean
+  numOutcomes: number
+  rankedOutcomes: Array<{ index: number; [key: string]: any }>
+  teamIds: readonly bigint[]
+  raceBinding: ReturnType<typeof import('@/lib/deprize/competitions').getDePrizeRaceBinding>
+  teamContract: any
+  outcomeColors: string[]
+  marketLoading: boolean
+  showResolved: boolean
+  isRefundVector: boolean
+  winningIndex: number
+  bettingOpen: boolean
+  tradingHalted: boolean
+  userAddress?: string
+  withdrawnByTeamId: Record<string, boolean>
+  onBet: (index: number) => void
 }) {
   const {
     chainSlug,
@@ -64,6 +84,21 @@ export default function ForecastPanel(props: {
     reported,
     collateralEth = 0,
     liveMarket = false,
+    numOutcomes,
+    rankedOutcomes,
+    teamIds,
+    raceBinding,
+    teamContract,
+    outcomeColors,
+    marketLoading,
+    showResolved,
+    isRefundVector,
+    winningIndex,
+    bettingOpen,
+    tradingHalted,
+    userAddress,
+    withdrawnByTeamId,
+    onBet,
   } = props
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
@@ -74,12 +109,12 @@ export default function ForecastPanel(props: {
   const { totalVMOONEY } = useTotalVMOONEY(account?.address)
 
   const n = labels.length
-  const [selected, setSelected] = useState<number[]>([])
+  const [picked, setPicked] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
 
-  const percents = useMemo(() => allocationFromSelected(selected, n), [selected, n])
+  const percents = useMemo(() => allocationForPick(picked, n), [picked, n])
   const forecastsContract = useContract({
     address: FORECASTS_TABLE_ADDRESSES[chainSlug] ?? '',
     chain,
@@ -107,7 +142,7 @@ export default function ForecastPanel(props: {
       ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
       : undefined
     if (mine?.allocation?.length === n) {
-      setSelected(selectedFromAllocation(mine.allocation))
+      setPicked(pickFromAllocation(mine.allocation))
     }
   }, [account?.address, chainSlug, deprizeId, n])
 
@@ -115,11 +150,9 @@ export default function ForecastPanel(props: {
     void loadConsensus()
   }, [loadConsensus])
 
-  function toggleOutcome(index: number) {
+  function pickOutcome(index: number) {
     if (inputsLocked) return
-    setSelected((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
-    )
+    setPicked((prev) => (prev === index ? null : index))
   }
 
   async function save() {
@@ -199,12 +232,14 @@ export default function ForecastPanel(props: {
     (row) => row.voterAddress === account?.address?.toLowerCase()
   )
 
+  if (numOutcomes <= 0) return null
+
   return (
     <section id="deprize-forecast" className={CARD}>
-      <h2 className="text-white text-base font-semibold">Back an outcome</h2>
+      <h2 className="title-text-colors text-lg font-GoodTimes">Competitors</h2>
       <p className="mt-1 text-sm text-gray-300">
-        Tap one or more competitors. Citizens write a vote weighted by √vMOONEY; where betting is
-        allowed, the same allocation is what you stake in ETH.
+        Back one with ETH where betting is allowed. Citizens can also call a single outcome with a
+        prediction weighted by √vMOONEY.
       </p>
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">
@@ -242,65 +277,107 @@ export default function ForecastPanel(props: {
         <p className="mt-3 text-sm text-gray-300">Your skill score is {mine.skill.toFixed(2)}.</p>
       )}
 
-      <div className="mt-4 flex flex-col gap-4" aria-live="polite">
-        {labels.map((label, i) => {
-          const minePct = percents[i] ?? 0
-          const marketPct = marketNormalized[i] ?? 0
-          const daoPct = daoReady ? (daoVector[i] ?? 0) * 100 : null
-          const pooledPct = pooled ? pooled[i] * 100 : null
-          const backed = minePct > 0
+      <div className="mt-4 flex flex-col gap-3" aria-live="polite">
+        {rankedOutcomes.map((o) => {
+          const teamId = teamIds[o.index] ?? 0n
+          const outcomeBinding = raceBinding?.outcomes[o.index]
+          const isField = !!outcomeBinding?.field
+          const atlasProject =
+            !isField && outcomeBinding?.projectId
+              ? projectById(SEED_ATLAS, outcomeBinding.projectId)
+              : undefined
+          const atlasOrg = atlasProject ? orgById(SEED_ATLAS, atlasProject.orgId) : undefined
+          const claimed = isCompetitorClaimed(outcomeBinding)
+          const isPicked = picked === o.index
+          const marketPct = marketNormalized[o.index] ?? 0
+          const daoPct = daoReady ? (daoVector[o.index] ?? 0) * 100 : null
+          const pooledPct = pooled ? pooled[o.index] * 100 : null
           const lo = daoPct == null ? marketPct : Math.min(marketPct, daoPct)
           const hi = daoPct == null ? marketPct : Math.max(marketPct, daoPct)
           return (
-            <button
-              key={`${label}-${i}`}
-              type="button"
-              onClick={() => toggleOutcome(i)}
-              disabled={inputsLocked}
-              className={`flex flex-col gap-1.5 text-left rounded-xl border px-3 py-2 ${
-                backed ? 'border-indigo-400/60 bg-indigo-400/10' : 'border-white/10 bg-transparent'
-              } disabled:opacity-60`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-white">{label}</span>
-                <span className="text-sm text-gray-200">{backed ? pct(minePct) : 'Back'}</span>
-              </div>
-              <div className="relative h-4 rounded-full bg-white/5 border border-white/10">
-                <span
-                  className="absolute inset-y-0 rounded-full bg-white/15"
-                  style={{ left: `${lo}%`, width: `${Math.max(1, hi - lo)}%` }}
-                />
-                {pooledPct != null && (
+            <div id={`deprize-outcome-${o.index}`} key={o.index}>
+              <DePrizeTeamCard
+                outcome={o as any}
+                teamId={teamId}
+                teamContract={teamContract}
+                color={outcomeColors[o.index]}
+                loading={marketLoading}
+                resolved={showResolved}
+                isRefundVector={isRefundVector}
+                isWinningSlot={showResolved && o.index === winningIndex}
+                bettingOpen={bettingOpen}
+                tradingHalted={tradingHalted}
+                busy={false}
+                userConnected={!!userAddress}
+                onBet={onBet}
+                isField={isField}
+                withdrawn={!!withdrawnByTeamId[teamId.toString()]}
+                hrefOverride={
+                  outcomeBinding?.projectId ? `/moonbase/${outcomeBinding.projectId}` : undefined
+                }
+                nameOverride={atlasOrg?.name || atlasProject?.name}
+                vehicleLabel={outcomeBinding?.vehicleLabel}
+                backLabel={
+                  isField
+                    ? 'Back the field'
+                    : atlasOrg?.name || atlasProject?.name
+                    ? `Back ${atlasOrg?.name || atlasProject?.name}`
+                    : undefined
+                }
+                imageOverride={claimed ? atlasOrg?.logoURI : undefined}
+                unclaimed={!isField && !!outcomeBinding && !claimed}
+                participation={
+                  isField || !outcomeBinding ? undefined : claimed ? 'official' : 'unofficial'
+                }
+              />
+              <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => pickOutcome(o.index)}
+                    disabled={inputsLocked}
+                    aria-pressed={isPicked}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border transition-colors disabled:opacity-40 ${
+                      isPicked
+                        ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
+                        : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
+                    }`}
+                  >
+                    {isPicked ? 'Your call' : 'Predict this'}
+                  </button>
+                  <p className="text-xs text-gray-400">
+                    {daoPct != null ? `DAO ${pct(daoPct)}` : 'DAO —'}
+                    {pooledPct != null ? ` · Pooled ${pct(pooledPct)}` : ''}
+                  </p>
+                </div>
+                <div className="mt-2 relative h-4 rounded-full bg-white/5 border border-white/10">
                   <span
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-1 rounded-full bg-indigo-300"
-                    style={{ left: `${pooledPct}%` }}
+                    className="absolute inset-y-0 rounded-full bg-white/15"
+                    style={{ left: `${lo}%`, width: `${Math.max(1, hi - lo)}%` }}
                   />
-                )}
+                  {pooledPct != null && (
+                    <span
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-1 rounded-full bg-indigo-300"
+                      style={{ left: `${pooledPct}%` }}
+                    />
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-gray-400">
-                Market {pct(marketPct)}
-                {daoPct != null ? ` · DAO ${pct(daoPct)}` : ''}
-                {pooledPct != null ? ` · Pooled ${pct(pooledPct)}` : ''}
-              </p>
-            </button>
+            </div>
           )
         })}
       </div>
 
       {!daoReady && (
-        <p className="mt-2 text-xs text-gray-400">
+        <p className="mt-3 text-xs text-gray-400">
           DAO shows once {FORECAST_DAO_MIN_PARTICIPANTS} Citizens have called it (
           {consensus?.participants ?? 0} so far).
         </p>
       )}
-      {selected.length === n && n > 1 && (
-        <p className="mt-2 text-xs text-amber-200">
-          Backing every outcome in the ETH market is a guaranteed loss net of fees.
-        </p>
-      )}
-      {selected.length === 1 && (
+      {picked != null && (
         <p className="mt-2 text-xs text-gray-400">
-          Unbacked outcomes are a probability-zero claim if one of them wins.
+          Calling one outcome says the rest will not win, which costs a full point under Brier if
+          one of them does.
         </p>
       )}
 

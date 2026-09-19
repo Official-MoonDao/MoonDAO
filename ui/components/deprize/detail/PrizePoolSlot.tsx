@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { Chain } from 'thirdweb'
-import EthUsd from '@/components/deprize/EthUsd'
-import DePrizePatrons from '@/components/deprize/DePrizePatrons'
-import FundPrizeModal from '@/components/deprize/FundPrizeModal'
 import {
   DEPRIZE_FUND_ENABLED,
   DEPRIZE_PATRONS_ENABLED,
@@ -12,6 +9,10 @@ import {
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { usePrizePatrons } from '@/lib/deprize/usePrizePatrons'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import DePrizeCallers from '@/components/deprize/DePrizeCallers'
+import DePrizePatrons from '@/components/deprize/DePrizePatrons'
+import EthUsd from '@/components/deprize/EthUsd'
+import FundPrizeModal from '@/components/deprize/FundPrizeModal'
 import { CARD } from './primitives'
 
 export default function PrizePoolSlot(props: {
@@ -25,6 +26,8 @@ export default function PrizePoolSlot(props: {
   account?: any
   refreshNonce?: number
   onFunded?: () => void
+  labels?: string[]
+  bettorAddresses?: readonly string[]
 }) {
   const restricted = useDePrizeRestricted()
   const fundAllowed = FUND_GEO_OPEN || !restricted
@@ -54,10 +57,7 @@ export default function PrizePoolSlot(props: {
     DEPRIZE_FUND_ENABLED && fundAllowed && props.jbProjectId != null && props.chain && props.account
 
   return (
-    <section
-      id="deprize-prize-pool"
-      className={`${CARD} space-y-4`}
-    >
+    <section id="deprize-prize-pool" className={`${CARD} space-y-4`}>
       <div>
         <h3 className="text-white text-sm font-semibold">Prize pool</h3>
         <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
@@ -72,6 +72,13 @@ export default function PrizePoolSlot(props: {
           chainSlug={props.chain ? getChainSlug(props.chain) : undefined}
         />
       )}
+
+      <DePrizeCallers
+        chainSlug={props.chain ? getChainSlug(props.chain) : 'arbitrum'}
+        deprizeId={props.deprizeId}
+        labels={props.labels ?? []}
+        bettorAddresses={props.bettorAddresses ?? []}
+      />
 
       {showFund && (
         <button
