@@ -13,7 +13,7 @@ import DePrizeCallers from '@/components/deprize/DePrizeCallers'
 import DePrizePatrons from '@/components/deprize/DePrizePatrons'
 import EthUsd from '@/components/deprize/EthUsd'
 import FundPrizeModal from '@/components/deprize/FundPrizeModal'
-import { CARD } from './primitives'
+import { CARD, TOUCH } from './primitives'
 
 export default function PrizePoolSlot(props: {
   poolUsd?: number | null
@@ -83,7 +83,7 @@ export default function PrizePoolSlot(props: {
       {showFund && (
         <button
           type="button"
-          className="rounded-full border border-white/20 px-4 py-2 text-sm text-white"
+          className={`w-full sm:w-auto rounded-full border border-white/20 px-4 py-2 text-sm text-white ${TOUCH}`}
           onClick={() => setFundOpen(true)}
         >
           Fund the prize

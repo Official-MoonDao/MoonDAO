@@ -85,7 +85,7 @@ export default function PrizeHeader(props: {
             />
           )}
         </div>
-        <div className="flex items-center gap-4 shrink-0 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {raceGoal && (
             <Link
               href={`/moonbase?race=${raceGoal.id}`}

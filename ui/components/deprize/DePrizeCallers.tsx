@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useCitizenRowsByOwners } from '@/lib/citizen/useCitizenRowsByOwners'
 import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import CitizenIdentity from '@/components/layout/CitizenIdentity'
+import { SCROLL_LIST } from '@/components/deprize/detail/primitives'
 
 /** `/api/voting-power` takes at most 100 addresses per call. */
 const MAX_ADDRESSES = 100
@@ -156,10 +157,10 @@ export default function DePrizeCallers(props: {
           {rows.length} {rows.length === 1 ? 'caller' : 'callers'}
         </p>
       </div>
-      <ul className="space-y-1.5">
+      <ul className={`space-y-1.5 ${SCROLL_LIST}`}>
         {rows.map((row) => (
-          <li key={row.address} className="flex items-center justify-between gap-3 text-sm">
-            <span className="min-w-0">
+          <li key={row.address} className="flex items-center justify-between gap-2 sm:gap-3 text-sm">
+            <span className="min-w-0 flex-1">
               <CitizenIdentity address={row.address} citizen={citizens.get(row.address)} />
               <span className="mt-0.5 block truncate text-xs text-gray-500">
                 {row.pick ? row.pick : 'Backed with ETH'}

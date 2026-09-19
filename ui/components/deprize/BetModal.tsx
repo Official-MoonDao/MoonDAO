@@ -55,6 +55,7 @@ import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import client from '@/lib/thirdweb/client'
 import EthUsd from '@/components/deprize/EthUsd'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 import Modal from '@/components/layout/Modal'
 import StandardButton from '@/components/layout/StandardButton'
 import { FundOnramp } from '@/components/onramp/FundOnramp'
@@ -449,13 +450,14 @@ export default function BetModal({
           <label className="text-xs text-gray-400">How much do you want to bet? (ETH)</label>
           <input
             type="number"
+            inputMode="decimal"
             min="0"
             step="any"
             autoFocus={!fundsArrived}
             value={betAmount}
             onChange={(e) => setBetAmount(e.target.value)}
             placeholder="e.g. 0.01"
-            className="mt-1 w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="mt-1 w-full px-4 py-3 text-base bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {betAmountNum > 0 && fmtUsdFromEth(betAmountNum, ethPrice) && (
             <p className="text-white/55 text-xs mt-1 tabular-nums">
@@ -467,7 +469,7 @@ export default function BetModal({
               <button
                 key={a}
                 onClick={() => setBetAmount(a)}
-                className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs"
+                className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
               >
                 {a} ETH
                 {fmtUsdFromEth(Number(a), ethPrice)
@@ -478,7 +480,7 @@ export default function BetModal({
             {spendableEth > 0 && (
               <button
                 onClick={() => setBetAmount(String(Math.floor(spendableEth * 1e6) / 1e6))}
-                className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs"
+                className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
               >
                 Max ({fmtEthWithUsd(spendableEth, ethPrice, { prize: true })})
               </button>
@@ -525,7 +527,7 @@ export default function BetModal({
         {/* Point-of-bet disclosure. Mirrors the non-custodial prediction-market
             approach (read the rules; total-loss risk; equal-payout on
             void/cancel; final resolution). Full detail in the DePrize Terms. */}
-        <div className="text-amber-300/90 text-[11px] leading-snug space-y-1.5">
+        <div className="text-amber-300/90 text-xs sm:text-[11px] leading-snug space-y-1.5">
           <p>
             You are buying outcome tokens for this competitor. If this competitor wins, they redeem
             for their full share; if it loses, they are{' '}
@@ -567,12 +569,12 @@ export default function BetModal({
         ) : null}
 
         <div className="flex flex-col gap-2">
-          <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+          <label className="flex items-start gap-2.5 text-xs sm:text-[11px] leading-snug text-gray-300 cursor-pointer">
             <input
               type="checkbox"
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
             />
             <span>
               I have read and agree to the{' '}
@@ -605,21 +607,21 @@ export default function BetModal({
               .
             </span>
           </label>
-          <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+          <label className="flex items-start gap-2.5 text-xs sm:text-[11px] leading-snug text-gray-300 cursor-pointer">
             <input
               type="checkbox"
               checked={attestations.notUsResident}
               onChange={(e) =>
                 setAttestations((prev) => ({ ...prev, notUsResident: e.target.checked }))
               }
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
             />
             <span>
               I am not a resident of the United States, and I am not currently located in the
               United States or any of its territories.
             </span>
           </label>
-          <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+          <label className="flex items-start gap-2.5 text-xs sm:text-[11px] leading-snug text-gray-300 cursor-pointer">
             <input
               type="checkbox"
               checked={attestations.notUsEntityOrRepresentative}
@@ -629,21 +631,21 @@ export default function BetModal({
                   notUsEntityOrRepresentative: e.target.checked,
                 }))
               }
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
             />
             <span>
               I am not acting for or on behalf of an entity organized in, or with its principal
               place of business in, the United States.
             </span>
           </label>
-          <label className="flex items-start gap-2 text-[11px] leading-snug text-gray-300 cursor-pointer">
+          <label className="flex items-start gap-2.5 text-xs sm:text-[11px] leading-snug text-gray-300 cursor-pointer">
             <input
               type="checkbox"
               checked={attestations.notInsiderOrProxy}
               onChange={(e) =>
                 setAttestations((prev) => ({ ...prev, notInsiderOrProxy: e.target.checked }))
               }
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
             />
             <span>
               I am not an insider for this DePrize, and I am not placing this bet on behalf of
@@ -651,7 +653,7 @@ export default function BetModal({
             </span>
           </label>
           {acceptanceState === 'error' && (
-            <p className="text-amber-300 text-[11px]">
+            <p className="text-amber-300 text-xs sm:text-[11px]">
               We could not record your acceptance. Recheck the boxes to try again.
             </p>
           )}
@@ -720,7 +722,7 @@ export default function BetModal({
               <>
                 <button
                   type="button"
-                  className="w-full rounded-full border border-white/25 px-4 py-2 text-sm text-white"
+                  className={`w-full rounded-full border border-white/25 px-4 py-2 text-sm text-white ${TOUCH}`}
                   onClick={() => {
                     setShowFunding(true)
                     trackOnrampEvent('cta_clicked')

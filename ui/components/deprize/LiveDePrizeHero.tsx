@@ -23,6 +23,7 @@ import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 import EthUsd from '@/components/deprize/EthUsd'
 import { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 
@@ -169,7 +170,9 @@ export default function LiveDePrizeHero({
               </span>
             </div>
           </div>
-          <div className="text-right shrink-0">
+          {/* Wrapped onto its own line on a phone, this block kept its right
+              alignment and read as detached from the prize it belongs to. */}
+          <div className="w-full sm:w-auto text-left sm:text-right sm:shrink-0">
             <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
               {poolLoading ? (
                 '…'
@@ -232,9 +235,9 @@ export default function LiveDePrizeHero({
                   <button
                     type="button"
                     onClick={() => setBetIndex(o.index)}
-                    className="relative z-10 shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold
+                    className={`relative z-10 shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold
                       bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
-                      transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+                      transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
                   >
                     Buy
                   </button>
@@ -242,8 +245,8 @@ export default function LiveDePrizeHero({
                   <button
                     type="button"
                     onClick={onConnectWallet}
-                    className="relative z-10 shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold
-                      bg-white/10 hover:bg-white/15 text-white transition-all"
+                    className={`relative z-10 shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold
+                      bg-white/10 hover:bg-white/15 text-white transition-all ${TOUCH}`}
                   >
                     Connect
                   </button>
@@ -266,9 +269,9 @@ export default function LiveDePrizeHero({
           {showPredict && (
             <a
               href={forecastHref}
-              className="inline-flex px-4 py-1.5 rounded-full text-sm font-semibold
+              className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold
                 bg-white/10 hover:bg-white/15 text-white transition-all
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
             >
               {DEPRIZE_PREDICT_CTA}
             </a>
