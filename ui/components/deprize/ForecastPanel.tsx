@@ -74,6 +74,7 @@ export default function ForecastPanel(props: {
   userAddress?: string
   withdrawnByTeamId: Record<string, boolean>
   onBet: (index: number) => void
+  onSaved?: () => void
 }) {
   const {
     chainSlug,
@@ -99,6 +100,7 @@ export default function ForecastPanel(props: {
     userAddress,
     withdrawnByTeamId,
     onBet,
+    onSaved,
   } = props
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
@@ -196,6 +198,7 @@ export default function ForecastPanel(props: {
         return { ...prev, leaderboard: [row, ...others] }
       })
       toast.success('Prediction saved', { style: toastStyle })
+      onSaved?.()
       void loadConsensus()
     } catch (err: any) {
       setError(err?.shortMessage || err?.message || 'Could not save your prediction.')

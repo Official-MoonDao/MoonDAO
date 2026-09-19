@@ -74,10 +74,12 @@ export default function PrizePoolSlot(props: {
       )}
 
       <DePrizeCallers
+        key={`${props.chain ? getChainSlug(props.chain) : 'arbitrum'}-${props.deprizeId ?? 'none'}`}
         chainSlug={props.chain ? getChainSlug(props.chain) : 'arbitrum'}
         deprizeId={props.deprizeId}
         labels={props.labels ?? []}
         bettorAddresses={props.bettorAddresses ?? []}
+        refreshNonce={props.refreshNonce}
       />
 
       {showFund && (

@@ -29,8 +29,9 @@ export default function DePrizeCallers(props: {
   deprizeId?: number
   labels: string[]
   bettorAddresses: readonly string[]
+  refreshNonce?: number
 }) {
-  const { chainSlug, deprizeId, labels, bettorAddresses } = props
+  const { chainSlug, deprizeId, labels, bettorAddresses, refreshNonce = 0 } = props
   const outcomes = labels.length
   const [leaderboard, setLeaderboard] = useState<ForecastConsensus['leaderboard']>([])
   const [votingPowers, setVotingPowers] = useState<Record<string, number>>({})
@@ -42,21 +43,28 @@ export default function DePrizeCallers(props: {
   )
 
   useEffect(() => {
+    setLeaderboard([])
+  }, [chainSlug, deprizeId])
+
+  useEffect(() => {
     let cancelled = false
     async function load() {
       if (deprizeId == null || outcomes < 2) {
+        setLeaderboard([])
         setLoading(false)
         return
       }
       setLoading(true)
       try {
         // Same query string the competitors panel uses, so the two share one
-        // CDN entry instead of warming two.
+        // CDN entry instead of warming two. `gen` only after a write so the
+        // first paint still hits that shared entry.
         const qs = new URLSearchParams({
           chain: chainSlug,
           deprizeId: String(deprizeId),
           outcomes: String(outcomes),
         })
+        if (refreshNonce) qs.set('gen', String(refreshNonce))
         const res = await fetch(`/api/forecasts/consensus?${qs}`)
         if (!res.ok || cancelled) return
         const body = (await res.json()) as ForecastConsensus
@@ -70,7 +78,7 @@ export default function DePrizeCallers(props: {
     return () => {
       cancelled = true
     }
-  }, [chainSlug, deprizeId, outcomes])
+  }, [chainSlug, deprizeId, outcomes, refreshNonce])
 
   const addresses = useMemo(() => {
     const seen = new Set<string>()

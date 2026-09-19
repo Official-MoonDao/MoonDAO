@@ -729,6 +729,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           userAddress={userAddress}
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
+          onSaved={refreshAll}
         />
         </div>
         <aside className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-6">
