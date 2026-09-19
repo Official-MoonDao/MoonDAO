@@ -29,10 +29,11 @@ put competitors and that prediction on one panel. Five holes are still open.
 They are product bugs, not polish. This document is the contract; the mocha
 suite under `ui/cypress/integration/lib/forecasts/` is how we know it landed.
 
-The suite is written first and is red by design. Baseline on the parent branch
-is **358 passing, 0 failing**. The work is done when `cd ui && yarn test:deprize`
-reports 0 failing. Every failure in the new specs carries a `[not implemented]`
-message naming the module or export it wants.
+The suite is written first and is red by design. Parent branch #1616 is
+**358 passing, 0 failing**. This PR's verified red baseline is **358 passing,
+13 failing**. Every new failure carries a `[not implemented]` message naming
+the module or export it wants. The work is done when
+`cd ui && yarn test:deprize` reports 0 failing.
 
 ```mermaid
 flowchart TD
