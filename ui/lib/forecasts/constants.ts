@@ -3,9 +3,8 @@ export const FORECAST_SEASON = '2026'
 
 export const FORECAST_SCHEMA_VERSION = 1
 
-export const FORECAST_COOLDOWN_MS = 30_000
-export const FORECAST_MAX_ENTRIES_PER_UTC_DAY = 20
-export const FORECAST_CROWD_MIN = 5
+/** Hide the DAO number until at least this many Citizens have called it. */
+export const FORECAST_DAO_MIN_PARTICIPANTS = 3
 export const FORECAST_WEIGHT_MAX = 1e6
 export const FORECAST_WEIGHT_MIN_LEN = 2
 export const FORECAST_WEIGHT_MAX_LEN = 12

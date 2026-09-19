@@ -18,6 +18,7 @@ import {
   getDePrizeCompetition,
   getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
+  isCompetitorClaimed,
   isKnownDePrizeCompetition,
   resolveLiveDePrizeId,
 } from '@/lib/deprize/competitions'
@@ -64,15 +65,12 @@ import BetModal from '@/components/deprize/BetModal'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import AdminSection from '@/components/deprize/detail/AdminSection'
 import ClaimSection from '@/components/deprize/detail/ClaimSection'
-import CompetitorsSection from '@/components/deprize/detail/CompetitorsSection'
-import FinePrint from '@/components/deprize/detail/FinePrint'
 import ForecastSlot from '@/components/deprize/detail/ForecastSlot'
 import LadderLine from '@/components/deprize/detail/LadderLine'
 import OddsSection from '@/components/deprize/detail/OddsSection'
 import PositionSection from '@/components/deprize/detail/PositionSection'
 import PrizeHeader from '@/components/deprize/detail/PrizeHeader'
 import PrizePoolSlot from '@/components/deprize/detail/PrizePoolSlot'
-import PrizeQuestion from '@/components/deprize/detail/PrizeQuestion'
 import ProvenanceFooter from '@/components/deprize/detail/ProvenanceFooter'
 import { Notice, NoticeStack, type NoticeItem } from '@/components/deprize/detail/primitives'
 import {
@@ -503,6 +501,13 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     [market.outcomes, raceBinding, showResolved, market.winningIndex],
   )
 
+  // Everyone who put ETH behind an outcome. They belong on the callers list
+  // next to the Citizens who wrote a prediction.
+  const bettorAddresses = useMemo(
+    () => [...new Set(activity.bets.map((bet) => bet.bettor.toLowerCase()))],
+    [activity.bets],
+  )
+
   const resolvedVector = useMemo(() => {
     if (!market.payoutDen || market.payoutDen <= 0n) return null
     const den = Number(market.payoutDen)
@@ -668,12 +673,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           showResolved={showResolved}
         />
         <NoticeStack items={pageNotices} />
-        <PrizeQuestion
-          tagline={competition.tagline}
-          description={raceGoal?.description}
-          criteria={raceGoal?.criteria}
-          moonbaseHref={raceGoal ? `/moonbase?race=${raceGoal.id}` : undefined}
-        />
         <LadderLine chainSlug={chainSlug} deprizeId={deprizeId} />
         <PositionSection
           userAddress={userAddress}
@@ -705,7 +704,16 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           markers={odds.markers}
           oddsLoading={odds.loading}
         />
-        <CompetitorsSection
+        <ForecastSlot
+          chainSlug={chainSlug}
+          deprizeId={deprizeId as number}
+          labels={predictionLabels}
+          marketPercents={market.outcomes.map((o) => o.probability)}
+          liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
+          reported={!!market.payoutDen && market.payoutDen > 0n}
+          resolvedVector={resolvedVector}
+          collateralEth={activity.totalStakedEth}
+          liveMarket={!!market.marketAddress}
           numOutcomes={numOutcomes}
           rankedOutcomes={rankedOutcomes}
           teamIds={deprize.teamIds}
@@ -739,18 +747,11 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           account={account}
           refreshNonce={refreshNonce}
           onFunded={refreshAll}
+          labels={predictionLabels}
+          bettorAddresses={bettorAddresses}
         />
         </aside>
         <div className="flex flex-col gap-4 min-w-0 lg:col-start-1 lg:row-start-2">
-        <ForecastSlot
-          chainSlug={chainSlug}
-          deprizeId={deprizeId as number}
-          labels={predictionLabels}
-          marketPercents={market.outcomes.map((o) => o.probability)}
-          liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
-          reported={!!market.payoutDen && market.payoutDen > 0n}
-          resolvedVector={resolvedVector}
-        />
         <ClaimSection>
           {showResolved && (
             <ClaimPanel
@@ -787,7 +788,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           supersedes={competition.supersedes}
           generationNumber={generationNumber}
         />
-        <FinePrint poolUsd={poolUsd} asOf={poolAsOf} raceBinding={raceBinding} />
         </div>
       </div>
 
