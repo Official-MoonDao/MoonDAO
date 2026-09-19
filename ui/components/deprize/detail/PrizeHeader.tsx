@@ -11,7 +11,7 @@ import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
 import { formatBettingCloses } from '@/lib/deprize/status'
 import EthUsd from '@/components/deprize/EthUsd'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
-import { CARD, Stat, StateBadge } from './primitives'
+import { CARD, Stat, StateBadge, TOUCH } from './primitives'
 
 export default function PrizeHeader(props: {
   knownCompetition: boolean
@@ -85,18 +85,18 @@ export default function PrizeHeader(props: {
             />
           )}
         </div>
-        <div className="flex items-center gap-4 shrink-0 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
           {raceGoal && (
             <Link
               href={`/moonbase?race=${raceGoal.id}`}
-              className="text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded"
+              className={`inline-flex items-center text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded ${TOUCH}`}
             >
               Open in Moon Base Zero
             </Link>
           )}
           <Link
             href="/deprize"
-            className="text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded"
+            className={`inline-flex items-center text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded ${TOUCH}`}
           >
             ← All prizes
           </Link>
@@ -152,7 +152,7 @@ export default function PrizeHeader(props: {
       {showFundLink && (
         <a
           href="#deprize-prize-pool"
-          className="mt-2 inline-block text-xs text-indigo-300 underline-offset-2 hover:underline"
+          className={`mt-2 inline-flex items-center text-xs text-indigo-300 underline-offset-2 hover:underline ${TOUCH}`}
         >
           Fund the prize →
         </a>

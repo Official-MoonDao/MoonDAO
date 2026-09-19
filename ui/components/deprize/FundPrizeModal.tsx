@@ -115,6 +115,7 @@ export default function FundPrizeModal(props: {
           Amount (ETH) — minimum {minEth} ETH
           <input
             type="number"
+            inputMode="decimal"
             min={minEth}
             step="any"
             value={amount}
@@ -122,7 +123,7 @@ export default function FundPrizeModal(props: {
               setAmount(e.target.value)
               setConfirmedLarge(false)
             }}
-            className="mt-1 w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white"
+            className="mt-1 w-full px-4 py-3 text-base bg-white/5 border border-white/20 rounded-xl text-white"
           />
         </label>
         {amountWei > 0n && (
@@ -132,11 +133,12 @@ export default function FundPrizeModal(props: {
           <p className="text-amber-300 text-xs">Minimum contribution is {minEth} ETH.</p>
         )}
         {needsConfirm && (
-          <label className="flex items-start gap-2 text-xs text-amber-200">
+          <label className="flex items-start gap-2.5 text-xs text-amber-200">
             <input
               type="checkbox"
               checked={confirmedLarge}
               onChange={(e) => setConfirmedLarge(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 rounded border-white/30 bg-white/5 accent-moon-green"
             />
             I understand this sends {fmtEthWithUsd(Number(amountWei) / Number(UNIT), ethPrice)} and
             cannot be reversed.
@@ -150,7 +152,7 @@ export default function FundPrizeModal(props: {
             maxLength={80}
             value={memo}
             onChange={(e) => setMemo(e.target.value)}
-            className="mt-1 w-full px-4 py-2 bg-white/5 border border-white/20 rounded-xl text-white"
+            className="mt-1 w-full px-4 py-2.5 text-base bg-white/5 border border-white/20 rounded-xl text-white"
           />
         </label>
 

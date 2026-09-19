@@ -26,7 +26,7 @@ import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
-import { CARD } from '@/components/deprize/detail/primitives'
+import { CARD, TOUCH } from '@/components/deprize/detail/primitives'
 
 function pct(n: number): string {
   if (!Number.isFinite(n)) return '—'
@@ -337,7 +337,7 @@ export default function ForecastPanel(props: {
                     onClick={() => pickOutcome(o.index)}
                     disabled={inputsLocked}
                     aria-pressed={isPicked}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border transition-colors disabled:opacity-40 ${
+                    className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border transition-colors disabled:opacity-40 ${TOUCH} ${
                       isPicked
                         ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
                         : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
@@ -386,7 +386,7 @@ export default function ForecastPanel(props: {
           type="button"
           onClick={save}
           disabled={account ? submitDisabled || !canWrite : false}
-          className="px-4 py-1.5 rounded-full text-sm border border-white/20 bg-white/10 text-white hover:bg-white/15 disabled:opacity-40"
+          className={`w-full sm:w-auto px-4 py-1.5 rounded-full text-sm border border-white/20 bg-white/10 text-white hover:bg-white/15 disabled:opacity-40 ${TOUCH}`}
         >
           {saving ? 'Saving…' : account ? 'Save prediction' : 'Connect to predict'}
         </button>

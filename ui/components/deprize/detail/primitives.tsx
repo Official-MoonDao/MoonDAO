@@ -5,6 +5,20 @@ import { pickNotices, type NoticeItemBase } from '@/lib/deprize/noticeStack'
 export const CARD =
   'p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg'
 
+/**
+ * 44px is the platform floor for a finger; a pill sized for a cursor is not
+ * reliably tappable. Only phones pay for it — the same rows would read as
+ * loose at that height on a pointer device.
+ */
+export const TOUCH = 'min-h-[44px] sm:min-h-0'
+
+/**
+ * Lists that grow without bound (patrons, callers) get their own scroll so one
+ * long prize cannot push the rest of the page — or the rest of the sidebar —
+ * out of reach.
+ */
+export const SCROLL_LIST = 'max-h-[18rem] overflow-y-auto overscroll-contain pr-1'
+
 export function StateBadge({
   state,
   labelOverride,
