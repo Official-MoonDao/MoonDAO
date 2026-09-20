@@ -212,7 +212,13 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // more than half the generic field-plus-tower footprint (9.5) Blue Origin
   // still stands on.
   isru_plant: plots(9.5, 5.35, 5.58),
-  rover: plots(2.3, 2.1, 2.2),
+  // The four LTV bids — Moon RACER (4.6 m), the NASA reference LTV on the
+  // generic 4.5 m rover size, Pegasus (4.4) and FLEX (4.2), each at half its
+  // own length. This district used to stand nothing at all: its field was out
+  // driving the spine and a depot yard held its ground instead. It now parks a
+  // copy of every entrant AND drives a second one (see BASE_PLAN.rover), so
+  // these lots are occupied and the shared yards are gone.
+  rover: plots(2.3, 2.25, 2.2, 2.1),
   // ICON, Redwire, Astroport, AI SpaceFactory, Astrobotic — five bids on the
   // same generic paving footprint, and one of only two districts that field
   // more than four. It is therefore what exercises the spill in districtSlots'
@@ -240,44 +246,8 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
 
 const races = Object.entries(ROSTERS) as [ProjectType, Plot[]][]
 
-// Ground taken by SHARED infrastructure rather than by anyone's competitor —
-// mirrored by hand from the model layer exactly as ROSTERS mirrors
-// footprintRadiusM, and for the same reason: this file must not import the
-// models. Only the rover district has any: its whole roster is out driving (see
-// PATROL), so what stands at the head of its branch is the depot yard and the
-// recharge station, and its `block` is sized for those rather than for an LTV.
-// See `DEPOT_FOOTPRINT_R` and `GAS_STATION_FOOTPRINT_R` in MarkerLayer.tsx.
-const SHARED_GROUND: Partial<Record<ProjectType, number[]>> = {
-  rover: [9, 7.25],
-}
-
-// Where that shared infrastructure actually stands, mirroring `depotCorner` in
-// MarkerLayer the same way SHARED_GROUND mirrors its footprints: a lot on each
-// side of the head of the district's branch, at its own frontage off that road
-// and back from the dead end by its own radius.
-//
-// Placed rather than fed through districtSlots, because it is not a competitor
-// and does not pack like one — the head of the branch stays empty here, which is
-// the whole point of the depot district (its fleet is out driving).
-function sharedLots(
-  category: ProjectType
-): { east: number; north: number; radiusM: number }[] {
-  const radii = SHARED_GROUND[category]
-  if (!radii) return []
-  const plan = BASE_PLAN[category]!
-  const [ue, un] = dirFor(plan.branch!.bearingDeg)
-  return radii.map((radiusM, i) => {
-    const across = (i % 2 ? -1 : 1) * (ROAD_HALF_M + SETBACK_M + radiusM)
-    return {
-      east: plan.east + ue * -radiusM - un * across,
-      north: plan.north + un * -radiusM + ue * across,
-      radiusM,
-    }
-  })
-}
-
-// How far a district's ground actually reaches once its real roster AND anything
-// shared standing on its lots are packed, in the frame of the roads it fronts:
+// How far a district's ground actually reaches once its real roster is packed,
+// in the frame of the roads it fronts:
 //
 //   lateral — the furthest any plot's edge gets from the centreline of its own
 //             road. This is what `block` has to cover, because the keep-out is
@@ -287,8 +257,11 @@ function sharedLots(
 //   behind  — the furthest back down the approach any plot's edge reaches,
 //             which is what the road has to be long enough to serve.
 //
-// All three are checked against hand-set numbers, and neither the rosters nor
-// the yard footprints are hand-set, so this is what keeps them honest.
+// All three are checked against hand-set numbers and the rosters are not hand-
+// set, so this is what keeps them honest. Every district's ground is its own
+// competitors' and nothing else's — the rover depot's shared yard and recharge
+// station used to be the one exception, and they are gone now that its field
+// parks on its own lots.
 function districtNeed(category: ProjectType, field: Plot[]) {
   const plan = BASE_PLAN[category]!
   const slots = districtSlots(plan, field)
@@ -300,12 +273,6 @@ function districtNeed(category: ProjectType, field: Plot[]) {
     lateral = Math.max(lateral, Math.abs(here.acrossM) + plot.radiusM)
     ahead = Math.max(ahead, here.alongM + plot.radiusM)
     behind = Math.max(behind, -here.alongM + plot.radiusM)
-  }
-  for (const lot of sharedLots(category)) {
-    const here = onItsRoad(plan, lot)
-    lateral = Math.max(lateral, Math.abs(here.acrossM) + lot.radiusM)
-    ahead = Math.max(ahead, here.alongM + lot.radiusM)
-    behind = Math.max(behind, -here.alongM + lot.radiusM)
   }
   return { lateral, ahead, behind }
 }
@@ -795,16 +762,12 @@ describe('moon base zero street plan', () => {
       for (const [category, field] of races) {
         const plan = BASE_PLAN[category]!
         const slots = districtSlots(plan, field)
-        // Everything that stands on this district's ground: its competitors, and
-        // the shared yards that are nobody's competitor. The depot's `block` is
-        // set by the latter, so leaving them out would call it 14 m oversized.
-        const standing = [
-          ...field.map((plot) => ({
-            ...slots.get(plot.id)!,
-            radiusM: plot.radiusM,
-          })),
-          ...sharedLots(category),
-        ]
+        // Everything that stands on this district's ground, which is now its
+        // competitors and only its competitors.
+        const standing = field.map((plot) => ({
+          ...slots.get(plot.id)!,
+          radiusM: plot.radiusM,
+        }))
 
         expect(
           contains(plan, standing, plan.block!),
