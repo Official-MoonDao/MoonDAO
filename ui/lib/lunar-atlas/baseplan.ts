@@ -128,8 +128,9 @@
 //
 // One thing: the SOLAR FARM (see SOLAR_ARRAYS, below the district keep-out).
 // Nobody is competing to build the colony's own generation, so it is not a
-// district and has no roster — it is shared infrastructure in the same sense as
-// the rover depot, just far larger. It is also the answer to the one thing the
+// district and has no roster — it is the only shared infrastructure left on the
+// plan, now that the rover depot's yard is gone and every district's ground is
+// its own competitors'. It is also the answer to the one thing the
 // tiered plan made worse: standing the districts at the ends of their branches
 // left large wedges of the flanks between them, and a solar farm is the one
 // kind of built ground that is SUPPOSED to be mostly empty. It is surveyed to
@@ -786,23 +787,26 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   // toward the pads. A motor pool wants to be off the main road and first on
   // the way out of town, which is exactly where this lands.
   //
-  // Its whole field is out driving the spine (see PATROL) — the only moving
-  // things on the base — which leaves every COMPETITOR's own lot standing
-  // empty, and that is the right answer rather than a gap: a motor pool with
-  // its yard bare is a motor pool whose fleet is working. What stands on the
-  // district's ground instead is shared, nobody's-competitor infrastructure
-  // (see `RoverDepotYard` in ProjectModel.tsx), which MarkerLayer places at the
-  // head of this branch. Sized for the yard and the station rather than for the
-  // roster: at 2.3 m an LTV needs almost nothing, but nothing in the roster
-  // ever stands here.
+  // This is the one district that shows its field TWICE, and the duplication is
+  // deliberate. Each LTV stands on its own lot here, exactly as every other
+  // race's hardware stands on its: a capability race whose entrants cannot be
+  // lined up and compared is one nobody can read, and four bids for the same
+  // contract are worth seeing side by side. A SECOND copy of the same four then
+  // drives the spine (see PATROL), which is what makes rovers the only moving
+  // things on the base.
+  //
+  // The depot yard and recharge station that used to stand at the head of this
+  // branch are gone. They existed to answer a district whose every lot was bare
+  // — the fleet being out driving — by giving the ground something built to
+  // read. Its lots are not bare any more, and the yard sat squarely on the two
+  // of them nearest the head.
   rover: district(-120, {
     turn: -6,
     branch: { bearingDeg: 270, lengthM: 55, width: 0.72 },
-    // Sized for the depot yard and the recharge station standing either side of
-    // this branch's head, not for the roster: the yard's 9 m apron at its own
-    // frontage off the road reaches 26.1 m from the district centre, where the
-    // biggest thing in the roster is a 2.3 m rover that is never here.
-    block: 27,
+    // Sized for the roster, now that the roster actually parks here: four
+    // LTV-class lots packed off a 55 m branch, the head one standing 19.7 m
+    // past the dead end. Was 27 while the yard's 9 m apron set it instead.
+    block: 20,
   }),
 
   // THE HABITAT RACE, on the longest branch but one: 130 m northwest off the
@@ -1094,9 +1098,9 @@ function onRaceGround(east: number, north: number, marginM: number): boolean {
 // The solar farm
 // ---------------------------------------------------------------------------
 
-// Base-wide generation, and the one large installation here that belongs to no
-// race: nobody is competing to build the colony's own switchyard, so this is
-// shared infrastructure in the same sense as the rover depot, just far bigger.
+// Base-wide generation, and the one installation on the whole plan that belongs
+// to no race: nobody is competing to build the colony's own switchyard, so this
+// is the last piece of shared infrastructure standing.
 //
 // It exists for two reasons that happen to agree. A settlement with a mass
 // driver, an ISRU plant and a construction yard needs power on the order of

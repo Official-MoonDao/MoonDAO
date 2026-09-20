@@ -3446,43 +3446,26 @@ export function UndergroundConstructionSite({ seed = 0 }: { seed?: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Rover depot yard — the motor pool's own lot, not a competitor's model
+// Rover depot yard — NOT PLACED ANY MORE, kept for the geometry
 // ---------------------------------------------------------------------------
 //
-// The rover race's actual hardware never stands here: the whole field is out
-// shuttling the spine (see PATROL in baseplan.ts), so every
-// competitor's own plot in this district is bare regolith by design — "a
-// motor pool with its yard bare is a motor pool whose fleet is working," per
-// BASE_PLAN.rover's own comment. Left literally empty, though, that reads as
-// a gap in the map rather than as that story, because there is nothing built
-// there to read the absence against. This is the shared fix: a paved apron
-// with marked bays, charging points, and a service canopy — infrastructure
-// nobody's competitor owns.
+// NOTHING RENDERS THIS. `RoverDepotYard` and `RoverGasStation` below answered a
+// district whose every lot was bare: the rover race's field was out shuttling
+// the spine (see PATROL in baseplan.ts) and never parked, so the head of its
+// branch had nothing a per-project loop would draw. A paved apron with marked
+// bays, charging points and a service canopy filled that ground with something
+// built — infrastructure nobody's competitor owned.
 //
-// It takes a real LOT at the head of the depot's own branch, at the same
-// frontage off that road a competitor's plot would get, with the recharge
-// station facing it across the branch. `BASE_PLAN.rover.block` is sized for
-// these two rather than for the district's LTV-class roster, which is the
-// honest way round: nothing in that roster ever parks, and a district's ground
-// has to hold what actually stands on it. Kept a compact 13 x 10 m all the same, because a motor pool
-// whose apron dwarfs the vehicles using it reads as a car park — see
-// MarkerLayer's `RoverDepotSite`, which does the placement and picks the exact
-// setback this footprint needs.
+// The district now parks a copy of every entrant on its own lots and drives a
+// second copy down the spine (see BASE_PLAN.rover and the render in
+// MarkerLayer), so the ground these two stood on is the roster's, and the
+// placement that put them there is gone. They survive here only because this
+// section is interleaved with the solar array's own geometry; treat them as
+// unreferenced, and take the whole section out with that geometry rather than
+// wiring either of them back up to a lot that is now somebody's.
 //
-// Two of the three bays are filled, not three, and not zero: a full lot
-// reads as "nobody drives today," an empty one reads as "nothing was ever
-// built here," and two-of-three is the one count that reads as an active
-// yard with most of its fleet out. The parked units are `RoverBody` — the
-// generic, unbranded rover shape kept in this file as the fallback for a
-// future competitor with no custom model yet — painted a flat neutral tone
-// rather than any org's accent, since a spares/support buggy sitting idle at
-// the depot must never read as one team's actual race entry benched here.
-//
-// Authored directly in real meters like every model in this file, but with
-// no PROJECT_SIZE_M/TYPE_SIZE_M entry: it isn't a project, so MarkerLayer
-// anchors it straight off a hand-computed direction with a plain
-// meters-to-scene-units scale instead of going through projectScale's
-// per-project normalization.
+// Authored directly in real meters like every model in this file, with no
+// PROJECT_SIZE_M/TYPE_SIZE_M entry, because neither is a project.
 
 const DEPOT_STRIPE = '#e9e7df' // painted bay lines — brighter than any hardware on the lot
 const DEPOT_CURB = '#5f5c53'
@@ -4377,9 +4360,9 @@ function TerracedSkirt({
   )
 }
 
-// Half-extents of the station's own forecourt apron, in meters — exported so
-// MarkerLayer's `RoverGasStationSite` can compute the same footprint radius
-// and setback the depot yard's own site function uses.
+// Half-extents of the station's own forecourt apron, in meters. Was exported so
+// MarkerLayer could derive this lot's footprint radius and setback from it;
+// nothing places the station any more (see the section note above).
 export const GAS_STATION_HALF_W = 5.0
 export const GAS_STATION_HALF_D = 4.4
 
@@ -4390,11 +4373,10 @@ export const GAS_STATION_HALF_D = 4.4
 //
 // The depot yard is a parking apron; this is what refuels or recharges a
 // unit before or after that, and a real forecourt is its own lot with its
-// own frontage, not a corner of somebody else's — the reason `MarkerLayer`
-// stands this on the OPPOSITE side of the depot branch from
-// `RoverDepotYard` (see `RoverGasStationSite`), so the two face each other
-// across the one straight road they both front rather than sharing a single
-// footprint. Same authoring convention as the depot yard: real meters, open
+// own frontage, not a corner of somebody else's — which is why this stood on
+// the OPPOSITE side of the depot branch from `RoverDepotYard`, the two facing
+// each other across the one straight road they both fronted rather than
+// sharing a single footprint. Same authoring convention as the depot yard: real meters, open
 // (forecourt) side on local +Z, no `PROJECT_SIZE_M` entry since this isn't a
 // competitor's model.
 export function RoverGasStation({ accent }: { accent: string }) {
@@ -13683,10 +13665,29 @@ const VAULT_FILL = '#ffd9a8'
 const VAULT_FILL_I = 0.17
 const VAULT_FILL_DEEP_I = 0.1 // further from the lamps: the floor, the far end
 
-// How far the cover's skirt is bedded BELOW grade, in meters. A skirt that
-// stops exactly at grade is coplanar with the ground it stands on, which is the
-// z-fight this avoids; a third of a meter of it buried is invisible.
-const COVER_BED_M = 0.35
+// How far below its own grade plane this model buries every edge that meets
+// the ground, in meters.
+//
+// The obvious job is z-fighting: an edge that stops exactly at grade is
+// coplanar with the ground it stands on. A third of a meter answered that, and
+// a third of a meter is what this used to be. The real job is much bigger, and
+// it is why the LIFE vault's head house was left hanging in the air.
+//
+// A vault is seated on the HIGHEST ground under its own 28 m footprint (see
+// gradedDeckRadiusM), which is the right call — the alternative buries the
+// uphill end of the berm — but it means the model's local y = 0 is a plane
+// through the high point, not a surface that follows the ground. Everything
+// authored at y = 0 therefore stands as far above the real regolith as the
+// ground falls away beneath it, and on a sloped lot that is metres, not
+// centimetres. Measured on the rendered height field: the MPH plot is nearly
+// level (1.2 m at worst), but the LIFE plot lies across the fall of the ridge
+// and drops 2.6 m from its seat to the toe at its head end, 3.4 m at the worst
+// point under its berm.
+//
+// So this is sized to swallow that relief rather than to clear a z-fight. On
+// level ground every bit of it is underground and invisible; on a slope it is
+// the cut-and-fill a real berm would need there anyway.
+const COVER_BED_M = 4
 
 // Liner thickness in meters. Mirrors LINER_M in subplan, which is where the
 // packing side of the same number lives.
@@ -14204,9 +14205,17 @@ function VaultAccess({ g, accent }: { g: VaultGeometry; accent: string }) {
             fillet: the pad is retained down to below grade on the low side and
             buried by the berm on the high one, which is why the building reads
             as set INTO the cover from uphill and standing on it from the stair.
-            A shallow fillet spanned neither and floated over the low corner. */}
-        <mesh position={[0, -(grade + 0.8) / 2, 0]}>
-          <boxGeometry args={[4.3, grade + 0.8, 4.3]} />
+            A shallow fillet spanned neither and floated over the low corner.
+
+            Retained all the way down to COVER_BED_M rather than the 0.8 m it
+            used to be. This is the furthest thing out on the mound's inward
+            taper, so it stands over the part of the lot that has fallen
+            furthest away from the model's grade plane — on the LIFE plot, 2.4 m
+            of it, against a bench 0.8 m deep. That is the head house hanging in
+            the air over its own shaft with daylight under the pad, and the
+            deeper bench is what puts it back on the ground. */}
+        <mesh position={[0, -(grade + COVER_BED_M) / 2, 0]}>
+          <boxGeometry args={[4.3, grade + COVER_BED_M, 4.3]} />
           <meshStandardMaterial color={COVER} roughness={0.95} metalness={0.02} />
         </mesh>
         {/* Kerb round the bench, which is what retains it */}
@@ -14258,15 +14267,21 @@ function VaultAccess({ g, accent }: { g: VaultGeometry; accent: string }) {
 
       {/* Stair down the flank to grade. Steep, because the flank is at the
           angle of repose and a ramp gentle enough to drive would run half a
-          district; crew climb, cargo goes down the shaft on the hoist. */}
+          district; crew climb, cargo goes down the shaft on the hoist.
+
+          Each tread is a block sunk to COVER_BED_M rather than a 16 cm slab,
+          so the flight reads as steps cut into a retained embankment. The foot
+          of it lands ~3 m PAST the mound's toe, further out than anything else
+          on the plot and so over the lowest ground of all — a floating slab is
+          what a thin tread gives you there. Buried, it costs nothing on a level
+          lot and carries the stair down to meet the regolith on a sloped one. */}
       {Array.from({ length: 8 }, (_, i) => {
         const t = (i + 1) / 8
+        const top = grade * (1 - t) - 0.02
+        const h = top + COVER_BED_M
         return (
-          <mesh
-            key={i}
-            position={[-2.1 - t * 2.6, grade * (1 - t) - 0.1, 0]}
-          >
-            <boxGeometry args={[0.42, 0.16, 1.7]} />
+          <mesh key={i} position={[-2.1 - t * 2.6, top - h / 2, 0]}>
+            <boxGeometry args={[0.42, h, 1.7]} />
             <meshStandardMaterial color={PAD_SLAB} roughness={0.9} metalness={0.03} />
           </mesh>
         )

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {LaunchPadPayHook} from "../../src/LaunchPadPayHook.sol";
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
@@ -76,10 +75,7 @@ contract LaunchPadPayHookDePrizeTest is Test {
         store = new MockTerminalStore();
         rulesets = new MockRulesets();
 
-        DePrizeRegistry impl = new DePrizeRegistry();
-        bytes memory initData = abi.encodeCall(DePrizeRegistry.initialize, (owner));
-        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
-        registry = DePrizeRegistry(address(proxy));
+        registry = new DePrizeRegistry(owner);
 
         hook = new LaunchPadPayHook(
             FUNDING_GOAL, deadline, REFUND_PERIOD, address(store), address(rulesets), owner
@@ -131,30 +127,8 @@ contract LaunchPadPayHookDePrizeTest is Test {
             return id;
         }
 
-        registry.startVote(id);
-        if (target == IDePrizeRegistry.DePrizeState.VOTING) {
-            vm.stopPrank();
-            return id;
-        }
-
         registry.settleWinner(id, 1);
         if (target == IDePrizeRegistry.DePrizeState.SETTLED) {
-            vm.stopPrank();
-            return id;
-        }
-
-        registry.releaseM1(id);
-        if (target == IDePrizeRegistry.DePrizeState.M1_RELEASED) {
-            vm.stopPrank();
-            return id;
-        }
-        if (target == IDePrizeRegistry.DePrizeState.M2_FAILED) {
-            registry.failM2(id);
-            vm.stopPrank();
-            return id;
-        }
-        if (target == IDePrizeRegistry.DePrizeState.M2_COMPLETE) {
-            registry.completeM2(id);
             vm.stopPrank();
             return id;
         }
@@ -286,13 +260,8 @@ contract LaunchPadPayHookDePrizeTest is Test {
     }
 
     function testActiveStatesBlockCashOut() public {
-        IDePrizeRegistry.DePrizeState[5] memory states = [
-            IDePrizeRegistry.DePrizeState.LOCKED,
-            IDePrizeRegistry.DePrizeState.VOTING,
-            IDePrizeRegistry.DePrizeState.SETTLED,
-            IDePrizeRegistry.DePrizeState.M1_RELEASED,
-            IDePrizeRegistry.DePrizeState.M2_COMPLETE
-        ];
+        IDePrizeRegistry.DePrizeState[2] memory states =
+            [IDePrizeRegistry.DePrizeState.LOCKED, IDePrizeRegistry.DePrizeState.SETTLED];
         // attach once: the registry pointer is write-once, and the same registry
         // serves every project id below
         _attach();
@@ -349,18 +318,18 @@ contract LaunchPadPayHookDePrizeTest is Test {
         assertEq(hook.stage(address(this), PROJECT), 3);
     }
 
-    function testM2FailedEnablesRefunds() public {
-        _registerTo(PROJECT, IDePrizeRegistry.DePrizeState.M2_FAILED);
+    function testSettledClosesContributionsButKeepsCashOutLocked() public {
+        // SETTLED is the success terminal: the Safe spends the pool on the payload,
+        // so no new money in and no refunds out.
+        _registerTo(PROJECT, IDePrizeRegistry.DePrizeState.SETTLED);
         _attach();
-
-        store.setFunding(3 ether, 0);
-        rulesets.setWeight(uint112(1e18));
-        (,, uint256 totalSupply,) = hook.beforeCashOutRecordedWith(_cashOutCtx(PROJECT));
-        assertEq(totalSupply, (3 ether * 1e18) / (2 * 1e18));
-        assertEq(hook.stage(address(this), PROJECT), 3);
 
         vm.expectRevert("DePrize is closed to new contributions.");
         hook.beforePayRecordedWith(_payCtx(PROJECT));
+
+        vm.expectRevert("DePrize is active. Refunds are disabled.");
+        hook.beforeCashOutRecordedWith(_cashOutCtx(PROJECT));
+        assertEq(hook.stage(address(this), PROJECT), 1);
     }
 
     // ---------------------------------------------------------------------

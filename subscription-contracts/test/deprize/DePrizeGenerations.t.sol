@@ -2,14 +2,12 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 import {IConditionalTokens} from "../../src/deprize/interfaces/IConditionalTokens.sol";
 import {DePrizeResolve} from "../../script/deprize/DePrizeResolve.s.sol";
-import {MockResolvingCTF} from "./DePrizeRedeem.t.sol";
-import {MockWETH} from "./DePrizeMint.t.sol";
+import {MockWETH, MockResolvingCTF} from "./DePrizeMocks.sol";
 import {LaunchPadPayHook} from "../../src/LaunchPadPayHook.sol";
 
 import {JBConstants} from "@nana-core-v5/libraries/JBConstants.sol";
@@ -43,14 +41,6 @@ contract GenRulesets {
     }
 }
 
-/// @dev Trivial UUPS upgrade target to exercise storage persistence across the
-///      generations upgrade (__gap 45 → 42).
-contract DePrizeRegistryGenerationsV2 is DePrizeRegistry {
-    function version() external pure returns (uint256) {
-        return 2;
-    }
-}
-
 /// @notice Phase 2 generations / withdrawal / setTeams / setSunset / resolve lineage.
 contract DePrizeGenerationsTest is Test {
     DePrizeRegistry registry;
@@ -68,10 +58,7 @@ contract DePrizeGenerationsTest is Test {
     bytes32 constant Q2 = keccak256("q2");
 
     function setUp() public {
-        DePrizeRegistry impl = new DePrizeRegistry();
-        bytes memory initData = abi.encodeCall(DePrizeRegistry.initialize, (owner));
-        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
-        registry = DePrizeRegistry(address(proxy));
+        registry = new DePrizeRegistry(owner);
 
         weth = new MockWETH();
         ctf = new MockResolvingCTF(address(weth));
@@ -250,27 +237,6 @@ contract DePrizeGenerationsTest is Test {
     }
 
     // ---------------------------------------------------------------------
-    // markWithdrawn
-    // ---------------------------------------------------------------------
-
-    function testMarkWithdrawnDoesNotGateBetting() public {
-        uint256 id = _registerOpen(_teams3());
-        vm.prank(owner);
-        registry.markWithdrawn(id, 302);
-
-        assertTrue(registry.withdrawn(id, 302));
-        assertTrue(registry.bettingOpen(id));
-        assertTrue(registry.isTeam(id, 302));
-    }
-
-    function testMarkWithdrawnRevertsUnknownTeam() public {
-        uint256 id = _registerOpen(_teams3());
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(IDePrizeRegistry.TeamNotOnRoster.selector, id, 9999));
-        registry.markWithdrawn(id, 9999);
-    }
-
-    // ---------------------------------------------------------------------
     // setSunset extend-only while OPEN
     // ---------------------------------------------------------------------
 
@@ -299,29 +265,6 @@ contract DePrizeGenerationsTest is Test {
             abi.encodeWithSelector(IDePrizeRegistry.InvalidState.selector, id, IDePrizeRegistry.DePrizeState.LOCKED)
         );
         registry.setSunset(id, block.timestamp + 90 days);
-    }
-
-    // ---------------------------------------------------------------------
-    // UUPS persistence
-    // ---------------------------------------------------------------------
-
-    function testUpgradePersistsLineageAndGap() public {
-        uint256 oldId = _registerOpen(_teamsWithField());
-        vm.prank(owner);
-        uint256 newId = registry.supersede(oldId, _teamsGen2(), block.timestamp + 60 days);
-        vm.prank(owner);
-        registry.markWithdrawn(newId, 401);
-
-        DePrizeRegistryGenerationsV2 v2 = new DePrizeRegistryGenerationsV2();
-        vm.prank(owner);
-        registry.upgradeToAndCall(address(v2), "");
-
-        assertEq(DePrizeRegistryGenerationsV2(address(registry)).version(), 2);
-        assertEq(registry.supersededBy(oldId), newId);
-        assertEq(registry.supersedes(newId), oldId);
-        assertEq(registry.deprizeIdByJBProject(JB_PROJECT), newId);
-        assertTrue(registry.withdrawn(newId, 401));
-        assertEq(uint256(registry.state(oldId)), uint256(IDePrizeRegistry.DePrizeState.SUPERSEDED));
     }
 
     // ---------------------------------------------------------------------
