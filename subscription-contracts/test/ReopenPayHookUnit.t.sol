@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {ReopenPayHook} from "../src/ReopenPayHook.sol";
@@ -107,10 +106,7 @@ contract ReopenPayHookUnitTest is Test {
         directory = new MockDirectory();
         controller = new MockController(address(directory));
 
-        DePrizeRegistry impl = new DePrizeRegistry();
-        bytes memory initData = abi.encodeCall(DePrizeRegistry.initialize, (owner));
-        ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
-        registry = DePrizeRegistry(address(proxy));
+        registry = new DePrizeRegistry(owner);
 
         hook = _deployHook();
     }
@@ -181,11 +177,8 @@ contract ReopenPayHookUnitTest is Test {
             return id;
         }
 
-        registry.startVote(id);
         registry.settleWinner(id, 1);
-        registry.releaseM1(id);
-        if (target == IDePrizeRegistry.DePrizeState.M2_FAILED) {
-            registry.failM2(id);
+        if (target == IDePrizeRegistry.DePrizeState.SETTLED) {
             vm.stopPrank();
             return id;
         }

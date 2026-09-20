@@ -1,7 +1,7 @@
 // Per-DePrize market provisioning config, consumed by
 // migrations/08_create_deprize_market.js.
 //
-// Each DePrize needs its own CTF condition + LMSRWithTWAP market. Bump
+// Each DePrize needs its own CTF condition + stock Gnosis LMSRMarketMaker. Bump
 // `questionId` for every new DePrize so conditions never collide, and set
 // `numOutcomes` to the number of competing teams (the DePrize's outcome slots,
 // in the same order as `DePrizeRegistry.teamIds`).
@@ -27,7 +27,7 @@ module.exports = {
   // targets ~1 ETH per team; scaled by numOutcomes unless DEPRIZE_FUNDING is set.
   fundingPerOutcome: process.env.DEPRIZE_FUNDING_PER_OUTCOME || ONE_ETH,
 
-  // Oracle that will call reportPayouts at resolution (MoonDAO multisig/EOA).
+  // Oracle that will call reportPayouts at resolution AND own the market: the admin Safe.
   // Falls back to deployConfig.oracle (REACT_APP_ORACLE_ADDRESS or deployer).
   oracle: process.env.DEPRIZE_ORACLE || process.env.REACT_APP_ORACLE_ADDRESS || null,
 

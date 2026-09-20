@@ -28,7 +28,11 @@ import {
   vector3ToLatLon,
 } from '@/lib/lunar-atlas/geo'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
-import { HOME_CAM as HOME_CAM_M, HOME_TARGET as HOME_TARGET_M } from '@/lib/lunar-atlas/homeview'
+import {
+  HOME_CAM as HOME_CAM_M,
+  HOME_GROUND as HOME_GROUND_M,
+  HOME_TARGET as HOME_TARGET_M,
+} from '@/lib/lunar-atlas/homeview'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import {
   CAP_CENTER_HEIGHT_M,
@@ -121,6 +125,10 @@ const CLICK_DRAG_TOLERANCE_PX = 8
 // asset's presentation side at this same viewpoint).
 const HOME_TARGET = new THREE.Vector3(...HOME_TARGET_M)
 const DEFAULT_CAM = new THREE.Vector3(...HOME_CAM_M)
+// The colony centre on the ground. The home camera aims ABOVE this (see
+// homeview), so anything that has to be centred on the base itself — the sun's
+// shadow frustum — takes this rather than the camera's target.
+const HOME_GROUND = new THREE.Vector3(...HOME_GROUND_M)
 // "Up" for the home view: the ridge's outward surface normal, so the ground
 // sits at the bottom of frame and space above.
 const HOME_UP = (() => {
@@ -309,7 +317,7 @@ function CameraRig({
     // can no longer even see.
     if (!animating.current && curTarget.distanceToSquared(HOME_TARGET) > (1 * M_TO_UNITS) ** 2) {
       // Altitude above the base's ground level, in meters.
-      const altM = (camera.position.length() - HOME_TARGET.length()) / M_TO_UNITS
+      const altM = (camera.position.length() - HOME_GROUND.length()) / M_TO_UNITS
       const recenter = THREE.MathUtils.clamp((altM / 2500 - 1) / 0.8, 0, 1)
       if (recenter > 0) {
         curTarget.lerp(HOME_TARGET, 1 - Math.pow(0.02, delta * recenter))
@@ -417,11 +425,11 @@ function Sun() {
   // scene for its world matrix to update.
   const target = useMemo(() => {
     const o = new THREE.Object3D()
-    o.position.copy(HOME_TARGET)
+    o.position.copy(HOME_GROUND)
     return o
   }, [])
   const lightPos = useMemo(
-    () => HOME_TARGET.clone().addScaledVector(SUN_DIR, SHADOW_LIGHT_DIST),
+    () => HOME_GROUND.clone().addScaledVector(SUN_DIR, SHADOW_LIGHT_DIST),
     []
   )
 

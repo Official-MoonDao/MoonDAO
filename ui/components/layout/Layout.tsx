@@ -64,14 +64,14 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
 
-  const { citizen, isExpired } = useContext(CitizenContext)
+  const { citizen } = useContext(CitizenContext)
   const citizenContract = useContract({
     address: CITIZEN_ADDRESSES[chainSlug],
     chain: selectedChain,
     abi: CitizenABI as any,
   })
 
-  const navigation = useNavigation(citizen, isExpired)
+  const navigation = useNavigation()
 
   useTranslation('common')
 

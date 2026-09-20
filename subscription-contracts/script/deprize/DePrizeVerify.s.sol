@@ -5,34 +5,30 @@ import "std/Script.sol";
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 import {DePrizeMint} from "../../src/deprize/DePrizeMint.sol";
-import {DePrizeFeeRouter} from "../../src/deprize/DePrizeFeeRouter.sol";
-import {ILMSRWithTWAP} from "../../src/deprize/interfaces/ILMSRWithTWAP.sol";
+import {ILMSRMarketMaker} from "../../src/deprize/interfaces/ILMSRMarketMaker.sol";
 import {IConditionalTokens} from "../../src/deprize/interfaces/IConditionalTokens.sol";
 import {LaunchPadPayHook} from "../../src/LaunchPadPayHook.sol";
 import "base/Config.sol";
 
 /// @title DePrizeVerify
-/// @notice Read-only Phase 5 "verify before announcing" checklist
-///         (docs/DEPRIZE_ARBITRUM_LAUNCH.md). Reverts on the first mismatch so
-///         a reviewer can treat a successful run as a green launch gate.
+/// @notice Read-only "verify before announcing" checklist for a v2 DePrize.
+///         Reverts on the first mismatch so a successful run is a green launch gate.
 ///
-/// AUDIT[plan Phase 5 verify]: mirrors DEPRIZE_QA.md section B.
-///
-/// Env: DEPRIZE_REGISTRY DEPRIZE_MINT DEPRIZE_FEE_ROUTER DEPRIZE_ID
-///      DEPRIZE_MARKET DEPRIZE_PAYHOOK (required — cashOut latch)
+/// Env: DEPRIZE_REGISTRY DEPRIZE_MINT DEPRIZE_ID DEPRIZE_MARKET DEPRIZE_OWNER (the Safe)
+///      DEPRIZE_PAYHOOK (required — cashOut latch)
 ///      DEPRIZE_JB_PROJECT (optional; falls back to registry jbProjectId)
 contract DePrizeVerify is Script, Config {
     function run() external {
         DePrizeRegistry registry = DePrizeRegistry(vm.envAddress("DEPRIZE_REGISTRY"));
-        DePrizeMint mint = DePrizeMint(payable(vm.envAddress("DEPRIZE_MINT")));
-        DePrizeFeeRouter feeRouter = DePrizeFeeRouter(payable(vm.envAddress("DEPRIZE_FEE_ROUTER")));
+        DePrizeMint mint = DePrizeMint(vm.envAddress("DEPRIZE_MINT"));
         uint256 id = vm.envUint("DEPRIZE_ID");
         address market = vm.envAddress("DEPRIZE_MARKET");
+        address safe = vm.envAddress("DEPRIZE_OWNER");
 
         IDePrizeRegistry.DePrize memory d = registry.getDePrize(id);
         IDePrizeRegistry.DePrizeState st = registry.state(id);
 
-        _ok("registry.state == OPEN", uint256(st) == uint256(IDePrizeRegistry.DePrizeState.OPEN));
+        _ok("registry.state == OPEN", st == IDePrizeRegistry.DePrizeState.OPEN);
         _ok("registry.bettingOpen", registry.bettingOpen(id));
         _ok("not terminal", !registry.isTerminal(id));
         _ok("not refundable", !registry.isRefundable(id));
@@ -41,21 +37,34 @@ contract DePrizeVerify is Script, Config {
         _ok("deprizeIdByJBProject", registry.deprizeIdByJBProject(jb) == id);
         _ok("jbProjectId matches", d.jbProjectId == jb);
 
+        // Authority: every owner is the Safe, nothing answers to an EOA or a contract.
+        _ok("registry.owner == Safe", registry.owner() == safe);
+        _ok("registry.pendingOwner == 0", registry.pendingOwner() == address(0));
+        _ok("mint.owner == Safe", mint.owner() == safe);
+        _ok("mint.pendingOwner == 0", mint.pendingOwner() == address(0));
+        _ok("lmsr.owner == Safe", ILMSRMarketMaker(market).owner() == safe);
+
         _ok("mint.marketOf == lmsr", mint.marketOf(id) == market);
-        _ok("feeRouter.marketOf == lmsr", feeRouter.marketOf(id) == market);
-        _ok("mint.feeRouter set", mint.feeRouter() == address(feeRouter));
-        _ok("lmsr.owner == feeRouter", ILMSRWithTWAP(market).owner() == address(feeRouter));
-        _ok("lmsr.stage == Running (0)", ILMSRWithTWAP(market).stage() == 0);
-        _ok("lmsr.fee == 1e16", ILMSRWithTWAP(market).fee() == 1e16);
+        _ok("mint.complianceSigner set", mint.complianceSigner() != address(0));
+        _ok("mint.registry == registry", address(mint.registry()) == address(registry));
+        _ok("lmsr.stage == Running (0)", ILMSRMarketMaker(market).stage() == 0);
+        _ok("lmsr.fee == 1e16", ILMSRMarketMaker(market).fee() == 1e16);
 
-        bytes32 cond = ILMSRWithTWAP(market).conditionIds(0);
+        bytes32 cond = ILMSRMarketMaker(market).conditionIds(0);
         _ok("market condition == registry", cond == d.ctfConditionId);
-        _ok("condition unresolved (payoutDenominator==0)", IConditionalTokens(ILMSRWithTWAP(market).pmSystem()).payoutDenominator(cond) == 0);
+        IConditionalTokens ctf = IConditionalTokens(ILMSRMarketMaker(market).pmSystem());
+        _ok("condition unresolved (payoutDenominator==0)", ctf.payoutDenominator(cond) == 0);
+        _ok("condition slots == roster", ctf.getOutcomeSlotCount(cond) == d.teamIds.length);
 
-        (address weth, address ctf) = requireDePrizeCollateral(block.chainid);
-        _ok("market collateral == configured WETH", ILMSRWithTWAP(market).collateralToken() == weth);
-        _ok("market pmSystem == configured CTF", ILMSRWithTWAP(market).pmSystem() == ctf);
-        _ok("mint/feeRouter share registry", address(mint.registry()) == address(registry) && address(feeRouter.registry()) == address(registry));
+        (address weth, address ctfCfg) = requireDePrizeCollateral(block.chainid);
+        _ok("market collateral == configured WETH", ILMSRMarketMaker(market).collateralToken() == weth);
+        _ok("market pmSystem == configured CTF", address(ctf) == ctfCfg);
+        _ok("mint.weth == configured WETH", address(mint.weth()) == weth);
+        _ok("mint.ctf == configured CTF", address(mint.ctf()) == ctfCfg);
+
+        // v2 has no TWAP subclass and no fee router: the market must be stock Gnosis.
+        (bool hasTwap,) = market.staticcall(abi.encodeWithSignature("getTWAP()"));
+        _ok("market has no getTWAP (stock LMSRMarketMaker)", !hasTwap);
 
         address payHook = vm.envAddress("DEPRIZE_PAYHOOK");
         require(payHook != address(0), "DEPRIZE_PAYHOOK required (cashOut latch)");

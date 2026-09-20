@@ -629,8 +629,8 @@
         {
           "id": "ilrs-changE7",
           "title": "Chang'e-7 South Pole reconnaissance",
-          "targetDate": "2026",
-          "datePrecision": "year",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
           "status": "planned",
           "sources": [
             {
@@ -1641,6 +1641,7 @@
           "targetDate": "2028",
           "datePrecision": "year",
           "status": "planned",
+          "location": "earth",
           "sources": [
             {
               "label": "SpaceNews — Voyager completes acquisition of Astrobotic",
@@ -1761,7 +1762,7 @@
           "title": "IM-2 Athena — landed near Mons Mouton on its side, mission cut short",
           "targetDate": "2025-03",
           "datePrecision": "month",
-          "status": "delayed",
+          "status": "achieved",
           "sources": [
             {
               "label": "Intuitive Machines — IM-2 mission",
