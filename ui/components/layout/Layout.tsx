@@ -31,6 +31,10 @@ const ProjectBanner = dynamic(() => import('./ProjectBanner'), {
 const CookieBanner = dynamic(() => import('./CookieBanner'), {
   ssr: false,
 })
+const CitizenExpiredModal = dynamic(
+  () => import('@/components/subscription/CitizenExpiredModal'),
+  { ssr: false }
+)
 
 // Gate `ssr: false` dynamics so they never enter the SSR tree as dehydrated
 // Suspense boundaries. Mounting them only after hydration avoids React 18's
@@ -158,6 +162,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           <MissionBanner />
           <ProjectBanner />
           <CookieBanner />
+          <CitizenExpiredModal />
         </ClientOnly>
       </>
 

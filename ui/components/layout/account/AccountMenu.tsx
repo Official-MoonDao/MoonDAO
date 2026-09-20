@@ -29,7 +29,7 @@ export default function AccountMenu() {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const { citizen } = useContext(CitizenContext)
+  const { citizen, isExpired } = useContext(CitizenContext)
   const account = useActiveAccount()
   const { authenticated } = usePrivy()
 
@@ -125,12 +125,15 @@ export default function AccountMenu() {
               Your Profile
             </NavLink>
           ) : (
+            // A lapsed subscription leaves `citizen` unset, but sending that
+            // wallet to the mint flow would be wrong — it already holds the
+            // token and needs the renewal prompt that /dashboard raises.
             <NavLink
-              href="/citizen"
+              href={isExpired ? '/dashboard' : '/citizen'}
               className={ITEM_CLASS}
               onClick={() => setOpen(false)}
             >
-              Become a Citizen
+              {isExpired ? 'Renew Citizenship' : 'Become a Citizen'}
             </NavLink>
           )}
 

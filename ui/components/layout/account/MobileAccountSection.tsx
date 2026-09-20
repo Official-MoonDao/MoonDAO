@@ -27,7 +27,7 @@ export default function MobileAccountSection({
 }: {
   onNavigate?: () => void
 }) {
-  const { citizen } = useContext(CitizenContext)
+  const { citizen, isExpired } = useContext(CitizenContext)
   const account = useActiveAccount()
   const { authenticated } = usePrivy()
 
@@ -44,12 +44,17 @@ export default function MobileAccountSection({
         Your account
       </p>
 
+      {/* See `AccountMenu`: an expired citizen needs renewal, not the mint flow. */}
       <NavLink
-        href={profileHref ?? '/citizen'}
+        href={profileHref ?? (isExpired ? '/dashboard' : '/citizen')}
         onClick={onNavigate}
         className={ITEM_CLASS}
       >
-        {profileHref ? 'Your Profile' : 'Become a Citizen'}
+        {profileHref
+          ? 'Your Profile'
+          : isExpired
+          ? 'Renew Citizenship'
+          : 'Become a Citizen'}
       </NavLink>
 
       <AccountDisclosure label="Your Teams">

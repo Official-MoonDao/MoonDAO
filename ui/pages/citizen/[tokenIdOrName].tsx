@@ -663,8 +663,18 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               <p className="text-slate-300">
                 {isDeleted
                   ? `This profile has been deleted. Please connect the owner's wallet to submit new data.`
+                  : isOwner
+                  ? `Your citizenship has expired. Renew it to restore your profile and the rest of your citizen benefits.`
                   : `The profile has expired. Please connect the owner's wallet to renew.`}
               </p>
+              {!isDeleted && isOwner && (
+                <button
+                  className="mt-5 gradient-2 rounded-full py-3 px-8 text-white font-medium"
+                  onClick={() => setSubModalEnabled(true)}
+                >
+                  Renew Citizenship
+                </button>
+              )}
             </div>
           </div>
         )}
