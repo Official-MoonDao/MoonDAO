@@ -53,19 +53,23 @@ export default function AccountMenu() {
     }
   }, [open])
 
-  // Signed out, this slot is the one call to action the bar makes. "Join" was
-  // previously the first of nine nav items, competing with eight peers; here it
-  // has nothing to compete with.
+  // Signed out, this is the bar's primary call to action: Sign in serves people
+  // who already belong, Join is how anyone new gets in.
   //
-  // Sized and filled to match the Sign in button it stands next to (see
-  // PrivyConnectWallet): same `md:text-[18px]`, same `rounded-full px-4 py-1`,
-  // same `gradient-2`. It was a 14px outline before, which read as the lesser
-  // of the two when it is the more important one.
+  // Matching Sign in exactly (the previous approach) made them a matched pair,
+  // and a pair has no primary. Worse, `gradient-2` is #425eeb -> #6d3f79, which
+  // is the same blue-to-purple as the navbar behind it, so neither pill had much
+  // to push against.
+  //
+  // Hierarchy comes from weight, width and light rather than size: the height
+  // and text size still match Sign in so the two stay aligned, but Join is
+  // bolder, wider, ringed to cut its edge out of the dark bar, and carries a
+  // blue glow that the flat Sign in pill does not.
   if (!isSignedIn) {
     return (
       <NavLink
         href="/join"
-        className="gradient-2 whitespace-nowrap rounded-full px-4 py-1 text-[12px] md:text-[18px] text-white hover:opacity-90 transition-opacity duration-150"
+        className="gradient-2 whitespace-nowrap rounded-full px-5 py-1 text-[12px] md:text-[18px] font-semibold text-white ring-1 ring-white/30 shadow-[0_0_18px_rgba(66,94,235,0.55)] hover:shadow-[0_0_26px_rgba(66,94,235,0.85)] hover:brightness-110 transition duration-150"
       >
         Join
       </NavLink>
