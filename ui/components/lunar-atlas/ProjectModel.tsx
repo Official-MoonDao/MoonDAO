@@ -14806,6 +14806,20 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   'firefly-blue-ghost': BlueGhost,
 }
 
+// Whether anything was ever authored for this project specifically — a
+// component of its own above, or a GLB on its dataset entry — as opposed to it
+// falling through to the generic shape for its type in the switch below.
+//
+// The generic shapes are a reasonable stand-in for a project that stands in a
+// district alongside others of its kind: an unmodelled construction bid still
+// reads as construction hardware on a construction lot. They are not a
+// stand-in for a project with no lot at all, which is why the timeline asks
+// this before deciding whether it can honestly name something (see
+// `timelineProjects` in pages/moonbase).
+export function hasOwnModel(project: Project): boolean {
+  return project.id in PROJECT_MODEL || Boolean(project.modelURI)
+}
+
 export function ProceduralModel({
   project,
   accent,
