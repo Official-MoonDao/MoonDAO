@@ -5,15 +5,23 @@ import {
 } from '@/lib/citizen/citizenSubscription'
 
 const HOUR = 60 * 60
+const EXPIRY_KEY_PREFIX = 'moondao_citizen_expiry_'
 
 function nowSeconds() {
   return Math.floor(Date.now() / 1000)
 }
 
-// Minimal localStorage so the cache helpers can run outside a browser.
-function stubLocalStorage() {
+// The cache helpers no-op unless they can see a browser, so the Mocha (Node)
+// pass needs a stand-in. Cypress already runs in a real browser, where
+// `localStorage` is a getter-only property of Window — assigning to it from a
+// module throws, so the stub is installed only when it is actually missing.
+function installStorageStub() {
   const store = new Map<string, string>()
   const storage = {
+    get length() {
+      return store.size
+    },
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
     getItem: (key: string) => store.get(key) ?? null,
     setItem: (key: string, value: string) => {
       store.set(key, value)
@@ -24,7 +32,22 @@ function stubLocalStorage() {
   }
   ;(globalThis as any).window = globalThis
   ;(globalThis as any).localStorage = storage
-  return store
+}
+
+// Leaving the stubs in place would make later specs in this Mocha process think
+// they're running in a browser.
+function removeStorageStub() {
+  delete (globalThis as any).localStorage
+  delete (globalThis as any).window
+}
+
+function expiryKeys() {
+  const keys: string[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key?.startsWith(EXPIRY_KEY_PREFIX)) keys.push(key)
+  }
+  return keys
 }
 
 describe('citizen subscription expiration', () => {
@@ -46,19 +69,21 @@ describe('citizen subscription expiration', () => {
   })
 
   describe('expiration cache', () => {
-    let store: Map<string, string>
-    const originalWindow = (globalThis as any).window
-    const originalLocalStorage = (globalThis as any).localStorage
+    let storageStubbed = false
 
-    beforeEach(() => {
-      store = stubLocalStorage()
+    before(() => {
+      storageStubbed = typeof localStorage === 'undefined'
+      if (storageStubbed) installStorageStub()
     })
 
-    // Leaving the stubs in place would make later specs in this Mocha process
-    // think they're running in a browser.
-    afterEach(() => {
-      ;(globalThis as any).window = originalWindow
-      ;(globalThis as any).localStorage = originalLocalStorage
+    after(() => {
+      if (storageStubbed) removeStorageStub()
+    })
+
+    // Only our own entries are touched — in the browser this is the shared
+    // localStorage of the spec frame.
+    beforeEach(() => {
+      expiryKeys().forEach((key) => localStorage.removeItem(key))
     })
 
     it('round-trips an active expiration', () => {
@@ -70,19 +95,21 @@ describe('citizen subscription expiration', () => {
     // Caching an expired verdict would mask a renewal until the entry aged out.
     it('never caches an expiration that has already passed', () => {
       setCachedCitizenExpiry('42', nowSeconds() - HOUR)
-      expect(store.size).to.equal(0)
+      expect(expiryKeys()).to.have.length(0)
       expect(getCachedCitizenExpiry('42')).to.equal(undefined)
     })
 
     it('drops a cached expiration once it lapses', () => {
-      const expiresAt = nowSeconds() + 1
-      setCachedCitizenExpiry('42', expiresAt)
+      setCachedCitizenExpiry('42', nowSeconds() + 1)
 
-      const key = Array.from(store.keys())[0]
-      store.set(key, JSON.stringify({ data: nowSeconds() - 1, timestamp: Date.now() }))
+      const key = expiryKeys()[0]
+      localStorage.setItem(
+        key,
+        JSON.stringify({ data: nowSeconds() - 1, timestamp: Date.now() })
+      )
 
       expect(getCachedCitizenExpiry('42')).to.equal(undefined)
-      expect(store.size).to.equal(0)
+      expect(expiryKeys()).to.have.length(0)
     })
 
     it('returns undefined for an unknown token', () => {
