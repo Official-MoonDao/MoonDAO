@@ -176,14 +176,15 @@ softgoods module uses for its own power feed.
   a `PROJECT_MODEL` entry alone would have rendered nothing. The GLB file itself
   is left in `public/` unreferenced, the same as `insight-lander.glb`.
 
-### The landing zone — Touchdown (DONE — 5 of 5)
+### The landing zone — Touchdown (DONE — 6 of 6)
 
 `shared-next-landing` was the newest race and the least differentiated. **All
-five vehicles now have their own models**: `blue-origin-blue-moon-mk1`,
-`cnsa-change-7`, `astrobotic-griffin`, `im-nova-c` and `firefly-blue-ghost`.
-Nothing in this race falls through to the generic `Lander` any more.
+six vehicles now have their own models**: `blue-origin-blue-moon-mk1`,
+`cnsa-change-7`, `astrobotic-griffin`, `im-nova-c`, `firefly-blue-ghost` and
+`ispace-apex`. Nothing in this race falls through to the generic `Lander` any
+more.
 
-**What tells them apart, in priority order.** This matters because five
+**What tells them apart, in priority order.** This matters because six
 four-to-six-legged landers on one pad is exactly the situation where a later
 edit "harmonises" two of them back into looking alike:
 
@@ -194,6 +195,29 @@ edit "harmonises" two of them back into looking alike:
 | Griffin | hexagonal basket of solar panels | 4 bare aluminium, no gold at all |
 | Nova-C | 4 m column tapering to a cone | **6** legs, lattice of thin tubes |
 | Blue Ghost | squat octagonal pyramid + chimney | 4 single thick tubes, flat oval skids |
+| ULTRA | crown of upright black solar slabs under a dish | 4 black bipods, polished damper cartridge, flat round discs |
+
+**`ispace-apex` draws ULTRA, and the id is a lie you should not "fix".** ispace
+cancelled APEX 1.0 on 27 March 2026, folding it and the Japanese Series 3 into
+one lander called ULTRA and dropping the VoidRunner engine with it; APEX 1.0 is
+gone from ispace's own spacecraft lineup. The project id stays `ispace-apex`
+because it is a stable key that three layers and a dataset reference — the same
+situation as `astrobotic-griffin` covering Peregrine. Renaming it is a
+migration, not a typo fix.
+
+ULTRA is the only entrant whose silhouette is mostly what stands **on** the body
+rather than the body itself, which is why it survives next to five other
+landers: a crown of tall black solar slabs standing on end at uneven heights,
+with a high-gain dish above them. Its skirt narrows going *down*, the inverse of
+Blue Ghost's pyramid. At 3.6 m high by 3.3 m wide it is the second-smallest pad
+in the district, and **height is its largest dimension** — true of only one
+other vehicle here (Nova-C), so `PROJECT_SIZE_M` describes its height and the
+dish rim is derived to land on that figure exactly rather than placed by eye.
+Its panels are near-vertical on purpose and that is *not* a violation of the
+sun-rake rule: the rule governs installations that get to choose their own
+orientation (the base's solar farm), and a lander's body-mounted array does not
+— ispace sells ULTRA for high-latitude and far-side sites where the sun never
+climbs far off the horizon, which is what a panel on end collects.
 
 Earlier revisions of this doc claimed the *gear finish* was what separated
 these. **That is no longer true and should not be relied on:** Blue Ghost is
