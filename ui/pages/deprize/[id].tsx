@@ -733,7 +733,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         </div>
         {/* A sticky column taller than the viewport hides its own bottom, and
             the patron and caller lists have no fixed length — so it scrolls. */}
-        <aside className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:overscroll-contain">
+        <aside className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-16 lg:max-h-[calc(100vh-4rem)] lg:overflow-y-auto">
         <PrizePoolSlot
           poolUsd={poolUsd}
           asOf={poolAsOf}

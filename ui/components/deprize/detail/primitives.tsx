@@ -17,7 +17,7 @@ export const TOUCH = 'min-h-[44px] sm:min-h-0'
  * long prize cannot push the rest of the page — or the rest of the sidebar —
  * out of reach.
  */
-export const SCROLL_LIST = 'max-h-[18rem] overflow-y-auto overscroll-contain pr-1'
+export const SCROLL_LIST = 'max-h-[18rem] overflow-y-auto pr-1'
 
 export function StateBadge({
   state,

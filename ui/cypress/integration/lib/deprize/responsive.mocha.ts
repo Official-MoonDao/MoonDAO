@@ -61,15 +61,19 @@ describe('deprize responsive layout', () => {
     const scroll = (match as RegExpMatchArray)[1]
     expect(scroll).to.match(/max-h-\[/)
     expect(scroll).to.match(/overflow-y-auto/)
-    expect(scroll, 'a nested list must not steal the page scroll').to.match(/overscroll-contain/)
+    expect(
+      scroll,
+      'contain stops chaining into the page (and the sidebar) once the list ends'
+    ).to.not.match(/overscroll-contain/)
   })
 
   it('lets the sticky sidebar scroll itself instead of hiding its own bottom', () => {
     const src = readUi('pages/deprize/[id].tsx')
     const aside = src.slice(src.indexOf('<aside'), src.indexOf('</aside>'))
     expect(aside).to.match(/lg:sticky/)
+    expect(aside, 'must clear the fixed h-16 nav, not sit under it').to.match(/lg:top-16/)
     expect(aside, 'a sticky column taller than the viewport traps its tail').to.match(
-      /lg:max-h-\[calc\(100vh/
+      /lg:max-h-\[calc\(100vh-4rem\)/
     )
     expect(aside).to.match(/lg:overflow-y-auto/)
   })
