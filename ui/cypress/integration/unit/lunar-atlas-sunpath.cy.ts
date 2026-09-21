@@ -257,12 +257,18 @@ describe('exposing for the sun that is actually up', () => {
     }
   })
 
-  it('opens up well under a stop for the real sun, not the 12.5x flat tracking wants', () => {
+  it('opens up well under a stop for the real sun, not the 15.8x flat tracking wants', () => {
     // The magnitude on the record, because it is the whole difference between the
-    // policies. Holding FLAT ground constant demands 12.5x more exposure at 2.08°
+    // policies. Holding FLAT ground constant demands 15.8x more exposure at 2.08°
     // than at 44.46° — and at a grazing sun a 25° slope is several times brighter
-    // than the flat ground beside it, so paying that 12.5x sends every sun-facing
+    // than the flat ground beside it, so paying that 15.8x sends every sun-facing
     // bump on the patch to white. Chalky noon, at midnight-grazing incidence.
+    //
+    // It was 12.5x before the BRDF modelled macroscopic roughness, and the gap grew
+    // for a reason worth keeping: Hapke's shadowing term goes to zero as incidence
+    // approaches 90°, so a rough surface loses MORE at a grazing sun than a smooth
+    // one does. Every number here moved in the direction that makes flat tracking a
+    // worse idea, not a better one.
     //
     // Holding the highlight constant costs ~1.6x instead: incidence on the reference
     // slope only moves from 69.5° to 27.1° as the sun drops, and Hapke is far flatter
@@ -273,7 +279,7 @@ describe('exposing for the sun that is actually up', () => {
     expect(ratio).to.be.lessThan(2.5) // and modestly — nowhere near flat tracking
     const flatTracking =
       litGroundRadiance(SUN_INTENSITY, SUN_LOCAL_ELEV_DEG) / litGroundRadiance(SUN_INTENSITY, real)
-    expect(flatTracking).to.be.closeTo(12.5, 0.3)
+    expect(flatTracking).to.be.closeTo(15.8, 0.3)
     expect(ratio).to.be.lessThan(flatTracking / 4)
   })
 

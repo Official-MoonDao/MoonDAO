@@ -145,6 +145,13 @@ export function buildLunarEnvironmentTexture(): THREE.DataTexture {
         // number: metal reflecting a plain 4x brighter than the plain it is
         // standing on is precisely the class of disagreement this file's header
         // promises the scene does not have.
+        //
+        // Macroscopic roughness arrives here through the BRDF's own default, and
+        // the default is the right one for this caller specifically: an
+        // environment map has no relief drawn into it at all, so every bit of the
+        // Moon's ~20° of facet slope is unresolved and has to be modelled. The
+        // terrain is the one surface that needs a smaller number, because it draws
+        // most of that itself.
         const L = SUN_INTENSITY * hapkeReflectance(mu0, mu, g)
         cr += groundMix * (REGOLITH_TINT[0] * L - cr)
         cg += groundMix * (REGOLITH_TINT[1] * L - cg)

@@ -165,6 +165,7 @@ describe('terrain shader patches against three s real Lambert source', () => {
       // silently by three, and the shading just comes out wrong.
       for (const name of [
         'terrainNormalMap',
+        'terrainSlopeSqMap',
         'detailSlopeMap',
         'mapXDir',
         'bounceRadiance',
@@ -192,7 +193,32 @@ describe('terrain shader patches against three s real Lambert source', () => {
       // lets whichever is steeper flatten the other, which at the ridge crest
       // would erase the craterlets and in the flats would erase the ridge.
       expect(src).to.contain('vec2 grad = -base / baseZ;')
-      expect(src).to.match(/grad \+= texture2D\(detailSlopeMap/)
+      expect(src).to.match(/grad \+= d\.xy \* [\d.]+;/)
+    })
+
+    it('accumulates the variance every octave lost, with the amplitude squared', () => {
+      // The roughness bookkeeping, and the one line of it that is easy to get wrong.
+      // Slopes are scaled by the octave amplitude, so their VARIANCE is scaled by its
+      // square; writing the amplitude once here would under-report the roughness of
+      // the coarse octaves by 4x and leave the far field too smooth to stay off the
+      // BRDF's domain edge — which is the bug this whole change exists to remove.
+      for (const [, amp] of DETAIL_OCTAVES) {
+        const a = amp.toFixed(4)
+        expect(src, `octave ${a}`).to.contain(
+          `lostVariance += ${a} * ${a} * max(d.z - dot(d.xy, d.xy), 0.0);`
+        )
+      }
+      // And the DEM's own band, differenced against the gradient before any octave
+      // has been added to it.
+      const dem = src.indexOf('texture2D(terrainSlopeSqMap, vUv).r - dot(grad, grad)')
+      expect(dem).to.be.greaterThan(-1)
+      expect(dem).to.be.lessThan(src.indexOf('lostVariance +='))
+    })
+
+    it('sets theta-bar before the light loop that reads it', () => {
+      const set = src.indexOf('regolithThetaBar = regolithResidualRoughness(lostVariance);')
+      expect(set).to.be.greaterThan(-1)
+      expect(set).to.be.lessThan(src.indexOf('#include <lights_fragment_begin>'))
     })
   })
 
@@ -294,12 +320,37 @@ describe('graded surface patches against three s real Standard source', () => {
     // reflect light differently and nothing fails — it just looks like a
     // materials choice somebody made on purpose.
     const bodyOf = (s: string) => {
-      const start = s.indexOf('float mu0 = dot(geometryNormal')
+      const start = s.indexOf('const float HORIZON_EPS')
       return s.slice(start, s.indexOf('reflectedLight.directDiffuse', start))
     }
     const terrain = applyShaderPatches(lambert.fragmentShader, TERRAIN_FRAGMENT_PATCHES)
     expect(bodyOf(src)).to.equal(bodyOf(terrain))
-    expect(bodyOf(src)).to.contain('hapkeReflectance(mu0, mu, cosG, acos(cosG))')
+    expect(bodyOf(src)).to.contain(
+      'hapkeReflectance(mu0, mu, cosG, acos(cosG), regolithThetaBar)'
+    )
+  })
+
+  it('clamps the shading normal into the visible hemisphere before shading', () => {
+    // The line that stopped the far field going black. A normal sampled from a
+    // texture can point behind a surface the mesh says is visible, and at a grazing
+    // view most of a distant slope does; without this the BRDF is handed an
+    // emergence angle past 90°, leaves its own domain, and returns zero.
+    //
+    // Asserted on BOTH material classes because they share the patch, and because a
+    // road that went black where the ground beside it did not would be the more
+    // conspicuous half of the same bug.
+    for (const [name, shader] of [
+      ['graded', src],
+      ['terrain', applyShaderPatches(lambert.fragmentShader, TERRAIN_FRAGMENT_PATCHES)],
+    ] as [string, string][]) {
+      const body = shader.slice(shader.indexOf('void RE_Direct_Hapke('))
+      expect(body, name).to.contain('if (nv < HORIZON_EPS)')
+      expect(body, name).to.contain('n = normalize(n + geometryViewDir * (HORIZON_EPS - nv));')
+      // And the cosines must be taken from the CLAMPED normal, not the original.
+      expect(body, name).to.contain('float mu0 = dot(n, directLight.direction);')
+      expect(body, name).to.contain('float mu = dot(n, geometryViewDir);')
+      expect(body, name).to.not.contain('dot(geometryNormal, geometryViewDir)')
+    }
   })
 
   it('fills its shadows, so a road cannot go black where the ground does not', () => {
@@ -359,7 +410,17 @@ describe('graded surface patches against three s real Standard source', () => {
     // the whole argument for sharing them is that a road and the ground it crosses
     // are in the same shadow.
     expect(src).to.not.contain('terrainNormalMap')
+    expect(src).to.not.contain('terrainSlopeSqMap')
     expect(src).to.not.contain('detailSlopeMap')
+  })
+
+  it('takes the fully-unresolved theta-bar, since its own relief is not drawn', () => {
+    // A road has no normal map describing its sub-metre craterlets the way the
+    // terrain does, so none of that roughness is drawn and all of it has to be
+    // modelled. The declaration's default is what supplies it; the terrain is the
+    // only surface that overwrites it, and it does so because it draws most of it.
+    expect(src).to.contain('float regolithThetaBar = HAPKE_MACRO_ROUGHNESS;')
+    expect(src).to.not.contain('regolithThetaBar = regolithResidualRoughness')
   })
 
   it('reconstructs its place in the skyline field from the world, not from its own UVs', () => {

@@ -188,6 +188,19 @@ export function occlusionPatch(uvExpr: string, worldPosExpr: string): ShaderPatc
 // the incidence cosine internally, inside mu0/(mu0 + mu), so multiplying by
 // directLight.color alone is the dimensionally correct thing — structurally the
 // same as Lambert's own dotNL * color * albedo/pi.
+//
+// THE HORIZON CLAMP IS NOT A FUDGE, and it is the line that stopped the far field
+// going black, so it is worth being precise about what it fixes. A BRDF is defined
+// for surfaces that face the eye. On a real surface that is automatic. Here the
+// shading normal comes from a texture at the DEM's resolution while the silhouette
+// comes from a 15.6 m mesh, so the normal is perfectly free to point behind a
+// surface the mesh says is plainly visible — and at a grazing view most of a ridge
+// flank does exactly that. Every one of those fragments used to leave the BRDF's
+// domain and return zero, which put large terrain-shaped black areas across the
+// distance. Tipping the normal back to just inside the horizon is the standard fix
+// for a normal map that has left the visible hemisphere, and it is the honest one:
+// what the eye can see there really is facets angled toward it, which is also what
+// theta-bar goes on to describe statistically.
 export function hapkeDirectPatch(parsChunk: string, materialStruct: string): ShaderPatch {
   return {
     label: `replace RE_Direct with Hapke (${materialStruct})`,
@@ -195,10 +208,20 @@ export function hapkeDirectPatch(parsChunk: string, materialStruct: string): Sha
     insert: `#include <${parsChunk}>
 #undef RE_Direct
 void RE_Direct_Hapke( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in ${materialStruct} material, inout ReflectedLight reflectedLight ) {
-  float mu0 = dot(geometryNormal, directLight.direction);
-  float mu = dot(geometryNormal, geometryViewDir);
+  // ~0.6 deg of clearance inside the horizon: enough to keep the emergence angle
+  // inside the roughness model's domain, small enough that any normal which was
+  // already valid is left exactly as it was.
+  const float HORIZON_EPS = 0.01;
+  vec3 n = geometryNormal;
+  float nv = dot(n, geometryViewDir);
+  if (nv < HORIZON_EPS) {
+    n = normalize(n + geometryViewDir * (HORIZON_EPS - nv));
+  }
+
+  float mu0 = dot(n, directLight.direction);
+  float mu = dot(n, geometryViewDir);
   float cosG = clamp(dot(directLight.direction, geometryViewDir), -1.0, 1.0);
-  float r = hapkeReflectance(mu0, mu, cosG, acos(cosG));
+  float r = hapkeReflectance(mu0, mu, cosG, acos(cosG), regolithThetaBar);
   // regolithDirectOcclusion is the skyline test; directLight.color already carries
   // the shadow map's attenuation. The two are multiplied because they occlude
   // different things — a habitat's own shadow and a ridge 6 km away — and a point
@@ -432,6 +455,7 @@ reflectedLight.indirectDiffuse += siteLight * (1.0 - regolithDirectOcclusion) * 
 
 export const TERRAIN_FRAGMENT_PATCHES: ShaderPatch[] = [
   regolithDeclarationsPatch(`uniform sampler2D terrainNormalMap;
+uniform sampler2D terrainSlopeSqMap;
 uniform sampler2D detailSlopeMap;
 uniform vec3 mapXDir;
 `),
@@ -463,10 +487,34 @@ uniform vec3 mapXDir;
   // normals instead lets whichever is stronger flatten the other.
   float baseZ = sqrt(max(1.0 - dot(base, base), 1e-6));
   vec2 grad = -base / baseZ;
+
+  // Slope variance this pixel's normal did NOT carry, accumulated as we go.
+  //
+  // Every lookup below is a filtered MEAN over the pixel's footprint, so the
+  // relief inside the footprint has been averaged out of it — that is what makes
+  // distant ground smooth, and it is why the far field had no roughness left to
+  // keep it off the BRDF's domain edge. The companion textures hold the MEAN
+  // SQUARE of the same field, which mips alongside it, so E[|s|^2] - |E[s]|^2 is
+  // the variance that went missing, exactly, at whatever mip the GPU chose. It
+  // goes to theta-bar and gets modelled instead of drawn.
+  //
+  // The base term treats the filtered NORMAL as though it were the filtered
+  // GRADIENT, which it is not quite (normalizing and averaging do not commute).
+  // The two differ by a few percent at DEM slopes and the result is a roughness
+  // angle, so it is well under the spread of the fits theta-bar comes from.
+  float lostVariance = max(texture2D(terrainSlopeSqMap, vUv).r - dot(grad, grad), 0.0);
 ${DETAIL_OCTAVES.map(
-  ([repeat, amp]) =>
-    `  grad += texture2D(detailSlopeMap, vUv * ${repeat.toFixed(1)}).xy * ${amp.toFixed(4)};`
+  ([repeat, amp]) => {
+    const a = amp.toFixed(4)
+    return `  {
+    vec4 d = texture2D(detailSlopeMap, vUv * ${repeat.toFixed(1)});
+    grad += d.xy * ${a};
+    lostVariance += ${a} * ${a} * max(d.z - dot(d.xy, d.xy), 0.0);
+  }`
+  }
 ).join('\n')}
+
+  regolithThetaBar = regolithResidualRoughness(lostVariance);
 
   float inv = inversesqrt(dot(grad, grad) + 1.0);
   vec3 nWorld = normalize((ex * -grad.x + ey * -grad.y + up) * inv);

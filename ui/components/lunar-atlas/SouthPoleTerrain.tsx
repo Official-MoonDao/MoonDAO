@@ -94,34 +94,84 @@ function toBufferGeometry(field: PolarHeightField, grid: number): CapMesh {
   return { geometry: geo, origin: new THREE.Vector3(...cap.origin) }
 }
 
+function toHalf(src: Float32Array): Uint16Array {
+  const half = new Uint16Array(src.length)
+  for (let i = 0; i < src.length; i++) half[i] = THREE.DataUtils.toHalfFloat(src[i])
+  return half
+}
+
 // The terrain's own normals, at the height field's full resolution, as a
 // two-channel float texture. Half float rather than bytes on purpose: 8 bits
 // across [-1, 1] quantises the normal to about 0.45°, and once the sun sits at
 // its true polar elevation of ~2° a 0.45° error is a tenth of the incidence
 // cosine. Linear filtering is safe here in a way it would NOT be on the packed
 // height PNG, whose high/low byte split cannot be interpolated at all.
-function toNormalTexture(field: PolarHeightField): THREE.DataTexture {
-  const { size, data } = buildNormalField(field)
-  const half = new Uint16Array(data.length)
-  for (let i = 0; i < data.length; i++) half[i] = THREE.DataUtils.toHalfFloat(data[i])
-  const tex = new THREE.DataTexture(half, size, size, THREE.RGFormat, THREE.HalfFloatType)
-  tex.magFilter = THREE.LinearFilter
-  tex.minFilter = THREE.LinearMipmapLinearFilter
-  tex.generateMipmaps = true
-  tex.anisotropy = 16
-  tex.needsUpdate = true
-  return tex
+//
+// The second texture is the same field's MEAN SQUARE slope, which the shader
+// differences against the filtered normal to recover the roughness a mip level
+// destroyed (see buildNormalField and residualRoughness). One channel, so at
+// 1600² it costs 5 MB against the normal map's 10 — widening the normal map to
+// RGBA instead would have cost 10, and this scene already has a phone budget.
+function toNormalTextures(field: PolarHeightField): {
+  normal: THREE.DataTexture
+  slopeSq: THREE.DataTexture
+} {
+  const { size, data, variance } = buildNormalField(field)
+
+  const normal = new THREE.DataTexture(
+    toHalf(data),
+    size,
+    size,
+    THREE.RGFormat,
+    THREE.HalfFloatType
+  )
+  const slopeSq = new THREE.DataTexture(
+    toHalf(variance),
+    size,
+    size,
+    THREE.RedFormat,
+    THREE.HalfFloatType
+  )
+
+  // Identical filtering on both, and that is load-bearing rather than tidy: the
+  // variance the shader recovers is E[|s|²] - |E[s]|², so the two textures have to
+  // be averaged over the same footprint or the subtraction is between two different
+  // neighbourhoods and can come out any sign it likes.
+  for (const tex of [normal, slopeSq]) {
+    tex.magFilter = THREE.LinearFilter
+    tex.minFilter = THREE.LinearMipmapLinearFilter
+    tex.generateMipmaps = true
+    tex.anisotropy = 16
+    tex.needsUpdate = true
+  }
+
+  return { normal, slopeSq }
 }
 
 // The tiling sub-resolution detail, uploaded as slopes. The field itself is
 // generated in lib/lunar-atlas/detailTile.ts, which is where the argument for its
 // contents and the measurement of its roughness live; this only turns it into a
 // texture.
+//
+// Four channels rather than two, carrying (gx, gy, gx² + gy², 0). The mean square
+// rides in the same texture as the slopes it belongs to because the terrain samples
+// this four times — once per octave — and splitting it out would make that eight
+// fetches to save 0.5 MB on a 512² tile.
 function toDetailTexture(): THREE.DataTexture {
-  const { size, data } = buildDetailSlopeTile()
-  const half = new Uint16Array(data.length)
-  for (let i = 0; i < data.length; i++) half[i] = THREE.DataUtils.toHalfFloat(data[i])
-  const tex = new THREE.DataTexture(half, size, size, THREE.RGFormat, THREE.HalfFloatType)
+  const { size, data, second } = buildDetailSlopeTile()
+  const rgba = new Float32Array(size * size * 4)
+  for (let i = 0; i < size * size; i++) {
+    rgba[i * 4] = data[i * 2]
+    rgba[i * 4 + 1] = data[i * 2 + 1]
+    rgba[i * 4 + 2] = second[i]
+  }
+  const tex = new THREE.DataTexture(
+    toHalf(rgba),
+    size,
+    size,
+    THREE.RGBAFormat,
+    THREE.HalfFloatType
+  )
   tex.wrapS = THREE.RepeatWrapping
   tex.wrapT = THREE.RepeatWrapping
   tex.magFilter = THREE.LinearFilter
@@ -139,7 +189,10 @@ export default function SouthPoleTerrain({
   onSurfaceClick?: () => void
 }) {
   const [innerGeo, setInnerGeo] = useState<CapMesh | null>(null)
-  const [normalTex, setNormalTex] = useState<THREE.DataTexture | null>(null)
+  const [normalTex, setNormalTex] = useState<{
+    normal: THREE.DataTexture
+    slopeSq: THREE.DataTexture
+  } | null>(null)
 
   const detail = useMemo(() => toDetailTexture(), [])
   useEffect(() => () => detail.dispose(), [detail])
@@ -153,7 +206,7 @@ export default function SouthPoleTerrain({
     loadInnerField().then((field) => {
       if (cancelled) return
       setInnerGeo(toBufferGeometry(field, CAP_GRID))
-      setNormalTex(toNormalTexture(field))
+      setNormalTex(toNormalTextures(field))
     })
     return () => {
       cancelled = true
@@ -166,7 +219,13 @@ export default function SouthPoleTerrain({
     },
     [innerGeo]
   )
-  useEffect(() => () => normalTex?.dispose(), [normalTex])
+  useEffect(
+    () => () => {
+      normalTex?.normal.dispose()
+      normalTex?.slopeSq.dispose()
+    },
+    [normalTex]
+  )
 
   const notified = useRef(false)
   useEffect(() => {
@@ -179,7 +238,8 @@ export default function SouthPoleTerrain({
   const onBeforeCompile = useMemo(
     () => (shader: THREE.WebGLProgramParametersWithUniforms) => {
       if (!normalTex) return
-      shader.uniforms.terrainNormalMap = { value: normalTex }
+      shader.uniforms.terrainNormalMap = { value: normalTex.normal }
+      shader.uniforms.terrainSlopeSqMap = { value: normalTex.slopeSq }
       shader.uniforms.detailSlopeMap = { value: detail }
       shader.uniforms.mapXDir = { value: new THREE.Vector3(...MAP_X_DIR) }
       // The skyline field, the sun tested against it, and the shadow fill derived
@@ -232,7 +292,7 @@ export default function SouthPoleTerrain({
         defines={{ USE_UV: '' }}
         onBeforeCompile={onBeforeCompile}
         // onBeforeCompile changes don't retrigger compilation on their own.
-        customProgramCacheKey={() => 'sp-hapke-v1'}
+        customProgramCacheKey={() => 'sp-hapke-v2-rough'}
       />
     </mesh>
   )
