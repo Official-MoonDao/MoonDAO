@@ -1,13 +1,16 @@
-import { randomBytes } from 'crypto'
 import { Redis } from '@upstash/redis'
+import { randomBytes } from 'crypto'
+import type { DiscountBps } from '@/lib/citizen/discountInvite'
 
 /**
- * One-time "magic link" invite tokens for sponsored citizen mints.
+ * One-time "magic link" invite tokens for citizen mints.
  *
- * A token grants a single free (relayer-sponsored) citizen mint to whichever
- * wallet redeems it. Tokens live in Upstash Redis (the same store used for the
- * Typeform answer cache and rate limiting) so redemption can be enforced
- * exactly once across serverless invocations.
+ * A token grants a single mint to whichever wallet redeems it. `discountBps`
+ * 1000 (or a missing value on older tokens) is a fully sponsored mint. 200 and
+ * 500 mean the recipient pays the remainder and the relayer covers the
+ * discount. Tokens live in Upstash Redis (the same store used for the Typeform
+ * answer cache and rate limiting) so redemption can be enforced exactly once
+ * across serverless invocations.
  *
  * Security model:
  *  - Tokens are high-entropy random strings (unguessable).
@@ -23,8 +26,12 @@ import { Redis } from '@upstash/redis'
 
 const TOKEN_PREFIX = 'citizen:invite:'
 const REDEEMED_PREFIX = 'citizen:invite:redeemed:'
+const PAYMENT_PREFIX = 'citizen:discount:payment:'
+const PAYMENT_LOCK_PREFIX = 'citizen:discount:payment-lock:'
 const DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
 const REDEEMED_AUDIT_TTL_SECONDS = 90 * 24 * 60 * 60 // keep an audit trail 90 days
+const PAYMENT_TTL_SECONDS = REDEEMED_AUDIT_TTL_SECONDS
+const PAYMENT_LOCK_TTL_SECONDS = 180
 
 export type CitizenInvite = {
   /** ms epoch the invite was created. */
@@ -33,11 +40,30 @@ export type CitizenInvite = {
   label?: string
   /** Optional creator note (who minted the link). */
   createdBy?: string
+  /**
+   * Parts-per-thousand taken off the first year. 1000 is fully sponsored.
+   * Missing on invites created before partial discounts existed.
+   */
+  discountBps?: DiscountBps
 }
 
 export type RedeemedInvite = CitizenInvite & {
   redeemedBy: string
   redeemedAt: number
+  /** Wei the recipient paid toward a partial discount. Absent on free mints. */
+  paidWei?: string
+  /** Transaction hash of that payment. */
+  paymentTx?: string
+}
+
+export type DiscountPaymentStatus = 'open' | 'refunded' | 'spent'
+
+export type DiscountPaymentRecord = {
+  status: DiscountPaymentStatus
+  payer: string
+  token: string
+  valueWei: string
+  updatedAt: number
 }
 
 let redis: Redis | null = null
@@ -57,6 +83,14 @@ function tokenKey(token: string): string {
 
 function redeemedKey(token: string): string {
   return `${REDEEMED_PREFIX}${token}`
+}
+
+function paymentKey(txHash: string): string {
+  return `${PAYMENT_PREFIX}${txHash.toLowerCase()}`
+}
+
+function paymentLockKey(txHash: string): string {
+  return `${PAYMENT_LOCK_PREFIX}${txHash.toLowerCase()}`
 }
 
 /** Generate an unguessable invite token (URL-safe base64, ~256 bits). */
@@ -94,27 +128,30 @@ export async function peekInvite(token: string): Promise<CitizenInvite | null> {
 
 /**
  * Atomically redeem an invite for `address`. Uses GETDEL so the token can only
- * be consumed once even under concurrent requests. Returns true if this call
- * won the redemption, false if the token was missing/expired/already used.
+ * be consumed once even under concurrent requests. Returns the consumed invite
+ * when this call won the redemption, or null if the token was missing, expired,
+ * already used, or Redis errored.
  *
  * The caller MUST have already verified that `address` belongs to the
- * authenticated Privy user before calling this.
+ * authenticated Privy user before calling this. The returned record includes
+ * `discountBps`, which matters when an earlier peek missed.
  */
 export async function consumeInvite(
   token: string,
-  address: string
-): Promise<boolean> {
+  address: string,
+  payment?: { paidWei: string; paymentTx: string }
+): Promise<CitizenInvite | null> {
   const client = getRedis()
-  if (!client || !token || !address) return false
+  if (!client || !token || !address) return null
   let invite: CitizenInvite | null = null
   try {
     // GETDEL is atomic: the first caller gets the value, everyone else gets null.
     invite = await client.getdel<CitizenInvite>(tokenKey(token))
   } catch (err) {
     console.error('[citizen-invite] consume failed:', err)
-    return false
+    return null
   }
-  if (!invite) return false
+  if (!invite) return null
 
   // Best-effort audit record of who redeemed the link (does not gate success).
   try {
@@ -122,6 +159,7 @@ export async function consumeInvite(
       ...invite,
       redeemedBy: address,
       redeemedAt: Date.now(),
+      ...(payment ? { paidWei: payment.paidWei, paymentTx: payment.paymentTx } : {}),
     }
     await client.set(redeemedKey(token), redeemed, {
       ex: REDEEMED_AUDIT_TTL_SECONDS,
@@ -129,7 +167,103 @@ export async function consumeInvite(
   } catch (err) {
     console.warn('[citizen-invite] failed to write redeemed audit record:', err)
   }
-  return true
+  return invite
+}
+
+export type DiscountPaymentClaim =
+  | 'claimed'
+  | 'locked'
+  | 'spent'
+  | 'refunded'
+  | 'mismatch'
+  | 'unavailable'
+
+/**
+ * Claim a discount payment tx so two requests cannot both mint or both refund
+ * it. The record is kept for the audit TTL. A short lock stops a second
+ * request while the first is still minting; if that request dies, the lock
+ * expires and the same wallet can retry.
+ */
+export async function claimDiscountPayment(input: {
+  txHash: string
+  payer: string
+  token: string
+  valueWei: string
+}): Promise<DiscountPaymentClaim> {
+  const client = getRedis()
+  if (!client || !input.txHash || !input.payer || !input.token) return 'unavailable'
+
+  const key = paymentKey(input.txHash)
+  try {
+    let existing = await client.get<DiscountPaymentRecord>(key)
+    if (!existing) {
+      const created: DiscountPaymentRecord = {
+        status: 'open',
+        payer: input.payer,
+        token: input.token,
+        valueWei: input.valueWei,
+        updatedAt: Date.now(),
+      }
+      const wrote = await client.set(key, created, { nx: true, ex: PAYMENT_TTL_SECONDS })
+      if (wrote !== 'OK') {
+        existing = await client.get<DiscountPaymentRecord>(key)
+      }
+    }
+
+    if (existing) {
+      if (existing.status === 'spent') return 'spent'
+      if (existing.status === 'refunded') return 'refunded'
+      if (
+        existing.payer.toLowerCase() !== input.payer.toLowerCase() ||
+        existing.token !== input.token
+      ) {
+        return 'mismatch'
+      }
+    }
+
+    const locked = await client.set(
+      paymentLockKey(input.txHash),
+      { payer: input.payer, at: Date.now() },
+      { nx: true, ex: PAYMENT_LOCK_TTL_SECONDS }
+    )
+    if (locked !== 'OK') return 'locked'
+    return 'claimed'
+  } catch (err) {
+    console.error('[citizen-invite] payment claim failed:', err)
+    return 'unavailable'
+  }
+}
+
+export async function setDiscountPaymentStatus(
+  txHash: string,
+  status: 'refunded' | 'spent'
+): Promise<void> {
+  const client = getRedis()
+  if (!client || !txHash) return
+  const key = paymentKey(txHash)
+  try {
+    const existing = await client.get<DiscountPaymentRecord>(key)
+    if (!existing) return
+    const next: DiscountPaymentRecord = {
+      ...existing,
+      status,
+      updatedAt: Date.now(),
+    }
+    await client.set(key, next, { ex: PAYMENT_TTL_SECONDS })
+  } catch (err) {
+    console.warn('[citizen-invite] failed to update payment status:', err)
+    throw err
+  }
+}
+
+export async function releaseDiscountPaymentLock(txHash: string): Promise<void> {
+  const client = getRedis()
+  if (!client || !txHash) return
+  try {
+    await client.del(paymentLockKey(txHash))
+  } catch (err) {
+    console.warn('[citizen-invite] failed to release payment lock:', err)
+  }
 }
 
 /**

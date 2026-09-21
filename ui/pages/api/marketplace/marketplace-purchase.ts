@@ -15,6 +15,7 @@ import withMiddleware from 'middleware/withMiddleware'
 import { getContract, readContract, waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
+import { FULL_DISCOUNT_BPS } from '@/lib/citizen/discountInvite'
 import { createInvite, generateInviteToken } from '@/lib/citizen/inviteTokens'
 import { validateGiftPurchase } from '@/lib/marketplace/giftPurchase'
 import {
@@ -370,6 +371,7 @@ async function handler(req: any, res: any) {
           createdAt: Date.now(),
           label: `Gift citizenship purchase (listing #${numericListingId})`,
           createdBy: `marketplace-gift:${txReceipt.from}`,
+          discountBps: FULL_DISCOUNT_BPS,
         },
         GIFT_INVITE_TTL_SECONDS
       )

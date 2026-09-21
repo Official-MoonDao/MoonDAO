@@ -37,14 +37,14 @@ export default function Join() {
         router.push('/')
       }
     },
-    [router],
+    [router]
   )
 
-  // A one-time magic-link invite (`?invite=<token>`) sponsors a free mint for
-  // whoever redeems it; eligibility is verified server-side against the token.
-  const inviteToken =
-    typeof router.query.invite === 'string' ? router.query.invite : undefined
-  const freeMint = router.query.freeMint === 'true' || Boolean(inviteToken)
+  // A one-time magic-link invite (`?invite=<token>`) is verified server-side.
+  // 100% off invites become a sponsored mint after that check. Partial
+  // discounts stay paid, so the token alone must not mark the page as free.
+  const inviteToken = typeof router.query.invite === 'string' ? router.query.invite : undefined
+  const freeMint = router.query.freeMint === 'true'
 
   return (
     <>

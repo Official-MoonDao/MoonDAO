@@ -12,14 +12,8 @@
  */
 import { KeyManagementServiceClient } from '@google-cloud/kms'
 import { BigNumber, providers, utils } from 'ethers'
-import {
-  arrayify,
-  hexlify,
-  keccak256,
-  toUtf8Bytes,
-  joinSignature,
-} from 'ethers/lib/utils'
 import { resolveEip1559FeesFromProvider } from '@/lib/rpc/eip1559Fees'
+import { arrayify, hexlify, keccak256, toUtf8Bytes, joinSignature } from 'ethers/lib/utils'
 import { arbitrum, sepolia } from '../rpc/chains'
 
 // -----------------------------
@@ -48,9 +42,7 @@ export interface SigningResult {
 // -----------------------------
 const KMS_CLIENT = (() => {
   const credsB64 = process.env.GCP_SIGNER_SERVICE_ACCOUNT
-  const creds = credsB64
-    ? JSON.parse(Buffer.from(credsB64, 'base64').toString('utf8'))
-    : undefined
+  const creds = credsB64 ? JSON.parse(Buffer.from(credsB64, 'base64').toString('utf8')) : undefined
   return new KeyManagementServiceClient({ credentials: creds })
 })()
 
@@ -141,8 +133,7 @@ function decompressPublicKey(compressed: Uint8Array): Uint8Array {
   const x = BigInt('0x' + Buffer.from(xBytes).toString('hex'))
 
   // Calculate y^2 = x^3 + 7 (mod p)
-  const ySquared =
-    (modPow(x, BigInt(3), SEC_P256K1_P) + SEC_P256K1_B) % SEC_P256K1_P
+  const ySquared = (modPow(x, BigInt(3), SEC_P256K1_P) + SEC_P256K1_B) % SEC_P256K1_P
 
   // Find y using modular square root
   const y = modSqrt(ySquared, SEC_P256K1_P)
@@ -170,10 +161,7 @@ function decompressPublicKey(compressed: Uint8Array): Uint8Array {
 
   return result
 }
-function readAsn1Length(
-  buf: Uint8Array,
-  offset: number
-): { len: number; off: number } {
+function readAsn1Length(buf: Uint8Array, offset: number): { len: number; off: number } {
   let len = buf[offset++]
   if ((len & 0x80) === 0) return { len, off: offset }
   const numBytes = len & 0x7f
@@ -194,8 +182,7 @@ function spkiPemToUncompressedPoint(pem: string): Uint8Array {
   const seq1 = readAsn1Length(der, off)
   off = seq1.off
 
-  if (der[off++] !== 0x30)
-    throw new Error('SPKI: expected AlgorithmIdentifier SEQUENCE')
+  if (der[off++] !== 0x30) throw new Error('SPKI: expected AlgorithmIdentifier SEQUENCE')
   const alg = readAsn1Length(der, off)
   off = alg.off
 
@@ -218,9 +205,7 @@ function spkiPemToUncompressedPoint(pem: string): Uint8Array {
   return point
 }
 
-async function getPublicKey(
-  cfg: HSMConfig
-): Promise<{ publicKey: Hex; address: Address }> {
+async function getPublicKey(cfg: HSMConfig): Promise<{ publicKey: Hex; address: Address }> {
   if (cachedUncompressedPubKey) {
     return {
       publicKey: hexlify(cachedUncompressedPubKey) as Hex,
@@ -269,10 +254,7 @@ function parseDerEcdsaSignature(der: Uint8Array): { r: Hex; s: Hex } {
   }
 }
 
-async function kmsSignDigest(
-  cfg: HSMConfig,
-  digest: Uint8Array
-): Promise<{ r: Hex; s: Hex }> {
+async function kmsSignDigest(cfg: HSMConfig, digest: Uint8Array): Promise<{ r: Hex; s: Hex }> {
   const name = KMS_CLIENT.cryptoKeyVersionPath(
     cfg.projectId,
     cfg.locationId,
@@ -314,10 +296,7 @@ export async function signPersonalMessage(
 }
 
 // Update the sendTransaction method in hsm-signer.ts around line 325-355
-export async function sendTransaction(
-  cfg: HSMConfig,
-  tx: any
-): Promise<string> {
+export async function sendTransaction(cfg: HSMConfig, tx: any): Promise<string> {
   const provider = new providers.JsonRpcProvider(
     process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum.rpc : sepolia.rpc
   )
@@ -378,16 +357,11 @@ export async function sendTransaction(
     const rec = utils.recoverAddress(digest, { r, s, v })
     console.log(`HSM sendTransaction - Recovery test v=${v}:`, rec)
     if (utils.getAddress(rec) === utils.getAddress(from)) {
-      console.log(
-        'HSM sendTransaction - Recovery successful, sending transaction...'
-      )
+      console.log('HSM sendTransaction - Recovery successful, sending transaction...')
       const raw = utils.serializeTransaction(finalTx, { v, r, s })
       try {
         const sent = await provider.sendTransaction(raw)
-        console.log(
-          'HSM sendTransaction - Transaction sent successfully:',
-          sent.hash
-        )
+        console.log('HSM sendTransaction - Transaction sent successfully:', sent.hash)
 
         // Wait for transaction confirmation
         console.log('HSM sendTransaction - Waiting for confirmation...')
@@ -432,31 +406,23 @@ async function resolveHsmEip1559Fees(
       }
     }
   } catch (error) {
-    console.warn(
-      'HSM EIP-1559 fee resolve failed, falling back to provider fee data:',
-      error
-    )
+    console.warn('HSM EIP-1559 fee resolve failed, falling back to provider fee data:', error)
   }
   return {
-    maxFeePerGas: (tx.maxFeePerGas as BigNumber | undefined) ??
+    maxFeePerGas:
+      (tx.maxFeePerGas as BigNumber | undefined) ??
       fee.maxFeePerGas ??
       fee.gasPrice ??
       BigNumber.from(0),
     maxPriorityFeePerGas:
-      (tx.maxPriorityFeePerGas as BigNumber | undefined) ??
-      fee.maxPriorityFeePerGas ??
-      undefined,
+      (tx.maxPriorityFeePerGas as BigNumber | undefined) ?? fee.maxPriorityFeePerGas ?? undefined,
   }
 }
 
 // Sign a fully-populated EIP-1559 tx object with the KMS key and return the
 // serialized raw tx, recovering the correct `v`. Shared by the single-send
 // and batch-send paths so their signing logic can't drift apart.
-async function signSerializedTx(
-  cfg: HSMConfig,
-  finalTx: any,
-  from: string
-): Promise<string> {
+async function signSerializedTx(cfg: HSMConfig, finalTx: any, from: string): Promise<string> {
   const unsigned = utils.serializeTransaction(finalTx)
   const digest = keccak256(unsigned)
   const { r, s } = await kmsSignDigest(cfg, arrayify(digest))
@@ -553,10 +519,7 @@ export async function sendTransactionBatch(
     try {
       await provider.waitForTransaction(lastHash, 1, timeoutMs)
     } catch (err) {
-      console.warn(
-        'HSM batch - confirmation wait timed out; txs remain broadcast:',
-        err
-      )
+      console.warn('HSM batch - confirmation wait timed out; txs remain broadcast:', err)
     }
   }
 
@@ -579,9 +542,7 @@ export function isHSMAvailable(): boolean {
  */
 function getHSMConfig(): HSMConfig {
   if (!isHSMAvailable()) {
-    throw new Error(
-      'HSM not available - missing required environment variables'
-    )
+    throw new Error('HSM not available - missing required environment variables')
   }
 
   return {
@@ -592,6 +553,15 @@ function getHSMConfig(): HSMConfig {
     versionId: '1',
     allowedOperations: process.env.GCP_ALLOWED_OPERATIONS?.split(','),
   }
+}
+
+/**
+ * Address that sponsors citizen mints and receives partial-discount payments.
+ * Derived from the KMS public key and cached after the first lookup.
+ */
+export async function getHSMAddress(): Promise<string> {
+  const { address } = await getPublicKey(getHSMConfig())
+  return address
 }
 
 /**
@@ -740,9 +710,7 @@ export async function sendEthFromHSM(to: string, amountWei: bigint): Promise<str
  */
 export function deriveAddressFromPublicKey(publicKeyHex: string): Address {
   // Remove 0x prefix if present
-  const cleanKey = publicKeyHex.startsWith('0x')
-    ? publicKeyHex.slice(2)
-    : publicKeyHex
+  const cleanKey = publicKeyHex.startsWith('0x') ? publicKeyHex.slice(2) : publicKeyHex
 
   // Convert hex string to Uint8Array
   const publicKeyBytes = Uint8Array.from(Buffer.from(cleanKey, 'hex'))
@@ -756,9 +724,7 @@ export function deriveAddressFromPublicKey(publicKeyHex: string): Address {
   } else if (publicKeyBytes.length === 65) {
     // Uncompressed public key
     if (publicKeyBytes[0] !== 0x04) {
-      throw new Error(
-        'Invalid uncompressed public key - should start with 0x04'
-      )
+      throw new Error('Invalid uncompressed public key - should start with 0x04')
     }
     uncompressedKey = publicKeyBytes
   } else {
