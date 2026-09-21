@@ -1,117 +1,104 @@
-// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.11 <0.9.0;
 
+import "@evm-tableland/contracts/interfaces/ITablelandTables.sol";
+import "@evm-tableland/contracts/interfaces/ITablelandController.sol";
 import "@evm-tableland/contracts/utils/TablelandDeployments.sol";
 import {SQLHelpers} from "@evm-tableland/contracts/utils/SQLHelpers.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
-/**
- * Public forecast book. Identity is an explicit `forecaster` handle supplied
- * by the owner/writer (the HSM relayer) — never msg.sender — so a gasless
- * Privy user can be published without a wallet.
- */
 contract Forecasts is ERC721Holder, Ownable {
+    // Table for storing forecasts. Same shape as Votes: vote is a json object
+    // with keys being outcome id and values the percent allocated to that
+    // outcome; voteId is which prize the row is for. The extra column is
+    // timestamp, written from block.timestamp on insert and on every revise.
+    using ERC165Checker for address;
+
     uint256 private _tableId;
     string private _TABLE_PREFIX;
-    mapping(address => bool) public writers;
-
     string private constant FORECAST_SCHEMA =
-        "id integer primary key, chainSlug text, deprizeId integer, forecaster text, vector text, displayName text, updatedAt integer, unique(chainSlug, deprizeId, forecaster)";
+        "id integer primary key, voteId integer, address text, vote text, timestamp integer, unique(address, voteId)";
 
-    error NotWriter();
-
-    constructor(string memory tablePrefix) Ownable(msg.sender) {
-        _TABLE_PREFIX = tablePrefix;
-        writers[msg.sender] = true;
+    constructor(string memory _table_prefix) Ownable(msg.sender)  {
+        _TABLE_PREFIX = _table_prefix;
         _tableId = TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(FORECAST_SCHEMA, _TABLE_PREFIX)
         );
     }
 
-    modifier onlyWriter() {
-        if (msg.sender != owner() && !writers[msg.sender]) revert NotWriter();
-        _;
-    }
-
-    function setWriter(address account, bool allowed) external onlyOwner {
-        writers[account] = allowed;
-    }
-
-    function insertRow(
-        string memory chainSlug,
-        uint256 deprizeId,
-        string memory forecaster,
-        string memory vector,
-        string memory displayName,
-        uint256 updatedAt
-    ) external onlyWriter {
+    function insertIntoTable(uint256 voteId, string memory vote) external {
         TablelandDeployments.get().mutate(
-            address(this),
+            address(this), // Table owner, i.e., this contract
             _tableId,
             SQLHelpers.toInsert(
                 _TABLE_PREFIX,
                 _tableId,
-                "chainSlug,deprizeId,forecaster,vector,displayName,updatedAt",
+                "voteId,address,vote,timestamp",
                 string.concat(
-                    SQLHelpers.quote(chainSlug),
+                    Strings.toString(voteId),
                     ",",
-                    Strings.toString(deprizeId),
-                    ",",
-                    SQLHelpers.quote(forecaster),
+                    SQLHelpers.quote(Strings.toHexString(msg.sender)),
                     ",",
                     "json(",
-                    SQLHelpers.quote(vector),
+                    SQLHelpers.quote(vote),
                     ")",
                     ",",
-                    SQLHelpers.quote(displayName),
-                    ",",
-                    Strings.toString(updatedAt)
+                    Strings.toString(block.timestamp)
                 )
             )
         );
     }
 
-    function updateRow(
-        string memory chainSlug,
-        uint256 deprizeId,
-        string memory forecaster,
-        string memory vector,
-        string memory displayName,
-        uint256 updatedAt
-    ) external onlyWriter {
+    function updateTableCol(uint256 voteId, string memory vote) external {
         TablelandDeployments.get().mutate(
-            address(this),
+            address(this), // Table owner, i.e., this contract
             _tableId,
             SQLHelpers.toUpdate(
                 _TABLE_PREFIX,
                 _tableId,
                 string.concat(
-                    "vector=",
+                "vote=",
                     "json(",
-                    SQLHelpers.quote(vector),
+                    SQLHelpers.quote(vote),
                     ")",
-                    ",displayName=",
-                    SQLHelpers.quote(displayName),
-                    ",updatedAt=",
-                    Strings.toString(updatedAt)
+                    ",timestamp=",
+                    Strings.toString(block.timestamp)
                 ),
-                _where(chainSlug, deprizeId, forecaster)
+                string.concat(
+                    "voteId = ",
+                    Strings.toString(voteId),
+                    " AND address = ",
+                    SQLHelpers.quote(Strings.toHexString(msg.sender))
+                )
             )
         );
     }
 
-    function deleteRow(
-        string memory chainSlug,
-        uint256 deprizeId,
-        string memory forecaster
-    ) external onlyWriter {
+    function deleteFromTable(uint256 voteId) external {
         TablelandDeployments.get().mutate(
             address(this),
             _tableId,
-            SQLHelpers.toDelete(_TABLE_PREFIX, _tableId, _where(chainSlug, deprizeId, forecaster))
+            SQLHelpers.toDelete(_TABLE_PREFIX, _tableId,
+                string.concat(
+                    "voteId = ",
+                    Strings.toString(voteId),
+                    " AND address = ",
+                    SQLHelpers.quote(Strings.toHexString(msg.sender))
+                )
+)
+        );
+    }
+
+    // Set the ACL controller to enable row-level writes with dynamic policies
+    function setAccessControl(address controller) external onlyOwner{
+        TablelandDeployments.get().setController(
+            address(this), // Table owner, i.e., this contract
+            _tableId,
+            controller // Set the controller address—a separate controller contract
         );
     }
 
@@ -123,19 +110,4 @@ contract Forecasts is ERC721Holder, Ownable {
         return SQLHelpers.toNameFromId(_TABLE_PREFIX, _tableId);
     }
 
-    function _where(
-        string memory chainSlug,
-        uint256 deprizeId,
-        string memory forecaster
-    ) private pure returns (string memory) {
-        return
-            string.concat(
-                "chainSlug = ",
-                SQLHelpers.quote(chainSlug),
-                " AND deprizeId = ",
-                Strings.toString(deprizeId),
-                " AND forecaster = ",
-                SQLHelpers.quote(forecaster)
-            );
-    }
 }

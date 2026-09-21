@@ -35,64 +35,40 @@ export function brierSkillScore(brier: number, outcome: number[]): number | null
   return 1 - brier / baseline
 }
 
-function utcDay(iso: string): string {
-  return new Date(iso).toISOString().slice(0, 10)
+/** Integer leftover-on-last split of 100, the UI's encoding of "even". */
+function evenIntegerPercents(n: number): number[] {
+  const base = Math.floor(100 / n)
+  const out = Array.from({ length: n }, () => base)
+  out[n - 1] += 100 - base * n
+  return out
 }
 
-function startOfNextUtcDayMs(day: string): number {
-  return Date.parse(`${day}T00:00:00.000Z`) + 86_400_000
-}
-
-function addUtcDays(day: string, delta: number): string {
-  return new Date(Date.parse(`${day}T00:00:00.000Z`) + delta * 86_400_000)
-    .toISOString()
-    .slice(0, 10)
-}
-
-function standingAtEndOfDay(
-  surviving: Array<{ at: string; vector: number[] }>,
-  day: string
-): number[] | undefined {
-  const cutoff = startOfNextUtcDayMs(day)
-  let chosen: number[] | undefined
-  for (const entry of surviving) {
-    if (Date.parse(entry.at) < cutoff) chosen = entry.vector
+function allocationAsProbabilities(allocation: number[]): number[] | null {
+  if (!Array.isArray(allocation) || allocation.length === 0) return null
+  const sum = allocation.reduce((acc, value) => acc + value, 0)
+  if (!(sum > 0)) return null
+  const even = evenIntegerPercents(allocation.length)
+  if (
+    allocation.length === even.length &&
+    allocation.every((value, i) => value === even[i])
+  ) {
+    return Array.from({ length: allocation.length }, () => 1 / allocation.length)
   }
-  return chosen
+  return allocation.map((value) => value / sum)
 }
 
-export function timeAveragedBrier(
-  forecastHistory: Array<{ at: string; vector: number[] }>,
-  resolvedAt: string,
-  resolvedVector: number[]
-): { brier: number; daysScored: number; calls: number } | null {
-  const resolvedMs = Date.parse(resolvedAt)
-  const surviving = forecastHistory.filter((entry) => Date.parse(entry.at) < resolvedMs)
-  if (surviving.length === 0) return null
-
-  const firstDay = surviving.reduce((min, entry) => {
-    const day = utcDay(entry.at)
-    return day < min ? day : min
-  }, utcDay(surviving[0].at))
-  const lastDay = addUtcDays(utcDay(resolvedAt), -1)
-  if (lastDay < firstDay) return null
-
-  const days: string[] = []
-  for (let day = firstDay; day <= lastDay; day = addUtcDays(day, 1)) {
-    days.push(day)
-  }
-
-  let total = 0
-  for (const day of days) {
-    const standing = standingAtEndOfDay(surviving, day)
-    if (!standing) return null
-    total += brierScore(standing, resolvedVector)
-  }
-
-  return {
-    brier: total / days.length,
-    daysScored: days.length,
-    calls: surviving.length,
+export function scoreAllocation(
+  allocation: number[],
+  resolved: number[] | null | undefined
+): { brier: number; skill: number | null } | null {
+  if (!resolved || resolved.length !== allocation.length) return null
+  const vector = allocationAsProbabilities(allocation)
+  if (!vector) return null
+  try {
+    const brier = brierScore(vector, resolved)
+    return { brier, skill: brierSkillScore(brier, resolved) }
+  } catch {
+    return null
   }
 }
 

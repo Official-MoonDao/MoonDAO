@@ -225,7 +225,7 @@ export const VOTES_TABLE_NAMES: Index = {
   arbitrum: 'Votes_42161_146',
   sepolia: 'Votes_11155111_1971',
 }
-/** Empty until `script/Forecasts.s.sol` is deployed per chain. */
+/** Empty until `script/Forecasts.s.sol` is deployed per chain. Votes-shaped table with a timestamp column. */
 export const FORECASTS_TABLE_ADDRESSES: Index = {
   arbitrum: '',
   sepolia: '',
