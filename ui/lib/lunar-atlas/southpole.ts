@@ -342,6 +342,17 @@ export const MAP_Y_DIR: Vec3 = mapAxis(0, 1)
 export type PolarNormalField = {
   size: number
   data: Float32Array
+  // |grad h|^2 per post, one channel, same layout.
+  //
+  // The SECOND moment of the slope, and it is here so that the shader can recover
+  // the variance a mip level threw away: a mip of this is E[|s|^2] over the
+  // footprint, a mip of the normal gives E[s], and the difference is the roughness
+  // that stopped being drawn and has to start being modelled instead. Storing the
+  // square rather than deriving it is the whole trick — filtering and squaring do
+  // not commute, so there is no way to get E[|s|^2] back out of a filtered normal.
+  //
+  // See residualRoughness in regolith.ts for what consumes it.
+  variance: Float32Array
 }
 
 // Central-difference the height field into map-frame normals.
@@ -352,6 +363,7 @@ export function buildNormalField(field: PolarHeightField): PolarNormalField {
   // offset and cancels in every difference below.
   const kM = ((field.maxM - field.minM) / 65535) * HEIGHT_EXAGGERATION
   const out = new Float32Array(size * size * 2)
+  const variance = new Float32Array(size * size)
   const cl = (v: number) => Math.max(0, Math.min(size - 1, v))
 
   for (let y = 0; y < size; y++) {
@@ -369,10 +381,11 @@ export function buildNormalField(field: PolarHeightField): PolarNormalField {
       const i2 = (y * size + x) * 2
       out[i2] = -dhdx * inv
       out[i2 + 1] = -dhdy * inv
+      variance[y * size + x] = dhdx * dhdx + dhdy * dhdy
     }
   }
 
-  return { size, data: out }
+  return { size, data: out, variance }
 }
 
 // ---------------------------------------------------------------------------

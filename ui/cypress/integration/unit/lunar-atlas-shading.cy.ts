@@ -27,17 +27,24 @@
 import { expect } from 'chai'
 import {
   HG_ASYMMETRY,
+  MACRO_ROUGHNESS_DEG,
+  MACRO_ROUGHNESS_RAD,
+  MICRO_ROUGHNESS_DEG,
+  MICRO_ROUGHNESS_RAD,
   OPPOSITION_B0,
   OPPOSITION_H,
   PHASE_REF_DEG,
   REGOLITH_ALBEDO,
   SINGLE_SCATTERING_ALBEDO,
+  azimuthFromPhase,
   chandrasekharH,
   hapkeNormalAlbedo,
   hapkeReflectance,
+  hapkeRoughness,
   hgPhase,
   normalizedSurge,
   oppositionSurge,
+  residualRoughness,
 } from '../../../lib/lunar-atlas/regolith'
 import { capCenterDirection, capLocalDirection } from '../../../lib/lunar-atlas/southpole'
 import {
@@ -336,6 +343,231 @@ describe('the full Hapke BRDF', () => {
   })
 })
 
+// Hapke's macroscopic roughness, which is the term that removed the black.
+//
+// The scene shipped for a while with large terrain-shaped black areas across the
+// far field, and the cause was not a shadow, a shadow map, or an exposure: it was
+// that the BRDF had a hard domain edge at mu = 0 and a normal-mapped renderer
+// walks straight over it. The shading normal is sampled at the DEM's resolution
+// while the silhouette comes from a 15.6 m mesh, so on a ridge flank seen at 3°
+// above grazing, most fragments carry a normal that points behind a surface the
+// mesh says is plainly visible. Every one of them returned zero.
+//
+// Roughness is the term that makes that situation describable instead of
+// undefined, so the cases below are mostly about its EDGES — the grazing limit,
+// the terminator, and the smooth limit — rather than about mid-range values.
+describe('macroscopic roughness (Hapke theta-bar)', () => {
+  it('collapses to the old smooth law at theta-bar = 0', () => {
+    // The containment property. Everything this term does has to be reachable from
+    // the law that was here before by turning one parameter up from zero, or it is
+    // a different BRDF wearing the same name.
+    for (const [iDeg, eDeg, psiDeg] of [
+      [0, 0, 0],
+      [30, 60, 45],
+      [70, 20, 135],
+      [89, 89, 180],
+    ]) {
+      const g = hapkeRoughness(iDeg * DEG, eDeg * DEG, psiDeg * DEG, 0)
+      expect(g.mu0e, `i ${iDeg}`).to.be.closeTo(Math.cos(iDeg * DEG), 1e-12)
+      expect(g.mue, `e ${eDeg}`).to.be.closeTo(Math.cos(eDeg * DEG), 1e-12)
+      expect(g.shadow, `S ${iDeg}/${eDeg}`).to.equal(1)
+    }
+  })
+
+  it('leaves the surface untouched looking straight down at zero phase', () => {
+    // The calibration geometry. S is exactly 1 here and both effective cosines come
+    // back equal, so Lommel-Seeliger is still exactly 1/2 and the only thing
+    // roughness moves is the multiple-scattering term. That is what keeps the w
+    // solved against REGOLITH_ALBEDO meaningful, and it is why w only had to move
+    // 0.2% when this term landed.
+    const g = hapkeRoughness(0, 0, 0, MACRO_ROUGHNESS_RAD)
+    expect(g.shadow).to.be.closeTo(1, 1e-9)
+    expect(g.mu0e).to.be.closeTo(g.mue, 1e-9)
+    expect(hapkeNormalAlbedo()).to.be.closeTo(REGOLITH_ALBEDO, 1e-4)
+  })
+
+  it('shadows nothing when the sun and the eye share an azimuth', () => {
+    // An exact identity rather than a tolerance, and a good check on the
+    // transcription: at psi = 0 with the eye more grazing than the sun, every facet
+    // the eye can see is one the sun can also see, so the shadowing fraction is
+    // exactly 1. Any slip in pairing eta with the wrong ray breaks this and almost
+    // nothing else.
+    for (const [iDeg, eDeg] of [
+      [10, 40],
+      [30, 30],
+      [5, 85],
+    ]) {
+      const g = hapkeRoughness(iDeg * DEG, eDeg * DEG, 0, MACRO_ROUGHNESS_RAD)
+      expect(g.shadow, `i ${iDeg} e ${eDeg}`).to.be.closeTo(1, 1e-9)
+    }
+  })
+
+  it('never claims more than all of the surface is visible and lit', () => {
+    // S is a FRACTION. The analytic form is a fit to an integral and overshoots by a
+    // couple of percent near 90° emergence, which is why hapkeRoughness caps it.
+    for (let i = 0; i <= 89; i += 7) {
+      for (let e = 0; e <= 89; e += 7) {
+        for (let psi = 0; psi <= 180; psi += 30) {
+          const g = hapkeRoughness(i * DEG, e * DEG, psi * DEG, MACRO_ROUGHNESS_RAD)
+          expect(g.shadow, `${i}/${e}/${psi}`).to.be.within(0, 1)
+        }
+      }
+    }
+  })
+
+  it('keeps the effective emergence cosine off zero at a grazing view', () => {
+    // THE PROPERTY THE FAR FIELD NEEDS. The raw cosine goes to zero at 90° and then
+    // negative, and negative is what used to return black. The effective one lands
+    // on a floor set by theta-bar itself — roughly chi * tan(theta-bar) — because a
+    // rough surface seen edge-on still shows the faces tilted toward the eye.
+    let prev = Infinity
+    for (const eDeg of [0, 45, 80, 86, 89, 89.99]) {
+      const g = hapkeRoughness(45 * DEG, eDeg * DEG, 90 * DEG, MACRO_ROUGHNESS_RAD)
+      expect(g.mue, `e ${eDeg}`).to.be.greaterThan(0.25)
+      expect(g.mue, `e ${eDeg} monotone`).to.be.lessThan(prev)
+      prev = g.mue
+    }
+    // And the floor is a real fraction of unity, not an epsilon keeping a divide
+    // alive: at the limit it is about a third.
+    const limit = hapkeRoughness(45 * DEG, 89.99 * DEG, 90 * DEG, MACRO_ROUGHNESS_RAD)
+    expect(limit.mue).to.be.within(0.28, 0.36)
+  })
+
+  it('has no cliff left anywhere along the approach to grazing', () => {
+    // The regression case, stated as the artifact rather than as the mechanism: walk
+    // the emergence angle in tenth-degree steps all the way to the horizon and the
+    // rendered reflectance must never fall off a step. Before roughness, the step
+    // from 89.9° to 90.1° was the whole lit value down to nothing, and it painted
+    // kilometres of the patch black.
+    const mu0 = Math.sin(44.46 * DEG)
+    let prev = hapkeReflectance(mu0, Math.cos(0), 85 * DEG)
+    for (let eDeg = 0.1; eDeg <= 89.9; eDeg += 0.1) {
+      const r = hapkeReflectance(mu0, Math.cos(eDeg * DEG), 85 * DEG)
+      expect(r, `e ${eDeg.toFixed(1)}`).to.be.greaterThan(0)
+      // No single tenth of a degree may change the ground by more than 2%.
+      expect(Math.abs(r - prev) / prev, `step at e ${eDeg.toFixed(1)}`).to.be.lessThan(0.02)
+      prev = r
+    }
+  })
+
+  it('fades the terminator out instead of switching it off', () => {
+    // The other end of the same benefit, and one the scene gets for free. S carries
+    // the incidence cosine to zero smoothly as the sun sets on a facet, so a
+    // sunset line is a gradient a few degrees wide rather than a hard edge — which
+    // matters a great deal once the sun comes down to its real 2°.
+    let prev = Infinity
+    for (const iDeg of [40, 60, 80, 88, 89.5]) {
+      const g = hapkeRoughness(iDeg * DEG, 30 * DEG, 45 * DEG, MACRO_ROUGHNESS_RAD)
+      expect(g.shadow, `i ${iDeg}`).to.be.lessThan(prev)
+      prev = g.shadow
+    }
+    expect(prev).to.be.lessThan(0.05)
+    expect(prev).to.be.greaterThan(0)
+  })
+
+  it('darkens the ground at high phase, which is what roughness is known for', () => {
+    // The photometric signature everybody quotes, and the one the old comment in
+    // regolith.ts dismissed this term for being "small". It is small at the design
+    // sun and it is not small at a grazing one, which is exactly the direction this
+    // scene is heading.
+    const mu0 = Math.sin(44.46 * DEG)
+    const smooth = (gDeg: number) =>
+      hapkeReflectance(mu0, 0.7, gDeg * DEG, SINGLE_SCATTERING_ALBEDO, 0)
+    const rough = (gDeg: number) =>
+      hapkeReflectance(mu0, 0.7, gDeg * DEG, SINGLE_SCATTERING_ALBEDO, MACRO_ROUGHNESS_RAD)
+    expect(rough(20) / smooth(20)).to.be.within(0.9, 1.02)
+    expect(rough(140) / smooth(140)).to.be.lessThan(rough(20) / smooth(20))
+  })
+
+  it('recovers the azimuth between the two planes from the three angles', () => {
+    // psi is not measured, it is reconstructed, and getting it wrong silently swaps
+    // which branch of the correction runs. Round-tripped through the spherical law
+    // of cosines the reconstruction is derived from.
+    for (const [iDeg, eDeg, psiDeg] of [
+      [30, 60, 0],
+      [30, 60, 90],
+      [30, 60, 180],
+      [75, 15, 120],
+    ]) {
+      const i = iDeg * DEG
+      const e = eDeg * DEG
+      const psi = psiDeg * DEG
+      const cosG = Math.cos(i) * Math.cos(e) + Math.sin(i) * Math.sin(e) * Math.cos(psi)
+      const back = azimuthFromPhase(Math.cos(i), Math.cos(e), Math.acos(cosG))
+      expect(back / DEG, `${iDeg}/${eDeg}/${psiDeg}`).to.be.closeTo(psiDeg, 1e-6)
+    }
+  })
+
+  it('answers zero azimuth when a ray is along the normal, where it is undefined', () => {
+    expect(azimuthFromPhase(1, 0.5, 60 * DEG)).to.equal(0)
+    expect(azimuthFromPhase(0.5, 1, 60 * DEG)).to.equal(0)
+  })
+})
+
+// How much roughness each pixel gets, which is a different question from what the
+// law does with it. The scene DRAWS most of the Moon's roughness, in the DEM's
+// normals and in four detail octaves, so handing every pixel the published 20°
+// would be counting the same bumps twice. What theta-bar gets is the part texture
+// filtering destroyed, and that varies from nearly nothing up close to nearly all
+// of it at 5 km.
+describe('the roughness budget', () => {
+  it('bottoms out at the floor when the normal carried everything', () => {
+    expect((residualRoughness(0) * 180) / Math.PI).to.be.closeTo(MICRO_ROUGHNESS_DEG, 1e-9)
+  })
+
+  it('never returns zero, which would put the grazing cliff straight back', () => {
+    // The floor's real job. At theta-bar = 0 the correction is the identity, mu_e is
+    // the raw cosine again, and near ground — where every octave IS resolved — would
+    // go back to having a hard edge at 90° emergence.
+    expect(MICRO_ROUGHNESS_RAD).to.be.greaterThan(0)
+    const g = hapkeRoughness(45 * DEG, 89.9 * DEG, 90 * DEG, MICRO_ROUGHNESS_RAD)
+    expect(g.mue).to.be.greaterThan(0.05)
+  })
+
+  it('climbs to the published lunar figure once filtering has taken everything', () => {
+    // The check that the budget closes from the other end. At a distance where the
+    // detail tile and the DEM have both averaged flat, every bit of their variance
+    // is lost and theta-bar has to land back on the ~20° that photometric fits to
+    // disc-resolved lunar imagery return — because from far enough away, this render
+    // and that imagery resolve the same amount of the Moon, which is none of it.
+    const detailVariance = 0.3 * 0.3
+    // Measured off the shipped height map with buildNormalField: 0.248 RMS slope
+    // across the patch, which is a rugged ridge rather than average mare.
+    const demVariance = 0.248 * 0.248
+    const deg = (residualRoughness(detailVariance + demVariance) * 180) / Math.PI
+    expect(deg).to.be.closeTo(MACRO_ROUGHNESS_DEG, 2)
+  })
+
+  it('leaves no room for a large floor, which is why the floor is small', () => {
+    // Stated as arithmetic because it is the constraint that sets MICRO_ROUGHNESS.
+    // The relief this scene draws already accounts for the whole lunar budget on its
+    // own; anything more than a few degrees underneath it is roughness the Moon does
+    // not have, applied on top of roughness the renderer is already drawing.
+    const drawnOnly = Math.atan(Math.sqrt(0.3 * 0.3 + 0.248 * 0.248))
+    expect((drawnOnly * 180) / Math.PI).to.be.greaterThan(MACRO_ROUGHNESS_DEG)
+    expect(MICRO_ROUGHNESS_DEG).to.be.lessThan(8)
+  })
+
+  it('is monotone in how much the filter destroyed', () => {
+    let prev = 0
+    for (const lost of [0, 0.001, 0.01, 0.05, 0.09, 0.15, 0.3]) {
+      const deg = (residualRoughness(lost) * 180) / Math.PI
+      expect(deg).to.be.greaterThan(prev)
+      prev = deg
+    }
+    // And it cannot run away: even absurd variance stays inside a slope a pile of
+    // soil could actually stand at.
+    expect((residualRoughness(10) * 180) / Math.PI).to.be.lessThan(80)
+  })
+
+  it('ignores a negative variance, which floating point will hand it', () => {
+    // E[s^2] - |E[s]|^2 is non-negative in exact arithmetic and occasionally is not
+    // in half floats sampled from two different mip chains. A NaN out of sqrt here
+    // would be a black pixel, which is the exact failure this change removes.
+    expect(residualRoughness(-1e-3)).to.be.closeTo(MICRO_ROUGHNESS_RAD, 1e-12)
+  })
+})
+
 // Everything the DEM cannot describe. LOLA's 5 m grids are interpolated from
 // sparse tracks, so below ~10 m there is no data at all and the foreground is
 // whatever this tile says it is. It shipped once at less than half the roughness
@@ -397,6 +629,34 @@ describe('sub-resolution detail tile', () => {
       expect(Math.abs(left)).to.be.lessThan(rms * 12)
       expect(Math.abs(right)).to.be.lessThan(rms * 12)
     }
+  })
+
+  it('carries its own mean square slope, for the roughness the mips destroy', () => {
+    // The companion channel, and the reason it cannot be derived at sample time:
+    // once an octave is far enough away that its mip has averaged the slopes to
+    // zero, nothing in the filtered result remembers how rough it was. Squaring
+    // BEFORE the GPU filters is what preserves it, so this must be the square of the
+    // slope stored beside it, texel for texel.
+    // Tolerances are relative and sized for float32 storage: both fields round-trip
+    // through a Float32Array, so exact equality is not available and 1e-6 relative is
+    // several orders of magnitude tighter than any mistake worth catching.
+    for (const i of [0, 1, 517, tile.size * tile.size - 1]) {
+      const gx = tile.data[i * 2]
+      const gy = tile.data[i * 2 + 1]
+      const expected = gx * gx + gy * gy
+      expect(tile.second[i]).to.be.closeTo(expected, Math.abs(expected) * 1e-6 + 1e-12)
+    }
+    expect(tile.second.length).to.equal(tile.size * tile.size)
+  })
+
+  it('has a mean square that recovers the RMS the octaves are scaled against', () => {
+    // Ties the new channel to the number the amplitudes were solved from: averaged
+    // over the whole tile, the second moment IS the mean square slope, so its root
+    // has to be the same rms detailRmsSlope measures. If these ever disagree the
+    // shader is scaling roughness by one tile's statistics and drawing another's.
+    let acc = 0
+    for (let i = 0; i < tile.second.length; i++) acc += tile.second[i]
+    expect(Math.sqrt(acc / tile.second.length)).to.be.closeTo(rms, rms * 1e-6)
   })
 
   it('has no bias, so the detail cannot tilt the terrain it is added to', () => {

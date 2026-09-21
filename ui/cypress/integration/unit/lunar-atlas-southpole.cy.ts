@@ -427,6 +427,67 @@ describe('moonbase connecting-ridge terrain', () => {
       }
     })
 
+    // The second channel: |grad h|^2 per post, which the shader mips alongside the
+    // normal to recover the roughness a mip level destroyed. It exists because
+    // filtering and squaring do not commute — at 5 km the filtered normal has
+    // averaged to nearly flat and takes every trace of the relief's amplitude with
+    // it, which is what used to leave the far field with no roughness to keep it off
+    // the BRDF's domain edge. See residualRoughness in regolith.ts.
+    describe('the slope variance channel', () => {
+      it('is zero exactly where the ground is flat', () => {
+        const f = buildNormalField(makeField(SIZE, 0, 1000, () => 12345))
+        for (let i = 0; i < f.variance.length; i++) expect(f.variance[i]).to.equal(0)
+      })
+
+      it('is the squared slope of the ramp it came from', () => {
+        // Squared, not the slope itself. Storing the slope would make the shader's
+        // E[s^2] - |E[s]|^2 identically zero and the whole mechanism a no-op that
+        // still compiles, which is the failure mode worth a test.
+        const perPx = 700
+        const f = buildNormalField(makeField(SIZE, 0, 1000, (x) => x * perPx))
+        const slope = rampSlope(perPx)
+        for (const x of [1, 17, 32, SIZE - 2]) {
+          expect(f.variance[(SIZE / 2) * SIZE + x]).to.be.closeTo(slope * slope, 1e-9)
+        }
+      })
+
+      it('agrees with the normal stored beside it, post for post', () => {
+        // The two are consumed as a matched pair — one is differenced against the
+        // other — so they have to describe the same gradient at the same texel. Back
+        // the gradient out of the normal and the variance must be its square.
+        //
+        // Relative tolerance, because both fields round-trip through a Float32Array
+        // and the reconstruction divides by a square root of one of them.
+        const f = buildNormalField(
+          makeField(SIZE, -523.2, 1959.5, (x, y) =>
+            Math.round(32768 + 20000 * Math.sin(x * 0.31) * Math.cos(y * 0.17))
+          )
+        )
+        for (const [x, y] of [
+          [16, 16],
+          [32, 20],
+          [40, 45],
+        ]) {
+          const { nx, ny } = nAt(f, x, y)
+          const nz = Math.sqrt(1 - nx * nx - ny * ny)
+          const gradSq = (nx * nx + ny * ny) / (nz * nz)
+          expect(f.variance[y * f.size + x]).to.be.closeTo(gradSq, gradSq * 1e-6 + 1e-12)
+        }
+      })
+
+      it('is never negative, so the shader s sqrt cannot produce a black pixel', () => {
+        const f = buildNormalField(
+          makeField(SIZE, -523.2, 1959.5, (x, y) =>
+            Math.round(32768 + 32000 * Math.sin(x * 0.7) * Math.cos(y * 0.9))
+          )
+        )
+        for (let i = 0; i < f.variance.length; i++) {
+          expect(f.variance[i]).to.be.at.least(0)
+          expect(Number.isFinite(f.variance[i])).to.equal(true)
+        }
+      })
+    })
+
     it('never stores a normal the shader could not reconstruct', () => {
       // The vertical component is not stored; it is rebuilt as
       // sqrt(1 - nx^2 - ny^2), which needs nx^2 + ny^2 < 1 at every texel. A

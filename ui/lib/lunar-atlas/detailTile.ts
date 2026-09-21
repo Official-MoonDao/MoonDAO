@@ -28,6 +28,16 @@ export type DetailSlopeTile = {
   size: number
   // (gx, gy) pairs, row-major. gy points along map +Y, i.e. up the image.
   data: Float32Array
+  // gx^2 + gy^2 per texel, one channel, same layout.
+  //
+  // Uploaded alongside the slopes so the GPU mips it too. A mip of this is the
+  // MEAN SQUARE slope over a pixel's footprint while a mip of `data` is the mean
+  // slope, and their difference is the variance filtering destroyed — which is the
+  // roughness the shader has to hand to theta-bar once an octave is too far away
+  // to draw. It cannot be recovered from the filtered slopes: at 5 km every octave
+  // has averaged to nearly zero and takes all evidence of its own amplitude with
+  // it. See residualRoughness in regolith.ts.
+  second: Float32Array
 }
 
 // Lattice sizes for the noise floor, finest first. Amplitude is proportional to
@@ -140,6 +150,7 @@ export function buildDetailHeights(size: number): Float32Array {
 export function buildDetailSlopeTile(size = 512): DetailSlopeTile {
   const h = buildDetailHeights(size)
   const data = new Float32Array(size * size * 2)
+  const second = new Float32Array(size * size)
   for (let y = 0; y < size; y++) {
     const yp = (y + 1) % size
     const ym = (y - 1 + size) % size
@@ -147,12 +158,15 @@ export function buildDetailSlopeTile(size = 512): DetailSlopeTile {
       const xp = (x + 1) % size
       const xm = (x - 1 + size) % size
       const i2 = (y * size + x) * 2
-      data[i2] = (h[y * size + xp] - h[y * size + xm]) * 0.5
+      const gx = (h[y * size + xp] - h[y * size + xm]) * 0.5
       // Image rows run top-down while the map frame's +Y runs up.
-      data[i2 + 1] = (h[ym * size + x] - h[yp * size + x]) * 0.5
+      const gy = (h[ym * size + x] - h[yp * size + x]) * 0.5
+      data[i2] = gx
+      data[i2 + 1] = gy
+      second[y * size + x] = gx * gx + gy * gy
     }
   }
-  return { size, data }
+  return { size, data, second }
 }
 
 // RMS slope of the tile as generated, before any octave amplitude is applied.
