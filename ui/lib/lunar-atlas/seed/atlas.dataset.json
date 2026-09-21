@@ -1667,15 +1667,15 @@
     {
       "id": "ispace-apex",
       "orgId": "ispace",
-      "name": "HAKUTO-R & APEX 1.0",
+      "name": "HAKUTO-R & ULTRA Landers",
       "type": "lander",
-      "summary": "ispace's lander line. Two HAKUTO-R landing attempts ended in crashes — an altitude misread in 2023 and a rangefinder failure in 2025 — and the larger APEX 1.0 built by ispace's US arm flies next for Draper under CLPS.",
+      "summary": "ispace's lander line. Two HAKUTO-R landing attempts ended in crashes — an altitude misread in 2023 and a rangefinder failure in 2025. In March 2026 ispace dropped the VoidRunner engine and merged its Japanese Series 3 and US APEX 1.0 designs into one lander, ULTRA, which flies Mission 3 in 2028; the Draper/CLPS far-side flight slipped to Mission 5 in 2030.",
       "location": {
         "lat": -87.4,
         "lon": 132
       },
       "locationPrecision": "approximate",
-      "regionLabel": "Schrödinger basin, lunar far side (APEX 1.0)",
+      "regionLabel": "Schrödinger basin, lunar far side (Mission 5, 2030)",
       "milestones": [
         {
           "id": "hakuto-m1",
@@ -1706,22 +1706,64 @@
           ]
         },
         {
-          "id": "apex-m3",
-          "title": "Mission 3 — APEX 1.0 to Schrödinger basin for Draper/CLPS",
-          "targetDate": "2027",
+          "id": "apex-superseded",
+          "title": "APEX 1.0 folded into ULTRA; VoidRunner engine dropped",
+          "targetDate": "2026-03",
+          "datePrecision": "month",
+          "status": "cancelled",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "ispace — Announces new \"ULTRA\" lunar lander integrating Japanese and U.S. lander models",
+              "url": "https://www.ispace-inc.com/2026/03/27/ispace-announces-new-ultra-lunar-lander-integrating-japanese-and-u-s-lander-models/",
+              "retrievedAt": "2026-09-20"
+            },
+            {
+              "label": "SpaceNews — ispace redesigns lunar lander, introduces lunar communications service",
+              "url": "https://spacenews.com/ispace-redesigns-lunar-lander-introduces-lunar-communications-service/",
+              "retrievedAt": "2026-09-20"
+            }
+          ]
+        },
+        {
+          "id": "ultra-m3",
+          "title": "Mission 3 — first ULTRA landing, funded by a METI SBIR grant",
+          "targetDate": "2028",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
             {
-              "label": "ispace — Missions",
-              "url": "https://ispace-inc.com/missions/",
-              "retrievedAt": "2026-07-27"
+              "label": "ispace — Mission 3 ULTRA",
+              "url": "https://www.ispace-inc.com/mission-3/",
+              "retrievedAt": "2026-09-20"
+            }
+          ]
+        },
+        {
+          "id": "ultra-m5-cp12",
+          "title": "Mission 5 — ULTRA to Schrödinger basin for Draper/CLPS CP-12, pending NASA approval",
+          "targetDate": "2030",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "ispace — Announces new \"ULTRA\" lunar lander integrating Japanese and U.S. lander models",
+              "url": "https://www.ispace-inc.com/2026/03/27/ispace-announces-new-ultra-lunar-lander-integrating-japanese-and-u-s-lander-models/",
+              "retrievedAt": "2026-09-20"
             }
           ]
         }
       ],
-      "sharedGoalIds": [],
+      "sharedGoalIds": [
+        "shared-next-landing"
+      ],
+      "rosterStatus": "listed",
       "sources": [
+        {
+          "label": "ispace — Spacecraft (ULTRA lander specifications)",
+          "url": "https://www.ispace-inc.com/spacecraft/",
+          "retrievedAt": "2026-09-20"
+        },
         {
           "label": "ispace — Missions",
           "url": "https://ispace-inc.com/missions/",
@@ -3257,13 +3299,14 @@
       "id": "shared-next-landing",
       "title": "Touchdown — next successful lunar landing",
       "category": "lander",
-      "description": "Which landing-vehicle operator after market open first lands upright on the Moon and returns surface data for at least 24 hours. The slot is the vehicle operator, not the payload or launch provider. Win tests are binary and public: touchdown UTC after OPEN, controlled powered descent, stable planned orientation, ≥24 h surface data, and independent confirmation. Tip-overs (IM-1, IM-2, SLIM) do not count. ispace, ISRO, and later flights sit in the Open Field.",
+      "description": "Which landing-vehicle operator after market open first lands upright on the Moon and returns surface data for at least 24 hours. The slot is the vehicle operator, not the payload or launch provider. Win tests are binary and public: touchdown UTC after OPEN, controlled powered descent, stable planned orientation, ≥24 h surface data, and independent confirmation. Tip-overs (IM-1, IM-2, SLIM) do not count. ISRO and later flights sit in the Open Field.",
       "projectIds": [
         "astrobotic-griffin",
         "im-nova-c",
         "firefly-blue-ghost",
         "blue-origin-blue-moon-mk1",
-        "cnsa-change-7"
+        "cnsa-change-7",
+        "ispace-apex"
       ],
       "location": {
         "lat": -85.5,
@@ -3305,11 +3348,12 @@
         "status": "planned",
         "resolutionAuthority": "senate",
         "impliedOdds": {
-          "firefly-blue-ghost": 0.28,
-          "im-nova-c": 0.22,
-          "cnsa-change-7": 0.2,
-          "astrobotic-griffin": 0.18,
-          "blue-origin-blue-moon-mk1": 0.12
+          "firefly-blue-ghost": 0.26,
+          "im-nova-c": 0.21,
+          "cnsa-change-7": 0.19,
+          "astrobotic-griffin": 0.16,
+          "blue-origin-blue-moon-mk1": 0.1,
+          "ispace-apex": 0.08
         }
       },
       "sources": [

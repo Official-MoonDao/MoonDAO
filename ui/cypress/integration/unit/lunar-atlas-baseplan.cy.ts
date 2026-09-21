@@ -200,10 +200,19 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // The Touchdown roster (shared-next-landing) — the landing race the zone
   // hosts now that the lander category moved off the crewed-lander goal. Pad
   // decks at 0.6 of each vehicle's size (GRADED_DECK_FRACTION.lander): Blue
-  // Moon MK1 (8 m), Chang'e-7 (4.8), Griffin (4.5), Nova-C (4), Blue Ghost
-  // (3.5). Five CLPS-class pads instead of the Starship-era two, which is
-  // what exercises the flank case's along-the-spine stepping.
-  lander: plots(4.8, 2.88, 2.7, 2.4, 2.1),
+  // Moon MK1 (8 m), Chang'e-7 (4.8), Griffin (4.5), Nova-C (4), ULTRA (3.6),
+  // Blue Ghost (3.5). Six CLPS-class pads instead of the Starship-era two,
+  // which is what exercises the flank case's along-the-spine stepping.
+  //
+  // ULTRA joining made this district's packing SMALLER per pad rather than
+  // larger, which is worth knowing before anyone tries to widen the zone for
+  // it. The flank case steps along the spine by the largest r[i] + r[i-2] over
+  // the roster, and at 2.16 ULTRA lands between Nova-C and Blue Ghost, where
+  // that sum is nowhere near the 2.7 + 4.8 the two biggest pads already set.
+  // So the step is unchanged, and six plots still make three rows the same way
+  // five did — the newcomer takes the empty side of the last row rather than
+  // opening a fourth.
+  lander: plots(4.8, 2.88, 2.7, 2.4, 2.16, 2.1),
   // eVinci radiator wall, IX's radiator canopy, Lockheed's radiator mast — the
   // three fission bids, and three very different amounts of ground.
   power: plots(11, 6.5, 4),

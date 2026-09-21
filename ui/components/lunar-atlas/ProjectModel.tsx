@@ -100,9 +100,9 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // not Peregrine's — the project's name is a family label covering both, and
   // Peregrine is under half this wide (see the note on the model).
   'astrobotic-griffin': 4.5,
-  // 4 m tall on a 1.56 m hexagonal bus, so HEIGHT is the max here — the only
-  // Touchdown lander of which that is true. NovaC below is authored so the
-  // antenna tips land on this figure and the 3.44 m leg span stays under it.
+  // 4 m tall on a 1.56 m hexagonal bus, so HEIGHT is the max here — true of
+  // only one other Touchdown lander (ULTRA, below). NovaC below is authored so
+  // the antenna tips land on this figure and the 3.44 m leg span stays under it.
   'im-nova-c': 4,
   // ~3.5 m across the legs on a ~2 m stack, so width is the max. BlueGhost is
   // authored so opposite footpads span exactly this, and its instrument booms
@@ -115,6 +115,13 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // footpads. Chang'e-3's own published figures put the two within a few cm of
   // each other at ~4.76 m, so the number did not move when the model landed.
   'cnsa-change-7': 4.8,
+  // ULTRA, off ispace's own spacecraft page: 3.6 m high by 3.3 m wide with the
+  // landing legs extended, so HEIGHT is the max. Ultra below is authored so the
+  // dish rim lands on this figure exactly and the footpads' OUTER edges span
+  // exactly 3.3 m. Not APEX 1.0 — that design was cancelled in March 2026 and
+  // folded into ULTRA; the id still says apex because it is a stable key, and
+  // the model comment carries the whole story.
+  'ispace-apex': 3.6,
   // Footpad to nose tip — NASA's own Artemis III renders show a tall stack:
   // splayed legs, a windowed crew module with a deployable crew ladder, two
   // open lattice bays exposing the propellant tanks, then a smooth ascent
@@ -10429,6 +10436,545 @@ function BlueGhost({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// ULTRA — ispace's unified lander
+// ---------------------------------------------------------------------------
+//
+// NOT APEX 1.0, AND NOT A HAKUTO-R, even though the project id is still
+// `ispace-apex` and its dataset name still leads with HAKUTO-R. ispace
+// announced on 27 March 2026 that it was dropping the VoidRunner engine and
+// merging the Japanese Series 3 and the American APEX 1.0 into one lander
+// called ULTRA; APEX 1.0 has since disappeared from ispace's own spacecraft
+// lineup entirely. So of the four vehicles this project has stood for, two
+// crashed and one was cancelled on the drawing board — ULTRA is the only one
+// that will actually fly, which is what a race entry has to draw. The id is
+// left alone because it is a stable key, exactly the way `astrobotic-griffin`
+// also covers Peregrine.
+//
+// Placed after BlueGhost because the panels reuse solarFaceMaps() and so have
+// to sit below it, which conveniently puts every panelled Touchdown lander
+// together.
+//
+// The generic `Lander` drum is wrong here in a way it is not wrong for the
+// other five: those are all vehicles whose BODY is their silhouette, and
+// ULTRA's silhouette is mostly the things standing on top of the body. Built
+// from ispace's own two ULTRA renders:
+//
+//   - A faceted skirt that NARROWS GOING DOWN toward the engine, gold MLI bays
+//     between bright structural ribs. The ispace family has always been wider
+//     at the top — Series 1, APEX 1.0 and ULTRA all are — and it is the exact
+//     inverse of Blue Ghost's pyramid two models up.
+//   - A CROWN OF TALL BLACK SOLAR SLABS standing near-vertically around the
+//     bus at uneven heights. This is the identity of the vehicle and nothing
+//     else in the district does it: Griffin wears its cells on a flared
+//     basket, Blue Ghost flush on sloped faces, Chang'e-7 on deployed wings.
+//     Nobody else stands them up on end.
+//   - A high-gain dish on a short truss over the top deck, which is the
+//     tallest thing on the vehicle and what identifies it at distance.
+//   - Four BIPOD legs in black composite with a polished damper cartridge let
+//     into the lower half, on flat ROUND disc pads. Note the gear is the weaker
+//     half of the argument and deliberately not what this model leans on: the
+//     handoff doc's own table warns that finish stopped separating these
+//     vehicles once Blue Ghost turned out to share the Blue Moons' scheme, and
+//     MK1 is a bipod too. What is actually unique here is the damper — no other
+//     lander on the pad has a visible shock cartridge — and, as always, the
+//     body above it.
+//
+// LIVERY: no ispace wordmark and no sponsor placards, though the renders carry
+// both — a competitor's marks are withheld until it claims its listing, so the
+// operator's colour appears as one band on the bus and one beacon.
+//
+// SIZE: 3.6 m high by 3.3 m wide with the legs extended, both off ispace's own
+// spacecraft page. HEIGHT is therefore the largest dimension, which is true of
+// only one other vehicle on this pad (Nova-C).
+const ULT_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['ispace-apex'] ?? 3.6)
+
+const ULT_GOLD = '#c8a141' // MLI over the tank bays, warmer than Griffin's creased foil
+const ULT_GOLD_DK = '#957628'
+const ULT_CARBON = '#23262d' // the legs' composite tube, near-black in every render
+const ULT_FACES = 8
+
+// Total height, off ispace's own figure. The dish rim is what reaches it, so
+// nothing else may.
+const ULT_TOP = 3.6
+
+// Half the published 3.3 m legs-extended width is the OUTER EDGE of a footpad,
+// not its centre, so the pads are seated a pad-radius inside it and the model's
+// true span comes out at exactly 3.3 m rather than 3.3 plus two pads.
+const ULT_PAD_R = 0.22
+const ULT_FOOT_R = 1.65 - ULT_PAD_R
+const ULT_FOOT_Y = 0.05
+
+// Gear. A bipod rather than Griffin's single tube: the primary runs from high
+// under the skirt out to the pad, and two braces come off a lower, tighter ring
+// to meet it at the knee, which is what makes the A-frame read from any angle.
+// Both roots are set a centimetre or two INSIDE the skirt's own cone at their
+// height (0.759 m at the hip, 0.544 m at the braces), so each leg emerges from
+// the structure rather than butting against it — the house rule about bedding
+// a fitting into what carries it, applied to a sloped surface.
+const ULT_HIP_R = 0.75
+const ULT_HIP_Y = 1.3
+const ULT_BRACE_R = 0.52
+const ULT_BRACE_Y = 0.94
+const ULT_BRACE_SPREAD = 0.42 // radians either side of the leg's own azimuth
+const ULT_KNEE_T = 0.58 // where along the primary the braces land
+// The polished damper cartridge, as a span of the primary. Stops short of both
+// ends: a cartridge running into the hip fitting reads as a two-tone paint job
+// rather than as a separate part.
+const ULT_DAMPER_T0 = 0.46
+const ULT_DAMPER_T1 = 0.8
+
+// Skirt. Top radius is the larger of the two — this narrows going DOWN, the
+// opposite of Griffin's basket and of Blue Ghost's pyramid.
+const ULT_SKIRT_BOT_Y = 0.8
+const ULT_SKIRT_BOT_R = 0.46
+const ULT_SKIRT_TOP_Y = 1.62
+const ULT_SKIRT_TOP_R = 0.95
+
+// Bus, set a little inside the skirt's rim so the rim reads as a ledge.
+const ULT_BUS_BOT_Y = 1.6
+const ULT_BUS_TOP_Y = 2.06
+const ULT_BUS_R = 0.92
+
+// Engine. One bell, hung clear of the regolith by the skirt above it.
+const ULT_ENG_THROAT_Y = 0.8
+const ULT_ENG_EXIT_Y = 0.32
+const ULT_ENG_EXIT_R = 0.29
+
+// The solar crown. Slabs stand OFF the bus wall rather than flush on its
+// facets, which is both what the render shows (discrete modules, not skin) and
+// what keeps this independent of where an octagonal cylinder happens to put its
+// vertices — everything here is placed by azimuth at a radius outside the bus's
+// circumradius, so no facet can be half-covered.
+const ULT_PANEL_R = 0.98
+const ULT_PANEL_BOT_Y = 1.68
+const ULT_PANEL_T = 0.07
+// Face index, half-width, and top height. Deliberately uneven: the render's
+// crown is a skyline rather than a ring of matching panels. Face 0 is the side
+// a procedural model presents (see MODEL_FRONT_AZ) and is kept the LOWEST of
+// the six, so the crown never walls the bus and the dish off from the camera.
+// Faces 2 and 6 carry no panel at all — that is where the thruster pods go.
+const ULT_PANELS: { face: number; w: number; top: number }[] = [
+  { face: 0, w: 0.34, top: 2.42 },
+  { face: 1, w: 0.46, top: 2.92 },
+  { face: 3, w: 0.4, top: 2.66 },
+  { face: 4, w: 0.34, top: 2.54 },
+  { face: 5, w: 0.46, top: 2.92 },
+  { face: 7, w: 0.4, top: 2.66 },
+]
+
+// High-gain dish, built to the same recipe as every other dish on this map
+// (see RelayDish and SAT_DISH_EL): a spherical cap sunk so its VERTEX lands on
+// the mount, boresight tipped UP off horizontal by the one figure this scene
+// uses for where Earth is, never at zenith.
+const ULT_DISH_D = 0.84
+const ULT_DISH_THETA = 0.95 // rim half-angle of the cap
+const ULT_DISH_R = ULT_DISH_D / 2 / Math.sin(ULT_DISH_THETA)
+const ULT_DISH_DEPTH = ULT_DISH_R * (1 - Math.cos(ULT_DISH_THETA))
+const ULT_DISH_HOOP_R = 0.03
+// Yawed off the front so the reflector is never seen face-on — a dish square to
+// the eye is a disc, and a disc is not a dish.
+const ULT_DISH_YAW = 0.62
+// DERIVED from ULT_TOP rather than placed and checked afterwards. Tipping the
+// aperture up by SAT_DISH_EL stands the rim's highest point
+// rimR*cos(EL) + depth*sin(EL) above the pivot, and the hoop adds its own tube
+// radius on top of that. The yaw is applied on an OUTER group (about Y), so it
+// cannot disturb this height at any bearing — which is also the reason the yaw
+// and the tilt are two groups rather than one Euler, per ChangE7's dish.
+const ULT_DISH_PIVOT_Y =
+  ULT_TOP -
+  ((ULT_DISH_D / 2) * Math.cos(SAT_DISH_EL) +
+    ULT_DISH_DEPTH * Math.sin(SAT_DISH_EL) +
+    ULT_DISH_HOOP_R)
+
+// Azimuth of each face. Face 0 is centred on +Z, the side a procedural model
+// presents, so the vehicle faces the camera with a panel and a livery band
+// rather than with a corner.
+function ultFaceAz(i: number): number {
+  return Math.PI / 2 + (i / ULT_FACES) * Math.PI * 2
+}
+
+// Legs sit on the half-face diagonals, so none of them stands in front of the
+// presented face — the same argument BlueMoonMk1 makes for its own gear.
+const ULT_LEG_AZ = [0, 1, 2, 3].map((i) => ultFaceAz(i * 2 + 0.5))
+
+const ultLerp = (
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number
+): [number, number, number] => [
+  a[0] + (b[0] - a[0]) * t,
+  a[1] + (b[1] - a[1]) * t,
+  a[2] + (b[2] - a[2]) * t,
+]
+
+// One leg: black composite primary with a polished damper let into its lower
+// half, two braces up to the body, and a flat disc pad.
+function UltLeg({ az }: { az: number }) {
+  const hip: [number, number, number] = [
+    Math.cos(az) * ULT_HIP_R,
+    ULT_HIP_Y,
+    Math.sin(az) * ULT_HIP_R,
+  ]
+  // The ankle sits 4 cm above the pad plate's own centre, which beds the joint
+  // sphere 2 cm INTO the disc on top of it. Placed at the pad's top face
+  // instead it hangs a visible gap, which is the first thing this model got
+  // wrong.
+  const foot: [number, number, number] = [
+    Math.cos(az) * ULT_FOOT_R,
+    ULT_FOOT_Y + 0.04,
+    Math.sin(az) * ULT_FOOT_R,
+  ]
+  const knee = ultLerp(hip, foot, ULT_KNEE_T)
+  const damp0 = ultLerp(hip, foot, ULT_DAMPER_T0)
+  const damp1 = ultLerp(hip, foot, ULT_DAMPER_T1)
+  return (
+    <group>
+      <TaperedMast from={hip} to={foot} r0={0.062} r1={0.042} color={ULT_CARBON} />
+      {/* The cartridge, standing proud of the tube it slides over. */}
+      <Strut from={damp0} to={damp1} r={0.072} color={HULL} seg={12} />
+      {[-1, 1].map((s) => (
+        <Strut
+          key={s}
+          from={[
+            Math.cos(az + s * ULT_BRACE_SPREAD) * ULT_BRACE_R,
+            ULT_BRACE_Y,
+            Math.sin(az + s * ULT_BRACE_SPREAD) * ULT_BRACE_R,
+          ]}
+          to={knee}
+          r={0.024}
+          color={ULT_CARBON}
+        />
+      ))}
+      {/* Ankle, then the pad. The plate runs 3 cm BELOW grade so it cannot lift
+          clear of a hollow it lands over, and the flat disc sits inside the
+          plate rather than on top of it — set flush the two leave a gap that
+          reads as a floating pad. ispace's pads are flat plates, not Griffin's
+          dished bowls. */}
+      <mesh position={foot}>
+        <sphereGeometry args={[0.055, 10, 8]} />
+        <meshStandardMaterial color={METAL} metalness={0.55} roughness={0.38} />
+      </mesh>
+      <mesh position={[foot[0], ULT_FOOT_Y - 0.05, foot[2]]}>
+        <cylinderGeometry args={[ULT_PAD_R, ULT_PAD_R * 0.86, 0.06, 20]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.4} roughness={0.5} />
+      </mesh>
+      <mesh position={[foot[0], ULT_FOOT_Y - 0.01, foot[2]]}>
+        <cylinderGeometry args={[ULT_PAD_R * 0.9, ULT_PAD_R * 0.9, 0.03, 20]} />
+        <meshStandardMaterial color={HULL} metalness={0.62} roughness={0.28} />
+      </mesh>
+    </group>
+  )
+}
+
+// The tank bay: a gold-blanketed frustum with bright ribs on the facet
+// boundaries. Ribs are placed from the CIRCUMRADIUS outward, so they stand
+// proud everywhere round the octagon rather than only at the facet centres.
+function UltSkirt() {
+  return (
+    <group>
+      <mesh position={[0, (ULT_SKIRT_BOT_Y + ULT_SKIRT_TOP_Y) / 2, 0]}>
+        <cylinderGeometry
+          args={[
+            ULT_SKIRT_TOP_R,
+            ULT_SKIRT_BOT_R,
+            ULT_SKIRT_TOP_Y - ULT_SKIRT_BOT_Y,
+            ULT_FACES,
+          ]}
+        />
+        <meshStandardMaterial
+          color={ULT_GOLD}
+          roughness={0.44}
+          metalness={0.5}
+          flatShading
+        />
+      </mesh>
+      {Array.from({ length: ULT_FACES }, (_, i) => {
+        const az = ultFaceAz(i + 0.5)
+        return (
+          <Strut
+            key={i}
+            from={[
+              Math.cos(az) * (ULT_SKIRT_BOT_R + 0.03),
+              ULT_SKIRT_BOT_Y,
+              Math.sin(az) * (ULT_SKIRT_BOT_R + 0.03),
+            ]}
+            to={[
+              Math.cos(az) * (ULT_SKIRT_TOP_R + 0.03),
+              ULT_SKIRT_TOP_Y,
+              Math.sin(az) * (ULT_SKIRT_TOP_R + 0.03),
+            ]}
+            r={0.035}
+            color={HULL}
+          />
+        )
+      })}
+      {/* A darker blanket band low on the cone, so the gold is not one flat
+          sheet from rim to throat. */}
+      <mesh position={[0, ULT_SKIRT_BOT_Y + 0.16, 0]}>
+        <cylinderGeometry args={[ULT_SKIRT_BOT_R + 0.11, ULT_SKIRT_BOT_R + 0.02, 0.2, ULT_FACES]} />
+        <meshStandardMaterial
+          color={ULT_GOLD_DK}
+          roughness={0.5}
+          metalness={0.45}
+          flatShading
+        />
+      </mesh>
+      {/* Rim hoop where the skirt meets the bus. */}
+      <mesh position={[0, ULT_SKIRT_TOP_Y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[ULT_SKIRT_TOP_R, 0.035, 8, ULT_FACES * 4]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.45} metalness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+function UltEngine() {
+  return (
+    <group>
+      <mesh position={[0, ULT_ENG_THROAT_Y - 0.06, 0]}>
+        <cylinderGeometry args={[0.16, 0.1, 0.14, 14]} />
+        <meshStandardMaterial color={METAL} roughness={0.42} metalness={0.6} />
+      </mesh>
+      <mesh
+        position={[0, (ULT_ENG_THROAT_Y + ULT_ENG_EXIT_Y) / 2 - 0.06, 0]}
+      >
+        <cylinderGeometry
+          args={[0.1, ULT_ENG_EXIT_R, ULT_ENG_THROAT_Y - ULT_ENG_EXIT_Y, 20, 1, true]}
+        />
+        <meshStandardMaterial
+          color={DARK}
+          side={THREE.DoubleSide}
+          metalness={0.72}
+          roughness={0.3}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// One solar slab. Near-VERTICAL, which is the vehicle's own design rather than
+// this scene's convention: ispace sells ULTRA for high-latitude and far-side
+// sites where the sun never climbs far off the horizon, and a panel stood on
+// end is what collects there. Note this is the opposite argument to the base's
+// own solar farm, which is raked back to SUN_LOCAL_ELEV_DEG because it gets to
+// choose — a lander's body-mounted array does not.
+function UltPanel({ face, w, top }: { face: number; w: number; top: number }) {
+  const maps = solarFaceMaps()
+  const h = top - ULT_PANEL_BOT_Y
+  const az = ultFaceAz(face)
+  return (
+    <group
+      position={[
+        Math.cos(az) * ULT_PANEL_R,
+        (ULT_PANEL_BOT_Y + top) / 2,
+        Math.sin(az) * ULT_PANEL_R,
+      ]}
+      rotation={[0, Math.PI / 2 - az, 0]}
+    >
+      <mesh>
+        <boxGeometry args={[w * 2, h, ULT_PANEL_T]} />
+        <meshStandardMaterial color={SOLAR_RAIL} roughness={0.6} metalness={0.35} />
+      </mesh>
+      {/* Cells stand 2 cm off the substrate rather than flush on it, per the
+          house rule about coplanar detail strobing. Tinted down off white:
+          ULTRA's arrays read near-black in both renders, noticeably darker
+          than Griffin's, and the shared face map carries its own colour. */}
+      <mesh position={[0, 0, ULT_PANEL_T / 2 + 0.02]}>
+        <planeGeometry args={[w * 1.88, h * 0.94]} />
+        <meshPhysicalMaterial
+          map={maps?.albedo ?? null}
+          roughnessMap={maps?.rough ?? null}
+          color={maps ? '#8b8f99' : '#0e1522'}
+          metalness={0.04}
+          roughness={maps ? 1 : 0.22}
+          clearcoat={1}
+          clearcoatRoughness={0.18}
+        />
+      </mesh>
+      {/* Standoff brackets back to the bus wall. */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * w * 0.6, -h / 2 + 0.06, -ULT_PANEL_T]}>
+          <boxGeometry args={[0.07, 0.1, 0.1]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.4} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+// Attitude-control quad on a short outrigger, out on the two faces the solar
+// crown leaves open.
+function UltRcsPod({ face }: { face: number }) {
+  const az = ultFaceAz(face)
+  const at = (r: number, y: number): [number, number, number] => [
+    Math.cos(az) * r,
+    y,
+    Math.sin(az) * r,
+  ]
+  return (
+    <group>
+      <Strut from={at(ULT_BUS_R - 0.04, 1.9)} to={at(ULT_BUS_R + 0.28, 1.9)} r={0.028} color={HULL} />
+      <mesh position={at(ULT_BUS_R + 0.34, 1.9)} rotation={[0, Math.PI / 2 - az, 0]}>
+        <boxGeometry args={[0.18, 0.14, 0.14]} />
+        <meshStandardMaterial color={HULL} roughness={0.45} metalness={0.45} />
+      </mesh>
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={at(ULT_BUS_R + 0.34, 1.9 + s * 0.09)}
+          rotation={[s > 0 ? 0 : Math.PI, 0, 0]}
+        >
+          <cylinderGeometry args={[0.032, 0.046, 0.07, 10, 1, true]} />
+          <meshStandardMaterial
+            color={DARK}
+            side={THREE.DoubleSide}
+            metalness={0.6}
+            roughness={0.35}
+          />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function UltDish() {
+  const rimR = ULT_DISH_D / 2
+  return (
+    <group position={[0, ULT_DISH_PIVOT_Y, 0]} rotation={[0, ULT_DISH_YAW, 0]}>
+      <group rotation={[-SAT_DISH_EL, 0, 0]}>
+        {/* Reflector, sunk so its VERTEX sits on the pivot — a cap placed by
+            its sphere centre floats a whole radius off the mount. */}
+        <mesh position={[0, 0, ULT_DISH_R]} rotation={[-Math.PI / 2, 0, 0]}>
+          <sphereGeometry
+            args={[ULT_DISH_R, 26, 14, 0, Math.PI * 2, 0, ULT_DISH_THETA]}
+          />
+          <meshStandardMaterial
+            color={HULL}
+            side={THREE.DoubleSide}
+            roughness={0.3}
+            metalness={0.45}
+          />
+        </mesh>
+        <mesh position={[0, 0, ULT_DISH_DEPTH]}>
+          <torusGeometry args={[rimR, ULT_DISH_HOOP_R, 8, 36]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.42} metalness={0.5} />
+        </mesh>
+        {/* Feed at the focus on a tripod — the detail that says "antenna"
+            rather than "bowl". */}
+        {[0, 1, 2].map((i) => {
+          const a = (i / 3) * Math.PI * 2
+          return (
+            <Strut
+              key={i}
+              from={[Math.cos(a) * rimR * 0.9, Math.sin(a) * rimR * 0.9, ULT_DISH_DEPTH]}
+              to={[0, 0, ULT_DISH_R / 2]}
+              r={0.012}
+              color={HULL_DARK}
+            />
+          )
+        })}
+        <mesh position={[0, 0, ULT_DISH_R / 2]}>
+          <cylinderGeometry args={[0.05, 0.06, 0.1, 10]} />
+          <meshStandardMaterial color={DARK} roughness={0.45} metalness={0.5} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// Bus, top deck and the truss the dish stands on.
+function UltBus({ accent }: { accent: string }) {
+  return (
+    <group>
+      <mesh position={[0, (ULT_BUS_BOT_Y + ULT_BUS_TOP_Y) / 2, 0]}>
+        <cylinderGeometry
+          args={[ULT_BUS_R, ULT_BUS_R, ULT_BUS_TOP_Y - ULT_BUS_BOT_Y, ULT_FACES]}
+        />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.5} metalness={0.4} flatShading />
+      </mesh>
+      <mesh position={[0, ULT_BUS_TOP_Y, 0]}>
+        <cylinderGeometry args={[ULT_BUS_R * 0.98, ULT_BUS_R, 0.07, ULT_FACES]} />
+        <meshStandardMaterial color={HULL} roughness={0.45} metalness={0.45} flatShading />
+      </mesh>
+
+      {/* Dish truss: a centre post and three splayed legs off the deck, rather
+          than one bare pole — the render carries a short open frame here. */}
+      <Strut
+        from={[0, ULT_BUS_TOP_Y, 0]}
+        to={[0, ULT_DISH_PIVOT_Y, 0]}
+        r={0.035}
+        color={HULL}
+      />
+      {[0, 1, 2].map((i) => {
+        const a = (i / 3) * Math.PI * 2 + 0.4
+        return (
+          <Strut
+            key={i}
+            from={[Math.cos(a) * 0.3, ULT_BUS_TOP_Y + 0.02, Math.sin(a) * 0.3]}
+            to={[0, ULT_DISH_PIVOT_Y - 0.16, 0]}
+            r={0.018}
+            color={HULL_DARK}
+          />
+        )
+      })}
+
+      {/* Avionics box and a star tracker on the deck, off to one side so the
+          truss keeps the middle. */}
+      <mesh position={[-0.42, ULT_BUS_TOP_Y + 0.14, 0.24]}>
+        <boxGeometry args={[0.34, 0.22, 0.28]} />
+        <meshStandardMaterial color={HULL} roughness={0.48} metalness={0.4} />
+      </mesh>
+      <mesh position={[0.4, ULT_BUS_TOP_Y + 0.13, -0.3]} rotation={[0.35, 0, 0.2]}>
+        <cylinderGeometry args={[0.08, 0.09, 0.2, 12]} />
+        <meshStandardMaterial color={DARK} roughness={0.4} metalness={0.5} />
+      </mesh>
+
+      {/* Livery: one band on the presented face and one beacon, per the house
+          rule on marks. */}
+      <mesh position={[0, ULT_BUS_BOT_Y + 0.14, ULT_BUS_R + 0.015]}>
+        <boxGeometry args={[ULT_BUS_R * 0.62, 0.05, 0.03]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={[0.3, ULT_BUS_TOP_Y + 0.09, 0.44]}>
+        <sphereGeometry args={[0.034, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.8}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function Ultra({ accent }: { accent: string }) {
+  return (
+    <group>
+      {/* gradedDeckRadiusM declares 0.6 x 3.6 m = 2.16 m of pad deck for a
+          lander, a shade over one local unit at ULT_M — and a unit radius
+          clears the 1.65 m footpads with room over. */}
+      <LandingPad r={1.0} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={ULT_M}>
+        {ULT_LEG_AZ.map((az) => (
+          <UltLeg key={az} az={az} />
+        ))}
+        <UltEngine />
+        <UltSkirt />
+        <UltBus accent={accent} />
+        {ULT_PANELS.map((p) => (
+          <UltPanel key={p.face} face={p.face} w={p.w} top={p.top} />
+        ))}
+        {[2, 6].map((f) => (
+          <UltRcsPod key={f} face={f} />
+        ))}
+        <UltDish />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Nova-C — Intuitive Machines' CLPS lander
 // ---------------------------------------------------------------------------
 //
@@ -14804,6 +15350,12 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // pyramid with a chimney on top, panels flush on its sloped faces. See
   // BlueGhost.
   'firefly-blue-ghost': BlueGhost,
+  // Touchdown's sixth entrant, and the one whose silhouette is mostly what
+  // stands ON the body rather than the body itself: a crown of tall black
+  // solar slabs on end and a high-gain dish over them, which the generic
+  // `lander` drum has nothing like. Draws ULTRA, not the cancelled APEX 1.0
+  // the id is named for and not either crashed HAKUTO-R. See Ultra.
+  'ispace-apex': Ultra,
 }
 
 // Whether anything was ever authored for this project specifically — a
