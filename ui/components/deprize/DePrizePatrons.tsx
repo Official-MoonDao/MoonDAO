@@ -1,4 +1,5 @@
 import EthUsd from '@/components/deprize/EthUsd'
+import { SCROLL_LIST, TOUCH } from '@/components/deprize/detail/primitives'
 import CitizenIdentity from '@/components/layout/CitizenIdentity'
 import { useCitizenRowsByOwners } from '@/lib/citizen/useCitizenRowsByOwners'
 import { PATRONS_STALE_AFTER_MS, UNIT } from '@/lib/deprize/constants'
@@ -43,7 +44,7 @@ export default function DePrizePatrons(props: {
         <p className="text-amber-300 text-sm">Couldn&apos;t load patrons right now.</p>
         <button
           type="button"
-          className="text-sm text-indigo-300 underline"
+          className={`inline-flex items-center text-sm text-indigo-300 underline ${TOUCH}`}
           onClick={() => patrons.refresh()}
         >
           Retry
@@ -60,7 +61,7 @@ export default function DePrizePatrons(props: {
         </p>
         <button
           type="button"
-          className="text-sm text-indigo-300 underline"
+          className={`inline-flex items-center text-sm text-indigo-300 underline ${TOUCH}`}
           onClick={() => patrons.refresh({ fresh: true })}
         >
           Retry
@@ -97,15 +98,22 @@ export default function DePrizePatrons(props: {
           Your contribution is confirming — the wall updates within a minute.
         </p>
       )}
-      <ul className="space-y-1.5">
+      <ul className={`space-y-1.5 ${SCROLL_LIST}`}>
         {patrons.patrons.map((row) => (
-          <li key={row.payer} className="flex items-center justify-between gap-3 text-sm">
-            <CitizenIdentity
-              address={row.payer}
-              citizen={citizens.get(row.payer.toLowerCase())}
-              fallbackName={row.displayName}
-            />
-            <EthUsd eth={Number(BigInt(row.totalWei)) / Number(UNIT)} prize />
+          <li
+            key={row.payer}
+            className="flex items-center justify-between gap-2 sm:gap-3 text-sm"
+          >
+            <span className="min-w-0 flex-1">
+              <CitizenIdentity
+                address={row.payer}
+                citizen={citizens.get(row.payer.toLowerCase())}
+                fallbackName={row.displayName}
+              />
+            </span>
+            <span className="shrink-0 tabular-nums">
+              <EthUsd eth={Number(BigInt(row.totalWei)) / Number(UNIT)} prize />
+            </span>
           </li>
         ))}
       </ul>

@@ -17,6 +17,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
 import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import DePrizeLadderStrip from '@/components/deprize/DePrizeLadderStrip'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
 import Container from '@/components/layout/Container'
@@ -163,7 +164,8 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
             <DePrizeLadderStrip chainSlug={chainSlug} />
 
-            {/* Search */}
+            {/* Search. 16px text on phones: iOS Safari zooms the page when a
+                focused input is any smaller. */}
             <div className="relative w-full max-w-md">
               <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
               <input
@@ -171,7 +173,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search races or teams…"
-                className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
+                className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white/5 border border-white/10 text-white placeholder-gray-500 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
               />
             </div>
 
@@ -180,7 +182,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
               <button
                 type="button"
                 onClick={() => setCategory('all')}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border ${TOUCH} ${
                   category === 'all'
                     ? 'bg-white/15 text-white border-white/20'
                     : 'text-gray-400 border-white/10 hover:text-white hover:border-white/20'
@@ -193,7 +195,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                   key={c}
                   type="button"
                   onClick={() => setCategory(c)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${TOUCH} ${
                     category === c
                       ? 'bg-white/15 text-white border-white/20'
                       : 'text-gray-400 border-white/10 hover:text-white hover:border-white/20'
@@ -220,7 +222,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                   role="tab"
                   aria-selected={activeTab === t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${TOUCH} ${
                     activeTab === t.id ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
