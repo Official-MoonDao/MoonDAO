@@ -88,6 +88,12 @@ const EXPLORER_TX: Record<string, string> = {
   'arbitrum-sepolia': 'https://sepolia.arbiscan.io/tx/',
 }
 
+function prizeQuestion(tagline: string): string {
+  // Taglines carry a trailing call to action after the question mark.
+  const q = tagline.indexOf('?')
+  return (q >= 0 ? tagline.slice(0, q + 1) : tagline).trim()
+}
+
 function outcomeDisplayName(
   index: number,
   raceBinding: ReturnType<typeof getDePrizeRaceBinding>
@@ -735,7 +741,6 @@ function DePrizeDetailContent() {
         {market.error && <Notice tone="red">Couldn&apos;t load market data — reload.</Notice>}
 
         <DePrizeQuestionCard
-          tagline={competition.tagline}
           description={raceGoal?.description}
           criteria={raceGoal?.criteria}
         />
@@ -763,19 +768,22 @@ function DePrizeDetailContent() {
         {/* Odds — the ranked cards below are the legend (same colors). */}
         {numOutcomes > 0 && (
           <div className={CARD}>
-            <p className="text-white font-semibold mb-3">
-              {!activity.loading && !activity.error && activity.bets.length === 0
-                ? 'Starting odds — no bets yet'
-                : 'Odds'}
+            <p className="text-white text-base font-semibold leading-snug">
+              {prizeQuestion(competition.tagline)}
             </p>
-            <OddsHistoryChart
-              history={odds.history}
-              labels={predictionLabels}
-              colors={outcomeColors}
-              domainStartMs={market.marketStartMs}
-              markers={odds.markers}
-              loading={odds.loading}
-            />
+            {!activity.loading && !activity.error && activity.bets.length === 0 && (
+              <p className="text-gray-500 text-xs mt-1">Starting odds — no bets yet</p>
+            )}
+            <div className="mt-3">
+              <OddsHistoryChart
+                history={odds.history}
+                labels={predictionLabels}
+                colors={outcomeColors}
+                domainStartMs={market.marketStartMs}
+                markers={odds.markers}
+                loading={odds.loading}
+              />
+            </div>
           </div>
         )}
 

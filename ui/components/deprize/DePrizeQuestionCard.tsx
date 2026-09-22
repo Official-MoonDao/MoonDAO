@@ -1,8 +1,6 @@
 import type { CapabilityCriterion } from '@/lib/lunar-atlas/types'
 
 type Props = {
-  /** The market's question, e.g. "Which company lands on the Moon next?" */
-  tagline: string
   description?: string
   criteria?: CapabilityCriterion[]
 }
@@ -24,36 +22,25 @@ function CriteriaList({ criteria }: { criteria: CapabilityCriterion[] }) {
   )
 }
 
-/**
- * One-line question above the fold. Description and win criteria start
- * expanded; the visitor can collapse them.
- */
-export default function DePrizeQuestionCard({ tagline, description, criteria }: Props) {
+/** Win criteria for a prize. The market question lives on the odds chart. */
+export default function DePrizeQuestionCard({ description, criteria }: Props) {
   const hasCriteria = !!criteria && criteria.length > 0
-  const hasDetails = !!description || hasCriteria
-  // Taglines carry a trailing call to action ("Back a competitor — every bet
-  // grows the prize pool."). Only the question belongs here.
-  const q = tagline.indexOf('?')
-  const question = q >= 0 ? tagline.slice(0, q + 1) : tagline
+  if (!description && !hasCriteria) return null
   return (
     <div className={CARD}>
-      <p className="text-white text-base font-semibold leading-snug">{question}</p>
-
-      {hasDetails && (
-        <details className="mt-3 group" open>
-          <summary className="cursor-pointer list-none text-sm font-semibold text-white flex items-center justify-between gap-3">
-            <span>{hasCriteria ? 'What counts as winning' : 'About this prize'}</span>
-            <span className="text-gray-500 text-xs font-normal shrink-0">
-              {hasCriteria ? `${criteria!.length} criteria` : null}
-              <span className="ml-1 inline-block transition-transform group-open:rotate-180">▾</span>
-            </span>
-          </summary>
-          <div className="mt-3 flex flex-col gap-3">
-            {description && <p className="text-gray-400 text-sm">{description}</p>}
-            {hasCriteria && <CriteriaList criteria={criteria!} />}
-          </div>
-        </details>
-      )}
+      <details className="group" open>
+        <summary className="cursor-pointer list-none text-sm font-semibold text-white flex items-center justify-between gap-3">
+          <span>{hasCriteria ? 'What counts as winning' : 'About this prize'}</span>
+          <span className="text-gray-500 text-xs font-normal shrink-0">
+            {hasCriteria ? `${criteria!.length} criteria` : null}
+            <span className="ml-1 inline-block transition-transform group-open:rotate-180">▾</span>
+          </span>
+        </summary>
+        <div className="mt-3 flex flex-col gap-3">
+          {description && <p className="text-gray-400 text-sm">{description}</p>}
+          {hasCriteria && <CriteriaList criteria={criteria!} />}
+        </div>
+      </details>
     </div>
   )
 }
