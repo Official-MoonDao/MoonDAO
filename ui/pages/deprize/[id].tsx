@@ -390,13 +390,16 @@ function DePrizeDetailContent() {
       : market.loading
         ? undefined
         : false
-  // Default-deny when country is unknown: `/api/geo/country` reports
-  // restricted=false for a missing geo header, which must not open betting.
+  // The predict control is offered once the market is open and geo has
+  // settled. A missing country (no Vercel/CF header — typical on localhost)
+  // still shows it, so a signed-in user can choose a competitor. The bet
+  // modal and permit API stay fail-closed for an unknown or restricted
+  // country. Confirmed restricted regions keep the control hidden, and we
+  // wait out the geo request so it does not flash on first.
   const bettingAllowed =
     !!deprize?.bettingOpen &&
     market.mintBound &&
     mintConfigured &&
-    !!region.country &&
     !region.isRestricted &&
     !region.isLoading &&
     !region.isError &&
@@ -836,7 +839,9 @@ function DePrizeDetailContent() {
                     }
                     nameOverride={atlasOrg?.name || atlasProject?.name}
                     vehicleLabel={outcomeBinding?.vehicleLabel}
-                    backLabel={isField ? 'Back Other' : competitorName ? `Back ${competitorName}` : undefined}
+                    backLabel={
+                      isField ? 'Predict Other' : competitorName ? `Predict ${competitorName}` : 'Predict'
+                    }
                     imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                     unclaimed={!isField && !!outcomeBinding && !claimed}
                   />

@@ -47,7 +47,7 @@ type DePrizeTeamCardProps = {
    */
   vehicleLabel?: string
   /**
-   * Live-page Back button copy, e.g. "Back Griffin Mission One".
+   * Live-page predict button copy, e.g. "Predict Griffin Mission One".
    * Demo cards omit this and keep "Back this team".
    */
   backLabel?: string
@@ -112,12 +112,14 @@ export default function DePrizeTeamCard({
   const pnl =
     realizedValue !== undefined && investedEth > 0 ? realizedValue - investedEth : undefined
   const canCashOut = showHoldings && !tradingHalted && !resolved
+  const canPredict = bettingOpen && !tradingHalted
 
   return (
     <div
       className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
         resolved && isWinningSlot ? 'border-emerald-400/40 ring-1 ring-emerald-400/20' : ''
-      }`}
+      } ${canPredict ? 'cursor-pointer hover:border-indigo-400/35 transition-colors' : ''}`}
+      onClick={canPredict ? () => onBet(outcome.index) : undefined}
     >
       {/* Top row: chance/result · team · bet CTA */}
       <div className="flex items-center gap-4 flex-wrap">
@@ -157,7 +159,7 @@ export default function DePrizeTeamCard({
         </div>
 
         <div className="flex-1 min-w-[150px] flex flex-col gap-1">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
             <DePrizeTeamLink
               teamId={teamId}
               teamContract={teamContract}
@@ -190,21 +192,26 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {bettingOpen && !tradingHalted && (
-          <StandardButton
-            onClick={() => onBet(outcome.index)}
-            disabled={busy}
-            className="rounded-xl shadow-purple-500/10"
-          >
-            {!userConnected
-              ? 'Connect to back'
-              : backLabel ?? (isField ? 'Back the field' : 'Back this team')}
-          </StandardButton>
+        {canPredict && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <StandardButton
+              onClick={() => onBet(outcome.index)}
+              disabled={busy}
+              className="rounded-xl shadow-purple-500/10"
+            >
+              {!userConnected
+                ? 'Connect to back'
+                : backLabel ?? (isField ? 'Back the field' : 'Back this team')}
+            </StandardButton>
+          </div>
         )}
       </div>
 
       {showHoldings && (
-        <div className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5">
+        <div
+          className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-gray-500">
               {resolved ? 'Claimable' : 'Cash out'}
