@@ -21,7 +21,6 @@ import type { SharedGoal } from '@/lib/lunar-atlas/types'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import Container from '@/components/layout/Container'
-import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
@@ -357,7 +356,6 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
             )}
           </div>
         </div>
-        <DePrizeAvailabilityLegend />
         <NoticeFooter />
       </Container>
 

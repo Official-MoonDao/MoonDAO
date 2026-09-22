@@ -15,7 +15,6 @@ import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
-import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
 import Container from '@/components/layout/Container'
@@ -155,12 +154,7 @@ export default function DePrizeIndexContent() {
           isProfile
           centerHeader
           centerHeaderWidth="72rem"
-          preFooter={
-            <>
-              <DePrizeAvailabilityLegend />
-              <NoticeFooter />
-            </>
-          }
+          preFooter={<NoticeFooter />}
         >
           <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
             {bettingBlockedReason && (
