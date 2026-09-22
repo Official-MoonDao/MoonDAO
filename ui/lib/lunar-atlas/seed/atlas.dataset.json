@@ -3458,7 +3458,7 @@
           "retrievedAt": "2026-09-07"
         }
       ],
-      "category": "power"
+      "indexCategory": "power"
     },
     {
       "id": "shared-isru-oxygen",

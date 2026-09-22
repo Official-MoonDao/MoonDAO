@@ -12,6 +12,7 @@ import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
 import {
+  goalIndexCategory,
   orgColor,
   PROJECT_TYPE_COLOR,
   PROJECT_TYPE_LABEL,
@@ -65,7 +66,7 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
     userAddress,
   )
 
-  const category = goal.category ?? 'other'
+  const category = goalIndexCategory(goal) ?? 'other'
   const categoryLabel = PROJECT_TYPE_LABEL[category]
   const categoryColor = PROJECT_TYPE_COLOR[category]
 

@@ -10,7 +10,7 @@ import { resetMockData } from '@/lib/deprize/mockMarket'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
-import { PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
+import { goalIndexCategory, PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -65,7 +65,8 @@ export default function DePrizeIndexContent() {
   const categories = useMemo(() => {
     const set = new Set<ProjectType>()
     races.forEach((r) => {
-      if (r.goal.category) set.add(r.goal.category)
+      const listed = goalIndexCategory(r.goal)
+      if (listed) set.add(listed)
     })
     return Array.from(set).sort((a, b) =>
       PROJECT_TYPE_LABEL[a].localeCompare(PROJECT_TYPE_LABEL[b])
@@ -75,7 +76,7 @@ export default function DePrizeIndexContent() {
   const filteredRaces = useMemo(() => {
     const q = search.trim().toLowerCase()
     return races.filter((r) => {
-      if (category !== 'all' && r.goal.category !== category) return false
+      if (category !== 'all' && goalIndexCategory(r.goal) !== category) return false
       if (!q) return true
       if (r.goal.title.toLowerCase().includes(q)) return true
       return r.competitors.some((c) => c.project.name.toLowerCase().includes(q))

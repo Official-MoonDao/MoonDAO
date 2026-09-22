@@ -26,7 +26,11 @@ import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import { isMintConfigured } from '@/lib/deprize/status'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
-import { PROJECT_TYPE_COLOR, PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
+import {
+  goalIndexCategory,
+  PROJECT_TYPE_COLOR,
+  PROJECT_TYPE_LABEL,
+} from '@/lib/lunar-atlas/display'
 import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import BetModal from '@/components/deprize/BetModal'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
@@ -276,7 +280,7 @@ export default function RaceMarketCard({
     concept: 'No developer yet',
   }[statusTone]
 
-  const category = goal.category ?? 'other'
+  const category = goalIndexCategory(goal) ?? 'other'
   const categoryLabel = PROJECT_TYPE_LABEL[category]
   const categoryColor = PROJECT_TYPE_COLOR[category]
 
