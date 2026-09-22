@@ -25,6 +25,7 @@ type Props = {
   userAddress?: string
   spendableEth: number
   bettingBlockedReason?: string
+  blockLiveBetting?: boolean
   onConnectWallet: () => void
   onDone: () => void
 }
@@ -42,6 +43,7 @@ export default function LiveDePrizeHero({
   userAddress,
   spendableEth,
   bettingBlockedReason,
+  blockLiveBetting = false,
   onConnectWallet,
   onDone,
 }: Props) {
@@ -90,6 +92,7 @@ export default function LiveDePrizeHero({
     !!deprize?.bettingOpen &&
     !betting.bettingBlockedReason &&
     !bettingBlockedReason &&
+    !blockLiveBetting &&
     !!market.marketAddress
 
   const [betIndex, setBetIndex] = useState<number | null>(null)

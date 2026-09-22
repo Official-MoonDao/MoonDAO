@@ -124,16 +124,16 @@ export default function DePrizeIndexContent() {
     }
   }, [account?.address, readChain, refreshNonce])
 
-  // Default-deny real betting when the region is unresolved: `/api/geo/country`
-  // reports restricted=false for a missing geo header, which must not open
-  // live betting. Demo markets are unaffected — no real value moves there.
+  // `/api/geo/country` reports restricted=false when the geo header is missing.
+  // That must not open live betting, and it does not get its own notice.
+  const regionUnverified =
+    !region.isRestricted && !region.isLoading && !region.isError && !region.country
   const bettingBlockedReason = region.isRestricted
     ? "Betting on live on-chain markets isn't available in your region."
-    : !region.isLoading && !region.isError && !region.country
-    ? "Can't verify your region — live betting is disabled until it resolves. Demo markets still work."
     : region.isLoading
     ? 'Checking your region…'
     : undefined
+  const blockLiveBetting = !!bettingBlockedReason || regionUnverified
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
@@ -257,6 +257,7 @@ export default function DePrizeIndexContent() {
                     userAddress={userAddress}
                     spendableEth={spendableEth}
                     bettingBlockedReason={bettingBlockedReason}
+                    blockLiveBetting={blockLiveBetting}
                     onConnectWallet={() => login()}
                     onDone={() => setRefreshNonce((n) => n + 1)}
                   />
@@ -276,6 +277,7 @@ export default function DePrizeIndexContent() {
                       refreshNonce={refreshNonce}
                       activeTab={activeTab}
                       bettingBlockedReason={bettingBlockedReason}
+                      blockLiveBetting={blockLiveBetting}
                       onConnectWallet={() => login()}
                       onHasPosition={handleHasPosition}
                       onDone={() => setRefreshNonce((n) => n + 1)}
@@ -305,6 +307,7 @@ export default function DePrizeIndexContent() {
                     refreshNonce={refreshNonce}
                     activeTab={activeTab}
                     bettingBlockedReason={bettingBlockedReason}
+                    blockLiveBetting={blockLiveBetting}
                     onConnectWallet={() => login()}
                     onHasPosition={handleHasPosition}
                     onDone={() => setRefreshNonce((n) => n + 1)}

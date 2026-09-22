@@ -149,6 +149,7 @@ export default function RaceMarketCard({
   refreshNonce,
   activeTab,
   bettingBlockedReason,
+  blockLiveBetting = false,
   onConnectWallet,
   onHasPosition,
   onDone,
@@ -165,6 +166,8 @@ export default function RaceMarketCard({
   activeTab: IndexTab
   /** Set when region/geo rules block *real* (on-chain) betting. Demo markets ignore it. */
   bettingBlockedReason: string | undefined
+  /** Blocks live Buy buttons without a page notice, e.g. when geo never resolves. */
+  blockLiveBetting?: boolean
   onConnectWallet: () => void
   onHasPosition: (sharedGoalId: string, has: boolean) => void
   onDone: () => void
@@ -252,7 +255,7 @@ export default function RaceMarketCard({
     live.stage === MarketStage.Running
   // Whether the Buy button actually opens — the market must be tradable AND
   // region rules must allow real bets (demo markets skip this entirely).
-  const bettingOpenReal = marketTradable && !bettingBlockedReason
+  const bettingOpenReal = marketTradable && !bettingBlockedReason && !blockLiveBetting
   const bettingEnabled = hasRace && (bound ? bettingOpenReal : true) // demo markets never gate
 
   const statusTone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept' = !hasRace
