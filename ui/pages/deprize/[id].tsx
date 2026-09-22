@@ -623,28 +623,6 @@ function DePrizeDetailContent() {
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
       <div className="flex flex-col gap-4 w-full max-w-[860px] mx-auto">
-        {/* Odds — the ranked cards below are the legend (same colors). */}
-        {numOutcomes > 0 && (
-          <div className={CARD}>
-            <p className="text-white text-base font-semibold leading-snug">
-              {prizeQuestion(competition.tagline)}
-            </p>
-            {!activity.loading && !activity.error && activity.bets.length === 0 && (
-              <p className="text-gray-500 text-xs mt-1">Starting odds — no bets yet</p>
-            )}
-            <div className="mt-3">
-              <OddsHistoryChart
-                history={odds.history}
-                labels={predictionLabels}
-                colors={outcomeColors}
-                domainStartMs={market.marketStartMs}
-                markers={odds.markers}
-                loading={odds.loading}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Header — name, id, status only when it isn't the normal OPEN state, stats. */}
         <div className={CARD}>
           <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -763,6 +741,28 @@ function DePrizeDetailContent() {
               </div>
             )}
         </div>
+
+        {/* Odds — the ranked cards below are the legend (same colors). */}
+        {numOutcomes > 0 && (
+          <div className={CARD}>
+            <p className="text-white text-base font-semibold leading-snug">
+              {prizeQuestion(competition.tagline)}
+            </p>
+            {!activity.loading && !activity.error && activity.bets.length === 0 && (
+              <p className="text-gray-500 text-xs mt-1">Starting odds — no bets yet</p>
+            )}
+            <div className="mt-3">
+              <OddsHistoryChart
+                history={odds.history}
+                labels={predictionLabels}
+                colors={outcomeColors}
+                domainStartMs={market.marketStartMs}
+                markers={odds.markers}
+                loading={odds.loading}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Actionable status only (paused / no market / cancelling). */}
         {bettingBlockedReason && !bettingBlockedReason.startsWith('Loading') && (
