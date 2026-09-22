@@ -113,7 +113,16 @@ export default function useOnrampJWT(
 
         const data = await response.json()
 
-        if (!response.ok || !data.valid) {
+        if (!response.ok) {
+          const message = data.error || 'Failed to verify JWT'
+          setError(message)
+          // 5xx is a gateway/server blip. Callers must be able to retry it
+          // instead of treating the token as permanently invalid.
+          if (response.status >= 500) throw new Error(message)
+          return null
+        }
+
+        if (!data.valid) {
           setError(data.error || 'Invalid or expired JWT')
           return null
         }
@@ -143,7 +152,7 @@ export default function useOnrampJWT(
         const errorMessage = err.message || 'JWT verification failed'
         setError(errorMessage)
         console.error('Error verifying onramp JWT:', errorMessage)
-        return null
+        throw err instanceof Error ? err : new Error(errorMessage)
       } finally {
         setIsVerifying(false)
       }

@@ -105,7 +105,7 @@ export default function BetModal({
   const [showFunding, setShowFunding] = useState(false)
   const ctaShown = useRef(false)
   const headingRef = useRef<HTMLHeadingElement | null>(null)
-  const { generateJWT, clearJWT } = useOnrampJWT(DEPRIZE_ONRAMP_JWT_KEY)
+  const { generateJWT, clearJWT, getStoredJWT } = useOnrampJWT(DEPRIZE_ONRAMP_JWT_KEY)
   const fundingStrategy = getFundingStrategy(chain.id)
   const [quote, setQuote] = useState<{ qty: number } | null>(null)
   const [quoting, setQuoting] = useState(false)
@@ -395,8 +395,10 @@ export default function BetModal({
       )
       toast.dismiss('bet')
       const qtyNum = Number(qty) / Number(UNIT)
+      const onrampToken = getStoredJWT()
+      const withinOnrampSession = Boolean(fundsArrived || initialAmountEth || onrampToken)
       clearJWT()
-      trackOnrampEvent('bet_placed_within_session')
+      if (withinOnrampSession) trackOnrampEvent('bet_placed_within_session')
       fireDePrizeConfetti()
       toast.success(
         `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ≈ ${fmtEthWithUsd(

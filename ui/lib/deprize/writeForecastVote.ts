@@ -10,9 +10,16 @@ export async function forecastVoteRowExists(args: {
   const statement = `SELECT id FROM ${args.forecastsTableName} WHERE voteId = ${args.voteId} AND address = '${addr}'`
   const url = `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(statement)}&t=${Date.now()}`
   const res = await fetch(url)
-  if (!res.ok) return false
+  // A failed read must not look like "no row". Tableland accepts a duplicate
+  // insert without changing the existing row, so the caller would toast success.
+  if (!res.ok) {
+    throw new Error('Could not check your existing prediction. Try again.')
+  }
   const data = await res.json()
-  return Array.isArray(data) && data.length > 0
+  if (!Array.isArray(data)) {
+    throw new Error('Could not check your existing prediction. Try again.')
+  }
+  return data.length > 0
 }
 
 export async function writeForecastVote(args: {

@@ -13,6 +13,9 @@ import {
 import { trackOnrampEvent } from './onrampTelemetryClient'
 import { resolveOnrampReturn, type ReturnNotice } from './resolveOnrampReturn'
 
+const VERIFY_RETRY_MS = 2500
+const VERIFY_RETRY_LIMIT = 5
+
 export type OnrampReturnState = {
   betIndex: number | null
   prefillEth?: string
@@ -29,6 +32,17 @@ function stripOnrampParams(router: ReturnType<typeof useRouter>) {
   router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true })
 }
 
+function readDeprizeOnrampToken(
+  storedJWT: string | null,
+  getStoredJWT: () => string | null
+): string | null {
+  return (
+    storedJWT ||
+    getStoredJWT() ||
+    (typeof window !== 'undefined' ? window.localStorage.getItem(DEPRIZE_ONRAMP_JWT_KEY) : null)
+  )
+}
+
 export function useDePrizeOnrampReturn(opts: {
   userAddress?: string
   numOutcomes: number
@@ -40,24 +54,53 @@ export function useDePrizeOnrampReturn(opts: {
   liveTipId?: number
 }): OnrampReturnState {
   const router = useRouter()
-  const { verifyJWT, getStoredJWT, storedJWT } = useOnrampJWT(DEPRIZE_ONRAMP_JWT_KEY)
+  const { verifyJWT, getStoredJWT, getAddressFromJWT, storedJWT } = useOnrampJWT(
+    DEPRIZE_ONRAMP_JWT_KEY
+  )
   const [state, setState] = useState<OnrampReturnState>({ betIndex: null })
+  const [verifyAttempt, setVerifyAttempt] = useState(0)
   const handled = useRef(false)
   const walletWaitStarted = useRef<number | null>(null)
+  const returnTracked = useRef(false)
+  const wrongWalletTracked = useRef<string | null>(null)
+  const verifyFailures = useRef(0)
+  const lastAddress = useRef<string | undefined>(undefined)
+  const optsRef = useRef(opts)
+  const routerRef = useRef(router)
+  optsRef.current = opts
+  routerRef.current = router
+  if (lastAddress.current !== opts.userAddress) {
+    lastAddress.current = opts.userAddress
+    verifyFailures.current = 0
+  }
+
+  const onrampQueryKey = [
+    router.query.onrampSuccess,
+    router.query.outcome,
+    router.query.amount,
+    router.query.mockOnramp,
+  ].join('|')
 
   useEffect(() => {
-    if (!router.isReady || opts.marketLoading || opts.numOutcomes <= 0) return
+    const live = optsRef.current
+    const liveRouter = routerRef.current
+    if (!liveRouter.isReady || live.marketLoading || live.numOutcomes <= 0) return
     if (handled.current) return
 
-    const parsed = parseOnrampReturn(router.query)
-    const mock = mockOnrampEnabled() ? parseMockOnrampScenario(router.query) : null
+    const parsed = parseOnrampReturn(liveRouter.query)
+    const mock = mockOnrampEnabled() ? parseMockOnrampScenario(liveRouter.query) : null
     if (!parsed.active && !mock) return
 
-    if (!opts.userAddress) {
+    const userAddress = live.userAddress
+    if (!userAddress) {
       if (walletWaitStarted.current == null) walletWaitStarted.current = Date.now()
-      if (Date.now() - walletWaitStarted.current < WALLET_WAIT_MS) return
+      const remaining = WALLET_WAIT_MS - (Date.now() - walletWaitStarted.current)
+      if (remaining > 0) {
+        const waitTimer = setTimeout(() => setVerifyAttempt((n) => n + 1), remaining)
+        return () => clearTimeout(waitTimer)
+      }
       handled.current = true
-      stripOnrampParams(router)
+      stripOnrampParams(liveRouter)
       setState({
         betIndex: null,
         notice: { kind: 'connect-wallet' },
@@ -65,42 +108,85 @@ export function useDePrizeOnrampReturn(opts: {
       return
     }
 
-    handled.current = true
-    trackOnrampEvent('return_received')
+    if (!returnTracked.current) {
+      returnTracked.current = true
+      trackOnrampEvent('return_received')
+    }
+
+    const token = mock ? null : readDeprizeOnrampToken(storedJWT, getStoredJWT)
+    const fundedHint = token ? getAddressFromJWT(token) : null
+    if (fundedHint && fundedHint.toLowerCase() !== userAddress.toLowerCase()) {
+      // Privy often reconnects a different wallet. Keep the URL and snapshot
+      // so switching to the funded address can still open the bet.
+      if (wrongWalletTracked.current !== fundedHint.toLowerCase()) {
+        wrongWalletTracked.current = fundedHint.toLowerCase()
+        trackOnrampEvent('return_rejected:address')
+      }
+      setState({
+        betIndex: null,
+        notice: { kind: 'wrong-wallet', fundedAddress: fundedHint },
+      })
+      return
+    }
+
+    let cancelled = false
+    const timer: { id?: ReturnType<typeof setTimeout> } = {}
 
     ;(async () => {
-      const token = storedJWT || getStoredJWT()
+      const current = optsRef.current
       let jwtVerified = false
       let jwtAddress: string | undefined
       let jwtIssuedAtMs: number | undefined
       let jwtConsumed = false
+      let verifyUnavailable = false
 
       if (mock) {
         jwtVerified = mock !== 'stale'
-        jwtAddress = opts.userAddress
+        jwtAddress = current.userAddress
         jwtIssuedAtMs = mock === 'stale' ? Date.now() - JWT_FRESHNESS_MS - 1 : Date.now()
       } else if (token) {
-        const payload = await verifyJWT(token, opts.userAddress, undefined, 'deprize')
-        jwtVerified = !!payload
-        jwtAddress = payload?.address
-        jwtIssuedAtMs = payload?.timestamp
-        const snap = readOnrampSnapshot(jwtSnapshotId(token))
-        jwtConsumed = snap?.consumed === true
+        try {
+          const payload = await verifyJWT(
+            token,
+            fundedHint || userAddress,
+            undefined,
+            'deprize'
+          )
+          jwtVerified = !!payload
+          jwtAddress = payload?.address
+          // Signer stores `timestamp` in seconds. Freshness is measured in ms.
+          jwtIssuedAtMs = payload?.timestamp != null ? payload.timestamp * 1000 : undefined
+          const snap = readOnrampSnapshot(jwtSnapshotId(token))
+          jwtConsumed = snap?.consumed === true
+        } catch {
+          verifyUnavailable = true
+        }
       }
 
+      if (cancelled) return
+
+      if (verifyUnavailable) {
+        verifyFailures.current += 1
+        if (verifyFailures.current <= VERIFY_RETRY_LIMIT) {
+          timer.id = setTimeout(() => {
+            if (!cancelled) setVerifyAttempt((n) => n + 1)
+          }, VERIFY_RETRY_MS)
+        }
+        return
+      }
+
+      const settled = optsRef.current
       const snapshot = token ? readOnrampSnapshot(jwtSnapshotId(token)) : null
       const result = resolveOnrampReturn({
-        parsed: parsed.active
-          ? parsed
-          : { active: true, outcomeIndex: 0 },
+        parsed: parsed.active ? parsed : { active: true, outcomeIndex: 0 },
         jwtVerified: mock === 'closed' ? true : jwtVerified,
         jwtAddress,
         jwtIssuedAtMs,
         jwtConsumed,
         nowMs: Date.now(),
-        userAddress: opts.userAddress,
-        numOutcomes: opts.numOutcomes,
-        marketAcceptsBets: mock === 'closed' ? false : opts.acceptsBets,
+        userAddress: settled.userAddress,
+        numOutcomes: settled.numOutcomes,
+        marketAcceptsBets: mock === 'closed' ? false : settled.acceptsBets,
         spendableEthAtReturn:
           mock === 'instant'
             ? 0
@@ -116,12 +202,25 @@ export function useDePrizeOnrampReturn(opts: {
               ? 0.004
               : mock === 'none'
                 ? 0.01
-                : opts.spendableEthNow,
-        capEth: opts.capEth,
+                : settled.spendableEthNow,
+        capEth: settled.capEth,
       })
 
+      if (cancelled) return
+
+      if (result.action === 'hold') {
+        const funded = result.notice?.kind === 'wrong-wallet' ? result.notice.fundedAddress : ''
+        if (funded && wrongWalletTracked.current !== funded.toLowerCase()) {
+          wrongWalletTracked.current = funded.toLowerCase()
+          trackOnrampEvent('return_rejected:address')
+        }
+        setState({ betIndex: null, notice: result.notice })
+        return
+      }
+
+      handled.current = true
       if (token) markOnrampSnapshotConsumed(jwtSnapshotId(token))
-      stripOnrampParams(router)
+      stripOnrampParams(routerRef.current)
 
       if (result.action === 'ignore') {
         if (!jwtVerified) trackOnrampEvent('return_rejected:no_jwt')
@@ -132,8 +231,7 @@ export function useDePrizeOnrampReturn(opts: {
         return
       }
       if (result.action === 'strip') {
-        if (result.notice?.kind === 'wrong-wallet') trackOnrampEvent('return_rejected:address')
-        else trackOnrampEvent('return_rejected:outcome')
+        trackOnrampEvent('return_rejected:outcome')
         setState({ betIndex: null, notice: result.notice })
         return
       }
@@ -146,19 +244,23 @@ export function useDePrizeOnrampReturn(opts: {
         notice: result.notice,
       })
     })()
+
+    return () => {
+      cancelled = true
+      if (timer.id !== undefined) clearTimeout(timer.id)
+    }
   }, [
-    router,
+    onrampQueryKey,
     router.isReady,
-    router.query,
     opts.marketLoading,
     opts.numOutcomes,
     opts.userAddress,
     opts.acceptsBets,
-    opts.spendableEthNow,
-    opts.capEth,
     storedJWT,
     getStoredJWT,
+    getAddressFromJWT,
     verifyJWT,
+    verifyAttempt,
   ])
 
   return state

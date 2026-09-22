@@ -111,14 +111,14 @@ describe('resolveOnrampReturn', () => {
     ).to.equal('ignore')
   })
 
-  it('2 — JWT address mismatch strips and names the funded wallet', () => {
+  it('2 — JWT address mismatch holds the return and names the funded wallet', () => {
     const result = resolveOnrampReturn({
       ...baseResolve,
       parsed: { active: true, outcomeIndex: 1 },
       jwtAddress: '0xfunded',
       userAddress: '0xother',
     })
-    expect(result.action).to.equal('strip')
+    expect(result.action).to.equal('hold')
     expect(result.notice).to.deep.equal({
       kind: 'wrong-wallet',
       fundedAddress: '0xfunded',

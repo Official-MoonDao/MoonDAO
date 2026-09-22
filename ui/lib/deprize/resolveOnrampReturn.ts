@@ -8,7 +8,8 @@ export type ReturnNotice =
   | { kind: 'connect-wallet' }
 
 export type ResolveOnrampReturnResult = {
-  action: 'ignore' | 'strip' | 'open'
+  /** `hold` keeps the return URL and snapshot so a later wallet can finish it. */
+  action: 'ignore' | 'strip' | 'open' | 'hold'
   betIndex?: number
   prefillEth?: string
   fundsArrived?: boolean
@@ -36,7 +37,7 @@ export function resolveOnrampReturn(input: {
   const user = input.userAddress?.toLowerCase()
   if (funded && user && funded !== user) {
     return {
-      action: 'strip',
+      action: 'hold',
       notice: { kind: 'wrong-wallet', fundedAddress: input.jwtAddress as string },
     }
   }

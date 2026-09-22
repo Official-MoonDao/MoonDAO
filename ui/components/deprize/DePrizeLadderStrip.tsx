@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import {
   CAPABILITY_LADDER_SPEC_HREF,
   getLadderForCompetition,
@@ -49,18 +50,21 @@ export default function DePrizeLadderStrip({ chainSlug }: { chainSlug: string })
             </>
           )
           const innerClass = 'flex flex-col gap-1 min-h-full'
-          const item = rung.href ? (
+          const item = !rung.href ? (
+            <span className={innerClass}>{body}</span>
+          ) : isOffsite(rung.href) ? (
             <a
               href={rung.href}
               className={`${innerClass} hover:opacity-90`}
-              {...(isOffsite(rung.href)
-                ? { target: '_blank', rel: 'noopener noreferrer' }
-                : {})}
+              target="_blank"
+              rel="noopener noreferrer"
             >
               {body}
             </a>
           ) : (
-            <span className={innerClass}>{body}</span>
+            <Link href={rung.href} className={`${innerClass} hover:opacity-90`}>
+              {body}
+            </Link>
           )
           return (
             <li
