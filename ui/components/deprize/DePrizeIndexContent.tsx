@@ -152,7 +152,6 @@ export default function DePrizeIndexContent() {
           isProfile
           centerHeader
           centerHeaderWidth="72rem"
-          description="Open capability races with live odds. Back the team you think will win — every bet grows the prize pool."
           preFooter={
             <>
               <DePrizeAvailabilityLegend />
