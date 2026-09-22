@@ -275,7 +275,7 @@ export default function RaceMarketCard({
   const statusLabel = {
     live: 'Live',
     paused: 'Paused',
-    demo: 'Planning stage',
+    demo: 'Planning',
     resolved: 'Resolved',
     concept: 'No developer yet',
   }[statusTone]
