@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import type { CapabilityCriterion } from '@/lib/lunar-atlas/types'
 
 type Props = {
@@ -6,8 +5,6 @@ type Props = {
   tagline: string
   description?: string
   criteria?: CapabilityCriterion[]
-  /** Deep link into Moon Base Zero for this race. */
-  moonbaseHref?: string
 }
 
 const CARD =
@@ -31,7 +28,7 @@ function CriteriaList({ criteria }: { criteria: CapabilityCriterion[] }) {
  * One-line question above the fold. Description and win criteria start
  * expanded; the visitor can collapse them.
  */
-export default function DePrizeQuestionCard({ tagline, description, criteria, moonbaseHref }: Props) {
+export default function DePrizeQuestionCard({ tagline, description, criteria }: Props) {
   const hasCriteria = !!criteria && criteria.length > 0
   const hasDetails = !!description || hasCriteria
   // Taglines carry a trailing call to action ("Back a competitor — every bet
@@ -56,17 +53,6 @@ export default function DePrizeQuestionCard({ tagline, description, criteria, mo
             {hasCriteria && <CriteriaList criteria={criteria!} />}
           </div>
         </details>
-      )}
-
-      {moonbaseHref && (
-        <p className="mt-3 text-xs">
-          <Link
-            href={moonbaseHref}
-            className="text-indigo-300/90 underline-offset-2 hover:underline hover:text-indigo-200"
-          >
-            See this race on Moon Base Zero →
-          </Link>
-        </p>
       )}
     </div>
   )

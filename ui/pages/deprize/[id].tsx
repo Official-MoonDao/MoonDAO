@@ -738,7 +738,6 @@ function DePrizeDetailContent() {
           tagline={competition.tagline}
           description={raceGoal?.description}
           criteria={raceGoal?.criteria}
-          moonbaseHref={raceGoal ? `/moonbase?race=${raceGoal.id}` : undefined}
         />
 
         {userAddress && numOutcomes > 0 && (
