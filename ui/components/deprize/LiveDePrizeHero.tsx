@@ -26,7 +26,6 @@ type Props = {
   spendableEth: number
   bettingBlockedReason?: string
   blockLiveBetting?: boolean
-  onConnectWallet: () => void
   onDone: () => void
 }
 
@@ -44,7 +43,6 @@ export default function LiveDePrizeHero({
   spendableEth,
   bettingBlockedReason,
   blockLiveBetting = false,
-  onConnectWallet,
   onDone,
 }: Props) {
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
@@ -175,7 +173,7 @@ export default function LiveDePrizeHero({
                 <span className="relative z-10 shrink-0 text-sm font-semibold tabular-nums text-gray-200">
                   {pct !== undefined ? `${pct}%` : '—'}
                 </span>
-                {bettingEnabled ? (
+                {bettingEnabled && (
                   <button
                     type="button"
                     onClick={() => setBetIndex(o.index)}
@@ -185,16 +183,7 @@ export default function LiveDePrizeHero({
                   >
                     Buy
                   </button>
-                ) : !account ? (
-                  <button
-                    type="button"
-                    onClick={onConnectWallet}
-                    className="relative z-10 shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold
-                      bg-white/10 hover:bg-white/15 text-white transition-all"
-                  >
-                    Connect
-                  </button>
-                ) : null}
+                )}
               </div>
             )
           })}

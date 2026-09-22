@@ -257,7 +257,6 @@ export default function DePrizeIndexContent() {
                     spendableEth={spendableEth}
                     bettingBlockedReason={bettingBlockedReason}
                     blockLiveBetting={blockLiveBetting}
-                    onConnectWallet={() => login()}
                     onDone={() => setRefreshNonce((n) => n + 1)}
                   />
                 )}
