@@ -2,8 +2,9 @@ import { Redis } from '@upstash/redis'
 import { getAddress } from 'viem'
 import { isHexAddress } from './eligibility'
 
+// The generated lists live on the repo's `lists` branch; `master` has no copy.
 const OFAC_ETH_URL =
-  'https://raw.githubusercontent.com/0xB10C/ofac-sanctioned-digital-currency-addresses/master/sanctioned_addresses_ETH.txt'
+  'https://raw.githubusercontent.com/0xB10C/ofac-sanctioned-digital-currency-addresses/lists/sanctioned_addresses_ETH.txt'
 const OFAC_CACHE_KEY = 'deprize:ofac:eth'
 const OFAC_CACHE_TTL_SECONDS = 60 * 60 * 12
 
