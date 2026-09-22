@@ -74,6 +74,7 @@ import DePrizeTeamLink, {
   useDePrizeTeamNames,
 } from '@/components/deprize/DePrizeTeamLink'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
+import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
 
 const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryChart'), {
   ssr: false,
@@ -706,13 +707,13 @@ function DePrizeDetailContent() {
             </Stat>
           </div>
           {!userAddress && !!deprize.bettingOpen && !tradingHalted && (
-            <button
-              type="button"
-              onClick={() => login()}
-              className="mt-3 w-full text-left px-3 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-100 text-sm font-medium hover:bg-indigo-500/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
-            >
-              Sign in to create a prediction.
-            </button>
+            <PrivyWeb3Button
+              v5
+              signInLabel="Sign in to create a prediction"
+              className="mt-3 w-full rounded-xl text-sm font-semibold"
+              label="Sign in to create a prediction"
+              action={() => {}}
+            />
           )}
           {winningTeamId > 0n && (
             <div className="mt-3 flex items-center gap-2 flex-wrap px-3 py-2.5 rounded-xl bg-moon-green/10 border border-moon-green/35">
