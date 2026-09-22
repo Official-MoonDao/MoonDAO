@@ -61,6 +61,7 @@ export function useDePrizeOnrampReturn(opts: {
   const [verifyAttempt, setVerifyAttempt] = useState(0)
   const handled = useRef(false)
   const walletWaitStarted = useRef<number | null>(null)
+  const walletSeen = useRef(false)
   const returnTracked = useRef(false)
   const wrongWalletTracked = useRef<string | null>(null)
   const verifyFailures = useRef(0)
@@ -93,6 +94,9 @@ export function useDePrizeOnrampReturn(opts: {
 
     const userAddress = live.userAddress
     if (!userAddress) {
+      // The timeout is only for the first hydration. A later disconnect is how
+      // Privy switches wallets, and consuming the return here drops the hold.
+      if (walletSeen.current) return
       if (walletWaitStarted.current == null) walletWaitStarted.current = Date.now()
       const remaining = WALLET_WAIT_MS - (Date.now() - walletWaitStarted.current)
       if (remaining > 0) {
@@ -107,6 +111,9 @@ export function useDePrizeOnrampReturn(opts: {
       })
       return
     }
+
+    walletSeen.current = true
+    walletWaitStarted.current = null
 
     if (!returnTracked.current) {
       returnTracked.current = true
