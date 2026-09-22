@@ -2,6 +2,7 @@ import type { ActivityRow, BetRow, SellRow } from '@/lib/deprize/activity-math'
 import { userActiveOutcomes, userActivity, userPosition, userSummary } from '@/lib/deprize/activity-math'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 import EthUsd from '@/components/deprize/EthUsd'
 
 type Props = {
@@ -225,7 +226,7 @@ export default function DePrizePositionPanel({
                     type="button"
                     onClick={() => onCashOut(index)}
                     disabled={value === undefined}
-                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide bg-white/5 hover:bg-indigo-500/15 text-white border border-white/10 hover:border-indigo-400/35 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wide bg-white/5 hover:bg-indigo-500/15 text-white border border-white/10 hover:border-indigo-400/35 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${TOUCH}`}
                   >
                     Cash out
                   </button>
