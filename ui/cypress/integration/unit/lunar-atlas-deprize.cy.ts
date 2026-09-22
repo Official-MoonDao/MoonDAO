@@ -74,7 +74,7 @@ describe('lunar-atlas × DePrize binding', () => {
       'rosatom-lunar-rtg',
       'isro-barc-rhu',
     ])
-    expect(nightShift!.category).to.equal(undefined)
+    expect(nightShift!.category).to.equal('power')
     expect(nightShift!.description).to.match(
       /^Deliver at least 10 watts of electricity, continuously, for 354 hours/,
     )
