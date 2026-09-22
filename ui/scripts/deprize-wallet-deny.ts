@@ -4,6 +4,10 @@
  *   yarn deprize:deny --list
  *   yarn deprize:deny --deny 0xabc... --reason "manual review"
  *   yarn deprize:deny --allow 0xabc... --reason "false positive"
+ *
+ * Admin / oracle / treasury wallets are denied by `insiderWallets.ts` (plus
+ * DEPRIZE_INSIDER_WALLETS). Use this tool for everyone else — Senate
+ * disclosures, manual review, or a false-positive lift.
  */
 import { getAddress, isAddress } from 'viem'
 import {

@@ -3,9 +3,7 @@ import { UNIT } from './constants'
 
 // Compact number formatter used across the DePrize UI.
 export const fmt = (n: number, d = 4) =>
-  Number.isFinite(n)
-    ? n.toLocaleString(undefined, { maximumFractionDigits: d })
-    : '—'
+  Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: d }) : '—'
 
 /** Prize-pool amounts are often ≪ 0.01 ETH on testnets — avoid rounding to "0.00". */
 export const fmtPrizeEth = (n: number) => {
@@ -82,10 +80,7 @@ export function fmtEthWithUsd(
 export const toWei = (v: string): bigint => {
   if (!v || Number(v) <= 0) return 0n
   const [whole, frac = ''] = v.split('.')
-  const fracPadded = (frac + '0'.repeat(COLLATERAL_DECIMALS)).slice(
-    0,
-    COLLATERAL_DECIMALS
-  )
+  const fracPadded = (frac + '0'.repeat(COLLATERAL_DECIMALS)).slice(0, COLLATERAL_DECIMALS)
   try {
     return BigInt(whole || '0') * UNIT + BigInt(fracPadded || '0')
   } catch {
@@ -96,6 +91,17 @@ export const toWei = (v: string): bigint => {
 // wei -> float ETH (display only; never used for on-chain amounts).
 export const toEth = (wei: bigint | undefined): number | undefined =>
   wei === undefined ? undefined : Number(wei) / Number(UNIT)
+
+/**
+ * Odds percents. Below 10% a whole-number round turns 0.4 into 0 and 4.2 into 4,
+ * so those keep one decimal. Non-finite input is an em dash, never `NaN%`.
+ */
+export function fmtOddsPct(n: number): string {
+  if (!Number.isFinite(n)) return '—'
+  if (n === 0) return '0%'
+  if (n > 0 && n < 10) return `${n.toFixed(1)}%`
+  return `${Math.round(n)}%`
+}
 
 /** `$FRANKT` when known; otherwise a generic label (never hardcode OVERVIEW). */
 export function formatPrizeTokenLabel(symbol: string | undefined): string {

@@ -1,4 +1,6 @@
 import { evaluateEligibility } from '@/lib/deprize/eligibility'
+import { DEPRIZE_INSIDER_WALLETS, isInsiderWallet } from '@/lib/deprize/insiderWallets'
+import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
 import { shouldCreatePermanentDenial } from '@/lib/deprize/walletObservations'
 import { isRestrictedJurisdiction } from '@/lib/deprize/restrictedJurisdictions'
 import { parseOfacEthList } from '@/lib/deprize/sanctions'
@@ -94,6 +96,32 @@ describe('deprize eligibility decision', () => {
       'wallet-denied'
     )
   })
+
+  it('rejects an insider wallet before other screens', () => {
+    expect(evaluateEligibility({ ...base, isInsiderWallet: true }).reason).to.equal(
+      'insider-wallet'
+    )
+    expect(
+      evaluateEligibility({ ...base, isInsiderWallet: true, isDeniedWallet: true }).reason
+    ).to.equal('insider-wallet')
+  })
+})
+
+describe('deprize insider wallet list', () => {
+  it('flags the deployer oracle and ignores a random wallet', () => {
+    expect(isInsiderWallet(DEPRIZE_INSIDER_WALLETS[0])).to.equal(true)
+    expect(isInsiderWallet(DEPRIZE_INSIDER_WALLETS[0].toLowerCase())).to.equal(true)
+    expect(isInsiderWallet('0x1234567890123456789012345678901234567890')).to.equal(false)
+    expect(isInsiderWallet(null)).to.equal(false)
+  })
+})
+
+describe('deprize generation-1 bet cap', () => {
+  it('allows a bet at the cap and rejects one wei over', () => {
+    expect(betExceedsCap(DEPRIZE_MAX_BET_WEI)).to.equal(false)
+    expect(betExceedsCap(DEPRIZE_MAX_BET_WEI + 1n)).to.equal(true)
+    expect(betExceedsCap(0n)).to.equal(false)
+  })
 })
 
 describe('deprize permanent denial triggers', () => {
@@ -104,6 +132,8 @@ describe('deprize permanent denial triggers', () => {
     expect(shouldCreatePermanentDenial('country-unknown')).to.equal(false)
     expect(shouldCreatePermanentDenial('screening-unavailable')).to.equal(false)
     expect(shouldCreatePermanentDenial('ok')).to.equal(false)
+    expect(shouldCreatePermanentDenial('insider-wallet')).to.equal(false)
+    expect(shouldCreatePermanentDenial('over-cap')).to.equal(false)
   })
 })
 

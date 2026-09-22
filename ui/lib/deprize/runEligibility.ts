@@ -10,6 +10,7 @@ import {
 import { screenWallet } from './sanctions'
 import { checkVpnOrProxy, type ConnectionKind } from './vpnCheck'
 import { sendComplianceAlert } from './complianceAlerts'
+import { isInsiderWallet } from './insiderWallets'
 import {
   denyWallet,
   getWalletDenial,
@@ -63,6 +64,7 @@ export async function runEligibilityChecks(
     isSanctioned: sanctions.isSanctioned,
     screeningFailed: vpn.failed || sanctions.failed || denial.failed,
     isDeniedWallet: denial.denied,
+    isInsiderWallet: Boolean(validWallet && isInsiderWallet(validWallet)),
   })
 
   if (validWallet) {
