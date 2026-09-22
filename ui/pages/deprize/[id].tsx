@@ -149,8 +149,9 @@ export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
 
 function DePrizeDetailContent() {
   const router = useRouter()
-  // `/deprize/sep/2` and `/deprize/arb/1` name the registry in the path, so the
-  // page can load that prize without the wallet being on that network.
+  // `/deprize/sep/2` and `/deprize/arb/1` name the registry in the path. The app
+  // shell also selects that network on load so a refresh does not fall back to
+  // the build default. Prize reads still use the path if the header is changed.
   const forcedSlug =
     router.pathname === '/deprize/sep/[id]'
       ? 'sepolia'

@@ -1,8 +1,10 @@
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { DEFAULT_CHAIN_V5 } from 'const/defaultChain'
 import { FlagProvider } from 'const/flags'
+import { chainForDeprizePath } from '@/lib/deprize/route-chain'
 import { SessionProvider } from 'next-auth/react'
 import { NextQueryParamProvider } from 'next-query-params'
+import { useRouter } from 'next/router'
 import React, { useEffect, useState, useMemo, startTransition } from 'react'
 import { Chain as ChainV5 } from 'thirdweb/chains'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
@@ -20,9 +22,19 @@ import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
 import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
+  const router = useRouter()
+  // Prefixed prize URLs name the network. Apply that before wallet sync so a
+  // refresh of /deprize/sep/2 does not come back on the Arbitrum default.
+  const routeChain = chainForDeprizePath(router.pathname)
   const [selectedWallet, setSelectedWallet] = useState<number>(0)
-  const [selectedChainV5, setSelectedChainV5]: any =
-    useState<ChainV5>(DEFAULT_CHAIN_V5)
+  const [selectedChainV5, setSelectedChainV5] = useState<ChainV5>(
+    () => routeChain ?? DEFAULT_CHAIN_V5
+  )
+  const [pinnedDeprizePath, setPinnedDeprizePath] = useState(router.pathname)
+  if (routeChain && router.pathname !== pinnedDeprizePath) {
+    setPinnedDeprizePath(router.pathname)
+    setSelectedChainV5(routeChain)
+  }
 
   const [lightMode, setLightMode] = useLightMode()
 
