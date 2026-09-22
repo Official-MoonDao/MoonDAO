@@ -164,7 +164,7 @@ export default function DePrizeTeamCard({
               color={color}
               size={40}
               className="text-base font-semibold text-white hover:text-indigo-200"
-              nameOverride={isField ? 'Open Field' : headline}
+              nameOverride={isField ? 'Other' : headline}
               imageOverride={isField ? FIELD_AVATAR : imageOverride}
               hrefOverride={isField ? '/deprize#open-field' : hrefOverride}
               // The field slot is not an organization, so its own placeholder mark
