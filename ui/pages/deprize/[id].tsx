@@ -95,6 +95,7 @@ function outcomeDisplayName(
 ): string {
   const binding = raceBinding?.outcomes[index]
   if (binding?.field) return 'Open Field'
+  if (binding?.vehicleLabel) return binding.vehicleLabel
   if (binding?.projectId) {
     const project = projectById(SEED_ATLAS, binding.projectId)
     const org = project ? orgById(SEED_ATLAS, project.orgId) : undefined
@@ -798,6 +799,8 @@ function DePrizeDetailContent() {
                 ? orgById(SEED_ATLAS, atlasProject.orgId)
                 : undefined
               const claimed = isCompetitorClaimed(outcomeBinding)
+              const competitorName =
+                outcomeBinding?.vehicleLabel || atlasOrg?.name || atlasProject?.name
               return (
                 <div id={`deprize-outcome-${o.index}`} key={o.index}>
                   <DePrizeTeamCard
@@ -824,11 +827,7 @@ function DePrizeDetailContent() {
                     nameOverride={atlasOrg?.name || atlasProject?.name}
                     vehicleLabel={outcomeBinding?.vehicleLabel}
                     backLabel={
-                      isField
-                        ? 'Back the field'
-                        : atlasOrg?.name || atlasProject?.name
-                          ? `Back ${atlasOrg?.name || atlasProject?.name}`
-                          : undefined
+                      isField ? 'Back the field' : competitorName ? `Back ${competitorName}` : undefined
                     }
                     imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                     unclaimed={!isField && !!outcomeBinding && !claimed}

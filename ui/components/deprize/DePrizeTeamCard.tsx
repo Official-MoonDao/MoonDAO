@@ -41,10 +41,13 @@ type DePrizeTeamCardProps = {
   hrefOverride?: string
   /** Atlas org display name, for competitors with no Team NFT. */
   nameOverride?: string
-  /** Vehicle / article shown under the org name (live prize page). */
+  /**
+   * Lander or vehicle. When set, this is the card title and `nameOverride`
+   * (the company) drops to the subtitle.
+   */
   vehicleLabel?: string
   /**
-   * Live-page Back button copy, e.g. "Back Voyager Lunar Systems".
+   * Live-page Back button copy, e.g. "Back Griffin Mission One".
    * Demo cards omit this and keep "Back this team".
    */
   backLabel?: string
@@ -103,6 +106,8 @@ export default function DePrizeTeamCard({
 }: DePrizeTeamCardProps) {
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
   const showHoldings = !!onCashOut && holding
+  const headline = !isField && vehicleLabel ? vehicleLabel : nameOverride
+  const orgSubtitle = !isField && vehicleLabel ? nameOverride : undefined
   const realizedValue = resolved ? redeemValueEth : sellQuoteEth
   const pnl =
     realizedValue !== undefined && investedEth > 0 ? realizedValue - investedEth : undefined
@@ -159,7 +164,7 @@ export default function DePrizeTeamCard({
               color={color}
               size={40}
               className="text-base font-semibold text-white hover:text-indigo-200"
-              nameOverride={isField ? 'Open Field' : nameOverride}
+              nameOverride={isField ? 'Open Field' : headline}
               imageOverride={isField ? FIELD_AVATAR : imageOverride}
               hrefOverride={isField ? '/deprize#open-field' : hrefOverride}
               // The field slot is not an organization, so its own placeholder mark
@@ -168,9 +173,7 @@ export default function DePrizeTeamCard({
             />
           </div>
           {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
-          {!isField && vehicleLabel && (
-            <p className="text-xs text-gray-400 pl-12">{vehicleLabel}</p>
-          )}
+          {orgSubtitle && <p className="text-xs text-gray-400 pl-12">{orgSubtitle}</p>}
           {withdrawn && !isField && (
             <p className="text-xs text-amber-400/90 pl-12">Withdrawn — sell only</p>
           )}
