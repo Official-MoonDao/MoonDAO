@@ -274,9 +274,16 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
             )}
 
             <div className="flex flex-col gap-3">
-              <h3 className="title-text-colors text-lg font-GoodTimes">
-                Competitors
-              </h3>
+              <div>
+                <h3 className="title-text-colors text-lg font-GoodTimes">
+                  Competitors
+                </h3>
+                {hasRace && (
+                  <p className="text-sm text-gray-400 mt-1">
+                    Click a competitor to predict them as the winner.
+                  </p>
+                )}
+              </div>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 -mt-1">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-3 w-1 rounded-full bg-zinc-400" />

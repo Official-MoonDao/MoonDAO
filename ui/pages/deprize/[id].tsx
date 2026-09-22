@@ -799,7 +799,14 @@ function DePrizeDetailContent() {
         {/* Competitors, ranked by chance; Open Field last. */}
         {numOutcomes > 0 && (
           <div className="flex flex-col gap-3">
-            <h3 className="title-text-colors text-lg font-GoodTimes">Competitors</h3>
+            <div>
+              <h3 className="title-text-colors text-lg font-GoodTimes">Competitors</h3>
+              {bettingAllowed && !showResolved && (
+                <p className="text-sm text-gray-400 mt-1">
+                  Click a competitor to predict them as the winner.
+                </p>
+              )}
+            </div>
             {rankedOutcomes.map((o) => {
               const teamId = deprize.teamIds[o.index] ?? 0n
               const outcomeBinding = raceBinding?.outcomes[o.index]
@@ -812,8 +819,6 @@ function DePrizeDetailContent() {
                 ? orgById(SEED_ATLAS, atlasProject.orgId)
                 : undefined
               const claimed = isCompetitorClaimed(outcomeBinding)
-              const competitorName =
-                outcomeBinding?.vehicleLabel || atlasOrg?.name || atlasProject?.name
               return (
                 <div id={`deprize-outcome-${o.index}`} key={o.index}>
                   <DePrizeTeamCard
@@ -839,9 +844,6 @@ function DePrizeDetailContent() {
                     }
                     nameOverride={atlasOrg?.name || atlasProject?.name}
                     vehicleLabel={outcomeBinding?.vehicleLabel}
-                    backLabel={
-                      isField ? 'Predict Other' : competitorName ? `Predict ${competitorName}` : 'Predict'
-                    }
                     imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                     unclaimed={!isField && !!outcomeBinding && !claimed}
                   />

@@ -2,7 +2,7 @@ import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import EthUsd from '@/components/deprize/EthUsd'
-import StandardButton from '@/components/layout/StandardButton'
+import type { KeyboardEvent } from 'react'
 
 type DePrizeTeamCardProps = {
   outcome: Outcome
@@ -46,11 +46,6 @@ type DePrizeTeamCardProps = {
    * (the company) drops to the subtitle.
    */
   vehicleLabel?: string
-  /**
-   * Live-page predict button copy, e.g. "Predict Griffin Mission One".
-   * Demo cards omit this and keep "Back this team".
-   */
-  backLabel?: string
   /** Atlas org logo. Suppressed when `unclaimed`. */
   imageOverride?: string
   /**
@@ -100,7 +95,6 @@ export default function DePrizeTeamCard({
   hrefOverride,
   nameOverride,
   vehicleLabel,
-  backLabel,
   imageOverride,
   unclaimed = false,
 }: DePrizeTeamCardProps) {
@@ -112,16 +106,36 @@ export default function DePrizeTeamCard({
   const pnl =
     realizedValue !== undefined && investedEth > 0 ? realizedValue - investedEth : undefined
   const canCashOut = showHoldings && !tradingHalted && !resolved
-  const canPredict = bettingOpen && !tradingHalted
+  const canPredict = bettingOpen && !tradingHalted && !busy
+  const predictName = isField ? 'Other' : headline || 'this competitor'
+  const predict = () => onBet(outcome.index)
+  // Cash-out is its own button. A card that also contains one cannot be a
+  // button itself, so that case stays a clickable div.
+  const cardIsButton = canPredict && !canCashOut
+
+  const onCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!canPredict || e.target !== e.currentTarget) return
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
+    predict()
+  }
 
   return (
     <div
+      role={cardIsButton ? 'button' : undefined}
+      tabIndex={cardIsButton ? 0 : undefined}
+      aria-label={cardIsButton ? `Predict ${predictName} as the winner` : undefined}
       className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
         resolved && isWinningSlot ? 'border-emerald-400/40 ring-1 ring-emerald-400/20' : ''
-      } ${canPredict ? 'cursor-pointer hover:border-indigo-400/35 transition-colors' : ''}`}
-      onClick={canPredict ? () => onBet(outcome.index) : undefined}
+      } ${
+        canPredict
+          ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 transition-colors'
+          : ''
+      }`}
+      onClick={canPredict ? predict : undefined}
+      onKeyDown={canPredict ? onCardKeyDown : undefined}
     >
-      {/* Top row: chance/result · team · bet CTA */}
+      {/* Top row: chance/result · team. The card itself is the predict control. */}
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-3 min-w-[96px]">
           <span
@@ -159,19 +173,20 @@ export default function DePrizeTeamCard({
         </div>
 
         <div className="flex-1 min-w-[150px] flex flex-col gap-1">
-          <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2 flex-wrap">
             <DePrizeTeamLink
               teamId={teamId}
               teamContract={teamContract}
               color={color}
               size={40}
-              className="text-base font-semibold text-white hover:text-indigo-200"
+              className="text-base font-semibold text-white"
               nameOverride={isField ? 'Other' : headline}
               imageOverride={isField ? FIELD_AVATAR : imageOverride}
               hrefOverride={isField ? '/deprize#open-field' : hrefOverride}
               // The field slot is not an organization, so its own placeholder mark
               // must survive the unclaimed logo suppression.
               unclaimed={!isField && unclaimed}
+              plain={canPredict}
             />
           </div>
           {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
@@ -192,19 +207,6 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {canPredict && (
-          <div onClick={(e) => e.stopPropagation()}>
-            <StandardButton
-              onClick={() => onBet(outcome.index)}
-              disabled={busy}
-              className="rounded-xl shadow-purple-500/10"
-            >
-              {!userConnected
-                ? 'Connect to back'
-                : backLabel ?? (isField ? 'Back the field' : 'Back this team')}
-            </StandardButton>
-          </div>
-        )}
       </div>
 
       {showHoldings && (
