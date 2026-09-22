@@ -14,12 +14,12 @@ import { SEED_ATLAS } from '../../../lib/lunar-atlas/seed'
 import { buildTechTrees, sharedGoalById } from '../../../lib/lunar-atlas/selectors'
 
 describe('lunar-atlas × DePrize binding', () => {
-  const binding = getDePrizeRaceBinding('sepolia', 9)
-  const goal = sharedGoalById(SEED_ATLAS, 'shared-fission-power')
+  const binding = getDePrizeRaceBinding('sepolia', 2)
+  const goal = sharedGoalById(SEED_ATLAS, 'shared-next-landing')
   const nightShift = sharedGoalById(SEED_ATLAS, 'shared-night-shift')
 
-  it('binds Sepolia DePrize 9 to the fission shared goal with matching projectIds', () => {
-    expect(binding?.sharedGoalId).to.equal('shared-fission-power')
+  it('binds Sepolia DePrize 2 to the Touchdown shared goal with matching projectIds', () => {
+    expect(binding?.sharedGoalId).to.equal('shared-next-landing')
     expect(goal).to.exist
     const competitorIds = (binding?.outcomes ?? [])
       .filter((o) => !o.field)
