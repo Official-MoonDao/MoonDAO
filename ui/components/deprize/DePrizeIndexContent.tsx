@@ -4,11 +4,11 @@ import { useContext, useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { getFeaturedLiveDePrizeId } from '@/lib/deprize/competitions'
-import { deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
+import { DEPRIZE_RESTRICTED_PREDICT_COPY, deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
+import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { resetMockData } from '@/lib/deprize/mockMarket'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
-import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
 import { goalIndexCategory, PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
@@ -16,6 +16,8 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
 import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
+import DePrizeLadderStrip from '@/components/deprize/DePrizeLadderStrip'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
 import Container from '@/components/layout/Container'
@@ -23,7 +25,7 @@ import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
-export default function DePrizeIndexContent() {
+export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   // Follow the app's live selected chain (wallet / header dropdown), not the
   // build-time default — otherwise switching networks never re-queries DePrize.
   const { selectedChain: chain } = useContext(ChainContextV5)
@@ -31,7 +33,6 @@ export default function DePrizeIndexContent() {
   const account = useActiveAccount()
   const userAddress = account?.address
   const { login } = useLogin()
-  const region = useRegionRestriction()
 
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<ProjectType | 'all'>('all')
@@ -127,16 +128,10 @@ export default function DePrizeIndexContent() {
     }
   }, [account?.address, readChain, refreshNonce])
 
-  // `/api/geo/country` reports restricted=false when the geo header is missing.
-  // That must not open live betting, and it does not get its own notice.
-  const regionUnverified =
-    !region.isRestricted && !region.isLoading && !region.isError && !region.country
-  const bettingBlockedReason = region.isRestricted
-    ? "Betting on live on-chain markets isn't available in your region."
-    : region.isLoading
-    ? 'Checking your region…'
-    : undefined
-  const blockLiveBetting = !!bettingBlockedReason || regionUnverified
+  // Default-deny real betting from the SSR DePrize verdict. Unknown country
+  // arrives as restricted=true (getDePrizePageEligibility). Demo markets are
+  // unaffected — RaceMarketCard never gates them on this reason.
+  const bettingBlockedReason = restricted ? DEPRIZE_RESTRICTED_PREDICT_COPY : undefined
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
@@ -163,13 +158,16 @@ export default function DePrizeIndexContent() {
           }
         >
           <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
-            {bettingBlockedReason && (
+            {restricted && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
-                {bettingBlockedReason}
+                {DEPRIZE_RESTRICTED_PREDICT_COPY}
               </div>
             )}
 
-            {/* Search */}
+            <DePrizeLadderStrip chainSlug={chainSlug} />
+
+            {/* Search. 16px text on phones: iOS Safari zooms the page when a
+                focused input is any smaller. */}
             <div className="relative w-full max-w-md">
               <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
               <input
@@ -177,7 +175,7 @@ export default function DePrizeIndexContent() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search races or teams…"
-                className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white/5 border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
+                className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white/5 border border-white/10 text-white placeholder-gray-500 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/50"
               />
             </div>
 
@@ -186,7 +184,7 @@ export default function DePrizeIndexContent() {
               <button
                 type="button"
                 onClick={() => setCategory('all')}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border ${TOUCH} ${
                   category === 'all'
                     ? 'bg-white/15 text-white border-white/20'
                     : 'text-gray-400 border-white/10 hover:text-white hover:border-white/20'
@@ -199,7 +197,7 @@ export default function DePrizeIndexContent() {
                   key={c}
                   type="button"
                   onClick={() => setCategory(c)}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${TOUCH} ${
                     category === c
                       ? 'bg-white/15 text-white border-white/20'
                       : 'text-gray-400 border-white/10 hover:text-white hover:border-white/20'
@@ -226,7 +224,7 @@ export default function DePrizeIndexContent() {
                   role="tab"
                   aria-selected={activeTab === t.id}
                   onClick={() => setActiveTab(t.id)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${TOUCH} ${
                     activeTab === t.id ? 'bg-white/15 text-white' : 'text-gray-400 hover:text-white'
                   }`}
                 >
@@ -259,7 +257,6 @@ export default function DePrizeIndexContent() {
                     userAddress={userAddress}
                     spendableEth={spendableEth}
                     bettingBlockedReason={bettingBlockedReason}
-                    blockLiveBetting={blockLiveBetting}
                     onDone={() => setRefreshNonce((n) => n + 1)}
                   />
                 )}
@@ -278,7 +275,6 @@ export default function DePrizeIndexContent() {
                       refreshNonce={refreshNonce}
                       activeTab={activeTab}
                       bettingBlockedReason={bettingBlockedReason}
-                      blockLiveBetting={blockLiveBetting}
                       onConnectWallet={() => login()}
                       onHasPosition={handleHasPosition}
                       onDone={() => setRefreshNonce((n) => n + 1)}
@@ -308,7 +304,6 @@ export default function DePrizeIndexContent() {
                     refreshNonce={refreshNonce}
                     activeTab={activeTab}
                     bettingBlockedReason={bettingBlockedReason}
-                    blockLiveBetting={blockLiveBetting}
                     onConnectWallet={() => login()}
                     onHasPosition={handleHasPosition}
                     onDone={() => setRefreshNonce((n) => n + 1)}

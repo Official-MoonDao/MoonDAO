@@ -1,0 +1,52 @@
+name: DePrize unit gates
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "ui/**"
+      - ".github/workflows/deprize-unit.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "docs/**"
+      - "ui/**"
+      - ".github/workflows/deprize-unit.yml"
+
+jobs:
+  deprize-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+          cache-dependency-path: ui/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install --frozen-lockfile
+
+      - name: yarn test:deprize
+        working-directory: ui
+        run: yarn test:deprize
+
+      - name: Gate 3 — no tracked *.local.md
+        run: |
+          if git ls-files '*.local.md' '**/*.local.md' | grep -q .; then
+            echo "tracked *.local.md is forbidden"
+            git ls-files '*.local.md' '**/*.local.md'
+            exit 1
+          fi
+          echo "A′ isolated-PR allowlist (exact equality skipped on the combined program branch):"
+          echo "  docs/DEPRIZE_TOUCHDOWN.md"
+          echo "  docs/DEPRIZE_CAPABILITY_LADDER.md"
+          echo "  docs/DEPRIZE_GTM_TOUCHDOWN.md"
+          echo "  ui/cypress/integration/lib/deprize/docsHygiene.cy.ts"
+          echo "  .github/workflows/* (this gate-3 step)"

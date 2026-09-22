@@ -18,11 +18,11 @@ slug: /deprize-official-prize-rules
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.0  
+Version 1.2  
 Effective Date: September 10, 2026  
-Last Updated: September 10, 2026
+Last Updated: September 17, 2026
 
-> **Review status.** Version 1.0 of these Rules was prepared on September 10, 2026 and is pending review by MoonDAO's counsel before DePrize opens to the public. MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies.
+> **Review status.** Version 1.2 records the payload-purse destination in Sections 6.3 and 9.7. MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies.
 
 > **Who these Rules are for.** These Rules govern the **competition side** of DePrize: how a team becomes eligible to receive a DePrize prize, how the winner is determined, and how the prize is paid. If you are a **bettor**, the [DePrize Terms and Conditions](/docs/Legal/DePrize/DePrize-Terms-and-Conditions) (the "**Terms**") govern your participation; the market's resolution is described there and summarized in Section 5 below. **NO PURCHASE, PAYMENT, OR BET IS NECESSARY TO COMPETE FOR OR WIN A DEPRIZE PRIZE.** Placing a bet does not make you a competitor and does not improve any competitor's chance of winning.
 
@@ -122,7 +122,7 @@ A Winner is a Prize-Eligible Winner only if, at the time of each Prize payment, 
 
 **6.2 Variable amount; ETH denomination.** The Prize Pool is held in ETH and **fluctuates continuously** with contributions, betting activity, and the market price of ETH. Any fiat-currency figure shown on the Site is an approximate conversion at the time displayed and is not a commitment. **MoonDAO does not guarantee any minimum Prize amount.**
 
-**6.3 Amount of the Prize.** Unless the DePrize Rules provide otherwise, the Prize is the Prize Pool balance at the time the Oracle reports the Winner, less any amounts the DePrize Rules reserve (for example, campaign-specific costs disclosed in the bound Launchpad campaign's terms). The Prize is paid in ETH (or another crypto asset the Prize Acceptance Agreement specifies) to the Winner's designated wallet. No cash or fiat alternative is offered.
+**6.3 Amount of the Prize.** Unless the DePrize Rules provide otherwise, the Prize is the Prize Pool balance at the time the Oracle reports the Winner, less any amounts the DePrize Rules reserve (for example, campaign-specific costs disclosed in the bound Launchpad campaign's terms). For capability-ladder prizes, the Prize is a **community payload purchase** on a future flight, not ETH wired to the Winner's corporate treasury. Contracting order: (a) a payload slot on the Winner's next qualifying flight; (b) if the Winner does not claim that payload, the Winner may designate a nonprofit to receive the Prize; (c) if there is no response, the Prize Pool is rolled into a future prize. No cash or fiat alternative is offered. See `docs/DEPRIZE_PAYLOAD_PURSE.md`.
 
 **6.4 Accumulation across generations.** Where a DePrize proceeds in generations (Terms, Section 6.4), the Prize Pool carries over and accumulates until a Prize is paid or the DePrize is cancelled or ends with no Winner.
 
@@ -183,7 +183,7 @@ Payments are made by MoonDAO's multi-signature account from the Prize Pool to th
 
 **9.6 Withholding and set-off.** MoonDAO may withhold any payment while a sanctions, verification, tax, or disqualification question is open, and may withhold amounts required by law.
 
-**9.7 No Prize-Eligible Winner.** If the Winner does not claim within the Claim Window, cannot or does not satisfy Sections 4, 9.2, 9.3, or 10, declines the Prize, or is a public body or other person to which MoonDAO cannot lawfully or practicably make payment, then no Prize is paid for that DePrize. The Market's resolution is unaffected. Unless the DePrize Rules provide otherwise, the Prize Pool is retained in the bound Launchpad project and either (a) carried forward as the Prize Pool of a successor DePrize or generation designated by MoonDAO governance within one hundred eighty (180) days, or (b) made available for return to the Launchpad campaign's contributors under that campaign's own refund mechanism. Bettors have no claim on the Prize Pool in either case.
+**9.7 No claim or no response.** If the Winner does not claim the payload within the Claim Window, the Winner may designate a nonprofit to receive the Prize. If there is no response, the Prize Pool is rolled into a future prize designated by MoonDAO. The Market's resolution is unaffected. Bettors have no claim on the Prize Pool. A public body that cannot accept a payload agreement is treated as a Winner that does not claim: it may designate a nonprofit, and if it does not respond the pool rolls forward.
 
 **9.8 Multiple achievers.** If more than one entrant achieves the Resolution Event, the DePrize Rules' tie-break (for example, earliest verified achievement time) determines the single Winner. No Prize is split unless the DePrize Rules expressly provide for it.
 

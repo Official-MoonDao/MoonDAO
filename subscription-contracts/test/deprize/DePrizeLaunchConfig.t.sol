@@ -13,14 +13,18 @@ contract DePrizeLaunchConfigTest is Config {
         require(WETH_ADDRESSES[ARBITRUM] == 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1, "weth");
     }
 
-    function testArbitrumCtfAndFactoryMatchPhase2() public view {
+    function testArbitrumCtfAndFactoryMatchH01() public view {
         require(
             CONDITIONAL_TOKENS_ADDRESSES[ARBITRUM] == 0x12DAC07Bf586E06a9bDa32c422864C8Fda43FA29,
             "ctf"
         );
         require(
-            LMSR_FACTORY_ADDRESSES[ARBITRUM] == 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8,
+            LMSR_FACTORY_ADDRESSES[ARBITRUM] == 0x299F163705AbBFa1A8DE7670F33171730F828F3D,
             "factory"
+        );
+        require(
+            LMSR_MARKET_ADDRESSES[ARBITRUM] == 0xB7fE1530D300C505295B42268e127ceea5aDe703,
+            "market"
         );
     }
 
