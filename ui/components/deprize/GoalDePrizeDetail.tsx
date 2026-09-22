@@ -315,7 +315,6 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
                     hrefOverride={`/moonbase/${o.projectId}`}
                     nameOverride={o.name}
                     unclaimed
-                    participation="unofficial"
                   />
                 )
               })}

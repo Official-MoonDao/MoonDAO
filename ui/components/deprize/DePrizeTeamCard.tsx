@@ -55,8 +55,6 @@ type DePrizeTeamCardProps = {
    * listing never reads as an endorsement. See ROSTER_DISCLAIMER.
    */
   unclaimed?: boolean
-  /** Official = claimed listing; unofficial = MoonDAO-listed, not confirmed. */
-  participation?: 'official' | 'unofficial'
 }
 
 /** Dashed-circle mark for the Open Field slot, which has no Team NFT. */
@@ -102,7 +100,6 @@ export default function DePrizeTeamCard({
   backLabel,
   imageOverride,
   unclaimed = false,
-  participation,
 }: DePrizeTeamCardProps) {
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
   const showHoldings = !!onCashOut && holding
@@ -169,14 +166,6 @@ export default function DePrizeTeamCard({
               // must survive the unclaimed logo suppression.
               unclaimed={!isField && unclaimed}
             />
-            {participation === 'unofficial' && !isField && (
-              <span
-                className="text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 border border-zinc-500/40 text-zinc-300"
-                title="Listed by MoonDAO; this organization has not confirmed participation."
-              >
-                Unconfirmed
-              </span>
-            )}
           </div>
           {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
           {!isField && vehicleLabel && (

@@ -832,13 +832,6 @@ function DePrizeDetailContent() {
                     }
                     imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                     unclaimed={!isField && !!outcomeBinding && !claimed}
-                    participation={
-                      isField || !outcomeBinding
-                        ? undefined
-                        : claimed
-                          ? 'official'
-                          : 'unofficial'
-                    }
                   />
                 </div>
               )
