@@ -7,7 +7,7 @@ import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import { getDePrizeCompetition } from '@/lib/deprize/competitions'
-import { DePrizeState, MarketStage, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
+import { DePrizeState, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
@@ -109,23 +109,6 @@ export default function LiveDePrizeHero({
       .sort((a, b) => b.probability - a.probability)
   }, [deprize?.teamIds, market.outcomes])
 
-  const statusTone =
-    deprize?.state === DePrizeState.OPEN && market.stage === MarketStage.Paused
-      ? 'paused'
-      : deprize?.state === DePrizeState.OPEN &&
-        !!deprize?.bettingOpen &&
-        !betting.bettingBlockedReason
-      ? 'live'
-      : 'other'
-  const statusLabel =
-    statusTone === 'live'
-      ? 'Live'
-      : statusTone === 'paused'
-      ? 'Paused'
-      : registryLoading
-      ? '…'
-      : DEPRIZE_STATE_META_LABEL(deprize?.state)
-
   const detailHref = `/deprize/${deprizeId}`
   const betOutcome = betIndex !== null ? market.outcomes[betIndex] : undefined
 
@@ -134,9 +117,6 @@ export default function LiveDePrizeHero({
       <div className="p-5 sm:p-7">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
           <div className="min-w-0">
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-200 mb-1.5">
-              ★ Live on Arbitrum
-            </span>
             <a
               href={detailHref}
               className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
@@ -146,20 +126,6 @@ export default function LiveDePrizeHero({
               </p>
             </a>
             <p className="mt-1.5 text-sm text-gray-400 max-w-xl">{competition.tagline}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-              <span>DePrize #{deprizeId}</span>
-              <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                  statusTone === 'live'
-                    ? 'text-moon-green border-moon-green/40 bg-moon-green/15'
-                    : statusTone === 'paused'
-                    ? 'text-amber-300 border-amber-500/40 bg-amber-500/15'
-                    : 'text-gray-300 border-white/20 bg-white/10'
-                }`}
-              >
-                {statusLabel}
-              </span>
-            </div>
           </div>
           <div className="text-right shrink-0">
             <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
@@ -276,12 +242,4 @@ export default function LiveDePrizeHero({
       )}
     </div>
   )
-}
-
-function DEPRIZE_STATE_META_LABEL(state: DePrizeState | undefined): string {
-  if (state === undefined || state === DePrizeState.NONE) return 'Unavailable'
-  if (state === DePrizeState.OPEN) return 'Open'
-  if (state === DePrizeState.SETTLED || state === DePrizeState.M1_RELEASED) return 'Resolved'
-  if (state === DePrizeState.CANCELLED || state === DePrizeState.NO_WINNER) return 'Closed'
-  return 'In progress'
 }
