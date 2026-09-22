@@ -42,6 +42,7 @@
     "verify:mail": "node scripts/verify-nodemailer.cjs",
     "verify:new-citizen-discord-image": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/verify-new-citizen-discord-image.ts",
     "export:deprize-compliance": "tsx --tsconfig tsconfig.json scripts/export-deprize-compliance-log.ts",
+    "discord:register": "tsx --tsconfig tsconfig.json scripts/register-discord-commands.ts",
     "deprize:deny": "tsx --tsconfig tsconfig.json scripts/deprize-wallet-deny.ts",
     "deprize:redeploy-h01": "tsx --tsconfig tsconfig.json scripts/redeploy-h01-markets.ts"
   },
@@ -85,6 +86,7 @@
     "chart.js": "^4.4.4",
     "daisyui": "^4.12.23",
     "date-fns": "^2.30.0",
+    "discord-interactions": "^4.4.0",
     "discord-oauth2": "^2.11.0",
     "ethers": "5.7",
     "form-data": "^4.0.3",
