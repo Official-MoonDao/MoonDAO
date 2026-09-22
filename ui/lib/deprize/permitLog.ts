@@ -14,7 +14,8 @@ export type PermitIssuanceRecord = {
   mintAddress: string
   issuedAt: string
   deadline: string
-  country: string
+  /** Null only for bypassed (non-prod) permits, e.g. localhost with no geo headers. */
+  country: string | null
   region: string | null
   ipHash: string
   connectionKind: ConnectionKind
@@ -46,7 +47,7 @@ export function buildPermitIssuanceRecord(args: {
   chainId: number
   mintAddress: Hex
   issuedAt: string
-  country: string
+  country: string | null
   region: string | null
   ipHash: string
   connectionKind: ConnectionKind

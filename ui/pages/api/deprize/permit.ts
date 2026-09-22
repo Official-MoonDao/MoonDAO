@@ -6,6 +6,7 @@ import type { Hex } from 'viem'
 import { hashIp, recordTermsAcceptance } from '@/lib/deprize/acceptanceLog'
 import { areAttestationsAccepted } from '@/lib/deprize/attestations'
 import {
+  complianceSignerAddress,
   mintAddressForChain,
   permitTtlSeconds,
   signCompliancePermit,
@@ -93,12 +94,24 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
+  const bypass = isNonProdBypassEnabled()
   const country = decision.country
-  if (!country || !ipHash) {
+  if ((!country && !bypass) || !ipHash) {
     return res.status(503).json({
       allowed: false,
       reason: 'screening-unavailable',
       message: eligibilityMessage('screening-unavailable'),
+    })
+  }
+
+  if (!complianceSignerAddress()) {
+    console.error('[deprize] permit signer missing: set DEPRIZE_COMPLIANCE_SIGNER_KEY')
+    return res.status(503).json({
+      allowed: false,
+      reason: 'permit-unavailable',
+      message: bypass
+        ? 'Bet permits are not configured on this server. Set DEPRIZE_COMPLIANCE_SIGNER_KEY.'
+        : eligibilityMessage('permit-unavailable'),
     })
   }
 
@@ -128,7 +141,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       attestations: req.body.attestations,
     })
     const recorded = await recordPermitIssuance(issuance)
-    if (!recorded && !isNonProdBypassEnabled()) {
+    if (!recorded && !bypass) {
       return res.status(503).json({
         allowed: false,
         reason: 'screening-unavailable',
