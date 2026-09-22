@@ -838,12 +838,6 @@ function DePrizeDetailContent() {
           </div>
         )}
 
-        {(region.isRestricted || (!region.isLoading && !region.isError && !region.country)) && (
-          <Notice tone="amber">
-            Betting isn&apos;t available in your region. You can view odds, cash out and claim.
-          </Notice>
-        )}
-
         {/* Claim / refund */}
         {showResolved && (
           <ClaimPanel
