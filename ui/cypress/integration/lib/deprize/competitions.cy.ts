@@ -1,6 +1,10 @@
 import {
   GENERIC_DEPRIZE_COMPETITION,
   chainHasRaceBindings,
+  deprizeChainLabel,
+  deprizeChainSlugFromPrefix,
+  deprizePrefixedHref,
+  findDePrizeChainSlugs,
   findDePrizeIdForGoal,
   generationNumberOf,
   getDePrizeCompetition,
@@ -160,6 +164,30 @@ describe('deprize competitions registry', () => {
     expect(arbitrum).to.deep.equal([
       { raceLabel: null, deprizeIds: [1, 2, 3], showHeading: false },
     ])
+  })
+})
+
+describe('deprize chain-prefixed links', () => {
+  it('maps sep and arb prefixes onto registry slugs', () => {
+    expect(deprizeChainSlugFromPrefix('sep')).to.equal('sepolia')
+    expect(deprizeChainSlugFromPrefix('sepolia')).to.equal('sepolia')
+    expect(deprizeChainSlugFromPrefix('arb')).to.equal('arbitrum')
+    expect(deprizeChainSlugFromPrefix('nope')).to.equal(undefined)
+    expect(deprizeChainLabel('sepolia')).to.equal('Sepolia')
+  })
+
+  it('builds a path that pins the registry', () => {
+    expect(deprizePrefixedHref('sepolia', 2)).to.equal('/deprize/sep/2')
+    expect(deprizePrefixedHref('arbitrum', 1)).to.equal('/deprize/arb/1')
+    expect(deprizePrefixedHref('sepolia', 'shared-next-landing')).to.equal(
+      '/deprize/sep/shared-next-landing'
+    )
+  })
+
+  it('finds which registries know an id', () => {
+    expect(findDePrizeChainSlugs(2)).to.deep.equal(['sepolia'])
+    expect(findDePrizeChainSlugs(1).sort()).to.deep.equal(['arbitrum', 'sepolia'])
+    expect(findDePrizeChainSlugs(99)).to.deep.equal([])
   })
 })
 

@@ -98,6 +98,47 @@ export function deprizeDetailHref(sharedGoalId: string): string {
   return `/deprize/${sharedGoalId}`
 }
 
+/** Path prefix → chain slug. `/deprize/sep/2` reads Sepolia no matter which network the wallet is on. */
+const DEPRIZE_PREFIX_TO_SLUG: Record<string, string> = {
+  sep: 'sepolia',
+  sepolia: 'sepolia',
+  arb: 'arbitrum',
+  arbitrum: 'arbitrum',
+}
+
+const DEPRIZE_SLUG_TO_PREFIX: Record<string, string> = {
+  sepolia: 'sep',
+  arbitrum: 'arb',
+}
+
+const DEPRIZE_CHAIN_LABEL: Record<string, string> = {
+  sepolia: 'Sepolia',
+  arbitrum: 'Arbitrum',
+}
+
+export function deprizeChainSlugFromPrefix(prefix: string | undefined): string | undefined {
+  if (!prefix) return undefined
+  return DEPRIZE_PREFIX_TO_SLUG[prefix.toLowerCase()]
+}
+
+export function deprizeChainLabel(chainSlug: string): string {
+  return DEPRIZE_CHAIN_LABEL[chainSlug] ?? chainSlug
+}
+
+/** Prize URL that always reads `chainSlug`, independent of the wallet network. */
+export function deprizePrefixedHref(chainSlug: string, id: string | number): string {
+  const prefix = DEPRIZE_SLUG_TO_PREFIX[chainSlug]
+  return prefix ? `/deprize/${prefix}/${id}` : `/deprize/${id}`
+}
+
+/** Chains whose competition map includes this id. */
+export function findDePrizeChainSlugs(deprizeId: number | undefined): string[] {
+  if (deprizeId === undefined || !Number.isFinite(deprizeId) || deprizeId <= 0) return []
+  return Object.entries(DEPRIZE_COMPETITIONS)
+    .filter(([, byId]) => !!byId[deprizeId])
+    .map(([slug]) => slug)
+}
+
 /** chainSlug → deprizeId → competition */
 const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> = {
   arbitrum: {

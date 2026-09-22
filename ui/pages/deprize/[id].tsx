@@ -17,6 +17,9 @@ import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
   ROSTER_DISCLAIMER,
+  deprizeChainLabel,
+  deprizePrefixedHref,
+  findDePrizeChainSlugs,
   findDePrizeIdForGoal,
   getDePrizeCompetition,
   getDePrizeGenerationNumber,
@@ -56,7 +59,7 @@ import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityL
 import EthUsd from '@/components/deprize/EthUsd'
 import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import Container from '@/components/layout/Container'
@@ -140,6 +143,15 @@ export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
 
 function DePrizeDetailContent() {
   const router = useRouter()
+  // `/deprize/sep/2` and `/deprize/arb/1` name the registry in the path, so the
+  // page can load that prize without the wallet being on that network.
+  const forcedSlug =
+    router.pathname === '/deprize/sep/[id]'
+      ? 'sepolia'
+      : router.pathname === '/deprize/arb/[id]'
+        ? 'arbitrum'
+        : undefined
+  const forcedChain = forcedSlug ? v4SlugToV5Chain(forcedSlug) : undefined
   const rawId = router.query.id
   const numericId =
     typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
@@ -147,15 +159,17 @@ function DePrizeDetailContent() {
     typeof rawId === 'string' && !/^\d+$/.test(rawId)
       ? sharedGoalById(SEED_ATLAS, rawId)
       : undefined
-  const { selectedChain: chain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chain = forcedChain ?? selectedChain
   const chainSlug = getChainSlug(chain)
+  const prizeHref = (id: number) =>
+    forcedSlug ? deprizePrefixedHref(forcedSlug, id) : `/deprize/${id}`
   const boundFromSlug = goalFromSlug
     ? findDePrizeIdForGoal(chainSlug, goalFromSlug.id)
     : undefined
   const deprizeId = numericId ?? boundFromSlug
 
-  // Follow the app's live selected chain (wallet / header dropdown), not the
-  // build-time default — otherwise switching networks never re-queries DePrize.
+  // Prefixed routes pin the registry. Otherwise follow the wallet / header chain.
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
   const raceGoal = raceBinding ? sharedGoalById(SEED_ATLAS, raceBinding.sharedGoalId) : undefined
@@ -568,9 +582,30 @@ function DePrizeDetailContent() {
     )
   }
   if (deprize.state === DePrizeState.NONE) {
+    const elsewhere = findDePrizeChainSlugs(deprizeId).filter((slug) => slug !== chainSlug)
     return (
       <Shell title={shellTitle} description={competition.metaDescription}>
-        <Notice tone="amber">DePrize #{deprizeId} does not exist.</Notice>
+        <Notice tone="amber">
+          {elsewhere.length === 0 ? (
+            <>DePrize #{deprizeId} does not exist.</>
+          ) : (
+            <>
+              DePrize #{deprizeId} is on{' '}
+              {elsewhere.map((slug, i) => (
+                <span key={slug}>
+                  {i > 0 ? ' and ' : ''}
+                  <Link
+                    href={deprizePrefixedHref(slug, deprizeId)}
+                    className="underline underline-offset-2 hover:text-amber-100"
+                  >
+                    {deprizeChainLabel(slug)}
+                  </Link>
+                </span>
+              ))}
+              .
+            </>
+          )}
+        </Notice>
       </Shell>
     )
   }
@@ -859,7 +894,7 @@ function DePrizeDetailContent() {
                   <>
                     {' '}by{' '}
                     <Link
-                      href={`/deprize/${competition.supersededBy}`}
+                      href={prizeHref(competition.supersededBy)}
                       className="underline underline-offset-2 hover:text-amber-100"
                     >
                       DePrize #{competition.supersededBy}
@@ -873,7 +908,7 @@ function DePrizeDetailContent() {
               <p className="text-xs text-gray-500">
                 Generation {generationNumber} · continues from{' '}
                 <Link
-                  href={`/deprize/${competition.supersedes}`}
+                  href={prizeHref(competition.supersedes)}
                   className="text-indigo-300/90 underline underline-offset-2 hover:text-indigo-200"
                 >
                   #{competition.supersedes}
