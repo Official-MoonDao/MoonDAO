@@ -8,10 +8,11 @@ import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import { getDePrizeCompetition } from '@/lib/deprize/competitions'
 import { DePrizeState, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
-import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
+import { fmt, fmtPrizeEth, fmtUsdFromEth } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
@@ -62,6 +63,8 @@ export default function LiveDePrizeHero({
   const { totalFunding, isLoading: poolLoading } = useTotalFunding(jbProjectId, chain)
   const poolEth =
     jbProjectId !== undefined && !poolLoading ? Number(totalFunding ?? 0) / Number(UNIT) : undefined
+  const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
+  const poolUsd = fmtUsdFromEth(poolEth, ethPrice)
 
   const teamContract = useMemo(
     () =>
@@ -128,7 +131,9 @@ export default function LiveDePrizeHero({
           <div className="text-right shrink-0">
             <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
               {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-              <span className="text-sm font-medium text-gray-400 ml-1.5">ETH</span>
+              <span className="text-sm font-medium text-gray-400 ml-1.5">
+                ETH{poolUsd ? ` (~${poolUsd})` : ''}
+              </span>
             </p>
             <p className="text-gray-500 text-[10px] uppercase tracking-wide">prize pool</p>
           </div>
