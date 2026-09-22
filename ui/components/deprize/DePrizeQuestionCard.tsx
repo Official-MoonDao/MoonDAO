@@ -28,8 +28,8 @@ function CriteriaList({ criteria }: { criteria: CapabilityCriterion[] }) {
 }
 
 /**
- * One-line question above the fold. Description + win criteria sit in a
- * single collapsed accordion so the odds chart and competitors stay visible.
+ * One-line question above the fold. Description and win criteria start
+ * expanded; the visitor can collapse them.
  */
 export default function DePrizeQuestionCard({ tagline, description, criteria, moonbaseHref }: Props) {
   const hasCriteria = !!criteria && criteria.length > 0
@@ -43,7 +43,7 @@ export default function DePrizeQuestionCard({ tagline, description, criteria, mo
       <p className="text-white text-base font-semibold leading-snug">{question}</p>
 
       {hasDetails && (
-        <details className="mt-3 group">
+        <details className="mt-3 group" open>
           <summary className="cursor-pointer list-none text-sm font-semibold text-white flex items-center justify-between gap-3">
             <span>{hasCriteria ? 'What counts as winning' : 'About this prize'}</span>
             <span className="text-gray-500 text-xs font-normal shrink-0">
