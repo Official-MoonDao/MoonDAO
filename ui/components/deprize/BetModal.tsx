@@ -86,6 +86,7 @@ export default function BetModal({
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [attestations, setAttestations] = useState<DePrizeAttestations>(EMPTY_ATTESTATIONS)
   const [acceptanceState, setAcceptanceState] = useState<AcceptanceSubmitState>('idle')
+  const [acceptanceError, setAcceptanceError] = useState<string | undefined>()
   const [eligibility, setEligibility] = useState<{
     status: 'loading' | 'ready' | 'error'
     allowed: boolean
@@ -202,10 +203,12 @@ export default function BetModal({
   useEffect(() => {
     if (!wallet || !termsAccepted || !allAttested) {
       setAcceptanceState('idle')
+      setAcceptanceError(undefined)
       return
     }
     let cancelled = false
     setAcceptanceState('saving')
+    setAcceptanceError(undefined)
     ;(async () => {
       const accessToken = await getAccessToken().catch(() => null)
       const res = await fetch('/api/deprize/accept-terms', {
@@ -222,7 +225,14 @@ export default function BetModal({
         }),
       })
       if (cancelled) return
-      if (!res.ok) throw new Error('accept-terms failed')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        if (cancelled) return
+        // The server refuses for eligibility (location, screening) as well as
+        // for a failed write, so show its reason rather than a generic one.
+        setAcceptanceError(typeof data?.message === 'string' ? data.message : undefined)
+        throw new Error(`accept-terms ${res.status}${data?.reason ? ` ${data.reason}` : ''}`)
+      }
       setAcceptanceState('saved')
     })().catch((err) => {
       console.warn('[deprize] accept-terms failed', err)
@@ -248,7 +258,7 @@ export default function BetModal({
     })) {
       toast.error(
         acceptanceState === 'error'
-          ? 'Could not record your acceptance. Recheck the boxes and try again.'
+          ? acceptanceError || 'Could not record your acceptance. Recheck the boxes and try again.'
           : 'Please accept the DePrize Terms and attestations to continue.',
         { style: toastStyle }
       )
@@ -559,7 +569,8 @@ export default function BetModal({
           </label>
           {acceptanceState === 'error' && (
             <p className="text-amber-300 text-[11px]">
-              We could not record your acceptance. Recheck the boxes to try again.
+              {acceptanceError ||
+                'We could not record your acceptance. Recheck the boxes to try again.'}
             </p>
           )}
         </div>
