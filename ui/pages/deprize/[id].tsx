@@ -771,11 +771,6 @@ function DePrizeDetailContent() {
 
         {market.error && <Notice tone="red">Couldn&apos;t load market data — reload.</Notice>}
 
-        <DePrizeQuestionCard
-          description={raceGoal?.description}
-          criteria={raceGoal?.criteria}
-        />
-
         {userAddress && numOutcomes > 0 && (
           <DePrizePositionPanel
             outcomes={market.outcomes}
@@ -848,6 +843,11 @@ function DePrizeDetailContent() {
             })}
           </div>
         )}
+
+        <DePrizeQuestionCard
+          description={raceGoal?.description}
+          criteria={raceGoal?.criteria}
+        />
 
         {/* Claim / refund */}
         {showResolved && (
