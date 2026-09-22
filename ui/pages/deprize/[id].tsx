@@ -22,7 +22,6 @@ import {
   findDePrizeChainSlugs,
   findDePrizeIdForGoal,
   getDePrizeCompetition,
-  getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
   isCompetitorClaimed,
   isKnownDePrizeCompetition,
@@ -173,7 +172,6 @@ function DePrizeDetailContent() {
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
   const raceGoal = raceBinding ? sharedGoalById(SEED_ATLAS, raceBinding.sharedGoalId) : undefined
-  const generationNumber = getDePrizeGenerationNumber(chainSlug, deprizeId)
   const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
   const userAddress = account?.address
@@ -614,8 +612,7 @@ function DePrizeDetailContent() {
   const abnormalStatus = !!bettingBlockedReason && !bettingBlockedReason.startsWith('Loading')
   const showBadge = abnormalStatus || deprize.state !== DePrizeState.OPEN
   const explorerTxBase = EXPLORER_TX[chainSlug] ?? 'https://etherscan.io/tx/'
-  const hasLineage =
-    deprize.state === DePrizeState.SUPERSEDED || competition.supersedes !== undefined
+  const hasLineage = deprize.state === DePrizeState.SUPERSEDED
 
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
@@ -887,17 +884,6 @@ function DePrizeDetailContent() {
                   </>
                 ) : null}
                 {' '}— new bets happen there. You can still sell here.
-              </p>
-            )}
-            {competition.supersedes !== undefined && deprize.state !== DePrizeState.SUPERSEDED && (
-              <p className="text-xs text-gray-500">
-                Generation {generationNumber} · continues from{' '}
-                <Link
-                  href={prizeHref(competition.supersedes)}
-                  className="text-indigo-300/90 underline underline-offset-2 hover:text-indigo-200"
-                >
-                  #{competition.supersedes}
-                </Link>
               </p>
             )}
             {isRaceBindingComplete(raceBinding?.outcomes) && (
