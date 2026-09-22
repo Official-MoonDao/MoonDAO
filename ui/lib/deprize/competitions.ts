@@ -107,8 +107,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     // groups under "Other challenges" on the index.
     1: {
       title: 'The Moon Is A Harsh Mistress',
-      tagline:
-        'Which team posts “The Moon is a harsh mistress” first? Back a competitor — every bet grows the prize pool.',
+      tagline: 'Which team posts “The Moon is a harsh mistress” first?',
       metaDescription:
         'Arbitrum DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
       questionId: '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
@@ -250,8 +249,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     // NFTs [2, 6, 7, 8]. Oracle at prepareCondition = deployer 0x3c5e…E011.
     20: {
       title: 'The Moon Is A Harsh Mistress',
-      tagline:
-        'Which team posts “The Moon is a harsh mistress” first? Back a competitor — every bet grows the prize pool.',
+      tagline: 'Which team posts “The Moon is a harsh mistress” first?',
       metaDescription:
         'Sepolia DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
       questionId: '0xe6430ff8d51a6e5389d1c23cfa5dcab4682407f866a208ef3ea60120b271d5cf',
