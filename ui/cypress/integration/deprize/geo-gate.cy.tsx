@@ -1,8 +1,23 @@
-import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
+import { Component, type ReactNode } from 'react'
 import {
   DePrizeRestrictedProvider,
   useDePrizeRestricted,
 } from '@/lib/deprize/deprizeRestrictedContext'
+import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
+
+/** Component tests have no Next.js overlay, so the thrown message has to land in the DOM. */
+class Boundary extends Component<{ children: ReactNode }, { message: string | null }> {
+  state = { message: null as string | null }
+
+  static getDerivedStateFromError(err: Error) {
+    return { message: err.message }
+  }
+
+  render() {
+    if (this.state.message) return <p>{this.state.message}</p>
+    return this.props.children
+  }
+}
 
 function Probe() {
   const restricted = useDePrizeRestricted()
@@ -34,11 +49,17 @@ describe('PR-0 DePrize geo gate (component)', () => {
 
   it('throws outside a provider', () => {
     cy.on('uncaught:exception', (err) => {
-      if (err.message.includes('useDePrizeRestricted must be used inside DePrizeRestrictedProvider')) {
+      if (
+        err.message.includes('useDePrizeRestricted must be used inside DePrizeRestrictedProvider')
+      ) {
         return false
       }
     })
-    cy.mount(<Probe />)
+    cy.mount(
+      <Boundary>
+        <Probe />
+      </Boundary>
+    )
     cy.contains('useDePrizeRestricted must be used inside DePrizeRestrictedProvider')
   })
 

@@ -1,8 +1,9 @@
+import type { ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
-import { TOUCH } from '@/components/deprize/detail/primitives'
 import EthUsd from '@/components/deprize/EthUsd'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 import StandardButton from '@/components/layout/StandardButton'
 
 type DePrizeTeamCardProps = {
@@ -30,6 +31,11 @@ type DePrizeTeamCardProps = {
   busy: boolean
   userConnected: boolean
   onBet: (index: number) => void
+  /**
+   * Predict (and undo) for this competitor. Rendered in the same row as Back
+   * so the two commitments are not split across a second strip.
+   */
+  actions?: ReactNode
   /** Open Field slot — render overrides instead of a Team NFT. */
   isField?: boolean
   /** Disclosure: competitor marked withdrawn on-chain. Slot stays tradable. */
@@ -94,6 +100,7 @@ export default function DePrizeTeamCard({
   busy,
   userConnected,
   onBet,
+  actions,
   onCashOut,
   isField = false,
   withdrawn = false,
@@ -134,8 +141,8 @@ export default function DePrizeTeamCard({
                   ? isWinningSlot
                     ? 'text-emerald-400'
                     : isRefundVector
-                      ? 'text-white'
-                      : 'text-gray-500'
+                    ? 'text-white'
+                    : 'text-gray-500'
                   : 'text-white'
               }`}
             >
@@ -143,13 +150,13 @@ export default function DePrizeTeamCard({
                 ? isWinningSlot
                   ? 'WON'
                   : isRefundVector
-                    ? 'Refund'
-                    : 'Lost'
+                  ? 'Refund'
+                  : 'Lost'
                 : Number.isNaN(outcome.probability)
-                  ? loading
-                    ? '…'
-                    : '—'
-                  : `${fmt(outcome.probability, 0)}%`}
+                ? loading
+                  ? '…'
+                  : '—'
+                : `${fmt(outcome.probability, 0)}%`}
             </p>
             {!resolved && (
               <p className="text-gray-500 text-[10px] mt-1 uppercase tracking-wide">chance</p>
@@ -201,17 +208,22 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {bettingOpen && !tradingHalted && (
-          <StandardButton
-            onClick={() => onBet(outcome.index)}
-            disabled={busy}
-            className={`rounded-xl shadow-purple-500/10 w-full sm:w-auto ${TOUCH}`}
-          >
-            {!userConnected
-              ? 'Connect to back'
-              : backLabel ?? (isField ? 'Back the field' : 'Back this team')}
-          </StandardButton>
-        )}
+        {(bettingOpen && !tradingHalted) || actions ? (
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            {bettingOpen && !tradingHalted && (
+              <StandardButton
+                onClick={() => onBet(outcome.index)}
+                disabled={busy}
+                className={`rounded-xl shadow-purple-500/10 w-full sm:w-auto ${TOUCH}`}
+              >
+                {!userConnected
+                  ? 'Connect to back'
+                  : backLabel ?? (isField ? 'Back the field' : 'Back this team')}
+              </StandardButton>
+            )}
+            {actions}
+          </div>
+        ) : null}
       </div>
 
       {showHoldings && (

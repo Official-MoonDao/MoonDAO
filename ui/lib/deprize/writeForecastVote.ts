@@ -43,3 +43,17 @@ export async function writeForecastVote(args: {
   })
   await sendAndConfirmTransaction({ transaction, account: args.account })
 }
+
+/** Erases the sender's Forecasts row. A missing row is a no-op on chain. */
+export async function clearForecastVote(args: {
+  forecastsContract: any
+  account: any
+  voteId: number
+}): Promise<void> {
+  const transaction = prepareContractCall({
+    contract: args.forecastsContract,
+    method: 'deleteFromTable' as string,
+    params: [BigInt(args.voteId)],
+  })
+  await sendAndConfirmTransaction({ transaction, account: args.account })
+}

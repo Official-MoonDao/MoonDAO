@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCitizenRowsByOwners } from '@/lib/citizen/useCitizenRowsByOwners'
+import { consensusQuery } from '@/lib/forecasts/consensusQuery'
 import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
-import CitizenIdentity from '@/components/layout/CitizenIdentity'
+import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import { SCROLL_LIST } from '@/components/deprize/detail/primitives'
+import CitizenIdentity from '@/components/layout/CitizenIdentity'
 
 /** `/api/voting-power` takes at most 100 addresses per call. */
 const MAX_ADDRESSES = 100
 
 type CallerRow = {
   address: string
-  /** Label of the outcome they called, when they wrote a prediction. */
+  /** Label of the outcome they predicted, when they wrote one. */
   pick?: string
   bet: boolean
   votingPower: number
@@ -21,9 +23,8 @@ function formatVotingPower(vp: number): string {
 }
 
 /**
- * Who called this prize, ranked by voting power rather than ETH. Citizens who
- * wrote a prediction and wallets that placed an ETH bet both belong here — the
- * bet is a call too, it just costs money instead of vMOONEY.
+ * Who predicted this prize, ranked by voting power rather than ETH. Citizens who
+ * wrote a prediction and wallets that placed an ETH bet both belong here.
  */
 export default function DePrizeCallers(props: {
   chainSlug: string
@@ -51,14 +52,15 @@ export default function DePrizeCallers(props: {
       }
       setLoading(true)
       try {
-        // Same query string the competitors panel uses, so the two share one
-        // CDN entry instead of warming two.
-        const qs = new URLSearchParams({
-          chain: chainSlug,
-          deprizeId: String(deprizeId),
-          outcomes: String(outcomes),
-        })
-        const res = await fetch(`/api/forecasts/consensus?${qs}`)
+        // Same non-fresh URL the competitors panel uses, so the two share one
+        // CDN entry. The panel's post-write refetch is the only fresh read.
+        const res = await fetch(
+          consensusQuery({
+            chain: chainSlug,
+            deprizeId,
+            outcomes,
+          })
+        )
         if (!res.ok || cancelled) return
         const body = (await res.json()) as ForecastConsensus
         if (cancelled) return
@@ -143,8 +145,8 @@ export default function DePrizeCallers(props: {
   if (rows.length === 0) {
     return (
       <div className="space-y-2">
-        <h3 className="text-white text-sm font-semibold">Who&apos;s called it</h3>
-        <p className="text-gray-400 text-sm">Nobody has called this one yet.</p>
+        <h3 className="text-white text-sm font-semibold">{FORECAST_COPY.callersHeading}</h3>
+        <p className="text-gray-400 text-sm">{FORECAST_COPY.callersEmpty}</p>
       </div>
     )
   }
@@ -152,23 +154,24 @@ export default function DePrizeCallers(props: {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-white text-sm font-semibold">Who&apos;s called it</h3>
-        <p className="text-gray-400 text-xs">
-          {rows.length} {rows.length === 1 ? 'caller' : 'callers'}
-        </p>
+        <h3 className="text-white text-sm font-semibold">{FORECAST_COPY.callersHeading}</h3>
+        <p className="text-gray-400 text-xs">{FORECAST_COPY.callersCount(rows.length)}</p>
       </div>
       <ul className={`space-y-1.5 ${SCROLL_LIST}`}>
         {rows.map((row) => (
-          <li key={row.address} className="flex items-center justify-between gap-2 sm:gap-3 text-sm">
+          <li
+            key={row.address}
+            className="flex items-center justify-between gap-2 sm:gap-3 text-sm"
+          >
             <span className="min-w-0 flex-1">
               <CitizenIdentity address={row.address} citizen={citizens.get(row.address)} />
               <span className="mt-0.5 block truncate text-xs text-gray-500">
-                {row.pick ? row.pick : 'Backed with ETH'}
+                {row.pick ? row.pick : FORECAST_COPY.backedWithEth}
                 {row.pick && row.bet ? ' · ETH bet' : ''}
               </span>
             </span>
-            <span className="shrink-0 tabular-nums text-gray-300" title="Voting power (√vMOONEY)">
-              {formatVotingPower(row.votingPower)} VP
+            <span className="shrink-0 tabular-nums text-gray-300" title={FORECAST_COPY.votingPower}>
+              {formatVotingPower(row.votingPower)}
             </span>
           </li>
         ))}

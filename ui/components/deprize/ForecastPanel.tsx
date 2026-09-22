@@ -8,16 +8,24 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import { isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
-import {
-  deprizeForecastVoteId,
-  encodeForecastVote,
-  isValidAllocation,
-} from '@/lib/deprize/forecastVote'
+import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { normalizeProbabilities } from '@/lib/deprize/serverMarket'
-import { writeForecastVote } from '@/lib/deprize/writeForecastVote'
+import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
+import { consensusQuery } from '@/lib/forecasts/consensusQuery'
 import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
+import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
+import {
+  allocationForPick,
+  canUndo,
+  pickFromAllocation,
+  pickLabel,
+  tapPlan,
+  undoPlan,
+} from '@/lib/forecasts/forecastPick'
+import { oddsRowView } from '@/lib/forecasts/oddsRow'
 import { daoEvidence, logLinearPool, marketEvidence } from '@/lib/forecasts/pool'
+import { rowActions } from '@/lib/forecasts/rowActions'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
 import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -27,27 +35,6 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import { CARD, TOUCH } from '@/components/deprize/detail/primitives'
-
-function pct(n: number): string {
-  if (!Number.isFinite(n)) return '—'
-  return `${Math.round(n)}%`
-}
-
-/** One outcome carries the whole call. A prediction is a single pick, not a spread. */
-function allocationForPick(picked: number | null, n: number): number[] {
-  const out = Array.from({ length: n }, () => 0)
-  if (picked == null || picked < 0 || picked >= n) return out
-  out[picked] = 100
-  return out
-}
-
-function pickFromAllocation(allocation: number[]): number | null {
-  let best = -1
-  for (let i = 0; i < allocation.length; i++) {
-    if ((allocation[i] ?? 0) > (allocation[best] ?? 0)) best = i
-  }
-  return best >= 0 && (allocation[best] ?? 0) > 0 ? best : null
-}
 
 export default function ForecastPanel(props: {
   chainSlug: string
@@ -109,12 +96,12 @@ export default function ForecastPanel(props: {
   const { totalVMOONEY } = useTotalVMOONEY(account?.address)
 
   const n = labels.length
-  const [picked, setPicked] = useState<number | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [savedPick, setSavedPick] = useState<number | null>(null)
+  const [previousPick, setPreviousPick] = useState<number | null>(null)
+  const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
 
-  const percents = useMemo(() => allocationForPick(picked, n), [picked, n])
   const forecastsContract = useContract({
     address: FORECASTS_TABLE_ADDRESSES[chainSlug] ?? '',
     chain,
@@ -125,50 +112,86 @@ export default function ForecastPanel(props: {
   const marketNormalized = useMemo(() => normalizeProbabilities(marketPercents), [marketPercents])
   const isLive = liveTipId == null || liveTipId === deprizeId
   const inputsLocked = !isLive || reported
-  const canWrite = Boolean(account && citizen && forecastsContract && forecastsTableName)
-  const submitDisabled = inputsLocked || saving || n < 2 || !isValidAllocation(percents)
+  const actions = rowActions({
+    restricted,
+    bettingOpen,
+    locked: inputsLocked,
+    isCitizen: !!citizen,
+    connected: !!account,
+  })
+  const predictAction = actions.find((action) => action.kind === 'predict')
+
+  const applyConsensus = useCallback(
+    (body: ForecastConsensus) => {
+      setConsensus(body)
+      const mine = account?.address
+        ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
+        : undefined
+      if (mine?.allocation?.length === n) {
+        setSavedPick(pickFromAllocation(mine.allocation))
+      }
+    },
+    [account?.address, n]
+  )
 
   const loadConsensus = useCallback(async () => {
-    const qs = new URLSearchParams({
-      chain: chainSlug,
-      deprizeId: String(deprizeId),
-      outcomes: String(n),
-    })
-    const res = await fetch(`/api/forecasts/consensus?${qs}`)
+    const res = await fetch(
+      consensusQuery({
+        chain: chainSlug,
+        deprizeId,
+        outcomes: n,
+      })
+    )
     if (!res.ok) return
-    const body = (await res.json()) as ForecastConsensus
-    setConsensus(body)
-    const mine = account?.address
-      ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
-      : undefined
-    if (mine?.allocation?.length === n) {
-      setPicked(pickFromAllocation(mine.allocation))
-    }
-  }, [account?.address, chainSlug, deprizeId, n])
+    applyConsensus((await res.json()) as ForecastConsensus)
+  }, [applyConsensus, chainSlug, deprizeId, n])
+
+  const refetchFresh = useCallback(async () => {
+    const res = await fetch(
+      consensusQuery({
+        chain: chainSlug,
+        deprizeId,
+        outcomes: n,
+        fresh: true,
+      })
+    )
+    if (!res.ok) return
+    applyConsensus((await res.json()) as ForecastConsensus)
+  }, [applyConsensus, chainSlug, deprizeId, n])
 
   useEffect(() => {
     void loadConsensus()
   }, [loadConsensus])
 
-  function pickOutcome(index: number) {
-    if (inputsLocked) return
-    setPicked((prev) => (prev === index ? null : index))
+  function rememberRow(allocation: number[]) {
+    if (!account) return
+    setConsensus((prev) => {
+      if (!prev) return prev
+      const row = {
+        voterAddress: account.address.toLowerCase(),
+        citizenId: citizen?.id ?? '',
+        citizenName: (citizen?.metadata?.name as string) || account.address,
+        citizenImage: citizen?.metadata?.image,
+        allocation,
+        weight: 0,
+        storedVmooney: totalVMOONEY || 0,
+        liveVmooney: totalVMOONEY || 0,
+        updatedAt: Math.floor(Date.now() / 1000),
+        brier: null,
+        skill: null,
+      }
+      const others = prev.leaderboard.filter((entry) => entry.voterAddress !== row.voterAddress)
+      return { ...prev, leaderboard: [row, ...others] }
+    })
   }
 
-  async function save() {
+  async function commitPick(index: number) {
+    if (!account || !citizen || !forecastsContract || !forecastsTableName) return
     setError(null)
-    if (!account) {
-      login()
-      return
-    }
-    if (!citizen) {
-      setError('Predictions count only for Citizens. Mint a Citizen to call it.')
-      return
-    }
-    if (submitDisabled) return
-    setSaving(true)
+    setWriting(true)
+    const allocation = allocationForPick(index, n)
     try {
-      const vote = encodeForecastVote(percents, totalVMOONEY || 0)
+      const vote = encodeForecastVote(allocation, totalVMOONEY || 0)
       await writeForecastVote({
         forecastsContract,
         account,
@@ -177,31 +200,68 @@ export default function ForecastPanel(props: {
         address: account.address,
         vote,
       })
-      setConsensus((prev) => {
-        if (!prev) return prev
-        const row = {
-          voterAddress: account.address.toLowerCase(),
-          citizenId: citizen.id ?? '',
-          citizenName: (citizen.metadata?.name as string) || account.address,
-          citizenImage: citizen.metadata?.image,
-          allocation: percents,
-          weight: 0,
-          storedVmooney: totalVMOONEY || 0,
-          liveVmooney: totalVMOONEY || 0,
-          updatedAt: Math.floor(Date.now() / 1000),
-          brier: null,
-          skill: null,
-        }
-        const others = prev.leaderboard.filter((entry) => entry.voterAddress !== row.voterAddress)
-        return { ...prev, leaderboard: [row, ...others] }
-      })
+      setPreviousPick(savedPick)
+      setSavedPick(index)
+      rememberRow(allocation)
       toast.success('Prediction saved', { style: toastStyle })
-      void loadConsensus()
+      await refetchFresh()
     } catch (err: any) {
       setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
     } finally {
-      setSaving(false)
+      setWriting(false)
     }
+  }
+
+  async function clearPick() {
+    if (!account || !forecastsContract) return
+    setError(null)
+    setWriting(true)
+    try {
+      await clearForecastVote({
+        forecastsContract,
+        account,
+        voteId: deprizeForecastVoteId(deprizeId),
+      })
+      setSavedPick(null)
+      setPreviousPick(null)
+      toast.success('Prediction removed', { style: toastStyle })
+      await refetchFresh()
+    } catch (err: any) {
+      setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
+    } finally {
+      setWriting(false)
+    }
+  }
+
+  function onPredict(index: number) {
+    const plan = tapPlan({
+      index,
+      savedPick,
+      writing,
+      connected: !!account,
+      isCitizen: !!citizen,
+      locked: inputsLocked,
+    })
+    if (plan.action === 'connect') {
+      login()
+      return
+    }
+    if (plan.action === 'need-citizen') {
+      setError('Predictions count only for Citizens. Mint a Citizen to predict.')
+      return
+    }
+    if (plan.action === 'write') void commitPick(plan.index)
+  }
+
+  function onUndo() {
+    const plan = undoPlan({
+      savedPick,
+      previousPick,
+      writing,
+      locked: inputsLocked,
+    })
+    if (plan.action === 'write') void commitPick(plan.index)
+    if (plan.action === 'clear') void clearPick()
   }
 
   const daoReady = (consensus?.participants ?? 0) >= FORECAST_DAO_MIN_PARTICIPANTS
@@ -222,25 +282,18 @@ export default function ForecastPanel(props: {
         ])
       : null
 
-  const divergence = labels.reduce((max, _, i) => {
-    const market = marketNormalized[i] ?? 0
-    const dao = (daoVector[i] ?? 0) * 100
-    return Math.max(max, Math.abs(market - dao))
-  }, 0)
-
   const mine = consensus?.leaderboard.find(
     (row) => row.voterAddress === account?.address?.toLowerCase()
   )
+  const showBet = actions.some((action) => action.kind === 'bet')
+  const undoEnabled = canUndo({ savedPick, writing, locked: inputsLocked })
 
   if (numOutcomes <= 0) return null
 
   return (
     <section id="deprize-forecast" className={CARD}>
       <h2 className="title-text-colors text-lg font-GoodTimes">Competitors</h2>
-      <p className="mt-1 text-sm text-gray-300">
-        Back one with ETH where betting is allowed. Citizens can also call a single outcome with a
-        prediction weighted by √vMOONEY.
-      </p>
+      <p className="mt-1 text-sm text-gray-300">{FORECAST_COPY.panelIntro}</p>
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">
           Betting isn&apos;t available in your region — you can still make a prediction.
@@ -268,11 +321,6 @@ export default function ForecastPanel(props: {
           </Link>
         </p>
       )}
-      {daoReady && divergence >= 10 && (
-        <p className="mt-3 text-sm text-gray-300">
-          Market and DAO diverge by {pct(divergence)} on the widest outcome.
-        </p>
-      )}
       {mine?.skill != null && (
         <p className="mt-3 text-sm text-gray-300">Your skill score is {mine.skill.toFixed(2)}.</p>
       )}
@@ -288,12 +336,17 @@ export default function ForecastPanel(props: {
               : undefined
           const atlasOrg = atlasProject ? orgById(SEED_ATLAS, atlasProject.orgId) : undefined
           const claimed = isCompetitorClaimed(outcomeBinding)
-          const isPicked = picked === o.index
+          const isSaved = savedPick === o.index
           const marketPct = marketNormalized[o.index] ?? 0
           const daoPct = daoReady ? (daoVector[o.index] ?? 0) * 100 : null
           const pooledPct = pooled ? pooled[o.index] * 100 : null
-          const lo = daoPct == null ? marketPct : Math.min(marketPct, daoPct)
-          const hi = daoPct == null ? marketPct : Math.max(marketPct, daoPct)
+          const view = oddsRowView({ marketPct, daoPct, pooledPct })
+          const predictReason =
+            predictAction?.reason === 'locked'
+              ? 'Forecasting is closed'
+              : predictAction?.reason === 'need-citizen'
+              ? 'Mint a Citizen to predict'
+              : undefined
           return (
             <div id={`deprize-outcome-${o.index}`} key={o.index}>
               <DePrizeTeamCard
@@ -305,11 +358,40 @@ export default function ForecastPanel(props: {
                 resolved={showResolved}
                 isRefundVector={isRefundVector}
                 isWinningSlot={showResolved && o.index === winningIndex}
-                bettingOpen={bettingOpen}
+                bettingOpen={bettingOpen && showBet}
                 tradingHalted={tradingHalted}
                 busy={false}
                 userConnected={!!userAddress}
                 onBet={onBet}
+                actions={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onPredict(o.index)}
+                      disabled={!predictAction?.enabled || writing}
+                      aria-pressed={isSaved}
+                      title={predictReason}
+                      className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border transition-colors disabled:opacity-40 w-full sm:w-auto ${TOUCH} ${
+                        isSaved
+                          ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
+                          : predictAction?.role === 'primary'
+                          ? 'border-indigo-400/40 bg-indigo-400/10 text-white'
+                          : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
+                      }`}
+                    >
+                      {pickLabel({ picked: isSaved, saved: isSaved && !writing })}
+                    </button>
+                    {isSaved && undoEnabled && (
+                      <button
+                        type="button"
+                        onClick={onUndo}
+                        className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border border-white/15 text-gray-200 hover:bg-white/10 w-full sm:w-auto ${TOUCH}`}
+                      >
+                        Undo
+                      </button>
+                    )}
+                  </>
+                }
                 isField={isField}
                 withdrawn={!!withdrawnByTeamId[teamId.toString()]}
                 hrefOverride={
@@ -331,34 +413,23 @@ export default function ForecastPanel(props: {
                 }
               />
               <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => pickOutcome(o.index)}
-                    disabled={inputsLocked}
-                    aria-pressed={isPicked}
-                    className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border transition-colors disabled:opacity-40 ${TOUCH} ${
-                      isPicked
-                        ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
-                        : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
-                    }`}
-                  >
-                    {isPicked ? 'Your call' : 'Predict this'}
-                  </button>
-                  <p className="text-xs text-gray-400">
-                    {daoPct != null ? `DAO ${pct(daoPct)}` : 'DAO —'}
-                    {pooledPct != null ? ` · Pooled ${pct(pooledPct)}` : ''}
-                  </p>
-                </div>
+                <p className="text-xs text-gray-400">
+                  Market {view.marketLabel} · DAO {view.daoLabel}
+                  {view.pooledLabel != null ? ` · Pooled ${view.pooledLabel}` : ''}
+                </p>
+                {view.gapCaption && <p className="mt-1 text-xs text-gray-400">{view.gapCaption}</p>}
                 <div className="mt-2 relative h-4 rounded-full bg-white/5 border border-white/10">
-                  <span
-                    className="absolute inset-y-0 rounded-full bg-white/15"
-                    style={{ left: `${lo}%`, width: `${Math.max(1, hi - lo)}%` }}
-                  />
-                  {pooledPct != null && (
+                  {view.showBracket && (
+                    <span
+                      className="absolute inset-y-0 rounded-full bg-white/15"
+                      style={{ left: `${view.bracketLo}%`, width: `${view.bracketWidth}%` }}
+                    />
+                  )}
+                  {view.pooledLabel != null && pooledPct != null && (
                     <span
                       className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-1 rounded-full bg-indigo-300"
                       style={{ left: `${pooledPct}%` }}
+                      title={`Pooled ${view.pooledLabel}`}
                     />
                   )}
                 </div>
@@ -370,27 +441,12 @@ export default function ForecastPanel(props: {
 
       {!daoReady && (
         <p className="mt-3 text-xs text-gray-400">
-          DAO shows once {FORECAST_DAO_MIN_PARTICIPANTS} Citizens have called it (
-          {consensus?.participants ?? 0} so far).
+          {FORECAST_COPY.daoPending(FORECAST_DAO_MIN_PARTICIPANTS, consensus?.participants ?? 0)}
         </p>
       )}
-      {picked != null && (
-        <p className="mt-2 text-xs text-gray-400">
-          Calling one outcome says the rest will not win, which costs a full point under Brier if
-          one of them does.
-        </p>
+      {savedPick != null && (
+        <p className="mt-2 text-xs text-gray-400">{FORECAST_COPY.singlePick}</p>
       )}
-
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={save}
-          disabled={account ? submitDisabled || !canWrite : false}
-          className={`w-full sm:w-auto px-4 py-1.5 rounded-full text-sm border border-white/20 bg-white/10 text-white hover:bg-white/15 disabled:opacity-40 ${TOUCH}`}
-        >
-          {saving ? 'Saving…' : account ? 'Save prediction' : 'Connect to predict'}
-        </button>
-      </div>
       {error && <p className="mt-2 text-xs text-amber-200">{error}</p>}
     </section>
   )
