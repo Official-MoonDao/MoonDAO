@@ -122,8 +122,11 @@ describe('MissionPayRedeem Component', () => {
     cy.contains('Enter contribution amount').should('be.visible')
     cy.contains('You receive').should('be.visible')
     cy.get('#usd-contribution-input').should('exist')
-    cy.get('#open-contribute-modal').should('contain', 'Contribute')
-    cy.contains('Sign In · Fund · Contribute').should('be.visible')
+    cy.get('#usd-contribution-input').should('have.attr', 'placeholder', 'Amount')
+    cy.contains('Enter an amount to see ETH').should('be.visible')
+    cy.contains('≈ 0 ETH').should('not.exist')
+    cy.get('#open-contribute-modal').should('contain', 'Enter an amount')
+    cy.contains('Sign in to pay with card, Apple Pay, or ETH').should('be.visible')
   })
 
   it('handles USD input changes correctly', () => {
@@ -407,7 +410,7 @@ describe('MissionPayRedeem Component', () => {
 
     cy.get('#fixed-contribute-button').should('exist')
     cy.get('#open-contribute-modal').should('exist')
-    cy.contains('Contribute').should('be.visible')
+    cy.contains('Enter an amount').should('be.visible')
   })
 
   it('renders standard button mode correctly', () => {
@@ -425,7 +428,7 @@ describe('MissionPayRedeem Component', () => {
     )
 
     cy.get('#open-contribute-modal').should('exist')
-    cy.contains('Contribute').should('be.visible')
+    cy.contains('Enter an amount').should('be.visible')
     cy.get('#mission-pay-container').should('not.exist')
   })
 

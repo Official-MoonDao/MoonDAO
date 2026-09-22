@@ -70,7 +70,7 @@ export default function MissionBanner() {
                   </span>
                   <span className="mx-3 text-white/15">·</span>
                   <span className="text-white/50">
-                    {`Contribute ${FREE_MINT_THRESHOLD_LABEL} for a free citizenship.`}
+                    {`Contribute ${FREE_MINT_THRESHOLD_LABEL} for one sponsored year of citizenship.`}
                   </span>
                 </span>
               ))}
