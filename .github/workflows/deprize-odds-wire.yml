@@ -1,0 +1,29 @@
+name: DePrize odds wire
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  odds-wire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger DePrize odds wire
+        env:
+          SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          BASE="${SITE_URL:-https://moondao.com}"
+          BODY="$(curl -sS -X POST "$BASE/api/cron/deprize-odds-wire" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            -w '\n%{http_code}')"
+          HTTP="$(echo "$BODY" | tail -n 1)"
+          JSON="$(echo "$BODY" | sed '$d')"
+          echo "$JSON"
+          if [ "$HTTP" -lt 200 ] || [ "$HTTP" -ge 300 ]; then
+            echo "odds-wire HTTP $HTTP"
+            exit 1
+          fi
+          echo "$JSON" | jq -e '.configured and (.errors | length == 0) and (.checked > 0)'

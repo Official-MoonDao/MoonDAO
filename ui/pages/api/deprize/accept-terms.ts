@@ -50,6 +50,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const termsVersion = DEPRIZE_TERMS_VERSION
+  const payloadNameOptIn = req.body?.payloadNameOptIn === true
   const logged = await recordTermsAcceptance({
     wallet,
     termsVersion,
@@ -60,6 +61,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     ipHash: hashIp(getClientIp(req)),
     attestations: req.body.attestations,
     surface: 'accept-terms',
+    payloadNameOptIn,
+    recordVersion: 2,
   })
 
   if (!logged) {
@@ -70,7 +73,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  return res.status(200).json({ ok: true, wallet, termsVersion })
+  return res.status(200).json({ ok: true, wallet, termsVersion, payloadNameOptIn })
 }
 
 export default withMiddleware(handler, authMiddleware, rateLimit)

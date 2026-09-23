@@ -6,16 +6,24 @@ import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
-import { getDePrizeCompetition } from '@/lib/deprize/competitions'
-import { DePrizeState, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
-import { fmt, fmtPrizeEth, fmtUsdFromEth } from '@/lib/deprize/format'
+import { deprizeForecastHref, getDePrizeCompetition } from '@/lib/deprize/competitions'
+import {
+  DEPRIZE_PREDICT_CTA,
+  DEPRIZE_TERMS_VERSION,
+  DePrizeState,
+  OUTCOME_COLORS,
+  UNIT,
+} from '@/lib/deprize/constants'
+import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
+import { fmt } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
+import { TOUCH } from '@/components/deprize/detail/primitives'
+import EthUsd from '@/components/deprize/EthUsd'
 import { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 
 type Props = {
@@ -26,7 +34,6 @@ type Props = {
   userAddress?: string
   spendableEth: number
   bettingBlockedReason?: string
-  blockLiveBetting?: boolean
   onDone: () => void
 }
 
@@ -43,7 +50,6 @@ export default function LiveDePrizeHero({
   userAddress,
   spendableEth,
   bettingBlockedReason,
-  blockLiveBetting = false,
   onDone,
 }: Props) {
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
@@ -63,8 +69,6 @@ export default function LiveDePrizeHero({
   const { totalFunding, isLoading: poolLoading } = useTotalFunding(jbProjectId, chain)
   const poolEth =
     jbProjectId !== undefined && !poolLoading ? Number(totalFunding ?? 0) / Number(UNIT) : undefined
-  const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
-  const poolUsd = fmtUsdFromEth(poolEth, ethPrice)
 
   const teamContract = useMemo(
     () =>
@@ -93,7 +97,6 @@ export default function LiveDePrizeHero({
     !!deprize?.bettingOpen &&
     !betting.bettingBlockedReason &&
     !bettingBlockedReason &&
-    !blockLiveBetting &&
     !!market.marketAddress
 
   const [betIndex, setBetIndex] = useState<number | null>(null)
@@ -111,7 +114,9 @@ export default function LiveDePrizeHero({
   }, [deprize?.teamIds, market.outcomes])
 
   const detailHref = `/deprize/${deprizeId}`
+  const forecastHref = deprizeForecastHref(deprizeId)
   const betOutcome = betIndex !== null ? market.outcomes[betIndex] : undefined
+  const showPredict = !!bettingBlockedReason
 
   return (
     <div className="rounded-2xl bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-indigo-950/50 backdrop-blur-xl border border-indigo-400/25 shadow-xl overflow-hidden">
@@ -128,14 +133,25 @@ export default function LiveDePrizeHero({
             </a>
             <p className="mt-1.5 text-sm text-gray-400 max-w-xl">{competition.tagline}</p>
           </div>
-          <div className="text-right shrink-0">
+          {/* Wrapped onto its own line on a phone, this block kept its right
+              alignment and read as detached from the prize it belongs to. */}
+          <div className="w-full sm:w-auto text-left sm:text-right sm:shrink-0">
             <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
-              {poolLoading ? '…' : poolEth !== undefined ? fmtPrizeEth(poolEth) : '—'}
-              <span className="text-sm font-medium text-gray-400 ml-1.5">
-                ETH{poolUsd ? ` (~${poolUsd})` : ''}
-              </span>
+              {poolLoading ? (
+                '…'
+              ) : (
+                <EthUsd
+                  eth={poolEth}
+                  prize
+                  layout="below"
+                  className="text-white text-2xl sm:text-3xl font-bold tabular-nums"
+                  usdClassName="text-gray-400 text-sm font-medium"
+                />
+              )}
             </p>
-            <p className="text-gray-500 text-[10px] uppercase tracking-wide">prize pool</p>
+            <p className="text-gray-500 text-[10px] uppercase tracking-wide">
+              {payloadCopy('heroPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
+            </p>
           </div>
         </div>
 
@@ -182,9 +198,9 @@ export default function LiveDePrizeHero({
                   <button
                     type="button"
                     onClick={() => setBetIndex(o.index)}
-                    className="relative z-10 shrink-0 px-2.5 py-1 rounded-md text-xs font-semibold
+                    className={`relative z-10 shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold
                       bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
-                      transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
+                      transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
                   >
                     Buy
                   </button>
@@ -199,16 +215,28 @@ export default function LiveDePrizeHero({
           )}
         </div>
 
-        {bettingBlockedReason && (
+        {showPredict && (
           <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>
         )}
 
-        <a
-          href={detailHref}
-          className="mt-4 inline-flex text-sm text-indigo-300 hover:text-indigo-200 transition-colors"
-        >
-          Open full market →
-        </a>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {showPredict && (
+            <a
+              href={forecastHref}
+              className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold
+                bg-white/10 hover:bg-white/15 text-white transition-all
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
+            >
+              {DEPRIZE_PREDICT_CTA}
+            </a>
+          )}
+          <a
+            href={detailHref}
+            className="inline-flex text-sm text-indigo-300 hover:text-indigo-200 transition-colors"
+          >
+            Open full market →
+          </a>
+        </div>
       </div>
 
       {betOutcome && account && market.marketAddress && (

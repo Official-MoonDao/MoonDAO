@@ -19,11 +19,11 @@ aliases: [Legal/DePrize-Terms-and-Conditions]
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.1  
+Version 1.2  
 Effective Date: September 10, 2026  
-Last Updated: September 11, 2026
+Last Updated: September 17, 2026
 
-> **Review status.** Version 1.1 of these Terms was prepared on September 11, 2026 and is pending review by MoonDAO's counsel before DePrize opens to the public. MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies to you.
+> **Review status.** Version 1.2 records the payload-purse destination (Section 7.4 and the Prize Rules). MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies to you.
 
 > **Read this first.** DePrize is a real-money prediction market. Outcome tokens can become worthless. MoonDAO is the market maker, the fee recipient, the oracle that reports results, and the sponsor of the prize. **DePrize is not available to U.S. persons or to anyone located in a Restricted Jurisdiction (Schedule A).** Resolution is final and cannot be reversed. If a DePrize is cancelled or ends with no winner, every outcome token redeems for an equal share (1/N) of the market's collateral — **not** for what you paid. The 5% prize contribution taken from every bet is not refundable through the market.
 
@@ -177,7 +177,7 @@ MoonDAO performs several roles in every DePrize. You acknowledge each of them an
 
 **7.3 Finality and permissionless redemption.** The on-chain report of a result is **irreversible**. Once the Oracle has reported, the result cannot be changed, reversed, or refunded by MoonDAO, by you, or by anyone else, even if the report is later shown to be mistaken. After the report, redemption is permissionless: you (or anyone acting on your wallet's behalf) may redeem Outcome Tokens directly against the CTF or through MoonDAO's redemption helper. MoonDAO has no obligation to redeem for you or to remind you to redeem, and unredeemed positions remain claimable only for as long as the underlying contracts permit.
 
-**7.4 The Market and the Prize are separate.** The Market resolves solely on the Resolution Event. Whether the winning Competitor (or Open Field entrant) is eligible to receive, claims, or is actually paid the Prize is governed by the Prize Rules and **does not affect your Outcome Tokens**. In particular: (a) if the winner is not a Prize-Eligible Winner (for example because it declines the Prize, cannot be verified, is a public body that cannot accept it, or is a sanctioned person), Outcome Tokens for that outcome still pay as winning tokens; and (b) the disposition of an unawarded Prize Pool is governed by the Prize Rules and creates no claim for bettors.
+**7.4 The Market and the Prize are separate.** The Market resolves solely on the Resolution Event. Whether the winning Competitor (or Open Field entrant) is eligible to receive, claims, or is actually paid the Prize is governed by the Prize Rules and **does not affect your Outcome Tokens**. In particular: (a) if the winner does not claim, designates a nonprofit, cannot be verified, is a public body that cannot accept a payload agreement, or is a sanctioned person, Outcome Tokens for that outcome still pay as winning tokens; and (b) an unclaimed Prize follows the payload-purse waterfall in the Prize Rules (nonprofit designation, then roll into a future prize) and creates no claim for bettors.
 
 **7.5 Milestones do not delay bettors.** Bettor redemptions are available once the Oracle reports a winner. The Prize is paid to the Prize-Eligible Winner in milestone tranches under the Prize Rules; a later failure of the winner to complete a milestone does **not** re-open or alter the Market's resolution.
 
@@ -365,3 +365,4 @@ Where a jurisdiction appears in more than one category, every listed basis appli
 |---|---|---|
 | 1.0 | September 10, 2026 | Initial published version. Supersedes the unpublished internal draft. Adds U.S. Person and Restricted Jurisdiction exclusions, MoonDAO role and conflict disclosures, insider and market-integrity rules, the market/prize separation, the challenge window, and click-through acceptance. |
 | 1.1 | September 11, 2026 | Splits the Section 3.7 representations into separate residency, entity, and insider attestations. Clarifies that Section 3.5 prohibits location misrepresentation, not every privacy relay. |
+| 1.2 | September 17, 2026 | Records the prize as a community payload purchase. If the winner does not claim, they may designate a nonprofit; if there is no response, the pool rolls into a future prize. |

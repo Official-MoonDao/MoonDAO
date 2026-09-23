@@ -1,6 +1,7 @@
 import {
   GENERIC_DEPRIZE_COMPETITION,
   chainHasRaceBindings,
+  deprizeForecastHref,
   findDePrizeIdForGoal,
   generationNumberOf,
   getDePrizeCompetition,
@@ -234,6 +235,13 @@ describe('deprize competitions registry', () => {
     expect(arbitrum).to.deep.equal([
       { raceLabel: null, deprizeIds: [1, 2, 3], showHeading: false },
     ])
+  })
+
+  it('deep-links predictions to the forecast panel', () => {
+    expect(deprizeForecastHref(1)).to.equal('/deprize/1#deprize-forecast')
+    expect(deprizeForecastHref('harsh-mistress')).to.equal(
+      '/deprize/harsh-mistress#deprize-forecast'
+    )
   })
 })
 
