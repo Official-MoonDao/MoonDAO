@@ -1,4 +1,4 @@
-import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { getAccessToken, useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
 import Link from 'next/link'
@@ -217,6 +217,30 @@ export default function ForecastPanel(props: {
     setWriting(true)
     const allocation = allocationForPick(index, n)
     try {
+      toast.loading('Covering gas…', { id: 'forecast-gas', style: toastStyle })
+      const accessToken = await getAccessToken().catch(() => null)
+      const sponsorRes = await fetch('/api/deprize/sponsor-forecast-gas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          wallet: account.address,
+          chainId: chain.id,
+          deprizeId,
+        }),
+      })
+      const sponsor = await sponsorRes.json().catch(() => ({}))
+      toast.dismiss('forecast-gas')
+      if (!sponsorRes.ok) {
+        setError(
+          typeof sponsor?.message === 'string'
+            ? sponsor.message
+            : 'Could not cover gas for this prediction.'
+        )
+        return false
+      }
       const vote = encodeForecastVote(allocation, totalVMOONEY || 0)
       await writeForecastVote({
         forecastsContract,
@@ -234,6 +258,7 @@ export default function ForecastPanel(props: {
       await refetchFresh()
       return true
     } catch (err: any) {
+      toast.dismiss('forecast-gas')
       setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
       return false
     } finally {
