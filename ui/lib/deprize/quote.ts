@@ -1,4 +1,4 @@
-import { searchMaxQtyWithinCost } from './quote-math'
+import { quoteQtyByProbing } from './quote-math'
 import { rpcRead } from './read'
 
 // Re-export the pure math so existing imports from '@/lib/deprize/quote' keep
@@ -9,6 +9,7 @@ export {
   betSlice,
   betBudget,
   buildAmounts,
+  quoteQtyByProbing,
   searchMaxQtyWithinCost,
 } from './quote-math'
 
@@ -48,8 +49,8 @@ export async function lmsrMarketFee(lmsr: any, netWei: bigint): Promise<bigint> 
 
 // How many outcome tokens does `targetWei` of collateral (the fee-INCLUSIVE
 // budget) actually buy, given LMSR price impact? The market pulls
-// `calcNetCost(qty) + calcMarketFee(calcNetCost(qty))`, so we binary-search the
-// largest qty whose fee-inclusive cost is still <= targetWei.
+// `calcNetCost(qty) + fee`. A short bracketed probe stays under the budget;
+// the exact wei search was too many sequential RPC calls and sat on "Quoting…".
 export async function quoteQtyForBudget(
   lmsr: any,
   index: number,
@@ -58,12 +59,15 @@ export async function quoteQtyForBudget(
 ): Promise<bigint> {
   if (!lmsr || targetWei <= 0n) return 0n
 
+  // The fee is linear in net cost. Read it once instead of on every probe.
+  // A full binary search was dozens of sequential RPC calls, which left the
+  // bet button sitting on "Quoting…".
+  const feeOnEther = await lmsrMarketFee(lmsr, 10n ** 18n)
   const feeInclusiveCost = async (qty: bigint): Promise<bigint> => {
     const net = await lmsrNetCost(lmsr, index, qty, numOutcomes)
     if (net <= 0n) return 0n
-    const fee = await lmsrMarketFee(lmsr, net)
-    return net + fee
+    return net + (net * feeOnEther) / 10n ** 18n
   }
 
-  return await searchMaxQtyWithinCost(feeInclusiveCost, targetWei)
+  return await quoteQtyByProbing(feeInclusiveCost, targetWei)
 }

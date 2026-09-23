@@ -2,6 +2,7 @@ import {
   betBudget,
   betSlice,
   buildAmounts,
+  quoteQtyByProbing,
   searchMaxQtyWithinCost,
 } from '@/lib/deprize/quote-math'
 
@@ -76,6 +77,37 @@ describe('deprize quote math', () => {
       const qty = await searchMaxQtyWithinCost(cost, budget)
       expect((await cost(qty)) <= budget).to.equal(true)
       expect((await cost(qty + 1n)) > budget).to.equal(true)
+    })
+  })
+
+  describe('quoteQtyByProbing', () => {
+    it('fits a flat fee curve in a couple of probes', async () => {
+      let calls = 0
+      const cost = async (q: bigint) => {
+        calls += 1
+        const net = q
+        return net + net / 100n
+      }
+      const budget = ETH
+      const qty = await quoteQtyByProbing(cost, budget)
+      expect(calls < 8).to.equal(true)
+      expect((await cost(qty)) <= budget).to.equal(true)
+      expect(qty > budget / 2n).to.equal(true)
+    })
+
+    it('fits a convex curve without overspending or dozens of probes', async () => {
+      let calls = 0
+      const cost = async (q: bigint) => {
+        calls += 1
+        return q + (q * q) / ETH
+      }
+      const budget = ETH
+      const qty = await quoteQtyByProbing(cost, budget)
+      const probes = calls
+      const spent = await cost(qty)
+      expect(probes < 12).to.equal(true)
+      expect(spent <= budget).to.equal(true)
+      expect(spent * 100n > budget * 90n).to.equal(true)
     })
   })
 })

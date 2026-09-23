@@ -54,3 +54,101 @@ export async function searchMaxQtyWithinCost(
   }
   return lo
 }
+
+// Stop once the measured cost is within 2% of the budget. The bet already
+// leaves another 1% of headroom under the on-chain max, so a closer wei is
+// not worth another RPC round trip.
+function costIsClose(cost: bigint, targetWei: bigint): boolean {
+  return cost > 0n && cost * 50n >= targetWei * 49n
+}
+
+async function bisectAffordableQty(
+  costFn: (qty: bigint) => Promise<bigint>,
+  lo: bigint,
+  hi: bigint,
+  targetWei: bigint,
+  steps: number
+): Promise<bigint> {
+  for (let i = 0; i < steps; i++) {
+    const mid = (lo + hi) / 2n
+    if (mid <= lo) break
+    const midCost = await costFn(mid)
+    if (midCost <= targetWei) lo = mid
+    else hi = mid
+  }
+  return lo
+}
+
+/**
+ * Affordable qty from a few cost reads.
+ * LMSR cost is convex and zero at zero, so `qty * budget / cost(qty)` is an
+ * upper bound. A chord under that bound raises the floor, then a short
+ * bisection lands near the budget. The exact wei search needed dozens of
+ * sequential RPC calls and left the bet button on "Quoting…".
+ * Never returns a qty whose measured cost was above `targetWei`.
+ */
+export async function quoteQtyByProbing(
+  costFn: (qty: bigint) => Promise<bigint>,
+  targetWei: bigint
+): Promise<bigint> {
+  if (targetWei <= 0n) return 0n
+  const probe = targetWei > 10n ** 15n ? 10n ** 15n : targetWei
+  const probeCost = await costFn(probe)
+  if (probeCost <= 0n) return 0n
+  if (probeCost > targetWei) {
+    return bisectAffordableQty(costFn, 0n, probe, targetWei, 8)
+  }
+  if (probe === targetWei || costIsClose(probeCost, targetWei)) return probe
+
+  let lo = probe
+  let loCost = probeCost
+  let hi = (targetWei * lo) / loCost
+  if (hi <= lo) return lo
+  const hiCost = await costFn(hi)
+  if (hiCost <= 0n) return 0n
+  if (hiCost <= targetWei) {
+    if (costIsClose(hiCost, targetWei)) return hi
+    let upper = hi
+    lo = hi
+    for (let k = 0; k < 3; k++) {
+      const next = upper * 2n
+      const nextCost = await costFn(next)
+      if (nextCost <= 0n) return lo
+      if (nextCost > targetWei) {
+        return bisectAffordableQty(costFn, lo, next, targetWei, 6)
+      }
+      lo = next
+      upper = next
+      if (costIsClose(nextCost, targetWei)) return lo
+    }
+    return lo
+  }
+
+  const rise = hiCost - probeCost
+  if (rise > 0n && hi > probe) {
+    const guess = probe + ((hi - probe) * (targetWei - probeCost)) / rise
+    if (guess > probe && guess < hi) {
+      const guessCost = await costFn(guess)
+      if (guessCost <= 0n) return probe
+      if (guessCost <= targetWei) {
+        if (costIsClose(guessCost, targetWei)) return guess
+        lo = guess
+        loCost = guessCost
+        const tightened = (targetWei * lo) / loCost
+        if (tightened > lo && tightened < hi) {
+          const tightenedCost = await costFn(tightened)
+          if (tightenedCost <= 0n) return lo
+          if (tightenedCost <= targetWei) {
+            if (costIsClose(tightenedCost, targetWei)) return tightened
+            lo = tightened
+          } else {
+            hi = tightened
+          }
+        }
+      } else {
+        hi = guess
+      }
+    }
+  }
+  return bisectAffordableQty(costFn, lo, hi, targetWei, 6)
+}
