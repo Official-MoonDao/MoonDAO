@@ -504,6 +504,7 @@ export default function ForecastPanel(props: {
           onUndo={onUndo}
           onConnect={login}
           onClose={onModalClose}
+          outcomeIndex={modalIndex}
           resumeBet={resumeBet}
           bet={
             showBet && renderBet ? (

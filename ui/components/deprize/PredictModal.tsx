@@ -28,6 +28,11 @@ export default function PredictModal(props: {
   /** Bet form. Omitted when this visitor is not allowed to bet. */
   bet?: ReactNode
   /**
+   * Which competitor this window is for. The modal stays mounted across
+   * switches, and a late roster name (`Team #N` → NFT metadata) is not a switch.
+   */
+  outcomeIndex: number
+  /**
    * Open the bet form immediately. An onramp return carries the funded amount
    * inside that form, so leaving it collapsed hides the bet they just paid for.
    */
@@ -38,7 +43,7 @@ export default function PredictModal(props: {
 
   useEffect(() => {
     setBetOpen(!!props.resumeBet)
-  }, [props.teamName, props.resumeBet])
+  }, [props.outcomeIndex, props.resumeBet])
 
   return (
     <Modal
