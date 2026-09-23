@@ -38,24 +38,10 @@ describe('Main E2E Testing', () => {
   })
 
   describe('MoonDAO App | About', () => {
-    it('should have iframe that covers the viewport', () => {
+    it('should render native documentation', () => {
       cy.visit('/about', { timeout: 60000 })
-
-      // Check iframe is visible and positioned correctly
-      cy.get('iframe', { timeout: 60000 })
-        .should('be.visible')
-        .and(($iframe) => {
-          const iframe = $iframe[0]
-          const rect = iframe.getBoundingClientRect()
-          const vw = Cypress.config('viewportWidth')
-          const vh = Cypress.config('viewportHeight')
-
-          // BrowserStack / Firefox / WebKit / Chrome differ on sub-pixel layout and chrome; keep checks meaningful but tolerant.
-          expect(rect.top).to.be.closeTo(0, 60)
-          expect(rect.left).to.be.closeTo(0, 60)
-          expect(rect.width).to.be.closeTo(vw, 160)
-          expect(rect.height).to.be.closeTo(vh, 120)
-        })
+      cy.contains('h1', 'Introduction', { timeout: 60000 }).should('be.visible')
+      cy.contains('Documentation').should('exist')
     })
   })
 

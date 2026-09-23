@@ -437,10 +437,16 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
         isProfile
       >
         {/* Header and socials */}
+        {/* Pass the raw `ipfs://` URI through: Head routes it to the dedicated
+            Pinata gateway that actually serves MoonDAO's pins. Building an
+            ipfs.io URL here made Head treat it as an already-resolved https URL
+            and leave it alone, and ipfs.io 504s on MoonDAO CIDs — so every link
+            preview (including the new-citizen Discord announcement) came
+            through with no portrait. */}
         <Head
           title={nft?.metadata?.name}
           description={nft?.metadata?.description}
-          image={`https://ipfs.io/ipfs/${nft?.metadata?.image.split('ipfs://')[1]}`}
+          image={nft?.metadata?.image}
         />
         {citizenMetadataModalEnabled && (
           <CitizenMetadataModal
@@ -457,7 +463,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
             subscriptionContract={citizenContract}
             validPass={subIsValid}
             expiresAt={expiresAt}
-            type="citizen'"
+            type="citizen"
           />
         )}
 
@@ -657,8 +663,18 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               <p className="text-slate-300">
                 {isDeleted
                   ? `This profile has been deleted. Please connect the owner's wallet to submit new data.`
+                  : isOwner
+                  ? `Your citizenship has expired. Renew it to restore your profile and the rest of your citizen benefits.`
                   : `The profile has expired. Please connect the owner's wallet to renew.`}
               </p>
+              {!isDeleted && isOwner && (
+                <button
+                  className="mt-5 gradient-2 rounded-full py-3 px-8 text-white font-medium"
+                  onClick={() => setSubModalEnabled(true)}
+                >
+                  Renew Citizenship
+                </button>
+              )}
             </div>
           </div>
         )}

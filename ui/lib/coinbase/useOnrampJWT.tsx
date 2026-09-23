@@ -31,20 +31,22 @@ export interface UseOnrampJWTReturn {
   error: string | null
 }
 
-export default function useOnrampJWT(): UseOnrampJWTReturn {
+export default function useOnrampJWT(
+  storageKey = 'onrampJWT'
+): UseOnrampJWTReturn {
   const [isGenerating, setIsGenerating] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [storedJWT, setStoredJWT] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  const STORAGE_KEY = 'onrampJWT'
+  const STORAGE_KEY = storageKey
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setStoredJWT(localStorage.getItem(STORAGE_KEY))
     }
-  }, [])
+  }, [STORAGE_KEY])
 
   const generateJWT = useCallback(async (payload: Omit<OnrampJwtPayload, 'timestamp'>) => {
     setIsGenerating(true)
@@ -90,7 +92,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     } finally {
       setIsGenerating(false)
     }
-  }, [])
+  }, [STORAGE_KEY])
 
   const verifyJWT = useCallback(
     async (
@@ -111,7 +113,16 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
 
         const data = await response.json()
 
-        if (!response.ok || !data.valid) {
+        if (!response.ok) {
+          const message = data.error || 'Failed to verify JWT'
+          setError(message)
+          // 5xx is a gateway/server blip. Callers must be able to retry it
+          // instead of treating the token as permanently invalid.
+          if (response.status >= 500) throw new Error(message)
+          return null
+        }
+
+        if (!data.valid) {
           setError(data.error || 'Invalid or expired JWT')
           return null
         }
@@ -141,7 +152,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
         const errorMessage = err.message || 'JWT verification failed'
         setError(errorMessage)
         console.error('Error verifying onramp JWT:', errorMessage)
-        return null
+        throw err instanceof Error ? err : new Error(errorMessage)
       } finally {
         setIsVerifying(false)
       }
@@ -153,7 +164,7 @@ export default function useOnrampJWT(): UseOnrampJWTReturn {
     localStorage.removeItem(STORAGE_KEY)
     setStoredJWT(null)
     setError(null)
-  }, [])
+  }, [STORAGE_KEY])
 
   const getStoredJWT = useCallback(() => {
     if (typeof window === 'undefined') return null

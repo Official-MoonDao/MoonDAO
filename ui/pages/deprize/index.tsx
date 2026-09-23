@@ -1,13 +1,15 @@
-import { useContext } from 'react'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import DePrizeComingSoon from '@/components/deprize/DePrizeComingSoon'
+import type { GetServerSideProps } from 'next'
+import { resolveDePrizePageProps, type DePrizePageProps } from '@/lib/deprize/pageEligibility'
+import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
 import DePrizeIndexContent from '@/components/deprize/DePrizeIndexContent'
 
-export default function DePrizeIndexPage() {
-  const { selectedChain } = useContext(ChainContextV5)
-  if (getChainSlug(selectedChain) === 'arbitrum') {
-    return <DePrizeComingSoon />
-  }
-  return <DePrizeIndexContent />
+export default function DePrizeIndexPage({ restricted }: DePrizePageProps) {
+  return (
+    <DePrizeRestrictedProvider restricted={restricted}>
+      <DePrizeIndexContent restricted={restricted} />
+    </DePrizeRestrictedProvider>
+  )
 }
+
+export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({ req, res }) =>
+  resolveDePrizePageProps(req, res)

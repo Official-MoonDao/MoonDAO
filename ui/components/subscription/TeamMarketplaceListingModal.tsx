@@ -14,6 +14,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { listingDiscordEmbed, listingOgFieldsFrom } from '@/lib/og/preview'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -246,13 +247,31 @@ export default function TeamMarketplaceListingModal({
               tokenId: BigInt(listingTeamId),
             })
             const teamName = team?.metadata.name as string
+            const link = `${DEPLOYED_ORIGIN}/marketplace/${listingId}`
+            const fields = listingOgFieldsFrom(
+              {
+                title: cleanedData.title,
+                price: cleanedData.price,
+                currency: cleanedData.currency,
+                tag: cleanedData.tag,
+                image: imageIpfsLink,
+                teamName,
+              },
+              teamName
+            )
             sendDiscordMessage(
               'networkNotifications',
               `## [**${teamName}** has ${
                 edit ? 'updated a' : 'posted a new'
-              } listing ](${DEPLOYED_ORIGIN}/team/${generatePrettyLink(
-                teamName
-              )}?listing=${listingId}&_timestamp=123456789) <@&${DISCORD_CITIZEN_ROLE_ID}>`
+              } listing ](${link}) <@&${DISCORD_CITIZEN_ROLE_ID}>`,
+              [
+                listingDiscordEmbed({
+                  fields,
+                  summary: cleanedData.description,
+                  url: link,
+                  teamName,
+                }),
+              ]
             )
 
             setTimeout(() => {
@@ -445,9 +464,7 @@ export default function TeamMarketplaceListingModal({
               </div>
             )}
           </div>
-          {!isGift && (
-            <p className="opacity-60">{`Listings are marked up 10% for non-citizens`}</p>
-          )}
+          {!isGift && <p className="opacity-60">{`Listings are marked up 10% for non-citizens`}</p>}
         </div>
         <PrivyWeb3Button
           requiredChain={DEFAULT_CHAIN_V5}

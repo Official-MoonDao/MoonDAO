@@ -2,9 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
@@ -12,137 +9,14 @@ import {DePrizeMint} from "../../src/deprize/DePrizeMint.sol";
 import {DePrizeRedeem} from "../../src/deprize/DePrizeRedeem.sol";
 import {IConditionalTokens} from "../../src/deprize/interfaces/IConditionalTokens.sol";
 import {DePrizeResolve} from "../../script/deprize/DePrizeResolve.s.sol";
-import {MockResolvingCTF} from "./DePrizeRedeem.t.sol";
-import {MockWETH, MockJBTerminal} from "./DePrizeMint.t.sol";
-
-/// @dev LMSR stand-in that supports BOTH directions. Buys mint outcome tokens and
-///      deliver them through the ERC-1155 acceptance hook (mirroring the real
-///      market's splitPosition-then-transfer); sells pull the trader's tokens and
-///      pay collateral back. Selling is what keeps a superseded generation's
-///      holders whole, so the mock has to model it.
-contract GenMarket is IERC1155Receiver {
-    MockResolvingCTF public immutable ctfC;
-    MockWETH public immutable wethC;
-    uint256 public immutable slots;
-    uint256 public immutable price; // WETH per outcome token, 1e18 fixed point
-    bytes32 public condition;
-    uint8 private _stage; // 0 Running, 1 Paused, 2 Closed
-    uint64 private _fee = 1e16; // 1%
-
-    constructor(address ctf_, address weth_, uint256 slots_, uint256 price_, bytes32 condition_) {
-        ctfC = MockResolvingCTF(ctf_);
-        wethC = MockWETH(payable(weth_));
-        slots = slots_;
-        price = price_;
-        condition = condition_;
-    }
-
-    function pmSystem() external view returns (address) {
-        return address(ctfC);
-    }
-
-    function collateralToken() external view returns (address) {
-        return address(wethC);
-    }
-
-    function atomicOutcomeSlotCount() external view returns (uint256) {
-        return slots;
-    }
-
-    function conditionIds(uint256) external view returns (bytes32) {
-        return condition;
-    }
-
-    function fee() public view returns (uint64) {
-        return _fee;
-    }
-
-    function stage() external view returns (uint8) {
-        return _stage;
-    }
-
-    function setStage(uint8 s) external {
-        _stage = s;
-    }
-
-    function updateCumulativeTWAP() external {}
-
-    function calcMarginalPrice(uint8) external view returns (uint256) {
-        return price;
-    }
-
-    function calcNetCost(int256[] memory amounts) public view returns (int256 cost) {
-        for (uint256 i = 0; i < amounts.length; i++) {
-            cost += (amounts[i] * int256(price)) / 1e18;
-        }
-    }
-
-    function calcMarketFee(uint256 outcomeTokenCost) public view returns (uint256) {
-        return (outcomeTokenCost * uint256(fee())) / 1e18;
-    }
-
-    function positionId(uint256 i) public view returns (uint256) {
-        return ctfC.getPositionId(address(wethC), ctfC.getCollectionId(bytes32(0), condition, 1 << i));
-    }
-
-    function trade(int256[] memory amounts, int256 collateralLimit) external returns (int256 total) {
-        require(_stage == 0, "market halted");
-        int256 net = calcNetCost(amounts);
-
-        uint256 n;
-        for (uint256 i = 0; i < amounts.length; i++) {
-            if (amounts[i] != 0) n++;
-        }
-        uint256[] memory ids = new uint256[](n);
-        uint256[] memory values = new uint256[](n);
-        uint256 j;
-        for (uint256 i = 0; i < amounts.length; i++) {
-            if (amounts[i] == 0) continue;
-            ids[j] = positionId(i);
-            values[j] = uint256(amounts[i] >= 0 ? amounts[i] : -amounts[i]);
-            j++;
-        }
-
-        if (net > 0) {
-            total = net + int256(calcMarketFee(uint256(net)));
-            require(total <= collateralLimit, "limit");
-            wethC.transferFrom(msg.sender, address(this), uint256(total));
-            for (uint256 i = 0; i < n; i++) {
-                ctfC.mint(address(this), ids[i], values[i]);
-            }
-            ctfC.safeBatchTransferFrom(address(this), msg.sender, ids, values, "");
-        } else {
-            uint256 gross = uint256(-net);
-            uint256 f = calcMarketFee(gross);
-            total = net + int256(f);
-            require(collateralLimit <= total, "limit");
-            ctfC.safeBatchTransferFrom(msg.sender, address(this), ids, values, "");
-            require(wethC.transfer(msg.sender, gross - f), "payout failed");
-        }
-    }
-
-    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
-        return IERC1155Receiver.onERC1155Received.selector;
-    }
-
-    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
-        external
-        pure
-        returns (bytes4)
-    {
-        return IERC1155Receiver.onERC1155BatchReceived.selector;
-    }
-
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
-        return interfaceId == type(IERC1155Receiver).interfaceId || interfaceId == type(IERC165).interfaceId;
-    }
-}
+import {MockResolvingCTF, MockWETH, MockJBTerminal, MockLMSR} from "./DePrizeMocks.sol";
+import {MintPermitHelper} from "./MintPermitHelper.sol";
 
 /// @notice End-to-end generational supersede: real registry, real mint router,
 ///         real redeem helper, faithful CTF. Money goes in as bets on generation 1,
 ///         the roster forks, and every holder either sells out or redeems against a
 ///         lineage-resolved payout vector. Nothing is stranded.
-contract DePrizeGenerationsE2ETest is Test {
+contract DePrizeGenerationsE2ETest is Test, MintPermitHelper {
     DePrizeRegistry registry;
     DePrizeMint mint;
     DePrizeRedeem redeemer;
@@ -173,26 +47,10 @@ contract DePrizeGenerationsE2ETest is Test {
         resolveScript = new DePrizeResolve();
         oracle = address(this);
 
-        DePrizeRegistry regImpl = new DePrizeRegistry();
-        registry = DePrizeRegistry(
-            address(new ERC1967Proxy(address(regImpl), abi.encodeCall(DePrizeRegistry.initialize, (owner))))
-        );
+        registry = new DePrizeRegistry(owner);
+        mint = new DePrizeMint(owner, address(registry), address(terminal), address(weth), address(ctf));
 
-        DePrizeMint mintImpl = new DePrizeMint();
-        mint = DePrizeMint(
-            payable(
-                address(
-                    new ERC1967Proxy(
-                        address(mintImpl),
-                        abi.encodeCall(
-                            DePrizeMint.initialize,
-                            (owner, address(registry), address(terminal), address(weth), address(ctf))
-                        )
-                    )
-                )
-            )
-        );
-
+        _initCompliance(mint, owner);
         redeemer = new DePrizeRedeem(address(registry), address(ctf), address(weth));
 
         // Collateral backing for redemptions (the real CTF holds it from splitPosition).
@@ -245,11 +103,11 @@ contract DePrizeGenerationsE2ETest is Test {
     ///      binding, open for betting, and a live market wired into the router.
     function _provision(uint256 deprizeId, bytes32 questionId, uint256 slots)
         internal
-        returns (bytes32 conditionId, GenMarket market)
+        returns (bytes32 conditionId, MockLMSR market)
     {
         conditionId = ctf.getConditionId(oracle, questionId, slots);
         ctf.prepareCondition(oracle, questionId, slots);
-        market = new GenMarket(address(ctf), address(weth), slots, PRICE, conditionId);
+        market = new MockLMSR(address(ctf), address(weth), slots, PRICE, conditionId);
 
         // Seed the market so it can buy positions back from sellers.
         weth.transfer(address(market), 50 ether);
@@ -262,8 +120,9 @@ contract DePrizeGenerationsE2ETest is Test {
     }
 
     function _bet(address who, uint256 deprizeId, uint256 outcomeIndex) internal {
+        (uint256 deadline1, bytes memory signature1) = _permit(mint, who, deprizeId);
         vm.prank(who);
-        mint.bet{value: 3 ether}(deprizeId, outcomeIndex, QTY, 3 ether);
+        mint.bet{value: 3 ether}(deprizeId, outcomeIndex, QTY, 3 ether, deadline1, signature1);
     }
 
     /// @dev Push the resolve script's payout vector on-chain as the oracle.
@@ -288,7 +147,7 @@ contract DePrizeGenerationsE2ETest is Test {
         // --- Generation 1 opens and takes real bets ------------------------
         vm.prank(owner);
         uint256 g1 = registry.register(JB_PROJECT, _teamsGen1(), block.timestamp + 30 days);
-        (bytes32 c1, GenMarket m1) = _provision(g1, Q1, 4);
+        (bytes32 c1, MockLMSR m1) = _provision(g1, Q1, 4);
 
         _bet(alice, g1, 0); // Alice backs team 301
         _bet(bob, g1, 3); // Bob backs the Open Field
@@ -306,9 +165,10 @@ contract DePrizeGenerationsE2ETest is Test {
         assertFalse(registry.isRefundable(g1), "supersede must not open refunds");
 
         // New bets on the old generation are refused...
+        (uint256 deadline2, bytes memory signature2) = _permit(mint, carol, g1);
         vm.prank(carol);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, g1));
-        mint.bet{value: 3 ether}(g1, 0, QTY, 3 ether);
+        mint.bet{value: 3 ether}(g1, 0, QTY, 3 ether, deadline2, signature2);
 
         // ...but the old market is still Running, so holders can exit at will.
         assertEq(m1.stage(), 0, "old market stays running as a sell-only venue");
@@ -317,7 +177,7 @@ contract DePrizeGenerationsE2ETest is Test {
         sell[0] = -int256(QTY / 2); // Alice sells half her position
         vm.startPrank(alice);
         ctf.setApprovalForAll(address(m1), true);
-        m1.trade(sell, type(int256).min);
+        m1.trade(sell, 0);
         vm.stopPrank();
 
         assertEq(ctf.balanceOf(alice, _pos(c1, 0)), QTY / 2, "half the position was sold");

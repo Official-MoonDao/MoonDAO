@@ -8,10 +8,10 @@ import type { ProjectCyclePhase } from 'const/config'
  * The deploy-time default phase lives in `PROJECT_CYCLE.phase` (const/config).
  * This module layers a runtime override on top of it — backed by the same
  * Upstash Redis store the rate-limiter / geo cache use — so the Executive
- * Branch can advance the cycle (Senate → Member → idle) from the operator
- * panel WITHOUT a redeploy. If the override is missing, expired, or KV is
- * unreachable, callers fall back to the config default, so the site always
- * has a safe, deterministic phase.
+ * Branch can advance the cycle (intake → Senate → Member → idle) from the
+ * operator panel WITHOUT a redeploy. If the override is missing, stamped to
+ * a different cycle, or KV is unreachable, callers fall back to the config
+ * default, so the site always has a safe, deterministic phase.
  *
  * Phase and Member Vote submissions-open are stored here. Per-cycle numbers
  * (budget, retro pool, deadlines) are NOT runtime-overridable — those are
@@ -22,23 +22,30 @@ import type { ProjectCyclePhase } from 'const/config'
 export type { ProjectCyclePhase }
 
 // Ordered phase progression within a single cycle. Advancing past 'idle'
-// (into the next cycle's Senate Vote) is intentionally NOT automatic: it
+// (into the next cycle's intake) is intentionally NOT automatic: it
 // requires editing PROJECT_CYCLE (new quarter, budget, retro pool), which is
 // a reviewed config change rather than a one-click runtime flip.
-export const PHASE_ORDER: ProjectCyclePhase[] = ['senate', 'member', 'idle']
+export const PHASE_ORDER: ProjectCyclePhase[] = [
+  'intake',
+  'senate',
+  'member',
+  'idle',
+]
 
 export type PhaseFlags = {
+  isIntake: boolean
   isSenateVote: boolean
   isMemberVote: boolean
   // Retroactive rewards run concurrently with the Member Vote.
   isRewardsCycle: boolean
 }
 
-// Single mapping from a phase to the three boolean flags the rest of the app
+// Single mapping from a phase to the boolean flags the rest of the app
 // reads. Mirrors the derived constants in const/config.ts so the live phase
 // and the deploy-time default resolve flags identically.
 export function getPhaseFlags(phase: ProjectCyclePhase): PhaseFlags {
   return {
+    isIntake: phase === 'intake',
     isSenateVote: phase === 'senate',
     isMemberVote: phase === 'member',
     isRewardsCycle: phase === 'member',
@@ -58,6 +65,11 @@ export function getNextPhase(
 export type LivePhaseOverride = {
   // null → follow the PROJECT_CYCLE.phase default.
   phase: ProjectCyclePhase | null
+  // Cycle stamp. An override whose quarter/year does not match the current
+  // PROJECT_CYCLE is treated as stale (previous-cycle leftover). Unstamped
+  // records (written before this field existed) are also stale.
+  quarter?: number
+  year?: number
   // When set, overrides PROJECT_CYCLE.memberVoteSubmissionsOpen so Advance
   // Phase (Senate → Member) can open the distribute UI without a redeploy.
   // Cleared with the phase key on wrap-up / delete.
@@ -79,7 +91,23 @@ function getRedis(): Redis | null {
 }
 
 function isProjectCyclePhase(value: unknown): value is ProjectCyclePhase {
-  return value === 'senate' || value === 'member' || value === 'idle'
+  return (
+    value === 'intake' ||
+    value === 'senate' ||
+    value === 'member' ||
+    value === 'idle'
+  )
+}
+
+export function isLivePhaseOverrideCurrent(
+  override: LivePhaseOverride | null | undefined
+): boolean {
+  return (
+    !!override &&
+    isProjectCyclePhase(override.phase) &&
+    override.quarter === PROJECT_CYCLE.quarter &&
+    override.year === PROJECT_CYCLE.year
+  )
 }
 
 /**
@@ -98,6 +126,9 @@ export async function getLivePhaseOverride(): Promise<LivePhaseOverride> {
       typeof value === 'string' ? JSON.parse(value) : value
     return {
       phase: isProjectCyclePhase(record?.phase) ? record.phase : null,
+      quarter:
+        typeof record?.quarter === 'number' ? record.quarter : undefined,
+      year: typeof record?.year === 'number' ? record.year : undefined,
       memberVoteSubmissionsOpen:
         typeof record?.memberVoteSubmissionsOpen === 'boolean'
           ? record.memberVoteSubmissionsOpen
@@ -135,6 +166,8 @@ export async function setLivePhaseOverride(params: {
   }
   const record: LivePhaseOverride = {
     phase: params.phase,
+    quarter: PROJECT_CYCLE.quarter,
+    year: PROJECT_CYCLE.year,
     memberVoteSubmissionsOpen:
       typeof params.memberVoteSubmissionsOpen === 'boolean'
         ? params.memberVoteSubmissionsOpen
@@ -147,28 +180,39 @@ export async function setLivePhaseOverride(params: {
   return record
 }
 
+export async function clearLivePhaseOverride(): Promise<LivePhaseOverride> {
+  return setLivePhaseOverride({ phase: null })
+}
+
 /**
- * Effective phase = live override (if set) else the PROJECT_CYCLE default.
- * This is the single resolver every read path should use.
+ * Effective phase = live override (if stamped to this cycle) else the
+ * PROJECT_CYCLE default. This is the single resolver every read path
+ * should use.
  */
 export function resolveLivePhase(
   override: LivePhaseOverride | null | undefined
 ): ProjectCyclePhase {
-  return override?.phase ?? PROJECT_CYCLE.phase
+  if (isLivePhaseOverrideCurrent(override) && override?.phase) {
+    return override.phase
+  }
+  return PROJECT_CYCLE.phase
 }
 
 /**
  * Whether Member Vote distribution submit/edit UI is open.
  * Live override (set true on Senate → Member advance) wins over the
- * deploy-time PROJECT_CYCLE.memberVoteSubmissionsOpen default. Legacy
- * overrides that only stored `phase: 'member'` are treated as open —
- * that advance meant "Open Member Vote".
+ * deploy-time PROJECT_CYCLE.memberVoteSubmissionsOpen default — but only
+ * when the override is stamped to the current cycle. Legacy overrides
+ * that only stored `phase: 'member'` are treated as open when they match.
  */
 export function resolveMemberVoteSubmissionsOpen(
   phase: ProjectCyclePhase,
   override: LivePhaseOverride | null | undefined
 ): boolean {
   if (phase !== 'member') return false
+  if (!isLivePhaseOverrideCurrent(override)) {
+    return PROJECT_CYCLE.memberVoteSubmissionsOpen
+  }
   if (typeof override?.memberVoteSubmissionsOpen === 'boolean') {
     return override.memberVoteSubmissionsOpen
   }

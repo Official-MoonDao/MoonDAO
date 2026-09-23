@@ -393,3 +393,45 @@ export function skyViewFraming(
     target,
   }
 }
+
+// A framing for a subject BELOW the surface rather than on or over it — the
+// buried habitats, the only such subject here (see lib/lunar-atlas/subplan).
+//
+// This is the one framing that puts the eye UNDER the ground, and it works
+// because of a property of the scene rather than in spite of it: the terrain
+// cap, the roads and the ground decals are all front-sided, so from beneath
+// they are back-face culled and simply are not there. Nothing has to be hidden,
+// faded or clipped. What the eye sees instead is the inside of the vault liner,
+// which is drawn back-sided for exactly this view.
+//
+// Unlike the framings above, the offsets here arrive as ABSOLUTE scene-space
+// distances rather than fractions of a radius: they come from a vault's authored
+// dimensions in meters, and re-expressing a 2 m inset off an end wall as a
+// fraction of the Moon's radius would hide the one thing about it that matters.
+export function subViewFraming(
+  lat: number,
+  lon: number,
+  // Distances from the sphere centre — both BELOW the local ground radius.
+  eyeRadius: number,
+  subjectRadius: number,
+  // Scene-space offset from the subject to the eye. Only its tangential part is
+  // used: the radial component is already carried by the two radii, and letting
+  // it through would move the eye off the depth its vault put it at.
+  standoff: Vec3
+): { position: Vec3; target: Vec3 } {
+  const target = latLonToVector3(lat, lon, subjectRadius)
+  const n = surfaceNormal(lat, lon)
+
+  const radial = dot3(standoff, n)
+  const along: Vec3 = [
+    standoff[0] - n[0] * radial,
+    standoff[1] - n[1] * radial,
+    standoff[2] - n[2] * radial,
+  ]
+
+  const eye = latLonToVector3(lat, lon, eyeRadius)
+  return {
+    position: [eye[0] + along[0], eye[1] + along[1], eye[2] + along[2]],
+    target,
+  }
+}

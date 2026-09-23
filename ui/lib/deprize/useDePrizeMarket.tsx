@@ -55,6 +55,8 @@ export type UseDePrizeMarketResult = {
   isRefundVector: boolean
   /** LMSR market open time (ms), when available — anchors the odds chart domain. */
   marketStartMs: number | undefined
+  /** LMSR `funding()` in ETH — the liquidity parameter behind marginal prices. */
+  fundingEth: number | undefined
   oddsHistory: OddsSample[]
   loading: boolean
   error: string | undefined
@@ -317,8 +319,10 @@ export function useDePrizeMarket(params: {
     positionIds: bigint[]
     feePct?: number
     marketStartMs?: number
+    fundingEth?: number
   } | null>(null)
   const [marketStartMs, setMarketStartMs] = useState<number | undefined>()
+  const [fundingEth, setFundingEth] = useState<number | undefined>()
   // Bumped whenever the bound market changes so in-flight loads/polls from a
   // prior navigation cannot overwrite the current market's state.
   const loadGenRef = useRef(0)
@@ -381,6 +385,14 @@ export function useDePrizeMarket(params: {
         })
           .then((v) => Number(v))
           .catch(() => 0)
+        // LMSR liquidity parameter; needed to rebuild odds history from trades.
+        const funding = await rpcRead<bigint>({
+          contract: lmsr,
+          method: 'funding' as string,
+          params: [],
+        })
+          .then((v) => Number(v) / Number(UNIT))
+          .catch(() => undefined)
         if (loadGenRef.current !== gen) return
         const startMs = Number.isFinite(startSec) && startSec > 0 ? startSec * 1000 : undefined
         staticRef.current = {
@@ -388,12 +400,14 @@ export function useDePrizeMarket(params: {
           positionIds: ids,
           feePct: fee,
           marketStartMs: startMs,
+          fundingEth: funding,
         }
         startTransition(() => {
           if (loadGenRef.current !== gen) return
           setPositionIds(ids)
           setFeePct(fee)
           setMarketStartMs(startMs)
+          setFundingEth(funding)
         })
       }
       const { conditionId: cond, positionIds: ids } = staticRef.current
@@ -581,6 +595,7 @@ export function useDePrizeMarket(params: {
     winningIndex,
     isRefundVector,
     marketStartMs: marketStartMs ?? staticRef.current?.marketStartMs,
+    fundingEth: fundingEth ?? staticRef.current?.fundingEth,
     oddsHistory,
     loading,
     error,

@@ -249,7 +249,9 @@ export const getStaticProps: GetStaticProps = async () => {
         if (!isFetchableUrl(project.proposalIPFS)) return
 
         try {
-          const proposalResponse = await fetch(project.proposalIPFS)
+          const proposalResponse = await fetch(project.proposalIPFS, {
+            signal: AbortSignal.timeout(PROPOSAL_IPFS_TIMEOUT_MS),
+          })
           const proposalJSON = await proposalResponse.json()
 
           // Author-deleted proposals disappear from the frontend.
@@ -304,6 +306,11 @@ export const getStaticProps: GetStaticProps = async () => {
   }
 }
 
+const SNAPSHOT_PAGE_SIZE = 1000
+const SNAPSHOT_MAX_PAGES = 10
+const SNAPSHOT_TIMEOUT_MS = 15_000
+const PROPOSAL_IPFS_TIMEOUT_MS = 10_000
+
 // Fetch all proposals from Snapshot's tomoondao.eth space, paginating through results
 async function fetchAllSnapshotProposals(): Promise<SnapshotProposal[]> {
   const snapshotEndpoint = 'https://hub.snapshot.org/graphql'
@@ -341,18 +348,25 @@ async function fetchAllSnapshotProposals(): Promise<SnapshotProposal[]> {
   let skip = 0
   let hasMore = true
 
-  while (hasMore) {
+  // The build has no Snapshot API key, so the public hub throttles us. Bound
+  // every request and cap the pages: an unbounded loop of untimed requests
+  // outlives Next's static generation timeout and fails the whole build.
+  while (hasMore && skip < SNAPSHOT_PAGE_SIZE * SNAPSHOT_MAX_PAGES) {
     try {
       const data = await snapshotClient.request<{
         proposals: SnapshotProposal[]
-      }>(query, { skip })
+      }>({
+        document: query,
+        variables: { skip },
+        signal: AbortSignal.timeout(SNAPSHOT_TIMEOUT_MS),
+      })
 
       allProposals = [...allProposals, ...data.proposals]
 
-      if (data.proposals.length < 1000) {
+      if (data.proposals.length < SNAPSHOT_PAGE_SIZE) {
         hasMore = false
       } else {
-        skip += 1000
+        skip += SNAPSHOT_PAGE_SIZE
       }
     } catch (error) {
       console.error('Error fetching Snapshot proposals:', error)

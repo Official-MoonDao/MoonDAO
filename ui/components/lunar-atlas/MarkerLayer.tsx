@@ -18,17 +18,27 @@
 
 import { Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   BASE_PLAN,
-  MAIN_LOOP_M,
-  onLoopRoad,
+  BRANCH_TAIL_M,
   PATROL,
-  RING_RADIUS_M,
   ROAD_HALF_M,
-  SETBACK_M,
+  ROAD_RUNS,
+  SOLAR_ARRAYS,
+  SPINE_BEARING_DEG,
+  SPINE_END_M,
+  SPINE_START_M,
+  at,
+  dirFor,
+  districtAlongM,
+  onRoad,
+  shuttleAt,
+  shuttleLapM,
+  spineCoords,
   withinDistrictGround,
+  type ShuttleRun,
   type Slot,
 } from '@/lib/lunar-atlas/baseplan'
 import {
@@ -37,12 +47,23 @@ import {
   vector3ToLatLon,
   Vec3,
 } from '@/lib/lunar-atlas/geo'
-import { PROJECT_TYPE_LABEL, orgColor } from '@/lib/lunar-atlas/display'
+import {
+  PROJECT_TYPE_LABEL,
+  formatPlace,
+  orgColor,
+} from '@/lib/lunar-atlas/display'
 import {
   M_TO_UNITS,
-  capCenterDirection,
+  capLocalDirection,
   capOffsetLatLon,
 } from '@/lib/lunar-atlas/southpole'
+import { buriedSite, vaultAxis } from '@/lib/lunar-atlas/subplan'
+import {
+  MASS_DRIVER_ID,
+  trackAxis,
+  trackBentOffsets,
+} from '@/lib/lunar-atlas/trackplan'
+import { SUN_DIR, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { TechTree } from '@/lib/lunar-atlas/selectors'
 import type {
@@ -56,15 +77,15 @@ import ProjectModel, {
   CableReel,
   CargoCrate,
   CrateCluster,
-  GAS_STATION_HALF_D,
-  GAS_STATION_HALF_W,
+  Excavator,
   gradedDeckRadiusM,
   projectSizeM,
-  RoverDepotYard,
-  RoverGasStation,
   SparePartsPallet,
+  DistrictFloodPool,
   StreetLight,
   SurfaceAnchor,
+  UndergroundConstructionSite,
+  VerticalSolarArray,
 } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
@@ -78,23 +99,14 @@ export function rankedMembers(tree: TechTree): Project[] {
   )
 }
 
-// Axis of the map patch, and so of the perimeter road: a lap is a rotation
-// about it. Fixed for the life of the app.
-const CAP_AXIS = new THREE.Vector3(...capCenterDirection()).normalize()
+// Scratch quaternion for the shuttle's per-frame rotation, so driving the fleet
+// allocates nothing.
+const TURN = new THREE.Quaternion()
 
 // Seconds-ish for a patrolling vehicle to reach speed, or to come to a stand
 // when its race is opened. A vehicle that stops dead reads as a paused
 // animation; one that rolls to a halt reads as a driver lifting off.
 const PATROL_EASE = 0.03
-
-// Live surface direction of each DRIVING competitor, keyed by project id and
-// rewritten every frame by its `CompetitorPlot`. A rover laps the road, so
-// where it actually is at any instant is runtime state, not something the
-// static layout table can know — the camera reads this when a rover is picked
-// from the list so it zooms to the vehicle where it stands on the road, rather
-// than teleporting it (or the camera) to its empty plot. Module-level because
-// it's a per-frame side channel, not part of the render tree's prop data.
-export const LIVE_PATROL_DIR = new Map<string, Vec3>()
 
 // How far down a district is taken while a DIFFERENT race is open. Heavy enough
 // that the open race is unmistakably the subject, light enough that the rest of
@@ -118,10 +130,10 @@ export type ColonyLayout = {
   // to when a race is opened.
   districts: Map<ProjectType, Vec3>
   // Per-project plot: its surface direction and its slot in the district.
-  // `standDir` is set only for a competitor whose race DRIVES (see PATROL): the
-  // road position it rests at, out on the patrol loop rather than on `dir` (its
-  // own plot). The model stands here and the camera aims here, off one shared
-  // value, so the two cannot land in different places.
+  // `standDir` is set only for a competitor whose race DRIVES (see PATROL), and
+  // is where its MOVING copy sets off from on the patrol run. The competitor
+  // itself still stands on `dir`, its own plot, which is what the camera aims
+  // at.
   plots: Map<string, { dir: Vec3; slot: Slot; standDir?: Vec3 }>
 }
 
@@ -141,18 +153,34 @@ type MarkerLayerProps = {
   getProjectStyle?: (project: Project) => MarkerStyle
   // Displaced terrain radius lookup so pins/models sit on the rendered ground.
   radiusAt?: RadiusAt | null
+  // Strips the map furniture — beacons, tethers, every floating name — and
+  // leaves only what would actually be standing on the Moon. This layer is a
+  // MAP most of the time and the reticles are the point of it, but they are
+  // also the one thing in the frame that could not exist, so a screenshot with
+  // them in it can only ever read as a diagram of a base rather than as a base.
+  cinematic?: boolean
+  // How far along the timeline the base's built environment is, on the same
+  // 0..1 scale as a marker's opacity. Drives the street furniture and the vault
+  // dig, which belong to no single race but cannot precede all of them.
+  infraPresence?: number
 }
 
 // Offsets above the local terrain (which the sampler provides per marker),
 // in REAL METERS — the base is true-to-scale on the 16 km ridge patch.
 const SEAT_LIFT = 0.5 * M_TO_UNITS // clears z-fighting with the terrain
-// Pins are sized to the district they mark: the reticle floats clear of the
-// tallest thing on the lot (a rover depot gets a ~25 m pin, the landing zone
-// with its 52 m Starship a ~68 m one). One fixed height either buried the
-// reticle inside tall models or dwarfed the small ones.
-const MIN_PIN_HEIGHT_M = 25
-const pinHeightUnits = (modelSizeM: number) =>
-  Math.max(MIN_PIN_HEIGHT_M, modelSizeM * 1.3) * M_TO_UNITS
+// Every district's reticle floats at the SAME height above its own ground, so
+// the beacons read as one instrument scale laid over the base. Sizing each pin
+// to the tallest model on its lot made a beacon's altitude a fact about the
+// hardware under it, which is not what a map marker says: the rover depot's
+// ~25 m pin and the landing zone's ~68 m one sat a district apart in the sky
+// and read as a ranking of the races rather than as markers on the same map.
+//
+// Set to clear the tallest thing standing on the base — the 52 m Starship on
+// the landing zone — with room to spare, so no reticle is ever buried in the
+// models it points at. The mass driver is not the exception it looks like:
+// almost all of its 600 m is guideway running away from its lot, and its deck
+// stands only a few meters over the breach works the pin actually marks.
+const PIN_HEIGHT_UNITS = 70 * M_TO_UNITS
 // Beacon dimensions, in REAL METERS. These are deliberately hairline: at true
 // scale the old pin was a 1.4 m-thick opaque rod under a 6 m emissive ball —
 // a plastic lollipop the size of a small building, which is what made the
@@ -218,57 +246,69 @@ function CompetitorPlot({
   patrolPhase,
   raceOpen,
   called,
+  standing,
   onSelect,
   onHover,
   radiusAt,
+  cinematic,
+  scenery,
 }: {
   project: Project
   slot: Slot
   dir: Vec3
-  // The road position a DRIVING competitor rests at, precomputed in the shared
-  // layout so the model and the camera agree (see ColonyLayout). Absent for a
-  // competitor that stands on its own plot, in which case `dir` is used.
+  // Where a DRIVING copy sets off from on the run, precomputed in the shared
+  // layout (see ColonyLayout). Absent on the parked rendering of the same
+  // competitor, which uses `dir`.
   standDir?: Vec3
   accent: string
   opacity: number
   // 1 while this plot's race is the subject, DIM_FACTOR while another's is.
   dim: number
-  // The road to drive and how fast, for a race whose hardware drives rather than
+  // The run to drive and how fast, for a race whose hardware drives rather than
   // stands. Taken straight from PATROL rather than rebuilt per render, because
   // it keys the seating memos below and a fresh object each render would have
   // them resample the terrain for nothing.
-  patrol?: { speedMps: number; radiusM: number }
-  // Radians round that road this vehicle starts at, which is what keeps a whole
-  // depot's worth of them off each other.
+  patrol?: ShuttleRun
+  // Fraction of one out-and-back this vehicle starts at, which is what keeps a
+  // whole depot's worth of them off each other.
   patrolPhase?: number
   // Whether this plot's own race is the open one. Names every asset on the lot,
   // and brings the driving ones to a stand so they can be read.
   raceOpen: boolean
   // Picked out specifically — hovered, or chosen from the competitor list.
   called: boolean
+  standing?: { place: number; probability: number }
   onSelect?: () => void
   onHover?: (hovered: boolean) => void
   radiusAt?: RadiusAt | null
+  // See MarkerLayerProps. Suppresses this plot's name card.
+  cinematic?: boolean
+  // A SECOND rendering of a competitor that is already shown somewhere else on
+  // the base, and so must not be named or clicked: the rover race stands its
+  // field on its lots AND drives a copy of it down the spine (see the render
+  // below), and two name cards or two hit targets for one machine is a bug the
+  // user reads as duplicated data rather than as one fleet in two places.
+  scenery?: boolean
 }) {
   const groupRef = useRef<THREE.Group>(null)
 
-  // Where this competitor actually stands. Normally its own plot — but a vehicle
-  // that drives starts OUT ON THE ROAD it laps rather than parked in its yard,
-  // spaced from its rivals by `phase` around that road so the whole depot can be
-  // out at once without one machine standing inside another.
+  // Where this rendering of the competitor stands. Normally its own plot — but
+  // the driving copy starts OUT ON THE ROAD it laps, spaced from its rivals by
+  // `phase` around that road so the whole fleet can be out at once without one
+  // machine standing inside another.
   const standAt = useMemo(() => {
     // The shared layout already worked this out for a driving competitor; fall
     // back to computing it here only if it wasn't handed down, and to the plot
     // itself for anything that isn't driving.
     if (standDir) return standDir
     if (!patrol) return dir
-    const bearing = Math.atan2(slot.north, slot.east) + (patrolPhase ?? 0)
-    const ll = capOffsetLatLon(
-      Math.cos(bearing) * patrol.radiusM,
-      Math.sin(bearing) * patrol.radiusM
+    const { east, north } = shuttleAt(
+      patrol,
+      (patrolPhase ?? 0) * shuttleLapM(patrol)
     )
+    const ll = capOffsetLatLon(east, north)
     return latLonToVector3(ll.lat, ll.lon, 1)
-  }, [standDir, dir, patrol, patrolPhase, slot.east, slot.north])
+  }, [standDir, dir, patrol, patrolPhase])
 
   const { ndir, seatRadius, labelAt } = useMemo(() => {
     const d = new THREE.Vector3(
@@ -302,66 +342,118 @@ function CompetitorPlot({
     }
   }, [standAt, radiusAt, project])
 
-  // Laps of main street, for a race whose hardware drives rather than stands
-  // (see PATROL).
+  // A buried habitat's vault runs along a KNOWN bearing rather than on the
+  // base's camera-facing heading, because the cutaway camera has to stand at one
+  // end of it (see vaultAxis, and `sub` in flyToProject). Read off the plot's
+  // own slot so the model and the camera derive the axis from one value.
+  const vaultAlong = useMemo(
+    () => (buriedSite(project.id) ? vaultAxis(slot) : undefined),
+    [project.id, slot]
+  )
+
+  // The mass driver needs two things no other competitor does, both because it
+  // is the only asset that is long rather than compact.
   //
-  // The lap is a rigid rotation of the vehicle about the patch axis, which is
-  // what makes it both cheap and correct: a rotation of the sphere holds it at
-  // exactly the radius it started from — the road — and carries its seating and
-  // its heading with it, so neither has to be recomputed per frame.
+  // Its AXIS is a fixed compass heading rather than the base's camera-facing
+  // one, chosen for the ground it has to stay level over (see trackplan) — the
+  // same reason a buried vault gets its axis handed down rather than derived.
   //
-  // It is also why a whole fleet can share one road safely. Every vehicle turns
-  // through the same angle at the same rate, so the gaps the phases opened up are
-  // held for good: the convoy can never close on itself, however long it runs.
-  const lap = useMemo(() => {
-    if (!patrol) return null
-    // Travel direction where it stands. Rotating a point p about axis n moves it
-    // along n × p, so this is the way a positive rate drives.
-    const along = CAP_AXIS.clone().cross(ndir).normalize()
-    return {
-      rate: patrol.speedMps / patrol.radiusM,
-      noseAlong: [along.x, along.y, along.z] as Vec3,
-    }
-  }, [patrol, ndir])
-  const lapRef = useRef(0)
+  // And it needs the GROUND UNDER EVERY BENT, not just under its own anchor.
+  // One seat radius is a fair description of where a 10 m reactor stands and a
+  // useless one for a 600 m trestle: the far end is 10 m below the near end, so
+  // a model built to a single sampled height has to either bury one end or hang
+  // the other in the air. This layer is the only one holding the terrain
+  // sampler, so the sampling happens here and the model is told the answer.
+  const track = useMemo(() => {
+    if (project.id !== MASS_DRIVER_ID) return null
+    const along = trackAxis()
+    if (!radiusAt) return { along, ground: undefined }
+    const ground = trackBentOffsets(slot).map((o) => {
+      const ll = capOffsetLatLon(o.east, o.north)
+      // Scene units back to meters, relative to the seat this model is placed
+      // at — which is the frame the model authors its own geometry in.
+      return (radiusAt(ll.lat, ll.lon) - seatRadius) / M_TO_UNITS
+    })
+    return { along, ground }
+  }, [project.id, slot, radiusAt, seatRadius])
+
+  // Runs of the spine, for a race whose hardware drives rather than stands (see
+  // PATROL). Out to the far end and back, forever.
+  //
+  // Still a rigid rotation of the vehicle about the globe centre, which is what
+  // keeps it cheap and correct: a rotation holds the vehicle at exactly the
+  // radius it started from and carries its seating and its heading with it, so
+  // neither is recomputed per frame. What changes on a spine is that the
+  // rotation can no longer be one angle about one fixed axis — a lap of a circle
+  // was, a triangle wave along a line is not — so it is solved each frame as the
+  // shortest rotation from where the vehicle was MOUNTED to where it has driven
+  // to. Over 680 m on a 1737 km sphere that is 0.02 degrees of arc, so the twist
+  // it also imparts is far below anything visible.
+  //
+  // A whole fleet still shares the road safely. Every vehicle covers the same
+  // distance at the same rate, so the gaps the phases opened up are held for
+  // good — but unlike a lap, vehicles on opposite legs now close on each other
+  // head on, which is what `acrossM` is for: they pass on opposite sides.
+  // The outbound direction of the spine, in world space. The nose is mounted on
+  // it and the frame loop below turns the vehicle round from there, so this is
+  // one fixed axis for the whole fleet rather than a per-vehicle heading.
+  const driveAlong = useMemo(
+    () => (patrol ? capLocalDirection(SPINE_BEARING_DEG, 0) : undefined),
+    [patrol]
+  )
+
+  const distRef = useRef(0)
   const throttleRef = useRef(0)
+  // +1 driving northeast, -1 coming back. Eased rather than switched, so the
+  // turn at each end swings round over a few meters instead of the vehicle
+  // snapping to face the other way on one frame. Seeded from the leg this
+  // vehicle actually starts on, so a fleet spread over both legs doesn't spend
+  // its first second turning around on the spot.
+  const headingRef = useRef(
+    patrol &&
+      !shuttleAt(patrol, (patrolPhase ?? 0) * shuttleLapM(patrol)).outbound
+      ? -1
+      : 1
+  )
 
   useFrame((_, delta) => {
     const g = groupRef.current
-    if (!g || !lap) return
-    // Roll to a stand where it IS when this race is opened — the vehicle sits
-    // still while the user reads about it, but stays put on the road rather than
-    // teleporting back to a start line. The camera comes to the vehicle instead
-    // (see LIVE_PATROL_DIR, published below, and the page's flyToProject).
+    if (!g || !patrol) return
+    // Roll to a stand where it IS when this race is opened — the fleet sits
+    // still while the user reads about it, but stays put on the road rather
+    // than teleporting back to a start line. Nothing has to chase it: the
+    // camera drills in to this machine's PARKED copy on its own lot.
     const throttle = raceOpen ? 0 : 1
-    throttleRef.current +=
-      (throttle - throttleRef.current) * (1 - Math.pow(PATROL_EASE, delta))
-    lapRef.current += lap.rate * throttleRef.current * delta
-    g.quaternion.setFromAxisAngle(CAP_AXIS, lapRef.current)
-    // Where the vehicle actually is this frame — its start direction carried
-    // round the lap. Published so a drill-in can find it on the road, and
-    // reused just below to ride the road's rise and fall.
-    const p = ndir.clone().applyQuaternion(g.quaternion)
-    LIVE_PATROL_DIR.set(project.id, [p.x, p.y, p.z])
+    const ease = 1 - Math.pow(PATROL_EASE, delta)
+    throttleRef.current += (throttle - throttleRef.current) * ease
+    distRef.current += patrol.speedMps * throttleRef.current * delta
+
+    const pos = shuttleAt(
+      patrol,
+      (patrolPhase ?? 0) * shuttleLapM(patrol) + distRef.current
+    )
+    headingRef.current += ((pos.outbound ? 1 : -1) - headingRef.current) * ease
+
+    const ll = capOffsetLatLon(pos.east, pos.north)
+    const p = new THREE.Vector3(
+      ...latLonToVector3(ll.lat, ll.lon, 1)
+    ).normalize()
+    // Carry the vehicle from where it was mounted to where it has driven to,
+    // then spin it about its own local up by however far round the turn it is.
+    // A rotation about `p` fixes `p`, so the spin moves the nose without moving
+    // the vehicle.
+    g.quaternion
+      .setFromAxisAngle(p, (Math.PI * (1 - headingRef.current)) / 2)
+      .multiply(TURN.setFromUnitVectors(ndir, p))
     // Every child is positioned in world space from the globe centre, so a
     // uniform scale IS a radial offset: the ratio of ground radii lifts the
     // vehicle by the height difference. The shape distortion is that same ratio
     // — about a part in a million for a couple of meters of relief against a
     // 1737 km radius.
     if (radiusAt) {
-      const pll = vector3ToLatLon([p.x, p.y, p.z])
-      g.scale.setScalar(radiusAt(pll.lat, pll.lon) / seatRadius)
+      g.scale.setScalar(radiusAt(ll.lat, ll.lon) / seatRadius)
     }
   })
-
-  // Drop the live position when this vehicle leaves the scene (filtered out by
-  // the timeline, say), so a drill-in can never chase a stale spot.
-  useEffect(() => {
-    const id = project.id
-    return () => {
-      LIVE_PATROL_DIR.delete(id)
-    }
-  }, [project.id])
 
   if (opacity <= MODEL_PRESENCE) return null
 
@@ -372,16 +464,17 @@ function CompetitorPlot({
         dir={[ndir.x, ndir.y, ndir.z]}
         accent={accent}
         turn={THREE.MathUtils.degToRad(slot.turn)}
-        noseAlong={lap?.noseAlong}
+        noseAlong={driveAlong ?? vaultAlong ?? track?.along}
         dim={dim}
-        onSelect={onSelect}
-        onHover={(id) => onHover?.(Boolean(id))}
+        onSelect={scenery ? undefined : onSelect}
+        onHover={scenery ? undefined : (id) => onHover?.(Boolean(id))}
         surfaceRadius={seatRadius}
+        trackGround={track?.ground}
       />
 
       {/* The asset's own name. Shown on hover, and for the whole field while
           its race is open — which is how you tell three reactors apart. */}
-      {(called || raceOpen) && (
+      {(called || raceOpen) && !cinematic && !scenery && (
         <Html
           position={labelAt}
           center
@@ -395,7 +488,13 @@ function CompetitorPlot({
                 : 'border-white/10 bg-black/55 text-white/70'
             }`}
           >
-            {project.name}
+            <div>{project.name}</div>
+            {standing && (
+              <div className="tabular-nums text-cyan-200/90">
+                {formatPlace(standing.place)} ·{' '}
+                {Math.round(standing.probability * 100)}%
+              </div>
+            )}
           </div>
         </Html>
       )}
@@ -404,199 +503,24 @@ function CompetitorPlot({
 }
 
 // ---------------------------------------------------------------------------
-// The rover district's own lot — shared infrastructure, not a competitor
-// ---------------------------------------------------------------------------
-//
-// Every other district's plots are populated by `CompetitorPlot` above, one
-// per project, placed by `districtSlots` with a setback that clears both
-// streets it fronts. The rover race has no plots standing: its whole field
-// drives permanent laps (see PATROL), so `districtDir` itself — the raw
-// junction where the depot avenue crosses main street — has nothing a
-// per-project loop would ever draw there. `RoverDepotYard` (ProjectModel.tsx)
-// is the fix, but it cannot simply stand AT `districtDir`: that point sits
-// ON both roads at once (the avenue's own radial line and the loop's circle
-// both pass through it), which is exactly what put the pad under the pavement
-// the first time this was tried.
-//
-// So this reproduces `districtSlots`' own radial/angular setback by hand
-// rather than calling it, but placed INWARD of main street rather than at an
-// outward corner like a real competitor's plot would be: `districtSlots`
-// always gives a single plot the district's first (outward) corner, which
-// would need `BASE_PLAN.rover.reach` inflated well past what this district's
-// own LTV-scale roster justifies — exactly what the avenue-overshoot check
-// in lunar-atlas-baseplan.cy.ts exists to catch, since `reach` is shared
-// with the real (if never-standing) competitor plots. Sitting inward instead
-// touches neither the avenue's own radial line nor the loop's circle, with
-// no baseplan.ts change at all: same radial setback off main street, same
-// angular swing off the avenue, just measured toward the core instead of
-// away from it. That belt is only ~23 m deep once both roads' own setbacks
-// are spent, which is what keeps `RoverDepotYard` a compact 13 x 10 m.
-const DEPOT_FOOTPRINT_R = 9 // half-diagonal of the yard's 13 x 10 m apron, with room to spare
-
-function RoverDepotSite({
-  accent,
-  dim,
-  opacity,
-  radiusAt,
-}: {
-  accent: string
-  dim: number
-  opacity: number
-  radiusAt?: RadiusAt | null
-}) {
-  const { seat, ndir, noseAlong } = useMemo(() => {
-    const plan = BASE_PLAN.rover!
-    const bearing = Math.atan2(plan.north, plan.east)
-    const front = ROAD_HALF_M + SETBACK_M + DEPOT_FOOTPRINT_R
-    const radius = MAIN_LOOP_M - front
-    const swing = Math.asin(Math.min(1, front / radius))
-    const a = bearing + swing
-
-    const ll = capOffsetLatLon(Math.cos(a) * radius, Math.sin(a) * radius)
-    const d = new THREE.Vector3(
-      ...latLonToVector3(ll.lat, ll.lon, 1)
-    ).normalize()
-    // A rigid 13 x 10 m apron cannot sink into a slope, so — exactly like
-    // the padded lander (see footprintSeatRadius's own comment) — it seats
-    // on the HIGHEST ground under its own footprint rather than the single
-    // point at its center, and RoverDepotYard grades a skirt down from
-    // there to hide whatever the downhill side leaves uncovered.
-    const ground = !radiusAt
-      ? GLOBE_RADIUS
-      : footprintSeatRadius(d, radiusAt, DEPOT_FOOTPRINT_R)
-
-    // A second point at the same radius but zero swing — back on the
-    // avenue's own radial line — so the yard's open (aisle) side faces the
-    // road it is served by rather than an arbitrary camera-relative default.
-    const backLl = capOffsetLatLon(
-      Math.cos(bearing) * radius,
-      Math.sin(bearing) * radius
-    )
-    const backDir = new THREE.Vector3(
-      ...latLonToVector3(backLl.lat, backLl.lon, 1)
-    )
-    const face: Vec3 = backDir.sub(d).normalize().toArray() as Vec3
-
-    return { seat: ground + SEAT_LIFT, ndir: d, noseAlong: face }
-  }, [radiusAt])
-
-  if (opacity <= MODEL_PRESENCE) return null
-
-  return (
-    <SurfaceAnchor
-      dir={[ndir.x, ndir.y, ndir.z]}
-      surfaceRadius={seat}
-      scale={M_TO_UNITS}
-      dim={dim}
-      noseAlong={noseAlong}
-    >
-      {/* RoverDepotYard is authored with its open, aisle-facing side on
-          local +Z (stalls back toward -Z); `noseAlong` steers local +X (see
-          `headingYaw`), so this 90° turn hands it the axis that convention
-          expects without re-authoring the yard itself. */}
-      <group rotation={[0, Math.PI / 2, 0]}>
-        <RoverDepotYard accent={accent} />
-      </group>
-    </SurfaceAnchor>
-  )
-}
-
-// Half-diagonal of the gas station's own 10 x 8.8 m forecourt apron (see
-// `GAS_STATION_HALF_W`/`GAS_STATION_HALF_D`), with room to spare — the same
-// role `DEPOT_FOOTPRINT_R` plays for the yard above.
-const GAS_STATION_FOOTPRINT_R = Math.hypot(GAS_STATION_HALF_W, GAS_STATION_HALF_D) + 0.6
-
-// The rover district's recharge/propellant station: a second, freestanding
-// piece of shared infrastructure, sited on the OPPOSITE side of the depot
-// avenue from `RoverDepotSite` — same radial setback off main street, same
-// angular swing off the avenue, just the other sign, so the two face each
-// other across the one straight road they both front rather than crowding
-// one footprint. This is the "different structure, across the street" the
-// depot's own corner never had room for.
-function RoverGasStationSite({
-  accent,
-  dim,
-  opacity,
-  radiusAt,
-}: {
-  accent: string
-  dim: number
-  opacity: number
-  radiusAt?: RadiusAt | null
-}) {
-  const { seat, ndir, noseAlong } = useMemo(() => {
-    const plan = BASE_PLAN.rover!
-    const bearing = Math.atan2(plan.north, plan.east)
-    const front = ROAD_HALF_M + SETBACK_M + GAS_STATION_FOOTPRINT_R
-    const radius = MAIN_LOOP_M - front
-    const swing = Math.asin(Math.min(1, front / radius))
-    // The depot itself takes `bearing + swing` (see RoverDepotSite); this
-    // stands at `bearing - swing` — the mirror image across the avenue's own
-    // radial line, at whatever radius ITS OWN (smaller) footprint needs.
-    const a = bearing - swing
-
-    const ll = capOffsetLatLon(Math.cos(a) * radius, Math.sin(a) * radius)
-    const d = new THREE.Vector3(
-      ...latLonToVector3(ll.lat, ll.lon, 1)
-    ).normalize()
-    const ground = !radiusAt
-      ? GLOBE_RADIUS
-      : footprintSeatRadius(d, radiusAt, GAS_STATION_FOOTPRINT_R)
-
-    // Face back toward the avenue's own radial line, same technique as
-    // RoverDepotSite — which, since the two sit on opposite sides of that
-    // line, points this station's own forecourt entrance at the depot yard
-    // across the road rather than out into open regolith.
-    const backLl = capOffsetLatLon(
-      Math.cos(bearing) * radius,
-      Math.sin(bearing) * radius
-    )
-    const backDir = new THREE.Vector3(
-      ...latLonToVector3(backLl.lat, backLl.lon, 1)
-    )
-    const face: Vec3 = backDir.sub(d).normalize().toArray() as Vec3
-
-    return { seat: ground + SEAT_LIFT, ndir: d, noseAlong: face }
-  }, [radiusAt])
-
-  if (opacity <= MODEL_PRESENCE) return null
-
-  return (
-    <SurfaceAnchor
-      dir={[ndir.x, ndir.y, ndir.z]}
-      surfaceRadius={seat}
-      scale={M_TO_UNITS}
-      dim={dim}
-      noseAlong={noseAlong}
-    >
-      {/* Same authoring convention as RoverDepotYard: forecourt entrance on
-          local +Z, so the same 90° turn hands it the noseAlong axis. */}
-      <group rotation={[0, Math.PI / 2, 0]}>
-        <RoverGasStation accent={accent} />
-      </group>
-    </SurfaceAnchor>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Base-wide filler — the open ground between districts
 // ---------------------------------------------------------------------------
 //
-// Everything above is either a competitor's plot or the depot's own shared
-// yard — one per district. This is the one layer that renders ONCE for the
+// Everything above is a competitor's plot, one district's worth at a time.
+// This is the one layer that renders ONCE for the
 // whole base rather than per-district, because most of the plan by area is
-// neither a district nor a road: it's the open regolith between avenues, and
-// the two closed loops stitching the districts together. Left bare, that is
-// most of what the camera actually sees on approach.
+// neither a district nor a road: it's the open regolith either side of the
+// spine, and the spine itself stitching the districts together. Left bare, that
+// is most of what the camera actually sees on approach.
 //
 // A boulder field fills the open ground — native rock, not manifested cargo,
 // so it belongs on unclaimed regolith in a way none of the logistics props in
-// ProjectModel.tsx do — and street lights line both loop roads. Both are kept
+// ProjectModel.tsx do — and street lights line the haul routes. Both are kept
 // off every district's own ground by `withinDistrictGround` (baseplan.ts),
 // which is deliberately generous rather than exact: it doesn't know any
-// district's live roster, only the widest plausible spread its `reach`
-// allows, so nothing here can ever end up sitting on a competitor's plot no
-// matter how a roster changes. Neither is dimmed when a race is opened (see
+// district's live roster, only the widest spread its `block` allows along the
+// roads it actually has, so nothing here can ever end up sitting on a
+// competitor's plot no matter how a roster changes. Neither is dimmed when a race is opened (see
 // SurfaceAnchor's own `dim`, left at its default): this belongs to the
 // settlement, not to whichever district happens to be nearest.
 
@@ -605,23 +529,49 @@ function hash1(n: number): number {
   return s - Math.floor(s)
 }
 
-// The annulus a boulder can land in: just past the ring road's own clearance
-// out to a bit beyond the landing zone's own reach (the single furthest any
-// district goes — see `wide` in baseplan.ts' DISTRICT_ZONES). Sampled as a
-// polar grid with per-cell jitter and a low keep-rate, which is what makes a
-// grid read as scatter instead of a filled ring.
-const BOULDER_MIN_R = RING_RADIUS_M + 5
-const BOULDER_MAX_R = 165
-const BOULDER_RADIAL_BANDS = 7
-const BOULDER_ANGULAR_STEPS = 30
+// The ground a boulder can land on: a band running the length of the spine and
+// a good way either side of it, sampled as a grid in the spine's own frame with
+// per-cell jitter and a low keep-rate — which is what makes a grid read as
+// scatter rather than as rows. Roads and district ground are skipped as the
+// walk goes (see the filter below), so the band can simply cover the whole base
+// instead of being an annulus threaded between two ring roads.
+//
+// Wider across than the base is and longer than the spine, so the scatter runs
+// past the settlement in every direction rather than stopping at a boundary the
+// eye can find.
+//
+// The across figure is set by the district that stands furthest off the spine,
+// which is no longer the landing zone: the pads reach 70 m, but the comms race
+// is now out at the end of a 145 m branch and its ground reaches 160 m. A band
+// sized for the pads would have stopped short of the two longest branches and
+// left the outer half of the base standing on conspicuously clean regolith.
+const BOULDER_ALONG_MIN_M = SPINE_START_M - 60
+const BOULDER_ALONG_MAX_M = SPINE_END_M + 60
+const BOULDER_ACROSS_M = 200
+// Kept in proportion to the band so widening it scatters more rock rather than
+// thinning what there is.
+const BOULDER_ALONG_STEPS = 34
+const BOULDER_ACROSS_STEPS = 20
 const BOULDER_KEEP_FRACTION = 0.34
 
-// A post every ~40 m along a loop, just outside its windrow — close enough
-// together to actually read as street lighting, far enough apart that a
-// closed loop doesn't need dozens of them.
-const STREET_LIGHT_SPACING_M = 40
+// A post every ~26 m of pavement, just outside the windrow — close enough
+// together to actually read as street lighting, far enough apart that 730 m of
+// spine doesn't need dozens of them.
+//
+// Tightened from 40 m once the fixtures started throwing real pools of light on
+// the ground. At 40 m the lit patches did not touch, so under the true sun the
+// spine read as a dotted line of circles with black road between them; at 26 m,
+// against the 11 m pool radius in StreetLight, consecutive pools just overlap
+// and the road reads as continuously lit. The two numbers are a pair — moving
+// either one alone reopens the gaps or doubles the post count for nothing.
+const STREET_LIGHT_SPACING_M = 26
 
-// Staged cargo along the shoulders of both loop roads — the manifested-cargo
+// Roads narrower than this are left dark. A lit street is a street with traffic
+// on it, and a rover track out to four relay masts has none — see `width` in
+// baseplan.ts' Street, and the branches that ask for 0.72.
+const LIT_ROAD_WIDTH = 1
+
+// Staged cargo along the shoulders of every road — the manifested-cargo
 // counterpart to the boulder field, for stretches of road with nothing to
 // look at otherwise. Unlike the boulders (native rock, scattered anywhere on
 // open ground) this stays close to a road on purpose: a crate stack or a
@@ -631,19 +581,274 @@ const ROADSIDE_SPACING_M = 30
 const ROADSIDE_KEEP_PROB = 0.75
 type RoadsideKind = 'crates' | 'cablereel' | 'parts' | 'bricks'
 
-function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
+// A small grading/earthmoving fleet, parked hard against the shoulder of
+// one of the roads — the same "close enough to a road that a
+// hauler could reach it" logic as `roadsideCargo`, not the boulder field's
+// wide-open annulus, since this is the settlement's own maintenance crew
+// working the street it grades rather than native scatter. A handful of
+// fixed units rather than a sampled grid: a dozen would read as a second
+// race's roster, five to six reads as a crew mid-shift. Placed by walking a
+// deterministic sequence of candidate (loop, bearing, side) triples — not a
+// grid — until enough clear the road itself and every district's own
+// ground, so a change to one district's `block` can only ever shift where
+// these land, never how many.
+const EXCAVATOR_COUNT = 6
+const EXCAVATOR_SHOULDER_MIN_M = 2.6
+const EXCAVATOR_SHOULDER_MAX_M = 6.5
+
+// Fixed spot for the base's own dig: beside the habitat's branch, on the long
+// stretch between where its spur leaves and where its own lots begin.
+//
+// It used to sit in the middle of the habitat district, which was possible
+// because that district was a ring of five plots around an empty plaza. There
+// is no plaza and no crossing now — the district is a cluster at the end of a
+// 130 m branch — so the dig takes the one stretch of that branch that is both
+// served by the road and nobody's lot: past the spur junction at 55 m, short of
+// the buried modules' own lots at 102 m.
+//
+// That is arguably where it belonged all along, since what this is digging is
+// the vaults those buried habitats stand in, and the next vault along is
+// exactly what a cut-and-cover excavation beside the access road would be.
+//
+// On the LEFT of the branch's outbound direction, which is the side the spur is
+// not on, so the machine has open regolith behind it rather than another road.
+// Offset far enough off the centreline to clear the windrow, so it works beside
+// its road rather than in it. The composite itself (ConstructionPit +
+// its Excavator, both authored together in ProjectModel.tsx) is asymmetric —
+// the machine stands off to one side of the pit, not scattered by angle like
+// InterDistrictFiller's ambient fleet — but SurfaceAnchor's default facing
+// (no `noseAlong` given here) turns that whole composite toward the home
+// camera on its own, the same as any other un-steered installation, so this
+// only ever needs to pick a location, never an orientation.
+// Meters out along the habitat branch. Between the spur junction and the lots,
+// with room for the composite's own 13 m span at either end — asserted in
+// lunar-atlas-baseplan.cy.ts rather than trusted, since both bounds move if the
+// habitat's roster or its spur does.
+const UGC_ALONG_BRANCH_M = 78
+const UGC_SITE = (() => {
+  const plan = BASE_PLAN.habitat!
+  const branch = plan.branch!
+  const crossing = at(plan.alongM)
+  const [de, dn] = dirFor(branch.bearingDeg)
+  return {
+    east:
+      crossing.east + de * UGC_ALONG_BRANCH_M - dn * (ROAD_HALF_M + 8),
+    north:
+      crossing.north + dn * UGC_ALONG_BRANCH_M + de * (ROAD_HALF_M + 8),
+  }
+})()
+const UGC_EAST_M = UGC_SITE.east
+const UGC_NORTH_M = UGC_SITE.north
+// Clears the arm's own highest hoisted point (see EXC_DIG_POSES' "hoist"
+// keyframe) rather than the machine's parked height, so the label never
+// clips through the boom mid-cycle.
+const UGC_LABEL_HEIGHT_M = 6.5
+// SEAT_LIFT is sized to clear z-fighting for a single point sample against
+// the rendered (displaced) terrain, but this whole composite spans a good
+// 13 m from the pit's own anchor out past the excavator standing off it —
+// far wider than the compact, single-point props (a boulder, a streetlight)
+// SEAT_LIFT was tuned against. Anywhere the real terrain's own slope across
+// that span puts ground even a little above the flat-plane height sampled at
+// the anchor's one point eats into that margin, and with this renderer's
+// logarithmic depth buffer (needed for a scene that spans orbit-to-meter
+// scale) precision loss shows up as shimmer/dropout well before it would on
+// a linear buffer — see the ground-level flat pit floor in ProjectModel.tsx
+// for the other half of this fix. A flat extra lift on top of SEAT_LIFT,
+// well past anything that stretch of ridge terrain plausibly slopes, buys
+// back that margin.
+const UGC_EXTRA_LIFT_M = 0.6
+
+function UndergroundConstructionSiteMarker({
+  radiusAt,
+  cinematic,
+  presence = 1,
+}: {
+  radiusAt?: RadiusAt | null
+  // See MarkerLayerProps. The dig itself stays — it's real hardware doing real
+  // work — but its caption goes, like every other floating name.
+  cinematic?: boolean
+  // Fades with the construction fleet: this is that fleet at work, so it cannot
+  // be digging the vault years before anything that could dig it is on the Moon.
+  presence?: number
+}) {
+  // The caption is shown on hover only, like every other name on the base (see
+  // CompetitorPlot). It used to be permanent, which made it the one label in
+  // the scene that was always up: a card floating over the middle of the base
+  // at fixed screen size whatever the camera was doing, and — since it is
+  // pinned above the tallest thing here — one that sat over the habitats behind
+  // it from most angles.
+  const [hovered, setHovered] = useState(false)
+
+  const { dir, seat, labelAt } = useMemo(() => {
+    const ll = capOffsetLatLon(UGC_EAST_M, UGC_NORTH_M)
+    const d = latLonToVector3(ll.lat, ll.lon, 1)
+    const seat =
+      (radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS) +
+      SEAT_LIFT +
+      UGC_EXTRA_LIFT_M * M_TO_UNITS
+    const labelAt = new THREE.Vector3(...d).multiplyScalar(
+      seat + UGC_LABEL_HEIGHT_M * M_TO_UNITS
+    )
+    return { dir: d, seat, labelAt }
+  }, [radiusAt])
+
+  // Nothing is digging the vault until the fleet that digs it is here.
+  if (presence <= MODEL_PRESENCE) return null
+
+  return (
+    <>
+      {/* Hover handled here rather than through SurfaceAnchor's own
+          `interactive` flag, which is all-or-nothing: that flag also swallows
+          the click and switches the cursor to a pointer, and this is a piece of
+          scenery with nothing to open — a dead click on it would stop the
+          background click that deselects and zooms back out. Pointer events
+          from the meshes inside bubble up to this group either way. */}
+      <group
+        onPointerOver={(e) => {
+          e.stopPropagation()
+          setHovered(true)
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation()
+          setHovered(false)
+        }}
+      >
+        <SurfaceAnchor
+          dir={dir}
+          surfaceRadius={seat}
+          scale={M_TO_UNITS}
+          dim={presence}
+          castShadows={false}
+          interactive={false}
+        >
+          <UndergroundConstructionSite seed={4021} />
+        </SurfaceAnchor>
+      </group>
+      {hovered && !cinematic && (
+        <Html
+          position={labelAt}
+          center
+          zIndexRange={[15, 0]}
+          style={{ pointerEvents: 'none' }}
+        >
+          <div className="whitespace-nowrap rounded border border-white/15 bg-black/75 px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight text-white shadow-md backdrop-blur-sm">
+            Underground base construction
+          </div>
+        </Html>
+      )}
+    </>
+  )
+}
+
+// Everything between the districts: the boulder field, and the street furniture
+// that accumulates around a base once there is a base. The boulders were on this
+// ridge for three billion years and stay at full strength whatever year the
+// scrubber is on; the lights, the roadside cargo and the parked excavators are
+// hardware, and they fade with the rest of the built environment. Showing lit
+// streets and idle diggers in a year whose Moon holds a single dead lander is
+// exactly as wrong as standing a habitat there.
+// ---------------------------------------------------------------------------
+// The solar farm
+// ---------------------------------------------------------------------------
+
+// The base's own generation: the fields of sun-tracking arrays whose siting,
+// lattices
+// and keep-out all live in baseplan.ts (see SOLAR_ARRAYS there for why they
+// stand where they do and why the rows are pitched as far apart as they are).
+// This only has to seat each array on the rendered ground and aim it.
+//
+// AIMED AT THE SUN, and aimed off the one place the sun is written down.
+// `SUN_DIR` is the world direction to the sun, so handing it to SurfaceAnchor
+// as `noseAlong` turns each array's blanket normal (its own +X) onto the sun's
+// azimuth; the model then lifts that normal by SUN_LOCAL_ELEV_DEG to catch the
+// sun's elevation. Both come from lib/sun.ts, which is what makes it impossible
+// for the farm to face somewhere the light is not — the failure that would
+// otherwise be invisible to write and glaring to look at.
+//
+// Not interactive and never dimmed: this belongs to the settlement rather than
+// to any race, so it neither swallows a click meant for the ground nor fades
+// when a competitor's district is opened.
+function SolarFarmSite({
+  radiusAt,
+  presence = 1,
+}: {
+  radiusAt?: RadiusAt | null
+  presence?: number
+}) {
+  const arrays = useMemo(() => {
+    return SOLAR_ARRAYS.map((a) => {
+      const ll = capOffsetLatLon(a.east, a.north)
+      const d = new THREE.Vector3(
+        ...latLonToVector3(ll.lat, ll.lon, 1)
+      ).normalize()
+      // Seats on the ground directly under the mast rather than on the highest
+      // point of a footprint: a mast on a planted footing is not a rigid apron,
+      // so it follows the terrain instead of needing a skirt to hide a gap.
+      const ground = radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
+      return {
+        key: `${a.row}:${a.bay}`,
+        dir: [d.x, d.y, d.z] as Vec3,
+        seat: ground + SEAT_LIFT,
+        seed: a.row * 131 + a.bay * 17,
+      }
+    })
+  }, [radiusAt])
+
+  // Same threshold the street furniture uses: below it the farm is gone rather
+  // than faint, because a ghost solar array is still an array standing on a
+  // Moon that has none.
+  if (presence <= MODEL_PRESENCE) return null
+
+  return (
+    <>
+      {arrays.map((a) => (
+        <SurfaceAnchor
+          key={a.key}
+          dir={a.dir}
+          surfaceRadius={a.seat}
+          scale={M_TO_UNITS}
+          noseAlong={SUN_DIR}
+          interactive={false}
+        >
+          <VerticalSolarArray
+            elevRad={(SUN_LOCAL_ELEV_DEG * Math.PI) / 180}
+            seed={a.seed}
+          />
+        </SurfaceAnchor>
+      ))}
+    </>
+  )
+}
+
+function InterDistrictFiller({
+  radiusAt,
+  presence = 1,
+}: {
+  radiusAt?: RadiusAt | null
+  presence?: number
+}) {
+  // Same threshold the competitors' own models use: below it the furniture is
+  // gone rather than faint, because a ghost street light is still a street
+  // light standing on a Moon that has none.
+  const built = presence > MODEL_PRESENCE
   const boulders = useMemo(() => {
     const out: { dir: Vec3; seat: number; size: number; seed: number }[] = []
-    for (let ri = 0; ri < BOULDER_RADIAL_BANDS; ri++) {
-      for (let ai = 0; ai < BOULDER_ANGULAR_STEPS; ai++) {
-        const k = ri * 977 + ai * 31 + 1
+    for (let ai = 0; ai < BOULDER_ALONG_STEPS; ai++) {
+      for (let ci = 0; ci < BOULDER_ACROSS_STEPS; ci++) {
+        const k = ai * 977 + ci * 31 + 1
         if (hash1(k) > BOULDER_KEEP_FRACTION) continue
-        const rFrac = (ri + 0.15 + hash1(k + 1) * 0.7) / BOULDER_RADIAL_BANDS
-        const r = BOULDER_MIN_R + rFrac * (BOULDER_MAX_R - BOULDER_MIN_R)
-        const bearing = ((ai + hash1(k + 2)) / BOULDER_ANGULAR_STEPS) * 360
-        if (onLoopRoad(r) || withinDistrictGround(r, bearing, 20)) continue
-        const a = (bearing * Math.PI) / 180
-        const ll = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+        const alongM =
+          BOULDER_ALONG_MIN_M +
+          ((ai + hash1(k + 1)) / BOULDER_ALONG_STEPS) *
+            (BOULDER_ALONG_MAX_M - BOULDER_ALONG_MIN_M)
+        const acrossM =
+          -BOULDER_ACROSS_M +
+          ((ci + hash1(k + 2)) / BOULDER_ACROSS_STEPS) * BOULDER_ACROSS_M * 2
+        const { east, north } = at(alongM, acrossM)
+        if (onRoad(east, north) || withinDistrictGround(east, north, 20)) {
+          continue
+        }
+        const ll = capOffsetLatLon(east, north)
         const dir = latLonToVector3(ll.lat, ll.lon, 1)
         const seat = radiusAt
           ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
@@ -656,53 +861,58 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
 
   const lights = useMemo(() => {
     const out: { dir: Vec3; seat: number; noseAlong: Vec3 }[] = []
-    // A fine angular step (every ~1-3 m of arc on these radii) walked all the
-    // way round each loop, placing a light once STREET_LIGHT_SPACING_M has
-    // accumulated since the last one and skipping any candidate over a
-    // district's own ground. A fixed COUNT of evenly-spaced stations was
-    // tried first and aliased badly: with 7 districts on the ring road and 7
-    // evenly-spaced stations, nearly every station landed within a wedge by
-    // coincidence and only one light survived. Walking and accumulating arc
-    // length instead means a wedge just delays the next light rather than
-    // deleting a whole station, so the loop is never left with a long dark
-    // stretch merely because a station's angle happened to land badly.
-    const STEP_DEG = 2
-    for (const r of [RING_RADIUS_M, MAIN_LOOP_M]) {
-      const postR = r + ROAD_HALF_M + 1.4
-      let lastPlacedDeg: number | null = null
-      for (let deg = 0; deg < 360; deg += STEP_DEG) {
-        // A narrower margin than the boulders': a thin post just needs to
-        // clear a district's own ground, not stand well back from it, so
-        // lights still line the road right up to each district's junction.
-        if (withinDistrictGround(postR, deg, 11)) continue
-        if (lastPlacedDeg !== null) {
-          const arcSinceM = ((deg - lastPlacedDeg) * Math.PI * r) / 180
-          if (arcSinceM < STREET_LIGHT_SPACING_M) continue
-        }
-        lastPlacedDeg = deg
+    if (!built) return out
+    // A fine step walked along each lit road, placing a light once
+    // STREET_LIGHT_SPACING_M of pavement has accumulated since the last one and
+    // skipping any candidate over a district's own ground. A fixed COUNT of
+    // evenly-spaced stations was tried first and aliased badly: with as many
+    // districts as stations, nearly every station landed on a district by
+    // coincidence and only one light survived. Walking and accumulating
+    // distance instead means a district just delays the next light rather than
+    // deleting a whole station, so no road is left with a long dark stretch
+    // merely because a station happened to land badly.
+    //
+    // Posts alternate sides as the walk goes, which a ring road could not do:
+    // its two flanks were an inner and an outer circle of different lengths.
+    // On a straight road they are the same road, so a single walk lights both
+    // verges and the spine gets a post every 20 m of its length rather than
+    // every 40.
+    const STEP_M = 2
+    for (const run of ROAD_RUNS) {
+      if (run.width < LIT_ROAD_WIDTH) continue
+      let placed = 0
+      let lastAt: number | null = null
+      for (let d = 0; d < run.lengthM; d += STEP_M) {
+        if (lastAt !== null && d - lastAt < STREET_LIGHT_SPACING_M) continue
+        const side = placed % 2 ? -1 : 1
+        const post = run.at(d, side * (ROAD_HALF_M + 1.4))
+        // A narrower margin than the boulders': a thin post just needs to clear
+        // a district's own ground, not stand well back from it, so lights still
+        // line the road right up to each district's crossing.
+        if (withinDistrictGround(post.east, post.north, 11)) continue
+        lastAt = d
+        placed++
 
-        const a = (deg * Math.PI) / 180
-        const ll = capOffsetLatLon(Math.cos(a) * postR, Math.sin(a) * postR)
-        const d = new THREE.Vector3(
+        const ll = capOffsetLatLon(post.east, post.north)
+        const dv = new THREE.Vector3(
           ...latLonToVector3(ll.lat, ll.lon, 1)
         ).normalize()
         const seat = radiusAt
           ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
           : GLOBE_RADIUS + SEAT_LIFT
-        // The boom leans toward the road's own centerline (radius r), not
-        // toward the ridge center generally — for the ring road that's the
-        // same thing, but for main street it keeps every light's fixture
-        // facing the pavement it actually lights rather than the core.
-        const innerLl = capOffsetLatLon(Math.cos(a) * r, Math.sin(a) * r)
+        // The boom leans toward this road's own centreline, so every light's
+        // fixture faces the pavement it actually lights.
+        const inner = run.at(d, 0)
+        const innerLl = capOffsetLatLon(inner.east, inner.north)
         const innerDir = new THREE.Vector3(
           ...latLonToVector3(innerLl.lat, innerLl.lon, 1)
         )
-        const noseAlong = innerDir.sub(d).normalize().toArray() as Vec3
-        out.push({ dir: [d.x, d.y, d.z] as Vec3, seat, noseAlong })
+        const noseAlong = innerDir.sub(dv).normalize().toArray() as Vec3
+        out.push({ dir: [dv.x, dv.y, dv.z] as Vec3, seat, noseAlong })
       }
     }
     return out
-  }, [radiusAt])
+  }, [radiusAt, built])
 
   const roadsideCargo = useMemo(() => {
     const out: {
@@ -712,29 +922,35 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
       seed: number
       yaw: number
     }[] = []
-    const STEP_DEG = 2
-    for (const r of [RING_RADIUS_M, MAIN_LOOP_M]) {
-      let lastSlotDeg: number | null = null
-      for (let deg = 0; deg < 360; deg += STEP_DEG) {
-        if (lastSlotDeg !== null) {
-          const arcSinceM = ((deg - lastSlotDeg) * Math.PI * r) / 180
-          if (arcSinceM < ROADSIDE_SPACING_M) continue
+    if (!built) return out
+    const STEP_M = 2
+    ROAD_RUNS.forEach((run, ri) => {
+      let lastAt: number | null = null
+      for (let d = 0; d < run.lengthM; d += STEP_M) {
+        if (lastAt !== null && d - lastAt < ROADSIDE_SPACING_M) continue
+        // Alternate shoulders rather than always the same one, so both verges
+        // pick up traffic. Offset starts further out than the street lights'
+        // own fixed band (ROAD_HALF_M + 1.4) so a crate cluster can never land
+        // close enough to clip one.
+        const seed = ri * 4001 + d * 13 + 7
+        const side = hash1(seed + 1) > 0.5 ? 1 : -1
+        const spot = run.at(
+          d,
+          side * (ROAD_HALF_M + 3.2 + hash1(seed + 2) * 3)
+        )
+        if (
+          onRoad(spot.east, spot.north) ||
+          withinDistrictGround(spot.east, spot.north, 8)
+        ) {
+          continue
         }
-        // Alternate shoulders rather than always the outward side, so a
-        // loop's inner and outer edges both pick up traffic. Offset starts
-        // further out than the street lights' own fixed band (r + ROAD_HALF_M
-        // + 1.4) so a crate cluster can never land close enough to clip one.
-        const side = hash1(r + deg * 3 + 1) > 0.5 ? 1 : -1
-        const postR = r + side * (ROAD_HALF_M + 3.2 + hash1(r + deg * 3 + 2) * 3)
-        if (onLoopRoad(postR) || withinDistrictGround(postR, deg, 8)) continue
         // Advance the walk past this slot regardless of whether it renders
         // anything below — that's what keeps the spacing organic (some
         // slots come up empty) rather than every eligible slot filling.
-        lastSlotDeg = deg
-        const k = Math.round(r) * 4001 + deg * 13 + 7
-        if (hash1(k) > ROADSIDE_KEEP_PROB) continue
+        lastAt = d
+        if (hash1(seed) > ROADSIDE_KEEP_PROB) continue
 
-        const roll = hash1(k + 1)
+        const roll = hash1(seed + 1)
         const kind: RoadsideKind =
           roll < 0.4
             ? 'crates'
@@ -743,17 +959,100 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
             : roll < 0.85
             ? 'parts'
             : 'bricks'
-        const a = (deg * Math.PI) / 180
-        const ll = capOffsetLatLon(Math.cos(a) * postR, Math.sin(a) * postR)
+        const ll = capOffsetLatLon(spot.east, spot.north)
         const dir = latLonToVector3(ll.lat, ll.lon, 1)
         const seat = radiusAt
           ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
           : GLOBE_RADIUS + SEAT_LIFT
-        out.push({ dir, seat, kind, seed: k, yaw: hash1(k + 2) * Math.PI * 2 })
+        out.push({
+          dir,
+          seat,
+          kind,
+          seed,
+          yaw: hash1(seed + 2) * Math.PI * 2,
+        })
       }
+    })
+    return out
+  }, [radiusAt, built])
+
+  // One broad floodlit pool over each district's ground, and one over the solar
+  // farm. Placed from BASE_PLAN's own district centres rather than from a second
+  // list, so a district that moves takes its lighting with it.
+  //
+  // This exists because of an asymmetry the true sun exposed: the hardware in a
+  // terrain shadow is lit (by the site fill in regolithShader) and the GROUND it
+  // stands on is not, since that fill only reaches materials the model traversal
+  // patches. Lit buildings on black ground reads worse than either extreme.
+  const districtPools = useMemo(() => {
+    const out: { dir: Vec3; seat: number; radiusM: number; key: string }[] = []
+    if (!built) return out
+    for (const [site, plan] of Object.entries(BASE_PLAN)) {
+      if (!plan) continue
+      const ll = capOffsetLatLon(plan.east, plan.north)
+      const dir = latLonToVector3(ll.lat, ll.lon, 1)
+      out.push({
+        dir,
+        seat: radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS,
+        // The landing zone's apron is 62 m across on its own, so it gets a
+        // wider pool than a district whose plots line one short branch.
+        radiusM: site === 'lander' ? 46 : 28,
+        key: site,
+      })
     }
     return out
-  }, [radiusAt])
+  }, [radiusAt, built])
+
+  const excavators = useMemo(() => {
+    const out: { dir: Vec3; seat: number; noseAlong: Vec3; seed: number }[] = []
+    if (!built) return out
+    let placed = 0
+    for (let tries = 0; placed < EXCAVATOR_COUNT && tries < 400; tries++) {
+      const k = tries * 733 + 5501
+      const run = ROAD_RUNS[Math.floor(hash1(k) * ROAD_RUNS.length)]
+      const d = hash1(k + 1) * run.lengthM
+      const side = hash1(k + 2) > 0.5 ? 1 : -1
+      const shoulder =
+        EXCAVATOR_SHOULDER_MIN_M +
+        hash1(k + 3) * (EXCAVATOR_SHOULDER_MAX_M - EXCAVATOR_SHOULDER_MIN_M)
+      const spot = run.at(d, side * (ROAD_HALF_M + shoulder))
+      // A narrower margin than the boulders' (which stand well clear of
+      // every district): this fleet works right up against a district's
+      // own edge, not out in open regolith.
+      if (
+        onRoad(spot.east, spot.north) ||
+        withinDistrictGround(spot.east, spot.north, 9)
+      ) {
+        continue
+      }
+      const ll = capOffsetLatLon(spot.east, spot.north)
+      const dir = latLonToVector3(ll.lat, ll.lon, 1)
+      const seat = radiusAt
+        ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
+        : GLOBE_RADIUS + SEAT_LIFT
+      // Nose along the road's own direction (a point a few meters further down
+      // the same run), the same "sample a neighbouring point on the base plane
+      // and subtract" trick `lights` uses for its boom heading — a grader
+      // actually working the shoulder sits lengthwise along the road, not at a
+      // random angle to it. Which way down the road is picked per-instance so a
+      // run of them doesn't all face the same direction.
+      const ahead = run.at(d + 4, side * (ROAD_HALF_M + shoulder))
+      const llAhead = capOffsetLatLon(ahead.east, ahead.north)
+      const dTangent = new THREE.Vector3(
+        ...latLonToVector3(llAhead.lat, llAhead.lon, 1)
+      )
+      const dVec = new THREE.Vector3(...dir)
+      const flip = hash1(k + 4) > 0.5 ? 1 : -1
+      const noseAlong = dTangent
+        .sub(dVec)
+        .multiplyScalar(flip)
+        .normalize()
+        .toArray() as Vec3
+      out.push({ dir, seat, noseAlong, seed: k })
+      placed++
+    }
+    return out
+  }, [radiusAt, built])
 
   return (
     <group>
@@ -776,10 +1075,23 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
           surfaceRadius={l.seat}
           scale={M_TO_UNITS}
           noseAlong={l.noseAlong}
+          dim={presence}
           castShadows={false}
           interactive={false}
         >
           <StreetLight />
+        </SurfaceAnchor>
+      ))}
+      {districtPools.map((p) => (
+        <SurfaceAnchor
+          key={`flood:${p.key}`}
+          dir={p.dir}
+          surfaceRadius={p.seat}
+          scale={M_TO_UNITS}
+          castShadows={false}
+          interactive={false}
+        >
+          <DistrictFloodPool radiusM={p.radiusM} />
         </SurfaceAnchor>
       ))}
       {roadsideCargo.map((c, i) => (
@@ -788,6 +1100,7 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
           dir={c.dir}
           surfaceRadius={c.seat}
           scale={M_TO_UNITS}
+          dim={presence}
           castShadows={false}
           interactive={false}
         >
@@ -812,6 +1125,20 @@ function InterDistrictFiller({ radiusAt }: { radiusAt?: RadiusAt | null }) {
           </group>
         </SurfaceAnchor>
       ))}
+      {excavators.map((e, i) => (
+        <SurfaceAnchor
+          key={`excavator:${i}`}
+          dir={e.dir}
+          surfaceRadius={e.seat}
+          scale={M_TO_UNITS}
+          noseAlong={e.noseAlong}
+          dim={presence}
+          castShadows={false}
+          interactive={false}
+        >
+          <Excavator seed={e.seed} />
+        </SurfaceAnchor>
+      ))}
     </group>
   )
 }
@@ -824,7 +1151,6 @@ function DistrictBeacon({
   dir,
   color,
   label,
-  pinModelSizeM,
   selected,
   hovered,
   style,
@@ -835,8 +1161,6 @@ function DistrictBeacon({
   dir: Vec3
   color: string
   label: string
-  // The tallest model on the lot, so the reticle floats clear of all of them.
-  pinModelSizeM: number
   selected: boolean
   hovered: boolean
   style: MarkerStyle
@@ -858,10 +1182,10 @@ function DistrictBeacon({
     const seat = ground + SEAT_LIFT
     return {
       base: d.clone().multiplyScalar(seat),
-      tip: d.clone().multiplyScalar(seat + pinHeightUnits(pinModelSizeM)),
+      tip: d.clone().multiplyScalar(seat + PIN_HEIGHT_UNITS),
       ndir: d,
     }
-  }, [dir, radiusAt, pinModelSizeM])
+  }, [dir, radiusAt])
 
   useFrame((_, delta) => {
     const g = groupRef.current
@@ -1096,6 +1420,8 @@ export default function MarkerLayer({
   onHoverTree,
   getProjectStyle,
   radiusAt,
+  cinematic,
+  infraPresence = 1,
 }: MarkerLayerProps) {
   const orgMap = useMemo(() => {
     const m = new Map<string, Organization>()
@@ -1130,12 +1456,19 @@ export default function MarkerLayer({
                 tree.goal ? 'competitor' : 'project'
               }${count === 1 ? '' : 's'}`
 
-        // The pin has to clear the tallest thing on the lot, not the average.
-        const tallestM = Math.max(...members.map((p) => projectSizeM(p)))
-        // The whole field drives, if this race's hardware is vehicles. Spread
-        // evenly round the circuit rather than sent out as a convoy: three rovers
-        // nose to tail is one moving object, where a third of a lap apart puts
-        // traffic somewhere in the city whichever way the camera is pointing.
+        // A race whose hardware is VEHICLES is shown twice over, and it is the
+        // only kind that is. Every competitor stands on its own lot like any
+        // other race's hardware, because four bids for the same contract are
+        // only a race the user can read if they can be lined up and compared;
+        // and a second copy of the whole field drives the spine, because a base
+        // where nothing ever moves reads as a diagram. The driving copies are
+        // scenery — no name card, no hit target — so the duplication never
+        // reaches the parts of the UI that count competitors.
+        //
+        // The fleet is spread evenly along the run rather than sent out as a
+        // convoy: four rovers nose to tail is one moving object, where a
+        // quarter of a run apart puts traffic somewhere on the street whichever
+        // way the camera is pointing.
         const patrol = PATROL[tree.category]
 
         return (
@@ -1149,61 +1482,80 @@ export default function MarkerLayer({
               }
               if (!style.visible) return null
               const org = orgMap.get(project.orgId)
+              const probability = tree.goal?.market?.impliedOdds?.[project.id]
               return (
-                <CompetitorPlot
-                  key={project.id}
-                  project={project}
-                  slot={plot.slot}
-                  dir={plot.dir}
-                  standDir={plot.standDir}
-                  accent={orgColor(org)}
-                  opacity={style.opacity}
-                  dim={dim}
-                  patrol={patrol}
-                  patrolPhase={(i / count) * Math.PI * 2}
-                  raceOpen={isOpen}
-                  called={selectedProject?.id === project.id}
-                  onSelect={() => onSelectProject?.(project.id)}
-                  onHover={(h) => onHoverTree?.(h ? tree.category : null)}
-                  radiusAt={radiusAt}
-                />
+                <group key={project.id}>
+                  <CompetitorPlot
+                    project={project}
+                    slot={plot.slot}
+                    dir={plot.dir}
+                    accent={orgColor(org)}
+                    opacity={style.opacity}
+                    dim={dim}
+                    raceOpen={isOpen}
+                    called={selectedProject?.id === project.id}
+                    standing={
+                      probability != null && Number.isFinite(probability)
+                        ? { place: i + 1, probability }
+                        : undefined
+                    }
+                    onSelect={() => onSelectProject?.(project.id)}
+                    onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+                    radiusAt={radiusAt}
+                    cinematic={cinematic}
+                  />
+
+                  {patrol && (
+                    <CompetitorPlot
+                      project={project}
+                      slot={plot.slot}
+                      dir={plot.dir}
+                      standDir={plot.standDir}
+                      accent={orgColor(org)}
+                      opacity={style.opacity}
+                      dim={dim}
+                      patrol={patrol}
+                      patrolPhase={i / count}
+                      raceOpen={isOpen}
+                      called={false}
+                      radiusAt={radiusAt}
+                      cinematic={cinematic}
+                      scenery
+                    />
+                  )}
+                </group>
               )
             })}
 
-            {tree.category === 'rover' && (
-              <>
-                <RoverDepotSite
-                  accent={color}
-                  dim={dim}
-                  opacity={districtOpacity}
-                  radiusAt={radiusAt}
-                />
-                <RoverGasStationSite
-                  accent={color}
-                  dim={dim}
-                  opacity={districtOpacity}
-                  radiusAt={radiusAt}
-                />
-              </>
+            {/* Dropped entirely rather than made invisible: the beacon owns
+                this district's oversized click target (see its hit sphere), and
+                leaving that behind would have a base with no visible markers
+                still turning the cursor to a pointer over empty sky. In
+                cinematic mode the hardware itself is the only thing to click. */}
+            {!cinematic && (
+              <DistrictBeacon
+                dir={districtDir}
+                color={color}
+                label={label}
+                selected={isOpen}
+                hovered={hoveredCategory === tree.category}
+                style={{ opacity: districtOpacity * dim, visible: true }}
+                onSelect={() => onSelectTree?.(tree.category)}
+                onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+                radiusAt={radiusAt}
+              />
             )}
-
-            <DistrictBeacon
-              dir={districtDir}
-              color={color}
-              label={label}
-              pinModelSizeM={tallestM}
-              selected={isOpen}
-              hovered={hoveredCategory === tree.category}
-              style={{ opacity: districtOpacity * dim, visible: true }}
-              onSelect={() => onSelectTree?.(tree.category)}
-              onHover={(h) => onHoverTree?.(h ? tree.category : null)}
-              radiusAt={radiusAt}
-            />
           </group>
         )
       })}
 
-      <InterDistrictFiller radiusAt={radiusAt} />
+      <SolarFarmSite radiusAt={radiusAt} presence={infraPresence} />
+      <InterDistrictFiller radiusAt={radiusAt} presence={infraPresence} />
+      <UndergroundConstructionSiteMarker
+        radiusAt={radiusAt}
+        cinematic={cinematic}
+        presence={infraPresence}
+      />
     </group>
   )
 }

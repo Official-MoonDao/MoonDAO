@@ -3,8 +3,7 @@
  * extractor and other budget sources. If an override exists, it takes
  * precedence and short-circuits the rest of `extractUsdBudget()`. Used when
  * a proposal author agrees to revise their requested budget (typically
- * downward, to fit under the quarterly 3/4-cap so that more projects can be
- * funded) without re-uploading a new proposal payload.
+ * downward) without re-uploading a new proposal payload.
  *
  * Keys are MDP numbers (string or number tolerated). Values are USD amounts.
  *

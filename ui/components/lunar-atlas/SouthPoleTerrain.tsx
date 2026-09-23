@@ -1,32 +1,78 @@
-// Photorealistic Connecting Ridge terrain for Moon Base Zero.
+// Physically lit Connecting Ridge terrain for Moon Base Zero.
 //
 // A single 16x16 km patch of the Shackleton-de Gerlache connecting ridge
-// (PGDA Site01 LOLA DEM, 5 m/px) — no whole Moon, no polar cap. Rendered in
-// the cartographic style of LROC quickmaps: ALL terrain shading is baked
-// into the albedo as hillshade (the DEM's full 5 m/px relief as per-pixel
-// light), and the terrain material is UNLIT. Dynamic-lighting the coarser
-// displaced mesh on top of the bake made every away-facing slope collapse
-// into a flat ambient-gray "pond" — unlit terrain renders exactly the crisp
-// baked map, from every camera angle. Only the 3D models and markers are
-// dynamically lit (their sun matches the baked hillshade azimuth).
+// (PGDA Site01 LOLA DEM, 5 m/px). The ground is shaded by evaluating the
+// regolith BRDF per pixel (see lib/lunar-atlas/regolith.ts) against the real
+// sun, rather than by displaying a hillshade that was baked at one fixed sun.
 //
-// Geometry positions come from the same decoded height field the CPU sampler
-// (useTerrainSampler) reads, so everything seated on the terrain agrees with
-// the rendered ground by construction.
-
+// WHY THIS IS NOT THE BAKED-HILLSHADE SCENE ANY MORE
+//
+// It used to be, and the argument for the bake was that dynamic-lighting the
+// displaced mesh made every away-facing slope collapse into a flat ambient-grey
+// "pond". That was a real failure, but it was misdiagnosed as a lighting
+// problem when it was a NORMALS problem: the mesh resolves 15.6 m, the relief
+// lives at 5-10 m, so the mesh's own normals had almost none of the terrain in
+// them and the bake was carrying all of it as painted light.
+//
+// The fix is to keep the relief but move it off the geometry. Normals come from
+// a texture built at the full height-field resolution (buildNormalField in
+// southpole.ts), so shading is per pixel and completely independent of how
+// coarse the mesh is. That matters more than it sounds: reaching 5 m/px in
+// GEOMETRY would cost 20.5 M triangles and ~550 MB of vertex buffers, which no
+// browser tab can hold, while the same relief as a normal map is a few MB and
+// leaves the mesh free to drop to CAP_GRID/2 on a phone without changing how
+// the ground is lit at all.
+//
+// What this buys beyond honesty: the sun can move (a bake cannot), shadows are
+// real rather than painted, and the terrain no longer needs a second
+// shadow-catching pass over the same 2.1 M triangles — a lit material receives
+// shadows by itself.
+//
+// Geometry positions still come from the same decoded height field the CPU
+// sampler (useTerrainSampler) reads, so everything seated on the terrain agrees
+// with the rendered ground by construction.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import { buildDetailSlopeTile } from '@/lib/lunar-atlas/detailTile'
 import {
   CAP_GRID,
+  MAP_X_DIR,
   buildCapGeometry,
+  buildNormalField,
   type PolarHeightField,
 } from '@/lib/lunar-atlas/southpole'
-import { SP_ALBEDO_MAP } from '@/lib/lunar-atlas/textures'
+import {
+  TERRAIN_FRAGMENT_PATCHES,
+  TERRAIN_VERTEX_PATCHES,
+  applyShaderPatches,
+} from '@/lib/lunar-atlas/regolithShader'
 import { loadInnerField } from './useTerrainSampler'
+import { bindOcclusionUniforms, primeRegolithOcclusion } from './regolithOcclusion'
 
 // A pointer that travels farther than this between down and up is a drag
 // (camera tumble), not a click.
 const CLICK_DRAG_TOLERANCE_PX = 8
+
+// Regolith is very slightly warm and almost perfectly neutral. This is a TINT,
+// not a brightness: how dark the ground is comes from the BRDF's single
+// scattering albedo, so this must stay near white or the surface gets darkened
+// twice. Same values as lunarEnvironment.ts, for the same reason.
+const REGOLITH_TINT = '#fff8ed'
+
+// The fill in every shadow. Derived in lib/lunar-atlas/regolith.ts, and shared
+// with the graded surfaces in BaseRoads so a road in shadow cannot sit at a
+// different depth from the ground it crosses.
+//
+// The first version of this was computed here, from a LAMBERTIAN ground radiance,
+// and came out 4x too high — 24% of the lit ground rather than 6%. A 24% uniform
+// fill is not a small cosmetic error: it is the "flat ambient pond" this
+// component's own history warns about, since it lifts every slope by the same
+// amount and so flattens exactly the shading contrast per-pixel normals were
+// added to produce. Sharing one derivation is how that stops recurring.
+// ...and it now lives in regolithOcclusion.ts, as one uniform box shared with the
+// graded surfaces rather than the same expression written out in both files. Agreeing
+// by duplication was already the weak version of agreeing, and it could not have
+// survived a sun that moves, since the fill scales with the sun's elevation.
 
 // The geometry plus the world offset its vertices are relative to (see
 // buildCapGeometry — the offset must go on the mesh transform, which three
@@ -39,98 +85,93 @@ function toBufferGeometry(field: PolarHeightField, grid: number): CapMesh {
   geo.setAttribute('position', new THREE.BufferAttribute(cap.positions, 3))
   geo.setAttribute('uv', new THREE.BufferAttribute(cap.uvs, 2))
   geo.setIndex(new THREE.BufferAttribute(cap.indices, 1))
+  // These vertex normals no longer light anything — the shader replaces `normal`
+  // with the per-pixel map-frame normal. They are still needed because three's
+  // shadow plumbing offsets its occlusion lookup along the interpolated vertex
+  // normal (shadowNormalBias), and because a missing `normal` attribute makes
+  // that offset NaN.
   geo.computeVertexNormals()
   return { geometry: geo, origin: new THREE.Vector3(...cap.origin) }
 }
 
-function useTexture(url: string, srgb: boolean): THREE.Texture | null {
-  const [tex, setTex] = useState<THREE.Texture | null>(null)
-  useEffect(() => {
-    let cancelled = false
-    new THREE.TextureLoader().load(url, (t) => {
-      if (cancelled) {
-        t.dispose()
-        return
-      }
-      t.colorSpace = srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace
-      t.anisotropy = 16
-      setTex(t)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [url, srgb])
-  useEffect(() => () => tex?.dispose(), [tex])
-  return tex
+function toHalf(src: Float32Array): Uint16Array {
+  const half = new Uint16Array(src.length)
+  for (let i = 0; i < src.length; i++) half[i] = THREE.DataUtils.toHalfFloat(src[i])
+  return half
 }
 
-// Tiling regolith detail for close-range terrain. The albedo bottoms out at
-// 2.5 m/px, so the foreground magnifies it into fuzz — this tile multiplies
-// in the missing structure. Plain white noise just reads as MORE fuzz;
-// instead the tile is a hillshaded field of small crater bowls + grain, so
-// magnified ground has the same cratered character as the baked albedo. It
-// is lit from the same azimuth as the baked sun so shading directions agree.
-function makeDetailTile(size = 512): THREE.DataTexture {
-  // Deterministic LCG so the ground doesn't change between mounts.
-  let s = 12345
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >>> 0
-    return s / 0xffffffff
+// The terrain's own normals, at the height field's full resolution, as a
+// two-channel float texture. Half float rather than bytes on purpose: 8 bits
+// across [-1, 1] quantises the normal to about 0.45°, and once the sun sits at
+// its true polar elevation of ~2° a 0.45° error is a tenth of the incidence
+// cosine. Linear filtering is safe here in a way it would NOT be on the packed
+// height PNG, whose high/low byte split cannot be interpolated at all.
+//
+// The second texture is the same field's MEAN SQUARE slope, which the shader
+// differences against the filtered normal to recover the roughness a mip level
+// destroyed (see buildNormalField and residualRoughness). One channel, so at
+// 1600² it costs 5 MB against the normal map's 10 — widening the normal map to
+// RGBA instead would have cost 10, and this scene already has a phone budget.
+function toNormalTextures(field: PolarHeightField): {
+  normal: THREE.DataTexture
+  slopeSq: THREE.DataTexture
+} {
+  const { size, data, variance } = buildNormalField(field)
+
+  const normal = new THREE.DataTexture(
+    toHalf(data),
+    size,
+    size,
+    THREE.RGFormat,
+    THREE.HalfFloatType
+  )
+  const slopeSq = new THREE.DataTexture(
+    toHalf(variance),
+    size,
+    size,
+    THREE.RedFormat,
+    THREE.HalfFloatType
+  )
+
+  // Identical filtering on both, and that is load-bearing rather than tidy: the
+  // variance the shader recovers is E[|s|²] - |E[s]|², so the two textures have to
+  // be averaged over the same footprint or the subtraction is between two different
+  // neighbourhoods and can come out any sign it likes.
+  for (const tex of [normal, slopeSq]) {
+    tex.magFilter = THREE.LinearFilter
+    tex.minFilter = THREE.LinearMipmapLinearFilter
+    tex.generateMipmaps = true
+    tex.anisotropy = 16
+    tex.needsUpdate = true
   }
 
-  // Height field: soft noise + a power-law population of crater bowls with
-  // raised rims, painted with wrap-around so the tile is seamless.
-  const h = new Float32Array(size * size)
-  for (let i = 0; i < h.length; i++) h[i] = (rand() + rand() - 1) * 0.6
-  const nCraters = 900
-  for (let c = 0; c < nCraters; c++) {
-    const cx = rand() * size
-    const cy = rand() * size
-    const R = 2 + Math.pow(rand(), 2.2) * 22 // px — many small, few large
-    const depth = R * (0.12 + rand() * 0.3)
-    const pad = Math.ceil(R * 1.4)
-    for (let y = Math.floor(cy) - pad; y <= Math.floor(cy) + pad; y++) {
-      for (let x = Math.floor(cx) - pad; x <= Math.floor(cx) + pad; x++) {
-        const dx = x - cx
-        const dy = y - cy
-        const r = Math.sqrt(dx * dx + dy * dy) / R
-        if (r >= 1.4) continue
-        const bowl = r < 1 ? -(1 - r * r) : 0.3 * ((1.4 - r) / 0.4)
-        const xi = ((x % size) + size) % size
-        const yi = ((y % size) + size) % size
-        h[yi * size + xi] += bowl * depth
-      }
-    }
-  }
+  return { normal, slopeSq }
+}
 
-  // Hillshade with a wrapping gradient. Light azimuth matches SUN_AZ_DEG in
-  // the bake script (40°); elevation is kept moderate so bowls shade without
-  // going black. Flat ground maps to 128 so the multiply blend is neutral.
-  const az = (40 * Math.PI) / 180
-  const el = (35 * Math.PI) / 180
-  const lx = Math.sin(az) * Math.cos(el)
-  const ly = Math.cos(az) * Math.cos(el)
-  const lz = Math.sin(el)
-  const data = new Uint8Array(size * size)
-  for (let y = 0; y < size; y++) {
-    const yp = (y + 1) % size
-    const ym = (y - 1 + size) % size
-    for (let x = 0; x < size; x++) {
-      const xp = (x + 1) % size
-      const xm = (x - 1 + size) % size
-      const gx = (h[y * size + xp] - h[y * size + xm]) * 0.5
-      // Rows run top-down while the map frame's +y runs up — flip so the
-      // tile's lit sides match the baked albedo's.
-      const gy = (h[ym * size + x] - h[yp * size + x]) * 0.5
-      const inv = 1 / Math.sqrt(gx * gx + gy * gy + 1)
-      const shade = Math.max((-gx * lx + gy * ly + lz) * inv, 0)
-      // Flat ground (shade = lz) -> 0.5; softened with a mild gamma.
-      const rel = Math.pow(shade / lz, 0.8) * 0.5
-      data[y * size + x] = Math.max(0, Math.min(255, Math.round(rel * 255)))
-    }
+// The tiling sub-resolution detail, uploaded as slopes. The field itself is
+// generated in lib/lunar-atlas/detailTile.ts, which is where the argument for its
+// contents and the measurement of its roughness live; this only turns it into a
+// texture.
+//
+// Four channels rather than two, carrying (gx, gy, gx² + gy², 0). The mean square
+// rides in the same texture as the slopes it belongs to because the terrain samples
+// this four times — once per octave — and splitting it out would make that eight
+// fetches to save 0.5 MB on a 512² tile.
+function toDetailTexture(): THREE.DataTexture {
+  const { size, data, second } = buildDetailSlopeTile()
+  const rgba = new Float32Array(size * size * 4)
+  for (let i = 0; i < size * size; i++) {
+    rgba[i * 4] = data[i * 2]
+    rgba[i * 4 + 1] = data[i * 2 + 1]
+    rgba[i * 4 + 2] = second[i]
   }
-
-  const tex = new THREE.DataTexture(data, size, size, THREE.RedFormat)
+  const tex = new THREE.DataTexture(
+    toHalf(rgba),
+    size,
+    size,
+    THREE.RGBAFormat,
+    THREE.HalfFloatType
+  )
   tex.wrapS = THREE.RepeatWrapping
   tex.wrapT = THREE.RepeatWrapping
   tex.magFilter = THREE.LinearFilter
@@ -148,16 +189,24 @@ export default function SouthPoleTerrain({
   onSurfaceClick?: () => void
 }) {
   const [innerGeo, setInnerGeo] = useState<CapMesh | null>(null)
+  const [normalTex, setNormalTex] = useState<{
+    normal: THREE.DataTexture
+    slopeSq: THREE.DataTexture
+  } | null>(null)
 
-  const albedo = useTexture(SP_ALBEDO_MAP, true)
-  const detail = useMemo(() => makeDetailTile(), [])
+  const detail = useMemo(() => toDetailTexture(), [])
   useEffect(() => () => detail.dispose(), [detail])
 
   useEffect(() => {
     let cancelled = false
+    // Kicked off here rather than awaited: the skyline field takes ~148 ms to sweep
+    // and the ground should not wait on it, since the placeholders it starts with are
+    // chosen to render identically to an open, level horizon.
+    void primeRegolithOcclusion()
     loadInnerField().then((field) => {
       if (cancelled) return
       setInnerGeo(toBufferGeometry(field, CAP_GRID))
+      setNormalTex(toNormalTextures(field))
     })
     return () => {
       cancelled = true
@@ -170,98 +219,81 @@ export default function SouthPoleTerrain({
     },
     [innerGeo]
   )
+  useEffect(
+    () => () => {
+      normalTex?.normal.dispose()
+      normalTex?.slopeSq.dispose()
+    },
+    [normalTex]
+  )
 
   const notified = useRef(false)
   useEffect(() => {
-    if (innerGeo && albedo && !notified.current) {
+    if (innerGeo && normalTex && !notified.current) {
       notified.current = true
       onReady?.()
     }
-  }, [innerGeo, albedo, onReady])
+  }, [innerGeo, normalTex, onReady])
 
-  // Multiplies octaves of the tiled craterlet shading into the cap's diffuse
-  // so magnified close-ups keep structure. Mean is ~1.0 (flat tile = 0.5,
-  // blend is 0.76 + 0.48·dn), so the overall tone is preserved.
   const onBeforeCompile = useMemo(
     () => (shader: THREE.WebGLProgramParametersWithUniforms) => {
-      shader.uniforms.detailMap = { value: detail }
-      shader.fragmentShader = shader.fragmentShader
-        .replace(
-          '#include <map_pars_fragment>',
-          '#include <map_pars_fragment>\nuniform sampler2D detailMap;'
-        )
-        .replace(
-          '#include <map_fragment>',
-          `#include <map_fragment>
-          {
-            // The UV square spans 16 km. Tile repeats: x60 = 267 m tiles
-            // (craterlets ~1-12 m, the near-field structure the 2.5 m/px
-            // albedo can't carry), x250 = 64 m (0.3-3 m craterlets), x800 =
-            // 20 m grain, x6400 = 2.5 m soil sparkle for ground-level views.
-            float dn = texture2D(detailMap, vMapUv * 60.0).r * 0.3
-                     + texture2D(detailMap, vMapUv * 250.0).r * 0.3
-                     + texture2D(detailMap, vMapUv * 800.0).r * 0.2
-                     + texture2D(detailMap, vMapUv * 6400.0).r * 0.2;
-            diffuseColor.rgb *= 0.76 + 0.48 * dn;
-            // Radial fade to black: dissolve the square patch's rim into the
-            // dark of space so the terrain reads as an expansive field
-            // receding into shadow, not a hard-edged floating chunk. rr is
-            // 0 at the ridge, 1 at the edge midpoint, ~1.41 at the corners —
-            // a long, soft gradient turns the slab into a fading disc.
-            float rr = length(vMapUv - 0.5) * 2.0;
-            diffuseColor.rgb *= 1.0 - smoothstep(0.82, 1.34, rr);
-          }`
-        )
+      if (!normalTex) return
+      shader.uniforms.terrainNormalMap = { value: normalTex.normal }
+      shader.uniforms.terrainSlopeSqMap = { value: normalTex.slopeSq }
+      shader.uniforms.detailSlopeMap = { value: detail }
+      shader.uniforms.mapXDir = { value: new THREE.Vector3(...MAP_X_DIR) }
+      // The skyline field, the sun tested against it, and the shadow fill derived
+      // from it. Shared boxes, not copies — see regolithOcclusion.ts — so the roads
+      // across this ground are always in the same shadow, at the same depth, under
+      // the same sun as the ground.
+      bindOcclusionUniforms(shader.uniforms)
+
+      // The patches themselves, and the reasoning for each anchor, live in
+      // lib/lunar-atlas/regolithShader.ts — they are string surgery on shader
+      // source three owns, so they are unit-tested against three's real
+      // ShaderLib rather than trusted.
+      shader.vertexShader = applyShaderPatches(shader.vertexShader, TERRAIN_VERTEX_PATCHES)
+      shader.fragmentShader = applyShaderPatches(shader.fragmentShader, TERRAIN_FRAGMENT_PATCHES)
     },
-    [detail]
+    [normalTex, detail]
   )
 
   const handleClick = (e: any) => {
     if (e.delta <= CLICK_DRAG_TOLERANCE_PX) onSurfaceClick?.()
   }
 
-  if (!innerGeo || !albedo) return null
+  if (!innerGeo || !normalTex) return null
 
   return (
-    <group>
-      {/* Unlit: the albedo IS the final shaded image (see header comment). */}
-      <mesh
-        geometry={innerGeo.geometry}
-        position={innerGeo.origin}
-        onClick={handleClick}
-      >
-        <meshBasicMaterial
-          map={albedo}
-          onBeforeCompile={onBeforeCompile}
-          // onBeforeCompile changes don't retrigger compilation on their own.
-          customProgramCacheKey={() => 'sp-inner-detail-v2'}
-        />
-      </mesh>
-      {/* Shadow catcher. An unlit material cannot receive shadows, so the
-          installations' cast shadows are drawn as a second, transparent pass
-          over the SAME geometry — ShadowMaterial renders nothing except where
-          something shadows it. Without this the hardware had no contact
-          shadow at all and read as pasted onto a photo.
+    <mesh
+      geometry={innerGeo.geometry}
+      position={innerGeo.origin}
+      onClick={handleClick}
+      receiveShadow
+    >
+      {/* Lambert only for its light loop and its shadow plumbing — RE_Direct is
+          replaced above, so nothing Lambertian survives into the image. The
+          colour is a TINT and must stay near white: the ground's darkness comes
+          from the BRDF's single scattering albedo, and a dark colour here would
+          apply it a second time.
 
-          The terrain deliberately does NOT cast: its own relief shadows are
-          already baked into the albedo, so casting them again would
-          double-darken every slope. */}
-      <mesh
-        geometry={innerGeo.geometry}
-        position={innerGeo.origin}
-        receiveShadow
-      >
-        <shadowMaterial
-          transparent
-          // Lunar shadows are near-black (no atmosphere to scatter light into
-          // them), lifted a hair by regolith bounce.
-          opacity={0.88}
-          color="#04050a"
-          depthWrite={false}
-          polygonOffset
-          polygonOffsetFactor={-1}
-        />
-      </mesh>
-    </group>
+          USE_UV is forced because this material has no `map`. Without a texture
+          bound to the uv channel three never declares vUv, and the normal and
+          detail lookups above would not compile.
+
+          The terrain deliberately does NOT cast. Its own relief is in the normal
+          map, not the geometry, so a shadow map rendered from this mesh would
+          only know about the 15.6 m mesh and would fight the per-pixel normals.
+          Terrain self-shadowing comes from the skyline field instead, which is
+          O(1) per fragment and reaches the whole 16 km patch rather than the
+          hundred metres a shadow map covers. */}
+      <meshLambertMaterial
+        color={REGOLITH_TINT}
+        defines={{ USE_UV: '' }}
+        onBeforeCompile={onBeforeCompile}
+        // onBeforeCompile changes don't retrigger compilation on their own.
+        customProgramCacheKey={() => 'sp-hapke-v2-rough'}
+      />
+    </mesh>
   )
 }

@@ -80,7 +80,7 @@ export default function SubmissionPage() {
                     Project System Guide
                   </Link>
                   <Link
-                    href="https://docs.moondao.com/Reference/Nested-Docs/Community-Rewards"
+                    href="/docs/Reference/Nested-Docs/Community-Rewards"
                     className="text-blue-400 hover:text-blue-300 underline"
                     target="_blank"
                     rel="noreferrer"

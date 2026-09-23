@@ -22,9 +22,11 @@ import {
   MarketStage,
   UNIT,
 } from '@/lib/deprize/constants'
-import { fmt } from '@/lib/deprize/format'
+import { fmtEthWithUsd } from '@/lib/deprize/format'
 import { rpcRead } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
+import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
@@ -67,6 +69,9 @@ export default function DePrizeAdminPanel({
   const seededQuestionId = getDePrizeQuestionId(chainSlug, deprizeId) ?? ''
 
   const [busy, setBusy] = useState(false)
+  const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
+    useDePrizeChainGuard(chain)
+  const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
   const [isRegistryOwner, setIsRegistryOwner] = useState(false)
   const [routerOwned, setRouterOwned] = useState(false)
   const [isMarketController, setIsMarketController] = useState(false)
@@ -245,6 +250,7 @@ export default function DePrizeAdminPanel({
   // Generic write helper with a toast lifecycle.
   const run = async (contract: any, method: string, params: any[], doneMsg: string) => {
     if (!account || !contract) return
+    if (blockedByNetwork()) return
     setBusy(true)
     try {
       await sendDePrizeTx(
@@ -273,6 +279,7 @@ export default function DePrizeAdminPanel({
   // Oracle resolution with the same pre-flight as DePrizeResolve.s.sol.
   const resolve = async (payouts: bigint[], label: string) => {
     if (!account || !ctf || !lmsr) return
+    if (blockedByNetwork()) return
     setBusy(true)
     try {
       const computed = await rpcRead<string>({
@@ -439,6 +446,23 @@ export default function DePrizeAdminPanel({
         {isOracle ? ' · oracle' : ''}
         {isMarketController ? (routerOwned ? ' · fee-router owner' : ' · market owner') : ''}
       </p>
+
+      {wrongNetwork && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2">
+          <p className="text-amber-200 text-sm">
+            Your wallet is on a different network. Admin actions are sent on{' '}
+            <span className="font-semibold">{chainLabel}</span>.
+          </p>
+          <StandardButton
+            onClick={switchToChain}
+            disabled={switching}
+            className="rounded-full self-start"
+            backgroundColor="bg-moon-green"
+          >
+            {switching ? 'Switching…' : `Switch wallet to ${chainLabel}`}
+          </StandardButton>
+        </div>
+      )}
 
       {/* Registry lifecycle (registry owner) */}
       {isRegistryOwner && registry && (
@@ -679,7 +703,7 @@ export default function DePrizeAdminPanel({
                 backgroundColor="bg-white/10"
               >
                 {marketFeesWei !== undefined
-                  ? `Sweep fees (${fmt(Number(marketFeesWei) / Number(UNIT), 4)} WETH)`
+                  ? `Sweep fees (${fmtEthWithUsd(Number(marketFeesWei) / Number(UNIT), ethPrice, { decimals: 4, unit: 'WETH' })})`
                   : `Sweep fees to ${sweepDestination}`}
               </StandardButton>
             ) : (
@@ -690,7 +714,7 @@ export default function DePrizeAdminPanel({
                 backgroundColor="bg-white/10"
               >
                 {marketFeesWei !== undefined
-                  ? `Withdraw fees (${fmt(Number(marketFeesWei) / Number(UNIT), 4)} WETH)`
+                  ? `Withdraw fees (${fmtEthWithUsd(Number(marketFeesWei) / Number(UNIT), ethPrice, { decimals: 4, unit: 'WETH' })})`
                   : 'Withdraw fees'}
               </StandardButton>
             )}

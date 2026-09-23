@@ -74,10 +74,10 @@ const infoCards = [
   },
   {
     icon: '/assets/icon-about.svg',
-    iconAlt: 'About MoonDAO',
-    header: 'About MoonDAO',
-    link: '/about',
-    hovertext: 'Learn About MoonDAO',
+    iconAlt: 'Documentation',
+    header: 'Documentation',
+    link: '/docs',
+    hovertext: 'Read the Docs',
     paragraph:
       'Learn about how MoonDAO operates, how you can contribute or propose a project, read about our mission and vision, and more.',
   },
@@ -103,7 +103,7 @@ const infoCards = [
 const Info: React.FC = () => {
   const title = 'Information Center'
   const description = "Learn More About The Internet's Space Program"
-  const image = '/assets/moondao-og.jpg'
+  const image = '/assets/MoonDAO-OG.png'
 
   useChainDefault()
 

@@ -16,9 +16,6 @@ import MobileSidebar from './Sidebar/MobileSidebar'
 import TopNavBar from './TopNavBar'
 
 // Lazy load non-critical components for better LCP
-const SpaceBackground = dynamic(() => import('./SpaceBackground'), {
-  ssr: false,
-})
 const GlobalSearch = dynamic(() => import('./GlobalSearch'), {
   ssr: false,
 })
@@ -31,6 +28,10 @@ const ProjectBanner = dynamic(() => import('./ProjectBanner'), {
 const CookieBanner = dynamic(() => import('./CookieBanner'), {
   ssr: false,
 })
+const CitizenExpiredModal = dynamic(
+  () => import('@/components/subscription/CitizenExpiredModal'),
+  { ssr: false }
+)
 
 // Gate `ssr: false` dynamics so they never enter the SSR tree as dehydrated
 // Suspense boundaries. Mounting them only after hydration avoids React 18's
@@ -67,7 +68,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     abi: CitizenABI as any,
   })
 
-  const navigation = useNavigation(citizen)
+  const navigation = useNavigation()
 
   useTranslation('common')
 
@@ -77,6 +78,11 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/about',
     '/faq',
     '/constitution',
+    '/privacy-policy',
+    '/terms-of-service',
+    '/project-system-docs',
+    '/docs',
+    '/documentation/[...slug]',
     '/news',
     '/mission/[tokenId]',
     '/network',
@@ -103,9 +109,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen relative`}
     >
-      <ClientOnly>
-        <SpaceBackground />
-      </ClientOnly>
       <>
         <div className="xl:hidden">
           <MobileMenuTop
@@ -153,6 +156,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           <MissionBanner />
           <ProjectBanner />
           <CookieBanner />
+          <CitizenExpiredModal />
         </ClientOnly>
       </>
 

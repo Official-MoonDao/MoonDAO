@@ -15,8 +15,8 @@ const cspHeaderBase = `
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    connect-src 'self' blob: https://auth.privy.io https://*.privy.systems https://*.moonpay.com https://*.meld.io https://*.thirdweb.com https://*.nance.app https://*.walletconnect.com wss://*.walletconnect.com https://www.walletlink.org wss://*.walletlink.org https://*.safe.global https://*.ipfscdn.io https://*.ensideas.com https://*.amazonaws.com https://apple.com https://google.com https://www.apple.com https://www.google.com https://pay.google.com https://*.snapshot.org https://testnets.tableland.network https://tableland.network https://*.coinbase.com https://*.cb-device-intelligence.com https://*.browser-intake-datadoghq.eu https://ipfs.io https://cloudflare-ipfs.com/* https://*.etherscan.io https://*.vimeo.com https://*.uniswap.org https://*.layerzero-scan.com https://docs.google.com https://docs.moondao.com https://*.layerzero-scan.com https://*.juicebox.money https://rpc2.base.org https://rpc2.arbitrum.org https://rpc2.sepolia.org https://rpc2.mainnet.org https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://google-analytics.com https://*.google-analytics.com https://*.infura.io https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://nance-ts-production.up.railway.app https://bendystraw.xyz https://*.bendystraw.xyz https://rpc.ankr.com https://cloudflare-eth.com https://ethereum.publicnode.com https://eth.llamarpc.com https://1rpc.io https://arb1.arbitrum.io https://mainnet.base.org https://rpc.sepolia.org https://sepolia.optimism.io;
-    frame-src 'self' https://*.youtube.com https://youtu.be/ https://*.privy.io https://*.privy.systems https://*.moonpay.com https://*.meld.io https://*.moondao.com https://*.typeform.com https://*.snapshot.org https://*.coinbase.com https://*.cb-device-intelligence.com https://pay.google.com https://*.google.com https://moondao.ck.page https://moondao.kit.com https://*.vimeo.com https://docs.google.com https://docs.moondao.com https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
+    connect-src 'self' blob: https://r2.comfy.icu https://auth.privy.io https://*.privy.systems https://*.moonpay.com https://*.meld.io https://*.thirdweb.com https://*.nance.app https://*.walletconnect.com wss://*.walletconnect.com https://www.walletlink.org wss://*.walletlink.org https://*.safe.global https://*.ipfscdn.io https://*.ensideas.com https://*.amazonaws.com https://apple.com https://google.com https://www.apple.com https://www.google.com https://pay.google.com https://*.snapshot.org https://testnets.tableland.network https://tableland.network https://*.coinbase.com https://*.cb-device-intelligence.com https://*.browser-intake-datadoghq.eu https://ipfs.io https://cloudflare-ipfs.com/* https://*.etherscan.io https://*.vimeo.com https://*.uniswap.org https://*.layerzero-scan.com https://docs.google.com https://*.layerzero-scan.com https://*.juicebox.money https://rpc2.base.org https://rpc2.arbitrum.org https://rpc2.sepolia.org https://rpc2.mainnet.org https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://google-analytics.com https://*.google-analytics.com https://*.infura.io https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com https://nance-ts-production.up.railway.app https://bendystraw.xyz https://*.bendystraw.xyz https://rpc.ankr.com https://cloudflare-eth.com https://ethereum.publicnode.com https://eth.llamarpc.com https://1rpc.io https://arb1.arbitrum.io https://mainnet.base.org https://rpc.sepolia.org https://sepolia.optimism.io;
+    frame-src 'self' https://*.youtube.com https://youtu.be/ https://*.privy.io https://*.privy.systems https://*.moonpay.com https://*.meld.io https://*.moondao.com https://*.typeform.com https://*.snapshot.org https://*.coinbase.com https://*.cb-device-intelligence.com https://pay.google.com https://*.google.com https://moondao.ck.page https://moondao.kit.com https://*.vimeo.com https://docs.google.com https://gray-main-toad-36.mypinata.cloud https://tan-collective-smelt-690.mypinata.cloud https://*.lu.ma https://lu.ma https://*.luma.com https://luma.com;
     upgrade-insecure-requests;
     worker-src 'self' blob:;
 `
@@ -31,12 +31,31 @@ module.exports = withBundleAnalyzer(
     nextTranslate({
       reactStrictMode: true,
       swcMinify: true,
+      env: {
+        // Branch-aware GitHub blob links (capabilityLadder SPEC()). Vercel sets
+        // VERCEL_GIT_COMMIT_REF at build time; production builds on main.
+        NEXT_PUBLIC_DOCS_REF: process.env.VERCEL_GIT_COMMIT_REF || 'main',
+      },
       compiler: {
         removeConsole: false,
       },
       experimental: {
         esmExternals: 'loose',
         serverComponentsExternalPackages: ['thirdweb'],
+        // vercel.json includeFiles is ignored for Next.js — only NFT / this
+        // map can put Lato and the fallback OG cards into the serverless bundles.
+        outputFileTracingIncludes: {
+          '/api/og/job': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+          ],
+          '/api/og/listing': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+          ],
+        },
         optimizePackageImports: [
           '@heroicons/react',
           'gsap',
@@ -89,8 +108,29 @@ module.exports = withBundleAnalyzer(
         ],
         formats: ['image/avif', 'image/webp'],
       },
-      output: 'standalone',
+      // No `output: 'standalone'`. Vercel manages its own build output, and
+      // standalone mode broke the deploy as soon as the app gained its first
+      // getStaticPaths route (pages/docs/[...slug].tsx) — see
+      // docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md. Nothing consumes
+      // .next/standalone: CI serves the app with `next start`, which does not
+      // need it.
       poweredByHeader: false,
+      // The docs catch-all lives at /documentation/* and is surfaced at /docs/*
+      // through this rewrite, so every public URL stays /docs/...
+      //
+      // Why: a dynamic catch-all mounted directly at /docs/* fails the Vercel
+      // deployment for this project, while the identical route under any other
+      // prefix deploys fine. Verified across six deploys — see
+      // docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md. A rewrite keeps the URL
+      // in the address bar, unlike a redirect.
+      async rewrites() {
+        return [
+          {
+            source: '/docs/:path*',
+            destination: '/documentation/:path*',
+          },
+        ]
+      },
       async headers() {
         return [
           {
@@ -117,9 +157,26 @@ module.exports = withBundleAnalyzer(
             destination: 'https://moondao.com/:path*',
             permanent: true,
           },
+          // NOTE: there are deliberately no `/docs/*` redirects here. A redirect
+          // whose source sits under /docs/* conflicts with the /docs/[...slug]
+          // dynamic route and fails the Vercel deploy — the identical route
+          // under a prefix with no redirects deploys fine. The legacy
+          // pre-Quartz short paths (/docs/token, /docs/team, …) are served as
+          // real pages via LEGACY_DOC_ALIASES in lib/docs/slug.ts, with the
+          // canonical tag pointing at the primary slug. See
+          // docs/DOCUMENTATION_EMBEDDING_VERIFICATION.md.
+          // The updates section shipped briefly at /blog. Safe to redirect
+          // because no dynamic route lives under /blog any more — a redirect
+          // that overlaps a dynamic route's own prefix is what broke the
+          // deploy for /docs (see the note above).
           {
-            source: '/docs',
-            destination: 'https://docs.moondao.com/',
+            source: '/blog',
+            destination: '/updates',
+            permanent: true,
+          },
+          {
+            source: '/blog/:slug',
+            destination: '/updates/:slug',
             permanent: true,
           },
           {
@@ -130,75 +187,6 @@ module.exports = withBundleAnalyzer(
           {
             source: '/lunar-atlas/:path*',
             destination: '/moonbase/:path*',
-            permanent: true,
-          },
-          {
-            source: '/docs/introduction',
-            destination: 'https://docs.moondao.com/',
-            permanent: true,
-          },
-          {
-            source: '/docs/token',
-            destination: 'https://docs.moondao.com/Governance/Governance-Tokens',
-            permanent: true,
-          },
-          {
-            source: '/docs/launch-path',
-            destination: 'https://docs.moondao.com/launch-path',
-            permanent: true,
-          },
-          {
-            source: '/docs/team',
-            destination: 'https://docs.moondao.com/About/Team',
-            permanent: true,
-          },
-          {
-            source: '/docs/contribute',
-            destination: 'https://docs.moondao.com/Onboarding/Contribute',
-            permanent: true,
-          },
-          {
-            source: '/docs/project-guidelines',
-            destination: 'https://docs.moondao.com/Projects/Project-System',
-            permanent: true,
-          },
-          {
-            source: '/docs/ticket-to-space-sweepstakes-rules',
-            destination:
-              'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
-            permanent: true,
-          },
-          {
-            source: '/docs/ticket-to-space-NFT-FAQs',
-            destination:
-              'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Ticket-to-Space-Sweepstakes-Rules',
-            permanent: true,
-          },
-          {
-            source: '/docs/dispute-notice',
-            destination: 'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Dispute-Notice',
-            permanent: true,
-          },
-          {
-            source: '/docs/nft-owner-agreement',
-            destination:
-              'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Ticket-to-Space-NFT-Owner-Agreement',
-            permanent: true,
-          },
-          {
-            source: '/docs/website-terms-and-conditions',
-            destination: 'https://docs.moondao.com/Legal/Website-Terms-and-Conditions',
-            permanent: true,
-          },
-          {
-            source: '/docs/sweepstakes-and-securities-disclaimer',
-            destination:
-              'https://docs.moondao.com/Legal/Ticket-to-Space-NFT/Sweepstakes-and-Securities-Disclaimer',
-            permanent: true,
-          },
-          {
-            source: '/docs/privacy-policy',
-            destination: 'https://docs.moondao.com/Legal/Website-Privacy-Policy',
             permanent: true,
           },
           {
@@ -398,9 +386,10 @@ module.exports = withBundleAnalyzer(
             destination: '/mission/4',
             permanent: false,
           },
-                    {
+          {
             source: '/overview-media',
-            destination: 'https://drive.google.com/drive/folders/1_Nwjqwq8oHfp0irBcBKyyRjL3KcGRqC5?usp=drive_link',
+            destination:
+              'https://drive.google.com/drive/folders/1_Nwjqwq8oHfp0irBcBKyyRjL3KcGRqC5?usp=drive_link',
             permanent: false,
           },
           {
@@ -455,57 +444,66 @@ module.exports = withBundleAnalyzer(
           '@stablelib/random': false,
         }
 
-        // Optimize chunk splitting for better LCP and First Load JS
-        config.optimization = {
-          ...config.optimization,
-          splitChunks: {
-            chunks: 'all',
-            cacheGroups: {
-              default: false,
-              vendors: false,
-              // Framework chunk - React/Next.js core (always needed, load sync)
-              framework: {
-                test: /[\\/]node_modules[\\/](react|react-dom|scheduler|next)[\\/]/,
-                name: 'framework',
-                chunks: 'all',
-                priority: 50,
-                enforce: true,
-              },
-              // Web3 libraries - load async (only when wallet functionality needed)
-              thirdweb: {
-                test: /[\\/]node_modules[\\/](thirdweb|@thirdweb)[\\/]/,
-                name: 'thirdweb',
-                chunks: 'async',
-                priority: 40,
-              },
-              privy: {
-                test: /[\\/]node_modules[\\/](@privy-io)[\\/]/,
-                name: 'privy',
-                chunks: 'async',
-                priority: 40,
-              },
-              web3: {
-                test: /[\\/]node_modules[\\/](ethers|viem|wagmi|@safe-global|ox)[\\/]/,
-                name: 'web3',
-                chunks: 'async',
-                priority: 40,
-              },
-              // Globe/Three.js - load async (heavy 3D library)
-              globe: {
-                test: /[\\/]node_modules[\\/](react-globe\.gl|three|gsap)[\\/]/,
-                name: 'globe',
-                chunks: 'async',
-                priority: 40,
-              },
-              // Common chunk for shared code between pages
-              common: {
-                minChunks: 2,
-                priority: 10,
-                reuseExistingChunk: true,
-                chunks: 'async',
+        // Optimize chunk splitting for better LCP and First Load JS.
+        //
+        // Browser build only. LCP and First Load JS are browser concerns, and
+        // the server builds do not merely fail to benefit — splitting the Edge
+        // bundle breaks it. The Edge runtime evaluates one self-contained ESM
+        // module, so hoisting React/Next into a shared `framework` chunk emits
+        // CommonJS that dies on first request with "exports is not defined",
+        // taking every middleware-matched route with it.
+        if (!isServer) {
+          config.optimization = {
+            ...config.optimization,
+            splitChunks: {
+              chunks: 'all',
+              cacheGroups: {
+                default: false,
+                vendors: false,
+                // Framework chunk - React/Next.js core (always needed, load sync)
+                framework: {
+                  test: /[\\/]node_modules[\\/](react|react-dom|scheduler|next)[\\/]/,
+                  name: 'framework',
+                  chunks: 'all',
+                  priority: 50,
+                  enforce: true,
+                },
+                // Web3 libraries - load async (only when wallet functionality needed)
+                thirdweb: {
+                  test: /[\\/]node_modules[\\/](thirdweb|@thirdweb)[\\/]/,
+                  name: 'thirdweb',
+                  chunks: 'async',
+                  priority: 40,
+                },
+                privy: {
+                  test: /[\\/]node_modules[\\/](@privy-io)[\\/]/,
+                  name: 'privy',
+                  chunks: 'async',
+                  priority: 40,
+                },
+                web3: {
+                  test: /[\\/]node_modules[\\/](ethers|viem|wagmi|@safe-global|ox)[\\/]/,
+                  name: 'web3',
+                  chunks: 'async',
+                  priority: 40,
+                },
+                // Globe/Three.js - load async (heavy 3D library)
+                globe: {
+                  test: /[\\/]node_modules[\\/](react-globe\.gl|three|gsap)[\\/]/,
+                  name: 'globe',
+                  chunks: 'async',
+                  priority: 40,
+                },
+                // Common chunk for shared code between pages
+                common: {
+                  minChunks: 2,
+                  priority: 10,
+                  reuseExistingChunk: true,
+                  chunks: 'async',
+                },
               },
             },
-          },
+          }
         }
 
         return config

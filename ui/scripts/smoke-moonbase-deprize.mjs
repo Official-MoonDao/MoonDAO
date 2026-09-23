@@ -44,19 +44,16 @@ try {
   })
   ok('race panel opened from ?race=')
 
-  // Per-team back CTA + see-all (bound race on Sepolia)
-  const backTeam = page.getByRole('link', { name: /Back this team/i }).first()
+  // Per-team back CTA is now an inline button (opens BetModal without leaving
+  // the globe) rather than a link out to /deprize/{id} — see Wave 3.
+  const backTeam = page
+    .getByRole('button', { name: /Back this team|Connect to back this team/i })
+    .first()
   try {
     await backTeam.waitFor({ timeout: 60_000 })
-    ok('Back this team link visible')
-    const href = await backTeam.getAttribute('href')
-    if (href && /^\/deprize\/9\?outcome=\d+$/.test(href)) {
-      ok('Back this team targets outcome deep link', href)
-    } else {
-      bad('Back this team targets outcome deep link', `href=${href}`)
-    }
+    ok('Back this team button visible (inline bet, no navigation)')
   } catch (e) {
-    bad('Back this team link visible', e.message)
+    bad('Back this team button visible', e.message)
   }
 
   const seeAll = page.getByRole('link', { name: /See all competitors/i })

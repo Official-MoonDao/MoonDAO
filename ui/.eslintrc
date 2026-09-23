@@ -3,5 +3,30 @@
   "rules": {
     "sort-imports": 0,
     "react/no-unescaped-entities": 0
-  }
+  },
+  "overrides": [
+    {
+      "files": ["pages/deprize/**", "components/deprize/**", "lib/deprize/**"],
+      "excludedFiles": ["lib/deprize/deprizeRestrictedContext.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@/lib/geo/useRegionRestriction",
+                "message": "useRegionRestriction is the EU/EEA GDPR flag (35 codes). DePrize gating needs the Schedule A verdict (87 codes): use the `restricted` prop from DePrizePageProps, or useDePrizeRestricted() from @/lib/deprize/deprizeRestrictedContext."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/lib/geo/useRegionRestriction"],
+                "message": "useRegionRestriction is the EU/EEA GDPR flag (35 codes). DePrize gating needs the Schedule A verdict (87 codes): use the `restricted` prop from DePrizePageProps, or useDePrizeRestricted() from @/lib/deprize/deprizeRestrictedContext."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

@@ -5,6 +5,13 @@ export interface SpellingCorrection {
   replacement: string;
 }
 
+// Applied to the transcript before summarization and to the summary after, so
+// the model reads corrected names rather than inventing spellings from them.
+//
+// These matter more than cosmetics: speech recognition mangles "MoonDAO" inside
+// spoken URLs too, and an uncaught variant ships a live summary telling readers
+// to visit "mundow.com/frank". Order is significant — the domain rule at the
+// end tidies up after the name rules have run.
 export const SPELLING_CORRECTIONS: SpellingCorrection[] = [
   // MoonDAO variations
   { pattern: /\bMoondow\b/gi, replacement: "MoonDAO" },
@@ -14,13 +21,32 @@ export const SPELLING_CORRECTIONS: SpellingCorrection[] = [
   { pattern: /\bMoon Dow\b/gi, replacement: "MoonDAO" },
   { pattern: /\bMoon D A O\b/gi, replacement: "MoonDAO" },
   { pattern: /\bMoon D\.A\.O\.\b/gi, replacement: "MoonDAO" },
+  // Variants observed in September 2026 town hall captions, which produced
+  // "mundow.com/frank" and "moonow.com/contributions" in published summaries.
+  { pattern: /\bMundow\b/gi, replacement: "MoonDAO" },
+  { pattern: /\bMoonundow\b/gi, replacement: "MoonDAO" },
+  { pattern: /\bMoonow\b/gi, replacement: "MoonDAO" },
+  { pattern: /\bMoonDow\b/gi, replacement: "MoonDAO" },
+  { pattern: /\bMoon Doe\b/gi, replacement: "MoonDAO" },
   // Name corrections
   { pattern: /\bIman\b/gi, replacement: "Eiman" },
+  { pattern: /\bJahangir\b/gi, replacement: "Jahangir" },
+  { pattern: /\bJiongir\b/gi, replacement: "Jahangir" },
+  { pattern: /\bJunger\b/gi, replacement: "Jahangir" },
+  { pattern: /\bHegel\b/g, replacement: "Hagle" },
+  // Restore the lowercase domain after the name rules above have turned
+  // "mundow.com" into "MoonDAO.com".
+  { pattern: /\bMoonDAO\.com\b/gi, replacement: "moondao.com" },
 ];
 
 export const DEFAULT_MODELS = {
   whisper: "whisper-large-v3",
-  llm: "llama-3.3-70b-versatile",
+  // GROQ retired the entire Llama family; `llama-3.3-70b-versatile` now 404s
+  // with model_not_found, which failed summarization for every town hall even
+  // once the transcript was in hand. gpt-oss-120b is the closest replacement
+  // still served — same 128k context, so the chunking maths below is unchanged.
+  // Check `GET /openai/v1/models` before changing this; GROQ deprecates often.
+  llm: "openai/gpt-oss-120b",
 } as const;
 
 export const AUDIO_CONFIG = {
@@ -59,7 +85,7 @@ export const CONTEXT_WINDOWS = {
 } as const;
 
 export const CONTEXT_WINDOW_MODELS = {
-  "128k": ["llama-3.3-70b", "llama-3.1-8b", "qwen", "kimi"],
+  "128k": ["gpt-oss", "llama-3.3-70b", "llama-3.1-8b", "qwen", "kimi"],
   "256k": ["kimi-k2"],
 } as const;
 

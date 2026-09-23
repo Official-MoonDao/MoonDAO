@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline'
 import { PROJECT_TYPE_GLYPH, orgColor } from '@/lib/lunar-atlas/display'
 import type {
@@ -51,10 +51,21 @@ export default function Legend({
   const [orgsOpen, setOrgsOpen] = useState(false)
   const hasFilter = selectedOrgIds.length > 0
 
+  // On mobile the info card and this legend stack (rather than sit side by
+  // side), so an expanded-by-default race list — fine on desktop, where the
+  // globe has room to spare — ends up covering the whole viewport and leaves
+  // nothing to pan/look around on. Collapse it by default below `sm`; a tap
+  // on "Show" still opens it. useLayoutEffect (not a lazy useState initializer)
+  // so the collapse happens before paint without disagreeing with the SSR
+  // markup and tripping a hydration mismatch.
+  useLayoutEffect(() => {
+    if (window.matchMedia('(max-width: 639px)').matches) setOpen(false)
+  }, [])
+
   const countForOrg = (id: string) => projects.filter((p) => p.orgId === id).length
 
   return (
-    <div className="pointer-events-auto w-64 rounded-2xl border border-white/10 bg-black/50 backdrop-blur-md">
+    <div className="pointer-events-auto w-full sm:w-64 rounded-2xl border border-white/10 bg-black/50 backdrop-blur-md">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-4 py-3 text-left"

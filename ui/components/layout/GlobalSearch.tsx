@@ -238,16 +238,6 @@ const searchMappings = [
   // ── Learn & Info ──────────────────────────────────────────────────────────
   {
     keywords: [
-      'about', 'about moondao', 'what is moondao', 'mission', 'vision', 'story', 'history',
-      'internet space program', 'lunar settlement', 'multiplanetary', 'who is moondao',
-    ],
-    title: 'About MoonDAO',
-    description: "Learn about MoonDAO — the internet's space program building toward a lunar settlement",
-    link: '/about',
-    category: 'Learn',
-  },
-  {
-    keywords: [
       'info', 'information center', 'information', 'news updates', 'town hall summaries',
       'treasury info', 'faq info', 'learn more',
     ],
@@ -289,11 +279,21 @@ const searchMappings = [
   {
     keywords: [
       'news', 'announcements', 'blog', 'articles', 'updates', 'latest news',
-      'recent updates', "what's new", 'press',
+      'recent updates', "what's new",
     ],
     title: 'News',
     description: 'Stay updated with the latest MoonDAO news and announcements',
     link: '/news',
+    category: 'Learn',
+  },
+  {
+    keywords: [
+      'press', 'press kit', 'media', 'media kit', 'press release', 'coverage',
+      'journalist', 'logo', 'brand assets', 'boilerplate', 'in the news', 'interview',
+    ],
+    title: 'Press',
+    description: 'Press releases, media coverage and downloadable press kit assets',
+    link: '/press',
     category: 'Learn',
   },
   {
@@ -314,6 +314,17 @@ const searchMappings = [
     title: 'FAQ',
     description: 'Answers to frequently asked questions about MoonDAO',
     link: '/faq',
+    category: 'Learn',
+  },
+  {
+    keywords: [
+      'documentation', 'docs', 'wiki', 'handbook', 'knowledge base', 'obsidian',
+      'quartz', 'native docs', 'about', 'about moondao', 'what is moondao',
+      'mission', 'vision', 'story', 'history', 'who is moondao',
+    ],
+    title: 'Documentation',
+    description: 'MoonDAO documentation — governance, legal, onboarding, and reference',
+    link: '/docs',
     category: 'Learn',
   },
   {
@@ -390,8 +401,30 @@ function fuzzyMatch(query: string, text: string): number {
   return matches / totalWords
 }
 
+type DocsSearchHit = {
+  title: string
+  slug: string
+  href: string
+  description: string
+  headings: string[]
+  body: string
+  category: string
+}
+
+function scoreDocsEntry(query: string, entry: DocsSearchHit): number {
+  const q = query.toLowerCase()
+  const title = entry.title.toLowerCase()
+  if (title === q) return 1
+  if (title.startsWith(q)) return 0.9
+  if (title.includes(q)) return 0.7
+  if (entry.headings.some((heading) => heading.toLowerCase().includes(q))) return 0.5
+  if (entry.description.toLowerCase().includes(q)) return 0.4
+  if (entry.body.toLowerCase().includes(q)) return 0.28
+  return 0
+}
+
 // Enhanced search function
-function searchMappingsFunction(query: string) {
+function searchMappingsFunction(query: string, docsIndex: DocsSearchHit[] = []) {
   if (!query.trim()) return []
   
   const results = searchMappings
@@ -406,11 +439,21 @@ function searchMappingsFunction(query: string) {
       
       return { ...mapping, score: totalScore }
     })
-    .filter(result => result.score > 0.2) // Lowered threshold for better coverage
+    .filter(result => result.score > 0.2)
+
+  const docsHits = docsIndex
+    .map((entry) => ({
+      title: entry.title,
+      description: entry.description,
+      link: entry.href,
+      category: 'Docs',
+      score: scoreDocsEntry(query, entry),
+    }))
+    .filter((result) => result.score > 0.27)
+
+  return [...results, ...docsHits]
     .sort((a, b) => b.score - a.score)
-    .slice(0, 6) // Show more results
-  
-  return results
+    .slice(0, 8)
 }
 
 export default function GlobalSearch() {
@@ -421,6 +464,7 @@ export default function GlobalSearch() {
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [isNavbarVisible, setIsNavbarVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
+  const [docsIndex, setDocsIndex] = useState<DocsSearchHit[]>([])
   const router = useRouter()
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -452,8 +496,23 @@ export default function GlobalSearch() {
   }, [lastScrollY])
 
   useEffect(() => {
+    let cancelled = false
+    fetch('/doc-search-index.json')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) setDocsIndex(data)
+      })
+      .catch(() => {
+        if (!cancelled) setDocsIndex([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     if (query.trim()) {
-      const searchResults = searchMappingsFunction(query)
+      const searchResults = searchMappingsFunction(query, docsIndex)
       setResults(searchResults)
       setIsOpen(searchResults.length > 0)
     } else {
@@ -461,7 +520,7 @@ export default function GlobalSearch() {
       setIsOpen(false)
     }
     setSelectedIndex(-1)
-  }, [query])
+  }, [query, docsIndex])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -504,11 +563,18 @@ export default function GlobalSearch() {
   }
 
   const handleResultClick = (result: any) => {
-    router.push(result.link)
     setQuery('')
     setIsOpen(false)
     setIsExpanded(false)
     inputRef.current?.blur()
+    // Docs live at /docs/* via a rewrite onto /documentation/[...slug], so the
+    // client router has no matching route and router.push would fall back to a
+    // full load anyway. Navigate directly. See components/docs/DocsLink.tsx.
+    if (typeof result.link === 'string' && result.link.startsWith('/docs')) {
+      window.location.assign(result.link)
+      return
+    }
+    router.push(result.link)
   }
 
   const clearSearch = () => {

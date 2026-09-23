@@ -9,6 +9,7 @@ import {
   useSetActiveWallet,
 } from 'thirdweb/react'
 import { createWalletAdapter } from 'thirdweb/wallets'
+import { withClientFeeOverrides } from '@/lib/rpc/eip1559Fees'
 import client from '@/lib/thirdweb/client'
 import { getWalletEthersProvider } from './getWalletEthersProvider'
 import PrivyWalletContext from './privy-wallet-context'
@@ -67,6 +68,21 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         const adaptedAccount = await ethers5Adapter.signer.fromEthers({
           signer,
         })
+
+        // Privy / wallet RPCs often populate inflated maxFeePerGas. Nodes then
+        // reject with "insufficient funds for gas * price + value" even when
+        // the signer has enough ETH for the real L2 fee. Stamp our gas-price
+        // API values (2.4× base + priority) onto every send from this adapter.
+        const originalSendTransaction = adaptedAccount.sendTransaction.bind(
+          adaptedAccount
+        )
+        adaptedAccount.sendTransaction = async (tx) => {
+          const decorated = await withClientFeeOverrides(
+            tx as Record<string, unknown>,
+            selectedChain.id
+          )
+          return originalSendTransaction(decorated as typeof tx)
+        }
 
         const thirdwebWallet = createWalletAdapter({
           adaptedAccount,

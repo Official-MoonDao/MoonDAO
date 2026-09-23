@@ -5,6 +5,7 @@
 
 import { expect } from 'chai'
 import {
+  findDePrizeIdForGoal,
   getDePrizeRaceBinding,
   OPEN_FIELD_PROJECT_ID,
 } from '../../../lib/deprize/competitions'
@@ -15,6 +16,7 @@ import { buildTechTrees, sharedGoalById } from '../../../lib/lunar-atlas/selecto
 describe('lunar-atlas × DePrize binding', () => {
   const binding = getDePrizeRaceBinding('sepolia', 9)
   const goal = sharedGoalById(SEED_ATLAS, 'shared-fission-power')
+  const nightShift = sharedGoalById(SEED_ATLAS, 'shared-night-shift')
 
   it('binds Sepolia DePrize 9 to the fission shared goal with matching projectIds', () => {
     expect(binding?.sharedGoalId).to.equal('shared-fission-power')
@@ -58,5 +60,55 @@ describe('lunar-atlas × DePrize binding', () => {
     expect(power?.goal?.market?.impliedOdds?.['westinghouse-fission-surface-power']).to.equal(
       0.4
     )
+  })
+
+  it('seeds Night Shift as an unbound planned race with seven named systems', () => {
+    expect(nightShift).to.exist
+    expect(nightShift!.title).to.match(/Night Shift/)
+    expect(nightShift!.projectIds).to.deep.equal([
+      'zeno-harmonia',
+      'astrobotic-nite',
+      'venturi-lunar-battery',
+      'perpetual-atomics-endure',
+      'cnnc-lunar-rtg',
+      'rosatom-lunar-rtg',
+      'isro-barc-rhu',
+    ])
+    // Power chip only. `category` is the unique tech-tree race, and fission
+    // already owns Power — Night Shift must not take that binding.
+    expect(nightShift!.category).to.equal(undefined)
+    expect(nightShift!.indexCategory).to.equal('power')
+    expect(nightShift!.description).to.match(
+      /^Deliver at least 10 watts of electricity, continuously, for 354 hours/,
+    )
+    expect(nightShift!.description).to.match(/not a 9\.8 W waiver/)
+    const sustained = nightShift!.criteria?.find((c) => c.id === 'sustained-output')
+    expect(sustained?.threshold).to.match(/first hour/)
+    expect(sustained?.threshold).to.not.match(/over the window/)
+    expect(nightShift!.criteria?.some((c) => c.id === 'size-disclosure')).to.equal(true)
+    expect(nightShift!.criteria?.some((c) => c.id === 'independent-meters')).to.equal(true)
+  })
+
+  // v0.7 closed the hole that owning the meters does not make the meters good
+  // enough: a legitimately calibrated instrument reading high turns a 9.85 We
+  // article into an honest file that passes every other check. The public
+  // criteria have to carry it, or the site advertises a bar the rules no longer
+  // set.
+  it('states the measurement-uncertainty rule on the criteria the site renders', () => {
+    const tenWatts = nightShift!.criteria?.find((c) => c.id === 'ten-watts')
+    expect(tenWatts?.threshold).to.match(/lower bound/)
+    expect(tenWatts?.threshold).to.match(/uncertainty/)
+
+    const meters = nightShift!.criteria?.find((c) => c.id === 'independent-meters')
+    expect(meters?.threshold).to.match(/0\.5% expanded uncertainty/)
+    expect(meters?.threshold).to.match(/traceably calibrated/)
+    expect(nightShift!.market?.status).to.equal('planned')
+    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
+    for (const id of nightShift!.projectIds) {
+      const project = SEED_ATLAS.projects.find((p) => p.id === id)
+      expect(project, id).to.exist
+      expect(project!.sharedGoalIds).to.include('shared-night-shift')
+      expect(project!.location, `${id} must stay off the globe`).to.equal(undefined)
+    }
   })
 })

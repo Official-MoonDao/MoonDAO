@@ -45,9 +45,9 @@ const Asset = ({ name, amount, usd, address, loading }: AssetProps) => {
         </a>
       </div>
 
-      <div className="text-right">
+      <div className="text-right min-w-0 ml-3">
         <p
-          className={`font-semibold text-lg ${
+          className={`font-semibold text-lg break-all ${
             loading ? 'bg-white/20 text-transparent rounded' : 'text-white'
           }`}
         >

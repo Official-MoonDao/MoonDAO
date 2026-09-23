@@ -142,6 +142,7 @@ export default function SkyLayer({
   getProjectStyle,
   onSelectProject,
   onHoverTree,
+  cinematic,
 }: {
   trees: TechTree[]
   organizations: Organization[]
@@ -150,6 +151,8 @@ export default function SkyLayer({
   getProjectStyle?: (project: Project) => MarkerStyle
   onSelectProject?: (projectId: string) => void
   onHoverTree?: (category: ProjectType | null) => void
+  // See MarkerLayerProps. The spacecraft keep flying; their names come off.
+  cinematic?: boolean
 }) {
   const orgMap = useMemo(() => {
     const m = new Map<string, Organization>()
@@ -192,7 +195,11 @@ export default function SkyLayer({
                 dim={raceOpen && !isOpen ? DIM_FACTOR : 1}
                 // Only the primary carries the label. Three copies of one name
                 // stacked up the sky is not three pieces of information.
-                named={i === 0 && (isOpen || selectedProject?.id === project.id)}
+                named={
+                  !cinematic &&
+                  i === 0 &&
+                  (isOpen || selectedProject?.id === project.id)
+                }
                 onSelect={() => onSelectProject?.(project.id)}
                 onHover={(h) => onHoverTree?.(h ? category : null)}
               />

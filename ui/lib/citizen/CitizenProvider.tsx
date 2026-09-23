@@ -4,6 +4,7 @@ import {
   startTransition,
   useCallback,
   useEffect,
+  useMemo,
   useState,
   useRef,
 } from 'react'
@@ -12,6 +13,11 @@ import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { citizenRowToNFT } from '../tableland/convertRow'
 import { getChainSlug } from '../thirdweb/chain'
 import CitizenContext from './citizen-context'
+import {
+  fetchCitizenExpiresAt,
+  getCachedCitizenExpiry,
+  isSubscriptionExpired,
+} from './citizenSubscription'
 
 // Cache configuration
 const CACHE_PREFIX = 'moondao_citizen_'
@@ -20,6 +26,9 @@ const CACHE_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
 // deferring to Tableland again. Indexing usually catches up within seconds.
 const OPTIMISTIC_WINDOW_MS = 2 * 60 * 1000 // 2 minutes
 const OPTIMISTIC_POLL_MS = 5000
+// Longest session we bother arming an "your subscription just lapsed" timer
+// for. Anything further out is picked up on the next page load.
+const MAX_EXPIRY_TIMER_MS = 6 * 60 * 60 * 1000 // 6 hours
 
 interface CachedCitizenData {
   data: any
@@ -416,8 +425,106 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     }
   }, [])
 
+  // --- Subscription expiration ---------------------------------------------
+  // Owning the NFT isn't enough: citizenship is a subscription and a lapsed one
+  // must close every gated feature. `undefined` means "not checked yet", `null`
+  // means "couldn't read it" — both are treated as unexpired so an RPC blip
+  // never locks a paid-up citizen out.
+  const [expiresAt, setExpiresAt] = useState<number | null | undefined>(
+    undefined
+  )
+  const [, setExpirationTick] = useState(0)
+  const citizenTokenId =
+    citizen?.metadata?.id != null ? String(citizen.metadata.id) : ''
+
+  useEffect(() => {
+    if (mock) {
+      setExpiresAt(null)
+      return
+    }
+
+    if (!citizenTokenId) {
+      setExpiresAt(undefined)
+      return
+    }
+
+    // Read the cache synchronously so a returning citizen doesn't flash
+    // through a "loading" state on every mount.
+    const cached = getCachedCitizenExpiry(citizenTokenId)
+    if (cached !== undefined) {
+      setExpiresAt(cached)
+      return
+    }
+
+    let cancelled = false
+    setExpiresAt(undefined)
+    fetchCitizenExpiresAt(citizenTokenId)
+      .then((value) => {
+        if (!cancelled) setExpiresAt(value)
+      })
+      .catch(() => {
+        if (!cancelled) setExpiresAt(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [citizenTokenId, mock])
+
+  // Re-render the moment a subscription lapses mid-session.
+  useEffect(() => {
+    if (typeof expiresAt !== 'number') return
+    const msUntilExpiry = expiresAt * 1000 - Date.now()
+    if (msUntilExpiry <= 0 || msUntilExpiry > MAX_EXPIRY_TIMER_MS) return
+    const timer = setTimeout(
+      () => setExpirationTick((tick) => tick + 1),
+      msUntilExpiry + 1000
+    )
+    return () => clearTimeout(timer)
+  }, [expiresAt])
+
+  const isExpired = isSubscriptionExpired(expiresAt)
+  // A citizen we've found but not yet resolved an expiration for. Callers must
+  // keep waiting rather than act on a citizenship that may already be lapsed.
+  const isExpirationPending = !mock && !!citizenTokenId && expiresAt === undefined
+
+  const [isRenewalModalOpen, setIsRenewalModalOpen] = useState(false)
+  const openRenewalModal = useCallback(() => setIsRenewalModalOpen(true), [])
+  const closeRenewalModal = useCallback(() => setIsRenewalModalOpen(false), [])
+
+  useEffect(() => {
+    if (!isExpired) setIsRenewalModalOpen(false)
+  }, [isExpired])
+
+  const contextValue = useMemo(
+    () => ({
+      citizen: isExpired ? undefined : citizen,
+      expiredCitizen: isExpired ? citizen : undefined,
+      isExpired,
+      subscriptionExpiresAt:
+        typeof expiresAt === 'number' ? expiresAt : undefined,
+      setCitizen,
+      seedCitizen,
+      isLoading: isLoading || isExpirationPending,
+      isRenewalModalOpen,
+      openRenewalModal,
+      closeRenewalModal,
+    }),
+    [
+      citizen,
+      isExpired,
+      expiresAt,
+      seedCitizen,
+      isLoading,
+      isExpirationPending,
+      isRenewalModalOpen,
+      openRenewalModal,
+      closeRenewalModal,
+    ]
+  )
+
   return (
-    <CitizenContext.Provider value={{ citizen, setCitizen, seedCitizen, isLoading }}>
+    <CitizenContext.Provider value={contextValue}>
       {children}
     </CitizenContext.Provider>
   )

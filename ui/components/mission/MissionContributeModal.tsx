@@ -245,7 +245,7 @@ export default function MissionContributeModal({
       <p className="text-sm text-gray-300 leading-relaxed">
         {`I acknowledge that any token issued from this contribution is not a security, carries no profit expectation, and I accept all `}
         <Link
-          href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+          href="/docs/Launchpad/Launchpad-Disclaimer"
           className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
           target="_blank"
           rel="noopener noreferrer"

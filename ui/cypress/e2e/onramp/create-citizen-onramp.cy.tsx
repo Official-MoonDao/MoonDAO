@@ -62,17 +62,16 @@ describe('CreateCitizen Onramp E2E Flow', () => {
       },
     })
 
-    cy.get('#app-layout', { timeout: 60000 }).should('exist')
+    cy.get('#app-layout', { timeout: 120000 }).should('exist')
 
-    // Verify cache still exists (should be restored by the component)
-    cy.window().then((win) => {
+    // Retryable: the app hydrates and restores asynchronously (Privy, JWT
+    // effects) after first paint, so a one-shot read can race the lifecycle.
+    cy.window({ timeout: 15000 }).should((win) => {
       const restored = win.localStorage.getItem(cacheKey)
-      expect(restored).to.not.be.null
-      if (restored) {
-        const cache = JSON.parse(restored)
-        expect(cache.formData.citizenData.name).to.equal('Test Citizen')
-        expect(cache.stage).to.equal(2)
-      }
+      expect(restored, 'form cache present in localStorage').to.not.be.null
+      const cache = JSON.parse(restored as string)
+      expect(cache.formData.citizenData.name).to.equal('Test Citizen')
+      expect(cache.stage).to.equal(2)
     })
 
     // JWT verification may or may not be called depending on component state
@@ -101,12 +100,12 @@ describe('CreateCitizen Onramp E2E Flow', () => {
       },
     })
 
-    cy.get('#app-layout', { timeout: 60000 }).should('exist')
+    cy.get('#app-layout', { timeout: 120000 }).should('exist')
 
-    // Cache should still exist even without JWT
-    cy.window().then((win) => {
+    // Retryable for the same async-hydration reason as above.
+    cy.window({ timeout: 15000 }).should((win) => {
       const restored = win.localStorage.getItem(cacheKey)
-      expect(restored).to.not.be.null
+      expect(restored, 'form cache present in localStorage').to.not.be.null
     })
   })
 
@@ -131,27 +130,16 @@ describe('CreateCitizen Onramp E2E Flow', () => {
       },
     })
 
-    cy.get('#app-layout', { timeout: 60000 }).should('exist')
-    // Allow client some time to run restoreCache / expiry handling.
-    // Note: this uses a fixed delay and is therefore not fully deterministic.
-    cy.wait(1500)
+    cy.get('#app-layout', { timeout: 120000 }).should('exist')
 
-    // Verify expired cache behavior
-    // restoreCache() should return null for expired cache and clear it
-    cy.window().then((win) => {
-      const restored = win.localStorage.getItem(cacheKey)
-      const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000 // 24 hours
-      
-      if (restored) {
-        const cache = JSON.parse(restored)
-        const now = Date.now()
-        const cacheAge = now - cache.timestamp
-        // Verify cache is expired
-        expect(cacheAge).to.be.greaterThan(CACHE_EXPIRY_MS)
-        // When restoreCache() is called, it should detect expiry and clear the cache
-        // The cache may still exist if restoreCache hasn't been called yet in the component lifecycle
-      }
-      // If cache was already cleared by restoreCache(), that's the expected behavior
+    // Deterministic: the app clears expired caches on mount (restoreCache and
+    // the expiry sweep effect), so poll until the key is gone instead of
+    // sleeping a fixed delay and asserting conditionally.
+    cy.window({ timeout: 15000 }).should((win) => {
+      expect(
+        win.localStorage.getItem(cacheKey),
+        'expired form cache cleared'
+      ).to.be.null
     })
   })
 })

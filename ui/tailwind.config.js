@@ -8,6 +8,17 @@ module.exports = {
       screens: {
         '3xl': '1920px',
         '4xl': '2560px',
+        // The one width the desktop navbar steps at: where there is enough room
+        // left over to spend on breathing room — wider item padding, bigger
+        // logo, deeper gutters.
+        //
+        // There used to be a second step, `navicons: 1500px`, below which the
+        // nav icons were hidden because eight of them cost 192px the row did
+        // not have. The bar carries five items now and the icons always fit.
+        //
+        // Nothing below xl (1280px) uses this: Layout hands anything narrower
+        // to the mobile drawer. See components/layout/TopNavBar.
+        navwide: '1650px',
       },
       fontFamily: {
         GoodTimes: ['Good Times', 'sans-serif'],

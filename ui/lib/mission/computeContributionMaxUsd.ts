@@ -1,16 +1,17 @@
 import { LAYERZERO_MAX_CONTRIBUTION_ETH } from 'const/config'
 import { arbitrum, base, ethereum } from '@/lib/rpc/chains'
+import { L2_GAS_BUDGET_WEI } from '@/lib/rpc/gasBudget'
 
 const WEI = BigInt('1000000000000000000')
 
-/** 0.0001 ETH — Arbitrum / Base same-chain gas reserve */
-const RESERVE_WEI_LOW = BigInt('100000000000000')
+/** Shared L2 budget — must cover wallet `gasLimit * maxFeePerGas` lock. */
+const RESERVE_WEI_LOW = L2_GAS_BUDGET_WEI
 /** 0.001 ETH — default same-chain reserve, cross-chain leave-behind */
 const RESERVE_WEI_DEFAULT = BigInt('1000000000000000')
 
 /**
  * Max USD contribution from native ETH balance, matching mission contribute modal / pay card rules:
- * same-chain gas reserves (Arbitrum/Base 0.0001 ETH, mainnet 0.001 ETH, else 0.001),
+ * same-chain gas reserves (Arbitrum/Base L2 budget, mainnet 0.001 ETH, else 0.001),
  * cross-chain leaves 0.001 ETH, LayerZero cap from config for eth/base sources.
  */
 export function computeContributionMaxUsd(input: {

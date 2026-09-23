@@ -45,7 +45,7 @@ export default function TreasuryPage() {
       {/*Assets Section*/}
       <section className="flex flex-col h-full">
         <div className="flex-shrink-0">
-          <h2 className="text-white text-3xl lg:text-4xl font-GoodTimes">Treasury</h2>
+          <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-GoodTimes">Treasury</h2>
           <div className="mt-4 h-[1px] bg-white/20 w-full"></div>
         </div>
         
@@ -77,7 +77,7 @@ export default function TreasuryPage() {
       {/*Transactions Section*/}
       <section className="flex flex-col h-full">
         <div className="flex-shrink-0">
-          <h2 className="text-white text-3xl lg:text-4xl font-GoodTimes">
+          <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-GoodTimes">
             Transactions
           </h2>
           <div className="mt-4 h-[1px] bg-white/20 w-full"></div>

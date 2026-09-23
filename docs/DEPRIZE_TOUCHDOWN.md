@@ -1,12 +1,21 @@
+<!-- deprize:freeze-table -->
+| Block | Lifecycle |
+|---|---|
+| Roster / named slots / outcome labels (Parts I–V) | Frozen at `prepareCondition` |
+| Win tests, parameters, tie-break (Parts I–V) | Frozen at `open` |
+| Purse / waterfall | `never` in force from this file — Terms v1.2 / [DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md) |
+| Part VI interpretation, evidence standards, Senate checklist | `always` editable as interpretation only |
+| Field discussion, source map, editorial framing | `always` editable |
+
 # TOUCHDOWN
 
 ### A DePrize for the next successful landing on the Moon
 
-> **CONFIDENTIAL — INTERNAL / NDA**
-> Draft for advisor and expert review. Not for publication, quotation, or distribution
-> outside the review list.
-> **Version** 0.1-draft · **Date** 4 September 2026 · **Owner** MoonDAO · **Status**
-> pre-registration, nothing on-chain.
+> *Historical note (2026-09-16): this file was drafted pre-registration under an internal banner.
+> Touchdown generation 2 is live on Sepolia #22 and this file is the public rules of record.
+> Parts I–V below are unchanged from v0.1 (`ce77f1bfc`); see Part VI for the v0.2 addendum.*
+>
+> **Version** 0.1-draft · **Date** 4 September 2026 · **Owner** MoonDAO
 > Competitor listings are editorial and based solely on public sources. No listed
 > organization has been contacted, has consented, or is affiliated with this prize.
 > Dates are as of 4 September 2026 and will move. Every date below is attributed.
@@ -25,7 +34,7 @@ This is a request for criticism, not approval. The load-bearing questions are in
    be *next* soaks up probability mass. Anyone we left in the field who should be named
    makes the market opaque.
 
-This prize is independent of [Night Shift](DEPRIZE_NIGHT_SHIFT.md). Different question,
+This prize is independent of Night Shift (a later capability-ladder rung). Different question,
 different roster, different market.
 
 ---
@@ -503,3 +512,93 @@ launch-services notice, 29 Jul 2026; SpaceNews, Jul 2026; Q1 FY2027 results, 7 A
 ispace-U.S. CP-12 statement, 15 Jul 2026; NEI / TASS / IKI (Luna-27A 2029, 27B 2030);
 ISRO / DoS parliamentary evidence (LUPEX September 2028); Times of India (Chandrayaan-4
 2028).
+
+---
+
+# PART VI — v0.2 ADDENDUM (16 September 2026)
+
+**Version** 0.2-draft · **Status:** addendum to v0.1 · **Does not reopen the market.**
+
+This addendum interprets frozen tests. It cannot change one. Generation-3 roster or test
+changes use the supersede procedure in (f).
+
+## (a) Capability ladder
+
+Touchdown is **rung 0** of Touchdown → First Tracks → Ice → Night Shift. See
+[DEPRIZE_CAPABILITY_LADDER.md](DEPRIZE_CAPABILITY_LADDER.md). Each rung has its own roster
+of the companies demonstrating **that** capability (a lander operator is not automatically
+a rover operator). Rungs 1–3 have names and bars only until A2.
+
+## (b) ispace named slot — next generation, not a silent rewrite of #22
+
+v0.1 Part V Q4 asked whether ispace should be named. **Decision: yes, on the next
+generation.** Hakuto-R Mission 3 (ULTRA / H3, 2028) is too late to be *next* on the current
+calendar, which is why v0.1 left them in Open Field. When Open Field odds sit near or above
+~⅓, or when Mission 3 enters a realistic "could be next successful landing" window, run the
+nine-step supersede and name ispace as its own slot. **Do not resize Sepolia #22 / the
+current CTF condition** — the roster froze at `prepareCondition`. Until then, ispace remains
+Open Field and the UI must say so.
+
+## (c) Uniform confirmation standard
+
+Same bar for every operator, including CNSA.
+
+- **Touchdown UTC** is established by a public statement from NASA, ESA, CNSA, JAXA, ISRO,
+  or Roscosmos (or the operator plus one of those agencies). Publish both clocks if they
+  disagree; use the more conservative UTC.
+- **Test 3 (stable planned orientation)** is not satisfied by an operator livestream alone.
+  It requires at least one of: (i) surface imagery from the vehicle that shows the
+  **horizon** (or an equivalent attitude reference), (ii) independently received third-party
+  telemetry, or (iii) LRO-class orbital imaging of the landed vehicle. The same evidence
+  types apply to Firefly, IM, Astrobotic, Blue Origin, and CNSA.
+- **Test 5** still accepts an agency success declaration as independent confirmation of
+  *that a landing occurred*. Test 3 orientation is a higher bar and is where IM-1 / IM-2 /
+  SLIM fail.
+
+## (d) Test 4 shorter-mission clause
+
+This paragraph is the canonical Test 4 wording.
+
+> The vehicle returns telemetry or imagery from the lunar surface for a continuous period of ≥ 24
+> hours after touchdown, **or for the full planned surface mission if that planned mission is shorter
+> than 24 hours**. "Planned" means the duration published by the operator or the sponsoring agency
+> before touchdown. A vehicle that dies at hour 6 of a published 14-day mission still fails. A hopper
+> or polar checkout whose published surface mission is 8 hours can clear Test 4 by completing those 8
+> hours.
+
+## (e) Purse = payload purchase, with waterfall
+
+The purse is **not** a cheque to a CLPS operator and **not** a cash transfer to Voyager / IM /
+Firefly corporate treasury. It buys a **community payload** on a future flight, in this order:
+
+1. **Winner's next qualifying flight** — a payload slot on the winning landing-vehicle operator's
+   next vehicle that can carry it.
+2. If the Winner does not claim that payload, the Winner may **designate a nonprofit**.
+3. If there is **no response**, the Prize Pool is **rolled into a future prize**.
+
+Market resolution is unaffected (Terms §7.4 / Prize Rules §5). The $25k figure is a **seed / target**,
+not a wire to the operator. See [DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md).
+
+## (f) Nine-step supersede procedure
+
+Trigger: Open Field implied odds stay near or above **~⅓**, or a named-slot gap that would
+mis-price the live question.
+
+1. On-chain `supersede` on the current DePrize — registry state `SUPERSEDED`. New bets close
+   on the old generation; sells remain open.
+2. Keep the **same Juicebox project** (`jbProjectId`). The pool does not move.
+3. Write off-chain lineage in `ui/lib/deprize/competitions.ts`: old `supersededBy: <newId>`,
+   new `supersedes: <oldId>`, and carry the **same `sharedGoalId`** onto the new row.
+4. Prepare a **new CTF condition** with the Safe as oracle (G4). Outcome set is frozen at
+   `prepareCondition`.
+5. Deploy a **new LMSR from the fixed factory** (H-01 / `tradeWithTWAP` fix).
+6. `setCondition` / `setMarket` / `open` on the new registry row.
+7. Rebind `competitions.ts` outcomes and the Moon Base Zero atlas race. Named slot → atlas
+   `projectId`; Open Field → `field: true`.
+8. Old holders **sell** on the superseded market or **wait**. Payout mapping is named slot if
+   the winner is on that roster, else Open Field, else 1/N (`buildSupersededPayouts`).
+9. Announce: old `/deprize/<oldId>` shows the superseded banner; live tip is
+   `/deprize/<newId>` and `/deprize/shared-next-landing`.
+
+A goal retired with no successor is the one manual ladder edit: flip that rung's status in
+`capabilityLadder.ts` on the resolution checklist.

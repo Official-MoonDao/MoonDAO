@@ -40,11 +40,13 @@ contract Config is Script {
     mapping(uint256 => address) public CITIZEN_TABLE_ADDRESSES;
     mapping(uint256 => address) public CITIZEN_NFT_ADDRESSES;
 
-    // DePrize / prediction-market stack (Gnosis Conditional Tokens + LMSRWithTWAP).
-    // These are externally-deployed Solidity 0.5 contracts that the 0.8 DePrizeMint
-    // router calls via interfaces. WETH is the CTF collateral. LMSR_MARKET is an
-    // already-deployed market instance reused by DePrize fork tests; LMSR_FACTORY is
-    // populated after the factory is deployed (used to provision new markets).
+    // DePrize / prediction-market stack (Gnosis Conditional Tokens + stock Gnosis
+    // LMSRMarketMaker). These are externally-deployed Solidity 0.5 contracts that
+    // the 0.8 DePrizeMint router calls via interfaces. WETH is the CTF collateral.
+    // LMSR_MARKET_ADDRESSES are v1 LMSRWithTWAP markets kept only for read-only
+    // fork checks; they must NOT be bound to the v2 mint. LMSR_FACTORY_ADDRESSES
+    // [SEP] is the stock Gnosis LMSRMarketMakerFactory (2026-09-18). [ARBITRUM]
+    // is still the v1 LMSRWithTWAPFactory until the stock factory is deployed.
     mapping(uint256 => address) public WETH_ADDRESSES;
     mapping(uint256 => address) public CONDITIONAL_TOKENS_ADDRESSES;
     mapping(uint256 => address) public LMSR_MARKET_ADDRESSES;
@@ -185,19 +187,47 @@ contract Config is Script {
         MISSION_TABLE_ADDRESSES[ARBITRUM] = arbJson.readAddress(".MissionTable");
         MISSION_TABLE_ADDRESSES[SEP] = sepJson.readAddress(".MissionTable");
 
-        // DePrize prediction-market stack. Testnet deployments mirror
-        // ui/const/config.ts (COLLATERAL_TOKEN/CONDITIONAL_TOKEN/LMSR_WITH_TWAP).
+        // DePrize prediction-market stack.
+        // AUDIT[plan 1.5 / Phase 2]: WETH is canonical aeWETH. CTF + LMSR
+        // factory were deployed 2026-08-18 (Truffle migrate -f 2 --to 4).
         WETH_ADDRESSES[SEP] = 0x8cfF28F922AeEe80d3a0663e735681469F7374c6;
         WETH_ADDRESSES[ARB_SEP] = 0xA441f20115c868dc66bC1977E1c17D4B9A0189c7;
+        WETH_ADDRESSES[ARBITRUM] = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
 
         CONDITIONAL_TOKENS_ADDRESSES[SEP] = 0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8;
         CONDITIONAL_TOKENS_ADDRESSES[ARB_SEP] = 0xa0B1b14515C26acb193cb45Be5508A8A46109a27;
+        CONDITIONAL_TOKENS_ADDRESSES[ARBITRUM] = 0x12DAC07Bf586E06a9bDa32c422864C8Fda43FA29;
 
         LMSR_MARKET_ADDRESSES[SEP] = 0x11DCe86c804ca088A0d9036eeE368e4055b235dE;
         LMSR_MARKET_ADDRESSES[ARB_SEP] = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
+        // H-01 replacement for DePrize 1. Pre-fix clone: 0x351aF5…F211.
+        LMSR_MARKET_ADDRESSES[ARBITRUM] = 0xB7fE1530D300C505295B42268e127ceea5aDe703;
+        // Sepolia is on the v2 stack (stock Gnosis LMSR factory). Arbitrum is
+        // still on LMSRWithTWAP: use the H-01-fixed factory, never the Phase 2
+        // factory 0xb40d77bD…, which clones the vulnerable implementation.
+        LMSR_FACTORY_ADDRESSES[SEP] = 0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674;
+        LMSR_FACTORY_ADDRESSES[ARBITRUM] = 0x299F163705AbBFa1A8DE7670F33171730F828F3D;
+    }
 
-        // LMSR_FACTORY_ADDRESSES: populate once the LMSRWithTWAPFactory is deployed
-        // on each chain (used by the per-DePrize market provisioning script).
+    /// @notice Resolve WETH + ConditionalTokens for `chainId`, or revert with a
+    ///         chain-id in the message so a mainnet run cannot silently pick
+    ///         address(0) and deploy a broken Mint/Redeem.
+    /// @dev AUDIT[plan 1.3]: replaces the generic "not configured" requires.
+    function requireDePrizeCollateral(uint256 chainId) public view returns (address weth, address ctf) {
+        weth = WETH_ADDRESSES[chainId];
+        ctf = CONDITIONAL_TOKENS_ADDRESSES[chainId];
+        require(
+            weth != address(0),
+            string.concat("WETH not configured for chainId ", vm.toString(chainId))
+        );
+        require(
+            ctf != address(0),
+            string.concat(
+                "ConditionalTokens not configured for chainId ",
+                vm.toString(chainId),
+                " - deploy prediction/ migrations 02-04 (DEPRIZE_ARBITRUM_LAUNCH Phase 2) then set CONDITIONAL_TOKENS_ADDRESSES"
+            )
+        );
     }
 
     function currentSalt() public view returns (bytes32) {

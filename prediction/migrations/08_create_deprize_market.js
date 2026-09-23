@@ -1,22 +1,23 @@
-// Provision a single DePrize prediction market:
-//   1. ConditionalTokens.prepareCondition(oracle, questionId, numOutcomes)
-//   2. LMSRWithTWAPFactory.createLMSRWithTWAP(ctf, weth, [conditionId], fee=1e16, 0x0, funding)
+// Provision a single DePrize prediction market (v2):
+//   1. ConditionalTokens.prepareCondition(oracle = admin Safe, questionId, numOutcomes)
+//   2. LMSRMarketMakerFactory.createLMSRMarketMaker(ctf, weth, [conditionId], fee=1e16, 0x0, funding)
+//   3. market.transferOwnership(admin Safe)
 //
-// Reuses the existing Gnosis CTF + LMSRWithTWAP stack. Set DEPRIZE_* env vars
-// (see ../deprize.config.js) to target an existing testnet deployment and to
-// scope the run to one DePrize. Resolution (reportPayouts) is performed later by
-// the oracle (M4) and is out of scope here.
+// Uses the UNMODIFIED Gnosis CTF + LMSRMarketMaker stack. The Safe is both the
+// CTF oracle (reportPayouts) and the market owner (pause/close/withdrawFees);
+// there is no fee router and no TWAP subclass.
 //
-// After this runs, wire the printed values into the 0.8 stack:
-//   DePrizeRegistry.setCondition(deprizeId, conditionId)
-//   DePrizeRegistry.open(deprizeId)
-//   DePrizeMint.setMarket(deprizeId, lmsrAddress)
+// After this runs, wire the printed values into the 0.8 stack with
+// subscription-contracts/script/deprize/DePrizeWire.s.sol:
+//   registry.setCondition(deprizeId, conditionId)
+//   mint.setMarket(deprizeId, lmsrAddress)      (write-once)
+//   registry.open(deprizeId)
 //
-// Usage (reusing existing arbitrum-sepolia deployment):
-//   DEPRIZE_ORACLE=0x<multisig> DEPRIZE_NUM_OUTCOMES=3 \
-//   DEPRIZE_CTF=0xa0B1... DEPRIZE_WETH=0xA441... DEPRIZE_FACTORY=0x<factory> \
-//   DEPRIZE_QUESTION_ID=0x...02 \
-//   npx truffle migrate -f 8 --to 8 --network arbitrumSepolia
+// Usage (reusing an existing deployment):
+//   DEPRIZE_ORACLE=0x<admin-safe> DEPRIZE_NUM_OUTCOMES=6 \
+//   DEPRIZE_CTF=0x... DEPRIZE_WETH=0x... DEPRIZE_FACTORY=0x<stock-factory> \
+//   DEPRIZE_QUESTION_ID=0x... \
+//   npm run truffle -- migrate -f 8 --to 8 --network sepolia
 
 const BN = require("bn.js");
 
@@ -25,8 +26,8 @@ const deprizeConfig = require("../deprize.config");
 
 const ConditionalTokens = artifacts.require("ConditionalTokens");
 const WETH9 = artifacts.require("WETH9");
-const LMSRWithTWAPFactory = artifacts.require("LMSRWithTWAPFactory");
-const LMSRWithTWAP = artifacts.require("LMSRWithTWAP");
+const LMSRMarketMakerFactory = artifacts.require("LMSRMarketMakerFactory");
+const LMSRMarketMaker = artifacts.require("LMSRMarketMaker");
 
 module.exports = function (deployer) {
   deployer.then(async () => {
@@ -41,10 +42,8 @@ module.exports = function (deployer) {
     } = deprizeConfig;
 
     const oracle = deprizeConfig.oracle || deployConfig.oracle;
-    if (!oracle) throw new Error("No oracle configured (set DEPRIZE_ORACLE)");
+    if (!oracle) throw new Error("No oracle configured (set DEPRIZE_ORACLE to the admin Safe)");
 
-    // Reuse existing deployments when addresses are provided, else fall back to
-    // the Truffle-tracked instances on this network.
     const pmSystem = conditionalTokensAddress
       ? await ConditionalTokens.at(conditionalTokensAddress)
       : await ConditionalTokens.deployed();
@@ -52,14 +51,14 @@ module.exports = function (deployer) {
       ? await WETH9.at(collateralTokenAddress)
       : await WETH9.deployed();
     const factory = factoryAddress
-      ? await LMSRWithTWAPFactory.at(factoryAddress)
-      : await LMSRWithTWAPFactory.deployed();
+      ? await LMSRMarketMakerFactory.at(factoryAddress)
+      : await LMSRMarketMakerFactory.deployed();
 
     // Total bounded-loss liquidity = fundingPerOutcome * numOutcomes.
     const funding = new BN(fundingPerOutcome).mul(new BN(numOutcomes)).toString();
 
-    console.log("DePrize market provisioning");
-    console.log("  oracle:          ", oracle);
+    console.log("DePrize market provisioning (v2, stock Gnosis LMSR)");
+    console.log("  oracle / owner:  ", oracle);
     console.log("  questionId:      ", questionId);
     console.log("  numOutcomes:     ", numOutcomes);
     console.log("  fee (1e18 frac): ", fee);
@@ -68,7 +67,8 @@ module.exports = function (deployer) {
     console.log("  Collateral (WETH):", collateralToken.address);
     console.log("  Factory:         ", factory.address);
 
-    // 1. Prepare the CTF condition (oracle = MoonDAO multisig).
+    // 1. Prepare the CTF condition. The oracle is baked into the conditionId and
+    //    can never be changed, so it MUST be the admin Safe.
     await pmSystem.prepareCondition(oracle, questionId, numOutcomes);
     const conditionId = web3.utils.soliditySha3(
       { t: "address", v: oracle },
@@ -77,11 +77,11 @@ module.exports = function (deployer) {
     );
     console.log("  conditionId:     ", conditionId);
 
-    // 2. Fund + create the LMSRWithTWAP market with the 1% fee.
+    // 2. Fund + create the stock market with the 1% fee and no trade whitelist.
     await collateralToken.deposit({ value: funding });
     await collateralToken.approve(factory.address, funding);
 
-    const tx = await factory.createLMSRWithTWAP(
+    const tx = await factory.createLMSRMarketMaker(
       pmSystem.address,
       collateralToken.address,
       [conditionId],
@@ -90,34 +90,27 @@ module.exports = function (deployer) {
       funding
     );
 
-    const creationLog = tx.logs.find(
-      ({ event }) => event === "LMSRWithTWAPCreation"
-    );
+    const creationLog = tx.logs.find(({ event }) => event === "LMSRMarketMakerCreation");
     if (!creationLog) {
       // eslint-disable-next-line no-console
       console.error(JSON.stringify(tx, null, 2));
       throw new Error(
-        "No LMSRWithTWAPCreation event. Check the tx above (outdated ABIs / unfunded LMSR / tx failure)."
+        "No LMSRMarketMakerCreation event. Check the tx above (outdated ABIs / unfunded LMSR / tx failure)."
       );
     }
+    const lmsrAddress = creationLog.args.lmsrMarketMaker;
 
-    const lmsrAddress = creationLog.args.lmsrWithTWAP;
-
-    // 3. Hand the market to the oracle multisig. The factory makes the deployer
-    // the owner, but close()/withdrawFees() (the M4 unwind) are onlyOwner and
-    // must be executable by the Safe, not a deployer EOA.
-    const lmsr = await LMSRWithTWAP.at(lmsrAddress);
+    // 3. The factory makes the deployer the owner. Hand the market to the Safe:
+    //    pause()/close()/withdrawFees() are onlyOwner and only the Safe may run them.
+    const lmsr = await LMSRMarketMaker.at(lmsrAddress);
     await lmsr.transferOwnership(oracle);
-    console.log("  LMSR ownership transferred to oracle:", oracle);
+    console.log("  LMSR ownership transferred to the Safe:", oracle);
 
     console.log("\n=== DePrize market ready ===");
-    console.log("conditionId:        ", conditionId);
-    console.log("LMSRWithTWAP market:", lmsrAddress);
-    console.log("RECORD the questionId with the conditionId — resolution");
+    console.log("conditionId:     ", conditionId);
+    console.log("LMSR market:     ", lmsrAddress);
+    console.log("RECORD the questionId with the conditionId - resolution");
     console.log("(DePrizeResolve.s.sol) needs it and it is not stored on-chain.");
-    console.log("Next (0.8 side):");
-    console.log("  registry.setCondition(deprizeId, conditionId)");
-    console.log("  registry.open(deprizeId)");
-    console.log("  deprizeMint.setMarket(deprizeId, market)");
+    console.log("Next (0.8 side): forge script script/deprize/DePrizeWire.s.sol");
   });
 };

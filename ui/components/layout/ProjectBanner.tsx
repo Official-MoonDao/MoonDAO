@@ -1,4 +1,10 @@
-import { PROJECT_SYSTEM_CONFIG, NEXT_QUARTER_BUDGET_USD, MAX_BUDGET_USD } from 'const/config'
+import {
+  ANNOUNCE_PROJECT_BUDGET,
+  PROJECT_SYSTEM_CONFIG,
+  NEXT_QUARTER_BUDGET_USD,
+  MAX_BUDGET_USD,
+} from 'const/config'
+import { endOfConfigDeadline } from '@/lib/utils/dates'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -11,8 +17,15 @@ const PROJECT_PAGES = [
   '/submit',
 ]
 
+// Routes this banner must never appear on, whatever the deadline says. The
+// moonbase is a fixed, fullscreen scene that docks its own controls along the
+// bottom edge; this banner is fixed to that same edge at z-40 and lands squarely
+// on the year scrubber. Matched by prefix so /moonbase/[projectId] is covered
+// as well as /moonbase itself.
+const FULLSCREEN_PAGES = ['/moonbase']
+
 // Check if deadline has passed (computed once on module load)
-const SUBMISSION_DEADLINE = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
+const SUBMISSION_DEADLINE = endOfConfigDeadline(PROJECT_SYSTEM_CONFIG.submissionDeadline)
 
 export default function ProjectBanner() {
   const router = useRouter()
@@ -21,10 +34,22 @@ export default function ProjectBanner() {
   // Hide banner if user is on project-related pages
   const isOnProjectPage = PROJECT_PAGES.includes(router.pathname)
 
+  const isOnFullscreenPage = FULLSCREEN_PAGES.some(
+    (page) =>
+      router.pathname === page || router.pathname.startsWith(`${page}/`)
+  )
+
   // Hide banner if submission deadline has passed
   const isDeadlinePassed = new Date() > SUBMISSION_DEADLINE
 
-  if (!isVisible || isOnProjectPage || isDeadlinePassed || process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true') {
+  if (
+    !ANNOUNCE_PROJECT_BUDGET ||
+    !isVisible ||
+    isOnProjectPage ||
+    isOnFullscreenPage ||
+    isDeadlinePassed ||
+    process.env.NEXT_PUBLIC_HIDE_PROJECT_BANNER === 'true'
+  ) {
     return null
   }
 

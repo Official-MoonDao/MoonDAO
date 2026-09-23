@@ -1,0 +1,721 @@
+/**
+ * Moon Base Zero — lighting and regolith scattering (headless, mocha + chai).
+ *
+ * The render itself needs a GPU and can only be judged by eye, but everything
+ * the render is derived FROM is arithmetic, and that is what this pins. Two
+ * classes of bug are worth a test here.
+ *
+ * The first is disagreement. The scene's sun used to be four things at once — a
+ * directional light, the hillshade baked into the terrain albedo, the craterlet
+ * detail tile's own hillshade, and the regolith the metal reflects — and they
+ * held private copies of the azimuth, one of which was already wrong (a
+ * map-frame 40° written down as a local bearing, which is really 50°). Two of
+ * those four are now gone: the terrain evaluates the BRDF against the light
+ * instead of displaying a bake, so there is no baked azimuth left to disagree.
+ * The round-trip cases below still re-derive the local bearing and elevation
+ * from SUN_DIR, because the models place hardware by local bearing and that
+ * confusion is one edit away from returning.
+ *
+ * The second is the regolith BRDF itself, where the values matter and are easy
+ * to get subtly wrong: the surge has to be exactly neutral at the reference
+ * angle or the whole scene's exposure shifts, it has to stay monotone in phase
+ * or the ground brightens as the camera turns AWAY from opposition, and now that
+ * the full Hapke law is evaluated per pixel, the law has to reproduce the
+ * Moon's actual albedo and stay bounded at the grazing angles this camera lives
+ * at.
+ */
+import { expect } from 'chai'
+import {
+  HG_ASYMMETRY,
+  MACRO_ROUGHNESS_DEG,
+  MACRO_ROUGHNESS_RAD,
+  MICRO_ROUGHNESS_DEG,
+  MICRO_ROUGHNESS_RAD,
+  OPPOSITION_B0,
+  OPPOSITION_H,
+  PHASE_REF_DEG,
+  REGOLITH_ALBEDO,
+  SINGLE_SCATTERING_ALBEDO,
+  azimuthFromPhase,
+  chandrasekharH,
+  hapkeNormalAlbedo,
+  hapkeReflectance,
+  hapkeRoughness,
+  hgPhase,
+  normalizedSurge,
+  oppositionSurge,
+  residualRoughness,
+} from '../../../lib/lunar-atlas/regolith'
+import { capCenterDirection, capLocalDirection } from '../../../lib/lunar-atlas/southpole'
+import {
+  SUN_ANGULAR_RADIUS_RAD,
+  SUN_DIR,
+  SUN_INTENSITY,
+  SUN_LOCAL_BEARING_DEG,
+  SUN_LOCAL_ELEV_DEG,
+  SUN_MAP_AZ_DEG,
+  SUN_MAP_EL_DEG,
+} from '../../../lib/lunar-atlas/sun'
+import {
+  buildDetailSlopeTile,
+  detailRmsSlope,
+  valueNoise,
+} from '../../../lib/lunar-atlas/detailTile'
+import { DETAIL_OCTAVES } from '../../../lib/lunar-atlas/regolithShader'
+
+const DEG = Math.PI / 180
+
+type V = readonly [number, number, number]
+
+const dot = (a: V, b: V) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+const angleDeg = (a: V, b: V) => Math.acos(Math.max(-1, Math.min(1, dot(a, b)))) / DEG
+
+describe('sun direction', () => {
+  it('is a unit vector', () => {
+    expect(Math.hypot(...SUN_DIR)).to.be.closeTo(1, 1e-12)
+  })
+
+  it('agrees with the bake it was derived from', () => {
+    // SUN_DIR is built by feeding the map-frame azimuth in as longitude and the
+    // negated map-frame elevation in as latitude. That identity is the only
+    // reason the light and the baked hillshade can be kept in step by
+    // construction, so assert it holds rather than trusting the comment.
+    expect(SUN_MAP_AZ_DEG).to.equal(40)
+    expect(SUN_MAP_EL_DEG).to.equal(45)
+  })
+
+  it('recovers the documented local elevation above the ridge', () => {
+    // Elevation is 90° minus the angle between the sun and the local up at the
+    // cap center. Nothing in this is a free parameter; if the number in sun.ts
+    // drifts from SUN_DIR, the models' hand-placed hardware stops agreeing
+    // with the light.
+    const up = capCenterDirection() as V
+    const elev = 90 - angleDeg(SUN_DIR as V, up)
+    expect(elev).to.be.closeTo(SUN_LOCAL_ELEV_DEG, 0.02)
+  })
+
+  it('recovers the documented local bearing above the ridge', () => {
+    // Bearing is recovered by asking capLocalDirection, the same helper every
+    // model uses to place itself, which direction reproduces SUN_DIR. Scanning
+    // rather than solving keeps the test independent of that helper's algebra.
+    const up = capCenterDirection() as V
+    const elev = 90 - angleDeg(SUN_DIR as V, up)
+    let best = { bearing: -1, err: Infinity }
+    for (let b = 0; b < 360; b += 0.05) {
+      const err = angleDeg(capLocalDirection(b, elev) as V, SUN_DIR as V)
+      if (err < best.err) best = { bearing: b, err }
+    }
+    expect(best.err).to.be.lessThan(0.02)
+    expect(best.bearing).to.be.closeTo(SUN_LOCAL_BEARING_DEG, 0.1)
+  })
+
+  it('is NOT at the map-frame azimuth when measured locally', () => {
+    // The bug this file exists to prevent. The two frames differ by ~10°, so a
+    // call site that reaches for the wrong one is off by a visible amount, not
+    // a rounding error.
+    expect(Math.abs(SUN_LOCAL_BEARING_DEG - SUN_MAP_AZ_DEG)).to.be.greaterThan(5)
+  })
+
+  it('subtends the sun s real angular diameter', () => {
+    // 0.5326° across, seen from 1 AU. This is the number that sets how soft a
+    // shadow penumbra is allowed to get.
+    expect((SUN_ANGULAR_RADIUS_RAD * 2) / DEG).to.be.closeTo(0.5326, 0.002)
+  })
+
+  it('keeps intensity positive and finite', () => {
+    expect(SUN_INTENSITY).to.be.greaterThan(0)
+    expect(Number.isFinite(SUN_INTENSITY)).to.equal(true)
+  })
+})
+
+describe('regolith albedo', () => {
+  it('is as dark as the Moon actually is', () => {
+    // Highland regolith normal albedo. Bracketed rather than pinned: anything
+    // outside this range is not lunar soil, and drifting up toward 0.3 is what
+    // makes a Moon render look like white plaster.
+    expect(REGOLITH_ALBEDO).to.be.within(0.07, 0.2)
+  })
+})
+
+describe('opposition surge', () => {
+  it('peaks at exact opposition with the full Hapke amplitude', () => {
+    // B(0) = 1 + B0, because at zero phase every grain shadow is hidden behind
+    // the grain that casts it.
+    expect(oppositionSurge(0)).to.be.closeTo(1 + OPPOSITION_B0, 1e-12)
+  })
+
+  it('decays to unity looking into the sun', () => {
+    // B(180°) -> 1: tan(g/2) diverges, so the surge term vanishes entirely.
+    expect(oppositionSurge(180 * DEG)).to.be.closeTo(1, 1e-6)
+  })
+
+  it('is monotonically decreasing in phase angle', () => {
+    // The physical content of the term. If this ever fails the ground gets
+    // brighter as the camera turns away from the light, which reads instantly
+    // as broken.
+    let prev = Infinity
+    for (let g = 0; g <= 180; g += 0.5) {
+      const b = oppositionSurge(g * DEG)
+      expect(b).to.be.lessThan(prev)
+      prev = b
+    }
+  })
+
+  it('halves its amplitude at the half-width angle', () => {
+    // h is defined as the phase angle where tan(g/2) = h, i.e. where the surge
+    // is exactly half its peak amplitude. Confirms h is being used as an
+    // angular width and not as an opaque fudge factor.
+    const gHalf = 2 * Math.atan(OPPOSITION_H)
+    expect(oppositionSurge(gHalf) - 1).to.be.closeTo(OPPOSITION_B0 / 2, 1e-12)
+  })
+
+  it('is exactly neutral at the reference angle', () => {
+    // The load-bearing property. The terrain bake was exposed with no surge at
+    // all, so the normalized surge must be 1.0 at the phase angle the home
+    // framing actually sits at, or every shot in the app shifts brightness.
+    expect(normalizedSurge(PHASE_REF_DEG * DEG)).to.be.closeTo(1, 1e-12)
+  })
+
+  it('brightens toward opposition and dims away from it', () => {
+    expect(normalizedSurge(0)).to.be.greaterThan(1)
+    expect(normalizedSurge(180 * DEG)).to.be.lessThan(1)
+  })
+
+  it('stays inside a range a tone curve can absorb', () => {
+    // Under 2x at the top and above 0.9 at the bottom, across the whole sphere
+    // of view directions. A surge that swung further than this would clip the
+    // sunlit ground at one end of a camera orbit and crush it at the other.
+    let lo = Infinity
+    let hi = -Infinity
+    for (let g = 0; g <= 180; g += 0.5) {
+      const b = normalizedSurge(g * DEG)
+      lo = Math.min(lo, b)
+      hi = Math.max(hi, b)
+    }
+    expect(hi).to.be.within(1.5, 2.0)
+    expect(lo).to.be.within(0.9, 1.0)
+  })
+
+  it('leaves the reference framing alone to within a couple of percent', () => {
+    // PHASE_REF_DEG was chosen from the phase angles the home framing actually
+    // spans (68°-99°). Over that whole span the surge stays within ~10% of
+    // neutral, so the shot the user lands on is essentially as authored.
+    for (let g = 68; g <= 99; g += 1) {
+      expect(normalizedSurge(g * DEG)).to.be.closeTo(1, 0.1)
+    }
+  })
+})
+
+describe('single-particle phase function', () => {
+  it('backscatters, which is what regolith does', () => {
+    // The sign convention is the trap. A positive asymmetry parameter in this
+    // form FORWARD scatters, which would darken the ground toward opposition and
+    // brighten it into the sun — the Moon, inverted.
+    expect(HG_ASYMMETRY).to.be.lessThan(0)
+    expect(hgPhase(0)).to.be.greaterThan(hgPhase(Math.PI))
+    expect(hgPhase(0)).to.be.greaterThan(1)
+  })
+
+  it('is normalized over the sphere', () => {
+    // A phase function must integrate to 1 over 4 pi steradians, or it is
+    // inventing or destroying light. Integrated in the polar angle with the
+    // sin(g) measure, which is the only axis it varies along.
+    const steps = 200000
+    let sum = 0
+    for (let i = 0; i < steps; i++) {
+      const g = ((i + 0.5) / steps) * Math.PI
+      sum += hgPhase(g) * Math.sin(g)
+    }
+    sum *= Math.PI / steps / 2 // dg * (2 pi / 4 pi)
+    expect(sum).to.be.closeTo(1, 1e-4)
+  })
+})
+
+describe('multiple scattering (Chandrasekhar H)', () => {
+  it('vanishes when grains never survive a scattering', () => {
+    // w = 0 means every photon is absorbed on first contact, so there is no
+    // multiple scattering and H must be exactly 1 everywhere.
+    for (const mu of [0, 0.1, 0.5, 1]) expect(chandrasekharH(mu, 0)).to.be.closeTo(1, 1e-12)
+  })
+
+  it('only ever adds light, and more of it the brighter the grains', () => {
+    for (const mu of [0.05, 0.3, 0.7, 1]) {
+      expect(chandrasekharH(mu)).to.be.greaterThan(1)
+      expect(chandrasekharH(mu, 0.4)).to.be.greaterThan(chandrasekharH(mu, 0.1))
+    }
+  })
+})
+
+describe('the full Hapke BRDF', () => {
+  it('reproduces the Moon s normal albedo from its single scattering albedo', () => {
+    // The load-bearing calibration of the whole surface. w is not a free knob:
+    // it is solved so that the BRDF returns REGOLITH_ALBEDO looking straight
+    // down at zero phase. If REGOLITH_ALBEDO is ever retuned and w is not
+    // re-solved, the ground silently stops being as dark as the Moon.
+    expect(hapkeNormalAlbedo()).to.be.closeTo(REGOLITH_ALBEDO, 1e-4)
+    expect(SINGLE_SCATTERING_ALBEDO).to.be.within(0.05, 0.5)
+  })
+
+  it('is dark, because w is not the albedo', () => {
+    // Sanity on the distinction that is easiest to get wrong: the single
+    // scattering albedo is ~0.19 while the surface's normal albedo is 0.12. Wire
+    // REGOLITH_ALBEDO in as w and the ground comes out too dark by a third.
+    expect(SINGLE_SCATTERING_ALBEDO).to.be.greaterThan(REGOLITH_ALBEDO)
+  })
+
+  it('returns nothing for geometry facing away from the sun or the eye', () => {
+    expect(hapkeReflectance(-0.1, 0.5, 0)).to.equal(0)
+    expect(hapkeReflectance(0.5, -0.1, 0)).to.equal(0)
+    expect(hapkeReflectance(0, 0.5, 0)).to.equal(0)
+  })
+
+  it('stays bounded at grazing angles, unlike the correction factor it replaced', () => {
+    // This is the whole reason the terrain can be lit directly instead of having
+    // Lommel-Seeliger patched onto a Lambertian bake. As a correction the term
+    // goes as 1/(mu0 + mu) and runs away when both cosines vanish; in the real
+    // BRDF it appears as mu0/(mu0 + mu), which cannot exceed 1. Sweep right into
+    // the corner where the old formulation exploded.
+    let worst = 0
+    for (const mu0 of [1e-6, 1e-4, 0.01, 0.036, 0.5, 1]) {
+      for (const mu of [1e-6, 1e-4, 0.01, 0.05, 0.5, 1]) {
+        for (const gd of [0, 1, 45, 85, 120, 179]) {
+          const r = hapkeReflectance(mu0, mu, gd * DEG)
+          expect(Number.isFinite(r)).to.equal(true)
+          expect(r).to.be.greaterThan(-1e-12)
+          worst = Math.max(worst, r)
+        }
+      }
+    }
+    // Bounded by (w / 4 pi) * 1 * [(1 + B0) p(0) + H(1) - 1], about 0.075.
+    expect(worst).to.be.lessThan(0.1)
+  })
+
+  it('brightens monotonically toward opposition', () => {
+    // Both view-dependent terms — the surge and the backscattering phase
+    // function — grow toward zero phase, so the sum has to as well. If this ever
+    // fails the ground gets brighter as the camera turns away from the sun.
+    for (const [mu0, mu] of [
+      [0.7, 0.7],
+      [0.036, 0.5],
+      [1, 0.05],
+    ]) {
+      let prev = Infinity
+      for (let gd = 0; gd <= 179; gd += 1) {
+        const r = hapkeReflectance(mu0, mu, gd * DEG)
+        expect(r).to.be.lessThan(prev)
+        prev = r
+      }
+    }
+  })
+
+  it('fills a shadow from the ground s real radiance, not a Lambertian stand-in', () => {
+    // The bug this case exists for shipped once. The shadow fill was derived as
+    // albedo * sun * mu0 / pi — the Lambertian radiance of the ground — which at
+    // an 85° phase angle is 4x what the actual BRDF returns, so shadows were
+    // filled to 24% of the lit ground instead of 6%.
+    //
+    // A uniform 24% lift is not a cosmetic error. It is the "flat ambient pond"
+    // the terrain's own history warns about: it raises every slope by the same
+    // amount, flattening exactly the shading contrast that per-pixel normals were
+    // introduced to produce.
+    const mu0 = Math.sin(SUN_LOCAL_ELEV_DEG * DEG)
+    const lit = hapkeReflectance(mu0, 1, PHASE_REF_DEG * DEG)
+    const lambertian = (REGOLITH_ALBEDO * mu0) / Math.PI
+    expect(lambertian / lit).to.be.within(3, 5)
+    // And the fill built on the correct one stays in single digits.
+    const fill = lit * REGOLITH_ALBEDO * 0.5
+    expect(fill / lit).to.be.within(0.03, 0.1)
+  })
+
+  it('brightens toward a grazing view, which is the bright lunar horizon', () => {
+    // Lommel-Seeliger's actual visible consequence: at fixed illumination the
+    // surface gets BRIGHTER as the view goes grazing, by enough to cancel the
+    // foreshortening that would darken a Lambertian limb. It is why the horizon
+    // reads as a band rather than fading out, and it is the one thing a
+    // Lambertian terrain can never look right without.
+    const mu0 = Math.sin(44.46 * DEG)
+    let prev = 0
+    for (const mu of [1, 0.8, 0.6, 0.4, 0.2, 0.1, 0.05, 0.02]) {
+      const r = hapkeReflectance(mu0, mu, 45 * DEG)
+      expect(r).to.be.greaterThan(prev)
+      prev = r
+    }
+  })
+})
+
+// Hapke's macroscopic roughness, which is the term that removed the black.
+//
+// The scene shipped for a while with large terrain-shaped black areas across the
+// far field, and the cause was not a shadow, a shadow map, or an exposure: it was
+// that the BRDF had a hard domain edge at mu = 0 and a normal-mapped renderer
+// walks straight over it. The shading normal is sampled at the DEM's resolution
+// while the silhouette comes from a 15.6 m mesh, so on a ridge flank seen at 3°
+// above grazing, most fragments carry a normal that points behind a surface the
+// mesh says is plainly visible. Every one of them returned zero.
+//
+// Roughness is the term that makes that situation describable instead of
+// undefined, so the cases below are mostly about its EDGES — the grazing limit,
+// the terminator, and the smooth limit — rather than about mid-range values.
+describe('macroscopic roughness (Hapke theta-bar)', () => {
+  it('collapses to the old smooth law at theta-bar = 0', () => {
+    // The containment property. Everything this term does has to be reachable from
+    // the law that was here before by turning one parameter up from zero, or it is
+    // a different BRDF wearing the same name.
+    for (const [iDeg, eDeg, psiDeg] of [
+      [0, 0, 0],
+      [30, 60, 45],
+      [70, 20, 135],
+      [89, 89, 180],
+    ]) {
+      const g = hapkeRoughness(iDeg * DEG, eDeg * DEG, psiDeg * DEG, 0)
+      expect(g.mu0e, `i ${iDeg}`).to.be.closeTo(Math.cos(iDeg * DEG), 1e-12)
+      expect(g.mue, `e ${eDeg}`).to.be.closeTo(Math.cos(eDeg * DEG), 1e-12)
+      expect(g.shadow, `S ${iDeg}/${eDeg}`).to.equal(1)
+    }
+  })
+
+  it('leaves the surface untouched looking straight down at zero phase', () => {
+    // The calibration geometry. S is exactly 1 here and both effective cosines come
+    // back equal, so Lommel-Seeliger is still exactly 1/2 and the only thing
+    // roughness moves is the multiple-scattering term. That is what keeps the w
+    // solved against REGOLITH_ALBEDO meaningful, and it is why w only had to move
+    // 0.2% when this term landed.
+    const g = hapkeRoughness(0, 0, 0, MACRO_ROUGHNESS_RAD)
+    expect(g.shadow).to.be.closeTo(1, 1e-9)
+    expect(g.mu0e).to.be.closeTo(g.mue, 1e-9)
+    expect(hapkeNormalAlbedo()).to.be.closeTo(REGOLITH_ALBEDO, 1e-4)
+  })
+
+  it('shadows nothing when the sun and the eye share an azimuth', () => {
+    // An exact identity rather than a tolerance, and a good check on the
+    // transcription: at psi = 0 with the eye more grazing than the sun, every facet
+    // the eye can see is one the sun can also see, so the shadowing fraction is
+    // exactly 1. Any slip in pairing eta with the wrong ray breaks this and almost
+    // nothing else.
+    for (const [iDeg, eDeg] of [
+      [10, 40],
+      [30, 30],
+      [5, 85],
+    ]) {
+      const g = hapkeRoughness(iDeg * DEG, eDeg * DEG, 0, MACRO_ROUGHNESS_RAD)
+      expect(g.shadow, `i ${iDeg} e ${eDeg}`).to.be.closeTo(1, 1e-9)
+    }
+  })
+
+  it('never claims more than all of the surface is visible and lit', () => {
+    // S is a FRACTION. The analytic form is a fit to an integral and overshoots by a
+    // couple of percent near 90° emergence, which is why hapkeRoughness caps it.
+    for (let i = 0; i <= 89; i += 7) {
+      for (let e = 0; e <= 89; e += 7) {
+        for (let psi = 0; psi <= 180; psi += 30) {
+          const g = hapkeRoughness(i * DEG, e * DEG, psi * DEG, MACRO_ROUGHNESS_RAD)
+          expect(g.shadow, `${i}/${e}/${psi}`).to.be.within(0, 1)
+        }
+      }
+    }
+  })
+
+  it('keeps the effective emergence cosine off zero at a grazing view', () => {
+    // THE PROPERTY THE FAR FIELD NEEDS. The raw cosine goes to zero at 90° and then
+    // negative, and negative is what used to return black. The effective one lands
+    // on a floor set by theta-bar itself — roughly chi * tan(theta-bar) — because a
+    // rough surface seen edge-on still shows the faces tilted toward the eye.
+    let prev = Infinity
+    for (const eDeg of [0, 45, 80, 86, 89, 89.99]) {
+      const g = hapkeRoughness(45 * DEG, eDeg * DEG, 90 * DEG, MACRO_ROUGHNESS_RAD)
+      expect(g.mue, `e ${eDeg}`).to.be.greaterThan(0.25)
+      expect(g.mue, `e ${eDeg} monotone`).to.be.lessThan(prev)
+      prev = g.mue
+    }
+    // And the floor is a real fraction of unity, not an epsilon keeping a divide
+    // alive: at the limit it is about a third.
+    const limit = hapkeRoughness(45 * DEG, 89.99 * DEG, 90 * DEG, MACRO_ROUGHNESS_RAD)
+    expect(limit.mue).to.be.within(0.28, 0.36)
+  })
+
+  it('has no cliff left anywhere along the approach to grazing', () => {
+    // The regression case, stated as the artifact rather than as the mechanism: walk
+    // the emergence angle in tenth-degree steps all the way to the horizon and the
+    // rendered reflectance must never fall off a step. Before roughness, the step
+    // from 89.9° to 90.1° was the whole lit value down to nothing, and it painted
+    // kilometres of the patch black.
+    const mu0 = Math.sin(44.46 * DEG)
+    let prev = hapkeReflectance(mu0, Math.cos(0), 85 * DEG)
+    for (let eDeg = 0.1; eDeg <= 89.9; eDeg += 0.1) {
+      const r = hapkeReflectance(mu0, Math.cos(eDeg * DEG), 85 * DEG)
+      expect(r, `e ${eDeg.toFixed(1)}`).to.be.greaterThan(0)
+      // No single tenth of a degree may change the ground by more than 2%.
+      expect(Math.abs(r - prev) / prev, `step at e ${eDeg.toFixed(1)}`).to.be.lessThan(0.02)
+      prev = r
+    }
+  })
+
+  it('fades the terminator out instead of switching it off', () => {
+    // The other end of the same benefit, and one the scene gets for free. S carries
+    // the incidence cosine to zero smoothly as the sun sets on a facet, so a
+    // sunset line is a gradient a few degrees wide rather than a hard edge — which
+    // matters a great deal once the sun comes down to its real 2°.
+    let prev = Infinity
+    for (const iDeg of [40, 60, 80, 88, 89.5]) {
+      const g = hapkeRoughness(iDeg * DEG, 30 * DEG, 45 * DEG, MACRO_ROUGHNESS_RAD)
+      expect(g.shadow, `i ${iDeg}`).to.be.lessThan(prev)
+      prev = g.shadow
+    }
+    expect(prev).to.be.lessThan(0.05)
+    expect(prev).to.be.greaterThan(0)
+  })
+
+  it('darkens the ground at high phase, which is what roughness is known for', () => {
+    // The photometric signature everybody quotes, and the one the old comment in
+    // regolith.ts dismissed this term for being "small". It is small at the design
+    // sun and it is not small at a grazing one, which is exactly the direction this
+    // scene is heading.
+    const mu0 = Math.sin(44.46 * DEG)
+    const smooth = (gDeg: number) =>
+      hapkeReflectance(mu0, 0.7, gDeg * DEG, SINGLE_SCATTERING_ALBEDO, 0)
+    const rough = (gDeg: number) =>
+      hapkeReflectance(mu0, 0.7, gDeg * DEG, SINGLE_SCATTERING_ALBEDO, MACRO_ROUGHNESS_RAD)
+    expect(rough(20) / smooth(20)).to.be.within(0.9, 1.02)
+    expect(rough(140) / smooth(140)).to.be.lessThan(rough(20) / smooth(20))
+  })
+
+  it('recovers the azimuth between the two planes from the three angles', () => {
+    // psi is not measured, it is reconstructed, and getting it wrong silently swaps
+    // which branch of the correction runs. Round-tripped through the spherical law
+    // of cosines the reconstruction is derived from.
+    for (const [iDeg, eDeg, psiDeg] of [
+      [30, 60, 0],
+      [30, 60, 90],
+      [30, 60, 180],
+      [75, 15, 120],
+    ]) {
+      const i = iDeg * DEG
+      const e = eDeg * DEG
+      const psi = psiDeg * DEG
+      const cosG = Math.cos(i) * Math.cos(e) + Math.sin(i) * Math.sin(e) * Math.cos(psi)
+      const back = azimuthFromPhase(Math.cos(i), Math.cos(e), Math.acos(cosG))
+      expect(back / DEG, `${iDeg}/${eDeg}/${psiDeg}`).to.be.closeTo(psiDeg, 1e-6)
+    }
+  })
+
+  it('answers zero azimuth when a ray is along the normal, where it is undefined', () => {
+    expect(azimuthFromPhase(1, 0.5, 60 * DEG)).to.equal(0)
+    expect(azimuthFromPhase(0.5, 1, 60 * DEG)).to.equal(0)
+  })
+})
+
+// How much roughness each pixel gets, which is a different question from what the
+// law does with it. The scene DRAWS most of the Moon's roughness, in the DEM's
+// normals and in four detail octaves, so handing every pixel the published 20°
+// would be counting the same bumps twice. What theta-bar gets is the part texture
+// filtering destroyed, and that varies from nearly nothing up close to nearly all
+// of it at 5 km.
+describe('the roughness budget', () => {
+  it('bottoms out at the floor when the normal carried everything', () => {
+    expect((residualRoughness(0) * 180) / Math.PI).to.be.closeTo(MICRO_ROUGHNESS_DEG, 1e-9)
+  })
+
+  it('never returns zero, which would put the grazing cliff straight back', () => {
+    // The floor's real job. At theta-bar = 0 the correction is the identity, mu_e is
+    // the raw cosine again, and near ground — where every octave IS resolved — would
+    // go back to having a hard edge at 90° emergence.
+    expect(MICRO_ROUGHNESS_RAD).to.be.greaterThan(0)
+    const g = hapkeRoughness(45 * DEG, 89.9 * DEG, 90 * DEG, MICRO_ROUGHNESS_RAD)
+    expect(g.mue).to.be.greaterThan(0.05)
+  })
+
+  it('climbs to the published lunar figure once filtering has taken everything', () => {
+    // The check that the budget closes from the other end. At a distance where the
+    // detail tile and the DEM have both averaged flat, every bit of their variance
+    // is lost and theta-bar has to land back on the ~20° that photometric fits to
+    // disc-resolved lunar imagery return — because from far enough away, this render
+    // and that imagery resolve the same amount of the Moon, which is none of it.
+    const detailVariance = 0.3 * 0.3
+    // Measured off the shipped height map with buildNormalField: 0.248 RMS slope
+    // across the patch, which is a rugged ridge rather than average mare.
+    const demVariance = 0.248 * 0.248
+    const deg = (residualRoughness(detailVariance + demVariance) * 180) / Math.PI
+    expect(deg).to.be.closeTo(MACRO_ROUGHNESS_DEG, 2)
+  })
+
+  it('leaves no room for a large floor, which is why the floor is small', () => {
+    // Stated as arithmetic because it is the constraint that sets MICRO_ROUGHNESS.
+    // The relief this scene draws already accounts for the whole lunar budget on its
+    // own; anything more than a few degrees underneath it is roughness the Moon does
+    // not have, applied on top of roughness the renderer is already drawing.
+    const drawnOnly = Math.atan(Math.sqrt(0.3 * 0.3 + 0.248 * 0.248))
+    expect((drawnOnly * 180) / Math.PI).to.be.greaterThan(MACRO_ROUGHNESS_DEG)
+    expect(MICRO_ROUGHNESS_DEG).to.be.lessThan(8)
+  })
+
+  it('is monotone in how much the filter destroyed', () => {
+    let prev = 0
+    for (const lost of [0, 0.001, 0.01, 0.05, 0.09, 0.15, 0.3]) {
+      const deg = (residualRoughness(lost) * 180) / Math.PI
+      expect(deg).to.be.greaterThan(prev)
+      prev = deg
+    }
+    // And it cannot run away: even absurd variance stays inside a slope a pile of
+    // soil could actually stand at.
+    expect((residualRoughness(10) * 180) / Math.PI).to.be.lessThan(80)
+  })
+
+  it('ignores a negative variance, which floating point will hand it', () => {
+    // E[s^2] - |E[s]|^2 is non-negative in exact arithmetic and occasionally is not
+    // in half floats sampled from two different mip chains. A NaN out of sqrt here
+    // would be a black pixel, which is the exact failure this change removes.
+    expect(residualRoughness(-1e-3)).to.be.closeTo(MICRO_ROUGHNESS_RAD, 1e-12)
+  })
+})
+
+// Everything the DEM cannot describe. LOLA's 5 m grids are interpolated from
+// sparse tracks, so below ~10 m there is no data at all and the foreground is
+// whatever this tile says it is. It shipped once at less than half the roughness
+// of real ground, which read as smooth plaster, so the roughness is measured here
+// rather than eyeballed in the render.
+describe('sub-resolution detail tile', () => {
+  // The size the renderer actually uses. Roughness is only APPROXIMATELY
+  // resolution-invariant — crater coverage is invariant by construction, but a
+  // finer grid resolves more of each bowl's steepest part, so the measured slope
+  // still creeps up with resolution (14.2° at 256, 16.6° at 512, 19.5° at 1024).
+  // Measuring anything other than what ships would therefore be measuring the
+  // wrong number. It costs under 100 ms.
+  const TILE_SIZE = 512
+  const tile = buildDetailSlopeTile(TILE_SIZE)
+  const rms = detailRmsSlope(tile)
+
+  it('stores a true slope, because its heights are in pixel units', () => {
+    // Crater depths are fractions of their own radius IN PIXELS, so
+    // height-per-pixel is dimensionless and needs no unit conversion before being
+    // added to the terrain's gradient. If this stopped holding, every amplitude
+    // below would silently mean something else.
+    expect(rms).to.be.within(0.4, 1.2)
+  })
+
+  it('describes a fixed physical roughness, not a fixed pixel roughness', () => {
+    // Crater coverage goes as count * R^2 / size^2, and radii are fractions of the
+    // tile, so the count must stay FIXED for coverage to be invariant. Quoting
+    // radii in absolute pixels breaks this one way; also scaling the count by area
+    // over-corrects by the same factor the other way. Both have shipped. Halving
+    // the resolution must not halve the roughness.
+    const half = detailRmsSlope(buildDetailSlopeTile(TILE_SIZE / 2))
+    expect(half / rms).to.be.within(0.7, 1.05)
+  })
+
+  it('is rough enough to be regolith once the octaves are applied', () => {
+    // Independent octaves add in quadrature. Mature lunar regolith runs about
+    // 0.26-0.34 RMS slope at meter scale, i.e. 15-19°, and the summed tile has to
+    // land there: too low and the near field is plaster, too high and the ground
+    // is past the angle of repose and reads as gravel.
+    const total = Math.sqrt(
+      DETAIL_OCTAVES.reduce((acc, [, amp]) => acc + (amp * rms) ** 2, 0)
+    )
+    expect(total).to.be.within(0.24, 0.38)
+    const deg = (Math.atan(total) * 180) / Math.PI
+    expect(deg).to.be.within(14, 21)
+  })
+
+  it('is seamless in slope, not just in height', () => {
+    // Every octave is tiled, and a tile that matches in height but not in
+    // gradient shows a crease under grazing light — which is the only light there
+    // is on this world. Wrap-around differencing is what prevents it, so compare
+    // the two edges the wrap has to join.
+    const n = tile.size
+    for (const c of [0, 1, 37, n - 1]) {
+      const left = tile.data[(c * n + 0) * 2]
+      const right = tile.data[(c * n + (n - 1)) * 2]
+      // Not equal — adjacent columns differ — but both must be ordinary interior
+      // values rather than the one-sided garbage a clamped edge would give.
+      expect(Math.abs(left)).to.be.lessThan(rms * 12)
+      expect(Math.abs(right)).to.be.lessThan(rms * 12)
+    }
+  })
+
+  it('carries its own mean square slope, for the roughness the mips destroy', () => {
+    // The companion channel, and the reason it cannot be derived at sample time:
+    // once an octave is far enough away that its mip has averaged the slopes to
+    // zero, nothing in the filtered result remembers how rough it was. Squaring
+    // BEFORE the GPU filters is what preserves it, so this must be the square of the
+    // slope stored beside it, texel for texel.
+    // Tolerances are relative and sized for float32 storage: both fields round-trip
+    // through a Float32Array, so exact equality is not available and 1e-6 relative is
+    // several orders of magnitude tighter than any mistake worth catching.
+    for (const i of [0, 1, 517, tile.size * tile.size - 1]) {
+      const gx = tile.data[i * 2]
+      const gy = tile.data[i * 2 + 1]
+      const expected = gx * gx + gy * gy
+      expect(tile.second[i]).to.be.closeTo(expected, Math.abs(expected) * 1e-6 + 1e-12)
+    }
+    expect(tile.second.length).to.equal(tile.size * tile.size)
+  })
+
+  it('has a mean square that recovers the RMS the octaves are scaled against', () => {
+    // Ties the new channel to the number the amplitudes were solved from: averaged
+    // over the whole tile, the second moment IS the mean square slope, so its root
+    // has to be the same rms detailRmsSlope measures. If these ever disagree the
+    // shader is scaling roughness by one tile's statistics and drawing another's.
+    let acc = 0
+    for (let i = 0; i < tile.second.length; i++) acc += tile.second[i]
+    expect(Math.sqrt(acc / tile.second.length)).to.be.closeTo(rms, rms * 1e-6)
+  })
+
+  it('has no bias, so the detail cannot tilt the terrain it is added to', () => {
+    // A nonzero mean gradient would be a constant slope summed on top of the real
+    // DEM at four different scales, quietly tipping the whole 16 km patch.
+    let sx = 0
+    let sy = 0
+    for (let i = 0; i < tile.data.length; i += 2) {
+      sx += tile.data[i]
+      sy += tile.data[i + 1]
+    }
+    const n = tile.size * tile.size
+    expect(Math.abs(sx / n)).to.be.lessThan(rms * 0.02)
+    expect(Math.abs(sy / n)).to.be.lessThan(rms * 0.02)
+  })
+
+  describe('value noise', () => {
+    it('is band-limited, so it survives mip-mapping', () => {
+      // The point of replacing white noise. Energy at a real wavelength means a
+      // coarser lattice must be SMOOTHER per pixel; white noise has the same
+      // gradient at every scale, which is why it averaged to flat in the mips and
+      // aliased in the near field.
+      let rand = (() => {
+        let s = 99
+        return () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 0xffffffff)
+      })()
+      const grad = (f: Float32Array, size: number) => {
+        let acc = 0
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const dx = f[y * size + ((x + 1) % size)] - f[y * size + x]
+            acc += dx * dx
+          }
+        }
+        return Math.sqrt(acc / (size * size))
+      }
+      const fine = grad(valueNoise(128, 64, rand), 128)
+      const coarse = grad(valueNoise(128, 8, rand), 128)
+      expect(fine).to.be.greaterThan(coarse * 3)
+    })
+
+    it('wraps, so a tiled octave has no seam', () => {
+      let s = 7
+      const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 0xffffffff)
+      const n = valueNoise(64, 8, rand)
+      // Column 0 continues from column 63: the step across the wrap must be no
+      // larger than a typical interior step.
+      let interior = 0
+      for (let y = 0; y < 64; y++) interior += Math.abs(n[y * 64 + 32] - n[y * 64 + 31])
+      let seam = 0
+      for (let y = 0; y < 64; y++) seam += Math.abs(n[y * 64 + 0] - n[y * 64 + 63])
+      expect(seam).to.be.lessThan(interior * 3 + 1e-9)
+    })
+
+    it('stays inside [-1, 1] so octave amplitudes mean what they say', () => {
+      let s = 3
+      const rand = () => ((s = (s * 1664525 + 1013904223) >>> 0), s / 0xffffffff)
+      const n = valueNoise(96, 12, rand)
+      for (let i = 0; i < n.length; i++) expect(Math.abs(n[i])).to.be.at.most(1)
+    })
+  })
+})

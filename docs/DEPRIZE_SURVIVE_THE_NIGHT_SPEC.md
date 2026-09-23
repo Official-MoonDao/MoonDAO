@@ -1,6 +1,6 @@
 # Survive the Night — Technical Specification v1.0-draft
 
-> **SUPERSEDED by [`DEPRIZE_NIGHT_SHIFT.md`](./DEPRIZE_NIGHT_SHIFT.md).** The 1 kg mass cap and
+> **SUPERSEDED.** The successor draft is the Night Shift package in this folder. The 1 kg mass cap and
 > no-radioisotopes clause below are technology-banning rather than outcome-defined, and the
 > hibernate-and-beacon win condition rewards survival rather than operation. Retained for the
 > physics and the rejected-options record.

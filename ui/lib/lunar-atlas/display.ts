@@ -11,7 +11,6 @@ import type {
 import type { ProjectTimeStatus } from './selectors'
 
 export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
-  crewed_base: 'Crewed base',
   habitat: 'Habitat',
   lander: 'Lander',
   rover: 'Rover',
@@ -20,13 +19,13 @@ export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
   comms_pnt: 'Comms / PNT',
   orbital: 'Orbital',
   construction: 'Surface construction',
+  mass_driver: 'Mass driver',
   other: 'Other',
 }
 
 // A compact emoji glyph per type — cheap, legible iconography for markers and
 // legends without shipping an icon set.
 export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
-  crewed_base: '🏛',
   habitat: '🛖',
   lander: '🛬',
   rover: '🚙',
@@ -35,6 +34,7 @@ export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
   comms_pnt: '📡',
   orbital: '🛰',
   construction: '🧱',
+  mass_driver: '🧲',
   other: '◆',
 }
 
@@ -43,7 +43,6 @@ export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
 // organization — org brand colors take over once a specific competitor is
 // selected.
 export const PROJECT_TYPE_COLOR: Record<ProjectType, string> = {
-  crewed_base: '#5eead4', // teal
   habitat: '#86efac', // green
   lander: '#67e8f9', // cyan
   rover: '#fcd34d', // amber
@@ -52,23 +51,34 @@ export const PROJECT_TYPE_COLOR: Record<ProjectType, string> = {
   comms_pnt: '#93c5fd', // blue
   orbital: '#a5b4fc', // indigo
   construction: '#f0abfc', // fuchsia — matches the race zone rings
+  mass_driver: '#5eead4', // teal — freed up by the crewed_base/habitat merge
   other: '#d1d5db', // gray
 }
 
-// Roster status of a DePrize competitor. Wording is deliberately honest:
-// "listed" is MoonDAO's curatorial judgment, not the company's commitment.
-export const ROSTER_STATUS_LABEL: Record<RosterStatus, string> = {
-  listed: 'Listed competitor — participation not confirmed',
-  invited: 'Invited — awaiting response',
-  consented: 'Confirmed competitor',
+// How a roster status reads to a visitor. "Listed" was curator jargon and
+// looked like a confirmed entry; official / unofficial is the actual split.
+export type ParticipationKind = 'official' | 'unofficial' | 'declined'
+
+export function participationKind(
+  status?: RosterStatus
+): ParticipationKind | undefined {
+  if (!status) return undefined
+  if (status === 'consented') return 'official'
+  if (status === 'declined') return 'declined'
+  return 'unofficial'
+}
+
+export const PARTICIPATION_LABEL: Record<ParticipationKind, string> = {
+  official: 'Official participant',
+  unofficial: 'Unofficial — listed by MoonDAO, not confirmed',
   declined: 'Declined to participate',
 }
 
-export const ROSTER_STATUS_CLASSES: Record<RosterStatus, string> = {
-  listed: 'text-white/60 bg-white/5 border-white/15',
-  invited: 'text-amber-200 bg-amber-500/15 border-amber-400/30',
-  consented: 'text-emerald-200 bg-emerald-500/15 border-emerald-400/30',
-  declined: 'text-rose-200 bg-rose-500/15 border-rose-400/30',
+export const ROSTER_STATUS_LABEL: Record<RosterStatus, string> = {
+  listed: PARTICIPATION_LABEL.unofficial,
+  invited: 'Unofficial — invited, awaiting a response',
+  consented: PARTICIPATION_LABEL.official,
+  declined: PARTICIPATION_LABEL.declined,
 }
 
 export const MILESTONE_STATUS_LABEL: Record<MilestoneStatus, string> = {
@@ -101,8 +111,34 @@ export function orgColor(org: Organization | undefined): string {
   return org?.brandColor ?? '#9ca3af'
 }
 
+// Chip and filter group on /deprize. `category` is the unique tech-tree race
+// a surface site opens; `indexCategory` is display grouping only.
+export function goalIndexCategory(goal: {
+  category?: ProjectType
+  indexCategory?: ProjectType
+}): ProjectType | undefined {
+  return goal.category ?? goal.indexCategory
+}
+
 export const LOCATION_PRECISION_LABEL: Record<string, string> = {
   exact: 'Exact location',
   approximate: 'Approximate location',
   region: 'Regional (target area)',
+}
+
+export function formatPlace(n: number): string {
+  const v = Math.abs(n)
+  const mod100 = v % 100
+  const mod10 = v % 10
+  const suffix =
+    mod100 >= 11 && mod100 <= 13
+      ? 'th'
+      : mod10 === 1
+        ? 'st'
+        : mod10 === 2
+          ? 'nd'
+          : mod10 === 3
+            ? 'rd'
+            : 'th'
+  return `${n}${suffix}`
 }

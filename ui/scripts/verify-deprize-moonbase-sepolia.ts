@@ -8,6 +8,9 @@
  *   yarn verify:deprize-moonbase
  *   yarn verify:deprize-moonbase -- --bet   # needs $PRIVATE_KEY, spends ~0.004 ETH
  *
+ * `--bet` also needs $DEPRIZE_COMPLIANCE_SIGNER_KEY: `bet` only accepts an
+ * EIP-712 permit signed by the address the contract holds in `complianceSigner`.
+ *
  * Exit 0 on green; non-zero on any failed assertion.
  */
 import { readFileSync } from 'node:fs'
@@ -22,10 +25,7 @@ import {
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { sepolia } from 'viem/chains'
-import {
-  getDePrizeRaceBinding,
-  OPEN_FIELD_PROJECT_ID,
-} from '../lib/deprize/competitions'
+import { getDePrizeRaceBinding, OPEN_FIELD_PROJECT_ID } from '../lib/deprize/competitions'
 import { mergeLiveMarketInto } from '../lib/deprize/goal-market'
 import { mapOutcomeOddsToProjectIds } from '../lib/deprize/goal-odds'
 import { buildAmounts } from '../lib/deprize/quote-math'
@@ -36,6 +36,14 @@ const REGISTRY = '0x299F163705AbBFa1A8DE7670F33171730F828F3D' as const
 const MINT = '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8' as const
 const DEPRIZE_ID = 9n
 const WANT_BET = process.argv.includes('--bet')
+
+const COMPLIANCE_PERMIT_TYPES = {
+  CompliancePermit: [
+    { name: 'wallet', type: 'address' },
+    { name: 'deprizeId', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ],
+} as const
 
 const RPCS = [
   process.env.SEPOLIA_RPC_URL,
@@ -67,11 +75,7 @@ const ok = (name: string, detail = '') => {
 const bad = (name: string, err: unknown) => {
   fail++
   const msg =
-    err instanceof Error
-      ? err.message
-      : typeof err === 'string'
-        ? err
-        : JSON.stringify(err)
+    err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err)
   console.log(`  FAIL  ${name} — ${msg}`)
 }
 const assert = (name: string, cond: boolean, detail = '') => {
@@ -117,18 +121,11 @@ async function readPrices(
   return prices
 }
 
-function mergeAndCheck(
-  label: string,
-  teamIds: bigint[],
-  probabilities: number[]
-) {
+function mergeAndCheck(label: string, teamIds: bigint[], probabilities: number[]) {
   console.log(`\n${label}`)
   const binding = getDePrizeRaceBinding('sepolia', Number(DEPRIZE_ID))
   assert('binding present', !!binding, `sharedGoalId=${binding?.sharedGoalId}`)
-  assert(
-    'binding is fission race',
-    binding?.sharedGoalId === 'shared-fission-power'
-  )
+  assert('binding is fission race', binding?.sharedGoalId === 'shared-fission-power')
 
   const mapped = mapOutcomeOddsToProjectIds({
     outcomes: binding!.outcomes,
@@ -160,11 +157,7 @@ function mergeAndCheck(
     fieldOdds: mapped.fieldOdds,
     status: 'live' as const,
   }
-  const next = mergeLiveMarketInto(
-    [...SEED_ATLAS.sharedGoals],
-    'shared-fission-power',
-    live
-  )
+  const next = mergeLiveMarketInto([...SEED_ATLAS.sharedGoals], 'shared-fission-power', live)
   const merged = next.find((g) => g.id === 'shared-fission-power')
   assert('merge flipped status to live', merged?.market?.status === 'live')
   assert(
@@ -188,6 +181,25 @@ function mergeAndCheck(
 
   console.log('  odds:', JSON.stringify(mapped.oddsByProjectId, null, 2))
   return { mapped, leaderId, probabilities }
+}
+
+async function signCompliancePermit(bettor: `0x${string}`) {
+  const raw = process.env.DEPRIZE_COMPLIANCE_SIGNER_KEY
+  if (!raw) return null
+  const key = (raw.startsWith('0x') ? raw : `0x${raw}`) as `0x${string}`
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 300)
+  const signature = await privateKeyToAccount(key).signTypedData({
+    domain: {
+      name: 'DePrizeMint',
+      version: '1',
+      chainId: sepolia.id,
+      verifyingContract: MINT,
+    },
+    types: COMPLIANCE_PERMIT_TYPES,
+    primaryType: 'CompliancePermit',
+    message: { wallet: bettor, deprizeId: DEPRIZE_ID, deadline },
+  })
+  return { deadline, signature }
 }
 
 async function placeSkewBet(
@@ -255,15 +267,23 @@ async function placeSkewBet(
   const maxCost = budget + parseEther('0.0005') // slip buffer on the 95% slice
 
   console.log(
-    `  betting qty=${formatEther(qty)} outcome tokens, value=${formatEther(value)} ETH, maxCost=${formatEther(maxCost)}`
+    `  betting qty=${formatEther(qty)} outcome tokens, value=${formatEther(
+      value
+    )} ETH, maxCost=${formatEther(maxCost)}`
   )
+
+  const permit = await signCompliancePermit(account.address)
+  if (!permit) {
+    bad('bet()', 'set $DEPRIZE_COMPLIANCE_SIGNER_KEY to sign the compliance permit')
+    return false
+  }
 
   try {
     const hash = await wallet.writeContract({
       address: MINT,
       abi: MintABI,
       functionName: 'bet',
-      args: [DEPRIZE_ID, 0n, qty, maxCost],
+      args: [DEPRIZE_ID, 0n, qty, maxCost, permit.deadline, permit.signature],
       value,
     })
     console.log(`  tx ${hash}`)
@@ -315,11 +335,7 @@ async function main() {
     functionName: 'marketOf',
     args: [DEPRIZE_ID],
   })) as `0x${string}`
-  assert(
-    'mint.marketOf(9) bound',
-    !!market && !/^0x0+$/.test(market),
-    market
-  )
+  assert('mint.marketOf(9) bound', !!market && !/^0x0+$/.test(market), market)
 
   const stage = Number(
     await client.readContract({
@@ -360,8 +376,7 @@ async function main() {
   // Live odds must differ from curator priors in at least one slot OR the
   // status flip alone is the Wave 2 contract — but after any trading they
   // should not all equal the seed priors.
-  const seedOdds = sharedGoalById(SEED_ATLAS, 'shared-fission-power')!.market!
-    .impliedOdds!
+  const seedOdds = sharedGoalById(SEED_ATLAS, 'shared-fission-power')!.market!.impliedOdds!
   const differsFromPriors = Object.entries(before.mapped.oddsByProjectId).some(
     ([id, p]) => Math.abs((seedOdds[id] ?? 0) - p) > 0.005
   )

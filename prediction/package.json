@@ -21,7 +21,11 @@
     "web3": "^1.5.2",
     "web3connect": "^1.0.0-beta.33"
   },
+  "devDependencies": {
+    "truffle": "^5.11.5"
+  },
   "scripts": {
+    "truffle": "node ./node_modules/truffle/build/cli.bundled.js",
     "prettier": "prettier --write './src/**/*.{ts,tsx}'",
     "prettier-check": "prettier --check './src/**/*.{ts,tsx}'"
   },

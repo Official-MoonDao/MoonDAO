@@ -11,12 +11,82 @@ export type GenerationPhase =
   | 'done'
   | 'error'
 
-const POLL_INTERVAL_MS = 3_000
-const POLL_MAX_ATTEMPTS = 150
-const POLL_TRANSIENT_ERROR_LIMIT = 6
+// Nothing can complete while a run is still waiting for a GPU, so poll lazily
+// until it actually starts and only then check often enough that we notice the
+// finished portrait promptly.
+const POLL_INTERVAL_QUEUED_MS = 3_000
+const POLL_INTERVAL_ACTIVE_MS = 1_000
+const POLL_ERROR_BACKOFF_MS = 3_000
+// Budgets are wall-clock rather than attempt counts: tying them to the poll
+// interval meant tightening the interval silently shortened both the overall
+// timeout and how long a comfy.icu blip could last before we gave up.
+const POLL_DEADLINE_MS = 450_000
+const POLL_ERROR_GRACE_MS = 20_000
 const GET_IMAGE_MAX_RETRIES = 3
 
-const PENDING_STATUSES = new Set(['QUEUED', 'STARTED', 'INIT', 'PENDING'])
+const COMFY_OUTPUT_HOSTNAME = 'r2.comfy.icu'
+
+const COMFY_SUCCESS_STATUS = 'COMPLETED'
+const COMFY_CREDIT_STATUS = 'INSUFFICIENT_CREDIT'
+const COMFY_FAILURE_STATUSES = new Set([
+  'ERROR',
+  'FAILED',
+  'CANCELLED',
+  'CANCELED',
+  'TIMEOUT',
+])
+const COMFY_GENERATING_STATUSES = new Set(['STARTED', 'RUNNING'])
+
+export type ComfyJobClass =
+  | 'pending'
+  | 'completed'
+  | 'insufficient_credit'
+  | 'failed'
+
+/**
+ * Classify a comfy.icu run status. Only known terminal statuses stop polling.
+ * In-progress and unknown statuses stay pending so a provider change (e.g.
+ * adding RUNNING on canary workers) cannot mark a live job as failed.
+ */
+export function classifyComfyJobStatus(status: unknown): ComfyJobClass {
+  if (status === COMFY_SUCCESS_STATUS) return 'completed'
+  if (status === COMFY_CREDIT_STATUS) return 'insufficient_credit'
+  if (typeof status === 'string' && COMFY_FAILURE_STATUSES.has(status)) {
+    return 'failed'
+  }
+  return 'pending'
+}
+
+export function isComfyJobPending(status: unknown): boolean {
+  return classifyComfyJobStatus(status) === 'pending'
+}
+
+export function isComfyJobGenerating(status: unknown): boolean {
+  return typeof status === 'string' && COMFY_GENERATING_STATUSES.has(status)
+}
+
+export function pollIntervalForStatus(status: unknown): number {
+  return isComfyJobGenerating(status) ? POLL_INTERVAL_ACTIVE_MS : POLL_INTERVAL_QUEUED_MS
+}
+
+/**
+ * Whether the browser can pull a finished portrait straight from comfy.icu's
+ * CDN instead of proxying it through our own API. Mirrors the server-side
+ * allowlist in `pages/api/image-gen/get-image.ts` so both paths accept exactly
+ * the same URLs.
+ */
+export function canFetchComfyOutputDirectly(url: unknown): boolean {
+  if (typeof url !== 'string' || !url) return false
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+  if (parsed.protocol !== 'https:') return false
+  if (parsed.port !== '') return false
+  return parsed.hostname === COMFY_OUTPUT_HOSTNAME
+}
 
 const inFlightJobIds = new Set<string>()
 const inFlightPromises = new Map<string, Promise<void>>()
@@ -51,16 +121,78 @@ async function deleteFromGoogleStorage(filename: string) {
   }
 }
 
+export function comfyJobStatusUrl(generateApiRoute: string, jobId: string): string {
+  const separator = generateApiRoute.includes('?') ? '&' : '?'
+  return `${generateApiRoute}${separator}id=${encodeURIComponent(jobId)}`
+}
+
+/** Normalize a single-run or legacy list response into the matching job. */
+export function parseComfyJobStatus(payload: unknown, jobId: string): any | undefined {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const job = payload as { id?: string }
+    if (job.id && job.id !== jobId) {
+      throw new Error('Job status response did not match the requested job')
+    }
+    return payload
+  }
+  if (Array.isArray(payload)) {
+    return payload.find((j: any) => j?.id === jobId)
+  }
+  throw new Error('Unexpected job status response shape')
+}
+
 async function fetchJob(generateApiRoute: string, jobId: string): Promise<any> {
-  const res = await fetchWithTimeout(generateApiRoute, {}, 20_000)
+  const res = await fetchWithTimeout(comfyJobStatusUrl(generateApiRoute, jobId), {}, 20_000)
   if (!res.ok) {
     throw new Error(`Job status request failed (${res.status})`)
   }
-  const jobs = await res.json()
-  if (!Array.isArray(jobs)) {
-    throw new Error('Unexpected job status response shape')
+  return parseComfyJobStatus(await res.json(), jobId)
+}
+
+function looksLikeImageBlob(blob: Blob): boolean {
+  return blob.size > 0 && blob.type.startsWith('image/')
+}
+
+/**
+ * The CDN sends `access-control-allow-origin: *`, so going straight to it saves
+ * a full round trip of the image through our own server. The proxy stays as a
+ * fallback for anything that blocks or intercepts the cross-origin request —
+ * captive portals happily answer 200 with a login page, so the response has to
+ * actually look like an image before we trust it.
+ */
+async function downloadGeneratedImage(outputUrl: string): Promise<Blob> {
+  if (canFetchComfyOutputDirectly(outputUrl)) {
+    try {
+      const direct = await fetchWithTimeout(
+        outputUrl,
+        { mode: 'cors', credentials: 'omit' },
+        30_000,
+      )
+      if (direct.ok) {
+        const blob = await direct.blob()
+        if (looksLikeImageBlob(blob)) return blob
+        console.warn(`Direct portrait download returned ${blob.type || 'no'} content, using proxy`)
+      } else {
+        console.warn(`Direct portrait download failed (${direct.status}), using proxy`)
+      }
+    } catch (err) {
+      console.warn('Direct portrait download failed, using proxy:', err)
+    }
   }
-  return jobs.find((j: any) => j?.id === jobId)
+
+  const res = await fetchWithTimeout(
+    '/api/image-gen/get-image',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: outputUrl }),
+    },
+    30_000,
+  )
+  if (!res.ok) {
+    throw new Error(`Image fetch failed (${res.status})`)
+  }
+  return res.blob()
 }
 
 export type PollComfyJobCallbacks = {
@@ -96,44 +228,44 @@ export async function pollComfyImageJob(
     setIsLoading?.(true)
 
     let job: any
-    let consecutiveErrors = 0
-    let attempts = 0
+    let firstErrorAt: number | null = null
+    const deadline = Date.now() + POLL_DEADLINE_MS
 
     try {
-      while (attempts < POLL_MAX_ATTEMPTS) {
-        attempts++
+      while (Date.now() < deadline) {
         try {
           job = await fetchJob(generateApiRoute, jobId)
-          consecutiveErrors = 0
+          firstErrorAt = null
         } catch (pollErr) {
-          consecutiveErrors++
-          console.warn(`Poll error (${consecutiveErrors}/${POLL_TRANSIENT_ERROR_LIMIT}):`, pollErr)
-          if (consecutiveErrors >= POLL_TRANSIENT_ERROR_LIMIT) {
+          if (firstErrorAt === null) firstErrorAt = Date.now()
+          const failingFor = Date.now() - firstErrorAt
+          console.warn(`Poll error (failing for ${failingFor}ms):`, pollErr)
+          if (failingFor >= POLL_ERROR_GRACE_MS) {
             throw pollErr
           }
-          await sleep(POLL_INTERVAL_MS)
+          await sleep(POLL_ERROR_BACKOFF_MS)
           continue
         }
 
         if (!job) {
-          await sleep(POLL_INTERVAL_MS)
+          await sleep(POLL_INTERVAL_QUEUED_MS)
           continue
         }
 
-        if (PENDING_STATUSES.has(job.status)) {
-          setPhase(job.status === 'STARTED' ? 'generating' : 'queued')
-          await sleep(POLL_INTERVAL_MS)
+        if (isComfyJobPending(job.status)) {
+          setPhase(isComfyJobGenerating(job.status) ? 'generating' : 'queued')
+          await sleep(pollIntervalForStatus(job.status))
           continue
         }
 
         break
       }
 
-      if (!job || PENDING_STATUSES.has(job?.status)) {
+      if (!job || isComfyJobPending(job?.status)) {
         throw new Error('Image generation timed out')
       }
 
-      if (job.status === 'COMPLETED') {
+      if (classifyComfyJobStatus(job.status) === 'completed') {
         const outputUrl = job?.output?.[0]?.url
         if (!outputUrl) {
           throw new Error('Job completed without an output image')
@@ -143,19 +275,7 @@ export async function pollComfyImageJob(
         let lastErr: any
         for (let attempt = 0; attempt < GET_IMAGE_MAX_RETRIES; attempt++) {
           try {
-            const res = await fetchWithTimeout(
-              '/api/image-gen/get-image',
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: outputUrl }),
-              },
-              30_000,
-            )
-            if (!res.ok) {
-              throw new Error(`Image fetch failed (${res.status})`)
-            }
-            const blob = await res.blob()
+            const blob = await downloadGeneratedImage(outputUrl)
             const fileName = `image_${jobId}.png`
             const file = new File([blob], fileName, { type: blob.type })
             // Bug fix: check if this job is still current before applying result
@@ -177,7 +297,7 @@ export async function pollComfyImageJob(
         throw lastErr ?? new Error('Failed to download generated image')
       }
 
-      if (job.status === 'INSUFFICIENT_CREDIT') {
+      if (classifyComfyJobStatus(job.status) === 'insufficient_credit') {
         setError?.('There was an error generating your image, please contact support.')
       } else {
         console.error('Job failed with status:', job.status)

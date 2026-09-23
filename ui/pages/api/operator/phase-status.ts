@@ -4,6 +4,7 @@ import {
   getLivePhaseOverride,
   getNextPhase,
   getPhaseFlags,
+  isLivePhaseOverrideCurrent,
   resolveLivePhase,
   resolveMemberVoteSubmissionsOpen,
 } from '@/lib/operator/cyclePhase'
@@ -26,10 +27,14 @@ export default async function handler(
   const override = await getLivePhaseOverride()
   const phase = resolveLivePhase(override)
 
+  const overrideIsStale =
+    override.phase != null && !isLivePhaseOverrideCurrent(override)
+
   return res.status(200).json({
     configPhase: PROJECT_CYCLE.phase,
     livePhase: phase,
     override,
+    overrideIsStale,
     nextPhase: getNextPhase(phase),
     flags: getPhaseFlags(phase),
     memberVoteSubmissionsOpen: resolveMemberVoteSubmissionsOpen(

@@ -5,6 +5,7 @@ import { Fragment } from 'react'
 import { useEffect } from 'react'
 import { useSwipeDirection } from '../../../lib/utils/hooks/useSwipeDirection'
 import { LogoSidebar, LogoSidebarLight } from '../../assets'
+import MobileAccountSection from '../account/MobileAccountSection'
 import NavigationLink from './NavigationLink'
 
 const MobileSidebar = ({
@@ -75,9 +76,12 @@ const MobileSidebar = ({
               </NavLink>
               <div className="mt-8 h-0 flex-1 overflow-y-auto">
                 <nav className="space-y-1 px-2">
+                  <MobileAccountSection
+                    onNavigate={() => setSidebarOpen(false)}
+                  />
                   {navigation?.map((item: any, i: any) => (
                     <NavigationLink
-                      key={i}
+                      key={item.name}
                       item={item}
                       index={i}
                       setSidebarOpen={setSidebarOpen}

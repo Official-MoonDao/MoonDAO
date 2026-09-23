@@ -159,13 +159,12 @@ export interface Senator {
 
 export const SENATORS_LIST: { [key: string]: Senator[] } = {
   arbitrum: [
-    { address: '0xf2Befa4B9489c1ef75E069D16A6F829F71B4B988', name: 'Frank' },
-    { address: '0x8687AB2FF3188F961828FC2131b6150Ee97Bedce', name: 'Kara' },
-    { address: '0xB87b8c495d3DAE468d4351621b69d2eC10E656FE', name: 'Alex' },
-    { address: '0x529Bd2351476ba114f9D60E71A020A9F0b99f047', name: 'Anastasia' },
-    { address: '0x8A7fD7F4B1A77A606DFdD229c194B1F22De868Ff', name: 'Daniel' },
-    { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Jade' },
-    { address: '0xE99cAD0078Dd4aC9cBEAddc0dacf6759aFD8fF43', name: 'Rina' },
+    { address: '0x7F79A7AAf569F350806813d41aebA544cbD017f4', name: 'Trent Tresch' },
+    { address: '0x1A1E25BcA28DcA769cb29df860D18e093cC894AE', name: 'Julio Rezende' },
+    { address: '0xf85dBC31D0C7bD46EB9Ec684A64D97e41AB04Ce3', name: 'Lakshmi Karan' },
+    { address: '0x2d2f4f747e1A56da59ceC9BE3aC7C373E5701BA6', name: 'Michael Castle Miller' },
+    { address: '0x8687AB2FF3188F961828FC2131b6150Ee97Bedce', name: 'Kara Howard' },
+    { address: '0xA64f2228cceC96076c82abb903021C33859082F8', name: 'Rod Mamin' },
   ],
   sepolia: [
     { address: '0x08B3e694caA2F1fcF8eF71095CED1326f3454B89', name: 'Test Senator 1' },
@@ -225,6 +224,15 @@ export const VOTES_TABLE_ADDRESSES: Index = {
 export const VOTES_TABLE_NAMES: Index = {
   arbitrum: 'Votes_42161_146',
   sepolia: 'Votes_11155111_1971',
+}
+/** Empty until `script/Forecasts.s.sol` is deployed per chain. Votes-shaped table with a timestamp column. */
+export const FORECASTS_TABLE_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
+export const FORECASTS_TABLE_NAMES: Index = {
+  arbitrum: '',
+  sepolia: '',
 }
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1
@@ -443,19 +451,36 @@ export const VMOONEY_SWEEPSTAKES: string = ethConfig.vMooneySweepstakesZeroG
 export const MARKETPLACE_FEE_SPLIT: string = polygonConfig.MarketplaceFeeSplit || ''
 
 export const LMSR_WITH_TWAP_ADDRESSES: Index = {
-  // sepolia: fresh self-serve market (oracle + owner = pmoncada.eth), DePrize id 3.
-  // Prior test markets: 0x48de28... (id 2, resolved), 0x11DCe8... (oracle
-  // jaderiverstokes.eth). Kept for reference only.
+  // sepolia: play-harness market (oracle + owner = pmoncada.eth), DePrize id 3.
+  // Production markets resolve via DePrizeMint.marketOf(id). H-01 Touchdown
+  // (#22) is 0xC717D9ac121E2f7882f007FA046009501Fe0B43C.
   sepolia: '0x36da9d41b673b4115df0e06cefb4c665e2289dd0',
   'arbitrum-sepolia': '0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe',
+  // DePrize 1 H-01 replacement (2026-09-11). Same condition as the disposable
+  // pre-fix clone 0x351aF5…F211. Per-DePrize markets resolve on-chain via
+  // DePrizeMint.marketOf(id); this scalar is the first-market fallback only.
+  arbitrum: '0xB7fE1530D300C505295B42268e127ceea5aDe703',
+}
+
+// Factories whose implementationMaster includes the H-01 tradeWithTWAP fix.
+// Do not create new markets from the Phase 2 factory 0xb40d77bD… (Arbitrum)
+// or 0x8787Dc3c… (Sepolia) — those still clone the vulnerable implementation.
+export const LMSR_WITH_TWAP_FACTORY_ADDRESSES: Index = {
+  sepolia: '0x18778032c44Cd0a7dF81eF9bF3f5aF1b03471a7a',
+  // Same 20-byte value as the Sepolia DePrizeRegistry — different chain.
+  arbitrum: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
 }
 export const CONDITIONAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8',
   'arbitrum-sepolia': '0xa0B1b14515C26acb193cb45Be5508A8A46109a27',
+  // AUDIT[plan 1.5]: Phase 2 Truffle migrate -f 2 --to 4 (2026-08-18).
+  arbitrum: '0x12DAC07Bf586E06a9bDa32c422864C8Fda43FA29',
 }
 export const COLLATERAL_TOKEN_ADDRESSES: Index = {
   sepolia: '0x8cfF28F922AeEe80d3a0663e735681469F7374c6',
   'arbitrum-sepolia': '0xA441f20115c868dc66bC1977E1c17D4B9A0189c7',
+  // Canonical Arbitrum aeWETH (bridged proxy). Do not deploy prediction/WETH9.
+  arbitrum: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
 }
 export const COLLATERAL_DECIMALS = 18
 
@@ -465,10 +490,19 @@ export const COLLATERAL_DECIMALS = 18
 export const DEPRIZE_REDEEM_ADDRESSES: Index = {
   sepolia: '0x2fec56899a1121a46b6bcba0bb924796b6ddf4f7',
   'arbitrum-sepolia': '',
+  arbitrum: '0xb0E06ed72cf6E0CcF21b4D00B002fdfDc198C3fA',
 }
 export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
   sepolia: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
   'arbitrum-sepolia': '',
+  arbitrum: '0xf8B2244634c6eCeF32de10BFe0D7436413A59924',
+}
+// First block worth scanning for DePrize events per chain: the block in which
+// DePrizeRegistry was deployed (Etherscan `getcontractcreation`). Every DePrize
+// mint router, market and trade was created after this block.
+export const DEPRIZE_EVENTS_FROM_BLOCK: Record<string, number> = {
+  sepolia: 11068914,
+  arbitrum: 495964196,
 }
 // DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
 // per chain once `script/deprize/DePrizeMint.s.sol` has deployed the router and
@@ -477,6 +511,7 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
 export const DEPRIZE_MINT_ADDRESSES: Index = {
   sepolia: '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8',
   'arbitrum-sepolia': '',
+  arbitrum: '0xfa36cAb21415B4e23a1eecCFe7B07693A690d838',
 }
 // DePrizeFeeRouter: owns the LMSR market and routes its accrued 1% trade fees
 // into the DePrize's Juicebox prize pool (sweepFees is permissionless). Populate
@@ -486,6 +521,7 @@ export const DEPRIZE_MINT_ADDRESSES: Index = {
 export const DEPRIZE_FEE_ROUTER_ADDRESSES: Index = {
   sepolia: '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a',
   'arbitrum-sepolia': '',
+  arbitrum: '0x0EF00977e37e2e106BB6E9fa15952bB43a2761e1',
 }
 // ---------------------------------------------------------------------------
 // Play-harness only (`ui/pages/deprize-play.tsx`).
@@ -506,13 +542,28 @@ export const DEPRIZE_QUESTION_ID =
 // previewRedeem/redeem take this id).
 export const DEPRIZE_PLAY_ID = 3
 
-// Oracle that prepared the play market's CTF condition; the only address that
-// can resolve (reportPayouts) that harness market. pmoncada.eth.
-export const ORACLE_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
+// AUDIT[plan Phase 6.2]: chain-indexed so mainnet does not inherit Sepolia
+// EOAs. Production admin derives the oracle from keccak(caller, questionId,
+// n) vs the market condition (`competitions.ts`); these maps are for the
+// play harness and any leftover scalar readers.
+export const ORACLE_ADDRESSES: Index = {
+  sepolia: '0x679d87D8640e66778c3419D164998E720D7495f6',
+  'arbitrum-sepolia': '',
+  // Deployer EOA — the CTF oracle baked into DePrize 1's condition id. This is
+  // the internal-competition setup; move to the admin Safe before a public
+  // prize, which requires preparing a new condition (the oracle is immutable
+  // once the condition exists).
+  arbitrum: '0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011',
+}
+export const OPERATOR_ADDRESSES: Index = {
+  sepolia: '0x679d87D8640e66778c3419D164998E720D7495f6',
+  'arbitrum-sepolia': '',
+  arbitrum: '0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011',
+}
 
-// Play-market owner (pause/close/withdrawFees on that LMSR). Ownership of the
-// fresh Sepolia play market was transferred to pmoncada.eth.
-export const OPERATOR_ADDRESS = '0x679d87D8640e66778c3419D164998E720D7495f6'
+// Play-harness scalars (Sepolia). Do not wire into `/deprize/[id]`.
+export const ORACLE_ADDRESS = ORACLE_ADDRESSES.sepolia
+export const OPERATOR_ADDRESS = OPERATOR_ADDRESSES.sepolia
 
 export const MOONDAO_TREASURY: string = '0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9'
 export const MOONDAO_L2_TREASURY: string = '0x8C0252c3232A2c7379DDC2E44214697ae8fF097a'
@@ -708,7 +759,7 @@ export const CITIZENSHIP_GIFT_TAG = 'citizenship-gift'
 
 /** MoonDAO docs — Overview Effect Flight mission (e.g. mission id 4). */
 export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
-  'https://docs.moondao.com/Legal/Overview-Effect-Flight/Overview-Effect-Flight-Terms-and-Conditions'
+  '/docs/Legal/Overview-Effect-Flight/Overview-Effect-Flight-Terms-and-Conditions'
 
 // ---------------------------------------------------------------------------
 // PROJECT CYCLE — single source of truth for the quarterly project system.
@@ -721,21 +772,24 @@ export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
 // Rolling to the NEXT cycle (once, by editing this object):
 //   1. Bump `quarter` / `year` and the three deadline strings.
 //   2. Set `budgetUSD` to the new quarterly budget.
-//   3. Set `phase` to 'senate' (Senate Vote opens first).
+//   3. Set `phase` to 'intake' (proposal submission opens first).
 //   4. Update `retro` for the cohort being paid out this cycle (the prior
 //      quarter's completed projects) — see the field comments below.
 //   5. Reset `memberVoteExcludedAddresses` to [].
 //
-// Advancing WITHIN a cycle (Senate -> Member -> idle) no longer requires a
-// redeploy: an operator clicks "Advance Phase" on /projects, which runs the
-// required on-chain calls and flips a live phase override stored in Upstash
-// KV (see `lib/operator/cyclePhase.ts`). `phase` here is the deploy-time
-// DEFAULT / fallback the live override layers on top of.
-export type ProjectCyclePhase = 'senate' | 'member' | 'idle'
+// Advancing WITHIN a cycle (intake -> Senate -> Member -> idle) no longer
+// requires a redeploy: an operator clicks "Advance Phase" on /projects, which
+// runs the required on-chain calls and flips a live phase override stored in
+// Upstash KV (see `lib/operator/cyclePhase.ts`). `phase` here is the
+// deploy-time DEFAULT / fallback the live override layers on top of.
+// Overrides are stamped to this object's quarter/year, so a leftover
+// wrap-up from the previous cycle is ignored automatically.
+export type ProjectCyclePhase = 'intake' | 'senate' | 'member' | 'idle'
 
 export interface ProjectCycleConfig {
-  // Deploy-time default phase. 'senate' = Senate Vote, 'member' = Member Vote
-  // + Retroactive rewards (they run concurrently), 'idle' = nothing active
+  // Deploy-time default phase. 'intake' = proposal submission + Senate
+  // review/edits, 'senate' = Senate Vote, 'member' = Member Vote +
+  // Retroactive rewards (they run concurrently), 'idle' = nothing active
   // (between cycles / wrapped up). The operator "Advance Phase" button moves
   // the LIVE phase forward without a redeploy.
   phase: ProjectCyclePhase
@@ -743,6 +797,10 @@ export interface ProjectCycleConfig {
   // vote cohort). The retro cohort is always the PRIOR quarter.
   quarter: number
   year: number
+  // When true, POST /api/proposals/submit rejects *new* proposals after
+  // `submissionDeadline` while the live phase is still `intake`. Author
+  // edits stay open through `editingDeadline`.
+  enforceSubmissionDeadline: boolean
   // When false, the Member Vote phase is still on (results panel, badge, etc.
   // still render) but the submit/edit Distribution UI is hidden — used to
   // close member-vote submissions while keeping the rest of the cycle intact.
@@ -756,8 +814,9 @@ export interface ProjectCycleConfig {
   submissionDeadline: string // second Thursday of the quarter
   editingDeadline: string // 48 hours before the third Thursday
   votingDate: string // third Thursday of the quarter
-  // Quarterly project budget in USD (stablecoins): 5% of liquid non-MOONEY
-  // assets. Per-proposal max is 1/5 of this. See docs Projects/Project-System.
+  // Quarterly project pot in USD (stablecoins): 3% of official liquid AUM
+  // (MDP-267 / v9.0), rounded to the nearest $500. Per-proposal grant cap
+  // is ¼ of this. See docs Projects/Project-System.
   budgetUSD: number
   // Retroactive rewards pool for the cohort being paid THIS cycle — i.e. the
   // PRIOR quarter's completed projects. These are pinned to the retro cohort's
@@ -778,28 +837,34 @@ export interface ProjectCycleConfig {
 }
 
 export const PROJECT_CYCLE: ProjectCycleConfig = {
-  // Q4 2026 Senate Vote. If a leftover Upstash override from Q3 Wrap Up
-  // is still `idle`, clear `moondao:operator:cycle_phase` so this default
-  // takes effect after deploy.
-  phase: 'senate',
+  // Q4 2026 intake. A leftover Upstash override stamped to a previous
+  // cycle (or unstamped, from before cycle-stamping shipped) is ignored
+  // automatically — see `resolveLivePhase`.
+  phase: 'intake',
   quarter: 4,
   year: 2026,
+  enforceSubmissionDeadline: true,
   memberVoteSubmissionsOpen: false,
   memberVoteExcludedAddresses: [],
   // Q4 2026 deadlines (second Thursday / 48h before third Thursday / third Thursday).
   submissionDeadline: 'October 8, 2026',
   editingDeadline: 'October 13, 2026',
   votingDate: 'October 15, 2026',
-  // Q4 2026: $20,029 = 5% of NMA at 2026-07-01 00:00 UTC (ETH $1,569.94).
-  // Per-proposal max $4,006. From `scripts/calculate-budget.mjs`.
-  budgetUSD: 20029,
+  // Q4 2026 (MDP-267 / v9.0): $8,500 = 3% of official liquid AUM
+  // ($288,847) at 2026-07-01 00:00 UTC (ETH $1,569.94), rounded to the
+  // nearest $500. Grant cap $2,125 (¼ pot). Official AUM = eight
+  // designated Safes + Uniswap V3 WETH; exclude MOONEY and staked ETH.
+  // Recalculated 2026-09-16 via
+  // `scripts/calculate-budget.mjs --year 2026 --quarter 4`.
+  budgetUSD: 8500,
   retro: {
-    // Q3 2026 retroactives (the cohort paid out this cycle), USDC-paid:
+    // Q3 2026 retroactives (the cohort paid out this cycle), USDC-paid
+    // under the v8 rules that cycle actually ran:
     //   - $4,427 for projects = ($24,310 * 0.9) - $17,452 upfront to the
     //     5 Member-Vote winners (MDP-260 $4,640 + MDP-265 $1,100 +
     //     MDP-259 $2,430 + MDP-262 $4,600 + MDP-258 $4,682).
     //   - $2,431 community circle = 10% of Q3's $24,310 budget (pinned to
-    //     the cohort's own quarter, NOT the current $20,029 budget).
+    //     the cohort's own quarter, NOT the current $8,500 pot).
     // The prior ETH cycle (Q1 2026) kept 2.215 ETH here for reference.
     payoutToken: 'USDC',
     usdBudget: 4427,
@@ -817,7 +882,7 @@ export const PROJECT_SYSTEM_CONFIG = {
   editingDeadline: PROJECT_CYCLE.editingDeadline,
   votingDate: PROJECT_CYCLE.votingDate,
   submissionUrl: 'https://moondao.com/propose',
-  docsUrl: 'https://docs.moondao.com/Projects/Project-System',
+  docsUrl: '/docs/Projects/Project-System',
 }
 
 // Voting Phase Flags — derived from PROJECT_CYCLE.phase. These are the
@@ -827,6 +892,7 @@ export const PROJECT_SYSTEM_CONFIG = {
 // (or a server-resolved live phase prop), not these constants.
 // Member Vote and the Retroactive rewards window run concurrently, so both
 // derive from the 'member' phase.
+export const IS_INTAKE = PROJECT_CYCLE.phase === 'intake'
 export const IS_SENATE_VOTE = PROJECT_CYCLE.phase === 'senate'
 export const IS_MEMBER_VOTE = PROJECT_CYCLE.phase === 'member'
 export const IS_REWARDS_CYCLE = PROJECT_CYCLE.phase === 'member'
@@ -846,9 +912,12 @@ export const NEXT_QUARTER_BUDGET_USD = PROJECT_CYCLE.budgetUSD
 // (budgetPercentMinusCommunityFund = 90), so this stays equal to the full budget.
 export const USD_BUDGET = NEXT_QUARTER_BUDGET_USD
 
-// Per the docs: "Proposal budgets must be less than or equal to 1/5 of the
-// total quarterly rewards."
-export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 5)
+// Per MDP-267: each funded project receives min(ask, ¼ of the pot).
+export const MAX_BUDGET_USD = Math.round(NEXT_QUARTER_BUDGET_USD / 4)
+
+// Public UI that prints NEXT_QUARTER_BUDGET_USD / MAX_BUDGET_USD.
+// Q4 2026 figure is confirmed and pinned ($8,500 / max $2,125).
+export const ANNOUNCE_PROJECT_BUDGET = true
 
 // Addresses that have manager-level access on ALL teams (can add jobs and
 // marketplace listings on behalf of any team). Lowercase for comparison.

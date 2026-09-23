@@ -6,8 +6,8 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import { getListingHref } from '@/lib/marketplace/listing'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
@@ -229,10 +229,7 @@ export default function TeamListing({
                 onClick={async (e) => {
                   e.stopPropagation()
                   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.moondao.com'
-                  const teamSlug = teamNFT?.metadata?.name
-                    ? generatePrettyLink(teamNFT.metadata.name)
-                    : String(listing.teamId)
-                  const shareLink = `${origin}/team/${teamSlug}?listing=${listing.id}`
+                  const shareLink = `${origin}${getListingHref(listing)}`
                   try {
                     if (!navigator.clipboard?.writeText) {
                       throw new Error('Clipboard API unavailable')

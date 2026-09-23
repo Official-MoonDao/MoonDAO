@@ -3,7 +3,7 @@
 A Google Cloud Run service that handles the complete townhall processing pipeline:
 1. Extracts audio URLs from YouTube videos using `yt-dlp`
 2. Transcribes audio using GROQ Whisper Large v3
-3. Summarizes transcripts using GROQ Llama-3.3-70b-versatile
+3. Summarizes transcripts using GROQ gpt-oss-120b
 4. Creates ConvertKit email broadcast drafts (requires manual review and sending)
 
 ## Credits
@@ -24,6 +24,7 @@ Set this URL as the `TOWNHALL_PROCESSING_SERVICE_URL` environment variable in Ve
 **Required Environment Variables (in Cloud Run):**
 - `GROQ_API_KEY` - GROQ API key for transcription and summarization (free tier available)
 - `ALLOWED_YOUTUBE_CHANNEL_ID` - YouTube channel ID to restrict processing to (e.g., for @officialmoondao). If not set, any channel is allowed.
+- `YOUTUBE_OAUTH_CLIENT_ID` / `YOUTUBE_OAUTH_CLIENT_SECRET` / `YOUTUBE_OAUTH_REFRESH_TOKEN` - owner credentials for downloading captions via the Data API. See [YouTube OAuth setup](#youtube-oauth-setup-one-off).
 
 **Required Environment Variables (in Vercel):**
 - `TOWNHALL_PROCESSING_SERVICE_URL` - URL of this Cloud Run service
@@ -51,7 +52,7 @@ Processes a complete townhall: extracts audio, transcribes, summarizes, and crea
   "videoId": "dQw4w9WgXcQ",
   "videoTitle": "Town Hall - January 2024",
   "videoDate": "2024-01-15T00:00:00Z",
-  "groqModel": "llama-3.3-70b-versatile",
+  "groqModel": "openai/gpt-oss-120b",
   "whisperModel": "whisper-large-v3",
   "convertKitApiKey": "your-api-key",
   "convertKitTagId": "123456"
@@ -131,7 +132,7 @@ Returns `{ "status": "ok" }` if the service is running.
    The test script will:
    - Extract audio from the YouTube video
    - Transcribe using GROQ Whisper Large v3
-   - Summarize using GROQ Llama-3.3-70b-versatile
+   - Summarize using GROQ gpt-oss-120b
    - Format the summary for ConvertKit
    - **Skip sending the ConvertKit email** (test mode)
 
@@ -215,19 +216,61 @@ The script:
 
 Required env vars: `YOUTUBE_API_KEY`, `YOUTUBE_CHANNEL_ID` (or `ALLOWED_YOUTUBE_CHANNEL_ID`), and `CONVERT_KIT_API_KEY` / `CONVERT_KIT_V4_API_KEY`.
 
-### Vercel Cron
+### Scheduling
 
-The townhall summarizer is automatically triggered every Friday at 12:00 UTC (after the Thursday town hall) by `vercel.json`:
+`.github/workflows/townhall-summarizer.yml` runs every Friday at 12:00 UTC (after the Thursday town hall) and is the **sole** scheduler. The Vercel cron that used to do this was removed in May 2026 to avoid two schedulers racing to create the same broadcast; the root `vercel.json` keeps an empty `"crons": []` for that reason. Don't re-add it.
 
-```json
-{
-  "crons": [
-    { "path": "/api/townhall/process", "schedule": "0 12 * * 5" }
-  ]
-}
-```
+The `/api/townhall/process` Vercel handler still exists for manual triggering, and calls the Cloud Run `/process` endpoint, which returns 202 immediately and continues in the background.
 
-The `/api/townhall/process` Vercel handler synchronously calls the Cloud Run `/process` endpoint, which immediately returns 202 and continues the long-running pipeline in the background. On failure (e.g. expired YouTube cookies), an alert is posted to the configured `DISCORD_WEBHOOK_URL`.
+If the scheduled run fails, the workflow posts to `DISCORD_WEBHOOK_URL`. That alert exists because the job failed silently every week from May to September 2026 — a stale `/townhall` page is indistinguishable from a quiet one, so nothing surfaced the breakage.
+
+### Transcript sources
+
+`TRANSCRIPT_SOURCE` selects how the transcript is obtained. `auto` (the default) walks the list top to bottom:
+
+| Value | Path | Notes |
+|---|---|---|
+| `owner` | Data API `captions.download`, authenticated as the channel owner | Preferred. Unaffected by IP reputation; no cookies. |
+| `captions` | Public `timedtext` endpoint via `youtube-transcript` | Works from a laptop, returns nothing from datacenter IPs. |
+| `audio` | yt-dlp download + GROQ Whisper | Last resort; needs cookies that expire within days. |
+
+**The failure this fixes:** the workflow pinned `TRANSCRIPT_SOURCE: captions`, and YouTube does not serve `timedtext` to GitHub Actions runners. Every scheduled run from May 2026 onward died with "No caption track available" on videos whose captions download fine from a residential connection — verified on `f_jXiCdzIxQ` and `ELcZETA5yzw`, both of which return 50k+ characters locally and nothing in CI.
+
+Since MoonDAO owns these videos, the `owner` path asks for them through the front door instead of scraping, which is what makes it stable.
+
+### YouTube OAuth setup (one-off)
+
+1. In Google Cloud Console → **APIs & Services** → **Credentials**, create an **OAuth client ID** of type **Web application**, with `http://localhost:8765` as an authorised redirect URI. Make sure the **YouTube Data API v3** is enabled for the project.
+
+2. On the **OAuth consent screen**, set publishing status to **In production**.
+
+   > This step is not optional. While the consent screen is in **Testing**, Google expires refresh tokens after **7 days**, and the pipeline starts failing with `invalid_grant`. This is the "the key keeps expiring" problem — it is a consent-screen setting, not something to work around in code.
+
+3. You need an account that can act for the channel. You do **not** have to be the owner — a Brand Account **Manager** works. An existing owner grants this at [YouTube Settings → Permissions → Invite](https://www.youtube.com/account_sharing) by inviting your Google account as **Manager** (not Editor; Editor cannot complete this OAuth flow).
+
+4. Put the client ID and secret in `townhall-summarizer/.env`, then, signed into that account:
+
+   ```bash
+   yarn oauth:setup
+   ```
+
+   Open the printed URL and authorise.
+
+   > **At the account chooser, pick the MoonDAO channel, not your personal one.** A manager is offered both. Choosing the personal channel mints a token that authenticates perfectly and then fails on every town hall, because it doesn't own them. `oauth:setup` prints which channel it ended up as and warns loudly on a mismatch, so read that line before copying the token.
+
+   Copy the refresh token it prints.
+
+5. Verify against a real town hall before trusting it:
+
+   ```bash
+   yarn captions:check f_jXiCdzIxQ ELcZETA5yzw
+   ```
+
+   It reports each step separately — credentials, token exchange, authenticated channel, `captions.list`, `captions.download` — so a failure tells you which one broke, and exits non-zero if nothing could be read.
+
+6. Add all three values as **repository secrets** (`YOUTUBE_OAUTH_CLIENT_ID`, `YOUTUBE_OAUTH_CLIENT_SECRET`, `YOUTUBE_OAUTH_REFRESH_TOKEN`) so the workflow can use them, and to Cloud Run if you run the service there.
+
+To backfill the summaries missed since May, run the workflow manually (**Actions** → **Townhall Summarizer** → **Run workflow**) with the video IDs, or use `yarn missing --days=180` to list them.
 
 ### Video Processing Order
 

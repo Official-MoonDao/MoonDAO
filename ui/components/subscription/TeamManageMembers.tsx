@@ -18,6 +18,7 @@ import {
 } from '@/lib/hats/teamRoles'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import { DEFAULT_SAFE_TX_GAS } from '@/lib/safe/executionGas'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import HatsABI from '../../const/abis/Hats.json'
@@ -160,7 +161,7 @@ function TeamMembers({
       // Granting the manager hat is always admin-gated, so it routes through
       // the team Safe (queued for signers to execute).
       if (tx.routing === 'safe') {
-        await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
+        await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: DEFAULT_SAFE_TX_GAS })
         setHasAddedMember?.(true)
         toast.success('Promotion queued.')
       } else {
@@ -265,7 +266,7 @@ function TeamMembers({
                         )
 
                         if (tx.routing === 'safe') {
-                          await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
+                          await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: DEFAULT_SAFE_TX_GAS })
                           setHasDeletedMember(true)
                         } else {
                           await account?.sendTransaction({
@@ -481,7 +482,7 @@ function TeamManageMembersModal({
 
             try {
               if (tx.routing === 'safe') {
-                await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
+                await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: DEFAULT_SAFE_TX_GAS })
                 setHasAddedMember(true)
               } else {
                 await account?.sendTransaction({ to: tx.to, data: txData, value: '0', gas: 1000000 })

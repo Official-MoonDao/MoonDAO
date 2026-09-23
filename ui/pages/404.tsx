@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import Container from '@/components/layout/Container'
+import ReportBugButton from '@/components/layout/ReportBugButton'
 
 export default function FourOhFour() {
   return (
@@ -18,8 +19,8 @@ export default function FourOhFour() {
                   This page could not be found
                 </h1>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  The page you're looking for doesn't exist or has been moved.
-                  Check the URL or navigate back to our homepage.
+                  The page you're looking for doesn't exist or has been moved. Check the URL or
+                  navigate back to our homepage.
                 </p>
               </div>
             </div>
@@ -32,6 +33,9 @@ export default function FourOhFour() {
               >
                 <span>Go to Homepage</span>
               </Link>
+              <div className="flex justify-center">
+                <ReportBugButton />
+              </div>
             </div>
           </div>
         </div>

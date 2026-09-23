@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { L2_GAS_BUDGET_ETH } from '@/lib/rpc/gasBudget'
 import viemChains from '@/lib/viem/viemChains'
 import Frame from '@/components/layout/Frame'
 import Action from './Action'
@@ -28,7 +29,7 @@ export default function GuestActions({
       })
 
       const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
-      const estimatedMaxGas = 0.0001
+      const estimatedMaxGas = L2_GAS_BUDGET_ETH
       const totalCost = Number(formattedCost) + estimatedMaxGas
 
       if (nativeBalance >= totalCost) {

@@ -1,30 +1,12 @@
 // Page Metadata
-import { DEPLOYED_ORIGIN, IPFS_GATEWAY } from 'const/config'
+import { DEPLOYED_ORIGIN } from 'const/config'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
+import { DEFAULT_OG_IMAGE_PATH, normalizeOgImageUrl } from '@/lib/utils/ogImage'
 
 const defaultTitle = "MoonDAO: The Internet's Space Program"
 const defaultDescription =
   'Join MoonDAO and be part of the future of space exploration. Learn more about our mission and how you can get involved.'
-const defaultImage = 'https://ipfs.io/ipfs/QmXY1axN4tQGV7CQBFtoE4hMZM3TRGMqqg5DD5LG3dz1dA'
-
-function normalizeOgImageUrl(image: string): string {
-  if (!image) return defaultImage
-
-  if (image.startsWith('http://') || image.startsWith('https://')) {
-    return image
-  }
-
-  if (image.startsWith('ipfs://')) {
-    return `${IPFS_GATEWAY}${image.replace('ipfs://', '')}`
-  }
-
-  if (image.startsWith('/')) {
-    return `${DEPLOYED_ORIGIN}${image}`
-  }
-
-  return `${IPFS_GATEWAY}${image}`
-}
 
 type WebsiteHeadProps = {
   title?: string
@@ -34,6 +16,17 @@ type WebsiteHeadProps = {
   keywords?: string
   author?: string
   robots?: string
+  /**
+   * Absolute canonical URL. Pass this when several routes serve the same
+   * content (e.g. /faq and /docs/About/FAQ) so they don't compete in search.
+   * Defaults to the current path.
+   */
+  canonical?: string
+  /** Open Graph type. Defaults to `website`; long-form updates pass `article`. */
+  ogType?: string
+  /** Pixel size of `image` when it is a generated 1200×630 preview card. */
+  imageWidth?: number
+  imageHeight?: number
   children?: any
 }
 
@@ -41,14 +34,18 @@ export default function WebsiteHead({
   title = defaultTitle,
   secondaryTitle,
   description = defaultDescription,
-  image = defaultImage,
+  image = DEFAULT_OG_IMAGE_PATH,
   keywords,
   author = 'MoonDAO',
   robots = 'index, follow',
+  canonical,
+  ogType = 'website',
+  imageWidth,
+  imageHeight,
   children,
 }: WebsiteHeadProps) {
   const router = useRouter()
-  const canonicalUrl = `${DEPLOYED_ORIGIN}${router.asPath}`
+  const canonicalUrl = canonical || `${DEPLOYED_ORIGIN}${router.asPath}`
   const ogImage = normalizeOgImageUrl(image)
 
   const truncatedDescription =
@@ -86,7 +83,16 @@ export default function WebsiteHead({
       <meta property="og:description" content={truncatedDescription} key="meta-ogdesc" />
       <meta property="og:image" content={ogImage} key="meta-ogimage" />
       <meta property="og:image:alt" content={title} key="meta-ogimagealt" />
-      <meta property="og:type" content="website" key="meta-ogweb" />
+      {imageWidth ? (
+        <meta property="og:image:width" content={String(imageWidth)} key="meta-ogimagewidth" />
+      ) : null}
+      {imageHeight ? (
+        <meta property="og:image:height" content={String(imageHeight)} key="meta-ogimageheight" />
+      ) : null}
+      {imageWidth && imageHeight ? (
+        <meta property="og:image:type" content="image/png" key="meta-ogimagetype" />
+      ) : null}
+      <meta property="og:type" content={ogType} key="meta-ogweb" />
       <meta property="og:url" content={canonicalUrl || 'https://moondao.com/'} key="meta-ogurl" />
       <meta property="og:site_name" content="MoonDAO" key="meta-ogsitename" />
       <meta property="og:locale" content="en_US" key="meta-oglocale" />

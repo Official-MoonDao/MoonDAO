@@ -7,9 +7,19 @@
 
 ## Reference addresses (Sepolia)
 
+**v2 (2026-09-18)** is the live stack. Full ledger:
+[`DEPRIZE_SEPOLIA_ADDRESSES.md`](./DEPRIZE_SEPOLIA_ADDRESSES.md).
+`DePrizeVerify` passed for Touchdown id **1**. UI still reads the v1
+addresses below until the follow-up rebind PR.
+
 | Piece | Address / value |
 |---|---|
-| Registry | `0x299F163705AbBFa1A8DE7670F33171730F828F3D` |
+| **v2 Registry** | `0x7208B0Ba9B1013000b8D30b60A462079300984E2` |
+| **v2 DePrizeMint** | `0x22E22C4135be93595f341e072321D18e7D4Ee0D0` |
+| **v2 DePrizeRedeem** | `0x7a6B6AaC8Efbe894EDEe224a6bC3b09874c10849` |
+| **v2 stock LMSR factory** | `0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674` |
+| **v2 Touchdown (id 1)** | JB **269** (mission 15), payhook `0x82B4B19232B860362B796a6f1aF06BB3BE006fFD`, stock LMSR `0x3cdC98142a9Fc1E05D22a2f39500d5DE2F290A44`, condition `0xda4fd1b1d84fa7a990ec7d7379f35606e6c23610c879ec60054833a39b1672c2`, teams **601/602/603/604/605/24**, question `shared-next-landing:v3` = `0x2c633f9b1a6bd1a6252c49ed56f89d554a85e421ff84a146b1ae9e21f6311f7b` |
+| Registry (v1, historical) | `0x299F163705AbBFa1A8DE7670F33171730F828F3D` |
 | Redeem | `0x2fec56899a1121a46b6bcba0bb924796b6ddf4f7` |
 | DePrizeMint | `0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8` |
 | FeeRouter | `0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a` |
@@ -22,7 +32,10 @@
 | **DePrize 9** (browser fixture) | id **9**, JB **256**, LMSR `0x6e1a513f3DfB6288836CacdF0a9d3496b411130C`, condition `0x7334d1e6…560d`, payhook `0xec3ba013…7E66`, teams **301/302/303**, oracle = deployer `0x3c5e…E011` |
 | DePrize 9 questionId | `0xab937cdea2250786bf37ee2dd06f244bbeed62159c337927074523844d5759fb` |
 | DePrize 9 race binding (B1) | `sharedGoalId` **shared-fission-power**; outcome index → projectId: **0→westinghouse-fission-surface-power (team 301)**, **1→lockheed-fission-surface-power (team 302)**, **2→ix-fission-surface-power (team 303)** — see `ui/lib/deprize/competitions.ts` |
-| **Open Field Team NFT** (roster-changes) | **Pending mint.** Reserved symbolic id `OPEN_FIELD` / intended Sepolia token id **999**, owned by the admin Safe, metadata name `"Open Field"`, image = neutral field glyph. Once minted, set `OPEN_FIELD_TEAM_ID` in `ui/lib/deprize/competitions.ts` and record the live token id here. Ops: `MoonDAOTeamCreator.createMoonDAOTeam` (same path as `CreateTeam` UI / `script/CreateTestMissionSepolia.s.sol` `_createTeam`). DePrize 9's live roster does **not** include a field slot — reserve the field on every **new** race from here on. |
+| **Open Field Team NFT** (roster-changes) | **Pending mint.** Reserved symbolic id `OPEN_FIELD` / intended Sepolia token id **999**, owned by the admin Safe, metadata name `"Open Field"`, image = neutral field glyph. Once minted, set `OPEN_FIELD_TEAM_ID` in `ui/lib/deprize/competitions.ts` and record the live token id here. Ops: `MoonDAOTeamCreator.createMoonDAOTeam` (same path as `CreateTeam` UI / `script/CreateTestMissionSepolia.s.sol` `_createTeam`). DePrize 9's live roster does **not** include a field slot — reserve the field on every **new** race from here on. Live Sepolia races use Team **24** as the field slot until 999 is minted. |
+| **DePrize 21** (Touchdown gen 1) | id **21**, synthetic JB **3003**, LMSR `0xA669CC2dAf08EED1f3F2af93C720DB884B2899dC`, condition `0x9cc60dd2eacdc7c1647fb9a0286d8557ba8b14131953114a89a0dad3a4f8db60`, teams **601/602/603/604/605/24**, oracle = deployer `0x3c5e…E011`. Race binding `shared-next-landing`. QuestionId `0x18f9e4f8e5b291580b00bd23299194b169a66c3513229c5e16240e05d8520f17`. **Superseded off-chain by #22** (no real prize pool). |
+| **DePrize 22** (Touchdown v1, superseded off-chain) | id **22** on the **v1** registry, JB **268** (mission 14), payhook `0xD6597D665cbC74e4Da52da6af34900897A24307B`, LMSRWithTWAP `0xC717D9ac121E2f7882f007FA046009501Fe0B43C` (H-01 replacement; pre-fix `0x9d3b999B…826D0`), condition `0xb1c4d8775e08aabcaed68cb17645aec155a22ce35316d640a3233679dbecfa66`, teams **601/602/603/604/605/24**, oracle = deployer `0x3c5e…E011`. QuestionId `0x1ba1808c0a0d8a2bbc48462cd3a490e306695713e0cafd362d365c9db3f43513` (`shared-next-landing:v2`). **Replaced by v2 registry id 1** (stock LMSR, new JB 269). The UI still binds #22 until the follow-up PR. |
+| **Night Shift** (not registered) | Atlas goal `shared-night-shift` + provisioner race (teams **611–617/24**). Registry / mint / FeeRouter `owner()` is deployer `0x3c5e…E011`; a faucet wallet cannot `register` (simulated: faucet reverts, owner call succeeds). QuestionId `keccak256("deprize:sepolia:shared-night-shift:v1")` = `0x6058f2c9f314734e1f1ecf8c34c8d8835fff5d8fb5e075d8044823e1717f00d4`. After `GOAL_ID=shared-night-shift yarn tsx scripts/provision-sepolia-races.ts` bind the printed id (expected **23**) in `competitions.ts`. |
 
 UI config (`ui/const/config.ts`) wires registry / redeem / mint / fee-router. It does **not** repoint app-wide `MISSION_CREATOR_ADDRESSES` (intentional — avoids fragmenting general launchpad listing). DePrize **9** resolves its LMSR via `mint.marketOf(9)` (no config LMSR fallback needed).
 

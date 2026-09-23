@@ -7,11 +7,14 @@ import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { UNIT } from '@/lib/deprize/constants'
-import { fmt } from '@/lib/deprize/format'
+import { fmtEthWithUsd } from '@/lib/deprize/format'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
+import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import EthUsd from '@/components/deprize/EthUsd'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import Modal from '@/components/layout/Modal'
@@ -46,6 +49,9 @@ export default function ExitPositionModal({
 }: ExitPositionModalProps) {
   const [quoteEth, setQuoteEth] = useState<number | undefined>()
   const [busy, setBusy] = useState(false)
+  const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
+    useDePrizeChainGuard(chain)
+  const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
   const ctfAddress = CONDITIONAL_TOKEN_ADDRESSES[getChainSlug(chain)] ?? ''
 
@@ -116,6 +122,7 @@ export default function ExitPositionModal({
 
   const cashOut = async () => {
     if (!account || !positionId) return
+    if (blockedByNetwork()) return
     setBusy(true)
     try {
       // Re-read CTF balance immediately before trade — the prop can lag a poll
@@ -165,7 +172,9 @@ export default function ExitPositionModal({
       )
       toast.dismiss('sell')
       fireDePrizeConfetti()
-      toast.success(`Cashed out ${teamName} for ≈ ${fmt(Number(-net) / Number(UNIT))} ETH.`, {
+      toast.success(
+        `Cashed out ${teamName} for ≈ ${fmtEthWithUsd(Number(-net) / Number(UNIT), ethPrice)}.`,
+        {
         style: toastStyle,
       })
       // Best-effort: sweep the sell's 1% market fee into the Juicebox prize
@@ -219,21 +228,36 @@ export default function ExitPositionModal({
           <div className="flex items-center justify-between">
             <span className="text-gray-400 text-sm">You receive (est.)</span>
             <span className="text-moon-green text-lg font-bold">
-              {quoteEth !== undefined ? `≈ ${fmt(quoteEth)} ETH` : '…'}
+              {quoteEth !== undefined ? (
+                <EthUsd eth={quoteEth} approx usdClassName="text-moon-green/70 font-normal text-sm" />
+              ) : (
+                '…'
+              )}
             </span>
           </div>
           <p className="text-gray-500 text-[11px] mt-1">
             Final amount may vary slightly with price movement (1% slippage allowed).
           </p>
         </div>
-        <StandardButton
-          onClick={cashOut}
-          disabled={busy || balanceWei <= 0n || !positionId}
-          className="rounded-full w-full"
-          backgroundColor="bg-moon-orange"
-        >
-          {busy ? 'Cashing out…' : 'Cash out'}
-        </StandardButton>
+        {wrongNetwork ? (
+          <StandardButton
+            onClick={switchToChain}
+            disabled={switching}
+            className="rounded-full w-full"
+            backgroundColor="bg-moon-orange"
+          >
+            {switching ? 'Switching…' : `Switch wallet to ${chainLabel}`}
+          </StandardButton>
+        ) : (
+          <StandardButton
+            onClick={cashOut}
+            disabled={busy || balanceWei <= 0n || !positionId}
+            className="rounded-full w-full"
+            backgroundColor="bg-moon-orange"
+          >
+            {busy ? 'Cashing out…' : 'Cash out'}
+          </StandardButton>
+        )}
       </div>
     </Modal>
   )

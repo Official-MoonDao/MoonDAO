@@ -11,17 +11,17 @@
  *
  * Gating rules (kept here so both call sites can't drift):
  *   - The exclusion only fires when the requested (quarter, year)
- *     matches the *current* calendar quarter. Past-quarter audits/
- *     tallies have to reproduce their original outcome exactly, so we
- *     never touch historical inputs.
+ *     matches the live proposal cycle (`PROJECT_CYCLE`). Past-quarter
+ *     audits/tallies have to reproduce their original outcome exactly,
+ *     so we never touch historical inputs.
  *   - Address comparison is case-insensitive (Tableland sometimes
  *     echoes EIP-55 mixed case, the constant is stored lowercase).
  *   - The disqualified rows stay in the Tableland table — we just
  *     omit them from the array we hand back. Audit trail is preserved
  *     on chain even though they don't count toward the outcome.
  */
-import { getCurrentQuarter } from '@/lib/utils/dates'
 import type { DistributionVote } from '@/lib/tableland/types'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 
 export type ExcludeMemberVotesResult = {
   /** Votes after the exclusion (same reference as input when no-op). */
@@ -36,9 +36,9 @@ export function excludeMemberVotesByAddress({
   year,
   excludedAddresses,
   /**
-   * Override for the "current calendar quarter" check. Tests pin this so
-   * they don't depend on the wall clock; production callers leave it
-   * undefined and we read `getCurrentQuarter()`.
+   * Override for the "live proposal cycle" check. Tests pin this so
+   * they don't depend on `PROJECT_CYCLE`; production callers leave it
+   * undefined and we read `getProposalCycle()`.
    */
   currentQuarter,
 }: {
@@ -57,7 +57,7 @@ export function excludeMemberVotesByAddress({
     return { votes, excluded: [] }
   }
 
-  const current = currentQuarter ?? getCurrentQuarter()
+  const current = currentQuarter ?? getProposalCycle()
   if (quarter !== current.quarter || year !== current.year) {
     return { votes, excluded: [] }
   }

@@ -12,15 +12,18 @@ export default function Join() {
   const router = useRouter()
 
   // EU/EEA visitors may browse the site but cannot permanently store personal
-  // data on chain (GDPR), so they don't get the citizen creation flow. If geo
-  // can't be resolved we fail closed (treat it as restricted) rather than risk
-  // showing the flow to a restricted visitor; the mint is also blocked
-  // server-side regardless.
-  const {
-    isRestricted,
-    isLoading: isResolvingRegion,
-    isError: regionError,
-  } = useRegionRestriction()
+  // data on chain (GDPR), so they don't get the citizen creation flow. We only
+  // gate on a *confirmed* restricted country here -- if the geo lookup errors
+  // out (timeout, flaky connection, etc.) we let the visitor through rather
+  // than assuming they're EU/EEA, since that previously misclassified
+  // non-EU/EEA visitors (e.g. Russia, which is not in EU_EEA_COUNTRIES) whose
+  // requests to /api/geo/country failed as "restricted" and blocked them from
+  // a flow that was never meant to apply to them. The GDPR gate is still
+  // enforced authoritatively server-side (see enforceRegionNotRestricted) at
+  // mint/image-generation time regardless of this client-side check, so
+  // actual EU/EEA visitors are never able to complete the flow even if their
+  // geo lookup happens to error out here.
+  const { isRestricted, isLoading: isResolvingRegion } = useRegionRestriction()
 
   useChainDefault()
 
@@ -54,7 +57,7 @@ export default function Join() {
       />
       {/* Wait until geo resolves so we never flash the creation flow to a
           restricted visitor. */}
-      {isResolvingRegion ? null : isRestricted || regionError ? (
+      {isResolvingRegion ? null : isRestricted ? (
         <RegionRestrictedNotice type="citizen" />
       ) : (
         <CreateCitizen

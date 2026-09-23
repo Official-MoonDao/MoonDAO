@@ -20,7 +20,7 @@ const EXTRA_MISSION_CREATORS: Partial<Record<string, readonly string[]>> = {
 }
 
 export type DePrizeLaunchpadToken = {
-  /** ERC-20 symbol of the JB project token (e.g. FRANKT, OVERVIEW). */
+  /** ERC-20 symbol of the bound mission's JB project token (e.g. FRANKT, OVERVIEW). */
   symbol: string | undefined
   /** ERC-20 name when available. */
   name: string | undefined

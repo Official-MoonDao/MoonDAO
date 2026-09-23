@@ -69,6 +69,7 @@ describe('<SafeSendModal />', () => {
       owners: [],
       threshold: 1,
       pendingTransactions: [],
+      isLoadingTransactions: false,
       transactionsToSign: [],
       transactionsToExecute: [],
       signPendingTransaction: cy.stub(),
