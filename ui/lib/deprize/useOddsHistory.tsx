@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { DePrizeActivity } from './useDePrizeActivity'
 import type { UseDePrizeMarketResult } from './useDePrizeMarket'
-import { maxProbDelta, rebuildOddsHistory, type TradeMarker } from './lmsr-history'
+import { maxProbDelta, rebuildOddsHistory, resolveMarketOpenMs, type TradeMarker } from './lmsr-history'
 import type { OddsSample } from './odds-chart'
 
 /** Live-vs-rebuilt divergence (percentage points) above which we trust live. */
@@ -26,17 +26,21 @@ export function useOddsHistory(args: {
   const liveValid = live.length > 0 && live.every((p) => Number.isFinite(p))
 
   return useMemo(() => {
+    const openMs = resolveMarketOpenMs(market.marketStartMs, activity.fundingChanges)
     const canRebuild =
       !activity.loading &&
       !activity.error &&
-      market.marketStartMs !== undefined &&
+      openMs !== undefined &&
       market.fundingEth !== undefined &&
       market.fundingEth > 0 &&
       market.outcomes.length > 0
 
     if (!canRebuild) {
+      // Per-browser samples are this tab's refreshes, not the market. With no
+      // trades they draw a few minutes of flat lines under "no bets yet".
+      const hideSession = activity.loading || (!activity.error && activity.trades.length === 0)
       return {
-        history: market.oddsHistory,
+        history: hideSession ? [] : market.oddsHistory,
         markers: [],
         loading: activity.loading,
         fromChain: false,
@@ -53,7 +57,7 @@ export function useOddsHistory(args: {
     const replayedDelta = fundingChanges.reduce((s, f) => s + f.deltaEth, 0)
     const initialFundingEth = Math.max(0, (market.fundingEth as number) - replayedDelta)
     const { history, markers } = rebuildOddsHistory({
-      marketStartMs: market.marketStartMs as number,
+      marketStartMs: openMs as number,
       initialFundingEth,
       trades,
       fundingChanges,

@@ -84,6 +84,23 @@ export function rebuildOddsHistory(args: {
   return { history, markers }
 }
 
+/**
+ * When the LMSR has no `startTime` (stock Gnosis markets revert that call),
+ * the seed funding log is the market open. A real start time wins when both exist.
+ */
+export function resolveMarketOpenMs(
+  startMs: number | undefined,
+  fundingChanges: { timestampMs: number }[],
+): number | undefined {
+  if (startMs !== undefined && Number.isFinite(startMs) && startMs > 0) return startMs
+  let open: number | undefined
+  for (const change of fundingChanges) {
+    if (!Number.isFinite(change.timestampMs) || change.timestampMs <= 0) continue
+    if (open === undefined || change.timestampMs < open) open = change.timestampMs
+  }
+  return open
+}
+
 /** Max absolute difference (percentage points) between two probability vectors. */
 export function maxProbDelta(a: number[], b: number[]): number {
   let d = 0
