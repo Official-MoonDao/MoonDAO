@@ -128,14 +128,14 @@ export default function PredictModal(props: {
         {props.bet ? (
           <div
             data-testid="deprize-predict-bet"
-            className="flex flex-col gap-3 border-t border-white/10 pt-4"
+            className="overflow-hidden rounded-xl border border-white/15 bg-white/5"
           >
             <button
               type="button"
               aria-expanded={betOpen}
               aria-controls="deprize-predict-bet-panel"
               onClick={() => setBetOpen((open) => !open)}
-              className={`flex w-full items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-left hover:bg-white/10 ${TOUCH}`}
+              className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-white/10 ${TOUCH}`}
             >
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-white">Attach a bet</span>
@@ -150,7 +150,12 @@ export default function PredictModal(props: {
             </button>
             <BetPrimaryActionContext.Provider value={betActionApi}>
               {betOpen ? (
-                <div id="deprize-predict-bet-panel">{props.bet}</div>
+                <div
+                  id="deprize-predict-bet-panel"
+                  className="border-t border-white/10 px-3 pb-4 pt-3"
+                >
+                  {props.bet}
+                </div>
               ) : null}
             </BetPrimaryActionContext.Provider>
           </div>

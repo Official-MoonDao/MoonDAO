@@ -140,6 +140,17 @@ describe('deprize forecast row action wiring', () => {
     expect(modal).to.include('setBetOpen((open) => !open)')
     expect(modal).to.include('Optional. Open to add an ETH bet.')
     expect(modal).to.include('{props.bet}')
+    const shell = modal.slice(
+      modal.indexOf('data-testid="deprize-predict-bet"'),
+      modal.indexOf('id="deprize-predict-bet-panel"')
+    )
+    expect(shell).to.include('overflow-hidden rounded-xl border border-white/15')
+    const attachButton = modal.slice(
+      modal.lastIndexOf('<button', modal.indexOf('aria-expanded={betOpen}')),
+      modal.indexOf('</button>', modal.indexOf('aria-expanded={betOpen}'))
+    )
+    expect(attachButton).to.not.include('rounded-xl')
+    expect(attachButton).to.not.include('border')
     expect(modal).to.not.include('This spends ETH and changes the odds.')
     expect(modal).to.not.include('Add a bet')
     expect(modal).to.not.include('Save prediction')
