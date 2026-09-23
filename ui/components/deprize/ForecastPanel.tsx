@@ -2,16 +2,16 @@ import { getAccessToken, useLogin, usePrivy, useWallets } from '@privy-io/react-
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
 import Link from 'next/link'
-import { useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
+import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
+import { votingPowerByOutcome } from '@/lib/forecasts/aggregate'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
 import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
@@ -26,6 +26,7 @@ import { rowActions } from '@/lib/forecasts/rowActions'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
 import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { sepolia } from '@/lib/rpc/chains'
 import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -67,11 +68,7 @@ export default function ForecastPanel(props: {
    * ETH bet form for the open competitor. The page omits this when betting
    * is not allowed; the prediction itself does not need it.
    */
-  renderBet?: (input: {
-    index: number
-    onClose: () => void
-    onPlaced: () => void
-  }) => ReactNode
+  renderBet?: (input: { index: number; onClose: () => void; onPlaced: () => void }) => ReactNode
 }) {
   const {
     chainSlug,
@@ -123,6 +120,10 @@ export default function ForecastPanel(props: {
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
+  const citizenVotingPowerByOutcome = useMemo(
+    () => (consensus ? votingPowerByOutcome(consensus.leaderboard ?? [], n) : undefined),
+    [consensus, n]
+  )
 
   const forecastsContract = useContract({
     address: FORECASTS_TABLE_ADDRESSES[chainSlug] ?? '',
@@ -310,10 +311,10 @@ export default function ForecastPanel(props: {
         prizeCitizen.linkedCitizenAddress
           ? 'Switch to the wallet that holds your Citizen to predict.'
           : prizeCitizen.lookupFailed
-            ? "Couldn't check your Citizen. Try again."
-            : prizeCitizen.expired
-              ? 'Your Citizen subscription has lapsed.'
-              : 'Predictions count only for Citizens. Mint a Citizen to predict.'
+          ? "Couldn't check your Citizen. Try again."
+          : prizeCitizen.expired
+          ? 'Your Citizen subscription has lapsed.'
+          : 'Predictions count only for Citizens. Mint a Citizen to predict.'
       )
       return
     }
@@ -435,6 +436,12 @@ export default function ForecastPanel(props: {
                 selectable={!showResolved && !inputsLocked}
                 highlighted={isSaved}
                 badge={isSaved ? FORECAST_COPY.predicted : undefined}
+                citizenVotingPower={
+                  citizenVotingPowerByOutcome
+                    ? citizenVotingPowerByOutcome[o.index] ?? 0
+                    : undefined
+                }
+                predictionCount={consensus ? consensus.backersByOutcome?.[o.index] ?? 0 : undefined}
                 tradingHalted={tradingHalted}
                 busy={writing}
                 userConnected={!!userAddress}

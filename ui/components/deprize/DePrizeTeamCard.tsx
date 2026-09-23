@@ -1,6 +1,7 @@
 import type { KeyboardEvent, ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
+import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import EthUsd from '@/components/deprize/EthUsd'
 import { TOUCH } from '@/components/deprize/detail/primitives'
@@ -40,6 +41,13 @@ type DePrizeTeamCardProps = {
   /** Short status under the name, such as "Predicted". */
   badge?: string
   /**
+   * Citizen-prediction voting power behind this option. Omit while consensus
+   * is still loading so the card does not flash a fake zero.
+   */
+  citizenVotingPower?: number
+  /** Citizens with any allocation on this option. Omit while consensus is loading. */
+  predictionCount?: number
+  /**
    * Citizen forecast controls for this competitor. Stop their clicks from
    * also placing a bet, since the card itself is the bet control.
    */
@@ -77,6 +85,12 @@ const FIELD_AVATAR =
     `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#1e293b"/><circle cx="20" cy="20" r="10" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3"/></svg>`
   )
 
+/** Same grouping the callers list uses for a citizen's voting power. */
+function formatVotingPower(vp: number): string {
+  if (!Number.isFinite(vp) || vp <= 0) return '0'
+  return vp.toLocaleString(undefined, { maximumFractionDigits: vp < 10 ? 1 : 0 })
+}
+
 function PnlSuffix({ pnl }: { pnl: number | undefined }) {
   if (pnl === undefined) return null
   return (
@@ -107,6 +121,8 @@ export default function DePrizeTeamCard({
   selectable = false,
   highlighted = false,
   badge,
+  citizenVotingPower,
+  predictionCount,
   actions,
   onCashOut,
   isField = false,
@@ -131,6 +147,16 @@ export default function DePrizeTeamCard({
   // Cash-out and forecast actions are their own buttons. A card that also
   // contains one cannot be a button itself, so that case stays a clickable div.
   const cardIsButton = canPredict && !canCashOut && !actions
+  const votingPowerText =
+    citizenVotingPower === undefined ? undefined : formatVotingPower(citizenVotingPower)
+  const predictionNoun = predictionCount === 1 ? 'prediction' : 'predictions'
+  const predictAria = !cardIsButton
+    ? undefined
+    : votingPowerText === undefined
+    ? `Predict ${predictName} as the winner`
+    : predictionCount
+    ? `Predict ${predictName} as the winner, ${votingPowerText} voting power from ${predictionCount} ${predictionNoun}`
+    : `Predict ${predictName} as the winner, ${votingPowerText} voting power`
 
   const onCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!canPredict || e.target !== e.currentTarget) return
@@ -143,7 +169,7 @@ export default function DePrizeTeamCard({
     <div
       role={cardIsButton ? 'button' : undefined}
       tabIndex={cardIsButton ? 0 : undefined}
-      aria-label={cardIsButton ? `Predict ${predictName} as the winner` : undefined}
+      aria-label={predictAria}
       aria-pressed={cardIsButton ? highlighted : undefined}
       className={`relative w-full overflow-hidden px-4 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
         resolved && isWinningSlot
@@ -235,6 +261,31 @@ export default function DePrizeTeamCard({
             </p>
           )}
         </div>
+
+        {votingPowerText !== undefined && (
+          <div
+            className="ml-auto shrink-0 text-right"
+            data-citizen-voting-power={citizenVotingPower}
+            data-prediction-count={predictionCount ?? 0}
+            title={
+              predictionCount
+                ? `${votingPowerText} voting power from ${predictionCount} ${predictionNoun}`
+                : `${votingPowerText} voting power`
+            }
+          >
+            <p className="text-sm font-semibold leading-none tabular-nums text-white">
+              {votingPowerText}
+            </p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-gray-500">
+              {FORECAST_COPY.votingPower}
+              {predictionCount ? (
+                <span className="ml-1 font-medium normal-case tracking-normal text-gray-400">
+                  · {predictionCount}
+                </span>
+              ) : null}
+            </p>
+          </div>
+        )}
 
         {actions ? (
           <div
