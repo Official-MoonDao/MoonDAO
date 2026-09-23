@@ -785,12 +785,9 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           chainSlug={chainSlug}
           deprizeId={deprizeId as number}
           labels={predictionLabels}
-          marketPercents={market.outcomes.map((o) => o.probability)}
           liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
           reported={!!market.payoutDen && market.payoutDen > 0n}
           resolvedVector={resolvedVector}
-          collateralEth={activity.totalStakedEth}
-          liveMarket={!!market.marketAddress}
           numOutcomes={numOutcomes}
           rankedOutcomes={rankedOutcomes}
           teamIds={deprize.teamIds}
