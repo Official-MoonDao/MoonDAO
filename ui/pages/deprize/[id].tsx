@@ -73,7 +73,6 @@ import ClaimPanel from '@/components/deprize/ClaimPanel'
 import AdminSection from '@/components/deprize/detail/AdminSection'
 import ClaimSection from '@/components/deprize/detail/ClaimSection'
 import ForecastSlot from '@/components/deprize/detail/ForecastSlot'
-import LadderLine from '@/components/deprize/detail/LadderLine'
 import OddsSection from '@/components/deprize/detail/OddsSection'
 import PositionSection from '@/components/deprize/detail/PositionSection'
 import PrizeHeader from '@/components/deprize/detail/PrizeHeader'
@@ -762,7 +761,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           oddsLoading={odds.loading}
         />
         <NoticeStack items={pageNotices} />
-        <LadderLine chainSlug={chainSlug} deprizeId={deprizeId} />
         <PositionSection
           userAddress={userAddress}
           numOutcomes={numOutcomes}
