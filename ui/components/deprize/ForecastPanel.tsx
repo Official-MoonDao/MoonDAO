@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
@@ -255,6 +256,7 @@ export default function ForecastPanel(props: {
       setSavedPick(index)
       rememberRow(allocation)
       toast.success('Prediction saved', { style: toastStyle })
+      fireDePrizeConfetti()
       await refetchFresh()
       return true
     } catch (err: any) {
