@@ -21,12 +21,14 @@ const A_PRIME_DOCS = [
   'DEPRIZE_TOUCHDOWN.md',
   'DEPRIZE_CAPABILITY_LADDER.md',
   'DEPRIZE_GTM_TOUCHDOWN.md',
+  'DEPRIZE_SIDE_MARKETS.md',
 ]
 
 const A_PRIME_ALLOWLIST = [
   'docs/DEPRIZE_TOUCHDOWN.md',
   'docs/DEPRIZE_CAPABILITY_LADDER.md',
   'docs/DEPRIZE_GTM_TOUCHDOWN.md',
+  'docs/DEPRIZE_SIDE_MARKETS.md',
   'ui/cypress/integration/lib/deprize/docsHygiene.cy.ts',
 ]
 
@@ -149,6 +151,19 @@ describe('A′ docs hygiene', () => {
     expect(text).to.not.match(/^1\.\s+\*\*Egress/m)
     expect(text).to.include('community payload purchase')
     expect(text).to.not.include('NOT IN FORCE')
+  })
+
+  it('acceptance — side markets are stated to have no purse and no competitor', () => {
+    // The load-bearing claim on this surface. A side market inherits the whole
+    // jurisdiction stack, so it will be read as a prize unless the rules say
+    // plainly that nobody is paid for causing an outcome.
+    const text = fs.readFileSync(path.join(DOCS_DIR, 'DEPRIZE_SIDE_MARKETS.md'), 'utf8')
+    expect(text).to.include('no purse and no competitor')
+    expect(text).to.include('Nothing on this page is an offer to award a prize')
+    expect(text).to.include('mutually exclusive and exhaustive')
+    // Settling side markets outside the parent's Safe batch is the insider
+    // window this sequencing exists to close.
+    expect(text).to.include('same Senate vote and the same Safe batch')
   })
 
   it('gate 3 — A′ allowlist files exist and no tracked *.local.md', () => {
