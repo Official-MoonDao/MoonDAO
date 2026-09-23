@@ -3,6 +3,7 @@ import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import EthUsd from '@/components/deprize/EthUsd'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 
 type DePrizeTeamCardProps = {
   outcome: Outcome
@@ -131,7 +132,7 @@ export default function DePrizeTeamCard({
       role={cardIsButton ? 'button' : undefined}
       tabIndex={cardIsButton ? 0 : undefined}
       aria-label={cardIsButton ? `Predict ${predictName} as the winner` : undefined}
-      className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
+      className={`relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
         resolved && isWinningSlot ? 'border-emerald-400/40 ring-1 ring-emerald-400/20' : ''
       } ${
         canPredict
