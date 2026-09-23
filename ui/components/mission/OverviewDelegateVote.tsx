@@ -826,7 +826,7 @@ export default function OverviewDelegateVote({
                   Get $OVERVIEW Tokens
                 </h3>
                 <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                  Contribute to the spaceflight mission. Every contribution grants you $OVERVIEW so you can back a candidate. Contributions over $100 automatically include MoonDAO Citizenship.
+                  Contribute to the spaceflight mission. Every contribution grants you $OVERVIEW so you can back a candidate. Contributions of $100 or more include one sponsored year of MoonDAO citizenship; the yearly passport on Join is otherwise paid.
                 </p>
                 <span className="inline-block mt-3 text-indigo-400 text-xs sm:text-sm font-medium group-hover:text-indigo-300 transition-colors">
                   Go to Mission &rarr;

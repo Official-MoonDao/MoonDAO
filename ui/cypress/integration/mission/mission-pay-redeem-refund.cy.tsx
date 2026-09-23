@@ -302,7 +302,7 @@ describe('MissionPayRedeem — Refund Flow', () => {
         </TestnetProviders>
       )
 
-      cy.get('#open-contribute-modal').should('contain', 'Contribute')
+      cy.get('#open-contribute-modal').should('contain', 'Enter an amount')
     })
 
     it('should NOT show a redeem button', () => {
@@ -400,7 +400,7 @@ describe('MissionPayRedeem — Refund Flow', () => {
         </TestnetProviders>
       )
 
-      cy.get('#open-contribute-modal').should('contain', 'Contribute')
+      cy.get('#open-contribute-modal').should('contain', 'Enter an amount')
     })
   })
 })

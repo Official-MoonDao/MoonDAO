@@ -50,6 +50,7 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { isValidContributorEmail } from '@/lib/contribution/validateContributorEmail'
 import { formatContributionOutput } from '@/lib/mission'
+import { hasPositiveContributionUsd } from '@/lib/mission/contributionAmount'
 import { sendContributionNotification } from '@/lib/mission/sendContributionNotification'
 import { waitForCrossChainPayReceipt } from '@/lib/mission/waitForCrossChainPayReceipt'
 import { fetchNativeBalanceWei } from '@/lib/mission/contributeModalDefaultChain'
@@ -533,15 +534,15 @@ export default function MissionContributeModal({
   const calculateEthAmount = useCallback(() => {
     const numericValue = usdInput.replace(/,/g, '')
 
-    if (!usdInput || isNaN(Number(numericValue))) {
-      return '0'
+    if (!hasPositiveContributionUsd(usdInput) || isNaN(Number(numericValue))) {
+      return ''
     }
-    if (!ethUsdPrice) {
-      return '0'
+    if (isLoadingEthUsdPrice || !ethUsdPrice) {
+      return ''
     }
     const eth = Number(numericValue) / ethUsdPrice
     return formatEthFiveSigFigs(eth)
-  }, [usdInput, ethUsdPrice])
+  }, [usdInput, ethUsdPrice, isLoadingEthUsdPrice])
 
   /**
    * ETH sent for the contribution / token quote. Uses the same USD÷price as the UI, not the
@@ -2281,10 +2282,10 @@ export default function MissionContributeModal({
                         autoFocus
                         autoComplete="off"
                         aria-label="Contribution amount in USD"
-                        className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-white/25 focus:placeholder-white/40 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={usdInput}
                         onChange={handleUsdInputChange}
-                        placeholder="0"
+                        placeholder="Amount"
                         maxLength={15}
                       />
                       <span className="text-gray-300 text-xl sm:text-2xl font-bold shrink-0 select-none">
@@ -2299,9 +2300,19 @@ export default function MissionContributeModal({
                         height={14}
                         className="w-3.5 h-3.5 opacity-60"
                       />
-                      <p className="text-gray-400 text-xs sm:text-sm tabular-nums">
-                        ≈ {calculateEthAmount()} ETH
-                      </p>
+                      {hasPositiveContributionUsd(usdInput) ? (
+                        calculateEthAmount() ? (
+                          <p className="text-gray-400 text-xs sm:text-sm tabular-nums">
+                            ≈ {calculateEthAmount()} ETH
+                          </p>
+                        ) : (
+                          <p className="text-gray-400 text-xs sm:text-sm">Calculating ETH…</p>
+                        )
+                      ) : (
+                        <p className="text-gray-500 text-xs sm:text-sm">
+                          Enter an amount to see ETH
+                        </p>
+                      )}
                     </div>
                   </label>
 
@@ -2622,11 +2633,18 @@ export default function MissionContributeModal({
                     </button>
                     <PrivyWeb3Button
                       label={
-                        layerZeroLimitExceeded
+                        !hasPositiveContributionUsd(usdInput)
+                          ? 'Enter an amount'
+                          : layerZeroLimitExceeded
                           ? 'Contribution Limit Exceeded'
                           : !chainSlugs.includes(chainSlug)
                           ? `Switch Network`
-                          : `Contribute $${formattedUsdInput || '0'} USD`
+                          : `Contribute $${formattedUsdInput} USD`
+                      }
+                      signInLabel={
+                        hasPositiveContributionUsd(usdInput)
+                          ? `Sign in to contribute $${formattedUsdInput} USD`
+                          : undefined
                       }
                       loadingLabel={
                         contributeButtonPhase === 'confirm'

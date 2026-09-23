@@ -11,7 +11,7 @@ export const MISSION_CONTRIBUTOR_TIERS: Partial<Record<number, MissionContributo
       amountUsd: 100,
       title: 'Overview Crew',
       description:
-        'Free Citizenship (required to enter into the competition to fly with Frank).',
+        'Includes one sponsored year of MoonDAO citizenship. The yearly passport on Join is otherwise paid. Required to enter the competition to fly with Frank.',
     },
     {
       amountUsd: 1_000,

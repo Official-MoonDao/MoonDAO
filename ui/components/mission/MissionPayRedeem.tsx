@@ -15,6 +15,12 @@ import { calculateTokensFromPayment } from '@/lib/juicebox/tokenCalculations'
 import { useMissionParticipantVolume } from '@/lib/juicebox/useMissionParticipantVolume'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatContributionOutput } from '@/lib/mission'
+import {
+  CONTRIBUTE_PAYMENT_HINT,
+  CONTRIBUTE_SIGN_IN_LABEL,
+  contributeOpenButtonLabel,
+  hasPositiveContributionUsd,
+} from '@/lib/mission/contributionAmount'
 import { formatEthFiveSigFigs } from '@/lib/mission/formatEthFiveSigFigs'
 import { computeContributionMaxUsd } from '@/lib/mission/computeContributionMaxUsd'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
@@ -195,10 +201,10 @@ function MissionPayRedeemContent({
                       inputMode="decimal"
                       autoComplete="off"
                       aria-label="Contribution amount in USD"
-                      className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-gray-600 focus:placeholder-gray-500 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-white/25 focus:placeholder-white/40 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       value={usdInput}
                       onChange={handleUsdInputChange}
-                      placeholder="0"
+                      placeholder="Amount"
                       maxLength={15}
                     />
                     <span className="text-gray-300 text-xl sm:text-2xl font-bold shrink-0 select-none">
@@ -213,9 +219,19 @@ function MissionPayRedeemContent({
                       height={14}
                       className="w-3.5 h-3.5 opacity-60"
                     />
-                    <p className="text-gray-400 text-xs sm:text-sm tabular-nums">
-                      ≈ {calculateEthAmount()} ETH
-                    </p>
+                    {hasPositiveContributionUsd(usdInput) ? (
+                      calculateEthAmount() ? (
+                        <p className="text-gray-400 text-xs sm:text-sm tabular-nums">
+                          ≈ {calculateEthAmount()} ETH
+                        </p>
+                      ) : (
+                        <p className="text-gray-400 text-xs sm:text-sm">Calculating ETH…</p>
+                      )
+                    ) : (
+                      <p className="text-gray-500 text-xs sm:text-sm">
+                        Enter an amount to see ETH
+                      </p>
+                    )}
                   </div>
                 </label>
 
@@ -363,17 +379,16 @@ function MissionPayRedeemContent({
 
             <div className="flex flex-col items-center justify-center mt-3">
               <PrivyWeb3Button
-                label={
-                  isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-                    ? 'Loading ETH price...'
-                    : 'Contribute'
+                label={contributeOpenButtonLabel(usdInput)}
+                signInLabel={
+                  hasPositiveContributionUsd(usdInput) ? CONTRIBUTE_SIGN_IN_LABEL : undefined
                 }
                 id="open-contribute-modal"
                 className="rounded-xl gradient-2 w-full py-4 sm:py-5 text-xl sm:text-2xl font-bold tracking-wide uppercase shadow-lg shadow-blue-500/30 ring-1 ring-white/10 hover:shadow-xl hover:shadow-blue-500/50 hover:brightness-110 hover:scale-[1.02] active:scale-[0.99] transition-all duration-200"
                 action={() => onOpenModal?.(usdInput)}
-                isDisabled={isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0}
+                isDisabled={!hasPositiveContributionUsd(usdInput)}
               />
-              <p className="pt-2 pb-0.5 text-xs text-gray-500">{`Sign In · Fund · Contribute`}</p>
+              <p className="pt-2 pb-0.5 text-xs text-gray-500">{CONTRIBUTE_PAYMENT_HINT}</p>
               <div className="w-full flex justify-center pt-0.5">
                 <AcceptedPaymentMethods />
               </div>
@@ -735,17 +750,14 @@ function MissionPayRedeemComponent({
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
-    if (!usdInput) return '0'
+    if (!hasPositiveContributionUsd(usdInput)) return ''
     const numericValue = usdInput.replace(/,/g, '')
 
-    if (!usdInput || isNaN(Number(numericValue))) {
-      return '0'
-    }
     if (isLoadingEthUsdPrice) {
       return <LoadingSpinner className="scale-50" />
     }
     if (!ethUsdPrice) {
-      return '0'
+      return ''
     }
     const eth = Number(numericValue) / ethUsdPrice
     return formatEthFiveSigFigs(eth)
@@ -1133,18 +1145,16 @@ function MissionPayRedeemComponent({
             >
               <div className="flex flex-col items-center justify-center">
                 <PrivyWeb3Button
-                  label={
-                    isLoadingEthUsdPrice && usdInput && parseFloat(usdInput) > 0
-                      ? 'Loading ETH price...'
-                      : 'Contribute'
+                  label={contributeOpenButtonLabel(usdInput)}
+                  signInLabel={
+                    hasPositiveContributionUsd(usdInput) ? CONTRIBUTE_SIGN_IN_LABEL : undefined
                   }
                   id="open-contribute-modal"
                   className={`rounded-full gradient-2 w-[85vw] py-3.5 text-lg font-bold uppercase tracking-wide shadow-xl shadow-blue-500/40 ring-1 ring-white/15 hover:brightness-110 hover:shadow-blue-500/60 active:scale-[0.99] transition-all duration-200 ${buttonClassName}`}
                   action={() => requestOpenContributeModal(usdInput)}
-                  isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
-                  showSignInLabel={false}
+                  isDisabled={!hasPositiveContributionUsd(usdInput)}
                 />
-                <p className="text-sm text-gray-300 italic mt-2">{`Sign In ● Fund ● Contribute`}</p>
+                <p className="text-sm text-gray-300 italic mt-2">{CONTRIBUTE_PAYMENT_HINT}</p>
               </div>
             </Modal>
           ) : onlyButton && buttonMode === 'standard' ? (
@@ -1155,14 +1165,16 @@ function MissionPayRedeemComponent({
               } transition-opacity duration-300 animate-fadeIn`}
             >
               <PrivyWeb3Button
-                label="Contribute"
+                label={contributeOpenButtonLabel(usdInput)}
+                signInLabel={
+                  hasPositiveContributionUsd(usdInput) ? CONTRIBUTE_SIGN_IN_LABEL : undefined
+                }
                 id="open-contribute-modal"
                 className={
                   buttonClassName ? buttonClassName : 'rounded-full gradient-2 rounded-full'
                 }
                 action={() => requestOpenContributeModal(usdInput)}
-                isDisabled={isLoadingEthUsdPrice && parseFloat(usdInput) > 0}
-                showSignInLabel={false}
+                isDisabled={!hasPositiveContributionUsd(usdInput)}
               />
             </div>
             )

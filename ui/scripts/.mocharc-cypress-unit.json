@@ -50,6 +50,7 @@
     "cypress/integration/lib/deprize/lifecycle.cy.ts",
     "cypress/integration/lib/deprize/odds-chart.cy.ts",
     "cypress/integration/lib/deprize/status.cy.ts",
-    "cypress/integration/unit/l2-gas-budget.cy.ts"
+    "cypress/integration/unit/l2-gas-budget.cy.ts",
+    "cypress/integration/unit/contribution-amount.cy.ts"
   ]
 }

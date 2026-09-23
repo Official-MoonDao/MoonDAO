@@ -26,7 +26,7 @@ const STEPS: {
   {
     title: 'Become a citizen',
     description:
-      'Mint your Citizen NFT to be eligible to fly. Without it, you can\u2019t be backed.',
+      'A contribution of $100 or more includes one sponsored year of citizenship. You can also buy the yearly passport on Join. An active Citizen NFT is required to be backed.',
     href: '/join',
     cta: 'Become a citizen \u2192',
   },

@@ -17,14 +17,18 @@ type UseOnrampFlowReturn = {
  * Hook to manage onramp flow: chain switching and modal state.
  * JWT verification and auto-transaction are handled by the modal using useOnrampAutoTransaction.
  */
-export function useOnrampFlow(router: NextRouter, chainSlugs: string[]): UseOnrampFlowReturn {
+export function useOnrampFlow(
+  router: NextRouter,
+  chainSlugs: string[],
+  initialUsdInput = ''
+): UseOnrampFlowReturn {
   const account = useActiveAccount()
   const { wallets } = useWallets()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
 
   const chainSlug = getChainSlug(selectedChain)
 
-  const [usdInput, setUsdInput] = useState<string>('')
+  const [usdInput, setUsdInput] = useState<string>(initialUsdInput)
   const [contributeModalEnabled, setContributeModalEnabled] = useState(false)
   const [hasReadInitialChainParam, setHasReadInitialChainParam] = useState(false)
   const hasProcessedOnrampRef = useRef(false)

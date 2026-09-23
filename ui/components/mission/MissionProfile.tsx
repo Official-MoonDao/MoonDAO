@@ -43,6 +43,7 @@ import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFu
 import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
+import { defaultContributionUsd } from '@/lib/mission/contributionAmount'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import {
@@ -195,7 +196,7 @@ export default function MissionProfile({
     setUsdInput,
     contributeModalEnabled,
     setContributeModalEnabled,
-  } = useOnrampFlow(router, chainSlugs)
+  } = useOnrampFlow(router, chainSlugs, defaultContributionUsd(mission?.id))
 
   /**
    * Contribute: re-fetch balances at click time, pick richest chain. If app network ≠ that chain,
