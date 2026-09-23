@@ -1,11 +1,12 @@
-import { useLogin } from '@privy-io/react-auth'
+import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
 import Link from 'next/link'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
-import { useCitizenQuery } from '@/lib/citizen/useCitizen'
+import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
@@ -28,6 +29,7 @@ import { sepolia } from '@/lib/rpc/chains'
 import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import CitizenPredictNotice from '@/components/deprize/CitizenPredictNotice'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import PredictModal from '@/components/deprize/PredictModal'
 import { CARD } from '@/components/deprize/detail/primitives'
@@ -97,9 +99,18 @@ export default function ForecastPanel(props: {
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
   const { login } = useLogin()
+  const { connectWallet } = usePrivy()
+  const { wallets } = useWallets()
+  const { setSelectedWallet } = useContext(PrivyWalletContext)
   const account = useActiveAccount()
   const chain = v4SlugToV5Chain(chainSlug) ?? sepolia
-  const { nft: citizen, isLoading: citizenLoading } = useCitizenQuery(chain)
+  const prizeCitizen = usePrizeChainCitizen(chain)
+  const isCitizen = prizeCitizen.isCitizen
+  const citizenWalletIndex = prizeCitizen.linkedCitizenAddress
+    ? wallets.findIndex(
+        (wallet) => wallet.address?.toLowerCase() === prizeCitizen.linkedCitizenAddress
+      )
+    : -1
   const { totalVMOONEY } = useTotalVMOONEY(account?.address)
 
   const n = labels.length
@@ -124,7 +135,7 @@ export default function ForecastPanel(props: {
     restricted,
     bettingOpen,
     locked: inputsLocked,
-    isCitizen: !!citizen,
+    isCitizen,
     connected: !!account,
   })
   const predictAction = actions.find((action) => action.kind === 'predict')
@@ -180,9 +191,9 @@ export default function ForecastPanel(props: {
       if (!prev) return prev
       const row = {
         voterAddress: account.address.toLowerCase(),
-        citizenId: citizen?.id ?? '',
-        citizenName: (citizen?.metadata?.name as string) || account.address,
-        citizenImage: citizen?.metadata?.image,
+        citizenId: prizeCitizen.tokenId ?? '',
+        citizenName: account.address,
+        citizenImage: undefined,
         allocation,
         weight: 0,
         storedVmooney: totalVMOONEY || 0,
@@ -197,7 +208,7 @@ export default function ForecastPanel(props: {
   }
 
   async function commitPick(index: number): Promise<boolean> {
-    if (!account || !citizen || !forecastsContract || !forecastsTableName) return false
+    if (!account || !isCitizen || !forecastsContract || !forecastsTableName) return false
     setError(null)
     setWriting(true)
     const allocation = allocationForPick(index, n)
@@ -252,7 +263,7 @@ export default function ForecastPanel(props: {
       savedPick,
       writing,
       connected: !!account,
-      isCitizen: !!citizen,
+      isCitizen,
       locked: inputsLocked,
     })
     if (plan.action === 'connect') {
@@ -260,7 +271,15 @@ export default function ForecastPanel(props: {
       return
     }
     if (plan.action === 'need-citizen') {
-      setError('Predictions count only for Citizens. Mint a Citizen to predict.')
+      setError(
+        prizeCitizen.linkedCitizenAddress
+          ? 'Switch to the wallet that holds your Citizen to predict.'
+          : prizeCitizen.lookupFailed
+            ? "Couldn't check your Citizen. Try again."
+            : prizeCitizen.expired
+              ? 'Your Citizen subscription has lapsed.'
+              : 'Predictions count only for Citizens. Mint a Citizen to predict.'
+      )
       return
     }
     if (plan.action === 'write') {
@@ -286,7 +305,7 @@ export default function ForecastPanel(props: {
       savedPick,
       writing,
       connected: !!account,
-      isCitizen: !!citizen,
+      isCitizen,
       locked: inputsLocked,
     })
     if (plan.action === 'write') void commitPick(plan.index)
@@ -296,6 +315,30 @@ export default function ForecastPanel(props: {
     (row) => row.voterAddress === account?.address?.toLowerCase()
   )
   const undoEnabled = canUndo({ savedPick, writing, locked: inputsLocked })
+
+  function switchToCitizenWallet() {
+    if (citizenWalletIndex >= 0) setSelectedWallet(citizenWalletIndex)
+    else connectWallet()
+  }
+
+  function renderCitizenNotice() {
+    if (!account) return null
+    return (
+      <CitizenPredictNotice
+        loading={prizeCitizen.isLoading}
+        isCitizen={isCitizen}
+        lookupFailed={prizeCitizen.lookupFailed}
+        expired={prizeCitizen.expired}
+        activeAddress={account.address}
+        linkedCitizenAddress={prizeCitizen.linkedCitizenAddress}
+        chainLabel={chain.name || 'this network'}
+        canSwitch={citizenWalletIndex >= 0}
+        onSwitch={switchToCitizenWallet}
+        onConnectLinked={connectWallet}
+        onRetry={prizeCitizen.retry}
+      />
+    )
+  }
 
   if (numOutcomes <= 0) return null
 
@@ -325,17 +368,7 @@ export default function ForecastPanel(props: {
           This prize has reported — forecasting is closed.
         </p>
       )}
-      {account && citizenLoading && (
-        <p className="mt-3 text-sm text-gray-400">Checking your Citizen…</p>
-      )}
-      {account && !citizenLoading && !citizen && (
-        <p className="mt-3 text-sm text-amber-200">
-          Predictions count for Citizens.{' '}
-          <Link href="/join" className="text-indigo-300 underline">
-            Mint a Citizen
-          </Link>
-        </p>
-      )}
+      {account && !isCitizen ? <div className="mt-3">{renderCitizenNotice()}</div> : null}
       {mine?.skill != null && (
         <p className="mt-3 text-sm text-gray-300">Your skill score is {mine.skill.toFixed(2)}.</p>
       )}
@@ -401,8 +434,9 @@ export default function ForecastPanel(props: {
           chanceLoading={marketLoading}
           bettingAvailable={showBet}
           connected={!!account}
-          citizenLoading={citizenLoading}
-          isCitizen={!!citizen}
+          citizenLoading={prizeCitizen.isLoading}
+          isCitizen={isCitizen}
+          citizenNotice={renderCitizenNotice()}
           saved={savedPick === modalIndex}
           writing={writing}
           predictEnabled={!!predictAction?.enabled}

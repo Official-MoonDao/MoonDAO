@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
 import { TOUCH } from '@/components/deprize/detail/primitives'
@@ -14,6 +13,8 @@ export default function PredictModal(props: {
   /** True while the Citizen lookup for this network is still running. */
   citizenLoading?: boolean
   isCitizen: boolean
+  /** Why predict is unavailable: still checking, switch wallets, or mint. */
+  citizenNotice?: ReactNode
   saved: boolean
   writing: boolean
   predictEnabled: boolean
@@ -63,18 +64,7 @@ export default function PredictModal(props: {
           </button>
         )}
 
-        {props.connected && props.citizenLoading && (
-          <p className="text-sm text-gray-300">Checking your Citizen…</p>
-        )}
-
-        {props.connected && !props.citizenLoading && !props.isCitizen && (
-          <p className="text-sm text-amber-200">
-            Predictions count for Citizens.{' '}
-            <Link href="/join" className="text-indigo-300 underline">
-              Mint a Citizen
-            </Link>
-          </p>
-        )}
+        {props.connected && props.citizenNotice}
 
         {props.connected && !props.citizenLoading && props.isCitizen && (
           <div className="flex flex-col gap-2">
