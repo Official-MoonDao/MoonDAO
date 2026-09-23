@@ -73,7 +73,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(200).json({ sponsored: false, funded: true })
   }
 
+  // A lookup blip is not "not a Citizen." Funded wallets already skipped
+  // this probe; an underfunded Citizen should retry, not be told to mint.
   const citizen = await probeCitizen(chain, wallet)
+  if (citizen.status === 'error') {
+    return res.status(503).json({
+      sponsored: false,
+      message: "Couldn't check your Citizen. Try again.",
+    })
+  }
+  if (citizen.status === 'expired') {
+    return res.status(403).json({
+      sponsored: false,
+      message: 'Your Citizen subscription has lapsed.',
+    })
+  }
   if (citizen.status !== 'citizen') {
     return res.status(403).json({
       sponsored: false,
