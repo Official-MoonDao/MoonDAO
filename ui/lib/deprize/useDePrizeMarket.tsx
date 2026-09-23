@@ -94,6 +94,11 @@ export function useDePrizeMarket(params: {
   // wipe a market binding or restart the price read that already succeeded.
   const conditionIdRef = useRef(conditionId)
   conditionIdRef.current = conditionId
+  // Flips false→true once when the registry condition arrives (it loads async
+  // from useDePrize). The binding effect below reads the value from the ref, so
+  // this only re-runs the match when a previously-unknown condition lands — it
+  // does not churn on every render or restart a price read that already bound.
+  const hasKnownCondition = !!(conditionId && !/^0x0+$/.test(conditionId))
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
   const fallbackLmsr = LMSR_WITH_TWAP_ADDRESSES[chainSlug] ?? ''
@@ -211,7 +216,7 @@ export function useDePrizeMarket(params: {
     return () => {
       cancelled = true
     }
-  }, [mint, deprizeId, fallbackLmsr, readChain])
+  }, [mint, deprizeId, fallbackLmsr, readChain, hasKnownCondition])
 
   const lmsr = useMemo(() => {
     if (!marketAddress) return undefined
@@ -505,12 +510,16 @@ export function useDePrizeMarket(params: {
         setPayoutDen(den)
         setPayoutNums(nums)
         setMarketFeesWei(mktFees)
-        setOutcomes(
+        setOutcomes((prev) =>
           ids.map((pid, i) => {
             const balWei = balances[i] as bigint | undefined
+            // A live poll may have written fresher odds while the slower
+            // position/payout reads were in flight; keep them instead of
+            // snapping back to the prices captured at load() start.
+            const probability = prev[i]?.probability ?? livePrices[i] ?? NaN
             return {
               index: i,
-              probability: livePrices[i] ?? NaN,
+              probability,
               balance: balWei !== undefined ? Number(balWei) / Number(UNIT) : NaN,
               balanceWei: balWei,
               positionId: pid,
