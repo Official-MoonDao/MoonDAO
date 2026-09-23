@@ -98,7 +98,10 @@ export async function quoteQtyByProbing(
   if (probeCost > targetWei) {
     return bisectAffordableQty(costFn, 0n, probe, targetWei, 8)
   }
-  if (probe === targetWei || costIsClose(probeCost, targetWei)) return probe
+  // probe === targetWei only means this quantity was affordable. LMSR cost is
+  // at most the quantity, so a small budget (the probe is the whole budget)
+  // can still buy many more shares. Keep searching unless the cost is close.
+  if (costIsClose(probeCost, targetWei)) return probe
 
   let lo = probe
   let loCost = probeCost

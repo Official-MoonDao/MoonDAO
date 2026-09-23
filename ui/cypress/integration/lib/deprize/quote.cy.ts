@@ -95,6 +95,16 @@ describe('deprize quote math', () => {
       expect(qty > budget / 2n).to.equal(true)
     })
 
+    it('grows a sub-0.001 ETH bet when the outcome is cheaper than the budget', async () => {
+      // Probe qty equals the whole budget at or under 0.001 ETH. A flat 20%
+      // price costs a fifth of that, so the fill must grow to about 5×.
+      const budget = 5n * 10n ** 14n
+      const cost = async (q: bigint) => q / 5n
+      const qty = await quoteQtyByProbing(cost, budget)
+      expect((await cost(qty)) <= budget).to.equal(true)
+      expect(qty).to.equal(budget * 5n)
+    })
+
     it('fits a convex curve without overspending or dozens of probes', async () => {
       let calls = 0
       const cost = async (q: bigint) => {
