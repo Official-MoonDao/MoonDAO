@@ -1,7 +1,7 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import DePrizeMintABI from 'const/abis/DePrizeMint.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
@@ -55,6 +55,7 @@ import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
+import { BetPrimaryActionContext } from '@/components/deprize/betPrimaryAction'
 import EthUsd from '@/components/deprize/EthUsd'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 import Modal from '@/components/layout/Modal'
@@ -108,6 +109,7 @@ export default function BetModal({
   onClose,
   onDone,
 }: BetModalProps) {
+  const betActionApi = useContext(BetPrimaryActionContext)
   const [betAmount, setBetAmount] = useState(initialAmountEth ?? '')
   const [showFunding, setShowFunding] = useState(false)
   const ctaShown = useRef(false)
@@ -440,6 +442,96 @@ export default function BetModal({
     }
   }
 
+  const placeBetRef = useRef(placeBet)
+  placeBetRef.current = placeBet
+  const drivenByPredict = embedded && betActionApi != null
+  const betActionKey = [
+    betAmountNum > 0,
+    needsFunding,
+    fundingStrategy.kind,
+    eligibility.status,
+    eligibility.allowed,
+    overCap,
+    wrongNetwork,
+    canBet,
+    busy,
+    termsAccepted,
+    allAttested,
+    acceptanceState,
+    betAmountWei > 0n,
+    ethPrice ?? '',
+  ].join('|')
+
+  useEffect(() => {
+    if (!embedded || !betActionApi) return
+    return () => betActionApi.report(null)
+  }, [embedded, betActionApi])
+
+  useEffect(() => {
+    if (!embedded || !betActionApi) return
+    if (!(betAmountNum > 0)) {
+      betActionApi.report(null)
+      return
+    }
+    if (needsFunding && fundingStrategy.kind !== 'none') {
+      betActionApi.setRun(() => {
+        setShowFunding(true)
+        trackOnrampEvent('cta_clicked')
+        if (fundingStrategy.kind === 'faucet') trackOnrampEvent('provider_selected:faucet')
+      })
+      betActionApi.report({
+        kind: 'fund',
+        label: 'Add funds to your wallet',
+        disabled: false,
+      })
+      return
+    }
+    if (needsFunding) {
+      betActionApi.report({
+        kind: 'place',
+        label: 'Lower your bet or add funds.',
+        disabled: true,
+      })
+      return
+    }
+    const placeDisabled =
+      busy ||
+      betAmountWei <= 0n ||
+      overCap ||
+      wrongNetwork ||
+      !canBet ||
+      eligibility.status !== 'ready' ||
+      !eligibility.allowed ||
+      !canSubmitDePrizeBet({
+        termsAccepted,
+        attestations,
+        eligibilityAllowed: eligibility.allowed,
+        eligibilityReady: eligibility.status === 'ready',
+        acceptanceState,
+      })
+    const placeLabel = busy
+      ? 'Placing bet…'
+      : !termsAccepted || !allAttested
+      ? 'Accept the Terms to bet'
+      : acceptanceState === 'saving'
+      ? 'Recording acceptance…'
+      : acceptanceState === 'error'
+      ? 'Acceptance failed — retry'
+      : eligibility.status === 'loading'
+      ? 'Checking eligibility…'
+      : `Bet ${fmtEthWithUsd(betAmountNum, ethPrice)}`
+    betActionApi.setRun(() => {
+      void placeBetRef.current()
+    })
+    betActionApi.report({
+      kind: 'place',
+      label: placeLabel,
+      disabled: placeDisabled,
+    })
+    // betActionKey covers the inputs that change the label or whether it can run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embedded, betActionApi, betActionKey])
+
   const betMult = quote && betAmountNum > 0 ? quote.qty / betAmountNum : undefined
 
   const body = (
@@ -739,24 +831,27 @@ export default function BetModal({
               <p className="text-amber-300 text-sm">Lower your bet or add funds.</p>
             ) : (
               <>
-                <button
-                  type="button"
-                  className={`w-full rounded-full border border-white/25 px-4 py-2 text-sm text-white ${TOUCH}`}
-                  onClick={() => {
-                    setShowFunding(true)
-                    trackOnrampEvent('cta_clicked')
-                    if (fundingStrategy.kind === 'faucet') {
-                      trackOnrampEvent('provider_selected:faucet')
-                    }
-                  }}
-                >
-                  Add funds to your wallet
-                </button>
+                {!drivenByPredict && (
+                  <button
+                    type="button"
+                    className={`w-full rounded-full border border-white/25 px-4 py-2 text-sm text-white ${TOUCH}`}
+                    onClick={() => {
+                      setShowFunding(true)
+                      trackOnrampEvent('cta_clicked')
+                      if (fundingStrategy.kind === 'faucet') {
+                        trackOnrampEvent('provider_selected:faucet')
+                      }
+                    }}
+                  >
+                    Add funds to your wallet
+                  </button>
+                )}
                 {showFunding && (
                   <div className="space-y-2">
                     <p className="text-gray-400 text-xs leading-relaxed">
-                      This buys ETH into your own wallet. It is not a bet, MoonDAO never holds
-                      it, and MoonDAO cannot reverse it. You may still be unable to bet afterwards.
+                      {drivenByPredict
+                        ? 'This buys ETH into your wallet for this bet. MoonDAO never holds it. When the ETH arrives, the button places the bet.'
+                        : 'This buys ETH into your own wallet. It is not a bet, MoonDAO never holds it, and MoonDAO cannot reverse it. You may still be unable to bet afterwards.'}
                     </p>
                     {fundingStrategy.kind === 'faucet' ? (
                       <p className="text-gray-300 text-sm">
@@ -802,7 +897,7 @@ export default function BetModal({
               </>
             )}
           </div>
-        ) : (
+        ) : drivenByPredict ? null : (
           <StandardButton
             onClick={placeBet}
             disabled={

@@ -1,5 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
+import {
+  BetPrimaryActionContext,
+  predictionActionLabel,
+  type BetPrimaryAction,
+} from '@/components/deprize/betPrimaryAction'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 import Modal from '@/components/layout/Modal'
 
@@ -38,11 +43,43 @@ export default function PredictModal(props: {
    */
   resumeBet?: boolean
 }) {
-  const predictLabel = props.writing ? 'Predicting…' : props.saved ? 'Predicted' : 'Predict'
   const [betOpen, setBetOpen] = useState(!!props.resumeBet)
+  const [betAction, setBetAction] = useState<BetPrimaryAction | null>(null)
+  const betRunRef = useRef<() => void>(() => {})
+  const reportBetAction = useCallback((action: BetPrimaryAction | null) => {
+    setBetAction((prev) => {
+      if (!prev && !action) return prev
+      if (
+        prev &&
+        action &&
+        prev.kind === action.kind &&
+        prev.label === action.label &&
+        prev.disabled === action.disabled
+      ) {
+        return prev
+      }
+      return action
+    })
+  }, [])
+  const betActionApi = useMemo(
+    () => ({
+      report: reportBetAction,
+      setRun(run: () => void) {
+        betRunRef.current = run
+      },
+    }),
+    [reportBetAction]
+  )
+  const activeBet = betOpen ? betAction : null
+  const primaryLabel = predictionActionLabel({
+    writing: props.writing,
+    saved: props.saved,
+    bet: activeBet,
+  })
 
   useEffect(() => {
     setBetOpen(!!props.resumeBet)
+    setBetAction(null)
   }, [props.outcomeIndex, props.resumeBet])
 
   return (
@@ -83,28 +120,8 @@ export default function PredictModal(props: {
 
         {props.connected && props.citizenNotice}
 
-        {props.connected && !props.citizenLoading && props.isCitizen && (
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={props.onPredict}
-              disabled={!props.predictEnabled || props.writing || props.saved}
-              aria-pressed={props.saved}
-              className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
-            >
-              {predictLabel}
-            </button>
-            {props.error && <p className="text-xs text-amber-200">{props.error}</p>}
-            {props.saved && props.undoEnabled && (
-              <button
-                type="button"
-                onClick={props.onUndo}
-                className={`w-full rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/10 ${TOUCH}`}
-              >
-                Undo
-              </button>
-            )}
-          </div>
+        {props.connected && props.error && (
+          <p className="text-xs text-amber-200">{props.error}</p>
         )}
 
         {props.bet ? (
@@ -124,9 +141,41 @@ export default function PredictModal(props: {
                 Attach a bet
               </button>
             )}
-            {betOpen ? props.bet : null}
+            <BetPrimaryActionContext.Provider value={betActionApi}>
+              {betOpen ? props.bet : null}
+            </BetPrimaryActionContext.Provider>
           </div>
         ) : null}
+
+        {props.connected && !props.citizenLoading && (props.isCitizen || activeBet) && (
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (activeBet) betRunRef.current()
+                else props.onPredict()
+              }}
+              disabled={
+                activeBet
+                  ? activeBet.disabled || props.writing
+                  : !props.predictEnabled || props.writing || props.saved
+              }
+              aria-pressed={!activeBet && props.saved}
+              className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
+            >
+              {primaryLabel}
+            </button>
+            {props.saved && props.undoEnabled && !activeBet && (
+              <button
+                type="button"
+                onClick={props.onUndo}
+                className={`w-full rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/10 ${TOUCH}`}
+              >
+                Undo
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   )
