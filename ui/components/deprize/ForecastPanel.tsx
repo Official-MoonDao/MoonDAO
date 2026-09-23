@@ -19,7 +19,6 @@ import {
   allocationForPick,
   canUndo,
   pickFromAllocation,
-  pickLabel,
   tapPlan,
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
@@ -98,6 +97,7 @@ export default function ForecastPanel(props: {
   const n = labels.length
   const [savedPick, setSavedPick] = useState<number | null>(null)
   const [previousPick, setPreviousPick] = useState<number | null>(null)
+  const [intent, setIntent] = useState<'bet' | 'predict'>('bet')
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
@@ -135,6 +135,7 @@ export default function ForecastPanel(props: {
   )
 
   const loadConsensus = useCallback(async () => {
+    if (n < 2) return
     const res = await fetch(
       consensusQuery({
         chain: chainSlug,
@@ -160,8 +161,9 @@ export default function ForecastPanel(props: {
   }, [applyConsensus, chainSlug, deprizeId, n])
 
   useEffect(() => {
+    if (n < 2) return
     void loadConsensus()
-  }, [loadConsensus])
+  }, [loadConsensus, n])
 
   function rememberRow(allocation: number[]) {
     if (!account) return
@@ -287,6 +289,10 @@ export default function ForecastPanel(props: {
   )
   const showBet = actions.some((action) => action.kind === 'bet')
   const undoEnabled = canUndo({ savedPick, writing, locked: inputsLocked })
+  const canBetOnCard = bettingOpen && showBet && !showResolved && !tradingHalted
+  const canPredictOnCard = !!predictAction?.enabled && !showResolved
+  const backing = canBetOnCard && intent === 'bet'
+  const predicting = !backing && canPredictOnCard
 
   if (numOutcomes <= 0) return null
 
@@ -294,9 +300,39 @@ export default function ForecastPanel(props: {
     <section id="deprize-forecast" className={CARD}>
       <h2 className="title-text-colors text-lg font-GoodTimes">Competitors</h2>
       <p className="mt-1 text-sm text-gray-300">{FORECAST_COPY.panelIntro}</p>
-      {bettingOpen && showBet && !showResolved && (
+      {canBetOnCard && (
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="How a click on a competitor is used">
+          <button
+            type="button"
+            aria-pressed={intent === 'bet'}
+            onClick={() => setIntent('bet')}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide border transition-colors w-full sm:w-auto ${TOUCH} ${
+              intent === 'bet'
+                ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
+                : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
+            }`}
+          >
+            Back with ETH
+          </button>
+          <button
+            type="button"
+            aria-pressed={intent === 'predict'}
+            onClick={() => setIntent('predict')}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide border transition-colors w-full sm:w-auto ${TOUCH} ${
+              intent === 'predict'
+                ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
+                : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
+            }`}
+          >
+            Citizen prediction
+          </button>
+        </div>
+      )}
+      {(backing || predicting) && (
         <p className="mt-1 text-sm text-gray-400">
-          Click a competitor to predict them as the winner.
+          {backing
+            ? 'Click a competitor to back them with ETH.'
+            : 'Click a competitor to predict them as the winner.'}
         </p>
       )}
       {restricted && (
@@ -349,12 +385,6 @@ export default function ForecastPanel(props: {
           const daoPct = daoReady ? (daoVector[o.index] ?? 0) * 100 : null
           const pooledPct = pooled ? pooled[o.index] * 100 : null
           const view = oddsRowView({ marketPct, daoPct, pooledPct })
-          const predictReason =
-            predictAction?.reason === 'locked'
-              ? 'Forecasting is closed'
-              : predictAction?.reason === 'need-citizen'
-              ? 'Mint a Citizen to predict'
-              : undefined
           return (
             <div id={`deprize-outcome-${o.index}`} key={o.index}>
               <DePrizeTeamCard
@@ -366,39 +396,23 @@ export default function ForecastPanel(props: {
                 resolved={showResolved}
                 isRefundVector={isRefundVector}
                 isWinningSlot={showResolved && o.index === winningIndex}
-                bettingOpen={bettingOpen && showBet}
+                bettingOpen={backing}
+                selectable={predicting}
+                highlighted={predicting && isSaved}
                 tradingHalted={tradingHalted}
-                busy={false}
+                busy={writing && predicting}
                 userConnected={!!userAddress}
-                onBet={onBet}
+                onBet={backing ? onBet : () => onPredict(o.index)}
                 actions={
-                  <>
+                  predicting && isSaved && undoEnabled ? (
                     <button
                       type="button"
-                      onClick={() => onPredict(o.index)}
-                      disabled={!predictAction?.enabled || writing}
-                      aria-pressed={isSaved}
-                      title={predictReason}
-                      className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border transition-colors disabled:opacity-40 w-full sm:w-auto ${TOUCH} ${
-                        isSaved
-                          ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
-                          : predictAction?.role === 'primary'
-                          ? 'border-indigo-400/40 bg-indigo-400/10 text-white'
-                          : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
-                      }`}
+                      onClick={onUndo}
+                      className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border border-white/15 text-gray-200 hover:bg-white/10 w-full sm:w-auto ${TOUCH}`}
                     >
-                      {pickLabel({ picked: isSaved, saved: isSaved && !writing })}
+                      Undo
                     </button>
-                    {isSaved && undoEnabled && (
-                      <button
-                        type="button"
-                        onClick={onUndo}
-                        className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border border-white/15 text-gray-200 hover:bg-white/10 w-full sm:w-auto ${TOUCH}`}
-                      >
-                        Undo
-                      </button>
-                    )}
-                  </>
+                  ) : undefined
                 }
                 isField={isField}
                 withdrawn={!!withdrawnByTeamId[teamId.toString()]}

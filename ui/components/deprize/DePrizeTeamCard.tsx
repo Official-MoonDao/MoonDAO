@@ -31,8 +31,14 @@ type DePrizeTeamCardProps = {
   userConnected: boolean
   onBet: (index: number) => void
   /**
-   * Citizen forecast controls for this competitor. Stop their clicks from
-   * also placing a bet, since the card itself is the bet control.
+   * Card click records a citizen prediction. Used when ETH betting is closed,
+   * or when the forecast panel is in prediction mode.
+   */
+  selectable?: boolean
+  /** Citizen prediction currently saved on this competitor. */
+  highlighted?: boolean
+  /**
+   * Extra controls (undo). Their clicks must not also activate the card.
    */
   actions?: ReactNode
   /** Open Field slot — render overrides instead of a Team NFT. */
@@ -95,6 +101,8 @@ export default function DePrizeTeamCard({
   busy,
   userConnected,
   onBet,
+  selectable = false,
+  highlighted = false,
   actions,
   onCashOut,
   isField = false,
@@ -113,7 +121,7 @@ export default function DePrizeTeamCard({
   const pnl =
     realizedValue !== undefined && investedEth > 0 ? realizedValue - investedEth : undefined
   const canCashOut = showHoldings && !tradingHalted && !resolved
-  const canPredict = bettingOpen && !tradingHalted && !busy
+  const canPredict = ((bettingOpen && !tradingHalted) || selectable) && !busy
   const predictName = isField ? 'Other' : headline || 'this competitor'
   const predict = () => onBet(outcome.index)
   // Cash-out and forecast actions are their own buttons. A card that also
@@ -133,7 +141,11 @@ export default function DePrizeTeamCard({
       tabIndex={cardIsButton ? 0 : undefined}
       aria-label={cardIsButton ? `Predict ${predictName} as the winner` : undefined}
       className={`relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
-        resolved && isWinningSlot ? 'border-emerald-400/40 ring-1 ring-emerald-400/20' : ''
+        resolved && isWinningSlot
+          ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
+          : highlighted
+            ? 'border-indigo-400/50 ring-1 ring-indigo-400/30'
+            : ''
       } ${
         canPredict
           ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 transition-colors'
