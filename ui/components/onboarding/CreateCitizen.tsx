@@ -146,6 +146,7 @@ const PENDING_TYPEFORM_SESSION_KEY = 'CreateCitizen_pendingTypeform'
 const RESUME_STAGE_SESSION_KEY = 'CreateCitizen_resumeStage'
 const CROPPED_IMAGE_SESSION_KEY = 'CreateCitizen_croppedImage'
 const INPUT_IMAGE_SESSION_KEY = 'CreateCitizen_inputImage'
+const DISCOUNT_PAYMENT_SESSION_KEY = 'CreateCitizen_discountPayment'
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60
 
@@ -183,6 +184,55 @@ type DiscountQuote = {
   fullPriceWei: string
   dueWei: string
   payTo: string
+}
+
+type SavedDiscountPayment = {
+  token?: string
+  txHash: string
+  dueWei: string
+  address: string
+}
+
+function readDiscountPaymentFromSession(): SavedDiscountPayment | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(DISCOUNT_PAYMENT_SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (
+      typeof parsed?.txHash === 'string' &&
+      typeof parsed?.dueWei === 'string' &&
+      typeof parsed?.address === 'string'
+    ) {
+      return {
+        token: typeof parsed.token === 'string' ? parsed.token : undefined,
+        txHash: parsed.txHash,
+        dueWei: parsed.dueWei,
+        address: parsed.address,
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function writeDiscountPaymentToSession(payment: SavedDiscountPayment) {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.setItem(DISCOUNT_PAYMENT_SESSION_KEY, JSON.stringify(payment))
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearDiscountPaymentSession() {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.removeItem(DISCOUNT_PAYMENT_SESSION_KEY)
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Format small ETH amounts for display without noisy trailing zeros. */
@@ -442,9 +492,10 @@ export default function CreateCitizen({
   const [resolvedInviteToken, setResolvedInviteToken] = useState<string | null>(null)
   const invitePending = Boolean(inviteToken) && resolvedInviteToken !== inviteToken
   // Keeps a confirmed discount payment across a failed mint response so a retry
-  // does not charge the recipient a second time. Cleared once that payment is
-  // refunded or the price quote changes.
-  const discountPaymentRef = useRef<{ token?: string; txHash: string; dueWei: string } | null>(null)
+  // does not charge the recipient a second time. Also written to sessionStorage
+  // so a refresh during the sponsored mint reuses the same transfer. Cleared once
+  // that payment is refunded or the price quote changes.
+  const discountPaymentRef = useRef<SavedDiscountPayment | null>(null)
 
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
@@ -766,6 +817,7 @@ export default function CreateCitizen({
         console.error(errorData)
         if (errorData?.refunded) {
           discountPaymentRef.current = null
+          clearDiscountPaymentSession()
         }
         if ((res.status === 409 || errorData?.refunded) && errorData?.dueWei) {
           setDiscountQuote((prev) =>
@@ -1496,13 +1548,15 @@ export default function CreateCitizen({
       if (discountQuote) {
         const due = BigInt(discountQuote.dueWei)
         let paymentTxHash: string | undefined
-        const savedPayment = discountPaymentRef.current
+        const savedPayment = discountPaymentRef.current ?? readDiscountPaymentFromSession()
         if (
           savedPayment &&
           savedPayment.token === inviteToken &&
-          savedPayment.dueWei === discountQuote.dueWei
+          savedPayment.dueWei === discountQuote.dueWei &&
+          savedPayment.address.toLowerCase() === address.toLowerCase()
         ) {
           paymentTxHash = savedPayment.txHash
+          discountPaymentRef.current = savedPayment
         } else if (due > BigInt(0)) {
           if (!account) {
             throw new Error('Please connect your wallet to continue.')
@@ -1517,11 +1571,14 @@ export default function CreateCitizen({
             account,
           })
           paymentTxHash = payment.transactionHash
-          discountPaymentRef.current = {
+          const confirmedPayment: SavedDiscountPayment = {
             token: inviteToken,
             txHash: paymentTxHash,
             dueWei: discountQuote.dueWei,
+            address,
           }
+          discountPaymentRef.current = confirmedPayment
+          writeDiscountPaymentToSession(confirmedPayment)
         }
         receipt = await executeFreeMint(newImageIpfsHash, profile, paymentTxHash)
       } else if (freeMint) {
@@ -2192,8 +2249,12 @@ export default function CreateCitizen({
 
     const getTotalPaid = async () => {
       if (inviteToken) {
+        // A refetch must not render as a resolved full-price mint. Dropping the
+        // quote without clearing the resolved token makes `invitePending` false
+        // while the new eligibility check is still in flight.
         setDiscountQuote(null)
         setFreeMint(false)
+        setResolvedInviteToken(null)
       }
       // A magic-link invite token makes this wallet eligible for a sponsored
       // or discounted mint even without a contribution history. Send the
