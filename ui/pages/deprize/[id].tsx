@@ -764,7 +764,10 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           raceBinding={raceBinding}
           teamContract={teamContract}
           outcomeColors={outcomeColors}
-          marketLoading={market.loading || (market.marketConfigured && !market.payoutSettled)}
+          // `loading` flips on wallet connect and the post-bet refresh, after the
+          // payout read has already settled. Lock only until that denominator
+          // is known, or Predict no-ops and the citizen forecast is never saved.
+          marketLoading={market.marketConfigured && !market.payoutSettled}
           showResolved={showResolved}
           isRefundVector={showRefundVector}
           winningIndex={market.winningIndex}
