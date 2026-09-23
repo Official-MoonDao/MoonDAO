@@ -145,7 +145,7 @@ export default function DePrizeTeamCard({
       tabIndex={cardIsButton ? 0 : undefined}
       aria-label={cardIsButton ? `Predict ${predictName} as the winner` : undefined}
       aria-pressed={cardIsButton ? highlighted : undefined}
-      className={`relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
+      className={`relative w-full overflow-hidden px-4 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
         resolved && isWinningSlot
           ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
           : highlighted
@@ -165,12 +165,12 @@ export default function DePrizeTeamCard({
             at 320px the two blocks alone asked for more than the card had. */}
         <div className="flex items-center gap-3 sm:min-w-[96px]">
           <span
-            className="inline-block w-1.5 h-10 rounded-full shrink-0"
+            className="inline-block w-1.5 h-8 rounded-full shrink-0"
             style={{ background: color }}
           />
           <div>
             <p
-              className={`text-2xl font-bold leading-none tabular-nums ${
+              className={`text-xl font-bold leading-none tabular-nums ${
                 resolved
                   ? isWinningSlot
                     ? 'text-emerald-400'
@@ -193,18 +193,18 @@ export default function DePrizeTeamCard({
                 : `${fmt(outcome.probability, 0)}%`}
             </p>
             {!resolved && (
-              <p className="text-gray-500 text-[10px] mt-1 uppercase tracking-wide">chance</p>
+              <p className="text-gray-500 text-[10px] mt-0.5 uppercase tracking-wide">chance</p>
             )}
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 sm:min-w-[150px] flex flex-col gap-1">
+        <div className="flex-1 min-w-0 sm:min-w-[150px] flex flex-col gap-0.5">
           <div className="flex items-center gap-2 flex-wrap">
             <DePrizeTeamLink
               teamId={teamId}
               teamContract={teamContract}
               color={color}
-              size={40}
+              size={32}
               className="text-base font-semibold text-white"
               nameOverride={isField ? 'Other' : headline}
               imageOverride={isField ? FIELD_AVATAR : imageOverride}
@@ -215,15 +215,17 @@ export default function DePrizeTeamCard({
               plain={canPredict}
             />
           </div>
-          {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
-          {orgSubtitle && <p className="text-xs text-gray-400 pl-12">{orgSubtitle}</p>}
-          {badge && <p className="text-xs text-indigo-200 pl-12">{badge}</p>}
+          {isField && <p className="text-xs leading-tight text-gray-400 pl-10">Any other team</p>}
+          {orgSubtitle && (
+            <p className="text-xs leading-tight text-gray-400 pl-10">{orgSubtitle}</p>
+          )}
+          {badge && <p className="text-xs leading-tight text-indigo-200 pl-10">{badge}</p>}
           {withdrawn && !isField && (
-            <p className="text-xs text-amber-400/90 pl-12">Withdrawn — sell only</p>
+            <p className="text-xs leading-tight text-amber-400/90 pl-10">Withdrawn — sell only</p>
           )}
           {showHoldings && !resolved && (
             <p
-              className="text-xs text-gray-500 pl-12"
+              className="text-xs leading-tight text-gray-500 pl-10"
               title="Each share you hold pays 1 ETH if this competitor is selected as the winner. Paid from the betting market, not from the prize pool."
             >
               Your payout if wins ·{' '}
@@ -246,7 +248,7 @@ export default function DePrizeTeamCard({
 
       {showHoldings && (
         <div
-          className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5"
+          className="mt-2.5 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="min-w-0">
