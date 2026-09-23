@@ -11,6 +11,8 @@ export default function PredictModal(props: {
   /** Betting is open for this prize, even if the wallet is not connected yet. */
   bettingAvailable?: boolean
   connected: boolean
+  /** True while the Citizen lookup for this network is still running. */
+  citizenLoading?: boolean
   isCitizen: boolean
   saved: boolean
   writing: boolean
@@ -61,7 +63,11 @@ export default function PredictModal(props: {
           </button>
         )}
 
-        {props.connected && !props.isCitizen && (
+        {props.connected && props.citizenLoading && (
+          <p className="text-sm text-gray-300">Checking your Citizen…</p>
+        )}
+
+        {props.connected && !props.citizenLoading && !props.isCitizen && (
           <p className="text-sm text-amber-200">
             Predictions count for Citizens.{' '}
             <Link href="/join" className="text-indigo-300 underline">
@@ -70,7 +76,7 @@ export default function PredictModal(props: {
           </p>
         )}
 
-        {props.connected && props.isCitizen && (
+        {props.connected && !props.citizenLoading && props.isCitizen && (
           <div className="flex flex-col gap-2">
             <button
               type="button"

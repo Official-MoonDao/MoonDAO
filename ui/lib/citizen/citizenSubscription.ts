@@ -16,25 +16,31 @@ type CachedExpiry = {
   timestamp: number
 }
 
-const expiryCacheKey = (tokenId: string) => `${EXPIRY_CACHE_PREFIX}${tokenId}`
+const expiryCacheKey = (tokenId: string, chainId?: number) =>
+  chainId == null
+    ? `${EXPIRY_CACHE_PREFIX}${tokenId}`
+    : `${EXPIRY_CACHE_PREFIX}${chainId}_${tokenId}`
 
 /**
  * Only unexpired timestamps are ever cached, and an entry is dropped once its
  * timestamp passes. A renewal therefore can't be masked by a stale "expired"
  * verdict, and the common case (valid citizen) still avoids the RPC.
  */
-export function getCachedCitizenExpiry(tokenId: string): number | undefined {
+export function getCachedCitizenExpiry(
+  tokenId: string,
+  chainId?: number
+): number | undefined {
   if (typeof window === 'undefined' || !tokenId) return undefined
 
   try {
-    const cached = localStorage.getItem(expiryCacheKey(tokenId))
+    const cached = localStorage.getItem(expiryCacheKey(tokenId, chainId))
     if (!cached) return undefined
 
     const parsed: CachedExpiry = JSON.parse(cached)
     if (typeof parsed?.data !== 'number') return undefined
 
     if (parsed.data * 1000 <= Date.now()) {
-      localStorage.removeItem(expiryCacheKey(tokenId))
+      localStorage.removeItem(expiryCacheKey(tokenId, chainId))
       return undefined
     }
 
@@ -45,13 +51,17 @@ export function getCachedCitizenExpiry(tokenId: string): number | undefined {
   }
 }
 
-export function setCachedCitizenExpiry(tokenId: string, expiresAt: number) {
+export function setCachedCitizenExpiry(
+  tokenId: string,
+  expiresAt: number,
+  chainId?: number
+) {
   if (typeof window === 'undefined' || !tokenId) return
   if (!Number.isFinite(expiresAt) || expiresAt * 1000 <= Date.now()) return
 
   try {
     const entry: CachedExpiry = { data: expiresAt, timestamp: Date.now() }
-    localStorage.setItem(expiryCacheKey(tokenId), JSON.stringify(entry))
+    localStorage.setItem(expiryCacheKey(tokenId, chainId), JSON.stringify(entry))
   } catch (error) {
     console.warn('Failed to cache citizen expiration:', error)
   }
@@ -63,22 +73,25 @@ export function setCachedCitizenExpiry(tokenId: string, expiresAt: number) {
  * the app (same reasoning as CitizenProvider's Tableland error handling).
  */
 export async function fetchCitizenExpiresAt(
-  tokenId: string
+  tokenId: string,
+  chain: { id: number; name?: string } = DEFAULT_CHAIN_V5
 ): Promise<number | null> {
   if (!tokenId) return null
 
-  const cached = getCachedCitizenExpiry(tokenId)
+  const cached = getCachedCitizenExpiry(tokenId, chain.id)
   if (cached !== undefined) return cached
 
   try {
     // Imported lazily so the pure helpers above stay usable without a
     // configured thirdweb client (they run in Node unit tests).
     const { default: client } = await import('../thirdweb/client')
-    const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+    const chainSlug = getChainSlug(chain as any)
+    const address = CITIZEN_ADDRESSES[chainSlug]
+    if (!address) return null
     const contract = getContract({
       client,
-      address: CITIZEN_ADDRESSES[chainSlug],
-      chain: DEFAULT_CHAIN_V5,
+      address,
+      chain: chain as any,
       abi: CitizenABI as any,
     })
 
@@ -91,7 +104,7 @@ export async function fetchCitizenExpiresAt(
     const seconds = Number(expiresAt?.toString())
     if (!Number.isFinite(seconds)) return null
 
-    setCachedCitizenExpiry(tokenId, seconds)
+    setCachedCitizenExpiry(tokenId, seconds, chain.id)
     return seconds
   } catch (error) {
     console.warn('Failed to read citizen expiration:', error)

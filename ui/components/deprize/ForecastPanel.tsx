@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
-import { useCitizen } from '@/lib/citizen/useCitizen'
+import { useCitizenQuery } from '@/lib/citizen/useCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
@@ -99,7 +99,7 @@ export default function ForecastPanel(props: {
   const { login } = useLogin()
   const account = useActiveAccount()
   const chain = v4SlugToV5Chain(chainSlug) ?? sepolia
-  const citizen = useCitizen(chain)
+  const { nft: citizen, isLoading: citizenLoading } = useCitizenQuery(chain)
   const { totalVMOONEY } = useTotalVMOONEY(account?.address)
 
   const n = labels.length
@@ -325,7 +325,10 @@ export default function ForecastPanel(props: {
           This prize has reported — forecasting is closed.
         </p>
       )}
-      {account && !citizen && (
+      {account && citizenLoading && (
+        <p className="mt-3 text-sm text-gray-400">Checking your Citizen…</p>
+      )}
+      {account && !citizenLoading && !citizen && (
         <p className="mt-3 text-sm text-amber-200">
           Predictions count for Citizens.{' '}
           <Link href="/join" className="text-indigo-300 underline">
@@ -398,6 +401,7 @@ export default function ForecastPanel(props: {
           chanceLoading={marketLoading}
           bettingAvailable={showBet}
           connected={!!account}
+          citizenLoading={citizenLoading}
           isCitizen={!!citizen}
           saved={savedPick === modalIndex}
           writing={writing}

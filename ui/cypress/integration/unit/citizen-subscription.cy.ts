@@ -116,5 +116,12 @@ describe('citizen subscription expiration', () => {
       expect(getCachedCitizenExpiry('999')).to.equal(undefined)
       expect(getCachedCitizenExpiry('')).to.equal(undefined)
     })
+
+    it('does not apply an expiration cached for one chain to another', () => {
+      const expiresAt = nowSeconds() + HOUR
+      setCachedCitizenExpiry('42', expiresAt, 42161)
+      expect(getCachedCitizenExpiry('42', 42161)).to.equal(expiresAt)
+      expect(getCachedCitizenExpiry('42', 11155111)).to.equal(undefined)
+    })
   })
 })
