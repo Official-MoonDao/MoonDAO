@@ -764,7 +764,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           raceBinding={raceBinding}
           teamContract={teamContract}
           outcomeColors={outcomeColors}
-          marketLoading={market.loading}
+          marketLoading={market.loading || (market.marketConfigured && !market.payoutSettled)}
           showResolved={showResolved}
           isRefundVector={showRefundVector}
           winningIndex={market.winningIndex}

@@ -117,7 +117,9 @@ export default function ForecastPanel(props: {
   const forecastsTableName = FORECASTS_TABLE_NAMES[chainSlug] ?? ''
 
   const isLive = liveTipId == null || liveTipId === deprizeId
-  const inputsLocked = !isLive || reported
+  // Cards stay locked until the payout read finishes. `reported` is still
+  // false for that whole window, so it cannot be the only gate.
+  const inputsLocked = !isLive || reported || marketLoading
   const actions = rowActions({
     restricted,
     bettingOpen,
