@@ -1,3 +1,4 @@
+import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
 import {
@@ -129,20 +130,28 @@ export default function PredictModal(props: {
             data-testid="deprize-predict-bet"
             className="flex flex-col gap-3 border-t border-white/10 pt-4"
           >
-            {betOpen ? (
-              <h3 className="text-sm font-semibold text-white">Attach a bet</h3>
-            ) : (
-              <button
-                type="button"
-                aria-expanded={false}
-                onClick={() => setBetOpen(true)}
-                className={`w-full text-left text-sm font-semibold text-white ${TOUCH}`}
-              >
-                Attach a bet
-              </button>
-            )}
+            <button
+              type="button"
+              aria-expanded={betOpen}
+              aria-controls="deprize-predict-bet-panel"
+              onClick={() => setBetOpen((open) => !open)}
+              className={`flex w-full items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-left hover:bg-white/10 ${TOUCH}`}
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-white">Attach a bet</span>
+                <span className="mt-0.5 block text-xs font-normal text-gray-400">
+                  {betOpen ? 'Hide the ETH bet' : 'Optional. Open to add an ETH bet.'}
+                </span>
+              </span>
+              <ChevronRightIcon
+                className={`h-5 w-5 shrink-0 text-gray-300 transition-transform ${betOpen ? 'rotate-90' : ''}`}
+                aria-hidden
+              />
+            </button>
             <BetPrimaryActionContext.Provider value={betActionApi}>
-              {betOpen ? props.bet : null}
+              {betOpen ? (
+                <div id="deprize-predict-bet-panel">{props.bet}</div>
+              ) : null}
             </BetPrimaryActionContext.Provider>
           </div>
         ) : null}
