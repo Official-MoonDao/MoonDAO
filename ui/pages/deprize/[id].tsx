@@ -778,6 +778,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           onBet={handleBet}
           modalIndex={betIndex}
           onModalClose={() => setBetIndex(null)}
+          resumeBet={onrampReturn.betIndex != null && betIndex === onrampReturn.betIndex}
           renderBet={
             account && market.marketAddress
               ? ({ index, onClose, onPlaced }) => (

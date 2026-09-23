@@ -61,6 +61,8 @@ export default function ForecastPanel(props: {
   /** Which competitor's prediction window is open. The page owns this so deep links share it. */
   modalIndex: number | null
   onModalClose: () => void
+  /** Open the embedded bet form as soon as the prediction window appears. */
+  resumeBet?: boolean
   /**
    * ETH bet form for the open competitor. The page omits this when betting
    * is not allowed; the prediction itself does not need it.
@@ -95,6 +97,7 @@ export default function ForecastPanel(props: {
     onBet,
     modalIndex,
     onModalClose,
+    resumeBet,
     renderBet,
   } = props
   const restricted = useDePrizeRestricted()
@@ -478,6 +481,7 @@ export default function ForecastPanel(props: {
           onUndo={onUndo}
           onConnect={login}
           onClose={onModalClose}
+          resumeBet={resumeBet}
           bet={
             showBet && renderBet ? (
               <div key={modalIndex}>

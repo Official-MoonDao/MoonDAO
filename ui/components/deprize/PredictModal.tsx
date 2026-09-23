@@ -27,13 +27,18 @@ export default function PredictModal(props: {
   onClose: () => void
   /** Bet form. Omitted when this visitor is not allowed to bet. */
   bet?: ReactNode
+  /**
+   * Open the bet form immediately. An onramp return carries the funded amount
+   * inside that form, so leaving it collapsed hides the bet they just paid for.
+   */
+  resumeBet?: boolean
 }) {
   const predictLabel = props.writing ? 'Predicting…' : props.saved ? 'Predicted' : 'Predict'
-  const [betOpen, setBetOpen] = useState(false)
+  const [betOpen, setBetOpen] = useState(!!props.resumeBet)
 
   useEffect(() => {
-    setBetOpen(false)
-  }, [props.teamName])
+    setBetOpen(!!props.resumeBet)
+  }, [props.teamName, props.resumeBet])
 
   return (
     <Modal
