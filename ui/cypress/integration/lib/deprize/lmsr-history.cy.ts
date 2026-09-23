@@ -2,6 +2,7 @@ import {
   lmsrMarginalPrices,
   maxProbDelta,
   rebuildOddsHistory,
+  resolveMarketOpenMs,
 } from '@/lib/deprize/lmsr-history'
 
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0)
@@ -89,6 +90,31 @@ describe('deprize LMSR history reconstruction', () => {
         trades: [{ timestampMs: open - 10, amounts: [0.001, 0, 0] }],
       })
       expect(history[1].t).to.equal(open)
+    })
+  })
+
+  describe('resolveMarketOpenMs', () => {
+    const open = Date.UTC(2026, 8, 22, 1, 31, 48)
+
+    it('keeps a real startTime ahead of the funding log', () => {
+      expect(
+        resolveMarketOpenMs(open, [{ timestampMs: open + 5000 }]),
+      ).to.equal(open)
+    })
+
+    it('uses the earliest funding log when startTime is missing', () => {
+      expect(
+        resolveMarketOpenMs(undefined, [
+          { timestampMs: open + 1000 },
+          { timestampMs: open },
+          { timestampMs: Number.NaN },
+        ]),
+      ).to.equal(open)
+    })
+
+    it('returns undefined when neither source is a real time', () => {
+      expect(resolveMarketOpenMs(undefined, [])).to.equal(undefined)
+      expect(resolveMarketOpenMs(0, [{ timestampMs: 0 }])).to.equal(undefined)
     })
   })
 
