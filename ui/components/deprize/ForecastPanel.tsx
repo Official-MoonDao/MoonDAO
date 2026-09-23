@@ -208,7 +208,11 @@ export default function ForecastPanel(props: {
   }
 
   async function commitPick(index: number): Promise<boolean> {
-    if (!account || !isCitizen || !forecastsContract || !forecastsTableName) return false
+    if (!account || !isCitizen) return false
+    if (!forecastsContract || !forecastsTableName) {
+      setError('Predictions are not available on this network yet.')
+      return false
+    }
     setError(null)
     setWriting(true)
     const allocation = allocationForPick(index, n)
@@ -439,6 +443,7 @@ export default function ForecastPanel(props: {
           citizenNotice={renderCitizenNotice()}
           saved={savedPick === modalIndex}
           writing={writing}
+          error={error}
           predictEnabled={!!predictAction?.enabled}
           undoEnabled={undoEnabled && savedPick === modalIndex}
           onPredict={() => void onPredict(modalIndex)}

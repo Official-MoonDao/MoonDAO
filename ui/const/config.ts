@@ -225,14 +225,14 @@ export const VOTES_TABLE_NAMES: Index = {
   arbitrum: 'Votes_42161_146',
   sepolia: 'Votes_11155111_1971',
 }
-/** Empty until `script/Forecasts.s.sol` is deployed per chain. Votes-shaped table with a timestamp column. */
+/** Votes-shaped table with a timestamp column. Arbitrum stays empty until that chain is deployed. */
 export const FORECASTS_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '',
+  sepolia: '0x8d6d1ea16c1d6d137BCf8ea03F1D4eE1b0790E98',
 }
 export const FORECASTS_TABLE_NAMES: Index = {
   arbitrum: '',
-  sepolia: '',
+  sepolia: 'Forecasts_11155111_2089',
 }
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1
