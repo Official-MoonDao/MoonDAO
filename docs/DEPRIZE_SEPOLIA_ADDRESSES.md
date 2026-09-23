@@ -61,6 +61,27 @@ to the v1 registry (one-way).
 
 `encodePacked`, not `encode`. Oracle is the deployer EOA above.
 
+## Touchdown — v2 generation 2 (2026-09-21)
+
+Generation 1 is in `VOTING` with a reported winner (team 601) and its market
+paused, so it cannot be reopened. This generation is the open bettable market.
+Same roster as generation 1. `ispace-apex` is on the atlas goal and is not in
+this market.
+
+| Slot | Value | Notes |
+|---|---|---|
+| `deprizeId` | `2` | `registry.count()` at register |
+| Competing teams | `[601, 602, 603, 604, 605, 24]` | Same order as generation 1 |
+| JB project id | `270` | Mission **16** |
+| LaunchPadPayHook | `0x53AE6F7D33f91591091385BF5059C6e8a16503DC` | Latched to the v2 registry |
+| `questionId` | `0x6498f99ba51f63aa7576860e9aff4a7afbc1e805e6c2aef9d4601840249c5898` | `keccak256("deprize:sepolia:shared-next-landing:v4")`. **Not on-chain.** |
+| `conditionId` | `0x9d0b3fa323c6a8e330cb76963004d6a145163b9b629dd09730cca57c41e3359c` | 6 outcome slots; oracle = deployer |
+| LMSRMarketMaker | `0x87569eBcc4954B59d77Ae6fC8e1949Bb44c34d2c` | Stock Gnosis, 0.06 ETH seed, 1% fee, owner = deployer, stage Running |
+| Sunset | `2028-09-21T01:30:44Z` | ~2 years from provision |
+
+Off-chain, generation 1 is `supersededBy: 2` and this id `supersedes: 1`. The
+live page is `/deprize/2` or `/deprize/shared-next-landing` with the app on Sepolia.
+
 ## UI follow-up PR (do not ship without both)
 
 Point `ui/const/config.ts` at the v2 stack **and** rebind

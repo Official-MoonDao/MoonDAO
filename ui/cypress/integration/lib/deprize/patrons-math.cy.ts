@@ -58,16 +58,17 @@ describe('isDirectPatronPay / aggregatePatrons', () => {
     expect(mint.excluded.protocolPayer).to.equal(1)
     expect(mint.patronCount).to.equal(0)
 
+    // Sepolia's v2 fee router is unset. Arbitrum's is the configured exclusion.
     const router = aggregatePatrons(
       [
         {
-          from: DEPRIZE_FEE_ROUTER_ADDRESSES.sepolia,
+          from: DEPRIZE_FEE_ROUTER_ADDRESSES.arbitrum,
           beneficiary: SAFE,
           amount: '10',
           timestamp: 1,
         },
       ],
-      'sepolia'
+      'arbitrum'
     )
     expect(router.excluded.protocolPayer).to.equal(1)
   })

@@ -6,7 +6,7 @@ import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
-import { deprizeForecastHref, getDePrizeCompetition } from '@/lib/deprize/competitions'
+import { deprizePrefixedHref, getDePrizeCompetition } from '@/lib/deprize/competitions'
 import {
   DEPRIZE_PREDICT_CTA,
   DEPRIZE_TERMS_VERSION,
@@ -113,8 +113,8 @@ export default function LiveDePrizeHero({
       .sort((a, b) => b.probability - a.probability)
   }, [deprize?.teamIds, market.outcomes])
 
-  const detailHref = `/deprize/${deprizeId}`
-  const forecastHref = deprizeForecastHref(deprizeId)
+  const detailHref = deprizePrefixedHref(chainSlug, deprizeId)
+  const forecastHref = `${detailHref}#deprize-forecast`
   const betOutcome = betIndex !== null ? market.outcomes[betIndex] : undefined
   const showPredict = !!bettingBlockedReason
 

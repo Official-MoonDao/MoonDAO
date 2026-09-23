@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { deprizePrefixedHref } from '@/lib/deprize/competitions'
 import { DePrizeState } from '@/lib/deprize/constants'
 
 export default function ProvenanceFooter(props: {
   hasLineage: boolean
+  chainSlug: string
   state: DePrizeState
   supersededBy?: number
   supersedes?: number
@@ -18,7 +20,7 @@ export default function ProvenanceFooter(props: {
             <>
               {' '}by{' '}
               <Link
-                href={`/deprize/${props.supersededBy}`}
+                href={deprizePrefixedHref(props.chainSlug, props.supersededBy)}
                 className="underline underline-offset-2 hover:text-amber-100"
               >
                 DePrize #{props.supersededBy}
@@ -32,7 +34,7 @@ export default function ProvenanceFooter(props: {
         <p className="text-xs text-gray-500">
           Generation {props.generationNumber} · continues from{' '}
           <Link
-            href={`/deprize/${props.supersedes}`}
+            href={deprizePrefixedHref(props.chainSlug, props.supersedes)}
             className="text-indigo-300/90 underline underline-offset-2 hover:text-indigo-200"
           >
             #{props.supersedes}

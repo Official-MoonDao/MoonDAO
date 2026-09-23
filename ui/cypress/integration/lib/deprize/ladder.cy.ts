@@ -42,27 +42,27 @@ describe('capability ladder', () => {
     }
   })
 
-  it('getLadderForCompetition("sepolia", 22): touchdown is live, current, href /deprize/22', () => {
-    const result = getLadderForCompetition('sepolia', 22)
+  it('getLadderForCompetition("sepolia", 2): touchdown is live, current, href /deprize/2', () => {
+    const result = getLadderForCompetition('sepolia', 2)
     const touchdown = result.rungs.find((r) => r.key === 'touchdown')
     expect(touchdown?.status).to.equal('live')
     expect(touchdown?.current).to.equal(true)
-    expect(touchdown?.href).to.equal('/deprize/22')
-    expect(touchdown?.deprizeId).to.equal(22)
+    expect(touchdown?.href).to.equal('/deprize/2')
+    expect(touchdown?.deprizeId).to.equal(2)
     expect(result.currentKey).to.equal('touchdown')
   })
 
-  it('getLadderForCompetition("sepolia", 21): touchdown still current via lineage; href points at 22, not 21', () => {
-    const result = getLadderForCompetition('sepolia', 21)
+  it('getLadderForCompetition("sepolia", 1): touchdown still current via lineage; href points at 2, not 1', () => {
+    const result = getLadderForCompetition('sepolia', 1)
     const touchdown = result.rungs.find((r) => r.key === 'touchdown')
     expect(touchdown?.current).to.equal(true)
-    expect(touchdown?.href).to.equal('/deprize/22')
-    expect(touchdown?.href).to.not.include('21')
+    expect(touchdown?.href).to.equal('/deprize/2')
+    expect(touchdown?.href).to.not.include('/1')
     expect(result.currentKey).to.equal('touchdown')
   })
 
   it('planned rungs have no href and no deprizeId', () => {
-    const result = getLadderForCompetition('sepolia', 22)
+    const result = getLadderForCompetition('sepolia', 2)
     for (const key of ['first-tracks', 'ice', 'night-shift'] as const) {
       const rung = result.rungs.find((r) => r.key === key)
       expect(rung?.status, key).to.equal('planned')
@@ -95,7 +95,7 @@ describe('capability ladder', () => {
   })
 
   it('every status value in the union has a producer', () => {
-    const live = getLadderForCompetition('sepolia', 22)
+    const live = getLadderForCompetition('sepolia', 2)
     expect(live.rungs[0].status).to.equal('live')
     expect(live.rungs[1].status).to.equal('planned')
 
@@ -103,7 +103,7 @@ describe('capability ladder', () => {
     const prev = rung0.statusOverride
     rung0.statusOverride = 'achieved'
     try {
-      const retired = getLadderForCompetition('sepolia', 22)
+      const retired = getLadderForCompetition('sepolia', 2)
       expect(retired.rungs[0].status).to.equal('achieved')
       expect(retired.rungs[0].deprizeId).to.equal(undefined)
     } finally {

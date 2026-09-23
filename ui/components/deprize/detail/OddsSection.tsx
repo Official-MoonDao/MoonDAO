@@ -7,6 +7,7 @@ const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryC
 
 export default function OddsSection(props: {
   numOutcomes: number
+  question?: string
   activityLoading: boolean
   activityError?: unknown
   betsLength: number
@@ -20,7 +21,10 @@ export default function OddsSection(props: {
   if (props.numOutcomes <= 0) return null
   return (
     <div className={CARD}>
-      <p className="text-white font-semibold mb-3">
+      {props.question && (
+        <p className="text-white text-base font-semibold leading-snug">{props.question}</p>
+      )}
+      <p className={`text-white font-semibold mb-3 ${props.question ? 'mt-1 text-xs text-gray-500 font-normal' : ''}`}>
         {!props.activityLoading && !props.activityError && props.betsLength === 0
           ? 'Starting odds — no bets yet'
           : 'Odds'}

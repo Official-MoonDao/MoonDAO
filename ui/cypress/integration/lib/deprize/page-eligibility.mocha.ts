@@ -93,6 +93,33 @@ describe('deprize page eligibility', () => {
     }
   })
 
+  it('bypasses under `next dev` without the flag, but never in production', () => {
+    const env = process.env as Record<string, string | undefined>
+    const prevNodeEnv = env.NODE_ENV
+    const prevEnv = env.NEXT_PUBLIC_ENV
+    const prevBypass = env.DEPRIZE_ELIGIBILITY_BYPASS
+    try {
+      delete env.DEPRIZE_ELIGIBILITY_BYPASS
+      env.NEXT_PUBLIC_ENV = 'dev'
+      env.NODE_ENV = 'development'
+      expect(getDePrizePageEligibility(req()).restricted).to.equal(false)
+      env.NODE_ENV = 'production'
+      expect(getDePrizePageEligibility(req()).restricted).to.equal(true)
+      env.NODE_ENV = 'development'
+      env.NEXT_PUBLIC_ENV = 'prod'
+      expect(getDePrizePageEligibility(req()).restricted).to.equal(true)
+    } finally {
+      for (const [key, value] of [
+        ['NODE_ENV', prevNodeEnv],
+        ['NEXT_PUBLIC_ENV', prevEnv],
+        ['DEPRIZE_ELIGIBILITY_BYPASS', prevBypass],
+      ] as const) {
+        if (value === undefined) delete env[key]
+        else env[key] = value
+      }
+    }
+  })
+
   it('sets private no-store cache headers on every DePrize page response', () => {
     const headers: Record<string, string> = {}
     const result = resolveDePrizePageProps(req({ 'x-vercel-ip-country': 'US' }), {

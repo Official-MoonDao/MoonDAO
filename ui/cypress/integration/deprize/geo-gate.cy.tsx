@@ -63,7 +63,7 @@ describe('PR-0 DePrize geo gate (component)', () => {
     cy.contains('useDePrizeRestricted must be used inside DePrizeRestrictedProvider')
   })
 
-  it('hides Back this team when bettingOpen is false and shows it when true', () => {
+  it('hides the predict control when bettingOpen is false and shows it when true', () => {
     cy.mount(
       <DePrizeTeamCard
         outcome={outcome as any}
@@ -82,7 +82,7 @@ describe('PR-0 DePrize geo gate (component)', () => {
         isField={false}
       />
     )
-    cy.contains(/Back (this team|the field)/).should('not.exist')
+    cy.get('[aria-label^="Predict "]').should('not.exist')
 
     cy.mount(
       <DePrizeTeamCard
@@ -102,6 +102,6 @@ describe('PR-0 DePrize geo gate (component)', () => {
         isField={false}
       />
     )
-    cy.contains('Back this team').should('exist')
+    cy.get('[aria-label="Predict this competitor as the winner"]').should('exist')
   })
 })

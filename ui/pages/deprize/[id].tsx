@@ -8,18 +8,24 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { useLogin } from '@privy-io/react-auth'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { getContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import {
+  ROSTER_DISCLAIMER,
+  deprizeChainLabel,
+  deprizePrefixedHref,
+  findDePrizeChainSlugs,
   findDePrizeIdForGoal,
   getDePrizeCompetition,
   getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
   isCompetitorClaimed,
   isKnownDePrizeCompetition,
+  isRaceBindingComplete,
   resolveLiveDePrizeId,
 } from '@/lib/deprize/competitions'
 import {
@@ -55,13 +61,14 @@ import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
 import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
-import { getChainSlug } from '@/lib/thirdweb/chain'
+import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import Container from '@/components/layout/Container'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import BetModal from '@/components/deprize/BetModal'
+import DePrizeQuestionCard from '@/components/deprize/DePrizeQuestionCard'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import AdminSection from '@/components/deprize/detail/AdminSection'
 import ClaimSection from '@/components/deprize/detail/ClaimSection'
@@ -85,12 +92,19 @@ const EXPLORER_TX: Record<string, string> = {
   'arbitrum-sepolia': 'https://sepolia.arbiscan.io/tx/',
 }
 
+function prizeQuestion(tagline: string): string {
+  // Taglines carry a trailing call to action after the question mark.
+  const q = tagline.indexOf('?')
+  return (q >= 0 ? tagline.slice(0, q + 1) : tagline).trim()
+}
+
 function outcomeDisplayName(
   index: number,
   raceBinding: ReturnType<typeof getDePrizeRaceBinding>
 ): string {
   const binding = raceBinding?.outcomes[index]
-  if (binding?.field) return 'Open Field'
+  if (binding?.field) return 'Other'
+  if (binding?.vehicleLabel) return binding.vehicleLabel
   if (binding?.projectId) {
     const project = projectById(SEED_ATLAS, binding.projectId)
     const org = project ? orgById(SEED_ATLAS, project.orgId) : undefined
@@ -114,6 +128,16 @@ export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
 
 function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const router = useRouter()
+  // `/deprize/sep/2` and `/deprize/arb/1` name the registry in the path. The app
+  // shell also selects that network on load so a refresh does not fall back to
+  // the build default. Prize reads still use the path if the header is changed.
+  const forcedSlug =
+    router.pathname === '/deprize/sep/[id]'
+      ? 'sepolia'
+      : router.pathname === '/deprize/arb/[id]'
+        ? 'arbitrum'
+        : undefined
+  const forcedChain = forcedSlug ? v4SlugToV5Chain(forcedSlug) : undefined
   const rawId = router.query.id
   const numericId =
     typeof rawId === 'string' && /^\d+$/.test(rawId) ? Number(rawId) : undefined
@@ -121,15 +145,15 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     typeof rawId === 'string' && !/^\d+$/.test(rawId)
       ? sharedGoalById(SEED_ATLAS, rawId)
       : undefined
-  const { selectedChain: chain } = useContext(ChainContextV5)
+  const { selectedChain } = useContext(ChainContextV5)
+  const chain = forcedChain ?? selectedChain
   const chainSlug = getChainSlug(chain)
   const boundFromSlug = goalFromSlug
     ? findDePrizeIdForGoal(chainSlug, goalFromSlug.id)
     : undefined
   const deprizeId = numericId ?? boundFromSlug
 
-  // Follow the app's live selected chain (wallet / header dropdown), not the
-  // build-time default — otherwise switching networks never re-queries DePrize.
+  // Prefixed routes pin the registry. Otherwise follow the wallet / header chain.
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
   const raceGoal = raceBinding ? sharedGoalById(SEED_ATLAS, raceBinding.sharedGoalId) : undefined
@@ -588,6 +612,37 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
       </Shell>
     )
   }
+  // Unprefixed `/deprize/1` is Arbitrum's Harsh Mistress and Sepolia's Touchdown.
+  // A prefixed path already picked a registry; otherwise ask, so a refresh on
+  // the default chain does not open the other prize.
+  if (!forcedSlug && numericId !== undefined) {
+    const chains = findDePrizeChainSlugs(numericId)
+    if (chains.length > 1) {
+      const search = router.asPath.replace(/^[^?#]*/, '')
+      return (
+        <Shell
+          title={`DePrize #${numericId}`}
+          description={`DePrize #${numericId} is registered on more than one network.`}
+        >
+          <Notice tone="amber">
+            DePrize #{numericId} is on{' '}
+            {chains.map((slug, i) => (
+              <span key={slug}>
+                {i > 0 ? ' and ' : ''}
+                <Link
+                  href={`${deprizePrefixedHref(slug, numericId)}${search}`}
+                  className="underline underline-offset-2 hover:text-amber-100"
+                >
+                  {deprizeChainLabel(slug)}
+                </Link>
+              </span>
+            ))}
+            .
+          </Notice>
+        </Shell>
+      )
+    }
+  }
   if (goalFromSlug && boundFromSlug === undefined) {
     return <GoalDePrizeDetail goal={goalFromSlug} />
   }
@@ -630,9 +685,30 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     )
   }
   if (deprize.state === DePrizeState.NONE) {
+    const elsewhere = findDePrizeChainSlugs(deprizeId).filter((slug) => slug !== chainSlug)
     return (
       <Shell title={shellTitle} description={competition.metaDescription}>
-        <Notice tone="amber">DePrize #{deprizeId} does not exist.</Notice>
+        <Notice tone="amber">
+          {elsewhere.length === 0 ? (
+            <>DePrize #{deprizeId} does not exist.</>
+          ) : (
+            <>
+              DePrize #{deprizeId} is on{' '}
+              {elsewhere.map((slug, i) => (
+                <span key={slug}>
+                  {i > 0 ? ' and ' : ''}
+                  <Link
+                    href={deprizePrefixedHref(slug, deprizeId)}
+                    className="underline underline-offset-2 hover:text-amber-100"
+                  >
+                    {deprizeChainLabel(slug)}
+                  </Link>
+                </span>
+              ))}
+              .
+            </>
+          )}
+        </Notice>
       </Shell>
     )
   }
@@ -672,6 +748,19 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           teamContract={teamContract}
           showResolved={showResolved}
         />
+        <OddsSection
+          numOutcomes={numOutcomes}
+          question={prizeQuestion(competition.tagline)}
+          activityLoading={activity.loading}
+          activityError={activity.error}
+          betsLength={activity.bets.length}
+          history={odds.history}
+          labels={predictionLabels}
+          colors={outcomeColors}
+          domainStartMs={market.marketStartMs}
+          markers={odds.markers}
+          oddsLoading={odds.loading}
+        />
         <NoticeStack items={pageNotices} />
         <LadderLine chainSlug={chainSlug} deprizeId={deprizeId} />
         <PositionSection
@@ -691,18 +780,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           explorerTxBase={explorerTxBase}
           onCashOut={(i) => setExitIndex(i)}
           loading={activity.loading}
-        />
-        <OddsSection
-          numOutcomes={numOutcomes}
-          activityLoading={activity.loading}
-          activityError={activity.error}
-          betsLength={activity.bets.length}
-          history={odds.history}
-          labels={predictionLabels}
-          colors={outcomeColors}
-          domainStartMs={market.marketStartMs}
-          markers={odds.markers}
-          oddsLoading={odds.loading}
         />
         <ForecastSlot
           chainSlug={chainSlug}
@@ -730,6 +807,13 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
         />
+        <DePrizeQuestionCard
+          description={raceGoal?.description}
+          criteria={raceGoal?.criteria}
+        />
+        {isRaceBindingComplete(raceBinding?.outcomes) && (
+          <p className="text-[11px] text-gray-600 leading-relaxed px-1">{ROSTER_DISCLAIMER}</p>
+        )}
         </div>
         {/* A sticky column taller than the viewport hides its own bottom, and
             the patron and caller lists have no fixed length — so it scrolls. */}
@@ -785,6 +869,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         />
         <ProvenanceFooter
           hasLineage={hasLineage}
+          chainSlug={chainSlug}
           state={deprize.state}
           supersededBy={competition.supersededBy}
           supersedes={competition.supersedes}

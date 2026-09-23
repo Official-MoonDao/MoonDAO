@@ -488,12 +488,12 @@ export const COLLATERAL_DECIMALS = 18
 // chain once `script/deprize/DePrizeRedeem.s.sol` / the registry deploy run;
 // the deprize-play harness also accepts manual overrides for testing.
 export const DEPRIZE_REDEEM_ADDRESSES: Index = {
-  sepolia: '0x2fec56899a1121a46b6bcba0bb924796b6ddf4f7',
+  sepolia: '0x7a6B6AaC8Efbe894EDEe224a6bC3b09874c10849',
   'arbitrum-sepolia': '',
   arbitrum: '0xb0E06ed72cf6E0CcF21b4D00B002fdfDc198C3fA',
 }
 export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
-  sepolia: '0x299F163705AbBFa1A8DE7670F33171730F828F3D',
+  sepolia: '0x7208B0Ba9B1013000b8D30b60A462079300984E2',
   'arbitrum-sepolia': '',
   arbitrum: '0xf8B2244634c6eCeF32de10BFe0D7436413A59924',
 }
@@ -501,7 +501,7 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
 // DePrizeRegistry was deployed (Etherscan `getcontractcreation`). Every DePrize
 // mint router, market and trade was created after this block.
 export const DEPRIZE_EVENTS_FROM_BLOCK: Record<string, number> = {
-  sepolia: 11068914,
+  sepolia: 11727650,
   arbitrum: 495964196,
 }
 // DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
@@ -509,7 +509,7 @@ export const DEPRIZE_EVENTS_FROM_BLOCK: Record<string, number> = {
 // `setMarket(deprizeId, lmsr)` has bound the market. Empty until then — the
 // production UI degrades gracefully (betting disabled with a notice) when unset.
 export const DEPRIZE_MINT_ADDRESSES: Index = {
-  sepolia: '0xa6f9632ee9848f7c1f252da5a1e869ac90e57cc8',
+  sepolia: '0x22E22C4135be93595f341e072321D18e7D4Ee0D0',
   'arbitrum-sepolia': '',
   arbitrum: '0xfa36cAb21415B4e23a1eecCFe7B07693A690d838',
 }
@@ -519,7 +519,7 @@ export const DEPRIZE_MINT_ADDRESSES: Index = {
 // market's LMSR ownership has been transferred to it. Empty = no post-sell sweep
 // (bets still sweep on-chain via DePrizeMint once its feeRouter is set).
 export const DEPRIZE_FEE_ROUTER_ADDRESSES: Index = {
-  sepolia: '0xbe8cbc97d4ddee28b938c0ed8245f1b5133b783a',
+  sepolia: '',
   'arbitrum-sepolia': '',
   arbitrum: '0x0EF00977e37e2e106BB6E9fa15952bB43a2761e1',
 }

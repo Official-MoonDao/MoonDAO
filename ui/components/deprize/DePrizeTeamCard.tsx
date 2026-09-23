@@ -1,10 +1,9 @@
-import type { ReactNode } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import EthUsd from '@/components/deprize/EthUsd'
 import { TOUCH } from '@/components/deprize/detail/primitives'
-import StandardButton from '@/components/layout/StandardButton'
 
 type DePrizeTeamCardProps = {
   outcome: Outcome
@@ -32,8 +31,8 @@ type DePrizeTeamCardProps = {
   userConnected: boolean
   onBet: (index: number) => void
   /**
-   * Predict (and undo) for this competitor. Rendered in the same row as Back
-   * so the two commitments are not split across a second strip.
+   * Citizen forecast controls for this competitor. Stop their clicks from
+   * also placing a bet, since the card itself is the bet control.
    */
   actions?: ReactNode
   /** Open Field slot — render overrides instead of a Team NFT. */
@@ -48,13 +47,11 @@ type DePrizeTeamCardProps = {
   hrefOverride?: string
   /** Atlas org display name, for competitors with no Team NFT. */
   nameOverride?: string
-  /** Vehicle / article shown under the org name (live prize page). */
-  vehicleLabel?: string
   /**
-   * Live-page Back button copy, e.g. "Back Voyager Lunar Systems".
-   * Demo cards omit this and keep "Back this team".
+   * Lander or vehicle. When set, this is the card title and `nameOverride`
+   * (the company) drops to the subtitle.
    */
-  backLabel?: string
+  vehicleLabel?: string
   /** Atlas org logo. Suppressed when `unclaimed`. */
   imageOverride?: string
   /**
@@ -62,8 +59,6 @@ type DePrizeTeamCardProps = {
    * listing never reads as an endorsement. See ROSTER_DISCLAIMER.
    */
   unclaimed?: boolean
-  /** Official = claimed listing; unofficial = MoonDAO-listed, not confirmed. */
-  participation?: 'official' | 'unofficial'
 }
 
 /** Dashed-circle mark for the Open Field slot, which has no Team NFT. */
@@ -107,25 +102,47 @@ export default function DePrizeTeamCard({
   hrefOverride,
   nameOverride,
   vehicleLabel,
-  backLabel,
   imageOverride,
   unclaimed = false,
-  participation,
 }: DePrizeTeamCardProps) {
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
   const showHoldings = !!onCashOut && holding
+  const headline = !isField && vehicleLabel ? vehicleLabel : nameOverride
+  const orgSubtitle = !isField && vehicleLabel ? nameOverride : undefined
   const realizedValue = resolved ? redeemValueEth : sellQuoteEth
   const pnl =
     realizedValue !== undefined && investedEth > 0 ? realizedValue - investedEth : undefined
   const canCashOut = showHoldings && !tradingHalted && !resolved
+  const canPredict = bettingOpen && !tradingHalted && !busy
+  const predictName = isField ? 'Other' : headline || 'this competitor'
+  const predict = () => onBet(outcome.index)
+  // Cash-out and forecast actions are their own buttons. A card that also
+  // contains one cannot be a button itself, so that case stays a clickable div.
+  const cardIsButton = canPredict && !canCashOut && !actions
+
+  const onCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (!canPredict || e.target !== e.currentTarget) return
+    if (e.key !== 'Enter' && e.key !== ' ') return
+    e.preventDefault()
+    predict()
+  }
 
   return (
     <div
-      className={`relative overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
+      role={cardIsButton ? 'button' : undefined}
+      tabIndex={cardIsButton ? 0 : undefined}
+      aria-label={cardIsButton ? `Predict ${predictName} as the winner` : undefined}
+      className={`relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
         resolved && isWinningSlot ? 'border-emerald-400/40 ring-1 ring-emerald-400/20' : ''
+      } ${
+        canPredict
+          ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 transition-colors'
+          : ''
       }`}
+      onClick={canPredict ? predict : undefined}
+      onKeyDown={canPredict ? onCardKeyDown : undefined}
     >
-      {/* Top row: chance/result · team · bet CTA */}
+      {/* Top row: chance/result · team. The card itself is the predict control. */}
       <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
         {/* Hard minimums here used to wrap the name under the odds on a phone:
             at 320px the two blocks alone asked for more than the card had. */}
@@ -171,27 +188,18 @@ export default function DePrizeTeamCard({
               teamContract={teamContract}
               color={color}
               size={40}
-              className="text-base font-semibold text-white hover:text-indigo-200"
-              nameOverride={isField ? 'Open Field' : nameOverride}
+              className="text-base font-semibold text-white"
+              nameOverride={isField ? 'Other' : headline}
               imageOverride={isField ? FIELD_AVATAR : imageOverride}
               hrefOverride={isField ? '/deprize#open-field' : hrefOverride}
               // The field slot is not an organization, so its own placeholder mark
               // must survive the unclaimed logo suppression.
               unclaimed={!isField && unclaimed}
+              plain={canPredict}
             />
-            {participation === 'unofficial' && !isField && (
-              <span
-                className="text-[10px] uppercase tracking-wide rounded-full px-2 py-0.5 border border-zinc-500/40 text-zinc-300"
-                title="Listed by MoonDAO; this organization has not confirmed participation."
-              >
-                Unconfirmed
-              </span>
-            )}
           </div>
           {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
-          {!isField && vehicleLabel && (
-            <p className="text-xs text-gray-400 pl-12">{vehicleLabel}</p>
-          )}
+          {orgSubtitle && <p className="text-xs text-gray-400 pl-12">{orgSubtitle}</p>}
           {withdrawn && !isField && (
             <p className="text-xs text-amber-400/90 pl-12">Withdrawn — sell only</p>
           )}
@@ -208,26 +216,21 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {(bettingOpen && !tradingHalted) || actions ? (
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            {bettingOpen && !tradingHalted && (
-              <StandardButton
-                onClick={() => onBet(outcome.index)}
-                disabled={busy}
-                className={`rounded-xl shadow-purple-500/10 w-full sm:w-auto ${TOUCH}`}
-              >
-                {!userConnected
-                  ? 'Connect to back'
-                  : backLabel ?? (isField ? 'Back the field' : 'Back this team')}
-              </StandardButton>
-            )}
+        {actions ? (
+          <div
+            className="flex flex-wrap items-center gap-2 w-full sm:w-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             {actions}
           </div>
         ) : null}
       </div>
 
       {showHoldings && (
-        <div className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5">
+        <div
+          className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-gray-500">
               {resolved ? 'Claimable' : 'Cash out'}

@@ -108,11 +108,17 @@ describe('deprize responsive layout', () => {
     }
   })
 
-  it('gives the primary Back action the full width of a phone', () => {
+  it('makes the competitor card the full-width predict control', () => {
     const src = readUi('components/deprize/DePrizeTeamCard.tsx')
-    const cta = src.slice(src.indexOf('<StandardButton'), src.indexOf('</StandardButton>'))
-    expect(cta).to.match(/w-full sm:w-auto/)
-    expect(cta).to.match(/\$\{TOUCH\}/)
+    expect(src, 'the card is the prediction; there is no separate Back button').to.not.include(
+      '<StandardButton'
+    )
+    expect(src).to.match(/Predict \$\{predictName\} as the winner/)
+    const card = src.slice(src.indexOf('className={`relative w-full'))
+    expect(card.slice(0, 80)).to.match(/relative w-full/)
+    const buttonAt = src.lastIndexOf('<button')
+    const cashOut = src.slice(buttonAt, src.indexOf('Cash out', buttonAt))
+    expect(cashOut).to.match(/\$\{TOUCH\}/)
   })
 
   it('sizes every DePrize control from the shared touch floor', () => {

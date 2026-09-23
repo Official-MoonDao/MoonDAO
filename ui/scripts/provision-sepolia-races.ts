@@ -61,6 +61,10 @@ const RACES: {
   teamIds: bigint[]
   tokenName: string
   tokenSymbol: string
+  // Frozen outcome order. Defaults to the atlas project list. Touchdown keeps
+  // the five landers already on v2 id 1; ispace-apex is on the atlas and is
+  // not part of this generation.
+  projectIds?: string[]
 }[] = [
   {
     goalId: 'shared-landing-pads',
@@ -87,6 +91,13 @@ const RACES: {
     goalId: 'shared-next-landing',
     raceLabel: 'Next lunar landing',
     teamIds: [601n, 602n, 603n, 604n, 605n, FIELD_TEAM],
+    projectIds: [
+      'astrobotic-griffin',
+      'im-nova-c',
+      'firefly-blue-ghost',
+      'blue-origin-blue-moon-mk1',
+      'cnsa-change-7',
+    ],
     tokenName: 'DePrize Touchdown',
     tokenSymbol: 'DTCH',
   },
@@ -156,6 +167,7 @@ type Result = {
   market: Hex
   jbProjectId: string
   teamIds: string[]
+  projectIds: string[]
 }
 
 function loadDone(): Result[] {
@@ -227,13 +239,24 @@ async function main() {
     }
     const goal = sharedGoalById(SEED_ATLAS, race.goalId)
     if (!goal) throw new Error(`missing goal ${race.goalId}`)
-    if (goal.projectIds.length + 1 !== race.teamIds.length) {
+    const projects = race.projectIds ?? goal.projectIds
+    if (projects.length + 1 !== race.teamIds.length) {
       throw new Error(`${race.goalId}: team count must be competitors + field`)
+    }
+    for (const id of projects) {
+      if (!goal.projectIds.includes(id)) {
+        throw new Error(`${race.goalId}: ${id} is not on the atlas goal`)
+      }
     }
 
     const n = BigInt(race.teamIds.length)
     const funding = FUNDING_PER_OUTCOME * n
-    const questionId = keccak256(toBytes(`deprize:sepolia:${race.goalId}:v1`))
+    // v1–v3 of shared-next-landing are already prepared (v1 registry #21/#22
+    // and v2 registry #1). Pass QUESTION_VERSION=v4 for a new generation.
+    const questionVersion = process.env.QUESTION_VERSION || 'v1'
+    const questionId = keccak256(
+      toBytes(`deprize:sepolia:${race.goalId}:${questionVersion}`)
+    )
 
     console.log(`\n=== ${race.goalId} ===`)
     console.log('questionId', questionId)
@@ -299,25 +322,10 @@ async function main() {
         console.log('  payHook', payHook)
       }
     } catch (err) {
-      console.warn('  createMission failed, using synthetic jb id:', err)
-      jbProjectId = 0n
-    }
-    if (!jbProjectId) {
-      // register() only needs a unique unused jbProjectId; viewing the market
-      // does not require a live Juicebox project.
-      let candidate = 3000n + BigInt(results.length)
-      for (;;) {
-        const bound = await publicClient.readContract({
-          address: REGISTRY,
-          abi: registryAbi,
-          functionName: 'deprizeIdByJBProject',
-          args: [candidate],
-        })
-        if (bound === 0n) break
-        candidate++
-      }
-      jbProjectId = candidate
-      console.log('  synthetic jbProjectId', jbProjectId.toString())
+      const message = err instanceof Error ? err.message : String(err)
+      throw new Error(
+        `createMission failed for ${race.goalId}: ${message}. Refusing a synthetic Juicebox id.`
+      )
     }
 
     const conditionId = await publicClient.readContract({
@@ -466,6 +474,7 @@ async function main() {
       market,
       jbProjectId: jbProjectId.toString(),
       teamIds: race.teamIds.map(String),
+      projectIds: projects,
     })
     writeFileSync(OUT, stringify(results, null, 2))
     console.log('  recorded', OUT)
@@ -480,7 +489,7 @@ async function main() {
     console.log(`      sharedGoalId: '${r.goalId}',`)
     console.log(`      questionId: '${r.questionId}',`)
     console.log(
-      `      outcomes: [${goal.projectIds
+      `      outcomes: [${r.projectIds
         .map((id, i) => `{ projectId: '${id}', teamId: ${named[i]} }`)
         .join(', ')}, { projectId: '${OPEN_FIELD_PROJECT_ID}', teamId: 24, field: true }],`,
     )

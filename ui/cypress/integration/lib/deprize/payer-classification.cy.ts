@@ -24,7 +24,12 @@ describe('payerClassification', () => {
   it('matches mint and fee-router on the configured chain only', () => {
     expect(isProtocolPayer(sepoliaMint, 'sepolia')).to.equal(true)
     expect(isProtocolPayer(sepoliaMint.toUpperCase(), 'sepolia')).to.equal(true)
-    expect(isProtocolPayer(sepoliaFee, 'sepolia')).to.equal(true)
+    // v2 Sepolia has no fee router yet. An empty slot must not match.
+    expect(isProtocolPayer(sepoliaFee, 'sepolia')).to.equal(sepoliaFee !== '')
+    const arbitrumFee = DEPRIZE_FEE_ROUTER_ADDRESSES.arbitrum
+    expect(arbitrumFee).to.not.equal('')
+    expect(isProtocolPayer(arbitrumFee, 'arbitrum')).to.equal(true)
+    expect(isProtocolPayer(arbitrumFee, 'sepolia')).to.equal(false)
     expect(isProtocolPayer(sepoliaMint, 'arbitrum')).to.equal(false)
     expect(isProtocolPayer(DEPRIZE_MINT_ADDRESSES.arbitrum, 'sepolia')).to.equal(false)
   })

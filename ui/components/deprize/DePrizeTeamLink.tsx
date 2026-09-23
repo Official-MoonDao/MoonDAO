@@ -27,6 +27,11 @@ type DePrizeTeamLinkProps = {
    * the doomed NFT read.
    */
   unclaimed?: boolean
+  /**
+   * Render the name and mark as plain text. The parent card is the control
+   * (click to predict), so a nested profile link would swallow that click.
+   */
+  plain?: boolean
 }
 
 /** Two-letter monogram from a team name (falls back to the numeric id). */
@@ -113,6 +118,7 @@ function TeamIdentity({
   nameOnly,
   size,
   href,
+  plain = false,
 }: {
   teamId: bigint
   name: string
@@ -122,6 +128,7 @@ function TeamIdentity({
   nameOnly: boolean
   size: number
   href: string
+  plain?: boolean
 }) {
   const linkClassName = `group inline-flex items-center gap-2 min-w-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50 transition-opacity hover:opacity-90 ${className}`
   const title = `View ${name} profile`
@@ -138,11 +145,19 @@ function TeamIdentity({
           teamId={teamId}
         />
       )}
-      <span className="text-sm font-medium truncate underline-offset-2 group-hover:underline text-white/90 group-hover:text-indigo-200">
+      <span
+        className={`text-sm font-medium truncate text-white/90 ${
+          plain ? '' : 'underline-offset-2 group-hover:underline group-hover:text-indigo-200'
+        }`}
+      >
         {name}
       </span>
     </>
   )
+
+  if (plain) {
+    return <span className={`inline-flex items-center gap-2 min-w-0 ${className}`}>{body}</span>
+  }
 
   if (isInternalHref(href)) {
     return (
@@ -179,6 +194,7 @@ export default function DePrizeTeamLink({
   imageOverride,
   hrefOverride,
   unclaimed = false,
+  plain = false,
 }: DePrizeTeamLinkProps) {
   // Only skip the NFT read when neither name nor image would come from it. An
   // unclaimed competitor shows no logo at all, so a name is the whole identity.
@@ -197,6 +213,7 @@ export default function DePrizeTeamLink({
         nameOnly={nameOnly}
         size={size}
         href={href}
+        plain={plain}
       />
     )
   }
@@ -213,6 +230,7 @@ export default function DePrizeTeamLink({
       imageOverride={imageOverride}
       href={href}
       unclaimed={unclaimed}
+      plain={plain}
     />
   )
 }
@@ -228,6 +246,7 @@ function DePrizeTeamLinkFromChain({
   imageOverride,
   href,
   unclaimed,
+  plain,
 }: {
   teamId: bigint
   teamContract: any
@@ -239,6 +258,7 @@ function DePrizeTeamLinkFromChain({
   imageOverride?: string
   href: string
   unclaimed: boolean
+  plain: boolean
 }) {
   const { data: teamNFT } = useReadContract(getNFT, {
     contract: teamContract,
@@ -261,6 +281,7 @@ function DePrizeTeamLinkFromChain({
       nameOnly={nameOnly}
       size={size}
       href={href}
+      plain={plain}
     />
   )
 }

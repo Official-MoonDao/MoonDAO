@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
-import { isCompetitorClaimed } from '@/lib/deprize/competitions'
+import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { normalizeProbabilities } from '@/lib/deprize/serverMarket'
@@ -294,6 +294,11 @@ export default function ForecastPanel(props: {
     <section id="deprize-forecast" className={CARD}>
       <h2 className="title-text-colors text-lg font-GoodTimes">Competitors</h2>
       <p className="mt-1 text-sm text-gray-300">{FORECAST_COPY.panelIntro}</p>
+      {bettingOpen && showBet && !showResolved && (
+        <p className="mt-1 text-sm text-gray-400">
+          Click a competitor to predict them as the winner.
+        </p>
+      )}
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">
           Betting isn&apos;t available in your region — you can still make a prediction.
@@ -303,7 +308,10 @@ export default function ForecastPanel(props: {
       {!isLive && (
         <p className="mt-3 text-sm text-amber-200">
           Forecasts are on the live generation.{' '}
-          <Link href={`/deprize/${liveTipId}`} className="text-indigo-300 underline">
+          <Link
+            href={deprizePrefixedHref(chainSlug, liveTipId)}
+            className="text-indigo-300 underline"
+          >
             Go to DePrize #{liveTipId}
           </Link>
         </p>

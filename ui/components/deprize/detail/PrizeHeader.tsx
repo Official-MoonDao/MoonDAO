@@ -115,7 +115,7 @@ export default function PrizeHeader(props: {
           )}
         </Stat>
         <Stat
-          label="Total staked"
+          label="Total volume"
           title="ETH bettors have put into the market. Winning shares are paid from this plus the market's seed funding."
         >
           {activityLoading && !betsLength ? (

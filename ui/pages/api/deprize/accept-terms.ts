@@ -5,7 +5,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { hashIp, recordTermsAcceptance } from '@/lib/deprize/acceptanceLog'
 import { areAttestationsAccepted } from '@/lib/deprize/attestations'
 import { DEPRIZE_TERMS_VERSION } from '@/lib/deprize/constants'
-import { eligibilityMessage } from '@/lib/deprize/eligibility'
+import { eligibilityMessage, isNonProdBypassEnabled } from '@/lib/deprize/eligibility'
 import { runEligibilityChecks } from '@/lib/deprize/runEligibility'
 import { walletFromSession } from '@/lib/deprize/sessionWallet'
 import { getClientIp, getCountryFromHeaders } from '@/lib/geo'
@@ -65,7 +65,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     recordVersion: 2,
   })
 
-  if (!logged) {
+  if (!logged && !isNonProdBypassEnabled()) {
     return res.status(503).json({
       ok: false,
       reason: 'screening-unavailable',
