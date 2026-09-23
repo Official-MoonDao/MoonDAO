@@ -26,19 +26,14 @@ describe('ContentLayout', () => {
   })
 
   it('Renders description when provided', () => {
-    cy.mount(
-      <ContentLayout header="Test Header" description="Test Description" />
-    )
+    cy.mount(<ContentLayout header="Test Header" description="Test Description" />)
 
     cy.contains('Test Description').should('be.visible')
   })
 
   it('Renders preFooter when provided', () => {
     cy.mount(
-      <ContentLayout
-        header="Test Header"
-        preFooter={<div data-testid="prefooter">PreFooter</div>}
-      >
+      <ContentLayout header="Test Header" preFooter={<div data-testid="prefooter">PreFooter</div>}>
         <div>Content</div>
       </ContentLayout>
     )
@@ -50,5 +45,24 @@ describe('ContentLayout', () => {
     cy.mount(<ContentLayout header="Test Header" popOverEffect={true} />)
 
     cy.get('#popout-bg-element').should('not.exist')
+  })
+
+  it('Does not force a 350px min-width spacer in compact unbranded mode', () => {
+    cy.viewport('iphone-x')
+    cy.mount(
+      <ContentLayout
+        header="Compact Profile"
+        mode="compact"
+        branded={false}
+        isProfile
+        description="Profile description"
+      >
+        <div data-testid="child">Body</div>
+      </ContentLayout>
+    )
+
+    cy.get('#image').should('not.have.class', 'min-w-[350px]')
+    cy.get('#title-wrapper').should('have.class', 'min-w-0')
+    cy.get('#content-container').should('have.class', 'min-w-0')
   })
 })

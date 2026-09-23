@@ -1,3 +1,4 @@
+import { OVERVIEW_TOKEN_ADDRESS } from 'const/config'
 import { getMissionDescription } from 'const/missionMilestones'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
@@ -9,7 +10,7 @@ import MissionPayRedeem from './MissionPayRedeem'
 import MissionSocialLinks from './MissionSocialLinks'
 import MissionTimelineChart from './MissionTimelineChart'
 import MissionTokenInfo from './MissionTokenInfo'
-import OverviewLeaderboardPreview from './OverviewLeaderboardPreview'
+import OverviewDelegateVote from './OverviewDelegateVote'
 
 export type MissionInfoTabType =
   | 'activity'
@@ -206,10 +207,16 @@ export default function MissionInfo({
         </div>
       </div>
 
-      {/* Content Area — lg+ matches MissionProfileHeader: 3fr/2fr cols, gap-8 lg:gap-10 */}
+      {/* Content Area — lg+ matches MissionProfileHeader: 3fr/2fr cols, gap-8 lg:gap-10.
+          The leaderboard tab is full-width so the vote form matches the original
+          /overview-vote layout (no contribute sidebar crowding the search/submit UI). */}
       <div
         id="mission-info-content"
-        className="w-full relative flex flex-col gap-8 lg:gap-10 lg:grid lg:grid-cols-[3fr_2fr] lg:items-start"
+        className={`w-full relative flex flex-col gap-8 lg:gap-10 lg:items-start ${
+          tab === 'leaderboard'
+            ? ''
+            : 'lg:grid lg:grid-cols-[3fr_2fr]'
+        }`}
       >
         <div className="min-w-0 pr-2 lg:pr-0">
           {tab === 'about' && (
@@ -274,15 +281,11 @@ export default function MissionInfo({
           )}
           {tab === 'leaderboard' && showLeaderboardTab && (
             <div className="w-full mb-8">
-              <MissionInfoHeader
-                title="Fly with Frank Leaderboard"
-                icon="/assets/icon-star-blue.svg"
-              />
-              <OverviewLeaderboardPreview
+              <OverviewDelegateVote
                 leaderboard={
                   (_overviewLeaderboard as LeaderboardEntry[]) ?? []
                 }
-                missionId={mission?.id ?? 4}
+                tokenAddress={OVERVIEW_TOKEN_ADDRESS}
               />
             </div>
           )}
@@ -319,29 +322,31 @@ export default function MissionInfo({
             </div>
           )}
         </div>
-        <div className="hidden lg:block min-w-0 w-full pt-[47px] self-start">
-          <MissionPayRedeem
-            ruleset={ruleset}
-            stage={stage}
-            mission={mission}
-            teamNFT={teamNFT}
-            token={token}
-            deadline={deadline}
-            primaryTerminalAddress={primaryTerminalAddress}
-            jbTokensContract={jbTokensContract}
-            jbControllerContract={jbControllerContract}
-            refreshTotalFunding={refreshTotalFunding}
-            onOpenModal={openContributeModal}
-            usdInput={usdInput || ''}
-            setUsdInput={setUsdInput}
-            fundingCompareEnabled={fundingCompareEnabled}
-            fundingPickReady={fundingPickReady}
-            fundingChainBalances={fundingChainBalances}
-            recommendedFundingChain={recommendedChain}
-            overviewTop25Threshold={_overviewTop25Threshold}
-            overviewRankedCount={_overviewRankedCount}
-          />
-        </div>
+        {tab !== 'leaderboard' && (
+          <div className="hidden lg:block min-w-0 w-full pt-[47px] self-start">
+            <MissionPayRedeem
+              ruleset={ruleset}
+              stage={stage}
+              mission={mission}
+              teamNFT={teamNFT}
+              token={token}
+              deadline={deadline}
+              primaryTerminalAddress={primaryTerminalAddress}
+              jbTokensContract={jbTokensContract}
+              jbControllerContract={jbControllerContract}
+              refreshTotalFunding={refreshTotalFunding}
+              onOpenModal={openContributeModal}
+              usdInput={usdInput || ''}
+              setUsdInput={setUsdInput}
+              fundingCompareEnabled={fundingCompareEnabled}
+              fundingPickReady={fundingPickReady}
+              fundingChainBalances={fundingChainBalances}
+              recommendedFundingChain={recommendedChain}
+              overviewTop25Threshold={_overviewTop25Threshold}
+              overviewRankedCount={_overviewRankedCount}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

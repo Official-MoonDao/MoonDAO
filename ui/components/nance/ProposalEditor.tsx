@@ -1,5 +1,4 @@
 import { Field, Label, Switch } from '@headlessui/react'
-import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 import {
   Action,
   RequestBudget,
@@ -7,29 +6,30 @@ import {
   getActionsFromBody,
   trimActionsFromBody,
 } from '@nance/nance-sdk'
-import { Project } from '@/lib/project/useProjectData'
+import { usePrivy } from '@privy-io/react-auth'
 import { getUnixTime } from 'date-fns'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState } from 'react'
 import { FormProvider, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
+import ReactMarkdown from 'react-markdown'
 import { useLocalStorage } from 'react-use'
+import remarkGfm from 'remark-gfm'
 import { useActiveAccount } from 'thirdweb/react'
-import { usePrivy } from '@privy-io/react-auth'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useAccount from '@/lib/nance/useAccountAddress'
+import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { Project } from '@/lib/project/useProjectData'
+import type { ProposalAIReviewResult } from '@/lib/proposals/aiReview'
 import { classNames } from '@/lib/utils/tailwind'
 import ProposalTitleInput from '@/components/nance/ProposalTitleInput'
-import type { ProposalAIReviewResult } from '@/lib/proposals/aiReview'
 import GoogleDocsImport from './GoogleDocsImport'
 import ProposalAIReview from './ProposalAIReview'
 import ProposalSubmissionCTA from './ProposalSubmissionCTA'
 import RequestBudgetActionForm from './RequestBudgetActionForm'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 
 type SignStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -99,10 +99,22 @@ export default function ProposalEditor({ project }: { project: Project }) {
     reset(actions[0].payload as RequestBudget)
   }
 
+  const handleSetTitle = (title: string) => {
+    setProposalTitle(title)
+    const cache = proposalCache || {
+      body: proposalBody || '',
+    }
+    setProposalCache({
+      ...cache,
+      title,
+      timestamp: getUnixTime(new Date()),
+    })
+  }
+
   // Function to set markdown content from Google Docs import
   const handleSetMarkdown = (markdown: string) => {
     setProposalBody(markdown)
-    
+
     // Parse budget from markdown
     const budgetInfo = parseBudgetFromMarkdown(markdown)
     if (budgetInfo && budgetInfo.length > 0) {
@@ -112,52 +124,57 @@ export default function ProposalEditor({ project }: { project: Project }) {
   }
 
   // Parse budget information from markdown content
-  const parseBudgetFromMarkdown = (markdown: string): Array<{ token: string; amount: string; justification: string }> | null => {
+  const parseBudgetFromMarkdown = (
+    markdown: string
+  ): Array<{ token: string; amount: string; justification: string }> | null => {
     const budgetSection = markdown.match(/##?\s*Budget\s*Request[:\s]*([\s\S]*?)(?=\n##|\n#|$)/i)
     if (!budgetSection) return null
-    
+
     const budgetText = budgetSection[1]
     const budgets: Array<{ token: string; amount: string; justification: string }> = []
-    
+
     // Look for patterns like "10 ETH for development" or "Amount: 10 ETH"
-    const amountPattern = /(?:^|\n)[-*]?\s*(?:Amount[:\s]+)?(\d+(?:\.\d+)?)\s*(ETH|USDC|DAI|MOONEY|vMOONEY)(?:\s+(?:for|:|-)?\s*(.+?))?(?=\n|$)/gi
+    const amountPattern =
+      /(?:^|\n)[-*]?\s*(?:Amount[:\s]+)?(\d+(?:\.\d+)?)\s*(ETH|USDC|DAI|MOONEY|vMOONEY)(?:\s+(?:for|:|-)?\s*(.+?))?(?=\n|$)/gi
     let match
-    
+
     while ((match = amountPattern.exec(budgetText)) !== null) {
       budgets.push({
         amount: match[1],
         token: match[2].toUpperCase(),
-        justification: match[3]?.trim() || 'Budget request'
+        justification: match[3]?.trim() || 'Budget request',
       })
     }
-    
+
     // Also check for table format
     const tableRows = budgetText.match(/\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/g)
     if (tableRows && tableRows.length > 1) {
-      for (let i = 2; i < tableRows.length; i++) { // Skip header and separator
-        const cells = tableRows[i].split('|').map(cell => cell.trim()).filter(cell => cell)
+      for (let i = 2; i < tableRows.length; i++) {
+        // Skip header and separator
+        const cells = tableRows[i]
+          .split('|')
+          .map((cell) => cell.trim())
+          .filter((cell) => cell)
         if (cells.length >= 2) {
           const amountMatch = cells[0].match(/(\d+(?:\.\d+)?)\s*(ETH|USDC|DAI|MOONEY|vMOONEY)/i)
           if (amountMatch) {
             budgets.push({
               amount: amountMatch[1],
               token: amountMatch[2].toUpperCase(),
-              justification: cells[1] || 'Budget request'
+              justification: cells[1] || 'Budget request',
             })
           }
         }
       }
     }
-    
+
     return budgets.length > 0 ? budgets : null
   }
 
   const { wallet } = useAccount()
   const buttonsDisabled = !address || signingStatus === 'loading' || isUploadingImage
 
-  const watchedBudget = watch('budget') as
-    | Array<{ token: string; amount: string }>
-    | undefined
+  const watchedBudget = watch('budget') as Array<{ token: string; amount: string }> | undefined
   const budgetHintUsd = (() => {
     if (!watchedBudget || !Array.isArray(watchedBudget)) return undefined
     let total = 0
@@ -212,9 +229,12 @@ export default function ProposalEditor({ project }: { project: Project }) {
     }
 
     if (!body.trim()) {
-      toast.error('Please import your Google Doc before submitting. The proposal body cannot be empty.', {
-        style: toastStyle,
-      })
+      toast.error(
+        'Please import your Google Doc before submitting. The proposal body cannot be empty.',
+        {
+          style: toastStyle,
+        }
+      )
       setSigningStatus('error')
       return
     }
@@ -230,11 +250,18 @@ export default function ProposalEditor({ project }: { project: Project }) {
     const header = `# ${trimmedProposalTitle}\n\n`
     const fileName = `${trimmedProposalTitle.replace(/\s+/g, '-')}.md`
 
-    const budgetItems = getValues()['budget'] as Array<{ token: string; amount: string }> | undefined
+    const budgetItems = getValues()['budget'] as
+      | Array<{ token: string; amount: string }>
+      | undefined
     let totalBudgetUSDC = 0
     if (budgetItems && Array.isArray(budgetItems)) {
       budgetItems.forEach((item) => {
-        if (item.token === 'USD' || item.token === 'USDC' || item.token === 'USDT' || item.token === 'DAI') {
+        if (
+          item.token === 'USD' ||
+          item.token === 'USDC' ||
+          item.token === 'USDT' ||
+          item.token === 'DAI'
+        ) {
           totalBudgetUSDC += Number(item.amount) || 0
         }
       })
@@ -245,7 +272,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
       budget: budgetItems,
       totalBudgetUSDC,
       authorAddress: address,
-      nonProjectProposal: nonProjectProposal
+      nonProjectProposal: nonProjectProposal,
     })
     const file = new File([fileContents], fileName, {
       type: 'application/json',
@@ -398,9 +425,9 @@ export default function ProposalEditor({ project }: { project: Project }) {
             <div className="mb-4 md:mb-6 p-3 md:p-5 bg-gradient-to-r from-indigo-900/40 to-blue-900/40 border border-indigo-500/30 rounded-xl">
               <div className="flex flex-col gap-4">
                 <div className={`${isUploadingImage ? 'pointer-events-none opacity-50' : ''}`}>
-                  <GoogleDocsImport 
-                    setMarkdown={handleSetMarkdown} 
-                    setTitle={setProposalTitle}
+                  <GoogleDocsImport
+                    setMarkdown={handleSetMarkdown}
+                    setTitle={handleSetTitle}
                     onImportStart={() => setIsUploadingImage(true)}
                     onImportEnd={() => setIsUploadingImage(false)}
                   />
@@ -415,16 +442,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 value={proposalTitle}
                 onChange={(s) => {
                   if (isUploadingImage) return
-                  setProposalTitle(s)
-                  console.debug('setProposalTitle', s)
-                  const cache = proposalCache || {
-                    body: proposalBody || '',
-                  }
-                  setProposalCache({
-                    ...cache,
-                    title: s,
-                    timestamp: getUnixTime(new Date()),
-                  })
+                  handleSetTitle(s)
                 }}
               />
             </div>
@@ -438,20 +456,32 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 </div>
                 <p className="text-sm text-gray-300 mt-1 font-mono break-all">{address}</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  This wallet address will be recorded as the proposal author. Make sure this is the correct wallet.
+                  This wallet address will be recorded as the proposal author. Make sure this is the
+                  correct wallet.
                 </p>
               </div>
             )}
             {!address && authenticated && (
               <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-xl">
                 <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  <svg
+                    className="w-4 h-4 text-yellow-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
                   </svg>
                   <span className="text-sm text-yellow-300 font-medium">No wallet detected</span>
                 </div>
                 <p className="text-xs text-yellow-200/70 mt-1">
-                  Please make sure your wallet is connected. You need a connected wallet to submit a proposal.
+                  Please make sure your wallet is connected. You need a connected wallet to submit a
+                  proposal.
                 </p>
               </div>
             )}
@@ -474,9 +504,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 } rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all`}
                 disabled={isUploadingImage || signingStatus === 'loading'}
               />
-              {emailError && (
-                <p className="mt-2 text-sm text-red-400">{emailError}</p>
-              )}
+              {emailError && <p className="mt-2 text-sm text-red-400">{emailError}</p>}
               <p className="mt-2 text-xs text-gray-500">
                 Receive a confirmation email with your proposal link and next steps.
               </p>
@@ -485,15 +513,27 @@ export default function ProposalEditor({ project }: { project: Project }) {
             {/* Team & Signers Info */}
             <div className="mb-4 p-4 bg-indigo-900/20 border border-indigo-500/20 rounded-xl">
               <div className="flex items-start gap-2">
-                <svg className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-5 h-5 text-indigo-400 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <div>
                   <p className="text-sm text-indigo-200 font-medium">Team Members & Multisig</p>
                   <p className="text-xs text-gray-400 mt-1">
-                    Project leads and team members are automatically extracted from your Google Doc if available.
-                    Including Discord usernames and ETH wallet addresses (0x...) is recommended but not required at submission time.
-                    A default 3/5 multisig will be created for your project automatically with MoonDAO core signers and your wallet.
+                    Project leads and team members are automatically extracted from your Google Doc
+                    if available. Including Discord usernames and ETH wallet addresses (0x...) is
+                    recommended but not required at submission time. A default 3/5 multisig will be
+                    created for your project automatically with MoonDAO core signers and your
+                    wallet.
                   </p>
                 </div>
               </div>
@@ -507,14 +547,22 @@ export default function ProposalEditor({ project }: { project: Project }) {
               <div className="p-3 md:p-6 min-h-[250px] max-h-[500px] overflow-y-auto">
                 {proposalBody ? (
                   <div className="prose prose-invert prose-sm max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {proposalBody}
-                    </ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{proposalBody}</ReactMarkdown>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[200px] text-gray-400">
-                    <svg className="w-12 h-12 mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <svg
+                      className="w-12 h-12 mb-3 opacity-40"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
                     </svg>
                     <p className="text-base font-medium">No content yet</p>
                     <p className="text-sm mt-1 text-center max-w-sm text-gray-500">
@@ -542,9 +590,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
                   className="w-16 h-16 mb-4"
                 />
                 <p className="text-white text-lg font-medium">Importing document...</p>
-                <p className="text-gray-300 text-sm mt-2">
-                  Please wait, do not close this window
-                </p>
+                <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
               </div>
             )}
 
@@ -585,12 +631,10 @@ export default function ProposalEditor({ project }: { project: Project }) {
                   />
                 </Switch>
                 <Label as="span" className="ml-3 text-sm">
-                  <span className="text-gray-300">
-                    Non-Project Proposal
-                  </span>
+                  <span className="text-gray-300">Non-Project Proposal</span>
                 </Label>
               </Field>
-              
+
               {/* Submit Button */}
               {authenticated ? (
                 <button
@@ -610,13 +654,31 @@ export default function ProposalEditor({ project }: { project: Project }) {
                 >
                   {signingStatus === 'loading' ? (
                     <span className="inline-flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        />
                       </svg>
                       Submitting...
                     </span>
-                  ) : 'Submit Proposal'}
+                  ) : (
+                    'Submit Proposal'
+                  )}
                 </button>
               ) : (
                 <button
@@ -632,7 +694,9 @@ export default function ProposalEditor({ project }: { project: Project }) {
             {attachBudget && (
               <FormProvider {...methods}>
                 <div className="my-6 p-5 rounded-xl bg-dark-cool border border-white/10">
-                  <h3 className="text-white text-lg font-medium mb-4">Budget Request (parsed from document)</h3>
+                  <h3 className="text-white text-lg font-medium mb-4">
+                    Budget Request (parsed from document)
+                  </h3>
                   <RequestBudgetActionForm disableRequiredFields={false} />
                 </div>
               </FormProvider>

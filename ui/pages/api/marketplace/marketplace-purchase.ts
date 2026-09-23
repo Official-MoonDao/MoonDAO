@@ -1,5 +1,8 @@
+import CitizenABI from 'const/abis/Citizen.json'
 import TeamABI from 'const/abis/Team.json'
 import {
+  CITIZEN_ADDRESSES,
+  CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
   EB_TEAM_ID,
@@ -9,14 +12,17 @@ import {
 } from 'const/config'
 import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
-import { getContract, waitForReceipt } from 'thirdweb'
+import { getContract, readContract, waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
-import {
-  createInvite,
-  generateInviteToken,
-} from '@/lib/citizen/inviteTokens'
+import { createInvite, generateInviteToken } from '@/lib/citizen/inviteTokens'
 import { validateGiftPurchase } from '@/lib/marketplace/giftPurchase'
+import {
+  extractEmailFromTypeformAnswers,
+  lookupVendorEmail,
+  resolveVendorTeamId,
+  safeTransactionApiUrl,
+} from '@/lib/marketplace/vendorEmail'
 import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 import { getPrivyUserData } from '@/lib/privy'
 import queryTable from '@/lib/tableland/queryTable'
@@ -35,6 +41,82 @@ const teamContract = getContract({
   client: serverClient,
   abi: TeamABI as any,
 })
+
+const citizenContract = getContract({
+  address: CITIZEN_ADDRESSES[chainSlug],
+  chain: DEFAULT_CHAIN_V5,
+  client: serverClient,
+  abi: CitizenABI as any,
+})
+
+async function fetchTypeformEmail(formIds: string[], responseId: string): Promise<string | null> {
+  if (!formIds.length || !responseId) return null
+  const data = await fetchResponseFromFormIds(formIds, responseId)
+  return extractEmailFromTypeformAnswers(data?.items?.[0]?.answers)
+}
+
+async function getTeamFormId(teamId: string): Promise<string | null> {
+  const teamRows = await queryTable(
+    DEFAULT_CHAIN_V5,
+    `SELECT formId FROM ${TEAM_TABLE_NAMES[chainSlug]} WHERE id = '${teamId}'`
+  )
+  const formId = teamRows?.[0]?.formId
+  return typeof formId === 'string' && formId.trim() ? formId.trim() : null
+}
+
+async function getTeamOwner(teamId: string): Promise<string | null> {
+  try {
+    const owner = (await readContract({
+      contract: teamContract,
+      method: 'ownerOf' as string,
+      params: [teamId],
+    })) as string
+    return owner || null
+  } catch {
+    return null
+  }
+}
+
+async function getSafeOwners(address: string): Promise<string[]> {
+  const api = safeTransactionApiUrl(chainSlug)
+  if (!api || !address) return []
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 5000)
+  try {
+    const res = await fetch(`${api}/api/v1/safes/${address}/`, {
+      signal: controller.signal,
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data?.owners)
+      ? data.owners.filter((owner: unknown) => typeof owner === 'string')
+      : []
+  } catch {
+    return []
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+async function getCitizenFormId(wallet: string): Promise<string | null> {
+  try {
+    const tokenId = await readContract({
+      contract: citizenContract,
+      method: 'getOwnedToken' as string,
+      params: [wallet],
+    })
+    const id = tokenId?.toString()
+    if (!id || !/^\d+$/.test(id)) return null
+    const rows = await queryTable(
+      DEFAULT_CHAIN_V5,
+      `SELECT formId FROM ${CITIZEN_TABLE_NAMES[chainSlug]} WHERE id = '${id}'`
+    )
+    const formId = rows?.[0]?.formId
+    return typeof formId === 'string' && formId.trim() ? formId.trim() : null
+  } catch {
+    return null
+  }
+}
 
 const MARKETPLACE_VENDOR_PURHCASE_FIELDS: any = {
   address: 'Address',
@@ -63,22 +145,12 @@ const generateHTML = (htmlData: any) => {
 
 const generateVendorEmailContent = (data: any) => {
   const stringData = Object.entries(data).reduce(
-    (str, [key, val]) =>
-      (str += `${MARKETPLACE_VENDOR_PURHCASE_FIELDS[key]}: \n${val} \n \n`),
+    (str, [key, val]) => (str += `${MARKETPLACE_VENDOR_PURHCASE_FIELDS[key]}: \n${val} \n \n`),
     ''
   )
 
-  const {
-    address,
-    email,
-    item,
-    value,
-    currency,
-    quantity,
-    shipping,
-    txLink,
-    isCitizen,
-  } = JSON.parse(data)
+  const { address, email, item, value, currency, quantity, shipping, txLink, isCitizen } =
+    JSON.parse(data)
 
   const htmlData = `
     <div>
@@ -92,9 +164,7 @@ const generateVendorEmailContent = (data: any) => {
     <p>${value} ${currency}</p>
     <label for="citizenship"><strong>Citizenship</strong></label>
     <p>${
-      isCitizen
-        ? 'Buyer is a citizen (regular price)'
-        : 'Buyer is not a citizen (10% markup)'
+      isCitizen ? 'Buyer is a citizen (regular price)' : 'Buyer is not a citizen (10% markup)'
     }</p>
     <label for="quantity"><strong>Quantity</strong></label>
     <p>${quantity}</p>
@@ -114,13 +184,11 @@ const generateVendorEmailContent = (data: any) => {
 
 const generateCitizenEmailContent = (data: any) => {
   const stringData = Object.entries(data).reduce(
-    (str, [key, val]) =>
-      (str += `${MARKETPLACE_CITIZEN_PURHCASE_FIELDS[key]}: \n${val} \n \n`),
+    (str, [key, val]) => (str += `${MARKETPLACE_CITIZEN_PURHCASE_FIELDS[key]}: \n${val} \n \n`),
     ''
   )
 
-  const { item, value, currency, quantity, txLink, teamLink, giftLink } =
-    JSON.parse(data)
+  const { item, value, currency, quantity, txLink, teamLink, giftLink } = JSON.parse(data)
 
   const giftSection = giftLink
     ? `
@@ -159,7 +227,7 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'Bad request' })
     }
 
-    const { email, txHash, accessToken, isGift, listingId } = JSON.parse(data)
+    const { email, txHash, accessToken, isGift, listingId, teamId } = JSON.parse(data)
 
     // Verify the Privy access token
     const privyUserData = await getPrivyUserData(accessToken)
@@ -175,8 +243,7 @@ async function handler(req: any, res: any) {
     // Check if transaction has already been used for email sending
     if (usedTransactions.has(txHash)) {
       return res.status(400).send({
-        message:
-          'Transaction has already been processed for marketplace purchase',
+        message: 'Transaction has already been processed for marketplace purchase',
       })
     }
 
@@ -197,9 +264,7 @@ async function handler(req: any, res: any) {
     }
 
     if (!txIsFromUsersWallet) {
-      return res
-        .status(400)
-        .send({ message: "Transaction is not from the user's wallet" })
+      return res.status(400).send({ message: "Transaction is not from the user's wallet" })
     }
 
     // Check if transaction is recent (within 10 minutes)
@@ -230,7 +295,16 @@ async function handler(req: any, res: any) {
       return res.status(status).send({ message })
     }
 
-    //Get the team email from the tx to address
+    // Derive the team that received this payment from the tx recipient. This
+    // is only reliable for ETH listings: `sendTransaction({ to: recipient })`
+    // makes tx.to the actual recipient, so "does that address own a Team NFT"
+    // is a trustworthy, un-spoofable check — which is exactly why the gift-
+    // citizenship flow below relies on it (gift listings are ETH-only). For
+    // ERC20 listings (USDC/MOONEY/DAI — most listings) the buyer instead calls
+    // `transfer()` ON THE TOKEN CONTRACT, so tx.to is the token contract
+    // address, which never owns a Team NFT. That silently produced an empty
+    // `ownedNFTs` and dropped the vendor email notification for every
+    // non-ETH purchase.
     const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
     const teamAddress = txReceipt.to
     const ownedNFTs = await getOwnedNFTs({
@@ -239,6 +313,23 @@ async function handler(req: any, res: any) {
     })
     const teamTokenId = ownedNFTs?.[0]?.id.toString()
 
+    // Resolve the listing row once, by its trusted on-chain-indexed id, so we
+    // have a currency-agnostic source of the vendor's teamId for the email
+    // lookup below and the gift-citizenship check doesn't need a second query.
+    const numericListingId = Number(listingId)
+    let listingRow: any = null
+    if (Number.isInteger(numericListingId) && numericListingId >= 0) {
+      try {
+        const listingRows = await queryTable(
+          DEFAULT_CHAIN_V5,
+          `SELECT * FROM ${MARKETPLACE_TABLE_NAMES[chainSlug]} WHERE id = ${numericListingId}`
+        )
+        listingRow = listingRows?.[0] || null
+      } catch (err: any) {
+        console.log('Error looking up listing for marketplace purchase:', err)
+      }
+    }
+
     // Gift-a-citizenship: when the purchased listing is a verified gift listing
     // on the EB team and the buyer paid at least the listing price, issue a
     // one-time free-citizen invite link. Generating the token server-side after
@@ -246,22 +337,16 @@ async function handler(req: any, res: any) {
     // authorization — buyers don't need to be operators.
     let giftLink: string | undefined
     if (isGift) {
-      const numericListingId = Number(listingId)
-
-      // Only query the table for a well-formed id on the EB team, so a bad
-      // listingId or non-EB payment can never produce malformed SQL. The
-      // authoritative accept/reject decision is made by validateGiftPurchase.
-      const canQueryListing =
-        Number.isInteger(numericListingId) &&
-        numericListingId >= 0 &&
-        String(teamTokenId) === EB_TEAM_ID
-      const listingRows = canQueryListing
-        ? await queryTable(
-            DEFAULT_CHAIN_V5,
-            `SELECT * FROM ${MARKETPLACE_TABLE_NAMES[chainSlug]} WHERE id = ${numericListingId} AND teamId = ${teamTokenId}`
-          )
-        : []
-      const giftListing: any = listingRows?.[0]
+      // Security anchor: both the listing's own recorded teamId AND the
+      // on-chain-derived recipient's team must independently resolve to the
+      // EB team. The latter can't be spoofed by the client (it's derived from
+      // the real payment recipient), which is what actually proves the buyer
+      // paid the EB team and not some other address. validateGiftPurchase
+      // makes the authoritative accept/reject decision.
+      const giftListing =
+        listingRow && String(listingRow.teamId) === EB_TEAM_ID && String(teamTokenId) === EB_TEAM_ID
+          ? listingRow
+          : undefined
 
       // Read the actual ETH value transferred so we can bind the payment to
       // this specific gift listing (see validateGiftPurchase).
@@ -298,59 +383,54 @@ async function handler(req: any, res: any) {
       giftLink = `${origin}/citizen?invite=${token}`
     }
 
-    const teamRows = await queryTable(
-      DEFAULT_CHAIN_V5,
-      `SELECT * FROM ${TEAM_TABLE_NAMES[chainSlug]} WHERE id = '${teamTokenId}'`
-    )
-    const team: any = teamRows?.[0]
-
-    // Get team form IDs (same as in hasAccessToResponse.ts)
-    const teamFormIds = [
-      process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
-      process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string,
-    ].filter(Boolean)
-
-    // Fetch team typeform response from multiple form IDs
-    let teamTypeformData = null
-    if (team?.formId && typeof team.formId === 'string') {
-      teamTypeformData = await fetchResponseFromFormIds(
-        teamFormIds,
-        team.formId
-      )
-    }
-
+    // Best-effort lookup of the vendor's notification email. Any failure here
+    // (Tableland hiccup, Typeform down/rate-limited, missing formId, etc.)
+    // must NOT crash the request or block the buyer's receipt below — it just
+    // means we fall back to notifying ops instead of the vendor directly.
+    // Prefer the listing's own teamId (works for every currency); then the
+    // on-chain-derived id (ETH-only, see above); then the client-sent teamId.
+    const vendorTeamId = resolveVendorTeamId({
+      listingTeamId: listingRow?.teamId,
+      onchainTeamTokenId: teamTokenId,
+      clientTeamId: teamId,
+    })
     let teamTypeformEmail = null
-    if (teamTypeformData && teamTypeformData.items?.length > 0) {
-      const teamTypeformResponse = teamTypeformData.items[0]
-      // Look for email in different possible field structures
-      teamTypeformEmail =
-        teamTypeformResponse.answers?.find(
-          (answer: any) =>
-            answer.field?.type === 'email' || answer.type === 'email'
-        )?.email || teamTypeformResponse.answers?.email
-    }
-
-    // For gift purchases the critical deliverable is the buyer's gift link, so
-    // a missing vendor email shouldn't block the purchase. For normal listings
-    // the vendor email is required to fulfill the order.
-    if (!teamTypeformEmail && !isGift) {
-      return failAndRelease(400, 'No team email found')
-    }
-
-    // Inject the server-generated gift link into the buyer's email payload.
-    const buyerEmailData = giftLink
-      ? JSON.stringify({ ...JSON.parse(data), giftLink })
-      : data
-
     try {
-      if (teamTypeformEmail) {
-        await getMoonDaoGmailTransport().sendMail({
-          from: opEmail,
-          to: teamTypeformEmail,
-          ...generateVendorEmailContent(data),
-          subject: 'MoonDAO | Marketplace Purchase',
+      if (vendorTeamId) {
+        teamTypeformEmail = await lookupVendorEmail(vendorTeamId, {
+          getTeamFormId,
+          fetchTypeformEmail,
+          getTeamOwner,
+          getSafeOwners,
+          getCitizenFormId,
+          teamFormIds: [
+            process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string,
+            process.env.NEXT_PUBLIC_TYPEFORM_TEAM_EMAIL_FORM_ID as string,
+          ].filter(Boolean),
+          citizenFormIds: [
+            process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID as string,
+            process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string,
+            process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID as string,
+          ].filter(Boolean),
         })
       }
+    } catch (err: any) {
+      console.log('Error looking up vendor email for marketplace purchase:', err)
+    }
+
+    // A missing vendor email must never block the buyer's receipt — the
+    // on-chain transfer already happened and is irreversible by this point.
+    // If we couldn't resolve the vendor's Typeform email, fall back to
+    // notifying MoonDAO ops so a human can follow up with the vendor manually
+    // instead of the purchase going unnoticed entirely.
+    const vendorNotifyEmail = teamTypeformEmail || opEmail
+
+    // Inject the server-generated gift link into the buyer's email payload.
+    const buyerEmailData = giftLink ? JSON.stringify({ ...JSON.parse(data), giftLink }) : data
+
+    // Send the buyer's receipt first since it's the critical deliverable for
+    // every purchase (the gift link, if any, is embedded in it above).
+    try {
       await getMoonDaoGmailTransport().sendMail({
         from: opEmail,
         to: email,
@@ -358,20 +438,37 @@ async function handler(req: any, res: any) {
         subject: 'MoonDAO | Marketplace Purchase',
         bcc: [opEmail],
       })
-      return res.status(200).json({ success: true, giftLink })
     } catch (err: any) {
-      console.log(err)
+      console.log('Failed to send buyer confirmation email:', err)
       // The gift link is already generated and returned to the buyer in the
       // modal, so a failed confirmation email shouldn't fail the purchase.
       if (isGift && giftLink) {
         return res.status(200).json({ success: true, giftLink })
       }
-      // Remove transaction from used set if email failed, allowing retry
-      usedTransactions.delete(txHash)
-      return res.status(400).json({
-        message: err.message,
-      })
+      // Release the tx hash so a legitimate buyer can retry (e.g. transient
+      // Gmail error) without the replay-attack guard blocking them.
+      return failAndRelease(
+        500,
+        'Payment received, but we could not send your confirmation email. Please contact support with your transaction hash.'
+      )
     }
+
+    // Notify the vendor (or ops as a fallback). The buyer already has their
+    // receipt at this point, so this failing shouldn't fail the request.
+    try {
+      await getMoonDaoGmailTransport().sendMail({
+        from: opEmail,
+        to: vendorNotifyEmail,
+        ...generateVendorEmailContent(data),
+        subject: teamTypeformEmail
+          ? 'MoonDAO | Marketplace Purchase'
+          : 'MoonDAO | Marketplace Purchase (vendor email not found, please forward)',
+      })
+    } catch (err: any) {
+      console.log('Failed to send vendor notification email:', err)
+    }
+
+    return res.status(200).json({ success: true, giftLink })
   } else {
     res.status(405).send({ message: 'Method not allowed' })
   }

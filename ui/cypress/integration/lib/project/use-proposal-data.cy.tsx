@@ -90,14 +90,21 @@ describe('useProposalData configuration', () => {
   })
 
   describe('Mainnet Configuration', () => {
-    it('arbitrum chain should have 7 senators', () => {
+    it('arbitrum chain should have 6 senators', () => {
       const arbitrumSenators = SENATORS_LIST['arbitrum'] || []
-      expect(arbitrumSenators.length).to.equal(7)
+      expect(arbitrumSenators.length).to.equal(6)
     })
 
     it('arbitrum senators should have correct names', () => {
       const arbitrumSenators = SENATORS_LIST['arbitrum'] || []
-      const expectedNames = ['Frank', 'Kara', 'Alex', 'Anastasia', 'Daniel', 'Jade', 'Rina']
+      const expectedNames = [
+        'Trent Tresch',
+        'Julio Rezende',
+        'Lakshmi Karan',
+        'Michael Castle Miller',
+        'Kara Howard',
+        'Rod Mamin',
+      ]
       const actualNames = arbitrumSenators.map((s: any) => s.name)
 
       expectedNames.forEach(name => {

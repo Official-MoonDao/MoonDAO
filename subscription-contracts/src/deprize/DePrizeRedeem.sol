@@ -74,7 +74,7 @@ contract DePrizeRedeem is ReentrancyGuard, IERC1155Receiver {
         }
         uint256[] memory balances = ctf.balanceOfBatch(owners, positionIds);
 
-        uint256 held;
+        uint256 held = 0;
         for (uint256 i = 0; i < n; i++) {
             if (balances[i] > 0) held++;
         }
@@ -83,7 +83,7 @@ contract DePrizeRedeem is ReentrancyGuard, IERC1155Receiver {
         uint256[] memory ids = new uint256[](held);
         uint256[] memory values = new uint256[](held);
         uint256[] memory indexSets = new uint256[](held);
-        uint256 j;
+        uint256 j = 0;
         for (uint256 i = 0; i < n; i++) {
             if (balances[i] > 0) {
                 ids[j] = positionIds[i];
@@ -107,6 +107,8 @@ contract DePrizeRedeem is ReentrancyGuard, IERC1155Receiver {
 
         if (payout > 0) {
             weth.withdraw(payout);
+            // The payout goes to the caller who just burned their own tokens.
+            // slither-disable-next-line arbitrary-send-eth
             (bool ok,) = msg.sender.call{value: payout}("");
             if (!ok) revert RedeemFailed();
         }

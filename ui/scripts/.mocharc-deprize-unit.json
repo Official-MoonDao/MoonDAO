@@ -1,0 +1,12 @@
+{
+  "require": [
+    "tsconfig-paths/register",
+    "ts-node/register",
+    "scripts/mocha-cypress-setup.cjs"
+  ],
+  "extensions": ["ts", "tsx"],
+  "spec": [
+    "cypress/integration/lib/{deprize,forecasts,discord,citizen}/**/*.cy.ts",
+    "cypress/integration/lib/{deprize,forecasts,discord,citizen}/**/*.mocha.ts"
+  ]
+}

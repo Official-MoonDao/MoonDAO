@@ -2,294 +2,18 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {DePrizeMint} from "../../src/deprize/DePrizeMint.sol";
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
-import {ILMSRWithTWAP} from "../../src/deprize/interfaces/ILMSRWithTWAP.sol";
-import {IWETH} from "../../src/deprize/interfaces/IWETH.sol";
+import {MintPermitHelper} from "./MintPermitHelper.sol";
+import {MockJBTerminal, MockWETH, MockResolvingCTF, MockLMSR} from "./DePrizeMocks.sol";
 
-// ---------------------------------------------------------------------------
-// Mocks
-// ---------------------------------------------------------------------------
-
-/// @dev Records the 5% prize-slice routing. Signature matches IJBTerminal.pay so
-///      the router's interface call dispatches here. Returns a 1:1 token count to
-///      stand in for the $OVERVIEW the bettor would receive.
-contract MockJBTerminal {
-    uint256 public lastProjectId;
-    address public lastBeneficiary;
-    uint256 public lastValue;
-    uint256 public totalReceived;
-
-    function pay(
-        uint256 projectId,
-        address,
-        uint256,
-        address beneficiary,
-        uint256,
-        string calldata,
-        bytes calldata
-    ) external payable returns (uint256) {
-        lastProjectId = projectId;
-        lastBeneficiary = beneficiary;
-        lastValue = msg.value;
-        totalReceived += msg.value;
-        return msg.value;
-    }
-
-    receive() external payable {}
-}
-
-/// @dev Minimal WETH9-style wrapper.
-contract MockWETH {
-    string public name = "Wrapped Ether";
-    string public symbol = "WETH";
-    uint8 public decimals = 18;
-    mapping(address => uint256) public balanceOf;
-    mapping(address => mapping(address => uint256)) public allowance;
-
-    function deposit() external payable {
-        balanceOf[msg.sender] += msg.value;
-    }
-
-    function withdraw(uint256 amount) external {
-        balanceOf[msg.sender] -= amount;
-        (bool ok,) = msg.sender.call{value: amount}("");
-        require(ok, "withdraw failed");
-    }
-
-    function approve(address spender, uint256 amount) external returns (bool) {
-        allowance[msg.sender][spender] = amount;
-        return true;
-    }
-
-    function transfer(address to, uint256 amount) external returns (bool) {
-        balanceOf[msg.sender] -= amount;
-        balanceOf[to] += amount;
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint256 amount) external returns (bool) {
-        allowance[from][msg.sender] -= amount;
-        balanceOf[from] -= amount;
-        balanceOf[to] += amount;
-        return true;
-    }
-
-    function totalSupply() external pure returns (uint256) {
-        return 0;
-    }
-
-    receive() external payable {
-        balanceOf[msg.sender] += msg.value;
-    }
-}
-
-/// @dev Minimal Gnosis ConditionalTokens ERC-1155 surface plus a `mintTo` helper
-///      the market mock uses to deliver outcome tokens (mirroring how the real CTF
-///      invokes the ERC-1155 acceptance hook with msg.sender == CTF).
-contract MockCTF {
-    mapping(uint256 => mapping(address => uint256)) public balances;
-
-    function balanceOf(address owner, uint256 id) external view returns (uint256) {
-        return balances[id][owner];
-    }
-
-    function balanceOfBatch(address[] calldata owners, uint256[] calldata ids)
-        external
-        view
-        returns (uint256[] memory out)
-    {
-        out = new uint256[](owners.length);
-        for (uint256 i = 0; i < owners.length; i++) {
-            out[i] = balances[ids[i]][owners[i]];
-        }
-    }
-
-    function isApprovedForAll(address, address) external pure returns (bool) {
-        return true;
-    }
-
-    function setApprovalForAll(address, bool) external {}
-
-    function mintTo(address to, uint256[] memory ids, uint256[] memory values) external {
-        for (uint256 i = 0; i < ids.length; i++) {
-            balances[ids[i]][to] += values[i];
-        }
-        // Acceptance hook is invoked by the CTF itself (msg.sender == this).
-        bytes4 ret = IERC1155Receiver(to).onERC1155BatchReceived(msg.sender, address(0), ids, values, "");
-        require(ret == IERC1155Receiver.onERC1155BatchReceived.selector, "1155 rejected");
-    }
-
-    function mintToSingle(address to, uint256 id, uint256 value) external {
-        balances[id][to] += value;
-        bytes4 ret = IERC1155Receiver(to).onERC1155Received(msg.sender, address(0), id, value, "");
-        require(ret == IERC1155Receiver.onERC1155Received.selector, "1155 rejected");
-    }
-
-    function safeTransferFrom(address from, address to, uint256 id, uint256 value, bytes calldata) external {
-        balances[id][from] -= value;
-        balances[id][to] += value;
-    }
-
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata values,
-        bytes calldata
-    ) external {
-        for (uint256 i = 0; i < ids.length; i++) {
-            balances[ids[i]][from] -= values[i];
-            balances[ids[i]][to] += values[i];
-        }
-    }
-}
-
-/// @dev LMSRWithTWAP stand-in: linear pricing (cost = qty * price / 1e18), pulls
-///      WETH collateral from the trader, and mints outcome tokens via the CTF mock.
-contract MockMarket {
-    address public ctf;
-    address public weth;
-    uint256 public slots;
-    uint256 public price; // WETH per outcome token, fixed-point 1e18
-    bytes32 public conditionId;
-
-    // Test knobs to exercise router edge cases.
-    uint64 private _fee = 1e16; // 1%
-    uint256 public underpull; // collateral the market leaves unconsumed
-    bool public skipMint; // pull collateral but mint no outcome tokens
-    bool public singleTransfer; // deliver via onERC1155Received (single) instead of batch
-
-    constructor(address _ctf, address _weth, uint256 _slots, uint256 _price) {
-        ctf = _ctf;
-        weth = _weth;
-        slots = _slots;
-        price = _price;
-        conditionId = keccak256("condition");
-    }
-
-    function setFee(uint64 f) external {
-        _fee = f;
-    }
-
-    function setUnderpull(uint256 u) external {
-        underpull = u;
-    }
-
-    function setSkipMint(bool s) external {
-        skipMint = s;
-    }
-
-    function setSingleTransfer(bool s) external {
-        singleTransfer = s;
-    }
-
-    function pmSystem() external view returns (address) {
-        return ctf;
-    }
-
-    function collateralToken() external view returns (address) {
-        return weth;
-    }
-
-    function atomicOutcomeSlotCount() external view returns (uint256) {
-        return slots;
-    }
-
-    function conditionIds(uint256) external view returns (bytes32) {
-        return conditionId;
-    }
-
-    function setConditionId(bytes32 c) external {
-        conditionId = c;
-    }
-
-    function fee() public view returns (uint64) {
-        return _fee;
-    }
-
-    function stage() external pure returns (uint8) {
-        return 0;
-    }
-
-    bool public twapUpdated;
-
-    function updateCumulativeTWAP() external {
-        twapUpdated = true;
-    }
-
-    function calcMarginalPrice(uint8) external view returns (uint256) {
-        return price;
-    }
-
-    function calcNetCost(int256[] memory amounts) public view returns (int256 cost) {
-        for (uint256 i = 0; i < amounts.length; i++) {
-            cost += (amounts[i] * int256(price)) / 1e18;
-        }
-    }
-
-    /// @dev Mirrors MarketMaker.calcMarketFee: outcomeTokenCost * fee / 1e18.
-    function calcMarketFee(uint256 outcomeTokenCost) public view returns (uint256) {
-        return (outcomeTokenCost * uint256(fee())) / 1e18;
-    }
-
-    function trade(int256[] memory amounts, int256 collateralLimit) public returns (int256) {
-        return _trade(amounts, collateralLimit);
-    }
-
-    function tradeWithTWAP(int256[] memory amounts, int256 collateralLimit) external {
-        // Faithful to the deployed LMSRWithTWAP: an external self-call makes the
-        // market the trader. The router must NOT use this (it would misattribute
-        // collateral/outcome flows) — it calls updateCumulativeTWAP() + trade().
-        this.trade(amounts, collateralLimit);
-    }
-
-    function _trade(int256[] memory amounts, int256 collateralLimit) internal returns (int256 total) {
-        int256 net = calcNetCost(amounts);
-        require(net >= 0, "negative");
-        // MarketMaker charges netCost + fee and checks the total against the limit.
-        total = net + int256(calcMarketFee(uint256(net)));
-        require(total <= collateralLimit, "limit");
-        // `underpull` lets a test leave collateral unconsumed to exercise the router's sweep.
-        MockWETH(payable(weth)).transferFrom(msg.sender, address(this), uint256(total) - underpull);
-
-        if (skipMint) return total;
-
-        uint256 n;
-        for (uint256 i = 0; i < amounts.length; i++) {
-            if (amounts[i] > 0) n++;
-        }
-        uint256[] memory ids = new uint256[](n);
-        uint256[] memory values = new uint256[](n);
-        uint256 j;
-        for (uint256 i = 0; i < amounts.length; i++) {
-            if (amounts[i] > 0) {
-                ids[j] = uint256(keccak256(abi.encode("position", i)));
-                values[j] = uint256(amounts[i]);
-                j++;
-            }
-        }
-        if (singleTransfer && n == 1) {
-            MockCTF(ctf).mintToSingle(msg.sender, ids[0], values[0]);
-        } else {
-            MockCTF(ctf).mintTo(msg.sender, ids, values);
-        }
-    }
-}
-
-/// @dev Trivial UUPS upgrade target to exercise _authorizeUpgrade.
-contract DePrizeMintV2 is DePrizeMint {
-    function version() external pure returns (uint256) {
-        return 2;
-    }
-}
-
-/// @dev Bettor with no payable receive/fallback: the ETH refund call reverts.
+/// @dev Bettor with no payable receive: the ETH refund call reverts.
 contract RevertingBettor {
     DePrizeMint internal mint;
 
@@ -297,59 +21,114 @@ contract RevertingBettor {
         mint = m;
     }
 
-    function placeBet(uint256 deprizeId, uint256 outcomeIndex, uint256 qty, uint256 maxCost) external payable {
-        mint.bet{value: msg.value}(deprizeId, outcomeIndex, qty, maxCost);
+    function placeBet(
+        uint256 deprizeId,
+        uint256 outcomeIndex,
+        uint256 qty,
+        uint256 maxCost,
+        uint256 deadline,
+        bytes calldata signature
+    ) external payable {
+        mint.bet{value: msg.value}(deprizeId, outcomeIndex, qty, maxCost, deadline, signature);
+    }
+
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
+        return IERC1155Receiver.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
+        return IERC1155Receiver.onERC1155BatchReceived.selector;
     }
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+/// @dev Re-enters `bet` from the refund callback. Both hops carry the same permit.
+contract ReentrantBettor {
+    DePrizeMint internal mint;
+    bytes internal replay;
+    uint256 internal reentered;
 
-contract DePrizeMintTest is Test {
+    constructor(DePrizeMint m) {
+        mint = m;
+    }
+
+    function placeBet(
+        uint256 deprizeId,
+        uint256 outcomeIndex,
+        uint256 qty,
+        uint256 maxCost,
+        uint256 deadline,
+        bytes calldata signature
+    ) external payable {
+        replay = abi.encodeCall(DePrizeMint.bet, (deprizeId, outcomeIndex, qty, maxCost, deadline, signature));
+        mint.bet{value: msg.value}(deprizeId, outcomeIndex, qty, maxCost, deadline, signature);
+    }
+
+    receive() external payable {
+        if (reentered++ == 0) {
+            (bool ok,) = address(mint).call{value: msg.value}(replay);
+            require(ok, "reentry rejected");
+        }
+    }
+
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external pure returns (bytes4) {
+        return IERC1155Receiver.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
+        external
+        pure
+        returns (bytes4)
+    {
+        return IERC1155Receiver.onERC1155BatchReceived.selector;
+    }
+}
+
+contract DePrizeMintTest is Test, MintPermitHelper {
     DePrizeMint mint;
     DePrizeRegistry registry;
     MockJBTerminal terminal;
     MockWETH weth;
-    MockCTF ctf;
-    MockMarket market;
+    MockResolvingCTF ctf;
+    MockLMSR market;
 
     address owner = address(0xA11CE);
+    address oracle = address(0x5AFE);
     address bettor = address(0xB0B);
+    address other = address(0xCAFE);
 
     uint256 constant JB_PROJECT = 4;
     uint256 constant PRICE = 0.5 ether; // 0.5 WETH per outcome token
+    bytes32 constant QUESTION = keccak256("touchdown");
     uint256[] teamIds;
     uint256 deprizeId;
+    bytes32 conditionId;
+
+    event MarketSet(uint256 indexed deprizeId, address indexed market);
+    event ComplianceSignerSet(address indexed complianceSigner);
+    event Bet(
+        uint256 indexed deprizeId,
+        address indexed bettor,
+        uint256 outcomeIndex,
+        uint256 outcomeTokenAmount,
+        uint256 cost,
+        uint256 slice
+    );
 
     function setUp() public {
-        // Registry (real, behind a proxy).
-        DePrizeRegistry regImpl = new DePrizeRegistry();
-        registry = DePrizeRegistry(
-            address(new ERC1967Proxy(address(regImpl), abi.encodeCall(DePrizeRegistry.initialize, (owner))))
-        );
-
-        // Prediction-market mocks.
+        registry = new DePrizeRegistry(owner);
         terminal = new MockJBTerminal();
         weth = new MockWETH();
-        ctf = new MockCTF();
-        market = new MockMarket(address(ctf), address(weth), 3, PRICE);
+        ctf = new MockResolvingCTF(address(weth));
 
-        // Mint router (real, behind a proxy).
-        DePrizeMint mintImpl = new DePrizeMint();
-        mint = DePrizeMint(
-            payable(
-                address(
-                    new ERC1967Proxy(
-                        address(mintImpl),
-                        abi.encodeCall(
-                            DePrizeMint.initialize,
-                            (owner, address(registry), address(terminal), address(weth), address(ctf))
-                        )
-                    )
-                )
-            )
-        );
+        ctf.prepareCondition(oracle, QUESTION, 3);
+        conditionId = ctf.getConditionId(oracle, QUESTION, 3);
+        market = new MockLMSR(address(ctf), address(weth), 3, PRICE, conditionId);
+
+        mint = new DePrizeMint(owner, address(registry), address(terminal), address(weth), address(ctf));
 
         teamIds = new uint256[](3);
         teamIds[0] = 101;
@@ -358,470 +137,489 @@ contract DePrizeMintTest is Test {
 
         vm.startPrank(owner);
         deprizeId = registry.register(JB_PROJECT, teamIds, block.timestamp + 30 days);
-        registry.setCondition(deprizeId, keccak256("condition"));
+        registry.setCondition(deprizeId, conditionId);
         registry.open(deprizeId);
         mint.setMarket(deprizeId, address(market));
         vm.stopPrank();
 
+        _initCompliance(mint, owner);
         vm.deal(bettor, 100 ether);
+        vm.deal(other, 100 ether);
     }
 
-    function _positionId(uint256 outcomeIndex) internal pure returns (uint256) {
-        return uint256(keccak256(abi.encode("position", outcomeIndex)));
+    // ---------------------------------------------------------------------
+    // helpers
+    // ---------------------------------------------------------------------
+
+    function _cost(uint256 qty) internal view returns (uint256) {
+        uint256 net = (qty * PRICE) / 1e18;
+        return net + (net * 1e16) / 1e18;
     }
 
-    // -- happy path ---------------------------------------------------------
-
-    function testBetRoutesSliceWrapsAndForwardsOutcomeTokens() public {
-        uint256 qty = 1 ether; // buy 1 outcome token
-        uint256 value = 1 ether; // slice = 0.05, budget = 0.95
-        uint256 expectedSlice = value / 20;
-        uint256 outcomeCost = (qty * PRICE) / 1e18; // 0.5 ETH (excludes fee)
-        uint256 expectedFee = (outcomeCost * 1e16) / 1e18; // 1% = 0.005 ETH
-        uint256 expectedCost = outcomeCost + expectedFee; // 0.505 ETH (what the market pulls)
-        uint256 expectedRefund = value - expectedSlice - expectedCost;
-
-        uint256 balBefore = bettor.balance;
-
-        vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
-
-        // 5% slice -> Juicebox, bettor as beneficiary (receives $OVERVIEW).
-        assertEq(terminal.lastValue(), expectedSlice, "slice value");
-        assertEq(terminal.lastBeneficiary(), bettor, "beneficiary");
-        assertEq(terminal.lastProjectId(), JB_PROJECT, "project id");
-
-        // Outcome tokens delivered to the bettor.
-        assertEq(ctf.balanceOf(bettor, _positionId(0)), qty, "outcome tokens");
-        assertEq(ctf.balanceOf(address(mint), _positionId(0)), 0, "router holds none");
-
-        // 95% wrapped; exactly `cost` consumed by the trade, rest refunded.
-        assertEq(weth.balanceOf(address(market)), expectedCost, "market collateral");
-        assertEq(weth.balanceOf(address(mint)), 0, "no stuck WETH");
-        assertEq(address(mint).balance, 0, "no stuck ETH");
-        assertEq(bettor.balance, balBefore - expectedSlice - expectedCost, "net spend = slice + cost");
-        assertEq(balBefore - bettor.balance, expectedSlice + expectedCost);
-        // sanity: refund matches
-        assertEq(expectedRefund, value - expectedSlice - expectedCost);
+    function _assertMintHoldsNothing() internal view {
+        assertEq(address(mint).balance, 0, "mint ETH");
+        assertEq(weth.balanceOf(address(mint)), 0, "mint WETH");
+        assertEq(weth.allowance(address(mint), address(market)), 0, "mint allowance");
+        for (uint256 i = 0; i < 3; i++) {
+            assertEq(ctf.balanceOf(address(mint), market.positionId(i)), 0, "mint outcome tokens");
+        }
     }
 
-    function testBetChargesLmsrFee() public {
-        uint256 qty = 1 ether;
-        uint256 outcomeCost = (qty * PRICE) / 1e18; // 0.5 ETH
-        uint256 expectedFee = (outcomeCost * 1e16) / 1e18; // 1% = 0.005 ETH
-        assertGt(expectedFee, 0, "fee should be non-zero");
-
-        vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, 0, qty, type(uint256).max);
-
-        // The market pulls outcomeCost + fee (not just outcomeCost). If the router
-        // under-funded by the fee, the trade would have reverted instead.
-        assertEq(weth.balanceOf(address(market)), outcomeCost + expectedFee, "market gets net + fee");
-    }
-
-    function testBetUpdatesTwapBeforeTrade() public {
-        assertFalse(market.twapUpdated(), "precondition");
-        vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
-        // The router calls updateCumulativeTWAP() (it uses trade(), not the
-        // self-calling tradeWithTWAP, so it must update TWAP itself).
-        assertTrue(market.twapUpdated(), "TWAP must be updated on every bet");
-    }
-
-    function testBetExactBudgetNoRefund() public {
-        // Fee-free, 1:1 priced market so cost can equal budget exactly (leftover == 0).
-        MockMarket m = new MockMarket(address(ctf), address(weth), 3, 1 ether);
-        m.setFee(0);
-        vm.prank(owner);
-        mint.setMarket(deprizeId, address(m));
-
-        uint256 value = 20 ether; // slice = 1, budget = 19
-        uint256 qty = 19 ether; // cost = 19 (no fee) == budget
-        uint256 balBefore = bettor.balance;
-
-        vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
-
-        assertEq(weth.balanceOf(address(m)), 19 ether, "market collateral == budget");
-        assertEq(address(mint).balance, 0, "no stuck ETH");
-        assertEq(balBefore - bettor.balance, value, "entire value spent, nothing refunded");
-        assertEq(ctf.balanceOf(bettor, _positionId(0)), qty);
-    }
-
-    function testBetSweepsResidualCollateral() public {
-        // Market consumes less collateral than approved; the router must unwrap and
-        // refund the remainder rather than leaving WETH stranded.
-        uint256 underpull = 0.01 ether;
-        market.setUnderpull(underpull);
-
-        uint256 qty = 1 ether; // total cost (incl fee) = 0.505 ETH
-        uint256 outcomeCost = (qty * PRICE) / 1e18;
-        uint256 cost = outcomeCost + (outcomeCost * 1e16) / 1e18; // 0.505
-        uint256 value = 1 ether;
-        uint256 slice = value / 20;
-        uint256 balBefore = bettor.balance;
-
-        vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
-
-        // Market kept cost - underpull; router holds no WETH or ETH.
-        assertEq(weth.balanceOf(address(market)), cost - underpull, "market kept net of underpull");
-        assertEq(weth.balanceOf(address(mint)), 0, "residual WETH swept");
-        assertEq(address(mint).balance, 0, "no stuck ETH");
-        // Net spend = slice + (cost - underpull); the swept residual is refunded.
-        assertEq(balBefore - bettor.balance, slice + cost - underpull, "residual refunded");
-    }
-
-    function testResidualSweepIgnoresStrayWeth() public {
-        // The residual-collateral sweep must be scoped to THIS bet's own unconsumed
-        // collateral, not the router's absolute WETH balance. WETH already sitting in
-        // the router (a donation, dust, or balance a future upgrade/operator parked
-        // there) must NOT be swept into the bettor's refund.
-        address donor = address(0xD0E);
-        vm.deal(donor, 1 ether);
-        vm.startPrank(donor);
-        weth.deposit{value: 1 ether}();
-        weth.transfer(address(mint), 1 ether);
-        vm.stopPrank();
-        assertEq(weth.balanceOf(address(mint)), 1 ether, "router starts with stray WETH");
-
-        uint256 qty = 1 ether; // cost (incl 1% fee) = 0.505 ETH
-        uint256 value = 1 ether; // slice 0.05, budget 0.95
-        uint256 outcomeCost = (qty * PRICE) / 1e18;
-        uint256 cost = outcomeCost + (outcomeCost * 1e16) / 1e18; // 0.505
-        uint256 slice = value / 20;
-        uint256 balBefore = bettor.balance;
-
-        vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max);
-
-        // The stray 1 WETH is untouched by the bet ...
-        assertEq(weth.balanceOf(address(mint)), 1 ether, "stray WETH left in the router");
-        assertEq(address(mint).balance, 0, "no stuck ETH");
-        // ... and the bettor only ever pays its own slice + cost (no windfall, no loss).
-        assertEq(balBefore - bettor.balance, slice + cost, "bettor pays exactly slice + cost");
-        assertEq(ctf.balanceOf(bettor, _positionId(0)), qty, "outcome tokens delivered");
-    }
-
-    function testBetDeliversViaSingleTransfer() public {
-        // Exercises onERC1155Received (single) instead of the batch hook.
-        market.setSingleTransfer(true);
-        vm.prank(bettor);
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
-        assertEq(ctf.balanceOf(bettor, _positionId(0)), 1 ether, "single-transfer delivery");
-    }
-
-    function testBetWithNoMintedTokens() public {
-        // Market mints nothing: should revert with NoOutcomeTokensReceived.
-        market.setSkipMint(true);
-        vm.prank(bettor);
-        vm.expectRevert(DePrizeMint.NoOutcomeTokensReceived.selector);
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
-    }
-
-    function testBetRevertsNonPositiveCost() public {
-        // qty == 0 -> calcNetCost == 0 -> NonPositiveCost.
-        vm.prank(bettor);
-        vm.expectRevert(DePrizeMint.NonPositiveCost.selector);
-        mint.bet{value: 1 ether}(deprizeId, 0, 0, type(uint256).max);
-    }
-
-    function testBetRevertsWhenRefundFails() public {
-        RevertingBettor rb = new RevertingBettor(mint);
-        vm.deal(address(rb), 10 ether);
-        // leftover refund to rb fails because rb has no payable receive.
-        vm.expectRevert(DePrizeMint.RefundFailed.selector);
-        rb.placeBet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
-    }
-
-    // -- upgradeability -----------------------------------------------------
-
-    function testUpgradeAuthorized() public {
-        DePrizeMintV2 v2 = new DePrizeMintV2();
-        vm.prank(owner);
-        mint.upgradeToAndCall(address(v2), "");
-        assertEq(DePrizeMintV2(payable(address(mint))).version(), 2);
-    }
-
-    function testUpgradeOnlyOwner() public {
-        DePrizeMintV2 v2 = new DePrizeMintV2();
-        vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", bettor));
-        mint.upgradeToAndCall(address(v2), "");
-    }
-
-    function testBetOnSecondOutcome() public {
-        uint256 qty = 2 ether; // cost = 1 ETH
-        vm.prank(bettor);
-        mint.bet{value: 2 ether}(deprizeId, 1, qty, type(uint256).max);
-        assertEq(ctf.balanceOf(bettor, _positionId(1)), qty);
-        assertEq(ctf.balanceOf(bettor, _positionId(0)), 0);
-    }
-
-    // -- gates / guards -----------------------------------------------------
-
-    function testBetRevertsWhenBettingClosed() public {
-        vm.prank(owner);
-        registry.lock(deprizeId); // OPEN -> LOCKED, betting no longer open
-
-        vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
-    }
-
-    function testBetRevertsWhenCancellationPending() public {
-        vm.prank(owner);
-        registry.announceCancellation(deprizeId); // bettingOpen becomes false
-
-        vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max);
-    }
-
-    function testBetRevertsBadOutcomeIndex() public {
-        vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BadOutcomeIndex.selector, deprizeId, uint8(3)));
-        mint.bet{value: 1 ether}(deprizeId, 3, 1 ether, type(uint256).max);
-    }
-
-    function testBetRevertsMaxCostExceeded() public {
-        uint256 qty = 1 ether; // outcome cost 0.5 + 1% fee = 0.505 ETH total
-        uint256 cap = 0.4 ether; // below total cost
-        vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.505 ether, 0.95 ether, cap));
-        mint.bet{value: 1 ether}(deprizeId, 0, qty, cap);
-    }
-
-    function testBetRevertsWhenCostExceedsBudget() public {
-        // qty needs 0.505 ETH total cost but only 0.095 ETH budget from 0.1 ETH value.
-        uint256 qty = 1 ether;
-        vm.prank(bettor);
-        vm.expectRevert(
-            abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, 0.505 ether, 0.095 ether, type(uint256).max)
-        );
-        mint.bet{value: 0.1 ether}(deprizeId, 0, qty, type(uint256).max);
-    }
-
-    function testBetRevertsMarketNotSet() public {
+    function _openSecondDePrize() internal returns (uint256 id, MockLMSR m2, bytes32 cond2) {
+        bytes32 q2 = keccak256("second");
+        ctf.prepareCondition(oracle, q2, 3);
+        cond2 = ctf.getConditionId(oracle, q2, 3);
+        m2 = new MockLMSR(address(ctf), address(weth), 3, PRICE, cond2);
         vm.startPrank(owner);
-        uint256 other = registry.register(99, teamIds, block.timestamp + 30 days);
-        registry.setCondition(other, keccak256("c2"));
-        registry.open(other);
+        id = registry.register(JB_PROJECT + 1, teamIds, block.timestamp + 30 days);
+        registry.setCondition(id, cond2);
+        registry.open(id);
         vm.stopPrank();
+    }
 
+    // ---------------------------------------------------------------------
+    // construction
+    // ---------------------------------------------------------------------
+
+    function testConstructorWiresImmutables() public view {
+        assertEq(mint.owner(), owner);
+        assertEq(mint.pendingOwner(), address(0));
+        assertEq(address(mint.registry()), address(registry));
+        assertEq(address(mint.jbTerminal()), address(terminal));
+        assertEq(address(mint.weth()), address(weth));
+        assertEq(address(mint.ctf()), address(ctf));
+        assertEq(mint.SLICE_DENOMINATOR(), 20);
+    }
+
+    function testConstructorRejectsZeroDependencies() public {
+        vm.expectRevert(DePrizeMint.ZeroAddress.selector);
+        new DePrizeMint(owner, address(0), address(terminal), address(weth), address(ctf));
+        vm.expectRevert(DePrizeMint.ZeroAddress.selector);
+        new DePrizeMint(owner, address(registry), address(0), address(weth), address(ctf));
+        vm.expectRevert(DePrizeMint.ZeroAddress.selector);
+        new DePrizeMint(owner, address(registry), address(terminal), address(0), address(ctf));
+        vm.expectRevert(DePrizeMint.ZeroAddress.selector);
+        new DePrizeMint(owner, address(registry), address(terminal), address(weth), address(0));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableInvalidOwner.selector, address(0)));
+        new DePrizeMint(address(0), address(registry), address(terminal), address(weth), address(ctf));
+    }
+
+    function testNoProxyPlumbingAndNoReceive() public {
+        (bool okInit,) = address(mint).call(abi.encodeWithSignature("initialize(address,address,address,address,address)", owner, owner, owner, owner, owner));
+        assertFalse(okInit, "initialize must not exist");
+        (bool okUpgrade,) = address(mint).call(abi.encodeWithSignature("upgradeToAndCall(address,bytes)", owner, ""));
+        assertFalse(okUpgrade, "UUPS must not exist");
+        (bool okFee,) = address(mint).call(abi.encodeWithSignature("setFeeRouter(address)", owner));
+        assertFalse(okFee, "fee router must not exist");
         vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketNotSet.selector, other));
-        mint.bet{value: 1 ether}(other, 0, 1 ether, type(uint256).max);
+        (bool okEth,) = address(mint).call{value: 1 wei}("");
+        assertFalse(okEth, "mint must not accept stray ETH");
     }
 
-    // -- admin: setMarket validations --------------------------------------
-
-    function testSetMarketRevertsOnCtfMismatch() public {
-        MockCTF otherCtf = new MockCTF();
-        MockMarket badMarket = new MockMarket(address(otherCtf), address(weth), 3, PRICE);
-        vm.prank(owner);
-        vm.expectRevert(DePrizeMint.MarketCtfMismatch.selector);
-        mint.setMarket(deprizeId, address(badMarket));
-    }
-
-    function testSetMarketRevertsOnCollateralMismatch() public {
-        MockWETH otherWeth = new MockWETH();
-        MockMarket badMarket = new MockMarket(address(ctf), address(otherWeth), 3, PRICE);
-        vm.prank(owner);
-        vm.expectRevert(DePrizeMint.MarketCollateralMismatch.selector);
-        mint.setMarket(deprizeId, address(badMarket));
-    }
-
-    function testSetMarketRevertsOnSlotMismatch() public {
-        MockMarket badMarket = new MockMarket(address(ctf), address(weth), 2, PRICE);
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketSlotMismatch.selector, 2, 3));
-        mint.setMarket(deprizeId, address(badMarket));
-    }
-
-    function testSetMarketRevertsOnConditionMismatch() public {
-        // Valid CTF/collateral/slots, but the market settles a different condition
-        // than the one the registry will resolve.
-        MockMarket badMarket = new MockMarket(address(ctf), address(weth), 3, PRICE);
-        bytes32 wrongCondition = keccak256("other-condition");
-        badMarket.setConditionId(wrongCondition);
-        vm.prank(owner);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                DePrizeMint.MarketConditionMismatch.selector, wrongCondition, keccak256("condition")
+    function testEip712DomainIsStable() public view {
+        // The backend signer (ui/pages/api/deprize/permit.ts) signs against
+        // name "DePrizeMint" / version "1"; a v2 redeploy must not change that.
+        bytes32 domain = keccak256(
+            abi.encode(
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256("DePrizeMint"),
+                keccak256("1"),
+                block.chainid,
+                address(mint)
             )
         );
-        mint.setMarket(deprizeId, address(badMarket));
-    }
-
-    function testSetMarketOnlyOwner() public {
-        vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", bettor));
-        mint.setMarket(deprizeId, address(market));
-    }
-
-    function testZeroMarketReverts() public {
-        vm.prank(owner);
-        vm.expectRevert(DePrizeMint.ZeroMarket.selector);
-        mint.setMarket(deprizeId, address(0));
-    }
-
-    // -- ERC-1155 receiver guard -------------------------------------------
-
-    function testRejectsUnsolicitedERC1155() public {
-        uint256[] memory ids = new uint256[](1);
-        uint256[] memory values = new uint256[](1);
-        ids[0] = 1;
-        values[0] = 1;
-        // Even from the configured CTF, transfers outside an active bet are rejected.
-        vm.prank(address(ctf));
-        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
-        IERC1155Receiver(address(mint)).onERC1155BatchReceived(address(this), address(0), ids, values, "");
-    }
-
-    function testRejectsUnsolicitedERC1155Single() public {
-        vm.prank(address(ctf));
-        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
-        IERC1155Receiver(address(mint)).onERC1155Received(address(this), address(0), 1, 1, "");
-    }
-
-    function testRejectsERC1155FromNonCtf() public {
-        // A non-CTF caller is rejected even if a bet were in progress (here it isn't).
-        uint256[] memory ids = new uint256[](1);
-        uint256[] memory values = new uint256[](1);
-        ids[0] = 1;
-        values[0] = 1;
-        vm.prank(address(0xDEAD));
-        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
-        IERC1155Receiver(address(mint)).onERC1155BatchReceived(address(this), address(0), ids, values, "");
+        uint256 deadline = block.timestamp + 1;
+        bytes32 structHash = keccak256(abi.encode(mint.COMPLIANCE_PERMIT_TYPEHASH(), bettor, deprizeId, deadline));
+        assertEq(mint.hashPermit(bettor, deprizeId, deadline), keccak256(abi.encodePacked("\x19\x01", domain, structHash)));
     }
 
     function testSupportsInterface() public view {
-        assertTrue(mint.supportsInterface(type(IERC1155Receiver).interfaceId), "ERC1155Receiver");
-        assertTrue(mint.supportsInterface(type(IERC165).interfaceId), "ERC165");
-        assertFalse(mint.supportsInterface(0xffffffff), "unknown");
-    }
-}
-
-/// @notice Optional integration test against the real, already-deployed Gnosis CTF
-///         + LMSRWithTWAP market on Arbitrum-Sepolia. The 0.5 prediction-market
-///         contracts cannot be deployed from Foundry, so we reuse the live market
-///         and only mock the Juicebox terminal (the 5% slice). Skips entirely unless
-///         `DEPRIZE_FORK_RPC` is set, so CI without an RPC is unaffected.
-///
-/// Run with: DEPRIZE_FORK_RPC=<arb-sepolia rpc> forge test --match-contract DePrizeMintForkTest -vvv
-contract DePrizeMintForkTest is Test {
-    // Arbitrum-Sepolia deployments (mirror ui/const/config.ts).
-    address constant WETH = 0xA441f20115c868dc66bC1977E1c17D4B9A0189c7;
-    address constant CTF = 0xa0B1b14515C26acb193cb45Be5508A8A46109a27;
-    address constant MARKET = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
-
-    DePrizeMint mint;
-    DePrizeRegistry registry;
-    MockJBTerminal terminal;
-
-    address owner = address(0xA11CE);
-    address bettor = address(0xB0B);
-    uint256 deprizeId;
-    uint256 slots;
-
-    function setUp() public {
-        string memory rpc = vm.envOr("DEPRIZE_FORK_RPC", string(""));
-        if (bytes(rpc).length == 0) return; // not configured -> tests no-op
-        vm.createSelectFork(rpc);
-
-        slots = ILMSRWithTWAP(MARKET).atomicOutcomeSlotCount();
-        require(slots >= 2, "market needs >=2 outcomes");
-
-        terminal = new MockJBTerminal();
-
-        DePrizeRegistry regImpl = new DePrizeRegistry();
-        registry = DePrizeRegistry(
-            address(new ERC1967Proxy(address(regImpl), abi.encodeCall(DePrizeRegistry.initialize, (owner))))
-        );
-
-        DePrizeMint mintImpl = new DePrizeMint();
-        mint = DePrizeMint(
-            payable(
-                address(
-                    new ERC1967Proxy(
-                        address(mintImpl),
-                        abi.encodeCall(DePrizeMint.initialize, (owner, address(registry), address(terminal), WETH, CTF))
-                    )
-                )
-            )
-        );
-
-        uint256[] memory teams = new uint256[](slots);
-        for (uint256 i = 0; i < slots; i++) {
-            teams[i] = 100 + i;
-        }
-
-        vm.startPrank(owner);
-        deprizeId = registry.register(4, teams, block.timestamp + 30 days);
-        registry.setCondition(deprizeId, ILMSRWithTWAP(MARKET).conditionIds(0));
-        registry.open(deprizeId);
-        mint.setMarket(deprizeId, MARKET); // validates pmSystem()/collateralToken()/slots
-        vm.stopPrank();
-
-        vm.deal(bettor, 100 ether);
+        assertTrue(mint.supportsInterface(type(IERC1155Receiver).interfaceId));
+        assertTrue(mint.supportsInterface(type(IERC165).interfaceId));
+        assertFalse(mint.supportsInterface(0xdeadbeef));
     }
 
-    function _forkEnabled() internal view returns (bool) {
-        return address(mint) != address(0);
-    }
+    // ---------------------------------------------------------------------
+    // happy path
+    // ---------------------------------------------------------------------
 
-    function testForkBetReusesLiveMarket() public {
-        if (!_forkEnabled()) return;
+    function testBetRoutesSliceBuysAndRefunds() public {
+        uint256 qty = 1 ether;
+        uint256 value = 1 ether;
+        uint256 slice = value / 20; // 0.05
+        uint256 cost = _cost(qty); // 0.505
+        uint256 refund = value - slice - cost;
 
-        uint256 qty = 0.01 ether; // small order against the live market
-        int256[] memory amounts = new int256[](slots);
-        amounts[0] = int256(qty);
-        uint256 net = uint256(ILMSRWithTWAP(MARKET).calcNetCost(amounts));
-        uint256 cost = net + ILMSRWithTWAP(MARKET).calcMarketFee(net); // fee-inclusive
-        assertGt(cost, 0, "expected positive cost");
+        uint256 before = bettor.balance;
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
 
-        uint256 value = cost * 2 + 1 ether; // ample for slice + cost
-        uint256 expectedSlice = value / 20;
-        uint256 balBefore = bettor.balance;
-
-        // Outcome tokens are delivered to the bettor via the ERC-1155 acceptance
-        // callbacks (position-id math handled inside the live CTF).
+        vm.expectEmit(true, true, false, true);
+        emit Bet(deprizeId, bettor, 0, qty, cost, slice);
         vm.prank(bettor);
-        mint.bet{value: value}(deprizeId, 0, qty, cost); // maxCost = exact quote
+        mint.bet{value: value}(deprizeId, 0, qty, type(uint256).max, deadline, sig);
 
-        // 5% routed to the (mock) Juicebox terminal.
-        assertEq(terminal.lastValue(), expectedSlice, "slice");
-        assertEq(terminal.lastBeneficiary(), bettor, "beneficiary");
-
-        // Net spend is slice + cost; the rest refunded. No funds stuck.
-        assertEq(balBefore - bettor.balance, expectedSlice + cost, "net spend");
-        assertEq(address(mint).balance, 0, "no stuck ETH");
-        assertEq(IWETH(WETH).balanceOf(address(mint)), 0, "no stuck WETH");
+        assertEq(terminal.lastProjectId(), JB_PROJECT);
+        assertEq(terminal.lastBeneficiary(), bettor);
+        assertEq(terminal.lastValue(), slice);
+        assertEq(weth.balanceOf(address(market)), cost, "market received exactly cost");
+        assertEq(ctf.balanceOf(bettor, market.positionId(0)), qty, "bettor holds the outcome tokens");
+        assertEq(ctf.balanceOf(bettor, market.positionId(1)), 0);
+        assertEq(before - bettor.balance, slice + cost, "bettor paid slice + cost");
+        assertEq(bettor.balance, before - value + refund, "unspent budget refunded");
+        assertGt(refund, 0, "this case has a refund");
+        _assertMintHoldsNothing();
     }
 
-    function testForkMaxCostGuard() public {
-        if (!_forkEnabled()) return;
+    function testBetExactBudgetNoRefund() public {
+        uint256 qty = 1 ether;
+        uint256 cost = _cost(qty);
+        // value such that value - value/20 == cost  => value = cost * 20 / 19 (rounded up)
+        uint256 value = (cost * 20 + 18) / 19;
+        uint256 slice = value / 20;
+        assertGe(value - slice, cost);
+        uint256 before = bettor.balance;
+        _bet(mint, bettor, value, deprizeId, 1, qty, cost);
+        assertEq(before - bettor.balance, slice + cost);
+        assertEq(ctf.balanceOf(bettor, market.positionId(1)), qty);
+        _assertMintHoldsNothing();
+    }
 
-        uint256 qty = 0.01 ether;
-        int256[] memory amounts = new int256[](slots);
-        amounts[0] = int256(qty);
-        uint256 net = uint256(ILMSRWithTWAP(MARKET).calcNetCost(amounts));
-        uint256 cost = net + ILMSRWithTWAP(MARKET).calcMarketFee(net); // fee-inclusive
+    function testBetAcceptsSingleTransferDelivery() public {
+        // Default mock delivery is the real Gnosis shape (one batch over all slots);
+        // a market that sends one single transfer per slot must also settle.
+        market.setDeliverSingle(true);
+        _bet(mint, bettor, 1 ether, deprizeId, 2, 1 ether, type(uint256).max);
+        assertEq(ctf.balanceOf(bettor, market.positionId(2)), 1 ether);
+        _assertMintHoldsNothing();
+    }
 
-        uint256 value = cost * 2 + 1 ether;
-        uint256 cap = cost - 1; // just below the quote
+    function testMultipleBetsAccumulateFeesInMarketOnly() public {
+        _bet(mint, bettor, 1 ether, deprizeId, 0, 1 ether, type(uint256).max);
+        _bet(mint, other, 2 ether, deprizeId, 1, 2 ether, type(uint256).max);
+        assertEq(weth.balanceOf(address(market)), _cost(1 ether) + _cost(2 ether));
+        assertEq(terminal.totalReceived(), 1 ether / 20 + 2 ether / 20);
+        assertEq(terminal.payCount(), 2);
+        _assertMintHoldsNothing();
+    }
+
+    function testFuzzBetConservesValue(uint96 qtyRaw, uint96 extraRaw) public {
+        uint256 qty = bound(uint256(qtyRaw), 1e12, 50 ether);
+        uint256 extra = bound(uint256(extraRaw), 0, 10 ether);
+        uint256 cost = _cost(qty);
+        uint256 value = (cost * 20 + 18) / 19 + extra;
+        vm.deal(bettor, value);
+        uint256 slice = value / 20;
+
+        _bet(mint, bettor, value, deprizeId, 0, qty, type(uint256).max);
+
+        uint256 refund = bettor.balance;
+        assertEq(slice + cost + refund, value, "ETH in == slice + cost + refund");
+        assertEq(terminal.totalReceived(), slice);
+        assertEq(weth.balanceOf(address(market)), cost);
+        assertEq(ctf.balanceOf(bettor, market.positionId(0)), qty);
+        _assertMintHoldsNothing();
+    }
+
+    // ---------------------------------------------------------------------
+    // input validation
+    // ---------------------------------------------------------------------
+
+    function testBetRevertsCostAboveMaxCost() public {
+        uint256 cost = _cost(1 ether);
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
-        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, cost, value - value / 20, cap));
-        mint.bet{value: value}(deprizeId, 0, qty, cap);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, cost, 0.95 ether, cost - 1));
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, cost - 1, deadline, sig);
     }
 
-    function testForkBettingClosedGate() public {
-        if (!_forkEnabled()) return;
+    function testBetRevertsCostAboveBudget() public {
+        uint256 cost = _cost(1 ether);
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CostTooHigh.selector, cost, 0.475 ether, type(uint256).max));
+        mint.bet{value: 0.5 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testBetRevertsZeroQuantity() public {
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.prank(bettor);
+        vm.expectRevert(DePrizeMint.NonPositiveCost.selector);
+        mint.bet{value: 1 ether}(deprizeId, 0, 0, type(uint256).max, deadline, sig);
+    }
+
+    function testBetRevertsBadOutcomeIndex() public {
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BadOutcomeIndex.selector, deprizeId, 3));
+        mint.bet{value: 1 ether}(deprizeId, 3, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testBetRevertsMarketNotSet() public {
+        (uint256 id,,) = _openSecondDePrize();
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, id);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketNotSet.selector, id));
+        mint.bet{value: 1 ether}(id, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testBetRevertsWhenBettingClosed() public {
         vm.prank(owner);
-        registry.lock(deprizeId);
+        registry.announceCancellation(deprizeId);
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
         vm.prank(bettor);
         vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
-        mint.bet{value: 1 ether}(deprizeId, 0, 0.01 ether, type(uint256).max);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+
+        vm.startPrank(owner);
+        registry.abortCancellation(deprizeId);
+        registry.lock(deprizeId);
+        vm.stopPrank();
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, deprizeId));
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testBetRevertsUnknownDePrize() public {
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, 77);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.BettingClosed.selector, 77));
+        mint.bet{value: 1 ether}(77, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    // ---------------------------------------------------------------------
+    // compliance permit
+    // ---------------------------------------------------------------------
+
+    function testPermitExpired() public {
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.warp(deadline + 1);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.PermitExpired.selector, deadline));
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testPermitBoundToWallet() public {
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.prank(other);
+        vm.expectRevert(); // InvalidPermit(recovered) with an unpredictable recovered address
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testPermitBoundToDePrize() public {
+        (uint256 id, MockLMSR m2,) = _openSecondDePrize();
+        vm.prank(owner);
+        mint.setMarket(id, address(m2));
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.prank(bettor);
+        vm.expectRevert();
+        mint.bet{value: 1 ether}(id, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testPermitWrongSigner() public {
+        uint256 deadline = block.timestamp + 1 hours;
+        uint256 badPk = uint256(keccak256("not-the-signer"));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(badPk, mint.hashPermit(bettor, deprizeId, deadline));
+        bytes memory sig = abi.encodePacked(r, s, v);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.InvalidPermit.selector, vm.addr(badPk)));
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testPermitSignerUnsetDisablesBetting() public {
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.expectEmit(true, false, false, false);
+        emit ComplianceSignerSet(address(0));
+        vm.prank(owner);
+        mint.setComplianceSigner(address(0));
+        vm.prank(bettor);
+        vm.expectRevert(DePrizeMint.ComplianceSignerUnset.selector);
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testSetComplianceSignerOnlyOwner() public {
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, bettor));
+        mint.setComplianceSigner(bettor);
+    }
+
+    // ---------------------------------------------------------------------
+    // setMarket
+    // ---------------------------------------------------------------------
+
+    function testSetMarketOnlyOwner() public {
+        (uint256 id, MockLMSR m2,) = _openSecondDePrize();
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, bettor));
+        mint.setMarket(id, address(m2));
+    }
+
+    function testSetMarketIsWriteOnce() public {
+        (uint256 id, MockLMSR m2, bytes32 cond2) = _openSecondDePrize();
+        MockLMSR m3 = new MockLMSR(address(ctf), address(weth), 3, PRICE, cond2);
+        vm.startPrank(owner);
+        vm.expectEmit(true, true, false, false);
+        emit MarketSet(id, address(m2));
+        mint.setMarket(id, address(m2));
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketAlreadySet.selector, id, address(m2)));
+        mint.setMarket(id, address(m3));
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketAlreadySet.selector, id, address(m2)));
+        mint.setMarket(id, address(m2));
+        vm.stopPrank();
+        assertEq(mint.marketOf(id), address(m2));
+    }
+
+    function testSetMarketValidations() public {
+        (uint256 id,, bytes32 cond2) = _openSecondDePrize();
+        vm.startPrank(owner);
+
+        vm.expectRevert(DePrizeMint.ZeroAddress.selector);
+        mint.setMarket(id, address(0));
+
+        MockResolvingCTF otherCtf = new MockResolvingCTF(address(weth));
+        MockLMSR badCtf = new MockLMSR(address(otherCtf), address(weth), 3, PRICE, cond2);
+        vm.expectRevert(DePrizeMint.MarketCtfMismatch.selector);
+        mint.setMarket(id, address(badCtf));
+
+        MockWETH otherWeth = new MockWETH();
+        MockLMSR badWeth = new MockLMSR(address(ctf), address(otherWeth), 3, PRICE, cond2);
+        vm.expectRevert(DePrizeMint.MarketCollateralMismatch.selector);
+        mint.setMarket(id, address(badWeth));
+
+        MockLMSR badSlots = new MockLMSR(address(ctf), address(weth), 4, PRICE, cond2);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.MarketSlotMismatch.selector, 4, 3));
+        mint.setMarket(id, address(badSlots));
+
+        MockLMSR badCond = new MockLMSR(address(ctf), address(weth), 3, PRICE, conditionId);
+        vm.expectRevert(
+            abi.encodeWithSelector(DePrizeMint.MarketConditionMismatch.selector, conditionId, cond2)
+        );
+        mint.setMarket(id, address(badCond));
+        vm.stopPrank();
+    }
+
+    // ---------------------------------------------------------------------
+    // fail closed on market misbehaviour
+    // ---------------------------------------------------------------------
+
+    function testBetRevertsWhenMarketUnderpulls() public {
+        market.setUnderpull(1);
+        uint256 cost = _cost(1 ether);
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.CollateralMismatch.selector, cost, cost - 1));
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+        _assertMintHoldsNothing();
+    }
+
+    function testBetRevertsWhenNoTokensDelivered() public {
+        market.setSkipDeliver(true);
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        uint256 expectedId = market.positionId(0);
+        vm.prank(bettor);
+        vm.expectRevert(abi.encodeWithSelector(DePrizeMint.OutcomeTokenMismatch.selector, expectedId, 1 ether, 0));
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testBetRevertsWhenWrongSlotDelivered() public {
+        market.setDeliverWrongSlot(true);
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.prank(bettor);
+        // The hook refuses a non-zero amount on any id other than the expected one.
+        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
+        mint.bet{value: 1 ether}(deprizeId, 1, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testBetRevertsWhenOverDelivered() public {
+        market.setOverDeliver(true);
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        uint256 expectedId = market.positionId(0);
+        vm.prank(bettor);
+        vm.expectRevert(
+            abi.encodeWithSelector(DePrizeMint.OutcomeTokenMismatch.selector, expectedId, 1 ether, 1 ether + 1)
+        );
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testBetRevertsWhenMarketPaused() public {
+        vm.prank(address(this));
+        market.pause();
+        (uint256 deadline, bytes memory sig) = _permit(mint, bettor, deprizeId);
+        vm.prank(bettor);
+        vm.expectRevert("market halted");
+        mint.bet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    // ---------------------------------------------------------------------
+    // ERC-1155 receiver gating
+    // ---------------------------------------------------------------------
+
+    function testReceiverRejectsOutsideBet() public {
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory vals = new uint256[](1);
+        vm.prank(address(ctf));
+        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
+        mint.onERC1155Received(address(0), address(0), 1, 1, "");
+        vm.prank(address(ctf));
+        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
+        mint.onERC1155BatchReceived(address(0), address(0), ids, vals, "");
+    }
+
+    function testReceiverRejectsNonCtfSender() public {
+        vm.prank(bettor);
+        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
+        mint.onERC1155Received(address(0), address(0), 1, 1, "");
+    }
+
+    function testUnsolicitedCtfTransferToMintReverts() public {
+        uint256 id = market.positionId(0);
+        ctf.mint(bettor, id, 5);
+        vm.prank(bettor);
+        vm.expectRevert(DePrizeMint.UnexpectedERC1155.selector);
+        ctf.safeTransferFrom(bettor, address(mint), id, 5, "");
+    }
+
+    // ---------------------------------------------------------------------
+    // refund path
+    // ---------------------------------------------------------------------
+
+    function testRefundFailureReverts() public {
+        RevertingBettor rb = new RevertingBettor(mint);
+        vm.deal(address(rb), 10 ether);
+        (uint256 deadline, bytes memory sig) = _permit(mint, address(rb), deprizeId);
+        vm.expectRevert(DePrizeMint.RefundFailed.selector);
+        rb.placeBet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+    }
+
+    function testReentrantRefundIsRejected() public {
+        ReentrantBettor rb = new ReentrantBettor(mint);
+        vm.deal(address(rb), 10 ether);
+        (uint256 deadline, bytes memory sig) = _permit(mint, address(rb), deprizeId);
+        // Inner bet reverts (ReentrancyGuard) -> receive reverts -> outer RefundFailed.
+        vm.expectRevert(DePrizeMint.RefundFailed.selector);
+        rb.placeBet{value: 1 ether}(deprizeId, 0, 1 ether, type(uint256).max, deadline, sig);
+        _assertMintHoldsNothing();
+    }
+
+    // ---------------------------------------------------------------------
+    // ownership
+    // ---------------------------------------------------------------------
+
+    function testRenounceOwnershipDisabled() public {
+        vm.prank(owner);
+        vm.expectRevert(DePrizeMint.RenounceDisabled.selector);
+        mint.renounceOwnership();
+        assertEq(mint.owner(), owner);
+    }
+
+    function testOwnershipIsTwoStep() public {
+        vm.prank(owner);
+        mint.transferOwnership(other);
+        assertEq(mint.owner(), owner);
+        vm.prank(other);
+        mint.acceptOwnership();
+        assertEq(mint.owner(), other);
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, owner));
+        mint.setComplianceSigner(owner);
     }
 }

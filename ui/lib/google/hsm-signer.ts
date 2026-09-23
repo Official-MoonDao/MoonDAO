@@ -11,7 +11,7 @@
  * - Proxies unknown JSON-RPC methods to the configured RPC node
  */
 import { KeyManagementServiceClient } from '@google-cloud/kms'
-import { utils, providers } from 'ethers'
+import { BigNumber, providers, utils } from 'ethers'
 import {
   arrayify,
   hexlify,
@@ -19,6 +19,7 @@ import {
   toUtf8Bytes,
   joinSignature,
 } from 'ethers/lib/utils'
+import { resolveEip1559FeesFromProvider } from '@/lib/rpc/eip1559Fees'
 import { arbitrum, sepolia } from '../rpc/chains'
 
 // -----------------------------
@@ -324,6 +325,7 @@ export async function sendTransaction(
   const nonce = await provider.getTransactionCount(from)
   const fee = await provider.getFeeData()
   const network = await provider.getNetwork()
+  const eip1559 = await resolveHsmEip1559Fees(provider, tx, fee)
 
   // Estimate gas if not provided
   let gasLimit = tx.gasLimit
@@ -350,8 +352,8 @@ export async function sendTransaction(
     type: 2,
     chainId: network.chainId,
     gasLimit,
-    maxFeePerGas: tx.maxFeePerGas ?? fee.maxFeePerGas ?? fee.gasPrice,
-    maxPriorityFeePerGas: tx.maxPriorityFeePerGas ?? fee.maxPriorityFeePerGas,
+    maxFeePerGas: eip1559.maxFeePerGas,
+    maxPriorityFeePerGas: eip1559.maxPriorityFeePerGas,
   }
 
   console.log('HSM sendTransaction - Final transaction:', {
@@ -404,6 +406,161 @@ export async function sendTransaction(
     }
   }
   throw new Error('Recovery failed')
+}
+
+function getHSMProvider(): providers.JsonRpcProvider {
+  return new providers.JsonRpcProvider(
+    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum.rpc : sepolia.rpc
+  )
+}
+
+function toFeeBigNumber(value: bigint): BigNumber {
+  return BigNumber.from(value.toString())
+}
+
+async function resolveHsmEip1559Fees(
+  provider: providers.Provider,
+  tx: { maxFeePerGas?: unknown; maxPriorityFeePerGas?: unknown },
+  fee: providers.FeeData
+): Promise<{ maxFeePerGas: BigNumber; maxPriorityFeePerGas?: BigNumber }> {
+  try {
+    const resolved = await resolveEip1559FeesFromProvider(provider)
+    if (resolved.maxFeePerGas > 0n) {
+      return {
+        maxFeePerGas: toFeeBigNumber(resolved.maxFeePerGas),
+        maxPriorityFeePerGas: toFeeBigNumber(resolved.maxPriorityFeePerGas),
+      }
+    }
+  } catch (error) {
+    console.warn(
+      'HSM EIP-1559 fee resolve failed, falling back to provider fee data:',
+      error
+    )
+  }
+  return {
+    maxFeePerGas: (tx.maxFeePerGas as BigNumber | undefined) ??
+      fee.maxFeePerGas ??
+      fee.gasPrice ??
+      BigNumber.from(0),
+    maxPriorityFeePerGas:
+      (tx.maxPriorityFeePerGas as BigNumber | undefined) ??
+      fee.maxPriorityFeePerGas ??
+      undefined,
+  }
+}
+
+// Sign a fully-populated EIP-1559 tx object with the KMS key and return the
+// serialized raw tx, recovering the correct `v`. Shared by the single-send
+// and batch-send paths so their signing logic can't drift apart.
+async function signSerializedTx(
+  cfg: HSMConfig,
+  finalTx: any,
+  from: string
+): Promise<string> {
+  const unsigned = utils.serializeTransaction(finalTx)
+  const digest = keccak256(unsigned)
+  const { r, s } = await kmsSignDigest(cfg, arrayify(digest))
+  for (const v of [27, 28]) {
+    const rec = utils.recoverAddress(digest, { r, s, v })
+    if (utils.getAddress(rec) === utils.getAddress(from)) {
+      return utils.serializeTransaction(finalTx, { v, r, s })
+    }
+  }
+  throw new Error('Recovery failed')
+}
+
+/**
+ * Broadcast several transactions from the HSM EOA back-to-back.
+ *
+ * Why this exists (vs. calling `sendTransaction` in a loop):
+ *   - `sendTransaction` reads the *latest* (confirmed) nonce and awaits a
+ *     confirmation for every tx. Firing it in a loop either collides on the
+ *     nonce (a load-balanced RPC hasn't yet caught up after `wait()`) or
+ *     blocks the request for one confirmation per tx — which is what makes the
+ *     operator "Add to Retroactives" call hang on "Sending…" once it needs to
+ *     write several columns.
+ *   - Here we read the *pending* nonce once and increment it locally, so each
+ *     broadcast gets a unique nonce without waiting, then confirm only the
+ *     final tx (bounded by a timeout). Because nonces are sequential, the last
+ *     tx confirming implies every earlier one did too.
+ *
+ * Returns the tx hashes in the same order as `txs`. A confirmation timeout is
+ * non-fatal: the txs are already broadcast, so we still return their hashes.
+ */
+export async function sendTransactionBatch(
+  cfg: HSMConfig,
+  txs: Array<{ to: string; data: string; value?: any }>,
+  opts?: { waitForConfirmation?: boolean; confirmationTimeoutMs?: number }
+): Promise<string[]> {
+  if (txs.length === 0) return []
+
+  const provider = getHSMProvider()
+  const from = (await getPublicKey(cfg)).address
+  const fee = await provider.getFeeData()
+  const network = await provider.getNetwork()
+  const eip1559 = await resolveHsmEip1559Fees(provider, {}, fee)
+  let nonce = await provider.getTransactionCount(from, 'pending')
+
+  const hashes: string[] = []
+  let lastHash: string | undefined
+
+  try {
+    for (const tx of txs) {
+      let gasLimit
+      try {
+        gasLimit = await provider.estimateGas({
+          to: tx.to,
+          data: tx.data,
+          from,
+          value: tx.value || 0,
+        })
+        gasLimit = gasLimit.mul(120).div(100)
+      } catch (error) {
+        console.warn('HSM batch - gas estimation failed, using default:', error)
+        gasLimit = utils.parseUnits('500000', 'wei')
+      }
+
+      const finalTx = {
+        to: tx.to,
+        data: tx.data,
+        value: tx.value || 0,
+        from,
+        nonce,
+        type: 2,
+        chainId: network.chainId,
+        gasLimit,
+        maxFeePerGas: eip1559.maxFeePerGas,
+        maxPriorityFeePerGas: eip1559.maxPriorityFeePerGas,
+      }
+
+      const raw = await signSerializedTx(cfg, finalTx, from)
+      const sent = await provider.sendTransaction(raw)
+      hashes.push(sent.hash)
+      lastHash = sent.hash
+      nonce++
+    }
+  } catch (err) {
+    // Preserve hashes already broadcast so callers can report partial progress
+    // instead of returning an empty submittedTxs list on mid-batch failure.
+    if (err && typeof err === 'object') {
+      ;(err as { submittedHashes?: string[] }).submittedHashes = hashes
+    }
+    throw err
+  }
+
+  if (opts?.waitForConfirmation !== false && lastHash) {
+    const timeoutMs = opts?.confirmationTimeoutMs ?? 45_000
+    try {
+      await provider.waitForTransaction(lastHash, 1, timeoutMs)
+    } catch (err) {
+      console.warn(
+        'HSM batch - confirmation wait timed out; txs remain broadcast:',
+        err
+      )
+    }
+  }
+
+  return hashes
 }
 
 // -----------------------------
@@ -497,6 +654,13 @@ export function getHSMSigner(): any {
     async sendTransaction(transaction: any): Promise<any> {
       const txHash = await sendTransaction(config, transaction)
       return { transactionHash: txHash }
+    },
+
+    async sendTransactionBatch(
+      txs: Array<{ to: string; data: string; value?: any }>,
+      opts?: { waitForConfirmation?: boolean; confirmationTimeoutMs?: number }
+    ): Promise<string[]> {
+      return sendTransactionBatch(config, txs, opts)
     },
   }
 }

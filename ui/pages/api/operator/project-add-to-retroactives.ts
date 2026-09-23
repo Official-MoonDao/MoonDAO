@@ -8,6 +8,7 @@ import { isOperator } from 'middleware/isOperator'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getHSMSigner, isHSMAvailable } from '@/lib/google/hsm-signer'
+import { PROJECT_ACTIVE, PROJECT_ENDED } from '@/lib/nance/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
 type Body = {
@@ -17,7 +18,12 @@ type Body = {
   rewardDistribution?: Record<string, number> | string
   upfrontPayments?: Record<string, any> | string
   markEligible?: boolean
+  // `markActive` → active = PROJECT_ACTIVE (2), so the project joins the
+  // current retro pool. `markInactive` → active = PROJECT_ENDED (0), so a
+  // retired project drops out of the "Active" tab and the current pool. They
+  // are mutually exclusive.
   markActive?: boolean
+  markInactive?: boolean
 }
 
 // Owner-only contract operations needed to put a completed project into the
@@ -168,10 +174,33 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
+  if (body.markActive && body.markInactive) {
+    return res.status(400).json({
+      error: 'markActive and markInactive are mutually exclusive',
+    })
+  }
+
   if (body.markActive) {
     calls.push({
       label: 'updateTableCol(active=2)',
-      data: iface.encodeFunctionData('updateTableCol', [projectId, 'active', '2']),
+      data: iface.encodeFunctionData('updateTableCol', [
+        projectId,
+        'active',
+        String(PROJECT_ACTIVE),
+      ]),
+    })
+  } else if (body.markInactive) {
+    // Retire the project from the current pool. Clearing the retro cohort
+    // pairs this with `markEligible: false` so a settled project leaves both
+    // the retro tab (no longer eligible) and the Active tab (no longer
+    // active === PROJECT_ACTIVE).
+    calls.push({
+      label: 'updateTableCol(active=0)',
+      data: iface.encodeFunctionData('updateTableCol', [
+        projectId,
+        'active',
+        String(PROJECT_ENDED),
+      ]),
     })
   }
 
@@ -183,18 +212,31 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const txs: Array<{ label: string; hash: string }> = []
   try {
-    for (const call of calls) {
-      const result = await signer.sendTransaction({
-        to: projectTableAddress,
-        data: call.data,
-      })
-      const hash = result?.transactionHash || result?.hash
+    // Broadcast every column write in one nonce-managed batch instead of
+    // awaiting a confirmation per call. Waiting per-tx serially made this
+    // route exceed the serverless time budget once a project needed multiple
+    // writes (final report + eligible + active), which surfaced in the
+    // operator UI as an "Add to Retroactives" modal stuck on "Sending…".
+    const hashes = await signer.sendTransactionBatch(
+      calls.map((call) => ({ to: projectTableAddress, data: call.data }))
+    )
+    calls.forEach((call, i) => {
+      const hash = hashes[i]
       if (!hash) {
         throw new Error(`No tx hash returned for ${call.label}`)
       }
       txs.push({ label: call.label, hash })
-    }
+    })
   } catch (err: any) {
+    // Mid-batch failures still leave earlier broadcasts in-flight; surface
+    // those hashes so operators/retries know which writes already landed.
+    if (Array.isArray(err?.submittedHashes)) {
+      err.submittedHashes.forEach((hash: string, i: number) => {
+        if (calls[i] && hash) {
+          txs.push({ label: calls[i].label, hash })
+        }
+      })
+    }
     console.error('project-add-to-retroactives failed:', err)
     return res.status(500).json({
       error: err?.message || 'Unknown error sending operator transactions',
@@ -208,5 +250,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     txs,
   })
 }
+
+// Multiple sequential on-chain writes (KMS signing + broadcast) can take well
+// over the platform default; give the function room so the operator request
+// resolves cleanly instead of the client hanging on a dropped connection.
+export const maxDuration = 60
 
 export default withMiddleware(handler, isOperator)

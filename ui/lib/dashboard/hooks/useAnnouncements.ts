@@ -7,15 +7,20 @@ export function useAnnouncements() {
 
   async function getAnnouncements(id?: string) {
     setIsLoading(true)
-    console.log('Fetching announcements...')
     try {
       const response = await fetch(
-        `/api/discord/announcements${id ? `?before=${id}` : ''}`
+        `/api/discord/messages?type=announcements${id ? `&before=${id}` : ''}`
       )
+      if (!response.ok) {
+        throw new Error('Failed to fetch announcements')
+      }
       const announcements = await response.json()
-      setAnnouncements((prev: any) => [...prev, ...announcements])
+      if (Array.isArray(announcements)) {
+        setAnnouncements((prev: any) => [...prev, ...announcements])
+      }
     } catch (error) {
       console.error('Error fetching announcements:', error)
+      setError(error)
     }
 
     setIsLoading(false)

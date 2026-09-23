@@ -85,6 +85,9 @@ import {
   getReviewPreviewFile,
   hasAiPortraitImage,
   isAiPortraitReady,
+  isGeneratedAiPortraitFile,
+  isUsableAiPortrait,
+  restoredCitizenImageLooksLikeAi,
 } from '@/lib/image-generator/citizenOnboardingImage'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
@@ -552,7 +555,11 @@ export default function CreateCitizen({
     }
   }, [imageGenProgress, isRegenerating, regenPhase, regenElapsedMs])
 
-  const hasAiPortrait = hasAiPortraitImage(citizenImage, croppedInputImage) && isAiPortraitReady()
+  const hasAiPortrait = isUsableAiPortrait(
+    citizenImage,
+    croppedInputImage,
+    isAiPortraitReady(),
+  )
 
   const isAwaitingAiPortrait = isImageGenerating || hasPendingImageJob
 
@@ -846,6 +853,7 @@ export default function CreateCitizen({
 
       const citizenName = citizenData.name
       const citizenPrettyLink = generatePrettyLinkWithId(citizenName, mintedTokenId)
+      const accessToken = await getAccessToken().catch(() => null)
 
       // The citizen's on-chain tokenURI is a Tableland gateway query, so its
       // metadata (name/image/attributes) only resolves once Tableland has
@@ -862,11 +870,10 @@ export default function CreateCitizen({
 
       // Record referral
       try {
-        const accessToken = await getAccessToken()
         const urlParams = new URLSearchParams(window.location.search)
         const referredBy = urlParams.get('referredBy')
 
-        if (referredBy && referredBy !== address) {
+        if (accessToken && referredBy && referredBy !== address) {
           const referralResponse = await fetch('/api/xp/citizen-referred', {
             method: 'POST',
             headers: {
@@ -934,16 +941,23 @@ export default function CreateCitizen({
       setMintComplete(true)
       fireCelebrationConfetti()
 
-      // Fire-and-forget: notify Discord once Tableland has indexed the new
-      // citizen so Discord's bot can scrape the OG image from the profile page.
-      // The server-side route polls Tableland before sending the message.
+      // Fire-and-forget: announce the new citizen in Discord. Pass the portrait
+      // URI and bio we just wrote on-chain so the server can upload the image
+      // with the message instead of relying on Discord to crawl the profile page
+      // (which needs Tableland to have indexed the row, and which drops the
+      // image whenever the IPFS gateway is slow).
       fetch('/api/discord/notify-new-citizen', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           tokenId: mintedTokenId,
           citizenName,
           prettyLink: citizenPrettyLink,
+          image: imageURI,
+          description: profile.bio,
         }),
       }).catch((err) => console.error('Failed to send Discord notification:', err))
 
@@ -1124,8 +1138,12 @@ export default function CreateCitizen({
     if (formData.citizenImage && isSerializedFile(formData.citizenImage)) {
       const restoredCitizenImage = base64ToFile(formData.citizenImage)
       setCitizenImage(restoredCitizenImage)
-      // If citizenImage differs from croppedInputImage, it's an AI portrait - mark it ready
-      if (!cropped || restoredCitizenImage !== cropped) {
+      // File object identity is meaningless after base64 restore — only a
+      // Comfy job filename (not the crop's own name/bytes) is a finished portrait.
+      const crop = isSerializedFile(formData.croppedInputImage)
+        ? formData.croppedInputImage
+        : undefined
+      if (restoredCitizenImageLooksLikeAi(formData.citizenImage, crop)) {
         markAiPortraitReady()
       }
     }
@@ -1259,18 +1277,17 @@ export default function CreateCitizen({
         setCitizenImage,
         'citizen image',
       )
-      // If citizenImage was restored and differs from croppedInputImage, it's an AI portrait
+      // If citizenImage was restored and is a Comfy download (not the crop),
+      // it's an AI portrait. SerializedFile stores bytes on `data`, not dataURL.
       if (
         citizenImageRestored &&
         formData.citizenImage &&
         isSerializedFile(formData.citizenImage)
       ) {
-        // Compare serialized data to determine if it's an AI portrait
-        if (
-          !formData.croppedInputImage ||
-          !isSerializedFile(formData.croppedInputImage) ||
-          formData.citizenImage.dataURL !== formData.croppedInputImage.dataURL
-        ) {
+        const crop = isSerializedFile(formData.croppedInputImage)
+          ? formData.croppedInputImage
+          : undefined
+        if (restoredCitizenImageLooksLikeAi(formData.citizenImage, crop)) {
           markAiPortraitReady()
         }
       }
@@ -1593,7 +1610,11 @@ export default function CreateCitizen({
       const sourceForGen = getGenerationSourceImage(cropped, undefined)
 
       const pendingJob = readPendingImageJob()
-      if (pendingJob && isPendingImageJobStale(pendingJob)) {
+      // Only eagerly clear stale 'uploading' jobs, which have no jobId to
+      // recover. A stale 'polling' job still has a real comfy.icu jobId that
+      // may already have a completed portrait waiting — decideImageResumeAction
+      // below will try to resume it rather than discard it.
+      if (pendingJob && isPendingImageJobStale(pendingJob) && pendingJob.status !== 'polling') {
         clearPendingImageJob()
       }
 
@@ -2028,7 +2049,8 @@ export default function CreateCitizen({
         inputImage,
         isImageGenerating,
         hasPendingImageJob,
-        aiPortraitReady: isAiPortraitReady(),
+        aiPortraitReady:
+          isAiPortraitReady() || isGeneratedAiPortraitFile(citizenImage),
       }),
     [citizenImage, croppedInputImage, inputImage, isImageGenerating, hasPendingImageJob],
   )

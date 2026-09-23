@@ -14,9 +14,11 @@ import {
   isValidEthereumAddress,
   requiresSafeTx,
   toHatIdHex,
+  wouldRemoveLastManager,
 } from '@/lib/hats/teamRoles'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import { DEFAULT_SAFE_TX_GAS } from '@/lib/safe/executionGas'
 import useSafe from '@/lib/safe/useSafe'
 import useTeamRoleRegistry, {
   REGISTRY_ROLE,
@@ -132,6 +134,7 @@ function TeamMembers({
   setHasAddedMember,
   managerHatId,
   adminHatId,
+  managerCount,
 }: any) {
   const hatNames = useHatNames(hatsContract, wearer.hatIds)
   const chainSlug = getChainSlug(selectedChain)
@@ -162,7 +165,7 @@ function TeamMembers({
       // Granting the manager hat is always admin-gated, so it routes through
       // the team Safe (queued for signers to execute).
       if (tx.routing === 'safe') {
-        await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
+        await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: DEFAULT_SAFE_TX_GAS })
         setHasAddedMember?.(true)
         toast.success('Promotion queued.')
       } else {
@@ -201,6 +204,39 @@ function TeamMembers({
                   <button
                     disabled={removingHat === hatName.hatId}
                     onClick={async () => {
+                      const removingManagerHat = isManagerHat(
+                        hatName.hatId,
+                        managerHatId
+                      )
+
+                      // Guard: never allow a team to be left with zero managers.
+                      // A team with no manager can no longer manage its own roles
+                      // (only the manager hat or Safe owner can), so it would need
+                      // super-manager intervention to recover.
+                      if (
+                        wouldRemoveLastManager(
+                          hatName.hatId,
+                          managerHatId,
+                          managerCount ?? 0
+                        )
+                      ) {
+                        return toast.error(
+                          "You can't remove the team's only manager. Assign another manager first, then remove this one."
+                        )
+                      }
+
+                      // Confirm removals of the (consequential, Safe-gated)
+                      // manager role to prevent accidental clicks.
+                      if (
+                        removingManagerHat &&
+                        typeof window !== 'undefined' &&
+                        !window.confirm(
+                          'Remove this manager? This revokes their administrative access and must be executed via the team Safe.'
+                        )
+                      ) {
+                        return
+                      }
+
                       setRemovingHat(hatName.hatId)
                       try {
                         const v2TeamCreatorPatchedPassthroughModuleAddress =
@@ -234,7 +270,7 @@ function TeamMembers({
                         )
 
                         if (tx.routing === 'safe') {
-                          await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
+                          await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: DEFAULT_SAFE_TX_GAS })
                           setHasDeletedMember(true)
                         } else {
                           await account?.sendTransaction({
@@ -304,6 +340,15 @@ function TeamManageMembersModal({
   const reversedHats = hats.slice().reverse()
 
   const uniqueWearers = useUniqueHatWearers(hats)
+
+  // How many distinct wallets currently wear the manager hat. Used to block
+  // removing the last manager (which would lock the team out of role management).
+  const managerCount = useMemo(() => {
+    if (!uniqueWearers) return 0
+    return uniqueWearers.filter((w: any) =>
+      w.hatIds?.some((id: string) => isManagerHat(id, managerHatId))
+    ).length
+  }, [uniqueWearers, managerHatId])
 
   const [hasAddedMember, setHasAddedMember] = useState<boolean>(false)
   const [newMemberAddress, setNewMemberAddress] = useState<string>('')
@@ -396,6 +441,7 @@ function TeamManageMembersModal({
                   setHasAddedMember={setHasAddedMember}
                   managerHatId={managerHatId}
                   adminHatId={adminHatId}
+                  managerCount={managerCount}
                 />
               ))
             ) : (
@@ -440,7 +486,7 @@ function TeamManageMembersModal({
 
             try {
               if (tx.routing === 'safe') {
-                await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: '1000000' })
+                await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: DEFAULT_SAFE_TX_GAS })
                 setHasAddedMember(true)
               } else {
                 await account?.sendTransaction({ to: tx.to, data: txData, value: '0', gas: 1000000 })

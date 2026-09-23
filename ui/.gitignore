@@ -51,3 +51,4 @@ scripts/generated/*
 !scripts/generated/.gitkeep
 .claude
 .vscode/
+.env*

@@ -114,6 +114,20 @@ const HISTORICAL_RETRO_POOLS: Record<string, FrozenRetroPool> = {
     communityCirclePrimary: 1.16,
     communityCircleMooney: 770_000,
   },
+  // Q2 2026 retroactives (paid in USDC, voting closed Jul 21, 2026).
+  // Cohort quarterly budget: $23,409 + ~7,315,125 MOONEY.
+  //   - Projects: $5,629.26 USDC = ($23,409 * 0.9) - $15,438.84 upfront
+  //     to the 4 Q2 Member-Vote winners, plus 90% of the MOONEY budget
+  //     (~6,583,612) with no MOONEY upfront.
+  //   - Community circle: $2,340.90 USDC + ~731,512 MOONEY (10% of the
+  //     cohort's own quarterly budget).
+  '2026-Q2': {
+    primaryAsset: 'USDC',
+    primaryProjectsAmount: 5629.26,
+    mooneyProjectsAmount: 6_583_612.218059649,
+    communityCirclePrimary: 2340.9,
+    communityCircleMooney: 731_512.4686732944,
+  },
 }
 
 /**

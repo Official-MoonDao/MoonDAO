@@ -10,6 +10,7 @@ import {
   isValidEthereumAddress,
   requiresSafeTx,
   toHatIdHex,
+  wouldRemoveLastManager,
 } from '@/lib/hats/teamRoles'
 
 // Hat ids are uint256 values. The subgraph returns them as 0x-prefixed,
@@ -294,6 +295,32 @@ describe('teamRoles', () => {
       expect(remove.slice(0, 10)).to.equal(
         iface.getSighash('setHatWearerStatus')
       )
+    })
+  })
+
+  describe('wouldRemoveLastManager', () => {
+    it('blocks removing the manager hat when only one manager remains', () => {
+      expect(
+        wouldRemoveLastManager(MANAGER_HAT_HEX, MANAGER_HAT_DECIMAL, 1)
+      ).to.equal(true)
+      expect(
+        wouldRemoveLastManager(MANAGER_HAT_HEX, MANAGER_HAT_DECIMAL, 0)
+      ).to.equal(true)
+    })
+
+    it('allows removing a manager when others remain', () => {
+      expect(
+        wouldRemoveLastManager(MANAGER_HAT_HEX, MANAGER_HAT_DECIMAL, 2)
+      ).to.equal(false)
+    })
+
+    it('never blocks removing a non-manager (member) hat', () => {
+      expect(
+        wouldRemoveLastManager(MEMBER_HAT_HEX, MANAGER_HAT_DECIMAL, 1)
+      ).to.equal(false)
+      expect(
+        wouldRemoveLastManager(MEMBER_HAT_HEX, MANAGER_HAT_DECIMAL, 0)
+      ).to.equal(false)
     })
   })
 

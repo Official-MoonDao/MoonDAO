@@ -187,7 +187,7 @@ Add these environment variables in your Vercel project settings:
 
 4. **GROQ Model Configuration** (optional, defaults shown):
    ```
-   GROQ_MODEL=llama-3.3-70b-versatile
+   GROQ_MODEL=openai/gpt-oss-120b
    WHISPER_MODEL=whisper-large-v3
    ```
 
@@ -343,7 +343,7 @@ Set via secrets:
 - `YOUTUBE_CHANNEL_ID` - YouTube channel ID
 - `CONVERT_KIT_API_KEY` or `CONVERT_KIT_V4_API_KEY` - ConvertKit API key
 - `TOWNHALL_CONVERTKIT_TAG_ID` - ConvertKit tag ID
-- `GROQ_MODEL` - GROQ model (default: llama-3.3-70b-versatile)
+- `GROQ_MODEL` - GROQ model (default: openai/gpt-oss-120b)
 - `WHISPER_MODEL` - Whisper model (default: whisper-large-v3)
 - `TOWNHALL_CRON_SECRET` - Secret for cron authentication
 

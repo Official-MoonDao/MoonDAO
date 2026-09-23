@@ -41,8 +41,10 @@ interface CBOnrampProps {
   embedded?: boolean
   /** Optional content rendered just beneath the "Fund" header */
   headerSlot?: React.ReactNode
-  /** Called when the device doesn't support Apple/Google Pay so the parent
-   *  can fall back to MoonPay automatically. */
+  /** Called when the device doesn't support Apple/Google Pay, or the user
+   *  manually says they don't have it set up, so the parent can fall back to
+   *  MoonPay (Coinbase's guest/debit-card checkout was deprecated, leaving
+   *  MoonPay as the only no-account card option). */
   onUnsupported?: () => void
   /** Region already resolved by a parent (e.g. FundOnramp). When provided,
    *  skips the duplicate /api/coinbase/region request. */
@@ -54,7 +56,6 @@ interface CBOnrampProps {
   onHeadlessSuccessInApp?: () => void
 }
 
-const GUEST_CHECKOUT_LIMIT = 500
 const MOCK_ONRAMP = process.env.NEXT_PUBLIC_MOCK_ONRAMP === 'true'
 
 export const CBOnramp: React.FC<CBOnrampProps> = ({
@@ -126,8 +127,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showExchangeFundingGuide, setShowExchangeFundingGuide] = useState(false)
-  const [showLimits, setShowLimits] = useState(false)
-  const [hasShownLimitsForExcess, setHasShownLimitsForExcess] = useState(false)
   const [quoteData, setQuoteData] = useState<{
     ethAmount: number
     purchaseAmount: number
@@ -150,11 +149,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
     }
   }, [ethAmount, allowAmountInput])
 
-  // Guest checkout limit
-  const exceedsGuestLimit = quoteData?.purchaseAmount
-    ? quoteData.purchaseAmount > GUEST_CHECKOUT_LIMIT
-    : false
-
   // Check if current chain is Arbitrum
   const isArbitrum = useMemo(
     () => selectedChain === arbitrum || selectedChain?.id === 42161 || selectedChain?.id === 421614,
@@ -172,14 +166,6 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
 
     return () => clearTimeout(timeoutId)
   }, [effectiveAmount])
-
-  // Auto-expand limits section when amount exceeds guest limit
-  useEffect(() => {
-    if (exceedsGuestLimit && !hasShownLimitsForExcess) {
-      setShowLimits(true)
-      setHasShownLimitsForExcess(true)
-    }
-  }, [exceedsGuestLimit, hasShownLimitsForExcess])
 
   // Fetch quote on component load and calculate fees
   useEffect(() => {
@@ -500,9 +486,10 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
   }, [address, selectedChain, asset])
 
   // Hosted Coinbase flow for US users who can't use Apple/Google Pay (e.g.
-  // desktop, no iPhone to scan the QR). Supports signing into an existing
-  // Coinbase account or paying by card/bank. Presets the crypto amount so we
-  // don't depend on the headless quote (which isn't fetched for US users).
+  // desktop, no iPhone to scan the QR). Coinbase's guest/debit-card checkout
+  // was deprecated, so this now requires signing into an existing Coinbase
+  // account. Presets the crypto amount so we don't depend on the headless
+  // quote (which isn't fetched for US users).
   const handleHostedFallback = useCallback(async () => {
     if (!address) return
 
@@ -908,26 +895,38 @@ export const CBOnramp: React.FC<CBOnrampProps> = ({
           </div>
         </div>
 
-        {/* Guest limit warning */}
-        {exceedsGuestLimit && (
-          <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-6 h-6 bg-orange-500/20 rounded-full flex items-center justify-center mt-0.5">
-                <span className="text-orange-400 text-sm">⚠️</span>
-              </div>
-              <div className="flex-1">
-                <p className="text-orange-300 font-semibold text-sm mb-1">
-                  Coinbase Account Required
-                </p>
-                <p className="text-orange-200/90 text-xs leading-relaxed">
-                  This purchase (${quoteData?.purchaseAmount.toFixed(2)}) exceeds the $500 guest
-                  checkout limit. You'll need to sign in with a Coinbase account to complete this
-                  purchase.
-                </p>
-              </div>
+        {/* Coinbase deprecated Guest Checkout on this hosted widget (June 30,
+            2026) — it's now account-login only, at any amount, not just above
+            the old $500 guest limit. */}
+        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-6 h-6 bg-orange-500/20 rounded-full flex items-center justify-center mt-0.5">
+              <span className="text-orange-400 text-sm">⚠️</span>
+            </div>
+            <div className="flex-1">
+              <p className="text-orange-300 font-semibold text-sm mb-1">
+                Coinbase account required
+              </p>
+              <p className="text-orange-200/90 text-xs leading-relaxed">
+                You&apos;ll need to sign in with a Coinbase account to complete this purchase.
+                {onUnsupported && (
+                  <>
+                    {' '}
+                    No account?{' '}
+                    <button
+                      type="button"
+                      onClick={onUnsupported}
+                      className="underline font-semibold text-orange-100 hover:text-white"
+                    >
+                      Use MoonPay instead
+                    </button>
+                    .
+                  </>
+                )}
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
         {quoteData?.purchaseAmount &&
           quoteData.purchaseAmount > LARGE_ONRAMP_FIAT_THRESHOLD_USD && (

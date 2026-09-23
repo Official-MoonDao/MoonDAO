@@ -1,45 +1,40 @@
 import { Redis } from '@upstash/redis'
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-// Extract client IP from trusted headers
+import {
+  getCountryFromHeaders,
+  getRegionFromHeaders,
+  getStateFromHeaders,
+} from './headers'
+
+export { getCountryFromHeaders, getRegionFromHeaders, getStateFromHeaders }
+
+function firstHeaderValue(value: string | string[] | undefined): string {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (!raw) return ''
+  return raw.split(',')[0].trim()
+}
+
+function normalizeClientIp(ip: string): string {
+  let out = ip.replace(/:\d+$/, '')
+  if (out.startsWith('::ffff:')) out = out.slice(7)
+  return out.toLowerCase()
+}
+
+// Extract client IP from trusted edge headers. Vercel documents
+// `x-vercel-forwarded-for`; `x-vercel-proxied-for` is not a documented header.
 export function getClientIp(req: NextApiRequest): string {
   const h = req.headers
-  const vercel = (h['x-vercel-proxied-for'] as string | undefined)?.trim()
-  const real = (h['x-real-ip'] as string | undefined)?.trim()
-  const cf = (h['cf-connecting-ip'] as string | undefined)?.trim()
-
-  let ip =
-    vercel ||
-    real ||
-    cf ||
-    ((h['x-forwarded-for'] as string | undefined)?.split(',')[0] || '').trim() ||
+  const ip =
+    firstHeaderValue(h['x-vercel-forwarded-for']) ||
+    firstHeaderValue(h['cf-connecting-ip']) ||
+    firstHeaderValue(h['x-forwarded-for']) ||
+    firstHeaderValue(h['x-real-ip']) ||
     req.socket.remoteAddress ||
     '0.0.0.0'
-
-  // Normalize IP - strip port and handle IPv6-mapped IPv4
-  ip = ip.replace(/:\d+$/, '')
-  if (ip.startsWith('::ffff:')) ip = ip.slice(7)
-  return ip.toLowerCase()
+  return normalizeClientIp(ip)
 }
 
-// Extract country from request headers (Vercel/Cloudflare geolocation)
-export function getCountryFromHeaders(req: NextApiRequest): string | null {
-  const h = req.headers
-
-  // Vercel provides x-vercel-ip-country
-  const vercelCountry = (h['x-vercel-ip-country'] as string | undefined)?.trim()
-  if (vercelCountry) {
-    return vercelCountry.toUpperCase()
-  }
-
-  // Cloudflare provides cf-ipcountry
-  const cfCountry = (h['cf-ipcountry'] as string | undefined)?.trim()
-  if (cfCountry) {
-    return cfCountry.toUpperCase()
-  }
-
-  return null
-}
 
 // GDPR-restricted regions (ISO 3166-1 alpha-2). Covers the EU, the wider EEA
 // (Iceland, Liechtenstein, Norway), and the UK (which retains UK-GDPR
@@ -118,29 +113,6 @@ export function enforceRegionNotRestricted(
   return true
 }
 
-// Extract US state from request headers (Vercel/Cloudflare geolocation)
-export function getStateFromHeaders(req: NextApiRequest): string | null {
-  const h = req.headers
-
-  // Vercel provides x-vercel-ip-country-region with US state codes
-  const vercelRegion = (h['x-vercel-ip-country-region'] as string | undefined)?.trim()
-  const vercelCountry = (h['x-vercel-ip-country'] as string | undefined)?.trim()
-
-  if (vercelCountry === 'US' && vercelRegion) {
-    // Vercel provides state codes like "IL", "CA", etc.
-    return vercelRegion.toUpperCase()
-  }
-
-  // Cloudflare provides cf-region-code (state for US)
-  const cfRegion = (h['cf-region-code'] as string | undefined)?.trim()
-  const cfCountry = (h['cf-ipcountry'] as string | undefined)?.trim()
-
-  if (cfCountry === 'US' && cfRegion) {
-    return cfRegion.toUpperCase()
-  }
-
-  return null
-}
 
 // Check Redis cache for IP -> state mapping
 export async function getStateFromCache(redis: Redis, ip: string): Promise<string | null> {

@@ -19,10 +19,8 @@ contract DeployDePrizeRedeem is Script, Config {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address registry = vm.envAddress("DEPRIZE_REGISTRY");
 
-        address weth = WETH_ADDRESSES[block.chainid];
-        address ctf = CONDITIONAL_TOKENS_ADDRESSES[block.chainid];
-        require(weth != address(0), "WETH not configured for chain");
-        require(ctf != address(0), "ConditionalTokens not configured for chain");
+        // AUDIT[plan 1.3]
+        (address weth, address ctf) = requireDePrizeCollateral(block.chainid);
 
         vm.startBroadcast(deployerPrivateKey);
         DePrizeRedeem redeem = new DePrizeRedeem(registry, ctf, weth);

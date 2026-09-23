@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - fee-hook/**
+      - .github/workflows/feehook.yml
   pull_request:
     branches: [main]
     paths:
       - fee-hook/**
+      - .github/workflows/feehook.yml
 
 env:
   FOUNDRY_PROFILE: ci
@@ -33,7 +35,13 @@ jobs:
 
       - name: Install npm dependencies
         run: |
-          cd fee-hook && npm install --legacy-peer-deps
+          cd fee-hook
+          if ! npm install --legacy-peer-deps; then
+            echo "npm install failed; clearing cache and retrying"
+            npm cache clean --force
+            rm -rf node_modules
+            npm install --legacy-peer-deps
+          fi
         id: install-dependencies
 
       - name: Run apply_patch.sh
@@ -46,15 +54,38 @@ jobs:
         with:
           version: nightly
 
-      - name: Run Local Chain with Anvil
-        run: anvil --fork-url https://1.rpc.thirdweb.com/${{ secrets.ANVIL_THIRDWEB_CLIENT_ID }} &
-        id: local-chain
-
       - name: Run Forge build
         run: |
           forge --version
           cd fee-hook && forge build --sizes --via-ir --optimize --optimizer-runs 200
         id: build
+
+      # Start the fork after compile. An anvil started earlier dies while
+      # `forge build --via-ir` runs, and the next step then gets
+      # "connection refused" on :8545. Retry if the upstream RPC flakes.
+      - name: Run Local Chain with Anvil
+        run: |
+          start_anvil() {
+            local port=$1; shift
+            for attempt in 1 2 3; do
+              "$@" &
+              local pid=$!
+              for i in $(seq 1 15); do
+                if cast chain-id --rpc-url "http://127.0.0.1:${port}" >/dev/null 2>&1; then
+                  echo "anvil ready on port ${port} (attempt ${attempt})"
+                  return 0
+                fi
+                sleep 2
+              done
+              echo "anvil not responding on port ${port} (attempt ${attempt}); retrying"
+              kill "$pid" 2>/dev/null || true
+              sleep 2
+            done
+            echo "anvil failed to start on port ${port} after 3 attempts"
+            return 1
+          }
+          start_anvil 8545 anvil --fork-url https://1.rpc.thirdweb.com/${{ secrets.ANVIL_THIRDWEB_CLIENT_ID }}
+        id: local-chain
 
       - name: Run Forge tests
         env:

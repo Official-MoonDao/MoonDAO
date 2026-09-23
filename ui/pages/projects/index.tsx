@@ -5,11 +5,16 @@ import {
   DISTRIBUTION_TABLE_NAMES,
   PROPOSALS_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
-  IS_REWARDS_CYCLE,
 } from 'const/config'
+import type { ProjectCyclePhase } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
+import {
+  getLivePhaseOverride,
+  resolveLivePhase,
+  resolveMemberVoteSubmissionsOpen,
+} from '@/lib/operator/cyclePhase'
 import {
   getProjectDisplayName,
   isUntitledLike,
@@ -19,7 +24,7 @@ import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { getRelativeQuarter, isRewardsCycle } from '@/lib/utils/dates'
+import { getProposalCycle, getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import { ProjectRewards, ProjectRewardsProps } from '@/components/nance/ProjectRewards'
 
 export default function Projects({
@@ -28,8 +33,12 @@ export default function Projects({
   pastProjects,
   distributions,
   proposalAllocations,
+  initialLivePhase,
+  initialMemberVoteSubmissionsOpen,
 }: ProjectRewardsProps & {
   proposalAllocations: any[]
+  initialLivePhase: ProjectCyclePhase
+  initialMemberVoteSubmissionsOpen: boolean
 }) {
   const router = useRouter()
   useChainDefault()
@@ -40,6 +49,8 @@ export default function Projects({
       pastProjects={pastProjects}
       distributions={distributions}
       proposalAllocations={proposalAllocations}
+      initialLivePhase={initialLivePhase}
+      initialMemberVoteSubmissionsOpen={initialMemberVoteSubmissionsOpen}
       refreshRewards={() => router.reload()}
     />
   )
@@ -49,18 +60,28 @@ export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
 
+  // Resolve the live cycle phase (operator override in KV, else the
+  // PROJECT_CYCLE.phase default) so ISR renders match the current phase
+  // without a redeploy. Retro rewards run concurrently with the Member Vote.
+  const livePhaseOverride = await getLivePhaseOverride()
+  const livePhase = resolveLivePhase(livePhaseOverride)
+  const memberVoteSubmissionsOpen = resolveMemberVoteSubmissionsOpen(
+    livePhase,
+    livePhaseOverride
+  )
+
   const emptyProps = {
     proposals: [] as Project[],
     currentProjects: [] as Project[],
     pastProjects: [] as Project[],
     distributions: [] as any[],
     proposalAllocations: [] as any[],
+    initialLivePhase: livePhase,
+    initialMemberVoteSubmissionsOpen: memberVoteSubmissionsOpen,
   }
 
   try {
-    const { quarter, year } = getRelativeQuarter(
-      isRewardsCycle(new Date(), IS_REWARDS_CYCLE) ? -1 : 0
-    )
+    const { quarter, year } = getRetroCohort()
 
     // The projects table is the one genuinely required read. If it fails
     // there is nothing to render, so fall back to the empty state. Every
@@ -77,14 +98,14 @@ export async function getStaticProps() {
       return { props: emptyProps, revalidate: 60 }
     }
 
-    // The proposals that should appear on /projects are the ones that belong
-    // to the *current* calendar quarter — i.e. the cycle that's actively
-    // being voted on. `getSubmissionQuarter()` is intentionally NOT used
-    // here: past its ~3-week cutoff it advances to the *next* quarter
-    // (because a brand-new submission via /api/proposals/submit would target
-    // the next cycle), and using it for filtering causes every in-flight
-    // Q{n} proposal to vanish from the page the moment that cutoff passes.
-    const activeProposalQuarter = getRelativeQuarter(0)
+    // Proposal cohort = PROJECT_CYCLE.quarter/year — the same source
+    // advance-phase uses when batch-tallying Senate votes. Do NOT use
+    // getRelativeQuarter(0) here: at a calendar boundary or with a stale
+    // config roll those diverge and operators would close a different set
+    // of MDPs than the proposals shown on the page. Also avoid
+    // getSubmissionQuarter(): past its ~3-week cutoff it advances to the
+    // *next* quarter and would make in-flight Q{n} proposals vanish.
+    const activeProposalQuarter = getProposalCycle()
     const proposals: Project[] = []
     const currentProjects: Project[] = []
     const pastProjects: Project[] = []
@@ -157,6 +178,8 @@ export async function getStaticProps() {
             const proposalResponse = await fetch(project.proposalIPFS)
             const proposalJSON = await proposalResponse.json()
             if (proposalJSON?.nonProjectProposal) return
+            // Author-deleted proposals disappear from the frontend.
+            if (proposalJSON?.deleted) return
             // Enrich name from IPFS while we have the JSON in hand
             if (isUntitledLike(project.name)) {
               const resolved = getProjectDisplayName(project, proposalJSON)
@@ -250,6 +273,8 @@ export async function getStaticProps() {
         pastProjects: pastProjects.reverse(),
         distributions,
         proposalAllocations,
+        initialLivePhase: livePhase,
+        initialMemberVoteSubmissionsOpen: memberVoteSubmissionsOpen,
       },
       revalidate: 60,
     }

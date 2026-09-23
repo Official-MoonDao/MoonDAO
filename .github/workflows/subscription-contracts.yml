@@ -135,6 +135,11 @@ jobs:
           FOUNDRY_DISABLE_NIGHTLY_WARNING: true
         run: |
           cd subscription-contracts
+          # Mock invariant suite must run on local anvil, not a live-network
+          # fork. Foundry's invariant runner scrapes the forked state for its
+          # fuzz dictionary and public RPCs flake with -32603 on PUSH20
+          # immediates (0x…3472), aborting setUp after ~400s with runs: 0.
+          forge test --via-ir --optimize --optimizer-runs 10000 --match-path test/deprize/DePrizeMintInvariant.t.sol -vvv
           forge coverage --via-ir --fork-url 127.0.0.1:8545 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file sepolia-coverge.info
           forge coverage --via-ir --fork-url 127.0.0.1:8546 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file arbitrum-coverge.info
           lcov -a sepolia-coverge.info -a arbitrum-coverge.info -o coverage.info
@@ -146,3 +151,51 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: Official-MoonDao/MoonDAO
         id: upload-coverage
+
+  # DePrize v2 static analysis. Scope, severity floor (medium) and the inline
+  # triage annotations live in subscription-contracts/slither.config.json so the
+  # local `slither . --config-file slither.config.json` run matches CI exactly.
+  slither:
+    name: slither (DePrize)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Run apply_patch.sh
+        run: |
+          chmod +x ./subscription-contracts/apply_patch.sh
+          ./subscription-contracts/apply_patch.sh
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Install npm dependencies
+        run: cd subscription-contracts && npm install --legacy-peer-deps
+
+      # Do not use slither-action's Docker image: it re-runs `npm ci` without
+      # --legacy-peer-deps, and `ignore-compile` skips foundryup so the
+      # container has no `forge` when crytic-compile later calls
+      # `forge config --json`. Compile and analyze on the runner instead.
+      - name: Forge build
+        run: |
+          cd subscription-contracts
+          # Skip tests/scripts: Foundry 1.8 writes preprocessor paths
+          # (foundry-pp/*.sol) into build-info that crytic-compile cannot
+          # resolve. DePrize sources still compile; slither.config.json
+          # already filters test/ and script/.
+          FOUNDRY_DYNAMIC_TEST_LINKING=false forge build --build-info --deny never --skip test --skip script --force
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Slither
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install slither-analyzer==0.11.6
+          slither subscription-contracts/ --config-file subscription-contracts/slither.config.json --ignore-compile --fail-medium

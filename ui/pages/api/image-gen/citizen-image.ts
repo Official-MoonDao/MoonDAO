@@ -2,8 +2,11 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { v4 } from 'uuid'
 import { enforceRegionNotRestricted } from '@/lib/geo'
 
-const COMFY_WORKFLOW_URL =
-  'https://comfy.icu/api/v1/workflows/8BYQ3mpiFVlTjWOatIUAc/runs'
+const COMFY_WORKFLOW_ID = '8BYQ3mpiFVlTjWOatIUAc'
+const COMFY_WORKFLOW_URL = `https://comfy.icu/api/v1/workflows/${COMFY_WORKFLOW_ID}/runs`
+
+// Comfy.icu run ids look like `VE52rnl_BVdbgou9tQbEF` / `3AIdyeK1zmdW9NaWw-46u`.
+const COMFY_RUN_ID_RE = /^[A-Za-z0-9_-]{8,64}$/
 
 // Comfy.icu's API can occasionally take a while to accept a job, so give it
 // plenty of time before we abort the request.
@@ -19,22 +22,23 @@ const JUGGERNAUT_CHECKPOINT_URL =
   'https://huggingface.co/RunDiffusion/Juggernaut-XL-Lightning/resolve/main/Juggernaut_RunDiffusionPhoto2_Lightning_4Steps.safetensors?download=true'
 
 async function fetchComfy(
-  init: RequestInit & { method: 'POST' | 'GET' }
+  init: RequestInit & { method: 'POST' | 'GET'; url?: string }
 ): Promise<Response> {
+  const { url, ...requestInit } = init
   const controller = new AbortController()
   const timeoutId = setTimeout(
     () => controller.abort(),
     COMFY_REQUEST_TIMEOUT_MS
   )
   try {
-    return await fetch(COMFY_WORKFLOW_URL, {
-      ...init,
+    return await fetch(url || COMFY_WORKFLOW_URL, {
+      ...requestInit,
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
         authorization: `Bearer ${process.env.COMFYICU_API_KEY}`,
-        ...(init.headers || {}),
+        ...(requestInit.headers || {}),
       },
     })
   } finally {
@@ -178,25 +182,36 @@ export default async function handler(
         .json({ error: 'Failed to create comfy.icu job' })
     }
   } else if (req.method === 'GET') {
+    // Poll one run. The collection endpoint is capped at ~300 rows and is the
+    // wrong API for status checks — official docs are GET /runs/:id.
+    const runId = typeof req.query.id === 'string' ? req.query.id : ''
+    if (!COMFY_RUN_ID_RE.test(runId)) {
+      return res.status(400).json({ error: 'Missing or invalid job id' })
+    }
+
     try {
-      const comfyRes = await fetchComfy({ method: 'GET' })
+      res.setHeader('Cache-Control', 'no-store')
+      const comfyRes = await fetchComfy({
+        method: 'GET',
+        url: `${COMFY_WORKFLOW_URL}/${encodeURIComponent(runId)}`,
+      })
       if (!comfyRes.ok) {
         const body = await comfyRes.text().catch(() => '')
         console.error(
-          `Comfy.icu list runs failed: ${comfyRes.status} ${body}`
+          `Comfy.icu get run failed: ${comfyRes.status} ${body}`
         )
         return res
           .status(comfyRes.status >= 500 ? 502 : comfyRes.status)
-          .json({ error: 'Failed to fetch comfy.icu jobs' })
+          .json({ error: 'Failed to fetch comfy.icu job' })
       }
-      const jobs = await comfyRes.json()
-      return res.status(200).json(jobs)
+      const job = await comfyRes.json()
+      return res.status(200).json(job)
     } catch (err: any) {
       const isAbort = err?.name === 'AbortError'
-      console.error('Comfy.icu list runs error:', err)
+      console.error('Comfy.icu get run error:', err)
       return res
         .status(isAbort ? 504 : 502)
-        .json({ error: 'Failed to fetch comfy.icu jobs' })
+        .json({ error: 'Failed to fetch comfy.icu job' })
     }
   } else {
     return res.status(405).json({ error: 'Method not allowed' })

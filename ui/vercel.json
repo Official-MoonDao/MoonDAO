@@ -1,3 +1,11 @@
 {
-  "installCommand": "yarn install --frozen-lockfile"
+  "installCommand": "yarn install --frozen-lockfile",
+  "functions": {
+    "pages/api/og/job.tsx": {
+      "includeFiles": "lib/og/fonts/Lato-Regular.ttf"
+    },
+    "pages/api/og/listing.tsx": {
+      "includeFiles": "lib/og/fonts/Lato-Regular.ttf"
+    }
+  }
 }

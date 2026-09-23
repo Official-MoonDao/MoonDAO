@@ -2,6 +2,7 @@ import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import CitizenExpiredPanel from '@/components/subscription/CitizenExpiredPanel'
 import Quests from '@/components/xp/Quests'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useContext } from 'react'
@@ -10,7 +11,7 @@ import CitizenTier from '@/components/onboarding/CitizenTier'
 import { useActiveAccount } from 'thirdweb/react'
 
 export default function QuestsPage() {
-  const { citizen } = useContext(CitizenContext)
+  const { citizen, expiredCitizen } = useContext(CitizenContext)
   const account = useActiveAccount()
 
   const descriptionSection = (
@@ -46,6 +47,8 @@ export default function QuestsPage() {
             <div className="mt-6">
               <Quests />
             </div>
+          ) : expiredCitizen ? (
+            <CitizenExpiredPanel feature="Quests" />
           ) : (
             <div className="md:mb-[5vw] 2xl:mb-[2vw]">
               <p className="p-5 md:p-0">

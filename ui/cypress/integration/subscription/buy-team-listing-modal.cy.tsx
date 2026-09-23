@@ -50,9 +50,26 @@ describe('<BuyTeamListingModal />', () => {
       </TestnetProviders>
     )
 
-    cy.get('#listing-price').should(
-      'have.text',
-      `${listing.price} ${listing.currency}`
+    cy.get('#listing-price').should('have.text', `${listing.price} ${listing.currency}`)
+  })
+
+  it('Lets the buyer read a long listing description in full', () => {
+    const longDescription =
+      "Join Loretta Hidalgo Whitesides on an 8-week Hero's Journey to help you take on the next level of your life. Level up your leadership, communication, and presence with weekly training, coaching, and community. This program is designed to meet you where you are and take you further than you thought possible."
+
+    cy.viewport(375, 667)
+    cy.mount(
+      <TestnetProviders>
+        <BuyTeamListingModal {...props} listing={{ ...listing, description: longDescription }} />
+      </TestnetProviders>
     )
+
+    cy.contains(longDescription).should('exist')
+    cy.get('[data-testid="expandable-text-toggle"]')
+      .should('be.visible')
+      .and('have.text', 'Read more')
+      .click()
+    cy.get('[data-testid="expandable-text"]').should('have.attr', 'data-expanded', 'true')
+    cy.get('[data-testid="expandable-text-toggle"]').should('have.text', 'Show less')
   })
 })

@@ -2,6 +2,7 @@
 import { parseISO } from 'date-fns'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import ExpandableText from '@/components/layout/ExpandableText'
 
 export function DiscordEvent({ discordEvent }: any) {
   const [formattedDate, setFormattedDate] = useState('')
@@ -64,9 +65,11 @@ export function DiscordEvent({ discordEvent }: any) {
         
         {/* Event Description */}
         {discordEvent.description && (
-          <p className="text-white/70 text-sm flex-1 line-clamp-3 leading-relaxed">
-            {discordEvent.description}
-          </p>
+          <div className="flex-1">
+            <ExpandableText className="text-white/70 text-sm leading-relaxed" lines={3}>
+              {discordEvent.description}
+            </ExpandableText>
+          </div>
         )}
       </div>
     </div>

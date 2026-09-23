@@ -1,0 +1,492 @@
+/**
+ * Stand up one Sepolia DePrize v2 end to end:
+ * Juicebox mission → payhook latch → CTF condition → stock LMSR →
+ * register / setCondition / setMarket / setComplianceSigner / open.
+ * The admin (deployer EOA on Sepolia) owns the market directly; there is
+ * no FeeRouter and no LMSRWithTWAP.
+ *
+ * Default competition is the Sepolia twin of Arbitrum #1
+ * ("The Moon Is A Harsh Mistress"). Set PRIZE=touchdown for the next
+ * successful lunar landing. Touchdown uses question version v3 because
+ * v1 is Sepolia #21 and v2 is v1-registry #22.
+ *
+ *   source ../prediction/.env   # DEPLOYER_PK
+ *   PRIZE=touchdown yarn tsx --tsconfig tsconfig.json scripts/provision-sepolia-prize.ts
+ */
+import { writeFileSync } from 'node:fs'
+import {
+  createPublicClient,
+  createWalletClient,
+  decodeEventLog,
+  http,
+  keccak256,
+  parseAbi,
+  parseEther,
+  stringify,
+  toBytes,
+  type Hex,
+} from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { sepolia } from 'viem/chains'
+
+function envAddr(name: string, fallback: Hex): Hex {
+  const raw = process.env[name]
+  return (raw && raw.startsWith('0x') ? raw : fallback) as Hex
+}
+
+const REGISTRY = envAddr(
+  'DEPRIZE_REGISTRY',
+  '0x7208B0Ba9B1013000b8D30b60A462079300984E2'
+)
+const MINT = envAddr('DEPRIZE_MINT', '0x22E22C4135be93595f341e072321D18e7D4Ee0D0')
+const FACTORY = envAddr(
+  'DEPRIZE_FACTORY',
+  '0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674'
+)
+const CTF = '0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8' as const
+const WETH = '0x8cfF28F922AeEe80d3a0663e735681469F7374c6' as const
+const MISSION_CREATOR = '0xa692eEd67c4D2C1C73DC0515240d27cf7d6fF9D1' as const
+const COMPLIANCE_SIGNER = envAddr(
+  'DEPRIZE_COMPLIANCE_SIGNER',
+  '0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011'
+)
+const MANAGED_TEAM_ID = 22n
+const FUNDING_PER_OUTCOME = parseEther('0.01')
+const FEE = 10_000_000_000_000_000n // 1%
+const SUNSET = BigInt(Math.floor(Date.now() / 1000) + 2 * 365 * 24 * 3600)
+const OUT = '/tmp/sepolia-prize.json'
+
+type PrizeSpec = {
+  slug: string
+  questionVersion: string
+  title: string
+  tagline: string
+  metaDescription: string
+  teamIds: bigint[]
+  tokenName: string
+  tokenSymbol: string
+}
+
+const PRIZES: Record<string, PrizeSpec> = {
+  'harsh-mistress': {
+    slug: 'harsh-mistress',
+    questionVersion: 'v1',
+    title: 'The Moon Is A Harsh Mistress',
+    tagline:
+      'Which team posts “The Moon is a harsh mistress” first? Back a team — every bet grows the prize pool.',
+    metaDescription:
+      'Sepolia DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
+    teamIds: [2n, 6n, 7n, 8n],
+    tokenName: 'DePrize Harsh',
+    tokenSymbol: 'DHMS',
+  },
+  // PR 1527 — next Qualifying Landing. Same roster as incomplete #21 so the
+  // atlas names stay aligned; new condition + real Juicebox mission.
+  touchdown: {
+    slug: 'shared-next-landing',
+    questionVersion: 'v3',
+    title: 'Touchdown',
+    tagline:
+      'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a team — every bet grows the prize pool.',
+    metaDescription:
+      'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
+    teamIds: [601n, 602n, 603n, 604n, 605n, 24n],
+    tokenName: 'DePrize Touchdown',
+    tokenSymbol: 'DTCH',
+  },
+}
+
+const selected = (process.env.PRIZE || 'harsh-mistress').toLowerCase()
+const PRIZE = PRIZES[selected]
+if (!PRIZE) {
+  throw new Error(`Unknown PRIZE=${selected}. Use ${Object.keys(PRIZES).join('|')}`)
+}
+
+const registryAbi = parseAbi([
+  'function count() view returns (uint256)',
+  'function register(uint256 jbProjectId, uint256[] teamIds, uint256 sunset) returns (uint256)',
+  'function setCondition(uint256 deprizeId, bytes32 ctfConditionId)',
+  'function open(uint256 deprizeId)',
+  'function state(uint256) view returns (uint8)',
+  'function bettingOpen(uint256) view returns (bool)',
+  'function deprizeIdByJBProject(uint256 jbProjectId) view returns (uint256)',
+  'event DePrizeRegistered(uint256 indexed deprizeId, uint256 indexed jbProjectId, uint256[] teamIds, uint256 sunset)',
+])
+
+const mintAbi = parseAbi([
+  'function setMarket(uint256 deprizeId, address market)',
+  'function marketOf(uint256 deprizeId) view returns (address)',
+  'function setComplianceSigner(address complianceSigner)',
+  'function complianceSigner() view returns (address)',
+])
+
+const ctfAbi = parseAbi([
+  'function prepareCondition(address oracle, bytes32 questionId, uint256 outcomeSlotCount)',
+  'function getConditionId(address oracle, bytes32 questionId, uint256 outcomeSlotCount) view returns (bytes32)',
+  'function getOutcomeSlotCount(bytes32 conditionId) view returns (uint256)',
+])
+
+const factoryAbi = parseAbi([
+  'function createLMSRMarketMaker(address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, address whitelist, uint256 funding) returns (address)',
+  'event LMSRMarketMakerCreation(address indexed creator, address lmsrMarketMaker, address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, uint256 funding)',
+])
+
+const wethAbi = parseAbi([
+  'function deposit()',
+  'function approve(address spender, uint256 amount) returns (bool)',
+  'function balanceOf(address) view returns (uint256)',
+])
+
+const lmsrAbi = parseAbi([
+  'function transferOwnership(address newOwner)',
+  'function owner() view returns (address)',
+  'function stage() view returns (uint8)',
+  'function fee() view returns (uint64)',
+])
+
+const missionAbi = parseAbi([
+  'function createMission(uint256 teamId, address to, string projectUri, uint256 fundingGoal, uint256 deadline, uint256 refundPeriod, bool token, string tokenName, string tokenSymbol, string memo) returns (uint256)',
+  'function missionIdToProjectId(uint256) view returns (uint256)',
+  'function missionIdToPayHook(uint256) view returns (address)',
+])
+
+const payhookAbi = parseAbi([
+  'function setDePrizeRegistry(address registry)',
+  'function deprizeRegistry() view returns (address)',
+])
+
+function pk(): Hex {
+  const raw = process.env.DEPLOYER_PK || process.env.PRIVATE_KEY
+  if (!raw) throw new Error('Set DEPLOYER_PK or PRIVATE_KEY')
+  return (raw.startsWith('0x') ? raw : `0x${raw}`) as Hex
+}
+
+function rpcUrl(): string {
+  if (process.env.SEPOLIA_RPC_URL) return process.env.SEPOLIA_RPC_URL
+  if (process.env.SEPOLIA_RPC) return process.env.SEPOLIA_RPC
+  const infura = process.env.NEXT_PUBLIC_INFURA_KEY
+  if (infura) return `https://sepolia.infura.io/v3/${infura}`
+  return 'https://ethereum-sepolia-rpc.publicnode.com'
+}
+
+async function main() {
+  const account = privateKeyToAccount(pk())
+  const rpc = rpcUrl()
+  const publicClient = createPublicClient({
+    chain: sepolia,
+    transport: http(rpc, { timeout: 60_000 }),
+  })
+  const wallet = createWalletClient({
+    account,
+    chain: sepolia,
+    transport: http(rpc, { timeout: 60_000 }),
+  })
+
+  const send = async (params: Parameters<typeof wallet.writeContract>[0]) => {
+    const hash = await wallet.writeContract(params)
+    const receipt = await publicClient.waitForTransactionReceipt({ hash })
+    if (receipt.status !== 'success') throw new Error(`tx reverted ${hash}`)
+    return receipt
+  }
+
+  const n = BigInt(PRIZE.teamIds.length)
+  const funding = FUNDING_PER_OUTCOME * n
+  const questionId = keccak256(
+    toBytes(`deprize:sepolia:${PRIZE.slug}:${PRIZE.questionVersion}`)
+  )
+
+  console.log('deployer', account.address)
+  console.log('prize', PRIZE.title)
+  console.log('registry', REGISTRY)
+  console.log('mint', MINT)
+  console.log('factory', FACTORY)
+  console.log('questionId', questionId)
+  console.log('outcomes', n.toString(), 'funding', funding.toString())
+
+  const before = await publicClient.readContract({
+    address: REGISTRY,
+    abi: registryAbi,
+    functionName: 'count',
+  })
+  console.log('registry.count before', before.toString())
+
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 2 * 365 * 24 * 3600)
+  const missionArgs = [
+    MANAGED_TEAM_ID,
+    account.address,
+    `https://moondao.com/deprize/${PRIZE.slug}`,
+    parseEther('100'),
+    deadline,
+    30n * 24n * 3600n,
+    true,
+    PRIZE.tokenName,
+    PRIZE.tokenSymbol,
+    `DePrize ${PRIZE.title}`,
+  ] as const
+
+  const sim = await publicClient.simulateContract({
+    account,
+    address: MISSION_CREATOR,
+    abi: missionAbi,
+    functionName: 'createMission',
+    args: missionArgs,
+  })
+  await send({
+    address: MISSION_CREATOR,
+    abi: missionAbi,
+    functionName: 'createMission',
+    args: missionArgs,
+  })
+  const missionId = sim.result
+  const jbProjectId = await publicClient.readContract({
+    address: MISSION_CREATOR,
+    abi: missionAbi,
+    functionName: 'missionIdToProjectId',
+    args: [missionId],
+  })
+  if (!jbProjectId) throw new Error('createMission produced no jb project')
+  const payHook = await publicClient.readContract({
+    address: MISSION_CREATOR,
+    abi: missionAbi,
+    functionName: 'missionIdToPayHook',
+    args: [missionId],
+  })
+  console.log('  missionId', missionId.toString(), 'jbProjectId', jbProjectId.toString())
+  console.log('  payHook', payHook)
+
+  if (payHook && payHook !== '0x0000000000000000000000000000000000000000') {
+    const current = await publicClient.readContract({
+      address: payHook,
+      abi: payhookAbi,
+      functionName: 'deprizeRegistry',
+    })
+    if (current.toLowerCase() !== REGISTRY.toLowerCase()) {
+      await send({
+        address: payHook,
+        abi: payhookAbi,
+        functionName: 'setDePrizeRegistry',
+        args: [REGISTRY],
+      })
+    }
+  }
+
+  const conditionId = await publicClient.readContract({
+    address: CTF,
+    abi: ctfAbi,
+    functionName: 'getConditionId',
+    args: [account.address, questionId, n],
+  })
+  const slots = await publicClient.readContract({
+    address: CTF,
+    abi: ctfAbi,
+    functionName: 'getOutcomeSlotCount',
+    args: [conditionId],
+  })
+  if (slots === 0n) {
+    await send({
+      address: CTF,
+      abi: ctfAbi,
+      functionName: 'prepareCondition',
+      args: [account.address, questionId, n],
+    })
+  }
+  console.log('  conditionId', conditionId, slots > 0n ? '(pre-existing)' : '')
+
+  const wethBal = await publicClient.readContract({
+    address: WETH,
+    abi: wethAbi,
+    functionName: 'balanceOf',
+    args: [account.address],
+  })
+  if (wethBal < funding) {
+    await send({
+      address: WETH,
+      abi: wethAbi,
+      functionName: 'deposit',
+      value: funding - wethBal,
+    })
+  }
+  await send({
+    address: WETH,
+    abi: wethAbi,
+    functionName: 'approve',
+    args: [FACTORY, funding],
+  })
+
+  const lmsrReceipt = await send({
+    address: FACTORY,
+    abi: factoryAbi,
+    functionName: 'createLMSRMarketMaker',
+    args: [CTF, WETH, [conditionId], FEE, '0x0000000000000000000000000000000000000000', funding],
+  })
+  let market: Hex | undefined
+  for (const log of lmsrReceipt.logs) {
+    try {
+      const parsed = decodeEventLog({
+        abi: factoryAbi,
+        data: log.data,
+        topics: log.topics,
+      })
+      if (parsed.eventName === 'LMSRMarketMakerCreation') {
+        market = (parsed.args as { lmsrMarketMaker: Hex }).lmsrMarketMaker
+      }
+    } catch {
+      /* not this event */
+    }
+  }
+  if (!market) throw new Error('no LMSRMarketMakerCreation log')
+  console.log('  market', market)
+
+  const regReceipt = await send({
+    address: REGISTRY,
+    abi: registryAbi,
+    functionName: 'register',
+    args: [jbProjectId, PRIZE.teamIds, SUNSET],
+  })
+  let deprizeId: bigint | undefined
+  for (const log of regReceipt.logs) {
+    try {
+      const parsed = decodeEventLog({
+        abi: registryAbi,
+        data: log.data,
+        topics: log.topics,
+      })
+      if (parsed.eventName === 'DePrizeRegistered') {
+        deprizeId = (parsed.args as { deprizeId: bigint }).deprizeId
+      }
+    } catch {
+      /* skip */
+    }
+  }
+  if (deprizeId === undefined) {
+    deprizeId = await publicClient.readContract({
+      address: REGISTRY,
+      abi: registryAbi,
+      functionName: 'count',
+    })
+  }
+  console.log('  deprizeId', deprizeId.toString())
+
+  await send({
+    address: REGISTRY,
+    abi: registryAbi,
+    functionName: 'setCondition',
+    args: [deprizeId, conditionId],
+  })
+  await send({
+    address: REGISTRY,
+    abi: registryAbi,
+    functionName: 'open',
+    args: [deprizeId],
+  })
+  await send({
+    address: MINT,
+    abi: mintAbi,
+    functionName: 'setMarket',
+    args: [deprizeId, market],
+  })
+  const signer = await publicClient.readContract({
+    address: MINT,
+    abi: mintAbi,
+    functionName: 'complianceSigner',
+  })
+  if (signer.toLowerCase() !== COMPLIANCE_SIGNER.toLowerCase()) {
+    await send({
+      address: MINT,
+      abi: mintAbi,
+      functionName: 'setComplianceSigner',
+      args: [COMPLIANCE_SIGNER],
+    })
+  }
+  const owner = await publicClient.readContract({
+    address: market,
+    abi: lmsrAbi,
+    functionName: 'owner',
+  })
+  if (owner.toLowerCase() !== account.address.toLowerCase()) {
+    throw new Error(`LMSR owner ${owner} is not the deployer ${account.address}`)
+  }
+
+  const [state, bettingOpen, mintMarket, lmsrOwner, stage, fee] = await Promise.all([
+    publicClient.readContract({
+      address: REGISTRY,
+      abi: registryAbi,
+      functionName: 'state',
+      args: [deprizeId],
+    }),
+    publicClient.readContract({
+      address: REGISTRY,
+      abi: registryAbi,
+      functionName: 'bettingOpen',
+      args: [deprizeId],
+    }),
+    publicClient.readContract({
+      address: MINT,
+      abi: mintAbi,
+      functionName: 'marketOf',
+      args: [deprizeId],
+    }),
+    publicClient.readContract({
+      address: market,
+      abi: lmsrAbi,
+      functionName: 'owner',
+    }),
+    publicClient.readContract({
+      address: market,
+      abi: lmsrAbi,
+      functionName: 'stage',
+    }),
+    publicClient.readContract({
+      address: market,
+      abi: lmsrAbi,
+      functionName: 'fee',
+    }),
+  ])
+
+  const result = {
+    slug: PRIZE.slug,
+    title: PRIZE.title,
+    tagline: PRIZE.tagline,
+    metaDescription: PRIZE.metaDescription,
+    deprizeId: Number(deprizeId),
+    questionId,
+    conditionId,
+    market,
+    jbProjectId: jbProjectId.toString(),
+    missionId: missionId.toString(),
+    payHook,
+    teamIds: PRIZE.teamIds.map(String),
+    sunset: SUNSET.toString(),
+    state: Number(state),
+    bettingOpen,
+    mintMarket,
+    lmsrOwner,
+    stage: Number(stage),
+    fee: fee.toString(),
+  }
+  writeFileSync(OUT, stringify(result, null, 2))
+
+  console.log('\nVerify:')
+  console.log('  state OPEN', Number(state) === 2, `(${Number(state)})`)
+  console.log('  bettingOpen', bettingOpen)
+  console.log('  mint.marketOf', mintMarket)
+  console.log('  lmsr.owner deployer', lmsrOwner.toLowerCase() === account.address.toLowerCase())
+  console.log('  lmsr.stage Running', Number(stage) === 0)
+  console.log('  lmsr.fee 1%', fee === FEE)
+  console.log('  recorded', OUT)
+
+  console.log('\nBind this in competitions.ts:\n')
+  console.log(`    ${result.deprizeId}: {`)
+  console.log(`      title: ${JSON.stringify(PRIZE.title)},`)
+  console.log(`      tagline:`)
+  console.log(`        ${JSON.stringify(PRIZE.tagline)},`)
+  console.log(`      metaDescription:`)
+  console.log(`        ${JSON.stringify(PRIZE.metaDescription)},`)
+  console.log(`      questionId: '${questionId}',`)
+  console.log(`    },`)
+}
+
+main().catch((err) => {
+  console.error(err)
+  process.exit(1)
+})

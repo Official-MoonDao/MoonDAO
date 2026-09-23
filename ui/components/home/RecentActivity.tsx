@@ -308,7 +308,7 @@ export default function RecentActivity({
         type: 'job',
         title: j.title || 'Open Position',
         subtitle: j.description && typeof j.description === 'string' ? j.description : undefined,
-        link: j.contactInfo || '/jobs',
+        link: j.id !== undefined ? `/jobs/${j.id}` : '/jobs',
         timestamp: j.timestamp ? Number(j.timestamp) * 1000 : undefined,
       })
     }

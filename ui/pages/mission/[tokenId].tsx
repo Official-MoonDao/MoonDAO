@@ -360,13 +360,13 @@ export const getServerSideProps: GetServerSideProps = async ({
         overviewStatsPromise,
       ])
 
-      // Slice to the top 5 for the preview component (its existing UX),
-      // pull the 25th-place backing total for the explainer's threshold
-      // callout, and report the actual ranked count so the empty-state
-      // copy stays factual when the top 25 isn't filled yet.
+      // Pass the full leaderboard into the Fly with Frank tab (vote +
+      // standings). Also pull the 25th-place backing total for the
+      // explainer's threshold callout, and report the actual ranked count
+      // so the empty-state copy stays factual when the top 25 isn't filled.
       const _overviewLeaderboard =
         _overviewLeaderboardFull !== undefined
-          ? _overviewLeaderboardFull.slice(0, 5)
+          ? _overviewLeaderboardFull
           : undefined
       const _overviewRankedCount =
         _overviewLeaderboardFull !== undefined

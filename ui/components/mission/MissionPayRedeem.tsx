@@ -385,7 +385,6 @@ function MissionPayRedeemContent({
                 <MissionFlyWithFrankExplainer
                   top25Threshold={overviewTop25Threshold}
                   rankedCount={overviewRankedCount}
-                  missionId={mission?.id}
                 />
               )}
             {resolvedSymbol && +tokenCredit?.toString() > 0 && (

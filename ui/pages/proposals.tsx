@@ -1,5 +1,12 @@
 import { NanceProvider } from '@nance/nance-hooks'
-import { PROJECT_TABLE_NAMES, DEFAULT_CHAIN_V5, NEXT_QUARTER_BUDGET_USD, MAX_BUDGET_USD } from 'const/config'
+import {
+  PROJECT_TABLE_NAMES,
+  DEFAULT_CHAIN_V5,
+  NEXT_QUARTER_BUDGET_USD,
+  MAX_BUDGET_USD,
+  ANNOUNCE_PROJECT_BUDGET,
+  PROJECT_CYCLE,
+} from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import { GetServerSideProps } from 'next'
@@ -8,7 +15,9 @@ import queryTable from '@/lib/tableland/queryTable'
 import React from 'react'
 import { NANCE_API_URL } from '../lib/nance/constants'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { useLivePhase } from '@/lib/operator/useLivePhase'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { daysUntilDate, endOfConfigDeadline } from '@/lib/utils/dates'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -24,6 +33,14 @@ export default function ProposalsPage({ project }: { project: Project }) {
 
   useChainDefault()
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
+  const { phase, isIntake } = useLivePhase()
+  const submissionDeadline = endOfConfigDeadline(PROJECT_CYCLE.submissionDeadline)
+  const daysLeft = daysUntilDate(submissionDeadline)
+  const submissionsClosed =
+    PROJECT_CYCLE.enforceSubmissionDeadline &&
+    isIntake &&
+    Date.now() > submissionDeadline.getTime()
+  const isEditingExisting = Boolean(project)
 
   return (
     <>
@@ -48,27 +65,61 @@ export default function ProposalsPage({ project }: { project: Project }) {
             {/* Main Content Area */}
             <div className="flex flex-col gap-5 md:gap-8 max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               
-              {/* Budget Info - At the top */}
               <div className="bg-black/20 rounded-xl p-3 md:p-4 border border-white/10">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                  <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
-                    <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Total Quarter Budget</h2>
-                    <RewardAsset
-                      name="USDC"
-                      value={`$${NEXT_QUARTER_BUDGET_USD.toLocaleString()}`}
-                      usdValue={NEXT_QUARTER_BUDGET_USD}
-                    />
-                  </div>
-                  <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
-                    <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Max Project Budget</h2>
-                    <RewardAsset
-                      name="USDC"
-                      value={`$${MAX_BUDGET_USD.toLocaleString()}`}
-                      usdValue={MAX_BUDGET_USD}
-                    />
+                <p className="text-xs uppercase tracking-wider text-white/50 mb-1">
+                  Q{PROJECT_CYCLE.quarter} {PROJECT_CYCLE.year}{' '}
+                  {isIntake
+                    ? 'Intake'
+                    : phase === 'senate'
+                    ? 'Senate Vote'
+                    : phase === 'member'
+                    ? 'Member Vote'
+                    : 'Cycle'}
+                </p>
+                {submissionsClosed ? (
+                  <p className="text-sm text-amber-200">
+                    Submissions closed on {PROJECT_CYCLE.submissionDeadline}.
+                    You can still edit a proposal you already submitted until{' '}
+                    {PROJECT_CYCLE.editingDeadline}. New proposals will open
+                    for the next cycle after Senate Vote begins.
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-300">
+                    Submit by{' '}
+                    <span className="font-semibold text-white">
+                      {PROJECT_CYCLE.submissionDeadline}
+                    </span>
+                    {daysLeft > 0
+                      ? ` — ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`
+                      : ''}
+                    . Edits close {PROJECT_CYCLE.editingDeadline}. Senate Vote
+                    opens {PROJECT_CYCLE.votingDate}.
+                  </p>
+                )}
+              </div>
+
+              {ANNOUNCE_PROJECT_BUDGET && (
+                <div className="bg-black/20 rounded-xl p-3 md:p-4 border border-white/10">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                    <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
+                      <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Total Quarter Budget</h2>
+                      <RewardAsset
+                        name="USDC"
+                        value={`$${NEXT_QUARTER_BUDGET_USD.toLocaleString()}`}
+                        usdValue={NEXT_QUARTER_BUDGET_USD}
+                      />
+                    </div>
+                    <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
+                      <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Max Project Budget</h2>
+                      <RewardAsset
+                        name="USDC"
+                        value={`$${MAX_BUDGET_USD.toLocaleString()}`}
+                        usdValue={MAX_BUDGET_USD}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Step 1: Get the Template - Most Prominent */}
               <div className="bg-gradient-to-br from-slate-900/80 via-blue-950/40 to-slate-900/80 backdrop-blur-xl border border-blue-500/25 rounded-2xl p-4 md:p-8 shadow-xl">
@@ -80,7 +131,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
                     <h2 className="text-xl md:text-2xl font-bold text-white mb-2">Get the Proposal Template</h2>
                     <p className="text-gray-300">
                       Use the canonical markdown template (novelty &amp; prior art, lunar bridge, budget
-                      classes, IP, checklist). Ask must be ≤ ${MAX_BUDGET_USD.toLocaleString()}.
+                      classes, IP, checklist). Ask must stay within the posted quarterly max.
                     </p>
                   </div>
                 </div>
@@ -145,7 +196,14 @@ export default function ProposalsPage({ project }: { project: Project }) {
                   </div>
                 </div>
                 
-                <ProposalEditor project={project} />
+                {submissionsClosed && !isEditingExisting ? (
+                  <p className="text-sm text-amber-200">
+                    New submissions are closed for this cycle. Come back after
+                    Senate Vote opens to file for the next quarter.
+                  </p>
+                ) : (
+                  <ProposalEditor project={project} />
+                )}
               </div>
 
               {/* Step 3: Present at Town Hall - Compact */}

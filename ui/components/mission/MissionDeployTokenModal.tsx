@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { keccak256 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { DEFAULT_SAFE_TX_GAS } from '@/lib/safe/executionGas'
 import { toUtf8Bytes } from 'ethers/lib/utils'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Input from '../layout/Input'
@@ -90,7 +91,7 @@ export default function MissionDeployTokenModal({
         to: JBV5_CONTROLLER_ADDRESS,
         data: txData,
         value: '0',
-        safeTxGas: '1000000',
+        safeTxGas: DEFAULT_SAFE_TX_GAS,
       })
       setSentTxToSafe(true)
     } catch (error) {
@@ -163,7 +164,7 @@ export default function MissionDeployTokenModal({
               ACCEPT ALL{' '}
               <Link
                 className="text-blue-500 hover:underline"
-                href="https://docs.moondao.com/Launchpad/Launchpad-Disclaimer"
+                href="/docs/Launchpad/Launchpad-Disclaimer"
                 target="_blank"
                 rel="noreferrer"
               >

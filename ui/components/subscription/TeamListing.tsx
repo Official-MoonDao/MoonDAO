@@ -6,15 +6,16 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import { getListingHref } from '@/lib/marketplace/listing'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
+import ExpandableText from '../layout/ExpandableText'
 import IPFSRenderer from '../layout/IPFSRenderer'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 import BuyTeamListingModal from './BuyTeamListingModal'
 import TeamMarketplaceListingModal from './TeamMarketplaceListingModal'
 
@@ -189,11 +190,13 @@ export default function TeamListing({
           <h4 id="main-header" className="text-white font-semibold text-sm leading-tight line-clamp-2">
             {listing?.title}
           </h4>
-          {listing?.description && (
-            <p className="text-white/40 text-xs leading-relaxed line-clamp-2">
-              {listing.description}
-            </p>
-          )}
+          <ExpandableText
+            className="text-white/40 text-xs leading-relaxed"
+            lines={2}
+            buttonClassName="mt-0.5 text-[11px] font-medium text-white/50 hover:text-white/80 transition-colors"
+          >
+            {listing?.description}
+          </ExpandableText>
 
           {/* Footer: price + actions */}
           <div className="mt-auto pt-2 flex items-center justify-between gap-2">
@@ -226,10 +229,7 @@ export default function TeamListing({
                 onClick={async (e) => {
                   e.stopPropagation()
                   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.moondao.com'
-                  const teamSlug = teamNFT?.metadata?.name
-                    ? generatePrettyLink(teamNFT.metadata.name)
-                    : String(listing.teamId)
-                  const shareLink = `${origin}/team/${teamSlug}?listing=${listing.id}`
+                  const shareLink = `${origin}${getListingHref(listing)}`
                   try {
                     if (!navigator.clipboard?.writeText) {
                       throw new Error('Clipboard API unavailable')

@@ -44,6 +44,18 @@ describe('<CitizenPointModal />', () => {
     })
   })
 
+  it('resolves portraits through the dedicated IPFS gateway, not ipfs.io', () => {
+    props.selectedPoint.citizens.forEach((citizen: any) => {
+      cy.get(`img[alt="${citizen.name}"]`)
+        .invoke('attr', 'src')
+        .then((src) => {
+          const decoded = decodeURIComponent(src || '')
+          expect(decoded).to.include('ipfscdn.io')
+          expect(decoded).to.not.include('ipfs.io')
+        })
+    })
+  })
+
   it('Closes the modal when the close button is clicked', () => {
     cy.get('#close-modal').click()
     cy.wrap(props.setEnabled).should('have.been.calledWith', false)

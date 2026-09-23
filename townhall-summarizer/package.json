@@ -10,6 +10,8 @@
     "test": "ts-node src/test.ts",
     "retro": "ts-node src/retro.ts",
     "missing": "ts-node src/find-missing.ts",
+    "oauth:setup": "ts-node src/oauth-setup.ts",
+    "captions:check": "ts-node src/check-captions.ts",
     "tag-broadcast": "ts-node src/tag-broadcast.ts",
     "delete-broadcast": "ts-node src/delete-broadcast.ts",
     "get-channel-id": "ts-node src/utils/get-channel-id.ts",

@@ -1,3 +1,4 @@
+import { IPFS_GATEWAY } from 'const/config'
 import CitizenPointLabel from '@/components/globe/CitizenPointLabel'
 
 describe('<CitizenPointLabel />', () => {
@@ -37,6 +38,19 @@ describe('<CitizenPointLabel />', () => {
           ? citizen.name.slice(0, 10) + '...'
           : citizen.name
       ).should('exist')
+    })
+  })
+
+  it('resolves ipfs:// portraits through the dedicated gateway, not ipfs.io', () => {
+    props.citizens.forEach((citizen: any) => {
+      const cid = citizen.image.replace('ipfs://', '')
+      cy.get(`img[alt="${citizen.name}"]`)
+        .invoke('attr', 'src')
+        .then((src) => {
+          const decoded = decodeURIComponent(src || '')
+          expect(decoded).to.include(`${IPFS_GATEWAY}${cid}`)
+          expect(decoded).to.not.include('ipfs.io')
+        })
     })
   })
 })

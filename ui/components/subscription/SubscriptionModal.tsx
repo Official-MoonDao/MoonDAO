@@ -2,8 +2,13 @@ import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import {
+  SECONDS_PER_YEAR,
+  buildRenewSubscriptionCall,
+} from '@/lib/subscription/renewSubscription'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import Input from '../layout/Input'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -28,52 +33,39 @@ export function SubscriptionModal({
   const { data: subscriptionCost, isLoading: isLoadingSubscriptionCost } = useRead({
     contract: subscriptionContract,
     method: 'getRenewalPrice',
-    params: [address, years * 365 * 24 * 60 * 60],
+    params: [address, (Number.isFinite(years) && years >= 1 ? years : 1) * SECONDS_PER_YEAR],
     deps: [years, address],
   })
 
   async function extendSubscription() {
-    if (!years || subscriptionCost === undefined) return
-
     setIsLoading(true)
 
     try {
       if (!account) throw new Error('No account found')
 
-      const duration = years * 365 * 24 * 60 * 60
+      const call = buildRenewSubscriptionCall({
+        type: type === 'team' ? 'team' : 'citizen',
+        address,
+        tokenId: nft?.metadata?.id ?? nft?.id,
+        years,
+        cost: subscriptionCost,
+      })
 
-      let receipt
-      if (type === 'team') {
-        const transaction = prepareContractCall({
-          contract: subscriptionContract,
-          method: 'renewSubscription',
-          params: [address, nft.metadata.id, duration],
-          options: {
-            value: subscriptionCost.toString(),
-          },
-        } as any)
-        receipt = await sendAndConfirmTransaction({
-          transaction,
-          account,
-        })
-      } else {
-        const transaction = prepareContractCall({
-          contract: subscriptionContract,
-          method: 'renewSubscription',
-          params: [nft.metadata.id, duration],
-          options: {
-            value: subscriptionCost.toString(),
-          },
-        } as any)
-        receipt = await sendAndConfirmTransaction({
-          transaction,
-          account,
-        })
-      }
+      const transaction = prepareContractCall({
+        contract: subscriptionContract,
+        method: call.method as string,
+        params: call.params,
+        value: call.value,
+      })
+      await sendAndConfirmTransaction({
+        transaction,
+        account,
+      })
       setEnabled(false)
       router.reload()
-    } catch (err) {
-      console.log(err)
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err?.message || 'Failed to extend subscription. Please try again.')
     }
     setIsLoading(false)
   }
@@ -134,7 +126,10 @@ export function SubscriptionModal({
                   </div>
                 ) : (
                   <span className="text-white font-medium">
-                    {subscriptionCost ? ethers.utils.formatEther(subscriptionCost) : '0.00'} ETH
+                    {subscriptionCost != null
+                      ? ethers.utils.formatEther(subscriptionCost)
+                      : '0.00'}{' '}
+                    ETH
                   </span>
                 )}
               </p>
@@ -148,7 +143,13 @@ export function SubscriptionModal({
                 await extendSubscription()
               }}
               className="w-full rounded-full"
-              isDisabled={isLoading || !years || years < 1}
+              isDisabled={isLoading}
+              actionDisabled={
+                isLoadingSubscriptionCost ||
+                subscriptionCost === undefined ||
+                !years ||
+                years < 1
+              }
             />
           </div>
         </div>

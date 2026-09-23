@@ -1,70 +1,48 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IDePrizeRegistry} from "./IDePrizeRegistry.sol";
 
 /// @title DePrizeRegistry
-/// @notice On-chain state machine and source of truth for the DePrize (Overview
-///         Prize) lifecycle. Other DePrize contracts read state from here so the
-///         system has a single, authoritative lifecycle.
+/// @notice On-chain state machine and source of truth for the DePrize lifecycle.
 ///
-/// @dev Lifecycle (see IDePrizeRegistry.DePrizeState):
+/// @dev Lifecycle:
 ///
-///   register() ──► DRAFT ──open──► OPEN ──lock──► LOCKED ──startVote──► VOTING
-///                                                    │                     │
-///                                                    └──────settleWinner───┤
-///                                                                          ▼
-///                                                                       SETTLED
-///                                                                          │
-///                                                                      releaseM1
-///                                                                          ▼
-///                                                                     M1_RELEASED
-///                                                                       │     │
-///                                                              completeM2     failM2
-///                                                                     ▼         ▼
-///                                                            M2_COMPLETE   M2_FAILED
+///   register() ──► DRAFT ──open──► OPEN ──lock──► LOCKED ──settleWinner──► SETTLED
+///                                                    │
+///                                                    └──settleNoWinner──► NO_WINNER
 ///
-///   settleNoWinner: LOCKED|VOTING ──► NO_WINNER
-///   cancel:         any non-terminal ──► CANCELLED (after CANCELLATION_NOTICE)
+///   supersede:  OPEN|LOCKED ──► SUPERSEDED (new generation registered in DRAFT)
+///   cancel:     any non-terminal ──► CANCELLED (after CANCELLATION_NOTICE)
 ///
-///   Refund-enabling terminals: CANCELLED, NO_WINNER, M2_FAILED.
-///   Success terminal: M2_COMPLETE.
+///   Refund terminals: CANCELLED, NO_WINNER.  Success terminal: SETTLED.
 ///
-/// Access control is a single owner (the admin Safe) for v1. The contract is
-/// UUPS-upgradeable; a timelocked upgrade path is a later milestone.
-contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, IDePrizeRegistry {
+///      Immutable and non-upgradeable. Owner is the admin Safe (Ownable2Step so a
+///      mistyped transfer cannot orphan the registry).
+contract DePrizeRegistry is Ownable2Step, IDePrizeRegistry {
     /// @inheritdoc IDePrizeRegistry
     uint256 public constant override CANCELLATION_NOTICE = 7 days;
 
-    uint256 private _nextId;
+    uint256 private _nextId = 1;
     mapping(uint256 => DePrize) private _deprizes;
     mapping(uint256 => uint256) private _deprizeIdByJBProject;
     mapping(uint256 => mapping(uint256 => bool)) private _isTeam;
 
-    /// @dev M5: winning provider's payout destination (set post-settlement). Stored
-    ///      as a standalone mapping rather than a `DePrize` struct field so the
-    ///      `getDePrize` return ABI is unchanged for existing consumers, and so this
-    ///      upgrade only consumes one previously-reserved gap slot.
-    mapping(uint256 => address) private _providerPayoutAddress;
+    /// @dev Generation lineage. `_supersededBy[old] = new`, `_supersedes[new] = old`.
+    mapping(uint256 => uint256) private _supersededBy;
+    mapping(uint256 => uint256) private _supersedes;
 
-    /// @dev Storage gap for future upgrades (50 slots - 5 used = 45).
-    uint256[45] private __gap;
+    error RenounceDisabled();
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
+    constructor(address owner_) Ownable(owner_) {}
+
+    /// @dev An ownerless immutable registry could never open, settle or cancel
+    ///      a DePrize. Ownership moves only through the two-step transfer.
+    function renounceOwnership() public view override onlyOwner {
+        revert RenounceDisabled();
     }
-
-    function initialize(address owner_) external initializer {
-        __Ownable_init(owner_);
-        __UUPSUpgradeable_init();
-        _nextId = 1;
-    }
-
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     // ---------------------------------------------------------------------
     // Registration & configuration
@@ -79,25 +57,9 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     {
         if (jbProjectId == 0) revert InvalidJBProject();
         if (_deprizeIdByJBProject[jbProjectId] != 0) revert JBProjectAlreadyBound(jbProjectId);
-        if (teamIds_.length < 2) revert TooFewTeams(teamIds_.length);
         if (sunset <= block.timestamp) revert InvalidSunset();
 
-        deprizeId = _nextId++;
-
-        DePrize storage d = _deprizes[deprizeId];
-        d.jbProjectId = jbProjectId;
-        d.sunset = sunset;
-        d.state = DePrizeState.DRAFT;
-
-        for (uint256 i = 0; i < teamIds_.length; i++) {
-            uint256 teamId = teamIds_[i];
-            // 0 is reserved as the "no winner declared" sentinel for winningTeamId.
-            if (teamId == 0) revert ZeroTeamId();
-            if (_isTeam[deprizeId][teamId]) revert DuplicateTeam(teamId);
-            _isTeam[deprizeId][teamId] = true;
-            d.teamIds.push(teamId);
-        }
-
+        deprizeId = _create(jbProjectId, teamIds_, sunset);
         _deprizeIdByJBProject[jbProjectId] = deprizeId;
 
         emit DePrizeRegistered(deprizeId, jbProjectId, teamIds_, sunset);
@@ -106,17 +68,72 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
 
     /// @inheritdoc IDePrizeRegistry
     function setCondition(uint256 deprizeId, bytes32 ctfConditionId) external override onlyOwner {
-        DePrize storage d = _requireDraft(deprizeId);
+        DePrize storage d = _requireState(deprizeId, DePrizeState.DRAFT);
         d.ctfConditionId = ctfConditionId;
         emit ConditionSet(deprizeId, ctfConditionId);
     }
 
     /// @inheritdoc IDePrizeRegistry
     function setSunset(uint256 deprizeId, uint256 sunset) external override onlyOwner {
-        DePrize storage d = _requireDraft(deprizeId);
+        DePrize storage d = _get(deprizeId);
         if (sunset <= block.timestamp) revert InvalidSunset();
+        if (d.state == DePrizeState.OPEN) {
+            if (sunset <= d.sunset) revert SunsetNotExtended(d.sunset, sunset);
+        } else if (d.state != DePrizeState.DRAFT) {
+            revert InvalidState(deprizeId, d.state);
+        }
         d.sunset = sunset;
         emit SunsetUpdated(deprizeId, sunset);
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function setTeams(uint256 deprizeId, uint256[] calldata teamIds_) external override onlyOwner {
+        DePrize storage d = _requireState(deprizeId, DePrizeState.DRAFT);
+
+        // Clear-then-write so stale `_isTeam` entries cannot let settleWinner
+        // accept a team that is no longer on the roster.
+        uint256 oldLen = d.teamIds.length;
+        for (uint256 i = 0; i < oldLen; i++) {
+            _isTeam[deprizeId][d.teamIds[i]] = false;
+        }
+        delete d.teamIds;
+        _writeRoster(deprizeId, d, teamIds_);
+
+        emit TeamsUpdated(deprizeId, teamIds_);
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function supersede(uint256 oldDeprizeId, uint256[] calldata newTeamIds, uint256 sunset)
+        external
+        override
+        onlyOwner
+        returns (uint256 newDeprizeId)
+    {
+        DePrize storage old = _get(oldDeprizeId);
+        if (old.state != DePrizeState.OPEN && old.state != DePrizeState.LOCKED) {
+            revert InvalidState(oldDeprizeId, old.state);
+        }
+        if (sunset <= block.timestamp) revert InvalidSunset();
+
+        if (old.cancellationNoticeAt != 0) {
+            old.cancellationNoticeAt = 0;
+            emit CancellationAborted(oldDeprizeId);
+        }
+
+        uint256 jbProjectId = old.jbProjectId;
+        newDeprizeId = _create(jbProjectId, newTeamIds, sunset);
+
+        // The old entry must be SUPERSEDED (terminal, not refundable) BEFORE the
+        // JB mapping points at the new DRAFT, so the pay hook never observes a
+        // refundable DePrize on a funded project.
+        _supersededBy[oldDeprizeId] = newDeprizeId;
+        _supersedes[newDeprizeId] = oldDeprizeId;
+        _setState(oldDeprizeId, old, DePrizeState.SUPERSEDED);
+        _deprizeIdByJBProject[jbProjectId] = newDeprizeId;
+
+        emit DePrizeRegistered(newDeprizeId, jbProjectId, newTeamIds, sunset);
+        emit StateChanged(newDeprizeId, DePrizeState.NONE, DePrizeState.DRAFT);
+        emit DePrizeSuperseded(oldDeprizeId, newDeprizeId, newTeamIds);
     }
 
     // ---------------------------------------------------------------------
@@ -138,68 +155,20 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     }
 
     /// @inheritdoc IDePrizeRegistry
-    function startVote(uint256 deprizeId) external override onlyOwner {
-        DePrize storage d = _requireState(deprizeId, DePrizeState.LOCKED);
-        _setState(deprizeId, d, DePrizeState.VOTING);
-    }
-
-    /// @inheritdoc IDePrizeRegistry
     function settleWinner(uint256 deprizeId, uint256 winningTeamId_) external override onlyOwner {
-        DePrize storage d = _get(deprizeId);
-        if (d.state != DePrizeState.LOCKED && d.state != DePrizeState.VOTING) {
-            revert InvalidState(deprizeId, d.state);
-        }
+        DePrize storage d = _requireState(deprizeId, DePrizeState.LOCKED);
         if (!_isTeam[deprizeId][winningTeamId_]) revert UnknownTeam(deprizeId, winningTeamId_);
         d.winningTeamId = winningTeamId_;
-        if (d.cancellationNoticeAt != 0) {
-            d.cancellationNoticeAt = 0;
-            emit CancellationAborted(deprizeId);
-        }
+        _clearNotice(deprizeId, d);
         _setState(deprizeId, d, DePrizeState.SETTLED);
         emit WinnerDeclared(deprizeId, winningTeamId_);
     }
 
     /// @inheritdoc IDePrizeRegistry
     function settleNoWinner(uint256 deprizeId) external override onlyOwner {
-        DePrize storage d = _get(deprizeId);
-        if (d.state != DePrizeState.LOCKED && d.state != DePrizeState.VOTING) {
-            revert InvalidState(deprizeId, d.state);
-        }
-        if (d.cancellationNoticeAt != 0) {
-            d.cancellationNoticeAt = 0;
-            emit CancellationAborted(deprizeId);
-        }
+        DePrize storage d = _requireState(deprizeId, DePrizeState.LOCKED);
+        _clearNotice(deprizeId, d);
         _setState(deprizeId, d, DePrizeState.NO_WINNER);
-    }
-
-    /// @inheritdoc IDePrizeRegistry
-    function releaseM1(uint256 deprizeId) external override onlyOwner {
-        DePrize storage d = _requireState(deprizeId, DePrizeState.SETTLED);
-        if (d.cancellationNoticeAt != 0) {
-            d.cancellationNoticeAt = 0;
-            emit CancellationAborted(deprizeId);
-        }
-        _setState(deprizeId, d, DePrizeState.M1_RELEASED);
-    }
-
-    /// @inheritdoc IDePrizeRegistry
-    function completeM2(uint256 deprizeId) external override onlyOwner {
-        DePrize storage d = _requireState(deprizeId, DePrizeState.M1_RELEASED);
-        if (d.cancellationNoticeAt != 0) {
-            d.cancellationNoticeAt = 0;
-            emit CancellationAborted(deprizeId);
-        }
-        _setState(deprizeId, d, DePrizeState.M2_COMPLETE);
-    }
-
-    /// @inheritdoc IDePrizeRegistry
-    function failM2(uint256 deprizeId) external override onlyOwner {
-        DePrize storage d = _requireState(deprizeId, DePrizeState.M1_RELEASED);
-        if (d.cancellationNoticeAt != 0) {
-            d.cancellationNoticeAt = 0;
-            emit CancellationAborted(deprizeId);
-        }
-        _setState(deprizeId, d, DePrizeState.M2_FAILED);
     }
 
     // ---------------------------------------------------------------------
@@ -209,11 +178,9 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     /// @inheritdoc IDePrizeRegistry
     function announceCancellation(uint256 deprizeId) external override onlyOwner {
         DePrize storage d = _get(deprizeId);
-        if (_isTerminalState(d.state)) {
-            revert InvalidState(deprizeId, d.state);
-        }
-        // Require an explicit abort before re-announcing, so the notice window can't be
-        // silently reset (off-chain monitors and bettors track a single executableAt).
+        if (_isTerminalState(d.state)) revert InvalidState(deprizeId, d.state);
+        // Explicit abort required before re-announcing so the window cannot be
+        // silently reset (bettors and monitors track a single executableAt).
         if (d.cancellationNoticeAt != 0) revert CancellationAlreadyPending(deprizeId);
         d.cancellationNoticeAt = block.timestamp;
         emit CancellationAnnounced(deprizeId, block.timestamp, block.timestamp + CANCELLATION_NOTICE);
@@ -235,37 +202,12 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         if (block.timestamp < executableAt) revert CancellationNoticeNotElapsed(deprizeId, executableAt);
         if (_isTerminalState(d.state)) revert InvalidState(deprizeId, d.state);
         d.cancellationNoticeAt = 0;
-        // Intentionally preserve winningTeamId: if cancellation happens after
-        // SETTLED/M1_RELEASED, downstream refund/settlement paths may need to know
-        // which provider had been selected. Pre-settlement it is already 0.
         _setState(deprizeId, d, DePrizeState.CANCELLED);
-    }
-
-    // ---------------------------------------------------------------------
-    // Prize disbursement (M5)
-    // ---------------------------------------------------------------------
-
-    /// @inheritdoc IDePrizeRegistry
-    function setProviderPayoutAddress(uint256 deprizeId, address provider) external override onlyOwner {
-        if (provider == address(0)) revert ZeroProviderAddress();
-        DePrize storage d = _get(deprizeId);
-        // Only meaningful once a winner is declared and before the prize fully
-        // resolves: SETTLED (pre-M1) or M1_RELEASED (between the two milestones).
-        if (d.state != DePrizeState.SETTLED && d.state != DePrizeState.M1_RELEASED) {
-            revert InvalidState(deprizeId, d.state);
-        }
-        _providerPayoutAddress[deprizeId] = provider;
-        emit ProviderPayoutAddressSet(deprizeId, provider);
     }
 
     // ---------------------------------------------------------------------
     // Views
     // ---------------------------------------------------------------------
-
-    /// @inheritdoc IDePrizeRegistry
-    function providerPayoutAddress(uint256 deprizeId) external view override returns (address) {
-        return _providerPayoutAddress[deprizeId];
-    }
 
     /// @inheritdoc IDePrizeRegistry
     function state(uint256 deprizeId) external view override returns (DePrizeState) {
@@ -306,7 +248,7 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     /// @inheritdoc IDePrizeRegistry
     function isRefundable(uint256 deprizeId) external view override returns (bool) {
         DePrizeState s = _deprizes[deprizeId].state;
-        return s == DePrizeState.CANCELLED || s == DePrizeState.NO_WINNER || s == DePrizeState.M2_FAILED;
+        return s == DePrizeState.CANCELLED || s == DePrizeState.NO_WINNER;
     }
 
     /// @inheritdoc IDePrizeRegistry
@@ -324,9 +266,42 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         return _nextId - 1;
     }
 
+    /// @inheritdoc IDePrizeRegistry
+    function supersededBy(uint256 deprizeId) external view override returns (uint256) {
+        return _supersededBy[deprizeId];
+    }
+
+    /// @inheritdoc IDePrizeRegistry
+    function supersedes(uint256 deprizeId) external view override returns (uint256) {
+        return _supersedes[deprizeId];
+    }
+
     // ---------------------------------------------------------------------
     // Internal helpers
     // ---------------------------------------------------------------------
+
+    function _create(uint256 jbProjectId, uint256[] calldata teamIds_, uint256 sunset)
+        private
+        returns (uint256 deprizeId)
+    {
+        deprizeId = _nextId++;
+        DePrize storage d = _deprizes[deprizeId];
+        d.jbProjectId = jbProjectId;
+        d.sunset = sunset;
+        d.state = DePrizeState.DRAFT;
+        _writeRoster(deprizeId, d, teamIds_);
+    }
+
+    function _writeRoster(uint256 deprizeId, DePrize storage d, uint256[] calldata teamIds_) private {
+        if (teamIds_.length < 2) revert TooFewTeams(teamIds_.length);
+        for (uint256 i = 0; i < teamIds_.length; i++) {
+            uint256 teamId = teamIds_[i];
+            if (teamId == 0) revert ZeroTeamId();
+            if (_isTeam[deprizeId][teamId]) revert DuplicateTeam(teamId);
+            _isTeam[deprizeId][teamId] = true;
+            d.teamIds.push(teamId);
+        }
+    }
 
     function _get(uint256 deprizeId) private view returns (DePrize storage d) {
         d = _deprizes[deprizeId];
@@ -338,8 +313,11 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
         if (d.state != expected) revert InvalidState(deprizeId, d.state);
     }
 
-    function _requireDraft(uint256 deprizeId) private view returns (DePrize storage d) {
-        return _requireState(deprizeId, DePrizeState.DRAFT);
+    function _clearNotice(uint256 deprizeId, DePrize storage d) private {
+        if (d.cancellationNoticeAt != 0) {
+            d.cancellationNoticeAt = 0;
+            emit CancellationAborted(deprizeId);
+        }
     }
 
     function _setState(uint256 deprizeId, DePrize storage d, DePrizeState to) private {
@@ -349,7 +327,9 @@ contract DePrizeRegistry is Initializable, OwnableUpgradeable, UUPSUpgradeable, 
     }
 
     function _isTerminalState(DePrizeState s) private pure returns (bool) {
-        return s == DePrizeState.M2_COMPLETE || s == DePrizeState.M2_FAILED || s == DePrizeState.CANCELLED
-            || s == DePrizeState.NO_WINNER;
+        // SUPERSEDED is terminal (stops bets and new contributions) but
+        // deliberately NOT refundable — see isRefundable.
+        return s == DePrizeState.SETTLED || s == DePrizeState.NO_WINNER || s == DePrizeState.CANCELLED
+            || s == DePrizeState.SUPERSEDED;
     }
 }

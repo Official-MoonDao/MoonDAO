@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import Job, { Job as JobType } from '../jobs/Job'
+import JobCitizenUpsell from '../jobs/JobCitizenUpsell'
 import StandardButton from '../layout/StandardButton'
 import Card from './Card'
 import TeamJobModal from './TeamJobModal'
@@ -127,87 +128,28 @@ export default function TeamJobs({
             </StandardButton>
           )}
         </div>
-        {isManager || isCitizen ? (
-          <div className="mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {jobs?.[0] ? (
-                jobs.map((job, i) => (
-                  <Job
-                    id={`team-job-${job.id}`}
-                    key={`team-job-${job.id}`}
-                    job={job}
-                    jobTableContract={jobTableContract}
-                    editable={isManager}
-                    refreshJobs={getEntityJobs}
-                    previewMode={false}
-                  />
-                ))
-              ) : (
-                <p className="text-slate-300 text-center py-8 col-span-2">{`This team hasn't listed any open roles yet.`}</p>
-              )}
-            </div>
+        <div className="mt-4 flex flex-col gap-4">
+          {!isManager && !isCitizen && (
+            <JobCitizenUpsell
+              variant="banner"
+              headline="Read the roles. Apply as a Citizen."
+              body="This team's open opportunities are public. Citizenship unlocks the apply link and how-to-apply steps."
+            />
+          )}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {jobs.map((job) => (
+              <Job
+                id={`team-job-${job.id}`}
+                key={`team-job-${job.id}`}
+                job={job}
+                jobTableContract={jobTableContract}
+                editable={isManager}
+                refreshJobs={getEntityJobs}
+                previewMode={false}
+              />
+            ))}
           </div>
-        ) : jobs?.[0] ? (
-          // Show preview for non-citizens
-          <div className="mt-4">
-            <div className="bg-slate-800/50 rounded-xl border border-slate-600/30 p-6 mb-4">
-              <div className="text-center">
-                <h4 className="text-lg font-semibold text-white mb-2">
-                  🔒 {jobs.length} Job{jobs.length !== 1 ? 's' : ''} Available
-                </h4>
-                <p className="text-slate-300 mb-4">
-                  This team has active job postings. Become a Citizen to view full details, salary
-                  information, and application links.
-                </p>
-                <StandardButton
-                  className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
-                  onClick={() => {
-                    router.push('/citizen')
-                  }}
-                >
-                  Become a Citizen
-                </StandardButton>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 opacity-50 pointer-events-none">
-              {jobs.slice(0, 3).map((job, i) => (
-                <Job
-                  id={`team-job-preview-${job.id}`}
-                  key={`team-job-preview-${job.id}`}
-                  job={job}
-                  jobTableContract={jobTableContract}
-                  editable={false}
-                  refreshJobs={getEntityJobs}
-                  previewMode={true}
-                />
-              ))}
-              {jobs.length > 3 && (
-                <div className="bg-slate-700/30 rounded-xl border border-slate-600/30 p-6 flex items-center justify-center min-h-[200px]">
-                  <p className="text-slate-400 text-center">
-                    +{jobs.length - 3} more job
-                    {jobs.length - 3 !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4 ">
-            <p>
-              {
-                '⚠️ You must be a Citizen of the Space Acceleration Network or a Manager of the team to view the job board. If you are already a Citizen or Manager, please sign in.'
-              }
-            </p>
-            <StandardButton
-              className="min-w-[200px] gradient-2 rounded-[2vmax] rounded-bl-[10px]"
-              onClick={() => {
-                router.push('/citizen')
-              }}
-            >
-              Become a Citizen
-            </StandardButton>
-          </div>
-        )}
+        </div>
 
         {teamJobModalEnabled && (
           <TeamJobModal

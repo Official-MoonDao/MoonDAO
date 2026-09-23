@@ -1,4 +1,7 @@
+import { PROJECT_CYCLE } from 'const/config'
+import type { ProjectCyclePhase } from 'const/config'
 import { BigNumber } from 'ethers'
+import { getSubmissionTargetCycle } from '@/lib/projectCycle/cycleQuarters'
 
 const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -109,24 +112,6 @@ export function isRewardsCycle(date: Date, override?: boolean) {
   return date >= endOfQuarter && date <= firstTuesdayAfterFourteenDays
 }
 
-export function isApprovalActive(date: Date) {
-  if (true) return true
-  const lastQuarter = getRelativeQuarter(-1)
-  const endOfQuarter = new Date(lastQuarter.year, lastQuarter.quarter * 3, 0)
-  const nextQuarterStart = new Date(lastQuarter.year, lastQuarter.quarter * 3, 1)
-
-  const twentyOneDaysIntoNextQuarter = new Date(nextQuarterStart)
-  twentyOneDaysIntoNextQuarter.setDate(twentyOneDaysIntoNextQuarter.getDate() + 21)
-
-  const firstThursdayAfterTwentyOneDays = new Date(twentyOneDaysIntoNextQuarter)
-  const daysUntilThursday = daysUntilDay(twentyOneDaysIntoNextQuarter, 'Thursday')
-  firstThursdayAfterTwentyOneDays.setDate(
-    firstThursdayAfterTwentyOneDays.getDate() + daysUntilThursday
-  )
-
-  return date >= endOfQuarter && date <= firstThursdayAfterTwentyOneDays
-}
-
 export function getSubmissionQuarter() {
   const lastQuarter = getRelativeQuarter(-1)
   const thisQuarter = getRelativeQuarter(0)
@@ -174,16 +159,27 @@ export function formatLongDate(date: Date) {
   })
 }
 
-export function getSubmissionCycleInfo() {
-  const { quarter, year } = getSubmissionQuarter()
+// Display dates like `October 8, 2026` parse as midnight at the start of
+// that day (UTC in production). Use the last millisecond so the advertised
+// calendar day stays inclusive.
+export function endOfConfigDeadline(displayDate: string): Date {
+  return new Date(`${displayDate} 23:59:59.999 UTC`)
+}
+
+export function getSubmissionCycleInfo(phase: ProjectCyclePhase) {
+  const { quarter, year } = getSubmissionTargetCycle(phase)
   const deadline = getSecondThursdayOfQuarter(quarter, year)
   const quarterLabel = formatQuarterCycleLabel(quarter, year)
+  const isCurrentSlate =
+    quarter === PROJECT_CYCLE.quarter && year === PROJECT_CYCLE.year
 
   return {
     quarter,
     year,
     quarterLabel,
     deadline,
-    deadlineFormatted: formatLongDate(deadline),
+    deadlineFormatted: isCurrentSlate
+      ? PROJECT_CYCLE.submissionDeadline
+      : formatLongDate(deadline),
   }
 }

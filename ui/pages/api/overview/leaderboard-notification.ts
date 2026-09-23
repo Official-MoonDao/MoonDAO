@@ -174,7 +174,7 @@ async function handler(req: any, res: any) {
         DEPLOYED_ORIGIN,
         (name, id) => generatePrettyLinkWithId(name, id) ?? String(id)
       )}`
-      content += `\n\n[Vote now →](${DEPLOYED_ORIGIN}/overview-vote)`
+      content += `\n\n[Vote now →](${DEPLOYED_ORIGIN}/frank?tab=leaderboard)`
     }
 
     const messageData: any = {

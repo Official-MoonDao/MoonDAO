@@ -45,7 +45,20 @@ jobs:
           ALLOWED_YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
           CONVERT_KIT_V4_API_KEY: ${{ secrets.CONVERT_KIT_V4_API_KEY }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          TRANSCRIPT_SOURCE: captions
+          # Owner-authenticated caption download. The anonymous `timedtext`
+          # endpoint that `TRANSCRIPT_SOURCE: captions` relied on returns
+          # nothing from GitHub's datacenter IPs — every scheduled run since
+          # May failed with "No caption track available" on videos whose
+          # captions download fine from a laptop. These credentials read the
+          # same tracks over the Data API as the channel owner, which does not
+          # depend on the runner's IP reputation.
+          YOUTUBE_OAUTH_CLIENT_ID: ${{ secrets.YOUTUBE_OAUTH_CLIENT_ID }}
+          YOUTUBE_OAUTH_CLIENT_SECRET: ${{ secrets.YOUTUBE_OAUTH_CLIENT_SECRET }}
+          YOUTUBE_OAUTH_REFRESH_TOKEN: ${{ secrets.YOUTUBE_OAUTH_REFRESH_TOKEN }}
+          # `auto` walks owner -> public timedtext -> audio. It was pinned to
+          # `captions`, so the one path that cannot work here was also the only
+          # one allowed to run.
+          TRANSCRIPT_SOURCE: auto
         run: |
           if [ -n "${{ github.event.inputs.video_ids }}" ]; then
             echo "Processing specified video(s): ${{ github.event.inputs.video_ids }}"
@@ -54,3 +67,21 @@ jobs:
             echo "Auto-detecting latest unprocessed town hall..."
             yarn ts-node src/find-missing.ts --days=14 --auto-run
           fi
+
+      # This job failed every Friday from May to September without anyone
+      # noticing, because a stale /townhall page looks the same as a quiet one.
+      # Shout when it breaks.
+      - name: Alert Discord on failure
+        if: failure()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "No DISCORD_WEBHOOK_URL configured; skipping alert."
+            exit 0
+          fi
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -sS -X POST "$DISCORD_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "{\"content\": \"Town hall summarizer failed — no new summary was published this week. Logs: $RUN_URL\"}" \
+            || echo "Discord alert failed to send."

@@ -1,8 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Widget } from '@typeform/embed-react'
 import {
-  DEPLOYED_ORIGIN,
-  DISCORD_CITIZEN_ROLE_ID,
+  DEFAULT_TEAM_MULTISIG_SIGNERS,
   TEAM_ADDRESSES,
   TEAM_CREATOR_ADDRESSES,
 } from 'const/config'
@@ -17,8 +16,8 @@ import useWindowSize from '../../lib/team/use-window-size'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
-import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
 import {
   estimateGasWithAPI,
   applyGasBuffer,
@@ -170,18 +169,21 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   }, [])
 
   const handlePostMint = useCallback(
-    async (mintedTokenId: string, teamName: string) => {
-      const teamPrettyLink = generatePrettyLink(teamName)
+    (tokenId: string, metadataReady: boolean) => {
       clearCache()
-      setTimeout(async () => {
-        await sendDiscordMessage(
-          'networkNotifications',
-          `## [**${teamName}**](${DEPLOYED_ORIGIN}/team/${teamPrettyLink}?_timestamp=123456789) has created a team in the Space Acceleration Network! <@&${DISCORD_CITIZEN_ROLE_ID}>`
+      // Numeric `/team/<id>` skips the 60s pretty-link cache, which never
+      // contains a team minted in the last minute. Only go there once
+      // `waitForERC721` has seen `metadata.name` — that read is Tableland-
+      // backed, so a miss means `fetchTeamWithOwner` would 404 too.
+      if (metadataReady) {
+        router.push(`/team/${tokenId}`)
+      } else {
+        toast.success(
+          'Team created. Profile indexing is taking longer than usual — it will appear on the network shortly.'
         )
-
-        router.push(`/team/${teamPrettyLink}`)
-        setIsLoadingMint(false)
-      }, 10000)
+        router.push('/network')
+      }
+      setIsLoadingMint(false)
     },
     [router, clearCache]
   )
@@ -312,6 +314,13 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
         return toast.error('Image upload to IPFS failed. Try a smaller file.')
       }
 
+      // Add MoonDAO stewards as co-signers on the team Safe (the creator is
+      // added as the first owner by the contract). Filter the creator out to
+      // avoid a duplicate-owner revert if a steward is creating the team.
+      const defaultSigners = DEFAULT_TEAM_MULTISIG_SIGNERS.filter(
+        (signer) => signer.toLowerCase() !== address.toLowerCase()
+      )
+
       const transaction = prepareContractCall({
         contract: teamCreatorContract,
         method: 'createMoonDAOTeam' as string,
@@ -335,7 +344,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
             _view: teamData.view,
             formId: escapeSingleQuotes(teamData.formResponseId),
           },
-          [],
+          defaultSigners,
         ],
         value: cost,
       })
@@ -352,10 +361,37 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
         return toast.error('Mint unverified — check your wallet or contact support.')
       }
 
-      if (mintedTokenId) {
+      // Announce immediately. The old path waited for Tableland metadata
+      // (`waitForERC721`, up to 60s) and then another 10s before calling
+      // `/api/discord/send` without a Privy Bearer token. Any failure in that
+      // chain — including the 401 from `authMiddleware` — silently dropped
+      // the Discord message after the on-chain mint had already succeeded.
+      const txHash = receipt?.transactionHash || receipt?.hash || `team-mint-${mintedTokenId}`
+      const teamPrettyLink = generatePrettyLink(teamData.name)
+      void sendOnchainNotification(
+        '/api/discord/notify-new-team',
+        {
+          txHash,
+          tokenId: mintedTokenId,
+          teamName: teamData.name,
+          prettyLink: teamPrettyLink,
+          image: 'ipfs://' + newImageIpfsHash,
+          description: teamData.description,
+        },
+        { label: 'notify-new-team' }
+      )
+
+      let metadataReady = false
+      try {
         await waitForERC721(teamContract, +mintedTokenId)
-        await handlePostMint(mintedTokenId, teamData.name)
+        metadataReady = true
+      } catch (err) {
+        // Announcement already fired. Do not send the payer to a pretty-link
+        // (or even `/team/<id>`) while Tableland is still missing the row —
+        // getServerSideProps 404s in that case.
+        console.error('Team NFT metadata not ready yet:', err)
       }
+      handlePostMint(mintedTokenId, metadataReady)
     } catch (err) {
       console.error(err)
       setIsLoadingMint(false)
@@ -405,7 +441,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
             _view: teamData.view,
             formId: escapeSingleQuotes(teamData.formResponseId || '0000'),
           },
-          [],
+          DEFAULT_TEAM_MULTISIG_SIGNERS.filter(
+            (signer) => signer.toLowerCase() !== address.toLowerCase()
+          ),
         ],
         value: cost,
       })
@@ -671,7 +709,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                         <h3 className="font-GoodTimes text-base mb-3 text-white">Treasury</h3>
                         <p className="text-slate-400 text-sm leading-relaxed">
                           A self-custodied multisignature treasury will secure your organization's
-                          assets. You can add more signers later via your Team management portal.
+                          assets. Your wallet plus two MoonDAO stewards are added as co-signers so we
+                          can help you get set up. You can add, remove, or change signers anytime via
+                          your Team management portal.
                         </p>
                       </div>
                       <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">

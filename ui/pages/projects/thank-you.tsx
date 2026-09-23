@@ -12,7 +12,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { getRelativeQuarter } from '@/lib/utils/dates'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -36,7 +36,7 @@ export default function RewardsThankYou() {
   const account = useActiveAccount()
   const address = account?.address
 
-  const { quarter: fallbackQuarter, year: fallbackYear } = getRelativeQuarter(-1)
+  const { quarter: fallbackQuarter, year: fallbackYear } = getRetroCohort()
 
   // Pull the quarter / year / submission type from the redirect URL. The
   // member-vote and retro-distribution flows live in different Tableland
@@ -89,21 +89,6 @@ export default function RewardsThankYou() {
       revalidateOnFocus: false,
     })
 
-  // Pull the project list for the *URL's* quarter so member-vote allocations
-  // (which point at proposals from the current submission quarter, not the
-  // rewards-shifted previous quarter) resolve to the right names. We also
-  // grab `proposalIPFS` so we can fall back to the IPFS proposal body for
-  // any project whose stored `name` is empty / "Untitled" — same title-
-  // resolution pipeline `ProjectCard` uses on the projects page.
-  const projectsStatement =
-    router.isReady && PROJECT_TABLE_NAME
-      ? `SELECT id, name, proposalIPFS, MDP FROM ${PROJECT_TABLE_NAME} WHERE year = ${year} AND quarter = ${quarter}`
-      : null
-
-  const { data: projectsForQuarter } = useTablelandQuery(projectsStatement, {
-    revalidateOnFocus: false,
-  })
-
   const userDistribution = useMemo(() => {
     if (!distributions || !address) return undefined
     return distributions.find(
@@ -128,6 +113,30 @@ export default function RewardsThankYou() {
     }
     return dist as Record<string, number>
   }, [userDistribution])
+
+  // Look up projects by the IDs actually present in the submitted
+  // distribution — NOT by (year, quarter). Retroactive cohorts can include
+  // projects originally proposed in earlier quarters (the operator flags
+  // them eligible regardless of proposal quarter), so a quarter-scoped
+  // query misses those rows and the thank-you page falls back to
+  // "Project #ID". Same approach `computeRetroactiveOutcome` uses.
+  const allocatedProjectIds = useMemo(() => {
+    return Object.entries(distributionMap)
+      .filter(([, v]) => Number(v) > 0)
+      .map(([id]) => id)
+      .filter((id) => /^\d+$/.test(id))
+      .map((id) => Number(id))
+  }, [distributionMap])
+
+  const projectsStatement =
+    router.isReady && PROJECT_TABLE_NAME && allocatedProjectIds.length > 0
+      ? `SELECT id, name, proposalIPFS, MDP FROM ${PROJECT_TABLE_NAME} WHERE id IN (${allocatedProjectIds.join(',')})`
+      : null
+
+  const { data: projectsForQuarter, isLoading: projectsLoading } =
+    useTablelandQuery(projectsStatement, {
+      revalidateOnFocus: false,
+    })
 
   // For any allocated project whose stored `name` is missing / "Untitled",
   // pull its proposal JSON from IPFS so we can derive a real title via
@@ -221,8 +230,14 @@ export default function RewardsThankYou() {
     () => allocations.reduce((sum, a) => sum + a.percent, 0),
     [allocations]
   )
-  const allocationsLoading = !!address && allocationsApiLoading
-  const hasAllocations = allocations.length > 0
+  // Keep the skeleton up until both the allocation row and the project
+  // metadata for its ids have loaded — otherwise we'd briefly render
+  // "Project #ID" placeholders before titles resolve.
+  const allocationsLoading =
+    !!address &&
+    (allocationsApiLoading ||
+      (allocatedProjectIds.length > 0 && projectsLoading))
+  const hasAllocations = allocations.length > 0 && !allocationsLoading
   const showLoadingState = allocationsLoading && !hasAllocations
   const showEmptyState =
     !!address && !allocationsLoading && !hasAllocations && distributions !== undefined

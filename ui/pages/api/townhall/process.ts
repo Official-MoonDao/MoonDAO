@@ -25,7 +25,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const youtubeApiKey = process.env.YOUTUBE_API_KEY
     const channelId = process.env.YOUTUBE_CHANNEL_ID
-    const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+    // Kept in step with townhall-summarizer's DEFAULT_MODELS.llm — GROQ retired
+    // the Llama family, so the old default now 404s as model_not_found.
+    const groqModel = process.env.GROQ_MODEL || 'openai/gpt-oss-120b'
     const whisperModel = process.env.WHISPER_MODEL || 'whisper-large-v3'
     const processingServiceUrl = process.env.TOWNHALL_PROCESSING_SERVICE_URL
 

@@ -1,0 +1,8 @@
+{
+  "filter_paths": "node_modules|lib/|test/|script/|src/(?!deprize/|LaunchPadPayHook)",
+  "exclude_informational": true,
+  "exclude_low": true,
+  "exclude_optimization": true,
+  "fail_on": "medium",
+  "foundry_compile_all": true
+}

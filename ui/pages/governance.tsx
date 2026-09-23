@@ -160,7 +160,7 @@ const Governance: React.FC = () => {
 
   return (
     <>
-      <WebsiteHead title={title} description={description} image="/assets/moondao-og.jpg" />
+      <WebsiteHead title={title} description={description} image="/assets/MoonDAO-OG.png" />
 
       {/* Hero Section */}
       <Container>

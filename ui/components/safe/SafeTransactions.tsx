@@ -33,6 +33,31 @@ const EXECUTE_BTN_CLASS =
 const REJECT_BTN_CLASS =
   'rounded-full px-5 py-2 text-sm font-semibold bg-transparent border border-red-500/40 text-red-300 hover:bg-red-500/10 hover:border-red-500/60 transition-all duration-200'
 
+function Spinner({ className = 'h-3 w-3' }: { className?: string }) {
+  return (
+    <svg
+      className={`animate-spin ${className}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+      />
+    </svg>
+  )
+}
+
 export default function SafeTransactions({
   address,
   safeData,
@@ -44,6 +69,7 @@ export default function SafeTransactions({
     rejectTransaction,
     threshold,
     pendingTransactions,
+    isLoadingTransactions,
   } = safeData
   const { selectedChain } = useContext(ChainContextV5)
   const { wallets } = useWallets()
@@ -90,10 +116,20 @@ export default function SafeTransactions({
         >
           Recent Transactions
         </h3>
-        {pendingTransactions.length > 0 && (
-          <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-slate-300">
-            {pendingTransactions.length} pending
+        {isLoadingTransactions ? (
+          <span
+            data-testid="transactions-loading-badge"
+            className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-slate-300"
+          >
+            <Spinner />
+            Syncing
           </span>
+        ) : (
+          pendingTransactions.length > 0 && (
+            <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-slate-300">
+              {pendingTransactions.length} pending
+            </span>
+          )
         )}
       </div>
 
@@ -357,6 +393,16 @@ export default function SafeTransactions({
           >
             Switch Network
           </StandardButton>
+        </div>
+      ) : isLoadingTransactions && pendingTransactions.length === 0 ? (
+        <div
+          data-testid="transactions-loading"
+          className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 flex flex-col items-center gap-3"
+        >
+          <Spinner className="h-6 w-6 text-slate-400" />
+          <p className="text-slate-400 text-sm">
+            Fetching the latest transactions…
+          </p>
         </div>
       ) : pendingTransactions.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center">

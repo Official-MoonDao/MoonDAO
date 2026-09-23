@@ -304,7 +304,7 @@ export default function Lock() {
             />
           }
         >
-          <div className="max-w-2xl mx-auto w-full">
+          <div className="max-w-2xl mx-auto w-full px-4 sm:px-5 md:px-0">
 
               {/* vMOONEY Withdraw Section */}
               <div className="mb-4 sm:mb-6">

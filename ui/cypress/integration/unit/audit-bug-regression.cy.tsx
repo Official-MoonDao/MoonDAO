@@ -385,7 +385,9 @@ describe('END-TO-END — Q2 2026 audit reproduces published screenshot', () => {
     const usdBudgets: Record<string, number> = {}
     for (const p of Q2_2026_PROJECTS) usdBudgets[String(p.id)] = p.budget
     const projectShape = Q2_2026_PROJECTS.map((p) => ({ id: String(p.id) }))
-    const approved = getApprovedProjects(projectShape, outcome, usdBudgets, QUARTERLY_BUDGET_USD)
+    const approved = getApprovedProjects(projectShape, outcome, usdBudgets, QUARTERLY_BUDGET_USD, {
+      rules: 'v8',
+    })
     const approvedMDPs = Q2_2026_PROJECTS.filter((p) => approved[String(p.id)])
       .map((p) => p.MDP)
       .sort((a, b) => a - b)
@@ -399,7 +401,9 @@ describe('END-TO-END — Q2 2026 audit reproduces published screenshot', () => {
     const usdBudgets: Record<string, number> = {}
     for (const p of Q2_2026_PROJECTS) usdBudgets[String(p.id)] = p.budget
     const projectShape = Q2_2026_PROJECTS.map((p) => ({ id: String(p.id) }))
-    const approved = getApprovedProjects(projectShape, outcome, usdBudgets, QUARTERLY_BUDGET_USD)
+    const approved = getApprovedProjects(projectShape, outcome, usdBudgets, QUARTERLY_BUDGET_USD, {
+      rules: 'v8',
+    })
     const totalApproved = Q2_2026_PROJECTS.filter((p) => approved[String(p.id)]).reduce(
       (s, p) => s + p.budget,
       0

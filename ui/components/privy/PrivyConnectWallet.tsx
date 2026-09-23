@@ -789,7 +789,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
             createPortal(
               <div
                 id="privy-connect-wallet-dropdown"
-                className="fixed top-20 right-4 w-[360px] text-sm rounded-xl animate-fadeIn p-6 flex flex-col bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
+                className="fixed top-20 left-4 right-4 w-auto sm:left-auto sm:w-[360px] text-sm rounded-xl animate-fadeIn p-6 flex flex-col bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
               >
                 {sendModalEnabled && (
                   <SendModal
@@ -1213,24 +1213,38 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
       ) : (
         <div className="w-full">
           <button
-            id="sign-in-button"
+            id={type === 'mobile' ? 'sign-in-button-mobile' : 'sign-in-button'}
             onClick={async () => {
-              if (user) {
-                if (activeWallet) {
+              // Always end by opening the login modal. The pre-login cleanup
+              // (disconnecting a stale wallet / Privy session) can throw or hang;
+              // if it isn't guarded, login() never runs and the button looks
+              // dead. Wrap every step so login() is guaranteed to fire.
+              try {
+                if (user) {
+                  if (activeWallet) {
+                    try {
+                      disconnectThirdwebWallet(activeWallet)
+                    } catch (err) {
+                      console.warn('Failed to disconnect thirdweb wallet:', err)
+                    }
+                  }
                   try {
-                    disconnectThirdwebWallet(activeWallet)
+                    wallets.forEach((wallet) => wallet.disconnect())
                   } catch (err) {
-                    console.warn(
-                      'Failed to disconnect thirdweb wallet:',
-                      err
-                    )
+                    console.warn('Failed to disconnect Privy wallets:', err)
+                  }
+                  try {
+                    clearAllCitizenCache()
+                  } catch (err) {
+                    console.warn('Failed to clear citizen cache:', err)
+                  }
+                  try {
+                    await logout()
+                  } catch (err) {
+                    console.warn('Privy logout failed:', err)
                   }
                 }
-                wallets.forEach((wallet) => wallet.disconnect())
-                clearAllCitizenCache()
-                await logout()
-                login()
-              } else {
+              } finally {
                 login()
               }
             }}
