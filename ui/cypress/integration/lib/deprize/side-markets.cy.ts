@@ -1,9 +1,11 @@
+import { SEED_ATLAS } from '@/lib/lunar-atlas/seed'
 import { findDePrizeIdForGoal } from '@/lib/deprize/competitions'
 import {
   SIDE_MARKETS,
   getSideMarketByDePrizeId,
   getSideMarketsForGoal,
   isSideMarketDePrize,
+  sideMarketDemoKey,
   sideMarketOutcomesArePartition,
   sideMarketPriorOdds,
 } from '@/lib/deprize/sideMarkets'
@@ -129,6 +131,30 @@ describe('sideMarketOutcomesArePartition', () => {
     expect(
       sideMarketOutcomesArePartition([{ ...a, prior: 1 }, { ...b, prior: 0 }])
     ).to.equal(false)
+  })
+})
+
+describe('sideMarketDemoKey', () => {
+  it('namespaces away from every atlas goal id', () => {
+    // mockMarket.ts keys one shared localStorage ledger by plain SharedGoal id.
+    // A collision would merge a side market's positions with a race's.
+    const goalIds = new Set(SEED_ATLAS.sharedGoals.map((g) => g.id))
+    for (const def of SIDE_MARKETS) {
+      const key = sideMarketDemoKey(def.key)
+      expect(goalIds.has(key), key).to.equal(false)
+      expect(key.startsWith('side:'), key).to.equal(true)
+    }
+  })
+
+  it('cannot collide with a goal id, because no goal id contains a colon', () => {
+    for (const goal of SEED_ATLAS.sharedGoals) {
+      expect(goal.id, goal.id).to.not.include(':')
+    }
+  })
+
+  it('keeps distinct markets on distinct keys', () => {
+    const keys = SIDE_MARKETS.map((d) => sideMarketDemoKey(d.key))
+    expect(new Set(keys).size).to.equal(keys.length)
   })
 })
 

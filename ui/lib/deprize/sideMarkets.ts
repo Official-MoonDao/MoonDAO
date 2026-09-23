@@ -288,6 +288,18 @@ export function sideMarketOutcomesArePartition(
 }
 
 /**
+ * Demo-market key for a side market.
+ *
+ * `mockMarket.ts` keys one shared localStorage ledger by plain SharedGoal id,
+ * so an unprefixed side-market key could collide with a race and merge two
+ * position sets. The prefix is the whole point of this function — it is not
+ * cosmetic, and it must not contain a character that appears in goal ids.
+ */
+export function sideMarketDemoKey(key: SideMarketKey | string): string {
+  return `side:${key}`
+}
+
+/**
  * Curator priors as percentages keyed by outcome key, in the shape
  * `useMockMarket` wants for `impliedOdds`. Seeds the demo sandbox so an
  * unprovisioned side market opens on its prior rather than on a flat 1/N.
