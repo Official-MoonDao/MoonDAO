@@ -140,10 +140,16 @@ contract ProjectV2 is ERC721Holder, Ownable {
     }
 
     function updateTableCol(uint256 id, uint256 teamId, string memory colName, string memory val) external {
-        require(Strings.equal(colName, "id") == false, "Cannot update id");
-        require(Strings.equal(colName, "teamId") == false, "Cannot update teamId");
+        // Exact column allowlist: colName is interpolated into the SET clause,
+        // so anything other than a known identifier can rewrite extra columns.
+        require(_isWritableColumn(colName), "Invalid column");
         require(idToTeamId[id] == teamId, "teamId mismatch");
         _isAuthorized(teamId);
+        // active and eligible are governance gates (see setActive). Managers
+        // must not flip them through this generic writer.
+        if (Strings.equal(colName, "active") || Strings.equal(colName, "eligible")) {
+            require(msg.sender == owner() || operators[msg.sender], "Only Owner or Operator");
+        }
 
         string memory setters = string.concat(colName, "=", SQLHelpers.quote(val));
         string memory filters = string.concat("id=", Strings.toString(id));
@@ -153,6 +159,16 @@ contract ProjectV2 is ERC721Holder, Ownable {
             SQLHelpers.toUpdate(_TABLE_PREFIX, _tableId, setters, filters)
         );
         emit ProjectUpdated(id, teamId);
+    }
+
+    function _isWritableColumn(string memory colName) internal pure returns (bool) {
+        return Strings.equal(colName, "name") || Strings.equal(colName, "description")
+            || Strings.equal(colName, "image") || Strings.equal(colName, "quarter")
+            || Strings.equal(colName, "year") || Strings.equal(colName, "MDP")
+            || Strings.equal(colName, "proposalIPFS") || Strings.equal(colName, "proposalLink")
+            || Strings.equal(colName, "finalReportIPFS") || Strings.equal(colName, "finalReportLink")
+            || Strings.equal(colName, "rewardDistribution") || Strings.equal(colName, "upfrontPayments")
+            || Strings.equal(colName, "active") || Strings.equal(colName, "eligible");
     }
 
     function setActive(uint256 id, uint256 teamId, uint256 active) external {

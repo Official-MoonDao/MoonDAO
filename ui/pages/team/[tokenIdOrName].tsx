@@ -629,7 +629,7 @@ function TeamDetailPageContent({
                   />
                   <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
                 </div>
-                {(isManager || isSuperManager) && hats?.[0]?.id && (
+                {(isManager || isSuperManager) && (registryBased || hats?.[0]?.id) && (
                   <TeamManageMembers
                     account={account}
                     hats={hats}
@@ -644,12 +644,14 @@ function TeamDetailPageContent({
                   />
                 )}
               </div>
-              {hats?.[0].id && (
+              {(registryBased || hats?.[0]?.id) && (
                 <TeamMembers
                   hats={hats}
                   hatsContract={hatsContract}
                   citizenContract={citizenContract}
                   managerHatId={managerHatId}
+                  teamContract={teamContract}
+                  teamId={tokenId}
                 />
               )}
             </div>
