@@ -21,7 +21,6 @@ import {
   findDePrizeChainSlugs,
   findDePrizeIdForGoal,
   getDePrizeCompetition,
-  getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
   isCompetitorClaimed,
   isKnownDePrizeCompetition,
@@ -157,7 +156,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
   const raceGoal = raceBinding ? sharedGoalById(SEED_ATLAS, raceBinding.sharedGoalId) : undefined
-  const generationNumber = getDePrizeGenerationNumber(chainSlug, deprizeId)
   const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
   const userAddress = account?.address
@@ -717,8 +715,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const abnormalStatus = !!bettingBlockedReason && !bettingBlockedReason.startsWith('Loading')
   const showBadge = abnormalStatus || deprize.state !== DePrizeState.OPEN
   const explorerTxBase = EXPLORER_TX[chainSlug] ?? 'https://etherscan.io/tx/'
-  const hasLineage =
-    deprize.state === DePrizeState.SUPERSEDED || competition.supersedes !== undefined
+  const hasLineage = deprize.state === DePrizeState.SUPERSEDED
 
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
@@ -872,8 +869,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           chainSlug={chainSlug}
           state={deprize.state}
           supersededBy={competition.supersededBy}
-          supersedes={competition.supersedes}
-          generationNumber={generationNumber}
         />
         </div>
       </div>
