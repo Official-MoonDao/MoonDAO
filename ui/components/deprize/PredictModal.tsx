@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 import Modal from '@/components/layout/Modal'
@@ -29,6 +29,11 @@ export default function PredictModal(props: {
   bet?: ReactNode
 }) {
   const predictLabel = props.writing ? 'Predicting…' : props.saved ? 'Predicted' : 'Predict'
+  const [betOpen, setBetOpen] = useState(false)
+
+  useEffect(() => {
+    setBetOpen(false)
+  }, [props.teamName])
 
   return (
     <Modal
@@ -98,8 +103,19 @@ export default function PredictModal(props: {
             data-testid="deprize-predict-bet"
             className="flex flex-col gap-3 border-t border-white/10 pt-4"
           >
-            <h3 className="text-sm font-semibold text-white">Add a bet (optional)</h3>
-            {props.bet}
+            {betOpen ? (
+              <h3 className="text-sm font-semibold text-white">Attach a bet</h3>
+            ) : (
+              <button
+                type="button"
+                aria-expanded={false}
+                onClick={() => setBetOpen(true)}
+                className={`w-full text-left text-sm font-semibold text-white ${TOUCH}`}
+              >
+                Attach a bet
+              </button>
+            )}
+            {betOpen ? props.bet : null}
           </div>
         ) : null}
       </div>
