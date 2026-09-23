@@ -46,8 +46,6 @@ export default function DePrizeIndexContent() {
   // atlas-sourced so it cannot drift into on-chain registry fixtures.
   const races = useMemo(() => {
     return SEED_ATLAS.sharedGoals
-      // Crewed HLS is the same landing question as Touchdown. Keep Touchdown.
-      .filter((g) => g.id !== 'shared-crewed-lander')
       .filter((g) => !!g.category || !!g.market)
       .map((goal) => ({
         goal,
