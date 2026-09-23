@@ -122,16 +122,15 @@ describe('deprize odds row view', () => {
 })
 
 describe('deprize odds row wiring', () => {
-  it('ForecastPanel uses oddsRowView and drops the old inline bracket math', () => {
+  it('ForecastPanel shows the ETH chance on the card and does not blend in the DAO', () => {
     const src = readUi('components/deprize/ForecastPanel.tsx')
-    if (!src.includes('oddsRowView')) {
-      throw new Error(
-        '[not implemented] ForecastPanel must import oddsRowView from @/lib/forecasts/oddsRow'
-      )
-    }
+    expect(src, 'citizen forecasts must not be pooled into the row').to.not.include('oddsRowView')
+    expect(src, 'citizen forecasts must not be pooled into the row').to.not.include('logLinearPool')
+    expect(src).to.not.match(/Market \{/)
+    expect(src).to.not.match(/DAO \{/)
     if (/function pct\(/.test(src) || /Math\.max\(\s*1\s*,\s*hi\s*-\s*lo\s*\)/.test(src)) {
       throw new Error(
-        '[not implemented] ForecastPanel still has the old inline pct() / bracket math. Use oddsRowView and fmtOddsPct.'
+        '[not implemented] ForecastPanel still has the old inline pct() / bracket math.'
       )
     }
   })
