@@ -33,7 +33,20 @@ export function useCitizenQuery(
   const address = account?.address
   const { user, authenticated } = usePrivy()
   const [citizenNFT, setCitizenNFT] = useState<any>()
-  const [isLoading, setIsLoading] = useState(false)
+  // Identity `citizenNFT` was resolved for. Stays unset until that lookup
+  // finishes, so the first paint is still pending for a connected wallet.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null)
+
+  const ownerKey = `${chainSlug}|${(address || '').toLowerCase()}|${(
+    citizenAddress || ''
+  ).toLowerCase()}`
+  const canLookup =
+    !skipFetch && !!authenticated && !!user && !!selectedChain && !!(citizenAddress || address)
+  // Not settled until this wallet, chain, and address have been checked.
+  // A same-identity refetch keeps the previous NFT so the mint prompt does
+  // not flash; a different identity must not reuse it.
+  const isLoading = canLookup && loadedFor !== ownerKey
+  const visibleNft = loadedFor === ownerKey ? citizenNFT : undefined
 
   useEffect(() => {
     // Check skipFetch FIRST, before changing any state
@@ -48,13 +61,12 @@ export function useCitizenQuery(
       if (!authenticated || !user || !selectedChain || !(citizenAddress || address)) {
         if (!cancelled) {
           setCitizenNFT(undefined)
-          setIsLoading(false)
+          setLoadedFor(null)
         }
         return
       }
 
-      if (!cancelled) setIsLoading(true)
-
+      let resolved: any
       try {
         let contract
         if (citizenContract) {
@@ -87,36 +99,37 @@ export function useCitizenQuery(
             selectedChain
           )
           if (isSubscriptionExpired(expiresAt)) {
-            if (!cancelled) setCitizenNFT(undefined)
+            resolved = undefined
             return
           }
         }
 
-        const owned = {
+        resolved = {
           id: ownedTokenId,
           owner: (citizenAddress || address || '').toLowerCase(),
           metadata: { id: ownedTokenId.toString(), name: '' },
         }
-        if (!cancelled) setCitizenNFT(owned)
 
         try {
-          const nft = await getNFT({
+          resolved = await getNFT({
             contract: contract,
             tokenId: BigInt(ownedTokenId),
           })
-          if (!cancelled) setCitizenNFT(nft)
         } catch (err) {
           // Ownership is already proven. A metadata/gateway failure must not
           // send a citizen back to the mint prompt.
           console.warn('Citizen metadata unavailable:', err)
         }
       } catch (err: any) {
-        if (!cancelled) setCitizenNFT(undefined)
+        resolved = undefined
         if (err?.reason !== 'No token owned' && !/No token owned/i.test(err?.message || '')) {
           console.warn('Citizen lookup failed:', err)
         }
       } finally {
-        if (!cancelled) setIsLoading(false)
+        if (!cancelled) {
+          setCitizenNFT(resolved)
+          setLoadedFor(ownerKey)
+        }
       }
     }
 
@@ -133,9 +146,10 @@ export function useCitizenQuery(
     authenticated,
     citizenAddress,
     skipFetch,
+    ownerKey,
   ])
 
-  return { nft: citizenNFT, isLoading }
+  return { nft: visibleNft, isLoading }
 }
 
 /**

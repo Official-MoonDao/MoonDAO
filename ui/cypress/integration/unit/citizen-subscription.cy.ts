@@ -1,3 +1,4 @@
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import {
   getCachedCitizenExpiry,
   isSubscriptionExpired,
@@ -122,6 +123,22 @@ describe('citizen subscription expiration', () => {
       setCachedCitizenExpiry('42', expiresAt, 42161)
       expect(getCachedCitizenExpiry('42', 42161)).to.equal(expiresAt)
       expect(getCachedCitizenExpiry('42', 11155111)).to.equal(undefined)
+    })
+
+    // fetchCitizenExpiresAt always writes the chain-scoped key. Callers that
+    // omit chainId (CitizenProvider's sync read) still need that default-chain
+    // entry, and must not pick up some other chain's token.
+    it('resolves a default-chain expiration when no chain is passed', () => {
+      const expiresAt = nowSeconds() + HOUR
+      setCachedCitizenExpiry('42', expiresAt, DEFAULT_CHAIN_V5.id)
+      expect(getCachedCitizenExpiry('42')).to.equal(expiresAt)
+    })
+
+    it('does not treat another chain as the unscoped expiration', () => {
+      const expiresAt = nowSeconds() + HOUR
+      const otherChainId = DEFAULT_CHAIN_V5.id === 42161 ? 11155111 : 42161
+      setCachedCitizenExpiry('42', expiresAt, otherChainId)
+      expect(getCachedCitizenExpiry('42')).to.equal(undefined)
     })
   })
 })

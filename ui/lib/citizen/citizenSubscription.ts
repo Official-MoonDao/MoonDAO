@@ -21,26 +21,19 @@ const expiryCacheKey = (tokenId: string, chainId?: number) =>
     ? `${EXPIRY_CACHE_PREFIX}${tokenId}`
     : `${EXPIRY_CACHE_PREFIX}${chainId}_${tokenId}`
 
-/**
- * Only unexpired timestamps are ever cached, and an entry is dropped once its
- * timestamp passes. A renewal therefore can't be masked by a stale "expired"
- * verdict, and the common case (valid citizen) still avoids the RPC.
- */
-export function getCachedCitizenExpiry(
-  tokenId: string,
-  chainId?: number
-): number | undefined {
+function readCachedCitizenExpiry(tokenId: string, chainId?: number): number | undefined {
   if (typeof window === 'undefined' || !tokenId) return undefined
 
   try {
-    const cached = localStorage.getItem(expiryCacheKey(tokenId, chainId))
+    const key = expiryCacheKey(tokenId, chainId)
+    const cached = localStorage.getItem(key)
     if (!cached) return undefined
 
     const parsed: CachedExpiry = JSON.parse(cached)
     if (typeof parsed?.data !== 'number') return undefined
 
     if (parsed.data * 1000 <= Date.now()) {
-      localStorage.removeItem(expiryCacheKey(tokenId, chainId))
+      localStorage.removeItem(key)
       return undefined
     }
 
@@ -49,6 +42,21 @@ export function getCachedCitizenExpiry(
     console.warn('Failed to load cached citizen expiration:', error)
     return undefined
   }
+}
+
+/**
+ * Only unexpired timestamps are ever cached, and an entry is dropped once its
+ * timestamp passes. A renewal therefore can't be masked by a stale "expired"
+ * verdict, and the common case (valid citizen) still avoids the RPC.
+ *
+ * `fetchCitizenExpiresAt` always stores the chain it read. A lookup that omits
+ * `chainId` still has to see that default-chain entry (and the legacy unscoped
+ * key) or a returning citizen is treated as unchecked.
+ */
+export function getCachedCitizenExpiry(tokenId: string, chainId?: number): number | undefined {
+  if (chainId != null) return readCachedCitizenExpiry(tokenId, chainId)
+
+  return readCachedCitizenExpiry(tokenId, DEFAULT_CHAIN_V5.id) ?? readCachedCitizenExpiry(tokenId)
 }
 
 export function setCachedCitizenExpiry(
