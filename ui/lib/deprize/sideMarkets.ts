@@ -37,6 +37,13 @@ export type SideMarketOutcome = {
    * never looks up a Team NFT, so a side-market outcome does not need one.
    */
   teamId: number
+  /**
+   * Curator prior as a fraction of 1, used to seed the demo market and as the
+   * displayed odds until a real LMSR exists. Editorial, not evidence — the
+   * same status as `SharedGoalMarket.impliedOdds` on an unbound race.
+   * Priors across a market should sum to 1.
+   */
+  prior: number
 }
 
 export type SideMarketDefinition = {
@@ -74,6 +81,13 @@ export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
     parentGoalId: 'shared-next-landing',
     label: 'How it comes to rest',
     question: 'How will the next lunar landing attempt end?',
+    // Priors start from the six attempts that reached the Moon between Jan 2024
+    // and Jun 2025 (Peregrine never got there, so it is not in the base rate):
+    // Blue Ghost 1 and Chang'e-6 upright and working, IM-1 / IM-2 / SLIM in the
+    // wrong orientation, Resilience lost on descent. That is 33 / 0 / 50 / 17.
+    // Smoothed off the zero — no outcome should be priced as impossible — and
+    // nudged toward success, since three of those six were first landings for
+    // their operator and the next attempt is not.
     outcomes: [
       {
         key: 'upright-working',
@@ -81,6 +95,7 @@ export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
         criterion:
           'Comes to rest in the orientation the operator published as nominal, and returns surface data for 24 hours or for its full published mission if that is shorter. Touchdown Tests 3 and 4 both pass.',
         teamId: 701,
+        prior: 0.35,
       },
       {
         key: 'upright-short',
@@ -88,6 +103,7 @@ export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
         criterion:
           'Nominal orientation, but surface data stops before 24 hours and before the published mission ends. Test 3 passes, Test 4 fails. The "dies at hour 6" case.',
         teamId: 702,
+        prior: 0.08,
       },
       {
         key: 'wrong-orientation',
@@ -95,6 +111,7 @@ export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
         criterion:
           'Reaches the surface intact but Test 3 is not satisfied, whatever it returns afterwards. The IM-1, IM-2 and SLIM outcome. Test 3 requires positive evidence of attitude, so a vehicle whose orientation cannot be established from public sources also settles here.',
         teamId: 703,
+        prior: 0.37,
       },
       {
         key: 'lost-on-descent',
@@ -102,6 +119,7 @@ export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
         criterion:
           'No controlled arrival at the surface: the vehicle is destroyed, or contact is lost and never regained, before touchdown. The Resilience outcome. Test 2 fails.',
         teamId: 704,
+        prior: 0.2,
       },
     ],
   },
@@ -110,24 +128,34 @@ export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
     parentGoalId: 'shared-next-landing',
     label: 'When it happens',
     question: 'When will the landing that settles Touchdown touch down?',
+    // Griffin-1 is the only attempt left on the 2026 calendar, and it is a
+    // first flight of a heavy lander that has already slipped. Its published
+    // cruise (3-33 days out, then 4-25 days in lunar orbit) means even a
+    // November launch can land in January. The 2026 slot also requires the
+    // landing to qualify, not just happen, so it stays low. 2027 carries IM-3,
+    // Blue Ghost 2, Chang'e-7 and Endurance, which is why it holds most of the
+    // mass.
     outcomes: [
       {
         key: '2026-q4',
         label: 'By 31 Dec 2026',
         criterion: 'Touchdown UTC on or before 2026-12-31T23:59:59Z.',
         teamId: 711,
+        prior: 0.12,
       },
       {
         key: '2027-h1',
         label: 'First half of 2027',
         criterion: 'Touchdown UTC between 2027-01-01T00:00:00Z and 2027-06-30T23:59:59Z.',
         teamId: 712,
+        prior: 0.33,
       },
       {
         key: '2027-h2',
         label: 'Second half of 2027',
         criterion: 'Touchdown UTC between 2027-07-01T00:00:00Z and 2027-12-31T23:59:59Z.',
         teamId: 713,
+        prior: 0.3,
       },
       {
         key: '2028-or-later',
@@ -135,6 +163,7 @@ export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
         criterion:
           'Touchdown UTC on or after 2028-01-01T00:00:00Z. This slot also absorbs the case where no qualifying landing happens before the market sunsets.',
         teamId: 714,
+        prior: 0.25,
       },
     ],
   },
@@ -228,9 +257,10 @@ export function isSideMarketDePrize(
 
 /**
  * Structural partition check: at least two outcomes (the registry rejects
- * fewer), unique keys, and unique teamIds (the registry rejects duplicates).
- * This cannot prove the criteria are semantically exhaustive — that is what
- * the rules of record are for — but it catches the copy-paste failures.
+ * fewer), unique keys, unique teamIds (the registry rejects duplicates), and
+ * priors that are real probabilities summing to 1. This cannot prove the
+ * criteria are semantically exhaustive — that is what the rules of record are
+ * for — but it catches the copy-paste failures.
  */
 export function sideMarketOutcomesArePartition(
   outcomes: readonly SideMarketOutcome[]
@@ -238,13 +268,32 @@ export function sideMarketOutcomesArePartition(
   if (outcomes.length < 2) return false
   const keys = new Set<string>()
   const teamIds = new Set<number>()
+  let priorTotal = 0
   for (const outcome of outcomes) {
     if (!outcome.key || !outcome.label || !outcome.criterion) return false
     if (!Number.isInteger(outcome.teamId) || outcome.teamId <= 0) return false
     if (keys.has(outcome.key)) return false
     if (teamIds.has(outcome.teamId)) return false
+    // Zero is a claim that an outcome is impossible, which under Brier costs a
+    // full point if it happens. Refuse it rather than display it.
+    if (!Number.isFinite(outcome.prior) || outcome.prior <= 0 || outcome.prior >= 1) {
+      return false
+    }
+    priorTotal += outcome.prior
     keys.add(outcome.key)
     teamIds.add(outcome.teamId)
   }
-  return true
+  // Floating-point slack only: 0.35 + 0.08 + 0.37 + 0.2 does not land on 1.
+  return Math.abs(priorTotal - 1) < 1e-9
+}
+
+/**
+ * Curator priors as percentages keyed by outcome key, in the shape
+ * `useMockMarket` wants for `impliedOdds`. Seeds the demo sandbox so an
+ * unprovisioned side market opens on its prior rather than on a flat 1/N.
+ */
+export function sideMarketPriorOdds(market: SideMarketDefinition): Record<string, number> {
+  const odds: Record<string, number> = {}
+  for (const outcome of market.outcomes) odds[outcome.key] = outcome.prior * 100
+  return odds
 }
