@@ -98,12 +98,7 @@ export default function PredictModal(props: {
             data-testid="deprize-predict-bet"
             className="flex flex-col gap-3 border-t border-white/10 pt-4"
           >
-            <div>
-              <h3 className="text-sm font-semibold text-white">Add a bet</h3>
-              <p className="mt-1 text-xs text-gray-400">
-                Optional. This spends ETH and changes the odds.
-              </p>
-            </div>
+            <h3 className="text-sm font-semibold text-white">Add a bet (optional)</h3>
             {props.bet}
           </div>
         ) : null}
