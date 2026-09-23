@@ -22,13 +22,16 @@ Space Acceleration Network
 Citizens can get [paid for their contributions](https://moondao.com/contributions) towards enabling a long-term human presence on the Moon (or anything else the community feels is valuable), [get hired](https://moondao.com/jobs) directly by teams in the network, [submit proposals](https://moondao.com/propose) to receive funding for their projects, and show up in our [network directory](https://moondao.com/network?tab=citizens).
 
 **How do I become a Citizen?**
-Click [here](https://moondao.com/citizen) and follow the steps. See: [How to Become a Citizen](/docs/Network/How-to-Become-a-Citizen)
+Open [https://moondao.com/citizen](https://moondao.com/citizen) and follow the steps. You can sign in with email and pay at checkout with Apple Pay, Google Pay, or a card. You do not need ETH in a wallet beforehand. See: [How to Become a Citizen](/docs/Network/How-to-Become-a-Citizen)
 
 **Do I need a wallet to join the Network?**
-Yes. If you don’t already have one, we will make one for you if you click “Sign In” and create an account.
+A wallet is created for you when you click **Sign In** with email, phone, or a social login. You do not need to install MetaMask or put ETH in that wallet before you start. An existing wallet works too.
+
+**Do I need to buy ETH before I become a Citizen?**
+No. At checkout, if your wallet is empty, you can pay with Apple Pay, Google Pay, or a card. That purchase covers the ETH the membership mint needs on Arbitrum. If you already hold ETH on Arbitrum, you can use that instead.
 
 **How much does it cost to be a Citizen?**
-Citizenship is **0.0111 ETH** per year on Arbitrum, plus gas. Confirm the live price on [Join](https://moondao.com/join) before you pay. After becoming a Citizen, you can renew for additional years. Prices may change over time, but you’ll be grandfathered in at the current price if you purchase in advance.
+The current price is on [https://moondao.com/join](https://moondao.com/join) and again at checkout. It is shown in ETH on Arbitrum, with a dollar estimate. Prices may change. After you become a Citizen, you can extend your membership for as many years as you’d like for the same price, and you’ll be grandfathered in at the current price if you purchase in advance.
 
 **How do I extend my membership?**
 Sign in with the wallet that owns your Citizen NFT and open your [citizen profile](https://moondao.com/network?tab=citizens). If the plan has expired, the profile prompts the owner to renew. Confirm the live renewal price on [Join](https://moondao.com/join) or [/citizen](https://moondao.com/citizen).
@@ -37,7 +40,7 @@ Sign in with the wallet that owns your Citizen NFT and open your [citizen profil
 Anyone can participate in our community, even if they are not Citizens. They can [join Discord](https://discord.gg/moondao), acquire our governance token, and vote on proposals without being a Citizen. Although it’s not required, it’s highly encouraged to become a Citizen to access the full opportunities MoonDAO can offer.
 
 **How do I fund my wallet?**
-On desktop, click the wallet button in the **top right**, then select **Fund** and follow the Coinbase or MoonPay instructions. If you need support with this step you can create a ticket in our Discord [here](https://discord.com/channels/914720248140279868/1212113005836247050) or email info@moondao.com.
+You do not need this step to join. To add ETH yourself, use the wallet button in the **top right** and choose **Fund** (Coinbase or MoonPay). For help, open a Discord ticket [here](https://discord.com/channels/914720248140279868/1212113005836247050) or email info@moondao.com.
 
 **How is data handled on the website?**
 We are an open source community, and data is stored onchain. This means it is written to the blockchain, please be aware that all data is public, except for email. You can request for your data to be removed from our front-end website, and then your profile will no longer show up on https://moondao.com. To delete your profile, navigate to your profile page and click the “edit” button and then "delete data."
