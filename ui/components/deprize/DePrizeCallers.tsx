@@ -123,19 +123,15 @@ function DePrizeCallersList(props: {
     [labelKey, leaderboard, overlays]
   )
 
-  const hidden = useMemo(
-    () => new Set(overlays.filter((row) => row.removed).map((row) => row.address.toLowerCase())),
-    [overlays]
-  )
-
   const addresses = useMemo(() => {
     const seen = new Set<string>()
     for (const row of merged) seen.add(row.voterAddress.toLowerCase())
+    // A cleared forecast drops that row. An ETH position on the same wallet stays.
     for (const address of bettorKey ? bettorKey.split(',') : []) {
-      if (!hidden.has(address)) seen.add(address)
+      seen.add(address)
     }
     return [...seen].slice(0, MAX_ADDRESSES)
-  }, [bettorKey, hidden, merged])
+  }, [bettorKey, merged])
 
   const addressKey = addresses.join(',')
 

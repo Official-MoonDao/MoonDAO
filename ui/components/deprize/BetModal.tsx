@@ -446,7 +446,7 @@ export default function BetModal({
   placeBetRef.current = placeBet
   const drivenByPredict = embedded && betActionApi != null
   const betActionKey = [
-    betAmountNum > 0,
+    betAmountNum,
     needsFunding,
     fundingStrategy.kind,
     eligibility.status,
