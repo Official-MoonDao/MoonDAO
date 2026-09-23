@@ -4,6 +4,7 @@ import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
+import { betPresetEthAmounts, formatBetPresetEth } from '@/lib/deprize/betPresets'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import {
   DEPRIZE_PRIVACY_URL,
@@ -575,26 +576,19 @@ export default function BetModal({
             </p>
           )}
           <div className="flex gap-2 mt-2 flex-wrap">
-            {['0.01', '0.05', '0.1'].map((a) => (
-              <button
-                key={a}
-                onClick={() => setBetAmount(a)}
-                className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
-              >
-                {a} ETH
-                {fmtUsdFromEth(Number(a), ethPrice)
-                  ? ` (${fmtUsdFromEth(Number(a), ethPrice)})`
-                  : ''}
-              </button>
-            ))}
-            {spendableEth > 0 && (
-              <button
-                onClick={() => setBetAmount(String(Math.floor(spendableEth * 1e6) / 1e6))}
-                className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
-              >
-                Max ({fmtEthWithUsd(spendableEth, ethPrice, { prize: true })})
-              </button>
-            )}
+            {betPresetEthAmounts(ethPrice, maxBetEth).map((eth) => {
+              const amount = formatBetPresetEth(eth)
+              const usd = fmtUsdFromEth(eth, ethPrice)
+              return (
+                <button
+                  key={amount}
+                  onClick={() => setBetAmount(amount)}
+                  className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
+                >
+                  {amount} ETH{usd ? ` (${usd})` : ''}
+                </button>
+              )
+            })}
           </div>
         </div>
 
