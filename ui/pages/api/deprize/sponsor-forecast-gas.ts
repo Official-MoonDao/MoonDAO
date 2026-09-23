@@ -54,21 +54,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const citizen = await probeCitizen(chain, wallet)
-  if (citizen.status !== 'citizen') {
-    return res.status(403).json({
-      sponsored: false,
-      message: 'Predictions count only for Citizens.',
-    })
-  }
-
-  if (!isHSMAvailable()) {
-    return res.status(503).json({
-      sponsored: false,
-      message: 'Gas sponsorship is not configured on this server.',
-    })
-  }
-
+  // A wallet that already covers gas does not need a stipend. Check that
+  // before the Citizen probe and HSM gate so a funded prediction still
+  // proceeds when the probe blips or this server has no signer.
   let rpc: string
   try {
     rpc = hsmRpcForChain(chainId)
@@ -83,6 +71,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   const topUp = forecastGasTopUpWei(BigInt(balance.toString()), forecastGasBudgetWei(chainId))
   if (topUp <= 0n) {
     return res.status(200).json({ sponsored: false, funded: true })
+  }
+
+  const citizen = await probeCitizen(chain, wallet)
+  if (citizen.status !== 'citizen') {
+    return res.status(403).json({
+      sponsored: false,
+      message: 'Predictions count only for Citizens.',
+    })
+  }
+
+  if (!isHSMAvailable()) {
+    return res.status(503).json({
+      sponsored: false,
+      message: 'Gas sponsorship is not configured on this server.',
+    })
   }
 
   const key = forecastGasSponsorKey(chainId, wallet)
