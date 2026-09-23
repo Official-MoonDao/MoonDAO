@@ -34,7 +34,9 @@ export function classifyCitizenProbes(input: {
   }
 
   const expiredLinked = input.others.find((row) => row.status === 'expired' && row.address)
-  if (input.active === 'expired' || expiredLinked) {
+  // The active wallet is the only one that can sign. A failed read there is
+  // not "another wallet lapsed" — the user needs a retry.
+  if (input.active === 'expired' || (expiredLinked && input.active !== 'error')) {
     return {
       isCitizen: false,
       lookupFailed: false,

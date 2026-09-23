@@ -34,6 +34,15 @@ describe('prize-chain citizen gate', () => {
     })
   })
 
+  it('does not hide a failed signer read behind a lapsed linked wallet', () => {
+    expect(
+      classifyCitizenProbes({
+        active: 'error',
+        others: [{ address: linked, status: 'expired' }],
+      })
+    ).to.deep.equal({ isCitizen: false, lookupFailed: true, expired: false })
+  })
+
   it('does not tell someone to mint when the read failed', () => {
     expect(
       classifyCitizenProbes({
