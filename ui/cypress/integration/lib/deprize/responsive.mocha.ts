@@ -181,6 +181,18 @@ describe('deprize responsive layout', () => {
     )
   })
 
+  it('shows betting volume beside the prize pool without restoring header stats', () => {
+    const slot = readUi('components/deprize/detail/PrizePoolSlot.tsx')
+    expect(slot).to.include('Betting volume')
+    expect(slot).to.include('volumeEth')
+    const header = readUi('components/deprize/detail/PrizeHeader.tsx')
+    expect(header).to.not.include('Backers')
+    expect(header).to.not.include('Betting closes')
+    expect(header).to.not.include('Total volume')
+    const page = readUi('pages/deprize/[id].tsx')
+    expect(page).to.match(/volumeEth=\{[\s\S]*totalStakedEth/)
+  })
+
   it('left-aligns the hero prize figure once it wraps under the title', () => {
     const src = readUi('components/deprize/LiveDePrizeHero.tsx')
     expect(src).to.match(/w-full sm:w-auto text-left sm:text-right/)

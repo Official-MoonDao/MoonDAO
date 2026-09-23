@@ -828,6 +828,11 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
               ? Number(totalFunding) / Number(UNIT)
               : null
           }
+          volumeEth={
+            activity.error || (activity.loading && activity.bets.length === 0)
+              ? null
+              : activity.totalStakedEth
+          }
           deprizeId={deprizeId}
           jbProjectId={jbProjectId}
           prizeTitle={competition.title}

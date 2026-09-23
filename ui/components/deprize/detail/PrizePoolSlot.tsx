@@ -20,6 +20,8 @@ export default function PrizePoolSlot(props: {
   poolUsd?: number | null
   asOf?: string | null
   poolEth?: number | null
+  /** Sum of bets placed into the market (`totalStaked`). Not the prize pool. */
+  volumeEth?: number | null
   deprizeId?: number
   jbProjectId?: number
   prizeTitle?: string
@@ -69,10 +71,23 @@ export default function PrizePoolSlot(props: {
   return (
     <section id="deprize-prize-pool" className={`${CARD} space-y-4`}>
       <div>
-        <h3 className="text-white text-sm font-semibold">Prize pool</h3>
-        <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
-          <EthUsd eth={props.poolEth} prize />
-        </p>
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+          <div className="min-w-0">
+            <h3 className="text-white text-sm font-semibold">Prize pool</h3>
+            <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
+              <EthUsd eth={props.poolEth} prize />
+            </p>
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-white text-sm font-semibold">Betting volume</h3>
+            <p
+              className="mt-1"
+              title="Sum of bets placed into this market. Separate from the prize pool."
+            >
+              <EthUsd eth={props.volumeEth} prize />
+            </p>
+          </div>
+        </div>
         {showFund && (
           <button
             type="button"
