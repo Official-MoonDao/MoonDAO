@@ -22,6 +22,7 @@ import {
   tapPlan,
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
+import { notifyRoster } from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
 import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
@@ -261,6 +262,13 @@ export default function ForecastPanel(props: {
       rememberRow(allocation)
       toast.success('Prediction saved', { style: toastStyle })
       fireDePrizeConfetti()
+      notifyRoster({
+        chain: chainSlug,
+        deprizeId,
+        address: account.address,
+        pick: labels[index],
+        removed: false,
+      })
       await refetchFresh()
       return true
     } catch (err: any) {
@@ -282,9 +290,17 @@ export default function ForecastPanel(props: {
         account,
         voteId: deprizeForecastVoteId(deprizeId),
       })
+      const clearedPick = savedPick != null ? labels[savedPick] : undefined
       setSavedPick(null)
       setPreviousPick(null)
       toast.success('Prediction removed', { style: toastStyle })
+      notifyRoster({
+        chain: chainSlug,
+        deprizeId,
+        address: account.address,
+        pick: clearedPick,
+        removed: true,
+      })
       await refetchFresh()
     } catch (err: any) {
       setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
