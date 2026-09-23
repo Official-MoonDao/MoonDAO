@@ -20,7 +20,11 @@ import {
   type AcceptanceSubmitState,
   type DePrizeAttestations,
 } from '@/lib/deprize/attestations'
-import { eligibilityMessage, type EligibilityReason } from '@/lib/deprize/eligibility'
+import {
+  eligibilityMessage,
+  shouldMockSepoliaEligibility,
+  type EligibilityReason,
+} from '@/lib/deprize/eligibility'
 import {
   DEPRIZE_ONRAMP_JWT_KEY,
   ELIGIBILITY_TIMEOUT_MS,
@@ -92,6 +96,15 @@ type BetModalProps = {
 const QUOTE_HEADROOM_NUM = 99n
 const QUOTE_HEADROOM_DEN = 100n
 
+async function readApiJson(res: Response): Promise<any> {
+  const text = await res.text()
+  try {
+    return text ? JSON.parse(text) : {}
+  } catch {
+    throw new Error('The bet service returned a page instead of a result. Try again.')
+  }
+}
+
 export default function BetModal({
   deprizeId,
   outcomeIndex,
@@ -125,12 +138,22 @@ export default function BetModal({
   const [attestations, setAttestations] = useState<DePrizeAttestations>(EMPTY_ATTESTATIONS)
   const [acceptanceState, setAcceptanceState] = useState<AcceptanceSubmitState>('idle')
   const [acceptanceError, setAcceptanceError] = useState<string | undefined>()
+  const mockSepoliaEligibility = shouldMockSepoliaEligibility(chain.id)
   const [eligibility, setEligibility] = useState<{
     status: 'loading' | 'ready' | 'error'
     allowed: boolean
     reason?: EligibilityReason
     message?: string
-  }>({ status: 'loading', allowed: false })
+  }>(() =>
+    mockSepoliaEligibility
+      ? {
+          status: 'ready',
+          allowed: true,
+          reason: 'dev-bypass',
+          message: eligibilityMessage('dev-bypass'),
+        }
+      : { status: 'loading', allowed: false }
+  )
   const [eligibilityRetry, setEligibilityRetry] = useState(0)
   const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
     useDePrizeChainGuard(chain)
@@ -232,6 +255,15 @@ export default function BetModal({
   }, [needsFunding, fundingStrategy.kind])
 
   useEffect(() => {
+    if (mockSepoliaEligibility) {
+      setEligibility({
+        status: 'ready',
+        allowed: true,
+        reason: 'dev-bypass',
+        message: eligibilityMessage('dev-bypass'),
+      })
+      return
+    }
     if (!wallet) {
       setEligibility({
         status: 'ready',
@@ -254,10 +286,13 @@ export default function BetModal({
     }, ELIGIBILITY_TIMEOUT_MS)
     ;(async () => {
       const accessToken = await getAccessToken().catch(() => null)
-      const res = await fetch(`/api/deprize/eligibility?wallet=${encodeURIComponent(wallet)}`, {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      })
-      const data = await res.json()
+      const res = await fetch(
+        `/api/deprize/eligibility?wallet=${encodeURIComponent(wallet)}&chainId=${chain.id}`,
+        {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        }
+      )
+      const data = await readApiJson(res)
       if (cancelled) return
       clearTimeout(timeout)
       setEligibility({
@@ -280,7 +315,7 @@ export default function BetModal({
       cancelled = true
       clearTimeout(timeout)
     }
-  }, [wallet, eligibilityRetry])
+  }, [wallet, eligibilityRetry, mockSepoliaEligibility, chain.id])
 
   const allAttested = areAttestationsAccepted(attestations)
 
@@ -303,6 +338,7 @@ export default function BetModal({
         },
         body: JSON.stringify({
           wallet,
+          chainId: chain.id,
           accepted: true,
           termsVersion: DEPRIZE_TERMS_VERSION,
           attestations,
@@ -325,7 +361,7 @@ export default function BetModal({
     return () => {
       cancelled = true
     }
-  }, [wallet, termsAccepted, allAttested, attestations])
+  }, [wallet, termsAccepted, allAttested, attestations, chain.id])
 
   const placeBet = async () => {
     if (!account || !mint) return
@@ -369,7 +405,10 @@ export default function BetModal({
       const qty = await quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes)
       if (qty <= 0n) throw new Error('Bet too small for this market.')
       toast.dismiss('quote')
-      toast.loading('Checking eligibility…', { id: 'permit', style: toastStyle })
+      toast.loading(mockSepoliaEligibility ? 'Preparing bet…' : 'Checking eligibility…', {
+        id: 'permit',
+        style: toastStyle,
+      })
       const accessToken = await getAccessToken().catch(() => null)
       const permitRes = await fetch('/api/deprize/permit', {
         method: 'POST',
@@ -386,7 +425,7 @@ export default function BetModal({
           attestations,
         }),
       })
-      const permit = await permitRes.json()
+      const permit = await readApiJson(permitRes)
       if (!permitRes.ok || !permit.signature || !permit.deadline) {
         throw new Error(permit.message || eligibilityMessage(permit.reason || 'permit-unavailable'))
       }

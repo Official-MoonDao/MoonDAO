@@ -27,6 +27,17 @@ export type EligibilityRunResult = EligibilityDecision & {
   connectionKind: ConnectionKind
 }
 
+/** Allowed result used when Sepolia screening is mocked. */
+export function mockedEligibilityResult(country: string | null): EligibilityRunResult {
+  return {
+    allowed: true,
+    reason: 'dev-bypass',
+    country,
+    region: null,
+    connectionKind: 'clear',
+  }
+}
+
 export async function runEligibilityChecks(
   req: NextApiRequest,
   wallet: string | null | undefined,
