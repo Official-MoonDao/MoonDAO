@@ -14,6 +14,10 @@ export type AcceptanceRecord = {
   ipHash: string | null
   attestations: DePrizeAttestations
   surface: AcceptanceSurface
+  /** Consent timestamp lives in the legal log. The NAME does not (PR-C2). */
+  payloadNameOptIn?: boolean
+  /** Present on records written on or after PR-C. Absent means pre-PR-C. */
+  recordVersion?: 2
 }
 
 export function hashIp(ip: string | null): string | null {

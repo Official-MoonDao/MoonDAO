@@ -1,8 +1,8 @@
+import type { KeyboardEvent, ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import EthUsd from '@/components/deprize/EthUsd'
-import type { KeyboardEvent } from 'react'
 
 type DePrizeTeamCardProps = {
   outcome: Outcome
@@ -29,6 +29,11 @@ type DePrizeTeamCardProps = {
   busy: boolean
   userConnected: boolean
   onBet: (index: number) => void
+  /**
+   * Citizen forecast controls for this competitor. Stop their clicks from
+   * also placing a bet, since the card itself is the bet control.
+   */
+  actions?: ReactNode
   /** Open Field slot — render overrides instead of a Team NFT. */
   isField?: boolean
   /** Disclosure: competitor marked withdrawn on-chain. Slot stays tradable. */
@@ -89,6 +94,7 @@ export default function DePrizeTeamCard({
   busy,
   userConnected,
   onBet,
+  actions,
   onCashOut,
   isField = false,
   withdrawn = false,
@@ -136,8 +142,10 @@ export default function DePrizeTeamCard({
       onKeyDown={canPredict ? onCardKeyDown : undefined}
     >
       {/* Top row: chance/result · team. The card itself is the predict control. */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-3 min-w-[96px]">
+      <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+        {/* Hard minimums here used to wrap the name under the odds on a phone:
+            at 320px the two blocks alone asked for more than the card had. */}
+        <div className="flex items-center gap-3 sm:min-w-[96px]">
           <span
             className="inline-block w-1.5 h-10 rounded-full shrink-0"
             style={{ background: color }}
@@ -149,8 +157,8 @@ export default function DePrizeTeamCard({
                   ? isWinningSlot
                     ? 'text-emerald-400'
                     : isRefundVector
-                      ? 'text-white'
-                      : 'text-gray-500'
+                    ? 'text-white'
+                    : 'text-gray-500'
                   : 'text-white'
               }`}
             >
@@ -158,13 +166,13 @@ export default function DePrizeTeamCard({
                 ? isWinningSlot
                   ? 'WON'
                   : isRefundVector
-                    ? 'Refund'
-                    : 'Lost'
+                  ? 'Refund'
+                  : 'Lost'
                 : Number.isNaN(outcome.probability)
-                  ? loading
-                    ? '…'
-                    : '—'
-                  : `${fmt(outcome.probability, 0)}%`}
+                ? loading
+                  ? '…'
+                  : '—'
+                : `${fmt(outcome.probability, 0)}%`}
             </p>
             {!resolved && (
               <p className="text-gray-500 text-[10px] mt-1 uppercase tracking-wide">chance</p>
@@ -172,7 +180,7 @@ export default function DePrizeTeamCard({
           </div>
         </div>
 
-        <div className="flex-1 min-w-[150px] flex flex-col gap-1">
+        <div className="flex-1 min-w-0 sm:min-w-[150px] flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
             <DePrizeTeamLink
               teamId={teamId}
@@ -207,6 +215,14 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
+        {actions ? (
+          <div
+            className="flex flex-wrap items-center gap-2 w-full sm:w-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {actions}
+          </div>
+        ) : null}
       </div>
 
       {showHoldings && (
@@ -245,9 +261,9 @@ export default function DePrizeTeamCard({
               type="button"
               onClick={() => onCashOut?.(outcome.index)}
               disabled={busy || !userConnected || sellQuoteEth === undefined}
-              className="shrink-0 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wide
+              className={`shrink-0 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wide
                 bg-white/5 hover:bg-indigo-500/15 text-white border border-white/10 hover:border-indigo-400/35
-                transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${TOUCH}`}
             >
               Cash out
             </button>

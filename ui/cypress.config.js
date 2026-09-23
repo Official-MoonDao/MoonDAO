@@ -6,6 +6,27 @@ const fs = require('fs')
 const axios = require('axios')
 const cypressSplit = require('cypress-split')
 
+// Node unit specs. `yarn test:deprize` runs these under mocha, where fs, crypto,
+// and child_process exist. The component runner bundles the same files for
+// Chrome, and those APIs are stubs there, so the specs fail before any assertion.
+const NODE_UNIT_SPECS = [
+  'cypress/integration/lib/deprize/compliance-scan-boundary.cy.ts',
+  'cypress/integration/lib/deprize/docsHygiene.cy.ts',
+  'cypress/integration/lib/deprize/ladder.cy.ts',
+  'cypress/integration/lib/deprize/payload-purse.cy.ts',
+  'cypress/integration/lib/forecasts/brier.cy.ts',
+  'cypress/integration/lib/forecasts/isolation.cy.ts',
+  'cypress/integration/lib/forecasts/panel-visibility.cy.ts',
+  'cypress/integration/lib/discord/discord-hygiene.cy.ts',
+  'cypress/integration/lib/discord/interactions-route.cy.ts',
+  'cypress/integration/lib/discord/post-channel-message.cy.ts',
+]
+
+function isNodeUnitSpec(spec) {
+  const value = String(spec).replace(/\\/g, '/')
+  return NODE_UNIT_SPECS.some((file) => value.endsWith(file))
+}
+
 // Set NEXT_PUBLIC_TEST_ENV=true BEFORE loading .env.local so that it takes
 // priority.  Next.js reads NEXT_PUBLIC_* from process.env when building its
 // DefinePlugin entries, so this must be in place before the dev-server starts.
@@ -228,7 +249,10 @@ module.exports = defineConfig({
         // Filter out any e2e tests that might have snuck in
         const beforeCount = config.specPattern.length
         config.specPattern = config.specPattern.filter(
-          (spec) => String(spec).includes('/integration/') && !String(spec).includes('/e2e/')
+          (spec) =>
+            String(spec).includes('/integration/') &&
+            !String(spec).includes('/e2e/') &&
+            !isNodeUnitSpec(spec)
         )
         if (config.specPattern.length === 0) {
           console.error(
@@ -344,7 +368,12 @@ module.exports = defineConfig({
       },
     },
     supportFile: 'cypress/support/component.ts',
-    excludeSpecPattern: ['**/node_modules/**', '**/dist/**'],
+    excludeSpecPattern: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/*.hot-update.js',
+      ...NODE_UNIT_SPECS,
+    ],
     video: false,
   },
 })

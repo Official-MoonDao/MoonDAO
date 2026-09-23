@@ -200,8 +200,13 @@ contract Config is Script {
 
         LMSR_MARKET_ADDRESSES[SEP] = 0x11DCe86c804ca088A0d9036eeE368e4055b235dE;
         LMSR_MARKET_ADDRESSES[ARB_SEP] = 0xbd10F66098e123Aa036f7cb1E747e76bbe849eBe;
+        // H-01 replacement for DePrize 1. Pre-fix clone: 0x351aF5…F211.
+        LMSR_MARKET_ADDRESSES[ARBITRUM] = 0xB7fE1530D300C505295B42268e127ceea5aDe703;
+        // Sepolia is on the v2 stack (stock Gnosis LMSR factory). Arbitrum is
+        // still on LMSRWithTWAP: use the H-01-fixed factory, never the Phase 2
+        // factory 0xb40d77bD…, which clones the vulnerable implementation.
         LMSR_FACTORY_ADDRESSES[SEP] = 0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674;
-        LMSR_FACTORY_ADDRESSES[ARBITRUM] = 0xb40d77bD8C3D8CF38c4b88D649D397efa2dd2cB8;
+        LMSR_FACTORY_ADDRESSES[ARBITRUM] = 0x299F163705AbBFa1A8DE7670F33171730F828F3D;
     }
 
     /// @notice Resolve WETH + ConditionalTokens for `chainId`, or revert with a

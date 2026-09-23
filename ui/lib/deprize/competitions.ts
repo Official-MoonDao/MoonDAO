@@ -139,6 +139,11 @@ export function findDePrizeChainSlugs(deprizeId: number | undefined): string[] {
     .map(([slug]) => slug)
 }
 
+/** Prize-page path that lands on the free prediction panel. */
+export function deprizeForecastHref(deprizeId: number | string): string {
+  return `/deprize/${deprizeId}#deprize-forecast`
+}
+
 /** chainSlug → deprizeId → competition */
 const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> = {
   arbitrum: {
@@ -177,6 +182,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
+    // v2 registry id 2 — the open Touchdown market. Id 1 is in the Senate vote.
     2: {
       title: 'Touchdown',
       tagline:

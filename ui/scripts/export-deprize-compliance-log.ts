@@ -4,6 +4,12 @@
  * Prints newline-delimited JSON to stdout. Redirect to encrypted cold storage.
  * Never prints raw IP addresses, private keys, or Redis credentials.
  *
+ * v2 acceptance rows (PR-C+) may include `recordVersion: 2` and
+ * `payloadNameOptIn` (boolean only — never a display name). Branch on
+ * `recordVersion` rather than inferring from a missing field. Pre-PR-C rows
+ * have no `recordVersion`. Display names, if collected later, live under
+ * `deprize:payload:optin:*` and are out of scope for this extract.
+ *
  *   yarn export:deprize-compliance
  */
 import { getComplianceRedis, scanComplianceKeys } from '../lib/deprize/complianceStore'
