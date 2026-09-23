@@ -27,18 +27,39 @@ import {
 import toast from 'react-hot-toast'
 import {
   prepareContractCall,
+  prepareTransaction,
   readContract,
   sendAndConfirmTransaction,
   waitForReceipt,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
-import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import useTag from '@/lib/convert-kit/useTag'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
+import {
+  clearAiPortraitReady,
+  markAiPortraitReady,
+  decideImageResumeAction,
+  getGenerationSourceImage,
+  getReviewPreviewFile,
+  hasAiPortraitImage,
+  isAiPortraitReady,
+  isGeneratedAiPortraitFile,
+  isUsableAiPortrait,
+  restoredCitizenImageLooksLikeAi,
+} from '@/lib/image-generator/citizenOnboardingImage'
+import {
+  clearPendingImageJob,
+  isPendingImageJobStale,
+  readPendingImageJob,
+} from '@/lib/image-generator/pendingImageJob'
+import { resumePendingComfyJob } from '@/lib/image-generator/pollComfyImageJob'
+import useImageGenerator from '@/lib/image-generator/useImageGenerator'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import {
   estimateGasWithAPI,
@@ -51,7 +72,6 @@ import {
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
-import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData, { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
@@ -67,36 +87,17 @@ import {
   isSerializedFile,
   SerializedFile,
 } from '@/lib/utils/files'
-import { compressImageForStorage } from '@/lib/utils/images'
 import { useClientHydrated } from '@/lib/utils/hooks/useClientHydrated'
 import { useFormCache } from '@/lib/utils/hooks/useFormCache'
-import useImageGenerator from '@/lib/image-generator/useImageGenerator'
-import {
-  clearPendingImageJob,
-  isPendingImageJobStale,
-  readPendingImageJob,
-} from '@/lib/image-generator/pendingImageJob'
-import { resumePendingComfyJob } from '@/lib/image-generator/pollComfyImageJob'
-import {
-  clearAiPortraitReady,
-  markAiPortraitReady,
-  decideImageResumeAction,
-  getGenerationSourceImage,
-  getReviewPreviewFile,
-  hasAiPortraitImage,
-  isAiPortraitReady,
-  isGeneratedAiPortraitFile,
-  isUsableAiPortrait,
-  restoredCitizenImageLooksLikeAi,
-} from '@/lib/image-generator/citizenOnboardingImage'
+import { compressImageForStorage } from '@/lib/utils/images'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
-import { FundOnrampModal } from '../onramp/FundOnrampModal'
 import Container from '../layout/Container'
 import ContentLayout from '../layout/ContentLayout'
 import { ExpandedFooter } from '../layout/ExpandedFooter'
 import { Steps } from '../layout/Steps'
+import { FundOnrampModal } from '../onramp/FundOnrampModal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 import {
   CitizenImageGenerationProgress,
@@ -145,6 +146,7 @@ const PENDING_TYPEFORM_SESSION_KEY = 'CreateCitizen_pendingTypeform'
 const RESUME_STAGE_SESSION_KEY = 'CreateCitizen_resumeStage'
 const CROPPED_IMAGE_SESSION_KEY = 'CreateCitizen_croppedImage'
 const INPUT_IMAGE_SESSION_KEY = 'CreateCitizen_inputImage'
+const DISCOUNT_PAYMENT_SESSION_KEY = 'CreateCitizen_discountPayment'
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60
 
@@ -171,12 +173,66 @@ async function readContractWithRetry<T>(
       if (!isRetryableDecodeError || attempt === maxRetries - 1) {
         throw error
       }
-      await new Promise((resolve) =>
-        setTimeout(resolve, baseDelayMs * Math.pow(2, attempt))
-      )
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * Math.pow(2, attempt)))
     }
   }
   throw lastError
+}
+
+type DiscountQuote = {
+  discountBps: number
+  fullPriceWei: string
+  dueWei: string
+  payTo: string
+}
+
+type SavedDiscountPayment = {
+  token?: string
+  txHash: string
+  dueWei: string
+  address: string
+}
+
+function readDiscountPaymentFromSession(): SavedDiscountPayment | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(DISCOUNT_PAYMENT_SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (
+      typeof parsed?.txHash === 'string' &&
+      typeof parsed?.dueWei === 'string' &&
+      typeof parsed?.address === 'string'
+    ) {
+      return {
+        token: typeof parsed.token === 'string' ? parsed.token : undefined,
+        txHash: parsed.txHash,
+        dueWei: parsed.dueWei,
+        address: parsed.address,
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
+function writeDiscountPaymentToSession(payment: SavedDiscountPayment) {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.setItem(DISCOUNT_PAYMENT_SESSION_KEY, JSON.stringify(payment))
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearDiscountPaymentSession() {
+  if (typeof window === 'undefined') return
+  try {
+    sessionStorage.removeItem(DISCOUNT_PAYMENT_SESSION_KEY)
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Format small ETH amounts for display without noisy trailing zeros. */
@@ -420,17 +476,26 @@ export default function CreateCitizen({
     startTransition(() => setStage(restoredStage))
   }, [isClientHydrated, restoredStage])
 
-  // Sync freeMint state when freeMintProp becomes available
+  // Sync freeMint state when freeMintProp becomes available. An invite token
+  // is not itself a free mint; the eligibility check decides that.
   useEffect(() => {
-    if (freeMintProp) {
+    if (freeMintProp && !inviteToken) {
       setFreeMint(true)
     }
-  }, [freeMintProp])
+  }, [freeMintProp, inviteToken])
 
   // ===== State: Onramp State =====
   const [onrampModalOpen, setOnrampModalOpen] = useState(false)
   const [requiredEthAmount, setRequiredEthAmount] = useState(0)
   const [freeMint, setFreeMint] = useState(false)
+  const [discountQuote, setDiscountQuote] = useState<DiscountQuote | null>(null)
+  const [resolvedInviteToken, setResolvedInviteToken] = useState<string | null>(null)
+  const invitePending = Boolean(inviteToken) && resolvedInviteToken !== inviteToken
+  // Keeps a confirmed discount payment across a failed mint response so a retry
+  // does not charge the recipient a second time. Also written to sessionStorage
+  // so a refresh during the sponsored mint reuses the same transfer. Cleared once
+  // that payment is refunded or the price quote changes.
+  const discountPaymentRef = useRef<SavedDiscountPayment | null>(null)
 
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
@@ -469,7 +534,12 @@ export default function CreateCitizen({
   const subscribeToNetworkSignup = useSubscribe(CK_NETWORK_SIGNUP_FORM_ID)
   const tagToNetworkSignup = useTag(CK_NETWORK_SIGNUP_TAG_ID)
 
-  const { nativeBalance, refetch: refetchNativeBalance } = useNativeBalance()
+  const {
+    nativeBalance,
+    nativeBalanceWei,
+    walletChain,
+    refetch: refetchNativeBalance,
+  } = useNativeBalance()
 
   // Hook for regenerating AI images from Review step
   const {
@@ -517,7 +587,7 @@ export default function CreateCitizen({
         setImage: (file) => setCitizenImage(file),
         setError: (msg) => console.warn('[CreateCitizen] image resume:', msg),
       },
-      sourceImage,
+      sourceImage
     ).finally(() => {
       clearInterval(elapsedTimer)
       setIsImageGenerating(false)
@@ -539,7 +609,7 @@ export default function CreateCitizen({
         setHasPendingImageJob(false)
       }
     },
-    [regenerateAIImage],
+    [regenerateAIImage]
   )
 
   // Progress for Review: Design-step generator (hidden mount) or Review regeneration hook.
@@ -555,11 +625,7 @@ export default function CreateCitizen({
     }
   }, [imageGenProgress, isRegenerating, regenPhase, regenElapsedMs])
 
-  const hasAiPortrait = isUsableAiPortrait(
-    citizenImage,
-    croppedInputImage,
-    isAiPortraitReady(),
-  )
+  const hasAiPortrait = isUsableAiPortrait(citizenImage, croppedInputImage, isAiPortraitReady())
 
   const isAwaitingAiPortrait = isImageGenerating || hasPendingImageJob
 
@@ -569,7 +635,7 @@ export default function CreateCitizen({
   const LAYER_ZERO_TRANSFER_COST = useMemo(() => BigInt('3000000000000000'), [])
   const isCrossChain = useMemo(
     () => selectedChainSlug !== defaultChainSlug,
-    [selectedChainSlug, defaultChainSlug],
+    [selectedChainSlug, defaultChainSlug]
   )
 
   const nativeSymbol = selectedChain?.nativeCurrency?.symbol ?? 'ETH'
@@ -603,14 +669,23 @@ export default function CreateCitizen({
 
   const { data: renewalUsd, isLoading: isLoadingRenewalUsd } = useETHPrice(
     mintCostBreakdown.renewalEth,
-    'ETH_TO_USD',
+    'ETH_TO_USD'
   )
   const { data: totalMintUsd, isLoading: isLoadingTotalMintUsd } = useETHPrice(
     mintCostBreakdown.totalEth,
-    'ETH_TO_USD',
+    'ETH_TO_USD'
   )
 
-  const isLoadingMintCosts = freeMint
+  const discountDueEth = discountQuote ? Number(ethers.utils.formatEther(discountQuote.dueWei)) : 0
+  const discountFullEth = discountQuote
+    ? Number(ethers.utils.formatEther(discountQuote.fullPriceWei))
+    : 0
+
+  const isLoadingMintCosts = invitePending
+    ? true
+    : discountQuote
+    ? false
+    : freeMint
     ? false
     : isLoadingRenewalPrice ||
       isLoadingGasEstimate ||
@@ -630,7 +705,7 @@ export default function CreateCitizen({
       }
       return totalCost
     },
-    [LAYER_ZERO_TRANSFER_COST],
+    [LAYER_ZERO_TRANSFER_COST]
   )
 
   // Persisted images are JPEG-compressed so the cache survives the storage quota
@@ -679,7 +754,7 @@ export default function CreateCitizen({
       }
       return false
     },
-    [],
+    []
   )
 
   const handleCrop = useCallback(
@@ -708,11 +783,11 @@ export default function CreateCitizen({
         console.warn('[CreateCitizen] Failed to persist cropped image:', err)
       }
     },
-    [stage, setCache, serializeCacheData, serializeForStorage],
+    [stage, setCache, serializeCacheData, serializeForStorage]
   )
 
   const executeFreeMint = useCallback(
-    async (imageIpfsHash: string, profile: CitizenProfileMintFields) => {
+    async (imageIpfsHash: string, profile: CitizenProfileMintFields, paymentTxHash?: string) => {
       // Invite-sponsored mints must prove the signed-in Privy user owns this
       // wallet, so the one-time token can only be redeemed by its recipient.
       const accessToken = inviteToken ? await getAccessToken() : null
@@ -734,16 +809,34 @@ export default function CreateCitizen({
           privacy: profile.view,
           formId: citizenData.formResponseId,
           ...(inviteToken ? { inviteToken, accessToken } : {}),
+          ...(paymentTxHash ? { paymentTxHash } : {}),
         }),
       })
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: 'Mint failed' }))
         console.error(errorData)
+        if (errorData?.refunded) {
+          discountPaymentRef.current = null
+          clearDiscountPaymentSession()
+        }
+        if ((res.status === 409 || errorData?.refunded) && errorData?.dueWei) {
+          setDiscountQuote((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  dueWei: String(errorData.dueWei),
+                  fullPriceWei: errorData.fullPriceWei
+                    ? String(errorData.fullPriceWei)
+                    : prev.fullPriceWei,
+                }
+              : prev
+          )
+        }
         throw new Error(errorData.error || 'Failed to mint citizen')
       }
       return await res.json()
     },
-    [address, citizenData.name, citizenData.formResponseId, inviteToken],
+    [address, citizenData.name, citizenData.formResponseId, inviteToken]
   )
 
   const executeCrossChainMint = useCallback(
@@ -786,7 +879,7 @@ export default function CreateCitizen({
       })
       const message = await waitForMessageReceived(
         isTestnet ? 19999 : 1,
-        originReceipt.transactionHash,
+        originReceipt.transactionHash
       )
       return await waitForReceipt({
         client: client,
@@ -804,7 +897,7 @@ export default function CreateCitizen({
       LAYER_ZERO_TRANSFER_COST,
       isTestnet,
       destinationChain,
-    ],
+    ]
   )
 
   const executeDirectMint = useCallback(
@@ -840,15 +933,11 @@ export default function CreateCitizen({
         account,
       })
     },
-    [account, citizenContract, address, citizenData.name, citizenData.formResponseId],
+    [account, citizenContract, address, citizenData.name, citizenData.formResponseId]
   )
 
   const handlePostMint = useCallback(
-    async (
-      mintedTokenId: string,
-      profile: CitizenProfileMintFields,
-      imageURI: string
-    ) => {
+    async (mintedTokenId: string, profile: CitizenProfileMintFields, imageURI: string) => {
       await tagToNetworkSignup(citizenData.email)
 
       const citizenName = citizenData.name
@@ -976,7 +1065,7 @@ export default function CreateCitizen({
       address,
       clearCache,
       seedCitizen,
-    ],
+    ]
   )
 
   // ===== Event Handlers & Callbacks =====
@@ -987,7 +1076,7 @@ export default function CreateCitizen({
       const baseCost = BigInt(ethers.utils.parseEther(formattedCost).toString())
       return calculateTotalCost(baseCost, estimatedGas, gasPriceToUse, isCrossChain)
     },
-    [estimatedGas, effectiveGasPrice, calculateTotalCost, isCrossChain],
+    [estimatedGas, effectiveGasPrice, calculateTotalCost, isCrossChain]
   )
 
   // Gas Estimation Handler. Returns the buffered gas estimate (and also stores
@@ -1170,7 +1259,7 @@ export default function CreateCitizen({
     }
 
     const caches = [restoreAnonymousFormCache(), address ? restoreCache() : null].filter(
-      Boolean,
+      Boolean
     ) as any[]
 
     for (const entry of caches) {
@@ -1265,17 +1354,17 @@ export default function CreateCitizen({
       const croppedInputImageRestored = restoreImageFromCache(
         formData.croppedInputImage,
         setCroppedInputImage,
-        'cropped input image',
+        'cropped input image'
       )
       const inputImageRestored = restoreImageFromCache(
         formData.inputImage,
         setInputImage,
-        'input image',
+        'input image'
       )
       const citizenImageRestored = restoreImageFromCache(
         formData.citizenImage,
         setCitizenImage,
-        'citizen image',
+        'citizen image'
       )
       // If citizenImage was restored and is a Comfy download (not the crop),
       // it's an AI portrait. SerializedFile stores bytes on `data`, not dataURL.
@@ -1312,7 +1401,7 @@ export default function CreateCitizen({
         }
       }
     },
-    [setSelectedChain, setAgreedToCondition, restoreImageFromCache, estimateMintGas],
+    [setSelectedChain, setAgreedToCondition, restoreImageFromCache, estimateMintGas]
   )
 
   // ===== Side Effects =====
@@ -1364,12 +1453,19 @@ export default function CreateCitizen({
 
     setIsLoadingMint(true)
 
+    if (invitePending) {
+      setIsLoadingMint(false)
+      return toast.error('Still checking your invite. Please wait a moment.')
+    }
+
     // Sponsored mints skip gas checks (the relayer pays everything).
-    // For paid mints, the user may have just signed in at this step, so the
-    // gas-estimation effect may not have run yet. Estimate inline and use the
-    // returned value rather than erroring out and forcing a retry.
+    // Discount invites pay a quoted share on the citizenship chain, so they
+    // skip the full mint gas estimate too. For paid mints, the user may have
+    // just signed in at this step, so the gas-estimation effect may not have
+    // run yet. Estimate inline and use the returned value rather than erroring
+    // out and forcing a retry.
     let gasToUse = BigInt(0)
-    if (!freeMint) {
+    if (!freeMint && !discountQuote) {
       gasToUse = estimatedGas ?? BigInt(0)
       if (!gasToUse || gasToUse === BigInt(0)) {
         gasToUse = (await estimateMintGas()) ?? BigInt(0)
@@ -1396,7 +1492,25 @@ export default function CreateCitizen({
 
       // Balance check only applies to paid mints; sponsored mints cost the
       // user nothing and may not have a gas price loaded at all.
-      if (!freeMint) {
+      if (discountQuote) {
+        if (walletChain && walletChain.id !== DEFAULT_CHAIN_V5.id) {
+          setIsLoadingMint(false)
+          return toast.error(`Switch to ${DEFAULT_CHAIN_V5.name} to pay this discount.`)
+        }
+        const due = BigInt(discountQuote.dueWei)
+        const transferGas =
+          effectiveGasPrice && effectiveGasPrice > BigInt(0)
+            ? effectiveGasPrice * BigInt(50000)
+            : BigInt(0)
+        const needed = due + transferGas
+        if ((nativeBalanceWei ?? BigInt(0)) < needed) {
+          const shortfall = needed - (nativeBalanceWei ?? BigInt(0))
+          setRequiredEthAmount((Number(shortfall) / 1e18) * 1.15)
+          setOnrampModalOpen(true)
+          setIsLoadingMint(false)
+          return
+        }
+      } else if (!freeMint) {
         const totalCost = calculateTotalCost(
           cost,
           gasToUse,
@@ -1431,7 +1545,43 @@ export default function CreateCitizen({
 
       // Execute mint based on type
       let receipt: any
-      if (freeMint) {
+      if (discountQuote) {
+        const due = BigInt(discountQuote.dueWei)
+        let paymentTxHash: string | undefined
+        const savedPayment = discountPaymentRef.current ?? readDiscountPaymentFromSession()
+        if (
+          savedPayment &&
+          savedPayment.token === inviteToken &&
+          savedPayment.dueWei === discountQuote.dueWei &&
+          savedPayment.address.toLowerCase() === address.toLowerCase()
+        ) {
+          paymentTxHash = savedPayment.txHash
+          discountPaymentRef.current = savedPayment
+        } else if (due > BigInt(0)) {
+          if (!account) {
+            throw new Error('Please connect your wallet to continue.')
+          }
+          const payment = await sendAndConfirmTransaction({
+            transaction: prepareTransaction({
+              client,
+              chain: DEFAULT_CHAIN_V5,
+              to: discountQuote.payTo,
+              value: due,
+            }),
+            account,
+          })
+          paymentTxHash = payment.transactionHash
+          const confirmedPayment: SavedDiscountPayment = {
+            token: inviteToken,
+            txHash: paymentTxHash,
+            dueWei: discountQuote.dueWei,
+            address,
+          }
+          discountPaymentRef.current = confirmedPayment
+          writeDiscountPaymentToSession(confirmedPayment)
+        }
+        receipt = await executeFreeMint(newImageIpfsHash, profile, paymentTxHash)
+      } else if (freeMint) {
         receipt = await executeFreeMint(newImageIpfsHash, profile)
       } else if (isCrossChain) {
         receipt = await executeCrossChainMint(newImageIpfsHash, cost, profile)
@@ -1455,8 +1605,7 @@ export default function CreateCitizen({
       console.error(err)
       // A TypeError mentioning "buffer" is viem failing to decode an empty RPC
       // response — a transient network issue, not a user-actionable error.
-      const isRpcDecodeError =
-        err instanceof TypeError && String(err?.message).includes('buffer')
+      const isRpcDecodeError = err instanceof TypeError && String(err?.message).includes('buffer')
       toast.error(
         isRpcDecodeError
           ? 'Network hiccup while reading the mint price. Please try again.'
@@ -1477,8 +1626,14 @@ export default function CreateCitizen({
     calculateTotalCost,
     isCrossChain,
     freeMint,
+    discountQuote,
+    invitePending,
     nativeBalance,
+    nativeBalanceWei,
+    walletChain,
     citizenData,
+    account,
+    inviteToken,
     executeFreeMint,
     executeCrossChainMint,
     executeDirectMint,
@@ -1545,13 +1700,13 @@ export default function CreateCitizen({
         setTypeformProcessingFailed(true)
         toast.error(
           error?.message || 'Still finalizing your profile. Please try again in a moment.',
-          { duration: 6000 },
+          { duration: 6000 }
         )
       } finally {
         setIsSubmittingTypeform(false)
       }
     },
-    [subscribeToNetworkSignup, authenticated, login],
+    [subscribeToNetworkSignup, authenticated, login]
   )
 
   const retryTypeformProcessing = useCallback(() => {
@@ -1775,7 +1930,7 @@ export default function CreateCitizen({
     } catch (error) {
       console.error('Regeneration error:', error)
       toast.error(
-        'Image generation is unavailable right now — you can continue with your uploaded photo.',
+        'Image generation is unavailable right now — you can continue with your uploaded photo.'
       )
     } finally {
       // Always release the generating state so the user can keep their cropped
@@ -1960,18 +2115,18 @@ export default function CreateCitizen({
             citizenImage: hasSerializedCitizenImage
               ? existingFormData.citizenImage
               : citizenImageRef.current
-                ? 'PENDING_SERIALIZATION'
-                : null,
+              ? 'PENDING_SERIALIZATION'
+              : null,
             inputImage: hasSerializedInputImage
               ? existingFormData.inputImage
               : inputImageRef.current
-                ? 'PENDING_SERIALIZATION'
-                : null,
+              ? 'PENDING_SERIALIZATION'
+              : null,
             croppedInputImage: hasSerializedCroppedInputImage
               ? existingFormData.croppedInputImage
               : croppedInputImageRef.current
-                ? 'PENDING_SERIALIZATION'
-                : null,
+              ? 'PENDING_SERIALIZATION'
+              : null,
             agreedToCondition: agreedToConditionRef.current,
             selectedChainSlug: selectedChainSlugRef.current,
           },
@@ -2049,14 +2204,13 @@ export default function CreateCitizen({
         inputImage,
         isImageGenerating,
         hasPendingImageJob,
-        aiPortraitReady:
-          isAiPortraitReady() || isGeneratedAiPortraitFile(citizenImage),
+        aiPortraitReady: isAiPortraitReady() || isGeneratedAiPortraitFile(citizenImage),
       }),
-    [citizenImage, croppedInputImage, inputImage, isImageGenerating, hasPendingImageJob],
+    [citizenImage, croppedInputImage, inputImage, isImageGenerating, hasPendingImageJob]
   )
   const reviewPreviewUrl = useMemo(
     () => (reviewPreviewFile ? URL.createObjectURL(reviewPreviewFile) : null),
-    [reviewPreviewFile],
+    [reviewPreviewFile]
   )
   useEffect(() => {
     return () => {
@@ -2067,7 +2221,7 @@ export default function CreateCitizen({
   const welcomeImageFile = citizenImage || croppedInputImage || inputImage
   const welcomeImageUrl = useMemo(
     () => (welcomeImageFile ? URL.createObjectURL(welcomeImageFile) : null),
-    [welcomeImageFile],
+    [welcomeImageFile]
   )
   useEffect(() => {
     return () => {
@@ -2091,12 +2245,21 @@ export default function CreateCitizen({
   // ===== Effect Group: Data Fetching =====
   useEffect(() => {
     if (!address) return
+    let cancelled = false
 
     const getTotalPaid = async () => {
+      if (inviteToken) {
+        // A refetch must not render as a resolved full-price mint. Dropping the
+        // quote without clearing the resolved token makes `invitePending` false
+        // while the new eligibility check is still in flight.
+        setDiscountQuote(null)
+        setFreeMint(false)
+        setResolvedInviteToken(null)
+      }
       // A magic-link invite token makes this wallet eligible for a sponsored
-      // mint even without a contribution history or on-chain allowlist entry.
-      // Send the invite token via header instead of query string to prevent
-      // leakage via browser history, analytics, and Referer headers.
+      // or discounted mint even without a contribution history. Send the
+      // invite token via header instead of query string to prevent leakage
+      // via browser history, analytics, and Referer headers.
       const headers: Record<string, string> = {}
       if (inviteToken) {
         headers['x-invite-token'] = inviteToken
@@ -2105,33 +2268,58 @@ export default function CreateCitizen({
         method: 'GET',
         headers,
       })
+      if (cancelled) return
       if (!res.ok) {
         const errorText = await res.text()
         console.error(errorText)
         // For invite tokens: distinguish between transient errors (5xx) and
         // validation failures (4xx). Invalid/expired tokens return 400.
         if (inviteToken && res.status >= 500) {
-          // Transient server error (e.g. Redis down) with invite - keep
-          // sponsored state so a valid invite isn't wrongly shown as paid.
+          // Transient server error (e.g. Redis down) with invite. Leave the
+          // invite pending so a valid link isn't shown as a full-price mint.
           console.warn('Eligibility check temporarily unavailable (5xx), keeping current state')
         } else if (inviteToken && res.status === 400) {
-          // Invite validation failed (invalid/expired/used) - clear sponsored state
           setFreeMint(false)
+          setDiscountQuote(null)
+          setResolvedInviteToken(inviteToken)
+          let message = 'This invite link is invalid, expired, or has already been used.'
+          try {
+            const parsed = JSON.parse(errorText)
+            if (typeof parsed?.error === 'string' && parsed.error) message = parsed.error
+          } catch {
+            /* response was not JSON */
+          }
+          toast.error(message)
         } else if (!inviteToken) {
           setFreeMint(false)
+          setDiscountQuote(null)
         }
       } else {
         const { data } = await res.json()
-        if (data.eligible) {
+        if (inviteToken) setResolvedInviteToken(inviteToken)
+        if (data.sponsored === false && data.dueWei && data.payTo) {
+          setFreeMint(false)
+          setDiscountQuote({
+            discountBps: Number(data.discountBps),
+            fullPriceWei: String(data.fullPriceWei),
+            dueWei: String(data.dueWei),
+            payTo: String(data.payTo),
+          })
+        } else if (data.eligible) {
+          setDiscountQuote(null)
           setFreeMint(true)
         } else {
           // Clear sponsored state when definitively ineligible (200 OK means the
           // service is up and the invite/eligibility was checked successfully).
+          setDiscountQuote(null)
           setFreeMint(false)
         }
       }
     }
     getTotalPaid()
+    return () => {
+      cancelled = true
+    }
   }, [address, inviteToken])
 
   // ===== JSX Render =====
@@ -2279,8 +2467,8 @@ export default function CreateCitizen({
                       {processingElapsedSec < 12
                         ? 'Processing your profile...'
                         : processingElapsedSec < 30
-                          ? 'Saving your answers...'
-                          : 'Almost there — finalizing your profile...'}
+                        ? 'Saving your answers...'
+                        : 'Almost there — finalizing your profile...'}
                     </p>
                     <p className="text-slate-400 text-sm max-w-[420px]">
                       This can take up to a minute while we securely sync your responses. We&apos;ll
@@ -2564,7 +2752,6 @@ export default function CreateCitizen({
                         />
                       </div>
                     </div>
-
                   </div>
                 </div>
 
@@ -2578,7 +2765,19 @@ export default function CreateCitizen({
                       <div className="flex justify-between gap-4">
                         <dt className="text-slate-400">1-year citizenship</dt>
                         <dd className="text-right tabular-nums">
-                          {freeMint ? (
+                          {discountQuote ? (
+                            <span>
+                              <span className="block text-slate-500 line-through">
+                                {formatEthAmount(discountFullEth)} ETH
+                              </span>
+                              <span className="text-emerald-400 font-medium">
+                                {formatEthAmount(discountDueEth)} ETH
+                              </span>
+                              <span className="block text-emerald-400/80 text-xs mt-0.5">
+                                {discountQuote.discountBps / 10}% off
+                              </span>
+                            </span>
+                          ) : freeMint ? (
                             <span className="text-emerald-400 font-medium">Sponsored</span>
                           ) : (
                             <>
@@ -2597,7 +2796,15 @@ export default function CreateCitizen({
                       <div className="flex justify-between gap-4">
                         <dt className="text-slate-400">Network fee (est.)</dt>
                         <dd className="text-right tabular-nums">
-                          {freeMint ? (
+                          {discountQuote ? (
+                            <span className="text-white">
+                              {effectiveGasPrice && effectiveGasPrice > BigInt(0)
+                                ? `${formatEthAmount(
+                                    Number(effectiveGasPrice * BigInt(21000)) / 1e18
+                                  )} ETH`
+                                : 'Paid at checkout'}
+                            </span>
+                          ) : freeMint ? (
                             <span className="text-emerald-400 font-medium">Sponsored</span>
                           ) : (
                             <span className="text-white">
@@ -2606,18 +2813,25 @@ export default function CreateCitizen({
                           )}
                         </dd>
                       </div>
-                      {!freeMint && isCrossChain && mintCostBreakdown.bridgeEth > 0 && (
-                        <div className="flex justify-between gap-4">
-                          <dt className="text-slate-400">Cross-chain bridge (est.)</dt>
-                          <dd className="text-white text-right tabular-nums">
-                            {formatEthAmount(mintCostBreakdown.bridgeEth)} {nativeSymbol}
-                          </dd>
-                        </div>
-                      )}
+                      {!freeMint &&
+                        !discountQuote &&
+                        isCrossChain &&
+                        mintCostBreakdown.bridgeEth > 0 && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-slate-400">Cross-chain bridge (est.)</dt>
+                            <dd className="text-white text-right tabular-nums">
+                              {formatEthAmount(mintCostBreakdown.bridgeEth)} {nativeSymbol}
+                            </dd>
+                          </div>
+                        )}
                       <div className="flex justify-between gap-4 pt-3 border-t border-white/[0.08]">
                         <dt className="text-slate-300 font-medium">Total due at mint</dt>
                         <dd className="text-white font-medium text-right tabular-nums">
-                          {freeMint ? (
+                          {discountQuote ? (
+                            <span className="text-emerald-400">
+                              {formatEthAmount(discountDueEth)} ETH
+                            </span>
+                          ) : freeMint ? (
                             <span className="text-emerald-400">Free</span>
                           ) : (
                             <>
@@ -2634,9 +2848,17 @@ export default function CreateCitizen({
                     </dl>
                   )}
                   <p className="mt-4 text-slate-500 text-xs leading-relaxed">
-                    {freeMint
+                    {discountQuote
+                      ? `Your invite takes ${
+                          discountQuote.discountBps / 10
+                        }% off the first year. You pay ${formatEthAmount(discountDueEth)} ETH on ${
+                          DEFAULT_CHAIN_V5.name
+                        }, plus a small network fee. Renewal next year is full price.`
+                      : freeMint
                       ? `Your citizenship and network fees are fully sponsored — you pay nothing to mint. Renewal is ~1 year from mint.`
-                      : `Citizenship is paid in ${nativeSymbol} on ${selectedChain?.name ?? 'your network'}. Gas varies with network conditions. Renewal is ~1 year from mint.`}
+                      : `Citizenship is paid in ${nativeSymbol} on ${
+                          selectedChain?.name ?? 'your network'
+                        }. Gas varies with network conditions. Renewal is ~1 year from mint.`}
                   </p>
                 </div>
 
@@ -2660,17 +2882,29 @@ export default function CreateCitizen({
                 <NetworkSelector chains={chains} />
                 <PrivyWeb3Button
                   id="citizen-checkout-button"
-                  skipNetworkCheck={true}
+                  skipNetworkCheck={!discountQuote}
+                  requiredChain={discountQuote ? DEFAULT_CHAIN_V5 : undefined}
+                  loadingLabel={
+                    discountQuote ? 'Paying and creating your citizen...' : 'Creating Citizen...'
+                  }
                   label={
-                    isLoadingMint
+                    invitePending
+                      ? 'Checking invite...'
+                      : isLoadingMint
                       ? 'Creating Citizen...'
-                      : isLoadingGasEstimate
-                        ? 'Estimating Gas...'
-                        : 'Become a Citizen'
+                      : !discountQuote && isLoadingGasEstimate
+                      ? 'Estimating Gas...'
+                      : discountQuote
+                      ? `Pay ${formatEthAmount(discountDueEth)} ETH`
+                      : 'Become a Citizen'
                   }
                   className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  isDisabled={
-                    !agreedToCondition || isLoadingMint || isLoadingGasEstimate || isImageGenerating
+                  actionDisabled={
+                    !agreedToCondition ||
+                    isLoadingMint ||
+                    invitePending ||
+                    isImageGenerating ||
+                    (!discountQuote && isLoadingGasEstimate)
                   }
                   action={callMint}
                 />

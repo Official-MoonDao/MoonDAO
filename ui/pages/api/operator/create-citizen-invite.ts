@@ -2,14 +2,17 @@ import { isOperator } from 'middleware/isOperator'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import {
-  createInvite,
-  generateInviteToken,
-} from '@/lib/citizen/inviteTokens'
+  discountOfferLabel,
+  parseDiscountBps,
+  percentOffFromBps,
+} from '@/lib/citizen/discountInvite'
+import { createInvite, generateInviteToken } from '@/lib/citizen/inviteTokens'
 
 type Body = {
   count?: number | string
   label?: string
   ttlDays?: number | string
+  discountBps?: number | string
 }
 
 const MAX_COUNT = 50
@@ -23,9 +26,7 @@ function getOrigin(req: NextApiRequest): string {
   const envBase = process.env.NEXT_PUBLIC_BASE_URL
   if (envBase) return envBase.replace(/\/$/, '')
   const forwardedProto = req.headers['x-forwarded-proto']
-  const proto =
-    (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) ||
-    'https'
+  const proto = (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) || 'https'
   const host = req.headers.host
   return `${proto}://${host}`
 }
@@ -53,6 +54,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       ? body.label.trim().slice(0, 120)
       : undefined
 
+  const discountOmitted =
+    body.discountBps === undefined || body.discountBps === null || body.discountBps === ''
+  const discountBps = parseDiscountBps(body.discountBps, { defaultFull: discountOmitted })
+  if (!discountBps) {
+    return res.status(400).json({ error: 'discountBps must be 200, 500, or 1000.' })
+  }
+
   const origin = getOrigin(req)
   const ttlSeconds = ttlDays * 24 * 60 * 60
 
@@ -62,14 +70,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       const token = generateInviteToken()
       const created = await createInvite(
         token,
-        { createdAt: Date.now(), label, createdBy: 'operator-panel' },
+        { createdAt: Date.now(), label, createdBy: 'operator-panel', discountBps },
         ttlSeconds
       )
       if (!created) {
         // createInvite returns null only when Redis is unconfigured.
         return res.status(500).json({
-          error:
-            'Invite storage is not configured (UPSTASH_REDIS_URL / UPSTASH_REDIS_TOKEN).',
+          error: 'Invite storage is not configured (UPSTASH_REDIS_URL / UPSTASH_REDIS_TOKEN).',
         })
       }
       links.push({ token, url: `${origin}/citizen?invite=${token}` })
@@ -85,12 +92,13 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         requested: count,
         ttlDays,
         label: label ?? null,
+        discountBps,
+        percentOff: percentOffFromBps(discountBps),
+        offerLabel: discountOfferLabel(discountBps),
         links,
       })
     }
-    return res
-      .status(500)
-      .json({ error: err?.message || 'Failed to create invite links.' })
+    return res.status(500).json({ error: err?.message || 'Failed to create invite links.' })
   }
 
   return res.status(200).json({
@@ -98,6 +106,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     count: links.length,
     ttlDays,
     label: label ?? null,
+    discountBps,
+    percentOff: percentOffFromBps(discountBps),
+    offerLabel: discountOfferLabel(discountBps),
     links,
   })
 }

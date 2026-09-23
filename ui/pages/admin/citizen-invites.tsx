@@ -1,6 +1,11 @@
 import { usePrivy } from '@privy-io/react-auth'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import {
+  DISCOUNT_PRESETS,
+  discountOfferLabel,
+  type DiscountBps,
+} from '@/lib/citizen/discountInvite'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
@@ -20,6 +25,8 @@ export default function CitizenInvitesAdmin() {
   const [count, setCount] = useState(1)
   const [label, setLabel] = useState('')
   const [ttlDays, setTtlDays] = useState(30)
+  const [discountBps, setDiscountBps] = useState<DiscountBps>(1000)
+  const [offerLabel, setOfferLabel] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>('idle')
   const [links, setLinks] = useState<GeneratedLink[]>([])
 
@@ -37,6 +44,7 @@ export default function CitizenInvitesAdmin() {
   const generate = async () => {
     setStatus('generating')
     setLinks([])
+    setOfferLabel(null)
     try {
       const res = await fetch('/api/operator/create-citizen-invite', {
         method: 'POST',
@@ -45,6 +53,7 @@ export default function CitizenInvitesAdmin() {
         body: JSON.stringify({
           count,
           ttlDays,
+          discountBps,
           label: label.trim() || undefined,
         }),
       })
@@ -53,6 +62,7 @@ export default function CitizenInvitesAdmin() {
         throw new Error(json?.error || `Request failed (${res.status})`)
       }
       setLinks(json.links || [])
+      setOfferLabel(json.offerLabel || discountOfferLabel(discountBps))
       if (res.status === 207) {
         toast(`Partial success: ${json.links?.length || 0} of ${count} links created.`, {
           style: toastStyle,
@@ -78,8 +88,8 @@ export default function CitizenInvitesAdmin() {
       return (
         <div className="bg-black/20 rounded-xl p-6 border border-white/10 text-center">
           <p className="text-gray-300 mb-4">
-            Sign in with an operator wallet (e.g. ryand2d.eth or pmoncada.eth)
-            to generate citizen invite links.
+            Sign in with an operator wallet (e.g. ryand2d.eth or pmoncada.eth) to generate citizen
+            invite links.
           </p>
           <button
             type="button"
@@ -106,8 +116,8 @@ export default function CitizenInvitesAdmin() {
       return (
         <div className="bg-black/20 rounded-xl p-6 border border-rose-400/30 text-center">
           <p className="text-rose-300">
-            This wallet isn&apos;t an authorized operator. Ask an admin to add
-            your address to the operator allowlist.
+            This wallet isn&apos;t an authorized operator. Ask an admin to add your address to the
+            operator allowlist.
           </p>
         </div>
       )
@@ -118,23 +128,22 @@ export default function CitizenInvitesAdmin() {
       <div className="flex flex-col gap-6">
         <div className="bg-black/20 rounded-xl p-6 border border-white/10 flex flex-col gap-4">
           <p className="text-gray-300 text-sm">
-            Each link lets one person sign up and mint a free 1-year citizenship,
-            fully sponsored. A link can be redeemed exactly once.
+            {discountBps === 1000
+              ? 'Each link lets one person sign up and mint a free 1-year citizenship, fully sponsored. A link can be redeemed exactly once.'
+              : `Each link takes ${
+                  discountBps / 10
+                }% off the first year. The recipient pays the rest on Arbitrum, and the link still works exactly once. Renewal is full price.`}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <label className="flex flex-col gap-1">
-              <span className="text-xs uppercase tracking-wider text-gray-400">
-                How many links
-              </span>
+              <span className="text-xs uppercase tracking-wider text-gray-400">How many links</span>
               <input
                 type="number"
                 min={1}
                 max={50}
                 value={count}
-                onChange={(e) =>
-                  setCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))
-                }
+                onChange={(e) => setCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
                 className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-400/40"
                 disabled={isGenerating}
               />
@@ -150,13 +159,27 @@ export default function CitizenInvitesAdmin() {
                 max={365}
                 value={ttlDays}
                 onChange={(e) =>
-                  setTtlDays(
-                    Math.max(1, Math.min(365, Number(e.target.value) || 30))
-                  )
+                  setTtlDays(Math.max(1, Math.min(365, Number(e.target.value) || 30)))
                 }
                 className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-400/40"
                 disabled={isGenerating}
               />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="text-xs uppercase tracking-wider text-gray-400">Discount</span>
+              <select
+                value={discountBps}
+                onChange={(e) => setDiscountBps(Number(e.target.value) as DiscountBps)}
+                className="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-400/40"
+                disabled={isGenerating}
+              >
+                {[...DISCOUNT_PRESETS].reverse().map((bps) => (
+                  <option key={bps} value={bps}>
+                    {discountOfferLabel(bps)}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="flex flex-col gap-1">
@@ -188,13 +211,12 @@ export default function CitizenInvitesAdmin() {
           <div className="bg-black/20 rounded-xl p-6 border border-green-400/30 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <h3 className="text-green-300 font-GoodTimes text-sm">
-                {links.length} link{links.length > 1 ? 's' : ''} created
+                {links.length} {offerLabel ? `${offerLabel} ` : ''}link
+                {links.length > 1 ? 's' : ''} created
               </h3>
               <button
                 type="button"
-                onClick={() =>
-                  copy(links.map((l) => l.url).join('\n'), 'all links')
-                }
+                onClick={() => copy(links.map((l) => l.url).join('\n'), 'all links')}
                 className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs"
               >
                 Copy all
@@ -206,9 +228,7 @@ export default function CitizenInvitesAdmin() {
                   key={l.token}
                   className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-lg px-3 py-2"
                 >
-                  <span className="text-gray-200 text-xs break-all flex-1 font-mono">
-                    {l.url}
-                  </span>
+                  <span className="text-gray-200 text-xs break-all flex-1 font-mono">{l.url}</span>
                   <button
                     type="button"
                     onClick={() => copy(l.url, 'link')}
@@ -220,8 +240,8 @@ export default function CitizenInvitesAdmin() {
               ))}
             </ul>
             <p className="text-[11px] text-gray-500">
-              Share each link with one person. Once redeemed, a link can&apos;t be
-              used again.
+              Share each link with one person. Once redeemed, a link can&apos;t be used again.
+              {discountBps === 1000 ? '' : ' Partial discounts apply to the first year only.'}
             </p>
           </div>
         )}
@@ -233,14 +253,14 @@ export default function CitizenInvitesAdmin() {
     <>
       <WebsiteHead
         title="Citizen Invite Links"
-        description="Generate one-time sponsored citizenship invite links."
+        description="Generate one-time citizenship invite links at 100%, 50%, or 20% off."
       />
       <section className="flex flex-col justify-start px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
         <Container>
           <ContentLayout
             header="Citizen Invite Links"
             headerSize="40px"
-            description="Generate one-time links that let someone sign up and mint a free, fully sponsored 1-year citizenship."
+            description="Generate one-time links that discount the first year of citizenship. 100% off is a fully sponsored mint. 50% and 20% off links ask the recipient to pay the rest."
             mainPadding
             mode="compact"
             isProfile={true}

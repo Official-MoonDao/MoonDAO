@@ -1,12 +1,17 @@
-// Generates one-time "magic link" invite tokens for sponsored citizen mints.
+// Generates one-time "magic link" invite tokens for citizen mints.
 //
-// Each token grants a single free (relayer-sponsored) citizen mint to whoever
-// redeems it. Tokens are stored in Upstash Redis (key `citizen:invite:<token>`)
-// and consumed atomically at mint time by /api/mission/freeMint.
+// Each token grants a single mint to whoever redeems it. The default is a
+// fully sponsored (free) mint. --discount 20 or 50 makes the recipient pay the
+// remainder while the relayer covers the discount. Tokens are stored in
+// Upstash Redis (key `citizen:invite:<token>`) and consumed atomically at mint
+// time by /api/mission/freeMint.
 //
 // Usage (from repo root or ui/):
 //   node ui/scripts/create-citizen-invite.mjs [--count 5] [--label "ETHDenver"] \
-//       [--ttl-days 30] [--base-url https://moondao.com]
+//       [--ttl-days 30] [--discount 20|50|100] [--base-url https://moondao.com]
+//
+// --discount is the percent taken off the first year. 100 (the default) is a
+// fully sponsored mint. 20 and 50 require the recipient to pay the remainder.
 //
 // Reads UPSTASH_REDIS_URL and UPSTASH_REDIS_TOKEN from ui/.env.local (or env).
 
@@ -42,14 +47,24 @@ function loadEnvLocal() {
   return env
 }
 
+function discountToBps(discount) {
+  if (discount === undefined) return 1000
+  const percent = Number(discount)
+  if (percent === 20) return 200
+  if (percent === 50) return 500
+  if (percent === 100) return 1000
+  throw new Error('--discount must be 20, 50, or 100')
+}
+
 function parseArgs(argv) {
-  const args = { count: 1, label: undefined, ttlDays: 30, baseUrl: undefined }
+  const args = { count: 1, label: undefined, ttlDays: 30, baseUrl: undefined, discount: undefined }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === '--count') args.count = parseInt(argv[++i], 10)
     else if (a === '--label') args.label = argv[++i]
     else if (a === '--ttl-days') args.ttlDays = parseInt(argv[++i], 10)
     else if (a === '--base-url') args.baseUrl = argv[++i]
+    else if (a === '--discount') args.discount = argv[++i]
   }
   if (!Number.isFinite(args.count) || args.count < 1) args.count = 1
   if (!Number.isFinite(args.ttlDays) || args.ttlDays < 1) args.ttlDays = 30
@@ -57,6 +72,10 @@ function parseArgs(argv) {
 }
 
 async function main() {
+  const { count, label, ttlDays, baseUrl, discount } = parseArgs(process.argv.slice(2))
+  const discountBps = discountToBps(discount)
+  const percentOff = discountBps / 10
+
   const env = loadEnvLocal()
   const url = process.env.UPSTASH_REDIS_URL || env.UPSTASH_REDIS_URL
   const token = process.env.UPSTASH_REDIS_TOKEN || env.UPSTASH_REDIS_TOKEN
@@ -66,8 +85,6 @@ async function main() {
     )
     process.exit(1)
   }
-
-  const { count, label, ttlDays, baseUrl } = parseArgs(process.argv.slice(2))
   const linkBase =
     baseUrl ||
     process.env.NEXT_PUBLIC_BASE_URL ||
@@ -85,6 +102,7 @@ async function main() {
       createdAt: Date.now(),
       ...(label ? { label } : {}),
       createdBy: 'create-citizen-invite-script',
+      discountBps,
     }
     await redis.set(`citizen:invite:${inviteToken}`, meta, { ex: ttlSeconds })
     links.push(`${linkBase.replace(/\/$/, '')}/citizen?invite=${inviteToken}`)
@@ -92,7 +110,7 @@ async function main() {
 
   console.log(
     `\nCreated ${count} citizen invite link${count > 1 ? 's' : ''}` +
-      `${label ? ` (label: ${label})` : ''}, valid for ${ttlDays} day${
+      ` (${percentOff}% off${label ? `, label: ${label}` : ''}), valid for ${ttlDays} day${
         ttlDays > 1 ? 's' : ''
       }:\n`
   )
