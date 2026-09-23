@@ -111,6 +111,15 @@ export function orgColor(org: Organization | undefined): string {
   return org?.brandColor ?? '#9ca3af'
 }
 
+// Chip and filter group on /deprize. `category` is the unique tech-tree race
+// a surface site opens; `indexCategory` is display grouping only.
+export function goalIndexCategory(goal: {
+  category?: ProjectType
+  indexCategory?: ProjectType
+}): ProjectType | undefined {
+  return goal.category ?? goal.indexCategory
+}
+
 export const LOCATION_PRECISION_LABEL: Record<string, string> = {
   exact: 'Exact location',
   approximate: 'Approximate location',

@@ -171,7 +171,12 @@ export type SharedGoal = {
   projectIds: string[] // competing projects/orgs
   // When set, this goal IS the capability race for that tech-tree category:
   // the category's surface site opens this goal's prediction-market view.
+  // Unique: at most one goal may declare a given category.
   category?: ProjectType
+  // DePrize index chip and filter only. Does not open a surface site.
+  // A goal that is not a tech-tree race (Night Shift) uses this to group
+  // under a capability without taking that category's binding.
+  indexCategory?: ProjectType
   // Optional globe anchor for capability races: competitors may be Earth
   // companies with no lunar coordinates, but the race itself often targets a
   // region (e.g. the South Pole construction zone).

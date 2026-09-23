@@ -11,7 +11,6 @@ import {
   DEPRIZE_PREDICT_CTA,
   DEPRIZE_TERMS_VERSION,
   DePrizeState,
-  MarketStage,
   OUTCOME_COLORS,
   UNIT,
 } from '@/lib/deprize/constants'
@@ -35,7 +34,6 @@ type Props = {
   userAddress?: string
   spendableEth: number
   bettingBlockedReason?: string
-  onConnectWallet: () => void
   onDone: () => void
 }
 
@@ -52,7 +50,6 @@ export default function LiveDePrizeHero({
   userAddress,
   spendableEth,
   bettingBlockedReason,
-  onConnectWallet,
   onDone,
 }: Props) {
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
@@ -116,23 +113,6 @@ export default function LiveDePrizeHero({
       .sort((a, b) => b.probability - a.probability)
   }, [deprize?.teamIds, market.outcomes])
 
-  const statusTone =
-    deprize?.state === DePrizeState.OPEN && market.stage === MarketStage.Paused
-      ? 'paused'
-      : deprize?.state === DePrizeState.OPEN &&
-        !!deprize?.bettingOpen &&
-        !betting.bettingBlockedReason
-      ? 'live'
-      : 'other'
-  const statusLabel =
-    statusTone === 'live'
-      ? 'Live'
-      : statusTone === 'paused'
-      ? 'Paused'
-      : registryLoading
-      ? '…'
-      : DEPRIZE_STATE_META_LABEL(deprize?.state)
-
   const detailHref = `/deprize/${deprizeId}`
   const forecastHref = deprizeForecastHref(deprizeId)
   const betOutcome = betIndex !== null ? market.outcomes[betIndex] : undefined
@@ -143,9 +123,6 @@ export default function LiveDePrizeHero({
       <div className="p-5 sm:p-7">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
           <div className="min-w-0">
-            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-200 mb-1.5">
-              ★ Live on Arbitrum
-            </span>
             <a
               href={detailHref}
               className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
@@ -155,20 +132,6 @@ export default function LiveDePrizeHero({
               </p>
             </a>
             <p className="mt-1.5 text-sm text-gray-400 max-w-xl">{competition.tagline}</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-              <span>DePrize #{deprizeId}</span>
-              <span
-                className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                  statusTone === 'live'
-                    ? 'text-moon-green border-moon-green/40 bg-moon-green/15'
-                    : statusTone === 'paused'
-                    ? 'text-amber-300 border-amber-500/40 bg-amber-500/15'
-                    : 'text-gray-300 border-white/20 bg-white/10'
-                }`}
-              >
-                {statusLabel}
-              </span>
-            </div>
           </div>
           {/* Wrapped onto its own line on a phone, this block kept its right
               alignment and read as detached from the prize it belongs to. */}
@@ -231,7 +194,7 @@ export default function LiveDePrizeHero({
                 <span className="relative z-10 shrink-0 text-sm font-semibold tabular-nums text-gray-200">
                   {pct !== undefined ? `${pct}%` : '—'}
                 </span>
-                {bettingEnabled ? (
+                {bettingEnabled && (
                   <button
                     type="button"
                     onClick={() => setBetIndex(o.index)}
@@ -241,16 +204,7 @@ export default function LiveDePrizeHero({
                   >
                     Buy
                   </button>
-                ) : !account && !showPredict ? (
-                  <button
-                    type="button"
-                    onClick={onConnectWallet}
-                    className={`relative z-10 shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold
-                      bg-white/10 hover:bg-white/15 text-white transition-all ${TOUCH}`}
-                  >
-                    Connect
-                  </button>
-                ) : null}
+                )}
               </div>
             )
           })}
@@ -310,12 +264,4 @@ export default function LiveDePrizeHero({
       )}
     </div>
   )
-}
-
-function DEPRIZE_STATE_META_LABEL(state: DePrizeState | undefined): string {
-  if (state === undefined || state === DePrizeState.NONE) return 'Unavailable'
-  if (state === DePrizeState.OPEN) return 'Open'
-  if (state === DePrizeState.SETTLED || state === DePrizeState.M1_RELEASED) return 'Resolved'
-  if (state === DePrizeState.CANCELLED || state === DePrizeState.NO_WINNER) return 'Closed'
-  return 'In progress'
 }

@@ -16,9 +16,6 @@ import MobileSidebar from './Sidebar/MobileSidebar'
 import TopNavBar from './TopNavBar'
 
 // Lazy load non-critical components for better LCP
-const SpaceBackground = dynamic(() => import('./SpaceBackground'), {
-  ssr: false,
-})
 const GlobalSearch = dynamic(() => import('./GlobalSearch'), {
   ssr: false,
 })
@@ -112,9 +109,6 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         !lightMode ? 'dark background-dark' : 'background-light'
       } min-h-screen relative`}
     >
-      <ClientOnly>
-        <SpaceBackground />
-      </ClientOnly>
       <>
         <div className="xl:hidden">
           <MobileMenuTop

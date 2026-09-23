@@ -10,7 +10,7 @@ import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { resetMockData } from '@/lib/deprize/mockMarket'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
-import { PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
+import { goalIndexCategory, PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -47,6 +47,8 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   // atlas-sourced so it cannot drift into on-chain registry fixtures.
   const races = useMemo(() => {
     return SEED_ATLAS.sharedGoals
+      // Crewed HLS is the same landing question as Touchdown. Keep Touchdown.
+      .filter((g) => g.id !== 'shared-crewed-lander')
       .filter((g) => !!g.category || !!g.market)
       .map((goal) => ({
         goal,
@@ -64,7 +66,8 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   const categories = useMemo(() => {
     const set = new Set<ProjectType>()
     races.forEach((r) => {
-      if (r.goal.category) set.add(r.goal.category)
+      const listed = goalIndexCategory(r.goal)
+      if (listed) set.add(listed)
     })
     return Array.from(set).sort((a, b) =>
       PROJECT_TYPE_LABEL[a].localeCompare(PROJECT_TYPE_LABEL[b])
@@ -74,7 +77,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   const filteredRaces = useMemo(() => {
     const q = search.trim().toLowerCase()
     return races.filter((r) => {
-      if (category !== 'all' && r.goal.category !== category) return false
+      if (category !== 'all' && goalIndexCategory(r.goal) !== category) return false
       if (!q) return true
       if (r.goal.title.toLowerCase().includes(q)) return true
       return r.competitors.some((c) => c.project.name.toLowerCase().includes(q))
@@ -147,7 +150,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
           isProfile
           centerHeader
           centerHeaderWidth="72rem"
-          description="Open capability races with live odds. Back the team you think will win — every bet grows the prize pool."
           preFooter={
             <>
               <DePrizeAvailabilityLegend />
@@ -255,7 +257,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                     userAddress={userAddress}
                     spendableEth={spendableEth}
                     bettingBlockedReason={bettingBlockedReason}
-                    onConnectWallet={() => login()}
                     onDone={() => setRefreshNonce((n) => n + 1)}
                   />
                 )}

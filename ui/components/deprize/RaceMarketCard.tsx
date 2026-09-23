@@ -34,7 +34,11 @@ import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import { isMintConfigured } from '@/lib/deprize/status'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
-import { PROJECT_TYPE_COLOR, PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
+import {
+  goalIndexCategory,
+  PROJECT_TYPE_COLOR,
+  PROJECT_TYPE_LABEL,
+} from '@/lib/lunar-atlas/display'
 import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import BetModal from '@/components/deprize/BetModal'
 import EthUsd from '@/components/deprize/EthUsd'
@@ -314,10 +318,11 @@ export default function RaceMarketCard({
     isMintConfigured(live.mintAddress) &&
     !tradingHalted &&
     live.stage === MarketStage.Running
-  // Whether the Buy button actually opens — the market must be tradable AND
-  // region rules must allow real bets (demo markets skip this entirely).
+  // Buy and live odds only exist on a bound on-chain market. Unbound races
+  // are a planning list: company names, no mock prices, no demo pool.
   const bettingOpenReal = marketTradable && !bettingBlockedReason
-  const bettingEnabled = hasRace && (bound ? bettingOpenReal : true) // demo markets never gate
+  const showLiveMarket = bound && hasRace
+  const bettingEnabled = showLiveMarket && bettingOpenReal
   const forecastHref =
     bound && !!bettingBlockedReason && deprizeId !== undefined
       ? deprizeForecastHref(deprizeId)
@@ -335,12 +340,12 @@ export default function RaceMarketCard({
   const statusLabel = {
     live: 'Live',
     paused: 'Paused',
-    demo: 'Demo',
+    demo: 'Planning',
     resolved: 'Resolved',
     concept: 'No developer yet',
   }[statusTone]
 
-  const category = goal.category ?? 'other'
+  const category = goalIndexCategory(goal) ?? 'other'
   const categoryLabel = PROJECT_TYPE_LABEL[category]
   const categoryColor = PROJECT_TYPE_COLOR[category]
 
@@ -356,8 +361,11 @@ export default function RaceMarketCard({
     () => [...outcomes].sort((a, b) => (b.probability || 0) - (a.probability || 0)),
     [outcomes],
   )
-  const top = ranked.slice(0, 4)
-  const more = ranked.length - top.length
+  // Unbound races keep roster order. Sorting them by mock odds would present
+  // a fake leader.
+  const ordered = showLiveMarket ? ranked : outcomes
+  const top = ordered.slice(0, 4)
+  const more = ordered.length - top.length
 
   // Bet targets — only one of these is ever open at a time.
   const [realBetIndex, setRealBetIndex] = useState<number | null>(null)
@@ -524,8 +532,8 @@ export default function RaceMarketCard({
 
   // --- Grid view: compact tile for the Polymarket-style browse grid ---
   if (variant === 'grid') {
-    const gridTop = ranked.slice(0, 3)
-    const gridMore = ranked.length - gridTop.length
+    const gridTop = ordered.slice(0, 3)
+    const gridMore = ordered.length - gridTop.length
     return (
       <div className="rounded-xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] hover:border-white/20 transition-colors overflow-hidden shadow-lg flex flex-col h-full">
         <a
@@ -555,7 +563,7 @@ export default function RaceMarketCard({
                 key={o.projectId}
                 className="relative flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1.5 overflow-hidden"
               >
-                {hasRace && (
+                {showLiveMarket && (
                   <div
                     className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
                     style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
@@ -563,7 +571,7 @@ export default function RaceMarketCard({
                 )}
                 <span className="relative z-10 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.color }} />
                 <span className="relative z-10 flex-1 min-w-0 truncate text-xs text-white/90">{o.name}</span>
-                {hasRace && (
+                {showLiveMarket && (
                   <span className="relative z-10 shrink-0 text-xs font-semibold tabular-nums text-gray-200">
                     {pct !== undefined ? `${pct}%` : '—'}
                   </span>
@@ -589,17 +597,18 @@ export default function RaceMarketCard({
           )}
         </div>
 
-        <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 flex items-center justify-between gap-2">
-          {hasRace ? (
-            <span className="min-w-0 truncate">
-              <PoolAmount eth={poolEth} loading={poolLoading} size="footer" />{' '}
-              {bound ? 'pool' : 'demo'}
-            </span>
-          ) : (
-            <span>No committed developer — not an active competition</span>
-          )}
-          {forecastHref && <PredictLink href={forecastHref} />}
-        </div>
+        {(showLiveMarket || !hasRace) && (
+          <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 flex items-center justify-between gap-2">
+            {showLiveMarket ? (
+              <span className="min-w-0 truncate">
+                <PoolAmount eth={poolEth} loading={poolLoading} size="footer" /> pool
+              </span>
+            ) : (
+              <span>No committed developer — not an active competition</span>
+            )}
+            {forecastHref && <PredictLink href={forecastHref} />}
+          </div>
+        )}
 
         {marketModals}
       </div>
@@ -608,8 +617,8 @@ export default function RaceMarketCard({
 
   // --- Featured view: hero card for the top of the index ---
   if (variant === 'featured') {
-    const featuredTop = ranked.slice(0, 6)
-    const featuredMore = ranked.length - featuredTop.length
+    const featuredTop = ordered.slice(0, 6)
+    const featuredMore = ordered.length - featuredTop.length
     return (
       <div className="rounded-2xl bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-indigo-950/50 backdrop-blur-xl border border-indigo-400/25 shadow-xl overflow-hidden">
         <div className="p-5 sm:p-7">
@@ -646,28 +655,26 @@ export default function RaceMarketCard({
               </div>
             </div>
             <div className="text-right shrink-0">
-              {hasRace ? (
+              {showLiveMarket ? (
                 <>
                   <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
                     <PoolAmount eth={poolEth} loading={poolLoading} size="hero" />
                   </p>
                   <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-                    {bound
-                      ? payloadCopy('cardPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))
-                      : 'demo pool'}
+                    {payloadCopy('cardPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
                   </p>
                 </>
-              ) : (
+              ) : !hasRace ? (
                 <p className="text-gray-500 text-[11px] max-w-[10rem]">
                   No committed developer yet
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
 
-          {hasRace && (
+          {showLiveMarket && (
             <div className="flex w-full h-2 rounded-full overflow-hidden bg-white/5 mb-4">
-              {ranked.map((o) => (
+              {ordered.map((o) => (
                 <div
                   key={o.projectId}
                   style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
@@ -682,7 +689,7 @@ export default function RaceMarketCard({
                 key={o.projectId}
                 outcome={o}
                 bettingEnabled={bettingEnabled}
-                showOdds={hasRace}
+                showOdds={showLiveMarket}
                 onBet={() => handleBet(o)}
               />
             ))}
@@ -741,22 +748,20 @@ export default function RaceMarketCard({
               </div>
             </div>
             <div className="text-right shrink-0">
-              {hasRace ? (
+              {showLiveMarket ? (
                 <>
                   <p className="text-white text-base sm:text-lg font-bold tabular-nums">
                     <PoolAmount eth={poolEth} loading={poolLoading} />
                   </p>
                   <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-                    {bound
-                      ? payloadCopy('cardPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))
-                      : 'demo pool'}
+                    {payloadCopy('cardPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
                   </p>
                 </>
-              ) : (
+              ) : !hasRace ? (
                 <p className="text-gray-500 text-[11px] max-w-[9rem]">
                   No committed developer yet
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -766,7 +771,7 @@ export default function RaceMarketCard({
                 key={o.projectId}
                 outcome={o}
                 bettingEnabled={bettingEnabled}
-                showOdds={hasRace}
+                showOdds={showLiveMarket}
                 onBet={() => handleBet(o)}
               />
             ))}

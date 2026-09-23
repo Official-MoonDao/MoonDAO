@@ -74,7 +74,10 @@ describe('lunar-atlas × DePrize binding', () => {
       'rosatom-lunar-rtg',
       'isro-barc-rhu',
     ])
+    // Power chip only. `category` is the unique tech-tree race, and fission
+    // already owns Power — Night Shift must not take that binding.
     expect(nightShift!.category).to.equal(undefined)
+    expect(nightShift!.indexCategory).to.equal('power')
     expect(nightShift!.description).to.match(
       /^Deliver at least 10 watts of electricity, continuously, for 354 hours/,
     )
