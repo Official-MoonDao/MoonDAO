@@ -176,8 +176,8 @@ describe('deprize responsive layout', () => {
         /inline-flex items-center/
       )
     }
-    expect(header.match(/\$\{TOUCH\}/g) ?? [], 'both header links and the fund CTA').to.have.length(
-      3
+    expect(header.match(/\$\{TOUCH\}/g) ?? [], 'the Moon Base and All prizes links').to.have.length(
+      2
     )
   })
 

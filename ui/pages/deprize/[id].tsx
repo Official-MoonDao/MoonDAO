@@ -20,7 +20,6 @@ import {
   findDePrizeChainSlugs,
   findDePrizeIdForGoal,
   getDePrizeCompetition,
-  getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
   isCompetitorClaimed,
   isKnownDePrizeCompetition,
@@ -54,7 +53,6 @@ import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeActivity } from '@/lib/deprize/useDePrizeActivity'
-import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
 import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
@@ -72,7 +70,6 @@ import ClaimPanel from '@/components/deprize/ClaimPanel'
 import AdminSection from '@/components/deprize/detail/AdminSection'
 import ClaimSection from '@/components/deprize/detail/ClaimSection'
 import ForecastSlot from '@/components/deprize/detail/ForecastSlot'
-import LadderLine from '@/components/deprize/detail/LadderLine'
 import OddsSection from '@/components/deprize/detail/OddsSection'
 import PositionSection from '@/components/deprize/detail/PositionSection'
 import PrizeHeader from '@/components/deprize/detail/PrizeHeader'
@@ -156,7 +153,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
   const raceGoal = raceBinding ? sharedGoalById(SEED_ATLAS, raceBinding.sharedGoalId) : undefined
-  const generationNumber = getDePrizeGenerationNumber(chainSlug, deprizeId)
   const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
   const userAddress = account?.address
@@ -207,7 +203,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     if (ethPrice == null) return null
     return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
   }, [ethPrice])
-  const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
 
@@ -703,8 +698,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const abnormalStatus = !!bettingBlockedReason && !bettingBlockedReason.startsWith('Loading')
   const showBadge = abnormalStatus || deprize.state !== DePrizeState.OPEN
   const explorerTxBase = EXPLORER_TX[chainSlug] ?? 'https://etherscan.io/tx/'
-  const hasLineage =
-    deprize.state === DePrizeState.SUPERSEDED || competition.supersedes !== undefined
+  const hasLineage = deprize.state === DePrizeState.SUPERSEDED
 
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
@@ -720,16 +714,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           badgeTitle={abnormalStatus ? bettingBlockedReason : undefined}
           abnormalStatus={abnormalStatus}
           raceGoal={raceGoal}
-          jbProjectId={jbProjectId}
-          isLoadingFunding={isLoadingFunding}
-          totalFunding={totalFunding}
-          launchpadMissionHref={launchpad.missionHref}
-          activityLoading={activity.loading}
-          activityError={activity.error}
-          betsLength={activity.bets.length}
-          totalStakedEth={activity.totalStakedEth}
-          backers={activity.backers}
-          sunset={deprize.sunset}
           winningTeamId={winningTeamId}
           teamContract={teamContract}
           showResolved={showResolved}
@@ -748,7 +732,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           oddsLoading={odds.loading}
         />
         <NoticeStack items={pageNotices} />
-        <LadderLine chainSlug={chainSlug} deprizeId={deprizeId} />
         <PositionSection
           userAddress={userAddress}
           numOutcomes={numOutcomes}
@@ -775,8 +758,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
           reported={!!market.payoutDen && market.payoutDen > 0n}
           resolvedVector={resolvedVector}
-          collateralEth={activity.totalStakedEth}
-          liveMarket={!!market.marketAddress}
           numOutcomes={numOutcomes}
           rankedOutcomes={rankedOutcomes}
           teamIds={deprize.teamIds}
@@ -889,8 +870,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           chainSlug={chainSlug}
           state={deprize.state}
           supersededBy={competition.supersededBy}
-          supersedes={competition.supersedes}
-          generationNumber={generationNumber}
         />
         </div>
       </div>

@@ -90,6 +90,10 @@ export function useDePrizeMarket(params: {
   const { deprizeId, conditionId, numOutcomes, chain, userAddress, registryState } = params
   const chainSlug = getChainSlug(chain)
   const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
+  // Position-id resolution reads this, but a late registry condition must not
+  // wipe a market binding or restart the price read that already succeeded.
+  const conditionIdRef = useRef(conditionId)
+  conditionIdRef.current = conditionId
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
   const fallbackLmsr = LMSR_WITH_TWAP_ADDRESSES[chainSlug] ?? ''
@@ -170,7 +174,8 @@ export function useDePrizeMarket(params: {
         }
         return
       }
-      if (conditionId && !/^0x0+$/.test(conditionId)) {
+      const knownCondition = conditionIdRef.current
+      if (knownCondition && !/^0x0+$/.test(knownCondition)) {
         try {
           const fallbackContract = getContract({
             client: deprizeReadClient,
@@ -184,7 +189,7 @@ export function useDePrizeMarket(params: {
             params: [0n],
           })
           if (!cancelled) {
-            const matched = marketCond.toLowerCase() === conditionId.toLowerCase()
+            const matched = marketCond.toLowerCase() === knownCondition.toLowerCase()
             startTransition(() => {
               setMarketAddress(matched ? fallbackLmsr : undefined)
               setMintBound(false)
@@ -206,7 +211,7 @@ export function useDePrizeMarket(params: {
     return () => {
       cancelled = true
     }
-  }, [mint, deprizeId, fallbackLmsr, conditionId, readChain, numOutcomes])
+  }, [mint, deprizeId, fallbackLmsr, readChain])
 
   const lmsr = useMemo(() => {
     if (!marketAddress) return undefined
@@ -344,9 +349,47 @@ export function useDePrizeMarket(params: {
     setLoading(true)
     setError(undefined)
     try {
+      // Stage and prices first. Position ids are a dozen extra reads and used
+      // to block the whole card on "…" even though odds do not need them.
+      const [stg, prices] = await Promise.all([
+        rpcRead({ contract: lmsr, method: 'stage' as string, params: [] })
+          .then((v) => Number(v))
+          .catch(() => undefined),
+        Promise.all(
+          Array.from({ length: numOutcomes }, (_, i) =>
+            rpcRead({
+              contract: lmsr,
+              method: 'calcMarginalPrice' as string,
+              params: [i],
+            })
+              .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
+              .catch(() => NaN),
+          ),
+        ),
+      ])
+      if (loadGenRef.current !== gen) return
+      const pricesValid = stg !== MarketStage.Closed
+      const livePrices = (prices as number[]).map((p) => (pricesValid ? p : NaN))
+      startTransition(() => {
+        if (loadGenRef.current !== gen) return
+        setStage(stg)
+        setOutcomes((prev) =>
+          Array.from({ length: numOutcomes }, (_, i) => ({
+            index: i,
+            probability: livePrices[i] ?? NaN,
+            balance: prev[i]?.balance ?? NaN,
+            balanceWei: prev[i]?.balanceWei,
+            positionId: prev[i]?.positionId ?? 0n,
+          })),
+        )
+        setLoading(false)
+      })
+
+      // Balances and position ids can fail without hiding odds that already rendered.
+      try {
       if (!staticRef.current) {
         // Prefer the registry's condition; fall back to the market's own.
-        let cond = conditionId
+        let cond = conditionIdRef.current
         if (!cond || /^0x0+$/.test(cond)) {
           cond = await rpcRead<string>({
             contract: lmsr,
@@ -355,46 +398,44 @@ export function useDePrizeMarket(params: {
           })
         }
         if (loadGenRef.current !== gen) return
-        const ids: bigint[] = []
-        for (let i = 0; i < numOutcomes; i++) {
-          const indexSet = 1n << BigInt(i)
-          const collectionId = await rpcRead<string>({
-            contract: ctf,
-            method: 'getCollectionId' as string,
-            params: [ZERO_BYTES32, cond, indexSet],
-          })
-          if (loadGenRef.current !== gen) return
-          const pid = await rpcRead<bigint>({
-            contract: ctf,
-            method: 'getPositionId' as string,
-            params: [wethAddress, collectionId],
-          })
-          ids.push(pid)
-        }
-        const fee = await rpcRead<bigint>({
-          contract: lmsr,
-          method: 'fee' as string,
-          params: [],
-        })
-          .then((v) => (Number(v) / 1e18) * 100)
-          .catch(() => undefined)
-        const startSec = await rpcRead<bigint>({
-          contract: lmsr,
-          method: 'startTime' as string,
-          params: [],
-        })
-          .then((v) => Number(v))
-          .catch(() => 0)
-        // LMSR liquidity parameter; needed to rebuild odds history from trades.
-        const funding = await rpcRead<bigint>({
-          contract: lmsr,
-          method: 'funding' as string,
-          params: [],
-        })
-          .then((v) => Number(v) / Number(UNIT))
-          .catch(() => undefined)
+        const [ids, feeRaw, startSec, fundingRaw] = await Promise.all([
+          Promise.all(
+            Array.from({ length: numOutcomes }, async (_, i) => {
+              const indexSet = 1n << BigInt(i)
+              const collectionId = await rpcRead<string>({
+                contract: ctf,
+                method: 'getCollectionId' as string,
+                params: [ZERO_BYTES32, cond, indexSet],
+              })
+              return rpcRead<bigint>({
+                contract: ctf,
+                method: 'getPositionId' as string,
+                params: [wethAddress, collectionId],
+              })
+            }),
+          ),
+          rpcRead<bigint>({
+            contract: lmsr,
+            method: 'fee' as string,
+            params: [],
+          }).catch(() => undefined),
+          rpcRead<bigint>({
+            contract: lmsr,
+            method: 'startTime' as string,
+            params: [],
+          }).catch(() => 0n),
+          rpcRead<bigint>({
+            contract: lmsr,
+            method: 'funding' as string,
+            params: [],
+          }).catch(() => undefined),
+        ])
         if (loadGenRef.current !== gen) return
-        const startMs = Number.isFinite(startSec) && startSec > 0 ? startSec * 1000 : undefined
+        const fee = feeRaw !== undefined ? (Number(feeRaw) / 1e18) * 100 : undefined
+        const startNum = Number(startSec)
+        const startMs = Number.isFinite(startNum) && startNum > 0 ? startNum * 1000 : undefined
+        const funding =
+          fundingRaw !== undefined ? Number(fundingRaw) / Number(UNIT) : undefined
         staticRef.current = {
           conditionId: cond as string,
           positionIds: ids,
@@ -410,23 +451,11 @@ export function useDePrizeMarket(params: {
           setFundingEth(funding)
         })
       }
-      const { conditionId: cond, positionIds: ids } = staticRef.current
+      const settled = staticRef.current
+      if (!settled) return
+      const { conditionId: cond, positionIds: ids } = settled
 
-      const [stg, prices, balances, den, nums, mktFees] = await Promise.all([
-        rpcRead({ contract: lmsr, method: 'stage' as string, params: [] })
-          .then((v) => Number(v))
-          .catch(() => undefined),
-        Promise.all(
-          Array.from({ length: numOutcomes }, (_, i) =>
-            rpcRead({
-              contract: lmsr,
-              method: 'calcMarginalPrice' as string,
-              params: [i],
-            })
-              .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
-              .catch(() => NaN),
-          ),
-        ),
+      const [balances, den, nums, mktFees] = await Promise.all([
         userAddress
           ? Promise.all(
               ids.map((pid) =>
@@ -469,12 +498,10 @@ export function useDePrizeMarket(params: {
 
       // Drop stale responses from overlapping loads (Strict Mode / nav churn).
       if (loadGenRef.current !== gen) return
-      const pricesValid = stg !== MarketStage.Closed
       // Odds history is recorded via the outcomes → recordOddsSample effect so
       // the chart cannot diverge from the legend.
       startTransition(() => {
         if (loadGenRef.current !== gen) return
-        setStage(stg)
         setPayoutDen(den)
         setPayoutNums(nums)
         setMarketFeesWei(mktFees)
@@ -483,7 +510,7 @@ export function useDePrizeMarket(params: {
             const balWei = balances[i] as bigint | undefined
             return {
               index: i,
-              probability: pricesValid ? (prices[i] as number) : NaN,
+              probability: livePrices[i] ?? NaN,
               balance: balWei !== undefined ? Number(balWei) / Number(UNIT) : NaN,
               balanceWei: balWei,
               positionId: pid,
@@ -491,6 +518,10 @@ export function useDePrizeMarket(params: {
           }),
         )
       })
+      } catch (err: any) {
+        if (loadGenRef.current !== gen) return
+        console.error('[deprize] position load failed', err)
+      }
     } catch (err: any) {
       if (loadGenRef.current !== gen) return
       console.error('[deprize] market load failed', err)
@@ -503,7 +534,7 @@ export function useDePrizeMarket(params: {
         startTransition(() => setLoading(false))
       }
     }
-  }, [lmsr, ctf, weth, numOutcomes, conditionId, userAddress, wethAddress, marketAddress])
+  }, [lmsr, ctf, weth, numOutcomes, userAddress, wethAddress, marketAddress])
 
   useEffect(() => {
     load()

@@ -2,18 +2,16 @@ import { useLogin } from '@privy-io/react-auth'
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
-import { normalizeProbabilities } from '@/lib/deprize/serverMarket'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
 import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
-import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import {
   allocationForPick,
@@ -22,8 +20,6 @@ import {
   tapPlan,
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
-import { oddsRowView } from '@/lib/forecasts/oddsRow'
-import { daoEvidence, logLinearPool, marketEvidence } from '@/lib/forecasts/pool'
 import { rowActions } from '@/lib/forecasts/rowActions'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
 import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
@@ -44,8 +40,6 @@ export default function ForecastPanel(props: {
   liveTipId?: number
   reported: boolean
   resolvedVector?: number[] | null
-  collateralEth?: number
-  liveMarket?: boolean
   numOutcomes: number
   rankedOutcomes: Array<{ index: number; [key: string]: any }>
   teamIds: readonly bigint[]
@@ -81,8 +75,6 @@ export default function ForecastPanel(props: {
     marketPercents,
     liveTipId,
     reported,
-    collateralEth = 0,
-    liveMarket = false,
     numOutcomes,
     rankedOutcomes,
     teamIds,
@@ -124,7 +116,6 @@ export default function ForecastPanel(props: {
   })
   const forecastsTableName = FORECASTS_TABLE_NAMES[chainSlug] ?? ''
 
-  const marketNormalized = useMemo(() => normalizeProbabilities(marketPercents), [marketPercents])
   const isLive = liveTipId == null || liveTipId === deprizeId
   const inputsLocked = !isLive || reported
   const actions = rowActions({
@@ -151,6 +142,7 @@ export default function ForecastPanel(props: {
   )
 
   const loadConsensus = useCallback(async () => {
+    if (n < 2) return
     const res = await fetch(
       consensusQuery({
         chain: chainSlug,
@@ -163,6 +155,7 @@ export default function ForecastPanel(props: {
   }, [applyConsensus, chainSlug, deprizeId, n])
 
   const refetchFresh = useCallback(async () => {
+    if (n < 2) return
     const res = await fetch(
       consensusQuery({
         chain: chainSlug,
@@ -297,24 +290,6 @@ export default function ForecastPanel(props: {
     if (plan.action === 'write') void commitPick(plan.index)
   }
 
-  const daoReady = (consensus?.participants ?? 0) >= FORECAST_DAO_MIN_PARTICIPANTS
-  const daoVector = daoReady ? consensus?.vector ?? [] : []
-  const mEvidence = marketEvidence(collateralEth, liveMarket)
-  const dEvidence = daoEvidence(consensus?.totalWeight ?? 0)
-  const pooled =
-    mEvidence + dEvidence > 0
-      ? logLinearPool([
-          {
-            p: marketNormalized.map((p) => p / 100),
-            weight: mEvidence,
-          },
-          {
-            p: daoVector.length === n ? daoVector : marketNormalized.map((p) => p / 100),
-            weight: dEvidence,
-          },
-        ])
-      : null
-
   const mine = consensus?.leaderboard.find(
     (row) => row.voterAddress === account?.address?.toLowerCase()
   )
@@ -372,10 +347,6 @@ export default function ForecastPanel(props: {
           const atlasOrg = atlasProject ? orgById(SEED_ATLAS, atlasProject.orgId) : undefined
           const claimed = isCompetitorClaimed(outcomeBinding)
           const isSaved = savedPick === o.index
-          const marketPct = marketNormalized[o.index] ?? 0
-          const daoPct = daoReady ? (daoVector[o.index] ?? 0) * 100 : null
-          const pooledPct = pooled ? pooled[o.index] * 100 : null
-          const view = oddsRowView({ marketPct, daoPct, pooledPct })
           return (
             <div id={`deprize-outcome-${o.index}`} key={o.index}>
               <DePrizeTeamCard
@@ -405,38 +376,11 @@ export default function ForecastPanel(props: {
                 imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                 unclaimed={!isField && !!outcomeBinding && !claimed}
               />
-              <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
-                <p className="text-xs text-gray-400">
-                  Market {view.marketLabel} · DAO {view.daoLabel}
-                  {view.pooledLabel != null ? ` · Pooled ${view.pooledLabel}` : ''}
-                </p>
-                {view.gapCaption && <p className="mt-1 text-xs text-gray-400">{view.gapCaption}</p>}
-                <div className="mt-2 relative h-4 rounded-full bg-white/5 border border-white/10">
-                  {view.showBracket && (
-                    <span
-                      className="absolute inset-y-0 rounded-full bg-white/15"
-                      style={{ left: `${view.bracketLo}%`, width: `${view.bracketWidth}%` }}
-                    />
-                  )}
-                  {view.pooledLabel != null && pooledPct != null && (
-                    <span
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-1 rounded-full bg-indigo-300"
-                      style={{ left: `${pooledPct}%` }}
-                      title={`Pooled ${view.pooledLabel}`}
-                    />
-                  )}
-                </div>
-              </div>
             </div>
           )
         })}
       </div>
 
-      {!daoReady && (
-        <p className="mt-3 text-xs text-gray-400">
-          {FORECAST_COPY.daoPending(FORECAST_DAO_MIN_PARTICIPANTS, consensus?.participants ?? 0)}
-        </p>
-      )}
       {savedPick != null && (
         <p className="mt-2 text-xs text-gray-400">{FORECAST_COPY.singlePick}</p>
       )}
