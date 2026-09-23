@@ -126,6 +126,18 @@ describe('deprize forecast row action wiring', () => {
       )
     }
   })
+
+  it('opens one prediction window from the competitor card', () => {
+    const src = readUi('components/deprize/ForecastPanel.tsx')
+    expect(src).to.include('PredictModal')
+    expect(src).to.not.include('pickLabel')
+    expect(src).to.not.include('Back with ETH')
+    expect(src).to.not.include('Citizen prediction')
+    const modal = readUi('components/deprize/PredictModal.tsx')
+    expect(modal).to.include('No bet attached')
+    expect(modal).to.include('Add a bet')
+    expect(modal).to.not.include('Save prediction')
+  })
 })
 
 export {}
