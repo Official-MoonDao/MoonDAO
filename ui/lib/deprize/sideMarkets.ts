@@ -61,6 +61,12 @@ export type SideMarketDefinition = {
  * like when it happens. Both resolve off the same public facts as the parent,
  * which is why they must settle in the same Senate vote and the same Safe
  * batch — see docs/DEPRIZE_SIDE_MARKETS.md.
+ *
+ * Neither names an operator, which is what keeps them stable across a parent
+ * supersede. Adding ispace as a named Touchdown slot is a new generation with
+ * a new roster and a new condition (Part VI(b) of DEPRIZE_TOUCHDOWN.md); these
+ * outcome sets do not change and their markets do not need to be superseded
+ * with it.
  */
 export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
   {
@@ -73,28 +79,28 @@ export const SIDE_MARKETS: readonly SideMarketDefinition[] = [
         key: 'upright-working',
         label: 'Upright and working',
         criterion:
-          'Comes to rest in the planned orientation and returns surface data for 24 hours, or for its full published mission if that is shorter. Touchdown Tests 3 and 4 both pass.',
+          'Comes to rest in the orientation the operator published as nominal, and returns surface data for 24 hours or for its full published mission if that is shorter. Touchdown Tests 3 and 4 both pass.',
         teamId: 701,
       },
       {
         key: 'upright-short',
         label: 'Upright, then silent',
         criterion:
-          'Planned orientation, but surface data stops before 24 hours and before the published mission ends. Test 3 passes, Test 4 fails.',
+          'Nominal orientation, but surface data stops before 24 hours and before the published mission ends. Test 3 passes, Test 4 fails. The "dies at hour 6" case.',
         teamId: 702,
       },
       {
         key: 'wrong-orientation',
         label: 'Down, but not as planned',
         criterion:
-          'Soft touchdown in an orientation the operator did not plan, whatever it then returns. The IM-1, IM-2 and SLIM outcome. Test 3 fails.',
+          'Reaches the surface intact but Test 3 is not satisfied, whatever it returns afterwards. The IM-1, IM-2 and SLIM outcome. Test 3 requires positive evidence of attitude, so a vehicle whose orientation cannot be established from public sources also settles here.',
         teamId: 703,
       },
       {
         key: 'lost-on-descent',
         label: 'Lost on descent',
         criterion:
-          'No controlled touchdown: the vehicle is destroyed or contact is lost before it reaches the surface. The Resilience outcome. Test 1 fails.',
+          'No controlled arrival at the surface: the vehicle is destroyed, or contact is lost and never regained, before touchdown. The Resilience outcome. Test 2 fails.',
         teamId: 704,
       },
     ],
