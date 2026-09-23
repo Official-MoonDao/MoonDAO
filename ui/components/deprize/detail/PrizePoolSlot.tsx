@@ -1,3 +1,4 @@
+import { useLogin } from '@privy-io/react-auth'
 import { useEffect, useState } from 'react'
 import type { Chain } from 'thirdweb'
 import {
@@ -30,6 +31,7 @@ export default function PrizePoolSlot(props: {
   bettorAddresses?: readonly string[]
 }) {
   const restricted = useDePrizeRestricted()
+  const { login } = useLogin()
   const fundAllowed = FUND_GEO_OPEN || !restricted
   const [fundOpen, setFundOpen] = useState(false)
   const [pendingPayer, setPendingPayer] = useState<string | null>(null)
@@ -54,7 +56,15 @@ export default function PrizePoolSlot(props: {
   }, [pendingPayer, patrons.patrons])
 
   const showFund =
-    DEPRIZE_FUND_ENABLED && fundAllowed && props.jbProjectId != null && props.chain && props.account
+    DEPRIZE_FUND_ENABLED && fundAllowed && props.jbProjectId != null && !!props.chain
+
+  function onFund() {
+    if (!props.account) {
+      login()
+      return
+    }
+    setFundOpen(true)
+  }
 
   return (
     <section id="deprize-prize-pool" className={`${CARD} space-y-4`}>
@@ -63,6 +73,15 @@ export default function PrizePoolSlot(props: {
         <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
           <EthUsd eth={props.poolEth} prize />
         </p>
+        {showFund && (
+          <button
+            type="button"
+            className={`mt-3 w-full sm:w-auto rounded-full border border-white/20 px-4 py-2 text-sm text-white ${TOUCH}`}
+            onClick={onFund}
+          >
+            Fund the prize
+          </button>
+        )}
       </div>
 
       {DEPRIZE_PATRONS_ENABLED && (
@@ -80,17 +99,7 @@ export default function PrizePoolSlot(props: {
         bettorAddresses={props.bettorAddresses ?? []}
       />
 
-      {showFund && (
-        <button
-          type="button"
-          className={`w-full sm:w-auto rounded-full border border-white/20 px-4 py-2 text-sm text-white ${TOUCH}`}
-          onClick={() => setFundOpen(true)}
-        >
-          Fund the prize
-        </button>
-      )}
-
-      {fundOpen && props.jbProjectId != null && props.chain && props.deprizeId != null && (
+      {fundOpen && props.jbProjectId != null && props.chain && props.deprizeId != null && props.account && (
         <FundPrizeModal
           deprizeId={props.deprizeId}
           jbProjectId={props.jbProjectId}
