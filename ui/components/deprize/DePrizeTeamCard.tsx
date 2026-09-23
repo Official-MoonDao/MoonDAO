@@ -31,6 +31,15 @@ type DePrizeTeamCardProps = {
   userConnected: boolean
   onBet: (index: number) => void
   /**
+   * The card opens the prediction window even when ETH betting is closed.
+   * `bettingOpen` alone is the bet gate and would leave the card inert.
+   */
+  selectable?: boolean
+  /** This competitor is the viewer's saved prediction. */
+  highlighted?: boolean
+  /** Short status under the name, such as "Predicted". */
+  badge?: string
+  /**
    * Citizen forecast controls for this competitor. Stop their clicks from
    * also placing a bet, since the card itself is the bet control.
    */
@@ -95,6 +104,9 @@ export default function DePrizeTeamCard({
   busy,
   userConnected,
   onBet,
+  selectable = false,
+  highlighted = false,
+  badge,
   actions,
   onCashOut,
   isField = false,
@@ -113,7 +125,7 @@ export default function DePrizeTeamCard({
   const pnl =
     realizedValue !== undefined && investedEth > 0 ? realizedValue - investedEth : undefined
   const canCashOut = showHoldings && !tradingHalted && !resolved
-  const canPredict = bettingOpen && !tradingHalted && !busy
+  const canPredict = !resolved && !busy && (selectable || (bettingOpen && !tradingHalted))
   const predictName = isField ? 'Other' : headline || 'this competitor'
   const predict = () => onBet(outcome.index)
   // Cash-out and forecast actions are their own buttons. A card that also
@@ -132,8 +144,13 @@ export default function DePrizeTeamCard({
       role={cardIsButton ? 'button' : undefined}
       tabIndex={cardIsButton ? 0 : undefined}
       aria-label={cardIsButton ? `Predict ${predictName} as the winner` : undefined}
+      aria-pressed={cardIsButton ? highlighted : undefined}
       className={`relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
-        resolved && isWinningSlot ? 'border-emerald-400/40 ring-1 ring-emerald-400/20' : ''
+        resolved && isWinningSlot
+          ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
+          : highlighted
+          ? 'border-indigo-400/50 ring-1 ring-indigo-400/30'
+          : ''
       } ${
         canPredict
           ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 transition-colors'
@@ -200,6 +217,7 @@ export default function DePrizeTeamCard({
           </div>
           {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
           {orgSubtitle && <p className="text-xs text-gray-400 pl-12">{orgSubtitle}</p>}
+          {badge && <p className="text-xs text-indigo-200 pl-12">{badge}</p>}
           {withdrawn && !isField && (
             <p className="text-xs text-amber-400/90 pl-12">Withdrawn — sell only</p>
           )}

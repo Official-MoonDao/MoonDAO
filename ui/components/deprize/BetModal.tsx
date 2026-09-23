@@ -76,6 +76,11 @@ type BetModalProps = {
   spendableEth: number
   initialAmountEth?: string
   fundsArrived?: boolean
+  /**
+   * Render the bet form inside another modal. The prediction window uses this
+   * so a bet is optional and does not open a second dialog.
+   */
+  embedded?: boolean
   onClose: () => void
   onDone: (index: number, costEth: number, qtyEth: number) => void
 }
@@ -99,6 +104,7 @@ export default function BetModal({
   spendableEth,
   initialAmountEth,
   fundsArrived,
+  embedded = false,
   onClose,
   onDone,
 }: BetModalProps) {
@@ -436,8 +442,7 @@ export default function BetModal({
 
   const betMult = quote && betAmountNum > 0 ? quote.qty / betAmountNum : undefined
 
-  return (
-    <Modal id="deprize-bet" setEnabled={(v) => !v && onClose()} title={`Back ${teamName}`}>
+  const body = (
       <div className="flex flex-col gap-4 w-full">
         <h2
           ref={headingRef}
@@ -466,7 +471,7 @@ export default function BetModal({
             inputMode="decimal"
             min="0"
             step="any"
-            autoFocus={!fundsArrived}
+            autoFocus={!embedded && !fundsArrived}
             value={betAmount}
             onChange={(e) => setBetAmount(e.target.value)}
             placeholder="e.g. 0.01"
@@ -829,6 +834,13 @@ export default function BetModal({
           </StandardButton>
         )}
       </div>
+  )
+
+  if (embedded) return body
+
+  return (
+    <Modal id="deprize-bet" setEnabled={(v) => !v && onClose()} title={`Back ${teamName}`}>
+      {body}
     </Modal>
   )
 }

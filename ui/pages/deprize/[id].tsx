@@ -7,7 +7,6 @@ import {
   DEPRIZE_REGISTRY_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
-import { useLogin } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
@@ -161,7 +160,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
   const userAddress = account?.address
-  const { login } = useLogin()
 
   const {
     deprize,
@@ -399,17 +397,11 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
   const onrampQueryActive = parseOnrampReturn(router.query).active
 
-  // The Back button is also the connect entry point.
-  const handleBet = useCallback(
-    (index: number) => {
-      if (!userAddress) {
-        login()
-        return
-      }
-      setBetIndex(index)
-    },
-    [userAddress, login],
-  )
+  // Clicking a competitor opens the prediction window. Connecting and betting
+  // happen inside that window.
+  const handleBet = useCallback((index: number) => {
+    setBetIndex(index)
+  }, [])
 
   // Moon Base Zero "Back this team" deep-links here with ?outcome=N. Wait for
   // the market + chart to settle so the layout above the card stops shifting.
@@ -426,10 +418,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return
     const idx = Number(raw)
     if (idx < 0 || idx >= numOutcomes) return
-    // Wallet hydrate and the geo check usually finish after the chart. Latch
-    // only once those gates can open the modal; otherwise a later ready pass
-    // would no-op and `?outcome=N` would scroll without auto-opening.
-    if (!userAddress || !bettingAllowed) return
     setDeepLinkHandled(true)
     const el = document.getElementById(`deprize-outcome-${idx}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -441,8 +429,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     numOutcomes,
     market.loading,
     odds.loading,
-    userAddress,
-    bettingAllowed,
     onrampQueryActive,
   ])
 
@@ -806,6 +792,37 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           userAddress={userAddress}
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
+          modalIndex={betIndex}
+          onModalClose={() => setBetIndex(null)}
+          renderBet={
+            account && market.marketAddress
+              ? ({ index, onClose, onPlaced }) => (
+                  <BetModal
+                    embedded
+                    deprizeId={deprizeId}
+                    outcomeIndex={index}
+                    teamName={
+                      predictionLabels[index] || outcomeDisplayName(index, raceBinding)
+                    }
+                    probability={market.outcomes[index]?.probability ?? NaN}
+                    numOutcomes={numOutcomes}
+                    mintAddress={mintAddress}
+                    marketAddress={market.marketAddress!}
+                    jbProjectId={deprize.jbProjectId}
+                    chain={chain}
+                    account={account}
+                    spendableEth={spendable}
+                    initialAmountEth={onrampReturn.prefillEth}
+                    fundsArrived={onrampReturn.fundsArrived}
+                    onClose={onClose}
+                    onDone={() => {
+                      onPlaced()
+                      refreshAll()
+                    }}
+                  />
+                )
+              : undefined
+          }
         />
         <DePrizeQuestionCard
           description={raceGoal?.description}
@@ -877,27 +894,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         />
         </div>
       </div>
-
-      {/* Bet modal */}
-      {betIndex !== null && market.marketAddress && account && (
-        <BetModal
-          deprizeId={deprizeId}
-          outcomeIndex={betIndex}
-          teamName={predictionLabels[betIndex] || outcomeDisplayName(betIndex, raceBinding)}
-          probability={market.outcomes[betIndex]?.probability ?? NaN}
-          numOutcomes={numOutcomes}
-          mintAddress={mintAddress}
-          marketAddress={market.marketAddress}
-          jbProjectId={deprize.jbProjectId}
-          chain={chain}
-          account={account}
-          spendableEth={spendable}
-          initialAmountEth={onrampReturn.prefillEth}
-          fundsArrived={onrampReturn.fundsArrived}
-          onClose={() => setBetIndex(null)}
-          onDone={refreshAll}
-        />
-      )}
 
       {/* Exit modal */}
       {exitIndex !== null && market.marketAddress && account && (

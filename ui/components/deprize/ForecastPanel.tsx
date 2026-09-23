@@ -2,7 +2,7 @@ import { useLogin } from '@privy-io/react-auth'
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
@@ -19,7 +19,6 @@ import {
   allocationForPick,
   canUndo,
   pickFromAllocation,
-  pickLabel,
   tapPlan,
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
@@ -34,7 +33,8 @@ import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
-import { CARD, TOUCH } from '@/components/deprize/detail/primitives'
+import PredictModal from '@/components/deprize/PredictModal'
+import { CARD } from '@/components/deprize/detail/primitives'
 
 export default function ForecastPanel(props: {
   chainSlug: string
@@ -61,6 +61,18 @@ export default function ForecastPanel(props: {
   userAddress?: string
   withdrawnByTeamId: Record<string, boolean>
   onBet: (index: number) => void
+  /** Which competitor's prediction window is open. The page owns this so deep links share it. */
+  modalIndex: number | null
+  onModalClose: () => void
+  /**
+   * ETH bet form for the open competitor. The page omits this when betting
+   * is not allowed; the prediction itself does not need it.
+   */
+  renderBet?: (input: {
+    index: number
+    onClose: () => void
+    onPlaced: () => void
+  }) => ReactNode
 }) {
   const {
     chainSlug,
@@ -86,6 +98,9 @@ export default function ForecastPanel(props: {
     userAddress,
     withdrawnByTeamId,
     onBet,
+    modalIndex,
+    onModalClose,
+    renderBet,
   } = props
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
@@ -120,6 +135,7 @@ export default function ForecastPanel(props: {
     connected: !!account,
   })
   const predictAction = actions.find((action) => action.kind === 'predict')
+  const showBet = actions.some((action) => action.kind === 'bet')
 
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
@@ -185,8 +201,8 @@ export default function ForecastPanel(props: {
     })
   }
 
-  async function commitPick(index: number) {
-    if (!account || !citizen || !forecastsContract || !forecastsTableName) return
+  async function commitPick(index: number): Promise<boolean> {
+    if (!account || !citizen || !forecastsContract || !forecastsTableName) return false
     setError(null)
     setWriting(true)
     const allocation = allocationForPick(index, n)
@@ -205,8 +221,10 @@ export default function ForecastPanel(props: {
       rememberRow(allocation)
       toast.success('Prediction saved', { style: toastStyle })
       await refetchFresh()
+      return true
     } catch (err: any) {
       setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
+      return false
     } finally {
       setWriting(false)
     }
@@ -233,7 +251,7 @@ export default function ForecastPanel(props: {
     }
   }
 
-  function onPredict(index: number) {
+  async function onPredict(index: number) {
     const plan = tapPlan({
       index,
       savedPick,
@@ -250,7 +268,10 @@ export default function ForecastPanel(props: {
       setError('Predictions count only for Citizens. Mint a Citizen to predict.')
       return
     }
-    if (plan.action === 'write') void commitPick(plan.index)
+    if (plan.action === 'write') {
+      const ok = await commitPick(plan.index)
+      if (ok && !showBet) onModalClose()
+    }
   }
 
   function onUndo() {
@@ -262,6 +283,18 @@ export default function ForecastPanel(props: {
     })
     if (plan.action === 'write') void commitPick(plan.index)
     if (plan.action === 'clear') void clearPick()
+  }
+
+  function attachPrediction(index: number) {
+    const plan = tapPlan({
+      index,
+      savedPick,
+      writing,
+      connected: !!account,
+      isCitizen: !!citizen,
+      locked: inputsLocked,
+    })
+    if (plan.action === 'write') void commitPick(plan.index)
   }
 
   const daoReady = (consensus?.participants ?? 0) >= FORECAST_DAO_MIN_PARTICIPANTS
@@ -285,7 +318,6 @@ export default function ForecastPanel(props: {
   const mine = consensus?.leaderboard.find(
     (row) => row.voterAddress === account?.address?.toLowerCase()
   )
-  const showBet = actions.some((action) => action.kind === 'bet')
   const undoEnabled = canUndo({ savedPick, writing, locked: inputsLocked })
 
   if (numOutcomes <= 0) return null
@@ -294,11 +326,6 @@ export default function ForecastPanel(props: {
     <section id="deprize-forecast" className={CARD}>
       <h2 className="title-text-colors text-lg font-GoodTimes">Competitors</h2>
       <p className="mt-1 text-sm text-gray-300">{FORECAST_COPY.panelIntro}</p>
-      {bettingOpen && showBet && !showResolved && (
-        <p className="mt-1 text-sm text-gray-400">
-          Click a competitor to predict them as the winner.
-        </p>
-      )}
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">
           Betting isn&apos;t available in your region — you can still make a prediction.
@@ -349,12 +376,6 @@ export default function ForecastPanel(props: {
           const daoPct = daoReady ? (daoVector[o.index] ?? 0) * 100 : null
           const pooledPct = pooled ? pooled[o.index] * 100 : null
           const view = oddsRowView({ marketPct, daoPct, pooledPct })
-          const predictReason =
-            predictAction?.reason === 'locked'
-              ? 'Forecasting is closed'
-              : predictAction?.reason === 'need-citizen'
-              ? 'Mint a Citizen to predict'
-              : undefined
           return (
             <div id={`deprize-outcome-${o.index}`} key={o.index}>
               <DePrizeTeamCard
@@ -366,40 +387,14 @@ export default function ForecastPanel(props: {
                 resolved={showResolved}
                 isRefundVector={isRefundVector}
                 isWinningSlot={showResolved && o.index === winningIndex}
-                bettingOpen={bettingOpen && showBet}
+                bettingOpen={false}
+                selectable={!showResolved && !inputsLocked}
+                highlighted={isSaved}
+                badge={isSaved ? FORECAST_COPY.predicted : undefined}
                 tradingHalted={tradingHalted}
-                busy={false}
+                busy={writing}
                 userConnected={!!userAddress}
                 onBet={onBet}
-                actions={
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onPredict(o.index)}
-                      disabled={!predictAction?.enabled || writing}
-                      aria-pressed={isSaved}
-                      title={predictReason}
-                      className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border transition-colors disabled:opacity-40 w-full sm:w-auto ${TOUCH} ${
-                        isSaved
-                          ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
-                          : predictAction?.role === 'primary'
-                          ? 'border-indigo-400/40 bg-indigo-400/10 text-white'
-                          : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
-                      }`}
-                    >
-                      {pickLabel({ picked: isSaved, saved: isSaved && !writing })}
-                    </button>
-                    {isSaved && undoEnabled && (
-                      <button
-                        type="button"
-                        onClick={onUndo}
-                        className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border border-white/15 text-gray-200 hover:bg-white/10 w-full sm:w-auto ${TOUCH}`}
-                      >
-                        Undo
-                      </button>
-                    )}
-                  </>
-                }
                 isField={isField}
                 withdrawn={!!withdrawnByTeamId[teamId.toString()]}
                 hrefOverride={
@@ -407,18 +402,8 @@ export default function ForecastPanel(props: {
                 }
                 nameOverride={atlasOrg?.name || atlasProject?.name}
                 vehicleLabel={outcomeBinding?.vehicleLabel}
-                backLabel={
-                  isField
-                    ? 'Back the field'
-                    : atlasOrg?.name || atlasProject?.name
-                    ? `Back ${atlasOrg?.name || atlasProject?.name}`
-                    : undefined
-                }
                 imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                 unclaimed={!isField && !!outcomeBinding && !claimed}
-                participation={
-                  isField || !outcomeBinding ? undefined : claimed ? 'official' : 'unofficial'
-                }
               />
               <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
                 <p className="text-xs text-gray-400">
@@ -456,6 +441,39 @@ export default function ForecastPanel(props: {
         <p className="mt-2 text-xs text-gray-400">{FORECAST_COPY.singlePick}</p>
       )}
       {error && <p className="mt-2 text-xs text-amber-200">{error}</p>}
+      {modalIndex != null && (
+        <PredictModal
+          teamName={labels[modalIndex] || 'this competitor'}
+          probability={
+            rankedOutcomes.find((outcome) => outcome.index === modalIndex)?.probability ??
+            marketPercents[modalIndex] ??
+            NaN
+          }
+          chanceLoading={marketLoading}
+          bettingAvailable={showBet}
+          connected={!!account}
+          isCitizen={!!citizen}
+          saved={savedPick === modalIndex}
+          writing={writing}
+          predictEnabled={!!predictAction?.enabled}
+          undoEnabled={undoEnabled && savedPick === modalIndex}
+          onPredict={() => void onPredict(modalIndex)}
+          onUndo={onUndo}
+          onConnect={login}
+          onClose={onModalClose}
+          bet={
+            showBet && renderBet ? (
+              <div key={modalIndex}>
+                {renderBet({
+                  index: modalIndex,
+                  onClose: onModalClose,
+                  onPlaced: () => attachPrediction(modalIndex),
+                })}
+              </div>
+            ) : undefined
+          }
+        />
+      )}
     </section>
   )
 }

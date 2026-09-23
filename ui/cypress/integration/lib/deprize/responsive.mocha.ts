@@ -26,7 +26,7 @@ const PRIMITIVES = 'components/deprize/detail/primitives.tsx'
 
 /** Files whose tap targets must come from the shared token. */
 const TOUCH_CONSUMERS = [
-  'components/deprize/ForecastPanel.tsx',
+  'components/deprize/PredictModal.tsx',
   'components/deprize/DePrizeTeamCard.tsx',
   'components/deprize/DePrizePositionPanel.tsx',
   'components/deprize/DePrizePatrons.tsx',
