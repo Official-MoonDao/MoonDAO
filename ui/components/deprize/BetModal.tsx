@@ -53,6 +53,7 @@ import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import EthUsd from '@/components/deprize/EthUsd'
 import { TOUCH } from '@/components/deprize/detail/primitives'
@@ -777,6 +778,7 @@ export default function BetModal({
                           outcomeIndex,
                           amountEth: betAmountNum > 0 ? String(betAmountNum) : undefined,
                           capEth: String(maxBetEth),
+                          chainSlug: getChainSlug(chain),
                         })}
                         onCoinbaseBeforeNavigate={async () => {
                           const ok = await persistOnrampSession()

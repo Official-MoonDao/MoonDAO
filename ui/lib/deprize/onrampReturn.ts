@@ -1,3 +1,5 @@
+import { deprizePrefixedHref } from '@/lib/deprize/competitions'
+
 const AMOUNT_RE = /^\d+(\.\d+)?$/
 const MAX_AMOUNT_LENGTH = 24
 const MAX_DECIMALS = 18
@@ -36,8 +38,12 @@ export function buildOnrampReturnUrl(opts: {
   outcomeIndex: number
   amountEth?: string
   capEth: string
+  chainSlug?: string
 }): string {
-  const url = new URL(`/deprize/${opts.deprizeId}`, opts.origin)
+  const path = opts.chainSlug
+    ? deprizePrefixedHref(opts.chainSlug, opts.deprizeId)
+    : `/deprize/${opts.deprizeId}`
+  const url = new URL(path, opts.origin)
   url.searchParams.set('onrampSuccess', 'true')
   url.searchParams.set('outcome', String(opts.outcomeIndex))
   if (opts.amountEth && isSafeAmountString(opts.amountEth)) {

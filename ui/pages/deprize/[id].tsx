@@ -612,6 +612,37 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
       </Shell>
     )
   }
+  // Unprefixed `/deprize/1` is Arbitrum's Harsh Mistress and Sepolia's Touchdown.
+  // A prefixed path already picked a registry; otherwise ask, so a refresh on
+  // the default chain does not open the other prize.
+  if (!forcedSlug && numericId !== undefined) {
+    const chains = findDePrizeChainSlugs(numericId)
+    if (chains.length > 1) {
+      const search = router.asPath.replace(/^[^?#]*/, '')
+      return (
+        <Shell
+          title={`DePrize #${numericId}`}
+          description={`DePrize #${numericId} is registered on more than one network.`}
+        >
+          <Notice tone="amber">
+            DePrize #{numericId} is on{' '}
+            {chains.map((slug, i) => (
+              <span key={slug}>
+                {i > 0 ? ' and ' : ''}
+                <Link
+                  href={`${deprizePrefixedHref(slug, numericId)}${search}`}
+                  className="underline underline-offset-2 hover:text-amber-100"
+                >
+                  {deprizeChainLabel(slug)}
+                </Link>
+              </span>
+            ))}
+            .
+          </Notice>
+        </Shell>
+      )
+    }
+  }
   if (goalFromSlug && boundFromSlug === undefined) {
     return <GoalDePrizeDetail goal={goalFromSlug} />
   }
@@ -686,7 +717,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const abnormalStatus = !!bettingBlockedReason && !bettingBlockedReason.startsWith('Loading')
   const showBadge = abnormalStatus || deprize.state !== DePrizeState.OPEN
   const explorerTxBase = EXPLORER_TX[chainSlug] ?? 'https://etherscan.io/tx/'
-  const hasLineage = deprize.state === DePrizeState.SUPERSEDED
+  const hasLineage =
+    deprize.state === DePrizeState.SUPERSEDED || competition.supersedes !== undefined
 
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
@@ -837,6 +869,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         />
         <ProvenanceFooter
           hasLineage={hasLineage}
+          chainSlug={chainSlug}
           state={deprize.state}
           supersededBy={competition.supersededBy}
           supersedes={competition.supersedes}

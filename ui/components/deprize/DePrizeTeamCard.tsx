@@ -116,9 +116,9 @@ export default function DePrizeTeamCard({
   const canPredict = bettingOpen && !tradingHalted && !busy
   const predictName = isField ? 'Other' : headline || 'this competitor'
   const predict = () => onBet(outcome.index)
-  // Cash-out is its own button. A card that also contains one cannot be a
-  // button itself, so that case stays a clickable div.
-  const cardIsButton = canPredict && !canCashOut
+  // Cash-out and forecast actions are their own buttons. A card that also
+  // contains one cannot be a button itself, so that case stays a clickable div.
+  const cardIsButton = canPredict && !canCashOut && !actions
 
   const onCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!canPredict || e.target !== e.currentTarget) return
