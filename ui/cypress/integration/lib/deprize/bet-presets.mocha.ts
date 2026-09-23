@@ -42,5 +42,6 @@ describe('bet preset amounts', () => {
     expect(src).to.include('betPresetEthAmounts')
     expect(src).to.not.include("['0.01', '0.05', '0.1']")
     expect(src).to.not.include('Max (')
+    expect(src).to.not.include('Chance to win')
   })
 })

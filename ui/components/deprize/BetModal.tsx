@@ -96,7 +96,6 @@ export default function BetModal({
   deprizeId,
   outcomeIndex,
   teamName,
-  probability,
   numOutcomes,
   mintAddress,
   marketAddress,
@@ -550,12 +549,6 @@ export default function BetModal({
             Funds arrived. You can place your bet.
           </p>
         )}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Chance to win</span>
-          <span className="text-white font-semibold">
-            {Number.isFinite(probability) ? `${fmt(probability, 0)}%` : '—'}
-          </span>
-        </div>
 
         <div>
           <label className="text-xs text-gray-400">How much do you want to bet? (ETH)</label>
