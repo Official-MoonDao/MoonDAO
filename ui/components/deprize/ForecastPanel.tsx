@@ -222,6 +222,7 @@ export default function ForecastPanel(props: {
         forecastsContract,
         account,
         forecastsTableName,
+        chainId: chain.id,
         voteId: deprizeForecastVoteId(deprizeId),
         address: account.address,
         vote,
