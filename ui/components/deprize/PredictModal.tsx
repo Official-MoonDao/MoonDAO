@@ -84,7 +84,6 @@ export default function PredictModal(props: {
             >
               {predictLabel}
             </button>
-            <p className="text-xs text-gray-400">No bet attached.</p>
             {props.error && <p className="text-xs text-amber-200">{props.error}</p>}
             {props.saved && props.undoEnabled && (
               <button

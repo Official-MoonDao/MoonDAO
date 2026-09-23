@@ -134,7 +134,7 @@ describe('deprize forecast row action wiring', () => {
     expect(src).to.not.include('Back with ETH')
     expect(src).to.not.include('Citizen prediction')
     const modal = readUi('components/deprize/PredictModal.tsx')
-    expect(modal).to.include('No bet attached')
+    expect(modal).to.not.include('No bet attached')
     expect(modal).to.include('Attach a bet')
     expect(modal).to.include('setBetOpen(true)')
     expect(modal).to.include('betOpen ? props.bet : null')
