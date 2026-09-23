@@ -380,6 +380,9 @@ async function settlePartialDiscountPayment(params: {
         error: 'This payment was refunded. Send a new payment to continue.',
         dueWei: dueWeiString,
         fullPriceWei,
+        // Same signal as a fresh refund. Without it, a refresh reloads the dead
+        // hash from session and retries it forever.
+        refunded: true,
       },
     }
   }
