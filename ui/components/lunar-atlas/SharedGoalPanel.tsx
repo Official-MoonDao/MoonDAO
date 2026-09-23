@@ -42,6 +42,7 @@ import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DemoBetModal from '@/components/deprize/DemoBetModal'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 import { MarketPill } from './ProjectPanel'
+import SideMarketsSection from './SideMarketsSection'
 import SourceBadge from './SourceBadge'
 
 type Competitor = {
@@ -638,6 +639,16 @@ export default function SharedGoalPanel({
             )}
           </div>
         )}
+
+        {/* Side markets on this race — "what does the landing look like", as
+            opposed to "who lands". Renders nothing for races that have none. */}
+        <SideMarketsSection
+          chainSlug={chainSlug}
+          parentGoalId={goal.id}
+          userAddress={userAddress}
+          onConnectWallet={onConnectWallet}
+          onDone={onDone}
+        />
 
         {/* Claim / refund — same helper as the DePrize detail page, so a
             resolved race can be settled without leaving the globe. */}
