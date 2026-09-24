@@ -328,22 +328,30 @@ export default function RaceMarketCard({
       ? deprizeForecastHref(deprizeId)
       : undefined
 
-  const statusTone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept' = !hasRace
+  // Stage is unknown until the first market read returns. Treating that as
+  // "not Running" painted every live race as Paused, then flipped to Live.
+  // Later polls set `loading` again; those must not hide a status we already have.
+  const awaitingMarket = bound && hasRace && !live.resolved && live.stage === undefined
+  const statusTone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept' | null = !hasRace
     ? 'concept'
     : !bound
       ? 'demo'
       : live.resolved
         ? 'resolved'
-        : marketTradable
-          ? 'live'
-          : 'paused'
-  const statusLabel = {
-    live: 'Live',
-    paused: 'Paused',
-    demo: 'Planning',
-    resolved: 'Resolved',
-    concept: 'No developer yet',
-  }[statusTone]
+        : awaitingMarket
+          ? null
+          : marketTradable
+            ? 'live'
+            : 'paused'
+  const statusLabel = statusTone
+    ? {
+        live: 'Live',
+        paused: 'Paused',
+        demo: 'Planning',
+        resolved: 'Resolved',
+        concept: 'No developer yet',
+      }[statusTone]
+    : null
 
   const category = goalIndexCategory(goal) ?? 'other'
   const categoryLabel = PROJECT_TYPE_LABEL[category]
@@ -449,7 +457,7 @@ export default function RaceMarketCard({
             <p className="text-white font-GoodTimes text-base">{goal.title}</p>
             <p className="text-gray-500 text-xs mt-0.5">{categoryLabel}</p>
           </a>
-          <StatusPill label={statusLabel} tone={statusTone} />
+          {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
         </div>
         <div className="px-4 sm:px-5 pb-4 sm:pb-5 flex flex-col gap-2">
           {heldOutcomes.map((o) => (
@@ -550,7 +558,7 @@ export default function RaceMarketCard({
             <p className="text-white font-GoodTimes text-sm leading-snug line-clamp-2">{goal.title}</p>
             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500">
               <span className="truncate">{categoryLabel}</span>
-              <StatusPill label={statusLabel} tone={statusTone} />
+              {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
             </div>
           </div>
         </a>
@@ -650,7 +658,7 @@ export default function RaceMarketCard({
                       </span>
                     </>
                   )}
-                  <StatusPill label={statusLabel} tone={statusTone} />
+                  {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
                 </div>
               </div>
             </div>
@@ -744,7 +752,7 @@ export default function RaceMarketCard({
                     </span>
                   </>
                 )}
-                <StatusPill label={statusLabel} tone={statusTone} />
+                {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
               </div>
             </div>
             <div className="text-right shrink-0">
