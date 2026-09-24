@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Night Shift — Prize Brief</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 15mm 15mm; }
+
+  :root {
+    --ink: #14161a;
+    --muted: #5c636e;
+    --rule: #d8dce2;
+    --accent: #1f4b8f;
+    --wash: #f4f6f9;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Charter", "Georgia", "Times New Roman", serif;
+    font-size: 9.9pt;
+    line-height: 1.45;
+    color: var(--ink);
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  h1, h2, h3, .label, th, .kicker, .tag {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+
+  /* ---------- cover ---------- */
+  .cover { page-break-after: always; height: 262mm; display: flex; flex-direction: column; padding-top: 8mm; }
+  .cover .grow { flex: 1 1 auto; }
+
+  .kicker {
+    font-size: 8.2pt; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 14mm;
+  }
+
+  h1 {
+    font-size: 46pt; line-height: 1.02; margin: 0 0 4mm 0;
+    letter-spacing: -.02em; font-weight: 700;
+  }
+
+  .sub {
+    font-size: 14pt; color: var(--muted); margin: 0 0 12mm 0;
+    line-height: 1.35; font-weight: 400;
+  }
+
+  .pull {
+    border-left: 3px solid var(--accent);
+    padding: 4mm 0 4mm 6mm;
+    font-size: 12.5pt; line-height: 1.45; margin: 0 0 12mm 0;
+  }
+  .pull em { font-style: italic; }
+
+  .meta {
+    border-top: 1px solid var(--rule); padding-top: 4mm;
+    font-size: 8.6pt; color: var(--muted); line-height: 1.7;
+  }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  .notice {
+    background: var(--wash); border: 1px solid var(--rule);
+    padding: 4mm 5mm; margin: 10mm 0 0 0;
+    font-size: 8.6pt; line-height: 1.55; color: var(--muted);
+  }
+  .notice b { color: var(--ink); }
+
+  /* ---------- body ---------- */
+  h2 {
+    font-size: 12.5pt; margin: 7mm 0 2.5mm 0; letter-spacing: -.01em;
+    padding-bottom: 1.5mm; border-bottom: 2px solid var(--ink);
+    page-break-after: avoid;
+  }
+  h2:first-of-type { margin-top: 0; }
+
+  h3 {
+    font-size: 10pt; margin: 6mm 0 2mm 0; color: var(--accent);
+    letter-spacing: .01em; page-break-after: avoid;
+  }
+
+  p { margin: 0 0 3mm 0; }
+  section { page-break-inside: auto; }
+
+  strong { font-weight: 700; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 3mm 0 4mm 0;
+    font-size: 8.8pt; page-break-inside: avoid;
+  }
+  th {
+    text-align: left; font-size: 7.6pt; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--muted); font-weight: 700;
+    border-bottom: 1.5px solid var(--ink); padding: 0 3mm 1.5mm 0;
+    vertical-align: bottom;
+  }
+  td {
+    padding: 1.8mm 3mm 1.8mm 0; border-bottom: 1px solid var(--rule);
+    vertical-align: top; line-height: 1.4;
+  }
+  td:last-child, th:last-child { padding-right: 0; }
+  .num { white-space: nowrap; }
+
+  .spec td:first-child { color: var(--muted); width: 32%; }
+  .spec td:last-child { font-weight: 600; }
+
+  ul { margin: 0 0 3mm 0; padding-left: 5mm; }
+  li { margin-bottom: 1.5mm; }
+
+  .rule-box {
+    border: 1px solid var(--rule); border-left: 3px solid var(--accent);
+    padding: 3mm 4.5mm; margin: 0 0 3mm 0; page-break-inside: avoid;
+  }
+  .rule-box .name {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 8pt; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 1.5mm;
+  }
+  .rule-box p:last-child { margin-bottom: 0; }
+
+  .callout {
+    background: var(--wash); padding: 3.5mm 4.5mm; margin: 0 0 3.5mm 0;
+    font-size: 9.6pt; page-break-inside: avoid;
+  }
+  .callout p:last-child { margin-bottom: 0; }
+
+  code {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 8.4pt; background: var(--wash); padding: .3mm 1mm;
+  }
+
+  .q { margin: 0 0 3mm 0; padding-left: 8mm; text-indent: -8mm; }
+  .q b { color: var(--accent); }
+
+  .foot {
+    margin-top: 8mm; border-top: 1px solid var(--rule); padding-top: 3mm;
+    font-size: 8.2pt; color: var(--muted);
+  }
+  .pb { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="kicker">MoonDAO &nbsp;·&nbsp; DePrize Program &nbsp;·&nbsp; Advisor Brief</div>
+
+  <h1>Night&nbsp;Shift</h1>
+  <p class="sub">A prize for the first machine that works<br>through a lunar night.</p>
+
+  <div class="pull">
+    Apollo did it in 1969 with fuel you can't buy.<br>
+    Chang'e&#8209;4 does it today with fuel you can't buy, while the spacecraft sleeps.<br>
+    <em>Do it awake, at ten watts, with fuel you can order.</em>
+  </div>
+
+  <div class="grow"></div>
+  <div class="meta">
+    <b>Document</b> Prize brief, v0.5-draft<br>
+    <b>Date</b> 2 September 2026<br>
+    <b>Owner</b> MoonDAO<br>
+    <b>Status</b> Pre-registration. Nothing is on-chain and no rules are final.<br>
+    <b>Purpose</b> Structured expert feedback before launch.
+  </div>
+
+  <div class="notice">
+    <b>Confidential — circulated under NDA.</b> Not for publication, quotation, or onward
+    distribution. Competitor listings are editorial, drawn entirely from public sources. No listed
+    organization has been contacted, has consented to be listed, or is affiliated with this prize.
+  </div>
+</div>
+
+<!-- ============ PAGE 2 ============ -->
+<section>
+  <h2>The problem</h2>
+
+  <p>A lunar night is <strong>354 hours</strong> of darkness at roughly <strong>100&nbsp;K</strong>.
+  Almost every spacecraft ever landed on the Moon dies in it, or sleeps through it.</p>
+
+  <p>The consequence is that lunar surface assets are <strong>disposable</strong>. A commercial
+  lander is a two-week instrument that becomes a monument at sunset. A rover spends half its life
+  unconscious. Nothing accumulates, every mission starts from zero, and the Moon acquires no
+  installed base. A sustained human presence is not possible on hardware that has to be replaced
+  every fortnight.</p>
+
+  <p>The technical problem is not warmth. It is <strong>useful electrical work, continuously,
+  without degrading, from a source you can actually buy.</strong></p>
+
+  <h2>Why this isn't already solved</h2>
+
+  <p>It looks solved, and the first reaction of most experts is that it is. Survival certainly is —
+  Apollo settled that in 1969, and a 42&nbsp;g radioisotope heater will keep a small box alive
+  indefinitely. But there is a precise gap between what has been demonstrated and what a permanent
+  asset requires, and it has two halves.</p>
+
+  <h3>First half: nobody operates. They hibernate.</h3>
+
+  <p>The strongest counter-example is Chang'e&#8209;4, which has been on the lunar far side since
+  January 2019 and is the closest prior art in existence:</p>
+
+  <table>
+    <tr><th style="width:38%">Chang'e-4 lander</th><th></th></tr>
+    <tr><td>Radioisotope output</td><td><strong>2.5 We</strong> (auxiliary), plus 120&nbsp;W thermal</td></tr>
+    <tr><td>Spacecraft state at night</td><td><strong>Sleep mode</strong> — the bus cannot run on it</td></tr>
+    <tr><td>What the power does</td><td>Runs a thermometer. Measured soil to −196&nbsp;°C</td></tr>
+    <tr><td>The data</td><td><strong>Stored, transmitted after dawn</strong></td></tr>
+  </table>
+
+  <p>Apollo's SNAP-27 did roughly <strong>70&nbsp;We</strong> and ran for years. So the physics has
+  been settled twice, decades apart. What has never been demonstrated is a machine that stays
+  <em>awake and working</em> at a power level that constitutes work rather than instrumentation.</p>
+
+  <h3>Second half: both proofs run on fuel nobody can purchase.</h3>
+
+  <table>
+    <tr><th style="width:38%">Plutonium-238</th><th></th></tr>
+    <tr><td>US production</td><td>DOE targets 1.5&nbsp;kg/yr; actual output <strong>below 0.5&nbsp;kg/yr</strong></td></tr>
+    <tr><td>Cost</td><td class="num"><strong>&gt; $8M per kilogram</strong></td></tr>
+    <tr><td>Availability</td><td>State reserve, allocated to flagship science missions</td></tr>
+    <tr><td>A single MMRTG</td><td class="num">~$54M, ~$83M including launch approval</td></tr>
+    <tr><td>Can a company buy some?</td><td><strong>No. Not at any price.</strong></td></tr>
+  </table>
+
+  <div class="callout">
+    <p>This is what the prize actually targets. It is an <strong>industrialization</strong>
+    milestone, not a physics breakthrough — the difference between a capability two governments
+    hold and a product anyone can buy. We would rather state that plainly than oversell it.</p>
+  </div>
+
+  <h2>What clearing it unlocks</h2>
+
+  <ul>
+    <li><strong>Mission duration.</strong> Two-week commercial landers become month-class and
+    beyond — the largest available multiplier on money already being spent.</li>
+    <li><strong>Shadowed-crater operations.</strong> Inside a permanently shadowed region there is
+    no dawn to wait for. Ice prospecting is night operation by definition.</li>
+    <li><strong>Continuous science.</strong> A seismometer that sleeps half its life is half a
+    seismometer. The same applies to heat flow, magnetometry, and dust monitoring.</li>
+    <li><strong>An installed base.</strong> The first hardware still working when the next lander
+    arrives is the beginning of infrastructure rather than a sequence of expeditions.</li>
+  </ul>
+
+  <p><strong>What it does not unlock, stated plainly:</strong> nothing here scales to a habitat, a
+  crew, or a resource-extraction plant. Those need kilowatts to megawatts and remain a fission
+  problem. Ten watts is the difference between a dead lander and a working instrument station.</p>
+</section>
+
+<!-- ============ PAGE 3 ============ -->
+<section>
+  <h2>The prize</h2>
+
+  <div class="callout">
+    <p><strong>Deliver at least 10 watts of electricity, continuously, for 354 hours, in a vacuum
+    chamber colder than 100 kelvin, with nothing plugged in — and still be delivering the same 10
+    watts at the end. Publish the data.</strong></p>
+  </div>
+
+  <p>It is a terrestrial thermal-vacuum test, and there is <strong>one milestone</strong>. You
+  either cleared it or you didn't.</p>
+
+  <table class="spec">
+    <tr><th style="width:32%">Parameter</th><th>Requirement</th></tr>
+    <tr><td>Delivered power</td><td>≥ 10.0 We, every rolling 60-minute window</td></tr>
+    <tr><td>Duration</td><td>354 continuous hours</td></tr>
+    <tr><td>Radiative sink</td><td>≤ 100 K (liquid nitrogen at 77 K qualifies)</td></tr>
+    <tr><td>Pressure</td><td>≤ 1×10⁻⁵ torr</td></tr>
+    <tr><td>Energy source</td><td>Entirely onboard at T0</td></tr>
+    <tr><td>Output retention</td><td>Final hour ≥ 98% of first hour</td></tr>
+    <tr><td>Purse</td><td>$25,000, growing with betting volume</td></tr>
+    <tr><td>Deadline</td><td>None — open until solved</td></tr>
+  </table>
+
+  <h3>Three rules carry the whole design</h3>
+
+  <div class="rule-box">
+    <div class="name">1 · The Unplug Rule</div>
+    <p><em>Nothing crosses the chamber boundary into the article except data.</em></p>
+    <p>No power, heat, propellant, coolant, or mass. One rule applied identically to every
+    chemistry — no technology ban and no carve-out for nuclear. A wall-powered heater standing in
+    for a radioisotope fails, because the chamber wall would be the power source. The same heater
+    running off an onboard battery passes; it simply spends the entrant's own energy.</p>
+  </div>
+
+  <div class="rule-box">
+    <div class="name">2 · The Sustained Output Rule</div>
+    <p><em>Power in the final hour must be at least 98% of power in the first hour.</em></p>
+    <p>This is how the prize stays technology-agnostic while remaining grounded in what a permanent
+    asset needs. An output that decays across one night is a consumable with a fortnight of runway
+    — the problem we are trying to retire. Any isotope passes without trying: americium-241 decays
+    0.007% over 354 hours. Any consumable must be oversized until 354 hours is a small bite out of
+    its inventory, which costs mass, which the public scoreboard then reports.</p>
+  </div>
+
+  <div class="rule-box">
+    <div class="name">3 · The Procurement Rule</div>
+    <p><em>The energy source must be commercially procurable, evidenced by an invoice or a
+    published price.</em></p>
+    <p>Not a technology ban — it says nothing about which physics you use, only that the answer must
+    be one somebody else could buy. State-reserve plutonium fails because it is a government
+    furnishing and no invoice exists. Americium-241 passes at roughly $1,500/g, with commercial
+    offtake agreements signed in 2025. Batteries and chemical systems pass off the shelf. A useful
+    side effect is that nationality never enters the rules.</p>
+  </div>
+
+  <h2>How it is judged</h2>
+
+  <p><strong>Nobody judges. A script does.</strong> Everything that decides the outcome is a number
+  in a data file, so we publish an open-source validator and any bettor, rival, or journalist can
+  run it on the same files and get the same answer:</p>
+
+  <table>
+    <tr><th style="width:52%">Validator check</th><th>Threshold</th></tr>
+    <tr><td>Minimum rolling 60-minute mean power</td><td class="num">≥ 10.0 W</td></tr>
+    <tr><td>Minimum instantaneous power</td><td class="num">≥ 5.0 W</td></tr>
+    <tr><td>Longest interval below floor</td><td class="num">≤ 60 s</td></tr>
+    <tr><td>Final-hour ÷ first-hour mean power</td><td class="num">≥ 0.98</td></tr>
+    <tr><td>Contiguous duration</td><td class="num">≥ 354 h</td></tr>
+    <tr><td>Maximum shroud temperature, all sensors</td><td class="num">≤ 100 K</td></tr>
+    <tr><td>Maximum chamber pressure</td><td class="num">≤ 1×10⁻⁵ torr</td></tr>
+  </table>
+
+  <p>That only works if the files are trustworthy, so a second rule governs custody:
+  <strong>an entrant may own the chamber and the article, but never the instruments or the
+  data.</strong> Whoever calibrates, installs, seals, and reads the measurement chain must be
+  independent of the entrant.</p>
+
+  <p>Crucially, <strong>observation is not judgment</strong>. The verifier decides nothing about
+  whether an entry counts and needs no opinion about lunar power systems. They attest to facts a
+  competent person can observe: what the article weighed, which conductors were in the feedthrough
+  panel, whose calibrated sensors these were, and that the seals held. Verification is two attended
+  days — sealing on day zero, custody of the files on day fifteen — with tamper-evident seals and
+  continuous video covering the gap.</p>
+</section>
+
+<!-- ============ PAGE 4 ============ -->
+<section>
+  <h2>The field</h2>
+
+  <p>Competitors are named by MoonDAO from public sources and do not apply — they claim. The roster
+  follows one selection rule: <strong>compete systems, not hosts.</strong> If a lander flies
+  somebody else's power box, that is one result and it belongs to the box.</p>
+
+  <table>
+    <tr>
+      <th style="width:20%">Organization</th>
+      <th style="width:19%">Approach</th>
+      <th style="width:35%">Position as of Sept 2026</th>
+      <th>Read</th>
+    </tr>
+    <tr>
+      <td><strong>Zeno Power</strong><br><span style="color:#5c636e">United States</span></td>
+      <td>Am-241 and Sr-90 radioisotope, Stirling conversion</td>
+      <td>$15M NASA "Harmonia" Space Act Agreement. Final design review April 2026 at 3.5× the original power spec. Orano americium offtake signed Sept 2025. Terrestrial demo due early 2027</td>
+      <td>The favourite. Retention rule is nearly free for an isotope</td>
+    </tr>
+    <tr>
+      <td><strong>Astrobotic</strong> (NITE)<br><span style="color:#5c636e">United States</span></td>
+      <td>Chemical / fuel cell — non-nuclear</td>
+      <td>~$2.8M NASA Tipping Point award. Thermal-vacuum testing at Penn State hit leakage and an oxidizer pump failure. Roughly TRL 4</td>
+      <td>Only funded non-nuclear operate-through system</td>
+    </tr>
+    <tr>
+      <td><strong>Venturi Space</strong><br><span style="color:#5c636e">Monaco / Switzerland / France</span></td>
+      <td>Cryogenic battery packs</td>
+      <td>Cells qualified −240&nbsp;°C to +130&nbsp;°C. Lunar-cycle vacuum endurance testing already inside their qualification flow. Supplies Astrolab's NASA-selected crewed rover</td>
+      <td>Could clear this fastest of anyone</td>
+    </tr>
+    <tr>
+      <td><strong>Perpetual Atomics</strong> + Univ. of Leicester<br><span style="color:#5c636e">United Kingdom</span></td>
+      <td>Am-241 heater units, ESA ENDURE programme</td>
+      <td>First americium-fuelled heater core produced April 2026 with QSA Global. Vibration qualified; thermal-vacuum only to −70&nbsp;°C so far</td>
+      <td>Needs a converter and a genuinely cryogenic run</td>
+    </tr>
+    <tr>
+      <td><strong>CNNC / China Institute of Atomic Energy</strong><br><span style="color:#5c636e">China</span></td>
+      <td>Pu-238 radioisotope generators</td>
+      <td>Only flight-proven lunar night electricity outside Apollo. National RTG standard GB/T 44319-2024 in force since March 2025</td>
+      <td>The prior art. State fuel fails the Procurement Rule</td>
+    </tr>
+    <tr>
+      <td><strong>Rosatom / Kurchatov Institute</strong><br><span style="color:#5c636e">Russia</span></td>
+      <td>Radioisotope heritage; "Selena" surface reactor</td>
+      <td>Deep Lunokhod-era heritage. Current programme is a 5–10&nbsp;kWe reactor, prototype 2032, deployment ~2036</td>
+      <td>Wrong scale and wrong decade for this bar</td>
+    </tr>
+    <tr>
+      <td><strong>ISRO / BARC</strong><br><span style="color:#5c636e">India</span></td>
+      <td>Am-241 heater units</td>
+      <td>Heater flown as a demonstrator on Chandrayaan-3's propulsion module. Targeting 100–200 day lander life; LUPEX is the named night demonstrator</td>
+      <td>Aimed at heat, not watts</td>
+    </tr>
+    <tr>
+      <td><strong>Open Field</strong></td>
+      <td>Any qualifying entrant not listed</td>
+      <td>University labs, unannounced startups, national labs, small teams</td>
+      <td>Genuine, not decorative</td>
+    </tr>
+  </table>
+
+  <p>Deliberately excluded as integrators or customers rather than competitors: Firefly Aerospace,
+  Intuitive Machines, Blue Origin, SpaceX, and ispace. Excluded on scale: tritium and betavoltaic
+  cells, which are three to four orders of magnitude below the bar.</p>
+
+  <h2>How the prize itself works</h2>
+
+  <p>Night Shift runs on MoonDAO's DePrize mechanism, which pairs a prize with a prediction market.
+  Each named competitor is a tradeable outcome; participants back who they think will get there
+  first; live odds emerge from the trading. A share of betting volume accrues to the prize pool, so
+  the purse grows as interest does.</p>
+
+  <p>Two design consequences are worth flagging to a reviewer. First, <strong>the prize has no
+  deadline</strong> — it stays open until somebody clears it. Second, and more importantly, the
+  prize does not need to be entered to do its job. Alongside the market we publish a standing
+  <strong>scoreboard</strong> of every listed competitor's best publicly verified result against
+  this exact standard. Most cells will start empty. That table is the point: it gives the market
+  something to price every month rather than one binary event years away, and an empty cell beside
+  a rival's filled one is an argument inside somebody's own building. Getting organizations to
+  disclose more about where they actually stand is an explicit objective, not a side effect.</p>
+</section>
+
+<!-- ============ PAGE 5 ============ -->
+<section>
+  <h2>What we are asking you for</h2>
+
+  <p>This brief is a request for criticism, not endorsement. The prize is unregistered and nothing
+  is on-chain, so every number below is still movable. We are specifically <em>not</em> looking for
+  a view on whether lunar night power matters — we are looking for the flaw that makes this prize
+  the wrong instrument, or the rule that a competent engineer would walk straight through.</p>
+
+  <h3>The questions that would most change the design</h3>
+
+  <p class="q"><b>1.</b> <strong>Can you beat the validator?</strong> Describe a data file that
+  passes every check on page 3 alongside hardware that shouldn't count. This is the single most
+  valuable thing a reviewer can give us.</p>
+
+  <p class="q"><b>2.</b> <strong>Is 10 watts the right bar?</strong> It is four times Chang'e-4's
+  entire nighttime budget, and it implies roughly $1.4M of americium for an isotope entry. Correct,
+  or should it be five?</p>
+
+  <p class="q"><b>3.</b> <strong>Is 98% retention measuring the right thing?</strong> It is trivial
+  for any isotope and hard for any consumable, which is the intent. Too tight, too loose, or the
+  wrong property altogether?</p>
+
+  <p class="q"><b>4.</b> <strong>Is two attended days enough independence?</strong> Seals and video
+  cover the 350 hours in between. Can that be defeated?</p>
+
+  <p class="q"><b>5.</b> <strong>Would a verification body actually take this on?</strong> The
+  design assumes a firm of the DNV or TÜV type will witness a fifteen-day cryogenic vacuum test for
+  a few thousand dollars. Is that realistic?</p>
+
+  <p class="q"><b>6.</b> <strong>Who runs a chamber for fifteen continuous days?</strong> This is
+  our largest unpriced risk and the practical gate on how large the field gets. Named suggestions
+  are more useful than anything else in this list.</p>
+
+  <p class="q"><b>7.</b> <strong>Who have we missed?</strong> Particularly outside the United States
+  and Europe, and particularly non-nuclear approaches.</p>
+
+  <p class="q"><b>8.</b> <strong>Is the framing too modest?</strong> We claim an industrialization
+  milestone rather than a physics breakthrough. Is that worth a prize at all?</p>
+
+  <h3>What happens with your feedback</h3>
+
+  <p>Responses go into a revision of the full rules document, which runs to considerably more detail
+  than this brief — definitions, excursion and restart handling, publication requirements, safety,
+  the verification routes, and the market mechanics. We are happy to share it with anyone who wants
+  to go deeper, and equally happy to take fifteen minutes of objections over a written response.</p>
+
+  <p>Rules freeze when the market opens, and after that only clarifications that cannot change an
+  outcome are permitted. So this window — before registration — is the only one in which
+  fundamental changes are cheap.</p>
+
+  <div class="callout" style="margin-top:6mm">
+    <p><strong>The one-sentence version, if you only remember one thing:</strong> we are trying to
+    move lunar night power from a capability two governments have demonstrated with unobtainable
+    fuel to a product with a price and a lead time — and to make the industry show its working
+    while it happens.</p>
+  </div>
+
+  <div class="foot">
+    <strong>Night Shift — Prize Brief v0.5-draft · 2 September 2026 · MoonDAO</strong><br>
+    Confidential, circulated under NDA. Competitor listings are editorial and drawn from public
+    sources; listing does not imply participation, endorsement, or affiliation. Figures for
+    plutonium-238 production and cost are from US Department of Energy and Government
+    Accountability Office reporting; Chang'e-4 power figures from published mission literature and
+    China Academy of Space Technology statements. Full source list available in the complete rules
+    document.
+  </div>
+</section>
+
+</body>
+</html>
