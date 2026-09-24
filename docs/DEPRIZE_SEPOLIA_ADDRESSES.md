@@ -101,6 +101,24 @@ systems, then the Open Field.
 
 `createMission` `0x1df39a84…f4a94`. `register` `0x25d56467…1cdef`. `open` `0x24c349ab…786dc`.
 
+## Crewed lunar rover — v2 id 4 (2026-09-24)
+
+Atlas goal `shared-lunar-rover`. This is the crewed LTV race, not First Tracks.
+Four slots: CLV-1, Pegasus, Moon RACER, then the Open Field.
+
+| Slot | Value | Notes |
+|---|---|---|
+| `deprizeId` | `4` | `deprizeIdByJBProject(272)` |
+| Competing teams | `[621, 622, 623, 24]` | CLV-1, Pegasus, Moon RACER, Open Field |
+| JB project id | `272` | Mission **18** |
+| LaunchPadPayHook | `0xDd58B218f7e3c59A2C92b5f3d260F617Fbe87F71` | Latched to the v2 registry; `stage == 1` |
+| `questionId` | `0x5e31f8a53fcd002b953f946dc7ce01c5f56e61ea1264092f15dbf5651d22a734` | `keccak256("deprize:sepolia:shared-lunar-rover:v1")`. **Not on-chain.** |
+| `conditionId` | `0xf9212031469896fcae29622a124c7848804df1bab671b983607a4e96e0789b66` | 4 outcome slots; oracle = deployer |
+| LMSRMarketMaker | `0x40f1e8E89B455B59439015156a088dE3c17d9A96` | Stock Gnosis, 0.04 ETH seed (0.01 × 4), 1% fee, owner = deployer, stage Running |
+| Sunset | `1853359250` | ~2 years from provision |
+
+`createMission` `0xa5081fb0…e1641`. `register` `0xb15bbbf4…955ca`. `open` `0xa2b52f84…ab9e1`.
+
 ## UI follow-up PR (do not ship without both)
 
 Point `ui/const/config.ts` at the v2 stack **and** rebind

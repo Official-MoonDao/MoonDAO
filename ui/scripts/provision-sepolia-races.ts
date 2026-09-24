@@ -108,6 +108,14 @@ const RACES: {
     tokenName: 'DePrize Night Shift',
     tokenSymbol: 'DNGT',
   },
+  {
+    // Already registered as v2 id 4. Do not run this row again.
+    goalId: 'shared-lunar-rover',
+    raceLabel: 'Crewed lunar rover',
+    teamIds: [621n, 622n, 623n, FIELD_TEAM],
+    tokenName: 'DePrize Rover',
+    tokenSymbol: 'DROV',
+  },
 ]
 
 const registryAbi = parseAbi([
