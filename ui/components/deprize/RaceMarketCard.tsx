@@ -12,6 +12,46 @@
 // before every race has a contract.
 
 import { useEffect, useMemo, useState } from 'react'
+
+/** Short card name when the atlas title is one sentence with no em dash. */
+const RACE_CARD_NAMES: Record<string, string> = {
+  'shared-landing-pads': 'Landing pads',
+  'shared-isru-oxygen': 'ISRU',
+  'shared-fission-power': 'Fission',
+  'shared-habitat': 'Habitat',
+  'shared-lunar-comms': 'Comms',
+  'shared-mass-driver': 'Mass driver',
+  'shared-crewed-lander': 'Crewed landing',
+  'shared-lunar-rover': 'Lunar rover',
+}
+
+function raceCardHeading(goal: { id: string; title: string }): { name: string; subtitle?: string } {
+  const parts = goal.title.split(/\s+[—–]\s+/)
+  if (parts.length >= 2 && parts[0]) {
+    return { name: parts[0], subtitle: parts.slice(1).join(' — ') }
+  }
+  const name = RACE_CARD_NAMES[goal.id]
+  if (name) return { name, subtitle: goal.title }
+  return { name: goal.title }
+}
+
+function RaceCardTitle({
+  goal,
+  titleClassName,
+}: {
+  goal: { id: string; title: string }
+  titleClassName: string
+}) {
+  const { name, subtitle } = raceCardHeading(goal)
+  return (
+    <>
+      <p className={titleClassName}>{name}</p>
+      {subtitle && (
+        <p className="mt-0.5 text-[11px] sm:text-xs leading-snug text-gray-400 line-clamp-2">{subtitle}</p>
+      )}
+    </>
+  )
+}
 import type { Chain } from 'thirdweb'
 import {
   deprizeForecastHref,
@@ -454,7 +494,7 @@ export default function RaceMarketCard({
             <CategoryIcon category={category} className="w-5 h-5" />
           </div>
           <a href={detailHref} className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg">
-            <p className="text-white font-GoodTimes text-base">{goal.title}</p>
+            <RaceCardTitle goal={goal} titleClassName="text-white font-GoodTimes text-base" />
             <p className="text-gray-500 text-xs mt-0.5">{categoryLabel}</p>
           </a>
           {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
@@ -555,7 +595,10 @@ export default function RaceMarketCard({
             <CategoryIcon category={category} className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-white font-GoodTimes text-sm leading-snug line-clamp-2">{goal.title}</p>
+            <RaceCardTitle
+              goal={goal}
+              titleClassName="text-white font-GoodTimes text-sm leading-snug"
+            />
             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500">
               <span className="truncate">{categoryLabel}</span>
               {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
@@ -646,7 +689,10 @@ export default function RaceMarketCard({
                   href={detailHref}
                   className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
                 >
-                  <p className="text-white font-GoodTimes text-xl sm:text-2xl leading-snug">{goal.title}</p>
+                  <RaceCardTitle
+                    goal={goal}
+                    titleClassName="text-white font-GoodTimes text-xl sm:text-2xl leading-snug"
+                  />
                 </a>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
                   <span>{categoryLabel}</span>
@@ -740,7 +786,10 @@ export default function RaceMarketCard({
                 href={detailHref}
                 className="min-w-0 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
               >
-                <p className="text-white font-GoodTimes text-base sm:text-lg leading-snug">{goal.title}</p>
+                <RaceCardTitle
+                  goal={goal}
+                  titleClassName="text-white font-GoodTimes text-base sm:text-lg leading-snug"
+                />
               </a>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
                 <span>{categoryLabel}</span>
