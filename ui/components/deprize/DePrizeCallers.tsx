@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCitizenRowsByOwners } from '@/lib/citizen/useCitizenRowsByOwners'
+import { citizenFromCaller } from '@/lib/forecasts/callerIdentity'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
-import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
+import type { ForecastCaller, ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
+import {
+  leadingPickLabel,
+  mergeCallerRoster,
+  pruneRosterOverlays,
+  readRosterNeedsFresh,
+  subscribeRoster,
+  type RosterOverlay,
+} from '@/lib/forecasts/rosterRefresh'
 import { SCROLL_LIST } from '@/components/deprize/detail/primitives'
 import CitizenIdentity from '@/components/layout/CitizenIdentity'
 
@@ -32,11 +41,27 @@ export default function DePrizeCallers(props: {
   labels: string[]
   bettorAddresses: readonly string[]
 }) {
+  return <DePrizeCallersList key={`${props.chainSlug}:${props.deprizeId ?? ''}`} {...props} />
+}
+
+function DePrizeCallersList(props: {
+  chainSlug: string
+  deprizeId?: number
+  labels: string[]
+  bettorAddresses: readonly string[]
+}) {
   const { chainSlug, deprizeId, labels, bettorAddresses } = props
   const outcomes = labels.length
-  const [leaderboard, setLeaderboard] = useState<ForecastConsensus['leaderboard']>([])
+  const [leaderboard, setLeaderboard] = useState<ForecastCaller[]>([])
+  const [overlays, setOverlays] = useState<RosterOverlay[]>([])
   const [votingPowers, setVotingPowers] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
+  const [noticeFresh, setNoticeFresh] = useState(false)
+  const [rosterTick, setRosterTick] = useState(0)
+
+  const sessionFresh = deprizeId != null && readRosterNeedsFresh(chainSlug, deprizeId)
+  const needsFresh = sessionFresh || noticeFresh
+  const labelKey = JSON.stringify(labels)
 
   const bettorKey = useMemo(
     () => [...new Set(bettorAddresses.map((address) => address.toLowerCase()))].sort().join(','),
@@ -44,7 +69,22 @@ export default function DePrizeCallers(props: {
   )
 
   useEffect(() => {
+    if (deprizeId == null) return
+    return subscribeRoster((notice) => {
+      if (notice.chain !== chainSlug || notice.deprizeId !== deprizeId) return
+      const address = notice.address.toLowerCase()
+      setOverlays((prev) => [
+        ...prev.filter((row) => row.address.toLowerCase() !== address),
+        { address, pick: notice.pick, removed: notice.removed },
+      ])
+      setNoticeFresh(true)
+      setRosterTick((tick) => tick + 1)
+    })
+  }, [chainSlug, deprizeId])
+
+  useEffect(() => {
     let cancelled = false
+    const labelList = JSON.parse(labelKey) as string[]
     async function load() {
       if (deprizeId == null || outcomes < 2) {
         setLoading(false)
@@ -52,19 +92,22 @@ export default function DePrizeCallers(props: {
       }
       setLoading(true)
       try {
-        // Same non-fresh URL the competitors panel uses, so the two share one
-        // CDN entry. The panel's post-write refetch is the only fresh read.
+        // First paint uses the shared non-fresh URL unless this prize was just
+        // written. needsFresh busts s-maxage after a roster notice or a recent save.
         const res = await fetch(
           consensusQuery({
             chain: chainSlug,
             deprizeId,
             outcomes,
+            fresh: needsFresh,
           })
         )
         if (!res.ok || cancelled) return
         const body = (await res.json()) as ForecastConsensus
         if (cancelled) return
-        setLeaderboard(body.leaderboard ?? [])
+        const server = body.leaderboard ?? []
+        setLeaderboard(server)
+        setOverlays((prev) => pruneRosterOverlays(prev, server, labelList))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -73,14 +116,22 @@ export default function DePrizeCallers(props: {
     return () => {
       cancelled = true
     }
-  }, [chainSlug, deprizeId, outcomes])
+  }, [chainSlug, deprizeId, outcomes, needsFresh, rosterTick, labelKey])
+
+  const merged = useMemo(
+    () => mergeCallerRoster(leaderboard, overlays, JSON.parse(labelKey) as string[]),
+    [labelKey, leaderboard, overlays]
+  )
 
   const addresses = useMemo(() => {
     const seen = new Set<string>()
-    for (const row of leaderboard) seen.add(row.voterAddress.toLowerCase())
-    for (const address of bettorKey ? bettorKey.split(',') : []) seen.add(address)
+    for (const row of merged) seen.add(row.voterAddress.toLowerCase())
+    // A cleared forecast drops that row. An ETH position on the same wallet stays.
+    for (const address of bettorKey ? bettorKey.split(',') : []) {
+      seen.add(address)
+    }
     return [...seen].slice(0, MAX_ADDRESSES)
-  }, [leaderboard, bettorKey])
+  }, [bettorKey, merged])
 
   const addressKey = addresses.join(',')
 
@@ -112,15 +163,29 @@ export default function DePrizeCallers(props: {
 
   const citizens = useCitizenRowsByOwners(addresses, chainSlug)
 
+  const callerByAddress = useMemo(() => {
+    const map = new Map<string, ForecastCaller>()
+    for (const row of merged) map.set(row.voterAddress.toLowerCase(), row)
+    return map
+  }, [merged])
+
+  const overlayPick = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const row of overlays) {
+      if (!row.removed && row.pick) map.set(row.address.toLowerCase(), row.pick)
+    }
+    return map
+  }, [overlays])
+
   const rows = useMemo<CallerRow[]>(() => {
     const bettors = new Set(bettorKey ? bettorKey.split(',') : [])
     const pickByAddress = new Map<string, string | undefined>()
-    for (const row of leaderboard) {
-      let best = -1
-      row.allocation.forEach((value, i) => {
-        if (value > 0 && (best < 0 || value > (row.allocation[best] ?? 0))) best = i
-      })
-      pickByAddress.set(row.voterAddress.toLowerCase(), best >= 0 ? labels[best] : undefined)
+    for (const row of merged) {
+      const address = row.voterAddress.toLowerCase()
+      pickByAddress.set(
+        address,
+        overlayPick.get(address) ?? leadingPickLabel(row.allocation, labels)
+      )
     }
     return addresses
       .map((address) => ({
@@ -130,7 +195,7 @@ export default function DePrizeCallers(props: {
         votingPower: votingPowers[address] ?? 0,
       }))
       .sort((a, b) => b.votingPower - a.votingPower || a.address.localeCompare(b.address))
-  }, [addresses, bettorKey, labels, leaderboard, votingPowers])
+  }, [addresses, bettorKey, labels, merged, overlayPick, votingPowers])
 
   if (loading && rows.length === 0) {
     return (
@@ -158,23 +223,36 @@ export default function DePrizeCallers(props: {
         <p className="text-gray-400 text-xs">{FORECAST_COPY.callersCount(rows.length)}</p>
       </div>
       <ul className={`space-y-1.5 ${SCROLL_LIST}`}>
-        {rows.map((row) => (
-          <li
-            key={row.address}
-            className="flex items-center justify-between gap-2 sm:gap-3 text-sm"
-          >
-            <span className="min-w-0 flex-1">
-              <CitizenIdentity address={row.address} citizen={citizens.get(row.address)} />
-              <span className="mt-0.5 block truncate text-xs text-gray-500">
-                {row.pick ? row.pick : FORECAST_COPY.backedWithEth}
-                {row.pick && row.bet ? ' · ETH bet' : ''}
+        {rows.map((row) => {
+          const owner = citizens.get(row.address)
+          const consensusCitizen = owner
+            ? undefined
+            : citizenFromCaller(callerByAddress.get(row.address))
+          return (
+            <li
+              key={row.address}
+              className="flex items-center justify-between gap-2 sm:gap-3 text-sm"
+            >
+              <span className="min-w-0 flex-1">
+                <CitizenIdentity
+                  address={row.address}
+                  citizen={owner ?? consensusCitizen?.citizen}
+                  fallbackName={owner ? undefined : consensusCitizen?.fallbackName}
+                />
+                <span className="mt-0.5 block truncate text-xs text-gray-500">
+                  {row.pick ? row.pick : FORECAST_COPY.backedWithEth}
+                  {row.pick && row.bet ? ' · ETH bet' : ''}
+                </span>
               </span>
-            </span>
-            <span className="shrink-0 tabular-nums text-gray-300" title={FORECAST_COPY.votingPower}>
-              {formatVotingPower(row.votingPower)}
-            </span>
-          </li>
-        ))}
+              <span
+                className="shrink-0 tabular-nums text-gray-300"
+                title={FORECAST_COPY.votingPower}
+              >
+                {formatVotingPower(row.votingPower)}
+              </span>
+            </li>
+          )
+        })}
       </ul>
     </div>
   )

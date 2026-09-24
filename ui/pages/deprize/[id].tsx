@@ -7,7 +7,6 @@ import {
   DEPRIZE_REGISTRY_ADDRESSES,
   TEAM_ADDRESSES,
 } from 'const/config'
-import { useLogin } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
@@ -21,7 +20,6 @@ import {
   findDePrizeChainSlugs,
   findDePrizeIdForGoal,
   getDePrizeCompetition,
-  getDePrizeGenerationNumber,
   getDePrizeRaceBinding,
   isCompetitorClaimed,
   isKnownDePrizeCompetition,
@@ -55,7 +53,6 @@ import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeActivity } from '@/lib/deprize/useDePrizeActivity'
-import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
 import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
@@ -73,7 +70,6 @@ import ClaimPanel from '@/components/deprize/ClaimPanel'
 import AdminSection from '@/components/deprize/detail/AdminSection'
 import ClaimSection from '@/components/deprize/detail/ClaimSection'
 import ForecastSlot from '@/components/deprize/detail/ForecastSlot'
-import LadderLine from '@/components/deprize/detail/LadderLine'
 import OddsSection from '@/components/deprize/detail/OddsSection'
 import PositionSection from '@/components/deprize/detail/PositionSection'
 import PrizeHeader from '@/components/deprize/detail/PrizeHeader'
@@ -157,11 +153,9 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const raceBinding = getDePrizeRaceBinding(chainSlug, deprizeId)
   const raceGoal = raceBinding ? sharedGoalById(SEED_ATLAS, raceBinding.sharedGoalId) : undefined
-  const generationNumber = getDePrizeGenerationNumber(chainSlug, deprizeId)
   const knownCompetition = isKnownDePrizeCompetition(chainSlug, deprizeId)
   const account = useActiveAccount()
   const userAddress = account?.address
-  const { login } = useLogin()
 
   const {
     deprize,
@@ -209,7 +203,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     if (ethPrice == null) return null
     return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
   }, [ethPrice])
-  const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
 
@@ -399,17 +392,11 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
   const onrampQueryActive = parseOnrampReturn(router.query).active
 
-  // The Back button is also the connect entry point.
-  const handleBet = useCallback(
-    (index: number) => {
-      if (!userAddress) {
-        login()
-        return
-      }
-      setBetIndex(index)
-    },
-    [userAddress, login],
-  )
+  // Clicking a competitor opens the prediction window. Connecting and betting
+  // happen inside that window.
+  const handleBet = useCallback((index: number) => {
+    setBetIndex(index)
+  }, [])
 
   // Moon Base Zero "Back this team" deep-links here with ?outcome=N. Wait for
   // the market + chart to settle so the layout above the card stops shifting.
@@ -426,10 +413,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     if (typeof raw !== 'string' || !/^\d+$/.test(raw)) return
     const idx = Number(raw)
     if (idx < 0 || idx >= numOutcomes) return
-    // Wallet hydrate and the geo check usually finish after the chart. Latch
-    // only once those gates can open the modal; otherwise a later ready pass
-    // would no-op and `?outcome=N` would scroll without auto-opening.
-    if (!userAddress || !bettingAllowed) return
     setDeepLinkHandled(true)
     const el = document.getElementById(`deprize-outcome-${idx}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -441,8 +424,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     numOutcomes,
     market.loading,
     odds.loading,
-    userAddress,
-    bettingAllowed,
     onrampQueryActive,
   ])
 
@@ -717,8 +698,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const abnormalStatus = !!bettingBlockedReason && !bettingBlockedReason.startsWith('Loading')
   const showBadge = abnormalStatus || deprize.state !== DePrizeState.OPEN
   const explorerTxBase = EXPLORER_TX[chainSlug] ?? 'https://etherscan.io/tx/'
-  const hasLineage =
-    deprize.state === DePrizeState.SUPERSEDED || competition.supersedes !== undefined
+  const hasLineage = deprize.state === DePrizeState.SUPERSEDED
 
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
@@ -734,16 +714,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           badgeTitle={abnormalStatus ? bettingBlockedReason : undefined}
           abnormalStatus={abnormalStatus}
           raceGoal={raceGoal}
-          jbProjectId={jbProjectId}
-          isLoadingFunding={isLoadingFunding}
-          totalFunding={totalFunding}
-          launchpadMissionHref={launchpad.missionHref}
-          activityLoading={activity.loading}
-          activityError={activity.error}
-          betsLength={activity.bets.length}
-          totalStakedEth={activity.totalStakedEth}
-          backers={activity.backers}
-          sunset={deprize.sunset}
           winningTeamId={winningTeamId}
           teamContract={teamContract}
           showResolved={showResolved}
@@ -762,7 +732,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           oddsLoading={odds.loading}
         />
         <NoticeStack items={pageNotices} />
-        <LadderLine chainSlug={chainSlug} deprizeId={deprizeId} />
         <PositionSection
           userAddress={userAddress}
           numOutcomes={numOutcomes}
@@ -789,15 +758,16 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           liveTipId={resolveLiveDePrizeId(chainSlug, deprizeId)}
           reported={!!market.payoutDen && market.payoutDen > 0n}
           resolvedVector={resolvedVector}
-          collateralEth={activity.totalStakedEth}
-          liveMarket={!!market.marketAddress}
           numOutcomes={numOutcomes}
           rankedOutcomes={rankedOutcomes}
           teamIds={deprize.teamIds}
           raceBinding={raceBinding}
           teamContract={teamContract}
           outcomeColors={outcomeColors}
-          marketLoading={market.loading}
+          // `loading` flips on wallet connect and the post-bet refresh, after the
+          // payout read has already settled. Lock only until that denominator
+          // is known, or Predict no-ops and the citizen forecast is never saved.
+          marketLoading={market.marketConfigured && !market.payoutSettled}
           showResolved={showResolved}
           isRefundVector={showRefundVector}
           winningIndex={market.winningIndex}
@@ -806,6 +776,38 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           userAddress={userAddress}
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
+          modalIndex={betIndex}
+          onModalClose={() => setBetIndex(null)}
+          resumeBet={onrampReturn.betIndex != null && betIndex === onrampReturn.betIndex}
+          renderBet={
+            account && market.marketAddress
+              ? ({ index, onClose, onPlaced }) => (
+                  <BetModal
+                    embedded
+                    deprizeId={deprizeId}
+                    outcomeIndex={index}
+                    teamName={
+                      predictionLabels[index] || outcomeDisplayName(index, raceBinding)
+                    }
+                    probability={market.outcomes[index]?.probability ?? NaN}
+                    numOutcomes={numOutcomes}
+                    mintAddress={mintAddress}
+                    marketAddress={market.marketAddress!}
+                    jbProjectId={deprize.jbProjectId}
+                    chain={chain}
+                    account={account}
+                    spendableEth={spendable}
+                    initialAmountEth={onrampReturn.prefillEth}
+                    fundsArrived={onrampReturn.fundsArrived}
+                    onClose={onClose}
+                    onDone={() => {
+                      onPlaced()
+                      refreshAll()
+                    }}
+                  />
+                )
+              : undefined
+          }
         />
         <DePrizeQuestionCard
           description={raceGoal?.description}
@@ -825,6 +827,11 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
             jbProjectId !== undefined && !isLoadingFunding
               ? Number(totalFunding) / Number(UNIT)
               : null
+          }
+          volumeEth={
+            activity.error || (activity.loading && activity.bets.length === 0)
+              ? null
+              : activity.totalStakedEth
           }
           deprizeId={deprizeId}
           jbProjectId={jbProjectId}
@@ -872,32 +879,9 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           chainSlug={chainSlug}
           state={deprize.state}
           supersededBy={competition.supersededBy}
-          supersedes={competition.supersedes}
-          generationNumber={generationNumber}
         />
         </div>
       </div>
-
-      {/* Bet modal */}
-      {betIndex !== null && market.marketAddress && account && (
-        <BetModal
-          deprizeId={deprizeId}
-          outcomeIndex={betIndex}
-          teamName={predictionLabels[betIndex] || outcomeDisplayName(betIndex, raceBinding)}
-          probability={market.outcomes[betIndex]?.probability ?? NaN}
-          numOutcomes={numOutcomes}
-          mintAddress={mintAddress}
-          marketAddress={market.marketAddress}
-          jbProjectId={deprize.jbProjectId}
-          chain={chain}
-          account={account}
-          spendableEth={spendable}
-          initialAmountEth={onrampReturn.prefillEth}
-          fundsArrived={onrampReturn.fundsArrived}
-          onClose={() => setBetIndex(null)}
-          onDone={refreshAll}
-        />
-      )}
 
       {/* Exit modal */}
       {exitIndex !== null && market.marketAddress && account && (

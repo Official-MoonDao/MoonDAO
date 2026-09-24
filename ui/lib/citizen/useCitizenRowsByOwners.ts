@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
-import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import {
   buildCitizenOwnerLookupStatement,
   citizenRowsByOwner,
   type CitizenRow,
 } from '@/lib/citizen/citizenLookup'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 
 export function useCitizenRowsByOwners(
   addresses: readonly string[],
@@ -19,6 +19,6 @@ export function useCitizenRowsByOwners(
     () => buildCitizenOwnerLookupStatement(chainSlug, key ? key.split(',') : []),
     [chainSlug, key]
   )
-  const { data } = useTablelandQuery(statement, { revalidateOnFocus: false })
+  const { data } = useTablelandQuery(statement, { revalidateOnFocus: false, chainSlug })
   return useMemo(() => citizenRowsByOwner((data || []) as CitizenRow[]), [data])
 }

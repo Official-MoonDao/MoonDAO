@@ -11,6 +11,7 @@ import { screenWallet } from './sanctions'
 import { checkVpnOrProxy, type ConnectionKind } from './vpnCheck'
 import { sendComplianceAlert } from './complianceAlerts'
 import { isInsiderWallet } from './insiderWallets'
+import { countryForDePrize } from './mockCountry'
 import {
   denyWallet,
   getWalletDenial,
@@ -26,12 +27,28 @@ export type EligibilityRunResult = EligibilityDecision & {
   connectionKind: ConnectionKind
 }
 
+/** Allowed result used when Sepolia screening is mocked. */
+export function mockedEligibilityResult(country: string | null): EligibilityRunResult {
+  return {
+    allowed: true,
+    reason: 'dev-bypass',
+    country,
+    region: null,
+    connectionKind: 'clear',
+  }
+}
+
 export async function runEligibilityChecks(
   req: NextApiRequest,
   wallet: string | null | undefined,
   options: { surface: EligibilitySurface }
 ): Promise<EligibilityRunResult> {
-  const country = getCountryFromHeaders(req)
+  const headerCountry = getCountryFromHeaders(req)
+  const mockHeader = req.headers['x-deprize-mock-country']
+  const country = countryForDePrize({
+    headerCountry,
+    mockHeader: Array.isArray(mockHeader) ? mockHeader[0] : mockHeader,
+  })
   const region = getRegionFromHeaders(req)
 
   if (isNonProdBypassEnabled()) {

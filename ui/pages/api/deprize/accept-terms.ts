@@ -5,8 +5,9 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { hashIp, recordTermsAcceptance } from '@/lib/deprize/acceptanceLog'
 import { areAttestationsAccepted } from '@/lib/deprize/attestations'
 import { DEPRIZE_TERMS_VERSION } from '@/lib/deprize/constants'
-import { eligibilityMessage, isNonProdBypassEnabled } from '@/lib/deprize/eligibility'
-import { runEligibilityChecks } from '@/lib/deprize/runEligibility'
+import { eligibilityMessage, isNonProdBypassEnabled, shouldMockSepoliaEligibility } from '@/lib/deprize/eligibility'
+import { countryForDePrize } from '@/lib/deprize/mockCountry'
+import { mockedEligibilityResult, runEligibilityChecks } from '@/lib/deprize/runEligibility'
 import { walletFromSession } from '@/lib/deprize/sessionWallet'
 import { getClientIp, getCountryFromHeaders } from '@/lib/geo'
 
@@ -40,7 +41,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const decision = await runEligibilityChecks(req, wallet, { surface: 'accept-terms' })
+  const chainId = Number(req.body?.chainId)
+  const mockSepolia = shouldMockSepoliaEligibility(chainId)
+  const mockHeader = req.headers['x-deprize-mock-country']
+  const decision = mockSepolia
+    ? mockedEligibilityResult(
+        countryForDePrize({
+          headerCountry: getCountryFromHeaders(req),
+          mockHeader: Array.isArray(mockHeader) ? mockHeader[0] : mockHeader,
+        })
+      )
+    : await runEligibilityChecks(req, wallet, { surface: 'accept-terms' })
   if (!decision.allowed) {
     return res.status(403).json({
       ok: false,
@@ -65,7 +76,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     recordVersion: 2,
   })
 
-  if (!logged && !isNonProdBypassEnabled()) {
+  if (!logged && !isNonProdBypassEnabled() && !mockSepolia) {
     return res.status(503).json({
       ok: false,
       reason: 'screening-unavailable',

@@ -1,9 +1,10 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import DePrizeMintABI from 'const/abis/DePrizeMint.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
+import { betPresetEthAmounts, formatBetPresetEth } from '@/lib/deprize/betPresets'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import {
   DEPRIZE_PRIVACY_URL,
@@ -19,7 +20,11 @@ import {
   type AcceptanceSubmitState,
   type DePrizeAttestations,
 } from '@/lib/deprize/attestations'
-import { eligibilityMessage, type EligibilityReason } from '@/lib/deprize/eligibility'
+import {
+  eligibilityMessage,
+  shouldMockSepoliaEligibility,
+  type EligibilityReason,
+} from '@/lib/deprize/eligibility'
 import {
   DEPRIZE_ONRAMP_JWT_KEY,
   ELIGIBILITY_TIMEOUT_MS,
@@ -55,6 +60,7 @@ import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
+import { BetPrimaryActionContext } from '@/components/deprize/betPrimaryAction'
 import EthUsd from '@/components/deprize/EthUsd'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 import Modal from '@/components/layout/Modal'
@@ -76,6 +82,11 @@ type BetModalProps = {
   spendableEth: number
   initialAmountEth?: string
   fundsArrived?: boolean
+  /**
+   * Render the bet form inside another modal. The prediction window uses this
+   * so a bet is optional and does not open a second dialog.
+   */
+  embedded?: boolean
   onClose: () => void
   onDone: (index: number, costEth: number, qtyEth: number) => void
 }
@@ -84,12 +95,23 @@ type BetModalProps = {
 // bet; the router still caps the actual spend at the full 95% budget.
 const QUOTE_HEADROOM_NUM = 99n
 const QUOTE_HEADROOM_DEN = 100n
+// The payout line and the bet button share one quote. Reuse it briefly so
+// confirming doesn't start a second LMSR waterfall.
+const QUOTE_REUSE_MS = 15_000
+
+async function readApiJson(res: Response): Promise<any> {
+  const text = await res.text()
+  try {
+    return text ? JSON.parse(text) : {}
+  } catch {
+    throw new Error('The bet service returned a page instead of a result. Try again.')
+  }
+}
 
 export default function BetModal({
   deprizeId,
   outcomeIndex,
   teamName,
-  probability,
   numOutcomes,
   mintAddress,
   marketAddress,
@@ -99,9 +121,11 @@ export default function BetModal({
   spendableEth,
   initialAmountEth,
   fundsArrived,
+  embedded = false,
   onClose,
   onDone,
 }: BetModalProps) {
+  const betActionApi = useContext(BetPrimaryActionContext)
   const [betAmount, setBetAmount] = useState(initialAmountEth ?? '')
   const [showFunding, setShowFunding] = useState(false)
   const ctaShown = useRef(false)
@@ -117,12 +141,22 @@ export default function BetModal({
   const [attestations, setAttestations] = useState<DePrizeAttestations>(EMPTY_ATTESTATIONS)
   const [acceptanceState, setAcceptanceState] = useState<AcceptanceSubmitState>('idle')
   const [acceptanceError, setAcceptanceError] = useState<string | undefined>()
+  const mockSepoliaEligibility = shouldMockSepoliaEligibility(chain.id)
   const [eligibility, setEligibility] = useState<{
     status: 'loading' | 'ready' | 'error'
     allowed: boolean
     reason?: EligibilityReason
     message?: string
-  }>({ status: 'loading', allowed: false })
+  }>(() =>
+    mockSepoliaEligibility
+      ? {
+          status: 'ready',
+          allowed: true,
+          reason: 'dev-bypass',
+          message: eligibilityMessage('dev-bypass'),
+        }
+      : { status: 'loading', allowed: false }
+  )
   const [eligibilityRetry, setEligibilityRetry] = useState(0)
   const { wrongNetwork, chainLabel, switching, switchToChain, blockedByNetwork } =
     useDePrizeChainGuard(chain)
@@ -160,6 +194,41 @@ export default function BetModal({
     [canBet, chain, mintAddress]
   )
 
+  const quoteCacheRef = useRef<{
+    key: string
+    at: number
+    promise: Promise<bigint>
+    qty?: bigint
+  } | null>(null)
+  const loadQuote = useCallback(
+    (target: bigint) => {
+      const key = `${chain.id}:${marketAddress}:${outcomeIndex}:${target}`
+      const cached = quoteCacheRef.current
+      if (cached && cached.key === key && Date.now() - cached.at < QUOTE_REUSE_MS) {
+        return cached.promise
+      }
+      const entry: { key: string; at: number; promise: Promise<bigint>; qty?: bigint } = {
+        key,
+        at: Date.now(),
+        promise: undefined as unknown as Promise<bigint>,
+      }
+      const promise = quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes).then(
+        (qty) => {
+          if (quoteCacheRef.current === entry) entry.qty = qty
+          return qty
+        },
+        (err) => {
+          if (quoteCacheRef.current === entry) quoteCacheRef.current = null
+          throw err
+        }
+      )
+      entry.promise = promise
+      quoteCacheRef.current = entry
+      return promise
+    },
+    [chain.id, lmsr, marketAddress, numOutcomes, outcomeIndex]
+  )
+
   // Live payout quote: the real, price-impact-aware token amount the 95% budget
   // buys (each winning token redeems 1:1 for ETH, so qty == potential payout).
   useEffect(() => {
@@ -175,7 +244,7 @@ export default function BetModal({
       try {
         const budget = betBudget(betAmountWei)
         const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
-        const qty = await quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes)
+        const qty = await loadQuote(target)
         if (!cancelled) setQuote({ qty: Number(qty) / Number(UNIT) })
       } catch (err) {
         console.warn('[deprize] payout quote failed', err)
@@ -188,7 +257,7 @@ export default function BetModal({
       cancelled = true
       clearTimeout(t)
     }
-  }, [betAmountWei, lmsr, outcomeIndex, numOutcomes])
+  }, [betAmountWei, loadQuote])
 
   const wallet = typeof account?.address === 'string' ? account.address : ''
   const needsFunding =
@@ -224,6 +293,15 @@ export default function BetModal({
   }, [needsFunding, fundingStrategy.kind])
 
   useEffect(() => {
+    if (mockSepoliaEligibility) {
+      setEligibility({
+        status: 'ready',
+        allowed: true,
+        reason: 'dev-bypass',
+        message: eligibilityMessage('dev-bypass'),
+      })
+      return
+    }
     if (!wallet) {
       setEligibility({
         status: 'ready',
@@ -246,10 +324,13 @@ export default function BetModal({
     }, ELIGIBILITY_TIMEOUT_MS)
     ;(async () => {
       const accessToken = await getAccessToken().catch(() => null)
-      const res = await fetch(`/api/deprize/eligibility?wallet=${encodeURIComponent(wallet)}`, {
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      })
-      const data = await res.json()
+      const res = await fetch(
+        `/api/deprize/eligibility?wallet=${encodeURIComponent(wallet)}&chainId=${chain.id}`,
+        {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        }
+      )
+      const data = await readApiJson(res)
       if (cancelled) return
       clearTimeout(timeout)
       setEligibility({
@@ -272,7 +353,7 @@ export default function BetModal({
       cancelled = true
       clearTimeout(timeout)
     }
-  }, [wallet, eligibilityRetry])
+  }, [wallet, eligibilityRetry, mockSepoliaEligibility, chain.id])
 
   const allAttested = areAttestationsAccepted(attestations)
 
@@ -295,6 +376,7 @@ export default function BetModal({
         },
         body: JSON.stringify({
           wallet,
+          chainId: chain.id,
           accepted: true,
           termsVersion: DEPRIZE_TERMS_VERSION,
           attestations,
@@ -317,7 +399,7 @@ export default function BetModal({
     return () => {
       cancelled = true
     }
-  }, [wallet, termsAccepted, allAttested, attestations])
+  }, [wallet, termsAccepted, allAttested, attestations, chain.id])
 
   const placeBet = async () => {
     if (!account || !mint) return
@@ -354,14 +436,27 @@ export default function BetModal({
     // while this modal is open.
     if (blockedByNetwork()) return
     setBusy(true)
-    toast.loading('Quoting…', { id: 'quote', style: toastStyle })
+    const budget = betBudget(betAmountWei)
+    const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
+    const quoteKey = `${chain.id}:${marketAddress}:${outcomeIndex}:${target}`
+    const cached = quoteCacheRef.current
+    const readyQty =
+      cached &&
+      cached.key === quoteKey &&
+      Date.now() - cached.at < QUOTE_REUSE_MS &&
+      cached.qty != null &&
+      cached.qty > 0n
+        ? cached.qty
+        : null
+    if (readyQty == null) toast.loading('Quoting…', { id: 'quote', style: toastStyle })
     try {
-      const budget = betBudget(betAmountWei)
-      const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
-      const qty = await quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes)
+      const qty = readyQty ?? (await loadQuote(target))
       if (qty <= 0n) throw new Error('Bet too small for this market.')
       toast.dismiss('quote')
-      toast.loading('Checking eligibility…', { id: 'permit', style: toastStyle })
+      toast.loading(mockSepoliaEligibility ? 'Preparing bet…' : 'Checking eligibility…', {
+        id: 'permit',
+        style: toastStyle,
+      })
       const accessToken = await getAccessToken().catch(() => null)
       const permitRes = await fetch('/api/deprize/permit', {
         method: 'POST',
@@ -378,7 +473,7 @@ export default function BetModal({
           attestations,
         }),
       })
-      const permit = await permitRes.json()
+      const permit = await readApiJson(permitRes)
       if (!permitRes.ok || !permit.signature || !permit.deadline) {
         throw new Error(permit.message || eligibilityMessage(permit.reason || 'permit-unavailable'))
       }
@@ -434,10 +529,99 @@ export default function BetModal({
     }
   }
 
+  const placeBetRef = useRef(placeBet)
+  placeBetRef.current = placeBet
+  const drivenByPredict = embedded && betActionApi != null
+  const betActionKey = [
+    betAmountNum,
+    needsFunding,
+    fundingStrategy.kind,
+    eligibility.status,
+    eligibility.allowed,
+    overCap,
+    wrongNetwork,
+    canBet,
+    busy,
+    termsAccepted,
+    allAttested,
+    acceptanceState,
+    betAmountWei > 0n,
+    ethPrice ?? '',
+  ].join('|')
+
+  useEffect(() => {
+    if (!embedded || !betActionApi) return
+    return () => betActionApi.report(null)
+  }, [embedded, betActionApi])
+
+  useEffect(() => {
+    if (!embedded || !betActionApi) return
+    if (!(betAmountNum > 0)) {
+      betActionApi.report(null)
+      return
+    }
+    if (needsFunding && fundingStrategy.kind !== 'none') {
+      betActionApi.setRun(() => {
+        setShowFunding(true)
+        trackOnrampEvent('cta_clicked')
+        if (fundingStrategy.kind === 'faucet') trackOnrampEvent('provider_selected:faucet')
+      })
+      betActionApi.report({
+        kind: 'fund',
+        label: 'Add funds to your wallet',
+        disabled: false,
+      })
+      return
+    }
+    if (needsFunding) {
+      betActionApi.report({
+        kind: 'place',
+        label: 'Lower your bet or add funds.',
+        disabled: true,
+      })
+      return
+    }
+    const placeDisabled =
+      busy ||
+      betAmountWei <= 0n ||
+      overCap ||
+      wrongNetwork ||
+      !canBet ||
+      eligibility.status !== 'ready' ||
+      !eligibility.allowed ||
+      !canSubmitDePrizeBet({
+        termsAccepted,
+        attestations,
+        eligibilityAllowed: eligibility.allowed,
+        eligibilityReady: eligibility.status === 'ready',
+        acceptanceState,
+      })
+    const placeLabel = busy
+      ? 'Placing bet…'
+      : !termsAccepted || !allAttested
+      ? 'Accept the Terms to bet'
+      : acceptanceState === 'saving'
+      ? 'Recording acceptance…'
+      : acceptanceState === 'error'
+      ? 'Acceptance failed — retry'
+      : eligibility.status === 'loading'
+      ? 'Checking eligibility…'
+      : `Bet ${fmtEthWithUsd(betAmountNum, ethPrice)}`
+    betActionApi.setRun(() => {
+      void placeBetRef.current()
+    })
+    betActionApi.report({
+      kind: 'place',
+      label: placeLabel,
+      disabled: placeDisabled,
+    })
+    // betActionKey covers the inputs that change the label or whether it can run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embedded, betActionApi, betActionKey])
+
   const betMult = quote && betAmountNum > 0 ? quote.qty / betAmountNum : undefined
 
-  return (
-    <Modal id="deprize-bet" setEnabled={(v) => !v && onClose()} title={`Back ${teamName}`}>
+  const body = (
       <div className="flex flex-col gap-4 w-full">
         <h2
           ref={headingRef}
@@ -452,12 +636,6 @@ export default function BetModal({
             Funds arrived. You can place your bet.
           </p>
         )}
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Chance to win</span>
-          <span className="text-white font-semibold">
-            {Number.isFinite(probability) ? `${fmt(probability, 0)}%` : '—'}
-          </span>
-        </div>
 
         <div>
           <label className="text-xs text-gray-400">How much do you want to bet? (ETH)</label>
@@ -466,7 +644,7 @@ export default function BetModal({
             inputMode="decimal"
             min="0"
             step="any"
-            autoFocus={!fundsArrived}
+            autoFocus={!embedded && !fundsArrived}
             value={betAmount}
             onChange={(e) => setBetAmount(e.target.value)}
             placeholder="e.g. 0.01"
@@ -478,26 +656,19 @@ export default function BetModal({
             </p>
           )}
           <div className="flex gap-2 mt-2 flex-wrap">
-            {['0.01', '0.05', '0.1'].map((a) => (
-              <button
-                key={a}
-                onClick={() => setBetAmount(a)}
-                className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
-              >
-                {a} ETH
-                {fmtUsdFromEth(Number(a), ethPrice)
-                  ? ` (${fmtUsdFromEth(Number(a), ethPrice)})`
-                  : ''}
-              </button>
-            ))}
-            {spendableEth > 0 && (
-              <button
-                onClick={() => setBetAmount(String(Math.floor(spendableEth * 1e6) / 1e6))}
-                className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
-              >
-                Max ({fmtEthWithUsd(spendableEth, ethPrice, { prize: true })})
-              </button>
-            )}
+            {betPresetEthAmounts(ethPrice, maxBetEth).map((eth) => {
+              const amount = formatBetPresetEth(eth)
+              const usd = fmtUsdFromEth(eth, ethPrice)
+              return (
+                <button
+                  key={amount}
+                  onClick={() => setBetAmount(amount)}
+                  className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
+                >
+                  {amount} ETH{usd ? ` (${usd})` : ''}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -734,24 +905,27 @@ export default function BetModal({
               <p className="text-amber-300 text-sm">Lower your bet or add funds.</p>
             ) : (
               <>
-                <button
-                  type="button"
-                  className={`w-full rounded-full border border-white/25 px-4 py-2 text-sm text-white ${TOUCH}`}
-                  onClick={() => {
-                    setShowFunding(true)
-                    trackOnrampEvent('cta_clicked')
-                    if (fundingStrategy.kind === 'faucet') {
-                      trackOnrampEvent('provider_selected:faucet')
-                    }
-                  }}
-                >
-                  Add funds to your wallet
-                </button>
+                {!drivenByPredict && (
+                  <button
+                    type="button"
+                    className={`w-full rounded-full border border-white/25 px-4 py-2 text-sm text-white ${TOUCH}`}
+                    onClick={() => {
+                      setShowFunding(true)
+                      trackOnrampEvent('cta_clicked')
+                      if (fundingStrategy.kind === 'faucet') {
+                        trackOnrampEvent('provider_selected:faucet')
+                      }
+                    }}
+                  >
+                    Add funds to your wallet
+                  </button>
+                )}
                 {showFunding && (
                   <div className="space-y-2">
                     <p className="text-gray-400 text-xs leading-relaxed">
-                      This buys ETH into your own wallet. It is not a bet, MoonDAO never holds
-                      it, and MoonDAO cannot reverse it. You may still be unable to bet afterwards.
+                      {drivenByPredict
+                        ? 'This buys ETH into your wallet for this bet. MoonDAO never holds it. When the ETH arrives, the button places the bet.'
+                        : 'This buys ETH into your own wallet. It is not a bet, MoonDAO never holds it, and MoonDAO cannot reverse it. You may still be unable to bet afterwards.'}
                     </p>
                     {fundingStrategy.kind === 'faucet' ? (
                       <p className="text-gray-300 text-sm">
@@ -797,7 +971,7 @@ export default function BetModal({
               </>
             )}
           </div>
-        ) : (
+        ) : drivenByPredict ? null : (
           <StandardButton
             onClick={placeBet}
             disabled={
@@ -829,6 +1003,13 @@ export default function BetModal({
           </StandardButton>
         )}
       </div>
+  )
+
+  if (embedded) return body
+
+  return (
+    <Modal id="deprize-bet" setEnabled={(v) => !v && onClose()} title={`Back ${teamName}`}>
+      {body}
     </Modal>
   )
 }

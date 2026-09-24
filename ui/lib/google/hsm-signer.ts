@@ -14,7 +14,7 @@ import { KeyManagementServiceClient } from '@google-cloud/kms'
 import { BigNumber, providers, utils } from 'ethers'
 import { resolveEip1559FeesFromProvider } from '@/lib/rpc/eip1559Fees'
 import { arrayify, hexlify, keccak256, toUtf8Bytes, joinSignature } from 'ethers/lib/utils'
-import { arbitrum, sepolia } from '../rpc/chains'
+import { arbitrum, arbitrumSepolia, sepolia } from '../rpc/chains'
 
 // -----------------------------
 // Types
@@ -296,10 +296,19 @@ export async function signPersonalMessage(
 }
 
 // Update the sendTransaction method in hsm-signer.ts around line 325-355
-export async function sendTransaction(cfg: HSMConfig, tx: any): Promise<string> {
-  const provider = new providers.JsonRpcProvider(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum.rpc : sepolia.rpc
-  )
+/** Direct RPC for an HSM transfer. Omitted chainId keeps the app-default chain. */
+export function hsmRpcForChain(chainId?: number): string {
+  if (chainId === 11155111) return sepolia.rpc
+  if (chainId === 42161) return arbitrum.rpc
+  if (chainId === 421614) return arbitrumSepolia.rpc
+  if (chainId != null) {
+    throw new Error(`HSM transfers are not configured for chain ${chainId}`)
+  }
+  return process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum.rpc : sepolia.rpc
+}
+
+export async function sendTransaction(cfg: HSMConfig, tx: any, chainId?: number): Promise<string> {
+  const provider = new providers.JsonRpcProvider(hsmRpcForChain(chainId))
   const from = (await getPublicKey(cfg)).address
   const nonce = await provider.getTransactionCount(from)
   const fee = await provider.getFeeData()
@@ -383,9 +392,7 @@ export async function sendTransaction(cfg: HSMConfig, tx: any): Promise<string> 
 }
 
 function getHSMProvider(): providers.JsonRpcProvider {
-  return new providers.JsonRpcProvider(
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? arbitrum.rpc : sepolia.rpc
-  )
+  return new providers.JsonRpcProvider(hsmRpcForChain())
 }
 
 function toFeeBigNumber(value: bigint): BigNumber {
@@ -698,9 +705,13 @@ export async function createHSMWallet(): Promise<any> {
  * Intended for small gas stipends (e.g. topping up new citizens after a free mint).
  * Throws on failure — callers should catch and treat as non-critical.
  */
-export async function sendEthFromHSM(to: string, amountWei: bigint): Promise<string> {
+export async function sendEthFromHSM(
+  to: string,
+  amountWei: bigint,
+  chainId?: number
+): Promise<string> {
   const config = getHSMConfig()
-  return sendTransaction(config, { to, value: amountWei, data: '0x' })
+  return sendTransaction(config, { to, value: amountWei, data: '0x' }, chainId)
 }
 
 /**

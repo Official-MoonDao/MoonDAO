@@ -98,6 +98,18 @@ export function eligibilityMessage(reason: EligibilityReason): string {
   }
 }
 
+/** Ethereum Sepolia. Bets on this chain skip live screening outside production. */
+export const SEPOLIA_CHAIN_ID = 11155111
+
+/**
+ * Sepolia is a testnet: skip geo, VPN, and sanctions there. Production always
+ * runs the real checks, including if a Sepolia chain id is ever sent.
+ */
+export function shouldMockSepoliaEligibility(chainId: number): boolean {
+  if (process.env.NEXT_PUBLIC_ENV === 'prod') return false
+  return chainId === SEPOLIA_CHAIN_ID
+}
+
 /**
  * Skips geo, VPN and sanctions screening, and tolerates a missing country and
  * an unreachable compliance store. Never in prod. Otherwise on when

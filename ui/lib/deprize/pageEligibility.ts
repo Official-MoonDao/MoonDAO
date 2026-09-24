@@ -4,6 +4,7 @@ import {
   type GeoHeaderRequest,
 } from '@/lib/geo/headers'
 import { isNonProdBypassEnabled } from './eligibility'
+import { countryForDePrize } from './mockCountry'
 import { isRestrictedJurisdiction, normalizeCountry } from './restrictedJurisdictions'
 
 export type DePrizePageEligibility = {
@@ -36,7 +37,11 @@ export function setDePrizePageNoStoreHeaders(res: {
  * or sanctions providers — those still run before acceptance and permits.
  */
 export function getDePrizePageEligibility(req: HeaderRequest): DePrizePageEligibility {
-  const country = normalizeCountry(getCountryFromHeaders(req))
+  const headerCountry = normalizeCountry(getCountryFromHeaders(req))
+  const mockHeader = Array.isArray(req.headers['x-deprize-mock-country'])
+    ? req.headers['x-deprize-mock-country'][0]
+    : req.headers['x-deprize-mock-country']
+  const country = countryForDePrize({ headerCountry, mockHeader })
   const region = getRegionFromHeaders(req)
 
   if (isNonProdBypassEnabled()) {

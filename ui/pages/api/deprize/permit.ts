@@ -12,9 +12,10 @@ import {
   signCompliancePermit,
 } from '@/lib/deprize/compliancePermit'
 import { DEPRIZE_TERMS_VERSION } from '@/lib/deprize/constants'
-import { eligibilityMessage, isNonProdBypassEnabled } from '@/lib/deprize/eligibility'
+import { eligibilityMessage, isNonProdBypassEnabled, shouldMockSepoliaEligibility } from '@/lib/deprize/eligibility'
+import { countryForDePrize } from '@/lib/deprize/mockCountry'
 import { buildPermitIssuanceRecord, recordPermitIssuance } from '@/lib/deprize/permitLog'
-import { runEligibilityChecks } from '@/lib/deprize/runEligibility'
+import { mockedEligibilityResult, runEligibilityChecks } from '@/lib/deprize/runEligibility'
 import { walletFromSession } from '@/lib/deprize/sessionWallet'
 import { getClientIp, getCountryFromHeaders } from '@/lib/geo'
 
@@ -65,7 +66,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const decision = await runEligibilityChecks(req, wallet, { surface: 'permit' })
+  const mockSepolia = shouldMockSepoliaEligibility(chainId)
+  const mockHeader = req.headers['x-deprize-mock-country']
+  const decision = mockSepolia
+    ? mockedEligibilityResult(
+        countryForDePrize({
+          headerCountry: getCountryFromHeaders(req),
+          mockHeader: Array.isArray(mockHeader) ? mockHeader[0] : mockHeader,
+        })
+      )
+    : await runEligibilityChecks(req, wallet, { surface: 'permit' })
   if (!decision.allowed) {
     return res.status(403).json({
       ...decision,
@@ -86,7 +96,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     attestations: req.body.attestations,
     surface: 'permit',
   })
-  if (!logged && !isNonProdBypassEnabled()) {
+  const bypass = isNonProdBypassEnabled() || mockSepolia
+  if (!logged && !bypass) {
     return res.status(503).json({
       allowed: false,
       reason: 'screening-unavailable',
@@ -94,7 +105,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const bypass = isNonProdBypassEnabled()
   const country = decision.country
   if ((!country && !bypass) || !ipHash) {
     return res.status(503).json({

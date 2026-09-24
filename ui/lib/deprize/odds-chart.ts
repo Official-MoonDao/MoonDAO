@@ -72,8 +72,13 @@ export function padOddsSamples(
 
 export function formatOddsTick(t: number, spanMs: number): string {
   const d = new Date(t)
-  if (spanMs >= ODDS_DAY_MS) {
+  // A window of about a day has five ticks that share a calendar date. The
+  // hour keeps those labels from repeating "Sep 22" across the axis.
+  if (spanMs >= ODDS_DAY_MS * 2) {
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  }
+  if (spanMs >= ODDS_DAY_MS) {
+    return d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric' })
   }
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }

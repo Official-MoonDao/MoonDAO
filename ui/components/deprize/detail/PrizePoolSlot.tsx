@@ -3,22 +3,22 @@ import type { Chain } from 'thirdweb'
 import {
   DEPRIZE_FUND_ENABLED,
   DEPRIZE_PATRONS_ENABLED,
-  FUND_GEO_OPEN,
   PATRONS_PENDING_TTL_MS,
 } from '@/lib/deprize/constants'
-import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { usePrizePatrons } from '@/lib/deprize/usePrizePatrons'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import DePrizeCallers from '@/components/deprize/DePrizeCallers'
 import DePrizePatrons from '@/components/deprize/DePrizePatrons'
 import EthUsd from '@/components/deprize/EthUsd'
-import FundPrizeModal from '@/components/deprize/FundPrizeModal'
+import DePrizeLaunchpadContribute from '@/components/deprize/DePrizeLaunchpadContribute'
 import { CARD, TOUCH } from './primitives'
 
 export default function PrizePoolSlot(props: {
   poolUsd?: number | null
   asOf?: string | null
   poolEth?: number | null
+  /** Sum of bets placed into the market (`totalStaked`). Not the prize pool. */
+  volumeEth?: number | null
   deprizeId?: number
   jbProjectId?: number
   prizeTitle?: string
@@ -29,8 +29,6 @@ export default function PrizePoolSlot(props: {
   labels?: string[]
   bettorAddresses?: readonly string[]
 }) {
-  const restricted = useDePrizeRestricted()
-  const fundAllowed = FUND_GEO_OPEN || !restricted
   const [fundOpen, setFundOpen] = useState(false)
   const [pendingPayer, setPendingPayer] = useState<string | null>(null)
 
@@ -53,16 +51,43 @@ export default function PrizePoolSlot(props: {
     return () => clearTimeout(t)
   }, [pendingPayer, patrons.patrons])
 
-  const showFund =
-    DEPRIZE_FUND_ENABLED && fundAllowed && props.jbProjectId != null && props.chain && props.account
+  const showFund = DEPRIZE_FUND_ENABLED && props.jbProjectId != null && !!props.chain
+
+  function onFund() {
+    // Always open the contribution window. A signed-in session with no
+    // thirdweb account used to make this click a no-op.
+    setFundOpen(true)
+  }
 
   return (
     <section id="deprize-prize-pool" className={`${CARD} space-y-4`}>
       <div>
-        <h3 className="text-white text-sm font-semibold">Prize pool</h3>
-        <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
-          <EthUsd eth={props.poolEth} prize />
-        </p>
+        <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+          <div className="min-w-0">
+            <h3 className="text-white text-sm font-semibold">Prize pool</h3>
+            <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
+              <EthUsd eth={props.poolEth} prize />
+            </p>
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-white text-sm font-semibold">Betting volume</h3>
+            <p
+              className="mt-1"
+              title="Sum of bets placed into this market. Separate from the prize pool."
+            >
+              <EthUsd eth={props.volumeEth} prize />
+            </p>
+          </div>
+        </div>
+        {showFund && (
+          <button
+            type="button"
+            className={`mt-3 w-full sm:w-auto rounded-full border border-white/20 px-4 py-2 text-sm text-white ${TOUCH}`}
+            onClick={onFund}
+          >
+            Fund the prize
+          </button>
+        )}
       </div>
 
       {DEPRIZE_PATRONS_ENABLED && (
@@ -80,26 +105,15 @@ export default function PrizePoolSlot(props: {
         bettorAddresses={props.bettorAddresses ?? []}
       />
 
-      {showFund && (
-        <button
-          type="button"
-          className={`w-full sm:w-auto rounded-full border border-white/20 px-4 py-2 text-sm text-white ${TOUCH}`}
-          onClick={() => setFundOpen(true)}
-        >
-          Fund the prize
-        </button>
-      )}
-
       {fundOpen && props.jbProjectId != null && props.chain && props.deprizeId != null && (
-        <FundPrizeModal
-          deprizeId={props.deprizeId}
+        <DePrizeLaunchpadContribute
           jbProjectId={props.jbProjectId}
-          prizeTitle={props.prizeTitle || `DePrize #${props.deprizeId}`}
-          chain={props.chain}
-          account={props.account}
+          chainId={props.chain.id}
+          open
           onClose={() => setFundOpen(false)}
-          onDone={(payer) => {
-            setPendingPayer(payer.toLowerCase())
+          onFunded={() => {
+            const payer = props.account?.address
+            if (typeof payer === 'string') setPendingPayer(payer.toLowerCase())
             patrons.refresh({ fresh: true })
             props.onFunded?.()
           }}

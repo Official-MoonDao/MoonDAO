@@ -99,7 +99,7 @@ export default function OddsHistoryChart({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: -16 }}>
+      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
         <CartesianGrid stroke="#ffffff12" vertical={false} />
         <XAxis
           dataKey="t"
@@ -120,7 +120,7 @@ export default function OddsHistoryChart({
           tickFormatter={(v) => `${v}%`}
           tick={{ fill: '#9ca3af', fontSize: 11 }}
           stroke="#ffffff22"
-          width={44}
+          width={48}
         />
         <Tooltip
           contentStyle={{

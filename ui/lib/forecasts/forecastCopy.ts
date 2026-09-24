@@ -3,8 +3,7 @@
  * Scoring stays Brier in the math modules; this object never says so.
  */
 export const FORECAST_COPY = {
-  panelIntro:
-    'Back one with ETH where betting is allowed. Citizens can also predict a single competitor, weighted by voting power.',
+  panelIntro: 'Click a competitor to predict them as the winner.',
   restrictedNote: "Betting isn't available in your region — you can still make a prediction.",
   singlePick: 'Picking one competitor means the others are treated as not winning.',
   daoPending: (min: number, have: number) =>

@@ -7,40 +7,26 @@ export default function ProvenanceFooter(props: {
   chainSlug: string
   state: DePrizeState
   supersededBy?: number
-  supersedes?: number
-  generationNumber: number
 }) {
-  if (!props.hasLineage) return null
+  if (!props.hasLineage || props.state !== DePrizeState.SUPERSEDED) return null
   return (
     <div className="flex flex-col gap-1.5 px-1">
-      {props.state === DePrizeState.SUPERSEDED && (
-        <p className="text-xs text-amber-200/90">
-          Superseded
-          {props.supersededBy ? (
-            <>
-              {' '}by{' '}
-              <Link
-                href={deprizePrefixedHref(props.chainSlug, props.supersededBy)}
-                className="underline underline-offset-2 hover:text-amber-100"
-              >
-                DePrize #{props.supersededBy}
-              </Link>
-            </>
-          ) : null}
-          {' '}— new bets happen there. You can still sell here.
-        </p>
-      )}
-      {props.supersedes !== undefined && props.state !== DePrizeState.SUPERSEDED && (
-        <p className="text-xs text-gray-500">
-          Generation {props.generationNumber} · continues from{' '}
-          <Link
-            href={deprizePrefixedHref(props.chainSlug, props.supersedes)}
-            className="text-indigo-300/90 underline underline-offset-2 hover:text-indigo-200"
-          >
-            #{props.supersedes}
-          </Link>
-        </p>
-      )}
+      <p className="text-xs text-amber-200/90">
+        Superseded
+        {props.supersededBy ? (
+          <>
+            {' '}
+            by{' '}
+            <Link
+              href={deprizePrefixedHref(props.chainSlug, props.supersededBy)}
+              className="underline underline-offset-2 hover:text-amber-100"
+            >
+              DePrize #{props.supersededBy}
+            </Link>
+          </>
+        ) : null}{' '}
+        — new bets happen there. You can still sell here.
+      </p>
     </div>
   )
 }

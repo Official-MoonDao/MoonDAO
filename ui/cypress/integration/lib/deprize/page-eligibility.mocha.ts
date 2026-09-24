@@ -81,9 +81,31 @@ describe('deprize page eligibility', () => {
       expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).restricted).to.equal(
         false
       )
+      expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).country).to.equal(
+        'CH'
+      )
+      expect(
+        getDePrizePageEligibility(
+          req({
+            'x-vercel-ip-country': 'US',
+            'x-deprize-mock-country': 'MX',
+          })
+        ).country
+      ).to.equal('MX')
+      expect(
+        getDePrizePageEligibility(
+          req({
+            'x-vercel-ip-country': 'US',
+            'x-deprize-mock-country': 'US',
+          })
+        ).country
+      ).to.equal('CH')
       process.env.NEXT_PUBLIC_ENV = 'prod'
       expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).restricted).to.equal(
         true
+      )
+      expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).country).to.equal(
+        'US'
       )
     } finally {
       if (prevEnv === undefined) delete process.env.NEXT_PUBLIC_ENV
