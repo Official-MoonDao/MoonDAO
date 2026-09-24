@@ -153,6 +153,17 @@ describe('deprize forecast consensus query wiring', () => {
         '[not implemented] DePrizeCallers must pass fresh: needsFresh after a roster notice'
       )
     }
+    const cards = readUi('components/deprize/ForecastPanel.tsx')
+    if (!/subscribeRoster\(/.test(cards) || !/mergeCallerRoster\(/.test(cards)) {
+      throw new Error(
+        '[not implemented] ForecastPanel must subscribeRoster and mergeCallerRoster so competitor counts update with Who predicted'
+      )
+    }
+    if (/backersByOutcome\?\.\[/.test(cards)) {
+      throw new Error(
+        '[not implemented] ForecastPanel must count predictions from the merged roster, not the stale server backersByOutcome'
+      )
+    }
     const notices = panel.match(/notifyRoster\(/g) || []
     if (notices.length < 2) {
       throw new Error(
