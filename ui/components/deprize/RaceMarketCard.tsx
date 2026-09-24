@@ -25,13 +25,18 @@ const RACE_CARD_NAMES: Record<string, string> = {
   'shared-lunar-rover': 'Lunar rover',
 }
 
+function capitalizeFirst(value: string): string {
+  if (!value) return value
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
 function raceCardHeading(goal: { id: string; title: string }): { name: string; subtitle?: string } {
   const parts = goal.title.split(/\s+[—–]\s+/)
   if (parts.length >= 2 && parts[0]) {
-    return { name: parts[0], subtitle: parts.slice(1).join(' — ') }
+    return { name: parts[0], subtitle: capitalizeFirst(parts.slice(1).join(' — ')) }
   }
   const name = RACE_CARD_NAMES[goal.id]
-  if (name) return { name, subtitle: goal.title }
+  if (name) return { name, subtitle: capitalizeFirst(goal.title) }
   return { name: goal.title }
 }
 
