@@ -205,22 +205,6 @@ export default function DePrizePositionPanel({
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-wide text-gray-500">
-                    {resolved ? (isRefundVector ? 'Refund' : index === winningIndex ? 'Won' : 'Lost') : 'Now worth'}
-                  </p>
-                  <p className="text-sm font-semibold text-white tabular-nums">
-                    {held > 0 ? (
-                      value !== undefined ? (
-                        <EthUsd eth={value} approx={!resolved} />
-                      ) : (
-                        '…'
-                      )
-                    ) : (
-                      <span className="text-gray-500">sold</span>
-                    )}
-                  </p>
-                </div>
                 {canSell && (
                   <button
                     type="button"
