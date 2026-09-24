@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MoonDAO — Direction 07 · Rational</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #000;
+    --ink-2: #4a4a4a;
+    --ink-3: #8e8e8e;
+    --hair: #cfcfcf;
+    --paper: #fff;
+    --mark: #a32b1c;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Archivo', Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  .tag {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .tag.red { color: var(--mark); }
+  .tag.grey { color: var(--ink-3); }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 36px; }
+
+  header {
+    position: sticky; top: 0; z-index: 40; background: var(--paper);
+    border-bottom: 2px solid #000;
+  }
+  .head-in {
+    max-width: 1240px; margin: 0 auto; padding: 0 36px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .wm { font-weight: 600; font-size: 17px; letter-spacing: -0.02em; text-transform: uppercase; }
+  .wm span { color: var(--mark); }
+  nav.top { display: flex; gap: 0; }
+  nav.top a {
+    font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 0 14px; border-left: 1px solid var(--hair);
+  }
+  nav.top a:last-child { border-right: 1px solid var(--hair); color: var(--mark); }
+  nav.top a:hover { color: var(--mark); }
+
+  .hero { padding: 56px 0 0; }
+  .hero h1 {
+    margin: 0;
+    font-size: clamp(42px, 7vw, 96px); font-weight: 600;
+    line-height: 0.94; letter-spacing: -0.045em; text-transform: uppercase;
+  }
+
+  .figures { border-top: 2px solid #000; border-bottom: 2px solid #000; margin-top: 56px; }
+  .fig-row { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .fig-row > div { padding: 32px 20px 28px 0; border-right: 1px solid var(--hair); }
+  .fig-row > div:last-child { border-right: 0; }
+  .fig-row .n {
+    font-size: clamp(40px, 5vw, 64px); font-weight: 600; line-height: 0.9; letter-spacing: -0.05em;
+  }
+  .fig-row .l { margin-top: 10px; }
+
+  .ledger { padding: 48px 0 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 0 0 10px; border-bottom: 2px solid #000;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
+  }
+  td { padding: 14px 0; border-bottom: 1px solid var(--hair); font-size: 16px; }
+  td.y { width: 90px; font-weight: 600; }
+
+  .close { margin-top: 64px; background: var(--ink); color: var(--paper); padding: 72px 0; }
+  .close a.b {
+    display: inline-block; background: var(--paper); color: var(--ink);
+    padding: 14px 22px; font-size: 13px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .close a.b:hover { background: var(--mark); color: #fff; }
+
+  footer { padding: 22px 0 40px; display: flex; justify-content: space-between; }
+
+  @media (max-width: 800px) {
+    nav.top a:not(:last-child) { display: none; }
+    .fig-row { grid-template-columns: 1fr; }
+    .fig-row > div { border-right: 0; border-bottom: 1px solid var(--hair); }
+    .close-in { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-in">
+    <a class="wm" href="#">Moon<span>·</span>DAO</a>
+    <nav class="top">
+      <a href="#">Missions</a>
+      <a href="#">Governance</a>
+      <a href="#">About</a>
+      <a href="#">Join</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <h1>Fund it.<br />Vote on it.<br />Fly it.</h1>
+  </div>
+</section>
+
+<section class="figures">
+  <div class="wrap">
+    <div class="fig-row">
+      <div><div class="n">2</div><div class="tag grey l">Flown</div></div>
+      <div><div class="n">$8M</div><div class="tag grey l">Raised</div></div>
+      <div><div class="n">2025</div><div class="tag grey l">Landed</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ledger">
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Year</th><th>Record</th></tr></thead>
+      <tbody>
+        <tr><td class="y">2022</td><td>Coby Cotton flown. Selected by vote.</td></tr>
+        <tr><td class="y">2024</td><td>Dr. Eiman Jahangir flown. Selected by sweepstakes.</td></tr>
+        <tr><td class="y">2025</td><td>Constitution delivered to the lunar surface.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="close">
+  <div class="wrap">
+    <a class="b" href="#">Join</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;width:100%">
+    <span class="tag grey">© MoonDAO</span>
+    <span class="tag grey">Privacy</span>
+  </div>
+</footer>
+
+</body>
+</html>
