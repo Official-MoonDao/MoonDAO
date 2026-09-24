@@ -230,24 +230,10 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
-    // v2 registry id 4 — crewed lunar terrain vehicle. Not First Tracks.
-    4: {
-      title: 'Lunar rover',
-      tagline:
-        'Which crewed lunar terrain vehicle enters service first? Back a competitor — every bet grows the prize pool.',
-      metaDescription:
-        'Sepolia DePrize for the first crewed lunar terrain vehicle. Astrolab CLV-1, Lunar Outpost Pegasus, Intuitive Machines Moon RACER, and the Open Field.',
-      questionId: '0x5e31f8a53fcd002b953f946dc7ce01c5f56e61ea1264092f15dbf5651d22a734',
-      sharedGoalId: 'shared-lunar-rover',
-      raceLabel: 'Crewed lunar rover',
-      outcomes: [
-        { projectId: 'astrolab-flex', teamId: 621, vehicleLabel: 'CLV-1' },
-        { projectId: 'lunar-outpost-lunar-dawn', teamId: 622, vehicleLabel: 'Pegasus' },
-        { projectId: 'im-moon-racer', teamId: 623, vehicleLabel: 'Moon RACER' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
-    },
-    // v2 registry id 5 — unmanned commercial egress. Not the crewed rover (id 4).
+    // v2 id 4 was the crewed lunar rover, registered by mistake. It is not in
+    // this map, and the index does not list shared-lunar-rover. Cancellation
+    // was announced on the registry; the id stays on-chain until that notice ends.
+    // v2 registry id 5 — unmanned commercial egress. Not the crewed rover.
     5: {
       title: 'First Tracks',
       tagline:

@@ -101,7 +101,13 @@ systems, then the Open Field.
 
 `createMission` `0x1df39a84…f4a94`. `register` `0x25d56467…1cdef`. `open` `0x24c349ab…786dc`.
 
-## Crewed lunar rover — v2 id 4 (2026-09-24)
+## Crewed lunar rover — v2 id 4 (withdrawn)
+
+Registered by mistake, then removed from the index and from `competitions.ts`.
+`announceCancellation` was sent so betting is closed. `cancel` can run after
+the 7-day notice. Do not bind this id again.
+
+## Crewed lunar rover — registration record (2026-09-24)
 
 Atlas goal `shared-lunar-rover`. This is the crewed LTV race, not First Tracks.
 Four slots: CLV-1, Pegasus, Moon RACER, then the Open Field.

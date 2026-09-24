@@ -46,7 +46,9 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   const races = useMemo(() => {
     return SEED_ATLAS.sharedGoals
       // Crewed HLS is the same landing question as Touchdown. Keep Touchdown.
-      .filter((g) => g.id !== 'shared-crewed-lander')
+      // The crewed terrain vehicle was registered as Sepolia id 4 by mistake
+      // and is withdrawn; First Tracks is the rover prize.
+      .filter((g) => g.id !== 'shared-crewed-lander' && g.id !== 'shared-lunar-rover')
       .filter((g) => !!g.category || !!g.market)
       .map((goal) => ({
         goal,
