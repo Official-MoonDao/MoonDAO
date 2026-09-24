@@ -3,7 +3,7 @@ import { useLogin } from '@privy-io/react-auth'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
-import { getFeaturedLiveDePrizeId } from '@/lib/deprize/competitions'
+import { getFeaturedLiveDePrizeId, isDePrizeGoalMarketBound } from '@/lib/deprize/competitions'
 import { DEPRIZE_RESTRICTED_PREDICT_COPY, deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
 import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
@@ -35,6 +35,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState<ProjectType | 'all'>('all')
+  const [listing, setListing] = useState<'all' | 'live' | 'planned'>('all')
   const [activeTab, setActiveTab] = useState<IndexTab>('all')
   const [refreshNonce, setRefreshNonce] = useState(0)
   const [spendableEth, setSpendableEth] = useState(0)
@@ -77,11 +78,14 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
     const q = search.trim().toLowerCase()
     return races.filter((r) => {
       if (category !== 'all' && goalIndexCategory(r.goal) !== category) return false
+      const live = isDePrizeGoalMarketBound(chainSlug, r.goal.id)
+      if (listing === 'live' && !live) return false
+      if (listing === 'planned' && live) return false
       if (!q) return true
       if (r.goal.title.toLowerCase().includes(q)) return true
       return r.competitors.some((c) => c.project.name.toLowerCase().includes(q))
     })
-  }, [races, search, category])
+  }, [races, search, category, listing, chainSlug])
 
   // Live on-chain competitions that aren't bound to a Moon Base Zero race
   // (Arbitrum #1 — The Moon Is A Harsh Mistress) take the hero slot. Atlas
@@ -203,6 +207,36 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
               ))}
             </div>
 
+            {/* Live markets vs races that are still a plan. Same chip row as
+                the categories above. */}
+            <div
+              role="group"
+              aria-label="Live or planned"
+              className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide"
+            >
+              {(
+                [
+                  { id: 'all' as const, label: 'All' },
+                  { id: 'live' as const, label: 'Live' },
+                  { id: 'planned' as const, label: 'Planned' },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  aria-pressed={listing === option.id}
+                  onClick={() => setListing(option.id)}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors border ${TOUCH} ${
+                    listing === option.id
+                      ? 'bg-white/15 text-white border-white/20'
+                      : 'text-gray-400 border-white/10 hover:text-white hover:border-white/20'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
             {/* Tabs */}
             <div
               role="tablist"
@@ -242,7 +276,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
               </div>
             ) : activeTab === 'all' ? (
               <>
-                {featuredLiveId !== undefined && (
+                {featuredLiveId !== undefined && listing !== 'planned' && (
                   <LiveDePrizeHero
                     deprizeId={featuredLiveId}
                     chain={chain}
@@ -279,7 +313,11 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
                 {filteredRaces.length === 0 && (
                   <div className="p-8 text-center text-gray-400 text-sm">
-                    No races match your search.
+                    {listing === 'live'
+                      ? 'No live races match.'
+                      : listing === 'planned'
+                        ? 'No planned races match.'
+                        : 'No races match your search.'}
                   </div>
                 )}
               </>
