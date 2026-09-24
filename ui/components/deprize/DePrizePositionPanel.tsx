@@ -143,16 +143,16 @@ export default function DePrizePositionPanel({
 
       <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Mini label="Spent" title="Everything you've paid in, including the 5% that went to the prize pool.">
-          {loading ? 'Loading' : <EthUsd eth={summary.totalSpentEth} />}
+          {loading ? 'Loading' : <EthUsd eth={summary.totalSpentEth} exact />}
         </Mini>
         <Mini
           label={resolved ? 'Claimable' : 'Current value'}
           title={resolved ? 'What your shares redeem for now.' : 'What the market would pay you to sell everything right now.'}
         >
-          {figuresReady ? <EthUsd eth={summary.currentValueEth} approx={!resolved} /> : 'Loading'}
+          {figuresReady ? <EthUsd eth={summary.currentValueEth} exact /> : 'Loading'}
         </Mini>
         <Mini label="Cashed out">
-          {loading ? 'Loading' : <EthUsd eth={summary.realizedEth} />}
+          {loading ? 'Loading' : <EthUsd eth={summary.realizedEth} exact />}
         </Mini>
         <Mini
           label={resolved ? 'Result' : 'If your pick wins'}
@@ -162,7 +162,7 @@ export default function DePrizePositionPanel({
             loading ? 'Loading' : isRefundVector ? 'Refund' : heldIdx.includes(winningIndex) ? 'Won' : 'Lost'
           ) : figuresReady ? (
             <span className="text-emerald-300">
-              <EthUsd eth={bestCase} usdClassName="text-emerald-300/70 font-normal" />
+              <EthUsd eth={bestCase} exact usdClassName="text-emerald-300/70 font-normal" />
             </span>
           ) : (
             'Loading'
