@@ -9,6 +9,7 @@ import {
   useSetActiveWallet,
 } from 'thirdweb/react'
 import { createWalletAdapter } from 'thirdweb/wallets'
+import { chainForDeprizePath } from '@/lib/deprize/route-chain'
 import { withClientFeeOverrides } from '@/lib/rpc/eip1559Fees'
 import client from '@/lib/thirdweb/client'
 import { getWalletEthersProvider } from './getWalletEthersProvider'
@@ -48,9 +49,15 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
             typeof document === 'undefined' ||
             document.visibilityState === 'visible'
 
+          // A /deprize/sep URL pins reads to Sepolia. Switching the wallet to
+          // match reloads the page, and the next load switches again.
+          const routePinnedChain =
+            typeof window !== 'undefined' &&
+            chainForDeprizePath(window.location.pathname)
           const shouldSwitchChain =
             isAutoSwitchWallet &&
             isTabVisible &&
+            !routePinnedChain &&
             currentWalletChainId !== null &&
             currentWalletChainId !== selectedChain.id
 
