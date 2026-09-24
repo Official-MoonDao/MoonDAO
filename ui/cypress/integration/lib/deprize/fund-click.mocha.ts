@@ -28,8 +28,9 @@ describe('fund the prize click', () => {
 
   it('mounts the launchpad contribution modal without waiting for a connected account', () => {
     expect(slot).to.match(
-      /\{fundOpen && props\.jbProjectId != null && props\.chain && props\.deprizeId != null && \(/
+      /\{props\.jbProjectId != null && props\.chain && props\.deprizeId != null && \(/
     )
+    expect(slot).to.include('open={fundOpen}')
     expect(slot).to.include('DePrizeLaunchpadContribute')
     expect(slot).to.not.include('FundPrizeModal')
     expect(slot).to.not.match(/fundOpen &&[\s\S]{0,120}props\.account &&/)

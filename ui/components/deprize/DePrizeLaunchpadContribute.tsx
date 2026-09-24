@@ -2,10 +2,9 @@ import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import Modal from '@/components/layout/Modal'
 
-const MissionContributeModal = dynamic(
-  () => import('@/components/mission/MissionContributeModal'),
-  { ssr: false }
-)
+const loadContributeModal = () => import('@/components/mission/MissionContributeModal')
+
+const MissionContributeModal = dynamic(loadContributeModal, { ssr: false })
 
 type ContributeProps = {
   mission: {
@@ -33,6 +32,10 @@ export default function DePrizeLaunchpadContribute(props: {
   const [usdInput, setUsdInput] = useState('')
   const [payload, setPayload] = useState<ContributeProps | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void loadContributeModal()
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -77,6 +80,7 @@ export default function DePrizeLaunchpadContribute(props: {
         if (!enabled) props.onClose()
       }}
       primaryTerminalAddress={payload.primaryTerminalAddress}
+      compact
       ruleset={payload.ruleset as any}
       usdInput={usdInput}
       setUsdInput={setUsdInput}

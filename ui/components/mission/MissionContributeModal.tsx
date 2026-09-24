@@ -106,6 +106,8 @@ type MissionContributeModalProps = {
    * network (e.g. “stay on Arbitrum”) instead of switching to the richest funding chain.
    */
   stayOnSelectedAppChainRef?: React.MutableRefObject<boolean>
+  /** Smaller type, for surfaces where the launchpad amount scale dwarfs the page. */
+  compact?: boolean
 }
 
 export default function MissionContributeModal({
@@ -125,6 +127,7 @@ export default function MissionContributeModal({
   recommendedFundingChain = null,
   fundingChainBalances = null,
   stayOnSelectedAppChainRef,
+  compact = false,
 }: MissionContributeModalProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
@@ -2116,6 +2119,7 @@ export default function MissionContributeModal({
         <MissionContributeModalHeader
           missionName={mission?.metadata?.name}
           onClose={handleModalClose}
+          compact={compact}
         />
 
         <div className="space-y-5">
@@ -2272,7 +2276,7 @@ export default function MissionContributeModal({
                     className="block cursor-text"
                   >
                     <div className="flex items-baseline justify-center gap-1 sm:gap-2 min-w-0">
-                      <span className="text-cyan-200/80 text-3xl sm:text-5xl font-bold shrink-0 select-none">
+                      <span className={`text-cyan-200/80 font-bold shrink-0 select-none ${compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-5xl'}`}>
                         $
                       </span>
                       <input
@@ -2282,13 +2286,13 @@ export default function MissionContributeModal({
                         autoFocus
                         autoComplete="off"
                         aria-label="Contribution amount in USD"
-                        className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-white/25 focus:placeholder-white/40 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className={`min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center font-bold tracking-tight placeholder-white/25 focus:placeholder-white/40 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${compact ? 'text-2xl sm:text-3xl' : 'text-4xl sm:text-6xl'}`}
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="Amount"
                         maxLength={15}
                       />
-                      <span className="text-gray-300 text-xl sm:text-2xl font-bold shrink-0 select-none">
+                      <span className={`text-gray-300 font-bold shrink-0 select-none ${compact ? 'text-sm sm:text-base' : 'text-xl sm:text-2xl'}`}>
                         USD
                       </span>
                     </div>
@@ -2441,7 +2445,7 @@ export default function MissionContributeModal({
                           <p className="text-white/60 text-sm">Calculating…</p>
                         </div>
                       ) : (
-                        <p className="font-bold text-emerald-200/95 text-xl sm:text-2xl tabular-nums tracking-tight sm:text-right">
+                        <p className={`font-bold text-emerald-200/95 tabular-nums tracking-tight sm:text-right ${compact ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'}`}>
                           {formatContributionOutput(output)}
                         </p>
                       )}
