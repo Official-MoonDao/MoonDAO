@@ -51,7 +51,7 @@ export const CAPABILITY_LADDER: readonly CapabilityRung[] = [
   {
     rung: 2,
     key: 'ice',
-    label: 'Ice',
+    label: 'Water Ice',
     bar: '2027 in-situ surface water ice',
     sharedGoalId: 'shared-ice',
     specHref: '',

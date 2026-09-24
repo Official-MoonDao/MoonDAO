@@ -254,7 +254,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     },
     // v2 registry id 6 — 2027 in-situ surface water ice.
     6: {
-      title: 'Ice',
+      title: 'Water Ice',
       tagline:
         'Who first publishes in-situ confirmation of lunar surface water ice? Back a competitor — every bet grows the prize pool.',
       metaDescription:

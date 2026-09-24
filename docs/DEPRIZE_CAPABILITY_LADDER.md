@@ -18,7 +18,7 @@ an offer to award a prize.
 |---|---|---|---|
 | 0 | Touchdown | next upright working landing | LIVE (Sepolia #22) |
 | 1 | First Tracks | commercial rover egress + drive | LIVE (Sepolia #5) |
-| 2 | Ice | 2027 in-situ surface water ice | LIVE (Sepolia #6) |
+| 2 | Water Ice | 2027 in-situ surface water ice | LIVE (Sepolia #6) |
 | 3 | Night Shift | chamber proxy now · surface 2028+ | LIVE (Sepolia #3) |
 
 **Why this order.** Upright landing is proven (Blue Ghost 1). Wheels are not. Ice is the 2027
