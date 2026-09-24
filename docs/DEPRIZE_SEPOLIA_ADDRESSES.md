@@ -119,6 +119,37 @@ Four slots: CLV-1, Pegasus, Moon RACER, then the Open Field.
 
 `createMission` `0xa5081fb0…e1641`. `register` `0xb15bbbf4…955ca`. `open` `0xa2b52f84…ab9e1`.
 
+## First Tracks — v2 id 5 (2026-09-24)
+
+Atlas goal `shared-first-tracks`. Unmanned commercial egress, not the crewed
+rover (id 4). Six slots.
+
+| Slot | Value | Notes |
+|---|---|---|
+| `deprizeId` | `5` | `deprizeIdByJBProject(273)` |
+| Competing teams | `[631, 632, 633, 634, 635, 24]` | FLIP, CubeRover, MAPP, Tenacious, Iris, Open Field |
+| JB project id | `273` | Mission **19** |
+| LaunchPadPayHook | `0xC457305d13c91AE90F2c101FC2d70764A01D57A4` | Latched to the v2 registry; `stage == 1` |
+| `questionId` | `0x5fe6f1664f0de1fc497411f5c6fc53cb2adbe80e6ba50078387f97bb66581dc8` | `keccak256("deprize:sepolia:shared-first-tracks:v1")`. **Not on-chain.** |
+| `conditionId` | `0x104131febf7f4960b19ca1ec100c32727261fbf07cf663756a03b3c972118dad` | 6 outcome slots; oracle = deployer |
+| LMSRMarketMaker | `0xB443AaC816A7738E062C3452e3069295a97aa6a6` | Stock Gnosis, 0.06 ETH seed, 1% fee, owner = deployer, stage Running |
+| Sunset | `1853361397` | ~2 years from provision |
+
+## Ice — v2 id 6 (2026-09-24)
+
+Atlas goal `shared-ice`. Four slots.
+
+| Slot | Value | Notes |
+|---|---|---|
+| `deprizeId` | `6` | `deprizeIdByJBProject(274)` |
+| Competing teams | `[641, 642, 643, 24]` | Chang'e-7, VIPER on MK1, IM-4, Open Field |
+| JB project id | `274` | Mission **20** |
+| LaunchPadPayHook | `0x061F82b09eca9ad2a1D9780Af2690E1b6360b5cE` | Latched to the v2 registry; `stage == 1` |
+| `questionId` | `0x849f4a11bbe459437a4962debe34fe5d3a1ad64326d37bd60886cf26c1f74d2d` | `keccak256("deprize:sepolia:shared-ice:v1")`. **Not on-chain.** |
+| `conditionId` | `0x78aa7fe075f3cbc85148fca564022025d825a282138a9877d9ccc44d077189dc` | 4 outcome slots; oracle = deployer |
+| LMSRMarketMaker | `0x53dE16D7995a2FF8Ef008DCb22d94c5CEA42Af8A` | Stock Gnosis, 0.04 ETH seed, 1% fee, owner = deployer, stage Running |
+| Sunset | `1853361577` | ~2 years from provision |
+
 ## UI follow-up PR (do not ship without both)
 
 Point `ui/const/config.ts` at the v2 stack **and** rebind

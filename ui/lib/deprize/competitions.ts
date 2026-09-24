@@ -247,6 +247,42 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
+    // v2 registry id 5 — unmanned commercial egress. Not the crewed rover (id 4).
+    5: {
+      title: 'First Tracks',
+      tagline:
+        'Which commercial rover leaves its lander and drives at least 10 metres first? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first commercial rover egress. Astrolab FLIP, Voyager CubeRover, Lunar Outpost MAPP, ispace Tenacious, Carnegie Mellon Iris, and the Open Field.',
+      questionId: '0x5fe6f1664f0de1fc497411f5c6fc53cb2adbe80e6ba50078387f97bb66581dc8',
+      sharedGoalId: 'shared-first-tracks',
+      raceLabel: 'First Tracks',
+      outcomes: [
+        { projectId: 'astrolab-flip', teamId: 631, vehicleLabel: 'FLIP' },
+        { projectId: 'voyager-cuberover', teamId: 632, vehicleLabel: 'CubeRover' },
+        { projectId: 'lunar-outpost-mapp', teamId: 633, vehicleLabel: 'MAPP' },
+        { projectId: 'ispace-tenacious', teamId: 634, vehicleLabel: 'Tenacious' },
+        { projectId: 'cmu-iris', teamId: 635, vehicleLabel: 'Iris-class' },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    // v2 registry id 6 — 2027 in-situ surface water ice.
+    6: {
+      title: 'Ice',
+      tagline:
+        'Who first publishes in-situ confirmation of lunar surface water ice? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the first published in-situ lunar water-ice dataset. Chang’e-7, VIPER on Blue Moon MK1, IM-4, and the Open Field.',
+      questionId: '0x849f4a11bbe459437a4962debe34fe5d3a1ad64326d37bd60886cf26c1f74d2d',
+      sharedGoalId: 'shared-ice',
+      raceLabel: 'Surface water ice',
+      outcomes: [
+        { projectId: 'cnsa-change-7', teamId: 641, vehicleLabel: "Chang'e-7 hopper" },
+        { projectId: 'blue-origin-viper', teamId: 642, vehicleLabel: 'VIPER on MK1' },
+        { projectId: 'im-4-volatiles', teamId: 643, vehicleLabel: 'IM-4 volatiles' },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
   },
 }
 

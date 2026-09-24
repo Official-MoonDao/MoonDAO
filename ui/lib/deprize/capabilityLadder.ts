@@ -45,6 +45,7 @@ export const CAPABILITY_LADDER: readonly CapabilityRung[] = [
     key: 'first-tracks',
     label: 'First Tracks',
     bar: 'First commercial rover egress and drive',
+    sharedGoalId: 'shared-first-tracks',
     specHref: '',
   },
   {
@@ -52,6 +53,7 @@ export const CAPABILITY_LADDER: readonly CapabilityRung[] = [
     key: 'ice',
     label: 'Ice',
     bar: '2027 in-situ surface water ice',
+    sharedGoalId: 'shared-ice',
     specHref: '',
   },
   {

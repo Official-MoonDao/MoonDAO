@@ -61,18 +61,20 @@ describe('capability ladder', () => {
     expect(result.currentKey).to.equal('touchdown')
   })
 
-  it('planned rungs have no href; Night Shift is the live rung after Touchdown', () => {
+  it('every registered rung is live', () => {
     const result = getLadderForCompetition('sepolia', 2)
     const night = result.rungs.find((r) => r.key === 'night-shift')
     expect(night?.status).to.equal('live')
     expect(night?.deprizeId).to.equal(3)
     expect(night?.href).to.equal('/deprize/3')
-    for (const key of ['first-tracks', 'ice'] as const) {
-      const rung = result.rungs.find((r) => r.key === key)
-      expect(rung?.status, key).to.equal('planned')
-      expect(rung?.href, key).to.equal(undefined)
-      expect(rung?.deprizeId, key).to.equal(undefined)
-    }
+    const tracks = result.rungs.find((r) => r.key === 'first-tracks')
+    expect(tracks?.status).to.equal('live')
+    expect(tracks?.deprizeId).to.equal(5)
+    expect(tracks?.href).to.equal('/deprize/5')
+    const ice = result.rungs.find((r) => r.key === 'ice')
+    expect(ice?.status).to.equal('live')
+    expect(ice?.deprizeId).to.equal(6)
+    expect(ice?.href).to.equal('/deprize/6')
   })
 
   it('no ladder entry references the chamber spec', () => {
@@ -101,7 +103,10 @@ describe('capability ladder', () => {
   it('every status value in the union has a producer', () => {
     const live = getLadderForCompetition('sepolia', 2)
     expect(live.rungs[0].status).to.equal('live')
-    expect(live.rungs[1].status).to.equal('planned')
+    const planned = getLadderForCompetition('sepolia', 2, {
+      findDePrizeIdForGoal: () => undefined,
+    })
+    expect(planned.rungs[1].status).to.equal('planned')
 
     const rung0 = CAPABILITY_LADDER[0]
     const prev = rung0.statusOverride
