@@ -8,6 +8,7 @@ import {
   BeakerIcon,
   BoltIcon,
   GlobeAltIcon,
+  MagnifyingGlassIcon,
   HomeModernIcon,
   RocketLaunchIcon,
   SignalIcon,
@@ -28,6 +29,7 @@ const CATEGORY_ICON: Record<ProjectType, ComponentType<SVGProps<SVGSVGElement>>>
   orbital: GlobeAltIcon,
   construction: WrenchScrewdriverIcon,
   mass_driver: ArrowUpRightIcon,
+  prospecting: MagnifyingGlassIcon,
   other: Square3Stack3DIcon,
 }
 
