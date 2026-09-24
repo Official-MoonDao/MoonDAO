@@ -202,7 +202,7 @@ export default function LiveDePrizeHero({
                       bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
                       transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
                   >
-                    Buy
+                    {DEPRIZE_PREDICT_CTA}
                   </button>
                 )}
               </div>
