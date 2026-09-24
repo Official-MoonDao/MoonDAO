@@ -177,7 +177,7 @@ function StatusPill({
     paused: 'text-amber-300 border-amber-500/40 bg-amber-500/15',
     demo: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',
     resolved: 'text-gray-300 border-white/20 bg-white/10',
-    concept: 'text-gray-400 border-white/15 bg-white/5',
+    concept: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',
   } as const
   return (
     <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls[tone]}`}>
@@ -394,7 +394,7 @@ export default function RaceMarketCard({
         paused: 'Paused',
         demo: 'Planned',
         resolved: 'Resolved',
-        concept: 'No developer yet',
+        concept: 'Planned',
       }[statusTone]
     : null
 
