@@ -11,7 +11,7 @@ import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
-import { votingPowerByOutcome } from '@/lib/forecasts/aggregate'
+import { aggregateForecastVotes, votingPowerByOutcome } from '@/lib/forecasts/aggregate'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
 import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
@@ -22,7 +22,13 @@ import {
   tapPlan,
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
-import { notifyRoster } from '@/lib/forecasts/rosterRefresh'
+import {
+  mergeCallerRoster,
+  notifyRoster,
+  pruneRosterOverlays,
+  subscribeRoster,
+  type RosterOverlay,
+} from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
 import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
@@ -121,9 +127,18 @@ export default function ForecastPanel(props: {
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
+  const [overlays, setOverlays] = useState<RosterOverlay[]>([])
+  const shownLeaderboard = useMemo(
+    () => mergeCallerRoster(consensus?.leaderboard ?? [], overlays, labels),
+    [consensus, overlays, labels]
+  )
   const citizenVotingPowerByOutcome = useMemo(
-    () => (consensus ? votingPowerByOutcome(consensus.leaderboard ?? [], n) : undefined),
-    [consensus, n]
+    () => (consensus ? votingPowerByOutcome(shownLeaderboard, n) : undefined),
+    [consensus, shownLeaderboard, n]
+  )
+  const predictionCounts = useMemo(
+    () => (consensus ? aggregateForecastVotes(shownLeaderboard, n).backersByOutcome : undefined),
+    [consensus, shownLeaderboard, n]
   )
 
   const forecastsContract = useContract({
@@ -150,6 +165,7 @@ export default function ForecastPanel(props: {
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
       setConsensus(body)
+      setOverlays((prev) => pruneRosterOverlays(prev, body.leaderboard ?? [], labels))
       const mine = account?.address
         ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
         : undefined
@@ -157,8 +173,19 @@ export default function ForecastPanel(props: {
         setSavedPick(pickFromAllocation(mine.allocation))
       }
     },
-    [account?.address, n]
+    [account?.address, labels, n]
   )
+
+  useEffect(() => {
+    return subscribeRoster((notice) => {
+      if (notice.chain !== chainSlug || notice.deprizeId !== deprizeId) return
+      const address = notice.address.toLowerCase()
+      setOverlays((prev) => [
+        ...prev.filter((row) => row.address.toLowerCase() !== address),
+        { address, pick: notice.pick, removed: notice.removed },
+      ])
+    })
+  }, [chainSlug, deprizeId])
 
   const loadConsensus = useCallback(async () => {
     if (n < 2) return
@@ -457,7 +484,7 @@ export default function ForecastPanel(props: {
                     ? citizenVotingPowerByOutcome[o.index] ?? 0
                     : undefined
                 }
-                predictionCount={consensus ? consensus.backersByOutcome?.[o.index] ?? 0 : undefined}
+                predictionCount={predictionCounts ? predictionCounts[o.index] ?? 0 : undefined}
                 tradingHalted={tradingHalted}
                 busy={writing}
                 userConnected={!!userAddress}

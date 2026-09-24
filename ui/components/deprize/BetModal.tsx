@@ -507,7 +507,7 @@ export default function BetModal({
       if (withinOnrampSession) trackOnrampEvent('bet_placed_within_session')
       fireDePrizeConfetti()
       toast.success(
-        `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ≈ ${fmtEthWithUsd(
+        `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ${fmtEthWithUsd(
           qtyNum,
           ethPrice
         )} if it wins.`,
@@ -652,7 +652,7 @@ export default function BetModal({
           />
           {betAmountNum > 0 && fmtUsdFromEth(betAmountNum, ethPrice) && (
             <p className="text-white/55 text-xs mt-1 tabular-nums">
-              ≈ {fmtUsdFromEth(betAmountNum, ethPrice)}
+              {fmtUsdFromEth(betAmountNum, ethPrice)}
             </p>
           )}
           <div className="flex gap-2 mt-2 flex-wrap">
@@ -680,11 +680,7 @@ export default function BetModal({
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">To win if it wins</span>
                   <span className="text-moon-green text-lg font-bold">
-                    <EthUsd
-                      eth={quote.qty}
-                      approx
-                      usdClassName="text-moon-green/70 font-normal text-sm"
-                    />
+                    <EthUsd eth={quote.qty} usdClassName="text-moon-green/70 font-normal text-sm" />
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -889,7 +885,7 @@ export default function BetModal({
         ) : needsFunding ? (
           <div className="space-y-3">
             <p className="text-amber-300 text-sm">
-              You only have ≈ {fmtEthWithUsd(spendableEth, ethPrice, { prize: true })} available (a
+              You only have {fmtEthWithUsd(spendableEth, ethPrice, { prize: true })} available (a
               little is kept back for gas).
             </p>
             {spendableEth > 0 && (

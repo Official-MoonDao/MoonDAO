@@ -1,8 +1,8 @@
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
-import { getContract, readContract } from 'thirdweb'
+import { getContract } from 'thirdweb'
+import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import client from '@/lib/thirdweb/client'
 import { isNoTokenOwnedError, type CitizenProbe } from './citizenGate'
 import { fetchCitizenExpiresAt, isSubscriptionExpired } from './citizenSubscription'
 
@@ -10,12 +10,15 @@ import { fetchCitizenExpiresAt, isSubscriptionExpired } from './citizenSubscript
  * Does this address hold an unexpired Citizen on `chain`?
  * `none` is only the contract's "No token owned" revert. Transport and
  * decode failures stay `error` so the UI does not tell a Citizen to mint.
+ *
+ * Uses the unbatched DePrize reader. The shared thirdweb client batches
+ * eth_calls, and a batched result was decoding as a failed lookup.
  */
 export async function probeCitizen(
   chain: { id: number; name?: string },
   owner: string
 ): Promise<CitizenProbe> {
-  if (!owner) return { status: 'error' }
+  if (!owner || !chain?.id) return { status: 'error' }
 
   try {
     const chainSlug = getChainSlug(chain as any)
@@ -23,12 +26,12 @@ export async function probeCitizen(
     if (!address) return { status: 'error' }
 
     const contract = getContract({
-      client,
+      client: deprizeReadClient,
       address,
-      chain: chain as any,
+      chain: deprizeReadChain(chain.id),
       abi: CitizenABI as any,
     })
-    const ownedTokenId: any = await readContract({
+    const ownedTokenId: any = await rpcRead({
       contract,
       method: 'getOwnedToken' as string,
       params: [owner],

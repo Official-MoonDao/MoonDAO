@@ -34,9 +34,9 @@ describe('deprize USD denomination', () => {
 
   describe('fmtEthWithUsd', () => {
     it('keeps ETH as the primary figure and tucks USD beside it', () => {
-      expect(fmtEthWithUsd(0.01, ETH_PRICE)).to.equal('0.01 ETH (~$30.00)')
+      expect(fmtEthWithUsd(0.01, ETH_PRICE)).to.equal('0.01 ETH ($30.00)')
       expect(fmtEthWithUsd(0.0006, ETH_PRICE, { approx: true })).to.equal(
-        '≈ 0.0006 ETH (~$1.80)'
+        '0.0006 ETH ($1.80)'
       )
     })
 
@@ -47,13 +47,13 @@ describe('deprize USD denomination', () => {
     it('formats the 5% prize slice instead of rounding it to 0 ETH', () => {
       // 5% of the 0.0003 ETH bet that previously displayed as "0 ETH".
       expect(fmtEthWithUsd(0.000015, ETH_PRICE, { prize: true })).to.equal(
-        '0.000015 ETH (~$0.045)'
+        '0.000015 ETH ($0.045)'
       )
     })
 
     it('labels WETH fees the same way as ETH', () => {
       expect(fmtEthWithUsd(0.004, ETH_PRICE, { decimals: 4, unit: 'WETH' })).to.equal(
-        '0.004 WETH (~$12.00)'
+        '0.004 WETH ($12.00)'
       )
     })
   })

@@ -19,6 +19,7 @@ describe('launchpad contribute props', () => {
 
   it('falls back to the DePrize mission creator when the public table has no row', () => {
     expect(route).to.include('findMissionByJuiceboxProject')
+    expect(route).to.include('Promise.all')
     expect(extra).to.include('0xa692eEd67c4D2C1C73DC0515240d27cf7d6fF9D1')
   })
 })

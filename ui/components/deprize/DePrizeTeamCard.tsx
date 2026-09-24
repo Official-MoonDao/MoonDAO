@@ -320,7 +320,7 @@ export default function DePrizeTeamCard({
                 '—'
               ) : sellQuoteEth !== undefined ? (
                 <>
-                  <EthUsd eth={sellQuoteEth} approx />
+                  <EthUsd eth={sellQuoteEth} />
                   <PnlSuffix pnl={pnl} />
                 </>
               ) : (

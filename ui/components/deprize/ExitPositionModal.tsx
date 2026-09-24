@@ -173,7 +173,7 @@ export default function ExitPositionModal({
       toast.dismiss('sell')
       fireDePrizeConfetti()
       toast.success(
-        `Cashed out ${teamName} for ≈ ${fmtEthWithUsd(Number(-net) / Number(UNIT), ethPrice)}.`,
+        `Cashed out ${teamName} for ${fmtEthWithUsd(Number(-net) / Number(UNIT), ethPrice)}.`,
         {
         style: toastStyle,
       })
@@ -229,7 +229,7 @@ export default function ExitPositionModal({
             <span className="text-gray-400 text-sm">You receive (est.)</span>
             <span className="text-moon-green text-lg font-bold">
               {quoteEth !== undefined ? (
-                <EthUsd eth={quoteEth} approx usdClassName="text-moon-green/70 font-normal text-sm" />
+                <EthUsd eth={quoteEth} usdClassName="text-moon-green/70 font-normal text-sm" />
               ) : (
                 '…'
               )}
