@@ -17,6 +17,9 @@ never reaches `main`. In Sep 2026 this stranded 22 DePrize PRs (#1581 through
 - Branch from fresh `main`:
   `git fetch origin main && git checkout -b cursor/<name> origin/main`
 - Open the PR with `base_branch: main`.
+- Follow-up messages in the same task go on that same branch and the same PR.
+  Commit and push there. Do not open another PR unless the user explicitly
+  asks for a separate one.
 - If the work needs another open PR, prefer one PR with both changes. If it
   must be separate, branch from `origin/main`, merge the other branch in, and
   still target `main`. Name the dependency in the PR body. The diff shrinks to
@@ -27,6 +30,8 @@ never reaches `main`. In Sep 2026 this stranded 22 DePrize PRs (#1581 through
 ## Don't
 - Set a PR's base to a `cursor/*`, `feat/*`, `fix/*` or any other branch.
 - Merge anything into a branch whose own PR has already merged or closed.
+- Open a new PR for each user message, bug, or UI tweak. One task, one PR.
+  A new sentence from the user is not a request for a new pull request.
 
 ## Existing stacks
 Before merging a PR whose base is not `main`, check the base branch's PR. If
