@@ -6,6 +6,27 @@ import { classifyCitizenProbes } from './citizenGate'
 import { probeCitizen } from './probeCitizen'
 
 const MAX_OTHER_WALLETS = 8
+const PROBE_ATTEMPTS = 3
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/** A blip is not a final answer. Retry before the page asks the user to. */
+async function probeUntilSettled(
+  chain: { id: number; name?: string },
+  owner: string,
+  cancelled: () => boolean
+) {
+  let probe = await probeCitizen(chain, owner)
+  for (let attempt = 1; attempt < PROBE_ATTEMPTS && probe.status === 'error'; attempt++) {
+    if (cancelled()) return probe
+    await wait(400 * 2 ** (attempt - 1))
+    if (cancelled()) return probe
+    probe = await probeCitizen(chain, owner)
+  }
+  return probe
+}
 
 type SettledCitizen = {
   key: string
@@ -60,11 +81,12 @@ export function usePrizeChainCitizen(chain?: { id: number; name?: string }) {
     const owners = otherKey ? otherKey.split(',') : []
     let cancelled = false
     const key = requestKey
+    const isCancelled = () => cancelled
 
     void (async () => {
       const probes = await Promise.all([
-        probeCitizen(chain, active),
-        ...owners.map((address) => probeCitizen(chain, address)),
+        probeUntilSettled(chain, active, isCancelled),
+        ...owners.map((address) => probeUntilSettled(chain, address, isCancelled)),
       ])
       if (cancelled) return
       const activeProbe = probes[0]
@@ -85,7 +107,7 @@ export function usePrizeChainCitizen(chain?: { id: number; name?: string }) {
     return () => {
       cancelled = true
     }
-  }, [active, chain, otherKey, ready, requestKey])
+  }, [active, otherKey, ready, requestKey])
 
   const settled = result?.key === requestKey && !!active && !!chain?.id && ready
   return {
