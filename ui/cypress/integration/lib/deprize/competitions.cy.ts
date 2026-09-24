@@ -4,6 +4,7 @@ import {
   deprizeChainLabel,
   deprizeChainSlugFromPrefix,
   deprizeForecastHref,
+  deprizeIndexHref,
   deprizePrefixedHref,
   findDePrizeChainSlugs,
   findDePrizeIdForGoal,
@@ -190,6 +191,9 @@ describe('deprize chain-prefixed links', () => {
     expect(deprizePrefixedHref('sepolia', 'shared-next-landing')).to.equal(
       '/deprize/sep/shared-next-landing'
     )
+    expect(deprizeIndexHref('sepolia')).to.equal('/deprize/sep')
+    expect(deprizeIndexHref('arbitrum')).to.equal('/deprize/arb')
+    expect(deprizeIndexHref('ethereum')).to.equal('/deprize')
   })
 
   it('finds which registries know an id', () => {

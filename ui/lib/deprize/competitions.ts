@@ -131,6 +131,12 @@ export function deprizePrefixedHref(chainSlug: string, id: string | number): str
   return prefix ? `/deprize/${prefix}/${id}` : `/deprize/${id}`
 }
 
+/** Index for a chain. Sepolia is `/deprize/sep`, matching `/deprize/sep/:id`. */
+export function deprizeIndexHref(chainSlug: string): string {
+  const prefix = DEPRIZE_SLUG_TO_PREFIX[chainSlug]
+  return prefix ? `/deprize/${prefix}` : '/deprize'
+}
+
 /** Chains whose competition map includes this id. */
 export function findDePrizeChainSlugs(deprizeId: number | undefined): string[] {
   if (deprizeId === undefined || !Number.isFinite(deprizeId) || deprizeId <= 0) return []

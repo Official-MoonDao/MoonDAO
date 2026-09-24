@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { deprizeIndexHref } from '@/lib/deprize/competitions'
 import { DePrizeState } from '@/lib/deprize/constants'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import { CARD, StateBadge, TOUCH } from './primitives'
@@ -16,6 +17,7 @@ export default function PrizeHeader(props: {
   winningTeamId: bigint
   teamContract: any
   showResolved: boolean
+  chainSlug: string
 }) {
   const {
     knownCompetition,
@@ -30,7 +32,9 @@ export default function PrizeHeader(props: {
     winningTeamId,
     teamContract,
     showResolved,
+    chainSlug,
   } = props
+  const indexHref = deprizeIndexHref(chainSlug)
 
   return (
     <div className={CARD}>
@@ -61,7 +65,7 @@ export default function PrizeHeader(props: {
             </Link>
           )}
           <Link
-            href="/deprize"
+            href={indexHref}
             className={`inline-flex items-center text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded ${TOUCH}`}
           >
             ← All prizes

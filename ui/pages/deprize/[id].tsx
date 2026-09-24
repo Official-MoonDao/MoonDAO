@@ -621,7 +621,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     }
   }
   if (goalFromSlug && boundFromSlug === undefined) {
-    return <GoalDePrizeDetail goal={goalFromSlug} />
+    return <GoalDePrizeDetail goal={goalFromSlug} chainSlug={chainSlug} />
   }
   if (!registryConfigured) {
     return (
@@ -713,6 +713,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           winningTeamId={winningTeamId}
           teamContract={teamContract}
           showResolved={showResolved}
+          chainSlug={chainSlug}
         />
         <OddsSection
           numOutcomes={numOutcomes}
