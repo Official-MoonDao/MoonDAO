@@ -205,6 +205,11 @@ export default function MissionContributeModal({
 
   const chainSlug = getChainSlug(payChainStable)
 
+  // A pinned payment chain settles on that chain's Juicebox terminal. Comparing
+  // it with the app default (Arbitrum) used to treat a Sepolia prize as a
+  // LayerZero transfer, and that map has no route for Sepolia.
+  const isCrossChainPay = paymentChain == null && chainSlug !== defaultChainSlug
+
   /**
    * The chain card / Apple-Pay funding is delivered to. The Coinbase onramp can
    * only reliably deliver ETH to the default chain (Arbitrum), and the mission
@@ -529,7 +534,7 @@ export default function MissionContributeModal({
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
-    const isCrossChain = chainSlug !== defaultChainSlug
+    const isCrossChain = isCrossChainPay
     if (!isCrossChain) return false
 
     if (chainSlug !== 'ethereum' && chainSlug !== 'base') return false
@@ -538,7 +543,7 @@ export default function MissionContributeModal({
 
     const LAYERZERO_MAX_WEI = BigInt(Math.floor(LAYERZERO_MAX_ETH * 1e18))
     return crossChainQuote > LAYERZERO_MAX_WEI
-  }, [chainSlug, defaultChainSlug, crossChainQuote])
+  }, [isCrossChainPay, chainSlug, defaultChainSlug, crossChainQuote])
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
@@ -731,7 +736,7 @@ export default function MissionContributeModal({
       return
     }
 
-    const isCrossChain = chainSlug !== defaultChainSlug
+    const isCrossChain = isCrossChainPay
 
     const applyGasBuffer = (rawGas: bigint, cross: boolean) => {
       const bufferPercent = cross ? 180 : 130
@@ -975,6 +980,7 @@ export default function MissionContributeModal({
     crossChainPayContract,
     chainSlug,
     defaultChainSlug,
+    isCrossChainPay,
     mission?.projectId,
     output,
     message,
@@ -991,7 +997,7 @@ export default function MissionContributeModal({
   // Required total (tx value + buffered gas) in wei for exact balance checks; ETH number for display only.
   const requiredWei = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
-    const isCrossChain = chainSlug !== defaultChainSlug
+    const isCrossChain = isCrossChainPay
 
     let transactionWei: bigint
     if (isCrossChain && crossChainQuote > BigInt(0) && !layerZeroLimitExceeded) {
@@ -1169,7 +1175,7 @@ export default function MissionContributeModal({
   // Calculate LayerZero cross-chain fee
   const layerZeroFeeDisplay = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
-    const isCrossChain = chainSlug !== defaultChainSlug
+    const isCrossChain = isCrossChainPay
 
     if (!isCrossChain || crossChainQuote === BigInt(0)) {
       return { eth: '0', usd: '0.00' }
@@ -1410,7 +1416,7 @@ export default function MissionContributeModal({
       }
 
       let receipt: any
-      if (chainSlug !== defaultChainSlug) {
+      if (isCrossChainPay) {
         // Never fire a cross-chain tx the wallet can't fund. If the balance on
         // this (non-default) chain doesn't cover the cross-chain cost, the tx
         // is doomed ("likely to fail") — this happens when card funding landed
