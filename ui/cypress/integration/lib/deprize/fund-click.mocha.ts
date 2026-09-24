@@ -49,5 +49,6 @@ describe('fund the prize click', () => {
     expect(modal).to.not.include('DePrizeAvailabilityLegend')
     expect(modal).to.not.include('useDePrizeRestricted')
     expect(modal).to.not.include('Not available to U.S. persons')
+    expect(modal).to.not.include('No minimum token amount is guaranteed')
   })
 })

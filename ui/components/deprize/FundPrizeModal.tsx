@@ -114,9 +114,6 @@ export default function FundPrizeModal(props: {
             payout if a competitor wins. This does not move the odds.
           </p>
           <p>This is not refundable by MoonDAO.</p>
-          <p className="text-xs text-gray-500">
-            No minimum token amount is guaranteed for this contribution.
-          </p>
         </div>
 
         <label className="text-xs text-gray-400">
