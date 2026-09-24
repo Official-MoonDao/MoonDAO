@@ -108,6 +108,12 @@ type MissionContributeModalProps = {
   stayOnSelectedAppChainRef?: React.MutableRefObject<boolean>
   /** Smaller type, for surfaces where the launchpad amount scale dwarfs the page. */
   compact?: boolean
+  /**
+   * Chain the Juicebox terminal was read from. When set, payment stays on that
+   * chain. A production build otherwise only offers Arbitrum and Ethereum, and
+   * a Sepolia prize was being told to pay on Arbitrum.
+   */
+  paymentChain?: Chain
 }
 
 export default function MissionContributeModal({
@@ -128,6 +134,7 @@ export default function MissionContributeModal({
   fundingChainBalances = null,
   stayOnSelectedAppChainRef,
   compact = false,
+  paymentChain,
 }: MissionContributeModalProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
@@ -141,10 +148,10 @@ export default function MissionContributeModal({
   // the many contributors who already hold mainnet ETH can pay from there via
   // the LayerZero cross-chain path. Base was removed earlier (users without
   // ETH on Base were bouncing).
-  const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
-    [isTestnet]
-  )
+  const chains = useMemo(() => {
+    if (paymentChain) return [paymentChain]
+    return isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]
+  }, [isTestnet, paymentChain])
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
 
   const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'

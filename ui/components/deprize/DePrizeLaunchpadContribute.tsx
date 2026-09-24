@@ -1,6 +1,7 @@
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import Modal from '@/components/layout/Modal'
+import { getChainById } from '@/lib/thirdweb/chain'
 
 const loadContributeModal = () => import('@/components/mission/MissionContributeModal')
 
@@ -80,6 +81,7 @@ export default function DePrizeLaunchpadContribute(props: {
         if (!enabled) props.onClose()
       }}
       primaryTerminalAddress={payload.primaryTerminalAddress}
+      paymentChain={getChainById(props.chainId)}
       compact
       ruleset={payload.ruleset as any}
       usdInput={usdInput}

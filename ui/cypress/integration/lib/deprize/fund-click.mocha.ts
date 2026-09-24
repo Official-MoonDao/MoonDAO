@@ -38,6 +38,7 @@ describe('fund the prize click', () => {
 
   it('reuses the launchpad contribution modal and its terms checkbox', () => {
     expect(contribute).to.include('MissionContributeModal')
+    expect(contribute).to.include('paymentChain={getChainById(props.chainId)}')
     expect(contribute).to.include('/api/mission/contribute-props')
     expect(contribute).to.not.include('DePrize Terms')
     expect(contribute).to.not.include('Not available to U.S. persons')
