@@ -112,12 +112,15 @@ export function shouldMockSepoliaEligibility(chainId: number): boolean {
 
 /**
  * Skips geo, VPN and sanctions screening, and tolerates a missing country and
- * an unreachable compliance store. Never in prod. Otherwise on when
+ * an unreachable compliance store. On for Vercel preview deployments so a
+ * shared preview link can be tested, even when that deploy inherited
+ * production env vars. Never on a production deployment. Otherwise on when
  * DEPRIZE_ELIGIBILITY_BYPASS=1, or under `next dev`: localhost sends no geo
- * headers, so without this no bet can be placed locally. Deployed builds
- * (Vercel previews included) run with NODE_ENV=production.
+ * headers, so without this no bet can be placed locally. Other deployed
+ * builds run with NODE_ENV=production.
  */
 export function isNonProdBypassEnabled(): boolean {
+  if (process.env.VERCEL_ENV === 'preview') return true
   if (process.env.NEXT_PUBLIC_ENV === 'prod') return false
   return (
     process.env.DEPRIZE_ELIGIBILITY_BYPASS === '1' || process.env.NODE_ENV === 'development'

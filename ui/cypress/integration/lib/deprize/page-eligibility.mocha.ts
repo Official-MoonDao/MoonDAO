@@ -115,6 +115,34 @@ describe('deprize page eligibility', () => {
     }
   })
 
+  it('bypasses on a Vercel preview even when production env vars are set', () => {
+    const env = process.env as Record<string, string | undefined>
+    const prevVercel = env.VERCEL_ENV
+    const prevEnv = env.NEXT_PUBLIC_ENV
+    const prevBypass = env.DEPRIZE_ELIGIBILITY_BYPASS
+    try {
+      delete env.DEPRIZE_ELIGIBILITY_BYPASS
+      env.NEXT_PUBLIC_ENV = 'prod'
+      env.VERCEL_ENV = 'preview'
+      expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).restricted).to.equal(
+        false
+      )
+      env.VERCEL_ENV = 'production'
+      expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).restricted).to.equal(
+        true
+      )
+    } finally {
+      for (const [key, value] of [
+        ['VERCEL_ENV', prevVercel],
+        ['NEXT_PUBLIC_ENV', prevEnv],
+        ['DEPRIZE_ELIGIBILITY_BYPASS', prevBypass],
+      ] as const) {
+        if (value === undefined) delete env[key]
+        else env[key] = value
+      }
+    }
+  })
+
   it('bypasses under `next dev` without the flag, but never in production', () => {
     const env = process.env as Record<string, string | undefined>
     const prevNodeEnv = env.NODE_ENV
