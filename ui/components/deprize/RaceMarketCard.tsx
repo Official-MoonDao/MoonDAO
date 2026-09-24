@@ -347,7 +347,7 @@ export default function RaceMarketCard({
     ? {
         live: 'Live',
         paused: 'Paused',
-        demo: 'Planning',
+        demo: 'Planned',
         resolved: 'Resolved',
         concept: 'No developer yet',
       }[statusTone]
