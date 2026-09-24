@@ -10,7 +10,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import DePrizeCallers from '@/components/deprize/DePrizeCallers'
 import DePrizePatrons from '@/components/deprize/DePrizePatrons'
 import EthUsd from '@/components/deprize/EthUsd'
-import FundPrizeModal from '@/components/deprize/FundPrizeModal'
+import DePrizeLaunchpadContribute from '@/components/deprize/DePrizeLaunchpadContribute'
 import { CARD, TOUCH } from './primitives'
 
 export default function PrizePoolSlot(props: {
@@ -106,15 +106,14 @@ export default function PrizePoolSlot(props: {
       />
 
       {fundOpen && props.jbProjectId != null && props.chain && props.deprizeId != null && (
-        <FundPrizeModal
-          deprizeId={props.deprizeId}
+        <DePrizeLaunchpadContribute
           jbProjectId={props.jbProjectId}
-          prizeTitle={props.prizeTitle || `DePrize #${props.deprizeId}`}
-          chain={props.chain}
-          account={props.account}
+          chainId={props.chain.id}
+          open
           onClose={() => setFundOpen(false)}
-          onDone={(payer) => {
-            setPendingPayer(payer.toLowerCase())
+          onFunded={() => {
+            const payer = props.account?.address
+            if (typeof payer === 'string') setPendingPayer(payer.toLowerCase())
             patrons.refresh({ fresh: true })
             props.onFunded?.()
           }}

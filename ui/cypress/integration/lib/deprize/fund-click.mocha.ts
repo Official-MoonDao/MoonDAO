@@ -1,7 +1,6 @@
 /**
- * "Fund the prize" opens the existing contribution window. It must not call
- * Privy login and return before that window exists — login() is a no-op when
- * a session is already signed in but thirdweb has no account.
+ * "Fund the prize" opens the launchpad contribution modal. It must not call
+ * Privy login and return before that window exists.
  */
 import fs from 'fs'
 import path from 'path'
@@ -14,7 +13,7 @@ function readUi(...parts: string[]): string {
 
 describe('fund the prize click', () => {
   const slot = readUi('components/deprize/detail/PrizePoolSlot.tsx')
-  const modal = readUi('components/deprize/FundPrizeModal.tsx')
+  const contribute = readUi('components/deprize/DePrizeLaunchpadContribute.tsx')
 
   it('opens the fund window on click instead of returning at login', () => {
     const start = slot.indexOf('function onFund()')
@@ -27,28 +26,20 @@ describe('fund the prize click', () => {
     expect(handler).to.not.match(/if\s*\(\s*!props\.account\s*\)/)
   })
 
-  it('mounts the fund window without waiting for a connected account', () => {
+  it('mounts the launchpad contribution modal without waiting for a connected account', () => {
     expect(slot).to.match(
       /\{fundOpen && props\.jbProjectId != null && props\.chain && props\.deprizeId != null && \(/
     )
-    expect(slot).to.not.match(
-      /fundOpen &&[\s\S]{0,120}props\.account &&/
-    )
+    expect(slot).to.include('DePrizeLaunchpadContribute')
+    expect(slot).to.not.include('FundPrizeModal')
+    expect(slot).to.not.match(/fundOpen &&[\s\S]{0,120}props\.account &&/)
   })
 
-  it('offers connect inside the fund window when no wallet is attached', () => {
-    expect(modal).to.include('account?: any')
-    expect(modal).to.include('Connect wallet')
-    expect(modal).to.include('Reconnect wallet')
-    expect(modal).to.include('!wallet ?')
-  })
-
-  it('does not geo-gate a prize-pool contribution', () => {
-    expect(slot).to.not.include('FUND_GEO_OPEN')
-    expect(slot).to.not.include('useDePrizeRestricted')
-    expect(modal).to.not.include('DePrizeAvailabilityLegend')
-    expect(modal).to.not.include('useDePrizeRestricted')
-    expect(modal).to.not.include('Not available to U.S. persons')
-    expect(modal).to.not.include('No minimum token amount is guaranteed')
+  it('reuses the launchpad contribution modal and its terms checkbox', () => {
+    expect(contribute).to.include('MissionContributeModal')
+    expect(contribute).to.include('/api/mission/contribute-props')
+    expect(contribute).to.not.include('DePrize Terms')
+    expect(contribute).to.not.include('Not available to U.S. persons')
+    expect(contribute).to.not.include('useDePrizeRestricted')
   })
 })

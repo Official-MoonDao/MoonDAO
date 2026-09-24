@@ -40,7 +40,6 @@ const TOUCH_CONSUMERS = [
 /** Surfaces where a user types, so the text has to survive an iOS focus. */
 const TYPED_SURFACES = [
   'components/deprize/BetModal.tsx',
-  'components/deprize/FundPrizeModal.tsx',
   'components/deprize/DePrizeIndexContent.tsx',
 ]
 
@@ -143,7 +142,7 @@ describe('deprize responsive layout', () => {
   })
 
   it('opens a decimal keypad for money instead of a full keyboard', () => {
-    for (const file of ['components/deprize/BetModal.tsx', 'components/deprize/FundPrizeModal.tsx']) {
+    for (const file of ['components/deprize/BetModal.tsx']) {
       for (const tag of inputTags(readUi(file))) {
         if (!/type="number"/.test(tag)) continue
         expect(tag, `a number input in ${file} has no inputMode:\n${tag}`).to.match(
