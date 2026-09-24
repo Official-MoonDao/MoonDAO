@@ -1,6 +1,7 @@
 import { MISSION_TABLE_NAMES } from 'const/config'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { fetchFromIPFSWithFallback } from '@/lib/ipfs/gateway'
+import { findMissionByJuiceboxProject } from '@/lib/mission/findMissionByProject'
 import {
   fetchMissionContracts,
   fetchMissionRow,
@@ -45,17 +46,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const rows = await queryTable(chain, `SELECT id FROM ${tableName} WHERE projectId = ${projectId}`)
-    const missionId = Number(rows?.[0]?.id)
-    if (!Number.isInteger(missionId) || missionId <= 0) {
-      return res.status(404).json({ error: 'No launchpad mission for this prize pool' })
-    }
-
-    const missionRow = await fetchMissionRow(missionId, chain)
+    const listedId = Number(rows?.[0]?.id)
+    const missionRow =
+      Number.isInteger(listedId) && listedId > 0
+        ? await fetchMissionRow(listedId, chain)
+        : await findMissionByJuiceboxProject(chain as any, projectId)
     if (!missionRow) {
       return res.status(404).json({ error: 'No launchpad mission for this prize pool' })
     }
 
-    const contractData = await fetchMissionContracts(missionRow.projectId, missionId, chain)
+    const contractData = await fetchMissionContracts(missionRow.projectId, missionRow.id, chain)
     const ipfsHash = String(contractData.metadataURI || '').replace(/^ipfs:\/\//, '')
     const metadata = ipfsHash
       ? await fetchFromIPFSWithFallback(ipfsHash, 8000).catch(() => ({
