@@ -1,4 +1,3 @@
-import { useLogin } from '@privy-io/react-auth'
 import { useEffect, useState } from 'react'
 import type { Chain } from 'thirdweb'
 import {
@@ -33,7 +32,6 @@ export default function PrizePoolSlot(props: {
   bettorAddresses?: readonly string[]
 }) {
   const restricted = useDePrizeRestricted()
-  const { login } = useLogin()
   const fundAllowed = FUND_GEO_OPEN || !restricted
   const [fundOpen, setFundOpen] = useState(false)
   const [pendingPayer, setPendingPayer] = useState<string | null>(null)
@@ -61,10 +59,8 @@ export default function PrizePoolSlot(props: {
     DEPRIZE_FUND_ENABLED && fundAllowed && props.jbProjectId != null && !!props.chain
 
   function onFund() {
-    if (!props.account) {
-      login()
-      return
-    }
+    // Always open the contribution window. A signed-in session with no
+    // thirdweb account used to make this click a no-op.
     setFundOpen(true)
   }
 
@@ -114,7 +110,7 @@ export default function PrizePoolSlot(props: {
         bettorAddresses={props.bettorAddresses ?? []}
       />
 
-      {fundOpen && props.jbProjectId != null && props.chain && props.deprizeId != null && props.account && (
+      {fundOpen && props.jbProjectId != null && props.chain && props.deprizeId != null && (
         <FundPrizeModal
           deprizeId={props.deprizeId}
           jbProjectId={props.jbProjectId}

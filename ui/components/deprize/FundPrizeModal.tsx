@@ -1,3 +1,4 @@
+import { useLogin, usePrivy } from '@privy-io/react-auth'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -27,7 +28,7 @@ export default function FundPrizeModal(props: {
   jbProjectId: number
   prizeTitle: string
   chain: Chain
-  account: any
+  account?: any
   onClose: () => void
   onDone: (payer: string) => void
 }) {
@@ -37,6 +38,8 @@ export default function FundPrizeModal(props: {
   const [busy, setBusy] = useState(false)
   const [confirmedLarge, setConfirmedLarge] = useState(false)
   const restricted = useDePrizeRestricted()
+  const { ready, authenticated, logout } = usePrivy()
+  const { login } = useLogin()
   const { wrongNetwork, chainLabel, switching, switchToChain } = useDePrizeChainGuard(chain)
   const { ethPrice } = useETHPrice(1)
   const launchpad = useDePrizeLaunchpadToken(jbProjectId, chain)
@@ -47,6 +50,17 @@ export default function FundPrizeModal(props: {
   const minEth = Number(FUND_MIN_WEI) / Number(UNIT)
 
   if (!(FUND_GEO_OPEN || !restricted)) return null
+
+  async function connectWallet() {
+    // login() does not open when Privy already has a session. A session with no
+    // thirdweb account is how this button used to do nothing, so sign out first.
+    try {
+      if (ready && authenticated) await logout()
+    } catch {
+      /* still open the login modal */
+    }
+    login()
+  }
 
   async function submit() {
     if (!wallet || amountWei < FUND_MIN_WEI || wrongNetwork) return
@@ -156,7 +170,15 @@ export default function FundPrizeModal(props: {
           />
         </label>
 
-        {wrongNetwork ? (
+        {!wallet ? (
+          <StandardButton
+            onClick={() => void connectWallet()}
+            className="rounded-full w-full"
+            backgroundColor="bg-white/10"
+          >
+            {ready && authenticated ? 'Reconnect wallet' : 'Connect wallet'}
+          </StandardButton>
+        ) : wrongNetwork ? (
           <StandardButton
             onClick={switchToChain}
             disabled={switching}
