@@ -2,6 +2,7 @@ import { DEPRIZE_FEE_ROUTER_ADDRESSES, DEPRIZE_MINT_ADDRESSES } from 'const/conf
 import { aggregatePatrons, applyPatronSuppression, isDirectPatronPay } from '@/lib/deprize/patrons-math'
 import {
   PATRONS_MAX_PAGES,
+  bendystrawGraphqlHost,
   buildPatronPayEventsQuery,
   claimedProjectMatchesRegistry,
   dedupeEventsById,
@@ -15,6 +16,14 @@ const VITALIK = '0x2222222222222222222222222222222222222222'
 const ATTACKER = '0x3333333333333333333333333333333333333333'
 const SAFE = '0x4444444444444444444444444444444444444444'
 const BETTOR = '0x5555555555555555555555555555555555555555'
+
+describe('bendystrawGraphqlHost', () => {
+  it('reads Sepolia from the testnet index and Arbitrum One from production', () => {
+    expect(bendystrawGraphqlHost(11155111)).to.equal('testnet.bendystraw.xyz')
+    expect(bendystrawGraphqlHost(421614)).to.equal('testnet.bendystraw.xyz')
+    expect(bendystrawGraphqlHost(42161)).to.equal('bendystraw.xyz')
+  })
+})
 
 describe('isDirectPatronPay / aggregatePatrons', () => {
   it('impersonation: from != beneficiary is never credited', () => {
