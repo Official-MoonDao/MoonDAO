@@ -105,11 +105,11 @@ export default function PrizePoolSlot(props: {
         bettorAddresses={props.bettorAddresses ?? []}
       />
 
-      {fundOpen && props.jbProjectId != null && props.chain && props.deprizeId != null && (
+      {props.jbProjectId != null && props.chain && props.deprizeId != null && (
         <DePrizeLaunchpadContribute
           jbProjectId={props.jbProjectId}
           chainId={props.chain.id}
-          open
+          open={fundOpen}
           onClose={() => setFundOpen(false)}
           onFunded={() => {
             const payer = props.account?.address

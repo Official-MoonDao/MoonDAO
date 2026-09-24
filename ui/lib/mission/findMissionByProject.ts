@@ -43,62 +43,64 @@ export async function findMissionByJuiceboxProject(
 ): Promise<MissionProjectRow | null> {
   const chainSlug = getChainSlug(chain as any)
 
-  for (const address of creatorAddresses(chainSlug)) {
-    try {
-      const creator = getContract({
-        client: serverClient,
-        chain,
-        address,
-        abi: creatorAbi,
-      })
-      const tableAddr = await readContract({
-        contract: creator,
-        method: 'missionTable' as string,
-        params: [],
-      })
-      if (typeof tableAddr !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(tableAddr)) continue
-      if (/^0x0+$/.test(tableAddr)) continue
-
-      const table = getContract({
-        client: serverClient,
-        chain,
-        address: tableAddr,
-        abi: tableAbi,
-      })
-      const curr = Number(
-        await readContract({
-          contract: table,
-          method: 'currId' as string,
+  const found = await Promise.all(
+    creatorAddresses(chainSlug).map(async (address) => {
+      try {
+        const creator = getContract({
+          client: serverClient,
+          chain,
+          address,
+          abi: creatorAbi,
+        })
+        const tableAddr = await readContract({
+          contract: creator,
+          method: 'missionTable' as string,
           params: [],
         })
-      )
-      if (!Number.isFinite(curr) || curr <= 1) continue
+        if (typeof tableAddr !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(tableAddr)) return null
+        if (/^0x0+$/.test(tableAddr)) return null
 
-      const ids = Array.from({ length: Math.min(curr - 1, 200) }, (_, i) => i + 1)
-      const projectIds = await Promise.all(
-        ids.map((id) =>
-          readContract({
-            contract: creator,
-            method: 'missionIdToProjectId' as string,
-            params: [BigInt(id)],
-          }).then((pid) => Number(pid))
-        )
-      )
-      const missionId = ids[projectIds.indexOf(projectId)]
-      if (!missionId) continue
-
-      const teamId = Number(
-        await readContract({
-          contract: table,
-          method: 'idToTeamId' as string,
-          params: [BigInt(missionId)],
+        const table = getContract({
+          client: serverClient,
+          chain,
+          address: tableAddr,
+          abi: tableAbi,
         })
-      )
-      return { id: missionId, teamId, projectId, fundingGoal: 0 }
-    } catch {
-      /* try the next creator */
-    }
-  }
+        const curr = Number(
+          await readContract({
+            contract: table,
+            method: 'currId' as string,
+            params: [],
+          })
+        )
+        if (!Number.isFinite(curr) || curr <= 1) return null
 
-  return null
+        const ids = Array.from({ length: Math.min(curr - 1, 200) }, (_, i) => i + 1)
+        const projectIds = await Promise.all(
+          ids.map((id) =>
+            readContract({
+              contract: creator,
+              method: 'missionIdToProjectId' as string,
+              params: [BigInt(id)],
+            }).then((pid) => Number(pid))
+          )
+        )
+        const missionId = ids[projectIds.indexOf(projectId)]
+        if (!missionId) return null
+
+        const teamId = Number(
+          await readContract({
+            contract: table,
+            method: 'idToTeamId' as string,
+            params: [BigInt(missionId)],
+          })
+        )
+        return { id: missionId, teamId, projectId, fundingGoal: 0 }
+      } catch {
+        return null
+      }
+    })
+  )
+
+  return found.find((row) => row != null) ?? null
 }
