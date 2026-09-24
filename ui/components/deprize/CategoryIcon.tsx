@@ -4,7 +4,6 @@
 // app's UI chrome.
 
 import {
-  ArrowUpRightIcon,
   BeakerIcon,
   BoltIcon,
   GlobeAltIcon,
@@ -17,9 +16,13 @@ import {
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import type { ComponentType, SVGProps } from 'react'
+import { PROJECT_TYPE_GLYPH } from '@/lib/lunar-atlas/display'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 
-const CATEGORY_ICON: Record<ProjectType, ComponentType<SVGProps<SVGSVGElement>>> = {
+const CATEGORY_ICON: Record<
+  Exclude<ProjectType, 'mass_driver'>,
+  ComponentType<SVGProps<SVGSVGElement>>
+> = {
   habitat: HomeModernIcon,
   lander: RocketLaunchIcon,
   rover: TruckIcon,
@@ -28,7 +31,6 @@ const CATEGORY_ICON: Record<ProjectType, ComponentType<SVGProps<SVGSVGElement>>>
   comms_pnt: SignalIcon,
   orbital: GlobeAltIcon,
   construction: WrenchScrewdriverIcon,
-  mass_driver: ArrowUpRightIcon,
   prospecting: MagnifyingGlassIcon,
   other: Square3Stack3DIcon,
 }
@@ -40,6 +42,13 @@ export default function CategoryIcon({
   category: ProjectType
   className?: string
 }) {
+  if (category === 'mass_driver') {
+    return (
+      <span className="text-base leading-none" aria-hidden>
+        {PROJECT_TYPE_GLYPH.mass_driver}
+      </span>
+    )
+  }
   const Icon = CATEGORY_ICON[category] ?? Square3Stack3DIcon
   return <Icon className={className} aria-hidden />
 }
