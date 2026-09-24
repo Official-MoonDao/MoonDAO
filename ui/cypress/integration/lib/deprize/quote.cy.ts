@@ -1,7 +1,10 @@
 import {
+  acceptSpotQuote,
   betBudget,
   betSlice,
   buildAmounts,
+  lmsrSpotBuyQty,
+  qtyUnderMeasuredCost,
   quoteQtyByProbing,
   searchMaxQtyWithinCost,
 } from '@/lib/deprize/quote-math'
@@ -118,6 +121,102 @@ describe('deprize quote math', () => {
       expect(probes < 12).to.equal(true)
       expect(spent <= budget).to.equal(true)
       expect(spent * 100n > budget * 90n).to.equal(true)
+    })
+  })
+
+  describe('lmsr spot quote', () => {
+    // Sepolia prize 2: 0.06 ETH funding, 6 outcomes, uniform price 1/6.
+    const funding = 6n * 10n ** 16n
+    const n = 6
+    const priceX64 = (2n ** 64n) / 6n
+
+    function feeCost(qty: bigint): bigint {
+      const b = Number(funding) / Math.log(n)
+      const p = Number(priceX64) / 2 ** 64
+      const net = b * Math.log(1 + p * (Math.exp(Number(qty) / b) - 1))
+      if (!Number.isFinite(net) || net <= 0) return 0n
+      const netWei = BigInt(Math.round(net))
+      return netWei + netWei / 100n
+    }
+
+    it('fits the fee-inclusive budget in one or two cost reads', async () => {
+      const target = 95n * 10n ** 16n
+      const netBudget = (target * 10n ** 18n) / (10n ** 18n + 10n ** 16n)
+      const estimate = lmsrSpotBuyQty({
+        fundingWei: funding,
+        marginalPriceX64: priceX64,
+        numOutcomes: n,
+        netBudgetWei: netBudget,
+      })
+      expect(estimate != null).to.equal(true)
+      let calls = 0
+      const qty = await acceptSpotQuote(
+        async (q) => {
+          calls += 1
+          return feeCost(q)
+        },
+        target,
+        estimate as bigint,
+        priceX64
+      )
+      expect(qty != null).to.equal(true)
+      expect(calls <= 2).to.equal(true)
+      const spent = feeCost(qty as bigint)
+      expect(spent <= target).to.equal(true)
+      expect(spent * 50n >= target * 49n).to.equal(true)
+    })
+
+    it('needs fewer cost reads than probing the same curve', async () => {
+      const target = 10n ** 17n
+      const netBudget = (target * 10n ** 18n) / (10n ** 18n + 10n ** 16n)
+      const estimate = lmsrSpotBuyQty({
+        fundingWei: funding,
+        marginalPriceX64: priceX64,
+        numOutcomes: n,
+        netBudgetWei: netBudget,
+      })
+      let spotCalls = 0
+      const spotQty = await acceptSpotQuote(
+        async (q) => {
+          spotCalls += 1
+          return feeCost(q)
+        },
+        target,
+        estimate as bigint,
+        priceX64
+      )
+      let probeCalls = 0
+      const probed = await quoteQtyByProbing(async (q) => {
+        probeCalls += 1
+        return feeCost(q)
+      }, target)
+      expect(spotQty != null).to.equal(true)
+      expect(spotCalls < probeCalls).to.equal(true)
+      const spotSpent = feeCost(spotQty as bigint)
+      const probeSpent = feeCost(probed)
+      expect(spotSpent <= target).to.equal(true)
+      expect(probeSpent <= target).to.equal(true)
+      expect(spotSpent * 50n >= target * 49n).to.equal(true)
+    })
+
+    it('returns null when funding, price, or outcome count cannot price a buy', () => {
+      const base = {
+        fundingWei: funding,
+        marginalPriceX64: priceX64,
+        numOutcomes: n,
+        netBudgetWei: ETH,
+      }
+      expect(lmsrSpotBuyQty({ ...base, fundingWei: 0n })).to.equal(null)
+      expect(lmsrSpotBuyQty({ ...base, marginalPriceX64: 0n })).to.equal(null)
+      expect(lmsrSpotBuyQty({ ...base, numOutcomes: 1 })).to.equal(null)
+      expect(lmsrSpotBuyQty({ ...base, netBudgetWei: 0n })).to.equal(null)
+    })
+
+    it('shaves a few wei of overshoot and refuses a large miss', () => {
+      const qty = 5n * ETH
+      const shaved = qtyUnderMeasuredCost(qty, ETH + 10n, ETH, priceX64)
+      expect(shaved != null && shaved < qty).to.equal(true)
+      expect(qtyUnderMeasuredCost(qty, ETH + ETH / 10n, ETH, priceX64)).to.equal(null)
     })
   })
 })

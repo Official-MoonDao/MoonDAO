@@ -1,7 +1,7 @@
 import { getAccessToken } from '@privy-io/react-auth'
 import DePrizeMintABI from 'const/abis/DePrizeMint.json'
 import LMSRWithTWAP from 'const/abis/LMSRWithTWAP.json'
-import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { betPresetEthAmounts, formatBetPresetEth } from '@/lib/deprize/betPresets'
@@ -95,6 +95,9 @@ type BetModalProps = {
 // bet; the router still caps the actual spend at the full 95% budget.
 const QUOTE_HEADROOM_NUM = 99n
 const QUOTE_HEADROOM_DEN = 100n
+// The payout line and the bet button share one quote. Reuse it briefly so
+// confirming doesn't start a second LMSR waterfall.
+const QUOTE_REUSE_MS = 15_000
 
 async function readApiJson(res: Response): Promise<any> {
   const text = await res.text()
@@ -191,6 +194,41 @@ export default function BetModal({
     [canBet, chain, mintAddress]
   )
 
+  const quoteCacheRef = useRef<{
+    key: string
+    at: number
+    promise: Promise<bigint>
+    qty?: bigint
+  } | null>(null)
+  const loadQuote = useCallback(
+    (target: bigint) => {
+      const key = `${chain.id}:${marketAddress}:${outcomeIndex}:${target}`
+      const cached = quoteCacheRef.current
+      if (cached && cached.key === key && Date.now() - cached.at < QUOTE_REUSE_MS) {
+        return cached.promise
+      }
+      const entry: { key: string; at: number; promise: Promise<bigint>; qty?: bigint } = {
+        key,
+        at: Date.now(),
+        promise: undefined as unknown as Promise<bigint>,
+      }
+      const promise = quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes).then(
+        (qty) => {
+          if (quoteCacheRef.current === entry) entry.qty = qty
+          return qty
+        },
+        (err) => {
+          if (quoteCacheRef.current === entry) quoteCacheRef.current = null
+          throw err
+        }
+      )
+      entry.promise = promise
+      quoteCacheRef.current = entry
+      return promise
+    },
+    [chain.id, lmsr, marketAddress, numOutcomes, outcomeIndex]
+  )
+
   // Live payout quote: the real, price-impact-aware token amount the 95% budget
   // buys (each winning token redeems 1:1 for ETH, so qty == potential payout).
   useEffect(() => {
@@ -206,7 +244,7 @@ export default function BetModal({
       try {
         const budget = betBudget(betAmountWei)
         const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
-        const qty = await quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes)
+        const qty = await loadQuote(target)
         if (!cancelled) setQuote({ qty: Number(qty) / Number(UNIT) })
       } catch (err) {
         console.warn('[deprize] payout quote failed', err)
@@ -219,7 +257,7 @@ export default function BetModal({
       cancelled = true
       clearTimeout(t)
     }
-  }, [betAmountWei, lmsr, outcomeIndex, numOutcomes])
+  }, [betAmountWei, loadQuote])
 
   const wallet = typeof account?.address === 'string' ? account.address : ''
   const needsFunding =
@@ -398,11 +436,21 @@ export default function BetModal({
     // while this modal is open.
     if (blockedByNetwork()) return
     setBusy(true)
-    toast.loading('Quoting…', { id: 'quote', style: toastStyle })
+    const budget = betBudget(betAmountWei)
+    const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
+    const quoteKey = `${chain.id}:${marketAddress}:${outcomeIndex}:${target}`
+    const cached = quoteCacheRef.current
+    const readyQty =
+      cached &&
+      cached.key === quoteKey &&
+      Date.now() - cached.at < QUOTE_REUSE_MS &&
+      cached.qty != null &&
+      cached.qty > 0n
+        ? cached.qty
+        : null
+    if (readyQty == null) toast.loading('Quoting…', { id: 'quote', style: toastStyle })
     try {
-      const budget = betBudget(betAmountWei)
-      const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
-      const qty = await quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes)
+      const qty = readyQty ?? (await loadQuote(target))
       if (qty <= 0n) throw new Error('Bet too small for this market.')
       toast.dismiss('quote')
       toast.loading(mockSepoliaEligibility ? 'Preparing bet…' : 'Checking eligibility…', {
