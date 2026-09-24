@@ -16,13 +16,29 @@ import {
   WrenchScrewdriverIcon,
 } from '@heroicons/react/24/outline'
 import type { ComponentType, SVGProps } from 'react'
-import { PROJECT_TYPE_GLYPH } from '@/lib/lunar-atlas/display'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 
-const CATEGORY_ICON: Record<
-  Exclude<ProjectType, 'mass_driver'>,
-  ComponentType<SVGProps<SVGSVGElement>>
-> = {
+function MagnetIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+      {...props}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 3.5v8.5a4 4 0 0 0 8 0V3.5"
+      />
+      <path strokeLinecap="round" d="M8 3.5v3.25M16 3.5v3.25" />
+    </svg>
+  )
+}
+
+const CATEGORY_ICON: Record<ProjectType, ComponentType<SVGProps<SVGSVGElement>>> = {
   habitat: HomeModernIcon,
   lander: RocketLaunchIcon,
   rover: TruckIcon,
@@ -31,6 +47,7 @@ const CATEGORY_ICON: Record<
   comms_pnt: SignalIcon,
   orbital: GlobeAltIcon,
   construction: WrenchScrewdriverIcon,
+  mass_driver: MagnetIcon,
   prospecting: MagnifyingGlassIcon,
   other: Square3Stack3DIcon,
 }
@@ -42,13 +59,6 @@ export default function CategoryIcon({
   category: ProjectType
   className?: string
 }) {
-  if (category === 'mass_driver') {
-    return (
-      <span className="text-base leading-none" aria-hidden>
-        {PROJECT_TYPE_GLYPH.mass_driver}
-      </span>
-    )
-  }
   const Icon = CATEGORY_ICON[category] ?? Square3Stack3DIcon
   return <Icon className={className} aria-hidden />
 }
