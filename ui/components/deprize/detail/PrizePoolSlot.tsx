@@ -3,10 +3,8 @@ import type { Chain } from 'thirdweb'
 import {
   DEPRIZE_FUND_ENABLED,
   DEPRIZE_PATRONS_ENABLED,
-  FUND_GEO_OPEN,
   PATRONS_PENDING_TTL_MS,
 } from '@/lib/deprize/constants'
-import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { usePrizePatrons } from '@/lib/deprize/usePrizePatrons'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import DePrizeCallers from '@/components/deprize/DePrizeCallers'
@@ -31,8 +29,6 @@ export default function PrizePoolSlot(props: {
   labels?: string[]
   bettorAddresses?: readonly string[]
 }) {
-  const restricted = useDePrizeRestricted()
-  const fundAllowed = FUND_GEO_OPEN || !restricted
   const [fundOpen, setFundOpen] = useState(false)
   const [pendingPayer, setPendingPayer] = useState<string | null>(null)
 
@@ -55,8 +51,7 @@ export default function PrizePoolSlot(props: {
     return () => clearTimeout(t)
   }, [pendingPayer, patrons.patrons])
 
-  const showFund =
-    DEPRIZE_FUND_ENABLED && fundAllowed && props.jbProjectId != null && !!props.chain
+  const showFund = DEPRIZE_FUND_ENABLED && props.jbProjectId != null && !!props.chain
 
   function onFund() {
     // Always open the contribution window. A signed-in session with no

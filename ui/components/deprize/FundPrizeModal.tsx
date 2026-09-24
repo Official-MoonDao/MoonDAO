@@ -4,11 +4,9 @@ import toast from 'react-hot-toast'
 import {
   DEPRIZE_TERMS_URL,
   FUND_CONFIRM_ABOVE_WEI,
-  FUND_GEO_OPEN,
   FUND_MIN_WEI,
   UNIT,
 } from '@/lib/deprize/constants'
-import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { fmtEthWithUsd } from '@/lib/deprize/format'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
@@ -18,7 +16,6 @@ import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { prepareJBPay } from '@/lib/juicebox/payProject'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import client from '@/lib/thirdweb/client'
-import DePrizeAvailabilityLegend from '@/components/deprize/DePrizeAvailabilityLegend'
 import Modal from '@/components/layout/Modal'
 import StandardButton from '@/components/layout/StandardButton'
 import type { Chain } from 'thirdweb'
@@ -37,7 +34,6 @@ export default function FundPrizeModal(props: {
   const [memo, setMemo] = useState('')
   const [busy, setBusy] = useState(false)
   const [confirmedLarge, setConfirmedLarge] = useState(false)
-  const restricted = useDePrizeRestricted()
   const { ready, authenticated, logout } = usePrivy()
   const { login } = useLogin()
   const { wrongNetwork, chainLabel, switching, switchToChain } = useDePrizeChainGuard(chain)
@@ -48,8 +44,6 @@ export default function FundPrizeModal(props: {
   const belowMin = amountWei > 0n && amountWei < FUND_MIN_WEI
   const needsConfirm = amountWei >= FUND_CONFIRM_ABOVE_WEI
   const minEth = Number(FUND_MIN_WEI) / Number(UNIT)
-
-  if (!(FUND_GEO_OPEN || !restricted)) return null
 
   async function connectWallet() {
     // login() does not open when Privy already has a session. A session with no
@@ -203,7 +197,6 @@ export default function FundPrizeModal(props: {
         <a href={DEPRIZE_TERMS_URL} className="text-xs text-indigo-300 underline">
           DePrize Terms
         </a>
-        <DePrizeAvailabilityLegend />
       </div>
     </Modal>
   )

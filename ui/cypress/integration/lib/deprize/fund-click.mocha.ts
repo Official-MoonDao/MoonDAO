@@ -42,4 +42,12 @@ describe('fund the prize click', () => {
     expect(modal).to.include('Reconnect wallet')
     expect(modal).to.include('!wallet ?')
   })
+
+  it('does not geo-gate a prize-pool contribution', () => {
+    expect(slot).to.not.include('FUND_GEO_OPEN')
+    expect(slot).to.not.include('useDePrizeRestricted')
+    expect(modal).to.not.include('DePrizeAvailabilityLegend')
+    expect(modal).to.not.include('useDePrizeRestricted')
+    expect(modal).to.not.include('Not available to U.S. persons')
+  })
 })
