@@ -27,7 +27,7 @@ Teams are created only after the wallet is whitelisted. Go to [Join](https://moo
    1. You can fund your wallet directly through the “Fund” feature in the **top-right** wallet menu using Coinbase onramp or MoonPay (not affiliated with MoonDAO). Debit cards are usually more successful at this step compared to credit cards.\
       ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXch-TUWV-G9V53YPucU-J0fAMaGHuUj4mCPgKF1mfabOkMxZ0vqdB6h5VwOD_z4zvHGUtV0PSxeXFmvXxSi0pC62FBVuWvJbKG9IhBglcfXAKaVcq_q7e4ctJ1ja40mTgwHKU0PXA?key=dNK6lTkf7eD9GOYdS33HGA)
 
-   2. Purchase Ethereum (ETH) on **Arbitrum**. A team is **0.0333 ETH** and a citizen is **0.0111 ETH**. Budget about **0.0444 ETH** plus gas if you need both. Confirm the live totals on [Join](https://moondao.com/join) before you pay.
+   2. Purchase Ethereum (ETH) on **Arbitrum**. Apply at [/team](https://moondao.com/team); the price is whatever checkout shows.
 
 
 ### What if you can’t fund your wallet at this step?
