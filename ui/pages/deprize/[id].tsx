@@ -57,7 +57,7 @@ import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
 import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
-import useTotalFunding from '@/lib/juicebox/useTotalFunding'
+import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -184,21 +184,18 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
   const odds = useOddsHistory({ market, activity })
 
-  // Pass a plain number: useRead JSON.stringify's its params for memoization,
-  // which throws on bigint. JB project ids are small, so Number() is safe.
-  // useTotalFunding returns BigInt(0) for a missing projectId / while reads are
-  // in flight, so gate the display on a real project id and !isLoading.
-  // Read Juicebox on the same chain as the DePrize registry (jbTerminal.pay
-  // settles on-chain with the mint router), not the build-time default.
+  // Juicebox project ids are small, so Number() is safe. A missing read stays
+  // null — it must not render as 0 ETH. The balance is the ETH still in the
+  // project on this prize's chain.
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
-  const { totalFunding, isLoading: isLoadingFunding } = useTotalFunding(jbProjectId, chain)
+  const { balanceWei, loading: isLoadingFunding } = useDePrizePrizePool(jbProjectId, chain.id)
   const { ethPrice } = useETHPrice(1)
+  const poolEth =
+    balanceWei != null && !isLoadingFunding ? Number(balanceWei) / Number(UNIT) : null
   const poolUsd = useMemo(() => {
-    if (jbProjectId === undefined || isLoadingFunding || ethPrice == null) return null
-    const eth = Number(totalFunding) / Number(UNIT)
-    if (!Number.isFinite(eth)) return null
-    return eth * ethPrice
-  }, [jbProjectId, isLoadingFunding, totalFunding, ethPrice])
+    if (poolEth == null || ethPrice == null) return null
+    return poolEth * ethPrice
+  }, [poolEth, ethPrice])
   const poolAsOf = useMemo(() => {
     if (ethPrice == null) return null
     return new Date().toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC')
@@ -823,11 +820,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         <PrizePoolSlot
           poolUsd={poolUsd}
           asOf={poolAsOf}
-          poolEth={
-            jbProjectId !== undefined && !isLoadingFunding
-              ? Number(totalFunding) / Number(UNIT)
-              : null
-          }
+          poolEth={poolEth}
           volumeEth={
             activity.error || (activity.loading && activity.bets.length === 0)
               ? null
