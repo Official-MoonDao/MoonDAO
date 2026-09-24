@@ -397,6 +397,9 @@ export default function RaceMarketCard({
         concept: 'Planned',
       }[statusTone]
     : null
+  // Live and Planned are the section headings. The pill stays for a market
+  // that is paused or already settled, which those headings do not say.
+  const showStatusPill = statusTone === 'paused' || statusTone === 'resolved'
 
   const category = goalIndexCategory(goal) ?? 'other'
   const categoryLabel = PROJECT_TYPE_LABEL[category]
@@ -502,7 +505,9 @@ export default function RaceMarketCard({
             <RaceCardTitle goal={goal} titleClassName="text-white font-GoodTimes text-base" />
             <p className="text-gray-500 text-xs mt-0.5">{categoryLabel}</p>
           </a>
-          {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
+          {showStatusPill && statusLabel && statusTone && (
+            <StatusPill label={statusLabel} tone={statusTone} />
+          )}
         </div>
         <div className="px-4 sm:px-5 pb-4 sm:pb-5 flex flex-col gap-2">
           {heldOutcomes.map((o) => (
@@ -606,7 +611,9 @@ export default function RaceMarketCard({
             />
             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500">
               <span className="truncate">{categoryLabel}</span>
-              {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
+              {showStatusPill && statusLabel && statusTone && (
+                <StatusPill label={statusLabel} tone={statusTone} />
+              )}
             </div>
           </div>
         </a>
@@ -709,7 +716,9 @@ export default function RaceMarketCard({
                       </span>
                     </>
                   )}
-                  {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
+                  {showStatusPill && statusLabel && statusTone && (
+                    <StatusPill label={statusLabel} tone={statusTone} />
+                  )}
                 </div>
               </div>
             </div>
@@ -806,7 +815,9 @@ export default function RaceMarketCard({
                     </span>
                   </>
                 )}
-                {statusTone && statusLabel && <StatusPill label={statusLabel} tone={statusTone} />}
+                {showStatusPill && statusLabel && statusTone && (
+                  <StatusPill label={statusLabel} tone={statusTone} />
+                )}
               </div>
             </div>
             <div className="text-right shrink-0">
