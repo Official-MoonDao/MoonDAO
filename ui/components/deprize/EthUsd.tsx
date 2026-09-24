@@ -4,8 +4,6 @@ import { fmt, fmtPrizeEth, fmtUsdFromEth } from '@/lib/deprize/format'
 type EthUsdProps = {
   eth?: number | null
   approx?: boolean
-  /** Omit the ≈ prefix and the ~ before USD. */
-  exact?: boolean
   prize?: boolean
   signed?: boolean
   unit?: string
@@ -24,8 +22,6 @@ type EthUsdProps = {
  */
 export default function EthUsd({
   eth,
-  approx = false,
-  exact = false,
   prize = false,
   signed = false,
   unit = 'ETH',
@@ -44,14 +40,13 @@ export default function EthUsd({
   const ethStr = prize ? fmtPrizeEth(Math.abs(eth)) : fmt(Math.abs(eth), decimals)
   const sign = signed ? (eth > 0 ? '+' : eth < 0 ? '-' : '') : eth < 0 ? '-' : ''
   const usd = fmtUsdFromEth(eth, ethPrice, { signed })
-  const ethLabel = `${!exact && approx ? '≈ ' : ''}${sign}${ethStr} ${unit}`
-  const usdLabel = (amount: string) => (exact ? ` (${amount})` : ` (~${amount})`)
+  const ethLabel = `${sign}${ethStr} ${unit}`
 
   if (layout === 'below') {
     return (
       <span className={`inline-flex flex-col items-end ${className ?? ''}`}>
         <span>{ethLabel}</span>
-        {usd != null && <span className={usdClassName}>{exact ? usd : `~${usd}`}</span>}
+        {usd != null && <span className={usdClassName}>{usd}</span>}
       </span>
     )
   }
@@ -59,7 +54,7 @@ export default function EthUsd({
   return (
     <span className={className}>
       {ethLabel}
-      {usd != null && <span className={usdClassName}>{usdLabel(usd)}</span>}
+      {usd != null && <span className={usdClassName}> ({usd})</span>}
     </span>
   )
 }

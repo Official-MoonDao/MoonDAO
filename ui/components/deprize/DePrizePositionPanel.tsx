@@ -143,16 +143,16 @@ export default function DePrizePositionPanel({
 
       <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Mini label="Spent" title="Everything you've paid in, including the 5% that went to the prize pool.">
-          {loading ? 'Loading' : <EthUsd eth={summary.totalSpentEth} exact />}
+          {loading ? 'Loading' : <EthUsd eth={summary.totalSpentEth} />}
         </Mini>
         <Mini
           label={resolved ? 'Claimable' : 'Current value'}
           title={resolved ? 'What your shares redeem for now.' : 'What the market would pay you to sell everything right now.'}
         >
-          {figuresReady ? <EthUsd eth={summary.currentValueEth} exact /> : 'Loading'}
+          {figuresReady ? <EthUsd eth={summary.currentValueEth} /> : 'Loading'}
         </Mini>
         <Mini label="Cashed out">
-          {loading ? 'Loading' : <EthUsd eth={summary.realizedEth} exact />}
+          {loading ? 'Loading' : <EthUsd eth={summary.realizedEth} />}
         </Mini>
         <Mini
           label={resolved ? 'Result' : 'If your pick wins'}
@@ -162,7 +162,7 @@ export default function DePrizePositionPanel({
             loading ? 'Loading' : isRefundVector ? 'Refund' : heldIdx.includes(winningIndex) ? 'Won' : 'Lost'
           ) : figuresReady ? (
             <span className="text-emerald-300">
-              <EthUsd eth={bestCase} exact usdClassName="text-emerald-300/70 font-normal" />
+              <EthUsd eth={bestCase} usdClassName="text-emerald-300/70 font-normal" />
             </span>
           ) : (
             'Loading'
@@ -195,7 +195,7 @@ export default function DePrizePositionPanel({
                         {value !== undefined && (
                           <>
                             {' · '}
-                            {resolved ? 'Claim' : 'Cash out'} <EthUsd eth={value} approx={!resolved} />
+                            {resolved ? 'Claim' : 'Cash out'} <EthUsd eth={value} />
                             <PnlSuffix pnl={value - pos.heldCostEth} />
                           </>
                         )}
@@ -214,20 +214,6 @@ export default function DePrizePositionPanel({
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-wide text-gray-500">
-                    {resolved ? (isRefundVector ? 'Refund' : index === winningIndex ? 'Won' : 'Lost') : 'Now worth'}
-                  </p>
-                  <p className="text-sm font-semibold text-white tabular-nums">
-                    {!balanceKnown || (held > 0 && value === undefined) ? (
-                      'Loading'
-                    ) : held > 0 ? (
-                      <EthUsd eth={value} approx={!resolved} />
-                    ) : (
-                      <span className="text-gray-500">sold</span>
-                    )}
-                  </p>
-                </div>
                 {canSell && (
                   <button
                     type="button"

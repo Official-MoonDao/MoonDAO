@@ -9,44 +9,44 @@ import { getContract } from 'thirdweb'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 
 /**
- * ETH currently held for a prize's Juicebox project.
- *
- * The shared `useTotalFunding` hook reads through the batched thirdweb client.
- * Batched eth_calls in this app decode as undefined, and that undefined is
- * shown as 0. DePrize reads go out one at a time so a real balance is not
- * reported as an empty pool.
+ * Juicebox terminal balance for a prize pool. The shared `useTotalFunding`
+ * reader batches calls and treats a missing result as 0, so the pool showed
+ * "0 ETH" before the balance arrived. This read stays unset until the
+ * unbatched call returns a bigint.
  */
-export function useDePrizePrizePool(projectId: number | undefined, chainId: number) {
+export function useDePrizePrizePool(projectId: number | undefined, chainId: number | undefined) {
   const [balanceWei, setBalanceWei] = useState<bigint | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(projectId != null && chainId != null)
 
   useEffect(() => {
-    if (projectId == null || !Number.isFinite(projectId) || projectId <= 0) {
+    if (projectId == null || chainId == null) {
       setBalanceWei(null)
       setLoading(false)
       return
     }
     let cancelled = false
     setLoading(true)
+    setBalanceWei(null)
     const store = getContract({
       client: deprizeReadClient,
       chain: deprizeReadChain(chainId),
       address: JBV5_TERMINAL_STORE_ADDRESS,
-      abi: (JBV5TerminalStore as { abi: any }).abi,
+      abi: ((JBV5TerminalStore as { abi?: unknown }).abi ?? JBV5TerminalStore) as any,
     })
     rpcRead<bigint>({
       contract: store,
       method: 'balanceOf' as string,
-      params: [JBV5_TERMINAL_ADDRESS, BigInt(projectId), JB_NATIVE_TOKEN_ADDRESS],
+      params: [JBV5_TERMINAL_ADDRESS, projectId, JB_NATIVE_TOKEN_ADDRESS],
     })
-      .then((balance) => {
-        if (!cancelled) setBalanceWei(balance)
+      .then((value) => {
+        if (cancelled) return
+        setBalanceWei(typeof value === 'bigint' ? value : null)
+        setLoading(false)
       })
       .catch(() => {
-        if (!cancelled) setBalanceWei(null)
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (cancelled) return
+        setBalanceWei(null)
+        setLoading(false)
       })
     return () => {
       cancelled = true

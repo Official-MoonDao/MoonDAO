@@ -184,14 +184,13 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
   const odds = useOddsHistory({ market, activity })
 
-  // Juicebox project ids are small, so Number() is safe. A missing read stays
-  // null — it must not render as 0 ETH. The balance is the ETH still in the
-  // project on this prize's chain.
+  // Read Juicebox on the same chain as the DePrize registry. A batched
+  // useTotalFunding read comes back empty and was shown as 0 ETH.
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
-  const { balanceWei, loading: isLoadingFunding } = useDePrizePrizePool(jbProjectId, chain.id)
-  const { ethPrice } = useETHPrice(1)
+  const prizePool = useDePrizePrizePool(jbProjectId, chain.id)
   const poolEth =
-    balanceWei != null && !isLoadingFunding ? Number(balanceWei) / Number(UNIT) : null
+    prizePool.balanceWei == null ? null : Number(prizePool.balanceWei) / Number(UNIT)
+  const { ethPrice } = useETHPrice(1)
   const poolUsd = useMemo(() => {
     if (poolEth == null || ethPrice == null) return null
     return poolEth * ethPrice
@@ -821,11 +820,13 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           poolUsd={poolUsd}
           asOf={poolAsOf}
           poolEth={poolEth}
+          poolLoading={prizePool.loading}
           volumeEth={
             activity.error || (activity.loading && activity.bets.length === 0)
               ? null
               : activity.totalStakedEth
           }
+          volumeLoading={activity.loading && activity.bets.length === 0}
           deprizeId={deprizeId}
           jbProjectId={jbProjectId}
           prizeTitle={competition.title}
