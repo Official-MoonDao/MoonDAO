@@ -15,7 +15,6 @@ import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
-import DePrizeLadderStrip from '@/components/deprize/DePrizeLadderStrip'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
@@ -161,8 +160,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                 {DEPRIZE_RESTRICTED_PREDICT_COPY}
               </div>
             )}
-
-            <DePrizeLadderStrip chainSlug={chainSlug} />
 
             {/* Search. 16px text on phones: iOS Safari zooms the page when a
                 focused input is any smaller. */}
