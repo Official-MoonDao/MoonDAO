@@ -248,13 +248,17 @@ export default function MissionContributeModal({
       setUserChosePayChainInModal(false)
       return
     }
+    if (paymentChain) {
+      setSelectedChain((prev) => (prev.id === paymentChain.id ? prev : paymentChain))
+      return
+    }
     if (stayOnSelectedAppChainRef?.current) {
       stayOnSelectedAppChainRef.current = false
       setUserChosePayChainInModal(true)
       return
     }
     syncContextToRecommendedFunding()
-  }, [modalEnabled, stayOnSelectedAppChainRef, syncContextToRecommendedFunding])
+  }, [modalEnabled, paymentChain, setSelectedChain, stayOnSelectedAppChainRef, syncContextToRecommendedFunding])
 
   const contributionTermsCheckboxLabel = useMemo(
     () => (
@@ -365,7 +369,7 @@ export default function MissionContributeModal({
 
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
-    chain: DEFAULT_CHAIN_V5,
+    chain: paymentChain ?? DEFAULT_CHAIN_V5,
     abi: JBV5MultiTerminal.abi as any,
     forwardClient,
   })
@@ -910,7 +914,7 @@ export default function MissionContributeModal({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chainId: DEFAULT_CHAIN_V5.id,
+              chainId: payChainStable.id,
               from: address,
               to: primaryTerminalAddress,
               data: txData,
@@ -1042,6 +1046,7 @@ export default function MissionContributeModal({
     crossChainQuote,
     chainSlug,
     defaultChainSlug,
+    isCrossChainPay,
     layerZeroLimitExceeded,
   ])
 
@@ -1123,6 +1128,7 @@ export default function MissionContributeModal({
   // true) and keep the cross-chain path.
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') return
+    if (paymentChain) return
     if (!modalEnabled || !address) return
     // Returning from the onramp: card funds always land on the default chain,
     // so pin the whole flow there immediately (before the auto-contribution
@@ -1145,6 +1151,7 @@ export default function MissionContributeModal({
     fundingBalanceResolved,
     hasEnoughBalance,
     payChainStable.id,
+    paymentChain,
     chains,
     setSelectedChain,
     router?.query?.onrampSuccess,
@@ -1194,7 +1201,7 @@ export default function MissionContributeModal({
       eth: layerZeroFeeEth.toFixed(6),
       usd: layerZeroFeeUsd.toFixed(2),
     }
-  }, [crossChainQuote, usdInput, ethUsdPrice, chainSlug, defaultChainSlug, layerZeroLimitExceeded])
+  }, [crossChainQuote, usdInput, ethUsdPrice, chainSlug, defaultChainSlug, isCrossChainPay, layerZeroLimitExceeded])
 
   // Calculate how much ETH the user needs to buy.
   // Treat an unresolved balance as 0 for deficit purposes — PaymentBreakdown
