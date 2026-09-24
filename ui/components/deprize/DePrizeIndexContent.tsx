@@ -75,15 +75,22 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
   const filteredRaces = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return races.filter((r) => {
-      if (category !== 'all' && goalIndexCategory(r.goal) !== category) return false
-      const live = isDePrizeGoalMarketBound(chainSlug, r.goal.id)
-      if (listing === 'live' && !live) return false
-      if (listing === 'planned' && live) return false
-      if (!q) return true
-      if (r.goal.title.toLowerCase().includes(q)) return true
-      return r.competitors.some((c) => c.project.name.toLowerCase().includes(q))
-    })
+    return races
+      .filter((r) => {
+        if (category !== 'all' && goalIndexCategory(r.goal) !== category) return false
+        const live = isDePrizeGoalMarketBound(chainSlug, r.goal.id)
+        if (listing === 'live' && !live) return false
+        if (listing === 'planned' && live) return false
+        if (!q) return true
+        if (r.goal.title.toLowerCase().includes(q)) return true
+        return r.competitors.some((c) => c.project.name.toLowerCase().includes(q))
+      })
+      .sort((a, b) => {
+        const aLive = isDePrizeGoalMarketBound(chainSlug, a.goal.id)
+        const bLive = isDePrizeGoalMarketBound(chainSlug, b.goal.id)
+        if (aLive === bLive) return 0
+        return aLive ? -1 : 1
+      })
   }, [races, search, category, listing, chainSlug])
 
   // Live on-chain competitions that aren't bound to a Moon Base Zero race
