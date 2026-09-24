@@ -3,6 +3,8 @@ import JobsABI from 'const/abis/JobBoardTable.json'
 import TeamABI from 'const/abis/Team.json'
 import { JOBS_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
+import getProjectActiveMap from '@/lib/project/getProjectActiveMap'
 import { Chain } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -71,7 +73,13 @@ export async function filterJobsByActiveTeam(
   )
 
   const expiresByTeam = new Map(expirations)
-  return jobs.filter((job) => (expiresByTeam.get(job.teamId) ?? 0) > now)
+  // Project-teams are gated by ProjectV2.active, not subscription expiry.
+  const projectActiveByTeamId = await getProjectActiveMap(chain, getChainSlug(chain))
+  return jobs.filter((job) => {
+    const projectActive = projectActiveByTeamId.get(String(job.teamId))
+    if (projectActive !== undefined) return projectActive === PROJECT_ACTIVE
+    return (expiresByTeam.get(job.teamId) ?? 0) > now
+  })
 }
 
 export async function fetchActiveJobs(

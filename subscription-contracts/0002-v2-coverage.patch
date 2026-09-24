@@ -1,0 +1,59 @@
+diff --git a/subscription-contracts/src/MoonDAOTeamCreatorV2.sol b/subscription-contracts/src/MoonDAOTeamCreatorV2.sol
+index 52ae58a1a..c39b98316 100644
+--- a/subscription-contracts/src/MoonDAOTeamCreatorV2.sol
++++ b/subscription-contracts/src/MoonDAOTeamCreatorV2.sol
+@@ -160,12 +160,12 @@ contract MoonDAOTeamCreatorV2 is Ownable {
+ 
+         table.insertIntoTable(
+             tokenId,
+-            metadata.name,
+-            metadata.bio,
+-            metadata.image,
+-            metadata.twitter,
+-            metadata.communications,
+-            metadata.website,
++            "",
++            "",
++            "",
++            "",
++            "",
++            "",
+             metadata._view,
+             metadata.formId
+         );
+diff --git a/subscription-contracts/src/ProjectTeamCreatorV2.sol b/subscription-contracts/src/ProjectTeamCreatorV2.sol
+index 34742b530..45079e776 100644
+--- a/subscription-contracts/src/ProjectTeamCreatorV2.sol
++++ b/subscription-contracts/src/ProjectTeamCreatorV2.sol
+@@ -143,12 +143,12 @@ contract ProjectTeamCreatorV2 is Ownable {
+ 
+         teamTable.insertIntoTable(
+             tokenId,
+-            teamMetadata.name,
+-            teamMetadata.bio,
+-            teamMetadata.image,
+-            teamMetadata.twitter,
+-            teamMetadata.communications,
+-            teamMetadata.website,
++            "",
++            "",
++            "",
++            "",
++            "",
++            "",
+             teamMetadata._view,
+             teamMetadata.formId
+         );
+@@ -157,9 +157,9 @@ contract ProjectTeamCreatorV2 is Ownable {
+             ProjectV2.ProjectData({
+                 id: projectMetadata.id,
+                 teamId: tokenId,
+-                name: projectMetadata.name,
+-                description: projectMetadata.description,
+-                image: projectMetadata.image,
++                name: "",
++                description: "",
++                image: "",
+                 quarter: projectMetadata.quarter,
+                 year: projectMetadata.year,
+                 MDP: projectMetadata.MDP,
