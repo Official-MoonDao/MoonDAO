@@ -145,7 +145,7 @@ export default function DePrizePositionPanel({
           label={resolved ? 'Claimable' : 'Current value'}
           title={resolved ? 'What your shares redeem for now.' : 'What the market would pay you to sell everything right now.'}
         >
-          {valueKnown ? <EthUsd eth={summary.currentValueEth} approx={!resolved} /> : '…'}
+          {valueKnown ? <EthUsd eth={summary.currentValueEth} /> : '…'}
         </Mini>
         <Mini label="Cashed out">
           <EthUsd eth={summary.realizedEth} />
@@ -186,7 +186,7 @@ export default function DePrizePositionPanel({
                         {value !== undefined && (
                           <>
                             {' · '}
-                            {resolved ? 'Claim' : 'Cash out'} <EthUsd eth={value} approx={!resolved} />
+                            {resolved ? 'Claim' : 'Cash out'} <EthUsd eth={value} />
                             <PnlSuffix pnl={value - pos.heldCostEth} />
                           </>
                         )}
@@ -212,7 +212,7 @@ export default function DePrizePositionPanel({
                   <p className="text-sm font-semibold text-white tabular-nums">
                     {held > 0 ? (
                       value !== undefined ? (
-                        <EthUsd eth={value} approx={!resolved} />
+                        <EthUsd eth={value} />
                       ) : (
                         '…'
                       )
