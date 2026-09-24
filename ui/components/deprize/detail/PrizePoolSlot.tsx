@@ -13,12 +13,27 @@ import EthUsd from '@/components/deprize/EthUsd'
 import DePrizeLaunchpadContribute from '@/components/deprize/DePrizeLaunchpadContribute'
 import { CARD, TOUCH } from './primitives'
 
+function PoolFigure({ eth, loading }: { eth?: number | null; loading?: boolean }) {
+  if (loading) {
+    return (
+      <span
+        className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white align-[-2px]"
+        role="status"
+        aria-label="Loading"
+      />
+    )
+  }
+  return <EthUsd eth={eth} prize />
+}
+
 export default function PrizePoolSlot(props: {
   poolUsd?: number | null
   asOf?: string | null
   poolEth?: number | null
+  poolLoading?: boolean
   /** Sum of bets placed into the market (`totalStaked`). Not the prize pool. */
   volumeEth?: number | null
+  volumeLoading?: boolean
   deprizeId?: number
   jbProjectId?: number
   prizeTitle?: string
@@ -66,7 +81,7 @@ export default function PrizePoolSlot(props: {
           <div className="min-w-0">
             <h3 className="text-white text-sm font-semibold">Prize pool</h3>
             <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
-              <EthUsd eth={props.poolEth} prize />
+              <PoolFigure eth={props.poolEth} loading={props.poolLoading} />
             </p>
           </div>
           <div className="min-w-0">
@@ -75,7 +90,7 @@ export default function PrizePoolSlot(props: {
               className="mt-1"
               title="Sum of bets placed into this market. Separate from the prize pool."
             >
-              <EthUsd eth={props.volumeEth} prize />
+              <PoolFigure eth={props.volumeEth} loading={props.volumeLoading} />
             </p>
           </div>
         </div>
