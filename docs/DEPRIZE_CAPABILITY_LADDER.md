@@ -19,7 +19,7 @@ an offer to award a prize.
 | 0 | Touchdown | next upright working landing | LIVE (Sepolia #22) |
 | 1 | First Tracks | commercial rover egress + drive | PLANNED — name and bar only |
 | 2 | Ice | 2027 in-situ surface water ice | PLANNED — name and bar only |
-| 3 | Night Shift | chamber proxy now · surface 2028+ | PLANNED — placeholder only |
+| 3 | Night Shift | chamber proxy now · surface 2028+ | LIVE (Sepolia #3) |
 
 **Why this order.** Upright landing is proven (Blue Ghost 1). Wheels are not. Ice is the 2027
 science prize. Night is later.
@@ -27,7 +27,7 @@ science prize. Night is later.
 **Why Night Shift is 2028+ (placeholder only).** No 2026–27 lander on the Touchdown roster is
 designed to operate through a full lunar night. Zeno RHU on Blue Ghost is NET 2028. A chamber
 prize was drafted as a proxy and then taken out of the public repo. This rung's public text
-is this paragraph only: chamber proxy now · surface-night market 2028+ · no on-chain id.
+is this paragraph only: chamber proxy now · surface-night market 2028+. Sepolia id 3 is the dress rehearsal.
 
 **Each rung has its own roster** (when it has one at all). Touchdown slots are landing-vehicle
 operators. First Tracks slots will be rover operators — not a crewed LTV race. Do not copy

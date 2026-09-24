@@ -105,7 +105,7 @@ describe('deprize competitions registry', () => {
   it('reverse-looks up the DePrize id for a bound goal (hit and miss)', () => {
     expect(findDePrizeIdForGoal('sepolia', 'shared-next-landing')).to.equal(2)
     expect(findDePrizeIdForGoal('sepolia', 'shared-fission-power')).to.equal(undefined)
-    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(3)
     expect(findDePrizeIdForGoal('sepolia', 'shared-mass-driver')).to.equal(undefined)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-fission-power')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', undefined)).to.equal(undefined)
@@ -114,7 +114,7 @@ describe('deprize competitions registry', () => {
   it('reports a bound race regardless of consent, and unbound goals as unbound', () => {
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-next-landing')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-fission-power')).to.equal(false)
-    expect(isDePrizeGoalMarketBound('sepolia', 'shared-night-shift')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-night-shift')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-mass-driver')).to.equal(false)
     // Arbitrum has no binding at all, so there is no market to report.
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-fission-power')).to.equal(false)

@@ -82,6 +82,25 @@ this market.
 Off-chain, generation 1 is `supersededBy: 2` and this id `supersedes: 1`. The
 live page is `/deprize/2` or `/deprize/shared-next-landing` with the app on Sepolia.
 
+## Night Shift — v2 id 3 (2026-09-24)
+
+First Tracks and Ice still have no roster, so this is the next capability race
+that can open. Atlas goal `shared-night-shift`. Eight slots: seven named
+systems, then the Open Field.
+
+| Slot | Value | Notes |
+|---|---|---|
+| `deprizeId` | `3` | `DePrizeRegistered` on `register` |
+| Competing teams | `[611, 612, 613, 614, 615, 616, 617, 24]` | Harmonia, NITE, Venturi, ENDURE, CNNC, Rosatom, BARC, Open Field |
+| JB project id | `271` | Mission **17** |
+| LaunchPadPayHook | `0xd49D3beEdF3DDdD372Fb1D9682d13ab783b62A5C` | Latched to the v2 registry; `stage == 1` |
+| `questionId` | `0x6058f2c9f314734e1f1ecf8c34c8d8835fff5d8fb5e075d8044823e1717f00d4` | `keccak256("deprize:sepolia:shared-night-shift:v1")`. **Not on-chain.** |
+| `conditionId` | `0xad54c1e19f7a525302453cc5e0ae63e1037a980cd9e56ea15a3ce28a7f275457` | 8 outcome slots; oracle = deployer |
+| LMSRMarketMaker | `0xff6F3CD6Fc79e21DaA15afAfF04dF98751DcF00c` | Stock Gnosis, 0.08 ETH seed (0.01 × 8), 1% fee, owner = deployer, stage Running |
+| Sunset | `1853358395` | ~2 years from provision |
+
+`createMission` `0x1df39a84…f4a94`. `register` `0x25d56467…1cdef`. `open` `0x24c349ab…786dc`.
+
 ## UI follow-up PR (do not ship without both)
 
 Point `ui/const/config.ts` at the v2 stack **and** rebind

@@ -61,9 +61,13 @@ describe('capability ladder', () => {
     expect(result.currentKey).to.equal('touchdown')
   })
 
-  it('planned rungs have no href and no deprizeId', () => {
+  it('planned rungs have no href; Night Shift is the live rung after Touchdown', () => {
     const result = getLadderForCompetition('sepolia', 2)
-    for (const key of ['first-tracks', 'ice', 'night-shift'] as const) {
+    const night = result.rungs.find((r) => r.key === 'night-shift')
+    expect(night?.status).to.equal('live')
+    expect(night?.deprizeId).to.equal(3)
+    expect(night?.href).to.equal('/deprize/3')
+    for (const key of ['first-tracks', 'ice'] as const) {
       const rung = result.rungs.find((r) => r.key === key)
       expect(rung?.status, key).to.equal('planned')
       expect(rung?.href, key).to.equal(undefined)

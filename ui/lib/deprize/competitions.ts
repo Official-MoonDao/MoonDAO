@@ -208,6 +208,28 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },
+    // v2 registry id 3 — Night Shift. Rungs 1 and 2 (First Tracks, Ice) still
+    // have no roster, so this is the next capability race that can open.
+    3: {
+      title: 'Night Shift',
+      tagline:
+        'Which power system delivers 10 watts, unplugged, through a lunar night in a cold vacuum chamber? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for lunar night power. Zeno Harmonia, Astrobotic NITE, Venturi, Perpetual Atomics ENDURE, CNNC, Rosatom, ISRO BARC, and the Open Field.',
+      questionId: '0x6058f2c9f314734e1f1ecf8c34c8d8835fff5d8fb5e075d8044823e1717f00d4',
+      sharedGoalId: 'shared-night-shift',
+      raceLabel: 'Lunar night power',
+      outcomes: [
+        { projectId: 'zeno-harmonia', teamId: 611, vehicleLabel: 'Harmonia' },
+        { projectId: 'astrobotic-nite', teamId: 612, vehicleLabel: 'NITE' },
+        { projectId: 'venturi-lunar-battery', teamId: 613, vehicleLabel: 'Lunar-cycle battery' },
+        { projectId: 'perpetual-atomics-endure', teamId: 614, vehicleLabel: 'ENDURE Am-241 RHU' },
+        { projectId: 'cnnc-lunar-rtg', teamId: 615, vehicleLabel: "Chang'e lunar RTG" },
+        { projectId: 'rosatom-lunar-rtg', teamId: 616, vehicleLabel: 'Rosatom lunar RTG' },
+        { projectId: 'isro-barc-rhu', teamId: 617, vehicleLabel: 'BARC / LUPEX night survival' },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
   },
 }
 

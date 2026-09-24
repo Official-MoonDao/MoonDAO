@@ -59,6 +59,7 @@ export const CAPABILITY_LADDER: readonly CapabilityRung[] = [
     key: 'night-shift',
     label: 'Night Shift',
     bar: 'Chamber proxy now · surface night 2028+',
+    sharedGoalId: 'shared-night-shift',
     specHref: '',
   },
 ]
