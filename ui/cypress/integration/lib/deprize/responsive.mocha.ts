@@ -26,7 +26,7 @@ const PRIMITIVES = 'components/deprize/detail/primitives.tsx'
 
 /** Files whose tap targets must come from the shared token. */
 const TOUCH_CONSUMERS = [
-  'components/deprize/ForecastPanel.tsx',
+  'components/deprize/PredictModal.tsx',
   'components/deprize/DePrizeTeamCard.tsx',
   'components/deprize/DePrizePositionPanel.tsx',
   'components/deprize/DePrizePatrons.tsx',
@@ -40,7 +40,6 @@ const TOUCH_CONSUMERS = [
 /** Surfaces where a user types, so the text has to survive an iOS focus. */
 const TYPED_SURFACES = [
   'components/deprize/BetModal.tsx',
-  'components/deprize/FundPrizeModal.tsx',
   'components/deprize/DePrizeIndexContent.tsx',
 ]
 
@@ -143,7 +142,7 @@ describe('deprize responsive layout', () => {
   })
 
   it('opens a decimal keypad for money instead of a full keyboard', () => {
-    for (const file of ['components/deprize/BetModal.tsx', 'components/deprize/FundPrizeModal.tsx']) {
+    for (const file of ['components/deprize/BetModal.tsx']) {
       for (const tag of inputTags(readUi(file))) {
         if (!/type="number"/.test(tag)) continue
         expect(tag, `a number input in ${file} has no inputMode:\n${tag}`).to.match(
@@ -176,9 +175,21 @@ describe('deprize responsive layout', () => {
         /inline-flex items-center/
       )
     }
-    expect(header.match(/\$\{TOUCH\}/g) ?? [], 'both header links and the fund CTA').to.have.length(
-      3
+    expect(header.match(/\$\{TOUCH\}/g) ?? [], 'the Moon Base and All prizes links').to.have.length(
+      2
     )
+  })
+
+  it('shows betting volume beside the prize pool without restoring header stats', () => {
+    const slot = readUi('components/deprize/detail/PrizePoolSlot.tsx')
+    expect(slot).to.include('Betting volume')
+    expect(slot).to.include('volumeEth')
+    const header = readUi('components/deprize/detail/PrizeHeader.tsx')
+    expect(header).to.not.include('Backers')
+    expect(header).to.not.include('Betting closes')
+    expect(header).to.not.include('Total volume')
+    const page = readUi('pages/deprize/[id].tsx')
+    expect(page).to.match(/volumeEth=\{[\s\S]*totalStakedEth/)
   })
 
   it('left-aligns the hero prize figure once it wraps under the title', () => {

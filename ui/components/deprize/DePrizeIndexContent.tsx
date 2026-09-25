@@ -3,7 +3,7 @@ import { useLogin } from '@privy-io/react-auth'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
-import { getFeaturedLiveDePrizeId } from '@/lib/deprize/competitions'
+import { getFeaturedLiveDePrizeId, isDePrizeGoalMarketBound } from '@/lib/deprize/competitions'
 import { DEPRIZE_RESTRICTED_PREDICT_COPY, deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
 import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
@@ -15,7 +15,6 @@ import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
-import DePrizeLadderStrip from '@/components/deprize/DePrizeLadderStrip'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
@@ -47,7 +46,9 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   const races = useMemo(() => {
     return SEED_ATLAS.sharedGoals
       // Crewed HLS is the same landing question as Touchdown. Keep Touchdown.
-      .filter((g) => g.id !== 'shared-crewed-lander')
+      // The crewed terrain vehicle was registered as Sepolia id 4 by mistake
+      // and is withdrawn; First Tracks is the rover prize.
+      .filter((g) => g.id !== 'shared-crewed-lander' && g.id !== 'shared-lunar-rover')
       .filter((g) => !!g.category || !!g.market)
       .map((goal) => ({
         goal,
@@ -75,20 +76,35 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
   const filteredRaces = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return races.filter((r) => {
-      if (category !== 'all' && goalIndexCategory(r.goal) !== category) return false
-      if (!q) return true
-      if (r.goal.title.toLowerCase().includes(q)) return true
-      return r.competitors.some((c) => c.project.name.toLowerCase().includes(q))
-    })
-  }, [races, search, category])
+    return races
+      .filter((r) => {
+        if (category !== 'all' && goalIndexCategory(r.goal) !== category) return false
+        if (!q) return true
+        if (r.goal.title.toLowerCase().includes(q)) return true
+        return r.competitors.some((c) => c.project.name.toLowerCase().includes(q))
+      })
+      .sort((a, b) => {
+        const aLive = isDePrizeGoalMarketBound(chainSlug, a.goal.id)
+        const bLive = isDePrizeGoalMarketBound(chainSlug, b.goal.id)
+        if (aLive === bLive) return 0
+        return aLive ? -1 : 1
+      })
+  }, [races, search, category, chainSlug])
+
+  const liveRaces = useMemo(
+    () => filteredRaces.filter((r) => isDePrizeGoalMarketBound(chainSlug, r.goal.id)),
+    [filteredRaces, chainSlug]
+  )
+  const plannedRaces = useMemo(
+    () => filteredRaces.filter((r) => !isDePrizeGoalMarketBound(chainSlug, r.goal.id)),
+    [filteredRaces, chainSlug]
+  )
 
   // Live on-chain competitions that aren't bound to a Moon Base Zero race
   // (Arbitrum #1 — The Moon Is A Harsh Mistress) take the hero slot. Atlas
   // race demos fill the grid below; fission no longer steals the featured
   // position when a real market is live on this chain.
   const featuredLiveId = useMemo(() => getFeaturedLiveDePrizeId(chainSlug), [chainSlug])
-  const gridRaces = filteredRaces
 
   const positionsCount = useMemo(
     () => Object.values(positionsMap).filter(Boolean).length,
@@ -157,8 +173,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                 {DEPRIZE_RESTRICTED_PREDICT_COPY}
               </div>
             )}
-
-            <DePrizeLadderStrip chainSlug={chainSlug} />
 
             {/* Search. 16px text on phones: iOS Safari zooms the page when a
                 focused input is any smaller. */}
@@ -242,42 +256,79 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
               </div>
             ) : activeTab === 'all' ? (
               <>
-                {featuredLiveId !== undefined && (
-                  <LiveDePrizeHero
-                    deprizeId={featuredLiveId}
-                    chain={chain}
-                    chainSlug={chainSlug}
-                    account={account}
-                    userAddress={userAddress}
-                    spendableEth={spendableEth}
-                    bettingBlockedReason={bettingBlockedReason}
-                    onDone={() => setRefreshNonce((n) => n + 1)}
-                  />
+                {(liveRaces.length > 0 || featuredLiveId !== undefined) && (
+                  <section aria-labelledby="deprize-live-heading" className="flex flex-col gap-4">
+                    <h2 id="deprize-live-heading" className="text-sm font-semibold text-white">
+                      Live
+                    </h2>
+                    {featuredLiveId !== undefined && (
+                      <LiveDePrizeHero
+                        deprizeId={featuredLiveId}
+                        chain={chain}
+                        chainSlug={chainSlug}
+                        account={account}
+                        userAddress={userAddress}
+                        spendableEth={spendableEth}
+                        bettingBlockedReason={bettingBlockedReason}
+                        onDone={() => setRefreshNonce((n) => n + 1)}
+                      />
+                    )}
+                    {liveRaces.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {liveRaces.map(({ goal, competitors }) => (
+                          <RaceMarketCard
+                            key={goal.id}
+                            goal={goal}
+                            competitors={competitors}
+                            chain={chain}
+                            chainSlug={chainSlug}
+                            account={account}
+                            userAddress={userAddress}
+                            spendableEth={spendableEth}
+                            refreshNonce={refreshNonce}
+                            activeTab={activeTab}
+                            bettingBlockedReason={bettingBlockedReason}
+                            onConnectWallet={() => login()}
+                            onHasPosition={handleHasPosition}
+                            onDone={() => setRefreshNonce((n) => n + 1)}
+                            variant="grid"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {gridRaces.map(({ goal, competitors }) => (
-                    <RaceMarketCard
-                      key={goal.id}
-                      goal={goal}
-                      competitors={competitors}
-                      chain={chain}
-                      chainSlug={chainSlug}
-                      account={account}
-                      userAddress={userAddress}
-                      spendableEth={spendableEth}
-                      refreshNonce={refreshNonce}
-                      activeTab={activeTab}
-                      bettingBlockedReason={bettingBlockedReason}
-                      onConnectWallet={() => login()}
-                      onHasPosition={handleHasPosition}
-                      onDone={() => setRefreshNonce((n) => n + 1)}
-                      variant="grid"
-                    />
-                  ))}
-                </div>
+                {plannedRaces.length > 0 && (
+                  <section aria-labelledby="deprize-planned-heading" className="flex flex-col gap-4">
+                    <h2 id="deprize-planned-heading" className="text-sm font-semibold text-white">
+                      Planned
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {plannedRaces.map(({ goal, competitors }) => (
+                        <RaceMarketCard
+                          key={goal.id}
+                          goal={goal}
+                          competitors={competitors}
+                          chain={chain}
+                          chainSlug={chainSlug}
+                          account={account}
+                          userAddress={userAddress}
+                          spendableEth={spendableEth}
+                          refreshNonce={refreshNonce}
+                          activeTab={activeTab}
+                          bettingBlockedReason={bettingBlockedReason}
+                          onConnectWallet={() => login()}
+                          onHasPosition={handleHasPosition}
+                          onDone={() => setRefreshNonce((n) => n + 1)}
+                          variant="grid"
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-                {filteredRaces.length === 0 && (
+                {filteredRaces.length === 0 && featuredLiveId === undefined && (
                   <div className="p-8 text-center text-gray-400 text-sm">
                     No races match your search.
                   </div>

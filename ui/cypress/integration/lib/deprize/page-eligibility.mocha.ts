@@ -81,15 +81,91 @@ describe('deprize page eligibility', () => {
       expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).restricted).to.equal(
         false
       )
+      expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).country).to.equal(
+        'CH'
+      )
+      expect(
+        getDePrizePageEligibility(
+          req({
+            'x-vercel-ip-country': 'US',
+            'x-deprize-mock-country': 'MX',
+          })
+        ).country
+      ).to.equal('MX')
+      expect(
+        getDePrizePageEligibility(
+          req({
+            'x-vercel-ip-country': 'US',
+            'x-deprize-mock-country': 'US',
+          })
+        ).country
+      ).to.equal('CH')
       process.env.NEXT_PUBLIC_ENV = 'prod'
       expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).restricted).to.equal(
         true
+      )
+      expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).country).to.equal(
+        'US'
       )
     } finally {
       if (prevEnv === undefined) delete process.env.NEXT_PUBLIC_ENV
       else process.env.NEXT_PUBLIC_ENV = prevEnv
       if (prevBypass === undefined) delete process.env.DEPRIZE_ELIGIBILITY_BYPASS
       else process.env.DEPRIZE_ELIGIBILITY_BYPASS = prevBypass
+    }
+  })
+
+  it('bypasses a Vercel preview only on the Sepolia prize path', () => {
+    const env = process.env as Record<string, string | undefined>
+    const prevVercel = env.VERCEL_ENV
+    const prevEnv = env.NEXT_PUBLIC_ENV
+    const prevBypass = env.DEPRIZE_ELIGIBILITY_BYPASS
+    try {
+      delete env.DEPRIZE_ELIGIBILITY_BYPASS
+      env.NEXT_PUBLIC_ENV = 'prod'
+      env.VERCEL_ENV = 'preview'
+      const us = { 'x-vercel-ip-country': 'US' }
+      expect(getDePrizePageEligibility({ headers: us, url: '/deprize/sep' }).restricted).to.equal(
+        false
+      )
+      expect(
+        getDePrizePageEligibility({ headers: us, url: '/deprize/sep/6' }).restricted
+      ).to.equal(false)
+      expect(getDePrizePageEligibility({ headers: us, url: '/deprize/arb' }).restricted).to.equal(
+        true
+      )
+      expect(getDePrizePageEligibility({ headers: us, url: '/deprize' }).restricted).to.equal(true)
+      expect(
+        getDePrizePageEligibility({
+          headers: us,
+          url: '/_next/data/build/deprize/sep.json',
+        }).restricted
+      ).to.equal(false)
+      expect(
+        getDePrizePageEligibility({
+          headers: us,
+          url: '/_next/data/build/deprize/sep/6.json?x=1',
+        }).restricted
+      ).to.equal(false)
+      expect(
+        getDePrizePageEligibility({
+          headers: us,
+          url: '/_next/data/build/deprize/arb.json',
+        }).restricted
+      ).to.equal(true)
+      env.VERCEL_ENV = 'production'
+      expect(getDePrizePageEligibility({ headers: us, url: '/deprize/sep' }).restricted).to.equal(
+        true
+      )
+    } finally {
+      for (const [key, value] of [
+        ['VERCEL_ENV', prevVercel],
+        ['NEXT_PUBLIC_ENV', prevEnv],
+        ['DEPRIZE_ELIGIBILITY_BYPASS', prevBypass],
+      ] as const) {
+        if (value === undefined) delete env[key]
+        else env[key] = value
+      }
     }
   })
 

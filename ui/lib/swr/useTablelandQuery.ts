@@ -7,6 +7,8 @@ export type UseTablelandQueryOptions = {
   revalidateOnFocus?: boolean
   revalidateOnReconnect?: boolean
   fallbackData?: any
+  /** When set, `/api/tableland/query` reads this chain instead of the app default. */
+  chainSlug?: string
 }
 
 export function useTablelandQuery(
@@ -18,11 +20,14 @@ export function useTablelandQuery(
     revalidateOnFocus = false,
     revalidateOnReconnect = false,
     fallbackData,
+    chainSlug,
   } = options
 
-  // Build the API URL with the statement parameter
+  // Build the API URL with the statement parameter. Chain is appended only
+  // when a caller asks for one, so existing cache keys stay the same.
+  const chainParam = chainSlug?.trim() ? `&chain=${encodeURIComponent(chainSlug.trim())}` : ''
   const key = statement
-    ? `/api/tableland/query?statement=${encodeURIComponent(statement)}`
+    ? `/api/tableland/query?statement=${encodeURIComponent(statement)}${chainParam}`
     : null
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {

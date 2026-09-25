@@ -1,40 +1,47 @@
-import { useLogin } from '@privy-io/react-auth'
+import { getAccessToken, useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
-import { useCitizen } from '@/lib/citizen/useCitizen'
+import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
+import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
-import { normalizeProbabilities } from '@/lib/deprize/serverMarket'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
+import { aggregateForecastVotes, votingPowerByOutcome } from '@/lib/forecasts/aggregate'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
 import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
-import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import {
   allocationForPick,
   canUndo,
   pickFromAllocation,
-  pickLabel,
   tapPlan,
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
-import { oddsRowView } from '@/lib/forecasts/oddsRow'
-import { daoEvidence, logLinearPool, marketEvidence } from '@/lib/forecasts/pool'
+import {
+  mergeCallerRoster,
+  notifyRoster,
+  pruneRosterOverlays,
+  subscribeRoster,
+  type RosterOverlay,
+} from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
 import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { sepolia } from '@/lib/rpc/chains'
 import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
+import CitizenPredictNotice from '@/components/deprize/CitizenPredictNotice'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
-import { CARD, TOUCH } from '@/components/deprize/detail/primitives'
+import PredictModal from '@/components/deprize/PredictModal'
+import { CARD } from '@/components/deprize/detail/primitives'
 
 export default function ForecastPanel(props: {
   chainSlug: string
@@ -44,8 +51,6 @@ export default function ForecastPanel(props: {
   liveTipId?: number
   reported: boolean
   resolvedVector?: number[] | null
-  collateralEth?: number
-  liveMarket?: boolean
   numOutcomes: number
   rankedOutcomes: Array<{ index: number; [key: string]: any }>
   teamIds: readonly bigint[]
@@ -61,6 +66,16 @@ export default function ForecastPanel(props: {
   userAddress?: string
   withdrawnByTeamId: Record<string, boolean>
   onBet: (index: number) => void
+  /** Which competitor's prediction window is open. The page owns this so deep links share it. */
+  modalIndex: number | null
+  onModalClose: () => void
+  /** Open the embedded bet form as soon as the prediction window appears. */
+  resumeBet?: boolean
+  /**
+   * ETH bet form for the open competitor. The page omits this when betting
+   * is not allowed; the prediction itself does not need it.
+   */
+  renderBet?: (input: { index: number; onClose: () => void; onPlaced: () => void }) => ReactNode
 }) {
   const {
     chainSlug,
@@ -69,8 +84,6 @@ export default function ForecastPanel(props: {
     marketPercents,
     liveTipId,
     reported,
-    collateralEth = 0,
-    liveMarket = false,
     numOutcomes,
     rankedOutcomes,
     teamIds,
@@ -86,13 +99,26 @@ export default function ForecastPanel(props: {
     userAddress,
     withdrawnByTeamId,
     onBet,
+    modalIndex,
+    onModalClose,
+    resumeBet,
+    renderBet,
   } = props
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
   const { login } = useLogin()
+  const { connectWallet } = usePrivy()
+  const { wallets } = useWallets()
+  const { setSelectedWallet } = useContext(PrivyWalletContext)
   const account = useActiveAccount()
   const chain = v4SlugToV5Chain(chainSlug) ?? sepolia
-  const citizen = useCitizen(chain)
+  const prizeCitizen = usePrizeChainCitizen(chain)
+  const isCitizen = prizeCitizen.isCitizen
+  const citizenWalletIndex = prizeCitizen.linkedCitizenAddress
+    ? wallets.findIndex(
+        (wallet) => wallet.address?.toLowerCase() === prizeCitizen.linkedCitizenAddress
+      )
+    : -1
   const { totalVMOONEY } = useTotalVMOONEY(account?.address)
 
   const n = labels.length
@@ -101,6 +127,19 @@ export default function ForecastPanel(props: {
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
+  const [overlays, setOverlays] = useState<RosterOverlay[]>([])
+  const shownLeaderboard = useMemo(
+    () => mergeCallerRoster(consensus?.leaderboard ?? [], overlays, labels),
+    [consensus, overlays, labels]
+  )
+  const citizenVotingPowerByOutcome = useMemo(
+    () => (consensus ? votingPowerByOutcome(shownLeaderboard, n) : undefined),
+    [consensus, shownLeaderboard, n]
+  )
+  const predictionCounts = useMemo(
+    () => (consensus ? aggregateForecastVotes(shownLeaderboard, n).backersByOutcome : undefined),
+    [consensus, shownLeaderboard, n]
+  )
 
   const forecastsContract = useContract({
     address: FORECASTS_TABLE_ADDRESSES[chainSlug] ?? '',
@@ -109,21 +148,24 @@ export default function ForecastPanel(props: {
   })
   const forecastsTableName = FORECASTS_TABLE_NAMES[chainSlug] ?? ''
 
-  const marketNormalized = useMemo(() => normalizeProbabilities(marketPercents), [marketPercents])
   const isLive = liveTipId == null || liveTipId === deprizeId
-  const inputsLocked = !isLive || reported
+  // Cards stay locked until the payout read finishes. `reported` is still
+  // false for that whole window, so it cannot be the only gate.
+  const inputsLocked = !isLive || reported || marketLoading
   const actions = rowActions({
     restricted,
     bettingOpen,
     locked: inputsLocked,
-    isCitizen: !!citizen,
+    isCitizen,
     connected: !!account,
   })
   const predictAction = actions.find((action) => action.kind === 'predict')
+  const showBet = actions.some((action) => action.kind === 'bet')
 
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
       setConsensus(body)
+      setOverlays((prev) => pruneRosterOverlays(prev, body.leaderboard ?? [], labels))
       const mine = account?.address
         ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
         : undefined
@@ -131,10 +173,22 @@ export default function ForecastPanel(props: {
         setSavedPick(pickFromAllocation(mine.allocation))
       }
     },
-    [account?.address, n]
+    [account?.address, labels, n]
   )
 
+  useEffect(() => {
+    return subscribeRoster((notice) => {
+      if (notice.chain !== chainSlug || notice.deprizeId !== deprizeId) return
+      const address = notice.address.toLowerCase()
+      setOverlays((prev) => [
+        ...prev.filter((row) => row.address.toLowerCase() !== address),
+        { address, pick: notice.pick, removed: notice.removed },
+      ])
+    })
+  }, [chainSlug, deprizeId])
+
   const loadConsensus = useCallback(async () => {
+    if (n < 2) return
     const res = await fetch(
       consensusQuery({
         chain: chainSlug,
@@ -147,6 +201,7 @@ export default function ForecastPanel(props: {
   }, [applyConsensus, chainSlug, deprizeId, n])
 
   const refetchFresh = useCallback(async () => {
+    if (n < 2) return
     const res = await fetch(
       consensusQuery({
         chain: chainSlug,
@@ -169,9 +224,9 @@ export default function ForecastPanel(props: {
       if (!prev) return prev
       const row = {
         voterAddress: account.address.toLowerCase(),
-        citizenId: citizen?.id ?? '',
-        citizenName: (citizen?.metadata?.name as string) || account.address,
-        citizenImage: citizen?.metadata?.image,
+        citizenId: prizeCitizen.tokenId ?? '',
+        citizenName: account.address,
+        citizenImage: undefined,
         allocation,
         weight: 0,
         storedVmooney: totalVMOONEY || 0,
@@ -185,17 +240,46 @@ export default function ForecastPanel(props: {
     })
   }
 
-  async function commitPick(index: number) {
-    if (!account || !citizen || !forecastsContract || !forecastsTableName) return
+  async function commitPick(index: number): Promise<boolean> {
+    if (!account || !isCitizen) return false
+    if (!forecastsContract || !forecastsTableName) {
+      setError('Predictions are not available on this network yet.')
+      return false
+    }
     setError(null)
     setWriting(true)
     const allocation = allocationForPick(index, n)
     try {
+      toast.loading('Covering gas…', { id: 'forecast-gas', style: toastStyle })
+      const accessToken = await getAccessToken().catch(() => null)
+      const sponsorRes = await fetch('/api/deprize/sponsor-forecast-gas', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({
+          wallet: account.address,
+          chainId: chain.id,
+          deprizeId,
+        }),
+      })
+      const sponsor = await sponsorRes.json().catch(() => ({}))
+      toast.dismiss('forecast-gas')
+      if (!sponsorRes.ok) {
+        setError(
+          typeof sponsor?.message === 'string'
+            ? sponsor.message
+            : 'Could not cover gas for this prediction.'
+        )
+        return false
+      }
       const vote = encodeForecastVote(allocation, totalVMOONEY || 0)
       await writeForecastVote({
         forecastsContract,
         account,
         forecastsTableName,
+        chainId: chain.id,
         voteId: deprizeForecastVoteId(deprizeId),
         address: account.address,
         vote,
@@ -204,9 +288,20 @@ export default function ForecastPanel(props: {
       setSavedPick(index)
       rememberRow(allocation)
       toast.success('Prediction saved', { style: toastStyle })
+      fireDePrizeConfetti()
+      notifyRoster({
+        chain: chainSlug,
+        deprizeId,
+        address: account.address,
+        pick: labels[index],
+        removed: false,
+      })
       await refetchFresh()
+      return true
     } catch (err: any) {
+      toast.dismiss('forecast-gas')
       setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
+      return false
     } finally {
       setWriting(false)
     }
@@ -222,9 +317,17 @@ export default function ForecastPanel(props: {
         account,
         voteId: deprizeForecastVoteId(deprizeId),
       })
+      const clearedPick = savedPick != null ? labels[savedPick] : undefined
       setSavedPick(null)
       setPreviousPick(null)
       toast.success('Prediction removed', { style: toastStyle })
+      notifyRoster({
+        chain: chainSlug,
+        deprizeId,
+        address: account.address,
+        pick: clearedPick,
+        removed: true,
+      })
       await refetchFresh()
     } catch (err: any) {
       setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
@@ -233,13 +336,13 @@ export default function ForecastPanel(props: {
     }
   }
 
-  function onPredict(index: number) {
+  async function onPredict(index: number) {
     const plan = tapPlan({
       index,
       savedPick,
       writing,
       connected: !!account,
-      isCitizen: !!citizen,
+      isCitizen,
       locked: inputsLocked,
     })
     if (plan.action === 'connect') {
@@ -247,10 +350,21 @@ export default function ForecastPanel(props: {
       return
     }
     if (plan.action === 'need-citizen') {
-      setError('Predictions count only for Citizens. Mint a Citizen to predict.')
+      setError(
+        prizeCitizen.linkedCitizenAddress
+          ? 'Switch to the wallet that holds your Citizen to predict.'
+          : prizeCitizen.lookupFailed
+          ? "Couldn't check your Citizen. Try again."
+          : prizeCitizen.expired
+          ? 'Your Citizen subscription has lapsed.'
+          : 'Predictions count only for Citizens. Mint a Citizen to predict.'
+      )
       return
     }
-    if (plan.action === 'write') void commitPick(plan.index)
+    if (plan.action === 'write') {
+      const ok = await commitPick(plan.index)
+      if (ok && !showBet) onModalClose()
+    }
   }
 
   function onUndo() {
@@ -264,29 +378,46 @@ export default function ForecastPanel(props: {
     if (plan.action === 'clear') void clearPick()
   }
 
-  const daoReady = (consensus?.participants ?? 0) >= FORECAST_DAO_MIN_PARTICIPANTS
-  const daoVector = daoReady ? consensus?.vector ?? [] : []
-  const mEvidence = marketEvidence(collateralEth, liveMarket)
-  const dEvidence = daoEvidence(consensus?.totalWeight ?? 0)
-  const pooled =
-    mEvidence + dEvidence > 0
-      ? logLinearPool([
-          {
-            p: marketNormalized.map((p) => p / 100),
-            weight: mEvidence,
-          },
-          {
-            p: daoVector.length === n ? daoVector : marketNormalized.map((p) => p / 100),
-            weight: dEvidence,
-          },
-        ])
-      : null
+  function attachPrediction(index: number) {
+    const plan = tapPlan({
+      index,
+      savedPick,
+      writing,
+      connected: !!account,
+      isCitizen,
+      locked: inputsLocked,
+    })
+    if (plan.action === 'write') void commitPick(plan.index)
+  }
 
   const mine = consensus?.leaderboard.find(
     (row) => row.voterAddress === account?.address?.toLowerCase()
   )
-  const showBet = actions.some((action) => action.kind === 'bet')
   const undoEnabled = canUndo({ savedPick, writing, locked: inputsLocked })
+
+  function switchToCitizenWallet() {
+    if (citizenWalletIndex >= 0) setSelectedWallet(citizenWalletIndex)
+    else connectWallet()
+  }
+
+  function renderCitizenNotice() {
+    if (!account) return null
+    return (
+      <CitizenPredictNotice
+        loading={prizeCitizen.isLoading}
+        isCitizen={isCitizen}
+        lookupFailed={prizeCitizen.lookupFailed}
+        expired={prizeCitizen.expired}
+        activeAddress={account.address}
+        linkedCitizenAddress={prizeCitizen.linkedCitizenAddress}
+        chainLabel={chain.name || 'this network'}
+        canSwitch={citizenWalletIndex >= 0}
+        onSwitch={switchToCitizenWallet}
+        onConnectLinked={connectWallet}
+        onRetry={prizeCitizen.retry}
+      />
+    )
+  }
 
   if (numOutcomes <= 0) return null
 
@@ -294,11 +425,6 @@ export default function ForecastPanel(props: {
     <section id="deprize-forecast" className={CARD}>
       <h2 className="title-text-colors text-lg font-GoodTimes">Competitors</h2>
       <p className="mt-1 text-sm text-gray-300">{FORECAST_COPY.panelIntro}</p>
-      {bettingOpen && showBet && !showResolved && (
-        <p className="mt-1 text-sm text-gray-400">
-          Click a competitor to predict them as the winner.
-        </p>
-      )}
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">
           Betting isn&apos;t available in your region — you can still make a prediction.
@@ -321,14 +447,7 @@ export default function ForecastPanel(props: {
           This prize has reported — forecasting is closed.
         </p>
       )}
-      {account && !citizen && (
-        <p className="mt-3 text-sm text-amber-200">
-          Predictions count for Citizens.{' '}
-          <Link href="/join" className="text-indigo-300 underline">
-            Mint a Citizen
-          </Link>
-        </p>
-      )}
+      {account && !isCitizen ? <div className="mt-3">{renderCitizenNotice()}</div> : null}
       {mine?.skill != null && (
         <p className="mt-3 text-sm text-gray-300">Your skill score is {mine.skill.toFixed(2)}.</p>
       )}
@@ -345,16 +464,6 @@ export default function ForecastPanel(props: {
           const atlasOrg = atlasProject ? orgById(SEED_ATLAS, atlasProject.orgId) : undefined
           const claimed = isCompetitorClaimed(outcomeBinding)
           const isSaved = savedPick === o.index
-          const marketPct = marketNormalized[o.index] ?? 0
-          const daoPct = daoReady ? (daoVector[o.index] ?? 0) * 100 : null
-          const pooledPct = pooled ? pooled[o.index] * 100 : null
-          const view = oddsRowView({ marketPct, daoPct, pooledPct })
-          const predictReason =
-            predictAction?.reason === 'locked'
-              ? 'Forecasting is closed'
-              : predictAction?.reason === 'need-citizen'
-              ? 'Mint a Citizen to predict'
-              : undefined
           return (
             <div id={`deprize-outcome-${o.index}`} key={o.index}>
               <DePrizeTeamCard
@@ -366,40 +475,20 @@ export default function ForecastPanel(props: {
                 resolved={showResolved}
                 isRefundVector={isRefundVector}
                 isWinningSlot={showResolved && o.index === winningIndex}
-                bettingOpen={bettingOpen && showBet}
+                bettingOpen={false}
+                selectable={!showResolved && !inputsLocked}
+                highlighted={isSaved}
+                badge={isSaved ? FORECAST_COPY.predicted : undefined}
+                citizenVotingPower={
+                  citizenVotingPowerByOutcome
+                    ? citizenVotingPowerByOutcome[o.index] ?? 0
+                    : undefined
+                }
+                predictionCount={predictionCounts ? predictionCounts[o.index] ?? 0 : undefined}
                 tradingHalted={tradingHalted}
-                busy={false}
+                busy={writing}
                 userConnected={!!userAddress}
                 onBet={onBet}
-                actions={
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onPredict(o.index)}
-                      disabled={!predictAction?.enabled || writing}
-                      aria-pressed={isSaved}
-                      title={predictReason}
-                      className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border transition-colors disabled:opacity-40 w-full sm:w-auto ${TOUCH} ${
-                        isSaved
-                          ? 'border-indigo-400/60 bg-indigo-400/15 text-white'
-                          : predictAction?.role === 'primary'
-                          ? 'border-indigo-400/40 bg-indigo-400/10 text-white'
-                          : 'border-white/15 bg-white/[0.04] text-gray-200 hover:bg-white/10'
-                      }`}
-                    >
-                      {pickLabel({ picked: isSaved, saved: isSaved && !writing })}
-                    </button>
-                    {isSaved && undoEnabled && (
-                      <button
-                        type="button"
-                        onClick={onUndo}
-                        className={`px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide border border-white/15 text-gray-200 hover:bg-white/10 w-full sm:w-auto ${TOUCH}`}
-                      >
-                        Undo
-                      </button>
-                    )}
-                  </>
-                }
                 isField={isField}
                 withdrawn={!!withdrawnByTeamId[teamId.toString()]}
                 hrefOverride={
@@ -407,55 +496,56 @@ export default function ForecastPanel(props: {
                 }
                 nameOverride={atlasOrg?.name || atlasProject?.name}
                 vehicleLabel={outcomeBinding?.vehicleLabel}
-                backLabel={
-                  isField
-                    ? 'Back the field'
-                    : atlasOrg?.name || atlasProject?.name
-                    ? `Back ${atlasOrg?.name || atlasProject?.name}`
-                    : undefined
-                }
                 imageOverride={claimed ? atlasOrg?.logoURI : undefined}
                 unclaimed={!isField && !!outcomeBinding && !claimed}
-                participation={
-                  isField || !outcomeBinding ? undefined : claimed ? 'official' : 'unofficial'
-                }
               />
-              <div className="mt-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5">
-                <p className="text-xs text-gray-400">
-                  Market {view.marketLabel} · DAO {view.daoLabel}
-                  {view.pooledLabel != null ? ` · Pooled ${view.pooledLabel}` : ''}
-                </p>
-                {view.gapCaption && <p className="mt-1 text-xs text-gray-400">{view.gapCaption}</p>}
-                <div className="mt-2 relative h-4 rounded-full bg-white/5 border border-white/10">
-                  {view.showBracket && (
-                    <span
-                      className="absolute inset-y-0 rounded-full bg-white/15"
-                      style={{ left: `${view.bracketLo}%`, width: `${view.bracketWidth}%` }}
-                    />
-                  )}
-                  {view.pooledLabel != null && pooledPct != null && (
-                    <span
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-1 rounded-full bg-indigo-300"
-                      style={{ left: `${pooledPct}%` }}
-                      title={`Pooled ${view.pooledLabel}`}
-                    />
-                  )}
-                </div>
-              </div>
             </div>
           )
         })}
       </div>
 
-      {!daoReady && (
-        <p className="mt-3 text-xs text-gray-400">
-          {FORECAST_COPY.daoPending(FORECAST_DAO_MIN_PARTICIPANTS, consensus?.participants ?? 0)}
-        </p>
-      )}
       {savedPick != null && (
         <p className="mt-2 text-xs text-gray-400">{FORECAST_COPY.singlePick}</p>
       )}
       {error && <p className="mt-2 text-xs text-amber-200">{error}</p>}
+      {modalIndex != null && (
+        <PredictModal
+          teamName={labels[modalIndex] || 'this competitor'}
+          probability={
+            rankedOutcomes.find((outcome) => outcome.index === modalIndex)?.probability ??
+            marketPercents[modalIndex] ??
+            NaN
+          }
+          chanceLoading={marketLoading}
+          bettingAvailable={showBet}
+          connected={!!account}
+          citizenLoading={prizeCitizen.isLoading}
+          isCitizen={isCitizen}
+          citizenNotice={renderCitizenNotice()}
+          saved={savedPick === modalIndex}
+          writing={writing}
+          error={error}
+          predictEnabled={!!predictAction?.enabled}
+          undoEnabled={undoEnabled && savedPick === modalIndex}
+          onPredict={() => void onPredict(modalIndex)}
+          onUndo={onUndo}
+          onConnect={login}
+          onClose={onModalClose}
+          outcomeIndex={modalIndex}
+          resumeBet={resumeBet}
+          bet={
+            showBet && renderBet ? (
+              <div key={modalIndex}>
+                {renderBet({
+                  index: modalIndex,
+                  onClose: onModalClose,
+                  onPlaced: () => attachPrediction(modalIndex),
+                })}
+              </div>
+            ) : undefined
+          }
+        />
+      )}
     </section>
   )
 }

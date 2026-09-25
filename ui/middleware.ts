@@ -33,7 +33,15 @@ export function middleware(req: NextRequest) {
     req.cookies.get(GATE_COOKIE)?.value,
     process.env.MOONBASE_GATE_TOKEN
   )
-  if (granted) return NextResponse.next()
+  if (granted) {
+    // Cursor's browser sends HEAD and waits on it before it will leave the
+    // loading state. In dev that HEAD enters the page compiler and never
+    // returns while the GET for the same URL is still compiling.
+    if (req.method === 'HEAD' && process.env.NODE_ENV === 'development') {
+      return new NextResponse(null, { status: 200 })
+    }
+    return NextResponse.next()
+  }
 
   // Redirect rather than rewrite. A rewrite would leave the address bar showing
   // /moonbase while the gate renders, which reads as the real page failing to

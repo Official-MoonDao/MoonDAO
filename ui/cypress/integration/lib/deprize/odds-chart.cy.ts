@@ -2,6 +2,7 @@ import {
   ODDS_MIN_SPAN_MS,
   ODDS_X_TICK_COUNT,
   buildOddsTimeDomain,
+  formatOddsTick,
   padOddsSamples,
   type OddsSample,
 } from '@/lib/deprize/odds-chart'
@@ -47,6 +48,16 @@ describe('deprize odds chart domain', () => {
       const domain = buildOddsTimeDomain(history, undefined, now)
       expect(domain.spanMs).to.equal(ODDS_MIN_SPAN_MS)
       expect(domain.tMax - domain.tMin).to.equal(ODDS_MIN_SPAN_MS)
+    })
+
+    it('gives a one-day window a distinct hour on every tick', () => {
+      const open = Date.UTC(2026, 8, 21, 18, 31)
+      const now = open + 27 * 60 * 60 * 1000
+      const domain = buildOddsTimeDomain([{ t: open, p: [17, 83] }], open, now)
+      const labels = domain.ticks.map((t) => formatOddsTick(t, domain.spanMs))
+      expect(new Set(labels).size).to.equal(labels.length)
+      expect(labels[0]).to.match(/\d/)
+      expect(labels[0]).to.not.equal(labels[1])
     })
 
     it('returns an empty domain for empty history', () => {

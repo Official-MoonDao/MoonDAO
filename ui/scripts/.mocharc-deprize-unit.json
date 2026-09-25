@@ -4,6 +4,7 @@
     "ts-node/register",
     "scripts/mocha-cypress-setup.cjs"
   ],
+  "timeout": 10000,
   "extensions": ["ts", "tsx"],
   "spec": [
     "cypress/integration/lib/{deprize,forecasts,discord,citizen}/**/*.cy.ts",

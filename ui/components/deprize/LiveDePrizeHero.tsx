@@ -19,7 +19,7 @@ import { fmt } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
-import useTotalFunding from '@/lib/juicebox/useTotalFunding'
+import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
 import { TOUCH } from '@/components/deprize/detail/primitives'
@@ -66,9 +66,9 @@ export default function LiveDePrizeHero({
   })
 
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
-  const { totalFunding, isLoading: poolLoading } = useTotalFunding(jbProjectId, chain)
+  const { balanceWei, loading: poolLoading } = useDePrizePrizePool(jbProjectId, chain.id)
   const poolEth =
-    jbProjectId !== undefined && !poolLoading ? Number(totalFunding ?? 0) / Number(UNIT) : undefined
+    balanceWei != null && !poolLoading ? Number(balanceWei) / Number(UNIT) : undefined
 
   const teamContract = useMemo(
     () =>
@@ -202,7 +202,7 @@ export default function LiveDePrizeHero({
                       bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
                       transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
                   >
-                    Buy
+                    {DEPRIZE_PREDICT_CTA}
                   </button>
                 )}
               </div>

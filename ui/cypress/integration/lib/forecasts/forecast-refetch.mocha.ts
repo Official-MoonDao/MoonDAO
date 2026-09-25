@@ -1,11 +1,13 @@
 /// <reference types="node" />
+
 /**
  * Acceptance: one consensus URL builder, and a cache-bust after a write.
  *
  * ForecastPanel and DePrizeCallers must share a non-fresh URL so the first
  * paint hits one CDN entry. After a write the panel refetches with a
- * changing t= so s-maxage=60 cannot serve the pre-write body. Neither
- * component builds that query itself.
+ * changing t= so s-maxage=60 cannot serve the pre-write body. The callers
+ * list subscribes to that save and passes fresh: needsFresh, which stays
+ * false on the shared first load. Neither component builds the query itself.
  */
 import fs from 'fs'
 import path from 'path'
@@ -87,13 +89,7 @@ describe('deprize forecast consensus query', () => {
       fresh: true,
       now: 9,
     })
-    expect(keysOf(withResolved)).to.deep.equal([
-      'chain',
-      'deprizeId',
-      'outcomes',
-      'resolved',
-      't',
-    ])
+    expect(keysOf(withResolved)).to.deep.equal(['chain', 'deprizeId', 'outcomes', 'resolved', 't'])
     const parsed = new URL(withResolved, 'https://example.test')
     expect(parsed.searchParams.get('t')).to.equal('9')
     expect(JSON.parse(parsed.searchParams.get('resolved') as string)).to.deep.equal([1, 0])
@@ -134,7 +130,7 @@ describe('deprize forecast consensus query wiring', () => {
     }
   })
 
-  it('refetches fresh after a write and keeps the callers list on the shared key', () => {
+  it('refetches fresh after a write and keeps the callers first load on the shared key', () => {
     const panel = readUi('components/deprize/ForecastPanel.tsx')
     const callers = readUi('components/deprize/DePrizeCallers.tsx')
     if (!/fresh\s*:\s*true/.test(panel)) {
@@ -144,7 +140,34 @@ describe('deprize forecast consensus query wiring', () => {
     }
     if (/fresh\s*:\s*true/.test(callers)) {
       throw new Error(
-        '[not implemented] DePrizeCallers must use the non-fresh consensusQuery so it shares the CDN entry'
+        '[not implemented] DePrizeCallers must keep the shared non-fresh key. Pass fresh: needsFresh, not the literal fresh: true.'
+      )
+    }
+    if (!/subscribeRoster\(/.test(callers)) {
+      throw new Error(
+        '[not implemented] DePrizeCallers must subscribeRoster so a save updates Who predicted'
+      )
+    }
+    if (!/fresh\s*:\s*needsFresh/.test(callers)) {
+      throw new Error(
+        '[not implemented] DePrizeCallers must pass fresh: needsFresh after a roster notice'
+      )
+    }
+    const cards = readUi('components/deprize/ForecastPanel.tsx')
+    if (!/subscribeRoster\(/.test(cards) || !/mergeCallerRoster\(/.test(cards)) {
+      throw new Error(
+        '[not implemented] ForecastPanel must subscribeRoster and mergeCallerRoster so competitor counts update with Who predicted'
+      )
+    }
+    if (/backersByOutcome\?\.\[/.test(cards)) {
+      throw new Error(
+        '[not implemented] ForecastPanel must count predictions from the merged roster, not the stale server backersByOutcome'
+      )
+    }
+    const notices = panel.match(/notifyRoster\(/g) || []
+    if (notices.length < 2) {
+      throw new Error(
+        '[not implemented] ForecastPanel must notifyRoster after a successful save and after a clear'
       )
     }
   })

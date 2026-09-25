@@ -108,6 +108,22 @@ const RACES: {
     tokenName: 'DePrize Night Shift',
     tokenSymbol: 'DNGT',
   },
+  {
+    // Already registered as v2 id 5. Do not run this row again.
+    goalId: 'shared-first-tracks',
+    raceLabel: 'First Tracks',
+    teamIds: [631n, 632n, 633n, 634n, 635n, FIELD_TEAM],
+    tokenName: 'DePrize First Tracks',
+    tokenSymbol: 'DTRK',
+  },
+  {
+    // Already registered as v2 id 6. Do not run this row again.
+    goalId: 'shared-ice',
+    raceLabel: 'Surface water ice',
+    teamIds: [641n, 642n, 643n, FIELD_TEAM],
+    tokenName: 'DePrize Ice',
+    tokenSymbol: 'DICE',
+  },
 ]
 
 const registryAbi = parseAbi([

@@ -23,23 +23,22 @@ describe('deprize index predict CTA and pool USD', () => {
     expect(card).to.not.match(/Predict\s+[—–-]\s*free/i)
   })
 
-  it('does not put a Predict control on every outcome row', () => {
+  it('puts Predict on each bettable outcome row', () => {
     const rowStart = card.indexOf('function OutcomeBetRow')
     const rowEnd = card.indexOf('export type RaceCardVariant')
     expect(rowStart).to.be.greaterThan(-1)
     expect(rowEnd).to.be.greaterThan(rowStart)
     const row = card.slice(rowStart, rowEnd)
-    expect(row).to.not.include('DEPRIZE_PREDICT_CTA')
-    expect(row).to.not.include('predictHref')
-    expect(row).to.not.match(/>\s*Predict\s*</)
+    expect(row).to.include('DEPRIZE_PREDICT_CTA')
+    expect(row).to.not.match(/>\s*Buy\s*</)
 
     const heroRows = hero.slice(hero.indexOf('{ranked.map'), hero.indexOf('{showPredict &&'))
-    expect(heroRows).to.not.include('DEPRIZE_PREDICT_CTA')
-    expect(heroRows).to.not.include('forecastHref')
+    expect(heroRows).to.include('DEPRIZE_PREDICT_CTA')
   })
 
-  it('keeps a single Predict link per prize card', () => {
-    expect(hero.split('DEPRIZE_PREDICT_CTA').length - 1).to.equal(2) // import + one render
+  it('keeps the restricted-region Predict link on each card variant', () => {
+    // import, the outcome-row button, and the restricted-region link
+    expect(hero.split('DEPRIZE_PREDICT_CTA').length - 1).to.equal(3)
     expect(card).to.include('function PredictLink')
     expect(card.split('<PredictLink').length - 1).to.equal(3) // grid, featured, list
   })

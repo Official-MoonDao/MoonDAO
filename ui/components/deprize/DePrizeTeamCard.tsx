@@ -1,6 +1,7 @@
 import type { KeyboardEvent, ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
+import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import EthUsd from '@/components/deprize/EthUsd'
 import { TOUCH } from '@/components/deprize/detail/primitives'
@@ -30,6 +31,22 @@ type DePrizeTeamCardProps = {
   busy: boolean
   userConnected: boolean
   onBet: (index: number) => void
+  /**
+   * The card opens the prediction window even when ETH betting is closed.
+   * `bettingOpen` alone is the bet gate and would leave the card inert.
+   */
+  selectable?: boolean
+  /** This competitor is the viewer's saved prediction. */
+  highlighted?: boolean
+  /** Short status under the name, such as "Predicted". */
+  badge?: string
+  /**
+   * Citizen-prediction voting power behind this option. Omit while consensus
+   * is still loading so the card does not flash a fake zero.
+   */
+  citizenVotingPower?: number
+  /** Citizens with any allocation on this option. Omit while consensus is loading. */
+  predictionCount?: number
   /**
    * Citizen forecast controls for this competitor. Stop their clicks from
    * also placing a bet, since the card itself is the bet control.
@@ -68,6 +85,12 @@ const FIELD_AVATAR =
     `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#1e293b"/><circle cx="20" cy="20" r="10" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3"/></svg>`
   )
 
+/** Same grouping the callers list uses for a citizen's voting power. */
+function formatVotingPower(vp: number): string {
+  if (!Number.isFinite(vp) || vp <= 0) return '0'
+  return vp.toLocaleString(undefined, { maximumFractionDigits: vp < 10 ? 1 : 0 })
+}
+
 function PnlSuffix({ pnl }: { pnl: number | undefined }) {
   if (pnl === undefined) return null
   return (
@@ -95,6 +118,11 @@ export default function DePrizeTeamCard({
   busy,
   userConnected,
   onBet,
+  selectable = false,
+  highlighted = false,
+  badge,
+  citizenVotingPower,
+  predictionCount,
   actions,
   onCashOut,
   isField = false,
@@ -113,12 +141,22 @@ export default function DePrizeTeamCard({
   const pnl =
     realizedValue !== undefined && investedEth > 0 ? realizedValue - investedEth : undefined
   const canCashOut = showHoldings && !tradingHalted && !resolved
-  const canPredict = bettingOpen && !tradingHalted && !busy
+  const canPredict = !resolved && !busy && (selectable || (bettingOpen && !tradingHalted))
   const predictName = isField ? 'Other' : headline || 'this competitor'
   const predict = () => onBet(outcome.index)
   // Cash-out and forecast actions are their own buttons. A card that also
   // contains one cannot be a button itself, so that case stays a clickable div.
   const cardIsButton = canPredict && !canCashOut && !actions
+  const votingPowerText =
+    citizenVotingPower === undefined ? undefined : formatVotingPower(citizenVotingPower)
+  const predictionNoun = predictionCount === 1 ? 'prediction' : 'predictions'
+  const predictAria = !cardIsButton
+    ? undefined
+    : votingPowerText === undefined
+    ? `Predict ${predictName} as the winner`
+    : predictionCount
+    ? `Predict ${predictName} as the winner, ${votingPowerText} voting power from ${predictionCount} ${predictionNoun}`
+    : `Predict ${predictName} as the winner, ${votingPowerText} voting power`
 
   const onCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!canPredict || e.target !== e.currentTarget) return
@@ -131,9 +169,14 @@ export default function DePrizeTeamCard({
     <div
       role={cardIsButton ? 'button' : undefined}
       tabIndex={cardIsButton ? 0 : undefined}
-      aria-label={cardIsButton ? `Predict ${predictName} as the winner` : undefined}
-      className={`relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
-        resolved && isWinningSlot ? 'border-emerald-400/40 ring-1 ring-emerald-400/20' : ''
+      aria-label={predictAria}
+      aria-pressed={cardIsButton ? highlighted : undefined}
+      className={`relative w-full overflow-hidden px-4 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
+        resolved && isWinningSlot
+          ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
+          : highlighted
+          ? 'border-indigo-400/50 ring-1 ring-indigo-400/30'
+          : ''
       } ${
         canPredict
           ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 transition-colors'
@@ -148,12 +191,12 @@ export default function DePrizeTeamCard({
             at 320px the two blocks alone asked for more than the card had. */}
         <div className="flex items-center gap-3 sm:min-w-[96px]">
           <span
-            className="inline-block w-1.5 h-10 rounded-full shrink-0"
+            className="inline-block w-1.5 h-8 rounded-full shrink-0"
             style={{ background: color }}
           />
           <div>
             <p
-              className={`text-2xl font-bold leading-none tabular-nums ${
+              className={`text-xl font-bold leading-none tabular-nums ${
                 resolved
                   ? isWinningSlot
                     ? 'text-emerald-400'
@@ -176,18 +219,18 @@ export default function DePrizeTeamCard({
                 : `${fmt(outcome.probability, 0)}%`}
             </p>
             {!resolved && (
-              <p className="text-gray-500 text-[10px] mt-1 uppercase tracking-wide">chance</p>
+              <p className="text-gray-500 text-[10px] mt-0.5 uppercase tracking-wide">chance</p>
             )}
           </div>
         </div>
 
-        <div className="flex-1 min-w-0 sm:min-w-[150px] flex flex-col gap-1">
+        <div className="flex-1 min-w-0 sm:min-w-[150px] flex flex-col gap-0.5">
           <div className="flex items-center gap-2 flex-wrap">
             <DePrizeTeamLink
               teamId={teamId}
               teamContract={teamContract}
               color={color}
-              size={40}
+              size={32}
               className="text-base font-semibold text-white"
               nameOverride={isField ? 'Other' : headline}
               imageOverride={isField ? FIELD_AVATAR : imageOverride}
@@ -198,14 +241,17 @@ export default function DePrizeTeamCard({
               plain={canPredict}
             />
           </div>
-          {isField && <p className="text-xs text-gray-400 pl-12">Any other team</p>}
-          {orgSubtitle && <p className="text-xs text-gray-400 pl-12">{orgSubtitle}</p>}
+          {isField && <p className="text-xs leading-tight text-gray-400 pl-10">Any other team</p>}
+          {orgSubtitle && (
+            <p className="text-xs leading-tight text-gray-400 pl-10">{orgSubtitle}</p>
+          )}
+          {badge && <p className="text-xs leading-tight text-indigo-200 pl-10">{badge}</p>}
           {withdrawn && !isField && (
-            <p className="text-xs text-amber-400/90 pl-12">Withdrawn — sell only</p>
+            <p className="text-xs leading-tight text-amber-400/90 pl-10">Withdrawn — sell only</p>
           )}
           {showHoldings && !resolved && (
             <p
-              className="text-xs text-gray-500 pl-12"
+              className="text-xs leading-tight text-gray-500 pl-10"
               title="Each share you hold pays 1 ETH if this competitor is selected as the winner. Paid from the betting market, not from the prize pool."
             >
               Your payout if wins ·{' '}
@@ -215,6 +261,31 @@ export default function DePrizeTeamCard({
             </p>
           )}
         </div>
+
+        {votingPowerText !== undefined && (
+          <div
+            className="ml-auto shrink-0 text-right"
+            data-citizen-voting-power={citizenVotingPower}
+            data-prediction-count={predictionCount ?? 0}
+            title={
+              predictionCount
+                ? `${votingPowerText} voting power from ${predictionCount} ${predictionNoun}`
+                : `${votingPowerText} voting power`
+            }
+          >
+            <p className="text-sm font-semibold leading-none tabular-nums text-white">
+              {votingPowerText}
+            </p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-gray-500">
+              {FORECAST_COPY.votingPower}
+              {predictionCount ? (
+                <span className="ml-1 font-medium normal-case tracking-normal text-gray-400">
+                  · {predictionCount}
+                </span>
+              ) : null}
+            </p>
+          </div>
+        )}
 
         {actions ? (
           <div
@@ -228,7 +299,7 @@ export default function DePrizeTeamCard({
 
       {showHoldings && (
         <div
-          className="mt-4 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2.5"
+          className="mt-2.5 flex items-center justify-between gap-3 flex-wrap rounded-xl bg-white/[0.03] border border-white/[0.06] px-3 py-2"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="min-w-0">
@@ -249,7 +320,7 @@ export default function DePrizeTeamCard({
                 '—'
               ) : sellQuoteEth !== undefined ? (
                 <>
-                  <EthUsd eth={sellQuoteEth} approx />
+                  <EthUsd eth={sellQuoteEth} />
                   <PnlSuffix pnl={pnl} />
                 </>
               ) : (
