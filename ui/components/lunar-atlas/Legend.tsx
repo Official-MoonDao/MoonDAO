@@ -10,19 +10,35 @@ import type {
 // One row of the race list: a capability race, the size of its field, and who
 // the market currently has in front.
 export type RaceEntry = {
+  /** TechTree.raceId — the row's identity and its selection key. */
+  raceId: string
+  /** Hardware type, for the glyph only. */
   category: ProjectType
   label: string
   count: number
   leaderName?: string
   leaderColor?: string
+  /**
+   * True for a race on the capability ladder — one of the four we actually
+   * ship. Product decision, identical on every chain, and what the two groups
+   * below are split on.
+   */
+  onLadder?: boolean
+  /**
+   * True when this race has a DePrize on the connected chain right now, so the
+   * panel shows real odds and the bet button moves real ETH. Drives the dot
+   * only. A ladder race with no market yet still belongs in the top group; it
+   * just isn't tradable from this chain.
+   */
+  tradable?: boolean
 }
 
 type LegendProps = {
   races: RaceEntry[]
   // The open race — the district at full strength on the surface.
-  selectedRace: ProjectType | null
-  onSelectRace: (category: ProjectType) => void
-  onHoverRace: (category: ProjectType | null) => void
+  selectedRace: string | null
+  onSelectRace: (raceId: string) => void
+  onHoverRace: (raceId: string | null) => void
   organizations: Organization[]
   selectedOrgIds: string[]
   onToggleOrg: (id: string) => void
@@ -64,6 +80,86 @@ export default function Legend({
 
   const countForOrg = (id: string) => projects.filter((p) => p.orgId === id).length
 
+  // Most of the atlas is capability we track but do not run a race on. The
+  // split says which is which up front, instead of letting someone pick a race
+  // and only discover at the panel that its odds are editorial. Both groups
+  // stay clickable — a race we aren't running still has competitors, sources
+  // and a district worth reading.
+  //
+  // Split on the ladder rather than on live markets, because those disagree in
+  // exactly the case that matters: production has none of the four bound yet,
+  // so grouping by market would tell prod there are no races at all.
+  const ladderRaces = races.filter((r) => r.onLadder)
+  const futureRaces = races.filter((r) => !r.onLadder)
+  const tradableCount = ladderRaces.filter((r) => r.tradable).length
+
+  const renderRace = (race: RaceEntry) => {
+    const active = selectedRace === race.raceId
+    return (
+      <button
+        key={race.raceId}
+        onClick={() => onSelectRace(race.raceId)}
+        onMouseEnter={() => onHoverRace(race.raceId)}
+        onMouseLeave={() => onHoverRace(null)}
+        className={`flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left transition ${
+          active
+            ? 'border-cyan-300/40 bg-cyan-300/10'
+            : 'border-transparent hover:bg-white/10'
+        }`}
+      >
+        <span
+          className={`mt-px shrink-0 text-sm leading-none ${
+            race.onLadder ? '' : 'opacity-50'
+          }`}
+        >
+          {PROJECT_TYPE_GLYPH[race.category]}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            {race.tradable && (
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
+                style={{ boxShadow: '0 0 6px rgb(52 211 153 / 0.9)' }}
+                title="Open market — you can bet on this now"
+              />
+            )}
+            <span
+              className={`min-w-0 truncate text-sm ${
+                active
+                  ? 'text-white'
+                  : race.onLadder
+                  ? 'text-white/80'
+                  : 'text-white/45'
+              }`}
+            >
+              {race.label}
+            </span>
+          </span>
+          {race.leaderName && (
+            <span
+              className={`mt-0.5 flex items-center gap-1.5 text-[11px] ${
+                race.onLadder ? 'text-white/40' : 'text-white/25'
+              }`}
+            >
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full"
+                style={{ backgroundColor: race.leaderColor }}
+              />
+              <span className="truncate">{race.leaderName} leading</span>
+            </span>
+          )}
+        </span>
+        <span
+          className={`mt-px shrink-0 text-xs ${
+            race.onLadder ? 'text-white/30' : 'text-white/20'
+          }`}
+        >
+          {race.count}
+        </span>
+      </button>
+    )
+  }
+
   return (
     <div className="pointer-events-auto w-full sm:w-64 rounded-2xl border border-white/10 bg-black/50 backdrop-blur-md">
       <button
@@ -74,56 +170,39 @@ export default function Legend({
           <AdjustmentsHorizontalIcon className="h-4 w-4 text-cyan-300" />
           Capability races
         </span>
-        <span className="text-xs text-white/40">{open ? 'Hide' : 'Show'}</span>
+        <span className="flex items-center gap-2 text-xs text-white/40">
+          {tradableCount > 0 && !open && (
+            <span className="text-emerald-300/80">{tradableCount} live</span>
+          )}
+          {open ? 'Hide' : 'Show'}
+        </span>
       </button>
 
       {open && (
         <div className="space-y-4 px-4 pb-4">
-          <div className="space-y-1">
-            {races.map((race) => {
-              const active = selectedRace === race.category
-              return (
-                <button
-                  key={race.category}
-                  onClick={() => onSelectRace(race.category)}
-                  onMouseEnter={() => onHoverRace(race.category)}
-                  onMouseLeave={() => onHoverRace(null)}
-                  className={`flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left transition ${
-                    active
-                      ? 'border-cyan-300/40 bg-cyan-300/10'
-                      : 'border-transparent hover:bg-white/10'
-                  }`}
-                >
-                  <span className="mt-px shrink-0 text-sm leading-none">
-                    {PROJECT_TYPE_GLYPH[race.category]}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className={`block truncate text-sm ${
-                        active ? 'text-white' : 'text-white/80'
-                      }`}
-                    >
-                      {race.label}
-                    </span>
-                    {race.leaderName && (
-                      <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-white/40">
-                        <span
-                          className="h-1.5 w-1.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: race.leaderColor }}
-                        />
-                        <span className="truncate">
-                          {race.leaderName} leading
-                        </span>
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-px shrink-0 text-xs text-white/30">
-                    {race.count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+          {/* Flat list when a filter has hidden the whole ladder — two headings
+              with nothing under the first reads like a failed load. */}
+          {ladderRaces.length === 0 ? (
+            <div className="space-y-1">{races.map(renderRace)}</div>
+          ) : (
+            <>
+              <div className="space-y-1">
+                <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-300/70">
+                  Racing now
+                </p>
+                {ladderRaces.map(renderRace)}
+              </div>
+
+              {futureRaces.length > 0 && (
+                <div className="space-y-1">
+                  <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-white/30">
+                    Potential future races
+                  </p>
+                  {futureRaces.map(renderRace)}
+                </div>
+              )}
+            </>
+          )}
 
           <div className="border-t border-white/10 pt-3">
             <button

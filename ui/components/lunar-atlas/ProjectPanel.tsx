@@ -1,7 +1,7 @@
 import { ArrowLeftIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useEffect, useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
 import type { Chain } from 'thirdweb'
+import { isLadderGoal } from '@/lib/deprize/capabilityLadder'
 import {
   findDePrizeIdForGoal,
   getDePrizeRaceBinding,
@@ -10,9 +10,7 @@ import {
 } from '@/lib/deprize/competitions'
 import { positionRedeemValue, UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
-import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import {
   parseAtlasYear,
   raceStandingForProject,
@@ -38,7 +36,6 @@ import type {
   SharedGoal,
 } from '@/lib/lunar-atlas/types'
 import BetModal from '@/components/deprize/BetModal'
-import DemoBetModal from '@/components/deprize/DemoBetModal'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 import SourceBadge from './SourceBadge'
 
@@ -143,19 +140,10 @@ export default function ProjectPanel({
   const outcome =
     bound && outcomeIndex >= 0 ? outcomes?.[outcomeIndex] : undefined
   const canBack =
-    hasRace &&
-    (bound ? marketDeprizeId !== undefined && outcomeIndex >= 0 : true)
-  const demo = useMockMarket(
-    betGoal?.id ?? project.id,
-    betGoal?.projectIds ?? [project.id],
-    betGoal?.market?.impliedOdds,
-    userAddress,
-  )
-  const demoPosition = demo.positions[project.id]
-  const holding = bound
-    ? !!outcome && Number.isFinite(outcome.balance) && outcome.balance > 0
-    : !!demoPosition && demoPosition.qty > 0
-  const heldValueEth = bound ? outcome?.balance : demoPosition?.qty
+    hasRace && bound && marketDeprizeId !== undefined && outcomeIndex >= 0
+  const holding =
+    bound && !!outcome && Number.isFinite(outcome.balance) && outcome.balance > 0
+  const heldValueEth = outcome?.balance
   const redeemValueEth =
     bound && resolved && outcome?.balanceWei !== undefined && payoutDen
       ? Number(
@@ -173,11 +161,9 @@ export default function ProjectPanel({
 
   const [betOpen, setBetOpen] = useState(false)
   const [exitOpen, setExitOpen] = useState(false)
-  const [demoBetOpen, setDemoBetOpen] = useState(false)
   useEffect(() => {
     setBetOpen(false)
     setExitOpen(false)
-    setDemoBetOpen(false)
   }, [project.id, betGoal?.id])
 
   const handleBetClick = () => {
@@ -185,11 +171,8 @@ export default function ProjectPanel({
       onConnectWallet?.()
       return
     }
-    if (!bound) {
-      setDemoBetOpen(true)
-      return
-    }
     if (
+      !bound ||
       !bettingAllowed ||
       outcomeIndex < 0 ||
       !marketAddress ||
@@ -199,15 +182,6 @@ export default function ProjectPanel({
       return
     }
     setBetOpen(true)
-  }
-
-  const handleDemoExit = () => {
-    if (!betGoal) return
-    const valueEth = exitMockPosition(betGoal.id, project.id, userAddress)
-    toast.success(`Cashed out ${project.name} (demo) for ≈ ${fmt(valueEth)} ETH.`, {
-      style: toastStyle,
-    })
-    onDone?.()
   }
 
   const milestones = useMemo(
@@ -361,12 +335,12 @@ export default function ProjectPanel({
         {holding && !resolved && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
             <span className="text-[11px] text-white/50">
-              {fmt(heldValueEth ?? 0)} {bound ? 'ETH' : 'demo ETH'} if wins
+              {fmt(heldValueEth ?? 0)} ETH if wins
             </span>
-            {(bound ? !tradingHalted : true) && (
+            {!tradingHalted && (
               <button
                 type="button"
-                onClick={() => (bound ? setExitOpen(true) : handleDemoExit())}
+                onClick={() => setExitOpen(true)}
                 className="shrink-0 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white transition-all hover:border-indigo-400/35 hover:bg-indigo-500/15"
               >
                 Cash out
@@ -446,7 +420,7 @@ export default function ProjectPanel({
                     className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:border-fuchsia-400/40 hover:bg-white/10"
                   >
                     <span className="text-sm text-white/85">{g.title}</span>
-                    <MarketPill status={g.market?.status ?? 'none'} />
+                    <MarketPill status={goalPillStatus(g)} />
                   </button>
                 ) : (
                   <div
@@ -454,7 +428,7 @@ export default function ProjectPanel({
                     className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left"
                   >
                     <span className="text-sm text-white/85">{g.title}</span>
-                    <MarketPill status={g.market?.status ?? 'none'} />
+                    <MarketPill status={goalPillStatus(g)} />
                   </div>
                 )
               )}
@@ -532,30 +506,27 @@ export default function ProjectPanel({
             }}
           />
         )}
-
-      {demoBetOpen && betGoal && (
-        <DemoBetModal
-          sharedGoalId={betGoal.id}
-          projectIds={betGoal.projectIds}
-          impliedOdds={betGoal.market?.impliedOdds}
-          projectId={project.id}
-          teamName={project.name}
-          probability={demo.odds[project.id] ?? 0}
-          address={userAddress}
-          onClose={() => setDemoBetOpen(false)}
-          onDone={() => {
-            setDemoBetOpen(false)
-            onDone?.()
-          }}
-        />
-      )}
     </div>
   )
 }
 
+/**
+ * What a goal's pill may claim. "Market planned" is a promise, so only a race
+ * on the capability ladder gets to make it — the rest of the atlas is capability
+ * we track, with no market scheduled.
+ */
+function goalPillStatus(goal: SharedGoal): string {
+  const status = goal.market?.status ?? 'none'
+  if (status === 'planned' && !isLadderGoal(goal.id)) return 'none'
+  return status
+}
+
 export function MarketPill({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    none: { label: 'Market TBD', cls: 'text-white/40 border-white/10 bg-white/5' },
+    none: {
+      label: 'No market',
+      cls: 'text-white/40 border-white/10 bg-white/5',
+    },
     planned: {
       label: 'Market planned',
       cls: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',

@@ -395,7 +395,7 @@
       "name": "Unassigned",
       "kind": "consortium",
       "brandColor": "#5eead4",
-      "summary": "Placeholder for a capability this atlas tracks that no specific agency, company, or team has publicly committed to building yet — reused across any project in this state rather than inventing a named developer per capability.",
+      "summary": "Stands in for a capability this atlas tracks that no agency, company, or team has publicly committed to building — reused wherever that is true, rather than inventing a named developer.",
       "sources": []
     },
     {
