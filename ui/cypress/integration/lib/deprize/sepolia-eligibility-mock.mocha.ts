@@ -27,6 +27,13 @@ describe('sepolia eligibility mock', () => {
     process.env.NEXT_PUBLIC_ENV = 'prod'
     expect(shouldMockSepoliaEligibility(SEPOLIA_CHAIN_ID)).to.equal(false)
     expect(shouldMockSepoliaEligibility(ARBITRUM_CHAIN_ID)).to.equal(false)
+
+    const prevVercel = process.env.VERCEL_ENV
+    process.env.VERCEL_ENV = 'preview'
+    expect(shouldMockSepoliaEligibility(SEPOLIA_CHAIN_ID)).to.equal(true)
+    expect(shouldMockSepoliaEligibility(ARBITRUM_CHAIN_ID)).to.equal(false)
+    if (prevVercel === undefined) delete process.env.VERCEL_ENV
+    else process.env.VERCEL_ENV = prevVercel
   })
 
   it('signs a permit without importing viem/accounts', async () => {

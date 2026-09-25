@@ -115,7 +115,7 @@ describe('deprize page eligibility', () => {
     }
   })
 
-  it('bypasses on a Vercel preview even when production env vars are set', () => {
+  it('bypasses a Vercel preview only on the Sepolia prize path', () => {
     const env = process.env as Record<string, string | undefined>
     const prevVercel = env.VERCEL_ENV
     const prevEnv = env.NEXT_PUBLIC_ENV
@@ -124,11 +124,19 @@ describe('deprize page eligibility', () => {
       delete env.DEPRIZE_ELIGIBILITY_BYPASS
       env.NEXT_PUBLIC_ENV = 'prod'
       env.VERCEL_ENV = 'preview'
-      expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).restricted).to.equal(
+      const us = { 'x-vercel-ip-country': 'US' }
+      expect(getDePrizePageEligibility({ headers: us, url: '/deprize/sep' }).restricted).to.equal(
         false
       )
+      expect(
+        getDePrizePageEligibility({ headers: us, url: '/deprize/sep/6' }).restricted
+      ).to.equal(false)
+      expect(getDePrizePageEligibility({ headers: us, url: '/deprize/arb' }).restricted).to.equal(
+        true
+      )
+      expect(getDePrizePageEligibility({ headers: us, url: '/deprize' }).restricted).to.equal(true)
       env.VERCEL_ENV = 'production'
-      expect(getDePrizePageEligibility(req({ 'x-vercel-ip-country': 'US' })).restricted).to.equal(
+      expect(getDePrizePageEligibility({ headers: us, url: '/deprize/sep' }).restricted).to.equal(
         true
       )
     } finally {
