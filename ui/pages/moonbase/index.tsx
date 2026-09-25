@@ -128,20 +128,29 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
     t.goal?.category === t.category ? 0 : t.goal ? 2 : 1
   const ordered = [...trees].sort((a, b) => claimRank(a) - claimRank(b))
 
-  // Whether a race has anything honest to stand on the ground.
+  // Where a race is allowed to stand, and whether it stands at all. Two rules,
+  // each named for the duplicate district it exists to stop.
   //
-  // On a zoned district a generic model reads fine — an unmodelled construction
-  // bid still looks like construction hardware on a construction lot, which is
-  // the rule hasOwnModel is written around. Out on open regolith there is no
-  // district of like hardware to carry that, so out there every machine has to
-  // be itself. Night Shift fields seven unmodelled reactors and First Tracks
-  // five unmodelled rovers: siting them puts seven identical crates and five
-  // identical rovers on the map under seven and five different companies'
-  // names, which says the opposite of what this map is for. They keep their
-  // legend row, their panel and their market — they just have no ground yet,
-  // and they take it the moment someone models them.
+  // A race takes the district the plan drew for its hardware. When two races
+  // run the same hardware only the first can have it, and the second does NOT
+  // get a consolation plot out on the regolith: Touchdown and the crewed
+  // landing are both lander races, and siting both put two lander clusters on
+  // the map — the second with no road to it, because the outlier row has no
+  // street. Same for the LTV against the rover district. A race in that
+  // position waits for ground of its own rather than standing next to the
+  // district it is a duplicate of.
+  //
+  // Hardware the plan never zoned is the different case the outlier row was
+  // built for: there is no district it could be mistaken for, so it stands
+  // past the head of the spine. But out there it has no district of like
+  // hardware to make a generic model read correctly, so every machine has to
+  // be itself. Night Shift fields seven reactors all typed `other`, all
+  // unmodelled, which is seven identical crates under seven companies' names.
+  //
+  // A race that stands nowhere keeps its legend row, its panel and its market.
+  const unplanned = (t: TechTree) => !BASE_PLAN[t.category]
   const canStand = (t: TechTree, zonedHere: boolean) =>
-    zonedHere || t.projects.every(hasOwnModel)
+    zonedHere || (unplanned(t) && t.projects.every(hasOwnModel))
 
   const nUnmapped = ordered.filter(
     (t) => !isZoned(t) && canStand(t, false)
