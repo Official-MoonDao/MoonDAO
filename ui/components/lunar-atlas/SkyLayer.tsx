@@ -137,7 +137,7 @@ function Satellite({
 export default function SkyLayer({
   trees,
   organizations,
-  selectedTreeCategory,
+  selectedRaceId,
   selectedProject,
   getProjectStyle,
   onSelectProject,
@@ -146,11 +146,11 @@ export default function SkyLayer({
 }: {
   trees: TechTree[]
   organizations: Organization[]
-  selectedTreeCategory?: ProjectType | null
+  selectedRaceId?: string | null
   selectedProject?: Project | null
   getProjectStyle?: (project: Project) => MarkerStyle
   onSelectProject?: (projectId: string) => void
-  onHoverTree?: (category: ProjectType | null) => void
+  onHoverTree?: (raceId: string | null) => void
   // See MarkerLayerProps. The spacecraft keep flying; their names come off.
   cinematic?: boolean
 }) {
@@ -161,29 +161,34 @@ export default function SkyLayer({
   }, [organizations])
 
   // The flying members of whatever races survived the org filter, each with the
-  // category it competes in — a satellite dims and lights up with its race like
-  // any lot in the city.
+  // race it competes in — a satellite dims and lights up with its race like any
+  // lot in the city.
   const flying = useMemo(() => {
-    const out: { project: Project; category: ProjectType }[] = []
+    const out: { project: Project; raceId: string }[] = []
+    const seen = new Set<string>()
     for (const tree of trees) {
       for (const project of tree.projects) {
-        if (SKY_STATIONS[project.id]) out.push({ project, category: tree.category })
+        // A competitor entered in two races is one satellite, lit by the first
+        // race that claims it — the same rule its ground plot follows.
+        if (!SKY_STATIONS[project.id] || seen.has(project.id)) continue
+        seen.add(project.id)
+        out.push({ project, raceId: tree.raceId })
       }
     }
     return out
   }, [trees])
 
-  const raceOpen = Boolean(selectedTreeCategory)
+  const raceOpen = Boolean(selectedRaceId)
 
   return (
     <group>
-      {flying.map(({ project, category }) => {
+      {flying.map(({ project, raceId }) => {
         const style = getProjectStyle?.(project) ?? { opacity: 1, visible: true }
         // Below the presence threshold the program has not flown yet at this
         // year on the scrubber. On the ground a district's beacon still marks
         // the lot; in the sky there is nothing to mark, so it simply is not up.
         if (!style.visible || style.opacity <= MODEL_PRESENCE) return null
-        const isOpen = selectedTreeCategory === category
+        const isOpen = selectedRaceId === raceId
         return (
           <group key={project.id}>
             {SKY_STATIONS[project.id].map((station, i) => (
@@ -201,7 +206,7 @@ export default function SkyLayer({
                   (isOpen || selectedProject?.id === project.id)
                 }
                 onSelect={() => onSelectProject?.(project.id)}
-                onHover={(h) => onHoverTree?.(h ? category : null)}
+                onHover={(h) => onHoverTree?.(h ? raceId : null)}
               />
             ))}
           </group>

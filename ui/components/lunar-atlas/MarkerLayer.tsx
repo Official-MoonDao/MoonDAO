@@ -126,9 +126,10 @@ export const MODEL_PRESENCE = 0.5
 // Where each competitor stands, and where each district's beacon goes. Built
 // once by the page so the models, the pins and the camera cannot disagree.
 export type ColonyLayout = {
-  // District centre directions, keyed by race category — what the camera flies
-  // to when a race is opened.
-  districts: Map<ProjectType, Vec3>
+  // District centre directions, keyed by TechTree.raceId — what the camera
+  // flies to when a race is opened. Not by category: two races can run the
+  // same hardware, and they do not share a district.
+  districts: Map<string, Vec3>
   // Per-project plot: its surface direction and its slot in the district.
   // `standDir` is set only for a competitor whose race DRIVES (see PATROL), and
   // is where its MOVING copy sets off from on the patrol run. The competitor
@@ -141,14 +142,15 @@ type MarkerLayerProps = {
   trees: TechTree[]
   organizations: Organization[]
   layout: ColonyLayout
-  // The open race. Its district stays at full strength; the others dim.
-  selectedTreeCategory?: ProjectType | null
+  // The open race, by TechTree.raceId. Its district stays at full strength;
+  // the others dim.
+  selectedRaceId?: string | null
   // Competitor picked from a race panel — its plot is called out by name.
   selectedProject?: Project | null
-  hoveredCategory?: ProjectType | null
-  onSelectTree?: (category: ProjectType) => void
+  hoveredRaceId?: string | null
+  onSelectTree?: (raceId: string) => void
   onSelectProject?: (projectId: string) => void
-  onHoverTree?: (category: ProjectType | null) => void
+  onHoverTree?: (raceId: string | null) => void
   // Timeline styling per member project.
   getProjectStyle?: (project: Project) => MarkerStyle
   // Displaced terrain radius lookup so pins/models sit on the rendered ground.
@@ -1412,9 +1414,9 @@ export default function MarkerLayer({
   trees,
   organizations,
   layout,
-  selectedTreeCategory,
+  selectedRaceId,
   selectedProject,
-  hoveredCategory,
+  hoveredRaceId,
   onSelectTree,
   onSelectProject,
   onHoverTree,
@@ -1429,12 +1431,12 @@ export default function MarkerLayer({
     return m
   }, [organizations])
 
-  const raceOpen = Boolean(selectedTreeCategory)
+  const raceOpen = Boolean(selectedRaceId)
 
   return (
     <group>
       {trees.map((tree) => {
-        const districtDir = layout.districts.get(tree.category)
+        const districtDir = layout.districts.get(tree.raceId)
         if (!districtDir) return null
         const members = rankedMembers(tree)
         if (!members.length) return null
@@ -1445,7 +1447,7 @@ export default function MarkerLayer({
         const leader = members[0]
         const leaderOrg = orgMap.get(leader.orgId)
         const color = orgColor(leaderOrg)
-        const isOpen = selectedTreeCategory === tree.category
+        const isOpen = selectedRaceId === tree.raceId
         const dim = raceOpen && !isOpen ? DIM_FACTOR : 1
 
         const count = members.length
@@ -1472,7 +1474,7 @@ export default function MarkerLayer({
         const patrol = PATROL[tree.category]
 
         return (
-          <group key={tree.category}>
+          <group key={tree.raceId}>
             {members.map((project, i) => {
               const plot = layout.plots.get(project.id)
               if (!plot) return null
@@ -1500,7 +1502,7 @@ export default function MarkerLayer({
                         : undefined
                     }
                     onSelect={() => onSelectProject?.(project.id)}
-                    onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+                    onHover={(h) => onHoverTree?.(h ? tree.raceId : null)}
                     radiusAt={radiusAt}
                     cinematic={cinematic}
                   />
@@ -1538,10 +1540,10 @@ export default function MarkerLayer({
                 color={color}
                 label={label}
                 selected={isOpen}
-                hovered={hoveredCategory === tree.category}
+                hovered={hoveredRaceId === tree.raceId}
                 style={{ opacity: districtOpacity * dim, visible: true }}
-                onSelect={() => onSelectTree?.(tree.category)}
-                onHover={(h) => onHoverTree?.(h ? tree.category : null)}
+                onSelect={() => onSelectTree?.(tree.raceId)}
+                onHover={(h) => onHoverTree?.(h ? tree.raceId : null)}
                 radiusAt={radiusAt}
               />
             )}

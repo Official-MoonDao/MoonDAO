@@ -307,13 +307,25 @@ export function indexRowsFromDataset(
 // site per tech tree; clicking it opens the race/market view, and picking a
 // competitor there swaps in that company's specific model.
 export type TechTree = {
+  /**
+   * Stable race key: the SharedGoal id for a declared race, `type:<category>`
+   * for surface hardware with no race behind it.
+   *
+   * Everything that identifies a race — district, selection, hover, roads,
+   * ground disturbance — keys on this rather than on `category`, because two
+   * races can run the same hardware. First Tracks and the crewed LTV are both
+   * rover races; keying by type let one silently erase the other.
+   */
+  raceId: string
+  /** Hardware type. Drives glyph, colour, label and the zoned district. */
   category: ProjectType
-  // Member projects with a surface location (drives the site placement).
+  // Member projects. A competitor in two races (Chang'e-7 is in both Touchdown
+  // and Water Ice) appears in both rosters and stands on one plot.
   projects: Project[]
-  // The capability race for this category, if a goal declares one.
+  // The capability race, if a goal declares one.
   goal?: SharedGoal
-  // Where the category's site marker sits: the race's target region when
-  // anchored, otherwise the spherical centroid of the member locations.
+  // Where the race's site marker sits: the race's target region when anchored,
+  // otherwise the spherical centroid of whichever members have coordinates.
   location: LatLon
 }
 
@@ -321,46 +333,98 @@ export type TechTree = {
 // never join a surface tech-tree site.
 const NON_SURFACE_TYPES: ProjectType[] = ['orbital']
 
-// Group located surface projects into tech trees, one per category present.
-// Applies AFTER org/type filtering so legend filters still work.
+/**
+ * Group surface projects into races.
+ *
+ * A race is a SharedGoal, not a hardware type. Keying by type was fine while
+ * every capability had one race, but the capability ladder broke that: First
+ * Tracks and the crewed LTV are both rover races, and Water Ice spans landers
+ * and rovers at once. Under the old grouping the second race of a type was
+ * dropped on the floor — no district, no marker, no legend row.
+ *
+ * Goals come first and take their declared competitors whatever the hardware.
+ * Whatever is left over still groups by type, so surface assets that no race
+ * explains keep a site instead of vanishing.
+ *
+ * A competitor needs no coordinates of its own: the colony layout assigns every
+ * plot from the base plan and overrides real positions anyway, so requiring a
+ * `location` here only served to exclude races nobody had placed yet.
+ *
+ * Applies AFTER org/type filtering so legend filters still work.
+ */
 export function buildTechTrees(
   projects: Project[],
   sharedGoals: SharedGoal[]
 ): TechTree[] {
-  const byCategory = new Map<ProjectType, Project[]>()
-  for (const p of projects) {
-    if (!p.location || NON_SURFACE_TYPES.includes(p.type)) continue
-    if (!byCategory.has(p.type)) byCategory.set(p.type, [])
-    byCategory.get(p.type)!.push(p)
+  const surface = projects.filter((p) => !NON_SURFACE_TYPES.includes(p.type))
+  const byId = new Map(surface.map((p) => [p.id, p]))
+
+  const anchorOf = (goal: SharedGoal | undefined, members: Project[]): LatLon => {
+    if (goal?.location) return goal.location
+    const placed = members.filter((m) => m.location)
+    if (!placed.length) return { lat: 0, lon: 0 }
+    const dir = centroidDirection(
+      placed.map((m) => ({ lat: m.location!.lat, lon: m.location!.lon }))
+    )
+    const ll = vector3ToLatLon(dir)
+    return { lat: ll.lat, lon: ll.lon }
   }
 
   const trees: TechTree[] = []
-  byCategory.forEach((members, category) => {
-    // Prefer a goal that declares this category as its race; otherwise fall
-    // back to any goal that lists one of the members as a competitor (e.g.
-    // the ISRU+power goal covers both the isru_plant and power trees).
-    const goal =
-      sharedGoals.find((g) => g.category === category) ??
-      sharedGoals.find((g) =>
-        members.some((m) => g.projectIds.includes(m.id))
-      )
-    // Only trust the goal's anchor when the goal is *this* category's race —
-    // a fallback goal borrowed from another category may target a different
-    // zone.
-    const location =
-      (goal?.category === category ? goal.location : undefined) ??
-      (() => {
-        const dir = centroidDirection(
-          members.map((m) => ({ lat: m.location!.lat, lon: m.location!.lon }))
-        )
-        const ll = vector3ToLatLon(dir)
-        return { lat: ll.lat, lon: ll.lon }
-      })()
-    trees.push({ category, projects: members, goal, location })
+  const inARace = new Set<string>()
+
+  for (const goal of sharedGoals) {
+    const members = goal.projectIds
+      .map((id) => byId.get(id))
+      .filter((p): p is Project => !!p)
+    if (!members.length) continue
+    for (const m of members) inARace.add(m.id)
+    // Hardware type for display and for the zoned district. The declared
+    // category when the goal has one, otherwise whatever most of the field
+    // actually is — Water Ice declares nothing and fields two landers and a
+    // rover, so it reads as a lander race.
+    const category = goal.category ?? dominantType(members)
+    trees.push({
+      raceId: goal.id,
+      category,
+      projects: members,
+      goal,
+      location: anchorOf(goal, members),
+    })
+  }
+
+  const leftovers = new Map<ProjectType, Project[]>()
+  for (const p of surface) {
+    if (inARace.has(p.id) || !p.location) continue
+    if (!leftovers.has(p.type)) leftovers.set(p.type, [])
+    leftovers.get(p.type)!.push(p)
+  }
+  leftovers.forEach((members, category) => {
+    trees.push({
+      raceId: `type:${category}`,
+      category,
+      projects: members,
+      location: anchorOf(undefined, members),
+    })
   })
 
   // Stable order for rendering/tests.
-  return trees.sort((a, b) => a.category.localeCompare(b.category))
+  return trees.sort((a, b) => a.raceId.localeCompare(b.raceId))
+}
+
+/** Most common hardware type in a field, ties broken by first appearance. */
+function dominantType(members: Project[]): ProjectType {
+  const counts = new Map<ProjectType, number>()
+  for (const m of members) counts.set(m.type, (counts.get(m.type) ?? 0) + 1)
+  let best = members[0].type
+  let bestN = 0
+  counts.forEach((n, type) => {
+    if (n > bestN) {
+      bestN = n
+      best = type
+    }
+  })
+  return best
 }
 
 // Convenience lookups used across the UI.

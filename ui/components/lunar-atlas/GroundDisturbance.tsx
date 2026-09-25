@@ -399,7 +399,7 @@ export default function GroundDisturbance({
   const pieces = useMemo(() => {
     if (!radiusAt) return []
     const out: {
-      category: ProjectType
+      raceId: string
       geometry: THREE.BufferGeometry
       style: PatchStyle
     }[] = []
@@ -441,7 +441,7 @@ export default function GroundDisturbance({
         new THREE.Float32BufferAttribute(buffers.colors, 4)
       )
       geometry.setIndex(buffers.index)
-      out.push({ category: tree.category, geometry, style })
+      out.push({ raceId: tree.raceId, geometry, style })
     }
     return out
   }, [trees, layout, radiusAt, origin])
@@ -457,11 +457,11 @@ export default function GroundDisturbance({
 
   return (
     <group position={origin}>
-      {pieces.map(({ category, geometry, style }) => {
-        const presence = siteOpacity?.get(category) ?? 1
+      {pieces.map(({ raceId, geometry, style }) => {
+        const presence = siteOpacity?.get(raceId) ?? 1
         if (presence <= MODEL_PRESENCE) return null
         return (
-          <mesh key={category} geometry={geometry} raycast={NO_RAYCAST}>
+          <mesh key={raceId} geometry={geometry} raycast={NO_RAYCAST}>
             {/* Still unlit, and now correctly so. This material does not
                 represent a surface at all — it emits a FACTOR, and the ground it
                 multiplies has already been lit by the regolith BRDF. Giving it a

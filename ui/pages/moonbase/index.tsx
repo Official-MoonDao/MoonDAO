@@ -4,7 +4,10 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
-import { isCompetitiveRace } from '@/lib/deprize/competitions'
+import {
+  findDePrizeIdForGoal,
+  isCompetitiveRace,
+} from '@/lib/deprize/competitions'
 import { MarketStage, UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
@@ -96,16 +99,37 @@ function dirAt(eastM: number, northM: number): Vec3 {
 // lib/lunar-atlas/baseplan; the footprint radii it packs against come from the
 // model layer, since only it knows how much ground an asset covers.
 function buildColonyLayout(trees: TechTree[]): ColonyLayout {
-  const districts = new Map<ProjectType, Vec3>()
+  const districts = new Map<string, Vec3>()
   const plots = new Map<
     string,
     { dir: Vec3; slot: Slot; standDir?: Vec3 }
   >()
   let fallbackIdx = 0
-  const nUnmapped = trees.filter((t) => !BASE_PLAN[t.category]).length
+  // The plan zones one district per hardware type, so when two races run the
+  // same hardware only the first can stand in it — the second is as unzoned as
+  // a type the plan never heard of. Count it that way or the outlier row is
+  // spaced for fewer races than actually stand in it.
+  const zoned = new Set<ProjectType>()
+  const isZoned = (t: TechTree) => {
+    if (!BASE_PLAN[t.category] || zoned.has(t.category)) return false
+    zoned.add(t.category)
+    return true
+  }
+  // Which race gets the zoned district when two want it: the one whose goal
+  // DECLARES that category, because that is the dataset saying "this is the
+  // landing race". Without this the winner is whoever sorts first by id, which
+  // would hand the landing zone to the crewed-lander race and stand Touchdown
+  // out on open regolith. A race with an inferred category goes last — it never
+  // claimed the ground, it just happens to field that hardware.
+  const claimRank = (t: TechTree) =>
+    t.goal?.category === t.category ? 0 : t.goal ? 2 : 1
+  const ordered = [...trees].sort((a, b) => claimRank(a) - claimRank(b))
 
-  for (const tree of trees) {
-    let plan = BASE_PLAN[tree.category]
+  const nUnmapped = ordered.filter((t) => !isZoned(t)).length
+  zoned.clear()
+
+  for (const tree of ordered) {
+    let plan = isZoned(tree) ? BASE_PLAN[tree.category] : undefined
     if (!plan) {
       // A category the plan doesn't zone stands past the head of the spine, so a
       // race added to the dataset appears on open regolith beyond the built
@@ -123,7 +147,11 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       }
       fallbackIdx++
     }
-    districts.set(tree.category, dirAt(plan.east, plan.north))
+    districts.set(tree.raceId, dirAt(plan.east, plan.north))
+    // A competitor entered in two races (Chang'e-7 runs in Touchdown and Water
+    // Ice) stands on one plot, owned by whichever race claims it first. Packing
+    // still counts it in both districts so neither leaves a gap where it would
+    // have stood.
     const slots = districtSlots(
       plan,
       tree.projects.map((p) => ({ id: p.id, radiusM: footprintRadiusM(p) }))
@@ -139,6 +167,7 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       ? new Map(rankedMembers(tree).map((p, i) => [p.id, i]))
       : null
     for (const [id, slot] of slots) {
+      if (plots.has(id)) continue
       let standDir: Vec3 | undefined
       if (patrol && rankOf) {
         const phase = rankOf.get(id)! / rankOf.size
@@ -166,11 +195,11 @@ export default function MoonBaseZeroIndex() {
   const region = useRegionRestriction()
 
   const [focus, setFocus] = useState<GlobeFocus>(null)
-  // Selection is layered: a tech-tree site (category) opens the race/market
-  // view; picking a competitor there selects a project, which swaps the
-  // site's generic model for the company-specific one.
-  const [selectedTreeCategory, setSelectedTreeCategory] =
-    useState<ProjectType | null>(null)
+  // Selection is layered: a race site opens the race/market view; picking a
+  // competitor there selects a project, which swaps the site's generic model
+  // for the company-specific one. Keyed by TechTree.raceId — a goal id for a
+  // declared race, `type:<category>` for surface hardware with no race.
+  const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
   // The race/tree a selected competitor was opened from, so the project panel
@@ -178,9 +207,7 @@ export default function MoonBaseZeroIndex() {
   const [raceReturn, setRaceReturn] = useState<
     { kind: 'goal' | 'tree'; id: string } | null
   >(null)
-  const [hoveredCategory, setHoveredCategory] = useState<ProjectType | null>(
-    null
-  )
+  const [hoveredRaceId, setHoveredRaceId] = useState<string | null>(null)
   // Organizations are the one remaining filter. Project TYPE used to be another,
   // but a race is a type — "the fission power race" and "projects of type power"
   // select the same hardware — so the race list below replaced it rather than
@@ -524,27 +551,34 @@ export default function MoonBaseZeroIndex() {
   // every project at its overlapping real coordinates.
   const layout = useMemo(() => buildColonyLayout(surfaceTrees), [surfaceTrees])
 
-  // The race list that drives the panel, ordered biggest field first — the more
-  // companies are chasing a capability, the more of a race it is. A single
-  // unassigned concept (today, only the mass driver) is a capability on the
-  // map, not a race, so it stays off this list.
+  // The race list that drives the panel. Races with a live DePrize sort first
+  // and the rest keep the biggest-field-first order — the more companies are
+  // chasing a capability, the more of a race it is. A single unassigned concept
+  // (today, only the mass driver) is a capability on the map, not a race, so it
+  // stays off this list.
   const races = useMemo<RaceEntry[]>(
     () =>
       [...surfaceTrees]
         .filter((tree) => isCompetitiveRace(tree.projects.length))
-        .sort((a, b) => b.projects.length - a.projects.length)
         .map((tree) => {
           const leader = rankedMembers(tree)[0]
           const leaderOrg = leader ? orgById(dataset, leader.orgId) : undefined
           return {
+            raceId: tree.raceId,
             category: tree.category,
-            label: PROJECT_TYPE_LABEL[tree.category],
+            // A declared race has a real title; a leftover type group only has
+            // its hardware label.
+            label: tree.goal?.title ?? PROJECT_TYPE_LABEL[tree.category],
             count: tree.projects.length,
             leaderName: leaderOrg?.name,
             leaderColor: orgColor(leaderOrg),
+            // Reads the same binding map the panel does, so the dot and the
+            // odds it promises can never disagree.
+            live: findDePrizeIdForGoal(chainSlug, tree.goal?.id) !== undefined,
           }
-        }),
-    [surfaceTrees, dataset]
+        })
+        .sort((a, b) => Number(b.live) - Number(a.live) || b.count - a.count),
+    [surfaceTrees, dataset, chainSlug]
   )
 
   const legendOrgs = useMemo(
@@ -591,8 +625,8 @@ export default function MoonBaseZeroIndex() {
   // but once a competitor is picked, the project panel takes over even though
   // the site category is kept (so the site stays focused and its model swaps).
   const selectedTree =
-    !selectedGoal && !selectedProjectId && selectedTreeCategory
-      ? trees.find((t) => t.category === selectedTreeCategory)
+    !selectedGoal && !selectedProjectId && selectedRaceId
+      ? trees.find((t) => t.raceId === selectedRaceId)
       : undefined
   const goalCompetitors = useMemo(
     () =>
@@ -606,13 +640,14 @@ export default function MoonBaseZeroIndex() {
   )
 
   // The direction of a race district's centre on the globe.
-  const siteDir = (category: ProjectType) => layout.districts.get(category)
+  const siteDir = (raceId: string | undefined) =>
+    raceId ? layout.districts.get(raceId) : undefined
 
   // Fly in close and centred on a specific competitor's own plot. Now that
   // every competitor stands on its own ground this can frame the asset itself
   // rather than the district — which is the point of picking one out of a list
   // of four. Falls back to the district, then to the project's real location.
-  const flyToProject = (project: Project, siteCategory?: ProjectType | null) => {
+  const flyToProject = (project: Project, siteRaceId?: string | null) => {
     // A competitor whose hardware is in orbit is framed at its station instead.
     // It keeps its ground lot — a relay service needs a ground segment, and that
     // terminal is real hardware on real regolith — but the satellites are what
@@ -647,7 +682,7 @@ export default function MoonBaseZeroIndex() {
       })
       return
     }
-    const cat = siteCategory ?? selectedTreeCategory ?? project.type
+    const race = siteRaceId ?? selectedRaceId ?? undefined
     // Always the competitor's own plot, including for a rover — the vehicle
     // lapping the spine is a second, scenery copy of a machine that is also
     // parked on its lot (see the render in MarkerLayer), and the parked one is
@@ -655,7 +690,7 @@ export default function MoonBaseZeroIndex() {
     // option, because the lot really was empty; it also meant the camera's
     // subject was somewhere different every time you clicked it.
     const plot = layout.plots.get(project.id)
-    const dir = plot?.dir ?? siteDir(cat)
+    const dir = plot?.dir ?? siteDir(race)
     const ll = dir ? vector3ToLatLon(dir) : project.location
     if (!ll) return
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
@@ -675,11 +710,11 @@ export default function MoonBaseZeroIndex() {
     const tree =
       surfaceTrees.find((t) => t.projects.some((p) => p.id === id)) ??
       trees.find((t) => t.projects.some((p) => p.id === id))
-    const category = tree?.category ?? project.type
+    const raceId = tree?.raceId ?? `type:${project.type}`
 
     if (selectedGoalId) setRaceReturn({ kind: 'goal', id: selectedGoalId })
-    else if (selectedTreeCategory)
-      setRaceReturn({ kind: 'tree', id: selectedTreeCategory })
+    else if (selectedRaceId)
+      setRaceReturn({ kind: 'tree', id: selectedRaceId })
     else setRaceReturn(null)
 
     // Globe clicks on a dimmed asset open that district. Deep links must
@@ -687,23 +722,23 @@ export default function MoonBaseZeroIndex() {
     // handler without remounting, so a prior race would otherwise win.
     if (
       !opts?.fromDeepLink &&
-      selectedTreeCategory &&
-      selectedTreeCategory !== category
+      selectedRaceId &&
+      selectedRaceId !== raceId
     ) {
       // Same as the hovering district pin: fill this cluster, dim the rest,
       // show the race, and frame the site.
-      setSelectedTreeCategory(category)
+      setSelectedRaceId(raceId)
       setSelectedGoalId(tree?.goal?.id ?? null)
       setSelectedProjectId(null)
-      flyToSite(category)
+      flyToSite(raceId)
       replaceMoonbaseQuery({ race: tree?.goal?.id ?? null, year })
       return
     }
 
     setSelectedGoalId(null)
-    setSelectedTreeCategory(category)
+    setSelectedRaceId(raceId)
     setSelectedProjectId(id)
-    flyToProject(project, category)
+    flyToProject(project, raceId)
   }
 
   // Keep ?race= / ?year= in sync with selection without remounting the scene.
@@ -777,14 +812,14 @@ export default function MoonBaseZeroIndex() {
     setRaceReturn(null)
     if (!r) return
     if (r.kind === 'goal') handleSelectSharedGoal(r.id)
-    else handleSelectTree(r.id as ProjectType)
+    else handleSelectTree(r.id)
   }
 
   // Frames a tech-tree site with the three-quarter "hero" surface view so the
   // leading company's asset is legible from a flattering angle — not the
   // top-down birdseye a straight drill-in gives.
-  const flyToSite = (category: ProjectType) => {
-    const dir = siteDir(category)
+  const flyToSite = (raceId: string) => {
+    const dir = siteDir(raceId)
     if (!dir) return
     const ll = vector3ToLatLon(dir)
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
@@ -792,14 +827,14 @@ export default function MoonBaseZeroIndex() {
 
   // Clicking a site opens its tech tree: the prediction-market race view when
   // one is declared, otherwise the plain category listing.
-  const handleSelectTree = (category: ProjectType) => {
-    if (category === selectedTreeCategory && !selectedProjectId) return
-    const tree = trees.find((t) => t.category === category)
+  const handleSelectTree = (raceId: string) => {
+    if (raceId === selectedRaceId && !selectedProjectId) return
+    const tree = trees.find((t) => t.raceId === raceId)
     if (!tree) return
     setSelectedProjectId(null)
     setSelectedGoalId(tree.goal?.id ?? null)
-    setSelectedTreeCategory(category)
-    flyToSite(category)
+    setSelectedRaceId(raceId)
+    flyToSite(raceId)
     replaceMoonbaseQuery({
       race: tree.goal?.id ?? null,
       year,
@@ -816,9 +851,10 @@ export default function MoonBaseZeroIndex() {
     const g = dataset.sharedGoals.find((x) => x.id === goalId)
     setSelectedProjectId(null)
     setSelectedGoalId(goalId)
-    setSelectedTreeCategory(g?.category ?? null)
-    if (g?.category && siteDir(g.category)) {
-      flyToSite(g.category)
+    // A goal IS a race now, so its id is the race key — no category detour.
+    setSelectedRaceId(g ? g.id : null)
+    if (g && siteDir(g.id)) {
+      flyToSite(g.id)
     } else if (g?.location) {
       setFocus({
         lat: g.location.lat,
@@ -835,7 +871,7 @@ export default function MoonBaseZeroIndex() {
   const clearSelection = () => {
     setSelectedProjectId(null)
     setSelectedGoalId(null)
-    setSelectedTreeCategory(null)
+    setSelectedRaceId(null)
     setRaceReturn(null)
     setFocus(null)
     replaceMoonbaseQuery({ race: null, year })
@@ -845,16 +881,16 @@ export default function MoonBaseZeroIndex() {
   // is open. Without a selection it does nothing — it must not yank the
   // camera away from a hotspot the user chose.
   const handleBackgroundClick = () => {
-    if (selectedProjectId || selectedGoalId || selectedTreeCategory)
+    if (selectedProjectId || selectedGoalId || selectedRaceId)
       clearSelection()
   }
 
   // Pressing the open race again closes it, which is what a list of eight rows
   // wants — otherwise the only way back to the whole colony is to click the
   // regolith, and nothing says so.
-  const handleToggleRace = (category: ProjectType) => {
-    if (category === selectedTreeCategory) clearSelection()
-    else handleSelectTree(category)
+  const handleToggleRace = (raceId: string) => {
+    if (raceId === selectedRaceId) clearSelection()
+    else handleSelectTree(raceId)
   }
 
   const toggleOrg = (id: string) =>
@@ -877,12 +913,12 @@ export default function MoonBaseZeroIndex() {
           focus={focus}
           trees={surfaceTrees}
           organizations={dataset.organizations}
-          selectedTreeCategory={selectedTreeCategory}
+          selectedRaceId={selectedRaceId}
           selectedProject={selectedProject ?? null}
-          hoveredCategory={hoveredCategory}
+          hoveredRaceId={hoveredRaceId}
           onSelectTree={handleSelectTree}
           onSelectProject={handleSelectProject}
-          onHoverTree={setHoveredCategory}
+          onHoverTree={setHoveredRaceId}
           getProjectStyle={getProjectStyle}
           layout={layout}
           onBackgroundClick={handleBackgroundClick}
@@ -952,9 +988,9 @@ export default function MoonBaseZeroIndex() {
 
             <Legend
               races={races}
-              selectedRace={selectedTreeCategory}
+              selectedRace={selectedRaceId}
               onSelectRace={handleToggleRace}
-              onHoverRace={setHoveredCategory}
+              onHoverRace={setHoveredRaceId}
               organizations={legendOrgs}
               selectedOrgIds={selectedOrgIds}
               onToggleOrg={toggleOrg}

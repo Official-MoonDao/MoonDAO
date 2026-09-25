@@ -103,13 +103,13 @@ export type MoonGlobeProps = {
   // Race district layer: every competitor in every race, on its own plot.
   trees?: TechTree[]
   organizations?: Organization[]
-  selectedTreeCategory?: ProjectType | null
+  selectedRaceId?: string | null
   // Competitor picked from a race panel — its plot is called out by name.
   selectedProject?: Project | null
-  hoveredCategory?: ProjectType | null
-  onSelectTree?: (category: ProjectType) => void
+  hoveredRaceId?: string | null
+  onSelectTree?: (raceId: string) => void
   onSelectProject?: (projectId: string) => void
-  onHoverTree?: (category: ProjectType | null) => void
+  onHoverTree?: (raceId: string | null) => void
   getProjectStyle?: (project: Project) => MarkerStyle
   // Plot and district positions, shared with the page so the camera and the
   // models cannot disagree on where a competitor stands.
@@ -683,9 +683,9 @@ export default function MoonGlobe({
   onReady,
   trees,
   organizations,
-  selectedTreeCategory,
+  selectedRaceId,
   selectedProject,
-  hoveredCategory,
+  hoveredRaceId,
   onSelectTree,
   onSelectProject,
   onHoverTree,
@@ -707,9 +707,9 @@ export default function MoonGlobe({
   // hardware rather than lying on an empty plain years early — and so no spur
   // is graded out to a plot nobody has broken ground on yet.
   const sitePresence = useMemo(() => {
-    const byCategory = new Map<string, number>()
-    for (const t of trees ?? []) byCategory.set(t.category, siteOpacity(t, getProjectStyle))
-    return byCategory
+    const byRace = new Map<string, number>()
+    for (const t of trees ?? []) byRace.set(t.raceId, siteOpacity(t, getProjectStyle))
+    return byRace
   }, [trees, getProjectStyle])
   // The built environment — graded roads, street lighting, the
   // roadside cargo, the parked excavators, the vault dig — is the work of the
@@ -905,9 +905,9 @@ export default function MoonGlobe({
           trees={trees}
           organizations={organizations}
           layout={layout}
-          selectedTreeCategory={selectedTreeCategory}
+          selectedRaceId={selectedRaceId}
           selectedProject={selectedProject}
-          hoveredCategory={hoveredCategory}
+          hoveredRaceId={hoveredRaceId}
           onSelectTree={onSelectTree}
           onSelectProject={onSelectProject}
           onHoverTree={onHoverTree}
@@ -924,7 +924,7 @@ export default function MoonGlobe({
         <SkyLayer
           trees={trees}
           organizations={organizations}
-          selectedTreeCategory={selectedTreeCategory}
+          selectedRaceId={selectedRaceId}
           selectedProject={selectedProject}
           getProjectStyle={getProjectStyle}
           onSelectProject={onSelectProject}
