@@ -28,6 +28,14 @@ describe('deprize index layout', () => {
     expect(index).to.include('plannedRaces')
     expect(index).to.not.include("setListing('live')")
     expect(index).to.not.include("setListing('planned')")
+    expect(index).to.include('id="deprize-intro"')
+    expect(index).to.include('A DePrize is a market on who reaches a lunar capability first')
+    expect(index).to.include('/moonbase?race=${rung.sharedGoalId}')
+  })
+
+  it('links each race card into Moonbase', () => {
+    expect(card).to.include('See in Moonbase')
+    expect(card).to.include('/moonbase?race=${goalId}')
   })
 
   it('keeps a status pill only when a market is paused or settled', () => {

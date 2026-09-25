@@ -3,6 +3,7 @@ import { useLogin } from '@privy-io/react-auth'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
+import { CAPABILITY_LADDER } from '@/lib/deprize/capabilityLadder'
 import { getFeaturedLiveDePrizeId, isDePrizeGoalMarketBound } from '@/lib/deprize/competitions'
 import { DEPRIZE_RESTRICTED_PREDICT_COPY, deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
 import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
@@ -168,6 +169,21 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
           preFooter={<NoticeFooter />}
         >
           <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
+            <p id="deprize-intro" className="text-sm text-gray-400 leading-relaxed max-w-3xl">
+              A DePrize is a market on who reaches a lunar capability first. You back a
+              competitor, and every bet grows the prize. See each one in Moonbase:{' '}
+              {CAPABILITY_LADDER.filter((rung) => rung.sharedGoalId).map((rung, i, list) => (
+                <span key={rung.key}>
+                  <a
+                    href={`/moonbase?race=${rung.sharedGoalId}`}
+                    className="text-indigo-300 hover:text-indigo-200"
+                  >
+                    {rung.label}
+                  </a>
+                  {i < list.length - 1 ? ', ' : '.'}
+                </span>
+              ))}
+            </p>
             {restricted && (
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
                 {DEPRIZE_RESTRICTED_PREDICT_COPY}
