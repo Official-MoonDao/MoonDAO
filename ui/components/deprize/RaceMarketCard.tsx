@@ -84,6 +84,17 @@ function RaceCardTitle({
   )
 }
 
+function MoonbaseLink({ goalId }: { goalId: string }) {
+  return (
+    <a
+      href={`/moonbase?race=${goalId}`}
+      className="shrink-0 text-[11px] text-indigo-300/90 hover:text-indigo-200 transition-colors"
+    >
+      See in Moonbase
+    </a>
+  )
+}
+
 function PredictLink({ href }: { href: string }) {
   return (
     <a
@@ -479,6 +490,7 @@ export default function RaceMarketCard({
             <RaceCardTitle goal={goal} titleClassName="text-white font-GoodTimes text-base" />
             <p className="text-gray-500 text-xs mt-0.5">{categoryLabel}</p>
           </a>
+          <MoonbaseLink goalId={goal.id} />
           {showStatusPill && statusLabel && statusTone && (
             <StatusPill label={statusLabel} tone={statusTone} />
           )}
@@ -634,18 +646,21 @@ export default function RaceMarketCard({
           )}
         </div>
 
-        {(showLiveMarket || !hasRace) && (
-          <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 flex items-center justify-between gap-2">
-            {showLiveMarket ? (
-              <span className="min-w-0 truncate">
-                <PoolAmount eth={poolEth} loading={poolLoading} size="footer" /> pool
-              </span>
-            ) : (
-              <span>No committed developer — not an active competition</span>
-            )}
+        <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 flex items-center justify-between gap-2">
+          {showLiveMarket ? (
+            <span className="min-w-0 truncate">
+              <PoolAmount eth={poolEth} loading={poolLoading} size="footer" /> pool
+            </span>
+          ) : !hasRace ? (
+            <span>No committed developer — not an active competition</span>
+          ) : (
+            <span />
+          )}
+          <span className="flex items-center gap-3 shrink-0">
             {forecastHref && <PredictLink href={forecastHref} />}
-          </div>
-        )}
+            <MoonbaseLink goalId={goal.id} />
+          </span>
+        </div>
 
         {marketModals}
       </div>
@@ -693,6 +708,7 @@ export default function RaceMarketCard({
                   {showStatusPill && statusLabel && statusTone && (
                     <StatusPill label={statusLabel} tone={statusTone} />
                   )}
+                  <MoonbaseLink goalId={goal.id} />
                 </div>
               </div>
             </div>
@@ -792,6 +808,7 @@ export default function RaceMarketCard({
                 {showStatusPill && statusLabel && statusTone && (
                   <StatusPill label={statusLabel} tone={statusTone} />
                 )}
+                <MoonbaseLink goalId={goal.id} />
               </div>
             </div>
             <div className="text-right shrink-0">
