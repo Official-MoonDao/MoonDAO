@@ -18,11 +18,17 @@ export type DePrizePageProps = {
 
 type HeaderRequest = GeoHeaderRequest & { url?: string }
 
-/** Preview betting is for `/deprize/sep` only. Arbitrum on the same deploy stays gated. */
+/**
+ * Page path from a document request (`/deprize/sep`) or a client transition
+ * (`/_next/data/<buildId>/deprize/sep.json`). Preview betting is for
+ * `/deprize/sep` only. Arbitrum on the same deploy stays gated.
+ */
 export function isSepoliaPreviewPath(url: string | undefined): boolean {
   if (process.env.VERCEL_ENV !== 'preview' || !url) return false
   const path = url.split('?')[0]
-  return path === '/deprize/sep' || path.startsWith('/deprize/sep/')
+  const data = path.match(/\/_next\/data\/[^/]+(\/.*)\.json$/)
+  const page = data ? data[1] : path
+  return page === '/deprize/sep' || page.startsWith('/deprize/sep/')
 }
 
 /** Browser + Vercel CDN must not cache a country-specific DePrize page. */

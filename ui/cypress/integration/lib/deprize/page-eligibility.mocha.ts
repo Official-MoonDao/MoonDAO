@@ -135,6 +135,24 @@ describe('deprize page eligibility', () => {
         true
       )
       expect(getDePrizePageEligibility({ headers: us, url: '/deprize' }).restricted).to.equal(true)
+      expect(
+        getDePrizePageEligibility({
+          headers: us,
+          url: '/_next/data/build/deprize/sep.json',
+        }).restricted
+      ).to.equal(false)
+      expect(
+        getDePrizePageEligibility({
+          headers: us,
+          url: '/_next/data/build/deprize/sep/6.json?x=1',
+        }).restricted
+      ).to.equal(false)
+      expect(
+        getDePrizePageEligibility({
+          headers: us,
+          url: '/_next/data/build/deprize/arb.json',
+        }).restricted
+      ).to.equal(true)
       env.VERCEL_ENV = 'production'
       expect(getDePrizePageEligibility({ headers: us, url: '/deprize/sep' }).restricted).to.equal(
         true
