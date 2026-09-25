@@ -1,6 +1,7 @@
 import { ArrowLeftIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useEffect, useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
+import { isLadderGoal } from '@/lib/deprize/capabilityLadder'
 import {
   findDePrizeIdForGoal,
   getDePrizeRaceBinding,
@@ -419,7 +420,7 @@ export default function ProjectPanel({
                     className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left transition hover:border-fuchsia-400/40 hover:bg-white/10"
                   >
                     <span className="text-sm text-white/85">{g.title}</span>
-                    <MarketPill status={g.market?.status ?? 'none'} />
+                    <MarketPill status={goalPillStatus(g)} />
                   </button>
                 ) : (
                   <div
@@ -427,7 +428,7 @@ export default function ProjectPanel({
                     className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-left"
                   >
                     <span className="text-sm text-white/85">{g.title}</span>
-                    <MarketPill status={g.market?.status ?? 'none'} />
+                    <MarketPill status={goalPillStatus(g)} />
                   </div>
                 )
               )}
@@ -509,9 +510,23 @@ export default function ProjectPanel({
   )
 }
 
+/**
+ * What a goal's pill may claim. "Market planned" is a promise, so only a race
+ * on the capability ladder gets to make it — the rest of the atlas is capability
+ * we track, with no market scheduled.
+ */
+function goalPillStatus(goal: SharedGoal): string {
+  const status = goal.market?.status ?? 'none'
+  if (status === 'planned' && !isLadderGoal(goal.id)) return 'none'
+  return status
+}
+
 export function MarketPill({ status }: { status: string }) {
   const map: Record<string, { label: string; cls: string }> = {
-    none: { label: 'Market TBD', cls: 'text-white/40 border-white/10 bg-white/5' },
+    none: {
+      label: 'No market',
+      cls: 'text-white/40 border-white/10 bg-white/5',
+    },
     planned: {
       label: 'Market planned',
       cls: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',

@@ -87,11 +87,10 @@ type SharedGoalPanelProps = {
 const NEUTRAL_ACCENT = '#9ca3af'
 
 function oddsCaption(status: string | undefined): string {
-  if (status === 'live') return 'Odds are live market-implied probabilities.'
   if (status === 'resolved') {
     return 'Final market-implied probabilities from the resolved market.'
   }
-  return 'Illustrative curator priors — live odds replace these when the prediction market opens.'
+  return 'Odds are live market-implied probabilities.'
 }
 
 function stopRowNav(e: MouseEvent) {
@@ -615,7 +614,7 @@ export default function SharedGoalPanel({
         {goal.criteria && goal.criteria.length > 0 && (
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
-              Capability criteria (draft)
+              {bound ? 'Capability criteria' : 'Capability criteria (draft)'}
             </h3>
             <ol className="space-y-2.5">
               {goal.criteria.map((c, i) => (
@@ -637,8 +636,9 @@ export default function SharedGoalPanel({
               ))}
             </ol>
             <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-              Draft criteria — the binding spec is frozen and pinned publicly
-              when a market opens.
+              {bound
+                ? 'The binding spec is frozen and pinned publicly for this market.'
+                : 'Draft criteria — the binding spec is frozen and pinned publicly when a market opens.'}
             </p>
           </div>
         )}
