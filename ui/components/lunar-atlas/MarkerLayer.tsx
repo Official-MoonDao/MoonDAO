@@ -135,6 +135,12 @@ export type ColonyLayout = {
   // flies to when a race is opened. Not by category: two races can run the
   // same hardware, and they do not share a district.
   districts: Map<string, Vec3>
+  // Which race stands in each zoned district of the base plan. The plan is
+  // drawn in hardware types, but a race is not a type, so anything keyed to the
+  // built environment — the graded branch roads above all — needs this to get
+  // from "the rover district" to the race actually parked in it. A race with no
+  // district of its own never appears here.
+  districtOwner: Map<ProjectType, string>
   // Per-project plot: its surface direction and its slot in the district.
   // `standDir` is set only for a competitor whose race DRIVES (see PATROL), and
   // is where its MOVING copy sets off from on the patrol run. The competitor

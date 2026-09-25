@@ -102,6 +102,7 @@ function dirAt(eastM: number, northM: number): Vec3 {
 // model layer, since only it knows how much ground an asset covers.
 function buildColonyLayout(trees: TechTree[]): ColonyLayout {
   const districts = new Map<string, Vec3>()
+  const districtOwner = new Map<ProjectType, string>()
   const plots = new Map<
     string,
     { dir: Vec3; slot: Slot; standDir?: Vec3 }
@@ -131,7 +132,9 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
   zoned.clear()
 
   for (const tree of ordered) {
-    let plan = isZoned(tree) ? BASE_PLAN[tree.category] : undefined
+    const takesDistrict = isZoned(tree)
+    if (takesDistrict) districtOwner.set(tree.category, tree.raceId)
+    let plan = takesDistrict ? BASE_PLAN[tree.category] : undefined
     if (!plan) {
       // A category the plan doesn't zone stands past the head of the spine, so a
       // race added to the dataset appears on open regolith beyond the built
@@ -183,7 +186,7 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       plots.set(id, { dir: dirAt(slot.east, slot.north), slot, standDir })
     }
   }
-  return { districts, plots }
+  return { districts, districtOwner, plots }
 }
 
 export default function MoonBaseZeroIndex() {
