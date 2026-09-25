@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
+import { isLadderGoal } from '@/lib/deprize/capabilityLadder'
 import {
   findDePrizeIdForGoal,
   isCompetitiveRace,
@@ -572,12 +573,19 @@ export default function MoonBaseZeroIndex() {
             count: tree.projects.length,
             leaderName: leaderOrg?.name,
             leaderColor: orgColor(leaderOrg),
-            // Reads the same binding map the panel does, so the dot and the
-            // odds it promises can never disagree.
-            live: findDePrizeIdForGoal(chainSlug, tree.goal?.id) !== undefined,
+            // Two different questions, and the legend needs both. Whether a
+            // race SHIPS is a product decision and the same on every chain.
+            // Whether you can bet on it *today* is a registry lookup, and it
+            // reads the same binding map the panel does, so the dot and the
+            // odds it promises cannot disagree.
+            onLadder: isLadderGoal(tree.goal?.id),
+            tradable:
+              findDePrizeIdForGoal(chainSlug, tree.goal?.id) !== undefined,
           }
         })
-        .sort((a, b) => Number(b.live) - Number(a.live) || b.count - a.count),
+        .sort(
+          (a, b) => Number(b.onLadder) - Number(a.onLadder) || b.count - a.count
+        ),
     [surfaceTrees, dataset, chainSlug]
   )
 

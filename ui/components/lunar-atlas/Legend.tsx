@@ -19,11 +19,18 @@ export type RaceEntry = {
   leaderName?: string
   leaderColor?: string
   /**
-   * True when this race has a DePrize on the connected chain, so the panel
-   * shows real odds and the bet button moves real ETH. False means the atlas
-   * still has the competitors and the tech tree, but the odds are editorial.
+   * True for a race on the capability ladder — one of the four we actually
+   * ship. Product decision, identical on every chain, and what the two groups
+   * below are split on.
    */
-  live?: boolean
+  onLadder?: boolean
+  /**
+   * True when this race has a DePrize on the connected chain right now, so the
+   * panel shows real odds and the bet button moves real ETH. Drives the dot
+   * only. A ladder race with no market yet still belongs in the top group; it
+   * just isn't tradable from this chain.
+   */
+  tradable?: boolean
 }
 
 type LegendProps = {
@@ -73,12 +80,18 @@ export default function Legend({
 
   const countForOrg = (id: string) => projects.filter((p) => p.orgId === id).length
 
-  // Most of the atlas is capabilities nobody can bet on yet. Splitting the list
-  // says which is which up front, instead of letting someone pick a race and
-  // only discover at the panel that its odds are editorial. Both groups stay
-  // clickable — an unbacked race still has competitors, sources and a district.
-  const liveRaces = races.filter((r) => r.live)
-  const futureRaces = races.filter((r) => !r.live)
+  // Most of the atlas is capability we track but do not run a race on. The
+  // split says which is which up front, instead of letting someone pick a race
+  // and only discover at the panel that its odds are editorial. Both groups
+  // stay clickable — a race we aren't running still has competitors, sources
+  // and a district worth reading.
+  //
+  // Split on the ladder rather than on live markets, because those disagree in
+  // exactly the case that matters: production has none of the four bound yet,
+  // so grouping by market would tell prod there are no races at all.
+  const ladderRaces = races.filter((r) => r.onLadder)
+  const futureRaces = races.filter((r) => !r.onLadder)
+  const tradableCount = ladderRaces.filter((r) => r.tradable).length
 
   const renderRace = (race: RaceEntry) => {
     const active = selectedRace === race.raceId
@@ -96,22 +109,27 @@ export default function Legend({
       >
         <span
           className={`mt-px shrink-0 text-sm leading-none ${
-            race.live ? '' : 'opacity-50'
+            race.onLadder ? '' : 'opacity-50'
           }`}
         >
           {PROJECT_TYPE_GLYPH[race.category]}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
-            {race.live && (
+            {race.tradable && (
               <span
                 className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400"
                 style={{ boxShadow: '0 0 6px rgb(52 211 153 / 0.9)' }}
+                title="Open market — you can bet on this now"
               />
             )}
             <span
               className={`min-w-0 truncate text-sm ${
-                active ? 'text-white' : race.live ? 'text-white/80' : 'text-white/45'
+                active
+                  ? 'text-white'
+                  : race.onLadder
+                  ? 'text-white/80'
+                  : 'text-white/45'
               }`}
             >
               {race.label}
@@ -120,7 +138,7 @@ export default function Legend({
           {race.leaderName && (
             <span
               className={`mt-0.5 flex items-center gap-1.5 text-[11px] ${
-                race.live ? 'text-white/40' : 'text-white/25'
+                race.onLadder ? 'text-white/40' : 'text-white/25'
               }`}
             >
               <span
@@ -133,7 +151,7 @@ export default function Legend({
         </span>
         <span
           className={`mt-px shrink-0 text-xs ${
-            race.live ? 'text-white/30' : 'text-white/20'
+            race.onLadder ? 'text-white/30' : 'text-white/20'
           }`}
         >
           {race.count}
@@ -153,8 +171,8 @@ export default function Legend({
           Capability races
         </span>
         <span className="flex items-center gap-2 text-xs text-white/40">
-          {liveRaces.length > 0 && !open && (
-            <span className="text-emerald-300/80">{liveRaces.length} live</span>
+          {tradableCount > 0 && !open && (
+            <span className="text-emerald-300/80">{tradableCount} live</span>
           )}
           {open ? 'Hide' : 'Show'}
         </span>
@@ -162,17 +180,17 @@ export default function Legend({
 
       {open && (
         <div className="space-y-4 px-4 pb-4">
-          {/* Flat list on a chain with no markets at all — two headings with
-              nothing under the first one reads like something failed to load. */}
-          {liveRaces.length === 0 ? (
+          {/* Flat list when a filter has hidden the whole ladder — two headings
+              with nothing under the first reads like a failed load. */}
+          {ladderRaces.length === 0 ? (
             <div className="space-y-1">{races.map(renderRace)}</div>
           ) : (
             <>
               <div className="space-y-1">
                 <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-300/70">
-                  Open markets
+                  Racing now
                 </p>
-                {liveRaces.map(renderRace)}
+                {ladderRaces.map(renderRace)}
               </div>
 
               {futureRaces.length > 0 && (
