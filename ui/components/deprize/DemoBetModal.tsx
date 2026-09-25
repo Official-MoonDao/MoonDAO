@@ -15,6 +15,11 @@ type DemoBetModalProps = {
   teamName: string
   probability: number
   address: string | undefined
+  /**
+   * What the sandbox is standing in for. A capability race is a 'race'; a
+   * Touchdown side market is a 'market' and has no competitors to race.
+   */
+  kind?: 'race' | 'market'
   onClose: () => void
   onDone: () => void
 }
@@ -34,6 +39,7 @@ export default function DemoBetModal({
   teamName,
   probability,
   address,
+  kind = 'race',
   onClose,
   onDone,
 }: DemoBetModalProps) {
@@ -75,9 +81,12 @@ export default function DemoBetModal({
     <Modal id="deprize-demo-bet" setEnabled={(v) => !v && onClose()} title={`Back ${teamName}`}>
       <div className="flex flex-col gap-4 w-full">
         <div className="p-3 rounded-xl bg-fuchsia-500/10 border border-fuchsia-400/30 text-fuchsia-200 text-xs leading-snug">
-          <span className="font-semibold">Demo market.</span> This race doesn&apos;t have a live
-          on-chain market yet, so this bet is simulated — no real ETH moves. It only updates the
-          odds and position shown in this browser.
+          <span className="font-semibold">Demo market.</span>{' '}
+          {kind === 'market'
+            ? 'This side market isn\u2019t on-chain yet'
+            : 'This race doesn\u2019t have a live on-chain market yet'}
+          , so this bet is simulated — no real ETH moves. It only updates the odds and position
+          shown in this browser.
         </div>
 
         <div className="flex items-center justify-between text-sm">
