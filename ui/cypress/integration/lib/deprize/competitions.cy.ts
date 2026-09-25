@@ -4,6 +4,7 @@ import {
   deprizeChainLabel,
   deprizeChainSlugFromPrefix,
   deprizeForecastHref,
+  deprizeIndexHref,
   deprizePrefixedHref,
   findDePrizeChainSlugs,
   findDePrizeIdForGoal,
@@ -104,7 +105,10 @@ describe('deprize competitions registry', () => {
   it('reverse-looks up the DePrize id for a bound goal (hit and miss)', () => {
     expect(findDePrizeIdForGoal('sepolia', 'shared-next-landing')).to.equal(2)
     expect(findDePrizeIdForGoal('sepolia', 'shared-fission-power')).to.equal(undefined)
-    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(3)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-lunar-rover')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-first-tracks')).to.equal(5)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-ice')).to.equal(6)
     expect(findDePrizeIdForGoal('sepolia', 'shared-mass-driver')).to.equal(undefined)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-fission-power')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', undefined)).to.equal(undefined)
@@ -113,7 +117,10 @@ describe('deprize competitions registry', () => {
   it('reports a bound race regardless of consent, and unbound goals as unbound', () => {
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-next-landing')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-fission-power')).to.equal(false)
-    expect(isDePrizeGoalMarketBound('sepolia', 'shared-night-shift')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-night-shift')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-lunar-rover')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-first-tracks')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-ice')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-mass-driver')).to.equal(false)
     // Arbitrum has no binding at all, so there is no market to report.
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-fission-power')).to.equal(false)
@@ -190,6 +197,9 @@ describe('deprize chain-prefixed links', () => {
     expect(deprizePrefixedHref('sepolia', 'shared-next-landing')).to.equal(
       '/deprize/sep/shared-next-landing'
     )
+    expect(deprizeIndexHref('sepolia')).to.equal('/deprize/sep')
+    expect(deprizeIndexHref('arbitrum')).to.equal('/deprize/arb')
+    expect(deprizeIndexHref('ethereum')).to.equal('/deprize')
   })
 
   it('finds which registries know an id', () => {

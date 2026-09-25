@@ -57,6 +57,9 @@ export type ProjectType =
   // refining, power and rovers are mature enough to feed it — which is why
   // it's the final capability, not a competitor to any of the others.
   | 'mass_driver'
+  // In-situ science, not a surface plant. Used as an index chip (Water Ice).
+  // It does not open a Moon Base district.
+  | 'prospecting'
   | 'other'
 
 // Where a project stands in a DePrize competitor roster. `listed` means

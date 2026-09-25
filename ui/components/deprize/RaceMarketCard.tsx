@@ -13,9 +13,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
+import { raceCardHeading } from '@/lib/deprize/raceCardHeading'
 import {
-  deprizeDetailHref,
   deprizeForecastHref,
+  deprizePrefixedHref,
   findDePrizeIdForGoal,
   getDePrizeRaceBinding,
   isCompetitiveRace,
@@ -63,6 +64,24 @@ type OutcomeRowVM = {
   outcomeIndex: number | undefined
   positionId: bigint | undefined
   balanceWei: bigint | undefined
+}
+
+function RaceCardTitle({
+  goal,
+  titleClassName,
+}: {
+  goal: { id: string; title: string }
+  titleClassName: string
+}) {
+  const { name, subtitle } = raceCardHeading(goal)
+  return (
+    <>
+      <p className={titleClassName}>{name}</p>
+      {subtitle && (
+        <p className="mt-0.5 text-[11px] sm:text-xs leading-snug text-gray-400 line-clamp-2">{subtitle}</p>
+      )}
+    </>
+  )
 }
 
 function PredictLink({ href }: { href: string }) {
@@ -132,7 +151,7 @@ function StatusPill({
     paused: 'text-amber-300 border-amber-500/40 bg-amber-500/15',
     demo: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',
     resolved: 'text-gray-300 border-white/20 bg-white/10',
-    concept: 'text-gray-400 border-white/15 bg-white/5',
+    concept: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',
   } as const
   return (
     <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls[tone]}`}>
@@ -187,7 +206,7 @@ function OutcomeBetRow({
             bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
             transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
         >
-          Buy
+          {DEPRIZE_PREDICT_CTA}
         </button>
       ) : null}
       {onCashOut && (
@@ -328,22 +347,33 @@ export default function RaceMarketCard({
       ? deprizeForecastHref(deprizeId)
       : undefined
 
-  const statusTone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept' = !hasRace
+  // Stage is unknown until the first market read returns. Treating that as
+  // "not Running" painted every live race as Paused, then flipped to Live.
+  // Later polls set `loading` again; those must not hide a status we already have.
+  const awaitingMarket = bound && hasRace && !live.resolved && live.stage === undefined
+  const statusTone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept' | null = !hasRace
     ? 'concept'
     : !bound
       ? 'demo'
       : live.resolved
         ? 'resolved'
-        : marketTradable
-          ? 'live'
-          : 'paused'
-  const statusLabel = {
-    live: 'Live',
-    paused: 'Paused',
-    demo: 'Planning',
-    resolved: 'Resolved',
-    concept: 'No developer yet',
-  }[statusTone]
+        : awaitingMarket
+          ? null
+          : marketTradable
+            ? 'live'
+            : 'paused'
+  const statusLabel = statusTone
+    ? {
+        live: 'Live',
+        paused: 'Paused',
+        demo: 'Planned',
+        resolved: 'Resolved',
+        concept: 'Planned',
+      }[statusTone]
+    : null
+  // Live and Planned are the section headings. The pill stays for a market
+  // that is paused or already settled, which those headings do not say.
+  const showStatusPill = statusTone === 'paused' || statusTone === 'resolved'
 
   const category = goalIndexCategory(goal) ?? 'other'
   const categoryLabel = PROJECT_TYPE_LABEL[category]
@@ -355,7 +385,7 @@ export default function RaceMarketCard({
   // Always the prize page. Bound races resolve the slug to the live DePrize;
   // unbound ones render the atlas detail at the same URL. Never moonbase —
   // the globe is a secondary link from the prize page, not the destination.
-  const detailHref = deprizeDetailHref(goal.id)
+  const detailHref = deprizePrefixedHref(chainSlug, deprizeId ?? goal.id)
 
   const ranked = useMemo(
     () => [...outcomes].sort((a, b) => (b.probability || 0) - (a.probability || 0)),
@@ -446,10 +476,12 @@ export default function RaceMarketCard({
             <CategoryIcon category={category} className="w-5 h-5" />
           </div>
           <a href={detailHref} className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg">
-            <p className="text-white font-GoodTimes text-base">{goal.title}</p>
+            <RaceCardTitle goal={goal} titleClassName="text-white font-GoodTimes text-base" />
             <p className="text-gray-500 text-xs mt-0.5">{categoryLabel}</p>
           </a>
-          <StatusPill label={statusLabel} tone={statusTone} />
+          {showStatusPill && statusLabel && statusTone && (
+            <StatusPill label={statusLabel} tone={statusTone} />
+          )}
         </div>
         <div className="px-4 sm:px-5 pb-4 sm:pb-5 flex flex-col gap-2">
           {heldOutcomes.map((o) => (
@@ -547,10 +579,15 @@ export default function RaceMarketCard({
             <CategoryIcon category={category} className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-white font-GoodTimes text-sm leading-snug line-clamp-2">{goal.title}</p>
+            <RaceCardTitle
+              goal={goal}
+              titleClassName="text-white font-GoodTimes text-sm leading-snug"
+            />
             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500">
               <span className="truncate">{categoryLabel}</span>
-              <StatusPill label={statusLabel} tone={statusTone} />
+              {showStatusPill && statusLabel && statusTone && (
+                <StatusPill label={statusLabel} tone={statusTone} />
+              )}
             </div>
           </div>
         </a>
@@ -584,7 +621,7 @@ export default function RaceMarketCard({
                       bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
                       transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
                   >
-                    Buy
+                    {DEPRIZE_PREDICT_CTA}
                   </button>
                 ) : null}
               </div>
@@ -638,7 +675,10 @@ export default function RaceMarketCard({
                   href={detailHref}
                   className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
                 >
-                  <p className="text-white font-GoodTimes text-xl sm:text-2xl leading-snug">{goal.title}</p>
+                  <RaceCardTitle
+                    goal={goal}
+                    titleClassName="text-white font-GoodTimes text-xl sm:text-2xl leading-snug"
+                  />
                 </a>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
                   <span>{categoryLabel}</span>
@@ -650,7 +690,9 @@ export default function RaceMarketCard({
                       </span>
                     </>
                   )}
-                  <StatusPill label={statusLabel} tone={statusTone} />
+                  {showStatusPill && statusLabel && statusTone && (
+                    <StatusPill label={statusLabel} tone={statusTone} />
+                  )}
                 </div>
               </div>
             </div>
@@ -732,7 +774,10 @@ export default function RaceMarketCard({
                 href={detailHref}
                 className="min-w-0 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
               >
-                <p className="text-white font-GoodTimes text-base sm:text-lg leading-snug">{goal.title}</p>
+                <RaceCardTitle
+                  goal={goal}
+                  titleClassName="text-white font-GoodTimes text-base sm:text-lg leading-snug"
+                />
               </a>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
                 <span>{categoryLabel}</span>
@@ -744,7 +789,9 @@ export default function RaceMarketCard({
                     </span>
                   </>
                 )}
-                <StatusPill label={statusLabel} tone={statusTone} />
+                {showStatusPill && statusLabel && statusTone && (
+                  <StatusPill label={statusLabel} tone={statusTone} />
+                )}
               </div>
             </div>
             <div className="text-right shrink-0">

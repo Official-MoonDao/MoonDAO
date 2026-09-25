@@ -525,6 +525,22 @@
           "retrievedAt": "2026-09-04"
         }
       ]
+    },
+    {
+      "id": "cmu",
+      "name": "Carnegie Mellon",
+      "kind": "company",
+      "country": "United States",
+      "website": "https://www.cmu.edu/",
+      "brandColor": "#C41230",
+      "summary": "Carnegie Mellon's Iris rover flew on Astrobotic's Peregrine. The Iris-class follow-on is the university rover in the First Tracks field.",
+      "sources": [
+        {
+          "label": "Carnegie Mellon — Iris lunar rover",
+          "url": "https://www.cmu.edu/news/stories/archives/2024/january/iris-rover",
+          "retrievedAt": "2026-09-24"
+        }
+      ]
     }
   ],
   "projects": [
@@ -1895,7 +1911,8 @@
         }
       ],
       "sharedGoalIds": [
-        "shared-next-landing"
+        "shared-next-landing",
+        "shared-ice"
       ],
       "rosterStatus": "listed",
       "sources": [
@@ -3172,6 +3189,258 @@
         }
       ],
       "visibility": "public"
+    },
+    {
+      "id": "astrolab-flip",
+      "orgId": "astrolab",
+      "name": "FLIP",
+      "type": "rover",
+      "summary": "Astrolab's smaller FLEX-derived rover, manifested on Griffin-1. First Tracks is this unmanned egress, not the crewed CLV-1.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth (Griffin-1 manifest)",
+      "milestones": [
+        {
+          "id": "flip-griffin",
+          "title": "FLIP manifested on Griffin-1",
+          "targetDate": "2026",
+          "datePrecision": "year",
+          "status": "planned",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "NASA — Moon Base cargo landers",
+              "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+              "retrievedAt": "2026-09-24"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-first-tracks"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Venturi Astrolab",
+          "url": "https://astrolab.space/",
+          "retrievedAt": "2026-09-24"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "voyager-cuberover",
+      "orgId": "astrobotic",
+      "name": "CubeRover",
+      "type": "rover",
+      "summary": "Voyager Lunar Systems' CubeRover, manifested on Griffin-1 beside FLIP.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth (Griffin-1 manifest)",
+      "milestones": [
+        {
+          "id": "cuberover-griffin",
+          "title": "CubeRover manifested on Griffin-1",
+          "targetDate": "2026",
+          "datePrecision": "year",
+          "status": "planned",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Astrobotic — CubeRover",
+              "url": "https://www.astrobotic.com/",
+              "retrievedAt": "2026-09-24"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-first-tracks"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Astrobotic",
+          "url": "https://www.astrobotic.com/",
+          "retrievedAt": "2026-09-24"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "lunar-outpost-mapp",
+      "orgId": "lunar-outpost",
+      "name": "MAPP",
+      "type": "rover",
+      "summary": "Lunar Outpost's Mobile Autonomous Prospecting Platform, manifested on Intuitive Machines IM-3.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth (IM-3 manifest)",
+      "milestones": [
+        {
+          "id": "mapp-im3",
+          "title": "MAPP manifested on IM-3",
+          "targetDate": "2026",
+          "datePrecision": "year",
+          "status": "planned",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Lunar Outpost",
+              "url": "https://www.lunaroutpost.com/",
+              "retrievedAt": "2026-09-24"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-first-tracks"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Lunar Outpost",
+          "url": "https://www.lunaroutpost.com/",
+          "retrievedAt": "2026-09-24"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "ispace-tenacious",
+      "orgId": "ispace",
+      "name": "Tenacious",
+      "type": "rover",
+      "summary": "ispace's Tenacious-class rover on Mission 3, the 2028 commercial follow-on.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth (Mission 3 manifest)",
+      "milestones": [
+        {
+          "id": "tenacious-m3",
+          "title": "Tenacious-class rover on ispace Mission 3",
+          "targetDate": "2028",
+          "datePrecision": "year",
+          "status": "planned",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "ispace",
+              "url": "https://ispace-inc.com/",
+              "retrievedAt": "2026-09-24"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-first-tracks"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "ispace",
+          "url": "https://ispace-inc.com/",
+          "retrievedAt": "2026-09-24"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "cmu-iris",
+      "orgId": "cmu",
+      "name": "Iris-class",
+      "type": "rover",
+      "summary": "Carnegie Mellon's Iris-class rover on the next available commercial lander. Iris flew on Peregrine and did not reach the surface.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth (no committed lander)",
+      "milestones": [
+        {
+          "id": "iris-peregrine",
+          "title": "Iris flew on Peregrine Mission One",
+          "targetDate": "2024-01",
+          "datePrecision": "month",
+          "status": "cancelled",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Carnegie Mellon — Iris lunar rover",
+              "url": "https://www.cmu.edu/news/stories/archives/2024/january/iris-rover",
+              "retrievedAt": "2026-09-24"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-first-tracks"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Carnegie Mellon — Iris lunar rover",
+          "url": "https://www.cmu.edu/news/stories/archives/2024/january/iris-rover",
+          "retrievedAt": "2026-09-24"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "blue-origin-viper",
+      "orgId": "blue-origin",
+      "name": "VIPER on MK1",
+      "type": "rover",
+      "summary": "NASA's VIPER ice rover, retargeted to Blue Origin's second Blue Moon MK1.",
+      "locationPrecision": "region",
+      "regionLabel": "Earth (second MK1 manifest)",
+      "milestones": [
+        {
+          "id": "viper-mk1",
+          "title": "VIPER assigned to the second Blue Moon MK1",
+          "targetDate": "2027",
+          "datePrecision": "year",
+          "status": "planned",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "NASA — VIPER",
+              "url": "https://science.nasa.gov/mission/viper/",
+              "retrievedAt": "2026-09-24"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-ice"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "NASA — VIPER",
+          "url": "https://science.nasa.gov/mission/viper/",
+          "retrievedAt": "2026-09-24"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "im-4-volatiles",
+      "orgId": "intuitive-machines",
+      "name": "IM-4 volatiles",
+      "type": "lander",
+      "summary": "Intuitive Machines IM-4, the 2027 CLPS volatiles flight aimed at Mons Mouton.",
+      "locationPrecision": "region",
+      "regionLabel": "Mons Mouton (planned)",
+      "milestones": [
+        {
+          "id": "im4-clps",
+          "title": "IM-4 CLPS volatiles mission",
+          "targetDate": "2027",
+          "datePrecision": "year",
+          "status": "planned",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "Intuitive Machines",
+              "url": "https://www.intuitivemachines.com/",
+              "retrievedAt": "2026-09-24"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": ["shared-ice"],
+      "rosterStatus": "listed",
+      "sources": [
+        {
+          "label": "Intuitive Machines",
+          "url": "https://www.intuitivemachines.com/",
+          "retrievedAt": "2026-09-24"
+        }
+      ],
+      "visibility": "public"
     }
   ],
   "sharedGoals": [
@@ -3864,6 +4133,110 @@
         }
       ],
       "category": "mass_driver"
+    },
+    {
+      "id": "shared-first-tracks",
+      "title": "First Tracks — first commercial rover egress and drive",
+      "description": "The first commercial rover to leave its lander and drive at least 10 metres on the lunar surface, then return a picture taken by the rover. Government rovers such as CADRE can drive first and the prize stays open. This is not the crewed lunar terrain vehicle.",
+      "projectIds": [
+        "astrolab-flip",
+        "voyager-cuberover",
+        "lunar-outpost-mapp",
+        "ispace-tenacious",
+        "cmu-iris"
+      ],
+      "indexCategory": "rover",
+      "criteria": [
+        {
+          "id": "egress",
+          "statement": "The rover leaves the lander under a published deploy procedure",
+          "threshold": "Free of the lander deck. A tip-over that spills the rover does not count"
+        },
+        {
+          "id": "traverse",
+          "statement": "Drive at least 10 metres under its own power",
+          "threshold": "Published odometry or an equivalent traverse reconstruction of ≥ 10 m"
+        },
+        {
+          "id": "imagery",
+          "statement": "Return a picture from the rover after egress",
+          "threshold": "At least one frame originated by the rover showing the lunar surface"
+        },
+        {
+          "id": "commercial",
+          "statement": "A commercial operator",
+          "threshold": "Government rovers cannot win. If one drives first, the prize stays open"
+        }
+      ],
+      "targetWindow": { "from": "2026", "to": "2029" },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "astrolab-flip": 0.34,
+          "voyager-cuberover": 0.22,
+          "lunar-outpost-mapp": 0.2,
+          "ispace-tenacious": 0.14,
+          "cmu-iris": 0.1
+        }
+      },
+      "sources": [
+        {
+          "label": "NASA — Moon Base cargo landers",
+          "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
+          "retrievedAt": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "id": "shared-ice",
+      "title": "Water Ice — first published in-situ lunar surface water ice",
+      "description": "Which organization first publishes an in-situ confirmation of lunar surface water ice from a 2027-window attempt. A press claim without a dataset does not pay. Orbital inference alone does not pay. Chang'e-7 can win Touchdown and still have to publish ice data to win this prize.",
+      "projectIds": [
+        "cnsa-change-7",
+        "blue-origin-viper",
+        "im-4-volatiles"
+      ],
+      "indexCategory": "prospecting",
+      "criteria": [
+        {
+          "id": "in-situ",
+          "statement": "Measured on or just above the surface by a landed asset",
+          "threshold": "Not solely from orbit"
+        },
+        {
+          "id": "water-ice",
+          "statement": "The dataset supports water ice",
+          "threshold": "H₂O ice, not only hydrogen or volatiles consistent with ice"
+        },
+        {
+          "id": "published",
+          "statement": "Published with data",
+          "threshold": "A dataset, a DOI'd paper, or an agency science release with plots or tables"
+        }
+      ],
+      "targetWindow": { "from": "2027", "to": "2027" },
+      "market": {
+        "status": "planned",
+        "resolutionAuthority": "senate",
+        "impliedOdds": {
+          "cnsa-change-7": 0.46,
+          "blue-origin-viper": 0.32,
+          "im-4-volatiles": 0.22
+        }
+      },
+      "sources": [
+        {
+          "label": "Wikipedia — Chang'e 7",
+          "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
+          "retrievedAt": "2026-09-24"
+        },
+        {
+          "label": "NASA — VIPER",
+          "url": "https://science.nasa.gov/mission/viper/",
+          "retrievedAt": "2026-09-24"
+        }
+      ]
     }
   ]
 }

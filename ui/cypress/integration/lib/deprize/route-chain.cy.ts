@@ -3,6 +3,7 @@ import { chainForDeprizePath } from '@/lib/deprize/route-chain'
 
 describe('chainForDeprizePath', () => {
   it('opens /deprize/sep pages on Sepolia', () => {
+    expect(chainForDeprizePath('/deprize/sep')?.id).to.equal(11155111)
     expect(chainForDeprizePath('/deprize/sep/[id]')?.id).to.equal(11155111)
     expect(chainForDeprizePath('/deprize/sep/2')?.id).to.equal(11155111)
   })
