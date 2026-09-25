@@ -745,7 +745,7 @@ export const MOONDAO_MISSIONS_SUBGRAPH_URL =
 export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
-export const FREE_MINT_THRESHOLD = 45e15 // 0.045 ETH in wei
+export const FREE_MINT_THRESHOLD = 30e15 // 0.03 ETH in wei
 export const FREE_MINT_THRESHOLD_LABEL = `${FREE_MINT_THRESHOLD / 1e18} ETH (~$100)`
 
 export const EB_TEAM_ID = '0'
