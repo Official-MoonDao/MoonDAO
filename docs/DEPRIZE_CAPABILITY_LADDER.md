@@ -11,8 +11,7 @@
 **Owner:** *unassigned — product*  
 **Last updated:** 2026-09-17
 
-Rungs 1–3 have **no pool, no registration, and no committed date**. Nothing on this page is
-an offer to award a prize.
+Rungs 1–3 are registered on Sepolia. Nothing on this page is an offer to award a prize.
 
 | Rung | Name | Bar | Status |
 |---|---|---|---|

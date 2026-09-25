@@ -12,52 +12,8 @@
 // before every race has a contract.
 
 import { useEffect, useMemo, useState } from 'react'
-
-/** Short card name when the atlas title is one sentence with no em dash. */
-const RACE_CARD_NAMES: Record<string, string> = {
-  'shared-landing-pads': 'Landing pads',
-  'shared-isru-oxygen': 'ISRU',
-  'shared-fission-power': 'Fission',
-  'shared-habitat': 'Habitat',
-  'shared-lunar-comms': 'Comms',
-  'shared-mass-driver': 'Mass driver',
-  'shared-crewed-lander': 'Crewed landing',
-  'shared-lunar-rover': 'Lunar rover',
-}
-
-function capitalizeFirst(value: string): string {
-  if (!value) return value
-  return value.charAt(0).toUpperCase() + value.slice(1)
-}
-
-function raceCardHeading(goal: { id: string; title: string }): { name: string; subtitle?: string } {
-  const parts = goal.title.split(/\s+[—–]\s+/)
-  if (parts.length >= 2 && parts[0]) {
-    return { name: parts[0], subtitle: capitalizeFirst(parts.slice(1).join(' — ')) }
-  }
-  const name = RACE_CARD_NAMES[goal.id]
-  if (name) return { name, subtitle: capitalizeFirst(goal.title) }
-  return { name: goal.title }
-}
-
-function RaceCardTitle({
-  goal,
-  titleClassName,
-}: {
-  goal: { id: string; title: string }
-  titleClassName: string
-}) {
-  const { name, subtitle } = raceCardHeading(goal)
-  return (
-    <>
-      <p className={titleClassName}>{name}</p>
-      {subtitle && (
-        <p className="mt-0.5 text-[11px] sm:text-xs leading-snug text-gray-400 line-clamp-2">{subtitle}</p>
-      )}
-    </>
-  )
-}
 import type { Chain } from 'thirdweb'
+import { raceCardHeading } from '@/lib/deprize/raceCardHeading'
 import {
   deprizeForecastHref,
   deprizePrefixedHref,
@@ -108,6 +64,24 @@ type OutcomeRowVM = {
   outcomeIndex: number | undefined
   positionId: bigint | undefined
   balanceWei: bigint | undefined
+}
+
+function RaceCardTitle({
+  goal,
+  titleClassName,
+}: {
+  goal: { id: string; title: string }
+  titleClassName: string
+}) {
+  const { name, subtitle } = raceCardHeading(goal)
+  return (
+    <>
+      <p className={titleClassName}>{name}</p>
+      {subtitle && (
+        <p className="mt-0.5 text-[11px] sm:text-xs leading-snug text-gray-400 line-clamp-2">{subtitle}</p>
+      )}
+    </>
+  )
 }
 
 function PredictLink({ href }: { href: string }) {
