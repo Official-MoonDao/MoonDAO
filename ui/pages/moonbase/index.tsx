@@ -128,11 +128,29 @@ function buildColonyLayout(trees: TechTree[]): ColonyLayout {
     t.goal?.category === t.category ? 0 : t.goal ? 2 : 1
   const ordered = [...trees].sort((a, b) => claimRank(a) - claimRank(b))
 
-  const nUnmapped = ordered.filter((t) => !isZoned(t)).length
+  // Whether a race has anything honest to stand on the ground.
+  //
+  // On a zoned district a generic model reads fine — an unmodelled construction
+  // bid still looks like construction hardware on a construction lot, which is
+  // the rule hasOwnModel is written around. Out on open regolith there is no
+  // district of like hardware to carry that, so out there every machine has to
+  // be itself. Night Shift fields seven unmodelled reactors and First Tracks
+  // five unmodelled rovers: siting them puts seven identical crates and five
+  // identical rovers on the map under seven and five different companies'
+  // names, which says the opposite of what this map is for. They keep their
+  // legend row, their panel and their market — they just have no ground yet,
+  // and they take it the moment someone models them.
+  const canStand = (t: TechTree, zonedHere: boolean) =>
+    zonedHere || t.projects.every(hasOwnModel)
+
+  const nUnmapped = ordered.filter(
+    (t) => !isZoned(t) && canStand(t, false)
+  ).length
   zoned.clear()
 
   for (const tree of ordered) {
     const takesDistrict = isZoned(tree)
+    if (!canStand(tree, takesDistrict)) continue
     if (takesDistrict) districtOwner.set(tree.category, tree.raceId)
     let plan = takesDistrict ? BASE_PLAN[tree.category] : undefined
     if (!plan) {
@@ -556,6 +574,15 @@ export default function MoonBaseZeroIndex() {
   // every project at its overlapping real coordinates.
   const layout = useMemo(() => buildColonyLayout(surfaceTrees), [surfaceTrees])
 
+  // The races the globe draws. buildColonyLayout is the one place that decides
+  // who gets ground (see canStand), so ask it rather than re-deriving the rule:
+  // a race it gave no district to has no plots either, and handing it to the
+  // globe anyway would render a district's worth of hardware at the origin.
+  const sitedTrees = useMemo(
+    () => surfaceTrees.filter((t) => layout.districts.has(t.raceId)),
+    [surfaceTrees, layout]
+  )
+
   // The race list that drives the panel. Races with a live DePrize sort first
   // and the rest keep the biggest-field-first order — the more companies are
   // chasing a capability, the more of a race it is. A single unassigned concept
@@ -924,7 +951,7 @@ export default function MoonBaseZeroIndex() {
       <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#03040a]">
         <MoonGlobeLazy
           focus={focus}
-          trees={surfaceTrees}
+          trees={sitedTrees}
           organizations={dataset.organizations}
           selectedRaceId={selectedRaceId}
           selectedProject={selectedProject ?? null}
