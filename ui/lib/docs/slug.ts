@@ -97,9 +97,20 @@ export function normalizeAliasSlug(raw: string): string {
     .replace(/\/+$/, '')
 }
 
+/**
+ * Public URL for a docs slug.
+ *
+ * Folder and tag index pages are identified internally as `<folder>/index`,
+ * but Next.js collapses a catch-all segment of `index` onto the parent path.
+ * `/docs/Press` (and `/docs/Legal/DePrize`) render; `/docs/Press/index` 404s.
+ * Always emit the parent path for those slugs so breadcrumbs and the sidebar
+ * stay clickable.
+ */
 export function docsHref(slug: string): string {
   if (!slug || slug === 'index') return DOCS_HREF_PREFIX
-  return `${DOCS_HREF_PREFIX}/${slug}`
+  const withoutFolderIndex = slug.replace(/\/index$/, '')
+  if (!withoutFolderIndex) return DOCS_HREF_PREFIX
+  return `${DOCS_HREF_PREFIX}/${withoutFolderIndex}`
 }
 
 /**

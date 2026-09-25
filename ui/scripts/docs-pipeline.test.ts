@@ -60,6 +60,33 @@ describe('docs slugifier (Quartz parity)', () => {
   it('docsHref treats index as /docs', () => {
     expectEqual(docsHref('index'), '/docs', 'index')
     expectEqual(docsHref('About/FAQ'), '/docs/About/FAQ', 'faq')
+    expectEqual(docsHref('Press/index'), '/docs/Press', 'folder index')
+    expectEqual(docsHref('Legal/DePrize/index'), '/docs/Legal/DePrize', 'nested folder')
+    expectEqual(docsHref('tags/index'), '/docs/tags', 'tags index')
+  })
+})
+
+describe('docs breadcrumbs', () => {
+  it('links folder crumbs at the parent path, not /index', () => {
+    resetDocsCache()
+    const page = getDocPage('Press/Press-Kit')
+    if (!page) throw new Error('Press Kit missing')
+    expectEqual(page.breadcrumbs[0]?.href, '/docs', 'docs crumb')
+    const press = page.breadcrumbs.find((c) => c.title === 'Press')
+    if (!press) throw new Error('no Press crumb')
+    expectEqual(press.href, '/docs/Press', 'press crumb')
+    const last = page.breadcrumbs[page.breadcrumbs.length - 1]
+    expectEqual(last?.href, '/docs/Press/Press-Kit', 'kit crumb')
+  })
+
+  it('nests folder crumbs without a trailing /index', () => {
+    resetDocsCache()
+    const page = getDocPage('Legal/DePrize/DePrize-Official-Prize-Rules')
+    if (!page) throw new Error('prize rules missing')
+    const legal = page.breadcrumbs.find((c) => c.title === 'Legal')
+    const deprize = page.breadcrumbs.find((c) => c.title === 'DePrize')
+    expectEqual(legal?.href, '/docs/Legal', 'legal crumb')
+    expectEqual(deprize?.href, '/docs/Legal/DePrize', 'deprize crumb')
   })
 })
 
