@@ -92,7 +92,12 @@ import type { RadiusAt } from './useTerrainSampler'
 // The competitors of a race, best-placed first. Order matters because the
 // front-runner is the one the district's beacon is named for.
 export function rankedMembers(tree: TechTree): Project[] {
-  const odds = tree.goal?.market?.impliedOdds
+  // Priors on a planned race are not a ranking. Seed order until the market
+  // is actually live, which is also when the beacon is allowed to name a leader.
+  const odds =
+    tree.goal?.market?.status === 'live' || tree.goal?.market?.status === 'resolved'
+      ? tree.goal.market.impliedOdds
+      : undefined
   if (!odds) return tree.projects
   return [...tree.projects].sort(
     (a, b) => (odds[b.id] ?? -1) - (odds[a.id] ?? -1)
@@ -1451,8 +1456,11 @@ export default function MarkerLayer({
         const dim = raceOpen && !isOpen ? DIM_FACTOR : 1
 
         const count = members.length
+        const priced =
+          tree.goal?.market?.status === 'live' ||
+          tree.goal?.market?.status === 'resolved'
         const label =
-          tree.goal && leaderOrg
+          priced && tree.goal && leaderOrg
             ? `${PROJECT_TYPE_LABEL[tree.category]} · ${leaderOrg.name} leading`
             : `${PROJECT_TYPE_LABEL[tree.category]} · ${count} ${
                 tree.goal ? 'competitor' : 'project'

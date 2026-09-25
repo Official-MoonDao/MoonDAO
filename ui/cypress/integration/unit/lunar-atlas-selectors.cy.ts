@@ -594,7 +594,7 @@ describe('lunar-atlas selectors', () => {
         ).to.be.greaterThan(0)
       }
     })
-    it('surfaces a competitor\'s place and odds from a race goal', () => {
+    it('does not rank a planned race off curator priors', () => {
       expect(formatPlace(1)).to.equal('1st')
       expect(formatPlace(2)).to.equal('2nd')
       expect(formatPlace(3)).to.equal('3rd')
@@ -602,15 +602,26 @@ describe('lunar-atlas selectors', () => {
       expect(formatPlace(12)).to.equal('12th')
       const lander = sharedGoalById(SEED_ATLAS, 'shared-crewed-lander')
       expect(lander).to.exist
-      const blue = raceStandingForProject('blue-origin-blue-moon-mk2', lander!)
+      expect(lander!.market?.status).to.equal('planned')
+      expect(
+        raceStandingForProject('blue-origin-blue-moon-mk2', lander!)
+      ).to.equal(undefined)
+      expect(
+        raceStandingForProject('not-a-competitor', lander!)
+      ).to.equal(undefined)
+    })
+    it('surfaces place and odds once the market is live', () => {
+      const lander = sharedGoalById(SEED_ATLAS, 'shared-crewed-lander')!
+      const live = {
+        ...lander,
+        market: { ...lander.market!, status: 'live' as const },
+      }
+      const blue = raceStandingForProject('blue-origin-blue-moon-mk2', live)
       expect(blue?.place).to.equal(2)
       expect(blue?.fieldSize).to.equal(2)
       expect(Math.round((blue?.probability ?? 0) * 100)).to.equal(36)
-      const starship = raceStandingForProject('spacex-starship-hls', lander!)
+      const starship = raceStandingForProject('spacex-starship-hls', live)
       expect(starship?.place).to.equal(1)
-      expect(raceStandingForProject('not-a-competitor', lander!)).to.equal(
-        undefined
-      )
     })
     it('at most one goal declares each race category', () => {
       const seen = new Map<string, string>()

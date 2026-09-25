@@ -447,12 +447,21 @@ export type RaceStanding = {
   marketStatus?: MarketStatus
 }
 
+/**
+ * True only once a market has real prices. Curator priors on a planned race
+ * are not odds — showing them ranks a field nobody can bet on.
+ */
+export function marketShowsOdds(status: string | undefined): boolean {
+  return status === 'live' || status === 'resolved'
+}
+
 /** Place + implied odds for a competitor in one shared goal, if priced. */
 export function raceStandingForProject(
   projectId: string,
   goal: SharedGoal
 ): RaceStanding | undefined {
   if (!goal.projectIds.includes(projectId)) return undefined
+  if (!marketShowsOdds(goal.market?.status)) return undefined
   const odds = goal.market?.impliedOdds
   const probability = odds?.[projectId]
   if (probability == null || !Number.isFinite(probability)) return undefined

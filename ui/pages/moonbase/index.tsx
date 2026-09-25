@@ -56,6 +56,7 @@ import {
   projectStateAtYear,
   raceArrivalYear,
   sharedGoalById,
+  marketShowsOdds,
   type TechTree,
 } from '@/lib/lunar-atlas/selectors'
 import type { Project, ProjectType, SharedGoal } from '@/lib/lunar-atlas/types'
@@ -562,7 +563,8 @@ export default function MoonBaseZeroIndex() {
       [...surfaceTrees]
         .filter((tree) => isCompetitiveRace(tree.projects.length))
         .map((tree) => {
-          const leader = rankedMembers(tree)[0]
+          const priced = marketShowsOdds(tree.goal?.market?.status)
+          const leader = priced ? rankedMembers(tree)[0] : undefined
           const leaderOrg = leader ? orgById(dataset, leader.orgId) : undefined
           return {
             raceId: tree.raceId,
@@ -572,7 +574,7 @@ export default function MoonBaseZeroIndex() {
             label: tree.goal?.title ?? PROJECT_TYPE_LABEL[tree.category],
             count: tree.projects.length,
             leaderName: leaderOrg?.name,
-            leaderColor: orgColor(leaderOrg),
+            leaderColor: priced ? orgColor(leaderOrg) : undefined,
             // Two different questions, and the legend needs both. Whether a
             // race SHIPS is a product decision and the same on every chain.
             // Whether you can bet on it *today* is a registry lookup, and it
