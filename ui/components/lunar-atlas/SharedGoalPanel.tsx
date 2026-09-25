@@ -1,6 +1,6 @@
 // Race view for a DePrize-shaped shared goal: the competitor roster (official
-// vs unofficial via color, not a repeating "listed" chip), the draft
-// capability criteria, market structure, and sources. Opened from a
+// vs unofficial via color, not a repeating "listed" chip), the capability
+// criteria, market structure, and sources. Opened from a
 // shared-goal row in ProjectPanel or by clicking the goal's region marker.
 
 import { FlagIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
@@ -614,7 +614,7 @@ export default function SharedGoalPanel({
         {goal.criteria && goal.criteria.length > 0 && (
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
-              {bound ? 'Capability criteria' : 'Capability criteria (draft)'}
+              Capability criteria
             </h3>
             <ol className="space-y-2.5">
               {goal.criteria.map((c, i) => (
@@ -638,7 +638,7 @@ export default function SharedGoalPanel({
             <p className="mt-2 text-[11px] leading-relaxed text-white/40">
               {bound
                 ? 'The binding spec is frozen and pinned publicly for this market.'
-                : 'Draft criteria — the binding spec is frozen and pinned publicly when a market opens.'}
+                : 'The binding spec is frozen and pinned publicly when this race opens for trading.'}
             </p>
           </div>
         )}
