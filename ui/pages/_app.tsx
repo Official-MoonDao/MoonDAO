@@ -1,6 +1,7 @@
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { DEFAULT_CHAIN_V5 } from 'const/defaultChain'
 import { FlagProvider } from 'const/flags'
+import { nextDeprizeChainPin } from '@/lib/deprize/deprizeChainPin'
 import { chainForDeprizePath } from '@/lib/deprize/route-chain'
 import { SessionProvider } from 'next-auth/react'
 import { NextQueryParamProvider } from 'next-query-params'
@@ -10,6 +11,7 @@ import { Chain as ChainV5 } from 'thirdweb/chains'
 import { useLightMode } from '../lib/utils/hooks/useLightMode'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { getChainById } from '@/lib/thirdweb/chain'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { ThirdwebProvider } from 'thirdweb/react'
 import { PrivyThirdwebV5Provider } from '@/lib/privy/PrivyThirdwebV5Provider'
@@ -25,15 +27,35 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
   const router = useRouter()
   // Prefixed prize URLs name the network. Apply that before wallet sync so a
   // refresh of /deprize/sep/2 does not come back on the Arbitrum default.
+  // Leaving the prefix restores the chain from before the visit. Otherwise a
+  // look at the Sepolia index leaves Citizen, balances, and embedded wallets
+  // on testnet for the rest of the session.
   const routeChain = chainForDeprizePath(router.pathname)
   const [selectedWallet, setSelectedWallet] = useState<number>(0)
   const [selectedChainV5, setSelectedChainV5] = useState<ChainV5>(
     () => routeChain ?? DEFAULT_CHAIN_V5
   )
   const [pinnedDeprizePath, setPinnedDeprizePath] = useState(router.pathname)
-  if (routeChain && router.pathname !== pinnedDeprizePath) {
-    setPinnedDeprizePath(router.pathname)
-    setSelectedChainV5(routeChain)
+  const [restoreChainId, setRestoreChainId] = useState<number | null>(null)
+  const chainPin = nextDeprizeChainPin(
+    {
+      selectedChainId: selectedChainV5.id,
+      pinnedPath: pinnedDeprizePath,
+      restoreChainId,
+    },
+    router.pathname,
+    DEFAULT_CHAIN_V5.id
+  )
+  if (
+    chainPin.pinnedPath !== pinnedDeprizePath ||
+    chainPin.restoreChainId !== restoreChainId ||
+    chainPin.selectedChainId !== selectedChainV5.id
+  ) {
+    setPinnedDeprizePath(chainPin.pinnedPath)
+    setRestoreChainId(chainPin.restoreChainId)
+    if (chainPin.selectedChainId !== selectedChainV5.id) {
+      setSelectedChainV5(getChainById(chainPin.selectedChainId) ?? DEFAULT_CHAIN_V5)
+    }
   }
 
   const [lightMode, setLightMode] = useLightMode()
