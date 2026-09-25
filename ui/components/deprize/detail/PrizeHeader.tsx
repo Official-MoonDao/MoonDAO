@@ -43,9 +43,6 @@ export default function PrizeHeader(props: {
           <h1 className="text-white font-GoodTimes text-lg sm:text-xl">
             {knownCompetition ? title : `DePrize #${deprizeId}`}
           </h1>
-          {knownCompetition && (
-            <span className="text-xs font-mono text-gray-500">#{deprizeId}</span>
-          )}
           {showBadge && (
             <StateBadge
               state={state}

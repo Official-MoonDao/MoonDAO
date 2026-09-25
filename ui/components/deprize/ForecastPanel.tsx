@@ -76,6 +76,8 @@ export default function ForecastPanel(props: {
    * is not allowed; the prediction itself does not need it.
    */
   renderBet?: (input: { index: number; onClose: () => void; onPlaced: () => void }) => ReactNode
+  /** ETH staked on each outcome, same order as `labels`. */
+  stakedEthByOutcome?: number[]
 }) {
   const {
     chainSlug,
@@ -103,6 +105,7 @@ export default function ForecastPanel(props: {
     onModalClose,
     resumeBet,
     renderBet,
+    stakedEthByOutcome,
   } = props
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
@@ -228,9 +231,9 @@ export default function ForecastPanel(props: {
         citizenName: account.address,
         citizenImage: undefined,
         allocation,
-        weight: 0,
-        storedVmooney: totalVMOONEY || 0,
-        liveVmooney: totalVMOONEY || 0,
+        weight: isCitizen ? totalVMOONEY || 0 : 0,
+        storedVmooney: isCitizen ? totalVMOONEY || 0 : 0,
+        liveVmooney: isCitizen ? totalVMOONEY || 0 : 0,
         updatedAt: Math.floor(Date.now() / 1000),
         brier: null,
         skill: null,
@@ -241,7 +244,7 @@ export default function ForecastPanel(props: {
   }
 
   async function commitPick(index: number): Promise<boolean> {
-    if (!account || !isCitizen) return false
+    if (!account) return false
     if (!forecastsContract || !forecastsTableName) {
       setError('Predictions are not available on this network yet.')
       return false
@@ -274,7 +277,7 @@ export default function ForecastPanel(props: {
         )
         return false
       }
-      const vote = encodeForecastVote(allocation, totalVMOONEY || 0)
+      const vote = encodeForecastVote(allocation, isCitizen ? totalVMOONEY || 0 : 0)
       await writeForecastVote({
         forecastsContract,
         account,
@@ -479,6 +482,7 @@ export default function ForecastPanel(props: {
                 selectable={!showResolved && !inputsLocked}
                 highlighted={isSaved}
                 badge={isSaved ? FORECAST_COPY.predicted : undefined}
+                stakedEth={stakedEthByOutcome?.[o.index] ?? 0}
                 citizenVotingPower={
                   citizenVotingPowerByOutcome
                     ? citizenVotingPowerByOutcome[o.index] ?? 0

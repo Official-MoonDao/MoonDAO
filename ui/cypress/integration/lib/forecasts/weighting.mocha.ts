@@ -110,6 +110,15 @@ describe('deprize forecast weighting', () => {
     for (const w of capped) expect(w).to.be.closeTo(1 / 3, CLOSE)
   })
 
+  it('keeps a zero-power vote at zero so it cannot move the outcome', () => {
+    const { sharesForVotingPower } = mod
+    expect(sharesForVotingPower([0, 0, 0], 0.15)).to.deep.equal([0, 0, 0])
+    const mixed = sharesForVotingPower([0, 9, 0], 0.15)
+    expect(mixed[0]).to.equal(0)
+    expect(mixed[2]).to.equal(0)
+    expect(mixed[1]).to.be.closeTo(1, CLOSE)
+  })
+
   it('handles empty and all-zero weight sets without producing NaN', () => {
     const { capWeights } = mod
     expect(capWeights([], 0.15)).to.deep.equal([])

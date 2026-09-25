@@ -7,8 +7,8 @@ import { FORECAST_DAO_MIN_PARTICIPANTS } from '@/lib/forecasts/constants'
 import {
   FORECAST_MAX_WEIGHT_SHARE,
   VMOONEY_UNAVAILABLE,
-  capWeights,
   resolveVmooney,
+  sharesForVotingPower,
   votingWeight,
 } from '@/lib/forecasts/weighting'
 import queryTable from '@/lib/tableland/queryTable'
@@ -84,7 +84,7 @@ export async function fetchForecastConsensus(args: {
       liveByVoter.set(vote.voterAddress, live)
       return votingWeight(live)
     })
-    const shares = capWeights(rawWeights, FORECAST_MAX_WEIGHT_SHARE)
+    const shares = sharesForVotingPower(rawWeights, FORECAST_MAX_WEIGHT_SHARE)
     const weighted = citizenVotes.map((vote, i) => ({
       ...vote,
       weight: shares[i] ?? 0,
@@ -95,7 +95,7 @@ export async function fetchForecastConsensus(args: {
 
     const leaderboard: ForecastCaller[] = citizenVotes
       .map((vote, i) => {
-        const citizen = citizenByOwner.get(vote.voterAddress)
+        const citizen = citizenByOwner.get(vote.voterAddress.toLowerCase())
         const scored = scoreAllocation(vote.allocation, resolvedVector)
         return {
           voterAddress: vote.voterAddress,
@@ -116,15 +116,46 @@ export async function fetchForecastConsensus(args: {
         return b.weight - a.weight
       })
 
+    // Anyone with a wallet can predict. A non-Citizen is listed at 0 voting
+    // power so they show up as a person, and they are left out of the weighted
+    // vector so they cannot move the outcome or the reveal threshold.
+    const citizens = new Set(citizenVotes.map((vote) => vote.voterAddress.toLowerCase()))
+    const outsiders: ForecastCaller[] = parsed
+      .filter((vote) => !citizens.has(vote.voterAddress.toLowerCase()))
+      .map((vote) => {
+        const scored = scoreAllocation(vote.allocation, resolvedVector)
+        return {
+          voterAddress: vote.voterAddress,
+          citizenId: '',
+          citizenName: vote.voterAddress,
+          allocation: vote.allocation,
+          weight: 0,
+          storedVmooney: 0,
+          liveVmooney: 0,
+          updatedAt: vote.timestamp,
+          brier: scored?.brier ?? null,
+          skill: scored?.skill ?? null,
+        }
+      })
+    const roster = [...leaderboard, ...outsiders]
+    const counted = aggregateForecastVotes(
+      roster.map((row) => ({
+        voterAddress: row.voterAddress,
+        allocation: row.allocation,
+        weight: row.weight,
+      })),
+      outcomeCount
+    )
+
     return {
       voteId,
       deprizeId,
       vector: aggregate.vector,
-      backersByOutcome: aggregate.backersByOutcome,
+      backersByOutcome: counted.backersByOutcome,
       participants: aggregate.participants,
       totalWeight,
       revealed: aggregate.participants >= FORECAST_DAO_MIN_PARTICIPANTS,
-      leaderboard,
+      leaderboard: roster,
     }
   } catch (error) {
     console.error('[fetchForecastConsensus] fatal error:', error)

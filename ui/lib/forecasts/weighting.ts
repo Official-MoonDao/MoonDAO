@@ -56,3 +56,25 @@ export function capWeights(weights: readonly number[], maxShare: number): number
     return (w / remainingWeight) * remainingMass
   })
 }
+
+/**
+ * Outcome shares from live voting power. A zero stays zero, so a wallet with
+ * no voting power is counted as a person and cannot move the distribution.
+ */
+export function sharesForVotingPower(weights: readonly number[], maxShare: number): number[] {
+  const indexes: number[] = []
+  const positive: number[] = []
+  weights.forEach((weight, index) => {
+    if (Number.isFinite(weight) && weight > 0) {
+      indexes.push(index)
+      positive.push(weight)
+    }
+  })
+  const shares = weights.map(() => 0)
+  if (positive.length === 0) return shares
+  const capped = capWeights(positive, maxShare)
+  indexes.forEach((index, i) => {
+    shares[index] = capped[i] ?? 0
+  })
+  return shares
+}

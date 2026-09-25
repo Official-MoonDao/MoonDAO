@@ -24,12 +24,10 @@ import {
 } from '@/lib/deprize/competitions'
 import {
   DEPRIZE_PREDICT_CTA,
-  DEPRIZE_TERMS_VERSION,
   MarketStage,
   OUTCOME_COLORS,
   UNIT,
 } from '@/lib/deprize/constants'
-import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
 import { fmt } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import { isMintConfigured } from '@/lib/deprize/status'
@@ -42,7 +40,7 @@ import {
 } from '@/lib/lunar-atlas/display'
 import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import BetModal from '@/components/deprize/BetModal'
-import EthUsd from '@/components/deprize/EthUsd'
+import PrizeAvailable from '@/components/deprize/PrizeAvailable'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DemoBetModal from '@/components/deprize/DemoBetModal'
@@ -94,48 +92,6 @@ function PredictLink({ href }: { href: string }) {
     >
       {DEPRIZE_PREDICT_CTA}
     </a>
-  )
-}
-
-function PoolAmount({
-  eth,
-  loading,
-  size = 'card',
-}: {
-  eth: number | undefined
-  loading: boolean
-  size?: 'card' | 'hero' | 'footer'
-}) {
-  if (loading) return <>…</>
-  if (size === 'hero') {
-    return (
-      <EthUsd
-        eth={eth}
-        prize
-        layout="below"
-        className="text-white text-2xl sm:text-3xl font-bold tabular-nums"
-        usdClassName="text-gray-400 text-sm font-medium"
-      />
-    )
-  }
-  if (size === 'footer') {
-    return (
-      <EthUsd
-        eth={eth}
-        prize
-        className="text-gray-300 font-semibold tabular-nums"
-        usdClassName="text-gray-500 font-normal"
-      />
-    )
-  }
-  return (
-    <EthUsd
-      eth={eth}
-      prize
-      layout="below"
-      className="text-white text-base sm:text-lg font-bold tabular-nums"
-      usdClassName="text-gray-400 text-xs font-medium"
-    />
   )
 }
 
@@ -637,8 +593,8 @@ export default function RaceMarketCard({
         {(showLiveMarket || !hasRace) && (
           <div className="px-4 py-2.5 border-t border-white/[0.06] text-[11px] text-gray-500 flex items-center justify-between gap-2">
             {showLiveMarket ? (
-              <span className="min-w-0 truncate">
-                <PoolAmount eth={poolEth} loading={poolLoading} size="footer" /> pool
+              <span className="min-w-0">
+                <PrizeAvailable eth={poolEth} loading={poolLoading} size="footer" />
               </span>
             ) : (
               <span>No committed developer — not an active competition</span>
@@ -699,12 +655,7 @@ export default function RaceMarketCard({
             <div className="text-right shrink-0">
               {showLiveMarket ? (
                 <>
-                  <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
-                    <PoolAmount eth={poolEth} loading={poolLoading} size="hero" />
-                  </p>
-                  <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-                    {payloadCopy('cardPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
-                  </p>
+                  <PrizeAvailable eth={poolEth} loading={poolLoading} size="hero" />
                 </>
               ) : !hasRace ? (
                 <p className="text-gray-500 text-[11px] max-w-[10rem]">
@@ -797,12 +748,7 @@ export default function RaceMarketCard({
             <div className="text-right shrink-0">
               {showLiveMarket ? (
                 <>
-                  <p className="text-white text-base sm:text-lg font-bold tabular-nums">
-                    <PoolAmount eth={poolEth} loading={poolLoading} />
-                  </p>
-                  <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-                    {payloadCopy('cardPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
-                  </p>
+                  <PrizeAvailable eth={poolEth} loading={poolLoading} />
                 </>
               ) : !hasRace ? (
                 <p className="text-gray-500 text-[11px] max-w-[9rem]">

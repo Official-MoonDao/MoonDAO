@@ -45,13 +45,13 @@ export default function CitizenPredictNotice(props: {
       <p className="text-sm text-amber-200">
         {props.linkedCitizenAddress ? (
           <>
-            The Citizen on <WalletLabel address={props.linkedCitizenAddress} /> has lapsed, so it
-            can&apos;t predict until it is renewed.
+            The Citizen on <WalletLabel address={props.linkedCitizenAddress} /> has lapsed. A
+            prediction from that wallet is saved with 0 voting power until it is renewed.
           </>
         ) : (
           <>
-            Your Citizen on {props.chainLabel} has lapsed, so predictions from this wallet
-            don&apos;t count until it is renewed.
+            Your Citizen on {props.chainLabel} has lapsed. You can still predict, and it is
+            saved with 0 voting power until the Citizen is renewed.
           </>
         )}
       </p>
@@ -62,9 +62,9 @@ export default function CitizenPredictNotice(props: {
     return (
       <div className="flex flex-col gap-2">
         <p className="text-sm text-amber-200">
-          Your Citizen is on <WalletLabel address={props.linkedCitizenAddress} />. This page is
-          connected as <WalletLabel address={props.activeAddress} />, and a prediction is signed by
-          that wallet.
+          Your Citizen is on <WalletLabel address={props.linkedCitizenAddress} />. A prediction
+          from <WalletLabel address={props.activeAddress} /> is saved with 0 voting power, so it
+          does not move the MOONEY outcome.
         </p>
         <button
           type="button"
@@ -96,11 +96,12 @@ export default function CitizenPredictNotice(props: {
 
   return (
     <p className="text-sm text-amber-200">
-      Predictions count for Citizens. <WalletLabel address={props.activeAddress} /> doesn&apos;t
-      hold one on {props.chainLabel}.{' '}
+      You can still predict. It is saved with 0 voting power, so it does not move the MOONEY
+      outcome.{' '}
       <Link href="/join" className="text-indigo-300 underline">
         Mint a Citizen
-      </Link>
+      </Link>{' '}
+      if you want it to count.
     </p>
   )
 }

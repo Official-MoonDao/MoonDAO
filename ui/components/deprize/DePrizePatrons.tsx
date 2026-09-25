@@ -73,7 +73,7 @@ export default function DePrizePatrons(props: {
   if (patrons.patronCount === 0) {
     return (
       <div className="space-y-2">
-        <h3 className="text-white text-sm font-semibold">Patrons</h3>
+        <h3 className="text-[15px] font-semibold text-white">Patrons</h3>
         <p className="text-gray-400 text-sm">Be the first patron.</p>
         {pendingOwn && (
           <p className="text-indigo-200 text-xs">
@@ -87,8 +87,8 @@ export default function DePrizePatrons(props: {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-white text-sm font-semibold">Patrons</h3>
-        <p className="text-gray-400 text-xs">
+        <h3 className="text-[15px] font-semibold text-white">Patrons</h3>
+        <p className="text-xs text-[#8b93a7]">
           <EthUsd eth={patrons.totalDirectEth} prize /> · {patrons.patronCount}{' '}
           {patrons.patronCount === 1 ? 'patron' : 'patrons'}
         </p>
@@ -111,7 +111,7 @@ export default function DePrizePatrons(props: {
                 fallbackName={row.displayName}
               />
             </span>
-            <span className="shrink-0 tabular-nums">
+            <span className="shrink-0 text-[15px] font-semibold tabular-nums text-white">
               <EthUsd eth={Number(BigInt(row.totalWei)) / Number(UNIT)} prize />
             </span>
           </li>
