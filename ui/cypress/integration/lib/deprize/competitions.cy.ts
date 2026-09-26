@@ -91,6 +91,31 @@ describe('deprize competitions registry', () => {
     ])
   })
 
+  it('binds the four Arbitrum capability races to the deployed rosters', () => {
+    expect(getDePrizeQuestionId('arbitrum', 2)).to.equal(
+      '0xd4daf3cb8f7f228cdf16c58c2e4345742bf4d1e58d7ebc271c0a533621262efc'
+    )
+    expect(getDePrizeQuestionId('arbitrum', 3)).to.equal(
+      '0x75be567e6161e270124d3eed4627ecee60fb1fc138e005517fed91cdaeca8602'
+    )
+    expect(getDePrizeQuestionId('arbitrum', 4)).to.equal(
+      '0x18e1c3d9d40fbccaaa147e0736917bff8f1eb3bd0a1f5ebc6f16c70fe4e9b396'
+    )
+    expect(getDePrizeQuestionId('arbitrum', 5)).to.equal(
+      '0xc97585bf11fff6b53bdddcd58e4518c02253f616c86eafc2962f3a3801333e15'
+    )
+    expect(getDePrizeRaceBinding('arbitrum', 2)!.outcomes.map((o) => o.teamId)).to.deep.equal([
+      601, 602, 603, 604, 605, 24,
+    ])
+    expect(getDePrizeRaceBinding('arbitrum', 5)!.outcomes.map((o) => o.projectId)).to.deep.equal([
+      'cnsa-change-7',
+      'blue-origin-viper',
+      'im-4-volatiles',
+      '__open-field__',
+    ])
+    expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(1)
+  })
+
   it('has no unbound Sepolia featured prize', () => {
     expect(getFeaturedLiveDePrizeId('sepolia')).to.equal(undefined)
     expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(1)
@@ -110,6 +135,10 @@ describe('deprize competitions registry', () => {
     expect(findDePrizeIdForGoal('sepolia', 'shared-first-tracks')).to.equal(5)
     expect(findDePrizeIdForGoal('sepolia', 'shared-ice')).to.equal(6)
     expect(findDePrizeIdForGoal('sepolia', 'shared-mass-driver')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('arbitrum', 'shared-next-landing')).to.equal(2)
+    expect(findDePrizeIdForGoal('arbitrum', 'shared-night-shift')).to.equal(3)
+    expect(findDePrizeIdForGoal('arbitrum', 'shared-first-tracks')).to.equal(4)
+    expect(findDePrizeIdForGoal('arbitrum', 'shared-ice')).to.equal(5)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-fission-power')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', undefined)).to.equal(undefined)
   })
@@ -122,7 +151,10 @@ describe('deprize competitions registry', () => {
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-first-tracks')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-ice')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-mass-driver')).to.equal(false)
-    // Arbitrum has no binding at all, so there is no market to report.
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-next-landing')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-first-tracks')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-ice')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-night-shift')).to.equal(true)
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-fission-power')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', undefined)).to.equal(false)
   })
@@ -157,7 +189,7 @@ describe('deprize competitions registry', () => {
 
   it('partitions the index by raceLabel and keeps unbound chains flat', () => {
     expect(chainHasRaceBindings('sepolia')).to.equal(true)
-    expect(chainHasRaceBindings('arbitrum')).to.equal(false)
+    expect(chainHasRaceBindings('arbitrum')).to.equal(true)
 
     const sepolia = partitionDePrizeIndexByRace('sepolia', 2)
     expect(sepolia).to.deep.equal([
@@ -168,9 +200,17 @@ describe('deprize competitions registry', () => {
       },
     ])
 
-    const arbitrum = partitionDePrizeIndexByRace('arbitrum', 3)
-    expect(arbitrum).to.deep.equal([
+    expect(partitionDePrizeIndexByRace('ethereum', 3)).to.deep.equal([
       { raceLabel: null, deprizeIds: [1, 2, 3], showHeading: false },
+    ])
+
+    const arbitrum = partitionDePrizeIndexByRace('arbitrum', 5)
+    expect(arbitrum).to.deep.equal([
+      { raceLabel: 'Next lunar landing', deprizeIds: [2], showHeading: true },
+      { raceLabel: 'Lunar night power', deprizeIds: [3], showHeading: true },
+      { raceLabel: 'First Tracks', deprizeIds: [4], showHeading: true },
+      { raceLabel: 'Surface water ice', deprizeIds: [5], showHeading: true },
+      { raceLabel: null, deprizeIds: [1], showHeading: true },
     ])
   })
 
@@ -203,7 +243,11 @@ describe('deprize chain-prefixed links', () => {
   })
 
   it('finds which registries know an id', () => {
-    expect(findDePrizeChainSlugs(2)).to.deep.equal(['sepolia'])
+    expect(findDePrizeChainSlugs(2).sort()).to.deep.equal(['arbitrum', 'sepolia'])
+    expect(findDePrizeChainSlugs(3).sort()).to.deep.equal(['arbitrum', 'sepolia'])
+    expect(findDePrizeChainSlugs(4)).to.deep.equal(['arbitrum'])
+    expect(findDePrizeChainSlugs(5).sort()).to.deep.equal(['arbitrum', 'sepolia'])
+    expect(findDePrizeChainSlugs(6)).to.deep.equal(['sepolia'])
     expect(findDePrizeChainSlugs(1).sort()).to.deep.equal(['arbitrum', 'sepolia'])
     expect(findDePrizeChainSlugs(99)).to.deep.equal([])
   })
