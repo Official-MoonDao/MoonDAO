@@ -164,6 +164,81 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         'Arbitrum DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
       questionId: '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
     },
+    // Arbitrum One registry (0xf8B2244634c6eCeF32de10BFe0D7436413A59924).
+    // Same rosters as the Sepolia dress rehearsal. Ids 2–5. H-01 LMSRWithTWAP,
+    // owned by the FeeRouter. Oracle is the deployer.
+    2: {
+      title: 'Touchdown',
+      tagline:
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Arbitrum DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
+      questionId: '0xd4daf3cb8f7f228cdf16c58c2e4345742bf4d1e58d7ebc271c0a533621262efc',
+      sharedGoalId: 'shared-next-landing',
+      raceLabel: 'Next lunar landing',
+      outcomes: [
+        { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
+        { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
+        { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
+        { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    3: {
+      title: 'Night Shift',
+      tagline:
+        'Which power system delivers 10 watts, unplugged, through a lunar night in a cold vacuum chamber? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Arbitrum DePrize for lunar night power. Zeno Harmonia, Astrobotic NITE, Venturi, Perpetual Atomics ENDURE, CNNC, Rosatom, ISRO BARC, and the Open Field.',
+      questionId: '0x75be567e6161e270124d3eed4627ecee60fb1fc138e005517fed91cdaeca8602',
+      sharedGoalId: 'shared-night-shift',
+      raceLabel: 'Lunar night power',
+      outcomes: [
+        { projectId: 'zeno-harmonia', teamId: 611, vehicleLabel: 'Harmonia' },
+        { projectId: 'astrobotic-nite', teamId: 612, vehicleLabel: 'NITE' },
+        { projectId: 'venturi-lunar-battery', teamId: 613, vehicleLabel: 'Lunar-cycle battery' },
+        { projectId: 'perpetual-atomics-endure', teamId: 614, vehicleLabel: 'ENDURE Am-241 RHU' },
+        { projectId: 'cnnc-lunar-rtg', teamId: 615, vehicleLabel: "Chang'e lunar RTG" },
+        { projectId: 'rosatom-lunar-rtg', teamId: 616, vehicleLabel: 'Rosatom lunar RTG' },
+        { projectId: 'isro-barc-rhu', teamId: 617, vehicleLabel: 'BARC / LUPEX night survival' },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    4: {
+      title: 'First Tracks',
+      tagline:
+        'Which commercial rover leaves its lander and drives at least 10 metres first? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Arbitrum DePrize for the first commercial rover egress. Astrolab FLIP, Voyager CubeRover, Lunar Outpost MAPP, ispace Tenacious, Carnegie Mellon Iris, and the Open Field.',
+      questionId: '0x18e1c3d9d40fbccaaa147e0736917bff8f1eb3bd0a1f5ebc6f16c70fe4e9b396',
+      sharedGoalId: 'shared-first-tracks',
+      raceLabel: 'First Tracks',
+      outcomes: [
+        { projectId: 'astrolab-flip', teamId: 631, vehicleLabel: 'FLIP' },
+        { projectId: 'voyager-cuberover', teamId: 632, vehicleLabel: 'CubeRover' },
+        { projectId: 'lunar-outpost-mapp', teamId: 633, vehicleLabel: 'MAPP' },
+        { projectId: 'ispace-tenacious', teamId: 634, vehicleLabel: 'Tenacious' },
+        { projectId: 'cmu-iris', teamId: 635, vehicleLabel: 'Iris-class' },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    5: {
+      title: 'Water Ice',
+      tagline:
+        'Who first publishes in-situ confirmation of lunar surface water ice? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Arbitrum DePrize for the first published in-situ lunar water-ice dataset. Chang’e-7, VIPER on Blue Moon MK1, IM-4, and the Open Field.',
+      questionId: '0xc97585bf11fff6b53bdddcd58e4518c02253f616c86eafc2962f3a3801333e15',
+      sharedGoalId: 'shared-ice',
+      raceLabel: 'Surface water ice',
+      outcomes: [
+        { projectId: 'cnsa-change-7', teamId: 641, vehicleLabel: "Chang'e-7 hopper" },
+        { projectId: 'blue-origin-viper', teamId: 642, vehicleLabel: 'VIPER on MK1' },
+        { projectId: 'im-4-volatiles', teamId: 643, vehicleLabel: 'IM-4 volatiles' },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
   },
   sepolia: {
     // v2 registry (0x7208B0Ba9B1013000b8D30b60A462079300984E2).

@@ -11,14 +11,14 @@
 **Owner:** *unassigned — product*  
 **Last updated:** 2026-09-17
 
-Rungs 1–3 are registered on Sepolia. Nothing on this page is an offer to award a prize.
+Touchdown, First Tracks, Water Ice, and Night Shift are registered on Sepolia and on Arbitrum. Nothing on this page is an offer to award a prize.
 
 | Rung | Name | Bar | Status |
 |---|---|---|---|
-| 0 | Touchdown | next upright working landing | LIVE (Sepolia #22) |
-| 1 | First Tracks | commercial rover egress + drive | LIVE (Sepolia #5) |
-| 2 | Water Ice | 2027 in-situ surface water ice | LIVE (Sepolia #6) |
-| 3 | Night Shift | chamber proxy now · surface 2028+ | LIVE (Sepolia #3) |
+| 0 | Touchdown | next upright working landing | LIVE (Sepolia #2) · Arbitrum #2 |
+| 1 | First Tracks | commercial rover egress + drive | LIVE (Sepolia #5) · Arbitrum #4 |
+| 2 | Water Ice | 2027 in-situ surface water ice | LIVE (Sepolia #6) · Arbitrum #5 |
+| 3 | Night Shift | chamber proxy now · surface 2028+ | LIVE (Sepolia #3) · Arbitrum #3 |
 
 **Why this order.** Upright landing is proven (Blue Ghost 1). Wheels are not. Ice is the 2027
 science prize. Night is later.
@@ -26,7 +26,7 @@ science prize. Night is later.
 **Why Night Shift is 2028+ (placeholder only).** No 2026–27 lander on the Touchdown roster is
 designed to operate through a full lunar night. Zeno RHU on Blue Ghost is NET 2028. A chamber
 prize was drafted as a proxy and then taken out of the public repo. This rung's public text
-is this paragraph only: chamber proxy now · surface-night market 2028+. Sepolia id 3 is the dress rehearsal.
+is this paragraph only: chamber proxy now · surface-night market 2028+. Sepolia id 3 is the dress rehearsal. Arbitrum id 3 is the same roster on mainnet.
 
 **Each rung has its own roster** (when it has one at all). Touchdown slots are landing-vehicle
 operators. First Tracks slots will be rover operators — not a crewed LTV race. Do not copy
@@ -35,7 +35,7 @@ Touchdown's six outcomes onto any other rung.
 Touchdown rules of record: [DEPRIZE_TOUCHDOWN.md](DEPRIZE_TOUCHDOWN.md). GTM context (read-only):
 [DEPRIZE_GTM_TOUCHDOWN.md](DEPRIZE_GTM_TOUCHDOWN.md). Purse destination:
 [DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md). First Tracks and Water Ice are
-live on Sepolia. Their rules of record are still this page until a spec is published.
+live on Sepolia and Arbitrum. Their rules of record are still this page until a spec is published.
 
 The purse for every rung is a **community payload purchase** on a future flight — the winner's next
 qualifying flight, or a nonprofit the Winner names if they do not claim, or the next prize if

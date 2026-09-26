@@ -89,12 +89,18 @@ describe('capability ladder', () => {
     expect(CAPABILITY_LADDER[3].specHref).to.equal('')
   })
 
-  it('getLadderForCompetition("arbitrum", 1): no current key, touchdown not live on this chain', () => {
-    const result = getLadderForCompetition('arbitrum', 1)
-    expect(result.currentKey).to.equal(undefined)
-    const touchdown = result.rungs.find((r) => r.key === 'touchdown')
-    expect(touchdown?.status).to.not.equal('live')
-    expect(touchdown?.current).to.equal(false)
+  it('getLadderForCompetition("arbitrum", 1): Harsh Mistress is not a rung, and the four races are live', () => {
+    const viewed = getLadderForCompetition('arbitrum', 1)
+    expect(viewed.currentKey).to.equal(undefined)
+    expect(viewed.rungs.map((r) => [r.key, r.status, r.deprizeId, r.current])).to.deep.equal([
+      ['touchdown', 'live', 2, false],
+      ['first-tracks', 'live', 4, false],
+      ['ice', 'live', 5, false],
+      ['night-shift', 'live', 3, false],
+    ])
+    const touchdown = getLadderForCompetition('arbitrum', 2)
+    expect(touchdown.currentKey).to.equal('touchdown')
+    expect(touchdown.rungs[0].current).to.equal(true)
   })
 
   it('getLadderForCompetition("sepolia", undefined) returns four rungs, none current', () => {
@@ -135,20 +141,15 @@ describe('LADDER_GOAL_IDS — which races the Moonbase calls real', () => {
     }
   })
 
-  // The bug this exists to prevent. The Moonbase legend used to split its race
-  // list on "has a DePrize on the connected chain", which is a different
-  // question from "is this a race we run". Arbitrum has none of the four bound,
-  // so on production that split demoted every real race to Potential and left
-  // the list with nothing highlighted at all.
-  it('is the same on a chain with no markets as on one with four', () => {
+  // The Moonbase legend must not split its race list on "has a DePrize on
+  // the connected chain". These ids are the races we run, on every chain.
+  it('lists the same races on Sepolia and on Arbitrum', () => {
     const bound = (chain: string) =>
       LADDER_GOAL_IDS.filter((id) => findDePrizeIdForGoal(chain, id) !== undefined)
-    expect(bound('sepolia').length, 'fixture: sepolia has the ladder bound')
-      .to.be.greaterThan(0)
-    expect(bound('arbitrum').length, 'fixture: arbitrum has none bound')
-      .to.equal(0)
+    expect(bound('sepolia').length).to.equal(LADDER_GOAL_IDS.length)
+    expect(bound('arbitrum').length).to.equal(LADDER_GOAL_IDS.length)
     for (const id of LADDER_GOAL_IDS) {
-      expect(isLadderGoal(id), `${id} on arbitrum`).to.equal(true)
+      expect(isLadderGoal(id), id).to.equal(true)
     }
   })
 
