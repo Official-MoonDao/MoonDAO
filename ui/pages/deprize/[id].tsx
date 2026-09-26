@@ -177,6 +177,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
 
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [oddsSource, setOddsSource] = useState<'eth' | 'mooney'>('eth')
   const activity = useDePrizeActivity({
     deprizeId,
     marketAddress: market.marketAddress,
@@ -740,6 +741,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           oddsLoading={odds.loading}
           chainSlug={chainSlug}
           deprizeId={deprizeId}
+          onSourceChange={setOddsSource}
         />
         <NoticeStack items={pageNotices} />
         <PositionSection
@@ -787,6 +789,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
           stakedEthByOutcome={stakedEthByOutcome}
+          rankSource={oddsSource}
           modalIndex={betIndex}
           onModalClose={() => setBetIndex(null)}
           resumeBet={onrampReturn.betIndex != null && betIndex === onrampReturn.betIndex}

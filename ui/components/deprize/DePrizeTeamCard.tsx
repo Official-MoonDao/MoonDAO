@@ -40,6 +40,8 @@ type DePrizeTeamCardProps = {
   highlighted?: boolean
   /** Short status under the name, such as "Your Prediction". */
   badge?: string
+  /** Caption under the percent. ETH odds say "chance"; MOONEY ranking says "share". */
+  chanceLabel?: string
   /** ETH bet into this outcome on the market. Shown above the voting-power line. */
   stakedEth?: number
   /**
@@ -123,6 +125,7 @@ export default function DePrizeTeamCard({
   selectable = false,
   highlighted = false,
   badge,
+  chanceLabel = 'chance',
   stakedEth,
   citizenVotingPower,
   predictionCount,
@@ -224,7 +227,7 @@ export default function DePrizeTeamCard({
                 : `${fmt(outcome.probability, 0)}%`}
             </p>
             {!resolved && (
-              <p className="text-gray-500 text-[10px] mt-0.5 uppercase tracking-wide">chance</p>
+              <p className="text-gray-500 text-[10px] mt-0.5 uppercase tracking-wide">{chanceLabel}</p>
             )}
           </div>
         </div>

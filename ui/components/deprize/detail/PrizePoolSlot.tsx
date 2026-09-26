@@ -104,10 +104,16 @@ export default function PrizePoolSlot(props: {
             </p>
           </div>
         </div>
+        <a
+          href="#deprize-forecast"
+          className={`mt-4 flex w-full items-center justify-center rounded-lg bg-[#2f5bff] px-4 py-3 text-[15px] font-semibold text-white shadow-[0_3px_0_0_#1e3a8a] ${TOUCH}`}
+        >
+          Place a Prediction
+        </a>
         {showFund && (
           <button
             type="button"
-            className={`mt-4 w-full rounded-lg bg-[#2f5bff] px-4 py-3 text-[15px] font-semibold text-white shadow-[0_3px_0_0_#1e3a8a] ${TOUCH}`}
+            className={`mt-2 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-[15px] font-semibold text-white ${TOUCH}`}
             onClick={onFund}
           >
             Fund the prize

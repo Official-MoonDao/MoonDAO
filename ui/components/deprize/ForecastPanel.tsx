@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
+import { rankOutcomes } from '@/lib/deprize/rank-outcomes'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
@@ -78,6 +79,8 @@ export default function ForecastPanel(props: {
   renderBet?: (input: { index: number; onClose: () => void; onPlaced: () => void }) => ReactNode
   /** ETH staked on each outcome, same order as `labels`. */
   stakedEthByOutcome?: number[]
+  /** Competitor order. ETH uses market odds; MOONEY uses voting-power share. */
+  rankSource?: 'eth' | 'mooney'
 }) {
   const {
     chainSlug,
@@ -106,6 +109,7 @@ export default function ForecastPanel(props: {
     resumeBet,
     renderBet,
     stakedEthByOutcome,
+    rankSource = 'eth',
   } = props
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
@@ -143,6 +147,26 @@ export default function ForecastPanel(props: {
     () => (consensus ? aggregateForecastVotes(shownLeaderboard, n).backersByOutcome : undefined),
     [consensus, shownLeaderboard, n]
   )
+  const orderedOutcomes = useMemo(() => {
+    if (rankSource !== 'mooney' || !citizenVotingPowerByOutcome) return rankedOutcomes
+    const total = citizenVotingPowerByOutcome.reduce((sum, value) => sum + value, 0)
+    const scored = rankedOutcomes.map((outcome) => ({
+      ...outcome,
+      probability:
+        total > 0 ? ((citizenVotingPowerByOutcome[outcome.index] ?? 0) / total) * 100 : 0,
+    }))
+    return rankOutcomes(scored, {
+      isField: (index) => !!raceBinding?.outcomes[index]?.field,
+      winningIndex: showResolved && winningIndex >= 0 ? winningIndex : undefined,
+    })
+  }, [
+    rankSource,
+    citizenVotingPowerByOutcome,
+    rankedOutcomes,
+    raceBinding,
+    showResolved,
+    winningIndex,
+  ])
 
   const forecastsContract = useContract({
     address: FORECASTS_TABLE_ADDRESSES[chainSlug] ?? '',
@@ -456,7 +480,7 @@ export default function ForecastPanel(props: {
       )}
 
       <div className="mt-4 flex flex-col gap-3" aria-live="polite">
-        {rankedOutcomes.map((o) => {
+        {orderedOutcomes.map((o) => {
           const teamId = teamIds[o.index] ?? 0n
           const outcomeBinding = raceBinding?.outcomes[o.index]
           const isField = !!outcomeBinding?.field
@@ -482,6 +506,7 @@ export default function ForecastPanel(props: {
                 selectable={!showResolved && !inputsLocked}
                 highlighted={isSaved}
                 badge={isSaved ? FORECAST_COPY.predicted : undefined}
+                chanceLabel={rankSource === 'mooney' ? 'share' : 'chance'}
                 stakedEth={stakedEthByOutcome?.[o.index] ?? 0}
                 citizenVotingPower={
                   citizenVotingPowerByOutcome
@@ -516,7 +541,7 @@ export default function ForecastPanel(props: {
         <PredictModal
           teamName={labels[modalIndex] || 'this competitor'}
           probability={
-            rankedOutcomes.find((outcome) => outcome.index === modalIndex)?.probability ??
+            orderedOutcomes.find((outcome) => outcome.index === modalIndex)?.probability ??
             marketPercents[modalIndex] ??
             NaN
           }

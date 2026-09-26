@@ -25,6 +25,7 @@ export default function OddsSection(props: {
   oddsLoading: boolean
   chainSlug?: string
   deprizeId?: number
+  onSourceChange?: (source: 'eth' | 'mooney') => void
 }) {
   const [source, setSource] = useState<OddsSource>('eth')
   const [mooney, setMooney] = useState<number[] | null>(null)
@@ -84,7 +85,10 @@ export default function OddsSection(props: {
           <button
             type="button"
             aria-pressed={source === 'eth'}
-            onClick={() => setSource('eth')}
+            onClick={() => {
+              setSource('eth')
+              props.onSourceChange?.('eth')
+            }}
             className={`rounded-md px-2.5 py-1 ${
               source === 'eth' ? 'bg-white text-slate-900' : 'text-gray-400 hover:text-white'
             }`}
@@ -94,7 +98,10 @@ export default function OddsSection(props: {
           <button
             type="button"
             aria-pressed={source === 'mooney'}
-            onClick={() => setSource('mooney')}
+            onClick={() => {
+              setSource('mooney')
+              props.onSourceChange?.('mooney')
+            }}
             className={`rounded-md px-2.5 py-1 ${
               source === 'mooney' ? 'bg-white text-slate-900' : 'text-gray-400 hover:text-white'
             }`}
