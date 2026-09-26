@@ -7,6 +7,7 @@ import {
   buildNavTree,
   getAliasTable,
   getDocPage,
+  getDocStaticProps,
   listBrokenDocsHrefs,
   listUnresolvedWikilinks,
   loadCorpus,
@@ -17,6 +18,7 @@ import { buildSearchIndex } from '../lib/docs/searchIndex'
 import {
   INTENTIONAL_SLUG_CHANGES,
   LEGACY_DOC_ALIASES,
+  REMOVED_DOC_REDIRECTS,
   docsHref,
   isRouteSafeSlug,
   slugifyFilePath,
@@ -351,7 +353,10 @@ describe('docs corpus vs Quartz contentIndex', () => {
     const produced = new Set(allProducedSlugs())
     const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, unknown>
     const missing = Object.keys(fixture).filter(
-      (k) => !produced.has(k) && !(k in INTENTIONAL_SLUG_CHANGES)
+      (k) =>
+        !produced.has(k) &&
+        !(k in INTENTIONAL_SLUG_CHANGES) &&
+        !(k in REMOVED_DOC_REDIRECTS)
     )
     if (missing.length > 0) {
       throw new Error(`Missing Quartz slugs:\n${missing.join('\n')}`)
@@ -360,6 +365,18 @@ describe('docs corpus vs Quartz contentIndex', () => {
     for (const replacement of Object.values(INTENTIONAL_SLUG_CHANGES)) {
       if (!produced.has(replacement)) {
         throw new Error(`replacement slug not produced: ${replacement}`)
+      }
+    }
+  })
+
+  it('redirects every removed doc slug instead of rendering it', async () => {
+    resetDocsCache()
+    const produced = new Set(allProducedSlugs())
+    for (const [slug, destination] of Object.entries(REMOVED_DOC_REDIRECTS)) {
+      if (produced.has(slug)) throw new Error(`removed slug ${slug} is still produced`)
+      const result = (await getDocStaticProps(slug)) as { redirect?: { destination: string } }
+      if (result.redirect?.destination !== destination) {
+        throw new Error(`/docs/${slug} does not redirect to ${destination}`)
       }
     }
   })

@@ -15,7 +15,11 @@ import {
   loadCorpus,
   resetDocsCache,
 } from '../lib/docs/loadDocs'
-import { INTENTIONAL_SLUG_CHANGES, isRouteSafeSlug } from '../lib/docs/slug'
+import {
+  INTENTIONAL_SLUG_CHANGES,
+  REMOVED_DOC_REDIRECTS,
+  isRouteSafeSlug,
+} from '../lib/docs/slug'
 
 const FIXTURE = path.join(__dirname, '..', 'lib', 'docs', 'fixtures', 'contentIndex.json')
 
@@ -76,13 +80,21 @@ function main() {
 
   const missing = fixture.filter((k) => !produced.has(k))
   const extra = [...produced].filter((k) => !fixture.includes(k))
-  const unexpectedMissing = missing.filter((k) => !(k in INTENTIONAL_SLUG_CHANGES))
+  const unexpectedMissing = missing.filter(
+    (k) => !(k in INTENTIONAL_SLUG_CHANGES) && !(k in REMOVED_DOC_REDIRECTS)
+  )
 
   console.log(`\n## Slug parity vs Quartz contentIndex`)
   console.log(`missing from native (in Quartz, not produced): ${missing.length}`)
   for (const k of missing) {
     const replacement = INTENTIONAL_SLUG_CHANGES[k]
-    console.log(`  - ${k}${replacement ? `  (intentional → ${replacement})` : '  ** UNEXPECTED **'}`)
+    const redirect = REMOVED_DOC_REDIRECTS[k]
+    const note = replacement
+      ? `  (intentional → ${replacement})`
+      : redirect
+        ? `  (removed, redirects → ${redirect})`
+        : '  ** UNEXPECTED **'
+    console.log(`  - ${k}${note}`)
   }
   console.log(`extra in native (not in Quartz fixture): ${extra.length}`)
   for (const k of extra) console.log(`  - ${k}`)

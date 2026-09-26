@@ -56,6 +56,21 @@ export const LEGACY_DOC_ALIASES: Record<string, string> = {
 }
 
 /**
+ * Docs pages that were removed because their content moved to a standalone
+ * app page. Each slug is still prerendered, but `getStaticProps` answers with a
+ * permanent redirect (not a `next.config.js` redirect — see the note above on
+ * why those break the deploy under `/docs/*`). Keys are Quartz slugs.
+ */
+export const REMOVED_DOC_REDIRECTS: Record<string, string> = {
+  // Press kit and coverage now live on /press.
+  'Press/index': '/press',
+  'Press/Press-Kit': '/press',
+  'Press/Press-Coverage': '/press',
+  'tags/press': '/press',
+  'tags/media': '/press',
+}
+
+/**
  * The only two Quartz URLs deliberately not reproduced, because their slugs
  * contained route-unsafe characters. Nothing in the corpus or in Quartz's own
  * link graph pointed at either page.
