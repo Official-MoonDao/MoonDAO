@@ -9,6 +9,7 @@
 import { expect } from 'chai'
 import {
   PARTICIPATION_LABEL,
+  TIME_STATUS_OPACITY,
   formatPlace,
   participationKind,
 } from '../../../lib/lunar-atlas/display'
@@ -25,6 +26,7 @@ import {
   projectStateAtYear,
   raceArrivalYear,
   raceStandingForProject,
+  settlementPresence,
   sharedGoalById,
 } from '../../../lib/lunar-atlas/selectors'
 import type {
@@ -633,6 +635,58 @@ describe('lunar-atlas selectors', () => {
         ).to.equal(false)
         seen.set(g.category, g.id)
       }
+    })
+  })
+
+  describe('settlement presence', () => {
+    const now = 2026
+
+    function presenceAt(year: number): Map<string, number> {
+      const trees = buildTechTrees(SEED_ATLAS.projects, SEED_ATLAS.sharedGoals)
+      const presence = new Map<string, number>()
+      for (const tree of trees) {
+        let opacity = 0
+        for (const project of tree.projects) {
+          const raceYear = raceArrivalYear(project, SEED_ATLAS.sharedGoals, now)
+          const state = projectStateAtYear(project, year, now, raceYear)
+          opacity = Math.max(opacity, TIME_STATUS_OPACITY[state.status])
+        }
+        presence.set(tree.raceId, opacity)
+      }
+      return presence
+    }
+
+    it('follows the construction race at the present, not the first lander', () => {
+      const trees = buildTechTrees(SEED_ATLAS.projects, SEED_ATLAS.sharedGoals)
+      const presence = presenceAt(now)
+      const fleet = trees.filter((tree) => tree.category === 'construction')
+      expect(fleet.length).to.be.greaterThan(0)
+      expect(presence.has('construction')).to.equal(false)
+      const fleetOpacity = Math.max(
+        ...fleet.map((tree) => presence.get(tree.raceId) ?? 0)
+      )
+      const loudest = Math.max(...presence.values())
+      expect(fleetOpacity).to.be.lessThan(loudest)
+      expect(settlementPresence(trees, presence)).to.equal(fleetOpacity)
+    })
+
+    it('keeps a construction race at zero from lighting the rest of the base', () => {
+      const trees = [
+        { raceId: 'shared-landing-pads', category: 'construction' as const },
+        { raceId: 'shared-next-landing', category: 'lander' as const },
+      ]
+      const presence = new Map<string, number>([
+        ['shared-landing-pads', 0],
+        ['shared-next-landing', 1],
+      ])
+      expect(settlementPresence(trees, presence)).to.equal(0)
+    })
+
+    it('falls back to the loudest site when the construction race is filtered out', () => {
+      const trees = [{ raceId: 'shared-next-landing', category: 'lander' as const }]
+      const presence = new Map<string, number>([['shared-next-landing', 0.4]])
+      expect(settlementPresence(trees, presence)).to.equal(0.4)
+      expect(settlementPresence([], new Map())).to.equal(0)
     })
   })
 })

@@ -412,6 +412,37 @@ export function buildTechTrees(
   return trees.sort((a, b) => a.raceId.localeCompare(b.raceId))
 }
 
+/**
+ * How built the settlement is: roads, lights, and the construction fleet.
+ *
+ * Those follow the construction race, not whichever site is furthest along.
+ * Presence is keyed by race id (a goal id, or `type:<category>` for hardware
+ * no race claims). Looking the fleet up under the hardware type "construction"
+ * always misses, and the town then appears with the first lander.
+ *
+ * When a filter has removed every construction race, fall back to the loudest
+ * remaining site so hiding that race cannot delete the roads under everything
+ * else.
+ */
+export function settlementPresence(
+  trees: readonly { raceId: string; category: ProjectType }[],
+  sitePresence: ReadonlyMap<string, number>
+): number {
+  let fleet: number | undefined
+  for (const tree of trees) {
+    if (tree.category !== 'construction') continue
+    const opacity = sitePresence.get(tree.raceId)
+    if (opacity == null || !Number.isFinite(opacity)) continue
+    fleet = fleet == null ? opacity : Math.max(fleet, opacity)
+  }
+  if (fleet != null) return fleet
+  let loudest = 0
+  for (const value of sitePresence.values()) {
+    if (Number.isFinite(value) && value > loudest) loudest = value
+  }
+  return loudest
+}
+
 /** Most common hardware type in a field, ties broken by first appearance. */
 function dominantType(members: Project[]): ProjectType {
   const counts = new Map<ProjectType, number>()
