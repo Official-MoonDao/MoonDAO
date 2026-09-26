@@ -74,6 +74,7 @@ import OddsSection from '@/components/deprize/detail/OddsSection'
 import PositionSection from '@/components/deprize/detail/PositionSection'
 import PrizeHeader from '@/components/deprize/detail/PrizeHeader'
 import PrizePoolSlot from '@/components/deprize/detail/PrizePoolSlot'
+import StickyRail from '@/components/deprize/detail/StickyRail'
 import ProvenanceFooter from '@/components/deprize/detail/ProvenanceFooter'
 import { Notice, NoticeStack, type NoticeItem } from '@/components/deprize/detail/primitives'
 import {
@@ -176,6 +177,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
 
   const [refreshNonce, setRefreshNonce] = useState(0)
+  const [oddsSource, setOddsSource] = useState<'eth' | 'mooney'>('eth')
   const activity = useDePrizeActivity({
     deprizeId,
     marketAddress: market.marketAddress,
@@ -509,6 +511,16 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     [activity.bets],
   )
 
+  const stakedEthByOutcome = useMemo(() => {
+    const totals = Array.from({ length: numOutcomes }, () => 0)
+    for (const bet of activity.bets) {
+      if (bet.outcomeIndex >= 0 && bet.outcomeIndex < totals.length) {
+        totals[bet.outcomeIndex] += bet.costEth
+      }
+    }
+    return totals
+  }, [activity.bets, numOutcomes])
+
   const resolvedVector = useMemo(() => {
     if (!market.payoutDen || market.payoutDen <= 0n) return null
     const den = Number(market.payoutDen)
@@ -727,6 +739,9 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           domainStartMs={market.marketStartMs}
           markers={odds.markers}
           oddsLoading={odds.loading}
+          chainSlug={chainSlug}
+          deprizeId={deprizeId}
+          onSourceChange={setOddsSource}
         />
         <NoticeStack items={pageNotices} />
         <PositionSection
@@ -773,6 +788,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           userAddress={userAddress}
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
+          stakedEthByOutcome={stakedEthByOutcome}
+          rankSource={oddsSource}
           modalIndex={betIndex}
           onModalClose={() => setBetIndex(null)}
           resumeBet={onrampReturn.betIndex != null && betIndex === onrampReturn.betIndex}
@@ -814,9 +831,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           <p className="text-[11px] text-gray-600 leading-relaxed px-1">{ROSTER_DISCLAIMER}</p>
         )}
         </div>
-        {/* A sticky column taller than the viewport hides its own bottom, and
-            the patron and caller lists have no fixed length — so it scrolls. */}
-        <aside className="min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:overscroll-contain">
+        <StickyRail>
         <PrizePoolSlot
           poolUsd={poolUsd}
           asOf={poolAsOf}
@@ -838,7 +853,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           labels={predictionLabels}
           bettorAddresses={bettorAddresses}
         />
-        </aside>
+        </StickyRail>
         <div className="flex flex-col gap-4 min-w-0 lg:col-start-1 lg:row-start-2">
         <ClaimSection>
           {showResolved && (

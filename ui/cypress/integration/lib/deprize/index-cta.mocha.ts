@@ -43,13 +43,15 @@ describe('deprize index predict CTA and pool USD', () => {
     expect(card.split('<PredictLink').length - 1).to.equal(3) // grid, featured, list
   })
 
-  it('renders prize-pool ETH with a USD equivalent', () => {
-    expect(hero).to.include("import EthUsd from '@/components/deprize/EthUsd'")
-    expect(hero).to.include('<EthUsd')
+  it('renders the prize as a dollar-led Prize available figure', () => {
+    expect(hero).to.include("import PrizeAvailable from '@/components/deprize/PrizeAvailable'")
+    expect(hero).to.include('<PrizeAvailable')
     expect(hero).to.not.include('fmtPrizeEth')
-    expect(card).to.include("import EthUsd from '@/components/deprize/EthUsd'")
-    expect(card).to.include('function PoolAmount')
-    expect(card).to.include('<EthUsd')
+    expect(card).to.include("import PrizeAvailable from '@/components/deprize/PrizeAvailable'")
+    expect(card).to.include('<PrizeAvailable')
     expect(card).to.not.include('fmtPrizeEth')
+    const figure = readUi('components/deprize/PrizeAvailable.tsx')
+    expect(figure).to.include('Prize available')
+    expect(figure).to.include('Math.round')
   })
 })

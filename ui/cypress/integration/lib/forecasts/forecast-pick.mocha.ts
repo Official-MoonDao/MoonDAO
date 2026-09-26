@@ -99,9 +99,10 @@ describe('deprize forecast pick', () => {
     })
   })
 
-  it('sends a connected non-Citizen to mint instead of writing', () => {
+  it('lets a connected non-Citizen write a zero-power prediction', () => {
     expect(mod.tapPlan({ ...READY, isCitizen: false })).to.deep.equal({
-      action: 'need-citizen',
+      action: 'write',
+      index: READY.index,
     })
   })
 

@@ -38,8 +38,12 @@ type DePrizeTeamCardProps = {
   selectable?: boolean
   /** This competitor is the viewer's saved prediction. */
   highlighted?: boolean
-  /** Short status under the name, such as "Predicted". */
+  /** Short status under the name, such as "Your Prediction". */
   badge?: string
+  /** Caption under the percent. ETH odds say "chance"; MOONEY ranking says "share". */
+  chanceLabel?: string
+  /** ETH bet into this outcome on the market. Shown above the voting-power line. */
+  stakedEth?: number
   /**
    * Citizen-prediction voting power behind this option. Omit while consensus
    * is still loading so the card does not flash a fake zero.
@@ -121,6 +125,8 @@ export default function DePrizeTeamCard({
   selectable = false,
   highlighted = false,
   badge,
+  chanceLabel = 'chance',
+  stakedEth,
   citizenVotingPower,
   predictionCount,
   actions,
@@ -175,11 +181,13 @@ export default function DePrizeTeamCard({
         resolved && isWinningSlot
           ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
           : highlighted
-          ? 'border-indigo-400/50 ring-1 ring-indigo-400/30'
+          ? 'border-amber-300/80 ring-1 ring-amber-300/45'
           : ''
       } ${
         canPredict
-          ? 'cursor-pointer hover:border-indigo-400/40 hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 transition-colors'
+          ? `cursor-pointer hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 transition-colors ${
+              highlighted ? 'hover:border-amber-300' : 'hover:border-indigo-400/40'
+            }`
           : ''
       }`}
       onClick={canPredict ? predict : undefined}
@@ -219,7 +227,7 @@ export default function DePrizeTeamCard({
                 : `${fmt(outcome.probability, 0)}%`}
             </p>
             {!resolved && (
-              <p className="text-gray-500 text-[10px] mt-0.5 uppercase tracking-wide">chance</p>
+              <p className="text-gray-500 text-[10px] mt-0.5 uppercase tracking-wide">{chanceLabel}</p>
             )}
           </div>
         </div>
@@ -245,7 +253,7 @@ export default function DePrizeTeamCard({
           {orgSubtitle && (
             <p className="text-xs leading-tight text-gray-400 pl-10">{orgSubtitle}</p>
           )}
-          {badge && <p className="text-xs leading-tight text-indigo-200 pl-10">{badge}</p>}
+          {badge && <p className="text-xs leading-tight text-amber-200 pl-10">{badge}</p>}
           {withdrawn && !isField && (
             <p className="text-xs leading-tight text-amber-400/90 pl-10">Withdrawn — sell only</p>
           )}
@@ -274,15 +282,13 @@ export default function DePrizeTeamCard({
             }
           >
             <p className="text-sm font-semibold leading-none tabular-nums text-white">
-              {votingPowerText}
+              <EthUsd eth={stakedEth ?? 0} />
             </p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-gray-500">
-              {FORECAST_COPY.votingPower}
-              {predictionCount ? (
-                <span className="ml-1 font-medium normal-case tracking-normal text-gray-400">
-                  · {predictionCount}
-                </span>
-              ) : null}
+            <p className="mt-1 text-[11px] leading-tight text-gray-400">
+              {votingPowerText} {FORECAST_COPY.votingPower}
+              {predictionCount
+                ? ` from ${predictionCount} ${predictionCount === 1 ? 'person' : 'people'}`
+                : ''}
             </p>
           </div>
         )}

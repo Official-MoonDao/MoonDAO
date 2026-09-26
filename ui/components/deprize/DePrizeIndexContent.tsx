@@ -95,6 +95,16 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
     () => filteredRaces.filter((r) => isDePrizeGoalMarketBound(chainSlug, r.goal.id)),
     [filteredRaces, chainSlug]
   )
+  // Touchdown is the live prize with a real pool. It takes the full row;
+  // the other live races sit on the row under it.
+  const featuredLiveRace = useMemo(
+    () => liveRaces.find((race) => race.goal.id === 'shared-next-landing'),
+    [liveRaces]
+  )
+  const otherLiveRaces = useMemo(
+    () => liveRaces.filter((race) => race.goal.id !== 'shared-next-landing'),
+    [liveRaces]
+  )
   const plannedRaces = useMemo(
     () => filteredRaces.filter((r) => !isDePrizeGoalMarketBound(chainSlug, r.goal.id)),
     [filteredRaces, chainSlug]
@@ -273,9 +283,28 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                         onDone={() => setRefreshNonce((n) => n + 1)}
                       />
                     )}
-                    {liveRaces.length > 0 && (
+                    {featuredLiveRace && (
+                      <RaceMarketCard
+                        key={featuredLiveRace.goal.id}
+                        goal={featuredLiveRace.goal}
+                        competitors={featuredLiveRace.competitors}
+                        chain={chain}
+                        chainSlug={chainSlug}
+                        account={account}
+                        userAddress={userAddress}
+                        spendableEth={spendableEth}
+                        refreshNonce={refreshNonce}
+                        activeTab={activeTab}
+                        bettingBlockedReason={bettingBlockedReason}
+                        onConnectWallet={() => login()}
+                        onHasPosition={handleHasPosition}
+                        onDone={() => setRefreshNonce((n) => n + 1)}
+                        variant="featured"
+                      />
+                    )}
+                    {otherLiveRaces.length > 0 && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {liveRaces.map(({ goal, competitors }) => (
+                        {otherLiveRaces.map(({ goal, competitors }) => (
                           <RaceMarketCard
                             key={goal.id}
                             goal={goal}
