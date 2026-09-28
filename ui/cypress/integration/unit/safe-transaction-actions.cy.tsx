@@ -11,14 +11,19 @@
 import { ethers } from 'ethers'
 import {
   deriveTransactionActions,
+  formatTokenAmount,
   getRecipientAddress,
+  getTransactionDisplayValue,
   getTransactionMethod,
   groupHasRejection,
   groupTransactionsByNonce,
   isEthTransfer,
   isRejectionTransaction,
   isTokenTransfer,
+  knownErc20Meta,
+  resolveTokenHint,
 } from '../../../lib/safe/safeTransactionActions'
+import { USDC_ADDRESSES } from '../../../const/config'
 
 const ME = '0x1111111111111111111111111111111111111111'
 const OTHER_A = '0x2222222222222222222222222222222222222222'
@@ -68,9 +73,7 @@ describe('Safe transaction action gating', () => {
         address: ME,
         hasRejectionInGroup: false,
       })
-      expect(s.canSign, 'a future-nonce tx must still be signable').to.equal(
-        true
-      )
+      expect(s.canSign, 'a future-nonce tx must still be signable').to.equal(true)
       expect(s.showSignButton).to.equal(true)
       // ...but it must not be executable yet (wrong nonce order).
       expect(s.canExecute).to.equal(false)
@@ -271,6 +274,96 @@ describe('Safe transaction labeling helpers', () => {
 
   it('uses tx.to as recipient for non-transfer methods', () => {
     expect(getRecipientAddress(baseTx)).to.equal(baseTx.to)
+  })
+
+  it('shows a USDC transfer in token units, not 18-decimal wei', () => {
+    const recipient = '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b'
+    const tx = {
+      ...baseTx,
+      to: USDC_ADDRESSES.arbitrum,
+      value: '0',
+      dataDecoded: {
+        method: 'transfer',
+        parameters: [
+          { name: 'to', type: 'address', value: recipient },
+          { name: 'value', type: 'uint256', value: '250500000' },
+        ],
+      },
+    }
+    const hint = resolveTokenHint(tx)
+    expect(hint).to.deep.equal({ decimals: 6, symbol: 'USDC' })
+    expect(getTransactionDisplayValue(tx, hint || undefined)).to.deep.equal({
+      amount: '250.5',
+      symbol: 'USDC',
+    })
+    expect(getTransactionMethod(tx, hint?.symbol)).to.equal('Transfer USDC')
+    expect(getRecipientAddress(tx)).to.equal(recipient)
+    // Without the token's decimals the card must not invent an 18-decimal amount.
+    expect(getTransactionDisplayValue(tx)).to.equal(null)
+  })
+
+  it('decodes a USDC transfer from calldata when Safe did not decode it', () => {
+    const recipient = '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b'
+    const data = new ethers.utils.Interface([
+      'function transfer(address to, uint256 value)',
+    ]).encodeFunctionData('transfer', [recipient, '1000000'])
+    const tx = {
+      ...baseTx,
+      to: USDC_ADDRESSES.arbitrum,
+      value: '0',
+      data,
+      dataDecoded: null,
+    }
+    expect(isTokenTransfer(tx)).to.equal(true)
+    expect(getRecipientAddress(tx).toLowerCase()).to.equal(recipient.toLowerCase())
+    expect(getTransactionDisplayValue(tx, knownErc20Meta(tx.to) || undefined)).to.deep.equal({
+      amount: '1',
+      symbol: 'USDC',
+    })
+  })
+
+  it('uses the treasury balance decimals for tokens that are not USDC', () => {
+    const tx = {
+      ...baseTx,
+      to: '0x1111111111111111111111111111111111111112',
+      value: '0',
+      dataDecoded: {
+        method: 'transfer',
+        parameters: [{ value: '0xabc' }, { value: '150000000' }],
+      },
+    }
+    const hint = resolveTokenHint(tx, [
+      {
+        tokenAddress: '0x1111111111111111111111111111111111111112',
+        token: { symbol: 'WBTC', decimals: 8 },
+      },
+    ])
+    expect(getTransactionDisplayValue(tx, hint || undefined)).to.deep.equal({
+      amount: '1.5',
+      symbol: 'WBTC',
+    })
+  })
+
+  it('formats whole token amounts with thousands separators', () => {
+    expect(formatTokenAmount('1000000000000', 6)).to.equal('1,000,000')
+    expect(formatTokenAmount('1000000000000000000', 18)).to.equal('1')
+  })
+
+  it('reads transferFrom amount from the third parameter', () => {
+    const tx = {
+      ...baseTx,
+      to: USDC_ADDRESSES.ethereum,
+      value: '0',
+      dataDecoded: {
+        method: 'transferFrom',
+        parameters: [{ value: '0xfrom' }, { value: '0xto' }, { value: '2000000' }],
+      },
+    }
+    expect(getRecipientAddress(tx)).to.equal('0xto')
+    expect(getTransactionDisplayValue(tx, { decimals: 6, symbol: 'USDC' })).to.deep.equal({
+      amount: '2',
+      symbol: 'USDC',
+    })
   })
 })
 

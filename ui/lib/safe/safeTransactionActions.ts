@@ -11,6 +11,7 @@
  * transaction regardless of nonce ordering — only EXECUTION must happen in
  * strict nonce order. Gating signing on the current nonce is a bug.
  */
+import { DAI_ADDRESSES, MOONEY_ADDRESSES, USDC_ADDRESSES, USDT_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 
 /** Minimal shape this module needs from a Safe pending transaction. */
@@ -50,45 +51,168 @@ export function isEthTransfer(tx: SafeTxLike): boolean {
   return isZeroData(tx.data) && valueAsBN(tx.value).gt(0)
 }
 
+const ERC20_INTERFACE = new ethers.utils.Interface([
+  'function transfer(address to, uint256 value)',
+  'function transferFrom(address from, address to, uint256 value)',
+])
+
+export type DecodedTokenTransfer = {
+  method: 'transfer' | 'transferFrom'
+  recipient: string
+  /** Raw uint256 amount, not adjusted for decimals. */
+  amount: string
+}
+
+function asScalar(value: unknown): string | null {
+  if (value == null || typeof value === 'object') return null
+  const str = String(value)
+  if (!str || str === 'undefined') return null
+  return str
+}
+
+/**
+ * Pulls the recipient and raw amount out of an ERC-20 transfer.
+ * Prefers Safe's `dataDecoded` payload, then the calldata itself, so a USDC
+ * send still shows an amount when the transaction service didn't decode it.
+ */
+export function decodedTokenTransfer(tx: SafeTxLike): DecodedTokenTransfer | null {
+  const method = tx.dataDecoded?.method
+  if (method === 'transfer' || method === 'transferFrom') {
+    const params = tx.dataDecoded?.parameters ?? []
+    const recipient = asScalar(method === 'transfer' ? params[0]?.value : params[1]?.value)
+    const amount = asScalar(method === 'transfer' ? params[1]?.value : params[2]?.value)
+    if (amount) {
+      return { method, recipient: recipient || tx.to, amount }
+    }
+  }
+
+  const data = tx.data
+  if (!data || data === '0x' || data.length < 10) return null
+  const selector = data.slice(0, 10).toLowerCase()
+  try {
+    if (selector === '0xa9059cbb') {
+      const decoded = ERC20_INTERFACE.decodeFunctionData('transfer', data)
+      return {
+        method: 'transfer',
+        recipient: decoded.to,
+        amount: decoded.value.toString(),
+      }
+    }
+    if (selector === '0x23b872dd') {
+      const decoded = ERC20_INTERFACE.decodeFunctionData('transferFrom', data)
+      return {
+        method: 'transferFrom',
+        recipient: decoded.to,
+        amount: decoded.value.toString(),
+      }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
 export function isTokenTransfer(tx: SafeTxLike): boolean {
-  return (
-    tx.dataDecoded?.method === 'transfer' ||
-    tx.dataDecoded?.method === 'transferFrom'
+  const method = tx.dataDecoded?.method
+  if (method === 'transfer' || method === 'transferFrom') return true
+  return decodedTokenTransfer(tx) != null
+}
+
+function addressSet(addresses: { [key: string]: string }): Set<string> {
+  return new Set(
+    Object.values(addresses)
+      .filter((address) => typeof address === 'string' && address.startsWith('0x'))
+      .map((address) => address.toLowerCase())
   )
+}
+
+const USDC_ADDRESSES_LOWER = addressSet(USDC_ADDRESSES)
+const USDT_ADDRESSES_LOWER = addressSet(USDT_ADDRESSES)
+const DAI_ADDRESSES_LOWER = addressSet(DAI_ADDRESSES)
+const MOONEY_ADDRESSES_LOWER = addressSet(MOONEY_ADDRESSES)
+
+/** Decimals and symbol for tokens we know without an RPC read. USDC is 6. */
+export function knownErc20Meta(
+  address?: string | null
+): { decimals: number; symbol: string } | null {
+  if (!address) return null
+  const normalized = address.toLowerCase()
+  if (USDC_ADDRESSES_LOWER.has(normalized)) return { decimals: 6, symbol: 'USDC' }
+  if (USDT_ADDRESSES_LOWER.has(normalized)) return { decimals: 6, symbol: 'USDT' }
+  if (DAI_ADDRESSES_LOWER.has(normalized)) return { decimals: 18, symbol: 'DAI' }
+  if (MOONEY_ADDRESSES_LOWER.has(normalized)) return { decimals: 18, symbol: 'MOONEY' }
+  return null
+}
+
+export type TokenBalanceHint = {
+  tokenAddress: string | null
+  token: { symbol: string; decimals: number } | null
+}
+
+/**
+ * Symbol and decimals for a token transfer, from the Safe's own balance list
+ * when the treasury holds that token, otherwise from the known-token map.
+ */
+export function resolveTokenHint(
+  tx: SafeTxLike,
+  balances?: TokenBalanceHint[] | null
+): { decimals: number; symbol: string } | null {
+  if (!isTokenTransfer(tx) || !tx.to) return null
+  const to = tx.to.toLowerCase()
+  if (Array.isArray(balances)) {
+    const match = balances.find(
+      (balance) => balance.tokenAddress?.toLowerCase() === to && balance.token
+    )
+    const decimals = Number(match?.token?.decimals)
+    if (match?.token && Number.isInteger(decimals) && decimals >= 0 && decimals <= 255) {
+      return { decimals, symbol: match.token.symbol || 'tokens' }
+    }
+  }
+  return knownErc20Meta(tx.to)
+}
+
+/** Trim trailing zeroes after the decimal, then group the whole part. */
+export function formatTokenAmount(raw: string, decimals: number): string {
+  let formatted: string
+  try {
+    formatted = ethers.utils.formatUnits(raw, decimals)
+  } catch {
+    return raw
+  }
+  if (formatted.includes('.')) {
+    formatted = formatted.replace(/0+$/, '').replace(/\.$/, '')
+  }
+  const [whole, frac] = formatted.split('.')
+  const withCommas = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return frac ? `${withCommas}.${frac}` : withCommas
 }
 
 /**
  * Returns the human-readable value to display on a transaction card.
  *
- * - ETH transfers: format tx.value from wei → "1.5 ETH"
- * - ERC-20 transfers: decode the token amount from dataDecoded parameters
- *   (assumes 18 decimals — correct for MOONEY and most standard tokens).
- *   Returns null when the value is zero and there is no decoded token amount,
- *   so callers can hide the row entirely for contract calls with no value.
+ * - ETH transfers: format tx.value from wei.
+ * - ERC-20 transfers: format the decoded uint with the token's own decimals.
+ *   Returns null until the caller supplies those decimals, so a 6-decimal
+ *   token like USDC is never shown as if it had 18.
+ * - Other calls: show ETH value only when it is non-zero.
  */
 export function getTransactionDisplayValue(
-  tx: SafeTxLike
+  tx: SafeTxLike,
+  meta?: { decimals?: number; symbol?: string }
 ): { amount: string; symbol: string } | null {
   if (isEthTransfer(tx)) {
     return { amount: ethers.utils.formatEther(tx.value ?? '0'), symbol: 'ETH' }
   }
 
   if (isTokenTransfer(tx)) {
-    const params = tx.dataDecoded?.parameters ?? []
-    // transfer(address to, uint256 value)  → params[1]
-    // transferFrom(address from, address to, uint256 value) → params[2]
-    const amountParam =
-      tx.dataDecoded?.method === 'transferFrom' ? params[2] : params[1]
-    const raw: string = amountParam?.value ?? '0'
+    const decoded = decodedTokenTransfer(tx)
+    if (!decoded || meta?.decimals == null) return null
     return {
-      amount: ethers.utils.formatEther(
-        ethers.BigNumber.from(raw).toString()
-      ),
-      symbol: 'tokens',
+      amount: formatTokenAmount(decoded.amount, meta.decimals),
+      symbol: meta.symbol || 'tokens',
     }
   }
 
-  // Generic contract call — show ETH value only when non-zero.
   const valueBN = valueAsBN(tx.value)
   if (valueBN.gt(0)) {
     return { amount: ethers.utils.formatEther(tx.value ?? '0'), symbol: 'ETH' }
@@ -98,9 +222,10 @@ export function getTransactionDisplayValue(
 }
 
 /** Human-friendly method label shown on the card. */
-export function getTransactionMethod(tx: SafeTxLike): string {
+export function getTransactionMethod(tx: SafeTxLike, tokenSymbol?: string): string {
   if (isEthTransfer(tx)) return 'Transfer ETH'
   if (isRejectionTransaction(tx)) return 'Reject Transaction'
+  if (isTokenTransfer(tx)) return tokenSymbol ? `Transfer ${tokenSymbol}` : 'Token Transfer'
   return tx.dataDecoded?.method || 'Unknown Method'
 }
 
@@ -109,13 +234,8 @@ export function getTransactionMethod(tx: SafeTxLike): string {
  * recipient (decoded param), not the token contract in `tx.to`.
  */
 export function getRecipientAddress(tx: SafeTxLike): string {
-  if (isTokenTransfer(tx)) {
-    const paramAddress =
-      tx.dataDecoded?.method === 'transfer'
-        ? tx.dataDecoded?.parameters?.[0]?.value
-        : tx.dataDecoded?.parameters?.[1]?.value
-    return paramAddress || tx.to
-  }
+  const decoded = decodedTokenTransfer(tx)
+  if (decoded?.recipient) return decoded.recipient
   return tx.to
 }
 
@@ -170,10 +290,7 @@ export type TxActionState = {
  * Single source of truth for the action gating + button visibility of a
  * pending Safe transaction.
  */
-export function deriveTransactionActions(
-  tx: SafeTxLike,
-  ctx: TxActionContext
-): TxActionState {
+export function deriveTransactionActions(tx: SafeTxLike, ctx: TxActionContext): TxActionState {
   const confirmations = tx.confirmations || []
   const confirmationCount = confirmations.length
   const requiredConfirmations = tx.confirmationsRequired || ctx.threshold
@@ -183,9 +300,7 @@ export function deriveTransactionActions(
   )
 
   const canExecute =
-    confirmationCount >= requiredConfirmations &&
-    !tx.isExecuted &&
-    tx.nonce === ctx.currentNonce
+    confirmationCount >= requiredConfirmations && !tx.isExecuted && tx.nonce === ctx.currentNonce
 
   // Owners can sign ANY pending transaction regardless of nonce ordering.
   const canSign = confirmationCount < requiredConfirmations && !tx.isExecuted
@@ -205,12 +320,10 @@ export function deriveTransactionActions(
     isBlockedByEarlierNonce,
     showSignButton: !hasSigned && !ctx.hasRejectionInGroup && canSign,
     showRejectButton: !hasSigned && !ctx.hasRejectionInGroup,
-    showSignWithRejectionButton:
-      !hasSigned && ctx.hasRejectionInGroup && canSign,
+    showSignWithRejectionButton: !hasSigned && ctx.hasRejectionInGroup && canSign,
     showSignedStatus: hasSigned,
     showExecuteButton: canExecute,
-    showRejectAfterSignButton:
-      hasSigned && !tx.isExecuted && !ctx.hasRejectionInGroup,
+    showRejectAfterSignButton: hasSigned && !tx.isExecuted && !ctx.hasRejectionInGroup,
     showBlockedIndicator: isBlockedByEarlierNonce,
   }
 }
