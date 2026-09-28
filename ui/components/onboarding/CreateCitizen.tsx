@@ -149,6 +149,8 @@ const INPUT_IMAGE_SESSION_KEY = 'CreateCitizen_inputImage'
 const DISCOUNT_PAYMENT_SESSION_KEY = 'CreateCitizen_discountPayment'
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60
+// How long the invite eligibility check may run before offering a retry.
+const INVITE_CHECK_TIMEOUT_MS = 20_000
 
 /**
  * Under transient RPC hiccups thirdweb's batched eth_call can resolve with an
@@ -491,6 +493,13 @@ export default function CreateCitizen({
   const [discountQuote, setDiscountQuote] = useState<DiscountQuote | null>(null)
   const [resolvedInviteToken, setResolvedInviteToken] = useState<string | null>(null)
   const invitePending = Boolean(inviteToken) && resolvedInviteToken !== inviteToken
+  // Set when the invite eligibility check could not complete (network error,
+  // timeout, rate limit, 5xx). The invite stays pending so a valid link is never
+  // shown as a full-price mint, but the button turns into a retry instead of
+  // sitting on "Checking invite..." forever.
+  const [inviteCheckError, setInviteCheckError] = useState<string | null>(null)
+  const [inviteCheckNonce, setInviteCheckNonce] = useState(0)
+  const retryInviteCheck = useCallback(() => setInviteCheckNonce((n) => n + 1), [])
   // Keeps a confirmed discount payment across a failed mint response so a retry
   // does not charge the recipient a second time. Also written to sessionStorage
   // so a refresh during the sponsored mint reuses the same transfer. Cleared once
@@ -2246,6 +2255,15 @@ export default function CreateCitizen({
   useEffect(() => {
     if (!address) return
     let cancelled = false
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), INVITE_CHECK_TIMEOUT_MS)
+
+    // Leave the invite pending (never a full-price mint) but surface a retry.
+    const failInviteCheck = (message: string) => {
+      if (cancelled) return
+      setInviteCheckError(message)
+      toast.error(message)
+    }
 
     const getTotalPaid = async () => {
       if (inviteToken) {
@@ -2255,6 +2273,7 @@ export default function CreateCitizen({
         setDiscountQuote(null)
         setFreeMint(false)
         setResolvedInviteToken(null)
+        setInviteCheckError(null)
       }
       // A magic-link invite token makes this wallet eligible for a sponsored
       // or discounted mint even without a contribution history. Send the
@@ -2264,38 +2283,70 @@ export default function CreateCitizen({
       if (inviteToken) {
         headers['x-invite-token'] = inviteToken
       }
-      const res = await fetch(`/api/mission/freeMint?address=${address}`, {
-        method: 'GET',
-        headers,
-      })
+      let res: Response
+      try {
+        res = await fetch(`/api/mission/freeMint?address=${address}`, {
+          method: 'GET',
+          headers,
+          signal: controller.signal,
+        })
+      } catch (err: any) {
+        if (cancelled) return
+        // Blocked by an extension, offline, or timed out.
+        console.error('Eligibility check failed:', err)
+        if (inviteToken) {
+          failInviteCheck(
+            err?.name === 'AbortError'
+              ? 'Checking your invite is taking too long. Please try again.'
+              : 'Could not reach MoonDAO to check your invite. Check your connection or disable ad blockers, then try again.'
+          )
+        }
+        return
+      }
       if (cancelled) return
       if (!res.ok) {
-        const errorText = await res.text()
+        const errorText = await res.text().catch(() => '')
         console.error(errorText)
-        // For invite tokens: distinguish between transient errors (5xx) and
-        // validation failures (4xx). Invalid/expired tokens return 400.
-        if (inviteToken && res.status >= 500) {
-          // Transient server error (e.g. Redis down) with invite. Leave the
-          // invite pending so a valid link isn't shown as a full-price mint.
-          console.warn('Eligibility check temporarily unavailable (5xx), keeping current state')
+        let serverMessage: string | null = null
+        try {
+          const parsed = JSON.parse(errorText)
+          if (typeof parsed?.error === 'string' && parsed.error) serverMessage = parsed.error
+        } catch {
+          /* response was not JSON */
+        }
+        // For invite tokens: distinguish between transient errors and
+        // validation failures. Invalid/expired tokens return 400.
+        if (inviteToken && res.status !== 400) {
+          // Transient (5xx, 429, firewall). Leave the invite pending so a valid
+          // link isn't shown as a full-price mint, and offer a retry.
+          failInviteCheck(
+            res.status === 429
+              ? 'Too many requests. Please wait a moment and try again.'
+              : serverMessage || 'We could not verify your invite right now. Please try again.'
+          )
         } else if (inviteToken && res.status === 400) {
           setFreeMint(false)
           setDiscountQuote(null)
           setResolvedInviteToken(inviteToken)
-          let message = 'This invite link is invalid, expired, or has already been used.'
-          try {
-            const parsed = JSON.parse(errorText)
-            if (typeof parsed?.error === 'string' && parsed.error) message = parsed.error
-          } catch {
-            /* response was not JSON */
-          }
-          toast.error(message)
+          toast.error(
+            serverMessage || 'This invite link is invalid, expired, or has already been used.'
+          )
         } else if (!inviteToken) {
           setFreeMint(false)
           setDiscountQuote(null)
         }
       } else {
-        const { data } = await res.json()
+        let data: any
+        try {
+          ;({ data } = await res.json())
+        } catch (err) {
+          console.error('Eligibility response could not be read:', err)
+          if (inviteToken) {
+            failInviteCheck('We could not verify your invite right now. Please try again.')
+          }
+          return
+        }
+        if (cancelled) return
         if (inviteToken) setResolvedInviteToken(inviteToken)
         if (data.sponsored === false && data.dueWei && data.payTo) {
           setFreeMint(false)
@@ -2316,11 +2367,13 @@ export default function CreateCitizen({
         }
       }
     }
-    getTotalPaid()
+    getTotalPaid().finally(() => clearTimeout(timeout))
     return () => {
       cancelled = true
+      clearTimeout(timeout)
+      controller.abort()
     }
-  }, [address, inviteToken])
+  }, [address, inviteToken, inviteCheckNonce])
 
   // ===== JSX Render =====
   return (
@@ -2887,8 +2940,13 @@ export default function CreateCitizen({
                   loadingLabel={
                     discountQuote ? 'Paying and creating your citizen...' : 'Creating Citizen...'
                   }
+                  signInLabel={inviteToken ? 'Sign In to Redeem Invite' : undefined}
                   label={
-                    invitePending
+                    invitePending && inviteCheckError
+                      ? 'Retry Invite Check'
+                      : invitePending && !address
+                      ? 'Connecting wallet...'
+                      : invitePending
                       ? 'Checking invite...'
                       : isLoadingMint
                       ? 'Creating Citizen...'
@@ -2900,13 +2958,15 @@ export default function CreateCitizen({
                   }
                   className="w-full py-3 gradient-2 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 rounded-2xl font-semibold text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   actionDisabled={
-                    !agreedToCondition ||
-                    isLoadingMint ||
-                    invitePending ||
-                    isImageGenerating ||
-                    (!discountQuote && isLoadingGasEstimate)
+                    invitePending && inviteCheckError
+                      ? false
+                      : !agreedToCondition ||
+                        isLoadingMint ||
+                        invitePending ||
+                        isImageGenerating ||
+                        (!discountQuote && isLoadingGasEstimate)
                   }
-                  action={callMint}
+                  action={invitePending && inviteCheckError ? retryInviteCheck : callMint}
                 />
                 {isLoadingMint && (
                   <div className="flex flex-col items-center gap-3 py-6 px-4 bg-slate-800/30 border border-white/[0.06] rounded-2xl">
