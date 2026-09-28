@@ -245,7 +245,11 @@ export default function TeamTreasury({
 
         {isSigner && safeData && (
           <div className="mt-4 pt-4 border-t border-slate-600/30">
-            <SafeTransactions address={address} safeData={safeData} />
+            <SafeTransactions
+              address={address}
+              safeData={safeData}
+              tokenBalances={safeBalances}
+            />
           </div>
         )}
       </div>
