@@ -321,21 +321,46 @@ describe('lunar-atlas selectors', () => {
     })
   })
 
-  describe('tech trees (one surface site per capability category)', () => {
+  describe('tech trees (one surface site per race)', () => {
     const trees = buildTechTrees(SEED_ATLAS.projects, SEED_ATLAS.sharedGoals)
 
-    it('groups every located surface project into exactly one tree', () => {
+    it('gives every located surface project a site', () => {
       const surface = SEED_ATLAS.projects.filter(
         (p) => p.location && p.type !== 'orbital'
       )
-      const grouped = trees.flatMap((t) => t.projects.map((p) => p.id))
-      expect(grouped.length).to.equal(surface.length)
-      expect(new Set(grouped).size).to.equal(surface.length)
+      const grouped = new Set(trees.flatMap((t) => t.projects.map((p) => p.id)))
+      for (const p of surface) {
+        expect(grouped.has(p.id), `${p.id} has no site`).to.equal(true)
+      }
+    })
+
+    it('only repeats a competitor across trees when two races declare it', () => {
+      // Chang'e-7 runs in Touchdown and in Water Ice, and is entitled to appear
+      // in both rosters. Anything repeated WITHOUT two goals claiming it would
+      // be a grouping bug, not a dual entry.
+      const seen = new Map<string, string[]>()
       for (const t of trees) {
         for (const p of t.projects) {
-          expect(p.type, `project ${p.id} in tree ${t.category}`).to.equal(
-            t.category
-          )
+          seen.set(p.id, [...(seen.get(p.id) ?? []), t.raceId])
+        }
+      }
+      for (const [pid, raceIds] of seen) {
+        if (raceIds.length < 2) continue
+        const declaring = SEED_ATLAS.sharedGoals.filter((g) =>
+          g.projectIds.includes(pid)
+        )
+        expect(declaring.length, `${pid} is in ${raceIds.join(', ')}`).to.equal(
+          raceIds.length
+        )
+      }
+    })
+
+    it('keeps a leftover type group to the hardware it is named for', () => {
+      for (const t of trees) {
+        if (t.goal) continue
+        expect(t.raceId).to.equal(`type:${t.category}`)
+        for (const p of t.projects) {
+          expect(p.type, `${p.id} in ${t.raceId}`).to.equal(t.category)
         }
       }
     })
@@ -345,11 +370,12 @@ describe('lunar-atlas selectors', () => {
       expect(ids.has('nasa-gateway')).to.equal(false)
     })
 
-    it('binds the race goal declared for a category', () => {
-      const construction = trees.find((t) => t.category === 'construction')
+    it('keys a race on its goal id, not on its hardware type', () => {
+      const construction = trees.find((t) => t.raceId === 'shared-landing-pads')
       expect(construction?.goal?.id).to.equal('shared-landing-pads')
-      const lander = trees.find((t) => t.category === 'lander')
+      const lander = trees.find((t) => t.raceId === 'shared-next-landing')
       expect(lander?.goal?.id).to.equal('shared-next-landing')
+      expect(lander?.category).to.equal('lander')
     })
 
     it('falls back to a goal listing a member when no category race exists', () => {
@@ -374,17 +400,50 @@ describe('lunar-atlas selectors', () => {
       expect(tree.goal?.id).to.equal('borrowed')
     })
 
-    // The seed itself should never need that fallback. A category whose site
-    // borrows another category's race shows the wrong competitors behind its
-    // marker — which is exactly what the power site did while fission surface
-    // power was being scored inside the ISRU goal.
-    it('gives every surface category in the seed its own declared race', () => {
-      for (const tree of trees) {
-        expect(tree.goal, `${tree.category} has no race`).to.not.equal(undefined)
-        expect(tree.goal?.category, `${tree.category} borrowed ${tree.goal?.id}`).to.equal(
-          tree.category
+    // The regression this whole keying exists for. Grouping by hardware type
+    // gave one tree per type and silently dropped the second race of a type:
+    // First Tracks and the crewed LTV are both rover races, Water Ice and
+    // Touchdown are both lander races, and only one of each survived. A dropped
+    // race has no district, no marker and no legend row, so it is invisible
+    // rather than merely wrong.
+    it('never drops a race because another one runs the same hardware', () => {
+      const placed = new Set(
+        SEED_ATLAS.projects.filter((p) => p.location).map((p) => p.id)
+      )
+      const expected = SEED_ATLAS.sharedGoals.filter((g) =>
+        g.projectIds.some((id) =>
+          SEED_ATLAS.projects.some(
+            (p) => p.id === id && p.type !== 'orbital'
+          )
         )
+      )
+      for (const goal of expected) {
+        const tree = trees.find((t) => t.raceId === goal.id)
+        expect(tree, `${goal.id} has no site`).to.not.equal(undefined)
+        expect(tree!.goal?.id).to.equal(goal.id)
       }
+      // And specifically the pairs that used to collide.
+      for (const [a, b] of [
+        ['shared-next-landing', 'shared-ice'],
+        ['shared-lunar-rover', 'shared-first-tracks'],
+      ]) {
+        expect(trees.find((t) => t.raceId === a), a).to.not.equal(undefined)
+        expect(trees.find((t) => t.raceId === b), b).to.not.equal(undefined)
+      }
+      expect(placed.size).to.be.greaterThan(0)
+    })
+
+    // A race with no coordinates anywhere still gets a site: the colony layout
+    // assigns every plot from the base plan, so requiring a location here only
+    // hid the ladder races nobody had placed yet.
+    it('sites a race whose competitors have no coordinates', () => {
+      const nightShift = trees.find((t) => t.raceId === 'shared-night-shift')
+      expect(nightShift, 'Night Shift has no site').to.not.equal(undefined)
+      expect(nightShift!.projects.length).to.be.greaterThan(1)
+      expect(
+        nightShift!.projects.every((p) => !p.location),
+        'fixture drifted: Night Shift now has placed competitors'
+      ).to.equal(true)
     })
 
     // Every entrant in a race has to be a member of the site that opens it,
@@ -410,13 +469,19 @@ describe('lunar-atlas selectors', () => {
       expect(power!.location.lon).to.be.within(-180, 180)
     })
 
-    it('applies after filtering, so filtered-out categories have no site', () => {
+    it('applies after filtering, so filtered-out hardware has no site', () => {
       const landersOnly = filterProjects(SEED_ATLAS.projects, {
         types: ['lander'],
       })
       const filtered = buildTechTrees(landersOnly, SEED_ATLAS.sharedGoals)
-      expect(filtered.length).to.equal(1)
-      expect(filtered[0].category).to.equal('lander')
+      expect(filtered.length).to.be.greaterThan(0)
+      for (const tree of filtered) {
+        for (const p of tree.projects) {
+          expect(p.type, `${p.id} survived a lander-only filter`).to.equal(
+            'lander'
+          )
+        }
+      }
     })
   })
 
@@ -529,7 +594,7 @@ describe('lunar-atlas selectors', () => {
         ).to.be.greaterThan(0)
       }
     })
-    it('surfaces a competitor\'s place and odds from a race goal', () => {
+    it('does not rank a planned race off curator priors', () => {
       expect(formatPlace(1)).to.equal('1st')
       expect(formatPlace(2)).to.equal('2nd')
       expect(formatPlace(3)).to.equal('3rd')
@@ -537,15 +602,26 @@ describe('lunar-atlas selectors', () => {
       expect(formatPlace(12)).to.equal('12th')
       const lander = sharedGoalById(SEED_ATLAS, 'shared-crewed-lander')
       expect(lander).to.exist
-      const blue = raceStandingForProject('blue-origin-blue-moon-mk2', lander!)
+      expect(lander!.market?.status).to.equal('planned')
+      expect(
+        raceStandingForProject('blue-origin-blue-moon-mk2', lander!)
+      ).to.equal(undefined)
+      expect(
+        raceStandingForProject('not-a-competitor', lander!)
+      ).to.equal(undefined)
+    })
+    it('surfaces place and odds once the market is live', () => {
+      const lander = sharedGoalById(SEED_ATLAS, 'shared-crewed-lander')!
+      const live = {
+        ...lander,
+        market: { ...lander.market!, status: 'live' as const },
+      }
+      const blue = raceStandingForProject('blue-origin-blue-moon-mk2', live)
       expect(blue?.place).to.equal(2)
       expect(blue?.fieldSize).to.equal(2)
       expect(Math.round((blue?.probability ?? 0) * 100)).to.equal(36)
-      const starship = raceStandingForProject('spacex-starship-hls', lander!)
+      const starship = raceStandingForProject('spacex-starship-hls', live)
       expect(starship?.place).to.equal(1)
-      expect(raceStandingForProject('not-a-competitor', lander!)).to.equal(
-        undefined
-      )
     })
     it('at most one goal declares each race category', () => {
       const seen = new Map<string, string>()

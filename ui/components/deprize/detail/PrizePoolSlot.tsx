@@ -23,7 +23,14 @@ function PoolFigure({ eth, loading }: { eth?: number | null; loading?: boolean }
       />
     )
   }
-  return <EthUsd eth={eth} prize />
+  return (
+    <EthUsd
+      eth={eth}
+      prize
+      className="text-[17px] font-semibold tracking-tight text-white"
+      usdClassName="text-[15px] font-medium text-[#9aa3b2]"
+    />
+  )
 }
 
 export default function PrizePoolSlot(props: {
@@ -75,17 +82,20 @@ export default function PrizePoolSlot(props: {
   }
 
   return (
-    <section id="deprize-prize-pool" className={`${CARD} space-y-4`}>
+    <section
+      id="deprize-prize-pool"
+      className={CARD}
+    >
       <div>
-        <div className="flex flex-wrap items-start gap-x-8 gap-y-3">
+        <div className="grid grid-cols-2 gap-4">
           <div className="min-w-0">
-            <h3 className="text-white text-sm font-semibold">Prize pool</h3>
+            <h3 className="text-[13px] font-medium text-[#c5cad3]">Prize pool</h3>
             <p className="mt-1" title={props.asOf ? `As of ${props.asOf}` : undefined}>
               <PoolFigure eth={props.poolEth} loading={props.poolLoading} />
             </p>
           </div>
           <div className="min-w-0">
-            <h3 className="text-white text-sm font-semibold">Betting volume</h3>
+            <h3 className="text-[13px] font-medium text-[#c5cad3]">Betting volume</h3>
             <p
               className="mt-1"
               title="Sum of bets placed into this market. Separate from the prize pool."
@@ -94,10 +104,16 @@ export default function PrizePoolSlot(props: {
             </p>
           </div>
         </div>
+        <a
+          href="#deprize-forecast"
+          className={`mt-4 flex w-full items-center justify-center rounded-lg bg-[#2f5bff] px-4 py-3 text-[15px] font-semibold text-white shadow-[0_3px_0_0_#1e3a8a] ${TOUCH}`}
+        >
+          Place a Prediction
+        </a>
         {showFund && (
           <button
             type="button"
-            className={`mt-3 w-full sm:w-auto rounded-full border border-white/20 px-4 py-2 text-sm text-white ${TOUCH}`}
+            className={`mt-2 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-[15px] font-semibold text-white ${TOUCH}`}
             onClick={onFund}
           >
             Fund the prize
@@ -106,19 +122,23 @@ export default function PrizePoolSlot(props: {
       </div>
 
       {DEPRIZE_PATRONS_ENABLED && (
+        <div className="mt-4 border-t border-white/10 pt-4">
         <DePrizePatrons
           patrons={patrons}
           pendingOwn={Boolean(pendingPayer)}
           chainSlug={props.chain ? getChainSlug(props.chain) : undefined}
         />
+        </div>
       )}
 
+      <div className="mt-4 border-t border-white/10 pt-4">
       <DePrizeCallers
         chainSlug={props.chain ? getChainSlug(props.chain) : 'arbitrum'}
         deprizeId={props.deprizeId}
         labels={props.labels ?? []}
         bettorAddresses={props.bettorAddresses ?? []}
       />
+      </div>
 
       {props.jbProjectId != null && props.chain && props.deprizeId != null && (
         <DePrizeLaunchpadContribute

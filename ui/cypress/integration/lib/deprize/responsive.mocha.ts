@@ -63,14 +63,14 @@ describe('deprize responsive layout', () => {
     expect(scroll, 'a nested list must not steal the page scroll').to.match(/overscroll-contain/)
   })
 
-  it('lets the sticky sidebar scroll itself instead of hiding its own bottom', () => {
-    const src = readUi('pages/deprize/[id].tsx')
-    const aside = src.slice(src.indexOf('<aside'), src.indexOf('</aside>'))
-    expect(aside).to.match(/lg:sticky/)
-    expect(aside, 'a sticky column taller than the viewport traps its tail').to.match(
+  it('lets the prize column follow the page and scroll itself when it is taller than the viewport', () => {
+    const src = readUi('components/deprize/detail/StickyRail.tsx')
+    expect(src, 'css sticky is trapped by the page scroll containers').to.match(/position:\s*'fixed'/)
+    expect(src, 'a column taller than the viewport traps its tail').to.match(
       /lg:max-h-\[calc\(100vh/
     )
-    expect(aside).to.match(/lg:overflow-y-auto/)
+    expect(src).to.match(/lg:overflow-y-auto/)
+    expect(readUi('pages/deprize/[id].tsx')).to.match(/<StickyRail>/)
   })
 
   it('caps the patron and caller lists so one long prize cannot bury the page', () => {

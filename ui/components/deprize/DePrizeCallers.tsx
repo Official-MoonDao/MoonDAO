@@ -210,7 +210,7 @@ function DePrizeCallersList(props: {
   if (rows.length === 0) {
     return (
       <div className="space-y-2">
-        <h3 className="text-white text-sm font-semibold">{FORECAST_COPY.callersHeading}</h3>
+        <h3 className="text-[15px] font-semibold text-white">{FORECAST_COPY.callersHeading}</h3>
         <p className="text-gray-400 text-sm">{FORECAST_COPY.callersEmpty}</p>
       </div>
     )
@@ -219,8 +219,8 @@ function DePrizeCallersList(props: {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-white text-sm font-semibold">{FORECAST_COPY.callersHeading}</h3>
-        <p className="text-gray-400 text-xs">{FORECAST_COPY.callersCount(rows.length)}</p>
+        <h3 className="text-[15px] font-semibold text-white">{FORECAST_COPY.callersHeading}</h3>
+        <p className="text-xs text-[#8b93a7]">{FORECAST_COPY.callersCount(rows.length)}</p>
       </div>
       <ul className={`space-y-1.5 ${SCROLL_LIST}`}>
         {rows.map((row) => {
@@ -245,7 +245,7 @@ function DePrizeCallersList(props: {
                 </span>
               </span>
               <span
-                className="shrink-0 tabular-nums text-gray-300"
+                className="shrink-0 text-[15px] font-semibold tabular-nums text-white"
                 title={FORECAST_COPY.votingPower}
               >
                 {formatVotingPower(row.votingPower)}

@@ -66,6 +66,23 @@ export const CAPABILITY_LADDER: readonly CapabilityRung[] = [
   },
 ]
 
+/**
+ * Goal ids of the races that ship — the four rungs of the ladder.
+ *
+ * Deliberately chain-independent. "Which races are real" is a product decision,
+ * and asking the registry instead answers a different question: Arbitrum has
+ * none of the four bound today, so a chain-derived list would tell production
+ * there are no races at all and quietly demote every one of them.
+ */
+export const LADDER_GOAL_IDS: readonly string[] = CAPABILITY_LADDER.flatMap(
+  (rung) => (rung.sharedGoalId ? [rung.sharedGoalId] : [])
+)
+
+/** True for a race on the ladder, whether or not it has a market yet. */
+export function isLadderGoal(sharedGoalId: string | undefined): boolean {
+  return !!sharedGoalId && LADDER_GOAL_IDS.includes(sharedGoalId)
+}
+
 export type LadderRung = {
   rung: number
   key: DePrizeLadderKey

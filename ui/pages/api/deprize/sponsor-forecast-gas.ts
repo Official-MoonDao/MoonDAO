@@ -5,7 +5,6 @@ import { Redis } from '@upstash/redis'
 import { providers } from 'ethers'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { FORECASTS_TABLE_ADDRESSES } from 'const/config'
-import { probeCitizen } from '@/lib/citizen/probeCitizen'
 import {
   FORECAST_GAS_SPONSOR_TTL_SECONDS,
   FORECAST_GAS_SPONSORSHIPS_PER_DAY,
@@ -55,8 +54,8 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   // A wallet that already covers gas does not need a stipend. Check that
-  // before the Citizen probe and HSM gate so a funded prediction still
-  // proceeds when the probe blips or this server has no signer.
+  // before the HSM gate so a funded prediction still proceeds when this
+  // server has no signer.
   let rpc: string
   try {
     rpc = hsmRpcForChain(chainId)
@@ -73,28 +72,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(200).json({ sponsored: false, funded: true })
   }
 
-  // A lookup blip is not "not a Citizen." Funded wallets already skipped
-  // this probe; an underfunded Citizen should retry, not be told to mint.
-  const citizen = await probeCitizen(chain, wallet)
-  if (citizen.status === 'error') {
-    return res.status(503).json({
-      sponsored: false,
-      message: "Couldn't check your Citizen. Try again.",
-    })
-  }
-  if (citizen.status === 'expired') {
-    return res.status(403).json({
-      sponsored: false,
-      message: 'Your Citizen subscription has lapsed.',
-    })
-  }
-  if (citizen.status !== 'citizen') {
-    return res.status(403).json({
-      sponsored: false,
-      message: 'Predictions count only for Citizens.',
-    })
-  }
-
+  // Anyone with a wallet can predict. A non-Citizen vote is stored at 0 voting
+  // power, so it does not move the MOONEY outcome. Gas is still sponsored so a
+  // new wallet can cast that vote.
   if (!isHSMAvailable()) {
     return res.status(503).json({
       sponsored: false,

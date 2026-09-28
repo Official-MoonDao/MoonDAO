@@ -1639,4 +1639,38 @@ describe('moon base zero street plan', () => {
       )
     })
   })
+
+  describe('what a branch road is keyed by', () => {
+    // BaseRoads grades a branch only once the district at the end of it has
+    // something standing in it, and it looks that up by the branch's `serves`
+    // entry. So `serves` speaks in the plan's vocabulary — hardware types —
+    // and every caller handing it a presence map has to translate into the
+    // same vocabulary first.
+    //
+    // Keying that map by RACE id instead is the regression this pins. It is
+    // silent: every lookup misses, every miss reads as zero presence, and the
+    // entire road network vanishes down to the bare spine with nothing logged.
+    it('serves a district the plan actually zones', () => {
+      for (const street of BASE_STREETS) {
+        for (const site of street.serves ?? []) {
+          expect(
+            BASE_PLAN[site],
+            `street serves ${site}, which the plan does not zone`
+          ).to.not.equal(undefined)
+        }
+      }
+    })
+
+    it('names a district, never a race', () => {
+      // A race id is a goal id (`shared-touchdown`) or a `type:` key, and
+      // neither is a ProjectType. If one ever turns up here, some caller has
+      // pushed race identity down into the plan and the roads will go dark.
+      const served = BASE_STREETS.flatMap((s) => s.serves ?? [])
+      expect(served.length, 'the plan has branch roads at all').to.be.greaterThan(0)
+      for (const site of served) {
+        expect(site, 'a district key, not a goal id').to.not.match(/^shared-/)
+        expect(site, 'a district key, not a type: race key').to.not.include(':')
+      }
+    })
+  })
 })

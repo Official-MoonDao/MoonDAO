@@ -15,12 +15,12 @@ export type TapInput = {
   locked: boolean
 }
 
-/** First match wins: locked, writing, disconnected, not a Citizen, already saved, write. */
+/** First match wins: locked, writing, disconnected, already saved, write.
+ *  A connected wallet can predict with 0 voting power. Only Citizen weight moves the outcome. */
 export function tapPlan(input: TapInput): TapPlan {
   if (input.locked) return { action: 'ignore', reason: 'locked' }
   if (input.writing) return { action: 'ignore', reason: 'writing' }
   if (!input.connected) return { action: 'connect' }
-  if (!input.isCitizen) return { action: 'need-citizen' }
   if (input.savedPick === input.index) return { action: 'ignore', reason: 'already-saved' }
   return { action: 'write', index: input.index }
 }

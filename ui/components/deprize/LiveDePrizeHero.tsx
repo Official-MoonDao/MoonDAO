@@ -9,12 +9,10 @@ import { getContract, type Chain } from 'thirdweb'
 import { deprizePrefixedHref, getDePrizeCompetition } from '@/lib/deprize/competitions'
 import {
   DEPRIZE_PREDICT_CTA,
-  DEPRIZE_TERMS_VERSION,
   DePrizeState,
   OUTCOME_COLORS,
   UNIT,
 } from '@/lib/deprize/constants'
-import { payloadCopy, payloadCopyMode } from '@/lib/deprize/payloadPurse'
 import { fmt } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
@@ -23,7 +21,7 @@ import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
 import { TOUCH } from '@/components/deprize/detail/primitives'
-import EthUsd from '@/components/deprize/EthUsd'
+import PrizeAvailable from '@/components/deprize/PrizeAvailable'
 import { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
 
 type Props = {
@@ -136,22 +134,7 @@ export default function LiveDePrizeHero({
           {/* Wrapped onto its own line on a phone, this block kept its right
               alignment and read as detached from the prize it belongs to. */}
           <div className="w-full sm:w-auto text-left sm:text-right sm:shrink-0">
-            <p className="text-white text-2xl sm:text-3xl font-bold tabular-nums">
-              {poolLoading ? (
-                '…'
-              ) : (
-                <EthUsd
-                  eth={poolEth}
-                  prize
-                  layout="below"
-                  className="text-white text-2xl sm:text-3xl font-bold tabular-nums"
-                  usdClassName="text-gray-400 text-sm font-medium"
-                />
-              )}
-            </p>
-            <p className="text-gray-500 text-[10px] uppercase tracking-wide">
-              {payloadCopy('heroPoolLabel', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
-            </p>
+            <PrizeAvailable eth={poolEth} loading={poolLoading} size="hero" />
           </div>
         </div>
 

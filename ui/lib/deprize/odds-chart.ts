@@ -40,10 +40,43 @@ export function buildOddsTimeDomain(
   }
 
   const span = tMax - tMin
-  const ticks = Array.from({ length: ODDS_X_TICK_COUNT }, (_, i) =>
-    Math.round(tMin + (span * i) / (ODDS_X_TICK_COUNT - 1)),
-  )
+  const ticks =
+    span >= ODDS_DAY_MS * 2
+      ? calendarDayTicks(tMin, tMax)
+      : Array.from({ length: ODDS_X_TICK_COUNT }, (_, i) =>
+          Math.round(tMin + (span * i) / (ODDS_X_TICK_COUNT - 1)),
+        )
   return { tMin, tMax, ticks, spanMs: span }
+}
+
+/** One label per local calendar day, so a multi-day axis cannot skip a date. */
+function calendarDayTicks(tMin: number, tMax: number): number[] {
+  const days: number[] = []
+  for (let day = localDayStart(tMin); day <= localDayStart(tMax); day = nextLocalDay(day)) {
+    days.push(day)
+    if (days.length > 400) break
+  }
+  const maxLabels = 8
+  const step = Math.max(1, Math.ceil(days.length / maxLabels))
+  const picked: number[] = []
+  for (let i = 0; i < days.length; i += step) picked.push(days[i])
+  const last = days[days.length - 1]
+  if (last !== undefined && picked[picked.length - 1] !== last) picked.push(last)
+  const noon = 12 * 60 * 60 * 1000
+  return picked.map((day) => Math.min(tMax, Math.max(tMin, day + noon)))
+}
+
+function localDayStart(ms: number): number {
+  const d = new Date(ms)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
+function nextLocalDay(ms: number): number {
+  const d = new Date(ms)
+  d.setDate(d.getDate() + 1)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
 }
 
 /**

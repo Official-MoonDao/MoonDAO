@@ -161,7 +161,7 @@ export default function PredictModal(props: {
           </div>
         ) : null}
 
-        {props.connected && (activeBet || (!props.citizenLoading && props.isCitizen)) && (
+        {props.connected && (activeBet || !props.citizenLoading) && (
           <div className="flex flex-col gap-2">
             <button
               type="button"

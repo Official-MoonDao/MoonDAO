@@ -21,6 +21,12 @@ describe('deprize index layout', () => {
   const card = readUi('components/deprize/RaceMarketCard.tsx')
   const icon = readUi('components/deprize/CategoryIcon.tsx')
 
+  it('features Touchdown on its own row above the other live races', () => {
+    expect(index).to.include("race.goal.id === 'shared-next-landing'")
+    expect(index).to.include('variant="featured"')
+    expect(index).to.include('otherLiveRaces')
+  })
+
   it('splits the index into Live and Planned sections', () => {
     expect(index).to.include('id="deprize-live-heading"')
     expect(index).to.include('id="deprize-planned-heading"')

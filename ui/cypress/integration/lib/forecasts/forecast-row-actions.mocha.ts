@@ -85,9 +85,10 @@ describe('deprize forecast row actions', () => {
     expect(kinds(actions)[0]).to.equal('bet')
   })
 
-  it('disables Predict with need-citizen when a connected wallet holds no Citizen', () => {
+  it('keeps Predict enabled for a connected wallet with no Citizen', () => {
     const actions = mod.rowActions({ ...OPEN, isCitizen: false })
-    expect(byKind(actions, 'predict')).to.include({ enabled: false, reason: 'need-citizen' })
+    expect(byKind(actions, 'predict')).to.include({ enabled: true })
+    expect(byKind(actions, 'predict').reason).to.equal(undefined)
   })
 
   it('keeps Predict enabled for a disconnected wallet so tapPlan can connect', () => {

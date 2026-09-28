@@ -13,6 +13,6 @@ export const FORECAST_COPY = {
   callersCount: (n: number) => (n === 1 ? '1 person' : `${n} people`),
   votingPower: 'voting power',
   predictThis: 'Predict this',
-  predicted: 'Predicted',
+  predicted: 'Your Prediction',
   backedWithEth: 'Backed with ETH',
 }
