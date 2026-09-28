@@ -4,6 +4,7 @@ import path from 'path'
 import { parseFrontmatter } from '../lib/docs/frontmatter'
 import {
   allProducedSlugs,
+  allStaticPaths,
   buildNavTree,
   getAliasTable,
   getDocPage,
@@ -21,6 +22,7 @@ import {
   REMOVED_DOC_REDIRECTS,
   docsHref,
   isRouteSafeSlug,
+  removedDocRedirectForPathname,
   slugifyFilePath,
   slugifySegment,
 } from '../lib/docs/slug'
@@ -372,11 +374,52 @@ describe('docs corpus vs Quartz contentIndex', () => {
   it('redirects every removed doc slug instead of rendering it', async () => {
     resetDocsCache()
     const produced = new Set(allProducedSlugs())
+    const prerendered = new Set(allStaticPaths().map((entry) => entry.params.slug.join('/')))
     for (const [slug, destination] of Object.entries(REMOVED_DOC_REDIRECTS)) {
       if (produced.has(slug)) throw new Error(`removed slug ${slug} is still produced`)
+      // A prerendered path cannot return `redirect` from getStaticProps; the
+      // production build fails with gsp-redirect-during-prerender.
+      if (prerendered.has(slug)) throw new Error(`removed slug ${slug} is still prerendered`)
+      const folder = slug.endsWith('/index') ? slug.slice(0, -'/index'.length) : undefined
+      if (folder && prerendered.has(folder)) {
+        throw new Error(`removed folder ${folder} is still prerendered`)
+      }
       const result = (await getDocStaticProps(slug)) as { redirect?: { destination: string } }
       if (result.redirect?.destination !== destination) {
         throw new Error(`/docs/${slug} does not redirect to ${destination}`)
+      }
+      for (const prefix of ['/docs', '/documentation']) {
+        const pathname = `${prefix}/${slug}`
+        if (removedDocRedirectForPathname(pathname) !== destination) {
+          throw new Error(`${pathname} does not redirect to ${destination}`)
+        }
+        if (folder && removedDocRedirectForPathname(`${prefix}/${folder}`) !== destination) {
+          throw new Error(`${prefix}/${folder} does not redirect to ${destination}`)
+        }
+      }
+    }
+  })
+
+  it('middleware matches every removed doc URL', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'middleware.ts'), 'utf8')
+    const matchers = [...src.matchAll(/'([^']+)'/g)].map((match) => match[1])
+    const covers = (pathname: string) =>
+      matchers.some((matcher) => {
+        if (matcher.endsWith('/:path*')) {
+          const prefix = matcher.slice(0, -'/:path*'.length)
+          return pathname.startsWith(`${prefix}/`)
+        }
+        return pathname === matcher
+      })
+    for (const slug of Object.keys(REMOVED_DOC_REDIRECTS)) {
+      for (const prefix of ['/docs', '/documentation']) {
+        const paths = [`${prefix}/${slug}`]
+        if (slug.endsWith('/index')) paths.push(`${prefix}/${slug.slice(0, -'/index'.length)}`)
+        for (const pathname of paths) {
+          if (!covers(pathname)) {
+            throw new Error(`middleware matcher does not cover ${pathname}`)
+          }
+        }
       }
     }
   })

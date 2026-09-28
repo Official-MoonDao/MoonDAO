@@ -8,6 +8,7 @@ import {
   docsHref,
   normalizeAliasSlug,
   noteNameFromFilePath,
+  removedDocRedirectForPathname,
   slugFromParams,
   slugifyFilePath,
   slugifyHeading,
@@ -254,7 +255,8 @@ export function allStaticPaths(root?: string): { params: { slug: string[] } }[] 
   for (const folder of corpus.folderSlugs) add(folder)
   for (const tag of corpus.tagSlugs) add(tag)
   for (const legacy of Object.keys(LEGACY_DOC_ALIASES)) add(legacy)
-  for (const removed of Object.keys(REMOVED_DOC_REDIRECTS)) add(removed)
+  // Removed slugs stay out of getStaticPaths. Prerendering them and returning
+  // `redirect` from getStaticProps fails the production build.
   return paths
 }
 
@@ -499,8 +501,7 @@ export function getDocPage(requestedSlug: string, root?: string): DocsPageProps 
 
 export async function getDocStaticProps(requestedSlug: string, root?: string) {
   const normalized = requestedSlug.replace(/\/+$/, '')
-  const destination =
-    REMOVED_DOC_REDIRECTS[normalized] || REMOVED_DOC_REDIRECTS[`${normalized}/index`]
+  const destination = removedDocRedirectForPathname(`/docs/${normalized}`)
   if (destination) return { redirect: { destination, permanent: true } }
   const page = getDocPage(requestedSlug, root)
   if (!page) return { notFound: true as const }

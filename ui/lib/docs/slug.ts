@@ -57,9 +57,13 @@ export const LEGACY_DOC_ALIASES: Record<string, string> = {
 
 /**
  * Docs pages that were removed because their content moved to a standalone
- * app page. Each slug is still prerendered, but `getStaticProps` answers with a
- * permanent redirect (not a `next.config.js` redirect — see the note above on
- * why those break the deploy under `/docs/*`). Keys are Quartz slugs.
+ * app page. Keys are Quartz slugs.
+ *
+ * These are not prerendered. Next.js throws during `next build` if
+ * `getStaticProps` returns `redirect` for a path in `getStaticPaths`
+ * (`fallback: false`). `middleware.ts` 308s the old `/docs` and
+ * `/documentation` URLs instead. A `next.config.js` redirect whose source
+ * sits under `/docs/*` is not an option — see the note on `LEGACY_DOC_ALIASES`.
  */
 export const REMOVED_DOC_REDIRECTS: Record<string, string> = {
   // Press kit and coverage now live on /press.
@@ -68,6 +72,22 @@ export const REMOVED_DOC_REDIRECTS: Record<string, string> = {
   'Press/Press-Coverage': '/press',
   'tags/press': '/press',
   'tags/media': '/press',
+}
+
+/**
+ * Destination for a removed docs URL, or undefined when the path is a live page.
+ * Accepts the public `/docs/...` path and the `/documentation/...` rewrite target.
+ * A folder slug (`Press/index`) also covers the folder URL (`/docs/Press`).
+ */
+export function removedDocRedirectForPathname(pathname: string): string | undefined {
+  const bare = pathname.replace(/\/+$/, '') || '/'
+  const slug = bare.startsWith('/docs/')
+    ? bare.slice('/docs/'.length)
+    : bare.startsWith('/documentation/')
+      ? bare.slice('/documentation/'.length)
+      : undefined
+  if (!slug) return undefined
+  return REMOVED_DOC_REDIRECTS[slug] || REMOVED_DOC_REDIRECTS[`${slug}/index`]
 }
 
 /**
