@@ -1,6 +1,6 @@
 import { DEPRIZE_MINT_ADDRESSES } from 'const/config'
+import { ethers } from 'ethers'
 import { hashTypedData, type Hex } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
 import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
 
 export const COMPLIANCE_PERMIT_TYPES = {
@@ -39,7 +39,10 @@ function signerKey(): Hex | null {
 export function complianceSignerAddress(): string | null {
   const key = signerKey()
   if (!key) return null
-  return privateKeyToAccount(key).address
+  // ethers, not viem/accounts: that entry loads a bip32 build whose ESM import
+  // of @noble/hashes fails under the pinned hashes 1.8.0, and Next then returns
+  // an HTML error page for /api/deprize/permit.
+  return ethers.utils.computeAddress(key)
 }
 
 export async function signCompliancePermit(args: {
@@ -51,17 +54,22 @@ export async function signCompliancePermit(args: {
 }): Promise<Hex> {
   const key = signerKey()
   if (!key) throw new Error('DEPRIZE_COMPLIANCE_SIGNER_KEY is not configured')
-  const account = privateKeyToAccount(key)
-  return account.signTypedData({
-    domain: complianceDomain(args.chainId, args.mintAddress),
-    types: COMPLIANCE_PERMIT_TYPES,
-    primaryType: 'CompliancePermit',
-    message: {
+  const wallet = new ethers.Wallet(key)
+  const signature = await wallet._signTypedData(
+    complianceDomain(args.chainId, args.mintAddress),
+    {
+      CompliancePermit: COMPLIANCE_PERMIT_TYPES.CompliancePermit.map((field) => ({
+        name: field.name,
+        type: field.type,
+      })),
+    },
+    {
       wallet: args.wallet,
       deprizeId: args.deprizeId,
       deadline: args.deadline,
-    },
-  })
+    }
+  )
+  return signature as Hex
 }
 
 export function hashCompliancePermit(args: {

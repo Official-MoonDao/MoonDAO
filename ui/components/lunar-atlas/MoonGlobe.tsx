@@ -60,6 +60,7 @@ import {
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { Organization, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import BaseRoads from './BaseRoads'
+import useFrameBudget from './useFrameBudget'
 import { setRegolithSun } from './regolithOcclusion'
 import EarthGlobe from './EarthGlobe'
 import GroundDisturbance from './GroundDisturbance'
@@ -103,13 +104,13 @@ export type MoonGlobeProps = {
   // Race district layer: every competitor in every race, on its own plot.
   trees?: TechTree[]
   organizations?: Organization[]
-  selectedTreeCategory?: ProjectType | null
+  selectedRaceId?: string | null
   // Competitor picked from a race panel — its plot is called out by name.
   selectedProject?: Project | null
-  hoveredCategory?: ProjectType | null
-  onSelectTree?: (category: ProjectType) => void
+  hoveredRaceId?: string | null
+  onSelectTree?: (raceId: string) => void
   onSelectProject?: (projectId: string) => void
-  onHoverTree?: (category: ProjectType | null) => void
+  onHoverTree?: (raceId: string | null) => void
   getProjectStyle?: (project: Project) => MarkerStyle
   // Plot and district positions, shared with the page so the camera and the
   // models cannot disagree on where a competitor stands.
@@ -683,9 +684,9 @@ export default function MoonGlobe({
   onReady,
   trees,
   organizations,
-  selectedTreeCategory,
+  selectedRaceId,
   selectedProject,
-  hoveredCategory,
+  hoveredRaceId,
   onSelectTree,
   onSelectProject,
   onHoverTree,
@@ -707,10 +708,22 @@ export default function MoonGlobe({
   // hardware rather than lying on an empty plain years early — and so no spur
   // is graded out to a plot nobody has broken ground on yet.
   const sitePresence = useMemo(() => {
-    const byCategory = new Map<string, number>()
-    for (const t of trees ?? []) byCategory.set(t.category, siteOpacity(t, getProjectStyle))
-    return byCategory
+    const byRace = new Map<string, number>()
+    for (const t of trees ?? []) byRace.set(t.raceId, siteOpacity(t, getProjectStyle))
+    return byRace
   }, [trees, getProjectStyle])
+  // The branch roads belong to the base PLAN, so each one serves a district —
+  // a hardware type — and not a race. Translate through the district's actual
+  // occupant. Keying the roads by race id instead left every branch looking up
+  // a name the plan has never used, which reads as zero and ungrades the whole
+  // network down to the bare spine.
+  const branchPresence = useMemo(() => {
+    const byType = new Map<string, number>()
+    for (const [type, raceId] of layout?.districtOwner ?? []) {
+      byType.set(type, sitePresence.get(raceId) ?? 0)
+    }
+    return byType
+  }, [layout, sitePresence])
   // The built environment — graded roads, street lighting, the
   // roadside cargo, the parked excavators, the vault dig — is the work of the
   // surface construction fleet, so it arrives when that fleet does and not when
@@ -759,9 +772,16 @@ export default function MoonGlobe({
     wheelTimer.current = setTimeout(() => setUserInteracting(false), 600)
   }
 
+  // Nothing on this map moves faster than a walk, so the scene does not need a
+  // frame for every one the display can scan out. See useFrameBudget for the
+  // rates, and for why `demand` is not the answer to a scene that is never idle.
+  const budget = useFrameBudget(userInteracting || isAnimating)
+
   return (
     <Canvas
-      dpr={[1, 2]}
+      frameloop="never"
+      onCreated={budget.onCreated}
+      dpr={budget.dpr}
       // PCF-soft rather than the default hard PCF: see SUN_PENUMBRA_PER_M for
       // why this is an antialiasing choice and not a softness one.
       shadows="soft"
@@ -774,7 +794,19 @@ export default function MoonGlobe({
         far: FULL_FAR,
       }}
       gl={{
-        antialias: true,
+        // OFF, and this is not a quality decision — it is the removal of an
+        // antialiasing pass that never touched a single edge in this scene.
+        //
+        // `antialias` multisamples the DEFAULT framebuffer, i.e. the one the
+        // canvas presents from. Every pixel of geometry here is rasterised into
+        // the EffectComposer's own render target instead, and the only thing
+        // ever drawn into the default framebuffer is the composer's final
+        // fullscreen triangle — which has no interior edges to alias. So this
+        // was buying a multisampled copy of the whole drawing buffer, and a
+        // resolve of it every frame, to smooth the two diagonals of a triangle
+        // that covers the screen. The real edge antialiasing is, and always was,
+        // the composer's `multisampling` below.
+        antialias: false,
         // The tone curve that actually runs is the <ToneMapping> effect at the
         // end of the EffectComposer, NOT this — @react-three/postprocessing
         // forces gl.toneMapping to NoToneMapping for as long as its composer is
@@ -886,7 +918,7 @@ export default function MoonGlobe({
 
       <SouthPoleTerrain onReady={onReady} onSurfaceClick={onBackgroundClick} />
 
-      <BaseRoads radiusAt={radiusAt} presence={basePresence} siteOpacity={sitePresence} />
+      <BaseRoads radiusAt={radiusAt} presence={basePresence} siteOpacity={branchPresence} />
 
       {/* Churned ground under the hardware. After the roads so a stain blends
           over a road's own crust where the two meet — a machine tracks dust
@@ -905,9 +937,9 @@ export default function MoonGlobe({
           trees={trees}
           organizations={organizations}
           layout={layout}
-          selectedTreeCategory={selectedTreeCategory}
+          selectedRaceId={selectedRaceId}
           selectedProject={selectedProject}
-          hoveredCategory={hoveredCategory}
+          hoveredRaceId={hoveredRaceId}
           onSelectTree={onSelectTree}
           onSelectProject={onSelectProject}
           onHoverTree={onHoverTree}
@@ -924,7 +956,7 @@ export default function MoonGlobe({
         <SkyLayer
           trees={trees}
           organizations={organizations}
-          selectedTreeCategory={selectedTreeCategory}
+          selectedRaceId={selectedRaceId}
           selectedProject={selectedProject}
           getProjectStyle={getProjectStyle}
           onSelectProject={onSelectProject}
@@ -1004,7 +1036,19 @@ export default function MoonGlobe({
           black above, so a surface that faces the ground is lit and one that
           faces the sky is not. Orientation now does much of the work that
           screen-space occlusion would have done by geometry. */}
-      <EffectComposer>
+      <EffectComposer
+        // 4 rather than the library's default of 8, and stated rather than
+        // inherited because this is now the scene's ONLY edge antialiasing (see
+        // the gl props for why the context's own is off).
+        //
+        // Each sample is a full RGBA half-float copy of the whole drawing
+        // buffer, resolved every frame, so halving the count halves that. Much
+        // of the time it will already have been halved for us — WebGL2 clamps
+        // to MAX_SAMPLES, which is 4 on a good deal of hardware including
+        // Apple's — which is the other half of the argument for writing it
+        // down: 8 was never what most of these machines were running anyway.
+        multisampling={4}
+      >
         <Bloom
           // High threshold keeps bloom off the sunlit regolith (which read as
           // a hazy video-game glow) and reserves it for emissive beacons.

@@ -86,6 +86,12 @@ export function buildPatronPayEventsQuery(opts: {
   `
 }
 
+/** Juicebox indexes Sepolia on the testnet subgraph and Arbitrum One on production. */
+export function bendystrawGraphqlHost(chainId: number): string {
+  if (chainId === 11155111 || chainId === 421614) return 'testnet.bendystraw.xyz'
+  return 'bendystraw.xyz'
+}
+
 export function dedupeEventsById<T extends { id?: string | null }>(events: T[]): T[] {
   const seen = new Set<string>()
   const out: T[] = []

@@ -2,8 +2,12 @@ import fs from 'fs'
 import path from 'path'
 import {
   CAPABILITY_LADDER,
+  LADDER_GOAL_IDS,
   getLadderForCompetition,
+  isLadderGoal,
 } from '@/lib/deprize/capabilityLadder'
+import { findDePrizeIdForGoal } from '@/lib/deprize/competitions'
+import { SEED_ATLAS } from '@/lib/lunar-atlas/seed'
 
 const REPO_ROOT = path.resolve(__dirname, '../../../../../')
 const CHAMBER_NEEDLE = ['NIGHT', 'SHIFT'].join('_')
@@ -61,14 +65,20 @@ describe('capability ladder', () => {
     expect(result.currentKey).to.equal('touchdown')
   })
 
-  it('planned rungs have no href and no deprizeId', () => {
+  it('every registered rung is live', () => {
     const result = getLadderForCompetition('sepolia', 2)
-    for (const key of ['first-tracks', 'ice', 'night-shift'] as const) {
-      const rung = result.rungs.find((r) => r.key === key)
-      expect(rung?.status, key).to.equal('planned')
-      expect(rung?.href, key).to.equal(undefined)
-      expect(rung?.deprizeId, key).to.equal(undefined)
-    }
+    const night = result.rungs.find((r) => r.key === 'night-shift')
+    expect(night?.status).to.equal('live')
+    expect(night?.deprizeId).to.equal(3)
+    expect(night?.href).to.equal('/deprize/3')
+    const tracks = result.rungs.find((r) => r.key === 'first-tracks')
+    expect(tracks?.status).to.equal('live')
+    expect(tracks?.deprizeId).to.equal(5)
+    expect(tracks?.href).to.equal('/deprize/5')
+    const ice = result.rungs.find((r) => r.key === 'ice')
+    expect(ice?.status).to.equal('live')
+    expect(ice?.deprizeId).to.equal(6)
+    expect(ice?.href).to.equal('/deprize/6')
   })
 
   it('no ladder entry references the chamber spec', () => {
@@ -97,7 +107,10 @@ describe('capability ladder', () => {
   it('every status value in the union has a producer', () => {
     const live = getLadderForCompetition('sepolia', 2)
     expect(live.rungs[0].status).to.equal('live')
-    expect(live.rungs[1].status).to.equal('planned')
+    const planned = getLadderForCompetition('sepolia', 2, {
+      findDePrizeIdForGoal: () => undefined,
+    })
+    expect(planned.rungs[1].status).to.equal('planned')
 
     const rung0 = CAPABILITY_LADDER[0]
     const prev = rung0.statusOverride
@@ -110,5 +123,42 @@ describe('capability ladder', () => {
       if (prev === undefined) delete rung0.statusOverride
       else rung0.statusOverride = prev
     }
+  })
+})
+
+describe('LADDER_GOAL_IDS — which races the Moonbase calls real', () => {
+  it('names one goal per rung, and every one exists on the atlas', () => {
+    expect(LADDER_GOAL_IDS.length).to.equal(CAPABILITY_LADDER.length)
+    const atlas = new Set(SEED_ATLAS.sharedGoals.map((g) => g.id))
+    for (const id of LADDER_GOAL_IDS) {
+      expect(atlas.has(id), `${id} is not an atlas goal`).to.equal(true)
+    }
+  })
+
+  // The bug this exists to prevent. The Moonbase legend used to split its race
+  // list on "has a DePrize on the connected chain", which is a different
+  // question from "is this a race we run". Arbitrum has none of the four bound,
+  // so on production that split demoted every real race to Potential and left
+  // the list with nothing highlighted at all.
+  it('is the same on a chain with no markets as on one with four', () => {
+    const bound = (chain: string) =>
+      LADDER_GOAL_IDS.filter((id) => findDePrizeIdForGoal(chain, id) !== undefined)
+    expect(bound('sepolia').length, 'fixture: sepolia has the ladder bound')
+      .to.be.greaterThan(0)
+    expect(bound('arbitrum').length, 'fixture: arbitrum has none bound')
+      .to.equal(0)
+    for (const id of LADDER_GOAL_IDS) {
+      expect(isLadderGoal(id), `${id} on arbitrum`).to.equal(true)
+    }
+  })
+
+  it('excludes the capabilities we track but do not race', () => {
+    for (const goal of SEED_ATLAS.sharedGoals) {
+      if (LADDER_GOAL_IDS.includes(goal.id)) continue
+      expect(isLadderGoal(goal.id), `${goal.id} should not be on the ladder`)
+        .to.equal(false)
+    }
+    expect(isLadderGoal(undefined)).to.equal(false)
+    expect(isLadderGoal('')).to.equal(false)
   })
 })

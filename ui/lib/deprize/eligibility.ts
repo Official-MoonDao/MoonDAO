@@ -98,15 +98,34 @@ export function eligibilityMessage(reason: EligibilityReason): string {
   }
 }
 
+/** Ethereum Sepolia. Bets on this chain skip live screening outside production. */
+export const SEPOLIA_CHAIN_ID = 11155111
+
+/**
+ * Sepolia is a testnet: skip geo, VPN, and sanctions there. A Vercel preview
+ * may inherit production env vars; the bypass still applies only to Sepolia,
+ * so an Arbitrum bet on that preview keeps the real checks. A production
+ * deployment always screens, including a Sepolia chain id.
+ */
+export function shouldMockSepoliaEligibility(chainId: number): boolean {
+  if (chainId !== SEPOLIA_CHAIN_ID) return false
+  if (process.env.VERCEL_ENV === 'preview') return true
+  if (process.env.NEXT_PUBLIC_ENV === 'prod') return false
+  return true
+}
+
 /**
  * Skips geo, VPN and sanctions screening, and tolerates a missing country and
- * an unreachable compliance store. Never in prod. Otherwise on when
- * DEPRIZE_ELIGIBILITY_BYPASS=1, or under `next dev`: localhost sends no geo
- * headers, so without this no bet can be placed locally. Deployed builds
- * (Vercel previews included) run with NODE_ENV=production.
+ * an unreachable compliance store. Never on a production deployment, and never
+ * for a Vercel preview: those links test Sepolia through
+ * `shouldMockSepoliaEligibility`, while Arbitrum on the same preview stays
+ * screened. Otherwise on when DEPRIZE_ELIGIBILITY_BYPASS=1, or under
+ * `next dev`: localhost sends no geo headers, so without this no bet can be
+ * placed locally. Other deployed builds run with NODE_ENV=production.
  */
 export function isNonProdBypassEnabled(): boolean {
   if (process.env.NEXT_PUBLIC_ENV === 'prod') return false
+  if (process.env.VERCEL_ENV === 'preview') return false
   return (
     process.env.DEPRIZE_ELIGIBILITY_BYPASS === '1' || process.env.NODE_ENV === 'development'
   )

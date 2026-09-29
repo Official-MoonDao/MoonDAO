@@ -131,7 +131,7 @@ export default function ClaimPanel({
       fireDePrizeConfetti()
       toast.success(
         claimEth !== undefined
-          ? `Claimed ≈ ${fmtEthWithUsd(claimEth, ethPrice)}.`
+          ? `Claimed ${fmtEthWithUsd(claimEth, ethPrice)}.`
           : 'Claimed.',
         { style: toastStyle, duration: 8000 }
       )

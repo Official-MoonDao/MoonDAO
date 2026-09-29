@@ -20,6 +20,7 @@ export const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
   orbital: 'Orbital',
   construction: 'Surface construction',
   mass_driver: 'Mass driver',
+  prospecting: 'Prospecting',
   other: 'Other',
 }
 
@@ -35,6 +36,7 @@ export const PROJECT_TYPE_GLYPH: Record<ProjectType, string> = {
   orbital: '🛰',
   construction: '🧱',
   mass_driver: '🧲',
+  prospecting: '🧊',
   other: '◆',
 }
 
@@ -52,6 +54,7 @@ export const PROJECT_TYPE_COLOR: Record<ProjectType, string> = {
   orbital: '#a5b4fc', // indigo
   construction: '#f0abfc', // fuchsia — matches the race zone rings
   mass_driver: '#5eead4', // teal — freed up by the crewed_base/habitat merge
+  prospecting: '#7dd3fc', // sky — water ice, distinct from the lander cyan
   other: '#d1d5db', // gray
 }
 

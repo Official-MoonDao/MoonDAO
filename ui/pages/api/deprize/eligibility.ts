@@ -2,8 +2,10 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { eligibilityMessage } from '@/lib/deprize/eligibility'
-import { runEligibilityChecks } from '@/lib/deprize/runEligibility'
+import { eligibilityMessage, shouldMockSepoliaEligibility } from '@/lib/deprize/eligibility'
+import { countryForDePrize } from '@/lib/deprize/mockCountry'
+import { mockedEligibilityResult, runEligibilityChecks } from '@/lib/deprize/runEligibility'
+import { getCountryFromHeaders } from '@/lib/geo'
 import { walletFromSession } from '@/lib/deprize/sessionWallet'
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -19,6 +21,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       reason: 'invalid-wallet',
       country: null,
       message: eligibilityMessage('invalid-wallet'),
+    })
+  }
+
+  const chainId = Number(req.query.chainId)
+  if (shouldMockSepoliaEligibility(chainId)) {
+    const mockHeader = req.headers['x-deprize-mock-country']
+    const decision = mockedEligibilityResult(
+      countryForDePrize({
+        headerCountry: getCountryFromHeaders(req),
+        mockHeader: Array.isArray(mockHeader) ? mockHeader[0] : mockHeader,
+      })
+    )
+    return res.status(200).json({
+      ...decision,
+      message: eligibilityMessage(decision.reason),
     })
   }
 

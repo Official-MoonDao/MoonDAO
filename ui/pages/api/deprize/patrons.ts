@@ -7,6 +7,7 @@ import { normalizeProtocolAddress } from '@/lib/deprize/payerClassification'
 import { aggregatePatrons, applyPatronSuppression } from '@/lib/deprize/patrons-math'
 import {
   PATRONS_MAX_PAGES,
+  bendystrawGraphqlHost,
   buildPatronPayEventsQuery,
   dedupeEventsById,
   validatePatronsRequest,
@@ -20,12 +21,10 @@ const CHAIN_SLUG: Record<number, string> = {
   421614: 'arbitrum-sepolia',
 }
 
-function bendystrawUrl(): string | null {
+function bendystrawUrl(chainId: number): string | null {
   const key = process.env.BENDYSTRAW_API_KEY
   if (!key) return null
-  return `https://${
-    process.env.NEXT_PUBLIC_CHAIN !== 'mainnet' ? 'testnet.' : ''
-  }bendystraw.xyz/${key}/graphql`
+  return `https://${bendystrawGraphqlHost(chainId)}/${key}/graphql`
 }
 
 function suppressionSet(): Set<string> {
@@ -92,7 +91,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     setCDNCacheHeaders(res, 60, 300)
   }
 
-  const url = bendystrawUrl()
+  const url = bendystrawUrl(parsed.chainId)
   if (!url) return res.status(503).json({ error: 'subgraph-unconfigured' })
 
   const events: Array<{

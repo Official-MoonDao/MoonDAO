@@ -2,10 +2,18 @@ import { ethers } from 'ethers'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import {
+  getRecipientAddress,
+  getTransactionMethod,
+  isTokenTransfer,
+  resolveTokenHint,
+  TokenBalanceHint,
+} from '@/lib/safe/safeTransactionActions'
 import { SafeData } from '@/lib/safe/useSafe'
 import ConditionCheckbox from '../layout/ConditionCheckbox'
 import Modal from '../layout/Modal'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import SafeTransactionAmount from './SafeTransactionAmount'
 import SafeTransactionData from './SafeTransactionData'
 
 type SafeModalProps = {
@@ -13,6 +21,7 @@ type SafeModalProps = {
   setEnabled: (enabled: boolean) => void
   safeTxHash?: string
   onExecute?: (safeTxHash: string) => Promise<void>
+  tokenBalances?: TokenBalanceHint[] | null
 }
 
 export default function SafeExecutionDisclaimer({
@@ -20,43 +29,21 @@ export default function SafeExecutionDisclaimer({
   setEnabled,
   safeTxHash,
   onExecute,
+  tokenBalances,
 }: SafeModalProps) {
   const [agreedToDisclaimer, setAgreedToDisclaimer] = useState(false)
   const [expandedTx, setExpandedTx] = useState(false)
 
   const transaction = safeData.pendingTransactions.find((tx) => tx.safeTxHash === safeTxHash)
 
-  const isEthTransfer =
-    transaction &&
-    (transaction.data === '0x' || transaction.data === null) &&
-    ethers.BigNumber.from(transaction.value).gt(0)
-
-  const isRejectionTx =
-    transaction &&
-    (transaction.dataDecoded?.method === 'rejectTransaction' ||
-      transaction.dataDecoded?.method === 'Reject Transaction' ||
-      transaction.dataDecoded?.method?.toLowerCase().includes('reject') ||
+  const tokenHint = transaction ? resolveTokenHint(transaction, tokenBalances) : null
+  const method = transaction ? getTransactionMethod(transaction, tokenHint?.symbol) : ''
+  const recipientAddress = transaction ? getRecipientAddress(transaction) : undefined
+  const showTokenOrEthAmount =
+    !!transaction &&
+    (isTokenTransfer(transaction) ||
       ((transaction.data === '0x' || transaction.data === null) &&
-        ethers.BigNumber.from(transaction.value).eq(0)))
-
-  const method = transaction
-    ? isEthTransfer
-      ? 'Transfer ETH'
-      : isRejectionTx
-      ? 'Reject Transaction'
-      : transaction.dataDecoded?.method || 'Unknown Method'
-    : ''
-
-  // Get recipient address - for token transfers, show the actual recipient
-  // For ETH transfers, use transaction.to directly
-  const recipientAddress =
-    transaction &&
-    (transaction.dataDecoded?.method === 'transfer' ||
-      transaction.dataDecoded?.method === 'transferFrom')
-      ? transaction.dataDecoded.method === 'transfer'
-        ? transaction.dataDecoded.parameters?.[0]?.value
-        : transaction.dataDecoded.parameters?.[1]?.value
-      : transaction?.to
+        ethers.BigNumber.from(transaction.value).gt(0)))
 
   const handleExecute = async () => {
     if (!safeTxHash || !onExecute) return
@@ -81,9 +68,15 @@ export default function SafeExecutionDisclaimer({
           <p className="text-gray-300 mb-2">
             To: <span className="text-sm">{recipientAddress}</span>
           </p>
-          <p className="text-gray-300 mb-2">
-            Value: {ethers.utils.formatEther(transaction.value)} ETH
-          </p>
+          {showTokenOrEthAmount ? (
+            <div className="mb-2">
+              <SafeTransactionAmount transaction={transaction} tokenBalances={tokenBalances} />
+            </div>
+          ) : (
+            <p className="text-gray-300 mb-2">
+              Value: {ethers.utils.formatEther(transaction.value)} ETH
+            </p>
+          )}
           <p className="text-gray-300 mb-2">Nonce: {transaction.nonce}</p>
           <p className="text-gray-300 mb-2">
             Confirmations: {transaction?.confirmations?.length || 0}/

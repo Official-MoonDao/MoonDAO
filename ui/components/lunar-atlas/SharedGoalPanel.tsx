@@ -1,13 +1,12 @@
 // Race view for a DePrize-shaped shared goal: the competitor roster (official
-// vs unofficial via color, not a repeating "listed" chip), the draft
-// capability criteria, market structure, and sources. Opened from a
+// vs unofficial via color, not a repeating "listed" chip), the capability
+// criteria, market structure, and sources. Opened from a
 // shared-goal row in ProjectPanel or by clicking the goal's region marker.
 
 import { FlagIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import type { MouseEvent } from 'react'
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
 import type { Chain } from 'thirdweb'
 import {
   OPEN_FIELD_PROJECT_ID,
@@ -20,9 +19,7 @@ import {
 } from '@/lib/deprize/competitions'
 import { DEPRIZE_TERMS_URL, positionRedeemValue, UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
-import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import {
   PARTICIPATION_LABEL,
   participationKind,
@@ -39,7 +36,6 @@ import type {
 } from '@/lib/lunar-atlas/types'
 import BetModal from '@/components/deprize/BetModal'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
-import DemoBetModal from '@/components/deprize/DemoBetModal'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
 import { MarketPill } from './ProjectPanel'
 import SourceBadge from './SourceBadge'
@@ -91,11 +87,10 @@ type SharedGoalPanelProps = {
 const NEUTRAL_ACCENT = '#9ca3af'
 
 function oddsCaption(status: string | undefined): string {
-  if (status === 'live') return 'Odds are live market-implied probabilities.'
   if (status === 'resolved') {
     return 'Final market-implied probabilities from the resolved market.'
   }
-  return 'Illustrative curator priors — live odds replace these when the prediction market opens.'
+  return 'Odds are live market-implied probabilities.'
 }
 
 function stopRowNav(e: MouseEvent) {
@@ -156,24 +151,15 @@ export default function SharedGoalPanel({
   const anyDeclined = kinds.includes('declined')
   const showParticipationLegend = anyOfficial || anyUnofficial || anyDeclined
 
-  // Demo betting sandbox for races without a bound on-chain market yet — same
-  // local ledger the /deprize index uses, so "Back this team" always does
-  // something even before every race has a deployed LMSR/mint router.
-  const projectIds = competitors.map((c) => c.project.id)
-  const impliedOdds = goal.market?.impliedOdds
-  const demo = useMockMarket(goal.id, projectIds, impliedOdds, userAddress)
-
   // Inline bet/cash-out modals — a competitor row opens one of these instead
   // of navigating to /deprize/{id}, so a bet can be placed without leaving
   // the globe. Reset whenever the open race changes so a stale index from a
   // previous goal can never target the wrong market.
   const [betIndex, setBetIndex] = useState<number | null>(null)
   const [exitIndex, setExitIndex] = useState<number | null>(null)
-  const [demoBetProjectId, setDemoBetProjectId] = useState<string | null>(null)
   useEffect(() => {
     setBetIndex(null)
     setExitIndex(null)
-    setDemoBetProjectId(null)
   }, [goal.id])
 
   const outcomeAt = (index: number | undefined): Outcome | undefined =>
@@ -182,25 +168,13 @@ export default function SharedGoalPanel({
   const canBet = (index: number) =>
     !!marketAddress && !!mintAddress && index < numOutcomes
 
-  const handleBetClick = (projectId: string, index: number | undefined) => {
+  const handleBetClick = (index: number | undefined) => {
     if (!userAddress) {
       onConnectWallet?.()
       return
     }
-    if (!bound) {
-      setDemoBetProjectId(projectId)
-      return
-    }
-    if (!bettingAllowed || index === undefined || !canBet(index)) return
+    if (!bound || !bettingAllowed || index === undefined || !canBet(index)) return
     setBetIndex(index)
-  }
-
-  const handleDemoExit = (projectId: string, teamName: string) => {
-    const valueEth = exitMockPosition(goal.id, projectId, userAddress)
-    toast.success(`Cashed out ${teamName} (demo) for \u2248 ${fmt(valueEth)} ETH.`, {
-      style: toastStyle,
-    })
-    onDone?.()
   }
 
   const nameForOutcome = (index: number): string => {
@@ -216,14 +190,13 @@ export default function SharedGoalPanel({
   const split = goal.market?.payoutSplit
   const odds = goal.market?.impliedOdds
   const fieldOdds = odds?.[OPEN_FIELD_PROJECT_ID]
-  // Odds fraction (0-1) for a competitor: live market odds once bound, else
-  // the demo market's current price (which starts at the curator prior and
-  // moves as demo bets land).
+  // Odds fraction (0-1) for a competitor, from the live market only. A race
+  // with no DePrize has no odds: the atlas priors are a curator's guess, and
+  // showing them (or a demo sandbox seeded from them) is a market that
+  // doesn't exist.
   const oddsFractionFor = (projectId: string): number | undefined => {
-    if (!hasRace) return undefined
-    if (bound) return odds?.[projectId]
-    const pct = demo.odds[projectId]
-    return pct !== undefined ? pct / 100 : odds?.[projectId]
+    if (!hasRace || !bound) return undefined
+    return odds?.[projectId]
   }
   // Highest-odds competitor first; ties and odds-less entries keep seed order.
   const ranked = [...competitors].sort(
@@ -263,16 +236,9 @@ export default function SharedGoalPanel({
             <span className="text-xs font-medium uppercase tracking-wide text-fuchsia-200/80">
               Capability race
             </span>
-            <MarketPill status={marketStatus} />
-            {!bound && hasRace ? (
-              <span
-                className="rounded-full border border-fuchsia-400/30 bg-fuchsia-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-fuchsia-200"
-                title="No on-chain market yet — betting here is simulated and only updates odds shown in this browser."
-              >
-                Demo market
-              </span>
-            ) : (
-              !bound &&
+            {bound && <MarketPill status={marketStatus} />}
+            {!bound &&
+              !hasRace &&
               competitors.length > 0 && (
                 <span
                   className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/50"
@@ -280,8 +246,7 @@ export default function SharedGoalPanel({
                 >
                   No developer yet
                 </span>
-              )
-            )}
+              )}
           </div>
           <h2 className="mt-1 text-lg font-semibold leading-snug text-white">
             {goal.title}
@@ -372,22 +337,18 @@ export default function SharedGoalPanel({
                 const color = accentFor(project.id, organization)
                 const p = oddsFractionFor(project.id)
                 const outcomeIndex = outcomeIndexFor(project.id)
-                // Every competitor can be backed: for real races once bound
-                // to an outcome index, for everything else via the demo
-                // sandbox (which uses the project id directly as its key).
-                // A single-entrant non-race (hasRace false) is never
-                // backable — see isCompetitiveRace.
                 const canBack =
                   hasRace &&
-                  (bound
-                    ? marketDeprizeId !== undefined && outcomeIndex !== undefined
-                    : true)
+                  bound &&
+                  marketDeprizeId !== undefined &&
+                  outcomeIndex !== undefined
                 const kind = participationKind(project.rosterStatus)
                 const outcome = outcomeAt(outcomeIndex)
-                const demoPosition = demo.positions[project.id]
-                const holding = bound
-                  ? !!outcome && Number.isFinite(outcome.balance) && outcome.balance > 0
-                  : !!demoPosition && demoPosition.qty > 0
+                const holding =
+                  bound &&
+                  !!outcome &&
+                  Number.isFinite(outcome.balance) &&
+                  outcome.balance > 0
                 const redeemValueEth =
                   bound && resolved && outcome?.balanceWei !== undefined && payoutDen
                     ? Number(
@@ -402,9 +363,7 @@ export default function SharedGoalPanel({
                   bound && resolved && outcomeIndex !== undefined && outcomeIndex === winningIndex
                 const backDisabled =
                   !!userAddress && bound && (!bettingAllowed || tradingHalted)
-                const heldValueEth = bound
-                  ? outcome?.balance
-                  : demoPosition?.qty
+                const heldValueEth = outcome?.balance
                 return (
                   <div
                     key={project.id}
@@ -471,7 +430,7 @@ export default function SharedGoalPanel({
                       {canBack && !resolved && (
                         <button
                           type="button"
-                          onClick={() => handleBetClick(project.id, outcomeIndex)}
+                          onClick={() => handleBetClick(outcomeIndex)}
                           disabled={backDisabled}
                           className="shrink-0 rounded-md px-3 py-1 text-xs font-semibold text-white transition-all
                             bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
@@ -496,16 +455,12 @@ export default function SharedGoalPanel({
                         onMouseDown={stopRowNav}
                       >
                         <span className="text-[11px] text-white/50">
-                          {fmt(heldValueEth ?? 0)} {bound ? 'ETH' : 'demo ETH'} if wins
+                          {fmt(heldValueEth ?? 0)} ETH if wins
                         </span>
-                        {(bound ? !tradingHalted : true) && (
+                        {bound && !tradingHalted && (
                           <button
                             type="button"
-                            onClick={() =>
-                              bound
-                                ? setExitIndex(outcomeIndex!)
-                                : handleDemoExit(project.id, project.name)
-                            }
+                            onClick={() => setExitIndex(outcomeIndex!)}
                             className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white
                               bg-white/5 hover:bg-indigo-500/15 border border-white/10 hover:border-indigo-400/35 transition-all"
                           >
@@ -517,7 +472,7 @@ export default function SharedGoalPanel({
                   </div>
                 )
               })}
-              {fieldOdds != null && Number.isFinite(fieldOdds) && (() => {
+              {bound && fieldOdds != null && Number.isFinite(fieldOdds) && (() => {
                 const fieldOutcome = outcomeAt(
                   fieldOutcomeIndex >= 0 ? fieldOutcomeIndex : undefined,
                 )
@@ -567,7 +522,7 @@ export default function SharedGoalPanel({
                       {marketDeprizeId !== undefined && fieldOutcomeIndex >= 0 && !resolved && (
                         <button
                           type="button"
-                          onClick={() => handleBetClick(OPEN_FIELD_PROJECT_ID, fieldOutcomeIndex)}
+                          onClick={() => handleBetClick(fieldOutcomeIndex)}
                           disabled={!!userAddress && (!bettingAllowed || tradingHalted)}
                           className="shrink-0 rounded-md px-3 py-1 text-xs font-semibold text-white transition-all
                             bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
@@ -617,7 +572,7 @@ export default function SharedGoalPanel({
               </Link>
             )}
 
-            {odds && (
+            {bound && odds && (
               <p className="mt-2 text-[11px] leading-relaxed text-white/40">
                 {oddsCaption(marketStatus)}
               </p>
@@ -659,7 +614,7 @@ export default function SharedGoalPanel({
         {goal.criteria && goal.criteria.length > 0 && (
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
-              Capability criteria (draft)
+              Capability criteria
             </h3>
             <ol className="space-y-2.5">
               {goal.criteria.map((c, i) => (
@@ -681,14 +636,15 @@ export default function SharedGoalPanel({
               ))}
             </ol>
             <p className="mt-2 text-[11px] leading-relaxed text-white/40">
-              Draft criteria — the binding spec is frozen and pinned publicly
-              when a market opens.
+              {bound
+                ? 'The binding spec is frozen and pinned publicly for this market.'
+                : 'The binding spec is frozen and pinned publicly when this race opens for trading.'}
             </p>
           </div>
         )}
 
         {/* Market structure */}
-        {goal.market && (split || goal.market.budgetGate) && (
+        {bound && goal.market && (split || goal.market.budgetGate) && (
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-white/40">
               Prize structure
@@ -743,9 +699,8 @@ export default function SharedGoalPanel({
           </p>
         ) : !bound ? (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
-            No on-chain MoonDAO DePrize market exists for this race yet, so the
-            odds and positions above are a demo sandbox — no real ETH moves.
-            Nothing here is an offer, endorsement, or prediction of outcomes.
+            No market is open for this race yet. The names above are the
+            programs on record — there are no odds, and nothing here is a bet.
           </p>
         ) : (
           <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
@@ -794,23 +749,6 @@ export default function SharedGoalPanel({
           chain={chain}
           account={account}
           onClose={() => setExitIndex(null)}
-          onDone={() => onDone?.()}
-        />
-      )}
-
-      {demoBetProjectId !== null && (
-        <DemoBetModal
-          sharedGoalId={goal.id}
-          projectIds={projectIds}
-          impliedOdds={impliedOdds}
-          projectId={demoBetProjectId}
-          teamName={
-            competitors.find((c) => c.project.id === demoBetProjectId)?.project.name ??
-            'this team'
-          }
-          probability={demo.odds[demoBetProjectId] ?? 0}
-          address={userAddress}
-          onClose={() => setDemoBetProjectId(null)}
           onDone={() => onDone?.()}
         />
       )}

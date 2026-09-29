@@ -225,14 +225,14 @@ export const VOTES_TABLE_NAMES: Index = {
   arbitrum: 'Votes_42161_146',
   sepolia: 'Votes_11155111_1971',
 }
-/** Empty until `script/Forecasts.s.sol` is deployed per chain. Votes-shaped table with a timestamp column. */
+/** Votes-shaped table with a timestamp column. Arbitrum stays empty until that chain is deployed. */
 export const FORECASTS_TABLE_ADDRESSES: Index = {
   arbitrum: '',
-  sepolia: '',
+  sepolia: '0x8d6d1ea16c1d6d137BCf8ea03F1D4eE1b0790E98',
 }
 export const FORECASTS_TABLE_NAMES: Index = {
   arbitrum: '',
-  sepolia: '',
+  sepolia: 'Forecasts_11155111_2089',
 }
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1
@@ -745,7 +745,7 @@ export const MOONDAO_MISSIONS_SUBGRAPH_URL =
 export const TICK_SPACING = 200
 
 export const BEACONCHAIN_API_BASE = 'https://beaconcha.in/api/v1'
-export const FREE_MINT_THRESHOLD = 45e15 // 0.045 ETH in wei
+export const FREE_MINT_THRESHOLD = 30e15 // 0.03 ETH in wei
 export const FREE_MINT_THRESHOLD_LABEL = `${FREE_MINT_THRESHOLD / 1e18} ETH (~$100)`
 
 export const EB_TEAM_ID = '0'

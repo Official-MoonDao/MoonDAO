@@ -4,10 +4,10 @@
 // app's UI chrome.
 
 import {
-  ArrowUpRightIcon,
   BeakerIcon,
   BoltIcon,
   GlobeAltIcon,
+  MagnifyingGlassIcon,
   HomeModernIcon,
   RocketLaunchIcon,
   SignalIcon,
@@ -18,6 +18,26 @@ import {
 import type { ComponentType, SVGProps } from 'react'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 
+function MagnetIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+      {...props}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 3.5v8.5a4 4 0 0 0 8 0V3.5"
+      />
+      <path strokeLinecap="round" d="M8 3.5v3.25M16 3.5v3.25" />
+    </svg>
+  )
+}
+
 const CATEGORY_ICON: Record<ProjectType, ComponentType<SVGProps<SVGSVGElement>>> = {
   habitat: HomeModernIcon,
   lander: RocketLaunchIcon,
@@ -27,7 +47,8 @@ const CATEGORY_ICON: Record<ProjectType, ComponentType<SVGProps<SVGSVGElement>>>
   comms_pnt: SignalIcon,
   orbital: GlobeAltIcon,
   construction: WrenchScrewdriverIcon,
-  mass_driver: ArrowUpRightIcon,
+  mass_driver: MagnetIcon,
+  prospecting: MagnifyingGlassIcon,
   other: Square3Stack3DIcon,
 }
 

@@ -1,14 +1,15 @@
-import { TABLELAND_ENDPOINT } from 'const/config'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { tablelandQueryEndpoint } from '@/lib/tableland/endpoint'
 
 export async function forecastVoteRowExists(args: {
+  chainId: number
   forecastsTableName: string
   voteId: number
   address: string
 }): Promise<boolean> {
   const addr = args.address.toLowerCase()
   const statement = `SELECT id FROM ${args.forecastsTableName} WHERE voteId = ${args.voteId} AND address = '${addr}'`
-  const url = `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(statement)}&t=${Date.now()}`
+  const url = `${tablelandQueryEndpoint(args.chainId)}?statement=${encodeURIComponent(statement)}&t=${Date.now()}`
   const res = await fetch(url)
   // A failed read must not look like "no row". Tableland accepts a duplicate
   // insert without changing the existing row, so the caller would toast success.
@@ -26,11 +27,13 @@ export async function writeForecastVote(args: {
   forecastsContract: any
   account: any
   forecastsTableName: string
+  chainId: number
   voteId: number
   address: string
   vote: string
 }): Promise<void> {
   const exists = await forecastVoteRowExists({
+    chainId: args.chainId,
     forecastsTableName: args.forecastsTableName,
     voteId: args.voteId,
     address: args.address,

@@ -72,15 +72,15 @@ export function useDePrizeActivity(args: {
         const bets = await fetchDePrizeBets({ chain, chainSlug, deprizeId, gen: refreshNonce })
         if (cancelled) return
         const firstBetBlock = bets.length ? bets[0].blockNumber : undefined
-        const { trades, fundingChanges } = firstBetBlock
-          ? await fetchMarketTrades({
-              chain,
-              marketAddress,
-              fromBlock: firstBetBlock,
-              fundingFromBlock: eventsFromBlock(chainSlug),
-              gen: refreshNonce,
-            })
-          : { trades: [] as TradeRow[], fundingChanges: [] as FundingLike[] }
+        // No bets yet still needs the seed-funding log. That timestamp is the
+        // chart's open when the market contract has no startTime().
+        const { trades, fundingChanges } = await fetchMarketTrades({
+          chain,
+          marketAddress,
+          fromBlock: firstBetBlock ?? eventsFromBlock(chainSlug),
+          fundingFromBlock: eventsFromBlock(chainSlug),
+          gen: refreshNonce,
+        })
         if (cancelled) return
         setData({
           bets,

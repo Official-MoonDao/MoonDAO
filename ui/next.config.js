@@ -23,7 +23,14 @@ const cspHeaderBase = `
 // Omit upgrade-insecure-requests in dev - it can break client-side navigation on localhost
 const cspHeader =
   process.env.NODE_ENV === 'development'
-    ? cspHeaderBase.replace(/\s*upgrade-insecure-requests;\s*/, ' ')
+    ? cspHeaderBase
+        .replace(/\s*upgrade-insecure-requests;\s*/, ' ')
+        // Cursor's browser embeds the app. frame-ancestors 'none' blocks that
+        // frame, and the embed keeps its loading spinner up.
+        .replace(
+          "frame-ancestors 'none';",
+          "frame-ancestors * vscode-webview: cursor-rpc-devtools:;"
+        )
     : cspHeaderBase
 
 module.exports = withBundleAnalyzer(

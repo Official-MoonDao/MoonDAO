@@ -20,9 +20,6 @@ export function rowActions(input: {
   if (input.locked) {
     predict.enabled = false
     predict.reason = 'locked'
-  } else if (input.connected && !input.isCitizen) {
-    predict.enabled = false
-    predict.reason = 'need-citizen'
   }
 
   if (input.bettingOpen && !input.restricted) {

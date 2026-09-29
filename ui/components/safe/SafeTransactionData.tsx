@@ -1,6 +1,11 @@
 import ERC20ABI from 'const/abis/ERC20.json'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
+import {
+  decodedTokenTransfer,
+  formatTokenAmount,
+  knownErc20Meta,
+} from '@/lib/safe/safeTransactionActions'
 import { PendingTransaction } from '@/lib/safe/useSafe'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
@@ -78,14 +83,11 @@ export default function SafeTransactionData({
     }
 
     if (transaction.dataDecoded?.method === 'removeOwner') {
-      const [prevOwner, ownerToRemove, newThreshold] =
-        transaction.dataDecoded.parameters || []
+      const [prevOwner, ownerToRemove, newThreshold] = transaction.dataDecoded.parameters || []
       return (
         <div className="space-y-2">
           <p className="text-slate-300">Type: Remove Signer</p>
-          <p className="text-slate-300">
-            Signer to Remove: {ownerToRemove?.value}
-          </p>
+          <p className="text-slate-300">Signer to Remove: {ownerToRemove?.value}</p>
           <p className="text-slate-300">New Threshold: {newThreshold?.value}</p>
         </div>
       )
@@ -101,30 +103,24 @@ export default function SafeTransactionData({
       )
     }
 
-    if (
-      transaction.dataDecoded?.method === 'transfer' ||
-      transaction.dataDecoded?.method === 'transferFrom'
-    ) {
-      // For transfer: parameters[0] = to, parameters[1] = value
-      // For transferFrom: parameters[0] = from, parameters[1] = to, parameters[2] = value
-      const recipient =
-        transaction.dataDecoded.method === 'transfer'
-          ? transaction.dataDecoded.parameters?.[0]?.value
-          : transaction.dataDecoded.parameters?.[1]?.value
-
-      const value =
-        transaction.dataDecoded.method === 'transfer'
-          ? transaction.dataDecoded.parameters?.[1]?.value
-          : transaction.dataDecoded.parameters?.[2]?.value
+    const decodedTransfer = decodedTokenTransfer(transaction)
+    if (decodedTransfer) {
+      const known = knownErc20Meta(transaction.to)
+      const decimals = tokenDecimals != null ? Number(tokenDecimals) : known?.decimals
+      const symbol = (typeof tokenSymbol === 'string' && tokenSymbol) || known?.symbol
 
       return (
         <div className="space-y-2">
           <p className="text-slate-300">Type: Token Transfer</p>
-          <p className="text-slate-300">Token: {tokenSymbol}</p>
-          <p className="text-slate-300">To: {recipient}</p>
+          <p className="text-slate-300">Token: {symbol || '…'}</p>
+          <p className="text-slate-300">To: {decodedTransfer.recipient}</p>
           <p className="text-slate-300">
             Amount:{' '}
-            {ethers.utils.formatUnits(value || '0', tokenDecimals || 18)}
+            {decimals != null
+              ? `${formatTokenAmount(decodedTransfer.amount, decimals)}${
+                  symbol ? ` ${symbol}` : ''
+                }`
+              : '…'}
           </p>
         </div>
       )
@@ -133,9 +129,7 @@ export default function SafeTransactionData({
     // For other transaction types, show the raw data
     return (
       <div className="space-y-2">
-        <p className="text-slate-300">
-          Method: {transaction.dataDecoded?.method || 'Unknown'}
-        </p>
+        <p className="text-slate-300">Method: {transaction.dataDecoded?.method || 'Unknown'}</p>
         {transaction.dataDecoded?.parameters && (
           <div className="mt-2">
             <p className="text-slate-300">Parameters:</p>

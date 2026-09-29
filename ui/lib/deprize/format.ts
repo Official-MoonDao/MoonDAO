@@ -54,7 +54,7 @@ export function fmtUsdFromEth(
   return formatUsd(eth * ethPrice, opts)
 }
 
-/** Toast / button copy: `0.01 ETH (~$30.00)`. Omits USD when the price is missing. */
+/** Toast / button copy: `0.01 ETH ($30.00)`. Omits USD when the price is missing. */
 export function fmtEthWithUsd(
   eth: number | undefined | null,
   ethPrice: number | null | undefined,
@@ -70,10 +70,9 @@ export function fmtEthWithUsd(
   const unit = opts?.unit ?? 'ETH'
   const ethStr = opts?.prize ? fmtPrizeEth(Math.abs(eth)) : fmt(Math.abs(eth), opts?.decimals)
   const sign = opts?.signed ? (eth > 0 ? '+' : eth < 0 ? '-' : '') : eth < 0 ? '-' : ''
-  const prefix = opts?.approx ? '≈ ' : ''
-  const ethLabel = `${prefix}${sign}${ethStr} ${unit}`
+  const ethLabel = `${sign}${ethStr} ${unit}`
   const usd = fmtUsdFromEth(eth, ethPrice, { signed: opts?.signed })
-  return usd ? `${ethLabel} (~${usd})` : ethLabel
+  return usd ? `${ethLabel} (${usd})` : ethLabel
 }
 
 // Parse a decimal ETH string into wei, tolerant of empty/invalid input.

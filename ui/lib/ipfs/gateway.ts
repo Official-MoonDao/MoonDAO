@@ -3,8 +3,9 @@ import { IPFS_GATEWAY } from 'const/config'
 export function getIPFSGateway(ipfsString: string) {
   if (!ipfsString) return ''
 
-  // Return blob URLs as-is
-  if (ipfsString.startsWith('blob:')) {
+  // Return blob and inline image URLs as-is. A data-URI avatar must not be
+  // prefixed with the IPFS gateway.
+  if (ipfsString.startsWith('blob:') || ipfsString.startsWith('data:')) {
     return ipfsString
   }
 
