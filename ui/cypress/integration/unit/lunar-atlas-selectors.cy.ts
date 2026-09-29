@@ -611,6 +611,11 @@ describe('lunar-atlas selectors', () => {
       expect(
         raceStandingForProject('not-a-competitor', lander!)
       ).to.equal(undefined)
+      // The crewed-rover district's name cards read this helper. Its priors
+      // are 52/44/4, which is what used to render as "1st · 52%" over CLV-1.
+      const rover = sharedGoalById(SEED_ATLAS, 'shared-lunar-rover')
+      expect(rover!.market?.status).to.equal('planned')
+      expect(raceStandingForProject('astrolab-flex', rover!)).to.equal(undefined)
     })
     it('surfaces place and odds once the market is live', () => {
       const lander = sharedGoalById(SEED_ATLAS, 'shared-crewed-lander')!
