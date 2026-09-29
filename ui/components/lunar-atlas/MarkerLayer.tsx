@@ -83,7 +83,7 @@ import ProjectModel, {
   CrateCluster,
   Excavator,
   gradedDeckRadiusM,
-  projectSizeM,
+  displaySizeM,
   SparePartsPallet,
   DistrictFloodPool,
   StreetLight,
@@ -357,7 +357,7 @@ function CompetitorPlot({
       // thing it names.
       labelAt: d
         .clone()
-        .multiplyScalar(ground + projectSizeM(project) * 1.25 * M_TO_UNITS),
+        .multiplyScalar(ground + displaySizeM(project) * 1.25 * M_TO_UNITS),
     }
   }, [standAt, radiusAt, project])
 

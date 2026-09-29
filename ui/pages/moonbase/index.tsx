@@ -72,7 +72,7 @@ import {
   CARRIED_BY,
   footprintRadiusM,
   hasOwnModel,
-  projectSizeM,
+  displaySizeM,
 } from '@/components/lunar-atlas/ProjectModel'
 import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
 import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
@@ -810,7 +810,7 @@ export default function MoonBaseZeroIndex() {
       lat: ll.lat,
       lon: ll.lon,
       view: 'surface',
-      subjectM: projectSizeM(project),
+      subjectM: displaySizeM(project),
     })
   }
 

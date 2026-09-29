@@ -24,6 +24,7 @@ import {
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { solarArrayFrame } from '@/lib/lunar-atlas/baseplan'
+import { DISPLAY_FLOOR_M, drawnSizeM } from '@/lib/lunar-atlas/display'
 import { HOME_CAM, HOME_TARGET } from '@/lib/lunar-atlas/homeview'
 import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import { buriedVault, type VaultGeometry } from '@/lib/lunar-atlas/subplan'
@@ -260,9 +261,23 @@ export function projectSizeM(project: Project): number {
   return PROJECT_SIZE_M[project.id] ?? TYPE_SIZE_M[project.type] ?? 10
 }
 
+// The size a project's model is actually DRAWN at, which is projectSizeM for
+// everything but the smallest hardware — see drawnSizeM for why that exception
+// exists. Use this for anything measuring the thing on screen (how high to
+// float its label, how close to fly the camera) and projectSizeM for anything
+// stating a fact about the real machine.
+export function displaySizeM(project: Project): number {
+  return drawnSizeM(projectSizeM(project))
+}
+
+// Whether this project is one of the enlarged ones, so the UI can say so.
+export function isEnlarged(project: Project): boolean {
+  return projectSizeM(project) < DISPLAY_FLOOR_M
+}
+
 // World scale (scene units per local model unit) for a project's model.
 export function projectScale(project: Project): number {
-  return (projectSizeM(project) * M_TO_UNITS) / UNIT_MAX_DIM
+  return (displaySizeM(project) * M_TO_UNITS) / UNIT_MAX_DIM
 }
 
 // The radius, as a fraction of a model's size, of the rigid deck it brings
@@ -371,6 +386,17 @@ export function footprintRadiusM(project: Project): number {
   const graded = gradedDeckRadiusM(project)
   if (graded !== null) return graded
   return projectSizeM(project) * (FOOTPRINT_FRACTION[project.id] ?? 0.5)
+}
+
+// The same footprint, but for the model as DRAWN — the ground the scuffed
+// regolith has to cover. Only the disturbance layer wants this: a patch sized
+// to a 38 cm rover under a rover drawn at 1.4 m is a halo of clean ground
+// around a machine that is supposed to have driven in on it. The packer keeps
+// the true radius above, because lots are real ground.
+export function displayFootprintRadiusM(project: Project): number {
+  return (
+    footprintRadiusM(project) * (displaySizeM(project) / projectSizeM(project))
+  )
 }
 
 // Which local-frame azimuth of a model is its "presentation" side — the

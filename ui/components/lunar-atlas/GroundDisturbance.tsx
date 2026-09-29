@@ -38,7 +38,7 @@ import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { STAIN_FRAGMENT_PATCHES, applyShaderPatches } from '@/lib/lunar-atlas/regolithShader'
 import { MODEL_PRESENCE, type ColonyLayout } from './MarkerLayer'
-import { footprintRadiusM } from './ProjectModel'
+import { displayFootprintRadiusM } from './ProjectModel'
 import type { RadiusAt } from './useTerrainSampler'
 
 // How far the churn reaches past the hardware's own footprint, as a multiple
@@ -417,7 +417,7 @@ export default function GroundDisturbance({
         addPatch(
           {
             dir: plot.dir,
-            radiusM: footprintRadiusM(project),
+            radiusM: displayFootprintRadiusM(project),
             // Seeded off the project id so a patch's outline is stable across
             // reloads and no two installations share a shape.
             seed: project.id.length * 31 + project.id.charCodeAt(0),
