@@ -147,6 +147,21 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // Light bar to rear wheel — Astrolab pitch FLEX as Jeep-sized. FLEX_M
   // inverts this exact number.
   'astrolab-flex': 4.2,
+  // FLIP, the little sister that actually flies first. Astrolab publish mass
+  // (450–500 kg) but no exterior dimensions, so this is an estimate rather
+  // than a figure: SpaceNews and Astrobotic both describe FLIP as "similar in
+  // size and mass to VIPER", whose footprint is about 1.5 m square, and the
+  // Astrobotic/Astrolab render puts it a little under half the width of
+  // Griffin's 4.5 m leg span. Two meters wheel-to-wheel fits both. FLIP_M
+  // inverts this exact number.
+  'astrolab-flip': 2.0,
+  // Wheel to wheel on the 2U CubeRover — a 5 kg shoebox, and the smallest
+  // model in the atlas by a factor of five. Unusually for this table the
+  // figure is built from published numbers rather than estimated: a 30 x 20 x
+  // 10 cm hull (CMU/Astrobotic TFAWS 2019) on ~20 cm wheels (CMU/Astrobotic
+  // LEAG 2017), with the axles inboard of the hull ends so the wheels set the
+  // overall length. CUBE_M inverts this exact number.
+  'voyager-cuberover': 0.4,
   // MAPP's long axis, straight off Lunar Outpost's own published envelope of
   // 45 x 38 x 40 cm. Note the 40 cm is the HEIGHT and it is not the largest
   // dimension, so this entry is the length — getting that backwards would
@@ -12602,6 +12617,250 @@ function FlexRover({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// FLIP — Venturi Astrolab
+// ---------------------------------------------------------------------------
+
+// FLEX Lunar Innovation Platform: Astrolab's technology demonstrator, riding
+// Griffin-1 to the Nobile region and the entrant that makes First Tracks a
+// race rather than a walkover.
+//
+// It is NOT a small FLEX, which is why it cannot borrow FlexRover above. FLEX
+// is a flatbed whose whole shape is the open payload bed and the manipulator
+// that loads it. FLIP is the opposite: one closed instrument box carried high
+// and level on four wheels, with no bed, no arm and no roof deck. The family
+// resemblance is entirely in the running gear.
+//
+// The running gear is the point. Astrolab's own FLIP page says it flies
+// Venturi's hyper-deformable wheels — the same article that will carry FLEX —
+// and proving them is a stated objective of the flight. So the wheel is
+// modeled from the Venturi hardware rather than implied: a pale woven tread
+// band that deforms over rock, carried on a fine multi-spoke hub, with the
+// inner mesh visible through the gap. Wheels this tall under a body this small
+// are the silhouette, and a generic rim would throw away the one feature the
+// mission exists to demonstrate.
+//
+// No wordmark and no flag, though the reference render carries both: per the
+// house rule livery is one accent band, here the stripe along the body flank.
+const FLIP_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['astrolab-flip'] ?? 2.0)
+
+const FLIP_BODY = '#e9ecef' // the white instrument box
+const FLIP_DARK = '#2a2e34' // avionics, radiator, camera bar
+const FLIP_HUB = '#b6bdc6' // machined spoke hub
+const FLIP_TREAD = '#cfc6a8' // Venturi's pale woven tread band
+const FLIP_MESH = '#8f9299' // the deformable inner mesh, shaded behind the tread
+
+const FLIP_WHEEL_R = 0.31
+const FLIP_WHEEL_W = 0.26
+// Axle stations fore and aft of centre. 0.69 + the wheel radius puts the
+// overall length on PROJECT_SIZE_M exactly, which is the dimension that entry
+// claims — the wheels, not the box, are what the vehicle measures across.
+const FLIP_WHEEL_X = 0.69
+// Track half-width. Must clear the box's own half-width plus the wheel's
+// half-thickness, or the body swallows the wheel tops: the box skirt hangs
+// below the axle line, exactly as it does in the render, so the gap between
+// flank and tyre is what the trailing arm spans.
+const FLIP_WHEEL_Z = 0.68
+const FLIP_CHASSIS = 0.52 // underside of the box, held clear of the regolith
+const FLIP_BOX_H = 0.78
+const FLIP_BOX_TOP = FLIP_CHASSIS + FLIP_BOX_H
+
+// The Venturi hyper-deformable wheel. Three concentric layers, because that is
+// what the hardware is and what makes it legible: the pale tread band on the
+// outside, a darker mesh annulus behind it, and the machined hub inside that.
+//
+// The tread is open-ended and double-sided rather than a solid cylinder, so the
+// mesh shows through from the rim edge the way it does on the real article —
+// a capped tyre would read as a solid roller. Spokes are drawn on the outboard
+// face only, which is the only one the camera ever gets.
+function FlipWheel({ x, z }: { x: number; z: number }) {
+  const face = Math.sign(z) * (FLIP_WHEEL_W / 2 + 0.008)
+  return (
+    <group position={[x, FLIP_WHEEL_R, z]} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Tread band */}
+      <mesh>
+        <cylinderGeometry
+          args={[FLIP_WHEEL_R, FLIP_WHEEL_R, FLIP_WHEEL_W, 28, 1, true]}
+        />
+        <meshStandardMaterial
+          color={FLIP_TREAD}
+          roughness={0.82}
+          metalness={0.12}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Inner mesh, set in from the tread so the two read as separate layers */}
+      <mesh>
+        <cylinderGeometry
+          args={[
+            FLIP_WHEEL_R * 0.88,
+            FLIP_WHEEL_R * 0.88,
+            FLIP_WHEEL_W * 0.82,
+            24,
+            1,
+            true,
+          ]}
+        />
+        <meshStandardMaterial
+          color={FLIP_MESH}
+          roughness={0.7}
+          metalness={0.45}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Hub barrel */}
+      <mesh>
+        <cylinderGeometry
+          args={[FLIP_WHEEL_R * 0.34, FLIP_WHEEL_R * 0.34, FLIP_WHEEL_W, 16]}
+        />
+        <meshStandardMaterial color="#7f868f" metalness={0.65} roughness={0.42} />
+      </mesh>
+      {/* Twelve raked spokes. The count is what separates this from a cart
+          wheel — Venturi's hub is dense and fine, so the gaps matter more than
+          any single spoke does. */}
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[
+              Math.cos(a) * FLIP_WHEEL_R * 0.6,
+              face,
+              Math.sin(a) * FLIP_WHEEL_R * 0.6,
+            ]}
+            // Raked off radial, matching the sculpted curve of the real spokes.
+            rotation={[0, -a + 0.3, 0]}
+          >
+            <boxGeometry args={[FLIP_WHEEL_R * 0.62, 0.014, 0.036]} />
+            <meshStandardMaterial
+              color={FLIP_HUB}
+              metalness={0.68}
+              roughness={0.32}
+            />
+          </mesh>
+        )
+      })}
+      {/* Centre cap */}
+      <mesh position={[0, face, 0]}>
+        <cylinderGeometry args={[0.085, 0.085, 0.05, 14]} />
+        <meshStandardMaterial color={FLIP_HUB} metalness={0.7} roughness={0.3} />
+      </mesh>
+    </group>
+  )
+}
+
+function FlipRover({ accent }: { accent: string }) {
+  const corners: [number, number][] = [
+    [FLIP_WHEEL_X, FLIP_WHEEL_Z],
+    [FLIP_WHEEL_X, -FLIP_WHEEL_Z],
+    [-FLIP_WHEEL_X, FLIP_WHEEL_Z],
+    [-FLIP_WHEEL_X, -FLIP_WHEEL_Z],
+  ]
+  return (
+    <group scale={FLIP_M}>
+      {corners.map(([x, z]) => (
+        <group key={`${x}:${z}`}>
+          <FlipWheel x={x} z={z} />
+          {/* Trailing arm out from the chassis rail to the hub. FLIP carries
+              its wheels well outboard of the box, so the arm is visible rather
+              than buried under bodywork. */}
+          <Strut
+            from={[x * 0.62, FLIP_CHASSIS + 0.03, Math.sign(z) * 0.36]}
+            to={[x, FLIP_WHEEL_R, z * 0.9]}
+            r={0.042}
+            color={FLIP_HUB}
+          />
+        </group>
+      ))}
+
+      {/* Chassis rail spanning the axles under the box */}
+      <mesh position={[0, FLIP_CHASSIS - 0.06, 0]}>
+        <boxGeometry args={[1.5, 0.12, 0.78]} />
+        <meshStandardMaterial color="#8a9099" metalness={0.5} roughness={0.55} />
+      </mesh>
+
+      {/* The instrument box. Everything FLIP carries is inside it: full-size
+          FLEX batteries, avionics and the 30 kg of customer payload. */}
+      <mesh position={[0, FLIP_CHASSIS + FLIP_BOX_H / 2, 0]}>
+        <boxGeometry args={[1.18, FLIP_BOX_H, 1.0]} />
+        <meshStandardMaterial color={FLIP_BODY} roughness={0.52} metalness={0.16} />
+      </mesh>
+
+      {/* Livery: one accent band around the flank, standing proud of the skin
+          rather than skimmed onto it so it survives the depth test. */}
+      <mesh position={[0, FLIP_CHASSIS + FLIP_BOX_H * 0.34, 0]}>
+        <boxGeometry args={[1.2, 0.08, 1.02]} />
+        <meshStandardMaterial color={accent} roughness={0.45} metalness={0.25} />
+      </mesh>
+
+      {/* Radiator panels down both flanks. FLIP is built to ride out lunar
+          nights, so heat rejection is real hardware and not decoration. */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[-0.12, FLIP_CHASSIS + FLIP_BOX_H * 0.66, s * 0.52]}>
+          <boxGeometry args={[0.74, 0.34, 0.04]} />
+          <meshStandardMaterial color={FLIP_DARK} roughness={0.42} metalness={0.5} />
+        </mesh>
+      ))}
+
+      {/* Top deck: the solar array that charges the Venturi batteries */}
+      <mesh position={[-0.02, FLIP_BOX_TOP + 0.02, 0]}>
+        <boxGeometry args={[1.12, 0.04, 0.94]} />
+        <meshStandardMaterial color={FLIP_DARK} roughness={0.35} metalness={0.4} />
+      </mesh>
+      {[-0.3, 0, 0.3].map((z) => (
+        <mesh key={z} position={[-0.02, FLIP_BOX_TOP + 0.045, z]}>
+          <boxGeometry args={[1.06, 0.01, 0.2]} />
+          <meshStandardMaterial
+            color={PANEL}
+            roughness={0.28}
+            metalness={0.55}
+          />
+        </mesh>
+      ))}
+
+      {/* Aft equipment stack, the dark mass that breaks the box's symmetry in
+          the Astrobotic/Astrolab render. */}
+      <mesh position={[-0.44, FLIP_BOX_TOP + 0.15, 0]}>
+        <boxGeometry args={[0.3, 0.22, 0.56]} />
+        <meshStandardMaterial color={FLIP_DARK} roughness={0.6} metalness={0.3} />
+      </mesh>
+
+      {/* Camera bar forward, up where a driver's eyeline would be. FLIP is
+          driven from Earth, so the cameras are the vehicle's only viewpoint. */}
+      <mesh position={[0.56, FLIP_BOX_TOP + 0.12, 0]}>
+        <boxGeometry args={[0.12, 0.14, 0.5]} />
+        <meshStandardMaterial color={FLIP_DARK} roughness={0.55} metalness={0.35} />
+      </mesh>
+      {[-0.14, 0.14].map((z) => (
+        <mesh
+          key={z}
+          position={[0.63, FLIP_BOX_TOP + 0.12, z]}
+          rotation={[0, Math.PI / 2, 0]}
+        >
+          <circleGeometry args={[0.035, 12]} />
+          <meshStandardMaterial
+            color={LED}
+            emissive={LED}
+            emissiveIntensity={1.4}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+
+      {/* Whip antenna for the direct-to-Earth link. Kept short deliberately:
+          it is the highest point on the vehicle, and anything taller would put
+          the model's height above its length and make PROJECT_SIZE_M a lie. */}
+      <Strut
+        from={[-0.5, FLIP_BOX_TOP + 0.24, 0.22]}
+        to={[-0.56, FLIP_BOX_TOP + 0.42, 0.26]}
+        r={0.014}
+        color={FLIP_HUB}
+        seg={6}
+      />
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Lunar Voyager LTV — Lunar Outpost / Lunar Dawn
 // ---------------------------------------------------------------------------
 
@@ -12865,6 +13124,307 @@ function GenericStructure({ accent }: { accent: string }) {
       <mesh position={[0, 0.85, 0]}>
         <sphereGeometry args={[0.05, 10, 10]} />
         <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.4} toneMapped={false} />
+      </mesh>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// CubeRover — Voyager Lunar Systems
+// ---------------------------------------------------------------------------
+
+// The 2U CubeRover riding Griffin-1 as the BEACON demonstration. Astrobotic
+// now trades as Voyager Lunar Systems after Voyager Technologies closed its
+// acquisition in July 2026, which is the only reason the org reads "Voyager"
+// here — the hardware and the Pittsburgh team are Astrobotic's.
+//
+// NAMING TRAP: `VoyagerRover` / `VOY_*` directly above is Lunar Outpost's
+// *Lunar Voyager* LTV, a crewed-class truck in a different race. It has
+// nothing to do with Voyager Lunar Systems and the two must not be merged,
+// renamed toward each other, or have constants shared between them.
+//
+// This is by a wide margin the smallest model in the atlas, and that is the
+// entire point of it. Everything here is authored at true scale, so a 5 kg
+// shoebox parked in the same race as a half-tonne FLIP has to actually read as
+// a shoebox — roughly a fifth of FLIP's length and a twentieth of a lander's.
+// Resist any urge to "make it visible" by inflating it; the size contrast is
+// the most honest thing this model says about the race.
+//
+// Dimensions are published rather than estimated, which is rare here:
+//   - hull bounding box 30 x 20 x 10 cm, from the CMU/Astrobotic TFAWS 2019
+//     thermal paper on the CubeRover platform
+//   - wheel diameter ~20 cm, chosen (per the CMU/Astrobotic LEAG 2017 poster)
+//     to maximize obstacle surmountability without inviting tip-over
+//   - 7 cm maximum ground clearance, from Astrobotic's CubeRover payload user
+//     guide, which is also where the drivetrain and thermal details below come
+//     from
+// Axles sit inboard of the hull ends, so the wheels are what the vehicle
+// measures across: 0.10 m axle station + 0.10 m wheel radius puts overall
+// length on PROJECT_SIZE_M's 0.4 m exactly.
+const CUBE_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['voyager-cuberover'] ?? 0.4)
+
+const CUBE_MLI = '#bf8b33' // kapton blanket over the chassis, copper-gold
+const CUBE_MLI_HI = '#d8a548' // brighter creases catching the sun on the blanket
+const CUBE_RAD = '#eef1f5' // the top panel, which IS the radiator
+const CUBE_RIM = '#b9bfc7' // bare aluminium wheel rim
+const CUBE_SPOKE = '#ded6c2' // non-metallic spokes — see CubeWheel
+const CUBE_DARK = '#24272c'
+const CUBE_ACTUATOR = '#e4e0d4' // the drive actuator housings at each corner
+
+// Overall wheel radius, measured OVER the grousers, because that is what the
+// published ~20 cm diameter means and what the vehicle actually rolls on. The
+// rim band itself is inset by the grouser height: put the band at the full
+// radius instead and the teeth stand proud of it, which quietly grows the
+// vehicle past its PROJECT_SIZE_M entry (0.412 m against a claimed 0.4).
+const CUBE_WHEEL_R = 0.1
+const CUBE_GROUSER_H = 0.012
+const CUBE_RIM_R = CUBE_WHEEL_R - CUBE_GROUSER_H / 2
+const CUBE_WHEEL_W = 0.05
+const CUBE_AXLE_X = 0.1 // axle station fore and aft of centre
+const CUBE_TRACK_Z = 0.135 // half-track; clears the hull's 0.10 m half-width
+const CUBE_HULL_L = 0.3
+const CUBE_HULL_W = 0.2
+const CUBE_HULL_H = 0.1
+const CUBE_CLEAR = 0.07 // underside of the electronics enclosure
+const CUBE_HULL_TOP = CUBE_CLEAR + CUBE_HULL_H
+
+// A rim-and-grouser wheel, which on this vehicle is a thermal part as much as
+// a mobility one. Astrobotic's payload guide calls out the wheel spokes
+// specifically: the rims conduct heat straight into the regolith and radiate
+// it to space, so the spokes are deliberately long, thin and NON-METALLIC to
+// keep that cold path away from the electronics. That is why they are drawn in
+// a pale composite here rather than in the rim's aluminium — the colour
+// difference is the design, not styling, and repainting the spokes to match
+// the rim would quietly erase the reason the wheel looks like this.
+//
+// The rim is an open, double-sided cylinder so the far wall shows through the
+// gaps, which is what makes a hoop read as a hoop instead of a roller. The
+// dark dots in the band are lightening holes, and the blocks straddling the
+// tread are the grousers that do the actual digging.
+function CubeWheel({ x, z }: { x: number; z: number }) {
+  const face = Math.sign(z) * (CUBE_WHEEL_W / 2 + 0.004)
+  return (
+    <group position={[x, CUBE_WHEEL_R, z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh>
+        <cylinderGeometry
+          args={[CUBE_RIM_R, CUBE_RIM_R, CUBE_WHEEL_W, 28, 1, true]}
+        />
+        <meshStandardMaterial
+          color={CUBE_RIM}
+          metalness={0.72}
+          roughness={0.34}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2
+        // Half a step round from the grouser, so the holes sit in the clear
+        // band between teeth rather than behind them.
+        const h = a + Math.PI / 12
+        return (
+          <group key={i}>
+            {/* Grouser, straddling the band out to the full wheel radius */}
+            <mesh
+              position={[Math.cos(a) * CUBE_RIM_R, 0, Math.sin(a) * CUBE_RIM_R]}
+              rotation={[0, -a, 0]}
+            >
+              <boxGeometry args={[CUBE_GROUSER_H, CUBE_WHEEL_W * 0.88, 0.011]} />
+              <meshStandardMaterial
+                color={CUBE_RIM}
+                metalness={0.7}
+                roughness={0.38}
+              />
+            </mesh>
+            {/* Lightening hole. The band has no thickness, so a dark block
+                straddling it reads as a hole from either side. */}
+            <mesh
+              position={[Math.cos(h) * CUBE_RIM_R, 0, Math.sin(h) * CUBE_RIM_R]}
+              rotation={[0, -h, 0]}
+            >
+              <boxGeometry args={[0.005, 0.014, 0.013]} />
+              <meshStandardMaterial color={CUBE_DARK} roughness={0.9} />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* Spokes, on the outboard face only — the inboard one is never seen. */}
+      {Array.from({ length: 6 }, (_, i) => {
+        const a = (i / 6) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[
+              (Math.cos(a) * CUBE_RIM_R) / 2,
+              face,
+              (Math.sin(a) * CUBE_RIM_R) / 2,
+            ]}
+            rotation={[0, -a, 0]}
+          >
+            <boxGeometry args={[CUBE_RIM_R, 0.004, 0.006]} />
+            <meshStandardMaterial
+              color={CUBE_SPOKE}
+              roughness={0.72}
+              metalness={0.05}
+            />
+          </mesh>
+        )
+      })}
+
+      <mesh position={[0, face, 0]}>
+        <cylinderGeometry args={[0.016, 0.016, 0.014, 12]} />
+        <meshStandardMaterial color={CUBE_RIM} metalness={0.7} roughness={0.32} />
+      </mesh>
+    </group>
+  )
+}
+
+function CubeRover({ accent }: { accent: string }) {
+  const corners: [number, number][] = [
+    [CUBE_AXLE_X, CUBE_TRACK_Z],
+    [CUBE_AXLE_X, -CUBE_TRACK_Z],
+    [-CUBE_AXLE_X, CUBE_TRACK_Z],
+    [-CUBE_AXLE_X, -CUBE_TRACK_Z],
+  ]
+  // Cell pitch across the deck. The array is inset from the radiator's edge on
+  // all four sides rather than covering it — see the deck comment below.
+  const cellCols = [-0.104, -0.052, 0, 0.052, 0.104]
+  const cellRows = [-0.06, -0.02, 0.02, 0.06]
+  return (
+    <group scale={CUBE_M}>
+      {corners.map(([x, z]) => (
+        <group key={`${x}:${z}`}>
+          <CubeWheel x={x} z={z} />
+          {/* Drive actuator: motor, planetary gearhead and encoder in one
+              housing per corner. CubeRover has fixed axles and skid steering —
+              no steering joint and no suspension — so this bridges straight
+              from the hull to the hub with nothing articulated in between, and
+              drawing a swing arm here would be inventing a mechanism the
+              vehicle deliberately does not carry. */}
+          <mesh
+            position={[x, CUBE_WHEEL_R, Math.sign(z) * (CUBE_TRACK_Z - 0.042)]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <cylinderGeometry args={[0.019, 0.019, 0.05, 12]} />
+            <meshStandardMaterial
+              color={CUBE_ACTUATOR}
+              roughness={0.55}
+              metalness={0.2}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Chassis, blanketed in MLI on every face except the top. The payload
+          guide is explicit that the outside of the chassis is lined to cut
+          heat loss to deep space and to the regolith, and every photograph of
+          the flight article is gold for exactly that reason. */}
+      <mesh position={[0, CUBE_CLEAR + CUBE_HULL_H / 2, 0]}>
+        <boxGeometry args={[CUBE_HULL_L, CUBE_HULL_H, CUBE_HULL_W]} />
+        <meshStandardMaterial
+          color={CUBE_MLI}
+          metalness={0.62}
+          roughness={0.42}
+          flatShading
+        />
+      </mesh>
+
+      {/* Creases in the blanket. A blanket is not sheet metal, and without a
+          few folds catching the light at a different angle the hull reads as a
+          machined gold block. Same reasoning as Griffin's creased MLI spheres. */}
+      {[-0.09, 0.02, 0.11].map((x) => (
+        <mesh key={x} position={[x, CUBE_CLEAR + CUBE_HULL_H / 2, 0]}>
+          <boxGeometry args={[0.012, CUBE_HULL_H * 0.92, CUBE_HULL_W + 0.005]} />
+          <meshStandardMaterial
+            color={CUBE_MLI_HI}
+            metalness={0.66}
+            roughness={0.36}
+            flatShading
+          />
+        </mesh>
+      ))}
+
+      {/* Livery: the one accent band, low on the flank under the blanket line. */}
+      <mesh position={[0, CUBE_CLEAR + 0.014, 0]}>
+        <boxGeometry args={[CUBE_HULL_L * 0.84, 0.008, CUBE_HULL_W + 0.007]} />
+        <meshStandardMaterial color={accent} roughness={0.5} metalness={0.2} />
+      </mesh>
+
+      {/* The top panel, which is the radiator — it is the heat sink for every
+          thermally-regulated component in the rover, and also the interface
+          the lander holds it by. It stays white and it stays EXPOSED: the
+          solar array above is deliberately inset so a margin of radiator still
+          sees cold sky on all four sides. Covering the panel edge to edge
+          would look tidier and would be the one change that stops the vehicle
+          working. */}
+      <mesh position={[0, CUBE_HULL_TOP + 0.004, 0]}>
+        <boxGeometry args={[CUBE_HULL_L, 0.008, CUBE_HULL_W]} />
+        <meshStandardMaterial color={CUBE_RAD} roughness={0.28} metalness={0.32} />
+      </mesh>
+
+      {/* Solar array, laid flat on the deck rather than raked onto the sun.
+          The rake rule applies to installations that choose their own
+          orientation — the base's tracking farm — and not to an array bolted
+          to a vehicle that drives wherever it is sent, the same exemption
+          Chang'e-7's fixed wings take. */}
+      <mesh position={[0, CUBE_HULL_TOP + 0.012, 0]}>
+        <boxGeometry args={[0.256, 0.007, 0.166]} />
+        <meshStandardMaterial color={CUBE_DARK} roughness={0.5} metalness={0.35} />
+      </mesh>
+      {cellCols.map((cx) =>
+        cellRows.map((cz) => (
+          <mesh
+            key={`${cx}:${cz}`}
+            position={[cx, CUBE_HULL_TOP + 0.0165, cz]}
+          >
+            <boxGeometry args={[0.046, 0.002, 0.034]} />
+            <meshStandardMaterial
+              color={PANEL}
+              roughness={0.24}
+              metalness={0.5}
+            />
+          </mesh>
+        ))
+      )}
+
+      {/* Camera head, poking up through a gap left in the array. CubeRover is
+          teleoperated from Earth on a seven-hours-on, one-hour-off cycle, so
+          this is the whole of the vehicle's situational awareness. */}
+      <mesh position={[0.082, CUBE_HULL_TOP + 0.026, 0]}>
+        <cylinderGeometry args={[0.014, 0.016, 0.022, 14]} />
+        <meshStandardMaterial color={CUBE_RAD} roughness={0.45} metalness={0.3} />
+      </mesh>
+      <mesh
+        position={[0.096, CUBE_HULL_TOP + 0.028, 0]}
+        rotation={[0, Math.PI / 2, 0]}
+      >
+        <circleGeometry args={[0.007, 12]} />
+        <meshStandardMaterial color={CUBE_DARK} roughness={0.2} metalness={0.6} />
+      </mesh>
+
+      {/* Long-range comms patch. BEACON's stated objective is a link that does
+          NOT relay through the lander, which is what buys the rover range past
+          the 200 m the standard WiFi to Griffin would cap it at. */}
+      <mesh position={[-0.1, CUBE_HULL_TOP + 0.018, 0]}>
+        <boxGeometry args={[0.042, 0.014, 0.042]} />
+        <meshStandardMaterial color={CUBE_RAD} roughness={0.42} metalness={0.34} />
+      </mesh>
+      <mesh position={[-0.1, CUBE_HULL_TOP + 0.026, 0]}>
+        <boxGeometry args={[0.03, 0.003, 0.03]} />
+        <meshStandardMaterial color={CUBE_DARK} roughness={0.35} metalness={0.5} />
+      </mesh>
+
+      {/* Status marker, the house emissive accent. Small on purpose: on a body
+          this size anything bigger becomes the whole vehicle. */}
+      <mesh position={[-0.13, CUBE_HULL_TOP + 0.008, 0.06]}>
+        <sphereGeometry args={[0.005, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.5}
+          toneMapped={false}
+        />
       </mesh>
     </group>
   )
@@ -15804,10 +16364,16 @@ function BuriedHabitat({
 const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   'im-moon-racer': MoonRacer,
   'astrolab-flex': FlexRover,
+  // Same company as FLEX above and a third its length, but a different race
+  // and a different vehicle — see the header on FlipRover.
+  'astrolab-flip': FlipRover,
   // Lunar Outpost field two vehicles in two different races. This is the
   // 10 kg prospector; VoyagerRover below is their crewed-class LTV.
   'lunar-outpost-mapp': MappRover,
   'lunar-outpost-lunar-dawn': VoyagerRover,
+  // Voyager Lunar Systems, i.e. Astrobotic. Not related to the Lunar Voyager
+  // LTV on the line above despite the collision — see CubeRover's header.
+  'voyager-cuberover': CubeRover,
   // Each habitat bid needs its own model, because the race is an argument about
   // what a first habitat even is and no two answers look remotely alike: Thales
   // send a rigid metal module, Sierra send fabric that inflates to twice the

@@ -37,6 +37,7 @@ import {
   writeOnrampSnapshot,
 } from '@/lib/deprize/onrampReturn'
 import { trackOnrampEvent } from '@/lib/deprize/onrampTelemetryClient'
+import { arbitrumMintUsesLegacyBet, LEGACY_MINT_BET_ABI } from '@/lib/deprize/mintBet'
 import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
 import {
   fmt,
@@ -186,12 +187,18 @@ export default function BetModal({
       }),
     [chain.id, marketAddress]
   )
+  const legacyBet = arbitrumMintUsesLegacyBet(chain.id)
   const mint = useMemo(
     () =>
       canBet
-        ? getContract({ client, chain, address: mintAddress, abi: DePrizeMintABI as any })
+        ? getContract({
+            client,
+            chain,
+            address: mintAddress,
+            abi: (legacyBet ? LEGACY_MINT_BET_ABI : DePrizeMintABI) as any,
+          })
         : undefined,
-    [canBet, chain, mintAddress]
+    [canBet, chain, legacyBet, mintAddress]
   )
 
   const quoteCacheRef = useRef<{
@@ -481,21 +488,26 @@ export default function BetModal({
       toast.loading('Placing bet…', { id: 'bet', style: toastStyle })
       // The router splits msg.value (5% slice -> this DePrize's Juicebox project
       // / project token, 95% -> market) and caps the trade cost at the 95%
-      // budget (maxCost), refunding any unspent ETH. deadline + signature are
-      // the server-issued CompliancePermit that the contract verifies.
-      await sendDePrizeTx(
-        account,
-        prepareContractCall({
-          contract: mint,
-          method: 'bet' as string,
-          params: [
+      // budget (maxCost), refunding any unspent ETH. Sepolia's mint also checks
+      // the server-issued CompliancePermit. Arbitrum One's deployed mint does
+      // not take that signature; the permit request above is still the
+      // eligibility gate before this transaction is sent.
+      const params = legacyBet
+        ? [BigInt(deprizeId), BigInt(outcomeIndex), qty, budget]
+        : [
             BigInt(deprizeId),
             BigInt(outcomeIndex),
             qty,
             budget,
             BigInt(permit.deadline),
             permit.signature,
-          ],
+          ]
+      await sendDePrizeTx(
+        account,
+        prepareContractCall({
+          contract: mint,
+          method: 'bet' as string,
+          params,
           value: betAmountWei,
         })
       )
