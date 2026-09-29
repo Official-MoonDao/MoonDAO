@@ -162,6 +162,9 @@ type MarkerLayerProps = {
   // Competitor picked from a race panel — its plot is called out by name.
   selectedProject?: Project | null
   hoveredRaceId?: string | null
+  // Competitors to hold at full brightness even though their own district is
+  // not the open one. See litProjectIds in pages/moonbase.
+  litProjectIds?: Set<string>
   onSelectTree?: (raceId: string) => void
   onSelectProject?: (projectId: string) => void
   onHoverTree?: (raceId: string | null) => void
@@ -1431,6 +1434,7 @@ export default function MarkerLayer({
   selectedRaceId,
   selectedProject,
   hoveredRaceId,
+  litProjectIds,
   onSelectTree,
   onSelectProject,
   onHoverTree,
@@ -1463,6 +1467,13 @@ export default function MarkerLayer({
         const color = orgColor(leaderOrg)
         const isOpen = selectedRaceId === tree.raceId
         const dim = raceOpen && !isOpen ? DIM_FACTOR : 1
+        // Whether any competitor on THIS district belongs to the open race.
+        // Normally none do unless the district is itself open, but a race can
+        // have no ground of its own and still have hardware standing here —
+        // Water Ice owns nothing and yet Chang'e-7 and VIPER are both in the
+        // lander row. Those lots stay lit and named while everything around
+        // them dims, which is the whole of the highlight.
+        const litHere = (id: string) => Boolean(litProjectIds?.has(id))
 
         const count = members.length
         const priced = marketShowsOdds(tree.goal?.market?.status)
@@ -1515,8 +1526,8 @@ export default function MarkerLayer({
                     dir={plot.dir}
                     accent={orgColor(org)}
                     opacity={style.opacity}
-                    dim={dim}
-                    raceOpen={isOpen}
+                    dim={litHere(project.id) ? 1 : dim}
+                    raceOpen={isOpen || litHere(project.id)}
                     called={selectedProject?.id === project.id}
                     standing={
                       standing
@@ -1537,10 +1548,10 @@ export default function MarkerLayer({
                       standDir={plot.standDir}
                       accent={orgColor(org)}
                       opacity={style.opacity}
-                      dim={dim}
+                      dim={litHere(project.id) ? 1 : dim}
                       patrol={patrol}
                       patrolPhase={i / count}
-                      raceOpen={isOpen}
+                      raceOpen={isOpen || litHere(project.id)}
                       called={false}
                       radiusAt={radiusAt}
                       cinematic={cinematic}
