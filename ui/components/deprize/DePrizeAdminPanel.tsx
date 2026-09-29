@@ -32,6 +32,7 @@ import {
 } from '@/lib/deprize/constants'
 import { fmtEthWithUsd } from '@/lib/deprize/format'
 import { JB_PROJECTS_ADDRESS, useAllowanceOfParams } from '@/lib/deprize/juiceboxPayout'
+import { outcomeWinnerNameAt } from '@/lib/deprize/outcomeName'
 import { rpcRead } from '@/lib/deprize/read'
 import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
@@ -606,7 +607,7 @@ export default function DePrizeAdminPanel({
     }
     return resolve(
       Array.from({ length: numOutcomes }, (_, i) => (i === winningIndex ? 1n : 0n)),
-      `outcome #${winningIndex + 1} wins`,
+      `${outcomeWinnerNameAt(raceBinding?.outcomes, teamIds, winningIndex)} wins`,
     )
   }
   const resolveNoWinner = () => {
@@ -917,7 +918,7 @@ export default function DePrizeAdminPanel({
                 <option value="">Select winning team…</option>
                 {teamIds.map((t, i) => (
                   <option key={t.toString()} value={t.toString()}>
-                    #{i + 1} — team {t.toString()}
+                    {outcomeWinnerNameAt(raceBinding?.outcomes, teamIds, i)}
                   </option>
                 ))}
               </select>
@@ -1127,17 +1128,20 @@ export default function DePrizeAdminPanel({
               </div>
             ) : (
               <div className="flex items-center gap-2 flex-wrap">
-                {Array.from({ length: numOutcomes }, (_, i) => (
-                  <StandardButton
-                    key={i}
-                    onClick={() => resolveWinner(i)}
-                    disabled={busy}
-                    className="rounded-full"
-                    backgroundColor="bg-white/10"
-                  >
-                    Resolve #{i + 1} wins
-                  </StandardButton>
-                ))}
+                {Array.from({ length: numOutcomes }, (_, i) => {
+                  const name = outcomeWinnerNameAt(raceBinding?.outcomes, teamIds, i)
+                  return (
+                    <StandardButton
+                      key={i}
+                      onClick={() => resolveWinner(i)}
+                      disabled={busy}
+                      className="rounded-full"
+                      backgroundColor="bg-white/10"
+                    >
+                      {name} wins
+                    </StandardButton>
+                  )
+                })}
                 <StandardButton
                   onClick={resolveNoWinner}
                   disabled={busy}
