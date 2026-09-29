@@ -4,16 +4,18 @@ import Image from 'next/image'
 interface MissionContributeModalHeaderProps {
   missionName?: string
   onClose: () => void
+  compact?: boolean
 }
 
 export function MissionContributeModalHeader({
   missionName,
   onClose,
+  compact = false,
 }: MissionContributeModalHeaderProps) {
   return (
-    <div className="flex items-center justify-between pb-6 border-b border-white/10 mb-8">
+    <div className={`flex items-center justify-between border-b border-white/10 ${compact ? 'pb-4 mb-5' : 'pb-6 mb-8'}`}>
       <div className="flex items-center space-x-4">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+        <div className={`${compact ? 'w-9 h-9' : 'w-12 h-12'} rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/20`}>
           <Image
             src="/assets/icon-star.svg"
             alt="Contribute"
@@ -23,7 +25,9 @@ export function MissionContributeModalHeader({
           />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Contribute to Mission</h2>
+          <h2 className={`${compact ? 'text-lg' : 'text-2xl'} font-bold text-white tracking-tight`}>
+            Contribute to Mission
+          </h2>
           <p className="text-gray-400 text-sm mt-0.5">{missionName}</p>
         </div>
       </div>

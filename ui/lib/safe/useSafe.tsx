@@ -300,6 +300,7 @@ export default function useSafe(
       safe,
       safeTx,
       isRejectionTx,
+      chainId: selectedChain?.id,
       provider,
     })
 

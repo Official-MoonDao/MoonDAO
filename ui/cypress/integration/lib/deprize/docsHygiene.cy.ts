@@ -141,10 +141,13 @@ describe('A′ docs hygiene', () => {
     }
   })
 
-  it('acceptance — ladder states rungs 1–3 are not enterable prizes', () => {
+  it('acceptance — ladder marks rungs 1–3 live on Sepolia', () => {
     const text = fs.readFileSync(path.join(DOCS_DIR, 'DEPRIZE_CAPABILITY_LADDER.md'), 'utf8')
-    expect(text).to.include('no pool, no registration, and no committed date')
-    expect(text).to.match(/PLANNED — name and bar only/)
+    expect(text).to.match(/First Tracks.*LIVE \(Sepolia #5\)/)
+    expect(text).to.match(/Water Ice.*LIVE \(Sepolia #6\)/)
+    expect(text).to.match(/Night Shift.*LIVE \(Sepolia #3\)/)
+    expect(text).to.not.match(/PLANNED — name and bar only/)
+    expect(text).to.not.include('no pool, no registration')
     expect(text).to.not.match(/^\| Roster \|/m)
     expect(text).to.not.match(/^1\.\s+\*\*Egress/m)
     expect(text).to.include('community payload purchase')

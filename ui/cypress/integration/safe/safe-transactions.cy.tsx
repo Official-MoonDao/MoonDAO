@@ -1,4 +1,5 @@
 import TestnetProviders from '@/cypress/mock/TestnetProviders'
+import { USDC_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import SafeTransactions from '@/components/safe/SafeTransactions'
 
@@ -73,10 +74,7 @@ describe('SafeTransactions', () => {
 
   it('renders transactions section', () => {
     cy.get('[data-testid="transactions-section"]').should('exist')
-    cy.get('[data-testid="transactions-title"]').should(
-      'contain',
-      'Transactions'
-    )
+    cy.get('[data-testid="transactions-title"]').should('contain', 'Transactions')
   })
 
   it('displays list of pending transactions', () => {
@@ -86,22 +84,13 @@ describe('SafeTransactions', () => {
 
   it('shows transaction details correctly', () => {
     cy.get('[data-testid="transaction-0x123"]').within(() => {
-      cy.get('[data-testid="transaction-nonce-1"]').should(
-        'contain',
-        'Nonce: 1'
-      )
+      cy.get('[data-testid="transaction-nonce-1"]').should('contain', 'Nonce: 1')
       cy.get('[data-testid="transaction-to-0x123"]').should(
         'contain',
         '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b'
       )
-      cy.get('[data-testid="transaction-value-0x123"]').should(
-        'contain',
-        '1.0 ETH'
-      )
-      cy.get('[data-testid="transaction-confirmations-0x123"]').should(
-        'contain',
-        '0/2'
-      )
+      cy.get('[data-testid="transaction-value-0x123"]').should('contain', '1.0 ETH')
+      cy.get('[data-testid="transaction-confirmations-0x123"]').should('contain', '0/2')
     })
   })
 
@@ -185,10 +174,7 @@ describe('SafeTransactions', () => {
         <SafeTransactions address={mockAddress} safeData={emptySafeData} />
       </TestnetProviders>
     )
-    cy.get('[data-testid="no-transactions-message"]').should(
-      'contain',
-      'No pending transactions'
-    )
+    cy.get('[data-testid="no-transactions-message"]').should('contain', 'No pending transactions')
   })
 
   it('shows reject button after signing when transaction is not executed', () => {
@@ -218,10 +204,7 @@ describe('SafeTransactions', () => {
 
     cy.mount(
       <TestnetProviders>
-        <SafeTransactions
-          address={mockAddress}
-          safeData={signedButNotExecutedSafeData}
-        />
+        <SafeTransactions address={mockAddress} safeData={signedButNotExecutedSafeData} />
       </TestnetProviders>
     )
 
@@ -279,17 +262,11 @@ describe('SafeTransactions', () => {
     }
     cy.mount(
       <TestnetProviders>
-        <SafeTransactions
-          address={mockAddress}
-          safeData={safeDataWithUndefinedConfirmations}
-        />
+        <SafeTransactions address={mockAddress} safeData={safeDataWithUndefinedConfirmations} />
       </TestnetProviders>
     )
     cy.get('[data-testid="transaction-0x123"]').should('exist')
-    cy.get('[data-testid="transaction-confirmations-0x123"]').should(
-      'contain',
-      '0/2'
-    )
+    cy.get('[data-testid="transaction-confirmations-0x123"]').should('contain', '0/2')
   })
 
   it('groups transactions by nonce', () => {
@@ -340,10 +317,82 @@ describe('SafeTransactions', () => {
         <SafeTransactions address={mockAddress} safeData={ethTransferData} />
       </TestnetProviders>
     )
-    cy.get('[data-testid="transaction-method-0x123"]').should(
-      'contain',
-      'Transfer ETH'
+    cy.get('[data-testid="transaction-method-0x123"]').should('contain', 'Transfer ETH')
+  })
+
+  it('shows a USDC send amount without expanding transaction details', () => {
+    const recipient = '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b'
+    const usdcData = {
+      ...mockSafeData,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          to: USDC_ADDRESSES.arbitrum,
+          value: '0',
+          data: '0xa9059cbb',
+          dataDecoded: {
+            method: 'transfer',
+            parameters: [
+              { name: 'to', type: 'address', value: recipient },
+              { name: 'value', type: 'uint256', value: '250500000' },
+            ],
+          },
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions address={mockAddress} safeData={usdcData} />
+      </TestnetProviders>
     )
+    cy.get('[data-testid="transaction-method-0x123"]').should('contain', 'Transfer USDC')
+    cy.get('[data-testid="transaction-to-0x123"]').should('contain', recipient)
+    cy.get('[data-testid="transaction-value-0x123"]').should('contain', '250.5 USDC')
+    cy.get('[data-testid="transaction-data-0x123"]').should('not.exist')
+  })
+
+  it('shows a treasury token amount from the safe balance list', () => {
+    const wbtc = '0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f'
+    const tokenData = {
+      ...mockSafeData,
+      pendingTransactions: [
+        {
+          ...mockSafeData.pendingTransactions[0],
+          to: wbtc,
+          value: '0',
+          data: new ethers.utils.Interface([
+            'function transfer(address to, uint256 value)',
+          ]).encodeFunctionData('transfer', [
+            '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b',
+            '150000000',
+          ]),
+          dataDecoded: {
+            method: 'transfer',
+            parameters: [
+              { value: '0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b' },
+              { value: '150000000' },
+            ],
+          },
+        },
+      ],
+    }
+    cy.mount(
+      <TestnetProviders>
+        <SafeTransactions
+          address={mockAddress}
+          safeData={tokenData}
+          tokenBalances={[
+            {
+              tokenAddress: wbtc,
+              token: { symbol: 'WBTC', decimals: 8 },
+            },
+          ]}
+        />
+      </TestnetProviders>
+    )
+    cy.get('[data-testid="transaction-value-0x123"]').should('contain', '1.5 WBTC')
+    cy.get('[data-testid="transaction-method-0x123"]').should('contain', 'Transfer WBTC')
+    cy.get('[data-testid="transaction-data-0x123"]').should('not.exist')
   })
 
   it('displays Reject Transaction method for rejection transactions', () => {
@@ -366,10 +415,7 @@ describe('SafeTransactions', () => {
         <SafeTransactions address={mockAddress} safeData={rejectionData} />
       </TestnetProviders>
     )
-    cy.get('[data-testid="transaction-method-0x123"]').should(
-      'contain',
-      'Reject Transaction'
-    )
+    cy.get('[data-testid="transaction-method-0x123"]').should('contain', 'Reject Transaction')
   })
 
   it('shows sign button when there is a rejection in the group', () => {
@@ -399,9 +445,7 @@ describe('SafeTransactions', () => {
         <SafeTransactions address={mockAddress} safeData={rejectionGroupData} />
       </TestnetProviders>
     )
-    cy.get('[data-testid="sign-transaction-with-rejection-0x123"]').should(
-      'exist'
-    )
+    cy.get('[data-testid="sign-transaction-with-rejection-0x123"]').should('exist')
     cy.get('[data-testid="reject-transaction-0x123"]').should('not.exist')
   })
 
@@ -486,9 +530,7 @@ describe('SafeTransactions', () => {
   it('calls signPendingTransaction when Sign is clicked', () => {
     cy.get('[data-testid="sign-transaction-0x123"]').click()
     cy.then(() => {
-      expect(mockSafeData.signPendingTransaction).to.have.been.calledWith(
-        '0x123'
-      )
+      expect(mockSafeData.signPendingTransaction).to.have.been.calledWith('0x123')
     })
   })
 
@@ -537,9 +579,7 @@ describe('SafeTransactions', () => {
     cy.get('input[type="checkbox"]').check({ force: true })
     cy.contains('button', 'Execute Transaction').click()
     cy.then(() => {
-      expect(executableSafeData.executeTransaction).to.have.been.calledWith(
-        '0x123'
-      )
+      expect(executableSafeData.executeTransaction).to.have.been.calledWith('0x123')
     })
   })
 })

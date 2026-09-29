@@ -122,18 +122,12 @@ describe('deprize odds row view', () => {
 })
 
 describe('deprize odds row wiring', () => {
-  it('ForecastPanel uses oddsRowView and drops the old inline bracket math', () => {
+  it('ForecastPanel shows ETH chance only and does not pool a DAO estimate', () => {
     const src = readUi('components/deprize/ForecastPanel.tsx')
-    if (!src.includes('oddsRowView')) {
-      throw new Error(
-        '[not implemented] ForecastPanel must import oddsRowView from @/lib/forecasts/oddsRow'
-      )
-    }
-    if (/function pct\(/.test(src) || /Math\.max\(\s*1\s*,\s*hi\s*-\s*lo\s*\)/.test(src)) {
-      throw new Error(
-        '[not implemented] ForecastPanel still has the old inline pct() / bracket math. Use oddsRowView and fmtOddsPct.'
-      )
-    }
+    expect(src).to.not.include('oddsRowView')
+    expect(src).to.not.include('logLinearPool')
+    expect(src).to.not.match(/Market \{/)
+    expect(src).to.not.match(/DAO \{/)
   })
 })
 

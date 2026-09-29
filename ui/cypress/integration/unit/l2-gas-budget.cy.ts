@@ -8,6 +8,8 @@ import {
 } from '@/lib/rpc/eip1559Fees'
 import { L2_GAS_BUDGET_ETH, L2_GAS_BUDGET_WEI } from '@/lib/rpc/gasBudget'
 import {
+  arbitrumSafeFees,
+  arbitrumSpotPrice,
   buildSafeExecutionOptions,
   encodeExecTransactionData,
   estimateSafeExecutionGas,
@@ -136,9 +138,7 @@ describe('Safe execution gas', () => {
       gasPrice: '0',
       gasToken: '0x0000000000000000000000000000000000000000',
       refundReceiver: '0x0000000000000000000000000000000000000000',
-      confirmations: [
-        { owner, signature: '0x' + 'ab'.repeat(65) },
-      ],
+      confirmations: [{ owner, signature: '0x' + 'ab'.repeat(65) }],
     }
     const encoded = encodeExecTransactionData(safeTx)
     expect(encoded.slice(0, 10)).to.equal('0x6a761202')
@@ -171,6 +171,60 @@ describe('Safe execution gas', () => {
     expect(seen.from).to.equal(owner)
     expect(seen.data).to.equal(encoded)
     expect(seen.maxFeePerGas).to.equal('48033600')
+  })
+
+  it('does not pad an Arbitrum estimate by 50% or up to the 1.5M cap', () => {
+    // Observed Arbitrum Safe token transfer: 116,871 gas used, limit 119,201.
+    const gasLimit = resolveSafeExecutionGasLimit({
+      estimatedGas: 116_871n,
+      isRejectionTx: false,
+      bufferBps: 110n,
+      minGasLimit: 100_000n,
+    })
+    expect(gasLimit).to.equal(128_558n)
+    expect(gasLimit < 150_000n).to.equal(true)
+  })
+
+  it('prices Arbitrum from the L2 spot price and drops an Ethereum wallet tip', () => {
+    const spot = ARBITRUM_GAS_PRICE_WEI
+    expect(
+      arbitrumSpotPrice({
+        gasPrice: 1_000_000_000n, // 1 gwei wallet quote
+        baseFeePerGas: spot,
+        maxFeePerGas: 1_000_000_000n,
+      })
+    ).to.equal(spot)
+
+    const fees = arbitrumSafeFees(spot)
+    expect(fees.maxPriorityFeePerGas).to.equal(0n)
+    expect(fees.maxFeePerGas).to.equal((spot * 120n) / 100n)
+
+    const options = buildSafeExecutionOptions({
+      estimatedGas: 116_871n,
+      isRejectionTx: false,
+      maxFeePerGas: fees.maxFeePerGas,
+      maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
+      bufferBps: 110n,
+      minGasLimit: 100_000n,
+    })
+    const locked = BigInt(options.gasLimit!) * BigInt(options.maxFeePerGas!)
+    // Real execution paid ~0.00000234 ETH. The old 2.4× fee plus a 1 gwei tip
+    // locked orders of magnitude more than this.
+    expect(locked < 5_000_000_000_000n).to.equal(true) // < 0.000005 ETH
+    const inflated = 175_306n * (computeMaxFeePerGas(spot, 0n) + 1_000_000_000n)
+    expect(locked * 10n < inflated).to.equal(true)
+  })
+
+  it('omits a fallback gas limit on Arbitrum when estimation fails', () => {
+    const options = buildSafeExecutionOptions({
+      estimatedGas: null,
+      isRejectionTx: false,
+      maxFeePerGas: 24_016_800n,
+      maxPriorityFeePerGas: 0n,
+      skipUnestimatedGasLimit: true,
+    })
+    expect(options.gasLimit).to.equal(undefined)
+    expect(options.maxPriorityFeePerGas).to.equal('0')
   })
 })
 

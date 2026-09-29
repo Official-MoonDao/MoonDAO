@@ -50,3 +50,26 @@ export function aggregateForecastVotes(
     backersByOutcome,
   }
 }
+
+/**
+ * Voting power behind each outcome.
+ * Sum of weight × (allocation / 100). Not divided by total weight, so a
+ * one-hot pick contributes that citizen's whole voting power to one option.
+ */
+export function votingPowerByOutcome(
+  votes: readonly { allocation: readonly number[]; weight: number }[],
+  nOutcomes: number
+): number[] {
+  if (!Number.isInteger(nOutcomes) || nOutcomes <= 0) return []
+
+  const totals = Array.from({ length: nOutcomes }, () => 0)
+  for (const vote of votes) {
+    const weight = Number.isFinite(vote.weight) && vote.weight > 0 ? vote.weight : 0
+    for (let i = 0; i < nOutcomes; i++) {
+      const allocRaw = vote.allocation?.[i] ?? 0
+      const alloc = Number.isFinite(allocRaw) ? allocRaw : 0
+      totals[i] += weight * (alloc / 100)
+    }
+  }
+  return totals
+}

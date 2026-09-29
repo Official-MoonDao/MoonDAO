@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import {
+  deprizeIndexHref,
   ROSTER_DISCLAIMER,
   isCompetitiveRace,
 } from '@/lib/deprize/competitions'
@@ -32,7 +33,14 @@ import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
  * to an on-chain DePrize on the selected chain. Same page chrome as
  * `/deprize/{id}` so every index card has a real destination — not moonbase.
  */
-export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
+export default function GoalDePrizeDetail({
+  goal,
+  chainSlug,
+}: {
+  goal: SharedGoal
+  chainSlug: string
+}) {
+  const indexHref = deprizeIndexHref(chainSlug)
   const account = useActiveAccount()
   const userAddress = account?.address
   const { login } = useLogin()
@@ -156,7 +164,7 @@ export default function GoalDePrizeDetail({ goal }: { goal: SharedGoal }) {
                   </div>
                 </div>
                 <Link
-                  href="/deprize"
+                  href={indexHref}
                   className="shrink-0 text-sm text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded"
                 >
                   ← All prizes

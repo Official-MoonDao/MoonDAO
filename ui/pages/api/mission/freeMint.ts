@@ -856,11 +856,21 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         abi: CitizenABI as any,
         chain: chain,
       })
-      const balance: any = await readContract({
-        contract: citizenContract,
-        method: 'balanceOf' as string,
-        params: [address as string],
-      })
+      let balance: any
+      try {
+        balance = await readContract({
+          contract: citizenContract,
+          method: 'balanceOf' as string,
+          params: [address as string],
+        })
+      } catch (err) {
+        // RPC blip. Report it as transient so the client offers a retry
+        // instead of an unhandled 500.
+        console.error('[freeMint] balanceOf failed during invite check:', err)
+        return res.status(503).json({
+          error: 'Unable to verify invite at this time. Please try again in a moment.',
+        })
+      }
       if (balance !== BigInt(0)) {
         return res.status(400).json({ error: 'You are already a citizen!' })
       }

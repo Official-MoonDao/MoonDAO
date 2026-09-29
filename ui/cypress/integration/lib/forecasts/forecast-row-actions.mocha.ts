@@ -85,9 +85,10 @@ describe('deprize forecast row actions', () => {
     expect(kinds(actions)[0]).to.equal('bet')
   })
 
-  it('disables Predict with need-citizen when a connected wallet holds no Citizen', () => {
+  it('keeps Predict enabled for a connected wallet with no Citizen', () => {
     const actions = mod.rowActions({ ...OPEN, isCitizen: false })
-    expect(byKind(actions, 'predict')).to.include({ enabled: false, reason: 'need-citizen' })
+    expect(byKind(actions, 'predict')).to.include({ enabled: true })
+    expect(byKind(actions, 'predict').reason).to.equal(undefined)
   })
 
   it('keeps Predict enabled for a disconnected wallet so tapPlan can connect', () => {
@@ -125,6 +126,35 @@ describe('deprize forecast row action wiring', () => {
         '[not implemented] ForecastPanel still renders "Save prediction". Commit on tap and delete the footer.'
       )
     }
+  })
+
+  it('opens one prediction window from the competitor card', () => {
+    const src = readUi('components/deprize/ForecastPanel.tsx')
+    expect(src).to.include('PredictModal')
+    expect(src).to.not.include('pickLabel')
+    expect(src).to.not.include('Back with ETH')
+    expect(src).to.not.include('Citizen prediction')
+    const modal = readUi('components/deprize/PredictModal.tsx')
+    expect(modal).to.not.include('No bet attached')
+    expect(modal).to.include('Attach a bet')
+    expect(modal).to.include('aria-expanded={betOpen}')
+    expect(modal).to.include('setBetOpen((open) => !open)')
+    expect(modal).to.include('Optional. Open to add an ETH bet.')
+    expect(modal).to.include('{props.bet}')
+    const shell = modal.slice(
+      modal.indexOf('data-testid="deprize-predict-bet"'),
+      modal.indexOf('id="deprize-predict-bet-panel"')
+    )
+    expect(shell).to.include('overflow-hidden rounded-xl border border-white/15')
+    const attachButton = modal.slice(
+      modal.lastIndexOf('<button', modal.indexOf('aria-expanded={betOpen}')),
+      modal.indexOf('</button>', modal.indexOf('aria-expanded={betOpen}'))
+    )
+    expect(attachButton).to.not.include('rounded-xl')
+    expect(attachButton).to.not.include('border')
+    expect(modal).to.not.include('This spends ETH and changes the odds.')
+    expect(modal).to.not.include('Add a bet')
+    expect(modal).to.not.include('Save prediction')
   })
 })
 

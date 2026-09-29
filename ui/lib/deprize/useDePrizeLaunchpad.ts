@@ -5,19 +5,11 @@ import MissionTableABI from 'const/abis/MissionTable.json'
 import { JBV5_TOKENS_ADDRESS, MISSION_CREATOR_ADDRESSES } from 'const/config'
 import { useEffect, useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
+import { EXTRA_MISSION_CREATORS } from '@/lib/deprize/extraMissionCreators'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
 const ZERO = '0x0000000000000000000000000000000000000000'
-
-/**
- * Extra MissionCreators to scan when resolving jbProjectId → mission id.
- * Sepolia DePrize fixtures sometimes use a dedicated creator outside the
- * app-wide deployment (see docs/DEPRIZE_QA.md).
- */
-const EXTRA_MISSION_CREATORS: Partial<Record<string, readonly string[]>> = {
-  sepolia: ['0xa692eEd67c4D2C1C73DC0515240d27cf7d6fF9D1'],
-}
 
 export type DePrizeLaunchpadToken = {
   /** ERC-20 symbol of the bound mission's JB project token (e.g. FRANKT, OVERVIEW). */

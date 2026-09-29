@@ -15,11 +15,38 @@ export function useCitizen(
   citizenAddress?: string,
   skipFetch: boolean = false
 ) {
+  return useCitizenQuery(selectedChain, citizenContract, citizenAddress, skipFetch).nft
+}
+
+/**
+ * Same lookup as `useCitizen`, plus whether the check is still in flight.
+ * A connected wallet is not "not a citizen" until this settles.
+ */
+export function useCitizenQuery(
+  selectedChain: any,
+  citizenContract?: any,
+  citizenAddress?: string,
+  skipFetch: boolean = false
+): { nft: any; isLoading: boolean } {
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
   const { user, authenticated } = usePrivy()
   const [citizenNFT, setCitizenNFT] = useState<any>()
+  // Identity `citizenNFT` was resolved for. Stays unset until that lookup
+  // finishes, so the first paint is still pending for a connected wallet.
+  const [loadedFor, setLoadedFor] = useState<string | null>(null)
+
+  const ownerKey = `${chainSlug}|${(address || '').toLowerCase()}|${(
+    citizenAddress || ''
+  ).toLowerCase()}`
+  const canLookup =
+    !skipFetch && !!authenticated && !!user && !!selectedChain && !!(citizenAddress || address)
+  // Not settled until this wallet, chain, and address have been checked.
+  // A same-identity refetch keeps the previous NFT so the mint prompt does
+  // not flash; a different identity must not reuse it.
+  const isLoading = canLookup && loadedFor !== ownerKey
+  const visibleNft = loadedFor === ownerKey ? citizenNFT : undefined
 
   useEffect(() => {
     // Check skipFetch FIRST, before changing any state
@@ -28,10 +55,18 @@ export function useCitizen(
       return
     }
 
-    async function getCitizenNFTByAddress() {
-      setCitizenNFT(undefined)
-      if (!authenticated || !user) return
+    let cancelled = false
 
+    async function getCitizenNFTByAddress() {
+      if (!authenticated || !user || !selectedChain || !(citizenAddress || address)) {
+        if (!cancelled) {
+          setCitizenNFT(undefined)
+          setLoadedFor(null)
+        }
+        return
+      }
+
+      let resolved: any
       try {
         let contract
         if (citizenContract) {
@@ -51,30 +86,57 @@ export function useCitizen(
           params: [citizenAddress || address],
         })
 
-        const nft = await getNFT({
-          contract: contract,
-          tokenId: BigInt(ownedTokenId),
-        })
-
         // Callers that omit `citizenAddress` are asking "is the connected
         // wallet a citizen?" to gate a feature — a lapsed subscription has to
         // answer no. Lookups for a specific address are display-only (member
         // lists), so they skip the extra read.
+        // Expiry is read on the same chain as the token. Token ids are not
+        // shared across chains, so a default-chain read can mark a paid-up
+        // testnet citizen as lapsed.
         if (!citizenAddress) {
-          const expiresAt = await fetchCitizenExpiresAt(ownedTokenId.toString())
+          const expiresAt = await fetchCitizenExpiresAt(
+            ownedTokenId.toString(),
+            selectedChain
+          )
           if (isSubscriptionExpired(expiresAt)) {
-            setCitizenNFT(undefined)
+            resolved = undefined
             return
           }
         }
 
-        setCitizenNFT(nft)
+        resolved = {
+          id: ownedTokenId,
+          owner: (citizenAddress || address || '').toLowerCase(),
+          metadata: { id: ownedTokenId.toString(), name: '' },
+        }
+
+        try {
+          resolved = await getNFT({
+            contract: contract,
+            tokenId: BigInt(ownedTokenId),
+          })
+        } catch (err) {
+          // Ownership is already proven. A metadata/gateway failure must not
+          // send a citizen back to the mint prompt.
+          console.warn('Citizen metadata unavailable:', err)
+        }
       } catch (err: any) {
-        if (err.reason === 'No token owned') setCitizenNFT(undefined)
+        resolved = undefined
+        if (err?.reason !== 'No token owned' && !/No token owned/i.test(err?.message || '')) {
+          console.warn('Citizen lookup failed:', err)
+        }
+      } finally {
+        if (!cancelled) {
+          setCitizenNFT(resolved)
+          setLoadedFor(ownerKey)
+        }
       }
     }
 
     if (selectedChain) getCitizenNFTByAddress()
+    return () => {
+      cancelled = true
+    }
   }, [
     selectedChain,
     chainSlug,
@@ -84,9 +146,10 @@ export function useCitizen(
     authenticated,
     citizenAddress,
     skipFetch,
+    ownerKey,
   ])
 
-  return citizenNFT
+  return { nft: visibleNft, isLoading }
 }
 
 /**

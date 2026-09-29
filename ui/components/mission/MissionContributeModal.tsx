@@ -106,6 +106,14 @@ type MissionContributeModalProps = {
    * network (e.g. “stay on Arbitrum”) instead of switching to the richest funding chain.
    */
   stayOnSelectedAppChainRef?: React.MutableRefObject<boolean>
+  /** Smaller type, for surfaces where the launchpad amount scale dwarfs the page. */
+  compact?: boolean
+  /**
+   * Chain the Juicebox terminal was read from. When set, payment stays on that
+   * chain. A production build otherwise only offers Arbitrum and Ethereum, and
+   * a Sepolia prize was being told to pay on Arbitrum.
+   */
+  paymentChain?: Chain
 }
 
 export default function MissionContributeModal({
@@ -125,6 +133,8 @@ export default function MissionContributeModal({
   recommendedFundingChain = null,
   fundingChainBalances = null,
   stayOnSelectedAppChainRef,
+  compact = false,
+  paymentChain,
 }: MissionContributeModalProps) {
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet, setSelectedWallet } = useContext(PrivyWalletContext)
@@ -138,10 +148,10 @@ export default function MissionContributeModal({
   // the many contributors who already hold mainnet ETH can pay from there via
   // the LayerZero cross-chain path. Base was removed earlier (users without
   // ETH on Base were bouncing).
-  const chains = useMemo(
-    () => (isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]),
-    [isTestnet]
-  )
+  const chains = useMemo(() => {
+    if (paymentChain) return [paymentChain]
+    return isTestnet ? [sepolia, optimismSepolia] : [arbitrum, ethereum]
+  }, [isTestnet, paymentChain])
   const chainSlugs = chains.map((chain) => getChainSlug(chain))
 
   const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
@@ -195,6 +205,11 @@ export default function MissionContributeModal({
 
   const chainSlug = getChainSlug(payChainStable)
 
+  // A pinned payment chain settles on that chain's Juicebox terminal. Comparing
+  // it with the app default (Arbitrum) used to treat a Sepolia prize as a
+  // LayerZero transfer, and that map has no route for Sepolia.
+  const isCrossChainPay = paymentChain == null && chainSlug !== defaultChainSlug
+
   /**
    * The chain card / Apple-Pay funding is delivered to. The Coinbase onramp can
    * only reliably deliver ETH to the default chain (Arbitrum), and the mission
@@ -233,13 +248,17 @@ export default function MissionContributeModal({
       setUserChosePayChainInModal(false)
       return
     }
+    if (paymentChain) {
+      setSelectedChain((prev) => (prev.id === paymentChain.id ? prev : paymentChain))
+      return
+    }
     if (stayOnSelectedAppChainRef?.current) {
       stayOnSelectedAppChainRef.current = false
       setUserChosePayChainInModal(true)
       return
     }
     syncContextToRecommendedFunding()
-  }, [modalEnabled, stayOnSelectedAppChainRef, syncContextToRecommendedFunding])
+  }, [modalEnabled, paymentChain, setSelectedChain, stayOnSelectedAppChainRef, syncContextToRecommendedFunding])
 
   const contributionTermsCheckboxLabel = useMemo(
     () => (
@@ -350,7 +369,7 @@ export default function MissionContributeModal({
 
   const primaryTerminalContract = useContract({
     address: primaryTerminalAddress,
-    chain: DEFAULT_CHAIN_V5,
+    chain: paymentChain ?? DEFAULT_CHAIN_V5,
     abi: JBV5MultiTerminal.abi as any,
     forwardClient,
   })
@@ -519,7 +538,7 @@ export default function MissionContributeModal({
 
   // Check if LayerZero quote exceeds the protocol limit
   const layerZeroLimitExceeded = useMemo(() => {
-    const isCrossChain = chainSlug !== defaultChainSlug
+    const isCrossChain = isCrossChainPay
     if (!isCrossChain) return false
 
     if (chainSlug !== 'ethereum' && chainSlug !== 'base') return false
@@ -528,7 +547,7 @@ export default function MissionContributeModal({
 
     const LAYERZERO_MAX_WEI = BigInt(Math.floor(LAYERZERO_MAX_ETH * 1e18))
     return crossChainQuote > LAYERZERO_MAX_WEI
-  }, [chainSlug, defaultChainSlug, crossChainQuote])
+  }, [isCrossChainPay, chainSlug, defaultChainSlug, crossChainQuote])
 
   // Calculate ETH amount from USD for display
   const calculateEthAmount = useCallback(() => {
@@ -721,7 +740,7 @@ export default function MissionContributeModal({
       return
     }
 
-    const isCrossChain = chainSlug !== defaultChainSlug
+    const isCrossChain = isCrossChainPay
 
     const applyGasBuffer = (rawGas: bigint, cross: boolean) => {
       const bufferPercent = cross ? 180 : 130
@@ -895,7 +914,7 @@ export default function MissionContributeModal({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chainId: DEFAULT_CHAIN_V5.id,
+              chainId: payChainStable.id,
               from: address,
               to: primaryTerminalAddress,
               data: txData,
@@ -965,6 +984,7 @@ export default function MissionContributeModal({
     crossChainPayContract,
     chainSlug,
     defaultChainSlug,
+    isCrossChainPay,
     mission?.projectId,
     output,
     message,
@@ -981,7 +1001,7 @@ export default function MissionContributeModal({
   // Required total (tx value + buffered gas) in wei for exact balance checks; ETH number for display only.
   const requiredWei = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
-    const isCrossChain = chainSlug !== defaultChainSlug
+    const isCrossChain = isCrossChainPay
 
     let transactionWei: bigint
     if (isCrossChain && crossChainQuote > BigInt(0) && !layerZeroLimitExceeded) {
@@ -1026,6 +1046,7 @@ export default function MissionContributeModal({
     crossChainQuote,
     chainSlug,
     defaultChainSlug,
+    isCrossChainPay,
     layerZeroLimitExceeded,
   ])
 
@@ -1107,6 +1128,7 @@ export default function MissionContributeModal({
   // true) and keep the cross-chain path.
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_TEST_ENV === 'true') return
+    if (paymentChain) return
     if (!modalEnabled || !address) return
     // Returning from the onramp: card funds always land on the default chain,
     // so pin the whole flow there immediately (before the auto-contribution
@@ -1129,6 +1151,7 @@ export default function MissionContributeModal({
     fundingBalanceResolved,
     hasEnoughBalance,
     payChainStable.id,
+    paymentChain,
     chains,
     setSelectedChain,
     router?.query?.onrampSuccess,
@@ -1159,7 +1182,7 @@ export default function MissionContributeModal({
   // Calculate LayerZero cross-chain fee
   const layerZeroFeeDisplay = useMemo(() => {
     const cleanUsdInput = usdInput ? usdInput.replace(/,/g, '') : '0'
-    const isCrossChain = chainSlug !== defaultChainSlug
+    const isCrossChain = isCrossChainPay
 
     if (!isCrossChain || crossChainQuote === BigInt(0)) {
       return { eth: '0', usd: '0.00' }
@@ -1178,7 +1201,7 @@ export default function MissionContributeModal({
       eth: layerZeroFeeEth.toFixed(6),
       usd: layerZeroFeeUsd.toFixed(2),
     }
-  }, [crossChainQuote, usdInput, ethUsdPrice, chainSlug, defaultChainSlug, layerZeroLimitExceeded])
+  }, [crossChainQuote, usdInput, ethUsdPrice, chainSlug, defaultChainSlug, isCrossChainPay, layerZeroLimitExceeded])
 
   // Calculate how much ETH the user needs to buy.
   // Treat an unresolved balance as 0 for deficit purposes — PaymentBreakdown
@@ -1400,7 +1423,7 @@ export default function MissionContributeModal({
       }
 
       let receipt: any
-      if (chainSlug !== defaultChainSlug) {
+      if (isCrossChainPay) {
         // Never fire a cross-chain tx the wallet can't fund. If the balance on
         // this (non-default) chain doesn't cover the cross-chain cost, the tx
         // is doomed ("likely to fail") — this happens when card funding landed
@@ -2116,6 +2139,7 @@ export default function MissionContributeModal({
         <MissionContributeModalHeader
           missionName={mission?.metadata?.name}
           onClose={handleModalClose}
+          compact={compact}
         />
 
         <div className="space-y-5">
@@ -2272,7 +2296,7 @@ export default function MissionContributeModal({
                     className="block cursor-text"
                   >
                     <div className="flex items-baseline justify-center gap-1 sm:gap-2 min-w-0">
-                      <span className="text-cyan-200/80 text-3xl sm:text-5xl font-bold shrink-0 select-none">
+                      <span className={`text-cyan-200/80 font-bold shrink-0 select-none ${compact ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-5xl'}`}>
                         $
                       </span>
                       <input
@@ -2282,13 +2306,13 @@ export default function MissionContributeModal({
                         autoFocus
                         autoComplete="off"
                         aria-label="Contribution amount in USD"
-                        className="min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center text-4xl sm:text-6xl font-bold tracking-tight placeholder-white/25 focus:placeholder-white/40 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className={`min-w-0 flex-1 max-w-[14ch] bg-transparent border-none outline-none text-white text-center font-bold tracking-tight placeholder-white/25 focus:placeholder-white/40 focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${compact ? 'text-2xl sm:text-3xl' : 'text-4xl sm:text-6xl'}`}
                         value={usdInput}
                         onChange={handleUsdInputChange}
                         placeholder="Amount"
                         maxLength={15}
                       />
-                      <span className="text-gray-300 text-xl sm:text-2xl font-bold shrink-0 select-none">
+                      <span className={`text-gray-300 font-bold shrink-0 select-none ${compact ? 'text-sm sm:text-base' : 'text-xl sm:text-2xl'}`}>
                         USD
                       </span>
                     </div>
@@ -2441,7 +2465,7 @@ export default function MissionContributeModal({
                           <p className="text-white/60 text-sm">Calculating…</p>
                         </div>
                       ) : (
-                        <p className="font-bold text-emerald-200/95 text-xl sm:text-2xl tabular-nums tracking-tight sm:text-right">
+                        <p className={`font-bold text-emerald-200/95 tabular-nums tracking-tight sm:text-right ${compact ? 'text-base sm:text-lg' : 'text-xl sm:text-2xl'}`}>
                           {formatContributionOutput(output)}
                         </p>
                       )}
