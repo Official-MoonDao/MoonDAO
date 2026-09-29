@@ -218,6 +218,6 @@ All figures are in USD.
 
 **Net impact and sustainability path.** At today's prices, with revenue flat, official AUM would end the term at about **$285k** if only the core is spent. If every program and the full bonus pay out, it would end at about **$232k**. Both figures include the project-system pot (3% of AUM per quarter under MDP-267). These are the numbers this term has to change, which is why every objective carries a revenue or cost key result. The path to cash-flow sustainability by the end of 2027 has three parts: recurring network revenue, sponsor-funded prizes, and external capital through the for-profit arm, all arriving while an agent-run EB brings guaranteed cost down to ≤ $15k per month from Q2 2027.
 
-**Runway guardrail.** If official AUM on `/admin/financial-overview` closes below **$300,000** for seven consecutive days, all unreleased program tranches and the bonus pool freeze automatically. The EB then brings a revised budget to the Senate within 30 days.
+**Runway guardrail.** If official AUM on `/admin/financial-overview` closes below **$300,000** for seven consecutive days, all unreleased program tranches freeze automatically. Verified milestone bonuses are still paid. The EB then brings a revised budget to the Senate within 30 days.
 
 Monthly burn against this envelope, and every program tranche release with the gate it passed, will be published through the project system and the weekly treasury report.
