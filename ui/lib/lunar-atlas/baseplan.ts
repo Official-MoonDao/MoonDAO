@@ -803,10 +803,20 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
   rover: district(-120, {
     turn: -6,
     branch: { bearingDeg: 270, lengthM: 55, width: 0.72 },
-    // Sized for the roster, now that the roster actually parks here: four
-    // LTV-class lots packed off a 55 m branch, the head one standing 19.7 m
-    // past the dead end. Was 27 while the yard's 9 m apron set it instead.
-    block: 20,
+    // Sized for the roster, now that the roster actually parks here: five
+    // First Tracks lots off the 55 m branch, with the head one — FLIP, at a 1 m
+    // radius the only vehicle in the field bigger than a shoebox — standing
+    // 16.1 m past the dead end. That lot is the binding constraint, and 9 is
+    // the least block that still covers the district; 12 leaves a working
+    // margin without claiming ground the filler could use.
+    //
+    // Was 20 for the four LTV-class lots that used to stand here, and 27 before
+    // that while the yard's 9 m apron set it instead. The district lost an
+    // order of magnitude of vehicle when the capability race took it off the
+    // crewed LTV bids, so the keep-out had to come down with it — left at 20 it
+    // was reserving 11 m more than the roster occupies, which on a plan with
+    // eight districts on eleven roads is ground the boulder field needs.
+    block: 12,
   }),
 
   // THE HABITAT RACE, on the longest branch but one: 130 m northwest off the
