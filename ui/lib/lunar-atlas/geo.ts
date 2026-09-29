@@ -267,6 +267,64 @@ export function drillInFraming(
   }
 }
 
+// Three-quarter "hero" framing for a single site: the eye ~30 m up and ~75 m
+// back, looking down at ~22° so the installation's form reads — not a top-down
+// birdseye, not a horizon-height squint. targetLift aims at mid-model.
+//
+// Those numbers describe a TEN METRE installation, which is what every
+// competitor on the base was within a factor of a few of until First Tracks
+// arrived with a field running from a 2 m FLIP down to a 38 cm Iris.
+export const HERO_SUBJECT_M = 10
+
+// The camera's own floors, which the framing below has to respect. Duplicated
+// from MoonGlobe as plain numbers so this stays a pure module — the assertions
+// in the geo suite are what keep the two honest.
+export const HERO_EYE_FLOOR_M = 3.2
+export const HERO_STANDOFF_FLOOR_M = 6
+
+// The hero framing, scaled to the thing it is framing.
+//
+// Held fixed, it stands 75 m off and aims 10 m ABOVE the ground — a good shot
+// of a 10 m reactor and a useless one of a 38 cm rover, because the camera
+// ends up pointed at empty sky some twenty-six vehicle-heights over its
+// subject's head with the subject itself a few pixels tall down in the corner.
+// Clicking a First Tracks entrant genuinely looked like nothing had loaded.
+//
+// Only SMALLER subjects are scaled. Everything at or above 10 m keeps exactly
+// the framing it has today, so this cannot quietly re-frame the rest of the
+// base while fixing the rovers.
+//
+// The floors are the camera's limits rather than taste. The eye may not go
+// below CAMERA_CLEARANCE, and the standoff has to stay outside the controls'
+// minimum distance or TrackballControls shoves the camera back out on the
+// first frame and undoes the framing — which is why heroMinDistanceM is
+// derived from this same function rather than written down twice.
+export function heroFraming(subjectM?: number): {
+  standoffM: number
+  eyeHeight: number
+  standoff: number
+  targetLift: number
+} {
+  const k = Math.min(1, (subjectM ?? HERO_SUBJECT_M) / HERO_SUBJECT_M)
+  const standoffM = Math.max(75 * k, HERO_STANDOFF_FLOOR_M)
+  return {
+    standoffM,
+    eyeHeight: Math.max(30 * k, HERO_EYE_FLOOR_M) / MOON_RADIUS_M,
+    standoff: standoffM / MOON_RADIUS_M,
+    // Aim at the middle of the subject. This is the part that matters most for
+    // small hardware: the distance only makes it small, the aim point moves it
+    // out of shot altogether.
+    targetLift: (10 * k) / MOON_RADIUS_M,
+  }
+}
+
+// How close the user may then zoom. Inside the standoff, so a drill-in never
+// starts already clamped, and never past the 12 m that reads as "close enough"
+// for the base at large.
+export function heroMinDistanceM(subjectM?: number): number {
+  return Math.min(12, heroFraming(subjectM).standoffM * 0.7)
+}
+
 // A cinematic, low-angle "from the surface" camera framing for a lat/lon. The
 // camera sits just above the ground a short distance away and looks across the
 // surface at a point slightly above it (where an on-surface model sits), so the

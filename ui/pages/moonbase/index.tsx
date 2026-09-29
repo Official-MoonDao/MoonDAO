@@ -72,6 +72,7 @@ import {
   CARRIED_BY,
   footprintRadiusM,
   hasOwnModel,
+  projectSizeM,
 } from '@/components/lunar-atlas/ProjectModel'
 import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
 import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
@@ -800,7 +801,17 @@ export default function MoonBaseZeroIndex() {
     const dir = plot?.dir ?? siteDir(race)
     const ll = dir ? vector3ToLatLon(dir) : project.location
     if (!ll) return
-    setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
+    // Framed against this machine's own size rather than the ~10 m the hero
+    // shot assumes. A district keeps the default, because a district's shot
+    // has to hold a whole roster; a single competitor gets framed as itself,
+    // which is the difference between looking at Iris and looking at the
+    // regolith ten meters above Iris.
+    setFocus({
+      lat: ll.lat,
+      lon: ll.lon,
+      view: 'surface',
+      subjectM: projectSizeM(project),
+    })
   }
 
   const handleSelectProject = (id: string, opts?: { fromDeepLink?: boolean }) => {

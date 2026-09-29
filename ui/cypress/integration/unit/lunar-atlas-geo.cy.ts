@@ -14,6 +14,11 @@ import {
   clampLat,
   declusterDirections,
   drillInFraming,
+  HERO_EYE_FLOOR_M,
+  HERO_STANDOFF_FLOOR_M,
+  HERO_SUBJECT_M,
+  heroFraming,
+  heroMinDistanceM,
   latLonToVector3,
   normalizeLon,
   orbitUpVector,
@@ -322,5 +327,70 @@ describe('lunar-atlas geo', () => {
       const expectedPosR = R * Math.sqrt(1.1 ** 2 + 0.3 ** 2)
       expect(Math.abs(len(position) - expectedPosR)).to.be.lessThan(1e-6)
     })
+  })
+})
+
+// The hero framing describes a 10 m installation, and held fixed it stood 75 m
+// off a 38 cm rover and aimed 10 m over its head — so clicking a First Tracks
+// entrant framed empty sky above something a few pixels tall. These pin the
+// scaling that fixed it, and in particular the two properties that are easy to
+// break later: that nothing at or above 10 m moves, and that the framing never
+// asks the camera for something its own floors forbid.
+describe('heroFraming — framing scaled to the subject', () => {
+  // Real PROJECT_SIZE_M entries, smallest to largest.
+  const IRIS = 0.38
+  const TENACIOUS = 0.54
+  const FLIP = 2.0
+
+  it('leaves everything at or above 10 m exactly as it was', () => {
+    const before = { eyeHeight: 30 / MOON_RADIUS_M, standoff: 75 / MOON_RADIUS_M, targetLift: 10 / MOON_RADIUS_M }
+    for (const m of [HERO_SUBJECT_M, 21.9, 38, undefined]) {
+      const f = heroFraming(m)
+      expect(f.eyeHeight, `${m}`).to.equal(before.eyeHeight)
+      expect(f.standoff, `${m}`).to.equal(before.standoff)
+      expect(f.targetLift, `${m}`).to.equal(before.targetLift)
+    }
+  })
+
+  // The aim point is what decided whether the subject was on screen at all.
+  // The invariant is that the camera looks somewhere within the subject's own
+  // envelope — not that it looks at the exact middle, since the size entry is
+  // a vehicle's LARGEST dimension and that is usually its length rather than
+  // its height. One length up is the roofline; the old fixed 10 m was about
+  // twenty-six Tenacious-heights over it.
+  it('aims inside the subject rather than far over it', () => {
+    for (const m of [IRIS, TENACIOUS, FLIP]) {
+      const liftM = heroFraming(m).targetLift * MOON_RADIUS_M
+      expect(liftM, `${m} m subject`).to.be.at.most(m)
+      expect(liftM / m, `${m} m subject`).to.be.closeTo(1, 1e-9)
+    }
+    // What it used to do, for contrast.
+    expect(10 / TENACIOUS).to.be.greaterThan(18)
+  })
+
+  it('closes in on small hardware instead of standing 75 m off it', () => {
+    expect(heroFraming(IRIS).standoffM).to.be.lessThan(heroFraming(FLIP).standoffM)
+    expect(heroFraming(FLIP).standoffM).to.be.lessThan(75)
+    // Roughly a subject-widths-per-frame constant, until the floor takes over.
+    expect(heroFraming(FLIP).standoffM).to.be.closeTo(15, 1e-9)
+  })
+
+  // Below the floors the camera simply refuses, and a framing that asks for
+  // less is silently overridden — which looks like the fix not working.
+  it('never asks the camera to go below its own floors', () => {
+    for (const m of [0.01, IRIS, TENACIOUS, FLIP, HERO_SUBJECT_M]) {
+      const f = heroFraming(m)
+      expect(f.eyeHeight * MOON_RADIUS_M, `eye ${m}`).to.be.at.least(HERO_EYE_FLOOR_M)
+      expect(f.standoffM, `standoff ${m}`).to.be.at.least(HERO_STANDOFF_FLOOR_M)
+    }
+  })
+
+  // TrackballControls clamps to minDistance every frame, so a standoff inside
+  // it is undone before the first frame is drawn.
+  it('keeps the zoom clamp inside the standoff it flies to', () => {
+    for (const m of [0.01, IRIS, TENACIOUS, FLIP, HERO_SUBJECT_M, 38, undefined]) {
+      expect(heroMinDistanceM(m), `${m}`).to.be.lessThan(heroFraming(m).standoffM)
+      expect(heroMinDistanceM(m), `${m}`).to.be.at.most(12)
+    }
   })
 })

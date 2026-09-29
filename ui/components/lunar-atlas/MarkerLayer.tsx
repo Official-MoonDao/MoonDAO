@@ -500,20 +500,34 @@ function CompetitorPlot({
           zIndexRange={[20, 0]}
           style={{ pointerEvents: 'none' }}
         >
-          <div
-            className={`whitespace-nowrap rounded border px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight shadow-md backdrop-blur-sm ${
-              called
-                ? 'border-white/25 bg-black/80 text-white'
-                : 'border-white/10 bg-black/55 text-white/70'
-            }`}
-          >
-            <div>{project.name}</div>
-            {standing && (
-              <div className="tabular-nums text-cyan-200/90">
-                {formatPlace(standing.place)} ·{' '}
-                {Math.round(standing.probability * 100)}%
-              </div>
-            )}
+          {/* The card hangs ABOVE its anchor rather than being centred on it.
+              `center` alone puts the anchor through the middle of the card,
+              which is harmless for a 4 m lander and fatal for a 40 cm rover:
+              the card is a fixed ~40 px of screen whatever it is naming, while
+              the lift that positions it shrinks with the hardware. On the
+              First Tracks field that inverted — a 26 cm Tenacious stands about
+              7 px tall under a card six times that, so the card covered the
+              whole machine and four of the five rovers read as not rendering
+              at all. Shifting the card up by half its own height puts its
+              bottom edge on the anchor, which holds at any zoom and for any
+              size of hardware, rather than only for hardware big enough to
+              stick out from behind its own name. */}
+          <div style={{ transform: 'translateY(calc(-50% - 6px))' }}>
+            <div
+              className={`whitespace-nowrap rounded border px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight shadow-md backdrop-blur-sm ${
+                called
+                  ? 'border-white/25 bg-black/80 text-white'
+                  : 'border-white/10 bg-black/55 text-white/70'
+              }`}
+            >
+              <div>{project.name}</div>
+              {standing && (
+                <div className="tabular-nums text-cyan-200/90">
+                  {formatPlace(standing.place)} ·{' '}
+                  {Math.round(standing.probability * 100)}%
+                </div>
+              )}
+            </div>
           </div>
         </Html>
       )}
