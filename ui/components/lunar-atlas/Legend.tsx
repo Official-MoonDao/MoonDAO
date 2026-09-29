@@ -25,6 +25,15 @@ export type RaceEntry = {
    */
   onLadder?: boolean
   /**
+   * Set when this race is decided somewhere other than the Moon, and carries
+   * the short label for it. Night Shift is the only one: it is won in a
+   * thermal-vacuum chamber, so it has no district and never will. Marked
+   * rather than left blank, because a race missing from the globe otherwise
+   * reads as one whose models have simply not been built yet.
+   * See EARTH_SIDE_VENUE.
+   */
+  venueChip?: string
+  /**
    * True when this race has a DePrize on the connected chain right now, so the
    * panel shows real odds and the bet button moves real ETH. Drives the dot
    * only. A ladder race with no market yet still belongs in the top group; it
@@ -112,7 +121,11 @@ export default function Legend({
             race.onLadder ? '' : 'opacity-50'
           }`}
         >
-          {PROJECT_TYPE_GLYPH[race.category]}
+          {/* A race settled off the Moon takes a globe rather than a hardware
+              glyph. Its members are all type `other`, so the alternative is
+              the generic ◆ — which says nothing, on the one row where the
+              category is the interesting part. */}
+          {race.venueChip ? '🌍' : PROJECT_TYPE_GLYPH[race.category]}
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
@@ -146,6 +159,14 @@ export default function Legend({
                 style={{ backgroundColor: race.leaderColor }}
               />
               <span className="truncate">{race.leaderName} leading</span>
+            </span>
+          )}
+          {/* On its own line rather than beside the title: these titles are a
+              full sentence and already truncate, so a chip next to one would
+              eat the words that identify the race. */}
+          {race.venueChip && (
+            <span className="mt-0.5 block text-[11px] text-sky-200/60">
+              {race.venueChip}
             </span>
           )}
         </span>

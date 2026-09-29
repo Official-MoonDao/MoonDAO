@@ -41,6 +41,7 @@ import {
 import {
   PROJECT_TYPE_LABEL,
   TIME_STATUS_OPACITY,
+  earthSideVenue,
   orgColor,
 } from '@/lib/lunar-atlas/display'
 import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
@@ -649,6 +650,10 @@ export default function MoonBaseZeroIndex() {
             onLadder: isLadderGoal(tree.goal?.id),
             tradable:
               findDePrizeIdForGoal(chainSlug, tree.goal?.id) !== undefined,
+            // Night Shift only. Every other row here either has a district or
+            // is waiting on one; this row is neither, and the legend has to
+            // say which.
+            venueChip: earthSideVenue(tree.goal?.id)?.chip,
           }
         })
         .sort(
@@ -656,6 +661,18 @@ export default function MoonBaseZeroIndex() {
         ),
     [surfaceTrees, dataset, chainSlug]
   )
+
+  // What the GLOBE is told is open, which is not always what the panel has
+  // open. Opening a race dims every district except its own, and that reads as
+  // "look here" — but Night Shift is settled in a chamber on Earth, so there
+  // is no "here" and the whole settlement went to DIM_FACTOR to point at
+  // nothing. Worse, dimming implies the answer is somewhere on this map.
+  //
+  // So a race with no lunar venue is simply not a selection as far as the
+  // globe is concerned. The base stays at full strength, the panel opens and
+  // says where the race actually happens, and the two no longer contradict
+  // each other.
+  const globeRaceId = earthSideVenue(selectedRaceId) ? null : selectedRaceId
 
   const legendOrgs = useMemo(
     () => dataset.organizations.filter((org) => org.id !== 'unassigned'),
@@ -1010,7 +1027,7 @@ export default function MoonBaseZeroIndex() {
           focus={focus}
           trees={sitedTrees}
           organizations={dataset.organizations}
-          selectedRaceId={selectedRaceId}
+          selectedRaceId={globeRaceId}
           selectedProject={selectedProject ?? null}
           hoveredRaceId={hoveredRaceId}
           litProjectIds={litProjectIds}
