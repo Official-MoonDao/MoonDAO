@@ -89,6 +89,14 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // whole camp rendered at 11/38 of its real size instead.
   'nasa-artemis-base-camp': 38,
   'blue-origin-blue-moon-mk1': 8,
+  // VIPER, and this one is a HEIGHT — 2.5 m to the mast head on a body only
+  // 1.7 m square, so unlike every other rover in this table the largest axis
+  // is vertical. NASA's engineering figures (Industry Day pack, LSIC mobility
+  // panel), not the 1.5 m "golf cart" rounding on the public mission page.
+  // Has a FOOTPRINT_FRACTION entry below for exactly this reason: the 0.5
+  // default would reserve a 1.25 m radius for a vehicle that covers 0.85.
+  // VIPER_M inverts this exact number.
+  'blue-origin-viper': 2.5,
   // The rest of the Touchdown roster (shared-next-landing), which is the race
   // that stands on the landing zone. CLPS-class hardware, so without entries
   // here each one would render at TYPE_SIZE_M.lander's 16 m — Blue Moon MK2
@@ -262,6 +270,10 @@ export function gradedDeckRadiusM(project: Project): number | null {
 const FOOTPRINT_FRACTION: Record<string, number> = {
   // Feet on the diagonals out to about 4 m; everything above the collar is
   // mast and radiator, which overhangs nothing it has to be spaced from.
+  // VIPER is 2.5 m tall on a 1.7 m square, so its size entry is a height and
+  // the 0.5 default would describe a footprint half again too big. Half of
+  // 1.7 over 2.5 gives the ground it actually covers.
+  'blue-origin-viper': 0.34,
   'lockheed-fission-surface-power': 0.21,
   // Guy anchors out to about 1 m; the rest of the 2.6 m is mast height, which
   // the packer should not be spacing a lot by.
@@ -1155,6 +1167,368 @@ function BlueMoonMk2({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// VIPER — NASA's polar ice prospector, delivered by Blue Moon MK1
+// ---------------------------------------------------------------------------
+
+// The Volatiles Investigating Polar Exploration Rover. Cancelled in 2024,
+// revived in 2025 on a CLPS task order to Blue Origin, and now manifested on
+// the second Blue Moon MK1 for a 2027 landing at Mons Mouton. It is a Water Ice
+// competitor, not a landing one, which is why it has no lot of its own: it is
+// drawn on MK1's, standing on the regolith beside the lander that flew it. See
+// CARRIED_BY, and the placement note in BlueMoonMk1 below.
+//
+// Dimensions are NASA's engineering figures — 1.7 x 1.7 x 2.5 m, 447 kg roving,
+// 0.5 m wheels — from the VIPER Industry Day pack and the LSIC mobility panel,
+// not the "5 by 5 by 8 feet, about the size of a golf cart" on the public
+// mission page. Those round to 1.5 m square and Wikipedia gives a third set
+// again (1.53 square, 2.45 tall); the engineering numbers are the ones the
+// hardware was built to.
+//
+// NOTE WHICH AXIS IS LARGEST. VIPER is 2.5 m TALL and only 1.7 m square, so
+// unlike every rover in the atlas its size entry is a HEIGHT. That has two
+// consequences and both are easy to get wrong: the model has to be authored
+// against the mast tip rather than the wheelbase, and footprintRadiusM's 0.5
+// default would claim a 1.25 m radius for a vehicle that covers 0.85 — hence
+// the FOOTPRINT_FRACTION entry.
+//
+// Three things make VIPER look like nothing else here and all three are
+// consequences of working at the pole:
+//   - The solar arrays stand VERTICALLY on three sides, because at the south
+//     pole the sun is at the horizon rather than overhead. A flat deck array
+//     would see almost nothing. This is the body-mounted-array case the house
+//     sun-raking rule exempts, same as ULTRA.
+//   - It has headlights, the first NASA rover to need them, because it drives
+//     into permanently shadowed craters. Eight LED arrays, and they are tuned
+//     BLUE rather than warm white — blue reads better against regolith in a
+//     PSR — so these are the one set of lamps in the atlas that must not use
+//     the usual cabin-warm tone.
+//   - All four wheels steer independently on active suspension, so it crabs
+//     sideways and spins in place. There is no rocker or bogie to draw; each
+//     corner is a steering column and a strut.
+const VIPER_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['blue-origin-viper'] ?? 2.5)
+
+const VIPER_BODY = '#e2e6ea' // the structure, which reads near-white
+const VIPER_MLI = '#c9a23a' // kapton over the warm box holding the avionics
+const VIPER_DARK = '#25282d' // array frames, mast, drill housing
+const VIPER_WHEEL = '#aeb5bd'
+const VIPER_RAD = '#f2f5f8' // the passive radiator faces
+const VIPER_LED = '#cfe4ff' // blue-tuned, per above — NOT the warm LED elsewhere
+
+const VIPER_WHEEL_R = 0.25 // published 0.5 m diameter
+const VIPER_WHEEL_W = 0.14
+// Grousers sit ON the published radius, not outside it. Centre a tab at
+// VIPER_WHEEL_R and half of it stands proud, which quietly makes a 0.5 m wheel
+// a 0.514 m one and pushes the whole vehicle past its published 1.7 m. This is
+// the third time this trap has caught a rover in this file — CubeRover by tab
+// height, Iris by tab rake, VIPER by tab thickness. Pull the centre in by half.
+const VIPER_GROUSER_T = 0.014 // radial thickness
+const VIPER_GROUSER_R = VIPER_WHEEL_R - VIPER_GROUSER_T / 2
+const VIPER_AXLE_X = 0.6 // + the wheel radius = the published 1.7 m
+const VIPER_TRACK_Z = 0.78 // + half a tyre = the published 1.7 m
+const VIPER_BODY_HALF = 0.45
+const VIPER_BODY_BOT = 0.4
+const VIPER_BODY_TOP = 1.02
+const VIPER_ARRAY_BOT = 0.5
+const VIPER_ARRAY_TOP = 1.85
+const VIPER_SUSP_Y = 0.58 // where the suspension arm meets the steering column
+const VIPER_SUSP_TOP = 0.66
+const VIPER_MAST_X = 0.34 // on the deck, forward of centre
+const VIPER_HEAD_BOT = 2.36
+const VIPER_HEIGHT = 2.5 // published, and the mast head tops out on it exactly
+
+// A corner module: steering column down from the chassis, suspension strut out
+// to the hub, and the wheel. Four of these and nothing else — no rocker, no
+// bogie, because every corner steers.
+function ViperCorner({ x, z }: { x: number; z: number }) {
+  const sx = Math.sign(x)
+  const sz = Math.sign(z)
+  return (
+    <group>
+      {/* Suspension arm, rooted a few cm INSIDE the chassis and reaching out to
+          the corner. The chassis is 0.9 m square and the wheels stand at 1.7 m
+          across, so a corner module is nowhere near the body in either axis —
+          drop the steering column straight down from (x, z) with nothing
+          spanning that gap and it hangs in space. The arm is what carries it. */}
+      <Strut
+        from={[sx * 0.42, VIPER_SUSP_Y + 0.04, sz * 0.42]}
+        to={[x, VIPER_SUSP_Y, z]}
+        r={0.038}
+        color={VIPER_BODY}
+      />
+      {/* Steering column over the hub. Every corner steers independently, so
+          this is a real actuator rather than a stub axle. Seated 2 cm into the
+          tyre's crown. */}
+      <mesh position={[x, (VIPER_WHEEL_R * 2 - 0.02 + VIPER_SUSP_TOP) / 2, z]}>
+        <cylinderGeometry
+          args={[0.05, 0.05, VIPER_SUSP_TOP - VIPER_WHEEL_R * 2 + 0.02, 12]}
+        />
+        <meshStandardMaterial color={VIPER_BODY} metalness={0.5} roughness={0.44} />
+      </mesh>
+      <ViperWheel x={x} z={z} />
+      {/* Hazlight on the body corner — the "parking lights" that let the
+          drivers see the wheel itself while manoeuvring. */}
+      <mesh position={[sx * 0.4, 0.55, sz * (VIPER_BODY_HALF + 0.012)]}>
+        <sphereGeometry args={[0.028, 10, 10]} />
+        <meshStandardMaterial
+          color={VIPER_LED}
+          emissive={VIPER_LED}
+          emissiveIntensity={1.6}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function ViperWheel({ x, z }: { x: number; z: number }) {
+  const face = Math.sign(z) * (VIPER_WHEEL_W / 2 + 0.005)
+  return (
+    <group position={[x, VIPER_WHEEL_R, z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh>
+        <cylinderGeometry
+          args={[VIPER_WHEEL_R, VIPER_WHEEL_R, VIPER_WHEEL_W, 26, 1, true]}
+        />
+        <meshStandardMaterial
+          color={VIPER_WHEEL}
+          metalness={0.52}
+          roughness={0.46}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Grousers, straddling the rim so they read from either side. */}
+      {Array.from({ length: 16 }, (_, i) => {
+        const a = (i / 16) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[
+              Math.cos(a) * VIPER_GROUSER_R,
+              0,
+              Math.sin(a) * VIPER_GROUSER_R,
+            ]}
+            rotation={[0, -a, 0]}
+          >
+            <boxGeometry args={[VIPER_GROUSER_T, VIPER_WHEEL_W, 0.022]} />
+            <meshStandardMaterial
+              color={VIPER_WHEEL}
+              metalness={0.48}
+              roughness={0.52}
+            />
+          </mesh>
+        )
+      })}
+      <mesh position={[0, face, 0]}>
+        <cylinderGeometry args={[0.062, 0.062, 0.03, 14]} />
+        <meshStandardMaterial color={VIPER_DARK} metalness={0.55} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// A solar wing: a dark cell field in a frame, standing on edge. Authored as a
+// flat panel in the XY plane and rotated into place by the caller, so the three
+// sides share one component instead of three near-copies.
+function ViperArray({ w, cols }: { w: number; cols: number }) {
+  const h = VIPER_ARRAY_TOP - VIPER_ARRAY_BOT
+  const rows = 4
+  return (
+    <group>
+      <mesh>
+        <boxGeometry args={[w, h, 0.022]} />
+        <meshStandardMaterial color={VIPER_DARK} metalness={0.4} roughness={0.5} />
+      </mesh>
+      {/* Standoffs, four per wing. The panel is held off the hull, so without
+          these it hangs there — and one strut rooted exactly ON the hull face
+          would be coplanar with it as well as too weak to read. These start
+          1.4 cm inside the chassis and finish in the back of the panel. */}
+      {[-1, 1].map((cx) =>
+        [-1, 1].map((cy) => (
+          <Strut
+            key={`${cx}:${cy}`}
+            from={[cx * w * 0.3, cy * h * 0.25, -0.034]}
+            to={[cx * w * 0.3, cy * h * 0.25, -0.009]}
+            r={0.016}
+            color={VIPER_BODY}
+          />
+        ))
+      )}
+      {Array.from({ length: cols }, (_, c) =>
+        Array.from({ length: rows }, (_, r) => (
+          <mesh
+            key={`${c}:${r}`}
+            position={[
+              (c - (cols - 1) / 2) * (w / cols),
+              (r - (rows - 1) / 2) * (h / rows),
+              0.014,
+            ]}
+          >
+            <boxGeometry args={[(w / cols) * 0.88, (h / rows) * 0.88, 0.006]} />
+            <meshStandardMaterial
+              color={PANEL}
+              metalness={0.34}
+              roughness={0.32}
+            />
+          </mesh>
+        ))
+      )}
+    </group>
+  )
+}
+
+// VIPER's geometry in METERS, with no scale wrapper of its own.
+//
+// Split out from ViperRover below so BlueMoonMk1 can drop it straight into its
+// own frame. Both frames are already true meters — a model's outer
+// projectScale and its inner *_M cancel to M_TO_UNITS by construction — so the
+// geometry is portable between them, but only if it carries no scale itself.
+// Nesting ViperRover instead would apply VIPER_M a second time and render a
+// 2.5 m rover at 68 cm.
+function ViperGeometry({ accent }: { accent: string }) {
+  const corners: [number, number][] = [
+    [VIPER_AXLE_X, VIPER_TRACK_Z],
+    [VIPER_AXLE_X, -VIPER_TRACK_Z],
+    [-VIPER_AXLE_X, VIPER_TRACK_Z],
+    [-VIPER_AXLE_X, -VIPER_TRACK_Z],
+  ]
+  const bodyH = VIPER_BODY_TOP - VIPER_BODY_BOT
+  const bodyMid = (VIPER_BODY_BOT + VIPER_BODY_TOP) / 2
+  const arrayMid = (VIPER_ARRAY_BOT + VIPER_ARRAY_TOP) / 2
+  return (
+    <group>
+      {corners.map(([x, z]) => (
+        <ViperCorner key={`${x}:${z}`} x={x} z={z} />
+      ))}
+
+      {/* The warm box: avionics inside an MLI blanket, which is the gold. */}
+      <mesh position={[0, bodyMid, 0]}>
+        <boxGeometry args={[VIPER_BODY_HALF * 2, bodyH, VIPER_BODY_HALF * 2]} />
+        <meshStandardMaterial
+          color={VIPER_MLI}
+          metalness={0.58}
+          roughness={0.46}
+          flatShading
+        />
+      </mesh>
+      {/* Radiator faces. The warm box rejects heat through loop heat pipes to
+          these, so they are bare white rather than blanketed. Flat to the sky
+          on the deck, per the house rule for radiators. */}
+      <mesh position={[0, VIPER_BODY_TOP + 0.006, 0]}>
+        <boxGeometry args={[VIPER_BODY_HALF * 1.7, 0.012, VIPER_BODY_HALF * 1.7]} />
+        <meshStandardMaterial color={VIPER_RAD} metalness={0.4} roughness={0.34} />
+      </mesh>
+
+      {/* Solar arrays on three sides, standing vertically. The fourth side is
+          left to the mast and the drill. */}
+      <group position={[-VIPER_BODY_HALF - 0.02, arrayMid, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <ViperArray w={0.92} cols={3} />
+      </group>
+      {[1, -1].map((s) => (
+        <group key={s} position={[0, arrayMid, s * (VIPER_BODY_HALF + 0.02)]}>
+          <ViperArray w={0.92} cols={3} />
+        </group>
+      ))}
+      {/* Mast: nav cameras, the gimballed high-gain dish, and the headlights.
+          Tops out on the published 2.5 m exactly. */}
+      <mesh position={[VIPER_MAST_X, (VIPER_BODY_TOP + VIPER_HEAD_BOT) / 2, 0]}>
+        <cylinderGeometry
+          args={[0.045, 0.055, VIPER_HEAD_BOT - VIPER_BODY_TOP, 12]}
+        />
+        <meshStandardMaterial color={VIPER_DARK} metalness={0.5} roughness={0.44} />
+      </mesh>
+      <mesh position={[VIPER_MAST_X, (VIPER_HEAD_BOT + VIPER_HEIGHT) / 2, 0]}>
+        <boxGeometry args={[0.13, VIPER_HEIGHT - VIPER_HEAD_BOT, 0.28]} />
+        <meshStandardMaterial color={VIPER_BODY} metalness={0.42} roughness={0.44} />
+      </mesh>
+      {/* Stereo navcams. */}
+      {[0.075, -0.075].map((cz) => (
+        <mesh
+          key={cz}
+          position={[VIPER_MAST_X + 0.07, 2.43, cz]}
+          rotation={[0, Math.PI / 2, 0]}
+        >
+          <circleGeometry args={[0.026, 14]} />
+          <meshStandardMaterial color="#0d0f13" metalness={0.68} roughness={0.16} />
+        </mesh>
+      ))}
+      {/* Headlights, flanking the cameras. Blue-tuned — see the header. */}
+      {[0.14, -0.14].map((lz) => (
+        <mesh key={lz} position={[VIPER_MAST_X + 0.07, 2.43, lz]}>
+          <sphereGeometry args={[0.032, 10, 10]} />
+          <meshStandardMaterial
+            color={VIPER_LED}
+            emissive={VIPER_LED}
+            emissiveIntensity={2.1}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+      {/* Gimballed high-gain dish. X-band direct to Earth — VIPER talks to the
+          ground itself rather than through the lander, so the dish is real
+          rather than decorative. */}
+      <mesh
+        position={[VIPER_MAST_X - 0.12, 2.3, 0]}
+        rotation={[Math.PI / 2.6, 0, 0]}
+      >
+        <sphereGeometry args={[0.15, 16, 10, 0, Math.PI * 2, 0, Math.PI / 3]} />
+        <meshStandardMaterial
+          color={VIPER_RAD}
+          metalness={0.34}
+          roughness={0.4}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* TRIDENT: a rotary percussive drill on a 1.24 m feed stage, reaching a
+          metre down. Drawn stowed, with the bit held clear of the regolith —
+          it is a metre of TRAVEL, not a metre of standing hardware, and a bit
+          drawn at full extension would be buried before the rover has drilled
+          anything. Seated into the chassis flank rather than floated off it. */}
+      <mesh position={[VIPER_BODY_HALF + 0.05, 0.8, -0.3]}>
+        <boxGeometry args={[0.12, 1.0, 0.16]} />
+        <meshStandardMaterial color={VIPER_DARK} metalness={0.46} roughness={0.48} />
+      </mesh>
+      <mesh position={[VIPER_BODY_HALF + 0.05, 0.4, -0.3]}>
+        <cylinderGeometry args={[0.018, 0.018, 0.42, 10]} />
+        <meshStandardMaterial color={VIPER_WHEEL} metalness={0.62} roughness={0.34} />
+      </mesh>
+
+      {/* Livery: the one accent band, as a collar high on the mast.
+          It went round the warm box first, which is where it sits on every
+          other vehicle here — but VIPER is the only one wearing solar wings on
+          three sides, and they run from 0.5 m to 1.85 m. A band on the body is
+          behind a panel from every direction but one, and that one is the face
+          the drill is on. The mast clears the wings by half a metre, so a
+          collar here is the only placement that can actually be seen. */}
+      <mesh position={[VIPER_MAST_X, 2.2, 0]}>
+        <cylinderGeometry args={[0.052, 0.052, 0.06, 12]} />
+        <meshStandardMaterial color={accent} metalness={0.32} roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+function ViperRover({ accent }: { accent: string }) {
+  return (
+    <group scale={VIPER_M}>
+      <ViperGeometry accent={accent} />
+    </group>
+  )
+}
+
+// Payloads drawn INSIDE another competitor's model rather than on ground of
+// their own, keyed rider -> host.
+//
+// VIPER is in Water Ice, not the landing race, so the colony layout never gives
+// it a plot — Water Ice loses the lander district to Touchdown and stands
+// nowhere. It is still physically on the base, because the lander that carries
+// it is. Selection reads this: opening Water Ice has to keep the host lit, or
+// the one race whose hardware you can actually see would dim the two places it
+// is visible.
+export const CARRIED_BY: Record<string, string> = {
+  'blue-origin-viper': 'blue-origin-blue-moon-mk1',
+}
+
+// ---------------------------------------------------------------------------
 // Blue Origin Blue Moon MK1 — uncrewed cargo lander
 // ---------------------------------------------------------------------------
 //
@@ -1651,6 +2025,27 @@ function BlueMoonMk1({ accent }: { accent: string }) {
         ))}
         <Mk1Ladder />
         <Mk1TopDeck accent={accent} />
+        {/* VIPER, down and clear. MK1's second flight is the ride NASA bought
+            for it, so the rover belongs in this picture — but it is a Water Ice
+            competitor, so the colony layout never gives it a lot of its own and
+            this is the only frame it can be drawn in. Both frames are true
+            meters, which is why ViperGeometry rather than ViperRover: the
+            latter would apply VIPER_M twice.
+            
+            Standing at 3.5 m on the +X axis, which is the one place it fits.
+            The gear is on the diagonals, so an axis is a gap between two legs —
+            2.58 m to the nearest footpad. It has to stay inside the 4.8 m
+            graded deck the lander is already seated on, and a 1.7 m square
+            slewed off radial reaches 4.64 m from the middle, so there is 16 cm
+            in hand and no room to push it further out. Off the front (+Z)
+            deliberately: that is where the skirt's arch and the ladder are.
+            
+            No ramp and no davit. MK1 lowers payload rather than rolling it off
+            and the mechanism's geometry is not public, so drawing one would be
+            inventing hardware. The rover is simply already down. */}
+        <group position={[3.5, 0, 0]} rotation={[0, -0.45, 0]}>
+          <ViperGeometry accent={accent} />
+        </group>
       </group>
     </group>
   )
@@ -15466,6 +15861,11 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // other four in that race still fall through to the generic `Lander`.
   // See BlueMoonMk1.
   'blue-origin-blue-moon-mk1': BlueMoonMk1,
+  // Registered even though the layout gives VIPER no plot, because the entry
+  // is what makes hasOwnModel true and what would draw it correctly the day
+  // Water Ice gets ground of its own. Today it is drawn inside MK1 — see
+  // CARRIED_BY.
+  'blue-origin-viper': ViperRover,
   // Touchdown's CNSA entrant, and nothing like the compact drum the generic
   // `lander` model is: a low boxy bus on splayed gold gear, with the widest
   // thing on it being a pair of deployed solar wings. Defined next to ILRSBase

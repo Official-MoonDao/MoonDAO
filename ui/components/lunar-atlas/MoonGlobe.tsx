@@ -108,6 +108,9 @@ export type MoonGlobeProps = {
   // Competitor picked from a race panel — its plot is called out by name.
   selectedProject?: Project | null
   hoveredRaceId?: string | null
+  // Competitors that stay lit while a race with no district of its own is
+  // open. See litProjectIds in pages/moonbase.
+  litProjectIds?: Set<string>
   onSelectTree?: (raceId: string) => void
   onSelectProject?: (projectId: string) => void
   onHoverTree?: (raceId: string | null) => void
@@ -687,6 +690,7 @@ export default function MoonGlobe({
   selectedRaceId,
   selectedProject,
   hoveredRaceId,
+  litProjectIds,
   onSelectTree,
   onSelectProject,
   onHoverTree,
@@ -940,6 +944,7 @@ export default function MoonGlobe({
           selectedRaceId={selectedRaceId}
           selectedProject={selectedProject}
           hoveredRaceId={hoveredRaceId}
+          litProjectIds={litProjectIds}
           onSelectTree={onSelectTree}
           onSelectProject={onSelectProject}
           onHoverTree={onHoverTree}

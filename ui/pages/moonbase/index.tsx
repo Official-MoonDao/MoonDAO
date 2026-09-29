@@ -68,6 +68,7 @@ import type {
   MarkerStyle,
 } from '@/components/lunar-atlas/MarkerLayer'
 import {
+  CARRIED_BY,
   footprintRadiusM,
   hasOwnModel,
 } from '@/components/lunar-atlas/ProjectModel'
@@ -592,6 +593,32 @@ export default function MoonBaseZeroIndex() {
     [surfaceTrees, layout]
   )
 
+  // Which competitors stay lit while a race is open.
+  //
+  // Selecting a race dims every district but its own, which is right until the
+  // open race has no district — and two of them never will. Water Ice is a
+  // question about publishing ice data, not a hardware type, so it loses the
+  // lander zone to Touchdown and stands nowhere. Yet it is plainly on the base:
+  // Chang'e-7 is out there in Touchdown's lander row, and VIPER is beside MK1
+  // in the same row. Without this set, opening Water Ice greyed the whole
+  // settlement to 0.28 and lit nothing at all — the one interaction that should
+  // have pointed at its hardware instead hid it.
+  //
+  // So light a race's members wherever they happen to stand, plus whoever is
+  // carrying them: VIPER has no plot of its own and is drawn inside MK1, so
+  // MK1 is what has to stay lit for the rover to be visible.
+  const litProjectIds = useMemo(() => {
+    const lit = new Set<string>()
+    if (!selectedRaceId) return lit
+    const open = surfaceTrees.find((t) => t.raceId === selectedRaceId)
+    for (const p of open?.projects ?? []) {
+      lit.add(p.id)
+      const host = CARRIED_BY[p.id]
+      if (host) lit.add(host)
+    }
+    return lit
+  }, [selectedRaceId, surfaceTrees])
+
   // The race list that drives the panel. Races with a live DePrize sort first
   // and the rest keep the biggest-field-first order — the more companies are
   // chasing a capability, the more of a race it is. A single unassigned concept
@@ -691,6 +718,20 @@ export default function MoonBaseZeroIndex() {
   // The direction of a race district's centre on the globe.
   const siteDir = (raceId: string | undefined) =>
     raceId ? layout.districts.get(raceId) : undefined
+
+  // Where a race with no district of its own can still be seen: the plot of
+  // the first member standing somewhere, or of whoever is carrying it. Water
+  // Ice has no ground and never will, but Chang'e-7 and VIPER are both out
+  // there in the lander row, so there IS somewhere to point the camera.
+  const guestPlotDir = (raceId: string | undefined) => {
+    if (!raceId || layout.districts.has(raceId)) return undefined
+    const tree = surfaceTrees.find((t) => t.raceId === raceId)
+    for (const p of tree?.projects ?? []) {
+      const dir = layout.plots.get(p.id)?.dir ?? layout.plots.get(CARRIED_BY[p.id])?.dir
+      if (dir) return dir
+    }
+    return undefined
+  }
 
   // Fly in close and centred on a specific competitor's own plot. Now that
   // every competitor stands on its own ground this can frame the asset itself
@@ -904,6 +945,13 @@ export default function MoonBaseZeroIndex() {
     setSelectedRaceId(g ? g.id : null)
     if (g && siteDir(g.id)) {
       flyToSite(g.id)
+    } else if (g && guestPlotDir(g.id)) {
+      // A race with no district of its own, whose hardware is standing in
+      // someone else's. Fly to the hardware rather than doing nothing: before
+      // this, selecting Water Ice dimmed the base and left the camera where it
+      // was, so the highlight it had just switched on was usually off screen.
+      const ll = vector3ToLatLon(guestPlotDir(g.id)!)
+      setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
     } else if (g?.location) {
       setFocus({
         lat: g.location.lat,
@@ -965,6 +1013,7 @@ export default function MoonBaseZeroIndex() {
           selectedRaceId={selectedRaceId}
           selectedProject={selectedProject ?? null}
           hoveredRaceId={hoveredRaceId}
+          litProjectIds={litProjectIds}
           onSelectTree={handleSelectTree}
           onSelectProject={handleSelectProject}
           onHoverTree={setHoveredRaceId}
