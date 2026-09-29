@@ -46,21 +46,21 @@ describe('capability ladder', () => {
     }
   })
 
-  it('getLadderForCompetition("sepolia", 2): touchdown is live, current, href /deprize/2', () => {
-    const result = getLadderForCompetition('sepolia', 2)
+  it('getLadderForCompetition("sepolia", 7): Touchdown v2 is live, current, href /deprize/7', () => {
+    const result = getLadderForCompetition('sepolia', 7)
     const touchdown = result.rungs.find((r) => r.key === 'touchdown')
     expect(touchdown?.status).to.equal('live')
     expect(touchdown?.current).to.equal(true)
-    expect(touchdown?.href).to.equal('/deprize/2')
-    expect(touchdown?.deprizeId).to.equal(2)
+    expect(touchdown?.href).to.equal('/deprize/7')
+    expect(touchdown?.deprizeId).to.equal(7)
     expect(result.currentKey).to.equal('touchdown')
   })
 
-  it('getLadderForCompetition("sepolia", 1): touchdown still current via lineage; href points at 2, not 1', () => {
+  it('getLadderForCompetition("sepolia", 1): touchdown still current via lineage; href points at 7, not 1', () => {
     const result = getLadderForCompetition('sepolia', 1)
     const touchdown = result.rungs.find((r) => r.key === 'touchdown')
     expect(touchdown?.current).to.equal(true)
-    expect(touchdown?.href).to.equal('/deprize/2')
+    expect(touchdown?.href).to.equal('/deprize/7')
     expect(touchdown?.href).to.not.include('/1')
     expect(result.currentKey).to.equal('touchdown')
   })

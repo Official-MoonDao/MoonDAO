@@ -199,12 +199,35 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       sharedGoalId: 'shared-next-landing',
       raceLabel: 'Next lunar landing',
       supersedes: 1,
+      supersededBy: 7,
       outcomes: [
         { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
         { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
         { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
         { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
         { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
+        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+      ],
+    },
+    // Touchdown v2. Own Juicebox project, owned by the executive Safe, with
+    // ispace on the roster. Id 2 stays OPEN on-chain; this is the live tip.
+    7: {
+      title: 'Touchdown v2',
+      tagline:
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia Touchdown v2. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and the Open Field. Operated by the executive Safe.',
+      questionId: '0x3b84fc396a95b42df70a164715d33f0f0d64a0ee765958d97b04a709464e0129',
+      sharedGoalId: 'shared-next-landing',
+      raceLabel: 'Next lunar landing',
+      supersedes: 2,
+      outcomes: [
+        { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
+        { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
+        { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
+        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
+        { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
+        { projectId: 'ispace-apex', teamId: 606, vehicleLabel: 'ispace' },
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
     },

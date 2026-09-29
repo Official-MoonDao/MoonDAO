@@ -28,6 +28,12 @@ describe('lunar-atlas × DePrize binding', () => {
     for (const id of competitorIds) {
       expect(goal!.projectIds, `atlas goal missing ${id}`).to.include(id)
     }
+    const v2 = getDePrizeRaceBinding('sepolia', 7)
+    const v2Ids = (v2?.outcomes ?? []).filter((o) => !o.field).map((o) => o.projectId)
+    expect(v2Ids).to.include('ispace-apex')
+    for (const id of v2Ids) {
+      expect(goal!.projectIds, `atlas goal missing ${id}`).to.include(id)
+    }
   })
 
   it('merges live odds into the real SharedGoal without dropping atlas market fields', () => {

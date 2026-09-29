@@ -15,7 +15,7 @@ Rungs 1–3 are registered on Sepolia. Nothing on this page is an offer to award
 
 | Rung | Name | Bar | Status |
 |---|---|---|---|
-| 0 | Touchdown | next upright working landing | LIVE (Sepolia #22) |
+| 0 | Touchdown | next upright working landing | LIVE (Sepolia #7) |
 | 1 | First Tracks | commercial rover egress + drive | LIVE (Sepolia #5) |
 | 2 | Water Ice | 2027 in-situ surface water ice | LIVE (Sepolia #6) |
 | 3 | Night Shift | chamber proxy now · surface 2028+ | LIVE (Sepolia #3) |

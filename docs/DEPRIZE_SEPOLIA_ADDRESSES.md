@@ -156,6 +156,32 @@ Atlas goal `shared-ice`. Four slots.
 | LMSRMarketMaker | `0x53dE16D7995a2FF8Ef008DCb22d94c5CEA42Af8A` | Stock Gnosis, 0.04 ETH seed, 1% fee, owner = deployer, stage Running |
 | Sunset | `1853361577` | ~2 years from provision |
 
+## Touchdown v2 — id 7 (2026-09-28)
+
+Dress rehearsal. Not a supersede of id 2: id 2 stays `OPEN` on-chain. The UI
+treats id 7 as the live tip of `shared-next-landing` and adds ispace.
+
+Oracle, Juicebox project owner, pay-hook owner, and LMSR owner are the
+executive Safe `0xE5148e4399e3D849F629E0FECEcf6fC986e96127` (Pablo, Ryan,
+Miguel, Eiman; threshold 3 of 4). Registry ownership is **nominated** to that
+Safe and is not accepted yet, so the deployer can still call `lock` until
+`acceptOwnership()`.
+
+The pay hook is not latched. The Safe must call `setDePrizeRegistry`.
+
+| Slot | Value | Notes |
+|---|---|---|
+| `deprizeId` | `7` | |
+| Competing teams | `[601, 602, 603, 604, 605, 606, 24]` | Griffin, Nova-C, Blue Ghost, Blue Moon MK1, Chang'e-7, ispace, Open Field |
+| JB project id | `275` | Mission **21**. Project NFT held by the Safe |
+| LaunchPadPayHook | `0xbA29717EBE6132cDD35061c171f194e4eb16D887` | Owned by the Safe. Not latched yet |
+| `questionId` | `0x3b84fc396a95b42df70a164715d33f0f0d64a0ee765958d97b04a709464e0129` | `keccak256("deprize:sepolia:touchdown-v2:v1")` |
+| `conditionId` | `0x35c9bb3e9cb590b85be331ae1a2ebcbb0c49fed64579c806d897ce6ef8b22465` | 7 slots. Oracle = the Safe |
+| LMSRMarketMaker | `0x7deDb1Ac0f53b0208F72977f941186F6FB2394E9` | Stock Gnosis, 0.07 ETH seed, 1% fee, owner = the Safe |
+| Sunset | `1853711494` | 2028-09-27 23:51:34 UTC |
+
+Rehearsal steps: [`DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md`](./DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md).
+
 ## UI follow-up PR (do not ship without both)
 
 Point `ui/const/config.ts` at the v2 stack **and** rebind
