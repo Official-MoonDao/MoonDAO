@@ -221,13 +221,24 @@ const ROSTERS: Partial<Record<ProjectType, Plot[]>> = {
   // more than half the generic field-plus-tower footprint (9.5) Blue Origin
   // still stands on.
   isru_plant: plots(9.5, 5.35, 5.58),
-  // The four LTV bids — Moon RACER (4.6 m), the NASA reference LTV on the
-  // generic 4.5 m rover size, Pegasus (4.4) and FLEX (4.2), each at half its
-  // own length. This district used to stand nothing at all: its field was out
-  // driving the spine and a depot yard held its ground instead. It now parks a
-  // copy of every entrant AND drives a second one (see BASE_PLAN.rover), so
-  // these lots are occupied and the shared yards are gone.
-  rover: plots(2.3, 2.25, 2.2, 2.1),
+  // The First Tracks field, in dataset order: FLIP (2.0 m), CubeRover (0.4),
+  // MAPP (0.45), Tenacious (0.54) and Iris (0.38), each at half its own length.
+  // This district used to stand nothing at all: its field was out driving the
+  // spine and a depot yard held its ground instead. It now parks a copy of
+  // every entrant AND drives a second one (see BASE_PLAN.rover), so these lots
+  // are occupied and the shared yards are gone.
+  //
+  // These are the CAPABILITY race's rovers, not the crewed LTV bids that used
+  // to hold this ground — the goal declares `rover` and the LTV goal no longer
+  // does, so First Tracks takes the district on claimRank and the LTV race
+  // stands nowhere. That swap shrank every lot here by roughly a factor of
+  // five: the largest plot went from Moon RACER's 2.3 m to FLIP's 1.0, and four
+  // of the five entrants are now under 30 cm of radius. That is not a mistake
+  // to be tuned out. First Tracks is a race between shoebox-class machines and
+  // the district is supposed to read that way, which is also why it is the one
+  // roster here whose smallest member (Iris, 0.19) is under a fifth of its
+  // largest — nothing else on the plan packs a spread like that.
+  rover: plots(1.0, 0.2, 0.225, 0.27, 0.19),
   // ICON, Redwire, Astroport, AI SpaceFactory, Astrobotic — five bids on the
   // same generic paving footprint, and one of only two districts that field
   // more than four. It is therefore what exercises the spill in districtSlots'

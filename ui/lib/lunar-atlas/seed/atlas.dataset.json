@@ -3801,6 +3801,7 @@
     },
     {
       "id": "shared-lunar-rover",
+      "indexCategory": "rover",
       "title": "First crewed lunar terrain vehicle in service",
       "description": "NASA's LTV Services approach put the unpressurized lunar rover out to industry, and the field has now been cut. Three teams took 2024 feasibility awards, but at the Ignition event in March 2026 NASA rewrote the requirement — simpler, cheaper, sooner, a year of service rather than a decade — and on 26 May 2026 issued Phase 1 task orders to just two: Venturi Astrolab's CLV-1 at $219M and Lunar Outpost's Pegasus at $220M. Intuitive Machines' Moon RACER was not selected and survives here only as a tail on a later phase of a programme worth more than $4B. Both winners ride Blue Origin's Blue Moon Mark 1 to the surface, with the goal of at least one of them driving before the Artemis IV crew lands in 2028.",
       "projectIds": [
@@ -3864,8 +3865,7 @@
           "url": "https://spacenews.com/nasa-selects-four-companies-for-initial-moon-base-awards/",
           "retrievedAt": "2026-08-28"
         }
-      ],
-      "category": "rover"
+      ]
     },
     {
       "id": "shared-fission-power",
@@ -4136,6 +4136,7 @@
     },
     {
       "id": "shared-first-tracks",
+      "category": "rover",
       "title": "First Tracks — first commercial rover egress and drive",
       "description": "The first commercial rover to leave its lander and drive at least 10 metres on the lunar surface, then return a picture taken by the rover. Government rovers such as CADRE can drive first and the prize stays open. This is not the crewed lunar terrain vehicle.",
       "projectIds": [
