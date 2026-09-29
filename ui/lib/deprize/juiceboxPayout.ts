@@ -9,7 +9,7 @@ export const JB_PROJECTS_ADDRESS = '0x885f707EFA18D2cb12f05a3a8eBA6B4B26c8c1D4'
  * (`uint32(uint160(native token))`, which is `JB_NATIVE_TOKEN_ID`). The locked
  * payout split cannot name a winner chosen later; this call can.
  */
-export function useAllowanceOfParams(opts: {
+export function allowanceOfParams(opts: {
   projectId: bigint
   amountWei: bigint
   beneficiary: string

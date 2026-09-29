@@ -31,7 +31,7 @@ import {
   UNIT,
 } from '@/lib/deprize/constants'
 import { fmtEthWithUsd } from '@/lib/deprize/format'
-import { JB_PROJECTS_ADDRESS, useAllowanceOfParams } from '@/lib/deprize/juiceboxPayout'
+import { JB_PROJECTS_ADDRESS, allowanceOfParams } from '@/lib/deprize/juiceboxPayout'
 import { outcomeWinnerNameAt } from '@/lib/deprize/outcomeName'
 import { rpcRead } from '@/lib/deprize/read'
 import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
@@ -493,7 +493,7 @@ export default function DePrizeAdminPanel({
       address: JBV5_TERMINAL_ADDRESS,
       abi: USE_ALLOWANCE_ABI as any,
     })
-    const params = [...useAllowanceOfParams({
+    const params = [...allowanceOfParams({
       projectId: jbProjectId,
       amountWei,
       beneficiary: prizeRecipient,
