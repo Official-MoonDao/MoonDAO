@@ -4,9 +4,11 @@ import path from 'path'
 import { parseFrontmatter } from '../lib/docs/frontmatter'
 import {
   allProducedSlugs,
+  allStaticPaths,
   buildNavTree,
   getAliasTable,
   getDocPage,
+  getDocStaticProps,
   listBrokenDocsHrefs,
   listUnresolvedWikilinks,
   loadCorpus,
@@ -17,8 +19,10 @@ import { buildSearchIndex } from '../lib/docs/searchIndex'
 import {
   INTENTIONAL_SLUG_CHANGES,
   LEGACY_DOC_ALIASES,
+  REMOVED_DOC_REDIRECTS,
   docsHref,
   isRouteSafeSlug,
+  removedDocRedirectForPathname,
   slugifyFilePath,
   slugifySegment,
 } from '../lib/docs/slug'
@@ -60,6 +64,33 @@ describe('docs slugifier (Quartz parity)', () => {
   it('docsHref treats index as /docs', () => {
     expectEqual(docsHref('index'), '/docs', 'index')
     expectEqual(docsHref('About/FAQ'), '/docs/About/FAQ', 'faq')
+    expectEqual(docsHref('Press/index'), '/docs/Press', 'folder index')
+    expectEqual(docsHref('Legal/DePrize/index'), '/docs/Legal/DePrize', 'nested folder')
+    expectEqual(docsHref('tags/index'), '/docs/tags', 'tags index')
+  })
+})
+
+describe('docs breadcrumbs', () => {
+  it('links folder crumbs at the parent path, not /index', () => {
+    resetDocsCache()
+    const page = getDocPage('Press/Press-Kit')
+    if (!page) throw new Error('Press Kit missing')
+    expectEqual(page.breadcrumbs[0]?.href, '/docs', 'docs crumb')
+    const press = page.breadcrumbs.find((c) => c.title === 'Press')
+    if (!press) throw new Error('no Press crumb')
+    expectEqual(press.href, '/docs/Press', 'press crumb')
+    const last = page.breadcrumbs[page.breadcrumbs.length - 1]
+    expectEqual(last?.href, '/docs/Press/Press-Kit', 'kit crumb')
+  })
+
+  it('nests folder crumbs without a trailing /index', () => {
+    resetDocsCache()
+    const page = getDocPage('Legal/DePrize/DePrize-Official-Prize-Rules')
+    if (!page) throw new Error('prize rules missing')
+    const legal = page.breadcrumbs.find((c) => c.title === 'Legal')
+    const deprize = page.breadcrumbs.find((c) => c.title === 'DePrize')
+    expectEqual(legal?.href, '/docs/Legal', 'legal crumb')
+    expectEqual(deprize?.href, '/docs/Legal/DePrize', 'deprize crumb')
   })
 })
 
@@ -351,7 +382,10 @@ describe('docs corpus vs Quartz contentIndex', () => {
     const produced = new Set(allProducedSlugs())
     const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, unknown>
     const missing = Object.keys(fixture).filter(
-      (k) => !produced.has(k) && !(k in INTENTIONAL_SLUG_CHANGES)
+      (k) =>
+        !produced.has(k) &&
+        !(k in INTENTIONAL_SLUG_CHANGES) &&
+        !(k in REMOVED_DOC_REDIRECTS)
     )
     if (missing.length > 0) {
       throw new Error(`Missing Quartz slugs:\n${missing.join('\n')}`)
@@ -360,6 +394,59 @@ describe('docs corpus vs Quartz contentIndex', () => {
     for (const replacement of Object.values(INTENTIONAL_SLUG_CHANGES)) {
       if (!produced.has(replacement)) {
         throw new Error(`replacement slug not produced: ${replacement}`)
+      }
+    }
+  })
+
+  it('redirects every removed doc slug instead of rendering it', async () => {
+    resetDocsCache()
+    const produced = new Set(allProducedSlugs())
+    const prerendered = new Set(allStaticPaths().map((entry) => entry.params.slug.join('/')))
+    for (const [slug, destination] of Object.entries(REMOVED_DOC_REDIRECTS)) {
+      if (produced.has(slug)) throw new Error(`removed slug ${slug} is still produced`)
+      // A prerendered path cannot return `redirect` from getStaticProps; the
+      // production build fails with gsp-redirect-during-prerender.
+      if (prerendered.has(slug)) throw new Error(`removed slug ${slug} is still prerendered`)
+      const folder = slug.endsWith('/index') ? slug.slice(0, -'/index'.length) : undefined
+      if (folder && prerendered.has(folder)) {
+        throw new Error(`removed folder ${folder} is still prerendered`)
+      }
+      const result = (await getDocStaticProps(slug)) as { redirect?: { destination: string } }
+      if (result.redirect?.destination !== destination) {
+        throw new Error(`/docs/${slug} does not redirect to ${destination}`)
+      }
+      for (const prefix of ['/docs', '/documentation']) {
+        const pathname = `${prefix}/${slug}`
+        if (removedDocRedirectForPathname(pathname) !== destination) {
+          throw new Error(`${pathname} does not redirect to ${destination}`)
+        }
+        if (folder && removedDocRedirectForPathname(`${prefix}/${folder}`) !== destination) {
+          throw new Error(`${prefix}/${folder} does not redirect to ${destination}`)
+        }
+      }
+    }
+  })
+
+  it('middleware matches every removed doc URL', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'middleware.ts'), 'utf8')
+    const matchers = [...src.matchAll(/'([^']+)'/g)].map((match) => match[1])
+    const covers = (pathname: string) =>
+      matchers.some((matcher) => {
+        if (matcher.endsWith('/:path*')) {
+          const prefix = matcher.slice(0, -'/:path*'.length)
+          return pathname.startsWith(`${prefix}/`)
+        }
+        return pathname === matcher
+      })
+    for (const slug of Object.keys(REMOVED_DOC_REDIRECTS)) {
+      for (const prefix of ['/docs', '/documentation']) {
+        const paths = [`${prefix}/${slug}`]
+        if (slug.endsWith('/index')) paths.push(`${prefix}/${slug.slice(0, -'/index'.length)}`)
+        for (const pathname of paths) {
+          if (!covers(pathname)) {
+            throw new Error(`middleware matcher does not cover ${pathname}`)
+          }
+        }
       }
     }
   })

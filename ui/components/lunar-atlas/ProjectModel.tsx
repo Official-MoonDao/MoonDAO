@@ -147,11 +147,6 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // Light bar to rear wheel — Astrolab pitch FLEX as Jeep-sized. FLEX_M
   // inverts this exact number.
   'astrolab-flex': 4.2,
-  // MAPP's long axis, straight off Lunar Outpost's own published envelope of
-  // 45 x 38 x 40 cm. Note the 40 cm is the HEIGHT and it is not the largest
-  // dimension, so this entry is the length — getting that backwards would
-  // scale the whole vehicle. MAPP_M inverts this exact number.
-  'lunar-outpost-mapp': 0.45,
   // FLIP, the little sister that actually flies first. Astrolab publish mass
   // (450–500 kg) but no exterior dimensions, so this is an estimate rather
   // than a figure: SpaceNews and Astrobotic both describe FLIP as "similar in
@@ -167,6 +162,11 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // LEAG 2017), with the axles inboard of the hull ends so the wheels set the
   // overall length. CUBE_M inverts this exact number.
   'voyager-cuberover': 0.4,
+  // MAPP's long axis, straight off Lunar Outpost's own published envelope of
+  // 45 x 38 x 40 cm. Note the 40 cm is the HEIGHT and it is not the largest
+  // dimension, so this entry is the length — getting that backwards would
+  // scale the whole vehicle. MAPP_M inverts this exact number.
+  'lunar-outpost-mapp': 0.45,
   // Tenacious end to end, from ispace's own press material: 54 cm long,
   // 31.5 cm wide, 26 cm tall, ~5 kg. Do not reach for the Smithsonian's
   // 57.5 x 52.1 x 80 cm instead — those are SORATO's, the XPRIZE ancestor,

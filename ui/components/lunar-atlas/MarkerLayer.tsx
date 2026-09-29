@@ -65,7 +65,11 @@ import {
 } from '@/lib/lunar-atlas/trackplan'
 import { SUN_DIR, SUN_LOCAL_ELEV_DEG } from '@/lib/lunar-atlas/sun'
 import { GLOBE_RADIUS } from '@/lib/lunar-atlas/textures'
-import type { TechTree } from '@/lib/lunar-atlas/selectors'
+import {
+  marketShowsOdds,
+  raceStandingForProject,
+  type TechTree,
+} from '@/lib/lunar-atlas/selectors'
 import type {
   Organization,
   Project,
@@ -94,10 +98,9 @@ import type { RadiusAt } from './useTerrainSampler'
 export function rankedMembers(tree: TechTree): Project[] {
   // Priors on a planned race are not a ranking. Seed order until the market
   // is actually live, which is also when the beacon is allowed to name a leader.
-  const odds =
-    tree.goal?.market?.status === 'live' || tree.goal?.market?.status === 'resolved'
-      ? tree.goal.market.impliedOdds
-      : undefined
+  const odds = marketShowsOdds(tree.goal?.market?.status)
+    ? tree.goal?.market?.impliedOdds
+    : undefined
   if (!odds) return tree.projects
   return [...tree.projects].sort(
     (a, b) => (odds[b.id] ?? -1) - (odds[a.id] ?? -1)
@@ -1462,9 +1465,7 @@ export default function MarkerLayer({
         const dim = raceOpen && !isOpen ? DIM_FACTOR : 1
 
         const count = members.length
-        const priced =
-          tree.goal?.market?.status === 'live' ||
-          tree.goal?.market?.status === 'resolved'
+        const priced = marketShowsOdds(tree.goal?.market?.status)
         const label =
           priced && tree.goal && leaderOrg
             ? `${PROJECT_TYPE_LABEL[tree.category]} · ${leaderOrg.name} leading`
@@ -1498,7 +1499,14 @@ export default function MarkerLayer({
               }
               if (!style.visible) return null
               const org = orgMap.get(project.orgId)
-              const probability = tree.goal?.market?.impliedOdds?.[project.id]
+              // Place and percent come from the same gate as the beacon.
+              // Curator priors live on a planned race's impliedOdds, and
+              // reading them here is what put "1st · 52%" over a rover nobody
+              // can bet on. raceStandingForProject returns nothing until the
+              // market is live or resolved.
+              const standing = tree.goal
+                ? raceStandingForProject(project.id, tree.goal)
+                : undefined
               return (
                 <group key={project.id}>
                   <CompetitorPlot
@@ -1511,8 +1519,8 @@ export default function MarkerLayer({
                     raceOpen={isOpen}
                     called={selectedProject?.id === project.id}
                     standing={
-                      probability != null && Number.isFinite(probability)
-                        ? { place: i + 1, probability }
+                      standing
+                        ? { place: standing.place, probability: standing.probability }
                         : undefined
                     }
                     onSelect={() => onSelectProject?.(project.id)}

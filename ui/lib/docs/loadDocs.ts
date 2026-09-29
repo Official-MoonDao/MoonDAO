@@ -4,9 +4,11 @@ import { extractTitle, parseFrontmatter } from './frontmatter'
 import { emptyReport, isTableRow, rewriteDocBody } from './rewrite'
 import {
   LEGACY_DOC_ALIASES,
+  REMOVED_DOC_REDIRECTS,
   docsHref,
   normalizeAliasSlug,
   noteNameFromFilePath,
+  removedDocRedirectForPathname,
   slugFromParams,
   slugifyFilePath,
   slugifyHeading,
@@ -253,6 +255,8 @@ export function allStaticPaths(root?: string): { params: { slug: string[] } }[] 
   for (const folder of corpus.folderSlugs) add(folder)
   for (const tag of corpus.tagSlugs) add(tag)
   for (const legacy of Object.keys(LEGACY_DOC_ALIASES)) add(legacy)
+  // Removed slugs stay out of getStaticPaths. Prerendering them and returning
+  // `redirect` from getStaticProps fails the production build.
   return paths
 }
 
@@ -496,6 +500,9 @@ export function getDocPage(requestedSlug: string, root?: string): DocsPageProps 
 }
 
 export async function getDocStaticProps(requestedSlug: string, root?: string) {
+  const normalized = requestedSlug.replace(/\/+$/, '')
+  const destination = removedDocRedirectForPathname(`/docs/${normalized}`)
+  if (destination) return { redirect: { destination, permanent: true } }
   const page = getDocPage(requestedSlug, root)
   if (!page) return { notFound: true as const }
   return { props: { page } }
@@ -556,6 +563,7 @@ export function listBrokenDocsHrefs(root?: string): { filePath: string; href: st
     }
   }
   for (const legacy of Object.keys(LEGACY_DOC_ALIASES)) valid.add(legacy)
+  for (const removed of Object.keys(REMOVED_DOC_REDIRECTS)) valid.add(removed)
   const broken: { filePath: string; href: string }[] = []
   for (const file of corpus.files) {
     const rewritten = rewriteDocBody(file.body, resolver(corpus))
