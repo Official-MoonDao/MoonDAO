@@ -167,6 +167,11 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // dimension, so this entry is the length — getting that backwards would
   // scale the whole vehicle. MAPP_M inverts this exact number.
   'lunar-outpost-mapp': 0.45,
+  // Tenacious end to end, from ispace's own press material: 54 cm long,
+  // 31.5 cm wide, 26 cm tall, ~5 kg. Do not reach for the Smithsonian's
+  // 57.5 x 52.1 x 80 cm instead — those are SORATO's, the XPRIZE ancestor,
+  // and the 80 cm is its raised antenna. TEN_M inverts this exact number.
+  'ispace-tenacious': 0.54,
   // Bumper to tailgate. The longest of the three LTV bids, and it looks it —
   // cab forward, cargo aft. VOY_M inverts this exact number.
   'lunar-outpost-lunar-dawn': 4.4,
@@ -14456,6 +14461,288 @@ function CruiserRover({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// TENACIOUS — ispace / ispace-EUROPE
+// ---------------------------------------------------------------------------
+
+// The Tenacious-class micro rover, designed, built and assembled in Luxembourg
+// and the first lunar rover made in Europe. The flight article rode RESILIENCE
+// on ispace Mission 2 and was lost with the lander in June 2025; the dataset
+// entry is the Mission 3 follow-on, so this is drawn as the CLASS rather than
+// as that specific airframe — no Moonhouse, which was an M2 artwork and not a
+// feature of the vehicle.
+//
+// Dimensions are ispace's own published figures: 54 cm long, 31.5 cm wide,
+// 26 cm tall, about 5 kg, on a CFRP frame. The width falls out exactly, which
+// is a useful check on the running gear: the wheels are stood well outboard of
+// a narrow body, so track plus half a tyre has to land on 31.5 cm and does.
+//
+// A NOTE ON REFERENCES, because two very different rovers get filed under this
+// name. The black machine with the sponsor decals, the raked deployable array
+// and the tall whip is SORATO — Team HAKUTO's Google Lunar XPRIZE rover, built
+// 2018, never flown, now in the Smithsonian. It is 57.5 x 52.1 x 31.7 cm with
+// the antenna down and 80 cm with it up, and the decals were an XPRIZE
+// sponsorship requirement. Tenacious descends from it and inherits the CFRP
+// frame and the wheel family, which is why SORATO is a fair guide to the
+// WHEELS and to nothing else. It is not a guide to the body: the flight
+// article is a gold-MLI box with a flat deck, no deployable array and no whip,
+// because Tenacious talks to Earth through the lander rather than directly.
+// Putting SORATO's 80 cm antenna on this vehicle would triple its real height.
+const TEN_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['ispace-tenacious'] ?? 0.54)
+
+const TEN_MLI = '#c39a35' // kapton blanket over the flanks
+const TEN_MLI_HI = '#dcb24a' // creases catching the light
+const TEN_BLACK = '#1a1c20' // black thermal blanket low on the body and nose
+const TEN_DECK = '#d9dde2' // the bare top plate
+const TEN_WHEEL = '#e3e6ea'
+const TEN_GREY = '#8d9298' // the payload/scoop housing on the flank
+const TEN_FRAME = '#b9bfc6'
+
+const TEN_WHEEL_R = 0.1
+const TEN_WHEEL_W = 0.06
+const TEN_AXLE_X = 0.17 // + the radius = the published 0.54 m length
+const TEN_TRACK_Z = 0.1275 // + half a tyre = the published 0.315 m width
+const TEN_BODY_L = 0.36
+const TEN_BODY_HALF_Z = 0.08
+const TEN_BODY_BOT = 0.085
+const TEN_BODY_TOP = 0.243
+const TEN_DECK_TOP = 0.252
+const TEN_HEIGHT = 0.26 // published, and where the deck fittings top out
+
+// Tenacious's wheels are the one part of it anybody can identify at a glance:
+// a wide open drum, slotted right through the tread, carried on broad flat
+// spokes rather than thin rods. The slots are not lightening holes — they are
+// the grip. ispace describe the wheels as "shaped in such a way that the rover
+// can traverse lunar regolith in a stable manner", and an open drum that lets
+// soil pass through it is how a 5 kg vehicle gets traction without the mass of
+// a cleated tyre.
+function TenaciousWheel({ x, z }: { x: number; z: number }) {
+  const face = Math.sign(z) * (TEN_WHEEL_W / 2 + 0.004)
+  return (
+    <group position={[x, TEN_WHEEL_R, z]} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Tread band */}
+      <mesh>
+        <cylinderGeometry
+          args={[TEN_WHEEL_R, TEN_WHEEL_R, TEN_WHEEL_W, 26, 1, true]}
+        />
+        <meshStandardMaterial
+          color={TEN_WHEEL}
+          metalness={0.28}
+          roughness={0.58}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Axial slots through the band. The band has no thickness, so a dark
+          block straddling it reads as a slot from either side. */}
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[Math.cos(a) * TEN_WHEEL_R, 0, Math.sin(a) * TEN_WHEEL_R]}
+            rotation={[0, -a, 0]}
+          >
+            <boxGeometry args={[0.007, TEN_WHEEL_W * 0.62, 0.016]} />
+            <meshStandardMaterial color="#3d4147" roughness={0.85} />
+          </mesh>
+        )
+      })}
+
+      {/* Broad flat spokes, tapering out to the rim. Nine of them, wide enough
+          to read as plate rather than wire — that width is what separates this
+          wheel from every other rover's in the atlas. */}
+      {Array.from({ length: 9 }, (_, i) => {
+        const a = (i / 9) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[
+              (Math.cos(a) * TEN_WHEEL_R) / 2,
+              face,
+              (Math.sin(a) * TEN_WHEEL_R) / 2,
+            ]}
+            rotation={[0, -a, 0]}
+          >
+            <boxGeometry args={[TEN_WHEEL_R, 0.005, 0.022]} />
+            <meshStandardMaterial
+              color={TEN_WHEEL}
+              metalness={0.26}
+              roughness={0.6}
+            />
+          </mesh>
+        )
+      })}
+
+      <mesh position={[0, face, 0]}>
+        <cylinderGeometry args={[0.019, 0.019, 0.014, 12]} />
+        <meshStandardMaterial color={TEN_FRAME} metalness={0.55} roughness={0.45} />
+      </mesh>
+    </group>
+  )
+}
+
+function TenaciousRover({ accent }: { accent: string }) {
+  const corners: [number, number][] = [
+    [TEN_AXLE_X, TEN_TRACK_Z],
+    [TEN_AXLE_X, -TEN_TRACK_Z],
+    [-TEN_AXLE_X, TEN_TRACK_Z],
+    [-TEN_AXLE_X, -TEN_TRACK_Z],
+  ]
+  const bodyH = TEN_BODY_TOP - TEN_BODY_BOT
+  return (
+    <group scale={TEN_M}>
+      {corners.map(([x, z]) => (
+        <group key={`${x}:${z}`}>
+          <TenaciousWheel x={x} z={z} />
+          {/* Stub axle out to the hub. The body is far narrower than the
+              track, so on this vehicle the axle is exposed rather than
+              implied — it is most of what you see between hull and wheel. */}
+          <mesh
+            position={[x, TEN_WHEEL_R, Math.sign(z) * (TEN_BODY_HALF_Z + 0.009)]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <cylinderGeometry args={[0.011, 0.011, 0.038, 10]} />
+            <meshStandardMaterial
+              color={TEN_FRAME}
+              metalness={0.6}
+              roughness={0.4}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Body, blanketed in gold kapton. */}
+      <mesh position={[0, (TEN_BODY_BOT + TEN_BODY_TOP) / 2, 0]}>
+        <boxGeometry args={[TEN_BODY_L, bodyH, TEN_BODY_HALF_Z * 2]} />
+        <meshStandardMaterial
+          color={TEN_MLI}
+          metalness={0.6}
+          roughness={0.44}
+          flatShading
+        />
+      </mesh>
+      {/* Creases in the blanket, so it reads as a wrapped box rather than a
+          machined gold one. */}
+      {[-0.1, 0.03, 0.13].map((cx) => (
+        <mesh key={cx} position={[cx, (TEN_BODY_BOT + TEN_BODY_TOP) / 2, 0]}>
+          <boxGeometry args={[0.012, bodyH * 0.9, TEN_BODY_HALF_Z * 2 + 0.005]} />
+          <meshStandardMaterial
+            color={TEN_MLI_HI}
+            metalness={0.64}
+            roughness={0.38}
+            flatShading
+          />
+        </mesh>
+      ))}
+
+      {/* Black thermal blanket wrapping the lower body and the nose, which is
+          the other half of the flight article's two-tone look. */}
+      <mesh position={[0, TEN_BODY_BOT + 0.026, 0]}>
+        <boxGeometry args={[TEN_BODY_L + 0.004, 0.052, TEN_BODY_HALF_Z * 2 + 0.004]} />
+        <meshStandardMaterial color={TEN_BLACK} roughness={0.82} metalness={0.2} />
+      </mesh>
+      <mesh position={[-TEN_BODY_L / 2 - 0.004, (TEN_BODY_BOT + TEN_BODY_TOP) / 2, 0]}>
+        <boxGeometry args={[0.01, bodyH, TEN_BODY_HALF_Z * 2 + 0.003]} />
+        <meshStandardMaterial color={TEN_BLACK} roughness={0.82} metalness={0.2} />
+      </mesh>
+
+      {/* Top plate: bare, flat and unblanketed, with a few small fittings. It
+          is the highest thing on the vehicle, which is how the published 26 cm
+          is measured. */}
+      <mesh position={[0, (TEN_BODY_TOP + TEN_DECK_TOP) / 2, 0]}>
+        <boxGeometry
+          args={[
+            TEN_BODY_L + 0.006,
+            TEN_DECK_TOP - TEN_BODY_TOP,
+            TEN_BODY_HALF_Z * 2 + 0.006,
+          ]}
+        />
+        <meshStandardMaterial color={TEN_DECK} metalness={0.55} roughness={0.36} />
+      </mesh>
+      {[
+        [-0.13, 0.055],
+        [0.14, -0.055],
+        [0.05, 0.055],
+      ].map(([fx, fz]) => (
+        <mesh
+          key={`${fx}:${fz}`}
+          position={[fx, (TEN_DECK_TOP + TEN_HEIGHT) / 2, fz]}
+        >
+          <boxGeometry args={[0.024, TEN_HEIGHT - TEN_DECK_TOP, 0.018]} />
+          <meshStandardMaterial
+            color={TEN_FRAME}
+            metalness={0.55}
+            roughness={0.45}
+          />
+        </mesh>
+      ))}
+
+      {/* Livery: the one accent band, along the deck edge. SORATO's sponsor
+          wall is withheld along with every other competitor's marks. */}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={[0, TEN_BODY_TOP - 0.012, s * (TEN_BODY_HALF_Z + 0.005)]}
+        >
+          <boxGeometry args={[TEN_BODY_L * 0.8, 0.01, 0.008]} />
+          <meshStandardMaterial color={accent} metalness={0.3} roughness={0.48} />
+        </mesh>
+      ))}
+
+      {/* Payload housing on the flank, the grey box that breaks the gold up in
+          every photograph of the flight article. It has to sit at mid
+          wheelbase: the body is narrow enough that anything standing this far
+          proud of it is inside the track, so the only clear ground is the gap
+          between the front and rear tyres. */}
+      <mesh position={[-0.01, TEN_BODY_BOT + 0.03, TEN_BODY_HALF_Z + 0.022]}>
+        <boxGeometry args={[0.1, 0.07, 0.044]} />
+        <meshStandardMaterial color={TEN_GREY} metalness={0.3} roughness={0.62} />
+      </mesh>
+
+      {/* Forward HD camera. ispace call it out by name, and on a rover with no
+          mast and no direct link it is the whole of the operator's view. */}
+      <mesh position={[TEN_BODY_L / 2 + 0.008, TEN_BODY_TOP - 0.035, 0]}>
+        <boxGeometry args={[0.014, 0.036, 0.05]} />
+        <meshStandardMaterial color={TEN_BLACK} metalness={0.4} roughness={0.5} />
+      </mesh>
+      <mesh
+        position={[TEN_BODY_L / 2 + 0.016, TEN_BODY_TOP - 0.035, 0]}
+        rotation={[0, Math.PI / 2, 0]}
+      >
+        <circleGeometry args={[0.012, 14]} />
+        <meshStandardMaterial color="#0e1013" metalness={0.65} roughness={0.18} />
+      </mesh>
+
+      {/* The scoop. Epiroc built it, and it is the reason this vehicle needed
+          a mission authorization under Luxembourg's space-resources law: it
+          lifts regolith and transfers ownership of the sample to NASA in
+          place. Kept short so it stays inside the wheel line. */}
+      <Strut
+        from={[TEN_BODY_L / 2 - 0.01, TEN_BODY_BOT + 0.01, 0.035]}
+        to={[TEN_BODY_L / 2 + 0.055, 0.032, 0.035]}
+        r={0.007}
+        color={TEN_FRAME}
+      />
+      <mesh position={[TEN_BODY_L / 2 + 0.066, 0.026, 0.035]}>
+        <boxGeometry args={[0.03, 0.026, 0.038]} />
+        <meshStandardMaterial color={TEN_FRAME} metalness={0.55} roughness={0.44} />
+      </mesh>
+
+      {/* Status marker, the house emissive accent. */}
+      <mesh position={[TEN_BODY_L / 2 + 0.012, TEN_BODY_TOP - 0.075, -0.05]}>
+        <sphereGeometry args={[0.007, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.5}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Comms & navigation ground terminal
 // ---------------------------------------------------------------------------
 
@@ -16374,6 +16661,7 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // Voyager Lunar Systems, i.e. Astrobotic. Not related to the Lunar Voyager
   // LTV on the line above despite the collision — see CubeRover's header.
   'voyager-cuberover': CubeRover,
+  'ispace-tenacious': TenaciousRover,
   // Each habitat bid needs its own model, because the race is an argument about
   // what a first habitat even is and no two answers look remotely alike: Thales
   // send a rigid metal module, Sierra send fabric that inflates to twice the
