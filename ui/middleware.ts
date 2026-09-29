@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { removedDocRedirectForPathname } from '@/lib/docs/slug'
 import {
   GATE_COOKIE,
   GATE_NEXT_PARAM,
@@ -12,9 +13,17 @@ import {
 // than in the page: a gate the browser evaluates is a gate whose password is in
 // the bundle.
 //
+// Also 308s removed docs (Press kit/coverage, tags/press, tags/media) to
+// /press. Those paths are not prerendered — returning `redirect` from
+// getStaticProps fails `next build` — and a next.config.js redirect under
+// /docs/* breaks the Vercel deploy. Keep the Press matchers in step with
+// REMOVED_DOC_REDIRECTS; the docs pipeline test reads them back out of this
+// file.
+//
 // Static literal — Next reads this at build time, so it cannot import from
-// lib/gate/access.ts. Keep these strings identical to GATED_MIDDLEWARE_MATCHERS
-// in that file; the access-gate unit test pins the pairing.
+// lib/gate/access.ts. Keep the gate strings identical to
+// GATED_MIDDLEWARE_MATCHERS in that file; the access-gate unit test pins the
+// pairing.
 export const config = {
   matcher: [
     '/moonbase',
@@ -22,11 +31,25 @@ export const config = {
     '/deprize',
     '/deprize/:path*',
     '/deprize-play',
+    '/docs/Press',
+    '/docs/Press/:path*',
+    '/docs/tags/press',
+    '/docs/tags/media',
+    '/documentation/Press',
+    '/documentation/Press/:path*',
+    '/documentation/tags/press',
+    '/documentation/tags/media',
   ],
 }
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
+  const removed = removedDocRedirectForPathname(pathname)
+  if (removed) {
+    const url = req.nextUrl.clone()
+    url.pathname = removed
+    return NextResponse.redirect(url, 308)
+  }
   if (!isGatedPath(pathname)) return NextResponse.next()
 
   const granted = isSessionValid(
