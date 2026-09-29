@@ -179,6 +179,15 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // the habitat race, so the habitat site shows a vehicle rather than a module
   // — which is the point of it. CRUISER_M inverts this exact number.
   'jaxa-lunar-cruiser': 6.6,
+  // Iris end to end, over the wheels. Unusually this one is derived rather than
+  // quoted, because CMU publish the CHASSIS (250 x 175 x 105 mm) and the vehicle
+  // is bigger than its chassis in every axis — the wheels are hung outside it.
+  // Published 180 mm wheels on a 200 mm wheelbase, which is as tight as four
+  // 180 mm wheels will pack on a 250 mm chassis, give 380 mm nose to tail. That
+  // is the largest dimension by a clear margin: width comes out at 283 mm over
+  // the hub bosses and height at the 180 mm the wheels set, because on Iris the
+  // wheels are the tallest thing on the vehicle. IRIS_M inverts this number.
+  'cmu-iris': 0.38,
   // Landing feet to the top of the radiator mast. The bus itself fits a 4 m
   // launch shroud; nearly everything above the collar is deployed on orbit or
   // on the surface, which is why it ends up the tallest thing on the base bar
@@ -15541,6 +15550,344 @@ function ParsecTerminal({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// IRIS — Carnegie Mellon
+// ---------------------------------------------------------------------------
+
+// The Iris-class nanorover: 2 kg, built by a few hundred CMU students, and the
+// smallest and lightest rover ever flown. It rode Peregrine in January 2024 and
+// never reached the surface — the lander leaked propellant hours after
+// separation — but it turned a wheel in space on the way out, which is more
+// than most of this roster can claim. The dataset entry is the re-flight on the
+// next available commercial lander, so this is the class.
+//
+// Iris is the one vehicle here you can size entirely from published numbers.
+// Chassis 250 x 175 x 105 mm, ground clearance 45 mm, wheels 180 mm across,
+// twelve grousers apiece, skid-steered on four fixed wheels with no suspension
+// at all. Every one of those figures is load-bearing below, and the stack-up
+// closes: the wheels put the axle at 90 mm, the published clearance puts the
+// chassis floor at 45 mm, and the published chassis height puts its roof at
+// 150 mm — 30 mm under the wheel tops, which is exactly how far the wheels
+// stand proud of the body in every photograph.
+//
+// The proportions ARE the vehicle. Iris's mechanical lead described wanting it
+// "as big as possible in terms of volume, while still hitting our mass budget",
+// which is why the chassis is a near-empty slab and the oversized wheels are
+// hung on the outside of it: mass went into the wheels, because wheels are what
+// let a 2 kg machine climb a 6 cm rock.
+//
+// Two things it does NOT have, both conspicuous by their absence in every
+// photograph. No solar array — nothing on the deck but fittings. And no
+// steering: a skid-steer rover turns by driving one side against the other, so
+// there is no rocker, no bogie and no steering knuckle to draw.
+//
+// A NOTE FOR THE NEXT PERSON. Do not merge this with CubeRover, two hundred
+// lines up. They are cousins — same city, same lab lineage, both nanorovers,
+// both manifested on Peregrine — and 2019-era press cheerfully calls Iris "the
+// first CubeRover", which it is not. Iris is the CMU student vehicle; CubeRover
+// is Astrobotic's product line, now Voyager Lunar Systems. They land within a
+// couple of centimetres of each other in size, which is precisely why the
+// wheels have to carry the difference: CubeRover rolls on spoked aluminium
+// rims, Iris on solid carbon-fibre discs.
+const IRIS_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['cmu-iris'] ?? 0.38)
+
+const IRIS_CF = '#26282d' // carbon fibre — the wheels, and the chassis under the blanket
+const IRIS_CF_HI = '#3f434b' // where the weave catches the sun
+const IRIS_GOLD = '#c8a23a' // kapton over the chassis
+const IRIS_GOLD_HI = '#e2bf55' // creases in the blanket
+const IRIS_PLATE = '#cdbf9a' // the pale composite floor plate, visible below the wrap
+const IRIS_BOARD = '#2f6b45' // avionics board showing at the deck edge
+const IRIS_TRIM = '#b9bfc6'
+
+// Published 180 mm across, measured OVER the grousers, because the grousers are
+// the wheel — they are moulded into it, not bolted on.
+const IRIS_WHEEL_R = 0.09
+const IRIS_WHEEL_W = 0.038 // a bottle cap is shallow, and this one is 30 grams
+const IRIS_RIM_R = 0.076 // the disc itself, inboard of the grouser tips
+
+const IRIS_GROUSER_RAKE = 0.35
+const IRIS_GROUSER_T = 0.012 // radial thickness
+const IRIS_GROUSER_W = 0.03 // tangential width — twelve of these nearly touch
+// Raking a tab swings its outboard corner further out than its thickness
+// suggests, so the tab's centre has to come in by its true reach or the wheel
+// quietly grows past the published 180 mm. This is the same trap CubeRover fell
+// into; there it was the grouser height, here it is the rake. Solve it rather
+// than guess it.
+const IRIS_GROUSER_REACH =
+  (IRIS_GROUSER_T * Math.cos(IRIS_GROUSER_RAKE) +
+    IRIS_GROUSER_W * Math.sin(IRIS_GROUSER_RAKE)) /
+  2
+const IRIS_GROUSER_R = IRIS_WHEEL_R - IRIS_GROUSER_REACH
+
+const IRIS_AXLE_X = 0.1 // + the wheel radius = the 0.38 m this model claims
+const IRIS_TRACK_Z = 0.1165
+const IRIS_BODY_L = 0.25 // published chassis length
+const IRIS_BODY_HALF_Z = 0.0875 // published 175 mm across
+const IRIS_BODY_BOT = 0.045 // published ground clearance
+const IRIS_BODY_TOP = 0.15 // + the published 105 mm chassis height
+
+// A bottle cap, which is what CMU call it and what it looks like: a solid disc
+// face outboard, a shallow rim wall running inboard off it, and twelve pointed
+// grousers wrapped round the tread. No hub, no spokes, no tyre — the disc is
+// the structure, and the grousers stiffen it as well as grip. The whole wheel
+// is carbon fibre and weighs about thirty grams.
+function IrisWheel({ x, z }: { x: number; z: number }) {
+  const face = Math.sign(z) * (IRIS_WHEEL_W / 2)
+  return (
+    <group position={[x, IRIS_WHEEL_R, z]} rotation={[Math.PI / 2, 0, 0]}>
+      {/* Rim wall */}
+      <mesh>
+        <cylinderGeometry
+          args={[IRIS_RIM_R, IRIS_RIM_R, IRIS_WHEEL_W, 30, 1, true]}
+        />
+        <meshStandardMaterial
+          color={IRIS_CF}
+          metalness={0.34}
+          roughness={0.36}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Disc face, outboard, and set back by its own half-thickness so it
+          finishes flush with the rim rather than adding to the track. */}
+      <mesh position={[0, face - Math.sign(z) * 0.002, 0]}>
+        <cylinderGeometry args={[IRIS_RIM_R, IRIS_RIM_R, 0.004, 30]} />
+        <meshStandardMaterial color={IRIS_CF} metalness={0.34} roughness={0.34} />
+      </mesh>
+
+      {/* Grousers. Raked, so the wheel bites turning as well as rolling. */}
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2
+        return (
+          <group
+            key={i}
+            position={[
+              Math.cos(a) * IRIS_GROUSER_R,
+              0,
+              Math.sin(a) * IRIS_GROUSER_R,
+            ]}
+            rotation={[0, -a, 0]}
+          >
+            <mesh rotation={[0, IRIS_GROUSER_RAKE, 0]}>
+              <boxGeometry
+                args={[IRIS_GROUSER_T, IRIS_WHEEL_W, IRIS_GROUSER_W]}
+              />
+              <meshStandardMaterial
+                color={IRIS_CF}
+                metalness={0.32}
+                roughness={0.4}
+              />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* Where each grouser is folded out of the disc it leaves a radial crease
+          running back to the centre. Twelve of them, lining up with the tabs. */}
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[
+              (Math.cos(a) * IRIS_RIM_R) / 2,
+              face + Math.sign(z) * 0.0005,
+              (Math.sin(a) * IRIS_RIM_R) / 2,
+            ]}
+            rotation={[0, -a, 0]}
+          >
+            <boxGeometry args={[IRIS_RIM_R * 0.92, 0.003, 0.006]} />
+            <meshStandardMaterial
+              color={IRIS_CF_HI}
+              metalness={0.4}
+              roughness={0.3}
+            />
+          </mesh>
+        )
+      })}
+
+      {/* Hub boss and its three fasteners, the only metal on the wheel. The
+          boss is the one thing that does stand outboard of the rim, by 6 mm —
+          it is the sole reason the vehicle measures 283 mm across and not the
+          271 mm the tyres alone would give. */}
+      <mesh position={[0, face + Math.sign(z) * 0.002, 0]}>
+        <cylinderGeometry args={[0.014, 0.014, 0.008, 14]} />
+        <meshStandardMaterial color={IRIS_TRIM} metalness={0.6} roughness={0.36} />
+      </mesh>
+      {[0, 1, 2].map((i) => {
+        const a = (i / 3) * Math.PI * 2 + 0.4
+        return (
+          <mesh
+            key={i}
+            position={[
+              Math.cos(a) * 0.022,
+              face + Math.sign(z) * 0.002,
+              Math.sin(a) * 0.022,
+            ]}
+          >
+            <cylinderGeometry args={[0.0035, 0.0035, 0.006, 8]} />
+            <meshStandardMaterial
+              color={IRIS_TRIM}
+              metalness={0.65}
+              roughness={0.32}
+            />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+function IrisRover({ accent }: { accent: string }) {
+  const corners: [number, number][] = [
+    [IRIS_AXLE_X, IRIS_TRACK_Z],
+    [IRIS_AXLE_X, -IRIS_TRACK_Z],
+    [-IRIS_AXLE_X, IRIS_TRACK_Z],
+    [-IRIS_AXLE_X, -IRIS_TRACK_Z],
+  ]
+  const bodyH = IRIS_BODY_TOP - IRIS_BODY_BOT
+  const bodyMidY = (IRIS_BODY_BOT + IRIS_BODY_TOP) / 2
+  return (
+    <group scale={IRIS_M}>
+      {corners.map(([x, z]) => (
+        <group key={`${x}:${z}`}>
+          <IrisWheel x={x} z={z} />
+          {/* Drive actuator in the 10 mm gap between chassis flank and wheel.
+              Four of them, one per wheel, and that is the entire drivetrain —
+              skid steer means nothing else moves. */}
+          <mesh
+            position={[x, IRIS_WHEEL_R, Math.sign(z) * 0.0925]}
+            rotation={[Math.PI / 2, 0, 0]}
+          >
+            <cylinderGeometry args={[0.014, 0.014, 0.014, 12]} />
+            <meshStandardMaterial
+              color={IRIS_TRIM}
+              metalness={0.58}
+              roughness={0.4}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Chassis: a monocoque carbon slab, blanketed in kapton. */}
+      <mesh position={[0, bodyMidY, 0]}>
+        <boxGeometry args={[IRIS_BODY_L, bodyH, IRIS_BODY_HALF_Z * 2]} />
+        <meshStandardMaterial
+          color={IRIS_GOLD}
+          metalness={0.58}
+          roughness={0.46}
+          flatShading
+        />
+      </mesh>
+      {[-0.075, 0.012, 0.088].map((cx) => (
+        <mesh key={cx} position={[cx, bodyMidY, 0]}>
+          <boxGeometry
+            args={[0.011, bodyH * 0.88, IRIS_BODY_HALF_Z * 2 + 0.005]}
+          />
+          <meshStandardMaterial
+            color={IRIS_GOLD_HI}
+            metalness={0.62}
+            roughness={0.4}
+            flatShading
+          />
+        </mesh>
+      ))}
+
+      {/* The blanket stops short of the floor plate, which shows as a pale band
+          along the bottom edge — the one light thing on an otherwise gold body,
+          and the easiest way to tell Iris from CubeRover at a distance. */}
+      <mesh position={[0, IRIS_BODY_BOT + 0.006, 0]}>
+        <boxGeometry args={[IRIS_BODY_L + 0.004, 0.012, IRIS_BODY_HALF_Z * 2 + 0.004]} />
+        <meshStandardMaterial color={IRIS_PLATE} metalness={0.18} roughness={0.7} />
+      </mesh>
+
+      {/* Avionics board at the deck edge. */}
+      <mesh position={[0, IRIS_BODY_TOP - 0.006, 0]}>
+        <boxGeometry args={[IRIS_BODY_L * 0.82, 0.008, IRIS_BODY_HALF_Z * 2 + 0.003]} />
+        <meshStandardMaterial color={IRIS_BOARD} metalness={0.2} roughness={0.62} />
+      </mesh>
+
+      {/* Deck: bare. Fittings and the two deployment posts Peregrine lowered it
+          on, and nothing else — there is no array to draw. Held under the wheel
+          tops so the wheels stay the tallest thing on the vehicle, which on
+          Iris they are. */}
+      {[
+        [-0.085, 0.048],
+        [-0.085, -0.048],
+      ].map(([px, pz]) => (
+        <mesh key={`${px}:${pz}`} position={[px, 0.1625, pz]}>
+          <cylinderGeometry args={[0.005, 0.005, 0.025, 10]} />
+          <meshStandardMaterial
+            color={IRIS_TRIM}
+            metalness={0.66}
+            roughness={0.32}
+          />
+        </mesh>
+      ))}
+      {[
+        [0.02, 0.05],
+        [0.07, -0.042],
+        [-0.03, -0.055],
+      ].map(([fx, fz]) => (
+        <mesh key={`${fx}:${fz}`} position={[fx, 0.157, fz]}>
+          <boxGeometry args={[0.026, 0.014, 0.018]} />
+          <meshStandardMaterial
+            color={IRIS_TRIM}
+            metalness={0.45}
+            roughness={0.48}
+          />
+        </mesh>
+      ))}
+
+      {/* Both cameras, on the front bulkhead. Iris carried no instrument beyond
+          them — the mission was to drive, and to photograph what driving did to
+          the regolith. They sight out between the front wheels. */}
+      {[0.032, -0.032].map((cz) => (
+        <group key={cz}>
+          <mesh position={[IRIS_BODY_L / 2 + 0.005, 0.112, cz]}>
+            <cylinderGeometry args={[0.013, 0.013, 0.01, 14]} />
+            <meshStandardMaterial
+              color={IRIS_CF}
+              metalness={0.4}
+              roughness={0.44}
+            />
+          </mesh>
+          <mesh
+            position={[IRIS_BODY_L / 2 + 0.011, 0.112, cz]}
+            rotation={[0, Math.PI / 2, 0]}
+          >
+            <circleGeometry args={[0.008, 14]} />
+            <meshStandardMaterial
+              color="#0d0f13"
+              metalness={0.7}
+              roughness={0.16}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Livery: the one accent band along the flanks, inboard of the tyres.
+          CMU's own marks stay off until the listing is claimed. */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[0, 0.062, s * (IRIS_BODY_HALF_Z + 0.004)]}>
+          <boxGeometry args={[IRIS_BODY_L * 0.78, 0.011, 0.006]} />
+          <meshStandardMaterial color={accent} metalness={0.3} roughness={0.5} />
+        </mesh>
+      ))}
+
+      <mesh position={[IRIS_BODY_L / 2 + 0.006, 0.14, -0.062]}>
+        <sphereGeometry args={[0.006, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.5}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Buried habitats — cut-and-cover vaults under a regolith cover
 // ---------------------------------------------------------------------------
 //
@@ -16670,6 +17017,7 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // of them loses the whole point of the district, which is what happened while
   // Thales and Sierra were both drawing the module.
   'jaxa-lunar-cruiser': CruiserRover,
+  'cmu-iris': IrisRover,
   'sierra-space-life': SierraLife,
   // Two of the three Fission Surface Power bids have their own model, and the
   // generic `power` model is the third — the Westinghouse eVinci. None of them
