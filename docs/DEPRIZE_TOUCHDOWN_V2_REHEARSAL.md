@@ -101,10 +101,10 @@ can still be resumed; lock is the registry, pause is the market.
 `settleWinner(7, 606)` records ispace. It does not send ETH. The team id is
 only a roster slot. ispace has no MoonDAO wallet.
 
-From the Safe, as owner of Juicebox project 275, send the project's ETH to
-the wallet you want to test as the winner. Ruleset 0 has a surplus allowance
-for this. The locked payout split still names the Safe, not ispace, so do
-not use the split. Name the recipient in the allowance call.
+On the prize page, under Juicebox prize pool, enter the winner address and
+the amount, then Send prize. That proposes `useAllowanceOf` on project 275.
+The locked payout split still names the Safe, so this surplus call is the
+one that can pay a different address.
 
 Check: project 275's balance dropped, and the recipient received the ETH.
 Bettors have not been paid yet. That is the next step.

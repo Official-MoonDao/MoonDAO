@@ -13,6 +13,7 @@ export default function AdminSection(props: {
   stage?: number
   resolved: boolean
   marketFeesWei?: bigint
+  jbProjectId?: bigint
   onDone: () => void
 }) {
   return (
@@ -28,6 +29,7 @@ export default function AdminSection(props: {
       stage={props.stage}
       resolved={props.resolved}
       marketFeesWei={props.marketFeesWei}
+      jbProjectId={props.jbProjectId}
       onDone={props.onDone}
     />
   )

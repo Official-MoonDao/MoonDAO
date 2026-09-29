@@ -6,7 +6,9 @@ import {
   CONDITIONAL_TOKEN_ADDRESSES,
   DEPRIZE_FEE_ROUTER_ADDRESSES,
   DEPRIZE_REGISTRY_ADDRESSES,
+  JBV5_TERMINAL_ADDRESS,
 } from 'const/config'
+import { ethers } from 'ethers'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
@@ -29,7 +31,9 @@ import {
   UNIT,
 } from '@/lib/deprize/constants'
 import { fmtEthWithUsd } from '@/lib/deprize/format'
+import { JB_PROJECTS_ADDRESS, useAllowanceOfParams } from '@/lib/deprize/juiceboxPayout'
 import { rpcRead } from '@/lib/deprize/read'
+import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -50,6 +54,7 @@ type DePrizeAdminPanelProps = {
   stage: number | undefined
   resolved: boolean
   marketFeesWei: bigint | undefined
+  jbProjectId?: bigint
   onDone: () => void
 }
 
@@ -65,6 +70,7 @@ export default function DePrizeAdminPanel({
   stage,
   resolved,
   marketFeesWei,
+  jbProjectId,
   onDone,
 }: DePrizeAdminPanelProps) {
   const userAddress = account?.address
@@ -85,7 +91,14 @@ export default function DePrizeAdminPanel({
   const [operatorSafe, setOperatorSafe] = useState('')
   const [pendingRegistryOwner, setPendingRegistryOwner] = useState('')
   const [proposalUrl, setProposalUrl] = useState('')
+  const [projectOwner, setProjectOwner] = useState('')
+  const [prizeRecipient, setPrizeRecipient] = useState('')
+  const [prizeAmountEth, setPrizeAmountEth] = useState('')
   const { queueSafeTx } = useSafe(operatorSafe, chain)
+  const prizePool = useDePrizePrizePool(
+    jbProjectId && jbProjectId > 0n ? Number(jbProjectId) : undefined,
+    chain.id
+  )
   // Sticky so editing the questionId away from a match doesn't unmount the
   // panel (and lose the input) before the user can correct it.
   const [oracleUnlocked, setOracleUnlocked] = useState(false)
@@ -355,6 +368,42 @@ export default function DePrizeAdminPanel({
     }
   }, [chain, lmsr, registry, userAddress])
 
+  useEffect(() => {
+    if (!jbProjectId || jbProjectId <= 0n) {
+      setProjectOwner('')
+      return
+    }
+    let cancelled = false
+    const projects = getContract({
+      client,
+      chain,
+      address: JB_PROJECTS_ADDRESS,
+      abi: [
+        {
+          type: 'function',
+          name: 'ownerOf',
+          stateMutability: 'view',
+          inputs: [{ name: 'tokenId', type: 'uint256' }],
+          outputs: [{ name: '', type: 'address' }],
+        },
+      ] as any,
+    })
+    rpcRead<string>({
+      contract: projects,
+      method: 'ownerOf' as string,
+      params: [jbProjectId],
+    })
+      .then((owner) => {
+        if (!cancelled) setProjectOwner(owner || '')
+      })
+      .catch(() => {
+        if (!cancelled) setProjectOwner('')
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [chain, jbProjectId])
+
   const isSafeSigner = Boolean(operatorSafe)
   // Market unwind is visible to the controller; oracle also needs pause/close
   // before resolving, so show it to either role. A Safe signer proposes
@@ -397,6 +446,76 @@ export default function DePrizeAdminPanel({
     } catch (err: any) {
       console.error(`[deprize-admin] ${method} failed`, err)
       toast.error(err?.shortMessage || err?.message || `${method} failed.`, {
+        style: toastStyle,
+        duration: 8000,
+      })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const safeOwnsProject =
+    isSafeSigner &&
+    !!projectOwner &&
+    projectOwner.toLowerCase() === operatorSafe.toLowerCase()
+  const userOwnsProject =
+    !!userAddress &&
+    !!projectOwner &&
+    userAddress.toLowerCase() === projectOwner.toLowerCase()
+  const canSendPrize = safeOwnsProject || userOwnsProject
+
+  const sendPrize = async () => {
+    if (!jbProjectId || jbProjectId <= 0n || !canSendPrize) return
+    if (blockedByNetwork()) return
+    if (!/^0x[0-9a-fA-F]{40}$/.test(prizeRecipient)) {
+      toast.error('Enter the winner address.', { style: toastStyle })
+      return
+    }
+    let amountWei: bigint
+    try {
+      amountWei = BigInt(ethers.utils.parseEther(prizeAmountEth || '0').toString())
+    } catch {
+      toast.error('Enter an ETH amount.', { style: toastStyle })
+      return
+    }
+    if (amountWei <= 0n) {
+      toast.error('Enter an ETH amount.', { style: toastStyle })
+      return
+    }
+    if (prizePool.balanceWei != null && amountWei > prizePool.balanceWei) {
+      toast.error('That is more than the Juicebox balance.', { style: toastStyle })
+      return
+    }
+    const terminal = getContract({
+      client,
+      chain,
+      address: JBV5_TERMINAL_ADDRESS,
+      abi: USE_ALLOWANCE_ABI as any,
+    })
+    const params = [...useAllowanceOfParams({
+      projectId: jbProjectId,
+      amountWei,
+      beneficiary: prizeRecipient,
+    })]
+    setBusy(true)
+    try {
+      if (safeOwnsProject) {
+        await proposeToSafe(terminal, 'useAllowanceOf', params, 'Prize payout proposed.')
+      } else {
+        await sendDePrizeTx(
+          account,
+          prepareContractCall({
+            contract: terminal,
+            method: 'useAllowanceOf' as string,
+            params,
+          }),
+        )
+        toast.success('Prize sent.', { style: toastStyle })
+        onDone()
+      }
+    } catch (err: any) {
+      console.error('[deprize-admin] useAllowanceOf failed', err)
+      toast.error(err?.shortMessage || err?.message || 'Prize payout failed.', {
         style: toastStyle,
         duration: 8000,
       })
@@ -850,6 +969,27 @@ export default function DePrizeAdminPanel({
         </div>
       )}
 
+      {jbProjectId && jbProjectId > 0n && (
+        <JuiceboxPrizeSection
+          busy={busy}
+          balanceWei={prizePool.balanceWei}
+          loading={prizePool.loading}
+          projectId={jbProjectId}
+          projectOwner={projectOwner}
+          canSend={canSendPrize}
+          recipient={prizeRecipient}
+          amountEth={prizeAmountEth}
+          onRecipient={setPrizeRecipient}
+          onAmount={setPrizeAmountEth}
+          onFillBalance={() => {
+            if (prizePool.balanceWei != null) {
+              setPrizeAmountEth(ethers.utils.formatEther(prizePool.balanceWei.toString()))
+            }
+          }}
+          onSend={sendPrize}
+        />
+      )}
+
       {/* Market unwind — FeeRouter passthroughs when router-owned */}
       {canSeeMarket && lmsr && (
         <div>
@@ -1009,6 +1149,115 @@ export default function DePrizeAdminPanel({
               </div>
             ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+const USE_ALLOWANCE_ABI = [
+  {
+    type: 'function',
+    name: 'useAllowanceOf',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'projectId', type: 'uint256' },
+      { name: 'token', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'currency', type: 'uint256' },
+      { name: 'minTokensPaidOut', type: 'uint256' },
+      { name: 'beneficiary', type: 'address' },
+      { name: 'feeBeneficiary', type: 'address' },
+      { name: 'memo', type: 'string' },
+    ],
+    outputs: [{ name: 'netAmountPaidOut', type: 'uint256' }],
+  },
+] as const
+
+function JuiceboxPrizeSection({
+  busy,
+  balanceWei,
+  loading,
+  projectId,
+  projectOwner,
+  canSend,
+  recipient,
+  amountEth,
+  onRecipient,
+  onAmount,
+  onFillBalance,
+  onSend,
+}: {
+  busy: boolean
+  balanceWei: bigint | null
+  loading: boolean
+  projectId: bigint
+  projectOwner: string
+  canSend: boolean
+  recipient: string
+  amountEth: string
+  onRecipient: (value: string) => void
+  onAmount: (value: string) => void
+  onFillBalance: () => void
+  onSend: () => void
+}) {
+  const balanceLabel =
+    loading || balanceWei == null ? '…' : `${ethers.utils.formatEther(balanceWei.toString())} ETH`
+  return (
+    <div>
+      <p className="text-gray-400 text-[11px] mb-2">
+        Juicebox prize pool · project {projectId.toString()} · {balanceLabel}
+      </p>
+      {projectOwner && (
+        <p className="text-gray-500 text-[11px] mb-2 font-mono break-all">
+          Owner {projectOwner}
+        </p>
+      )}
+      {canSend ? (
+        <div className="flex flex-col gap-2">
+          <p className="text-gray-400 text-xs leading-relaxed">
+            Sends ETH from the project surplus to a winner address. The locked
+            payout split is not used, so the recipient does not have to be the
+            project owner.
+          </p>
+          <input
+            type="text"
+            value={recipient}
+            onChange={(e) => onRecipient(e.target.value.trim())}
+            placeholder="Winner address (0x…)"
+            className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white text-xs font-mono placeholder-gray-500"
+          />
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={amountEth}
+              onChange={(e) => onAmount(e.target.value.trim())}
+              placeholder="Amount in ETH"
+              className="w-40 px-3 py-2 bg-white/5 border border-white/20 rounded-xl text-white text-xs font-mono placeholder-gray-500"
+            />
+            <button
+              type="button"
+              className="text-xs text-indigo-300 hover:text-indigo-200"
+              onClick={onFillBalance}
+              disabled={balanceWei == null}
+            >
+              Use full balance
+            </button>
+            <StandardButton
+              onClick={onSend}
+              disabled={busy}
+              className="rounded-full"
+              backgroundColor="bg-moon-green"
+            >
+              Send prize
+            </StandardButton>
+          </div>
+        </div>
+      ) : (
+        <p className="text-gray-500 text-xs">
+          The connected wallet cannot pay this project. The project owner has to
+          send the surplus.
+        </p>
       )}
     </div>
   )
