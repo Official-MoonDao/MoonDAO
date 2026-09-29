@@ -33,7 +33,7 @@ import {
   HOME_GROUND as HOME_GROUND_M,
   HOME_TARGET as HOME_TARGET_M,
 } from '@/lib/lunar-atlas/homeview'
-import type { TechTree } from '@/lib/lunar-atlas/selectors'
+import { settlementPresence, type TechTree } from '@/lib/lunar-atlas/selectors'
 import {
   CAP_CENTER_HEIGHT_M,
   M_TO_UNITS,
@@ -728,16 +728,16 @@ export default function MoonGlobe({
   // roadside cargo, the parked excavators, the vault dig — is the work of the
   // surface construction fleet, so it arrives when that fleet does and not when
   // the first lander touches down. Keying it to the loudest district on the
-  // ridge (which is what this did) put a lit street grid around a single dead
-  // 2024 lander, because one achieved landing was enough to build the whole
-  // town. Falls back to that behaviour only when a filter has taken the
+  // ridge put a lit street grid around a single dead 2024 lander, because one
+  // achieved landing was enough to build the whole town. Presence is keyed by
+  // race id, so the fleet is the construction race, not the hardware-type
+  // string. Falls back to the loudest site only when a filter has taken the
   // construction race off the map entirely, so filtering cannot delete the
   // roads under everything else.
-  const basePresence = useMemo(() => {
-    const construction = sitePresence.get('construction')
-    if (construction != null) return construction
-    return Math.max(0, ...Array.from(sitePresence.values()))
-  }, [sitePresence])
+  const basePresence = useMemo(
+    () => settlementPresence(trees ?? [], sitePresence),
+    [trees, sitePresence]
+  )
   // Auto-drift pauses whenever the user is interacting or a camera
   // transition is in flight.
   const [userInteracting, setUserInteracting] = useState(false)
