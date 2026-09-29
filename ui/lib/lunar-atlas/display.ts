@@ -123,6 +123,49 @@ export function goalIndexCategory(goal: {
   return goal.category ?? goal.indexCategory
 }
 
+// Races that are not settled on the Moon at all.
+//
+// Almost every capability here is won by hardware standing on the surface, so
+// a race with no district usually just means nobody has modelled its hardware
+// yet — a gap, and one worth filling. Night Shift is not that, and treating it
+// as a gap would misstate the race.
+//
+// Read its own criteria. A sealed article in a chamber below 100 K and
+// 1e-5 torr, nothing crossing the boundary but data, weighed and instrumented
+// on day 0, seals checked and files collected on day 15. That is a test
+// campaign with two site visits, and the only place it can happen is Earth.
+// CAPABILITY_LADDER already says as much on the rung itself ("Chamber proxy
+// now · surface night 2028+"); this is the same fact, said where someone
+// looking at the Moon can see it.
+//
+// So Night Shift is marked rather than sited, and the marking has to be
+// explicit — a race that is simply absent from the globe reads as one whose
+// models are still to come.
+export type EarthSideVenue = {
+  /** Short enough for a legend row. */
+  chip: string
+  /** The panel's answer to "then where does this happen?" */
+  note: string
+}
+
+export const EARTH_SIDE_VENUE: Record<string, EarthSideVenue> = {
+  'shared-night-shift': {
+    chip: 'Settled on Earth',
+    note:
+      'This one is not won on the Moon. The bar is 354 hours — one lunar ' +
+      'night — in a thermal-vacuum chamber below 100 K, with nothing crossing ' +
+      'the chamber boundary but data. The verifier weighs and seals the ' +
+      'article on day 0 and collects the files on day 15. No entrant stands ' +
+      'at Moon Base Zero until a qualified unit flies.',
+  },
+}
+
+export function earthSideVenue(
+  goalId: string | null | undefined
+): EarthSideVenue | undefined {
+  return goalId ? EARTH_SIDE_VENUE[goalId] : undefined
+}
+
 export const LOCATION_PRECISION_LABEL: Record<string, string> = {
   exact: 'Exact location',
   approximate: 'Approximate location',

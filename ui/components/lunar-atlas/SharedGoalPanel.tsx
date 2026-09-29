@@ -3,7 +3,12 @@
 // criteria, market structure, and sources. Opened from a
 // shared-goal row in ProjectPanel or by clicking the goal's region marker.
 
-import { FlagIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import {
+  FlagIcon,
+  GlobeAmericasIcon,
+  MapPinIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import type { MouseEvent } from 'react'
 import { useEffect, useState } from 'react'
@@ -22,6 +27,7 @@ import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import {
   PARTICIPATION_LABEL,
+  earthSideVenue,
   participationKind,
   orgColor,
 } from '@/lib/lunar-atlas/display'
@@ -136,6 +142,9 @@ export default function SharedGoalPanel({
   // declaring that entrant the winning builder rather than what it actually
   // is — the only public writeup on a capability nobody has committed to yet.
   const hasRace = isCompetitiveRace(competitors.length)
+  // Set only for a race that is not decided on the Moon — today just Night
+  // Shift, which is won in a thermal-vacuum chamber. See EARTH_SIDE_VENUE.
+  const venue = earthSideVenue(goal.id)
   const marketDeprizeId = bound
     ? deprizeId ?? findDePrizeIdForGoal(chainSlug!, goal.id)
     : undefined
@@ -285,6 +294,23 @@ export default function SharedGoalPanel({
               <MapPinIcon className="h-3.5 w-3.5" />
               {goal.regionLabel}
             </span>
+          </div>
+        )}
+
+        {/* Where a lunar race names its patch of ground, a race that is not
+            settled on the Moon has to say so outright. This slot was simply
+            empty for Night Shift, which left the panel looking like a race
+            whose location had not been filled in rather than one that is
+            deliberately nowhere on this map. */}
+        {venue && (
+          <div className="rounded-lg border border-sky-400/20 bg-sky-400/5 p-3">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-sky-200/90">
+              <GlobeAmericasIcon className="h-4 w-4" />
+              {venue.chip}
+            </p>
+            <p className="mt-1.5 text-xs leading-relaxed text-white/60">
+              {venue.note}
+            </p>
           </div>
         )}
 
