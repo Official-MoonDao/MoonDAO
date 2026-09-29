@@ -147,6 +147,11 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // Light bar to rear wheel — Astrolab pitch FLEX as Jeep-sized. FLEX_M
   // inverts this exact number.
   'astrolab-flex': 4.2,
+  // MAPP's long axis, straight off Lunar Outpost's own published envelope of
+  // 45 x 38 x 40 cm. Note the 40 cm is the HEIGHT and it is not the largest
+  // dimension, so this entry is the length — getting that backwards would
+  // scale the whole vehicle. MAPP_M inverts this exact number.
+  'lunar-outpost-mapp': 0.45,
   // Bumper to tailgate. The longest of the three LTV bids, and it looks it —
   // cab forward, cargo aft. VOY_M inverts this exact number.
   'lunar-outpost-lunar-dawn': 4.4,
@@ -11587,6 +11592,393 @@ function NovaC({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// MAPP — Lunar Outpost
+// ---------------------------------------------------------------------------
+
+// The Mobile Autonomous Prospecting Platform, riding Intuitive Machines' IM-3
+// to Reiner Gamma as Lunar Outpost's Lunar Voyage 2. MAPP already reached the
+// surface once, on IM-2 in March 2025, and never got to drive: Athena came to
+// rest on her side with MAPP's garage wedged upside down underneath.
+//
+// DO NOT merge this with `VoyagerRover` further down. That is the same
+// company's Eagle/Pegasus LTV — a crewed-class terrain vehicle on chain-mail
+// Goodyear mesh tyres, racing in the crewed-rover goal. It is roughly ten
+// times this vehicle's length and shares no hardware with it. Lunar Outpost
+// fields both, which is exactly the Blue Moon MK1/MK2 situation: one operator,
+// two races, two silhouettes, and neither is a stand-in for the other.
+//
+// Every dimension here is Lunar Outpost's own published figure: a 45 x 38 x
+// 40 cm envelope on a 5-10 kg vehicle carrying up to 15 kg, 10 cm/s flat out,
+// 50 mm of ground clearance. The height works out unusually neatly — a 20 cm
+// body with APL's 20 cm Vector Magnetometer-Rover mast standing on it lands
+// exactly on the published 40 cm — so the mast is sized from the instrument
+// rather than drawn to taste.
+const MAPP_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['lunar-outpost-mapp'] ?? 0.45)
+
+const MAPP_FRAME = '#c6cbd2' // machined aluminium chassis and bulkhead
+const MAPP_CELL = '#16181f' // the array reads near-black, not blue, in every render
+const MAPP_BLUE = '#a4c9dd' // the pale blue flank panel under the array
+const MAPP_WHEEL = '#dde1e6'
+const MAPP_MAST = '#1c1f24'
+const MAPP_TEAL = '#4e8f78' // the green instrument window on the bulkhead
+const MAPP_PORT = '#8e2f2a' // red-anodized connector ports beside it
+const MAPP_REGOLITH = '#4a4640' // what ends up in the collection hopper
+
+const MAPP_WHEEL_R = 0.075
+const MAPP_WHEEL_W = 0.06
+const MAPP_AXLE_X = 0.15 // + the wheel radius = the published 0.45 m length
+const MAPP_TRACK_Z = 0.155 // + half the tyre = 0.37 m, inside the published 0.38
+const MAPP_CLEAR = 0.05 // published 50 mm ground clearance
+const MAPP_BODY_L = 0.3
+// Chassis half-width. The tyres are the hard constraint, not the envelope:
+// everything that stands proud of the flank — panel, accent band, rocker —
+// has to fit in the gap between the hull and the inner face of the tyre, and
+// at 0.12 there was only 5 mm of it and all three overran into the wheels.
+const MAPP_BODY_HALF_Z = 0.105
+const MAPP_TUB_TOP = 0.155 // high enough to bury the barrel's lowest facet
+
+// The array is a faceted barrel rather than a smooth one, which is how it
+// reads in Lunar Outpost's renders: flat rectangular cells in rows, wrapped
+// over an arc in five straight facets. Crown height is derived from the arc
+// so the deck, the mast base and the published overall height all agree.
+const MAPP_ARC_R = 0.105
+const MAPP_ARC_Y = 0.095
+const MAPP_DECK_Y = MAPP_ARC_Y + MAPP_ARC_R // 0.20
+const MAPP_FACETS = [-1, -0.5, 0, 0.5, 1]
+const MAPP_FACET_W = 0.058
+const MAPP_MAST_H = 0.2 // the VMR mast, per APL's own figure
+const MAPP_HEAD_H = 0.024
+const MAPP_MAST_TOP = MAPP_DECK_Y + MAPP_MAST_H // = the published 0.40 m
+
+// Rocker-arm suspension, which Lunar Outpost calls out by name. On a vehicle
+// this small the rocker is plainly visible along the flank rather than hidden
+// inside bodywork, and it is the reason the wheels can articulate
+// independently over rock without a spring anywhere on the vehicle.
+function MappRocker({ side }: { side: number }) {
+  const z = side * (MAPP_TRACK_Z - 0.022)
+  return (
+    <group>
+      <Strut
+        from={[-MAPP_AXLE_X, MAPP_WHEEL_R, z]}
+        to={[MAPP_AXLE_X, MAPP_WHEEL_R, z]}
+        r={0.008}
+        color={MAPP_FRAME}
+      />
+      {/* Pivot where the rocker hangs off the chassis */}
+      <mesh position={[0, MAPP_WHEEL_R + 0.014, z]}>
+        <boxGeometry args={[0.028, 0.03, 0.016]} />
+        <meshStandardMaterial color={MAPP_FRAME} metalness={0.5} roughness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+// Topology-optimized wheels — Lunar Outpost's own term, and the reason these
+// look grown rather than machined: the spoke web is whatever material survived
+// a mass-minimization solve, so it is a few sweeping curved arms instead of an
+// even star of bars. Deep raked vanes around the rim do the digging.
+//
+// `hopper` marks the ONE wheel carrying a transparent regolith collection
+// hopper. MAPP scoops regolith into it while driving and then transfers
+// ownership of the sample to NASA in place — the first sale of space resources
+// in history, flown on Lunar Voyages 1 and 2. It is deliberately on a single
+// wheel, because that is how the vehicle is actually built and because four of
+// them would read as styling rather than as an instrument.
+function MappWheel({
+  x,
+  z,
+  hopper = false,
+}: {
+  x: number
+  z: number
+  hopper?: boolean
+}) {
+  const face = Math.sign(z) * (MAPP_WHEEL_W / 2 + 0.004)
+  return (
+    <group position={[x, MAPP_WHEEL_R, z]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh>
+        <cylinderGeometry
+          args={[
+            MAPP_WHEEL_R - 0.008,
+            MAPP_WHEEL_R - 0.008,
+            MAPP_WHEEL_W,
+            24,
+            1,
+            true,
+          ]}
+        />
+        <meshStandardMaterial
+          color={MAPP_WHEEL}
+          metalness={0.45}
+          roughness={0.5}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Raked vanes. The rake is what makes them scoop rather than merely
+          grip, which matters on the wheel that is also the sample hopper. */}
+      {Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2
+        return (
+          <group
+            key={i}
+            position={[
+              Math.cos(a) * (MAPP_WHEEL_R - 0.008),
+              0,
+              Math.sin(a) * (MAPP_WHEEL_R - 0.008),
+            ]}
+            rotation={[0, -a, 0]}
+          >
+            <mesh rotation={[0.42, 0, 0]}>
+              <boxGeometry args={[0.016, MAPP_WHEEL_W * 0.92, 0.012]} />
+              <meshStandardMaterial
+                color={MAPP_WHEEL}
+                metalness={0.42}
+                roughness={0.54}
+              />
+            </mesh>
+          </group>
+        )
+      })}
+
+      {/* The optimized spoke web, on the outboard face only. */}
+      {Array.from({ length: 5 }, (_, i) => {
+        const a = (i / 5) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[
+              (Math.cos(a) * MAPP_WHEEL_R) / 2.2,
+              face,
+              (Math.sin(a) * MAPP_WHEEL_R) / 2.2,
+            ]}
+            rotation={[0, -a + 0.4, 0]}
+          >
+            <boxGeometry args={[MAPP_WHEEL_R * 0.78, 0.005, 0.013]} />
+            <meshStandardMaterial
+              color={MAPP_WHEEL}
+              metalness={0.4}
+              roughness={0.55}
+            />
+          </mesh>
+        )
+      })}
+
+      <mesh position={[0, face, 0]}>
+        <cylinderGeometry args={[0.018, 0.018, 0.012, 12]} />
+        <meshStandardMaterial color={MAPP_FRAME} metalness={0.6} roughness={0.4} />
+      </mesh>
+
+      {hopper && (
+        <group>
+          {/* Transparent hopper shell. Authored with opacity set so
+              SurfaceAnchor can strip its shadow — a shadow map is binary and
+              glazing that casts one blacks out the ground under it. */}
+          <mesh>
+            <cylinderGeometry
+              args={[
+                MAPP_WHEEL_R - 0.019,
+                MAPP_WHEEL_R - 0.019,
+                MAPP_WHEEL_W * 0.7,
+                18,
+              ]}
+            />
+            <meshStandardMaterial
+              color="#cfe2ea"
+              transparent
+              opacity={0.32}
+              roughness={0.12}
+              metalness={0.1}
+            />
+          </mesh>
+          {/* The sample itself, pooled in the bottom of the drum. */}
+          <mesh position={[0, 0, -0.022]}>
+            <boxGeometry args={[0.07, MAPP_WHEEL_W * 0.6, 0.022]} />
+            <meshStandardMaterial color={MAPP_REGOLITH} roughness={0.96} />
+          </mesh>
+        </group>
+      )}
+    </group>
+  )
+}
+
+function MappRover({ accent }: { accent: string }) {
+  return (
+    <group scale={MAPP_M}>
+      <MappWheel x={MAPP_AXLE_X} z={MAPP_TRACK_Z} />
+      <MappWheel x={MAPP_AXLE_X} z={-MAPP_TRACK_Z} />
+      {/* The hopper rides the left rear wheel — one wheel, not four. */}
+      <MappWheel x={-MAPP_AXLE_X} z={MAPP_TRACK_Z} hopper />
+      <MappWheel x={-MAPP_AXLE_X} z={-MAPP_TRACK_Z} />
+      <MappRocker side={1} />
+      <MappRocker side={-1} />
+
+      {/* Chassis tub. Everything above the clearance line is structure; MAPP
+          carries its 15 kg of payload inside this box rather than on a deck. */}
+      <mesh position={[0, (MAPP_CLEAR + MAPP_TUB_TOP) / 2, 0]}>
+        <boxGeometry
+          args={[MAPP_BODY_L, MAPP_TUB_TOP - MAPP_CLEAR, MAPP_BODY_HALF_Z * 2]}
+        />
+        <meshStandardMaterial color={MAPP_FRAME} metalness={0.45} roughness={0.5} />
+      </mesh>
+
+      {/* Pale blue flank panels, the one piece of colour on the vehicle that
+          is not an instrument. */}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={[-0.01, MAPP_CLEAR + 0.032, s * (MAPP_BODY_HALF_Z + 0.004)]}
+        >
+          <boxGeometry args={[0.24, 0.05, 0.008]} />
+          <meshStandardMaterial color={MAPP_BLUE} metalness={0.3} roughness={0.42} />
+        </mesh>
+      ))}
+
+      {/* Livery: the one accent band, run along the chassis sill. */}
+      {[-1, 1].map((s) => (
+        <mesh
+          key={s}
+          position={[-0.01, MAPP_CLEAR + 0.006, s * (MAPP_BODY_HALF_Z + 0.005)]}
+        >
+          <boxGeometry args={[0.24, 0.008, 0.009]} />
+          <meshStandardMaterial color={accent} metalness={0.25} roughness={0.5} />
+        </mesh>
+      ))}
+
+      {/* Faceted solar barrel. Each facet is a flat substrate laid tangent to
+          the arc, carrying a row of cells stood proud of it. */}
+      {MAPP_FACETS.map((t) => {
+        const fy = MAPP_ARC_Y + MAPP_ARC_R * Math.cos(t)
+        const fz = MAPP_ARC_R * Math.sin(t)
+        return (
+          <group key={t} position={[0, fy, fz]} rotation={[t, 0, 0]}>
+            <mesh>
+              <boxGeometry args={[MAPP_BODY_L, 0.006, MAPP_FACET_W]} />
+              <meshStandardMaterial
+                color={MAPP_FRAME}
+                metalness={0.4}
+                roughness={0.5}
+              />
+            </mesh>
+            {[-0.125, -0.075, -0.025, 0.025, 0.075, 0.125].map((cx) => (
+              <mesh key={cx} position={[cx, 0.005, 0]}>
+                <boxGeometry args={[0.044, 0.003, 0.048]} />
+                <meshStandardMaterial
+                  color={MAPP_CELL}
+                  metalness={0.35}
+                  roughness={0.3}
+                />
+              </mesh>
+            ))}
+          </group>
+        )
+      })}
+
+      {/* Forward instrument bulkhead: an open aluminium frame rather than a
+          skin, carrying the stereo navigation cameras MAPP drives on, the
+          multispectral microscope's window, and its connector ports. */}
+      <mesh position={[MAPP_BODY_L / 2 + 0.008, 0.125, 0]}>
+        <boxGeometry args={[0.016, 0.135, 0.215]} />
+        <meshStandardMaterial color={MAPP_FRAME} metalness={0.5} roughness={0.45} />
+      </mesh>
+      {[-0.045, 0.045].map((z) => (
+        <mesh
+          key={z}
+          position={[MAPP_BODY_L / 2 + 0.019, 0.163, z]}
+          rotation={[0, Math.PI / 2, 0]}
+        >
+          <circleGeometry args={[0.013, 14]} />
+          <meshStandardMaterial color="#15171b" metalness={0.6} roughness={0.2} />
+        </mesh>
+      ))}
+      <mesh position={[MAPP_BODY_L / 2 + 0.018, 0.108, 0.012]}>
+        <boxGeometry args={[0.005, 0.05, 0.05]} />
+        <meshStandardMaterial color={MAPP_TEAL} metalness={0.4} roughness={0.35} />
+      </mesh>
+      {[-0.07, -0.045].map((z) => (
+        <mesh
+          key={z}
+          position={[MAPP_BODY_L / 2 + 0.018, 0.105, z]}
+          rotation={[0, 0, Math.PI / 2]}
+        >
+          <cylinderGeometry args={[0.009, 0.009, 0.006, 12]} />
+          <meshStandardMaterial
+            color={MAPP_PORT}
+            metalness={0.5}
+            roughness={0.38}
+          />
+        </mesh>
+      ))}
+
+      {/* VMR mast. Two clamp brackets, because that is how it is held in every
+          photograph, and a sensor head on top: APL's magnetometer is a
+          tetrahedral array of four fluxgates, and the whole reason it stands
+          off the body at all is to get the sensors away from the rover's own
+          magnetic signature. */}
+      <mesh
+        position={[
+          -0.035,
+          MAPP_DECK_Y + (MAPP_MAST_H - MAPP_HEAD_H + 0.004) / 2,
+          0,
+        ]}
+      >
+        <cylinderGeometry
+          args={[0.019, 0.019, MAPP_MAST_H - MAPP_HEAD_H + 0.004, 14]}
+        />
+        <meshStandardMaterial color={MAPP_MAST} metalness={0.35} roughness={0.6} />
+      </mesh>
+      {[0.03, 0.1].map((dy) => (
+        <mesh key={dy} position={[-0.035, MAPP_DECK_Y + dy, 0]}>
+          <boxGeometry args={[0.05, 0.016, 0.05]} />
+          <meshStandardMaterial
+            color={MAPP_FRAME}
+            metalness={0.55}
+            roughness={0.42}
+          />
+        </mesh>
+      ))}
+      <mesh position={[-0.035, MAPP_MAST_TOP - MAPP_HEAD_H / 2, 0]}>
+        <boxGeometry args={[0.038, MAPP_HEAD_H, 0.038]} />
+        <meshStandardMaterial color={MAPP_MAST} metalness={0.3} roughness={0.62} />
+      </mesh>
+
+      {/* Whip antennas: S-band and X-band direct to Earth, plus the LTE link
+          the lander carries. Each foots on the barrel rather than on a
+          notional flat deck — the crown is the only place the arc is actually
+          at MAPP_DECK_Y, so the seat height is solved from the arc. */}
+      {[
+        [0.1, 0.04],
+        [0.1, -0.04],
+        [-0.11, 0],
+      ].map(([ax, az]) => {
+        const seat = MAPP_ARC_Y + Math.sqrt(MAPP_ARC_R ** 2 - az ** 2)
+        return (
+          <mesh key={`${ax}:${az}`} position={[ax, seat + 0.022, az]}>
+            <cylinderGeometry args={[0.004, 0.004, 0.05, 8]} />
+            <meshStandardMaterial
+              color="#e6e8ec"
+              roughness={0.55}
+              metalness={0.2}
+            />
+          </mesh>
+        )
+      })}
+
+      {/* Status marker, the house emissive accent. */}
+      <mesh position={[MAPP_BODY_L / 2 + 0.018, 0.075, 0.062]}>
+        <sphereGeometry args={[0.006, 8, 8]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.5}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Moon RACER LTV — Intuitive Machines
 // ---------------------------------------------------------------------------
 
@@ -15412,6 +15804,9 @@ function BuriedHabitat({
 const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   'im-moon-racer': MoonRacer,
   'astrolab-flex': FlexRover,
+  // Lunar Outpost field two vehicles in two different races. This is the
+  // 10 kg prospector; VoyagerRover below is their crewed-class LTV.
+  'lunar-outpost-mapp': MappRover,
   'lunar-outpost-lunar-dawn': VoyagerRover,
   // Each habitat bid needs its own model, because the race is an argument about
   // what a first habitat even is and no two answers look remotely alike: Thales
