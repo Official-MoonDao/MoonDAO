@@ -10,6 +10,12 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
+import useSafe from '@/lib/safe/useSafe'
+import {
+  encodeContractCall,
+  isAddressInList,
+  safeTransactionUrl,
+} from '@/lib/deprize/safeProposal'
 import {
   OPEN_FIELD_TEAM_ID,
   getDePrizeQuestionId,
@@ -76,6 +82,10 @@ export default function DePrizeAdminPanel({
   const [routerOwned, setRouterOwned] = useState(false)
   const [isMarketController, setIsMarketController] = useState(false)
   const [isOracle, setIsOracle] = useState(false)
+  const [operatorSafe, setOperatorSafe] = useState('')
+  const [pendingRegistryOwner, setPendingRegistryOwner] = useState('')
+  const [proposalUrl, setProposalUrl] = useState('')
+  const { queueSafeTx } = useSafe(operatorSafe, chain)
   // Sticky so editing the questionId away from a match doesn't unmount the
   // panel (and lose the input) before the user can correct it.
   const [oracleUnlocked, setOracleUnlocked] = useState(false)
@@ -221,17 +231,24 @@ export default function DePrizeAdminPanel({
     let cancelled = false
     ;(async () => {
       try {
-        const computed = await rpcRead<string>({
-          contract: ctf,
-          method: 'getConditionId' as string,
-          params: [userAddress, questionId, BigInt(numOutcomes)],
-        })
         const marketConditionId = await rpcRead<string>({
           contract: lmsr,
           method: 'conditionIds' as string,
           params: [0n],
         })
-        if (!cancelled) setIsOracle(computed.toLowerCase() === marketConditionId.toLowerCase())
+        const candidates = [userAddress, operatorSafe].filter(Boolean)
+        for (const who of candidates) {
+          const computed = await rpcRead<string>({
+            contract: ctf,
+            method: 'getConditionId' as string,
+            params: [who, questionId, BigInt(numOutcomes)],
+          })
+          if (computed.toLowerCase() === marketConditionId.toLowerCase()) {
+            if (!cancelled) setIsOracle(true)
+            return
+          }
+        }
+        if (!cancelled) setIsOracle(false)
       } catch {
         if (!cancelled) setIsOracle(false)
       }
@@ -239,26 +256,144 @@ export default function DePrizeAdminPanel({
     return () => {
       cancelled = true
     }
-  }, [ctf, lmsr, userAddress, questionId, numOutcomes])
+  }, [ctf, lmsr, operatorSafe, userAddress, questionId, numOutcomes])
 
+  // A signer of the Safe that owns the market (or is the pending registry
+  // owner) can propose the same calls. The connected wallet is not the Safe,
+  // so those calls cannot be sent directly.
+  useEffect(() => {
+    if (!userAddress) {
+      setOperatorSafe('')
+      setPendingRegistryOwner('')
+      return
+    }
+    let cancelled = false
+    const ownersAbi = [
+      {
+        type: 'function',
+        name: 'getOwners',
+        stateMutability: 'view',
+        inputs: [],
+        outputs: [{ name: '', type: 'address[]' }],
+      },
+    ] as const
+    const ownableAbi = [
+      {
+        type: 'function',
+        name: 'owner',
+        stateMutability: 'view',
+        inputs: [],
+        outputs: [{ name: '', type: 'address' }],
+      },
+      {
+        type: 'function',
+        name: 'pendingOwner',
+        stateMutability: 'view',
+        inputs: [],
+        outputs: [{ name: '', type: 'address' }],
+      },
+    ] as const
+    const readOwners = async (address: string) => {
+      const contract = getContract({ client, chain, address, abi: ownersAbi as any })
+      return rpcRead<string[]>({ contract, method: 'getOwners' as string, params: [] })
+    }
+    ;(async () => {
+      const candidates: string[] = []
+      try {
+        if (lmsr) {
+          const lmsrOwner = await rpcRead<string>({
+            contract: lmsr,
+            method: 'owner' as string,
+            params: [],
+          })
+          if (lmsrOwner) candidates.push(lmsrOwner)
+        }
+        if (registry) {
+          const owner = await rpcRead<string>({
+            contract: registry,
+            method: 'owner' as string,
+            params: [],
+          })
+          if (owner) candidates.push(owner)
+          const ownable = getContract({
+            client,
+            chain,
+            address: registry.address,
+            abi: ownableAbi as any,
+          })
+          const pending = await rpcRead<string>({
+            contract: ownable,
+            method: 'pendingOwner' as string,
+            params: [],
+          }).catch(() => '')
+          if (!cancelled) setPendingRegistryOwner(pending || '')
+          if (pending) candidates.push(pending)
+        }
+      } catch {
+        if (!cancelled) setOperatorSafe('')
+        return
+      }
+      const seen = new Set<string>()
+      for (const candidate of candidates) {
+        const key = candidate.toLowerCase()
+        if (!candidate || seen.has(key)) continue
+        seen.add(key)
+        try {
+          const owners = await readOwners(candidate)
+          if (isAddressInList(userAddress, owners || [])) {
+            if (!cancelled) setOperatorSafe(candidate)
+            return
+          }
+        } catch {
+          /* not a Safe */
+        }
+      }
+      if (!cancelled) setOperatorSafe('')
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [chain, lmsr, registry, userAddress])
+
+  const isSafeSigner = Boolean(operatorSafe)
   // Market unwind is visible to the controller; oracle also needs pause/close
-  // before resolving, so show it to either role. Sweep is permissionless when
-  // router-owned — exposed to any connected admin-role wallet.
-  const canSeeMarket = isMarketController || isOracle || oracleUnlocked
+  // before resolving, so show it to either role. A Safe signer proposes
+  // instead of sending. Sweep is permissionless when router-owned.
+  const canSeeMarket = isMarketController || isOracle || oracleUnlocked || isSafeSigner
   if (!userAddress || (!isRegistryOwner && !canSeeMarket)) return null
 
   // Generic write helper with a toast lifecycle.
+  const proposeToSafe = async (contract: any, method: string, params: any[], doneMsg: string) => {
+    const data = encodeContractCall(contract.abi as any, method, params)
+    const safeTxHash = await queueSafeTx({
+      to: contract.address,
+      value: '0',
+      data,
+      operation: 0,
+    })
+    const url = safeTransactionUrl(chain.id, operatorSafe, safeTxHash)
+    setProposalUrl(url)
+    toast.success(`${doneMsg} Share the Safe link so the other signers can confirm.`, {
+      style: toastStyle,
+      duration: 8000,
+    })
+  }
+
   const run = async (contract: any, method: string, params: any[], doneMsg: string) => {
     if (!account || !contract) return
     if (blockedByNetwork()) return
     setBusy(true)
     try {
-      await sendDePrizeTx(
-        account,
-        prepareContractCall({ contract, method: method as string, params }),
-      )
-      toast.success(doneMsg, { style: toastStyle })
-      onDone()
+      if (isSafeSigner) {
+        await proposeToSafe(contract, method, params, doneMsg)
+      } else {
+        await sendDePrizeTx(
+          account,
+          prepareContractCall({ contract, method: method as string, params }),
+        )
+        toast.success(doneMsg, { style: toastStyle })
+        onDone()
+      }
     } catch (err: any) {
       console.error(`[deprize-admin] ${method} failed`, err)
       toast.error(err?.shortMessage || err?.message || `${method} failed.`, {
@@ -282,10 +417,11 @@ export default function DePrizeAdminPanel({
     if (blockedByNetwork()) return
     setBusy(true)
     try {
+      const oracleAddress = isSafeSigner ? operatorSafe : account.address
       const computed = await rpcRead<string>({
         contract: ctf,
         method: 'getConditionId' as string,
-        params: [account.address, questionId, BigInt(numOutcomes)],
+        params: [oracleAddress, questionId, BigInt(numOutcomes)],
       })
       const marketConditionId = await rpcRead<string>({
         contract: lmsr,
@@ -317,16 +453,20 @@ export default function DePrizeAdminPanel({
           'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.',
         )
       }
-      await sendDePrizeTx(
-        account,
-        prepareContractCall({
-          contract: ctf,
-          method: 'reportPayouts' as string,
-          params: [questionId, payouts],
-        }),
-      )
-      toast.success(`Resolved: ${label}.`, { style: toastStyle })
-      onDone()
+      if (isSafeSigner) {
+        await proposeToSafe(ctf, 'reportPayouts', [questionId, payouts], `Resolved: ${label}.`)
+      } else {
+        await sendDePrizeTx(
+          account,
+          prepareContractCall({
+            contract: ctf,
+            method: 'reportPayouts' as string,
+            params: [questionId, payouts],
+          }),
+        )
+        toast.success(`Resolved: ${label}.`, { style: toastStyle })
+        onDone()
+      }
     } catch (err: any) {
       toast.error(err?.shortMessage || err?.message || 'Resolve failed.', {
         style: toastStyle,
@@ -443,9 +583,38 @@ export default function DePrizeAdminPanel({
       <p className="text-yellow-300 text-xs font-medium">
         Admin actions
         {isRegistryOwner ? ' · registry owner' : ''}
+        {isSafeSigner ? ' · Safe signer' : ''}
         {isOracle ? ' · oracle' : ''}
         {isMarketController ? (routerOwned ? ' · fee-router owner' : ' · market owner') : ''}
       </p>
+      {isSafeSigner && (
+        <p className="text-gray-400 text-xs leading-relaxed">
+          Actions are proposed to the executive Safe. Send the Safe link to the other
+          signers. Three of four must confirm before it can execute.
+        </p>
+      )}
+      {proposalUrl && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <a
+            href={proposalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-indigo-300 hover:text-indigo-200 underline underline-offset-2"
+          >
+            Open in Safe to collect signatures
+          </a>
+          <button
+            type="button"
+            className="text-xs text-gray-300 hover:text-white"
+            onClick={() => {
+              void navigator.clipboard.writeText(proposalUrl)
+              toast.success('Safe link copied.', { style: toastStyle })
+            }}
+          >
+            Copy link
+          </button>
+        </div>
+      )}
 
       {wrongNetwork && (
         <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex flex-col gap-2">
@@ -465,10 +634,42 @@ export default function DePrizeAdminPanel({
       )}
 
       {/* Registry lifecycle (registry owner) */}
-      {isRegistryOwner && registry && (
+      {(isRegistryOwner || isSafeSigner) && registry && (
         <div>
           <p className="text-gray-400 text-[11px] mb-2">DePrize lifecycle</p>
           <div className="flex items-center gap-2 flex-wrap">
+            {isSafeSigner &&
+              pendingRegistryOwner &&
+              pendingRegistryOwner.toLowerCase() === operatorSafe.toLowerCase() && (
+                <StandardButton
+                  onClick={() =>
+                    run(
+                      getContract({
+                        client,
+                        chain,
+                        address: registryAddress,
+                        abi: [
+                          {
+                            type: 'function',
+                            name: 'acceptOwnership',
+                            stateMutability: 'nonpayable',
+                            inputs: [],
+                            outputs: [],
+                          },
+                        ] as any,
+                      }),
+                      'acceptOwnership',
+                      [],
+                      'Ownership acceptance proposed.',
+                    )
+                  }
+                  disabled={busy}
+                  className="rounded-full"
+                  backgroundColor="bg-moon-green"
+                >
+                  Accept Safe ownership
+                </StandardButton>
+              )}
             {state === S.DRAFT && (
               <StandardButton
                 onClick={() => run(registry, 'open', [BigInt(deprizeId)], 'DePrize opened.')}
@@ -657,14 +858,14 @@ export default function DePrizeAdminPanel({
             {routerOwned
               ? ` (via FeeRouter — pause before resolving; sweep fees into the ${sweepDestination})`
               : ' (direct LMSR — pause before resolving, close + withdraw fees after)'}
-            {!isMarketController && isOracle
+            {!isMarketController && !isSafeSigner && isOracle
               ? ' · pause/close requires the fee-router or market owner'
               : ''}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <StandardButton
               onClick={pauseMarket}
-              disabled={busy || !isMarketController || stage !== MarketStage.Running}
+              disabled={busy || (!isMarketController && !isSafeSigner) || stage !== MarketStage.Running}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
@@ -672,7 +873,7 @@ export default function DePrizeAdminPanel({
             </StandardButton>
             <StandardButton
               onClick={resumeMarket}
-              disabled={busy || !isMarketController || stage !== MarketStage.Paused}
+              disabled={busy || (!isMarketController && !isSafeSigner) || stage !== MarketStage.Paused}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
@@ -680,7 +881,7 @@ export default function DePrizeAdminPanel({
             </StandardButton>
             <StandardButton
               onClick={closeMarket}
-              disabled={busy || !isMarketController || isClosed}
+              disabled={busy || (!isMarketController && !isSafeSigner) || isClosed}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
@@ -709,7 +910,7 @@ export default function DePrizeAdminPanel({
             ) : (
               <StandardButton
                 onClick={() => run(lmsr, 'withdrawFees', [], 'Fees withdrawn to owner.')}
-                disabled={busy || !isMarketController || !isClosed}
+                disabled={busy || (!isMarketController && !isSafeSigner) || !isClosed}
                 className="rounded-full"
                 backgroundColor="bg-white/10"
               >

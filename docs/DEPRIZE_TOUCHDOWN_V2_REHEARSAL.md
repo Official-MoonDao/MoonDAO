@@ -21,9 +21,10 @@ A second Safe, `0x8E5343aFaaffbDc1E99B7f1c5E64EeEA5a6de795`, has the same four
 people plus `0x31CDb419E4A7998367627faa24cEe15941795827` at threshold 3 of 5.
 This rehearsal uses the 3-of-4.
 
-The yellow admin panel on the prize page compares the connected wallet to
-`owner()`. It will not appear for any one signer. Run these transactions from
-the Safe app.
+Connect one of the four signers on http://localhost:3000/deprize/sep/7.
+The yellow Admin actions box proposes a Safe transaction and shows a link.
+Send that link to the other signers. Three of four must confirm in the Safe
+app before the transaction can execute.
 
 Accepting registry ownership moves **every** Sepolia DePrize, not only #7.
 Night Shift, First Tracks, and Water Ice become Safe-operated too.
