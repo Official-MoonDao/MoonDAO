@@ -180,7 +180,8 @@ The pay hook is not latched. The Safe must call `setDePrizeRegistry`.
 | LMSRMarketMaker | `0x7deDb1Ac0f53b0208F72977f941186F6FB2394E9` | Stock Gnosis, 0.07 ETH seed, 1% fee, owner = the Safe |
 | Sunset | `1853711494` | 2028-09-27 23:51:34 UTC |
 
-Rehearsal steps: [`DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md`](./DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md).
+Rehearsal script: [`DEPRIZE_E2E_REHEARSAL.md`](./DEPRIZE_E2E_REHEARSAL.md).
+Calldata: [`DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md`](./DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md).
 
 ## UI follow-up PR (do not ship without both)
 

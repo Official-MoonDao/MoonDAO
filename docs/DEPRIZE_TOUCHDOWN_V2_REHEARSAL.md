@@ -1,5 +1,8 @@
 # Touchdown v2 — Sepolia dress rehearsal
 
+Miguel runs [`DEPRIZE_E2E_REHEARSAL.md`](./DEPRIZE_E2E_REHEARSAL.md). This file is
+the calldata reference. Where the two disagree, follow the E2E script.
+
 Sepolia DePrize **#7**. The executive Safe operates the market, the Juicebox
 project, and (after it accepts) the registry. Three of four signatures are
 required. Signers:
