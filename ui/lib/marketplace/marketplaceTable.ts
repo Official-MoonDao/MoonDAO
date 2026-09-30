@@ -8,6 +8,8 @@ import {
   TEAM_TABLE_NAMES,
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
+import getProjectActiveMap from '@/lib/project/getProjectActiveMap'
 import { Chain } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -115,7 +117,11 @@ export async function filterListingsByActiveTeam(
     chain,
     listings.map((listing) => listing.teamId),
   )
+  // Project-teams are gated by ProjectV2.active, not subscription expiry.
+  const projectActiveByTeamId = await getProjectActiveMap(chain, getChainSlug(chain))
   return listings.filter((listing) => {
+    const projectActive = projectActiveByTeamId.get(String(listing.teamId))
+    if (projectActive !== undefined) return projectActive === PROJECT_ACTIVE
     const expiration = expirations.get(listing.teamId)
     return expiration === null || expiration === undefined || expiration > now
   })

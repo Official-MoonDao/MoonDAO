@@ -1,8 +1,10 @@
-import { SUPER_MANAGERS } from 'const/config'
+import { SUPER_MANAGERS, TEAM_ROLE_REGISTRY_ADDRESSES } from 'const/config'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { useEffect, useMemo, useState } from 'react'
-import { readContract } from 'thirdweb'
+import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import TeamRoleRegistryABI from 'const/abis/TeamRoleRegistry.json'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { Job } from '@/components/jobs/Job'
 import { Mission } from '@/components/mission/MissionCard'
@@ -149,8 +151,26 @@ export function useTeamData(
           } else {
             setIsSuperManager(false)
           }
+          // Prefer the on-chain role registry (which itself falls back to hats
+          // for legacy teams). If no registry is configured for this chain yet,
+          // call the team contract's hats-based isManager directly.
+          let managerContract = teamContract
+          try {
+            const chainSlug = getChainSlug(teamContract.chain)
+            const registryAddress = TEAM_ROLE_REGISTRY_ADDRESSES[chainSlug]
+            if (registryAddress) {
+              managerContract = getContract({
+                client: teamContract.client,
+                address: registryAddress,
+                abi: TeamRoleRegistryABI as any,
+                chain: teamContract.chain,
+              })
+            }
+          } catch (err) {
+            console.error('Failed to resolve role registry contract:', err)
+          }
           const isAddressManager: any = await readContract({
-            contract: teamContract,
+            contract: managerContract,
             method: 'isManager' as string,
             params: [nft?.metadata?.id, address],
           })
