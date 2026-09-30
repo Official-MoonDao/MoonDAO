@@ -13,12 +13,12 @@ This is a compilation, not an audit. Every number below comes with its source in
 1. **The products are built; almost none of them are public.** The DePrize contracts are on Arbitrum mainnet, but the four capability-ladder rungs run on Sepolia only. `/moonbase`, `/deprize`, and `/deprize-play` sit behind a shared-password gate. Nothing can earn until it ships.
 2. **Touchdown has a hard deadline.** Astrobotic's Griffin launches no earlier than November 2026 and is the only competitor that can land in 2026. The rung has to be live and public before that launch, which is why the proposal's first milestone is November 1.
 3. **Revenue is far below what past proposals assumed.** Measured cash revenue over the trailing twelve months is about **$4.5k**. MDP-249 cited $24.5k, and MDP-194 set a target of $100k.
-4. **The treasury rallied, but the burn has not changed.** Official liquid AUM is **$451.8k**. It was $288.8k on July 1 and $327.9k on August 14; the increase is almost entirely ETH price. At the MDP-249 cost stack, that is about 16 months of runway, against the three-year standard set in MDP-176 and MDP-194.
+4. **The treasury rallied, but the burn has not changed.** Official liquid AUM is **$451.8k**. It was $288.8k on July 1 and $327.9k on August 14; the increase is almost entirely ETH price. After about $22k of committed but unpaid outlays (§4.4), that is about 15 months of runway at the MDP-249 cost stack, against the three-year standard set in MDP-176 and MDP-194.
 5. **The August financial disclosure double-counts $181k.** It lists 96 ETH as still staked, but Kiln returned 97.8 ETH to the treasury on June 15, 2026. Its "16 months including staked ETH" runway figure is therefore wrong. Staking income has also stopped.
-6. **Stablecoins are about $27k.** That is less than one month of burn, so the next EB budget has to be converted at passage.
+6. **Stablecoins are about $27k.** That is less than one month of burn, so the next EB budget has to be converted from ETH and WBTC as it is paid. The draft pays it in two transactions three months apart.
 7. **Frank's raise has stalled since the re-open.** About $172k was raised or pledged in March and April. The Juicebox project holds 27.39 ETH (~$74k), and only +0.65 ETH has come in since the July re-open. Holders voted 92.9% for "keep options open, two seats".
 8. **The network grew but missed its targets.** Citizens went 199 → 262 (target 300) and Teams 20 → 26 (target 30). Q3 2026 was still the best subscription quarter on record.
-9. **This is probably the last EB term the treasury can fund at this rate.** At today's prices, the proposed envelope leaves about $232k–$285k at the end of March 2027. The term therefore has to produce revenue, external capital, or a lower fixed cost. The automation objective is the plan for the last of those.
+9. **This is probably the last EB term the treasury can fund at this rate.** At today's prices, and after committed outlays, the proposed envelope leaves about $220k–$263k at the end of March 2027. The term therefore has to produce revenue, external capital, or a lower fixed cost. The automation objective is the plan for the last of those.
 
 ---
 
@@ -128,17 +128,25 @@ The bonus pool payout was not traced.
 
 Q4 intake closes October 8, editing closes October 13, and the Senate votes October 15. As a non-project proposal, the EB proposal should be submitted inside this window.
 
-### 4.4 Runway (official AUM $451.8k, prices held constant)
+### 4.4 Runway (official AUM $451.8k less $22.3k committed outlays, prices held constant)
+
+**Committed but unspent outlays ($22.3k).** These are already owed and are taken off AUM before the runway is computed.
+
+- **Q3 2026 grant second halves, $6,406.** On Aug 3 the payout Safe (`0xbbbc1ec0…d886`) paid exactly half of each Q3 grant: $2,320 (MDP-260), $2,300 (MDP-262), $2,341 (MDP-258), $1,215 (MDP-259), and $550 (MDP-265), $8,726 in total. The Arbitrum treasury paid MDP-260's second half ($2,320) on Sep 9, and the other four are still owed.
+- **Q3 2026 retro and Contributor Circle, $6,858.** $4,427 + $2,431, from `PROJECT_CYCLE.retro`; paid after the Q3 cycle closes.
+- **MDP-249 milestone bonuses, up to $9,000.** See §5; subject to the Senate's review.
+
+The same Aug 3 batch paid the Q2 retro ($5,629.26) and the Q2 Contributor Circle ($2,340.89) in full. The May 11 Q2 grant payments do not split cleanly into halves, so whether any Q2 grant balance is still owed was not confirmed.
 
 | Scenario | Net monthly burn | Months |
 | :-- | --: | --: |
-| MDP-249 stack held flat ($26.4k EB + $2.8k projects − $0.4k revenue) | $28.9k | 15.7 |
-| Proposed core only | $27.7k | 16.3 |
-| Proposed core + all gated programs | $35.2k | 12.8 |
-| Proposed maximum (programs + bonus cash) | $36.7k | 12.3 |
-| Three-year standard (MDP-176 / MDP-194) | ≤ $12.5k | 36 |
+| MDP-249 stack held flat ($26.4k EB + $2.8k projects − $0.4k revenue) | $28.9k | 14.9 |
+| Proposed core only | $27.7k | 15.5 |
+| Proposed core + all gated programs | $34.2k | 12.6 |
+| Proposed maximum (programs + bonus cash) | $35.0k | 12.3 |
+| Three-year standard (MDP-176 / MDP-194) | ≤ $11.9k | 36 |
 
-End-of-term AUM at constant prices would be about $285k with core only and about $232k at the maximum. No proposal in the last three cycles has met the three-year standard, and this one does not either. The draft makes that explicit and commits to a Q2 2027 plan with guaranteed EB cost at or below $15k per month.
+End-of-term AUM at constant prices would be about $263k with core only and about $220k at the maximum. No proposal in the last three cycles has met the three-year standard, and this one does not either. The draft makes that explicit and commits to a Q2 2027 plan with guaranteed EB cost at or below $15k per month.
 
 ---
 
@@ -247,10 +255,10 @@ The main manual gaps are social posting, where an X contractor role is open at $
 ## 7. Why these priorities
 
 - **Ladder and simulation first.** They are finished, they are MoonDAO's most distinctive work, and one of them has an external deadline (Griffin). Shipping them unlocks sponsorship, the forecast funnel for Citizenship, and the story for the seed round.
-- **Frank second.** It is the DAO's biggest public promise, and $172k of community money is waiting on it. The next step is procedural: publish the scorecard, sign a refundable reservation, and pick the Candidate. It needs no new treasury money.
-- **Network pricing with staked MOONEY.** At $30 a year, 262 Citizens produce about $2.6k, so price is the lever and not volume alone. Bundling $25 plus a $25 match of staked MOONEY turns the increase into a better offer, gives new Citizens voting power, and recycles revenue into MOONEY instead of selling it. The existing `VotingEscrowDepositor` pattern makes this a router, not a new token system.
+- **Frank second.** It is the DAO's biggest public promise, and $172k of community money is waiting on it. The next step is procedural: keep the raise open and sign a refundable two-seat reservation with Frank named. The Candidate process waits until the raise closes. It needs no new treasury money.
+- **Network pricing with staked MOONEY.** At $30 a year, 262 Citizens produce about $2.6k, so price is the lever and not volume alone. Putting $25 of each payment into staked MOONEY and $25 into a cash referral turns the increase into a better offer, gives new Citizens voting power, and recycles revenue into MOONEY instead of selling it. Both come out of the price, with no treasury match. The existing `VotingEscrowDepositor` pattern makes this a router, not a new token system.
 - **Ads with a kill switch.** MoonDAO has never measured what a Citizen costs to acquire. A $3k test answers that; spending $12k blind would not.
-- **Automation as the cost plan.** At $12.5k per month, the three-year standard cannot be met with today's team doing today's manual work. Automation is what makes a smaller Q2 2027 budget credible.
+- **Automation as the cost plan.** At $12k per month, the three-year standard cannot be met with today's team doing today's manual work. Automation is what makes a smaller Q2 2027 budget credible.
 - **Travel and equipment are capped and tied to key results.** Provider diligence for Frank, sponsor meetings, and conferences (the Mars Society convention in October; ETHDenver in February) justify travel. Content and event kit plus local agent hardware justify equipment.
 
 **Considered and left out:**
@@ -263,9 +271,9 @@ The main manual gaps are social posting, where an X contractor role is open at $
 
 ## 8. Decisions for the author before posting
 
-1. **Salary levels.** The draft holds MDP-249 rates. A lean alternative is a 20% cut to guaranteed pay with a bonus pool twice as large, bringing core to about $20.8k per month.
-2. **Citizenship price.** $99 with $50 of staked MOONEY is the draft. Alternatives are $69 with $25 + $25, or a USD-pegged price in place of ETH repricing.
-3. **Lock length for bundle MOONEY.** The draft implies four years, matching project rewards. One year would match the subscription.
+1. **Salary levels.** The draft holds MDP-249 rates and lets each core member take up to 25% of salary as four-year vMOONEY. Half of the bonus pool is now tied to midpoint milestones and 75% of it is paid in vMOONEY. A lean alternative is a 20% cut to guaranteed pay with a bonus pool twice as large, bringing core to about $20.8k per month.
+2. **Citizenship price.** $99, with $25 of staked MOONEY for the Citizen and $25 to the referrer, both out of the price, is the draft. A USD-pegged price in place of ETH repricing is the main alternative.
+3. **Lock length for the Citizenship MOONEY.** The draft implies four years, matching project rewards. One year would match the subscription.
 4. **X contractor.** Hire from the open role at up to $2,400 per month, or run agent-first with Ryan as editor and save $12k.
 5. **Variable reward.** The draft drops the 2% treasury-growth reward and keeps the 10% revenue reward. With ETH up about 70% since July 1, the 2% reward would pay out on price alone.
 6. **Term start and pay gap.** The escrows ended Sep 29, and the proposal will not pass before mid-October. Either back-date the lines to Oct 1 or start them on passage.
@@ -277,10 +285,10 @@ The main manual gaps are social posting, where an X contractor role is open at $
 
 - The Uniswap V3 fee income on #686147 was not measured.
 - The ~$172k "raised or pledged" for Frank includes off-chain pledges. Confirm the off-chain amount and which pledges are still firm.
-- On Sep 9 the Arbitrum treasury paid 2,320 USDC to `0x75f3b7e4…65ed`. The payout Safe paid the same recipient the same amount on Aug 3. Confirm this was a second tranche and not a duplicate.
+- Whether any Q2 2026 grant balances are still owed (see §4.4).
 - Whether any site metric still reports the 96 staked ETH.
 - The MDP-249 bonus pool payout, and the Team discovery calls.
-- The depth of MOONEY liquidity on Arbitrum. If the FeeHook v4 pools are thinner than the Ethereum pool, route bundle buys accordingly.
+- The depth of MOONEY liquidity on Arbitrum. If the FeeHook v4 pools are thinner than the Ethereum pool, route the Citizenship MOONEY buys accordingly.
 - A baseline for Citizen renewal rate, from Citizen NFT expiry data.
 
 ---
