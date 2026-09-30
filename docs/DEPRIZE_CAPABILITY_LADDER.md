@@ -15,7 +15,7 @@ Touchdown, First Tracks, Water Ice, and Night Shift are registered on Sepolia an
 
 | Rung | Name | Bar | Status |
 |---|---|---|---|
-| 0 | Touchdown | next upright working landing | LIVE (Sepolia #2) · Arbitrum #2 |
+| 0 | Touchdown | next upright working landing | LIVE (Sepolia #7) · Arbitrum #2 |
 | 1 | First Tracks | commercial rover egress + drive | LIVE (Sepolia #5) · Arbitrum #4 |
 | 2 | Water Ice | 2027 in-situ surface water ice | LIVE (Sepolia #6) · Arbitrum #5 |
 | 3 | Night Shift | chamber proxy now · surface 2028+ | LIVE (Sepolia #3) · Arbitrum #3 |

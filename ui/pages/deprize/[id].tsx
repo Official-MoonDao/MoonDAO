@@ -882,6 +882,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           stage={market.stage}
           resolved={market.resolved}
           marketFeesWei={market.marketFeesWei}
+          jbProjectId={deprize.jbProjectId}
           onDone={refreshAll}
         />
         <ProvenanceFooter

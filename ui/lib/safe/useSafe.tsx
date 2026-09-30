@@ -422,7 +422,7 @@ export default function useSafe(
   }
 
   async function initializeSafe() {
-    if (!account?.address) return null
+    if (!account?.address || !safeAddress) return null
 
     const wallet = wallets?.[selectedWallet]
     const provider: any = await wallet?.getEthereumProvider()
