@@ -43,6 +43,10 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import StandardButton from '@/components/layout/StandardButton'
 
+function sameAddr(a?: string, b?: string) {
+  return !!a && !!b && a.toLowerCase() === b.toLowerCase()
+}
+
 type DePrizeAdminPanelProps = {
   deprizeId: number
   chain: Chain
@@ -86,9 +90,13 @@ export default function DePrizeAdminPanel({
     useDePrizeChainGuard(chain)
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
   const [isRegistryOwner, setIsRegistryOwner] = useState(false)
+  const [registryOwner, setRegistryOwner] = useState('')
   const [routerOwned, setRouterOwned] = useState(false)
   const [isMarketController, setIsMarketController] = useState(false)
+  const [marketController, setMarketController] = useState('')
   const [isOracle, setIsOracle] = useState(false)
+  // True only when the condition's oracle is operatorSafe, not the connected EOA.
+  const [safeIsOracle, setSafeIsOracle] = useState(false)
   const [operatorSafe, setOperatorSafe] = useState('')
   const [pendingRegistryOwner, setPendingRegistryOwner] = useState('')
   const [proposalUrl, setProposalUrl] = useState('')
@@ -166,6 +174,7 @@ export default function DePrizeAdminPanel({
   useEffect(() => {
     if (!registry || !userAddress) {
       setIsRegistryOwner(false)
+      setRegistryOwner('')
       return
     }
     let cancelled = false
@@ -176,9 +185,15 @@ export default function DePrizeAdminPanel({
           method: 'owner' as string,
           params: [],
         })
-        if (!cancelled) setIsRegistryOwner(owner.toLowerCase() === userAddress.toLowerCase())
+        if (!cancelled) {
+          setRegistryOwner(owner || '')
+          setIsRegistryOwner(sameAddr(owner, userAddress))
+        }
       } catch {
-        if (!cancelled) setIsRegistryOwner(false)
+        if (!cancelled) {
+          setIsRegistryOwner(false)
+          setRegistryOwner('')
+        }
       }
     })()
     return () => {
@@ -193,6 +208,7 @@ export default function DePrizeAdminPanel({
     if (!lmsr || !userAddress) {
       setRouterOwned(false)
       setIsMarketController(false)
+      setMarketController('')
       return
     }
     let cancelled = false
@@ -203,8 +219,7 @@ export default function DePrizeAdminPanel({
           method: 'owner' as string,
           params: [],
         })
-        const viaRouter =
-          !!feeRouterAddress && lmsrOwner.toLowerCase() === feeRouterAddress.toLowerCase()
+        const viaRouter = !!feeRouterAddress && sameAddr(lmsrOwner, feeRouterAddress)
         if (cancelled) return
         setRouterOwned(viaRouter)
         if (viaRouter && feeRouter) {
@@ -213,15 +228,19 @@ export default function DePrizeAdminPanel({
             method: 'owner' as string,
             params: [],
           })
-          if (!cancelled)
-            setIsMarketController(routerOwner.toLowerCase() === userAddress.toLowerCase())
-        } else {
-          setIsMarketController(lmsrOwner.toLowerCase() === userAddress.toLowerCase())
+          if (!cancelled) {
+            setMarketController(routerOwner || '')
+            setIsMarketController(sameAddr(routerOwner, userAddress))
+          }
+        } else if (!cancelled) {
+          setMarketController(lmsrOwner || '')
+          setIsMarketController(sameAddr(lmsrOwner, userAddress))
         }
       } catch {
         if (!cancelled) {
           setRouterOwned(false)
           setIsMarketController(false)
+          setMarketController('')
         }
       }
     })()
@@ -236,10 +255,12 @@ export default function DePrizeAdminPanel({
   useEffect(() => {
     if (!ctf || !lmsr || !userAddress || !questionId || numOutcomes <= 0) {
       setIsOracle(false)
+      setSafeIsOracle(false)
       return
     }
     if (!/^0x[0-9a-fA-F]{64}$/.test(questionId)) {
       setIsOracle(false)
+      setSafeIsOracle(false)
       return
     }
     let cancelled = false
@@ -250,6 +271,8 @@ export default function DePrizeAdminPanel({
           method: 'conditionIds' as string,
           params: [0n],
         })
+        // EOA first: a wallet that is the oracle must not have reportPayouts
+        // rewritten onto a Safe it merely signs.
         const candidates = [userAddress, operatorSafe].filter(Boolean)
         for (const who of candidates) {
           const computed = await rpcRead<string>({
@@ -257,14 +280,23 @@ export default function DePrizeAdminPanel({
             method: 'getConditionId' as string,
             params: [who, questionId, BigInt(numOutcomes)],
           })
-          if (computed.toLowerCase() === marketConditionId.toLowerCase()) {
-            if (!cancelled) setIsOracle(true)
+          if (sameAddr(computed, marketConditionId)) {
+            if (!cancelled) {
+              setIsOracle(true)
+              setSafeIsOracle(sameAddr(who, operatorSafe) && !sameAddr(who, userAddress))
+            }
             return
           }
         }
-        if (!cancelled) setIsOracle(false)
+        if (!cancelled) {
+          setIsOracle(false)
+          setSafeIsOracle(false)
+        }
       } catch {
-        if (!cancelled) setIsOracle(false)
+        if (!cancelled) {
+          setIsOracle(false)
+          setSafeIsOracle(false)
+        }
       }
     })()
     return () => {
@@ -272,9 +304,9 @@ export default function DePrizeAdminPanel({
     }
   }, [ctf, lmsr, operatorSafe, userAddress, questionId, numOutcomes])
 
-  // A signer of the Safe that owns the market (or is the pending registry
-  // owner) can propose the same calls. The connected wallet is not the Safe,
-  // so those calls cannot be sent directly.
+  // A signer of the Safe that owns the market, owns the registry, or is the
+  // pending registry owner can propose the calls that Safe is allowed to make.
+  // The connected wallet is not the Safe, so those calls cannot be sent directly.
   useEffect(() => {
     if (!userAddress) {
       setOperatorSafe('')
@@ -406,11 +438,21 @@ export default function DePrizeAdminPanel({
   }, [chain, jbProjectId])
 
   const isSafeSigner = Boolean(operatorSafe)
+  // Signing one Safe does not grant every admin role. Juicebox already
+  // requires projectOwner === operatorSafe; market, registry, and oracle
+  // calls need the same check or a nominated registry Safe proposes
+  // reverting transactions on every other prize.
+  const safeOwnsMarket = sameAddr(operatorSafe, marketController)
+  const safeOwnsRegistry = sameAddr(operatorSafe, registryOwner)
+  const safeIsPendingRegistryOwner = sameAddr(operatorSafe, pendingRegistryOwner)
+  const canControlMarket = isMarketController || safeOwnsMarket
+  const canControlRegistry = isRegistryOwner || safeOwnsRegistry
   // Market unwind is visible to the controller; oracle also needs pause/close
-  // before resolving, so show it to either role. A Safe signer proposes
-  // instead of sending. Sweep is permissionless when router-owned.
-  const canSeeMarket = isMarketController || isOracle || oracleUnlocked || isSafeSigner
-  if (!userAddress || (!isRegistryOwner && !canSeeMarket)) return null
+  // before resolving, so show it to either role. Sweep is permissionless when
+  // router-owned.
+  const canSeeMarket = canControlMarket || isOracle || oracleUnlocked
+  if (!userAddress || (!canControlRegistry && !safeIsPendingRegistryOwner && !canSeeMarket))
+    return null
 
   // Generic write helper with a toast lifecycle.
   const proposeToSafe = async (contract: any, method: string, params: any[], doneMsg: string) => {
@@ -429,12 +471,27 @@ export default function DePrizeAdminPanel({
     })
   }
 
+  // Propose only when this Safe holds the role the call requires.
+  const proposeViaSafe = (contract: any, method: string) => {
+    if (!operatorSafe || !contract?.address) return false
+    const addr = String(contract.address).toLowerCase()
+    if (lmsr?.address && addr === String(lmsr.address).toLowerCase()) return safeOwnsMarket
+    if (feeRouter?.address && addr === String(feeRouter.address).toLowerCase())
+      return safeOwnsMarket
+    const registryAddr = String(registry?.address || registryAddress || '').toLowerCase()
+    if (registryAddr && addr === registryAddr) {
+      if (method === 'acceptOwnership') return safeIsPendingRegistryOwner
+      return safeOwnsRegistry
+    }
+    return false
+  }
+
   const run = async (contract: any, method: string, params: any[], doneMsg: string) => {
     if (!account || !contract) return
     if (blockedByNetwork()) return
     setBusy(true)
     try {
-      if (isSafeSigner) {
+      if (proposeViaSafe(contract, method)) {
         await proposeToSafe(contract, method, params, doneMsg)
       } else {
         await sendDePrizeTx(
@@ -537,7 +594,7 @@ export default function DePrizeAdminPanel({
     if (blockedByNetwork()) return
     setBusy(true)
     try {
-      const oracleAddress = isSafeSigner ? operatorSafe : account.address
+      const oracleAddress = safeIsOracle ? operatorSafe : account.address
       const computed = await rpcRead<string>({
         contract: ctf,
         method: 'getConditionId' as string,
@@ -573,7 +630,7 @@ export default function DePrizeAdminPanel({
           'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.',
         )
       }
-      if (isSafeSigner) {
+      if (safeIsOracle) {
         await proposeToSafe(ctf, 'reportPayouts', [questionId, payouts], `Resolved: ${label}.`)
       } else {
         await sendDePrizeTx(
@@ -754,43 +811,41 @@ export default function DePrizeAdminPanel({
       )}
 
       {/* Registry lifecycle (registry owner) */}
-      {(isRegistryOwner || isSafeSigner) && registry && (
+      {(canControlRegistry || safeIsPendingRegistryOwner) && registry && (
         <div>
           <p className="text-gray-400 text-[11px] mb-2">DePrize lifecycle</p>
           <div className="flex items-center gap-2 flex-wrap">
-            {isSafeSigner &&
-              pendingRegistryOwner &&
-              pendingRegistryOwner.toLowerCase() === operatorSafe.toLowerCase() && (
-                <StandardButton
-                  onClick={() =>
-                    run(
-                      getContract({
-                        client,
-                        chain,
-                        address: registryAddress,
-                        abi: [
-                          {
-                            type: 'function',
-                            name: 'acceptOwnership',
-                            stateMutability: 'nonpayable',
-                            inputs: [],
-                            outputs: [],
-                          },
-                        ] as any,
-                      }),
-                      'acceptOwnership',
-                      [],
-                      'Ownership acceptance proposed.',
-                    )
-                  }
-                  disabled={busy}
-                  className="rounded-full"
-                  backgroundColor="bg-moon-green"
-                >
-                  Accept Safe ownership
-                </StandardButton>
-              )}
-            {state === S.DRAFT && (
+            {safeIsPendingRegistryOwner && (
+              <StandardButton
+                onClick={() =>
+                  run(
+                    getContract({
+                      client,
+                      chain,
+                      address: registryAddress,
+                      abi: [
+                        {
+                          type: 'function',
+                          name: 'acceptOwnership',
+                          stateMutability: 'nonpayable',
+                          inputs: [],
+                          outputs: [],
+                        },
+                      ] as any,
+                    }),
+                    'acceptOwnership',
+                    [],
+                    'Ownership acceptance proposed.',
+                  )
+                }
+                disabled={busy}
+                className="rounded-full"
+                backgroundColor="bg-moon-green"
+              >
+                Accept Safe ownership
+              </StandardButton>
+            )}
+            {canControlRegistry && state === S.DRAFT && (
               <StandardButton
                 onClick={() => run(registry, 'open', [BigInt(deprizeId)], 'DePrize opened.')}
                 disabled={busy}
@@ -800,7 +855,7 @@ export default function DePrizeAdminPanel({
                 Open betting
               </StandardButton>
             )}
-            {state === S.OPEN && (
+            {canControlRegistry && state === S.OPEN && (
               <StandardButton
                 onClick={() => run(registry, 'lock', [BigInt(deprizeId)], 'DePrize locked.')}
                 disabled={busy}
@@ -810,7 +865,7 @@ export default function DePrizeAdminPanel({
                 Lock betting
               </StandardButton>
             )}
-            {state === S.LOCKED && (
+            {canControlRegistry && state === S.LOCKED && (
               <StandardButton
                 onClick={() =>
                   run(registry, 'startVote', [BigInt(deprizeId)], 'Winner vote started.')
@@ -822,7 +877,7 @@ export default function DePrizeAdminPanel({
                 Start winner vote
               </StandardButton>
             )}
-            {(state === S.LOCKED || state === S.VOTING) && (
+            {canControlRegistry && (state === S.LOCKED || state === S.VOTING) && (
               <StandardButton
                 onClick={() =>
                   run(registry, 'settleNoWinner', [BigInt(deprizeId)], 'Settled: no winner.')
@@ -834,7 +889,7 @@ export default function DePrizeAdminPanel({
                 Settle: no winner
               </StandardButton>
             )}
-            {state === S.SETTLED && (
+            {canControlRegistry && state === S.SETTLED && (
               <StandardButton
                 onClick={() => run(registry, 'releaseM1', [BigInt(deprizeId)], 'M1 released.')}
                 disabled={busy}
@@ -844,7 +899,7 @@ export default function DePrizeAdminPanel({
                 Release M1 (30%)
               </StandardButton>
             )}
-            {state === S.M1_RELEASED && (
+            {canControlRegistry && state === S.M1_RELEASED && (
               <>
                 <StandardButton
                   onClick={() => run(registry, 'completeM2', [BigInt(deprizeId)], 'M2 complete.')}
@@ -866,7 +921,7 @@ export default function DePrizeAdminPanel({
                 </StandardButton>
               </>
             )}
-            {!cancellationPending && state !== S.NONE && (
+            {canControlRegistry && !cancellationPending && state !== S.NONE && (
               <StandardButton
                 onClick={() =>
                   run(
@@ -883,7 +938,7 @@ export default function DePrizeAdminPanel({
                 Announce cancellation
               </StandardButton>
             )}
-            {cancellationPending && (
+            {canControlRegistry && cancellationPending && (
               <>
                 <StandardButton
                   onClick={() =>
@@ -908,7 +963,7 @@ export default function DePrizeAdminPanel({
           </div>
 
           {/* Settle winner (needs a team selection) */}
-          {(state === S.LOCKED || state === S.VOTING) && (
+          {canControlRegistry && (state === S.LOCKED || state === S.VOTING) && (
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <select
                 value={winnerTeamId}
@@ -941,7 +996,7 @@ export default function DePrizeAdminPanel({
           )}
 
           {/* Provider payout address (M5) */}
-          {(state === S.SETTLED || state === S.M1_RELEASED) && (
+          {canControlRegistry && (state === S.SETTLED || state === S.M1_RELEASED) && (
             <div className="mt-3 flex items-center gap-2 flex-wrap">
               <input
                 type="text"
@@ -998,15 +1053,15 @@ export default function DePrizeAdminPanel({
             Market unwind
             {routerOwned
               ? ` (via FeeRouter — pause before resolving; sweep fees into the ${sweepDestination})`
-              : ' (direct LMSR — pause before resolving, close + withdraw fees after)'}
-            {!isMarketController && !isSafeSigner && isOracle
+              : ' (direct LMSR — withdraw fees while live; pause before resolving)'}
+            {!canControlMarket && isOracle
               ? ' · pause/close requires the fee-router or market owner'
               : ''}
           </p>
           <div className="flex items-center gap-2 flex-wrap">
             <StandardButton
               onClick={pauseMarket}
-              disabled={busy || (!isMarketController && !isSafeSigner) || stage !== MarketStage.Running}
+              disabled={busy || !canControlMarket || stage !== MarketStage.Running}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
@@ -1014,7 +1069,7 @@ export default function DePrizeAdminPanel({
             </StandardButton>
             <StandardButton
               onClick={resumeMarket}
-              disabled={busy || (!isMarketController && !isSafeSigner) || stage !== MarketStage.Paused}
+              disabled={busy || !canControlMarket || stage !== MarketStage.Paused}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
@@ -1022,7 +1077,7 @@ export default function DePrizeAdminPanel({
             </StandardButton>
             <StandardButton
               onClick={closeMarket}
-              disabled={busy || (!isMarketController && !isSafeSigner) || isClosed}
+              disabled={busy || !canControlMarket || isClosed}
               className="rounded-full"
               backgroundColor="bg-white/10"
             >
@@ -1051,7 +1106,7 @@ export default function DePrizeAdminPanel({
             ) : (
               <StandardButton
                 onClick={() => run(lmsr, 'withdrawFees', [], 'Fees withdrawn to owner.')}
-                disabled={busy || (!isMarketController && !isSafeSigner) || !isClosed}
+                disabled={busy || !canControlMarket}
                 className="rounded-full"
                 backgroundColor="bg-white/10"
               >
