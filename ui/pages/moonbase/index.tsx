@@ -21,6 +21,7 @@ import { SEED_ATLAS } from '@/lib/lunar-atlas'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import {
+  centroidDirection,
   latLonToVector3,
   MOON_RADIUS_M,
   vector3ToLatLon,
@@ -57,6 +58,7 @@ import {
   projectStateAtYear,
   raceArrivalYear,
   sharedGoalById,
+  standIdsForRace,
   marketShowsOdds,
   type TechTree,
 } from '@/lib/lunar-atlas/selectors'
@@ -70,8 +72,10 @@ import type {
 } from '@/components/lunar-atlas/MarkerLayer'
 import {
   CARRIED_BY,
+  SAME_VEHICLE,
   footprintRadiusM,
   hasOwnModel,
+  displaySizeM,
 } from '@/components/lunar-atlas/ProjectModel'
 import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
 import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
@@ -606,16 +610,20 @@ export default function MoonBaseZeroIndex() {
   // have pointed at its hardware instead hid it.
   //
   // So light a race's members wherever they happen to stand, plus whoever is
-  // carrying them: VIPER has no plot of its own and is drawn inside MK1, so
-  // MK1 is what has to stay lit for the rover to be visible.
+  // carrying them and whichever vehicle they share. VIPER has no plot of its
+  // own and is drawn inside MK1, so MK1 is what has to stay lit for the rover
+  // to be visible. IM-4 is the Nova-C already in the same row.
   const litProjectIds = useMemo(() => {
     const lit = new Set<string>()
     if (!selectedRaceId) return lit
     const open = surfaceTrees.find((t) => t.raceId === selectedRaceId)
     for (const p of open?.projects ?? []) {
       lit.add(p.id)
-      const host = CARRIED_BY[p.id]
-      if (host) lit.add(host)
+      // VIPER is drawn on MK1, and IM-4 is the Nova-C already in the landing
+      // zone. Either way the thing on screen is not the roster id, and that
+      // thing is what has to stay lit.
+      const shownWith = CARRIED_BY[p.id] ?? SAME_VEHICLE[p.id]
+      if (shownWith) lit.add(shownWith)
     }
     return lit
   }, [selectedRaceId, surfaceTrees])
@@ -736,18 +744,19 @@ export default function MoonBaseZeroIndex() {
   const siteDir = (raceId: string | undefined) =>
     raceId ? layout.districts.get(raceId) : undefined
 
-  // Where a race with no district of its own can still be seen: the plot of
-  // the first member standing somewhere, or of whoever is carrying it. Water
-  // Ice has no ground and never will, but Chang'e-7 and VIPER are both out
-  // there in the lander row, so there IS somewhere to point the camera.
-  const guestPlotDir = (raceId: string | undefined) => {
-    if (!raceId || layout.districts.has(raceId)) return undefined
+  // The plots a race with no district of its own can still be seen from.
+  // Water Ice never gets the lander zone. Chang'e-7 has a pad in it, VIPER is
+  // drawn on MK1's deck, and IM-4 is the Nova-C already parked there — see
+  // standIdsForRace.
+  const standDirs = (raceId: string): Vec3[] => {
     const tree = surfaceTrees.find((t) => t.raceId === raceId)
-    for (const p of tree?.projects ?? []) {
-      const dir = layout.plots.get(p.id)?.dir ?? layout.plots.get(CARRIED_BY[p.id])?.dir
-      if (dir) return dir
-    }
-    return undefined
+    if (!tree) return []
+    return standIdsForRace(
+      tree.projects.map((p) => p.id),
+      (id) => layout.plots.has(id),
+      CARRIED_BY,
+      SAME_VEHICLE
+    ).map((id) => layout.plots.get(id)!.dir)
   }
 
   // Fly in close and centred on a specific competitor's own plot. Now that
@@ -796,11 +805,29 @@ export default function MoonBaseZeroIndex() {
     // what a drill-in should frame. Chasing the moving copy used to be the only
     // option, because the lot really was empty; it also meant the camera's
     // subject was somewhere different every time you clicked it.
-    const plot = layout.plots.get(project.id)
+    // A rider has no plot of its own, and neither does a later flight of a
+    // vehicle already standing. VIPER is drawn on MK1's deck; IM-4 is the
+    // Nova-C in the landing zone. Without this, picking either out of the
+    // Water Ice list found neither a plot nor a district and the camera
+    // stayed where it was.
+    const plot =
+      layout.plots.get(project.id) ??
+      layout.plots.get(CARRIED_BY[project.id] ?? '') ??
+      layout.plots.get(SAME_VEHICLE[project.id] ?? '')
     const dir = plot?.dir ?? siteDir(race)
     const ll = dir ? vector3ToLatLon(dir) : project.location
     if (!ll) return
-    setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
+    // Framed against this machine's own size rather than the ~10 m the hero
+    // shot assumes. A district keeps the default, because a district's shot
+    // has to hold a whole roster; a single competitor gets framed as itself,
+    // which is the difference between looking at Iris and looking at the
+    // regolith ten meters above Iris.
+    setFocus({
+      lat: ll.lat,
+      lon: ll.lon,
+      view: 'surface',
+      subjectM: displaySizeM(project),
+    })
   }
 
   const handleSelectProject = (id: string, opts?: { fromDeepLink?: boolean }) => {
@@ -925,8 +952,22 @@ export default function MoonBaseZeroIndex() {
   // Frames a tech-tree site with the three-quarter "hero" surface view so the
   // leading company's asset is legible from a flattering angle — not the
   // top-down birdseye a straight drill-in gives.
+  //
+  // A race with a district is framed on that district. A race without one is
+  // framed on the hardware it can actually be seen on: the midpoint of those
+  // plots, so the landing-zone machines Water Ice is won on — Chang'e-7,
+  // VIPER on MK1, and the Nova-C that flies IM-4 — all land in the shot
+  // instead of the camera picking the first and leaving the others at the
+  // edge. No subject size is passed, because this is a roster
+  // shot — the same wide framing a district gets — not a drill-in on one
+  // machine.
   const flyToSite = (raceId: string) => {
-    const dir = siteDir(raceId)
+    const dirs = standDirs(raceId)
+    const dir =
+      siteDir(raceId) ??
+      (dirs.length
+        ? centroidDirection(dirs.map((d) => vector3ToLatLon(d)))
+        : undefined)
     if (!dir) return
     const ll = vector3ToLatLon(dir)
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
@@ -960,15 +1001,13 @@ export default function MoonBaseZeroIndex() {
     setSelectedGoalId(goalId)
     // A goal IS a race now, so its id is the race key — no category detour.
     setSelectedRaceId(g ? g.id : null)
-    if (g && siteDir(g.id)) {
+    if (g && (siteDir(g.id) || standDirs(g.id).length)) {
+      // District races frame their own ground. A race standing in someone
+      // else's district — Water Ice — frames that hardware instead. The
+      // legend reaches this through handleSelectTree; a ?race= link and the
+      // project panel reach it here, and the two have to land in the same
+      // place.
       flyToSite(g.id)
-    } else if (g && guestPlotDir(g.id)) {
-      // A race with no district of its own, whose hardware is standing in
-      // someone else's. Fly to the hardware rather than doing nothing: before
-      // this, selecting Water Ice dimmed the base and left the camera where it
-      // was, so the highlight it had just switched on was usually off screen.
-      const ll = vector3ToLatLon(guestPlotDir(g.id)!)
-      setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
     } else if (g?.location) {
       setFocus({
         lat: g.location.lat,

@@ -27,6 +27,11 @@
 
 import { expect } from 'chai'
 import {
+  DISPLAY_FLOOR_M,
+  drawnSizeM,
+} from '@/lib/lunar-atlas/display'
+import { heroFraming } from '@/lib/lunar-atlas/geo'
+import {
   BASE_PLAN,
   BASE_STREETS,
   BRANCH_TAIL_M,
@@ -1683,5 +1688,140 @@ describe('moon base zero street plan', () => {
         expect(site, 'a district key, not a type: race key').to.not.include(':')
       }
     })
+  })
+})
+
+// The base is 1:1 except below DISPLAY_FLOOR_M, where hardware is drawn
+// oversize so a 38 cm rover is not five pixels at street range (see the long
+// note on DISPLAY_FLOOR_M in lib/lunar-atlas/display). That cheat is only
+// acceptable while it stays confined, and these say what "confined" means.
+describe('drawnSizeM — the one place the base is not true scale', () => {
+  // True sizes for the First Tracks field, matching PROJECT_SIZE_M. The
+  // ROSTERS entry above carries the footprint radii for the same five.
+  const FIRST_TRACKS: { id: string; sizeM: number; radiusM: number }[] = [
+    { id: 'flip', sizeM: 2.0, radiusM: 1.0 },
+    { id: 'cube', sizeM: 0.4, radiusM: 0.2 },
+    { id: 'mapp', sizeM: 0.45, radiusM: 0.225 },
+    { id: 'tenacious', sizeM: 0.54, radiusM: 0.27 },
+    { id: 'iris', sizeM: 0.38, radiusM: 0.19 },
+  ]
+
+  it('leaves everything at or above the floor exactly as it is', () => {
+    // Every size on the base at or above the floor, plus the floor itself —
+    // the curve has to be continuous there or crossing it would pop.
+    for (const m of [DISPLAY_FLOOR_M, 2.6, 3.5, 4.5, 8, 21.9, 38, 52]) {
+      expect(drawnSizeM(m), `${m} m`).to.equal(m)
+    }
+  })
+
+  // VIPER is drawn standing on Blue Moon MK1's deck (CARRIED_BY), at a fixed
+  // offset from a lander that is not itself enlarged. Magnify one of a pair
+  // and it drives through the other.
+  it('does not enlarge VIPER, which rides on another model', () => {
+    expect(drawnSizeM(2.5)).to.equal(2.5)
+  })
+
+  it('keeps the field in size order rather than flattening it', () => {
+    const drawn = FIRST_TRACKS.map((p) => drawnSizeM(p.sizeM))
+    const bySizeAsc = [...FIRST_TRACKS].sort((a, b) => a.sizeM - b.sizeM)
+    for (let i = 1; i < bySizeAsc.length; i++) {
+      expect(
+        drawnSizeM(bySizeAsc[i].sizeM),
+        `${bySizeAsc[i].id} vs ${bySizeAsc[i - 1].id}`
+      ).to.be.greaterThan(drawnSizeM(bySizeAsc[i - 1].sizeM))
+    }
+    // Compressed, but still visibly a spread — a clamp would have made this 1.
+    const spread = Math.max(...drawn) / Math.min(...drawn)
+    expect(spread).to.be.greaterThan(1.4)
+    expect(spread).to.be.lessThan(2.5)
+  })
+
+  it('actually makes the small ones legible', () => {
+    // At the ~81 m a district is framed from, on a 780 px pane at 42 deg,
+    // five pixels was the complaint. Anything under ~10 px reads as absent.
+    const px = (hM: number) =>
+      (hM / (2 * Math.hypot(75, 30) * Math.tan((21 * Math.PI) / 180))) * 780
+    for (const p of FIRST_TRACKS) {
+      expect(px(drawnSizeM(p.sizeM)), p.id).to.be.greaterThan(10)
+    }
+    expect(px(0.38)).to.be.lessThan(6) // what Iris used to be
+  })
+
+  // The important one. Lots are packed by TRUE footprints, so the enlargement
+  // is spending clearance the street plan left for real hardware. It is only
+  // safe while it never becomes the thing that sets the tightest gap on the
+  // base — the moment it does, a display choice is dictating the plan.
+  it('never becomes the tightest clearance on the base', () => {
+    const plan = BASE_PLAN.rover!
+    const lots = FIRST_TRACKS.map((p) => ({ id: p.id, radiusM: p.radiusM }))
+    const trueGap = tightestGap(plan, lots)
+
+    // The packer must be given the TRUE footprints, because that is all it
+    // ever sees in production — the enlargement is downstream of it. Handing
+    // it the drawn radii instead would have it space the lots further apart
+    // to suit them, which hides the entire risk this test exists to catch.
+    const slots = districtSlots(plan, lots)
+    const drawnR = new Map(
+      FIRST_TRACKS.map((p) => [
+        p.id,
+        p.radiusM * (drawnSizeM(p.sizeM) / p.sizeM),
+      ])
+    )
+    let drawnGap = Infinity
+    for (let i = 0; i < FIRST_TRACKS.length; i++) {
+      for (let j = i + 1; j < FIRST_TRACKS.length; j++) {
+        const a = slots.get(FIRST_TRACKS[i].id)!
+        const b = slots.get(FIRST_TRACKS[j].id)!
+        drawnGap = Math.min(
+          drawnGap,
+          Math.hypot(a.east - b.east, a.north - b.north) -
+            drawnR.get(FIRST_TRACKS[i].id)! -
+            drawnR.get(FIRST_TRACKS[j].id)!
+        )
+      }
+    }
+
+    expect(drawnGap, 'drawn models overlap').to.be.greaterThan(0)
+    // The plan's own tightest gap is 6.16 m, between Blue Moon MK1 and Griffin
+    // — two full-size landers, nowhere near this district. Enlarged rovers
+    // must stay looser than that.
+    expect(drawnGap).to.be.greaterThan(6)
+    expect(trueGap).to.be.greaterThan(drawnGap)
+  })
+})
+
+// Opening Water Ice frames the midpoint of the three members that are actually
+// on the base — Chang'e-7's pad, MK1's deck where VIPER stands, and the Nova-C
+// that flies IM-4 — with the same wide shot a district gets. That only shows
+// all three if each is closer to the midpoint than the shot is wide. Radii are
+// the Touchdown graded decks, the same numbers as ROSTERS.lander above.
+describe('Water Ice — its stands fit in one hero shot', () => {
+  it('keeps Chang\'e-7, MK1 and Nova-C inside the framing the race flies to', () => {
+    const slots = districtSlots(BASE_PLAN.lander!, [
+      { id: 'blue-origin-blue-moon-mk1', radiusM: 4.8 },
+      { id: 'cnsa-change-7', radiusM: 2.88 },
+      { id: 'astrobotic-griffin', radiusM: 2.7 },
+      { id: 'im-nova-c', radiusM: 2.4 },
+      { id: 'ispace-apex', radiusM: 2.16 },
+      { id: 'firefly-blue-ghost', radiusM: 2.1 },
+    ])
+    const ids = [
+      'cnsa-change-7',
+      'blue-origin-blue-moon-mk1',
+      'im-nova-c',
+    ]
+    const pts = ids.map((id) => slots.get(id)!)
+    const cx = pts.reduce((s, p) => s + p.east, 0) / pts.length
+    const cy = pts.reduce((s, p) => s + p.north, 0) / pts.length
+    // Half of what the default hero shot covers at the aim point. The globe
+    // camera is 42°; the horizontal frame is wider than this on any normal
+    // pane, so this is the conservative axis.
+    const half =
+      heroFraming().standoffM * Math.tan(((42 / 2) * Math.PI) / 180)
+    for (const id of ids) {
+      const p = slots.get(id)!
+      const d = Math.hypot(p.east - cx, p.north - cy)
+      expect(d, id).to.be.lessThan(half)
+    }
   })
 })

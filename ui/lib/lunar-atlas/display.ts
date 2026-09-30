@@ -123,6 +123,59 @@ export function goalIndexCategory(goal: {
   return goal.category ?? goal.indexCategory
 }
 
+// THE ONE PLACE THE BASE IS NOT TRUE SCALE.
+//
+// Everything at Moon Base Zero is authored and placed at 1:1, and that is the
+// point of it — a 38 m camp really does dwarf a 4 m lander, and you can only
+// see that if nobody has been resized to look important. But First Tracks
+// brought in a field of shoebox-class machines, and at the range a district is
+// viewed from (~81 m) a 38 cm Iris is five pixels. Not small: gone. The field
+// read as broken rather than as small, which is worse than a scale cheat,
+// because a viewer cannot tell "tiny" from "failed to load" — and no camera
+// move fixes it while still showing the roster side by side, which is the
+// whole purpose of standing a race's entrants on one street.
+//
+// So hardware below the floor is DRAWN larger than life. Three properties keep
+// that from becoming a lie that spreads:
+//
+//  - Nothing at or above the floor moves. The curve is continuous there, so
+//    this cannot quietly resize the rest of the base while fixing the rovers.
+//    VIPER sits exactly ON the floor and is therefore untouched, which matters
+//    because it rides on Blue Moon MK1's deck (see CARRIED_BY in ProjectModel)
+//    and magnifying one of a pair would drive it through the other.
+//  - Order is preserved. An exponent rather than a clamp: FLIP still reads as
+//    the big one and Iris as the small one, where Math.max(size, floor) would
+//    have flattened the field to a single size and thrown away the most
+//    interesting thing about it.
+//  - The street plan stays honest. footprintRadiusM is deliberately NOT scaled
+//    by this, so lots are still spaced by the ground real hardware occupies.
+//    The floor is then the largest value at which the tightest clearance on the
+//    base is still set by real hardware — 6.16 m, between Blue Moon MK1 and
+//    Griffin — rather than by this enlargement. Checked across every roster
+//    with scripts/tmp-display-floor.ts; at 5 m the enlargement becomes the
+//    binding constraint, which is the point where a display cheat would start
+//    dictating the street plan.
+//
+// And the UI says so out loud rather than hoping nobody measures: SCALE_NOTE
+// below is shown in the legend.
+export const DISPLAY_FLOOR_M = 2.5
+
+// 0.3 rather than a harder squeeze because the result still has to read as an
+// ORDERING: it takes First Tracks' true 5.3:1 spread down to about 1.6:1,
+// which is compressed but still visibly a spread.
+export const DISPLAY_GAMMA = 0.3
+
+// True size in meters -> the size it is drawn at.
+export function drawnSizeM(trueSizeM: number): number {
+  if (trueSizeM >= DISPLAY_FLOOR_M) return trueSizeM
+  return DISPLAY_FLOOR_M * Math.pow(trueSizeM / DISPLAY_FLOOR_M, DISPLAY_GAMMA)
+}
+
+// Said in the legend. Names the threshold rather than waving at it, so a
+// reader can work out exactly which hardware is affected, and states which
+// numbers are still real — the panels quote true dimensions throughout.
+export const SCALE_NOTE = `Models are true scale above ${DISPLAY_FLOOR_M} m. Smaller hardware is drawn larger than life so it is visible from the street; relative sizes are kept, and all quoted dimensions are real.`
+
 // Races that are not settled on the Moon at all.
 //
 // Almost every capability here is won by hardware standing on the surface, so

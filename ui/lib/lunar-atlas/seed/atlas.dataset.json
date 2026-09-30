@@ -3411,7 +3411,7 @@
       "orgId": "intuitive-machines",
       "name": "IM-4 volatiles",
       "type": "lander",
-      "summary": "Intuitive Machines IM-4, the 2027 CLPS volatiles flight aimed at Mons Mouton.",
+      "summary": "Intuitive Machines IM-4, a Nova-C on the 2027 CLPS volatiles flight aimed at Mons Mouton. Same lander as the Touchdown entry; a different mission.",
       "locationPrecision": "region",
       "regionLabel": "Mons Mouton (planned)",
       "milestones": [

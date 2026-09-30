@@ -24,6 +24,7 @@ import {
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { solarArrayFrame } from '@/lib/lunar-atlas/baseplan'
+import { DISPLAY_FLOOR_M, drawnSizeM } from '@/lib/lunar-atlas/display'
 import { HOME_CAM, HOME_TARGET } from '@/lib/lunar-atlas/homeview'
 import { M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import { buriedVault, type VaultGeometry } from '@/lib/lunar-atlas/subplan'
@@ -112,6 +113,11 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // only one other Touchdown lander (ULTRA, below). NovaC below is authored so
   // the antenna tips land on this figure and the 3.44 m leg span stays under it.
   'im-nova-c': 4,
+  // IM-4 is another Nova-C, not a new design. NASA's CP-22 page names the
+  // lander: "The Intuitive Machines Nova-C lander (IM-4)". Same 4 m column,
+  // so the drill-in frames the vehicle already standing in Touchdown rather
+  // than a 16 m generic lander. See SAME_VEHICLE.
+  'im-4-volatiles': 4,
   // ~3.5 m across the legs on a ~2 m stack, so width is the max. BlueGhost is
   // authored so opposite footpads span exactly this, and its instrument booms
   // are held inside it — the real electrodes deploy far past the pads, but the
@@ -260,9 +266,23 @@ export function projectSizeM(project: Project): number {
   return PROJECT_SIZE_M[project.id] ?? TYPE_SIZE_M[project.type] ?? 10
 }
 
+// The size a project's model is actually DRAWN at, which is projectSizeM for
+// everything but the smallest hardware — see drawnSizeM for why that exception
+// exists. Use this for anything measuring the thing on screen (how high to
+// float its label, how close to fly the camera) and projectSizeM for anything
+// stating a fact about the real machine.
+export function displaySizeM(project: Project): number {
+  return drawnSizeM(projectSizeM(project))
+}
+
+// Whether this project is one of the enlarged ones, so the UI can say so.
+export function isEnlarged(project: Project): boolean {
+  return projectSizeM(project) < DISPLAY_FLOOR_M
+}
+
 // World scale (scene units per local model unit) for a project's model.
 export function projectScale(project: Project): number {
-  return (projectSizeM(project) * M_TO_UNITS) / UNIT_MAX_DIM
+  return (displaySizeM(project) * M_TO_UNITS) / UNIT_MAX_DIM
 }
 
 // The radius, as a fraction of a model's size, of the rigid deck it brings
@@ -371,6 +391,17 @@ export function footprintRadiusM(project: Project): number {
   const graded = gradedDeckRadiusM(project)
   if (graded !== null) return graded
   return projectSizeM(project) * (FOOTPRINT_FRACTION[project.id] ?? 0.5)
+}
+
+// The same footprint, but for the model as DRAWN — the ground the scuffed
+// regolith has to cover. Only the disturbance layer wants this: a patch sized
+// to a 38 cm rover under a rover drawn at 1.4 m is a halo of clean ground
+// around a machine that is supposed to have driven in on it. The packer keeps
+// the true radius above, because lots are real ground.
+export function displayFootprintRadiusM(project: Project): number {
+  return (
+    footprintRadiusM(project) * (displaySizeM(project) / projectSizeM(project))
+  )
 }
 
 // Which local-frame azimuth of a model is its "presentation" side — the
@@ -1560,6 +1591,17 @@ function ViperRover({ accent }: { accent: string }) {
 // is visible.
 export const CARRIED_BY: Record<string, string> = {
   'blue-origin-viper': 'blue-origin-blue-moon-mk1',
+}
+
+// A later flight of a vehicle that already has a model, keyed flight -> the
+// project that model was built for.
+//
+// IM-4 is a Nova-C. It is not the Touchdown entry — that one is IM-1, IM-2
+// and IM-3 — but it is the same lander, and a second copy on the next pad
+// would be a duplicate of a machine the base already shows. Water Ice points
+// at the Nova-C standing in the landing zone. There is no separate mesh.
+export const SAME_VEHICLE: Record<string, string> = {
+  'im-4-volatiles': 'im-nova-c',
 }
 
 // ---------------------------------------------------------------------------

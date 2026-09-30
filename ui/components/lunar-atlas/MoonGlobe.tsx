@@ -19,6 +19,8 @@ import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   drillInFraming,
+  heroFraming,
+  heroMinDistanceM,
   MOON_RADIUS_M,
   orbitUpVector,
   skyViewFraming,
@@ -85,6 +87,12 @@ export type GlobeFocus = {
   // Meters above the base datum of the thing being looked at. Only 'sky' uses
   // it — every other framing takes its subject to be on the ground.
   heightM?: number
+  // How big the subject IS, for 'surface' only. Absent means "assume the 10 m
+  // installation the hero framing was written for", which is what a district
+  // is — a district's framing has to hold a whole roster, not one machine.
+  // Set it when flying to a single competitor, so a shoebox is framed like a
+  // shoebox. See heroFraming.
+  subjectM?: number
   // The cutaway framing, for 'sub' only: how far below local grade the subject
   // and the eye sit, how far back along the vault's axis the eye stands, and
   // which way that axis runs (degrees CCW from east, the district convention).
@@ -174,16 +182,6 @@ const CAMERA_CLEARANCE = 3 * M_TO_UNITS
 // the Moon, and nothing is bought by trimming it.
 const FULL_FAR = GLOBE_RADIUS * 40
 
-// Three-quarter "hero" framing for a single site (fractions of the sphere
-// radius = meters / MOON_RADIUS_M): the eye ~30 m up and ~75 m back, looking
-// down at ~22° so the installation's form reads — not a top-down birdseye,
-// not a horizon-height squint. targetLift aims at mid-model.
-const SURFACE_VIEW_OPTS = {
-  eyeHeight: 30 / MOON_RADIUS_M,
-  standoff: 75 / MOON_RADIUS_M,
-  targetLift: 10 / MOON_RADIUS_M,
-}
-
 // Framing for the relay constellation, the one subject that is not on the
 // ground. The eye rises 170 m over the satellite and stands off 150 m outward,
 // which is a 227 m slant range: at that distance a 20 m spacecraft covers an
@@ -263,7 +261,7 @@ function CameraRig({
             )
           : focus.view === 'surface'
           ? surfaceViewFraming(focus.lat, focus.lon, surfaceR, {
-              ...SURFACE_VIEW_OPTS,
+              ...heroFraming(focus.subjectM),
               // Close in from whichever side the camera is already on, so a
               // site click zooms straight in rather than orbiting around to
               // the subject's back.
@@ -999,7 +997,13 @@ export default function MoonGlobe({
         rotateSpeed={2.2}
         zoomSpeed={1.2}
         dynamicDampingFactor={0.12}
-        minDistance={(focus?.view === 'sub' ? 1.5 : 12) * M_TO_UNITS}
+        minDistance={
+          (focus?.view === 'sub'
+            ? 1.5
+            : focus?.view === 'surface'
+            ? heroMinDistanceM(focus.subjectM)
+            : 12) * M_TO_UNITS
+        }
         maxDistance={40000 * M_TO_UNITS}
         target={[HOME_TARGET.x, HOME_TARGET.y, HOME_TARGET.z]}
       />

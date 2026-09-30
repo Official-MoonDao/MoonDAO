@@ -301,6 +301,38 @@ export function indexRowsFromDataset(
   })
 }
 
+// Where a race's hardware can actually be looked at, when the race has no
+// district of its own.
+//
+// Water Ice loses the lander zone to Touchdown, so opening it has nothing of
+// its own to fly to. All three of its members are standing in that zone
+// anyway: Chang'e-7 on its own pad, VIPER drawn on Blue Moon MK1's deck, and
+// IM-4, which is a later flight of the Nova-C already parked there. The
+// camera has to go to those, or the race lights its hardware and then leaves
+// it off screen.
+//
+// A member with neither a plot, nor a host, nor a vehicle already on the base
+// contributes nothing. There is no such member in Water Ice.
+//
+// `hasPlot` is passed in so this stays pure. The colony layout is what knows
+// who was given ground, and this must not grow a dependency on it.
+export function standIdsForRace(
+  memberIds: readonly string[],
+  hasPlot: (id: string) => boolean,
+  carriedBy: Readonly<Record<string, string>> = {},
+  sameVehicle: Readonly<Record<string, string>> = {}
+): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const id of memberIds) {
+    const stand = hasPlot(id) ? id : carriedBy[id] ?? sameVehicle[id]
+    if (!stand || seen.has(stand) || !hasPlot(stand)) continue
+    seen.add(stand)
+    out.push(stand)
+  }
+  return out
+}
+
 // A tech tree: one capability category (landers, surface construction, …),
 // its competing projects, and — when one is declared — the shared-goal race
 // whose prediction market prices the category. The globe renders ONE generic

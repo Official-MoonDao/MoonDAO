@@ -28,6 +28,7 @@ import {
   raceStandingForProject,
   settlementPresence,
   sharedGoalById,
+  standIdsForRace,
 } from '../../../lib/lunar-atlas/selectors'
 import type {
   Milestone,
@@ -693,5 +694,55 @@ describe('lunar-atlas selectors', () => {
       expect(settlementPresence(trees, presence)).to.equal(0.4)
       expect(settlementPresence([], new Map())).to.equal(0)
     })
+  })
+})
+
+// Water Ice has no district — Touchdown owns the lander zone — so the camera
+// can only go where its members are already standing. VIPER has no plot and is
+// drawn on MK1's deck, so MK1 is the stand. IM-4 has no plot and no host.
+describe('standIdsForRace — hardware a district-less race can be flown to', () => {
+  const touchdown = new Set([
+    'astrobotic-griffin',
+    'im-nova-c',
+    'firefly-blue-ghost',
+    'blue-origin-blue-moon-mk1',
+    'cnsa-change-7',
+    'ispace-apex',
+  ])
+  const carriedBy = { 'blue-origin-viper': 'blue-origin-blue-moon-mk1' }
+  // IM-4 is a later Nova-C. It has no pad of its own; the one in Touchdown is
+  // the lander.
+  const sameVehicle = { 'im-4-volatiles': 'im-nova-c' }
+
+  it('flies Water Ice to every member that is actually standing', () => {
+    const ice = sharedGoalById(SEED_ATLAS, 'shared-ice')
+    expect(ice, 'shared-ice').to.not.equal(undefined)
+    expect(
+      standIdsForRace(
+        ice!.projectIds,
+        (id) => touchdown.has(id),
+        carriedBy,
+        sameVehicle
+      )
+    ).to.deep.equal([
+      'cnsa-change-7',
+      'blue-origin-blue-moon-mk1',
+      'im-nova-c',
+    ])
+  })
+
+  it('treats IM-4 as the Nova-C already in the landing zone', () => {
+    const im4 = SEED_ATLAS.projects.find((p) => p.id === 'im-4-volatiles')
+    expect(im4, 'im-4-volatiles').to.not.equal(undefined)
+    expect(im4!.summary).to.match(/Nova-C/)
+    expect(touchdown.has('im-4-volatiles')).to.equal(false)
+    expect(
+      standIdsForRace(
+        ['im-4-volatiles'],
+        (id) => touchdown.has(id),
+        carriedBy,
+        sameVehicle
+      )
+    ).to.deep.equal(['im-nova-c'])
   })
 })

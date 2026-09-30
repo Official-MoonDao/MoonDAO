@@ -1,6 +1,10 @@
 import { useLayoutEffect, useState } from 'react'
 import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline'
-import { PROJECT_TYPE_GLYPH, orgColor } from '@/lib/lunar-atlas/display'
+import {
+  PROJECT_TYPE_GLYPH,
+  SCALE_NOTE,
+  orgColor,
+} from '@/lib/lunar-atlas/display'
 import type {
   Organization,
   Project,
@@ -281,6 +285,13 @@ export default function Legend({
               Clear filters
             </button>
           )}
+
+          {/* The base is 1:1 except for the smallest hardware, and a viewer
+              comparing two machines on screen deserves to know which of the
+              two facts they are reading. See SCALE_NOTE. */}
+          <p className="border-t border-white/10 pt-3 text-[10px] leading-snug text-white/35">
+            {SCALE_NOTE}
+          </p>
         </div>
       )}
     </div>

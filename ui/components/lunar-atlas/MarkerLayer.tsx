@@ -83,7 +83,7 @@ import ProjectModel, {
   CrateCluster,
   Excavator,
   gradedDeckRadiusM,
-  projectSizeM,
+  displaySizeM,
   SparePartsPallet,
   DistrictFloodPool,
   StreetLight,
@@ -357,7 +357,7 @@ function CompetitorPlot({
       // thing it names.
       labelAt: d
         .clone()
-        .multiplyScalar(ground + projectSizeM(project) * 1.25 * M_TO_UNITS),
+        .multiplyScalar(ground + displaySizeM(project) * 1.25 * M_TO_UNITS),
     }
   }, [standAt, radiusAt, project])
 
@@ -500,20 +500,34 @@ function CompetitorPlot({
           zIndexRange={[20, 0]}
           style={{ pointerEvents: 'none' }}
         >
-          <div
-            className={`whitespace-nowrap rounded border px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight shadow-md backdrop-blur-sm ${
-              called
-                ? 'border-white/25 bg-black/80 text-white'
-                : 'border-white/10 bg-black/55 text-white/70'
-            }`}
-          >
-            <div>{project.name}</div>
-            {standing && (
-              <div className="tabular-nums text-cyan-200/90">
-                {formatPlace(standing.place)} ·{' '}
-                {Math.round(standing.probability * 100)}%
-              </div>
-            )}
+          {/* The card hangs ABOVE its anchor rather than being centred on it.
+              `center` alone puts the anchor through the middle of the card,
+              which is harmless for a 4 m lander and fatal for a 40 cm rover:
+              the card is a fixed ~40 px of screen whatever it is naming, while
+              the lift that positions it shrinks with the hardware. On the
+              First Tracks field that inverted — a 26 cm Tenacious stands about
+              7 px tall under a card six times that, so the card covered the
+              whole machine and four of the five rovers read as not rendering
+              at all. Shifting the card up by half its own height puts its
+              bottom edge on the anchor, which holds at any zoom and for any
+              size of hardware, rather than only for hardware big enough to
+              stick out from behind its own name. */}
+          <div style={{ transform: 'translateY(calc(-50% - 6px))' }}>
+            <div
+              className={`whitespace-nowrap rounded border px-1.5 py-0.5 text-center text-[9px] font-medium leading-tight shadow-md backdrop-blur-sm ${
+                called
+                  ? 'border-white/25 bg-black/80 text-white'
+                  : 'border-white/10 bg-black/55 text-white/70'
+              }`}
+            >
+              <div>{project.name}</div>
+              {standing && (
+                <div className="tabular-nums text-cyan-200/90">
+                  {formatPlace(standing.place)} ·{' '}
+                  {Math.round(standing.probability * 100)}%
+                </div>
+              )}
+            </div>
           </div>
         </Html>
       )}
@@ -1470,9 +1484,9 @@ export default function MarkerLayer({
         // Whether any competitor on THIS district belongs to the open race.
         // Normally none do unless the district is itself open, but a race can
         // have no ground of its own and still have hardware standing here —
-        // Water Ice owns nothing and yet Chang'e-7 and VIPER are both in the
-        // lander row. Those lots stay lit and named while everything around
-        // them dims, which is the whole of the highlight.
+        // Water Ice owns nothing and yet Chang'e-7, VIPER and the Nova-C that
+        // flies IM-4 are all in the lander row. Those lots stay lit and named
+        // while everything around them dims, which is the whole of the highlight.
         const litHere = (id: string) => Boolean(litProjectIds?.has(id))
 
         const count = members.length
