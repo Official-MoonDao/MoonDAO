@@ -12,24 +12,24 @@ Two prizes:
    the market. The Juicebox surplus is sent to a chosen winner address. A
    separate amount is sent to the Sepolia mission treasury. The pool deployer
    is funded with ETH and project tokens, then `createAndAddLiquidity` runs.
-2. **Failure.** A new two-outcome prize, created for this rehearsal. Two
-   wallets bet. The prize is brought to the no-winner refund. Both bettors
-   claim from the market, and both cash the Juicebox slice back out. A literal
-   `cancel()` cannot finish the same day. That path is spelled out below.
+2. **Failure.** Sepolia DePrize **#8** is already open. Two wallets bet. The
+   prize is brought to the no-winner refund. Both bettors claim from the
+   market, and both cash the Juicebox slice back out. A literal `cancel()`
+   cannot finish the same day. That path is spelled out below.
 
 Do not resolve #7 as the failure case. `reportPayouts` can be sent once.
 
-Chain state checked 2026-09-30, before this script starts:
+Chain state checked 2026-09-30, after the failure prize was provisioned:
 
 | Check | Value |
 |---|---|
 | Registry owner | `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011` (deployer) |
 | Registry pending owner | the Safe below |
-| DePrize #7 `state` | `2` (OPEN) |
-| DePrize #7 `bettingOpen` | `true` |
-| Pay hook `deprizeRegistry()` | `0x0000…0000` (not latched) |
+| DePrize #7 `state` | `2` (OPEN), betting open |
+| DePrize #7 pay hook | not latched |
+| DePrize #8 `state` | `2` (OPEN), betting open, hook latched |
 
-Re-read those five values before Part A. If they moved, stop and tell Pablo.
+A1 and A2 are done. Before A3, re-read the registry owner and #7. If the owner is already the Safe, or #7 is no longer open, stop and tell Pablo.
 
 ## Open the app
 
@@ -43,7 +43,8 @@ git checkout cursor/deprize-touchdown-v2-7d60
 cd ui && yarn && yarn dev
 ```
 
-- Prize: http://localhost:3000/deprize/sep/7
+- Success prize: http://localhost:3000/deprize/sep/7
+- Failure prize: http://localhost:3000/deprize/sep/8
 - Index: http://localhost:3000/deprize/sep
 - Wallet network: Sepolia. The panel has a switch button if it is wrong.
 - Gate password: `MOONBASE_GATE_PASSWORD` in `ui/.env.local`. Ask Pablo for the
@@ -151,13 +152,13 @@ Fill this in as you go. Balances are the checker.
 
 | Field | Value |
 |---|---|
-| Failure prize id | |
-| Failure market | |
-| Failure Juicebox project | |
-| Failure pay hook | |
-| Failure questionId | |
-| Failure pool deployer | |
-| #7 project 275 ETH before bets | |
+| Failure prize id | `8` |
+| Failure market | `0xC739aC0D912771619dC8217501D6f6E8Aff27987` |
+| Failure Juicebox project | `276` (mission 22) |
+| Failure pay hook | `0xCFcF30E399ce63025FaF02311a4977081F956060` (latched) |
+| Failure questionId | `0x92780d846f3b3ba767d18baafe154c0c6f44fa1739d362ac2b11c7439feb1111` |
+| Failure pool deployer | `0xf177dc243ee9f5DeA7744F52e15Bca73C639F6A5` |
+| #7 project 275 ETH before bets | `0` |
 | #7 project 275 ETH after bets | |
 | Pablo #7 bet tx | |
 | Ryan #7 bet tx | |
@@ -191,41 +192,54 @@ you click anything after a settle.
 
 ## Part A — before anyone bets #7
 
-### A1. Pablo provisions the failure prize
+### A1. Failure prize — done
 
-The deployer still owns the registry, so only the deployer can `register` and
-`open`. Do this **before** Accept Safe ownership. After accept, those calls
-belong to the Safe.
+DePrize **#8** is open. Do not provision another one, and do not run
+`ui/scripts/provision-touchdown-v2-sepolia.cjs` or
+`ui/scripts/provision-failure-rehearsal-sepolia.cjs` again. Do not call
+`transferOwnership` on the registry. The pending owner is already the Safe.
 
-Do not run `ui/scripts/provision-touchdown-v2-sepolia.cjs` again. Do not call
-`transferOwnership` on the registry again. The pending owner is already the Safe.
+| Slot | Value |
+|---|---|
+| Page | http://localhost:3000/deprize/sep/8 |
+| Outcomes | **Outcome 1** (team `701`), **Outcome 2** (team `702`) |
+| questionId | `0x92780d846f3b3ba767d18baafe154c0c6f44fa1739d362ac2b11c7439feb1111` |
+| conditionId | `0x01d5e48894172154288f36902b7242b92d05875ca78e5caab59371fc94c4096d` |
+| Market | `0xC739aC0D912771619dC8217501D6f6E8Aff27987` |
+| Seed | 0.02 ETH (`funding()`) |
+| Juicebox project | `276`, mission `22`, owner = the Safe |
+| Pay hook | `0xCFcF30E399ce63025FaF02311a4977081F956060`, latched, owner = the Safe |
+| Pool deployer | `0xf177dc243ee9f5DeA7744F52e15Bca73C639F6A5` |
+| Sunset | `1853881556` (2028-09-29 23:05:56 UTC) |
 
-End state of the new prize:
+Paste the questionId into the admin panel on #8 or the resolve buttons stay hidden.
 
-- Two outcomes. Team ids `701` and `702`. The page will label them **Outcome 1**
-  and **Outcome 2** (Ryan bets Outcome 1, Miguel bets Outcome 2).
-- Oracle, LMSR owner, Juicebox project owner, and pay-hook owner are the Safe.
-- Pay hook latched to the registry
-  `0x7208B0Ba9B1013000b8D30b60A462079300984E2`.
-- Seed about 0.02 ETH (0.01 ETH for each outcome).
-- State OPEN, betting open.
-- Write down id, market, project id, pay hook, questionId, and that mission’s
-  pool deployer. The questionId is not stored on the registry. Paste it into
-  the admin panel later or the resolve buttons stay hidden.
-- Open it at `http://localhost:3000/deprize/sep/<id>`. It will not be on the index.
+The hook had to be latched before the Safe could own it, so `createMission`
+named the deployer as `to`, then the hook and the project NFT were transferred
+to the Safe. The locked 90% payout split still names the deployer
+`0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011`. That split does not run in this
+ruleset. Surplus payments follow the project owner, which is the Safe.
 
-Same shape as #7: `prepareCondition(Safe, questionId, 2)`, `createMission`
-with `to` = the Safe, stock LMSR factory
-`0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674`, transfer the market to the Safe,
-`register`, `setCondition`, `setMarket`, `open`, then the Safe latches the hook.
-Node 23 cannot sign with viem. The Touchdown v2 provisioner uses ethers v5.
+### A2. Snapshot — done
 
-### A2. Snapshot
+Recorded 2026-09-30, before any rehearsal bets. Juicebox balances are the
+terminal-store balance. Market collateral is `funding()`, not the market
+contract’s WETH balance (that balance is 0; the seed sits in the conditional
+tokens).
 
-Record ETH for Pablo, Ryan, Miguel, project 275, the new Juicebox project, both
-markets, treasury `0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b`, and pool deployer
-`0x9cc4EBaA13C274F3bD727fB09C7876606c3Ea23c`. The panel’s **Juicebox prize pool**
-line is the project balance.
+| Account | ETH |
+|---|---|
+| Pablo `0x679d87D8640e66778c3419D164998E720D7495f6` | 4.389635364623640119 |
+| Ryan `0xB2d3900807094D4Fe47405871B0C8AdB58E10D42` | 89.950507037385669449 |
+| Miguel `0xAF6f2A7643A97b849bD9cf6d3f57e142c5BbB0DA` | 0.077346189295693545 |
+| Deployer `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011` | 2.564454717355290453 |
+| Treasury `0x0724d0eb7b6d32AEDE6F9e492a5B1436b537262b` | 0.13400039169330874 |
+| #7 pool deployer `0x9cc4EBaA13C274F3bD727fB09C7876606c3Ea23c` | 0 |
+| #8 pool deployer `0xf177dc243ee9f5DeA7744F52e15Bca73C639F6A5` | 0 |
+| Juicebox project 275 | 0 |
+| Juicebox project 276 | 0 |
+| #7 market `funding()` | 0.07 |
+| #8 market `funding()` | 0.02 |
 
 ### A3. Accept registry ownership
 
@@ -369,8 +383,10 @@ Check: both balances drop. A revert with “no funds to deploy” is a fail.
 
 ## Part C — failure prize
 
-Use the prize from A1. Paste its questionId into the admin panel before any
-resolve button.
+Use DePrize #8 at http://localhost:3000/deprize/sep/8. Paste this questionId
+into the admin panel before any resolve button:
+
+`0x92780d846f3b3ba767d18baafe154c0c6f44fa1739d362ac2b11c7439feb1111`
 
 ### C1. Two bets
 
