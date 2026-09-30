@@ -53,11 +53,11 @@ const MobileSidebar = ({
             leaveTo="-translate-x-full"
           >
             {/*The actual menu inside */}
-            <Dialog.Panel className="relative flex w-full max-w-xs flex-1 flex-col px-3 pb-4 pt-5 bg-gradient-to-b from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border-r border-white/20 shadow-2xl">
+            <Dialog.Panel className="relative flex w-full max-w-xs flex-1 flex-col border-r border-white/[0.08] bg-dark-cool px-3 pb-4 pt-5">
               <div className="absolute right-0 top-0 -mr-12 pt-2">
                 <button
                   type="button"
-                  className="ml-1 flex h-10 w-10 items-center justify-center rounded-full bg-gray-900/80 backdrop-blur-md border border-white/20 hover:bg-gray-800/80 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/50"
+                  className="ml-1 flex h-10 w-10 items-center justify-center text-white/70 hover:text-white focus:outline-none"
                   onClick={() => setSidebarOpen(false)}
                 >
                   <span className="sr-only">Close sidebar</span>

@@ -42,17 +42,19 @@ const NavigationLink = ({
                 same gesture. */}
             <div
               className={`${
-                isActive
-                  ? 'bg-gradient-to-r from-blue-500/30 to-purple-500/30 border border-blue-400/50 font-semibold'
-                  : 'hover:bg-white/10'
-              } group flex items-center rounded-md font-medium transition-all duration-200`}
+                isActive ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
+              } group flex items-center rounded-md font-medium`}
             >
               <NavLink
                 href={item.href}
                 onClick={close}
                 className="flex flex-1 items-center px-2 py-2 text-white cursor-pointer"
               >
-                <item.icon className="mr-2 h-5 w-5 flex-shrink-0 text-white" />
+                <item.icon
+                  className={`mr-2 h-5 w-5 flex-shrink-0 ${
+                    isActive ? 'text-moon-gold' : 'text-white/70'
+                  }`}
+                />
                 {t(item.name)}
               </NavLink>
               {item.children.length > 0 && (
@@ -89,8 +91,8 @@ const NavigationLink = ({
                       onClick={close}
                       className={`w-full text-left block ${
                         router.asPath === child.href
-                          ? 'text-blue-300 font-semibold'
-                          : 'text-gray-300 hover:text-white'
+                          ? 'text-moon-gold'
+                          : 'text-white/60 hover:text-white'
                       } my-3 flex items-center transition-colors duration-200`}
                     >
                       {child.name}

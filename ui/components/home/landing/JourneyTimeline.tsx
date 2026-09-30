@@ -42,7 +42,7 @@ const timelineEvents: TimelineEvent[] = [
     date: 'May 2023',
     title: 'Project Funding',
     description:
-      'Funds 80+ space-related projects, fostering a thriving ecosystem of space entrepreneurs and researchers.',
+      'Funds 100+ space-related projects, fostering a thriving ecosystem of space entrepreneurs and researchers.',
     icon: '/assets/icon-project.svg',
     iconAlt: 'Project Funding',
   },
@@ -77,14 +77,6 @@ const timelineEvents: TimelineEvent[] = [
       'The MoonDAO Launchpad goes live, enabling decentralized funding for space missions and projects.',
     icon: '/assets/MoonDAOLaunchpad.svg',
     iconAlt: 'Launchpad Platform',
-  },
-  {
-    date: '2025',
-    title: 'Starship Access',
-    description:
-      'Fundraise for ownership of a Starship or equivalent launch vehicle, with guaranteed refuel missions.',
-    icon: '/assets/launchpad/rocket.svg',
-    iconAlt: 'Starship Ownership',
   },
   {
     date: '2026',

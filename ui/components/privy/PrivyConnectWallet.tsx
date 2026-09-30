@@ -766,7 +766,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
         <div className="w-full">
           <div
             id="privy-connect-wallet"
-            className="cursor-pointer flex-wrap md:w-[175px] md:full relative flex flex-col items-right justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-lato z-[10] rounded-full duration-300 shadow-lg hover:shadow-xl transition-colors"
+            className="relative z-[10] flex cursor-pointer flex-col flex-wrap items-right justify-center rounded-full border border-white/[0.12] bg-white/[0.06] px-4 py-2 font-lato text-white transition-colors duration-200 hover:bg-white/[0.1] md:w-[175px] md:full"
             onClick={(e: any) => {
               setEnabled(!enabled)
             }}
@@ -789,7 +789,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
             createPortal(
               <div
                 id="privy-connect-wallet-dropdown"
-                className="fixed top-20 left-4 right-4 w-auto sm:left-auto sm:w-[360px] text-sm rounded-xl animate-fadeIn p-6 flex flex-col bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl text-white z-[9999] max-h-[80vh] overflow-y-auto scrollbar-hide"
+                className="fixed top-20 left-4 right-4 z-[9999] flex max-h-[80vh] w-auto animate-fadeIn flex-col overflow-y-auto rounded-md border border-white/[0.08] bg-[#0b1020] p-6 text-sm text-white shadow-[0_16px_40px_rgba(0,0,0,0.45)] scrollbar-hide sm:left-auto sm:w-[360px]"
               >
                 {sendModalEnabled && (
                   <SendModal
@@ -1248,7 +1248,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                 login()
               }
             }}
-            className="text-[12px] md:text-[18px] rounded-full px-4 py-1 gradient-2 transition-colors duration-150"
+            className="rounded-full border border-white/20 px-3.5 py-1.5 text-[13px] font-medium text-white/90 transition-colors duration-150 hover:border-white/40 hover:text-white"
           >
             <div className="flex items-center justify-center">
               <Image
