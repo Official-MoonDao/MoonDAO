@@ -28,6 +28,7 @@ import {
   raceStandingForProject,
   settlementPresence,
   sharedGoalById,
+  standIdsForRace,
 } from '../../../lib/lunar-atlas/selectors'
 import type {
   Milestone,
@@ -693,5 +694,40 @@ describe('lunar-atlas selectors', () => {
       expect(settlementPresence(trees, presence)).to.equal(0.4)
       expect(settlementPresence([], new Map())).to.equal(0)
     })
+  })
+})
+
+// Water Ice has no district — Touchdown owns the lander zone — so the camera
+// can only go where its members are already standing. VIPER has no plot and is
+// drawn on MK1's deck, so MK1 is the stand. IM-4 has no plot and no host.
+describe('standIdsForRace — hardware a district-less race can be flown to', () => {
+  const touchdown = new Set([
+    'astrobotic-griffin',
+    'im-nova-c',
+    'firefly-blue-ghost',
+    'blue-origin-blue-moon-mk1',
+    'cnsa-change-7',
+    'ispace-apex',
+  ])
+  const carriedBy = { 'blue-origin-viper': 'blue-origin-blue-moon-mk1' }
+
+  it('flies Water Ice to Chang\'e-7 and to the lander carrying VIPER', () => {
+    const ice = sharedGoalById(SEED_ATLAS, 'shared-ice')
+    expect(ice, 'shared-ice').to.not.equal(undefined)
+    expect(
+      standIdsForRace(ice!.projectIds, (id) => touchdown.has(id), carriedBy)
+    ).to.deep.equal(['cnsa-change-7', 'blue-origin-blue-moon-mk1'])
+  })
+
+  it('has nowhere to put IM-4, which is listed and not on the base', () => {
+    const im4 = SEED_ATLAS.projects.find((p) => p.id === 'im-4-volatiles')
+    expect(im4, 'im-4-volatiles').to.not.equal(undefined)
+    expect(im4!.modelURI, 'a model would be a modelURI or a procedural entry').to.equal(
+      undefined
+    )
+    expect(touchdown.has('im-4-volatiles')).to.equal(false)
+    expect(
+      standIdsForRace(['im-4-volatiles'], (id) => touchdown.has(id), carriedBy)
+    ).to.deep.equal([])
   })
 })
