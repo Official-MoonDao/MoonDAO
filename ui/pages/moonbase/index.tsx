@@ -1124,37 +1124,129 @@ export default function MoonBaseZeroIndex() {
           aria-hidden={cinematic}
           style={cinematic ? { visibility: 'hidden' } : undefined}
         >
-          {/* Top row: stacked on mobile so the info card and race legend never
-              have to squeeze into half the viewport each (see mobile audit). */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 p-4 sm:p-6">
-            <div className="pointer-events-auto w-full sm:max-w-sm rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
-
-              <div className="flex items-center gap-2">
-                <GlobeAltIcon className="h-5 w-5 text-cyan-300" />
-                <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
+          {/* The name card and the open detail panel stack on the left. The
+              race legend stays on the right, so opening a race never covers
+              it. On mobile they still stack, and the detail panel leaves this
+              column to become the bottom sheet (see below). */}
+          <div className="flex min-h-0 flex-1 flex-col justify-start gap-3 p-4 sm:flex-row sm:items-stretch sm:justify-between sm:gap-4 sm:p-6">
+            <div className="flex w-full min-w-0 flex-col gap-3 sm:w-96 sm:max-w-[calc(100%-18rem)] sm:shrink-0">
+              <div className="pointer-events-auto w-full shrink-0 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                  <GlobeAltIcon className="h-5 w-5 text-cyan-300" />
+                  <h1 className="text-lg font-semibold text-white">
+                    Moon Base Zero
+                  </h1>
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-white/60">
+                  A true-to-scale moonbase on the Shackleton connecting ridge —
+                  every serious program is racing here. Click a site to explore
+                  its capability race, competitors, and sources.
+                </p>
               </div>
-              <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                A true-to-scale moonbase on the Shackleton connecting ridge —
-                every serious program is racing here. Click a site to explore
-                its capability race, competitors, and sources.
-              </p>
+
+              {/* Detail panel sits under the name card on desktop and fills the
+                  column down to the timeline. On mobile it is taken out of the
+                  column and docked as a bottom sheet. One panel at a time —
+                  race view wins. */}
+              {(selectedGoal || selectedTree || selectedProject) &&
+                !cinematic && (
+                  <div className="pointer-events-none absolute inset-x-4 bottom-40 z-20 h-[55vh] sm:static sm:inset-auto sm:z-auto sm:h-auto sm:min-h-0 sm:flex-1 sm:overflow-hidden">
+                    <div className="h-full min-h-0">
+                      {selectedGoal ? (
+                        <SharedGoalPanel
+                          goal={selectedGoal}
+                          competitors={goalCompetitors}
+                          onClose={clearSelection}
+                          onSelectProject={handleSelectProject}
+                          deprizeId={liveOdds.deprizeId}
+                          chainSlug={chainSlug}
+                          prizePoolLabel={prizePoolLabel}
+                          prizePoolLoading={
+                            liveOdds.jbProjectId !== undefined &&
+                            isLoadingPrizePool
+                          }
+                          chain={chain}
+                          account={account}
+                          userAddress={userAddress}
+                          onConnectWallet={() => login()}
+                          spendableEth={spendableEth}
+                          mintAddress={liveOdds.mintAddress}
+                          marketAddress={liveOdds.marketAddress}
+                          numOutcomes={liveOdds.numOutcomes}
+                          outcomes={liveOdds.outcomes}
+                          bettingAllowed={bettingAllowed}
+                          tradingHalted={liveOdds.tradingHalted}
+                          resolved={liveOdds.resolved}
+                          winningIndex={liveOdds.winningIndex}
+                          isRefundVector={liveOdds.isRefundVector}
+                          payoutDen={liveOdds.payoutDen}
+                          payoutNums={liveOdds.payoutNums}
+                          jbProjectId={liveOdds.jbProjectId}
+                          refreshNonce={refreshNonce}
+                          onDone={handleRaceMarketDone}
+                        />
+                      ) : selectedTree ? (
+                        <TechTreePanel
+                          tree={selectedTree}
+                          organizations={dataset.organizations}
+                          onClose={clearSelection}
+                          onSelectProject={handleSelectProject}
+                        />
+                      ) : selectedProject ? (
+                        <ProjectPanel
+                          project={selectedProject}
+                          organization={selectedOrg}
+                          sharedGoals={selectedSharedGoals}
+                          onClose={clearSelection}
+                          onFocusRegion={flyToProject}
+                          onSelectSharedGoal={handleSelectSharedGoal}
+                          onBack={raceReturn ? handleBackToRace : undefined}
+                          betGoal={
+                            oddsGoalId
+                              ? sharedGoals.find((g) => g.id === oddsGoalId)
+                              : undefined
+                          }
+                          chainSlug={chainSlug}
+                          chain={chain}
+                          account={account}
+                          userAddress={userAddress}
+                          onConnectWallet={() => login()}
+                          spendableEth={spendableEth}
+                          deprizeId={liveOdds.deprizeId}
+                          mintAddress={liveOdds.mintAddress}
+                          marketAddress={liveOdds.marketAddress}
+                          numOutcomes={liveOdds.numOutcomes}
+                          outcomes={liveOdds.outcomes}
+                          bettingAllowed={bettingAllowed}
+                          tradingHalted={liveOdds.tradingHalted}
+                          resolved={liveOdds.resolved}
+                          winningIndex={liveOdds.winningIndex}
+                          isRefundVector={liveOdds.isRefundVector}
+                          payoutDen={liveOdds.payoutDen}
+                          payoutNums={liveOdds.payoutNums}
+                          jbProjectId={liveOdds.jbProjectId}
+                          onDone={handleRaceMarketDone}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                )}
             </div>
 
-            <Legend
-              races={races}
-              selectedRace={selectedRaceId}
-              onSelectRace={handleToggleRace}
-              onHoverRace={setHoveredRaceId}
-              organizations={legendOrgs}
-              selectedOrgIds={selectedOrgIds}
-              onToggleOrg={toggleOrg}
-              onClear={clearFilters}
-              projects={dataset.projects}
-            />
+            <div className="w-full shrink-0 sm:w-64 sm:self-start">
+              <Legend
+                races={races}
+                selectedRace={selectedRaceId}
+                onSelectRace={handleToggleRace}
+                onHoverRace={setHoveredRaceId}
+                organizations={legendOrgs}
+                selectedOrgIds={selectedOrgIds}
+                onToggleOrg={toggleOrg}
+                onClear={clearFilters}
+                projects={dataset.projects}
+              />
+            </div>
           </div>
-
-          {/* Middle spacer keeps the bottom controls pinned down. */}
-          <div className="min-h-0 flex-1" />
 
           {/* Bottom controls: timeline scrubber */}
           <div className="flex flex-col items-center gap-3 px-4 pb-6">
@@ -1177,90 +1269,6 @@ export default function MoonBaseZeroIndex() {
             />
           </div>
         </div>
-
-        {/* Detail panel: right dock on desktop, bottom sheet on mobile.
-            Positioned absolutely (not in the HUD flex column) so its height
-            doesn't depend on how tall the Legend happens to be; it overlays
-            the Legend while open. One panel at a time — race view wins. */}
-        {(selectedGoal || selectedTree || selectedProject) && !cinematic && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-40 top-auto z-20 h-[55vh] sm:inset-x-auto sm:bottom-40 sm:right-4 sm:top-20 sm:h-auto sm:w-[380px]">
-            {selectedGoal ? (
-              <SharedGoalPanel
-                goal={selectedGoal}
-                competitors={goalCompetitors}
-                onClose={clearSelection}
-                onSelectProject={handleSelectProject}
-                deprizeId={liveOdds.deprizeId}
-                chainSlug={chainSlug}
-                prizePoolLabel={prizePoolLabel}
-                prizePoolLoading={
-                  liveOdds.jbProjectId !== undefined && isLoadingPrizePool
-                }
-                chain={chain}
-                account={account}
-                userAddress={userAddress}
-                onConnectWallet={() => login()}
-                spendableEth={spendableEth}
-                mintAddress={liveOdds.mintAddress}
-                marketAddress={liveOdds.marketAddress}
-                numOutcomes={liveOdds.numOutcomes}
-                outcomes={liveOdds.outcomes}
-                bettingAllowed={bettingAllowed}
-                tradingHalted={liveOdds.tradingHalted}
-                resolved={liveOdds.resolved}
-                winningIndex={liveOdds.winningIndex}
-                isRefundVector={liveOdds.isRefundVector}
-                payoutDen={liveOdds.payoutDen}
-                payoutNums={liveOdds.payoutNums}
-                jbProjectId={liveOdds.jbProjectId}
-                refreshNonce={refreshNonce}
-                onDone={handleRaceMarketDone}
-              />
-            ) : selectedTree ? (
-              <TechTreePanel
-                tree={selectedTree}
-                organizations={dataset.organizations}
-                onClose={clearSelection}
-                onSelectProject={handleSelectProject}
-              />
-            ) : selectedProject ? (
-              <ProjectPanel
-                project={selectedProject}
-                organization={selectedOrg}
-                sharedGoals={selectedSharedGoals}
-                onClose={clearSelection}
-                onFocusRegion={flyToProject}
-                onSelectSharedGoal={handleSelectSharedGoal}
-                onBack={raceReturn ? handleBackToRace : undefined}
-                betGoal={
-                  oddsGoalId
-                    ? sharedGoals.find((g) => g.id === oddsGoalId)
-                    : undefined
-                }
-                chainSlug={chainSlug}
-                chain={chain}
-                account={account}
-                userAddress={userAddress}
-                onConnectWallet={() => login()}
-                spendableEth={spendableEth}
-                deprizeId={liveOdds.deprizeId}
-                mintAddress={liveOdds.mintAddress}
-                marketAddress={liveOdds.marketAddress}
-                numOutcomes={liveOdds.numOutcomes}
-                outcomes={liveOdds.outcomes}
-                bettingAllowed={bettingAllowed}
-                tradingHalted={liveOdds.tradingHalted}
-                resolved={liveOdds.resolved}
-                winningIndex={liveOdds.winningIndex}
-                isRefundVector={liveOdds.isRefundVector}
-                payoutDen={liveOdds.payoutDen}
-                payoutNums={liveOdds.payoutNums}
-                jbProjectId={liveOdds.jbProjectId}
-                onDone={handleRaceMarketDone}
-              />
-            ) : null}
-          </div>
-        )}
       </div>
     </>
   )
