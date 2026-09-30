@@ -180,7 +180,34 @@ The pay hook is not latched. The Safe must call `setDePrizeRegistry`.
 | LMSRMarketMaker | `0x7deDb1Ac0f53b0208F72977f941186F6FB2394E9` | Stock Gnosis, 0.07 ETH seed, 1% fee, owner = the Safe |
 | Sunset | `1853711494` | 2028-09-27 23:51:34 UTC |
 
-Rehearsal steps: [`DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md`](./DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md).
+Rehearsal script: [`DEPRIZE_E2E_REHEARSAL.md`](./DEPRIZE_E2E_REHEARSAL.md).
+Calldata: [`DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md`](./DEPRIZE_TOUCHDOWN_V2_REHEARSAL.md).
+
+## Failure rehearsal — id 8 (2026-09-30)
+
+Same-day refund prize. Not a ladder race. Two synthetic outcomes. Oracle,
+market owner, Juicebox project owner, and pay-hook owner are the executive
+Safe. The hook is latched. Registry ownership is still only nominated.
+
+`createMission` named the deployer as `to` so the deployer could latch the
+hook, then transferred the hook and the project NFT to the Safe. The locked
+90% payout split still names the deployer
+`0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011`.
+
+| Slot | Value | Notes |
+|---|---|---|
+| `deprizeId` | `8` | |
+| Competing teams | `[701, 702]` | Outcome 1, Outcome 2 |
+| JB project id | `276` | Mission **22**. Project NFT held by the Safe |
+| LaunchPadPayHook | `0xCFcF30E399ce63025FaF02311a4977081F956060` | Latched. Owned by the Safe |
+| `questionId` | `0x92780d846f3b3ba767d18baafe154c0c6f44fa1739d362ac2b11c7439feb1111` | `keccak256("deprize:sepolia:failure-rehearsal:v1")` |
+| `conditionId` | `0x01d5e48894172154288f36902b7242b92d05875ca78e5caab59371fc94c4096d` | 2 slots. Oracle = the Safe |
+| LMSRMarketMaker | `0xC739aC0D912771619dC8217501D6f6E8Aff27987` | Stock Gnosis, 0.02 ETH seed, 1% fee, owner = the Safe |
+| Pool deployer | `0xf177dc243ee9f5DeA7744F52e15Bca73C639F6A5` | |
+| Sunset | `1853881556` | 2028-09-29 23:05:56 UTC |
+
+`prepareCondition` `0x04dea86d…190b1a`. `createMission` `0xdfb0c356…d4c1e5`.
+`register` `0xe788307a…aff622`. `open` `0x4171ce17…8920f9`.
 
 ## UI follow-up PR (do not ship without both)
 
