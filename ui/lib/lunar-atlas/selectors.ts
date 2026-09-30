@@ -305,27 +305,27 @@ export function indexRowsFromDataset(
 // district of its own.
 //
 // Water Ice loses the lander zone to Touchdown, so opening it has nothing of
-// its own to fly to. Two of its three members are standing in that zone
-// anyway: Chang'e-7 on its own pad, and VIPER drawn on Blue Moon MK1's deck
-// rather than on ground of its own. The camera has to go to those, or the
-// race lights its hardware and then leaves it off screen.
+// its own to fly to. All three of its members are standing in that zone
+// anyway: Chang'e-7 on its own pad, VIPER drawn on Blue Moon MK1's deck, and
+// IM-4, which is a later flight of the Nova-C already parked there. The
+// camera has to go to those, or the race lights its hardware and then leaves
+// it off screen.
 //
-// A member with neither a plot nor a host contributes nothing. IM-4 is that
-// case: it is on the roster and in the market, and it is not on the base,
-// because nobody has modelled it and no other competitor is carrying it.
-// Pretending otherwise would fly the camera at empty regolith.
+// A member with neither a plot, nor a host, nor a vehicle already on the base
+// contributes nothing. There is no such member in Water Ice.
 //
 // `hasPlot` is passed in so this stays pure. The colony layout is what knows
 // who was given ground, and this must not grow a dependency on it.
 export function standIdsForRace(
   memberIds: readonly string[],
   hasPlot: (id: string) => boolean,
-  carriedBy: Readonly<Record<string, string>> = {}
+  carriedBy: Readonly<Record<string, string>> = {},
+  sameVehicle: Readonly<Record<string, string>> = {}
 ): string[] {
   const out: string[] = []
   const seen = new Set<string>()
   for (const id of memberIds) {
-    const stand = hasPlot(id) ? id : carriedBy[id]
+    const stand = hasPlot(id) ? id : carriedBy[id] ?? sameVehicle[id]
     if (!stand || seen.has(stand) || !hasPlot(stand)) continue
     seen.add(stand)
     out.push(stand)

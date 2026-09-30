@@ -1484,9 +1484,9 @@ export default function MarkerLayer({
         // Whether any competitor on THIS district belongs to the open race.
         // Normally none do unless the district is itself open, but a race can
         // have no ground of its own and still have hardware standing here —
-        // Water Ice owns nothing and yet Chang'e-7 and VIPER are both in the
-        // lander row. Those lots stay lit and named while everything around
-        // them dims, which is the whole of the highlight.
+        // Water Ice owns nothing and yet Chang'e-7, VIPER and the Nova-C that
+        // flies IM-4 are all in the lander row. Those lots stay lit and named
+        // while everything around them dims, which is the whole of the highlight.
         const litHere = (id: string) => Boolean(litProjectIds?.has(id))
 
         const count = members.length

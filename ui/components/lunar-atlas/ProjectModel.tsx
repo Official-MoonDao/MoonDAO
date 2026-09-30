@@ -113,6 +113,11 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // only one other Touchdown lander (ULTRA, below). NovaC below is authored so
   // the antenna tips land on this figure and the 3.44 m leg span stays under it.
   'im-nova-c': 4,
+  // IM-4 is another Nova-C, not a new design. NASA's CP-22 page names the
+  // lander: "The Intuitive Machines Nova-C lander (IM-4)". Same 4 m column,
+  // so the drill-in frames the vehicle already standing in Touchdown rather
+  // than a 16 m generic lander. See SAME_VEHICLE.
+  'im-4-volatiles': 4,
   // ~3.5 m across the legs on a ~2 m stack, so width is the max. BlueGhost is
   // authored so opposite footpads span exactly this, and its instrument booms
   // are held inside it — the real electrodes deploy far past the pads, but the
@@ -1586,6 +1591,17 @@ function ViperRover({ accent }: { accent: string }) {
 // is visible.
 export const CARRIED_BY: Record<string, string> = {
   'blue-origin-viper': 'blue-origin-blue-moon-mk1',
+}
+
+// A later flight of a vehicle that already has a model, keyed flight -> the
+// project that model was built for.
+//
+// IM-4 is a Nova-C. It is not the Touchdown entry — that one is IM-1, IM-2
+// and IM-3 — but it is the same lander, and a second copy on the next pad
+// would be a duplicate of a machine the base already shows. Water Ice points
+// at the Nova-C standing in the landing zone. There is no separate mesh.
+export const SAME_VEHICLE: Record<string, string> = {
+  'im-4-volatiles': 'im-nova-c',
 }
 
 // ---------------------------------------------------------------------------

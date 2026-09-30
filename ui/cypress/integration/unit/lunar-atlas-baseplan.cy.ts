@@ -1790,13 +1790,13 @@ describe('drawnSizeM — the one place the base is not true scale', () => {
   })
 })
 
-// Opening Water Ice frames the midpoint of the two members that are actually
-// on the base — Chang'e-7's pad and MK1's, where VIPER stands — with the same
-// wide shot a district gets. That only shows both if they are closer together
-// than the shot is wide. Radii are the Touchdown graded decks, the same
-// numbers as ROSTERS.lander above.
-describe('Water Ice — its two stands fit in one hero shot', () => {
-  it('keeps Chang\'e-7 and MK1 inside the framing the race flies to', () => {
+// Opening Water Ice frames the midpoint of the three members that are actually
+// on the base — Chang'e-7's pad, MK1's deck where VIPER stands, and the Nova-C
+// that flies IM-4 — with the same wide shot a district gets. That only shows
+// all three if each is closer to the midpoint than the shot is wide. Radii are
+// the Touchdown graded decks, the same numbers as ROSTERS.lander above.
+describe('Water Ice — its stands fit in one hero shot', () => {
+  it('keeps Chang\'e-7, MK1 and Nova-C inside the framing the race flies to', () => {
     const slots = districtSlots(BASE_PLAN.lander!, [
       { id: 'blue-origin-blue-moon-mk1', radiusM: 4.8 },
       { id: 'cnsa-change-7', radiusM: 2.88 },
@@ -1805,14 +1805,23 @@ describe('Water Ice — its two stands fit in one hero shot', () => {
       { id: 'ispace-apex', radiusM: 2.16 },
       { id: 'firefly-blue-ghost', radiusM: 2.1 },
     ])
-    const a = slots.get('blue-origin-blue-moon-mk1')!
-    const b = slots.get('cnsa-change-7')!
-    const sep = Math.hypot(a.east - b.east, a.north - b.north)
+    const ids = [
+      'cnsa-change-7',
+      'blue-origin-blue-moon-mk1',
+      'im-nova-c',
+    ]
+    const pts = ids.map((id) => slots.get(id)!)
+    const cx = pts.reduce((s, p) => s + p.east, 0) / pts.length
+    const cy = pts.reduce((s, p) => s + p.north, 0) / pts.length
     // Half of what the default hero shot covers at the aim point. The globe
     // camera is 42°; the horizontal frame is wider than this on any normal
     // pane, so this is the conservative axis.
     const half =
       heroFraming().standoffM * Math.tan(((42 / 2) * Math.PI) / 180)
-    expect(sep / 2, `${sep.toFixed(1)} m apart`).to.be.lessThan(half)
+    for (const id of ids) {
+      const p = slots.get(id)!
+      const d = Math.hypot(p.east - cx, p.north - cy)
+      expect(d, id).to.be.lessThan(half)
+    }
   })
 })

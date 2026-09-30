@@ -72,6 +72,7 @@ import type {
 } from '@/components/lunar-atlas/MarkerLayer'
 import {
   CARRIED_BY,
+  SAME_VEHICLE,
   footprintRadiusM,
   hasOwnModel,
   displaySizeM,
@@ -609,16 +610,20 @@ export default function MoonBaseZeroIndex() {
   // have pointed at its hardware instead hid it.
   //
   // So light a race's members wherever they happen to stand, plus whoever is
-  // carrying them: VIPER has no plot of its own and is drawn inside MK1, so
-  // MK1 is what has to stay lit for the rover to be visible.
+  // carrying them and whichever vehicle they share. VIPER has no plot of its
+  // own and is drawn inside MK1, so MK1 is what has to stay lit for the rover
+  // to be visible. IM-4 is the Nova-C already in the same row.
   const litProjectIds = useMemo(() => {
     const lit = new Set<string>()
     if (!selectedRaceId) return lit
     const open = surfaceTrees.find((t) => t.raceId === selectedRaceId)
     for (const p of open?.projects ?? []) {
       lit.add(p.id)
-      const host = CARRIED_BY[p.id]
-      if (host) lit.add(host)
+      // VIPER is drawn on MK1, and IM-4 is the Nova-C already in the landing
+      // zone. Either way the thing on screen is not the roster id, and that
+      // thing is what has to stay lit.
+      const shownWith = CARRIED_BY[p.id] ?? SAME_VEHICLE[p.id]
+      if (shownWith) lit.add(shownWith)
     }
     return lit
   }, [selectedRaceId, surfaceTrees])
@@ -740,16 +745,17 @@ export default function MoonBaseZeroIndex() {
     raceId ? layout.districts.get(raceId) : undefined
 
   // The plots a race with no district of its own can still be seen from.
-  // Water Ice never gets the lander zone, but Chang'e-7's pad and MK1's deck
-  // (where VIPER is drawn) are both in it. IM-4 is on the roster and nowhere
-  // on the base, so it is not in this list — see standIdsForRace.
+  // Water Ice never gets the lander zone. Chang'e-7 has a pad in it, VIPER is
+  // drawn on MK1's deck, and IM-4 is the Nova-C already parked there — see
+  // standIdsForRace.
   const standDirs = (raceId: string): Vec3[] => {
     const tree = surfaceTrees.find((t) => t.raceId === raceId)
     if (!tree) return []
     return standIdsForRace(
       tree.projects.map((p) => p.id),
       (id) => layout.plots.has(id),
-      CARRIED_BY
+      CARRIED_BY,
+      SAME_VEHICLE
     ).map((id) => layout.plots.get(id)!.dir)
   }
 
@@ -799,13 +805,15 @@ export default function MoonBaseZeroIndex() {
     // what a drill-in should frame. Chasing the moving copy used to be the only
     // option, because the lot really was empty; it also meant the camera's
     // subject was somewhere different every time you clicked it.
-    // A rider has no plot of its own: VIPER is drawn on MK1's deck, so that
-    // pad is the only place a drill-in can land. Without this, picking VIPER
-    // out of the Water Ice list found neither a plot nor a district and the
-    // camera stayed where it was.
+    // A rider has no plot of its own, and neither does a later flight of a
+    // vehicle already standing. VIPER is drawn on MK1's deck; IM-4 is the
+    // Nova-C in the landing zone. Without this, picking either out of the
+    // Water Ice list found neither a plot nor a district and the camera
+    // stayed where it was.
     const plot =
       layout.plots.get(project.id) ??
-      layout.plots.get(CARRIED_BY[project.id] ?? '')
+      layout.plots.get(CARRIED_BY[project.id] ?? '') ??
+      layout.plots.get(SAME_VEHICLE[project.id] ?? '')
     const dir = plot?.dir ?? siteDir(race)
     const ll = dir ? vector3ToLatLon(dir) : project.location
     if (!ll) return
@@ -947,9 +955,10 @@ export default function MoonBaseZeroIndex() {
   //
   // A race with a district is framed on that district. A race without one is
   // framed on the hardware it can actually be seen on: the midpoint of those
-  // plots, so two machines across a road (Chang'e-7 and VIPER on MK1) both
-  // land in the shot instead of the camera picking the first and leaving the
-  // other at the edge. No subject size is passed, because this is a roster
+  // plots, so the landing-zone machines Water Ice is won on — Chang'e-7,
+  // VIPER on MK1, and the Nova-C that flies IM-4 — all land in the shot
+  // instead of the camera picking the first and leaving the others at the
+  // edge. No subject size is passed, because this is a roster
   // shot — the same wide framing a district gets — not a drill-in on one
   // machine.
   const flyToSite = (raceId: string) => {
