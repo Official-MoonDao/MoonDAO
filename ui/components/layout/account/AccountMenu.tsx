@@ -13,7 +13,7 @@ import { UserTeamsList } from './UserTeamsList'
 const SECTION_LABEL =
   'px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider'
 const ITEM_CLASS =
-  'block px-4 py-2 mx-2 text-sm rounded-lg text-gray-300 hover:text-white hover:bg-purple-500/20 transition-all duration-200'
+  'block mx-1.5 rounded-sm px-3 py-2 text-[13px] text-white/70 hover:bg-white/[0.04] hover:text-white'
 
 /**
  * Everything that belongs to the signed-in user: their profile, their teams,
@@ -53,23 +53,14 @@ export default function AccountMenu() {
     }
   }, [open])
 
-  // Signed out, this is the bar's primary call to action: Sign in serves people
-  // who already belong, Join is how anyone new gets in.
-  //
-  // Matching Sign in exactly (the previous approach) made them a matched pair,
-  // and a pair has no primary. Worse, `gradient-2` is #425eeb -> #6d3f79, which
-  // is the same blue-to-purple as the navbar behind it, so neither pill had much
-  // to push against.
-  //
-  // Hierarchy comes from weight, width and light rather than size: the height
-  // and text size still match Sign in so the two stay aligned, but Join is
-  // bolder, wider, ringed to cut its edge out of the dark bar, and carries a
-  // blue glow that the flat Sign in pill does not.
+  // Signed out, this is the bar's primary call to action. Sign in is the
+  // outline control for people who already belong; Join is solid gold so the
+  // two are not a matched pair.
   if (!isSignedIn) {
     return (
       <NavLink
         href="/join"
-        className="gradient-2 whitespace-nowrap rounded-full px-5 py-1 text-[12px] md:text-[18px] font-semibold text-white ring-1 ring-white/30 shadow-[0_0_18px_rgba(66,94,235,0.55)] hover:shadow-[0_0_26px_rgba(66,94,235,0.85)] hover:brightness-110 transition duration-150"
+        className="whitespace-nowrap rounded-full bg-moon-gold px-4 py-1.5 text-[13px] font-semibold text-[#1c1408] transition duration-150 hover:brightness-105"
       >
         Join
       </NavLink>
@@ -114,7 +105,7 @@ export default function AccountMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute top-full right-0 mt-2 z-50 w-64 max-h-[70vh] overflow-y-auto bg-gradient-to-br from-gray-900/98 via-blue-900/95 to-purple-900/90 backdrop-blur-xl border border-white/30 shadow-2xl py-2 rounded-xl"
+          className="absolute top-full right-0 z-50 mt-2 max-h-[70vh] w-64 overflow-y-auto rounded-md border border-white/[0.08] bg-[#0b1020] py-2 shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
         >
           {profileHref ? (
             <NavLink

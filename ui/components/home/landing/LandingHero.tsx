@@ -25,7 +25,7 @@ const item = {
 const stats = [
   { value: 8, prefix: '$', suffix: 'M+', label: 'Raised onchain' },
   { value: 12_000, suffix: '+', label: 'Token holders' },
-  { value: 80, suffix: '+', label: 'Projects funded' },
+  { value: 100, suffix: '+', label: 'Projects funded' },
   { value: 2, suffix: '', label: 'Astronauts sent to space' },
 ]
 

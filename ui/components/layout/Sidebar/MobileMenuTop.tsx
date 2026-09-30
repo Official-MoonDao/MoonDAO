@@ -49,14 +49,14 @@ const MobileMenuTop = ({
   }, [lastScrollY])
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-900/95 via-blue-900/80 to-purple-900/70 backdrop-blur-xl border-b border-white/20 shadow-2xl transition-transform duration-300 ease-in-out ${
+    <nav className={`fixed top-0 left-0 right-0 z-[9999] border-b border-white/[0.08] bg-dark-cool transition-transform duration-300 ease-in-out ${
       isVisible ? 'translate-y-0' : '-translate-y-full'
     }`}>
       <div className="max-w-full mx-auto px-2 sm:px-4">
         <div className="flex items-center justify-between h-16 min-w-0">
           <button
             type="button"
-            className="flex-shrink-0 px-2 text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors duration-200"
+            className="flex-shrink-0 px-2 text-white/70 hover:text-white focus:outline-none"
             onClick={() => setSidebarOpen(true)}
           >
             <span className="sr-only">Open sidebar</span>
