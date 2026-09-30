@@ -31,7 +31,7 @@ const pillars: Pillar[] = [
     link: '/proposals',
     hovertext: 'Browse Proposals',
     paragraph:
-      'Allocated $600,000+ to 100+ projects via open community governance.',
+      'Allocated $750,000+ to 100+ projects via open community governance.',
   },
   {
     icon: '/assets/icon-plane.svg',
