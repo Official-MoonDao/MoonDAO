@@ -106,6 +106,8 @@ Q3 2026 had 28 Citizen payments and 3 Team payments, the best quarter on record.
 
 **Not in the total.** Uniswap V3 fees accrue inside the position and are not cash. MDP-194 estimated them at about $10.6k per year, but that figure was not re-measured here. Staking yield ended on June 15.
 
+**Secured Launchpad fee on Frank's raise.** The campaign has already taken in ~$172k raised or pledged. At today's ETH price that is about **$190k**: 27.39 ETH in JB project 73 ($73.9k) plus $116.5k in off-chain pledges. The raise is treated as successful, so the Launchpad fee is taken from that total on payout. The usual split is 2.5% cash to the treasury and 5% into MoonDAO-owned liquidity. No liquidity will be added, so both slices go to the treasury as cash: **7.5% ≈ $14,300** ($4,800 + $9,500). That is one-time, not recurring. It is in the proposal's revenue table and the end-of-term cash target.
+
 ### 4.2 What MDP-249 actually cost
 
 MDP-249 disbursed about $125.6k against a five-month core of $132k, so it came in on budget:
@@ -226,7 +228,7 @@ End-of-term AUM at constant prices would be about $263k with core only and about
   - Zephalto, whose two seats cost about €360k (~$390k), is now MoonDAO Team #25.
 - **Candidate pipeline.** The $OVERVIEW delegation leaderboard has 65 entries.
 
-The gap is roughly $390k for two Zephalto seats against ~$172k raised or pledged, so the draft sets +$50k by the midpoint. The end-of-term target is to cover two seats through raise + pledges + a partner price, not through the treasury.
+The gap is roughly $390k for two Zephalto seats against ~$172k raised or pledged, so the draft sets +$50k by the midpoint. The end-of-term target is to cover two seats through raise + pledges + a partner price, not through the treasury. On payout, 7.5% of the existing raise (~$14,300 at today's prices) goes to the treasury as cash; see §4.1.
 
 ### 6.4 Network, pricing, and growth
 

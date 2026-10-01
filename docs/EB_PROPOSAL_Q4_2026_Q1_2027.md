@@ -47,7 +47,7 @@ The EB will run five objectives with a midpoint checkpoint on December 31 and a 
 
 **1. Public launch of the capability ladder and Moon Base Zero.** Touchdown moves from its Sepolia rehearsal to Arbitrum by November 1, under the Executive Safe as operator and oracle. `/moonbase` and `/deprize` come out from behind the access gate at the same time; the country gate, attestations, and reconciliation stay on for betting. A free forecast mode, open to everyone including people who cannot bet, is the top of the funnel. First Tracks and Water Ice get published rules of record and go live on Arbitrum by the end of the term. Night Shift stays a public placeholder. Every rung's purse is a community payload purchase on a future flight. The EB will look for outside sponsors for those purses and for Moon Base Zero districts. Before any single market holds more than 5 ETH, the contracts get an independent security review.
 
-**2. Frank's flight.** Following the $OVERVIEW holders' decision (Option B), the fundraiser stays open through the whole term. The raise does not close until the full payment for both seats is covered. Working from the existing report on every provider, the EB will place only fully refundable deposits unless holders vote otherwise. It will work toward a signed two-seat reservation, with Frank named on the manifest and the second seat held for a MoonDAO Citizen. The Candidate process cannot close before the fundraiser does, so it does not run this term; it starts once the raise closes. When a seat is purchased, the Launchpad payout routes 2.5% to the treasury and 5% to MoonDAO-owned liquidity, per the mission's splits.
+**2. Frank's flight.** Following the $OVERVIEW holders' decision (Option B), the fundraiser stays open through the whole term. The raise does not close until the full payment for both seats is covered. Working from the existing report on every provider, the EB will place only fully refundable deposits unless holders vote otherwise. It will work toward a signed two-seat reservation, with Frank named on the manifest and the second seat held for a MoonDAO Citizen. The Candidate process cannot close before the fundraiser does, so it does not run this term; it starts once the raise closes. When a seat is purchased, the Launchpad payout takes **7.5% of the total raised as cash to the treasury**: the usual 2.5% treasury split, plus the 5% that would have seeded MoonDAO-owned liquidity. No liquidity is added. On the ~$172k already raised or pledged (about $190k at today's ETH price: 27.39 ETH plus $116.5k in off-chain pledges), that is about **$14,300** of secured, one-time cash.
 
 **3. Citizenship as a stake in MoonDAO.** Citizenship moves from about $30 a year to $99 a year, set in ETH and reviewed quarterly. $25 of each payment buys MOONEY on the open market and locks it as vMOONEY in the Citizen's name, using the same escrow pattern as the quarterly project rewards (`VotingEscrowDepositor`). Every new Citizen therefore has real voting power from day one. When a new Citizen joins through a referral link, or names a referrer, another $25 of the payment goes to the referrer in ETH or USDC. This replaces the current MOONEY referral reward. It is paid once per new paying Citizen and keeps the existing self-referral and duplicate checks. Both $25 amounts come out of the $99 price, so neither needs a treasury budget. Existing Citizens keep their current price for one more renewal. New Teams move to $499 a year, or $199 for nonprofits and schools. MoonDAO runs its first paid acquisition campaign for Citizenship behind a $3,000 test gate. Citizen registration opens to the EU/EEA/UK with no personal data on the public chain. Either the Citizen NFT is matched to an off-chain record, or the data is posted on-chain encrypted so that only MoonDAO's server can read it; the approach is chosen with counsel before launch. This also opens that market to the campaign.
 
@@ -57,14 +57,14 @@ The EB will run five objectives with a midpoint checkpoint on December 31 and a 
 
 ### Current revenue streams
 
-| Revenue stream | Basis | Trailing 12 months (cash) | End-of-term target (annualized) |
+| Revenue stream | Basis | Trailing 12 months (cash) | End-of-term target |
 | :-- | :-- | --: | --: |
-| Citizen subscriptions | 86 payments at 0.0111 ETH | $2,575 | $12,000 |
-| Team subscriptions | 6 payments | $1,800 | $6,000 |
-| Launchpad fees | 2.5% cash split on mission payouts | $128 | One-time on Frank payout |
+| Citizen subscriptions | 86 payments at 0.0111 ETH | $2,575 | $12,000 annualized |
+| Team subscriptions | 6 payments | $1,800 | $6,000 annualized |
+| Launchpad fees (Frank) | 7.5% of the raise, all cash: 2.5% treasury + 5% liquidity redirected | $128 | **~$14,300** secured, one-time |
 | DePrize trade fees | 1% LMSR fee, not yet live on mainnet | $0 | Tracked, not targeted |
 | Uniswap LP fees | Accrue inside the position; not cash | Not measured | — |
-| **Total cash** | | **~$4,500** | **≥ $18,000 recurring** |
+| **Total cash** | | **~$4,500** | **≥ $18,000 recurring + ~$14,300 Launchpad** |
 
 Figures are ETH that reached the Arbitrum treasury, matched by sending contract (the same method as `/admin/financial-overview`), valued at ETH $2,697.
 
@@ -82,7 +82,7 @@ Agents are supervised by the members above. They draft, prepare, and report; hum
 ## Benefits
 
 - MoonDAO's two most distinctive products, a public lunar settlement simulation and a prize ladder for real lunar capabilities, go live in time for the next landing attempts. That positions MoonDAO as the place where the lunar economy is tracked, forecast, and funded.
-- Frank's flight moves from open-ended fundraising to a signed reservation with Frank named on the manifest, which is the proof contributors were promised.
+- Frank's flight moves from open-ended fundraising to a signed reservation with Frank named on the manifest, which is the proof contributors were promised. The payout also sends about **$14,300** of already-raised money to the treasury (7.5% of the raise).
 - Citizenship gives members a real stake: every new Citizen holds staked MOONEY and votes from day one. The recurring buy supports MOONEY and moves supply into long locks. The $25 cash referral makes every Citizen a recruiter.
 - The first paid acquisition test tells MoonDAO what a Citizen costs to acquire, and that number should shape every later growth budget.
 - Agent-run operations cut key-person risk and recurring cost. They are the basis for a smaller fixed EB from Q2 2027.
@@ -128,6 +128,7 @@ Members responsible: @pmoncada, @moguel, @ryand2d
 | :-- | :-- | :-- |
 | Two-seat reservation with a provider that meets the bar in the existing provider report | Signed two-seat reservation or LOI (refundable unless holders vote otherwise) | Frank named on the manifest with a target flight window, confirmed in writing; second seat held for a MoonDAO Citizen |
 | Fundraiser kept open through the term; new commitments (on-chain, fiat, sponsors) | +$50k | Raised + pledged + partner discount covers two seats with the selected provider |
+| Launchpad fee on the existing raise, 7.5% cash to the treasury (2.5% + 5% liquidity redirected) | — | ~$14,300 collected on payout |
 | Contributor transparency | Monthly updates; no open refund requests | Same |
 | Contingency | — | If no provider meets the bar, a follow-up $OVERVIEW vote within 30 days |
 
@@ -171,7 +172,8 @@ Members responsible: @pmoncada, @moguel
 | Operate within this envelope; budget paid in two transactions (at passage and in January), each converted at that day's price; monthly public burn report | On budget | On budget |
 | Restated financial disclosure (the staked ETH was withdrawn in June) | Published with the midpoint report | — |
 | Recurring subscription revenue run-rate (about $4.4k today) | ≥ $9k | ≥ $18k |
-| Total cash revenue received during the term | ≥ $6k | ≥ $20k |
+| Launchpad fees from Frank's raise, 7.5% cash to the treasury | — | ~$14,300 collected on payout |
+| Total cash revenue received during the term | ≥ $6k | ≥ $34k (recurring plus the Frank payout) |
 | For-profit arm | Proposal ratified | Seed round open: deck, data room, ≥ 10 investor meetings |
 | Executive Branch election under the Constitution | Process published | Held by Feb 28, 2027 |
 | Advisory board | 3 candidates engaged | ≥ 3 advisors confirmed with a written charter |
@@ -233,7 +235,7 @@ The Citizenship MOONEY stake and referral payouts come out of the $99 price and 
 - $6.9k in Q3 2026 retroactive and Contributor Circle rewards;
 - up to $9k of MDP-249 milestone bonuses, subject to the Senate's review.
 
-After those outlays, at today's prices and with revenue flat, official AUM would end the term at about **$263k** if only the core is spent. If every program and the full bonus cash pay out, it would end at about **$220k**. Both figures include the project-system pot (3% of AUM per quarter under MDP-267). These are the numbers this term has to change, which is why every objective carries a revenue or cost key result. The path to cash-flow sustainability by the end of 2027 has three parts: recurring network revenue, sponsor-funded prizes, and external capital through the for-profit arm, all arriving while an agent-run EB brings guaranteed cost down to ≤ $15k per month from Q2 2027.
+After those outlays, at today's prices and with subscription revenue flat, official AUM would end the term at about **$263k** if only the core is spent, or about **$277k** once the ~$14,300 Launchpad fee from Frank's raise is collected. If every program and the full bonus cash pay out, it would end at about **$220k**, or about **$234k** with that fee. Both pairs include the project-system pot (3% of AUM per quarter under MDP-267). These are the numbers this term has to change, which is why every objective carries a revenue or cost key result. The path to cash-flow sustainability by the end of 2027 has three parts: recurring network revenue, sponsor-funded prizes, and external capital through the for-profit arm, all arriving while an agent-run EB brings guaranteed cost down to ≤ $15k per month from Q2 2027.
 
 **Runway guardrail.** If official AUM on `/admin/financial-overview` closes below **$300,000** for seven consecutive days, all unreleased program tranches freeze automatically. Verified milestone bonuses are still paid. The EB then brings a revised budget to the Senate within 30 days.
 
