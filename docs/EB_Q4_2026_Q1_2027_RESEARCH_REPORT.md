@@ -18,7 +18,7 @@ This is a compilation, not an audit. Every number below comes with its source in
 6. **Stablecoins are about $27k.** That is less than one month of burn, so the next EB budget has to be converted from ETH and WBTC as it is paid. The draft pays it in two transactions three months apart.
 7. **Frank's raise has stalled since the re-open.** About $172k was raised or pledged in March and April. The Juicebox project holds 27.39 ETH (~$74k), and only +0.65 ETH has come in since the July re-open. Holders voted 92.9% for "keep options open, two seats".
 8. **The network grew but missed its targets.** Citizens went 199 → 262 (target 300) and Teams 20 → 26 (target 30). Q3 2026 was still the best subscription quarter on record.
-9. **This is probably the last EB term the treasury can fund at this rate.** At today's prices, and after committed outlays, the proposed envelope leaves about $220k–$263k at the end of March 2027. The term therefore has to produce revenue, external capital, or a lower fixed cost. The automation objective is the plan for the last of those.
+9. **This is probably the last EB term the treasury can fund at this rate.** At today's prices, and after committed outlays, the proposed envelope leaves about $214k–$257k at the end of March 2027. The term therefore has to produce revenue, external capital, or a lower fixed cost. The automation objective is the plan for the last of those.
 
 ---
 
@@ -143,12 +143,12 @@ The same Aug 3 batch paid the Q2 retro ($5,629.26) and the Q2 Contributor Circle
 | Scenario | Net monthly burn | Months |
 | :-- | --: | --: |
 | MDP-249 stack held flat ($26.4k EB + $2.8k projects − $0.4k revenue) | $28.9k | 14.9 |
-| Proposed core only | $27.7k | 15.5 |
-| Proposed core + all gated programs | $34.2k | 12.6 |
-| Proposed maximum (programs + bonus cash) | $35.0k | 12.3 |
+| Proposed core only | $28.8k | 14.9 |
+| Proposed core + all gated programs | $35.3k | 12.2 |
+| Proposed maximum (programs + bonus cash) | $36.1k | 11.9 |
 | Three-year standard (MDP-176 / MDP-194) | ≤ $11.9k | 36 |
 
-End-of-term AUM at constant prices would be about $263k with core only and about $220k at the maximum. No proposal in the last three cycles has met the three-year standard, and this one does not either. The draft makes that explicit and commits to a Q2 2027 plan with guaranteed EB cost at or below $15k per month.
+End-of-term AUM at constant prices would be about $257k with core only and about $214k at the maximum. The Q1 core includes a third Executive Lead at 10 hours a week and $50 an hour from January 1 ($6,500). No proposal in the last three cycles has met the three-year standard, and this one does not either. The draft makes that explicit and commits to a Q2 2027 plan with guaranteed EB cost at or below $15k per month.
 
 ---
 

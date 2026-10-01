@@ -17,7 +17,7 @@ A six-month budget is proposed for the Executive Branch (EB) to take MoonDAO's l
 
 Core operations continue throughout: governance and the project system, treasury and liquidity management, communications, website, Launchpad, billing, sales, and community.
 
-The guaranteed core budget is $25,250 per month, 4% below MDP-249. The budget is paid in two transactions three months apart, so the Q1 half is converted at January's prices rather than today's. Growth spend (ads, travel, equipment, and an X contractor) is released in tranches against published gates. A runway guardrail freezes that spend automatically if the treasury falls below a set floor.
+The guaranteed core budget is $25,250 per month through December, 4% below MDP-249, then $27,417 per month in Q1 once a third Executive Lead starts. The budget is paid in two transactions three months apart, so the Q1 half is converted at January's prices rather than today's. Growth spend (ads, travel, equipment, and an X contractor) is released in tranches against published gates. A runway guardrail freezes that spend automatically if the treasury falls below a set floor.
 
 ## Problem Statement
 
@@ -72,8 +72,13 @@ Figures are ETH that reached the Arbitrum treasury, matched by sending contract 
 
 1. @pmoncada — **Executive Branch Lead.** Strategy, product (DePrize, Moon Base Zero, Launchpad), agent and automation architecture, provider negotiations for Frank's flight, treasury operations, and the for-profit arm. Hosts the weekly townhall.
 2. @ryand2d — **Communications & Partnerships Lead.** Socials, newsletter, Discord, the weekly Senate meeting, and AMAs. Owns the sponsor and partner pipeline, Team onboarding, project-cycle operations, and the Frank campaign.
-3. @moguel — **Engineering & Automation (half-time).** Mainnet ladder deployment and UI, the Citizenship checkout (MOONEY stake and referral payout), agent pipelines, and testing. Safe signer.
-4. **X / social contractor** (hired from the open role, ≤ 10 hrs/week). Owns growth of @OfficialMoonDAO, working from agent-drafted content.
+3. **Third Executive Lead** (open seat, from January 1). See below.
+4. @moguel — **Engineering & Automation (half-time).** Mainnet ladder deployment and UI, the Citizenship checkout (MOONEY stake and referral payout), agent pipelines, and testing. Safe signer.
+5. **X / social contractor** (hired from the open role, ≤ 10 hrs/week). Owns growth of @OfficialMoonDAO, working from agent-drafted content.
+
+### Third Executive Lead
+
+From January 1 through March 31, the EB adds a third Executive Lead at **10 hours per week and $50 per hour**. The quarter is counted as 13 weeks, so the allocation is 10 × 13 × $50 = **$6,500** (about $2,167 per month). It is paid in full with the January budget transaction. The seat is open; the scope is set when the person is named, inside those 10 hours. This line is salary only. It is not part of the milestone bonus pool, which stays split across Pablo, Ryan, and Miguel.
 
 Agents are supervised by the members above. They draft, prepare, and report; humans approve anything public and sign anything financial.
 
@@ -99,7 +104,7 @@ Agents are supervised by the members above. They draft, prepare, and report; hum
 - **Thin MOONEY liquidity.** The main pool holds about $58k per side. *Mitigation:* batched buys capped at 1% price impact per swap, routed through the deepest pool and published weekly.
 - **Ads may not pay back for a web3 membership.** *Mitigation:* a $3,000 test; the rest is released only if the cost per paying Citizen is at or below $100.
 - **Automation errors.** *Mitigation:* human approval for anything public or financial, no keys held by agents, an address-book allowlist, and logs for every agent action.
-- **Team capacity.** Two and a half people carry five objectives. *Mitigation:* automation is itself an objective, and October is reserved for Touchdown and the ops inventory.
+- **Team capacity.** Two and a half people carry five objectives through December. *Mitigation:* a third Executive Lead joins on January 1 at 10 hours a week, automation is itself an objective, and October is reserved for Touchdown and the ops inventory.
 
 ## Objectives and Key Results
 
@@ -210,9 +215,10 @@ All figures are in USD.
 | Pablo — Executive Lead | 12,000 | 72,000 | Unchanged from MDP-249 |
 | Ryan — Communications & Partnerships Lead | 7,500 | 45,000 | Unchanged from MDP-249 |
 | Miguel — Engineering & Automation (half-time) | 2,750 | 16,500 | MDP-249 month 4–5 rate |
+| Third Executive Lead | 2,167 | 6,500 | January–March only; 10 hrs/week at $50 (13 weeks) |
 | Operations & AI agents | 2,000 | 12,000 | Infra, subscriptions, model and API usage; non-AI SaaS under $1,000 |
 | Flexible | 1,000 | 6,000 | Returned if unused |
-| **Core subtotal** | **25,250** | **151,500** | 4% below MDP-249's $26,400/month |
+| **Core subtotal** | **25,250 / 27,417** | **158,000** | Q4 / Q1. Q4 is 4% below MDP-249's $26,400/month |
 | **Growth programs (gated; unspent funds return to the treasury)** | | | |
 | X / social contractor | up to 2,400 | 12,000 | November–March, from the open role; reviewed at midpoint |
 | Citizenship paid acquisition | — | 12,000 | $3,000 test; the rest only if cost per paying Citizen ≤ $100 |
@@ -221,11 +227,11 @@ All figures are in USD.
 | **Programs subtotal** | | **39,000** | |
 | **At-risk** | | | |
 | Performance bonus pool | — | 18,000 | $4,500 USDC + $13,500 in vMOONEY; half on midpoint milestones |
-| **Maximum envelope** | | **208,500** | Maximum cash $195,000 |
+| **Maximum envelope** | | **215,000** | Maximum cash $201,500 |
 
 The Citizenship MOONEY stake and referral payouts come out of the $99 price and have no budget line.
 
-**Budget request:** $190,500 in USDC ($151,500 core plus $39,000 gated programs), plus a bonus pool of up to $4,500 in USDC and $13,500 in MOONEY. The USDC is paid in two transactions three months apart: half at passage for Q4, and half in January for Q1. Each is sized in dollars and funded by converting ETH and WBTC in proportion to holdings at that day's price, so the treasury does not end the term more concentrated in either asset. Program funds are released with each transaction and stay gated.
+**Budget request:** $197,000 in USDC ($158,000 core plus $39,000 gated programs), plus a bonus pool of up to $4,500 in USDC and $13,500 in MOONEY. The standing core ($151,500) is paid in two transactions three months apart: half at passage for Q4, and half in January for Q1. The third-lead allocation ($6,500) is paid entirely in the January transaction. Each transaction is sized in dollars and funded by converting ETH and WBTC in proportion to holdings at that day's price, so the treasury does not end the term more concentrated in either asset. Program funds are released with each transaction and stay gated.
 
 **Salary in MOONEY.** Each core member may elect to take up to 25% of their salary as four-year vMOONEY, from treasury MOONEY at the 30-day average price. The election is made before each transaction, and the USDC not paid out stays in the treasury.
 
@@ -235,7 +241,7 @@ The Citizenship MOONEY stake and referral payouts come out of the $99 price and 
 - $6.9k in Q3 2026 retroactive and Contributor Circle rewards;
 - up to $9k of MDP-249 milestone bonuses, subject to the Senate's review.
 
-After those outlays, at today's prices and with subscription revenue flat, official AUM would end the term at about **$263k** if only the core is spent, or about **$277k** once the ~$14,300 Launchpad fee from Frank's raise is collected. If every program and the full bonus cash pay out, it would end at about **$220k**, or about **$234k** with that fee. Both pairs include the project-system pot (3% of AUM per quarter under MDP-267). These are the numbers this term has to change, which is why every objective carries a revenue or cost key result. The path to cash-flow sustainability by the end of 2027 has three parts: recurring network revenue, sponsor-funded prizes, and external capital through the for-profit arm, all arriving while an agent-run EB brings guaranteed cost down to ≤ $15k per month from Q2 2027.
+After those outlays, at today's prices and with subscription revenue flat, official AUM would end the term at about **$257k** if only the core is spent, or about **$271k** once the ~$14,300 Launchpad fee from Frank's raise is collected. If every program and the full bonus cash pay out, it would end at about **$214k**, or about **$228k** with that fee. Both pairs include the project-system pot (3% of AUM per quarter under MDP-267). These are the numbers this term has to change, which is why every objective carries a revenue or cost key result. The path to cash-flow sustainability by the end of 2027 has three parts: recurring network revenue, sponsor-funded prizes, and external capital through the for-profit arm, all arriving while an agent-run EB brings guaranteed cost down to ≤ $15k per month from Q2 2027.
 
 **Runway guardrail.** If official AUM on `/admin/financial-overview` closes below **$300,000** for seven consecutive days, all unreleased program tranches freeze automatically. Verified milestone bonuses are still paid. The EB then brings a revised budget to the Senate within 30 days.
 
