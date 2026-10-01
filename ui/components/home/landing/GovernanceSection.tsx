@@ -44,14 +44,7 @@ export default function GovernanceSection() {
           <SectionHeading
             align="left"
             eyebrow="Governance"
-            title={
-              <>
-                Permissionless{' '}
-                <span className="bg-gradient-to-r from-[#7c8cff] to-[#22d3ee] bg-clip-text text-transparent">
-                  by Design
-                </span>
-              </>
-            }
+            title="Permissionless by Design"
             description="Everything at MoonDAO is proposed, governed, and created by its members. Lock $MOONEY to become a voter and co-govern the treasury — no gatekeepers, no permission needed."
           />
 
@@ -68,36 +61,28 @@ export default function GovernanceSection() {
                   toast.error('Could not copy address. Please copy it manually.')
                 }
               }}
-              className="group flex w-full max-w-xl items-center gap-3 rounded-2xl border border-white/15 bg-white/5 p-4 text-left backdrop-blur-md transition-colors duration-300 hover:border-white/35 hover:bg-white/10"
+              className="group flex w-full max-w-xl items-center gap-4 border-t border-white/10 py-4 text-left transition-colors duration-300 hover:border-white/25"
             >
-              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#425EEB]/40 to-[#6C407D]/40 ring-1 ring-white/15">
-                <Image
-                  src="/assets/icon-copy.svg"
-                  alt=""
-                  width={18}
-                  height={18}
-                />
-              </span>
-              <span className="min-w-0">
-                <span className="block font-RobotoMono text-[10px] uppercase tracking-[0.25em] text-white/50">
-                  $MOONEY Token Contract
+              <span className="min-w-0 flex-1">
+                <span className="block font-RobotoMono text-[10px] uppercase tracking-[0.22em] text-white/40">
+                  $MOONEY contract
                 </span>
-                <span className="block truncate font-RobotoMono text-sm text-white/90 md:text-base">
+                <span className="mt-1 block truncate font-RobotoMono text-sm text-white/75">
                   {MOONEY_ADDRESS}
                 </span>
               </span>
-              <span className="ml-auto hidden font-RobotoMono text-xs uppercase tracking-widest text-white/40 transition-colors group-hover:text-white/80 sm:block">
+              <span className="font-RobotoMono text-[10px] uppercase tracking-[0.18em] text-white/40 transition-colors group-hover:text-white">
                 Copy
               </span>
             </button>
           </Reveal>
 
           <Reveal delay={0.35}>
-            <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6">
               <CtaButton href="/get-mooney" variant="primary">
                 Buy $MOONEY
               </CtaButton>
-              <CtaButton href="/constitution" variant="secondary">
+              <CtaButton href="/constitution" variant="quiet">
                 Read the Constitution
               </CtaButton>
             </div>
@@ -111,9 +96,9 @@ export default function GovernanceSection() {
                 href={astronaut.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative flex flex-col items-center gap-5 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center backdrop-blur-md transition-all duration-300 hover:-translate-y-2 hover:border-white/30 hover:shadow-[0_25px_70px_-25px_rgba(124,140,255,0.55)]"
+                className="group flex flex-col items-center gap-5 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8 text-center transition-colors duration-300 hover:border-white/20"
               >
-                <div className="rounded-full bg-gradient-to-br from-[#3044A9] to-[#743F72] p-1 transition-transform duration-500 group-hover:scale-105">
+                <div className="rounded-full ring-1 ring-white/20">
                   <Image
                     src={astronaut.image}
                     alt={astronaut.name}
@@ -126,21 +111,14 @@ export default function GovernanceSection() {
                   <h3 className="font-GoodTimes text-base text-white md:text-lg">
                     {astronaut.name}
                   </h3>
-                  <p className="mt-1 text-sm text-white/65">
-                    {astronaut.subtitle}
-                  </p>
-                  <p className="mt-3 font-RobotoMono text-[10px] uppercase tracking-[0.2em] text-[#7c8cff]">
+                  <p className="mt-1 text-sm text-white/65">{astronaut.subtitle}</p>
+                  <p className="mt-3 font-RobotoMono text-[10px] uppercase tracking-[0.18em] text-white/40">
                     {astronaut.flight}
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-2 font-RobotoMono text-[10px] uppercase tracking-[0.25em] text-white/40 transition-colors duration-300 group-hover:text-white/90">
+                <span className="inline-flex items-center gap-2 font-RobotoMono text-[10px] uppercase tracking-[0.16em] text-white/35 transition-colors duration-300 group-hover:text-white/80">
                   Watch the flight
-                  <svg
-                    className="h-3 w-3"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden
-                  >
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </span>

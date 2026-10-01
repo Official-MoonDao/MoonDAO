@@ -6,7 +6,7 @@ import Starfield from './Starfield'
 
 export default function FinalCTA() {
   return (
-    <section className="relative overflow-hidden bg-[#010208] pb-32 pt-28 md:pb-48 md:pt-44">
+    <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
       <div className="absolute inset-0">
         <Image
           src="/assets/landing/earthrise.jpg"
@@ -22,31 +22,28 @@ export default function FinalCTA() {
 
       <div className="relative z-10 mx-auto flex w-full max-w-[900px] flex-col items-center px-5 text-center md:px-10">
         <Reveal>
-          <span className="font-RobotoMono text-xs uppercase tracking-[0.35em] text-[#7c8cff]">
+          <span className="font-RobotoMono text-[11px] uppercase tracking-[0.28em] text-moon-gold">
             The Mission Needs You
           </span>
         </Reveal>
         <Reveal delay={0.1}>
-          <h2 className="mt-5 font-GoodTimes text-3xl leading-[1.15] text-white md:text-5xl 2xl:text-6xl">
-            Take Humanity Back{' '}
-            <span className="bg-gradient-to-r from-[#7c8cff] via-[#b07ce8] to-[#22d3ee] bg-clip-text text-transparent">
-              to the Moon
-            </span>
+          <h2 className="mt-5 max-w-3xl font-GoodTimes text-3xl leading-[1.15] text-white md:text-5xl">
+            Take Humanity Back to the Moon
           </h2>
         </Reveal>
         <Reveal delay={0.2}>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/75 md:text-lg">
-            We&apos;re accelerating the development of a lunar base through
-            better coordination. Whether you&apos;re new to Web3 or a space
-            industry veteran, there&apos;s a place for you in the network.
+            We&apos;re accelerating the development of a lunar base through better coordination.
+            Whether you&apos;re new to Web3 or a space industry veteran, there&apos;s a place for
+            you in the network.
           </p>
         </Reveal>
         <Reveal delay={0.3}>
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
             <CtaButton href="/join" variant="primary">
               Join the Network
             </CtaButton>
-            <CtaButton href="/docs" variant="secondary">
+            <CtaButton href="/docs" variant="quiet">
               Learn More
             </CtaButton>
           </div>
@@ -56,7 +53,7 @@ export default function FinalCTA() {
             <p className="font-RobotoMono text-[11px] uppercase tracking-[0.25em] text-white/45">
               Or get weekly mission updates
             </p>
-            <MailingList />
+            <MailingList submitLabel="Subscribe" quietSubmit compact />
           </div>
         </Reveal>
       </div>

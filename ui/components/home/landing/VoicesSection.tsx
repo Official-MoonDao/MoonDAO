@@ -45,19 +45,12 @@ const speakers = [
 export default function VoicesSection() {
   return (
     <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(108,64,125,0.16),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(108,64,125,0.07),transparent_55%)]" />
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 md:px-10">
         <SectionHeading
           eyebrow="Voices"
-          title={
-            <>
-              Backed by People Who&apos;ve{' '}
-              <span className="bg-gradient-to-r from-[#7c8cff] to-[#22d3ee] bg-clip-text text-transparent">
-                Been There
-              </span>
-            </>
-          }
+          title="Backed by People Who've Been There"
           description="Moonwalkers, astronauts, and pioneers of the space industry have joined MoonDAO town halls to share what it takes to get there."
         />
 
@@ -71,8 +64,7 @@ export default function VoicesSection() {
                 className="group flex flex-col items-center gap-4 text-center"
               >
                 <div className="relative">
-                  <div className="absolute -inset-2 rounded-full bg-gradient-to-br from-[#425EEB]/0 to-[#6C407D]/0 blur-xl transition-all duration-500 group-hover:from-[#425EEB]/40 group-hover:to-[#6C407D]/40" />
-                  <div className="relative rounded-full bg-gradient-to-br from-[#3044A9] to-[#743F72] p-[3px]">
+                  <div className="rounded-full ring-1 ring-white/20">
                     <Image
                       src={speaker.image}
                       alt={speaker.name}
@@ -93,12 +85,8 @@ export default function VoicesSection() {
                   </span>
                 </div>
                 <div>
-                  <h3 className="font-GoodTimes text-sm text-white md:text-lg">
-                    {speaker.name}
-                  </h3>
-                  <p className="mt-1 text-xs text-white/60 md:text-sm">
-                    {speaker.subtitle}
-                  </p>
+                  <h3 className="font-GoodTimes text-sm text-white md:text-lg">{speaker.name}</h3>
+                  <p className="mt-1 text-xs text-white/60 md:text-sm">{speaker.subtitle}</p>
                 </div>
               </Link>
             </Reveal>

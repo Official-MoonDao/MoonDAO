@@ -4,7 +4,7 @@ import { ReactNode } from 'react'
 type CtaButtonProps = {
   children: ReactNode
   href: string
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'quiet'
   target?: string
   className?: string
 }
@@ -16,14 +16,14 @@ export default function CtaButton({
   target,
   className = '',
 }: CtaButtonProps) {
-  const base =
+  const pill =
     'group relative inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm md:text-base font-semibold tracking-wide transition-all duration-300 will-change-transform'
 
   const variants = {
-    primary:
-      'bg-white text-black hover:scale-[1.04] hover:shadow-[0_0_40px_rgba(124,140,255,0.45)]',
-    secondary:
-      'border border-white/25 bg-white/5 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/10 hover:scale-[1.04]',
+    primary: `${pill} bg-white text-black hover:scale-[1.04] hover:shadow-[0_0_40px_rgba(124,140,255,0.45)]`,
+    secondary: `${pill} border border-white/25 bg-white/5 text-white backdrop-blur-md hover:border-white/50 hover:bg-white/10 hover:scale-[1.04]`,
+    quiet:
+      'group relative inline-flex items-center gap-1.5 py-2 text-sm font-medium tracking-wide text-white/55 transition-colors duration-200 hover:text-white',
   }
 
   return (
@@ -31,7 +31,7 @@ export default function CtaButton({
       href={href}
       target={target}
       rel={target === '_blank' ? 'noopener noreferrer' : undefined}
-      className={`${base} ${variants[variant]} ${className}`}
+      className={`${variants[variant]} ${className}`}
     >
       <span>{children}</span>
       <svg

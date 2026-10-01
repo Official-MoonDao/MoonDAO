@@ -72,13 +72,7 @@ const press: Logo[] = [
   },
 ]
 
-function MarqueeRow({
-  logos,
-  reverse = false,
-}: {
-  logos: Logo[]
-  reverse?: boolean
-}) {
+function MarqueeRow({ logos, reverse = false }: { logos: Logo[]; reverse?: boolean }) {
   // Duplicate the list so the -50% translate loops seamlessly
   const doubled = [...logos, ...logos]
   return (
@@ -118,13 +112,13 @@ export default function PartnersMarquee() {
     <section className="relative overflow-hidden border-y border-white/10 bg-[#010208] py-16 md:py-24">
       <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-10 px-5 md:px-10">
         <Reveal>
-          <p className="text-center font-RobotoMono text-xs uppercase tracking-[0.35em] text-white/50">
+          <p className="text-center font-RobotoMono text-[11px] uppercase tracking-[0.28em] text-white/45">
             Our Network
           </p>
         </Reveal>
         <MarqueeRow logos={partners} />
         <Reveal>
-          <p className="mt-4 text-center font-RobotoMono text-xs uppercase tracking-[0.35em] text-white/50">
+          <p className="mt-4 text-center font-RobotoMono text-[11px] uppercase tracking-[0.28em] text-white/45">
             As Featured On
           </p>
         </Reveal>

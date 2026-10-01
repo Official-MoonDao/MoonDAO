@@ -3,7 +3,18 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 
-export default function MailingList() {
+type MailingListProps = {
+  submitLabel?: string
+  /** Landing pages pass this so the submit control stays secondary to the section CTA. */
+  quietSubmit?: boolean
+  compact?: boolean
+}
+
+export default function MailingList({
+  submitLabel = 'Learn More',
+  quietSubmit = false,
+  compact = false,
+}: MailingListProps = {}) {
   const [userEmail, setUserEmail] = useState<any>('')
   const subscribe = useSubscribe(CK_NEWSLETTER_FORM_ID)
 
@@ -23,7 +34,7 @@ export default function MailingList() {
         }
       }}
     >
-      <div className="mb-[60px] lg:mb-0">
+      <div className={compact ? '' : 'mb-[60px] lg:mb-0'}>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 max-w-md">
           <input
             type="email"
@@ -34,9 +45,13 @@ export default function MailingList() {
           />
           <button
             type="submit"
-            className="px-6 py-3 bg-white text-black font-medium rounded-lg sm:rounded-l-none hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/30 transition-all duration-200 whitespace-nowrap"
+            className={
+              quietSubmit
+                ? 'whitespace-nowrap rounded-lg border border-white/25 bg-transparent px-5 py-3 text-sm font-medium text-white/80 transition-colors duration-200 hover:border-white/45 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/20 sm:rounded-l-none'
+                : 'whitespace-nowrap rounded-lg bg-white px-6 py-3 font-medium text-black transition-all duration-200 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white/30 sm:rounded-l-none'
+            }
           >
-            Learn More
+            {submitLabel}
           </button>
         </div>
       </div>
