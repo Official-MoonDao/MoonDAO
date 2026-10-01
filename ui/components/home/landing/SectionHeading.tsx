@@ -24,10 +24,10 @@ export default function SectionHeading({
       }`}
     >
       <Reveal>
-        <span className="inline-flex items-center gap-3 font-RobotoMono text-xs tracking-[0.35em] uppercase text-[#7c8cff]">
-          <span className="h-px w-8 bg-gradient-to-r from-transparent via-[#7c8cff] to-[#22d3ee]" />
+        <span className="inline-flex items-center gap-3 font-RobotoMono text-[11px] uppercase tracking-[0.28em] text-moon-gold">
+          <span className="h-px w-6 bg-moon-gold/70" />
           {eyebrow}
-          <span className="h-px w-8 bg-gradient-to-r from-[#22d3ee] via-[#7c8cff] to-transparent" />
+          {isCenter ? <span className="h-px w-6 bg-moon-gold/70" /> : null}
         </span>
       </Reveal>
       <Reveal delay={0.1}>

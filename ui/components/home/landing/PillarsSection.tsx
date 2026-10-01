@@ -1,7 +1,6 @@
-import { useReducedMotion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MouseEvent, ReactNode, useRef } from 'react'
+import { ReactNode } from 'react'
 import Reveal from './Reveal'
 import SectionHeading from './SectionHeading'
 
@@ -30,8 +29,7 @@ const pillars: Pillar[] = [
     header: 'Fund Space R&D',
     link: '/proposals',
     hovertext: 'Browse Proposals',
-    paragraph:
-      'Allocated $750,000+ to 100+ projects via open community governance.',
+    paragraph: 'Allocated $750,000+ to 100+ projects via open community governance.',
   },
   {
     icon: '/assets/icon-plane.svg',
@@ -71,78 +69,24 @@ const pillars: Pillar[] = [
   },
 ]
 
-function TiltCard({ pillar }: { pillar: Pillar }) {
-  const ref = useRef<HTMLAnchorElement>(null)
-  const glowRef = useRef<HTMLDivElement>(null)
-  const reduceMotion = useReducedMotion()
-
-  // Write the tilt/glow straight to the DOM on each pointer move instead of
-  // going through React state — a 60Hz `setState` would re-render the whole
-  // card (and its <Image>/SVG children) on every event, across up to 6 cards.
-  const handleMouseMove = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (reduceMotion) return
-    const el = ref.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const px = (e.clientX - rect.left) / rect.width - 0.5
-    const py = (e.clientY - rect.top) / rect.height - 0.5
-    el.style.transform = `perspective(900px) rotateX(${py * -7}deg) rotateY(${
-      px * 9
-    }deg) translateY(-4px)`
-    const glow = glowRef.current
-    if (glow) {
-      glow.style.opacity = '1'
-      glow.style.setProperty('--glow-x', `${((px + 0.5) * 100).toFixed(1)}%`)
-      glow.style.setProperty('--glow-y', `${((py + 0.5) * 100).toFixed(1)}%`)
-    }
-  }
-
-  const reset = () => {
-    const el = ref.current
-    if (el) el.style.transform = ''
-    const glow = glowRef.current
-    if (glow) glow.style.opacity = '0'
-  }
-
+function PillarCard({ pillar }: { pillar: Pillar }) {
   return (
     <Link
-      ref={ref}
       href={pillar.link}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={reset}
-      className="group relative flex h-full flex-col gap-5 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-7 backdrop-blur-md transition-[border-color,box-shadow,transform] duration-300 hover:border-white/30 hover:shadow-[0_20px_60px_-20px_rgba(66,94,235,0.5)] md:p-8"
+      className="group flex h-full flex-col gap-5 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-7 transition-colors duration-300 hover:border-white/20 hover:bg-white/[0.05] md:p-8"
     >
-      {/* Cursor-tracking glow */}
-      <div
-        ref={glowRef}
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300"
-        style={{
-          background:
-            'radial-gradient(420px circle at var(--glow-x, 50%) var(--glow-y, 50%), rgba(124,140,255,0.16), transparent 45%)',
-        }}
-      />
-
-      <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#425EEB]/30 to-[#6C407D]/30 ring-1 ring-white/15 transition-transform duration-300 group-hover:scale-110">
-        <Image
-          src={pillar.icon}
-          alt={pillar.iconAlt}
-          width={30}
-          height={30}
-          className="h-7 w-7"
-        />
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/[0.04] ring-1 ring-white/10">
+        <Image src={pillar.icon} alt={pillar.iconAlt} width={28} height={28} className="h-7 w-7" />
       </div>
 
-      <div className="relative flex flex-1 flex-col gap-3">
-        <h3 className="font-GoodTimes text-lg text-white md:text-xl">
+      <div className="flex flex-1 flex-col gap-3">
+        <h3 className="font-GoodTimes text-lg leading-tight text-white md:text-xl">
           {pillar.header}
         </h3>
-        <p className="text-sm leading-relaxed text-white/65 md:text-base">
-          {pillar.paragraph}
-        </p>
+        <p className="text-sm leading-relaxed text-white/65 md:text-base">{pillar.paragraph}</p>
       </div>
 
-      <div className="relative flex items-center gap-2 font-RobotoMono text-xs uppercase tracking-[0.2em] text-[#7c8cff] opacity-70 transition-all duration-300 group-hover:gap-3 group-hover:opacity-100">
+      <div className="flex items-center gap-2 font-RobotoMono text-[11px] uppercase tracking-[0.16em] text-white/40 transition-colors duration-300 group-hover:text-white/80">
         {pillar.hovertext}
         <svg
           className="h-3.5 w-3.5"
@@ -165,26 +109,19 @@ function TiltCard({ pillar }: { pillar: Pillar }) {
 export default function PillarsSection() {
   return (
     <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(66,94,235,0.14),transparent_55%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(66,94,235,0.07),transparent_55%)]" />
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 md:px-10">
         <SectionHeading
           eyebrow="What We Do"
-          title={
-            <>
-              A Track Record{' '}
-              <span className="bg-gradient-to-r from-[#7c8cff] to-[#22d3ee] bg-clip-text text-transparent">
-                Written Onchain
-              </span>
-            </>
-          }
+          title="A Track Record Written Onchain"
           description="From sending everyday people to space to landing a constitution on the Moon — MoonDAO turns collective ambition into verifiable results."
         />
 
-        <div className="mt-14 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 md:gap-6">
+        <div className="mt-16 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 md:gap-6">
           {pillars.map((pillar, i) => (
             <Reveal key={pillar.header} delay={0.08 * (i % 3)} className="h-full">
-              <TiltCard pillar={pillar} />
+              <PillarCard pillar={pillar} />
             </Reveal>
           ))}
         </div>
