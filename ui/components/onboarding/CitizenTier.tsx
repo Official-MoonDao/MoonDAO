@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { useCitizenCheckoutLive, usePublicYearEth } from '@/lib/subscription/citizenCheckout'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -16,14 +17,11 @@ type CitizenTierProps = {
   compact?: boolean
 }
 
-const PRICE = 0.0111
-
-const CitizenTier = ({
-  setSelectedTier,
-  compact = false,
-}: CitizenTierProps) => {
+const CitizenTier = ({ setSelectedTier, compact = false }: CitizenTierProps) => {
   const { selectedChain } = useContext(ChainContextV5)
-  const { data: usdPrice } = useETHPrice(PRICE, 'ETH_TO_USD')
+  const priceEth = usePublicYearEth('citizen')
+  const stakeIncluded = useCitizenCheckoutLive()
+  const { data: usdPrice } = useETHPrice(priceEth ?? 0, 'ETH_TO_USD')
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
@@ -66,7 +64,7 @@ const CitizenTier = ({
   return (
     <div id="citizen-tier-container">
       <Tier
-        price={PRICE}
+        price={priceEth == null ? 0 : Number(priceEth.toFixed(4))}
         usdPrice={usdPrice}
         label="Become a Citizen"
         description="Citizens are the trailblazers supporting the creation of off-world settlements. Whether you're already part of a team or seeking to join one, everyone has a crucial role to play in this mission."
@@ -81,6 +79,11 @@ const CitizenTier = ({
         type="citizen"
         compact={compact}
         gateOnAuth={false}
+        priceNote={
+          stakeIncluded
+            ? '0.036 ETH for one year. A quarter of this buys MOONEY. Claim the voting power from your dashboard.'
+            : undefined
+        }
       />
     </div>
   )

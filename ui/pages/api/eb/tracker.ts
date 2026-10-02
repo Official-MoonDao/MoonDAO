@@ -11,17 +11,16 @@
  * All revenue figures come from the same canonical on-chain pipeline
  * used by /api/eb/audit — Etherscan v2 internal txs on Arbitrum.
  */
-import { NextApiRequest, NextApiResponse } from 'next'
-import { getCanonicalSubscriptionRevenue } from '@/lib/treasury/canonicalRevenue'
-import { TEAM_DISCOUNT } from '@/lib/treasury/arr'
-import { getETHPrice } from '@/lib/etherscan'
 import CitizenABI from 'const/abis/Citizen.json'
 import TeamABI from 'const/abis/Team.json'
 import { CITIZEN_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
+import { NextApiRequest, NextApiResponse } from 'next'
 import { getContract, readContract } from 'thirdweb'
-import { serverClient } from '@/lib/thirdweb/serverClient'
+import { getETHPrice } from '@/lib/etherscan'
 import { arbitrum } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/serverClient'
+import { getCanonicalSubscriptionRevenue } from '@/lib/treasury/canonicalRevenue'
 
 // ─── Frozen baseline (captured 2026-05-27) ───────────────────────────────────
 const BASELINE = {
@@ -63,27 +62,28 @@ async function getSubscriptionPricesETH(): Promise<SubscriptionPrices> {
       abi: TeamABI as any,
     })
 
-    const [citizenPricePerSecond, teamPricePerSecond] = await Promise.all([
+    const [citizenPricePerSecond, teamPricePerSecond, teamDiscount] = await Promise.all([
       readContract({ contract: citizenContract, method: 'pricePerSecond' }),
       readContract({ contract: teamContract, method: 'pricePerSecond' }),
+      readContract({ contract: teamContract, method: 'discount' }),
     ])
+    const teamFactor = (1000 - Number(teamDiscount)) / 1000
 
     return {
-      // TEAM_DISCOUNT (imported from arr.ts) is applied to the team contract's
-      // raw pricePerSecond because the team UX charges ~0.0333 ETH/yr, not the
-      // ~0.493 ETH/yr the raw value implies. Without it the cost is 14.8× high.
+      // Citizen pricePerSecond is the treasury share. The extra quarter that
+      // buys MOONEY is not treasury revenue. Team discount is on-chain.
       citizenPerMonth: (Number(citizenPricePerSecond) * SECONDS_PER_MONTH) / 1e18,
-      teamPerMonth: (Number(teamPricePerSecond) * SECONDS_PER_MONTH * TEAM_DISCOUNT) / 1e18,
+      teamPerMonth: (Number(teamPricePerSecond) * SECONDS_PER_MONTH * teamFactor) / 1e18,
       source: 'onchain',
     }
   } catch (err) {
     console.error('[eb/tracker] pricePerSecond read failed, using fallback:', err)
-    // Fallback to known values if RPC unavailable
-    // citizen: 0.0111 ETH/year → 0.0111×(30/365) = 0.000912 ETH/month
-    // team:    0.0333 ETH/year → 0.0333×(30/365) = 0.002737 ETH/month
+    // Fallback matches the pricing Safe batch: 0.027 and 0.36 ETH/year.
+    // citizen: 0.027×(30/365) = 0.002219 ETH/month
+    // team:    0.36×(30/365) = 0.029589 ETH/month
     return {
-      citizenPerMonth: 0.000912,
-      teamPerMonth: 0.002737,
+      citizenPerMonth: 0.002219,
+      teamPerMonth: 0.029589,
       source: 'fallback',
     }
   }
@@ -92,13 +92,10 @@ async function getSubscriptionPricesETH(): Promise<SubscriptionPrices> {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const now = Date.now()
-    const trailing30dStart  = now - 30  * 24 * 60 * 60 * 1000
+    const trailing30dStart = now - 30 * 24 * 60 * 60 * 1000
     const trailing365dStart = now - 365 * 24 * 60 * 60 * 1000
 
-    const [ethPrice, prices] = await Promise.all([
-      getETHPrice(),
-      getSubscriptionPricesETH(),
-    ])
+    const [ethPrice, prices] = await Promise.all([getETHPrice(), getSubscriptionPricesETH()])
 
     // getETHPrice() returns 0 on failure. Bail rather than silently emitting
     // $0 for every USD field while the ETH figures look correct.
@@ -113,21 +110,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Promise.all on a cold cache would fire two identical requests and can
     // trip the free-tier rate limit. The first await warms `memo`; the second
     // reuses it for free.
-    const trailing30d = await getCanonicalSubscriptionRevenue(
-      trailing30dStart,
-      now,
-      ethPrice
-    )
-    const trailing365d = await getCanonicalSubscriptionRevenue(
-      trailing365dStart,
-      now,
-      ethPrice
-    )
+    const trailing30d = await getCanonicalSubscriptionRevenue(trailing30dStart, now, ethPrice)
+    const trailing365d = await getCanonicalSubscriptionRevenue(trailing365dStart, now, ethPrice)
 
     // Monthly cost for ALL baseline subscribers at current on-chain prices
     const monthlySubscriptionCostETH =
-      BASELINE.citizens * prices.citizenPerMonth +
-      BASELINE.teams * prices.teamPerMonth
+      BASELINE.citizens * prices.citizenPerMonth + BASELINE.teams * prices.teamPerMonth
 
     // Underlying data changes slowly and is memoised for 10min server-side.
     // Let the CDN serve repeated EB/dashboard polls instead of re-invoking.
@@ -157,7 +145,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         baselineMonthlyTotal: {
           eth: monthlySubscriptionCostETH,
           usd: monthlySubscriptionCostETH * ethPrice,
-          breakdown: `${BASELINE.citizens} citizens × ${prices.citizenPerMonth.toFixed(6)} ETH + ${BASELINE.teams} teams × ${prices.teamPerMonth.toFixed(6)} ETH`,
+          breakdown: `${BASELINE.citizens} citizens × ${prices.citizenPerMonth.toFixed(6)} ETH + ${
+            BASELINE.teams
+          } teams × ${prices.teamPerMonth.toFixed(6)} ETH`,
         },
       },
       trailing30d: {

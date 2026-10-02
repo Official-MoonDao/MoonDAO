@@ -2,7 +2,7 @@ import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
@@ -10,8 +10,18 @@ import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import {
+  citizenCheckoutContract,
+  citizenCheckoutIsLive,
+  quoteMinMooneyOut,
+  unlockedStakeFromReceipt,
+  walletPaymentForTreasury,
+} from '@/lib/subscription/citizenCheckout'
+import { rememberUnlockedCitizenshipMooney } from '@/lib/subscription/citizenshipMooneyClaim'
+import {
   SECONDS_PER_YEAR,
   buildRenewSubscriptionCall,
+  renewalDurationSeconds,
+  toRenewalValue,
 } from '@/lib/subscription/renewSubscription'
 import client from '@/lib/thirdweb/client'
 import useRead from '@/lib/thirdweb/hooks/useRead'
@@ -61,23 +71,43 @@ export function SubscriptionModal({
     params: [address, (Number.isFinite(years) && years >= 1 ? years : 1) * SECONDS_PER_YEAR],
     deps: [years, address],
   })
+  const [payCost, setPayCost] = useState<bigint | null>(null)
+
+  useEffect(() => {
+    if (subscriptionCost == null || subscriptionCost === '') {
+      setPayCost(null)
+      return
+    }
+    const treasury = toRenewalValue(subscriptionCost)
+    if (type !== 'citizen') {
+      setPayCost(treasury)
+      return
+    }
+    let cancelled = false
+    walletPaymentForTreasury(DEFAULT_CHAIN_V5, treasury).then((total) => {
+      if (!cancelled) setPayCost(total)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [subscriptionCost, type])
 
   const { effectiveGasPrice } = useGasPrice(DEFAULT_CHAIN_V5)
 
-  const costEth =
-    subscriptionCost != null ? Number(ethers.utils.formatEther(subscriptionCost)) : 0
-  const { data: costUsd } = useETHPrice(costEth, 'ETH_TO_USD')
+  const payEth = payCost != null ? Number(ethers.utils.formatEther(payCost)) : 0
+  const { data: costUsd } = useETHPrice(payEth, 'ETH_TO_USD')
 
   // Renewal is paid on Arbitrum only, so check the Arbitrum balance directly
-  // rather than whatever chain the wallet happens to be on.
+  // rather than whatever chain the wallet happens to be on. Citizens pay the
+  // checkout total (membership plus the MOONEY quarter) once that contract is live.
   const getShortfallWei = useCallback(async () => {
-    if (!address || subscriptionCost == null) return BigInt(0)
+    if (!address || payCost == null) return BigInt(0)
     const balance = await eth_getBalance(getRpcClient({ client, chain: DEFAULT_CHAIN_V5 }), {
       address,
     })
-    const needed = BigInt(subscriptionCost) + (effectiveGasPrice ?? BigInt(0)) * RENEW_GAS_LIMIT
+    const needed = payCost + (effectiveGasPrice ?? BigInt(0)) * RENEW_GAS_LIMIT
     return needed > balance ? needed - balance : BigInt(0)
-  }, [address, subscriptionCost, effectiveGasPrice])
+  }, [address, payCost, effectiveGasPrice])
 
   const openOnramp = useCallback((shortfallWei: bigint) => {
     setRequiredEthAmount((Number(shortfallWei) / 1e18) * 1.15)
@@ -97,24 +127,56 @@ export function SubscriptionModal({
         return
       }
 
-      const call = buildRenewSubscriptionCall({
-        type: type === 'team' ? 'team' : 'citizen',
-        address,
-        tokenId: nft?.metadata?.id ?? nft?.id,
-        years,
-        cost: subscriptionCost,
-      })
+      const treasury = toRenewalValue(subscriptionCost)
+      const total = type === 'citizen' ? payCost ?? treasury : treasury
+      const checkout = citizenCheckoutContract(DEFAULT_CHAIN_V5)
+      const useCheckout =
+        type === 'citizen' &&
+        Boolean(checkout) &&
+        (await citizenCheckoutIsLive(DEFAULT_CHAIN_V5)) &&
+        total > treasury
 
-      const transaction = prepareContractCall({
-        contract: subscriptionContract,
-        method: call.method as string,
-        params: call.params,
-        value: call.value,
-      })
-      await sendAndConfirmTransaction({
-        transaction,
-        account,
-      })
+      let receipt: any
+      if (useCheckout) {
+        const duration = renewalDurationSeconds(years)
+        const tokenId = nft?.metadata?.id ?? nft?.id
+        receipt = await sendAndConfirmTransaction({
+          account,
+          transaction: prepareContractCall({
+            contract: checkout!,
+            method: 'renew' as string,
+            params: [
+              tokenId,
+              duration,
+              await quoteMinMooneyOut(DEFAULT_CHAIN_V5, total - treasury),
+            ],
+            value: total,
+          }),
+        })
+        const unlocked = unlockedStakeFromReceipt(receipt)
+        if (unlocked && unlocked > BigInt(0)) {
+          if (address) rememberUnlockedCitizenshipMooney(address, unlocked)
+          toast('Renewed. Claim the voting power from your dashboard.')
+        }
+      } else {
+        const call = buildRenewSubscriptionCall({
+          type: type === 'team' ? 'team' : 'citizen',
+          address,
+          tokenId: nft?.metadata?.id ?? nft?.id,
+          years,
+          cost: treasury,
+        })
+
+        receipt = await sendAndConfirmTransaction({
+          transaction: prepareContractCall({
+            contract: subscriptionContract,
+            method: call.method as string,
+            params: call.params,
+            value: call.value,
+          }),
+          account,
+        })
+      }
       setEnabled(false)
       router.reload()
     } catch (err: any) {
@@ -123,7 +185,8 @@ export function SubscriptionModal({
         // Our estimate was short (e.g. a gas spike) — fall back to the
         // funding flow instead of surfacing the raw RPC error.
         const shortfall = await getShortfallWei().catch(() => BigInt(0))
-        openOnramp(shortfall > BigInt(0) ? shortfall : BigInt(subscriptionCost ?? 0) / BigInt(10))
+        const fallback = payCost ?? BigInt(subscriptionCost ?? 0)
+        openOnramp(shortfall > BigInt(0) ? shortfall : fallback / BigInt(10))
       } else {
         toast.error(err?.message || 'Failed to extend subscription. Please try again.')
       }
@@ -187,7 +250,7 @@ export function SubscriptionModal({
                   </div>
                 ) : (
                   <span className="text-white font-medium">
-                    {subscriptionCost != null ? formatEthCeil(costEth) : '0.00'} ETH
+                    {payCost != null ? formatEthCeil(payEth) : '0.00'} ETH
                     {costUsd > 0 && (
                       <span className="text-gray-400 font-normal">
                         {' '}
@@ -197,6 +260,16 @@ export function SubscriptionModal({
                   </span>
                 )}
               </p>
+              {type === 'citizen' &&
+                payCost != null &&
+                subscriptionCost != null &&
+                payCost > toRenewalValue(subscriptionCost) && (
+                  <p className="text-gray-400 text-sm mt-2">
+                    A quarter of this buys MOONEY in this payment. A one-year renewal is 0.036 ETH.
+                    Claim the voting power from your dashboard unless it was added to a lock you
+                    already have.
+                  </p>
+                )}
               <p className="text-xs text-gray-400 mt-2">
                 Paid in ETH on Arbitrum. Have ETH on Ethereum mainnet?{' '}
                 <Link href="/bridge" className="text-moon-orange hover:underline">
@@ -218,6 +291,7 @@ export function SubscriptionModal({
               actionDisabled={
                 isLoadingSubscriptionCost ||
                 subscriptionCost === undefined ||
+                payCost == null ||
                 !years ||
                 years < 1
               }

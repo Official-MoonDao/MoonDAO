@@ -33,6 +33,11 @@ import { getContract, NFT, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { networkCard } from '@/lib/layout/styles'
+import {
+  useCitizenCheckoutLive,
+  usePublicYearEth,
+  useTeamMintOpen,
+} from '@/lib/subscription/citizenCheckout'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
@@ -116,11 +121,12 @@ export default function Join({
   const shallowQueryRoute = useShallowQueryRoute()
   const { citizen } = useContext(CitizenContext)
 
-  // Pricing constants and hooks for dynamic pricing
-  const CITIZEN_PRICE = 0.0111
-  const TEAM_PRICE = 0.0333
-  const { data: citizenUsdPrice } = useETHPrice(CITIZEN_PRICE, 'ETH_TO_USD')
-  const { data: teamUsdPrice } = useETHPrice(TEAM_PRICE, 'ETH_TO_USD')
+  const citizenPriceEth = usePublicYearEth('citizen')
+  const teamPriceEth = usePublicYearEth('team')
+  const citizenStakeIncluded = useCitizenCheckoutLive()
+  const teamMintOpen = useTeamMintOpen()
+  const { data: citizenUsdPrice } = useETHPrice(citizenPriceEth ?? 0, 'ETH_TO_USD')
+  const { data: teamUsdPrice } = useETHPrice(teamPriceEth ?? 0, 'ETH_TO_USD')
 
   const [input, setInput] = useState('')
   function filterBySearch(nfts: any[]) {
@@ -361,10 +367,19 @@ export default function Join({
                       <div className="text-2xl font-semibold text-white">
                         ~${Math.round(citizenUsdPrice || 0)} / Year
                       </div>
-                      <div className="text-sm text-slate-400">({CITIZEN_PRICE} Arbitrum ETH)</div>
+                      <div className="text-sm text-slate-400">
+                        ({citizenPriceEth == null ? '…' : Number(citizenPriceEth.toFixed(4))}{' '}
+                        Arbitrum ETH)
+                      </div>
                       <div className="text-green-400 text-sm font-medium mt-2">
                         ✓ 12-Month Passport
                       </div>
+                      {citizenStakeIncluded && (
+                        <p className="text-slate-400 text-xs mt-2 max-w-[16rem]">
+                          0.036 ETH for one year. A quarter of this buys MOONEY. Claim the voting
+                          power from your dashboard.
+                        </p>
+                      )}
                     </div>
                     <StandardButton
                       className="gradient-2 hover:opacity-90 transition-opacity w-full"
@@ -402,10 +417,18 @@ export default function Join({
                       <div className="text-2xl font-semibold text-white">
                         ~${Math.round(teamUsdPrice || 0)} / Year
                       </div>
-                      <div className="text-sm text-slate-400">({TEAM_PRICE} Arbitrum ETH)</div>
+                      <div className="text-sm text-slate-400">
+                        ({teamPriceEth == null ? '…' : Number(teamPriceEth.toFixed(4))} Arbitrum
+                        ETH)
+                      </div>
                       <div className="text-green-400 text-sm font-medium mt-2">
                         ✓ 12-Month Passport
                       </div>
+                      {teamMintOpen && (
+                        <p className="text-slate-400 text-xs mt-2 max-w-[16rem]">
+                          Open to any team. 0.36 ETH for one year.
+                        </p>
+                      )}
                     </div>
                     <StandardButton
                       className="gradient-2 hover:opacity-90 transition-opacity w-full"
