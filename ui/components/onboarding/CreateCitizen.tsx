@@ -81,6 +81,7 @@ import {
   unlockedStakeFromReceipt,
   walletPaymentForTreasury,
 } from '@/lib/subscription/citizenCheckout'
+import { rememberUnlockedCitizenshipMooney } from '@/lib/subscription/citizenshipMooneyClaim'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData, { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
@@ -969,7 +970,10 @@ export default function CreateCitizen({
         account,
       })
       const unlocked = unlockedStakeFromReceipt(receipt)
-      if (unlocked && unlocked > BigInt(0)) setStakeToClaim(true)
+      if (unlocked && unlocked > BigInt(0)) {
+        if (address) rememberUnlockedCitizenshipMooney(address, unlocked)
+        setStakeToClaim(true)
+      }
       return receipt
     },
     [account, citizenContract, address, citizenData.name, citizenData.formResponseId, selectedChain]

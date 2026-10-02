@@ -16,6 +16,7 @@ import {
   unlockedStakeFromReceipt,
   walletPaymentForTreasury,
 } from '@/lib/subscription/citizenCheckout'
+import { rememberUnlockedCitizenshipMooney } from '@/lib/subscription/citizenshipMooneyClaim'
 import {
   SECONDS_PER_YEAR,
   buildRenewSubscriptionCall,
@@ -154,6 +155,7 @@ export function SubscriptionModal({
         })
         const unlocked = unlockedStakeFromReceipt(receipt)
         if (unlocked && unlocked > BigInt(0)) {
+          if (address) rememberUnlockedCitizenshipMooney(address, unlocked)
           toast('Renewed. Claim the voting power from your dashboard.')
         }
       } else {
