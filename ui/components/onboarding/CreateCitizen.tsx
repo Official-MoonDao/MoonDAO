@@ -72,6 +72,15 @@ import {
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
+import {
+  checkoutProfileTuple,
+  citizenCheckoutContract,
+  citizenCheckoutIsLive,
+  lockCitizenshipMooney,
+  quoteMinMooneyOut,
+  unlockedStakeFromReceipt,
+  walletPaymentForTreasury,
+} from '@/lib/subscription/citizenCheckout'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import cleanData, { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import { getChainSlug, v4SlugToV5Chain } from '@/lib/thirdweb/chain'
@@ -509,6 +518,7 @@ export default function CreateCitizen({
   // ===== State: Gas Estimation =====
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
   const [renewalPriceWei, setRenewalPriceWei] = useState<bigint | null>(null)
+  const [stakeIncluded, setStakeIncluded] = useState(false)
   const [isLoadingRenewalPrice, setIsLoadingRenewalPrice] = useState(false)
 
   // ===== Refs =====
@@ -915,34 +925,66 @@ export default function CreateCitizen({
         throw new Error('Please connect your wallet to continue.')
       }
 
-      const transaction = await prepareContractCall({
-        contract: citizenContract,
-        method: 'mintTo' as string,
-        params: [
-          address,
-          // Escape single quotes so an apostrophe (e.g. "Brazil's") can't produce
-          // malformed SQL the Tableland validator silently rejects. `location` is
-          // already escaped upstream (resolveLocationField -> cleanData) and
-          // `view` is a fixed enum, so neither needs re-escaping here.
-          escapeSingleQuotes(citizenData.name),
-          escapeSingleQuotes(profile.bio),
-          `ipfs://${imageIpfsHash}`,
-          profile.location,
-          escapeSingleQuotes(profile.discord),
-          escapeSingleQuotes(profile.twitter),
-          escapeSingleQuotes(profile.website),
-          profile.view,
-          escapeSingleQuotes(citizenData.formResponseId),
-        ],
-        value: cost,
+      const treasury = BigInt(cost)
+      const checkout = citizenCheckoutContract(selectedChain)
+      const useCheckout = Boolean(checkout) && (await citizenCheckoutIsLive(selectedChain))
+      const pay = useCheckout ? await walletPaymentForTreasury(selectedChain, treasury) : treasury
+      const profileTuple = checkoutProfileTuple({
+        to: address,
+        // Escape single quotes so an apostrophe (e.g. "Brazil's") can't produce
+        // malformed SQL the Tableland validator silently rejects. `location` is
+        // already escaped upstream (resolveLocationField -> cleanData) and
+        // `view` is a fixed enum, so neither needs re-escaping here.
+        name: escapeSingleQuotes(citizenData.name),
+        bio: escapeSingleQuotes(profile.bio),
+        image: `ipfs://${imageIpfsHash}`,
+        location: profile.location,
+        discord: escapeSingleQuotes(profile.discord),
+        twitter: escapeSingleQuotes(profile.twitter),
+        website: escapeSingleQuotes(profile.website),
+        viewData: profile.view,
+        formId: escapeSingleQuotes(citizenData.formResponseId),
       })
+      const transaction = useCheckout
+        ? await prepareContractCall({
+            contract: checkout!,
+            method: 'mint' as string,
+            params: [
+              profileTuple,
+              pay > treasury ? await quoteMinMooneyOut(selectedChain, pay - treasury) : BigInt(1),
+            ],
+            value: pay,
+          })
+        : await prepareContractCall({
+            contract: citizenContract,
+            method: 'mintTo' as string,
+            params: profileTuple,
+            value: treasury,
+          })
 
-      return await sendAndConfirmTransaction({
+      const receipt = await sendAndConfirmTransaction({
         transaction,
         account,
       })
+      const unlocked = unlockedStakeFromReceipt(receipt)
+      if (unlocked && unlocked > BigInt(0)) {
+        try {
+          toast('Confirm the next signature to lock your MOONEY for one year.')
+          await lockCitizenshipMooney({
+            account,
+            chain: selectedChain,
+            amount: unlocked,
+          })
+        } catch (lockErr) {
+          console.error(lockErr)
+          toast.error(
+            'Citizenship minted. MOONEY is in your wallet and still needs a one-year lock.'
+          )
+        }
+      }
+      return receipt
     },
-    [account, citizenContract, address, citizenData.name, citizenData.formResponseId]
+    [account, citizenContract, address, citizenData.name, citizenData.formResponseId, selectedChain]
   )
 
   const handlePostMint = useCallback(
@@ -1106,6 +1148,8 @@ export default function CreateCitizen({
         params: [address, 365 * 24 * 60 * 60],
       })
 
+      const treasuryWei = BigInt(String(cost))
+      const payWei = await walletPaymentForTreasury(selectedChain, treasuryWei)
       let gasEstimate: bigint = BigInt(0)
 
       if (isCrossChain) {
@@ -1154,23 +1198,46 @@ export default function CreateCitizen({
           gasEstimate = BigInt(500000)
         }
       } else {
-        const transaction = await prepareContractCall({
-          contract: citizenContract,
-          method: 'mintTo' as string,
-          params: [
-            address,
-            citizenData.name,
-            '',
-            'ipfs://placeholder',
-            '',
-            '',
-            '',
-            '',
-            'public',
-            citizenData.formResponseId || '0000',
-          ],
-          value: cost,
-        })
+        const checkout = citizenCheckoutContract(selectedChain)
+        const useCheckout = Boolean(checkout) && (await citizenCheckoutIsLive(selectedChain))
+        const transaction = useCheckout
+          ? await prepareContractCall({
+              contract: checkout!,
+              method: 'mint' as string,
+              params: [
+                checkoutProfileTuple({
+                  to: address,
+                  name: citizenData.name,
+                  bio: '',
+                  image: 'ipfs://placeholder',
+                  location: '',
+                  discord: '',
+                  twitter: '',
+                  website: '',
+                  viewData: 'public',
+                  formId: citizenData.formResponseId || '0000',
+                }),
+                BigInt(1),
+              ],
+              value: payWei,
+            })
+          : await prepareContractCall({
+              contract: citizenContract,
+              method: 'mintTo' as string,
+              params: [
+                address,
+                citizenData.name,
+                '',
+                'ipfs://placeholder',
+                '',
+                '',
+                '',
+                '',
+                'public',
+                citizenData.formResponseId || '0000',
+              ],
+              value: cost,
+            })
 
         try {
           const txData =
@@ -1183,9 +1250,9 @@ export default function CreateCitizen({
           gasEstimate = await estimateGasWithAPI({
             chainId: selectedChain.id,
             from: address,
-            to: CITIZEN_ADDRESSES[defaultChainSlug],
+            to: useCheckout ? checkout!.address : CITIZEN_ADDRESSES[defaultChainSlug],
             data: txData,
-            value: `0x${cost.toString(16)}`,
+            value: `0x${(useCheckout ? payWei : BigInt(String(cost))).toString(16)}`,
           })
         } catch (estimationError: any) {
           console.error('Gas estimation error (same-chain):', estimationError)
@@ -1498,6 +1565,8 @@ export default function CreateCitizen({
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
       })
+      const treasuryWei = BigInt(String(cost))
+      const payWei = await walletPaymentForTreasury(selectedChain, treasuryWei)
 
       // Balance check only applies to paid mints; sponsored mints cost the
       // user nothing and may not have a gas price loaded at all.
@@ -1521,7 +1590,7 @@ export default function CreateCitizen({
         }
       } else if (!freeMint) {
         const totalCost = calculateTotalCost(
-          cost,
+          payWei,
           gasToUse,
           effectiveGasPrice ?? BigInt(0),
           isCrossChain
@@ -1593,9 +1662,13 @@ export default function CreateCitizen({
       } else if (freeMint) {
         receipt = await executeFreeMint(newImageIpfsHash, profile)
       } else if (isCrossChain) {
+        if (payWei !== treasuryWei) {
+          setIsLoadingMint(false)
+          return toast.error(`Switch to ${DEFAULT_CHAIN_V5.name} to become a citizen.`)
+        }
         receipt = await executeCrossChainMint(newImageIpfsHash, cost, profile)
       } else {
-        receipt = await executeDirectMint(newImageIpfsHash, cost, profile)
+        receipt = await executeDirectMint(newImageIpfsHash, treasuryWei, profile)
       }
 
       // Verify receipt and extract token ID
@@ -1647,6 +1720,7 @@ export default function CreateCitizen({
     executeCrossChainMint,
     executeDirectMint,
     handlePostMint,
+    selectedChain,
   ])
 
   // Balance Check Handler
@@ -1657,14 +1731,15 @@ export default function CreateCitizen({
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
       })
-      const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
+      const pay = await walletPaymentForTreasury(selectedChain, BigInt(String(cost)))
+      const formattedCost = ethers.utils.formatEther(pay.toString()).toString()
       const totalCost = await calculateCost(formattedCost)
       return +(nativeBalance ?? '0') >= totalCost
     } catch (error) {
       console.error('Error checking balance:', error)
       return false
     }
-  }, [address, citizenContract, nativeBalance, calculateCost])
+  }, [address, citizenContract, nativeBalance, calculateCost, selectedChain])
 
   // Typeform Submission Handler
   const submitTypeform = useCallback(
@@ -1963,16 +2038,20 @@ export default function CreateCitizen({
       method: 'getRenewalPrice' as string,
       params: [address, ONE_YEAR_SECONDS],
     })
-      .then((cost: unknown) => {
-        if (!cancelled) {
-          setRenewalPriceWei(BigInt(String(cost)))
-          setIsLoadingRenewalPrice(false)
-        }
+      .then(async (cost: unknown) => {
+        if (cancelled) return
+        const treasury = BigInt(String(cost))
+        const pay = await walletPaymentForTreasury(selectedChain, treasury)
+        if (cancelled) return
+        setRenewalPriceWei(pay)
+        setStakeIncluded(pay > treasury)
+        setIsLoadingRenewalPrice(false)
       })
       .catch((err) => {
         console.error('Failed to fetch citizenship renewal price:', err)
         if (!cancelled) {
           setRenewalPriceWei(null)
+          setStakeIncluded(false)
           setIsLoadingRenewalPrice(false)
         }
       })
@@ -1980,7 +2059,7 @@ export default function CreateCitizen({
     return () => {
       cancelled = true
     }
-  }, [stage, address, citizenContract])
+  }, [stage, address, citizenContract, selectedChain])
 
   useEffect(() => {
     if (stage === 2 && address && citizenData.name) {
@@ -2921,6 +3000,9 @@ export default function CreateCitizen({
                   <p className="text-slate-400 text-sm leading-relaxed">
                     Citizenship lasts for one year and can be renewed at any time. Wallet funds are
                     self-custodied and not dependent on registration.
+                    {stakeIncluded
+                      ? ' A quarter of the price buys MOONEY and locks it for one year.'
+                      : ''}
                   </p>
                   <p className="mt-4 text-slate-500 text-xs text-center">
                     Welcome to the future of on-chain, off-world coordination with MoonDAO.

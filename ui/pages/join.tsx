@@ -13,6 +13,8 @@ import {
   TEAM_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
+import { testimonials as testimonialsContent, TESTIMONIAL_CITIZEN_IDS } from 'const/joinPageContent'
+import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import {
   BLOCKED_CITIZENS,
   BLOCKED_TEAMS,
@@ -20,10 +22,6 @@ import {
   FEATURED_CITIZEN_ROLES,
   FEATURED_TEAMS,
 } from 'const/whitelist'
-import {
-  testimonials as testimonialsContent,
-  TESTIMONIAL_CITIZEN_IDS,
-} from 'const/joinPageContent'
 import useTranslation from 'next-translate/useTranslation'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -33,35 +31,35 @@ import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { networkCard } from '@/lib/layout/styles'
+import { usePublicYearEth } from '@/lib/subscription/citizenCheckout'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import { networkCard } from '@/lib/layout/styles'
 import { getAttribute } from '@/lib/utils/nft'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
+import JobCitizenUpsell from '@/components/jobs/JobCitizenUpsell'
+import type { FeaturedCitizen } from '@/components/join/FeaturedCitizensMarquee'
+import type { FeaturedTeam } from '@/components/join/FeaturedTeamsMarquee'
+import JoinHero from '@/components/join/JoinHero'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
 import { SectionSkeleton } from '@/components/layout/SkeletonLoader'
-import JobCitizenUpsell from '@/components/jobs/JobCitizenUpsell'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
-import JoinHero from '@/components/join/JoinHero'
-import type { FeaturedCitizen } from '@/components/join/FeaturedCitizensMarquee'
-import type { FeaturedTeam } from '@/components/join/FeaturedTeamsMarquee'
-import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import JobsABI from '../const/abis/JobBoardTable.json'
 
 // Dynamic imports for globe components. Only one globe is mounted at a time
@@ -71,10 +69,9 @@ const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
 // Below-the-fold marketing sections are code-split the same way the homepage
 // splits its landing sections (see pages/index.tsx) to keep initial JS light.
-const FeaturedCitizensMarquee = dynamic(
-  () => import('@/components/join/FeaturedCitizensMarquee'),
-  { loading: () => <SectionSkeleton minHeight="min-h-[300px]" /> }
-)
+const FeaturedCitizensMarquee = dynamic(() => import('@/components/join/FeaturedCitizensMarquee'), {
+  loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
+})
 const FeaturedTeamsMarquee = dynamic(() => import('@/components/join/FeaturedTeamsMarquee'), {
   loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
 })
@@ -117,11 +114,10 @@ export default function Join({
   const shallowQueryRoute = useShallowQueryRoute()
   const { citizen } = useContext(CitizenContext)
 
-  // Pricing constants and hooks for dynamic pricing
-  const CITIZEN_PRICE = 0.0111
-  const TEAM_PRICE = 0.0333
-  const { data: citizenUsdPrice } = useETHPrice(CITIZEN_PRICE, 'ETH_TO_USD')
-  const { data: teamUsdPrice } = useETHPrice(TEAM_PRICE, 'ETH_TO_USD')
+  const citizenPriceEth = usePublicYearEth('citizen')
+  const teamPriceEth = usePublicYearEth('team')
+  const { data: citizenUsdPrice } = useETHPrice(citizenPriceEth ?? 0, 'ETH_TO_USD')
+  const { data: teamUsdPrice } = useETHPrice(teamPriceEth ?? 0, 'ETH_TO_USD')
 
   const [input, setInput] = useState('')
   function filterBySearch(nfts: any[]) {
@@ -362,7 +358,10 @@ export default function Join({
                       <div className="text-2xl font-semibold text-white">
                         ~${Math.round(citizenUsdPrice || 0)} / Year
                       </div>
-                      <div className="text-sm text-slate-400">({CITIZEN_PRICE} Arbitrum ETH)</div>
+                      <div className="text-sm text-slate-400">
+                        ({citizenPriceEth == null ? '…' : Number(citizenPriceEth.toFixed(4))}{' '}
+                        Arbitrum ETH)
+                      </div>
                       <div className="text-green-400 text-sm font-medium mt-2">
                         ✓ 12-Month Passport
                       </div>
@@ -403,7 +402,10 @@ export default function Join({
                       <div className="text-2xl font-semibold text-white">
                         ~${Math.round(teamUsdPrice || 0)} / Year
                       </div>
-                      <div className="text-sm text-slate-400">({TEAM_PRICE} Arbitrum ETH)</div>
+                      <div className="text-sm text-slate-400">
+                        ({teamPriceEth == null ? '…' : Number(teamPriceEth.toFixed(4))} Arbitrum
+                        ETH)
+                      </div>
                       <div className="text-green-400 text-sm font-medium mt-2">
                         ✓ 12-Month Passport
                       </div>
@@ -540,7 +542,9 @@ export default function Join({
                 </div>
               </div>
               <div className="w-full flex justify-center">
-                <div className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}>
+                <div
+                  className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}
+                >
                   {mapView === 'earth' ? (
                     <div className="flex items-center justify-center">
                       <LazyEarth pointsData={citizensLocationData || []} />
@@ -714,12 +718,7 @@ export default function Join({
 // truthy promises — it filtered nothing while still firing one RPC per NFT.)
 const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11'
 
-async function filterUnexpiredNFTs(
-  nfts: NFT[],
-  targetAddress: string,
-  chain: any,
-  now: number
-) {
+async function filterUnexpiredNFTs(nfts: NFT[], targetAddress: string, chain: any, now: number) {
   if (!nfts.length) return []
 
   const { ethers } = await import('ethers')
@@ -790,8 +789,7 @@ function toDirectoryItem(nft: any, type: 'team' | 'citizen') {
       name: nft.metadata?.name ?? '',
       description: nft.metadata?.description ?? '',
       image: nft.metadata?.image ?? '',
-      attributes:
-        type === 'team' ? [{ trait_type: 'communications', value: '' }] : [],
+      attributes: type === 'team' ? [{ trait_type: 'communications', value: '' }] : [],
     },
   }
 }
@@ -912,7 +910,9 @@ export async function getStaticProps() {
         citizenTableName = ''
       }
     }
-    const citizenRows: any = citizenTableName ? await queryTable(chain, `SELECT * FROM ${citizenTableName}`) : []
+    const citizenRows: any = citizenTableName
+      ? await queryTable(chain, `SELECT * FROM ${citizenTableName}`)
+      : []
 
     const teams: NFT[] = []
     for (const row of teamRows) {
@@ -963,7 +963,9 @@ export async function getStaticProps() {
       }
     }
 
-    const jobStatement = jobBoardTableName ? `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 6` : ''
+    const jobStatement = jobBoardTableName
+      ? `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 6`
+      : ''
     const jobs = jobStatement ? await queryTable(chain, jobStatement) : []
 
     const citizens: NFT[] = []
@@ -985,9 +987,7 @@ export async function getStaticProps() {
     // Social-proof data for the /join sales sections — sourced from the same
     // valid (non-expired) citizen rows already fetched above, no extra queries.
     const featuredCitizens = FEATURED_CITIZENS.map((id: number) =>
-      filteredValidCitizens.find(
-        (nft: any) => Number(nft.id ?? nft.metadata?.id) === Number(id)
-      )
+      filteredValidCitizens.find((nft: any) => Number(nft.id ?? nft.metadata?.id) === Number(id))
     )
       .filter(Boolean)
       .map(toFeaturedCitizen)

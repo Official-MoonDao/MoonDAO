@@ -1,13 +1,23 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import {
+  citizenCheckoutContract,
+  citizenCheckoutIsLive,
+  lockCitizenshipMooney,
+  quoteMinMooneyOut,
+  unlockedStakeFromReceipt,
+  walletPaymentForTreasury,
+} from '@/lib/subscription/citizenCheckout'
+import {
   SECONDS_PER_YEAR,
   buildRenewSubscriptionCall,
+  renewalDurationSeconds,
+  toRenewalValue,
 } from '@/lib/subscription/renewSubscription'
 import useRead from '@/lib/thirdweb/hooks/useRead'
 import Input from '../layout/Input'
@@ -36,6 +46,26 @@ export function SubscriptionModal({
     params: [address, (Number.isFinite(years) && years >= 1 ? years : 1) * SECONDS_PER_YEAR],
     deps: [years, address],
   })
+  const [payCost, setPayCost] = useState<bigint | null>(null)
+
+  useEffect(() => {
+    if (subscriptionCost == null || subscriptionCost === '') {
+      setPayCost(null)
+      return
+    }
+    const treasury = toRenewalValue(subscriptionCost)
+    if (type !== 'citizen') {
+      setPayCost(treasury)
+      return
+    }
+    let cancelled = false
+    walletPaymentForTreasury(DEFAULT_CHAIN_V5, treasury).then((total) => {
+      if (!cancelled) setPayCost(total)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [subscriptionCost, type])
 
   async function extendSubscription() {
     setIsLoading(true)
@@ -43,24 +73,65 @@ export function SubscriptionModal({
     try {
       if (!account) throw new Error('No account found')
 
-      const call = buildRenewSubscriptionCall({
-        type: type === 'team' ? 'team' : 'citizen',
-        address,
-        tokenId: nft?.metadata?.id ?? nft?.id,
-        years,
-        cost: subscriptionCost,
-      })
+      const treasury = toRenewalValue(subscriptionCost)
+      const total = type === 'citizen' ? payCost ?? treasury : treasury
+      const checkout = citizenCheckoutContract(DEFAULT_CHAIN_V5)
+      const useCheckout =
+        type === 'citizen' &&
+        Boolean(checkout) &&
+        (await citizenCheckoutIsLive(DEFAULT_CHAIN_V5)) &&
+        total > treasury
 
-      const transaction = prepareContractCall({
-        contract: subscriptionContract,
-        method: call.method as string,
-        params: call.params,
-        value: call.value,
-      })
-      await sendAndConfirmTransaction({
-        transaction,
-        account,
-      })
+      let receipt: any
+      if (useCheckout) {
+        const duration = renewalDurationSeconds(years)
+        const tokenId = nft?.metadata?.id ?? nft?.id
+        receipt = await sendAndConfirmTransaction({
+          account,
+          transaction: prepareContractCall({
+            contract: checkout!,
+            method: 'renew' as string,
+            params: [
+              tokenId,
+              duration,
+              await quoteMinMooneyOut(DEFAULT_CHAIN_V5, total - treasury),
+            ],
+            value: total,
+          }),
+        })
+        const unlocked = unlockedStakeFromReceipt(receipt)
+        if (unlocked && unlocked > BigInt(0)) {
+          try {
+            toast('Confirm the next signature to lock your MOONEY for one year.')
+            await lockCitizenshipMooney({
+              account,
+              chain: DEFAULT_CHAIN_V5,
+              amount: unlocked,
+            })
+          } catch (lockErr) {
+            console.error(lockErr)
+            toast.error('Renewed. MOONEY is in your wallet and still needs a one-year lock.')
+          }
+        }
+      } else {
+        const call = buildRenewSubscriptionCall({
+          type: type === 'team' ? 'team' : 'citizen',
+          address,
+          tokenId: nft?.metadata?.id ?? nft?.id,
+          years,
+          cost: treasury,
+        })
+
+        receipt = await sendAndConfirmTransaction({
+          transaction: prepareContractCall({
+            contract: subscriptionContract,
+            method: call.method as string,
+            params: call.params,
+            value: call.value,
+          }),
+          account,
+        })
+      }
       setEnabled(false)
       router.reload()
     } catch (err: any) {
@@ -126,10 +197,7 @@ export function SubscriptionModal({
                   </div>
                 ) : (
                   <span className="text-white font-medium">
-                    {subscriptionCost != null
-                      ? ethers.utils.formatEther(subscriptionCost)
-                      : '0.00'}{' '}
-                    ETH
+                    {payCost != null ? ethers.utils.formatEther(payCost) : '0.00'} ETH
                   </span>
                 )}
               </p>
@@ -147,6 +215,7 @@ export function SubscriptionModal({
               actionDisabled={
                 isLoadingSubscriptionCost ||
                 subscriptionCost === undefined ||
+                payCost == null ||
                 !years ||
                 years < 1
               }
