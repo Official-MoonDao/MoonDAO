@@ -78,7 +78,7 @@ export default function GuestActions({ address, nativeBalance, citizenContract }
               title="Fund Wallet"
               description={
                 checkoutLive
-                  ? 'Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. A year is 0.036 ETH on Arbitrum, plus a little gas. A quarter of that buys MOONEY and locks it for one year.'
+                  ? 'Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. A year is 0.036 ETH on Arbitrum, plus a little gas. A quarter of that buys MOONEY. Claim the voting power from your dashboard.'
                   : 'Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. You will need enough Arbitrum ETH for one year of citizenship, plus a little gas.'
               }
               icon={

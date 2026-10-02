@@ -373,8 +373,8 @@ export default function Join({
                       </div>
                       {citizenStakeIncluded && (
                         <p className="text-slate-400 text-xs mt-2 max-w-[16rem]">
-                          0.036 ETH for one year. A quarter of this buys MOONEY and locks it for one
-                          year.
+                          0.036 ETH for one year. A quarter of this buys MOONEY. Claim the voting
+                          power from your dashboard.
                         </p>
                       )}
                     </div>

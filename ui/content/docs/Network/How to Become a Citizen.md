@@ -23,7 +23,7 @@ If you already have an external wallet such as [MetaMask](https://metamask.io/) 
 
    ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXdCp8292LOzpisHf3r-hjCxIUmMYfHTOdQY3xV8Cf7whagWdPv9uI6IErsnSsCyjDx83_2sauHNrX-0Qxv2goE59G4F2E6Gen7JahnIF8lpgIW1e2WfgMv4tdkwPKl6bw1pczPXEg?key=SvZCq2k1UFaTYNW83ubioQ)
 
-A year of citizenship is **0.036 ETH** on Arbitrum. The same amount is on [https://moondao.com/join](https://moondao.com/join), with a dollar estimate. Three quarters (0.027 ETH) pays for the membership. One quarter (0.009 ETH) buys MOONEY and locks it as vMOONEY for one year. If you do not already have a lock, you confirm that lock in a second signature after the mint. Pay the amount shown at checkout.
+A year of citizenship is **0.036 ETH** on Arbitrum. The same amount is on [https://moondao.com/join](https://moondao.com/join), with a dollar estimate. Three quarters (0.027 ETH) pays for the membership. One quarter (0.009 ETH) buys MOONEY in that same payment. If you already have a vMOONEY lock and have approved it, the MOONEY is added to the lock. Otherwise it stays in your wallet, and the dashboard shows voting power you can claim by locking it for one year. Pay the amount shown at checkout.
 
 4. If the wallet does not already have enough ETH, a **Fund** window opens for the amount due, including a small network fee.
    - **In the United States:** pay with Apple Pay or Google Pay through Coinbase. No Coinbase account is required. Prepaid cards are declined on this path. If Apple Pay or Google Pay is not available, switch to MoonPay and pay with a debit or credit card. MoonPay is an independent provider, not MoonDAO.

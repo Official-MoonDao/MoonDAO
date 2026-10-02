@@ -81,7 +81,7 @@ const CitizenTier = ({ setSelectedTier, compact = false }: CitizenTierProps) => 
         gateOnAuth={false}
         priceNote={
           stakeIncluded
-            ? '0.036 ETH for one year. A quarter of this buys MOONEY and locks it for one year.'
+            ? '0.036 ETH for one year. A quarter of this buys MOONEY. Claim the voting power from your dashboard.'
             : undefined
         }
       />

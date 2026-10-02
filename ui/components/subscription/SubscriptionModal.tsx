@@ -8,7 +8,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import {
   citizenCheckoutContract,
   citizenCheckoutIsLive,
-  lockCitizenshipMooney,
   quoteMinMooneyOut,
   unlockedStakeFromReceipt,
   walletPaymentForTreasury,
@@ -101,17 +100,7 @@ export function SubscriptionModal({
         })
         const unlocked = unlockedStakeFromReceipt(receipt)
         if (unlocked && unlocked > BigInt(0)) {
-          try {
-            toast('Confirm the next signature to lock your MOONEY for one year.')
-            await lockCitizenshipMooney({
-              account,
-              chain: DEFAULT_CHAIN_V5,
-              amount: unlocked,
-            })
-          } catch (lockErr) {
-            console.error(lockErr)
-            toast.error('Renewed. MOONEY is in your wallet and still needs a one-year lock.')
-          }
+          toast('Renewed. Claim the voting power from your dashboard.')
         }
       } else {
         const call = buildRenewSubscriptionCall({
@@ -206,8 +195,9 @@ export function SubscriptionModal({
                 subscriptionCost != null &&
                 payCost > toRenewalValue(subscriptionCost) && (
                   <p className="text-gray-400 text-sm mt-2">
-                    A quarter of this buys MOONEY and locks it for one year. A one-year renewal is
-                    0.036 ETH.
+                    A quarter of this buys MOONEY in this payment. A one-year renewal is 0.036 ETH.
+                    Claim the voting power from your dashboard unless it was added to a lock you
+                    already have.
                   </p>
                 )}
             </div>

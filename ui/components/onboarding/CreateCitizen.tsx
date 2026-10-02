@@ -76,7 +76,6 @@ import {
   checkoutProfileTuple,
   citizenCheckoutContract,
   citizenCheckoutIsLive,
-  lockCitizenshipMooney,
   useCitizenCheckoutLive,
   quoteMinMooneyOut,
   unlockedStakeFromReceipt,
@@ -460,6 +459,7 @@ export default function CreateCitizen({
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
   // Celebration shown after a successful mint, before landing on the dashboard.
   const [mintComplete, setMintComplete] = useState<boolean>(false)
+  const [stakeToClaim, setStakeToClaim] = useState(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
   const [imageGenProgress, setImageGenProgress] = useState<ImageGenProgressSnapshot | null>(null)
   const [regenElapsedMs, setRegenElapsedMs] = useState(0)
@@ -969,21 +969,7 @@ export default function CreateCitizen({
         account,
       })
       const unlocked = unlockedStakeFromReceipt(receipt)
-      if (unlocked && unlocked > BigInt(0)) {
-        try {
-          toast('Confirm the next signature to lock your MOONEY for one year.')
-          await lockCitizenshipMooney({
-            account,
-            chain: selectedChain,
-            amount: unlocked,
-          })
-        } catch (lockErr) {
-          console.error(lockErr)
-          toast.error(
-            'Citizenship minted. MOONEY is in your wallet and still needs a one-year lock.'
-          )
-        }
-      }
+      if (unlocked && unlocked > BigInt(0)) setStakeToClaim(true)
       return receipt
     },
     [account, citizenContract, address, citizenData.name, citizenData.formResponseId, selectedChain]
@@ -2995,7 +2981,7 @@ export default function CreateCitizen({
                           checkoutLive ? ' (0.036 ETH)' : ''
                         }.${
                           checkoutLive
-                            ? ' A quarter of the ETH you pay buys MOONEY and locks it for one year.'
+                            ? ' A quarter of the ETH you pay buys MOONEY. Claim the voting power from your dashboard.'
                             : ''
                         }`
                       : freeMint
@@ -3005,7 +2991,7 @@ export default function CreateCitizen({
                       : checkoutLive
                       ? `Citizenship is 0.036 ETH for one year, paid in ${nativeSymbol} on ${
                           selectedChain?.name ?? 'your network'
-                        }. Three quarters is the membership. One quarter buys MOONEY and locks it for one year. Gas varies with network conditions. Renewal is ~1 year from mint.`
+                        }. Three quarters is the membership. One quarter buys MOONEY in this payment. Claim the voting power from your dashboard. Gas varies with network conditions. Renewal is ~1 year from mint.`
                       : `Citizenship is paid in ${nativeSymbol} on ${
                           selectedChain?.name ?? 'your network'
                         }. Gas varies with network conditions. Renewal is ~1 year from mint.`}
@@ -3018,10 +3004,10 @@ export default function CreateCitizen({
                   <p className="text-slate-400 text-sm leading-relaxed">
                     Citizenship lasts for one year and can be renewed at any time.
                     {checkoutLive
-                      ? ' A year is 0.036 ETH. Three quarters pays for the membership. One quarter buys MOONEY and locks it for one year.'
+                      ? ' A year is 0.036 ETH. Three quarters pays for the membership. One quarter buys MOONEY in this payment.'
                       : ''}
                     {stakeIncluded
-                      ? ' If you do not already have a lock, you confirm that lock in a second signature.'
+                      ? ' If you already have a lock, it is added then. Otherwise claim the voting power from your dashboard.'
                       : ''}{' '}
                     Wallet funds are self-custodied and not dependent on registration.
                   </p>
@@ -3182,6 +3168,9 @@ export default function CreateCitizen({
               {citizenData.name ? `Welcome aboard, ${citizenData.name}. ` : 'Welcome aboard. '}
               You&apos;re now part of the Space Acceleration Network. Your dashboard is ready with
               everything you can do next.
+              {stakeToClaim
+                ? ' Your citizenship included MOONEY. Voting power is waiting there to claim.'
+                : ''}
             </p>
             <button
               ref={welcomeButtonRef}
