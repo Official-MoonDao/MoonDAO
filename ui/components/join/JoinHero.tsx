@@ -1,17 +1,55 @@
+import CitizenABI from 'const/abis/Citizen.json'
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import useRead from '@/lib/thirdweb/hooks/useRead'
 import CountUp from '@/components/home/landing/CountUp'
 import CtaButton from '@/components/home/landing/CtaButton'
 import Reveal from '@/components/home/landing/Reveal'
 import Starfield from '@/components/home/landing/Starfield'
 
 type JoinHeroProps = {
-  citizenCount: number
+  citizenCount: number | null
   teamCount: number
 }
 
+function supplyToNumber(supply: unknown): number | null {
+  if (supply == null) return null
+  const count = Number(
+    typeof supply === 'bigint' ||
+      (typeof supply === 'object' && supply !== null && 'toString' in supply)
+      ? (supply as { toString: () => string }).toString()
+      : supply
+  )
+  return Number.isFinite(count) && count >= 0 ? count : null
+}
+
 export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
-  const stats = [
-    { value: citizenCount, suffix: '+', label: 'Citizens' },
+  const hasServerSupply = typeof citizenCount === 'number' && citizenCount > 0
+  const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
+  const citizenContract = useContract({
+    chain: DEFAULT_CHAIN_V5,
+    address: hasServerSupply ? '' : CITIZEN_ADDRESSES[chainSlug] || '',
+    abi: CitizenABI,
+  })
+  // Only hit the chain in the browser when getStaticProps could not read
+  // totalSupply. A missing read must not fall back to the filtered directory count.
+  // A null param keeps useRead from firing while a server count is already in hand.
+  const { data: supply } = useRead({
+    contract: citizenContract,
+    method: 'totalSupply',
+    params: hasServerSupply ? [null] : [],
+  })
+  const mintedSupply = hasServerSupply ? citizenCount : supplyToNumber(supply)
+
+  const stats: {
+    value: number | null
+    prefix?: string
+    suffix?: string
+    label: string
+  }[] = [
+    { value: mintedSupply, suffix: '+', label: 'Citizens' },
     { value: teamCount, suffix: '+', label: 'Teams' },
     { value: 8, prefix: '$', suffix: 'M+', label: 'Raised onchain' },
     { value: 2, suffix: '', label: 'Astronauts sent to space' },
@@ -41,9 +79,8 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
           </Reveal>
           <Reveal delay={0.1}>
             <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/85 md:text-xl drop-shadow-lg">
-              An onchain startup society funding, training, and flying everyday
-              people to space — governed by its members, transparent by
-              design.
+              An onchain startup society funding, training, and flying everyday people to space —
+              governed by its members, transparent by design.
             </p>
           </Reveal>
           <Reveal delay={0.2}>
@@ -69,12 +106,16 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
                 i >= 2 ? 'border-t border-white/10 lg:border-t-0' : ''
               }`}
             >
-              <CountUp
-                to={stat.value}
-                prefix={stat.prefix}
-                suffix={stat.suffix}
-                className="font-GoodTimes text-2xl text-white md:text-4xl"
-              />
+              {stat.value == null ? (
+                <span className="font-GoodTimes text-2xl text-white md:text-4xl">—</span>
+              ) : (
+                <CountUp
+                  to={stat.value}
+                  prefix={stat.prefix}
+                  suffix={stat.suffix}
+                  className="font-GoodTimes text-2xl text-white md:text-4xl"
+                />
+              )}
               <span className="font-RobotoMono text-[10px] uppercase tracking-[0.2em] text-white/50 md:text-xs">
                 {stat.label}
               </span>

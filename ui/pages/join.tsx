@@ -1,5 +1,6 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
 import { GlobeAmericasIcon, ListBulletIcon, MoonIcon } from '@heroicons/react/24/outline'
+import CitizenABI from 'const/abis/Citizen.json'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
@@ -97,7 +98,9 @@ type JoinProps = {
   featuredCitizens?: FeaturedCitizen[]
   featuredTeams?: FeaturedTeam[]
   testimonials?: TestimonialWithPhoto[]
-  citizenCount?: number
+  // On-chain Citizen NFT totalSupply. Null when that read failed so the hero
+  // can fetch it in the browser instead of showing the filtered directory count.
+  citizenCount?: number | null
   teamCount?: number
 }
 
@@ -109,7 +112,7 @@ export default function Join({
   featuredCitizens = [],
   featuredTeams = [],
   testimonials = [],
-  citizenCount = 0,
+  citizenCount = null,
   teamCount = 0,
 }: JoinProps) {
   const { t } = useTranslation('common')
@@ -880,11 +883,40 @@ function matchCitizenPhotoByName(name: string, citizens: any[]): string | null {
   return matches[0].metadata?.image || null
 }
 
-export async function getStaticProps() {
-  try {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
+// Public /join citizen stat. On-chain minted supply is the source of truth —
+// not the unexpired Tableland directory length. Returns null on failure so the
+// hero can read totalSupply in the browser instead of falling back to that
+// filtered count.
+async function readCitizenTotalSupply(chain: any, chainSlug: string): Promise<number | null> {
+  const address = CITIZEN_ADDRESSES[chainSlug]
+  if (!address) return null
 
+  try {
+    const supply = await readContract({
+      contract: getContract({
+        client: serverClient,
+        address,
+        chain,
+        abi: CitizenABI as any,
+      }),
+      method: 'totalSupply' as string,
+      params: [],
+    })
+    const count = Number((supply as any)?.toString?.() ?? supply)
+    if (!Number.isFinite(count) || count < 0) return null
+    return count
+  } catch (error) {
+    console.error('Error reading citizen totalSupply:', error)
+    return null
+  }
+}
+
+export async function getStaticProps() {
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+  const citizenCount = await readCitizenTotalSupply(chain, chainSlug)
+
+  try {
     const now = Math.floor(Date.now() / 1000)
 
     // Prefer the statically configured table names; only fall back to an
@@ -1031,7 +1063,7 @@ export async function getStaticProps() {
         featuredCitizens,
         featuredTeams,
         testimonials: testimonialsWithPhotos,
-        citizenCount: filteredValidCitizens.length,
+        citizenCount,
         teamCount: sortedValidTeams.length,
       },
       revalidate: 60,
@@ -1047,7 +1079,7 @@ export async function getStaticProps() {
         featuredCitizens: [],
         featuredTeams: [],
         testimonials: testimonialsContent,
-        citizenCount: 0,
+        citizenCount,
         teamCount: 0,
       },
       revalidate: 60,
