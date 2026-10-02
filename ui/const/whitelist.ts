@@ -24,9 +24,7 @@ export const FEATURED_TEAMS: any = [6, 7, 8, 13, 1, 9, 5, 4, 2]
 // Citizen token ids to spotlight on /join as social proof (astronauts,
 // founders, notable community members). Edit this list directly to change
 // who appears in the featured-citizens marquee.
-export const FEATURED_CITIZENS: number[] = [
-  22, 4, 158, 45, 77, 175, 17, 111, 162, 8, 217, 186,
-]
+export const FEATURED_CITIZENS: number[] = [22, 4, 158, 45, 77, 175, 17, 111, 162, 8, 217, 186, 260]
 
 // Marketing tagline shown under each featured citizen's name — not derivable
 // from on-chain data, so it's maintained here alongside the id list above.
@@ -43,4 +41,7 @@ export const FEATURED_CITIZEN_ROLES: Record<number, string> = {
   8: 'Founder of LifeShip',
   217: 'NASA Astronaut',
   186: 'Virgin Galactic Spaceflight Participant · Galactic 07',
+  // Citizen 260 (Alan Stern). Tagline is the opening of his Tableland
+  // description, not a placeholder bio.
+  260: "Planetary scientist · NASA's New Horizons",
 }
