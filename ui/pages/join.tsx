@@ -1,5 +1,6 @@
 import { PlusCircleIcon } from '@heroicons/react/20/solid'
 import { GlobeAmericasIcon, ListBulletIcon, MoonIcon } from '@heroicons/react/24/outline'
+import CitizenABI from 'const/abis/Citizen.json'
 import CitizenTableABI from 'const/abis/CitizenTable.json'
 import TeamTableABI from 'const/abis/TeamTable.json'
 import {
@@ -13,6 +14,8 @@ import {
   TEAM_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
+import { testimonials as testimonialsContent, TESTIMONIAL_CITIZEN_IDS } from 'const/joinPageContent'
+import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import {
   BLOCKED_CITIZENS,
   BLOCKED_TEAMS,
@@ -20,10 +23,6 @@ import {
   FEATURED_CITIZEN_ROLES,
   FEATURED_TEAMS,
 } from 'const/whitelist'
-import {
-  testimonials as testimonialsContent,
-  TESTIMONIAL_CITIZEN_IDS,
-} from 'const/joinPageContent'
 import useTranslation from 'next-translate/useTranslation'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -33,35 +32,34 @@ import React, { useState, useEffect, useCallback, useContext } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { networkCard } from '@/lib/layout/styles'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import { networkCard } from '@/lib/layout/styles'
 import { getAttribute } from '@/lib/utils/nft'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Card from '../components/layout/Card'
 import Container from '../components/layout/Container'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
+import JobCitizenUpsell from '@/components/jobs/JobCitizenUpsell'
+import type { FeaturedCitizen } from '@/components/join/FeaturedCitizensMarquee'
+import type { FeaturedTeam } from '@/components/join/FeaturedTeamsMarquee'
+import JoinHero from '@/components/join/JoinHero'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import CardSkeleton from '@/components/layout/CardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import Search from '@/components/layout/Search'
 import { SectionSkeleton } from '@/components/layout/SkeletonLoader'
-import JobCitizenUpsell from '@/components/jobs/JobCitizenUpsell'
 import StandardButton from '@/components/layout/StandardButton'
 import StandardDetailCard from '@/components/layout/StandardDetailCard'
 import Tab from '@/components/layout/Tab'
-import JoinHero from '@/components/join/JoinHero'
-import type { FeaturedCitizen } from '@/components/join/FeaturedCitizensMarquee'
-import type { FeaturedTeam } from '@/components/join/FeaturedTeamsMarquee'
-import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import JobsABI from '../const/abis/JobBoardTable.json'
 
 // Dynamic imports for globe components. Only one globe is mounted at a time
@@ -71,10 +69,9 @@ const Moon = dynamic(() => import('@/components/globe/Moon'), { ssr: false })
 
 // Below-the-fold marketing sections are code-split the same way the homepage
 // splits its landing sections (see pages/index.tsx) to keep initial JS light.
-const FeaturedCitizensMarquee = dynamic(
-  () => import('@/components/join/FeaturedCitizensMarquee'),
-  { loading: () => <SectionSkeleton minHeight="min-h-[300px]" /> }
-)
+const FeaturedCitizensMarquee = dynamic(() => import('@/components/join/FeaturedCitizensMarquee'), {
+  loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
+})
 const FeaturedTeamsMarquee = dynamic(() => import('@/components/join/FeaturedTeamsMarquee'), {
   loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
 })
@@ -96,7 +93,9 @@ type JoinProps = {
   featuredCitizens?: FeaturedCitizen[]
   featuredTeams?: FeaturedTeam[]
   testimonials?: TestimonialWithPhoto[]
-  citizenCount?: number
+  // On-chain Citizen NFT totalSupply. Null when that read failed so the hero
+  // can fetch it in the browser instead of showing the filtered directory count.
+  citizenCount?: number | null
   teamCount?: number
 }
 
@@ -108,7 +107,7 @@ export default function Join({
   featuredCitizens = [],
   featuredTeams = [],
   testimonials = [],
-  citizenCount = 0,
+  citizenCount = null,
   teamCount = 0,
 }: JoinProps) {
   const { t } = useTranslation('common')
@@ -540,7 +539,9 @@ export default function Join({
                 </div>
               </div>
               <div className="w-full flex justify-center">
-                <div className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}>
+                <div
+                  className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}
+                >
                   {mapView === 'earth' ? (
                     <div className="flex items-center justify-center">
                       <LazyEarth pointsData={citizensLocationData || []} />
@@ -714,12 +715,7 @@ export default function Join({
 // truthy promises — it filtered nothing while still firing one RPC per NFT.)
 const MULTICALL3_ADDRESS = '0xcA11bde05977b3631167028862bE2a173976CA11'
 
-async function filterUnexpiredNFTs(
-  nfts: NFT[],
-  targetAddress: string,
-  chain: any,
-  now: number
-) {
+async function filterUnexpiredNFTs(nfts: NFT[], targetAddress: string, chain: any, now: number) {
   if (!nfts.length) return []
 
   const { ethers } = await import('ethers')
@@ -790,8 +786,7 @@ function toDirectoryItem(nft: any, type: 'team' | 'citizen') {
       name: nft.metadata?.name ?? '',
       description: nft.metadata?.description ?? '',
       image: nft.metadata?.image ?? '',
-      attributes:
-        type === 'team' ? [{ trait_type: 'communications', value: '' }] : [],
+      attributes: type === 'team' ? [{ trait_type: 'communications', value: '' }] : [],
     },
   }
 }
@@ -865,11 +860,40 @@ function matchCitizenPhotoByName(name: string, citizens: any[]): string | null {
   return matches[0].metadata?.image || null
 }
 
-export async function getStaticProps() {
-  try {
-    const chain = DEFAULT_CHAIN_V5
-    const chainSlug = getChainSlug(chain)
+// Public /join citizen stat. On-chain minted supply is the source of truth —
+// not the unexpired Tableland directory length. Returns null on failure so the
+// hero can read totalSupply in the browser instead of falling back to that
+// filtered count.
+async function readCitizenTotalSupply(chain: any, chainSlug: string): Promise<number | null> {
+  const address = CITIZEN_ADDRESSES[chainSlug]
+  if (!address) return null
 
+  try {
+    const supply = await readContract({
+      contract: getContract({
+        client: serverClient,
+        address,
+        chain,
+        abi: CitizenABI as any,
+      }),
+      method: 'totalSupply' as string,
+      params: [],
+    })
+    const count = Number((supply as any)?.toString?.() ?? supply)
+    if (!Number.isFinite(count) || count < 0) return null
+    return count
+  } catch (error) {
+    console.error('Error reading citizen totalSupply:', error)
+    return null
+  }
+}
+
+export async function getStaticProps() {
+  const chain = DEFAULT_CHAIN_V5
+  const chainSlug = getChainSlug(chain)
+  const citizenCount = await readCitizenTotalSupply(chain, chainSlug)
+
+  try {
     const now = Math.floor(Date.now() / 1000)
 
     // Prefer the statically configured table names; only fall back to an
@@ -912,7 +936,9 @@ export async function getStaticProps() {
         citizenTableName = ''
       }
     }
-    const citizenRows: any = citizenTableName ? await queryTable(chain, `SELECT * FROM ${citizenTableName}`) : []
+    const citizenRows: any = citizenTableName
+      ? await queryTable(chain, `SELECT * FROM ${citizenTableName}`)
+      : []
 
     const teams: NFT[] = []
     for (const row of teamRows) {
@@ -963,7 +989,9 @@ export async function getStaticProps() {
       }
     }
 
-    const jobStatement = jobBoardTableName ? `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 6` : ''
+    const jobStatement = jobBoardTableName
+      ? `SELECT * FROM ${jobBoardTableName} WHERE (endTime = 0 OR endTime >= ${now}) ORDER BY id DESC LIMIT 6`
+      : ''
     const jobs = jobStatement ? await queryTable(chain, jobStatement) : []
 
     const citizens: NFT[] = []
@@ -985,9 +1013,7 @@ export async function getStaticProps() {
     // Social-proof data for the /join sales sections — sourced from the same
     // valid (non-expired) citizen rows already fetched above, no extra queries.
     const featuredCitizens = FEATURED_CITIZENS.map((id: number) =>
-      filteredValidCitizens.find(
-        (nft: any) => Number(nft.id ?? nft.metadata?.id) === Number(id)
-      )
+      filteredValidCitizens.find((nft: any) => Number(nft.id ?? nft.metadata?.id) === Number(id))
     )
       .filter(Boolean)
       .map(toFeaturedCitizen)
@@ -1014,7 +1040,7 @@ export async function getStaticProps() {
         featuredCitizens,
         featuredTeams,
         testimonials: testimonialsWithPhotos,
-        citizenCount: filteredValidCitizens.length,
+        citizenCount,
         teamCount: sortedValidTeams.length,
       },
       revalidate: 60,
@@ -1030,7 +1056,7 @@ export async function getStaticProps() {
         featuredCitizens: [],
         featuredTeams: [],
         testimonials: testimonialsContent,
-        citizenCount: 0,
+        citizenCount,
         teamCount: 0,
       },
       revalidate: 60,
