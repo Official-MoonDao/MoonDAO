@@ -1,9 +1,5 @@
+import { GiftListingRow, priceToWei, validateGiftPurchase } from '../lib/marketplace/giftPurchase'
 import { CITIZENSHIP_GIFT_TAG, EB_TEAM_ID } from '../const/config'
-import {
-  GiftListingRow,
-  priceToWei,
-  validateGiftPurchase,
-} from '../lib/marketplace/giftPurchase'
 
 function expectEqual<T>(actual: T, expected: T, label: string) {
   if (actual !== expected) {
@@ -25,8 +21,7 @@ function expectReject(
 
 // es2016 ts-node target forbids the `n` literal syntax, so build bigints via
 // the BigInt() constructor (the runtime is Node 18, which supports BigInt).
-const pct = (value: bigint, percent: number) =>
-  (value * BigInt(percent)) / BigInt(100)
+const pct = (value: bigint, percent: number) => (value * BigInt(percent)) / BigInt(100)
 
 // A canonical, valid gift listing on the EB team priced at exactly 1 ETH.
 const ONE_ETH = BigInt('1000000000000000000')
@@ -235,8 +230,8 @@ describe('validateGiftPurchase', () => {
   })
 
   it('handles fractional (citizen-priced) listings with rounding tolerance', () => {
-    const listing: GiftListingRow = { ...validListing, price: '0.0111' }
-    const expectedWei = priceToWei('0.0111') as bigint
+    const listing: GiftListingRow = { ...validListing, price: '0.036' }
+    const expectedWei = priceToWei('0.036') as bigint
     // Exactly the (float-derived) expected value passes.
     expectEqual(
       validateGiftPurchase({

@@ -6,7 +6,10 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { L2_GAS_BUDGET_ETH } from '@/lib/rpc/gasBudget'
-import { walletPaymentForTreasury } from '@/lib/subscription/citizenCheckout'
+import {
+  useCitizenCheckoutLive,
+  walletPaymentForTreasury,
+} from '@/lib/subscription/citizenCheckout'
 import viemChains from '@/lib/viem/viemChains'
 import Frame from '@/components/layout/Frame'
 import Action from './Action'
@@ -17,6 +20,7 @@ export default function GuestActions({ address, nativeBalance, citizenContract }
   const [canBuyCitizen, setCanBuyCitizen] = useState(false)
 
   const { fundWallet } = useFundWallet()
+  const checkoutLive = useCitizenCheckoutLive()
 
   useEffect(() => {
     async function checkIfCanBuyCitizen() {
@@ -72,7 +76,11 @@ export default function GuestActions({ address, nativeBalance, citizenContract }
           ) : (
             <Action
               title="Fund Wallet"
-              description="Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. You will need enough Arbitrum ETH for one year of citizenship, plus a little gas."
+              description={
+                checkoutLive
+                  ? 'Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. A year is 0.036 ETH on Arbitrum, plus a little gas. A quarter of that buys MOONEY and locks it for one year.'
+                  : 'Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. You will need enough Arbitrum ETH for one year of citizenship, plus a little gas.'
+              }
               icon={
                 <Image
                   src="/assets/icon-project.svg"

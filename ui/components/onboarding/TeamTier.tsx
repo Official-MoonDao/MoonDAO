@@ -4,7 +4,7 @@ import { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
-import { usePublicYearEth } from '@/lib/subscription/citizenCheckout'
+import { usePublicYearEth, useTeamMintOpen } from '@/lib/subscription/citizenCheckout'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -22,6 +22,7 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
   const account = useActiveAccount()
   const address = account?.address
   const priceEth = usePublicYearEth('team')
+  const teamMintOpen = useTeamMintOpen()
   const { data: usdPrice } = useETHPrice(priceEth ?? 0, 'ETH_TO_USD')
 
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
@@ -96,6 +97,7 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
         onClick={compact ? () => {} : handleTeamClick}
         type="team"
         compact={compact}
+        priceNote={teamMintOpen ? 'Open to any team. 0.36 ETH for one year.' : undefined}
       />
     </div>
   )

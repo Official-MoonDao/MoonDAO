@@ -17,7 +17,7 @@ const PAYER = '0x0000000000000000000000000000000000000001'
 const PAY_TO = '0x0000000000000000000000000000000000000002'
 const OTHER = '0x0000000000000000000000000000000000000003'
 
-const YEAR = BigInt('11100000000000000') // 0.0111 ETH
+const YEAR = BigInt('36000000000000000') // 0.036 ETH, the public citizen year
 
 describe('discount rate parsing', () => {
   it('treats a missing stored rate as fully sponsored', () => {

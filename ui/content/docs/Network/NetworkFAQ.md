@@ -31,10 +31,10 @@ A wallet is created for you when you click **Sign In** with email, phone, or a s
 No. At checkout, if your wallet is empty, you can pay with Apple Pay, Google Pay, or a card. That purchase covers the ETH the membership mint needs on Arbitrum. If you already hold ETH on Arbitrum, you can use that instead.
 
 **How much does it cost to be a Citizen?**
-The current price is on [https://moondao.com/join](https://moondao.com/join) and again at checkout. It is shown in ETH on Arbitrum, with a dollar estimate. Prices may change. After you become a Citizen, you can extend your membership for as many years as you’d like for the same price, and you’ll be grandfathered in at the current price if you purchase in advance.
+A year of citizenship is **0.036 ETH** on Arbitrum. Three quarters of that (0.027 ETH) pays for the membership. One quarter (0.009 ETH) buys MOONEY on the Arbitrum market and locks it as vMOONEY for one year. If you do not already have a lock, checkout asks you to confirm that lock in a second signature. [Join](https://moondao.com/join) and checkout also show a dollar estimate. You can renew for more years at the price shown when you renew. Years you pay for in advance are covered at that price. A fully sponsored invite is free and does not buy MOONEY. A partial invite discounts the 0.036 ETH total, and a quarter of the ETH you actually pay still buys MOONEY.
 
 **How do I extend my membership?**
-Sign in with the wallet that owns your Citizen NFT and open your [citizen profile](https://moondao.com/network?tab=citizens). If the plan has expired, the profile prompts the owner to renew. Confirm the live renewal price on [Join](https://moondao.com/join) or [/citizen](https://moondao.com/citizen).
+Sign in with the wallet that owns your Citizen NFT and open your [citizen profile](https://moondao.com/network?tab=citizens). If the plan has expired, the profile prompts the owner to renew. A paid renewal uses the same split as a new citizenship: three quarters to the membership, one quarter to a one-year MOONEY lock. Confirm the amount on [Join](https://moondao.com/join) or [/citizen](https://moondao.com/citizen).
 
 **Do I need to be a Citizen to participate in MoonDAO?**
 Anyone can participate in our community, even if they are not Citizens. They can [join Discord](https://discord.gg/moondao), acquire our governance token, and vote on proposals without being a Citizen. Although it’s not required, it’s highly encouraged to become a Citizen to access the full opportunities MoonDAO can offer.
@@ -55,7 +55,7 @@ We are an open source community, and data is stored onchain. This means it is wr
 Teams are companies, nonprofits, communities, or internal groups that are coordinating together using our tools to accelerate a permanent human presence on the Moon. MoonDAO teams interface directly with the MoonDAO community, allowing them access to fund, hire, and sell directly to the MoonDAO community.
 
 **How do I create a Team?**
-Currently you must apply to create a Team. Go to https://moondao.com/join and click “Create a Team” to fill out the application form. You should hear back within a few days. See: [How to Create Your Team](/docs/Network/How-to-Create-Your-Team)
+Anyone can create a team. Open [Create a Team](https://moondao.com/team) and complete checkout. A year is **0.36 ETH** on Arbitrum. There is no application and no member discount. See: [How to Create Your Team](/docs/Network/How-to-Create-Your-Team)
 
 **What is the difference between a Manager and a Member role?**
 Managers can edit the team page directly, Members are displayed as part of the team and can access the teams portal but cannot edit the public team page.

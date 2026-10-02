@@ -4,7 +4,7 @@
 
 ## **Sign In**
 
-_\* If you already have an external wallet such as [MetaMask](https://metamask.io/), you should sign in with that to MoonDAO and skip ahead to Apply, then Fund Your Wallet._
+_\* If you already have an external wallet such as [MetaMask](https://metamask.io/), you should sign in with that to MoonDAO and skip ahead to Fund Your Wallet._
 
    1. Visit [MoonDAO.com](https://moondao.com)
 
@@ -18,16 +18,16 @@ _\* If you already have an external wallet such as [MetaMask](https://metamask.i
       ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXdw-ONP-kXqw4SnJTnm9eTGQIyBS6WoZxNpW0zl1uyi8mJVaU_3DsH64Qd7llNZXVqGnsHfLeepBJxE-GnmzPGUAatpn8HynU_sY3vFM-GNAEx7EoF5NWtRlqmbiACgrjZdMKDLgw?key=dNK6lTkf7eD9GOYdS33HGA)\
       ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXcI3rJl7edrGMa7Rl3EBUOQahHzARISrC4AkmNw5Mx3Ed9yRw8wKZKaL-G5dCMPZ5rR_NMtfekeOt2XzoxxAyB1dqbaGMIesw0HXkC0PVwfsDuiZ8-FC5UqlL7i8dPrCuNijMsAJw?key=dNK6lTkf7eD9GOYdS33HGA)
 
-## **Apply**
+## **Price**
 
-Teams are created only after the wallet is whitelisted. Go to [Join](https://moondao.com/join) or [Create a Team](https://moondao.com/team) and submit the application form. You should hear back within a few days. Creating the team on-chain will fail until that whitelist is in place.
+Anyone can create a team. A year is **0.36 ETH** on Arbitrum. There is no application and no member discount. Pay the amount shown at checkout.
 
 ## **Fund Your Wallet**
 
    1. You can fund your wallet directly through the “Fund” feature in the **top-right** wallet menu using Coinbase onramp or MoonPay (not affiliated with MoonDAO). Debit cards are usually more successful at this step compared to credit cards.\
       ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXch-TUWV-G9V53YPucU-J0fAMaGHuUj4mCPgKF1mfabOkMxZ0vqdB6h5VwOD_z4zvHGUtV0PSxeXFmvXxSi0pC62FBVuWvJbKG9IhBglcfXAKaVcq_q7e4ctJ1ja40mTgwHKU0PXA?key=dNK6lTkf7eD9GOYdS33HGA)
 
-   2. Purchase Ethereum (ETH) on **Arbitrum**. Apply at [/team](https://moondao.com/team); the price is whatever checkout shows.
+   2. Purchase Ethereum (ETH) on **Arbitrum**. A team year is 0.36 ETH, plus a little gas for the transaction. Create the team at [/team](https://moondao.com/team).
 
 
 ### What if you can’t fund your wallet at this step?
@@ -48,7 +48,7 @@ Teams are created only after the wallet is whitelisted. Go to [Join](https://moo
 
 ## **Create a Team**
 
-_\* Please ensure that you’ve applied, been whitelisted, and have Arbitrum ETH in your wallet._
+_\* Please have Arbitrum ETH in your wallet. A year is 0.36 ETH, plus gas._
 
 1. Visit the onboarding page: <https://moondao.com/team>
 

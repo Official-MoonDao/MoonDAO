@@ -4,6 +4,7 @@ import {
   CITIZEN_ADDRESSES,
   CITIZEN_CHECKOUT_ADDRESSES,
   DEFAULT_CHAIN_V5,
+  TEAM_CREATOR_ADDRESSES,
   MOONEY_ADDRESSES,
   MOONEY_WETH_POOL_FEE,
   TEAM_ADDRESSES,
@@ -161,6 +162,60 @@ export function citizenCheckoutContract(chain: { id: number }) {
     chain: chain as any,
     abi: CitizenCheckoutABI as any,
   })
+}
+
+/** True once the pricing Safe batch has deployed CitizenCheckout. */
+export function useCitizenCheckoutLive(): boolean {
+  const [live, setLive] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    citizenCheckoutIsLive(DEFAULT_CHAIN_V5).then((value) => {
+      if (!cancelled) setLive(value)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  return live
+}
+
+/** True once team creation no longer requires a whitelist. */
+export function useTeamMintOpen(): boolean {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    const chain = DEFAULT_CHAIN_V5
+    const address = TEAM_CREATOR_ADDRESSES[getChainSlug(chain)]
+    if (!address) return
+    readContract({
+      contract: getContract({
+        client,
+        address,
+        chain,
+        abi: [
+          {
+            inputs: [],
+            name: 'openAccess',
+            outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+            stateMutability: 'view',
+            type: 'function',
+          },
+        ] as any,
+      }),
+      method: 'openAccess' as string,
+      params: [],
+    })
+      .then((value) => {
+        if (!cancelled) setOpen(Boolean(value))
+      })
+      .catch((err) => {
+        console.error('Failed to read team open access', err)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  return open
 }
 
 export function citizenCheckoutIsLive(chain: { id: number }): Promise<boolean> {

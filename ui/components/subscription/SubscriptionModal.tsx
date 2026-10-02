@@ -201,6 +201,15 @@ export function SubscriptionModal({
                   </span>
                 )}
               </p>
+              {type === 'citizen' &&
+                payCost != null &&
+                subscriptionCost != null &&
+                payCost > toRenewalValue(subscriptionCost) && (
+                  <p className="text-gray-400 text-sm mt-2">
+                    A quarter of this buys MOONEY and locks it for one year. A one-year renewal is
+                    0.036 ETH.
+                  </p>
+                )}
             </div>
 
             <PrivyWeb3Button

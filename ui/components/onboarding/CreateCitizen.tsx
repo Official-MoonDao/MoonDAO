@@ -77,6 +77,7 @@ import {
   citizenCheckoutContract,
   citizenCheckoutIsLive,
   lockCitizenshipMooney,
+  useCitizenCheckoutLive,
   quoteMinMooneyOut,
   unlockedStakeFromReceipt,
   walletPaymentForTreasury,
@@ -519,6 +520,7 @@ export default function CreateCitizen({
   const [estimatedGas, setEstimatedGas] = useState<bigint>(BigInt(0))
   const [renewalPriceWei, setRenewalPriceWei] = useState<bigint | null>(null)
   const [stakeIncluded, setStakeIncluded] = useState(false)
+  const checkoutLive = useCitizenCheckoutLive()
   const [isLoadingRenewalPrice, setIsLoadingRenewalPrice] = useState(false)
 
   // ===== Refs =====
@@ -2895,7 +2897,11 @@ export default function CreateCitizen({
                   ) : (
                     <dl className="space-y-3 text-sm">
                       <div className="flex justify-between gap-4">
-                        <dt className="text-slate-400">1-year citizenship</dt>
+                        <dt className="text-slate-400">
+                          {stakeIncluded
+                            ? '1-year citizenship, including MOONEY'
+                            : '1-year citizenship'}
+                        </dt>
                         <dd className="text-right tabular-nums">
                           {discountQuote ? (
                             <span>
@@ -2985,9 +2991,21 @@ export default function CreateCitizen({
                           discountQuote.discountBps / 10
                         }% off the first year. You pay ${formatEthAmount(discountDueEth)} ETH on ${
                           DEFAULT_CHAIN_V5.name
-                        }, plus a small network fee. Renewal next year is full price.`
+                        }, plus a small network fee. Renewal next year is full price${
+                          checkoutLive ? ' (0.036 ETH)' : ''
+                        }.${
+                          checkoutLive
+                            ? ' A quarter of the ETH you pay buys MOONEY and locks it for one year.'
+                            : ''
+                        }`
                       : freeMint
-                      ? `Your citizenship and network fees are fully sponsored — you pay nothing to mint. Renewal is ~1 year from mint.`
+                      ? `Your citizenship and network fees are fully sponsored — you pay nothing to mint.${
+                          checkoutLive ? ' A free invite does not buy MOONEY.' : ''
+                        } Renewal is ~1 year from mint.`
+                      : checkoutLive
+                      ? `Citizenship is 0.036 ETH for one year, paid in ${nativeSymbol} on ${
+                          selectedChain?.name ?? 'your network'
+                        }. Three quarters is the membership. One quarter buys MOONEY and locks it for one year. Gas varies with network conditions. Renewal is ~1 year from mint.`
                       : `Citizenship is paid in ${nativeSymbol} on ${
                           selectedChain?.name ?? 'your network'
                         }. Gas varies with network conditions. Renewal is ~1 year from mint.`}
@@ -2998,11 +3016,14 @@ export default function CreateCitizen({
                 <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
                   <h3 className="font-GoodTimes text-base mb-3 text-white">Citizenship</h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
-                    Citizenship lasts for one year and can be renewed at any time. Wallet funds are
-                    self-custodied and not dependent on registration.
-                    {stakeIncluded
-                      ? ' A quarter of the price buys MOONEY and locks it for one year.'
+                    Citizenship lasts for one year and can be renewed at any time.
+                    {checkoutLive
+                      ? ' A year is 0.036 ETH. Three quarters pays for the membership. One quarter buys MOONEY and locks it for one year.'
                       : ''}
+                    {stakeIncluded
+                      ? ' If you do not already have a lock, you confirm that lock in a second signature.'
+                      : ''}{' '}
+                    Wallet funds are self-custodied and not dependent on registration.
                   </p>
                   <p className="mt-4 text-slate-500 text-xs text-center">
                     Welcome to the future of on-chain, off-world coordination with MoonDAO.

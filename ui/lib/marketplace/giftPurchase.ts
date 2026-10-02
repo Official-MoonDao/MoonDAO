@@ -49,7 +49,7 @@ const MAX_BPS = BigInt(101)
 const BPS_DENOMINATOR = BigInt(100)
 
 /**
- * Convert a human price string/number (e.g. "0.0111" or "1,000") to wei.
+ * Convert a human price string/number (e.g. "0.036" or "1,000") to wei.
  * Returns null for non-positive or non-finite prices.
  */
 export function priceToWei(price: string | number | undefined): bigint | null {
@@ -63,9 +63,7 @@ export function priceToWei(price: string | number | undefined): bigint | null {
  * result with the computed price band, or a `{ status, message }` describing
  * exactly why it was rejected (mirrors the HTTP responses the API sends).
  */
-export function validateGiftPurchase(
-  params: GiftValidationParams
-): GiftValidationResult {
+export function validateGiftPurchase(params: GiftValidationParams): GiftValidationResult {
   const { teamTokenId, listingId, listing, paidValueWei } = params
 
   if (String(teamTokenId) !== EB_TEAM_ID) {

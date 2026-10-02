@@ -390,7 +390,7 @@ export default function TeamMarketplaceListingModal({
               </div>
               {isGift && (
                 <p className="text-[75%] opacity-60">
-                  {`On purchase, the buyer receives a one-time link to mint a free citizenship that they can gift to anyone. Set the price to the standard citizen price.`}
+                  {`On purchase, the buyer receives a one-time link to mint a free citizenship that they can gift to anyone. Set the price to the standard citizen price, 0.036 ETH for one year.`}
                 </p>
               )}
             </div>

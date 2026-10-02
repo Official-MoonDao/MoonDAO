@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
-import { usePublicYearEth } from '@/lib/subscription/citizenCheckout'
+import { useCitizenCheckoutLive, usePublicYearEth } from '@/lib/subscription/citizenCheckout'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -20,6 +20,7 @@ type CitizenTierProps = {
 const CitizenTier = ({ setSelectedTier, compact = false }: CitizenTierProps) => {
   const { selectedChain } = useContext(ChainContextV5)
   const priceEth = usePublicYearEth('citizen')
+  const stakeIncluded = useCitizenCheckoutLive()
   const { data: usdPrice } = useETHPrice(priceEth ?? 0, 'ETH_TO_USD')
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
@@ -78,6 +79,11 @@ const CitizenTier = ({ setSelectedTier, compact = false }: CitizenTierProps) => 
         type="citizen"
         compact={compact}
         gateOnAuth={false}
+        priceNote={
+          stakeIncluded
+            ? '0.036 ETH for one year. A quarter of this buys MOONEY and locks it for one year.'
+            : undefined
+        }
       />
     </div>
   )
