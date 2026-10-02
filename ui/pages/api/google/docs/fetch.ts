@@ -23,7 +23,7 @@ function extractDocId(url: string): string | null {
 }
 
 // Convert HTML to Markdown
-function htmlToMarkdown(html: string): string {
+export function htmlToMarkdown(html: string): string {
   let markdown = html
 
   // Remove style tags and their content
@@ -61,14 +61,16 @@ function htmlToMarkdown(html: string): string {
     return content.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, '- $1\n') + '\n'
   })
 
-  // Handle ordered lists
-  let listCounter = 0
-  markdown = markdown.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (match, content) => {
-    listCounter = 0
+  // Handle ordered lists. The item body has to be kept: Google Docs exports
+  // each priority as <li><span>…</span></li>, and dropping the capture
+  // leaves a bare "1. 2. 3. 4." line.
+  markdown = markdown.replace(/<ol([^>]*)>([\s\S]*?)<\/ol>/gi, (_match, attrs, content) => {
+    const startAttr = String(attrs).match(/\bstart\s*=\s*["']?(\d+)/i)
+    let listCounter = startAttr ? Number(startAttr[1]) - 1 : 0
     return (
-      content.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, () => {
+      content.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_item: string, body: string) => {
         listCounter++
-        return `${listCounter}. `
+        return `${listCounter}. ${String(body).trim()}\n`
       }) + '\n'
     )
   })
@@ -149,6 +151,10 @@ function htmlToMarkdown(html: string): string {
     .replace(/&mdash;/g, '—')
     .replace(/&ndash;/g, '–')
     .replace(/&hellip;/g, '...')
+    .replace(/&ge;/g, '≥')
+    .replace(/&le;/g, '≤')
+    .replace(/&times;/g, '×')
+    .replace(/&rarr;/g, '→')
 
   // Clean up extra whitespace
   markdown = markdown.replace(/\n{3,}/g, '\n\n')
