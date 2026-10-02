@@ -63,15 +63,15 @@ contract MockCitizen {
 
     function mintTo(
         address to,
-        string calldata,
-        string calldata,
-        string calldata,
-        string calldata,
-        string calldata,
-        string calldata,
-        string calldata,
-        string calldata,
-        string calldata
+        string memory,
+        string memory,
+        string memory,
+        string memory,
+        string memory,
+        string memory,
+        string memory,
+        string memory,
+        string memory
     ) external payable returns (uint256) {
         require(msg.value == price, "treasury");
         lastTo = to;
@@ -175,7 +175,7 @@ contract CitizenCheckoutTest is Test {
     }
 
     function _profile(address to) internal pure returns (CitizenCheckout.Profile memory) {
-        return CitizenCheckout.Profile(to, "Ada", "", "", "", "", "", "", "public", "1");
+        return CitizenCheckout.Profile(to, "Ada Lovelace", "bio", "ipfs://img", "Earth", "ada", "ada_l", "https://a.example", "public", "form-99");
     }
 
     function testMintForwardsTreasuryAndSwapsTheQuarter() public {
@@ -183,6 +183,7 @@ contract CitizenCheckoutTest is Test {
         vm.prank(buyer);
         uint256 tokenId = checkout.mint{value: total}(_profile(buyer), 1);
         assertEq(tokenId, 7);
+        assertEq(citizen.lastTo(), buyer);
         assertEq(citizen.lastValue(), TREASURY);
         assertEq(router.pulled(), total - TREASURY);
         assertEq(mooney.balanceOf(buyer), (total - TREASURY) * 1000);

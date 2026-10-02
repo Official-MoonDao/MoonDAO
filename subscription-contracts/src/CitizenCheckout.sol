@@ -172,19 +172,105 @@ contract CitizenCheckout is Ownable, ReentrancyGuard {
         _refund(msg.sender, msg.value - treasury - stakeWei);
     }
 
-    function _mint(Profile calldata profile, uint256 treasury) internal returns (uint256) {
-        return citizen.mintTo{value: treasury}(
-            profile.to,
-            profile.name,
-            profile.bio,
-            profile.image,
-            profile.location,
-            profile.discord,
-            profile.twitter,
-            profile.website,
-            profile.viewData,
-            profile.formId
+    /// @dev `mintTo` takes ten arguments. Encoding that call in one function
+    ///      overruns the stack under the coverage compiler, so the profile is
+    ///      encoded in two halves and stitched.
+    function _mint(Profile calldata profile, uint256 treasury) internal returns (uint256 tokenId) {
+        bytes memory head = _encodeHead(profile.to, profile.name, profile.bio, profile.image, profile.location);
+        bytes memory tail = _encodeTail(
+            profile.discord, profile.twitter, profile.website, profile.viewData, profile.formId
         );
+        bytes memory args = _joinProfile(head, tail);
+        address citizenAddr = address(citizen);
+        bytes4 selector = IMoonDAOCitizen.mintTo.selector;
+        assembly {
+            let data := add(args, 32)
+            let len := mload(args)
+            let dest := mload(0x40)
+            mstore(dest, selector)
+            let src := data
+            let end := add(src, len)
+            for {} lt(src, end) {} {
+                mstore(add(dest, add(4, sub(src, data))), mload(src))
+                src := add(src, 32)
+            }
+            let total := add(len, 4)
+            let ok := call(gas(), citizenAddr, treasury, dest, total, 0, 32)
+            if iszero(ok) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+            tokenId := mload(0)
+        }
+    }
+
+    function _encodeHead(
+        address to,
+        string calldata name,
+        string calldata bio,
+        string calldata image,
+        string calldata location
+    ) internal pure returns (bytes memory) {
+        return abi.encode(to, name, bio, image, location);
+    }
+
+    function _encodeTail(
+        string calldata discord,
+        string calldata twitter,
+        string calldata website,
+        string calldata viewData,
+        string calldata formId
+    ) internal pure returns (bytes memory) {
+        return abi.encode(discord, twitter, website, viewData, formId);
+    }
+
+    /// @dev Stitch two 5-word ABI blobs into the 10-word mintTo argument block.
+    function _joinProfile(bytes memory head, bytes memory tail) internal pure returns (bytes memory) {
+        uint256 headBodies = head.length - 160;
+        uint256 tailBodies = tail.length - 160;
+        bytes memory out = new bytes(320 + headBodies + tailBodies);
+        // address
+        assembly {
+            mstore(add(out, 32), mload(add(head, 32)))
+        }
+        // First four strings lived at head offsets; shift them by +160 so they
+        // sit after a 10-word head instead of a 5-word head.
+        for (uint256 i = 0; i < 4; i++) {
+            uint256 oldOff;
+            assembly {
+                oldOff := mload(add(head, add(64, mul(i, 32))))
+            }
+            uint256 newOff = oldOff + 160;
+            assembly {
+                mstore(add(out, add(64, mul(i, 32))), newOff)
+            }
+        }
+        for (uint256 i = 0; i < 5; i++) {
+            uint256 oldOff;
+            assembly {
+                oldOff := mload(add(tail, add(32, mul(i, 32))))
+            }
+            uint256 newOff = 160 + headBodies + oldOff;
+            assembly {
+                mstore(add(out, add(192, mul(i, 32))), newOff)
+            }
+        }
+        // Copy bodies. Head bodies start at byte 160 of `head`.
+        assembly {
+            let dest := add(out, 352) // 32 length prefix + 320 head
+            let hlen := sub(mload(head), 160)
+            let src := add(head, 192) // 32 length prefix + 160
+            for { let i := 0 } lt(i, hlen) { i := add(i, 32) } {
+                mstore(add(dest, i), mload(add(src, i)))
+            }
+            dest := add(dest, hlen)
+            let tlen := sub(mload(tail), 160)
+            src := add(tail, 192)
+            for { let i := 0 } lt(i, tlen) { i := add(i, 32) } {
+                mstore(add(dest, i), mload(add(src, i)))
+            }
+        }
+        return out;
     }
 
     function setSponsor(address sponsor_) external onlyOwner {

@@ -115,7 +115,7 @@ export const CITIZEN_ADDRESSES: Index = {
 // Admin Safe batch in subscription-contracts/script/safe-tx-pricing-batch.json
 // is executed. The app keeps the old mint path until that code exists.
 export const CITIZEN_CHECKOUT_ADDRESSES: Index = {
-  arbitrum: '0x66347849C6fd0A25A40a93A877fc1742cebd08A9',
+  arbitrum: '0xdCad6AD8B576FbD113e17dDB50C924453DE1D04D',
 }
 
 export const UNISWAP_V3_QUOTER_V2_ADDRESSES: Index = {
