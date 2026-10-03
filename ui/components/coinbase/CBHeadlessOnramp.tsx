@@ -6,6 +6,7 @@ import useOnrampVerification from '@/lib/coinbase/useOnrampVerification'
 import { OnrampAsset, onrampAssetIcon } from '@/lib/onramp/assets'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+import { OnrampVerificationCard } from './OnrampVerificationCard'
 
 interface CBHeadlessOnrampProps {
   address: string
@@ -125,7 +126,7 @@ export function CBHeadlessOnramp({
   const shellWidthClass = fullWidth ? 'w-full' : 'w-full max-w-md mx-auto'
   const shellChrome = embedded
     ? 'w-full text-white'
-    : `${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`
+    : `${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`
 
   const [fundingState, setFundingState] = useState<FundingState>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -712,47 +713,7 @@ export function CBHeadlessOnramp({
           )}
         </div>
 
-        {/* Verification */}
-        <div className="bg-white/5 border border-white/10 rounded-lg p-4 space-y-3">
-          <p className="text-gray-200 font-semibold text-sm">Verify your details</p>
-          <p className="text-gray-400 text-xs leading-relaxed">
-            Coinbase {payLabel} checkout requires a verified US phone number and email.
-          </p>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              <StatusDot ok={verification.hasPhone} />
-              <span className="text-gray-300">
-                Phone{verification.phoneNumber ? `: ${verification.phoneNumber}` : ''}
-              </span>
-            </div>
-            {!verification.hasPhone && (
-              <button
-                type="button"
-                onClick={verification.linkPhone}
-                className="text-xs font-semibold text-blue-300 hover:text-blue-200 underline"
-              >
-                {verification.phoneVerificationStale ? 'Re-verify' : 'Add phone'}
-              </button>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm">
-              <StatusDot ok={verification.hasEmail} />
-              <span className="text-gray-300">
-                Email{verification.email ? `: ${verification.email}` : ''}
-              </span>
-            </div>
-            {!verification.hasEmail && (
-              <button
-                type="button"
-                onClick={verification.linkEmail}
-                className="text-xs font-semibold text-blue-300 hover:text-blue-200 underline"
-              >
-                Add email
-              </button>
-            )}
-          </div>
-        </div>
+        <OnrampVerificationCard verification={verification} payLabel={payLabel} />
 
         {/* Terms */}
         <label className="flex items-start gap-3 cursor-pointer">
@@ -888,15 +849,5 @@ function FallbackOptions({
         )}
       </div>
     </div>
-  )
-}
-
-function StatusDot({ ok }: { ok: boolean }) {
-  return (
-    <span
-      className={`inline-block w-2.5 h-2.5 rounded-full ${
-        ok ? 'bg-emerald-400' : 'bg-gray-500'
-      }`}
-    />
   )
 }
