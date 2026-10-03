@@ -992,7 +992,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // totalPaid stays 0, but user is still eligible due to the allowlist
       }
     } else if (listed === false) {
-      totalPaid = await getTotalPaid(address as string)
+      // Contribution total is the only remaining eligibility signal. A subgraph
+      // outage must not 500 the request; tell the client to retry.
+      try {
+        totalPaid = await getTotalPaid(address as string)
+      } catch (err) {
+        console.error('getTotalPaid failed for unlisted user:', err)
+        return res.status(503).json({ error: 'Unable to verify eligibility. Please try again.' })
+      }
     } else {
       // listed === null (RPC error): fall back to contribution check only
       try {
