@@ -19,6 +19,7 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
+import { postMarketplacePurchase } from '@/lib/marketplace/purchaseNotification'
 import {
   computePurchasePrice,
   evaluateUsdcPurchase,
@@ -270,10 +271,16 @@ export default function BuyTeamListingModal({
           ? generatePrettyLink(listing.teamName)
           : listing.teamId
 
-        // Send email request with transaction verification
-        const res = await fetch('/api/marketplace/marketplace-purchase', {
-          method: 'POST',
-          body: JSON.stringify({
+        // Receipt mail is behind authMiddleware. The Privy token has to be a
+        // Bearer header — a NextAuth cookie is not always present — or the
+        // route 401s and nobody (buyer, vendor, or info@) is emailed.
+        const {
+          success,
+          message: responseMessage,
+          giftLink: returnedGiftLink,
+        } = await postMarketplacePurchase({
+          accessToken,
+          payload: {
             address: account?.address,
             email,
             item: listing.title,
@@ -291,15 +298,8 @@ export default function BuyTeamListingModal({
             isGift,
             listingId: listing.id,
             teamId: listing.teamId,
-            accessToken,
-          }),
+          },
         })
-
-        const {
-          success,
-          message: responseMessage,
-          giftLink: returnedGiftLink,
-        } = await res.json()
 
         if (success) {
           if (isGift && returnedGiftLink) {
