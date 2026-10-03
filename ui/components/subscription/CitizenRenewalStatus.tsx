@@ -35,10 +35,8 @@ export function CitizenRenewalStatusView({
     <div
       data-testid="citizen-renewal-status"
       data-urgent={urgent ? 'true' : 'false'}
-      className={`inline-flex max-w-full items-center gap-2 rounded-xl border pl-3 pr-1.5 py-1.5 ${
-        urgent
-          ? 'w-full justify-between border-red-400/50 bg-red-500/15'
-          : 'border-white/10 bg-white/5'
+      className={`inline-flex flex-shrink-0 items-center gap-2 rounded-xl border pl-3 pr-1.5 py-1 ${
+        urgent ? 'border-red-400/50 bg-red-500/15' : 'border-white/10 bg-white/5'
       } ${className ?? ''}`}
     >
       <div className="flex min-w-0 items-center gap-2">
@@ -58,7 +56,7 @@ export function CitizenRenewalStatusView({
         type="button"
         data-testid="citizen-renew-button"
         onClick={onRenew}
-        className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+        className={`flex-shrink-0 rounded-lg px-3 py-1 text-sm font-semibold transition-colors ${
           urgent
             ? 'bg-red-600 text-white shadow-lg shadow-red-900/40 hover:bg-red-500'
             : 'border border-white/10 bg-white/10 text-white hover:bg-white/15'

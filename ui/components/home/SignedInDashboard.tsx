@@ -597,8 +597,8 @@ export default function SignedInDashboard({
             >
               Edit
             </Link>
+            <CitizenRenewalStatus />
           </div>
-          <CitizenRenewalStatus className="basis-full w-full justify-between" />
         </div>
 
         {/* ──────────────── PREMIUM HERO: Greeting + KPIs ──────────────── */}
@@ -706,14 +706,10 @@ export default function SignedInDashboard({
                     <PencilSquareIcon className="w-4 h-4" />
                     Edit Profile
                   </Link>
+                  <CitizenRenewalStatus />
                 </div>
               )}
             </div>
-            {citizen && (
-              <div className="relative mt-4">
-                <CitizenRenewalStatus />
-              </div>
-            )}
           </div>
 
         </div>
