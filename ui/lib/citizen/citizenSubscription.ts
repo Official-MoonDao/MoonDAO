@@ -125,6 +125,66 @@ export function isSubscriptionExpired(expiresAt?: number | null): boolean {
   return expiresAt * 1000 <= Date.now()
 }
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+/** Show the dashboard Renew control as a red alert inside this window. */
+export const CITIZENSHIP_RENEWAL_ALERT_DAYS = 30
+
+/**
+ * Whole days until `expiresAt`, rounded up so the last day still counts as 1.
+ * Returns null when the timestamp is missing or unreadable.
+ */
+export function daysUntilCitizenshipExpiry(
+  expiresAt?: number | null,
+  nowMs = Date.now()
+): number | null {
+  if (typeof expiresAt !== 'number' || !Number.isFinite(expiresAt)) return null
+  return Math.ceil((expiresAt * 1000 - nowMs) / MS_PER_DAY)
+}
+
+export function isCitizenshipRenewalUrgent(expiresAt?: number | null, nowMs = Date.now()): boolean {
+  const days = daysUntilCitizenshipExpiry(expiresAt, nowMs)
+  return days !== null && days <= CITIZENSHIP_RENEWAL_ALERT_DAYS
+}
+
+export function formatCitizenshipExpiryDate(expiresAt: number): string {
+  return new Date(expiresAt * 1000).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+/** Date line next to the dashboard Renew button. Urgent copy includes days left. */
+export function citizenshipRenewalLabel(expiresAt: number, nowMs = Date.now()): string {
+  const date = formatCitizenshipExpiryDate(expiresAt)
+  const days = daysUntilCitizenshipExpiry(expiresAt, nowMs)
+  if (days === null || days > CITIZENSHIP_RENEWAL_ALERT_DAYS) return `Expires ${date}`
+  if (days <= 0) return `Expires today · ${date}`
+  if (days === 1) return `1 day left · ${date}`
+  return `${days} days left · ${date}`
+}
+
+/**
+ * Drop every cached expiration for a token. An early renewal extends a date
+ * that is still in the future, so the "only cache unexpired timestamps" rule
+ * would keep showing the old date until that old date passed.
+ */
+export function clearCachedCitizenExpiry(tokenId: string, chainId?: number) {
+  if (typeof window === 'undefined' || !tokenId) return
+
+  try {
+    const keys = new Set<string>([
+      expiryCacheKey(tokenId),
+      expiryCacheKey(tokenId, DEFAULT_CHAIN_V5.id),
+    ])
+    if (chainId != null) keys.add(expiryCacheKey(tokenId, chainId))
+    keys.forEach((key) => localStorage.removeItem(key))
+  } catch (error) {
+    console.warn('Failed to clear cached citizen expiration:', error)
+  }
+}
+
 /**
  * Routes whose whole purpose is a citizen-gated feature. Landing on one with a
  * lapsed subscription re-opens the renewal dialog even if it was dismissed.

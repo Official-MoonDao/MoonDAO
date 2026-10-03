@@ -1,6 +1,10 @@
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import {
+  citizenshipRenewalLabel,
+  clearCachedCitizenExpiry,
+  daysUntilCitizenshipExpiry,
   getCachedCitizenExpiry,
+  isCitizenshipRenewalUrgent,
   isSubscriptionExpired,
   setCachedCitizenExpiry,
 } from '@/lib/citizen/citizenSubscription'
@@ -139,6 +143,57 @@ describe('citizen subscription expiration', () => {
       const otherChainId = DEFAULT_CHAIN_V5.id === 42161 ? 11155111 : 42161
       setCachedCitizenExpiry('42', expiresAt, otherChainId)
       expect(getCachedCitizenExpiry('42')).to.equal(undefined)
+    })
+
+    // An early renewal extends a date that is still in the future. Leaving the
+    // old timestamp cached would hide the new expiration until the old one lapsed.
+    it('clears a still-valid expiration after renewal', () => {
+      const expiresAt = nowSeconds() + HOUR
+      setCachedCitizenExpiry('42', expiresAt, DEFAULT_CHAIN_V5.id)
+      setCachedCitizenExpiry('7', expiresAt, DEFAULT_CHAIN_V5.id)
+      clearCachedCitizenExpiry('42', DEFAULT_CHAIN_V5.id)
+      expect(getCachedCitizenExpiry('42')).to.equal(undefined)
+      expect(getCachedCitizenExpiry('42', DEFAULT_CHAIN_V5.id)).to.equal(undefined)
+      expect(getCachedCitizenExpiry('7', DEFAULT_CHAIN_V5.id)).to.equal(expiresAt)
+    })
+  })
+
+  describe('renewal alert window', () => {
+    const now = 1_700_000_000_000
+    const day = 24 * 60 * 60
+
+    it('treats 30 days or fewer as urgent and 31 as not', () => {
+      const in30 = now / 1000 + 30 * day
+      const justOver30 = now / 1000 + 30 * day + 1
+      expect(daysUntilCitizenshipExpiry(in30, now)).to.equal(30)
+      expect(isCitizenshipRenewalUrgent(in30, now)).to.equal(true)
+      expect(daysUntilCitizenshipExpiry(justOver30, now)).to.equal(31)
+      expect(isCitizenshipRenewalUrgent(justOver30, now)).to.equal(false)
+    })
+
+    it('counts a partial last day as one day left', () => {
+      const inTwelveHours = now / 1000 + 12 * 60 * 60
+      expect(daysUntilCitizenshipExpiry(inTwelveHours, now)).to.equal(1)
+      expect(isCitizenshipRenewalUrgent(inTwelveHours, now)).to.equal(true)
+    })
+
+    it('fails open when the expiration is unknown', () => {
+      expect(daysUntilCitizenshipExpiry(undefined, now)).to.equal(null)
+      expect(daysUntilCitizenshipExpiry(null, now)).to.equal(null)
+      expect(isCitizenshipRenewalUrgent(undefined, now)).to.equal(false)
+    })
+
+    it('includes the date, and days left only inside the alert window', () => {
+      const expiresAt = Date.UTC(2026, 9, 3, 16, 0, 0) / 1000
+      const date = new Date(expiresAt * 1000).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+      const tenDaysBefore = expiresAt * 1000 - 10 * day * 1000
+      const fortyDaysBefore = expiresAt * 1000 - 40 * day * 1000
+      expect(citizenshipRenewalLabel(expiresAt, tenDaysBefore)).to.equal(`10 days left · ${date}`)
+      expect(citizenshipRenewalLabel(expiresAt, fortyDaysBefore)).to.equal(`Expires ${date}`)
     })
   })
 })

@@ -88,6 +88,7 @@ import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import { SendModal } from '@/components/privy/PrivyConnectWallet'
 import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
+import CitizenRenewalStatus from '@/components/subscription/CitizenRenewalStatus'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
@@ -597,6 +598,7 @@ export default function SignedInDashboard({
               Edit
             </Link>
           </div>
+          <CitizenRenewalStatus className="basis-full w-full justify-between" />
         </div>
 
         {/* ──────────────── PREMIUM HERO: Greeting + KPIs ──────────────── */}
@@ -707,6 +709,11 @@ export default function SignedInDashboard({
                 </div>
               )}
             </div>
+            {citizen && (
+              <div className="relative mt-4">
+                <CitizenRenewalStatus />
+              </div>
+            )}
           </div>
 
         </div>
