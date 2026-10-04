@@ -16,7 +16,18 @@ import { getContract, readContract, waitForReceipt } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import { getOwnedNFTs } from 'thirdweb/extensions/erc721'
 import { FULL_DISCOUNT_BPS } from '@/lib/citizen/discountInvite'
-import { createInvite, generateInviteToken } from '@/lib/citizen/inviteTokens'
+import {
+  createInvite,
+  generateInviteToken,
+  insertMarketplaceGiftTx,
+  markMarketplaceGiftTxIssued,
+  peekInvite,
+  readMarketplaceGiftTx,
+} from '@/lib/citizen/inviteTokens'
+import {
+  issueMarketplaceGiftInvite,
+  readyMarketplaceGiftToken,
+} from '@/lib/marketplace/giftInviteIssuance'
 import { validateGiftPurchase } from '@/lib/marketplace/giftPurchase'
 import {
   deliverMarketplaceReceipts,
@@ -44,6 +55,11 @@ export const config = {
 }
 
 const GIFT_INVITE_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
+
+function giftLinkForToken(token: string): string {
+  const origin = (DEPLOYED_ORIGIN || '').replace(/\/$/, '')
+  return `${origin}/citizen?invite=${token}`
+}
 
 const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
 
@@ -130,7 +146,9 @@ async function getCitizenFormId(wallet: string): Promise<string | null> {
   }
 }
 
-// In-memory storage for used transaction hashes to prevent replay attacks
+// Same-isolate dedup for receipt mail. Gift invites are not locked by this set:
+// a retry after a dropped response or a 504 often runs on another instance.
+// issueMarketplaceGiftInvite reserves the tx hash in Redis instead.
 const usedTransactions = new Set<string>()
 
 setInterval(() => {
@@ -266,13 +284,6 @@ async function handler(req: any, res: any) {
       return res.status(400).send({ message: 'No wallet addresses found' })
     }
 
-    // Check if transaction has already been used for email sending
-    if (usedTransactions.has(txHash)) {
-      return res.status(400).send({
-        message: 'Transaction has already been processed for marketplace purchase',
-      })
-    }
-
     // Verify transaction exists and is valid
     const txReceipt = await waitForReceipt({
       client: serverClient,
@@ -309,11 +320,43 @@ async function handler(req: any, res: any) {
       })
     }
 
-    // Mark transaction as used to prevent replay attacks. This must happen
-    // before any gift validation / invite creation so two concurrent requests
-    // with the same txHash can never both mint an invite. If a later step
-    // fails, we release the hash via `failAndRelease` so a legitimate buyer
-    // whose invite generation failed can retry with the same payment.
+    // Replay of a gift that already minted an invite returns that same link.
+    // The in-memory set is only a same-isolate shortcut; the Redis record is
+    // what stops a second isolate from minting another full-discount token.
+    if (usedTransactions.has(txHash)) {
+      if (!isGift) {
+        return res.status(400).send({
+          message: 'Transaction has already been processed for marketplace purchase',
+        })
+      }
+      const ready = await readyMarketplaceGiftToken(
+        { read: () => readMarketplaceGiftTx(txHash) },
+        txReceipt.from
+      )
+      if (ready.status === 'ready') {
+        return res.status(200).json({
+          success: true,
+          giftLink: giftLinkForToken(ready.token),
+        })
+      }
+      if (ready.status === 'mismatch') {
+        return res.status(400).send({
+          message: 'Transaction has already been processed for marketplace purchase',
+        })
+      }
+      if (ready.status === 'unavailable') {
+        return res.status(500).send({
+          message:
+            'Invite storage is not configured. Please contact support to claim your gift.',
+        })
+      }
+      // Reserved on this isolate, but the invite was never marked issued.
+      usedTransactions.delete(txHash)
+    }
+
+    // Same-isolate mail dedup. Gift issuance is locked in Redis, not by this
+    // set — a second isolate never sees it. Releasing the hash on a later
+    // failure lets the buyer retry a payment that did not mint an invite.
     usedTransactions.add(txHash)
 
     const failAndRelease = (status: number, message: string) => {
@@ -389,25 +432,38 @@ async function handler(req: any, res: any) {
         return failAndRelease(validation.status, validation.message)
       }
 
-      const token = generateInviteToken()
-      const created = await createInvite(
-        token,
+      const issued = await issueMarketplaceGiftInvite(
         {
-          createdAt: Date.now(),
-          label: `Gift citizenship purchase (listing #${numericListingId})`,
-          createdBy: `marketplace-gift:${txReceipt.from}`,
-          discountBps: FULL_DISCOUNT_BPS,
+          insertIfAbsent: (record) =>
+            insertMarketplaceGiftTx(txHash, record, GIFT_INVITE_TTL_SECONDS),
+          read: () => readMarketplaceGiftTx(txHash),
+          inviteState: async (token) => ((await peekInvite(token)) ? 'live' : 'missing'),
+          createInvite: async (token) => {
+            const created = await createInvite(
+              token,
+              {
+                createdAt: Date.now(),
+                label: `Gift citizenship purchase (listing #${numericListingId})`,
+                createdBy: `marketplace-gift:${txReceipt.from}`,
+                discountBps: FULL_DISCOUNT_BPS,
+              },
+              GIFT_INVITE_TTL_SECONDS
+            )
+            return !!created
+          },
+          markIssued: () => markMarketplaceGiftTxIssued(txHash, GIFT_INVITE_TTL_SECONDS),
         },
-        GIFT_INVITE_TTL_SECONDS
+        { payer: txReceipt.from, newToken: generateInviteToken() }
       )
-      if (!created) {
+      if (!issued.ok) {
         return failAndRelease(
-          500,
-          'Invite storage is not configured. Please contact support to claim your gift.'
+          issued.reason === 'mismatch' ? 400 : 500,
+          issued.reason === 'mismatch'
+            ? 'Transaction has already been processed for marketplace purchase'
+            : 'Invite storage is not configured. Please contact support to claim your gift.'
         )
       }
-      const origin = (DEPLOYED_ORIGIN || '').replace(/\/$/, '')
-      giftLink = `${origin}/citizen?invite=${token}`
+      giftLink = giftLinkForToken(issued.token)
     }
 
     // Buyer receipt (BCC info@) goes out before vendor lookup. Typeform has no

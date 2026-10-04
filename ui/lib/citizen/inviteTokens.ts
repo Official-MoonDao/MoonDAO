@@ -28,6 +28,7 @@ const TOKEN_PREFIX = 'citizen:invite:'
 const REDEEMED_PREFIX = 'citizen:invite:redeemed:'
 const PAYMENT_PREFIX = 'citizen:discount:payment:'
 const PAYMENT_LOCK_PREFIX = 'citizen:discount:payment-lock:'
+const GIFT_TX_PREFIX = 'marketplace:gift-tx:'
 const DEFAULT_TTL_SECONDS = 30 * 24 * 60 * 60 // 30 days
 const REDEEMED_AUDIT_TTL_SECONDS = 90 * 24 * 60 * 60 // keep an audit trail 90 days
 const PAYMENT_TTL_SECONDS = REDEEMED_AUDIT_TTL_SECONDS
@@ -91,6 +92,91 @@ function paymentKey(txHash: string): string {
 
 function paymentLockKey(txHash: string): string {
   return `${PAYMENT_LOCK_PREFIX}${txHash.toLowerCase()}`
+}
+
+function giftTxKey(txHash: string): string {
+  return `${GIFT_TX_PREFIX}${txHash.toLowerCase()}`
+}
+
+export type MarketplaceGiftTxRecord = {
+  token: string
+  payer: string
+  issued: boolean
+}
+
+function parseMarketplaceGiftTx(value: unknown): MarketplaceGiftTxRecord | null {
+  if (!value || typeof value !== 'object') return null
+  const record = value as { token?: unknown; payer?: unknown; issued?: unknown }
+  if (typeof record.token !== 'string' || !record.token) return null
+  if (typeof record.payer !== 'string' || !record.payer) return null
+  return {
+    token: record.token,
+    payer: record.payer.toLowerCase(),
+    issued: record.issued === true,
+  }
+}
+
+/**
+ * SET NX the gift payment. true = this caller reserved it, false = another
+ * request already did, null = Redis is down or the write failed. The invite
+ * is not created here; callers mark `issued` only after that write lands.
+ */
+export async function insertMarketplaceGiftTx(
+  txHash: string,
+  record: { token: string; payer: string },
+  ttlSeconds: number
+): Promise<boolean | null> {
+  const client = getRedis()
+  if (!client || !txHash || !record.token || !record.payer || ttlSeconds <= 0) return null
+  try {
+    const wrote = await client.set(
+      giftTxKey(txHash),
+      {
+        token: record.token,
+        payer: record.payer.toLowerCase(),
+        issued: false,
+      },
+      { nx: true, ex: ttlSeconds }
+    )
+    return wrote === 'OK'
+  } catch (err) {
+    console.error('[marketplace-gift] failed to reserve tx:', err)
+    return null
+  }
+}
+
+/** Throw on Redis errors so a blip is not treated as "no invite yet". */
+export async function readMarketplaceGiftTx(
+  txHash: string
+): Promise<MarketplaceGiftTxRecord | null> {
+  const client = getRedis()
+  if (!client || !txHash) return null
+  const value = await client.get(giftTxKey(txHash))
+  return parseMarketplaceGiftTx(value)
+}
+
+/** Record that the invite for this payment exists, so a retry must not recreate it. */
+export async function markMarketplaceGiftTxIssued(
+  txHash: string,
+  ttlSeconds: number
+): Promise<boolean> {
+  const client = getRedis()
+  if (!client || !txHash || ttlSeconds <= 0) return false
+  try {
+    const key = giftTxKey(txHash)
+    const existing = parseMarketplaceGiftTx(await client.get(key))
+    if (!existing) return false
+    if (existing.issued) return true
+    await client.set(
+      key,
+      { token: existing.token, payer: existing.payer, issued: true },
+      { ex: ttlSeconds }
+    )
+    return true
+  } catch (err) {
+    console.error('[marketplace-gift] failed to mark tx issued:', err)
+    return false
+  }
 }
 
 /** Generate an unguessable invite token (URL-safe base64, ~256 bits). */
