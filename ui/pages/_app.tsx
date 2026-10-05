@@ -15,6 +15,7 @@ import { getChainById } from '@/lib/thirdweb/chain'
 import { PrivyProvider } from '@privy-io/react-auth'
 import { ThirdwebProvider } from 'thirdweb/react'
 import { PrivyThirdwebV5Provider } from '@/lib/privy/PrivyThirdwebV5Provider'
+import { privyDefaultChain } from '@/lib/privy/privyDefaultChain'
 import { WalletChainSync } from '@/lib/privy/WalletChainSync'
 import CitizenProvider from '@/lib/citizen/CitizenProvider'
 import { reportWebVitals as reportVitals, monitorLongTasks, monitorPageVisibility, NextWebVitalsMetric } from '@/lib/performance/webVitals'
@@ -106,6 +107,9 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
                   createOnLogin: 'users-without-wallets',
                 },
               },
+              // Privy's fallback is Ethereum mainnet. Embedded wallets then
+              // switch onto the app chain before thirdweb can attach them.
+              defaultChain: privyDefaultChain(),
               appearance: {
                 theme: '#252c4d',
                 showWalletLoginFirst: false,

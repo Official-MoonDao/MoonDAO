@@ -1,6 +1,6 @@
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { signIn, signOut } from 'next-auth/react'
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { defineChain } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
 import {
@@ -18,20 +18,28 @@ import PrivyWalletContext from './privy-wallet-context'
 export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
   const { user, ready, authenticated, getAccessToken } = usePrivy()
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { wallets } = useWallets()
+  const { wallets, ready: walletsReady } = useWallets()
   const setActiveWallet = useSetActiveWallet()
   const activeWallet = useActiveWallet()
   const { disconnect: disconnectThirdwebWallet } = useDisconnect()
   const [isSigningIn, setIsSigningIn] = useState(false)
+  const wasAuthenticated = useRef(false)
+  const clearedStaleSession = useRef(false)
 
   useEffect(() => {
     async function setActive() {
+      // The selected index can be empty while Privy is still connecting the
+      // embedded wallet. Prefer that wallet once it appears so thirdweb does
+      // not stay on a missing slot and leave useActiveAccount() null.
+      const wallet =
+        wallets[selectedWallet] ??
+        wallets.find((candidate) => candidate.walletClientType === 'privy') ??
+        wallets[0]
+      if (!wallet) {
+        return
+      }
+
       try {
-        const wallet = wallets[selectedWallet]
-        if (!wallet) {
-          // If no wallet is selected, we don't need to set an active wallet
-          return
-        }
 
         try {
           const walletClientType = wallet?.walletClientType
@@ -118,10 +126,11 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         console.error(
           '[PrivyThirdwebV5Provider] Failed to set active Thirdweb v5 wallet — useActiveAccount() will be null until the user reconnects.',
           {
-            walletClientType: wallets[selectedWallet]?.walletClientType,
-            address: wallets[selectedWallet]?.address,
-            chainId: wallets[selectedWallet]?.chainId,
+            walletClientType: wallet?.walletClientType,
+            address: wallet?.address,
+            chainId: wallet?.chainId,
             selectedChainId: selectedChain?.id,
+            walletsReady,
             message: err?.message,
             error: err,
           }
@@ -131,7 +140,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     }
 
     setActive()
-  }, [user, wallets, selectedWallet, selectedChain])
+  }, [user, wallets, walletsReady, selectedWallet, selectedChain])
 
   useEffect(() => {
     async function handleAuth() {
@@ -160,12 +169,24 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
   }, [ready, authenticated, user, getAccessToken])
 
   useEffect(() => {
-    if (ready && !authenticated) {
+    if (!ready) return
+
+    if (authenticated) {
+      wasAuthenticated.current = true
+      return
+    }
+
+    // Clear a leftover NextAuth session once Privy is ready and signed out.
+    // Disconnect thirdweb only after a real logout. Doing it whenever
+    // `authenticated` is still false drops the wallet that setActive() just
+    // attached, while Privy's own user is already signed in.
+    if (!clearedStaleSession.current || wasAuthenticated.current) {
+      clearedStaleSession.current = true
       signOut({ redirect: false })
-      // Ensure the thirdweb active wallet is disconnected so hooks like
-      // useActiveAccount() stop returning the previously connected address.
-      // Without this, pages that read the address directly from thirdweb
-      // (e.g. CitizenTier) can still see the old wallet after Privy logout.
+    }
+
+    if (wasAuthenticated.current) {
+      wasAuthenticated.current = false
       if (activeWallet) {
         try {
           disconnectThirdwebWallet(activeWallet)
@@ -174,7 +195,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         }
       }
     }
-  }, [ready, authenticated, user, activeWallet, disconnectThirdwebWallet])
+  }, [ready, authenticated, activeWallet, disconnectThirdwebWallet])
 
   return <>{children}</>
 }
