@@ -1,9 +1,10 @@
 import WhitelistABI from 'const/abis/Whitelist.json'
-import { TEAM_WHITELIST_ADDRESSES } from 'const/config'
+import { TEAM_CREATOR_ADDRESSES, TEAM_WHITELIST_ADDRESSES } from 'const/config'
 import { useContext, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { usePublicYearEth, useTeamMintOpen } from '@/lib/subscription/citizenCheckout'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
@@ -15,20 +16,48 @@ type TeamTierProps = {
   compact?: boolean
 }
 
-const PRICE = 0.0333
-
 const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
-  const { data: usdPrice } = useETHPrice(PRICE, 'ETH_TO_USD')
+  const priceEth = usePublicYearEth('team')
+  const teamMintOpen = useTeamMintOpen()
+  const { data: usdPrice } = useETHPrice(priceEth ?? 0, 'ETH_TO_USD')
 
   const [applyModalEnabled, setApplyModalEnabled] = useState(false)
 
   const handleTeamClick = async () => {
     if (chainSlug === 'sepolia') {
       return setSelectedTier('team')
+    }
+
+    try {
+      const creator = getContract({
+        client,
+        address: TEAM_CREATOR_ADDRESSES[chainSlug],
+        chain: selectedChain,
+        abi: [
+          {
+            inputs: [],
+            name: 'openAccess',
+            outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+            stateMutability: 'view',
+            type: 'function',
+          },
+        ] as any,
+      })
+      const openAccess = await readContract({
+        contract: creator,
+        method: 'openAccess' as string,
+        params: [],
+      })
+      if (openAccess) {
+        setSelectedTier('team')
+        return
+      }
+    } catch (err) {
+      console.error('Failed to read team open access', err)
     }
 
     const teamWhitelistContract = getContract({
@@ -51,11 +80,9 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
 
   return (
     <div id="team-pricing-container">
-      {applyModalEnabled && (
-        <ApplyModal type="team" setEnabled={setApplyModalEnabled} />
-      )}
+      {applyModalEnabled && <ApplyModal type="team" setEnabled={setApplyModalEnabled} />}
       <Tier
-        price={PRICE}
+        price={priceEth == null ? 0 : Number(priceEth.toFixed(4))}
         usdPrice={usdPrice}
         label="Create a Team"
         description="Teams are driving innovation and tackling ambitious space challenges together. From non-profits to startups and university teams, every group has something to contribute to our multiplanetary future. We are all a part of Team Space."
@@ -70,6 +97,7 @@ const TeamTier = ({ setSelectedTier, compact = false }: TeamTierProps) => {
         onClick={compact ? () => {} : handleTeamClick}
         type="team"
         compact={compact}
+        priceNote={teamMintOpen ? 'Open to any team. 0.36 ETH for one year.' : undefined}
       />
     </div>
   )

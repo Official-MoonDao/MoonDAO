@@ -111,6 +111,24 @@ export const CITIZEN_ADDRESSES: Index = {
   'arbitrum-sepolia': '0x853d6B4BA61115810330c7837FDD24D61CBab855',
 }
 
+// Predicted CREATE2 address of CitizenCheckout. It has no code until the
+// Admin Safe batch in subscription-contracts/script/safe-tx-pricing-batch.json
+// is executed. The app keeps the old mint path until that code exists.
+export const CITIZEN_CHECKOUT_ADDRESSES: Index = {
+  arbitrum: '0xdCad6AD8B576FbD113e17dDB50C924453DE1D04D',
+}
+
+export const UNISWAP_V3_QUOTER_V2_ADDRESSES: Index = {
+  arbitrum: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',
+}
+
+export const WETH_ADDRESSES: Index = {
+  arbitrum: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1',
+}
+
+// Uniswap v3 MOONEY/WETH 1% pool on Arbitrum.
+export const MOONEY_WETH_POOL_FEE = 10000
+
 export const CITIZEN_TABLE_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.CitizenTable,
   sepolia: sepoliaConfig.CitizenTable,
@@ -901,8 +919,7 @@ export const IS_REWARDS_CYCLE = PROJECT_CYCLE.phase === 'member'
 export const MEMBER_VOTE_SUBMISSIONS_OPEN = PROJECT_CYCLE.memberVoteSubmissionsOpen
 
 // See PROJECT_CYCLE.memberVoteExcludedAddresses.
-export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] =
-  PROJECT_CYCLE.memberVoteExcludedAddresses
+export const MEMBER_VOTE_EXCLUDED_ADDRESSES: string[] = PROJECT_CYCLE.memberVoteExcludedAddresses
 
 // Quarterly budget in USD (stablecoins). See PROJECT_CYCLE.budgetUSD.
 export const NEXT_QUARTER_BUDGET_USD = PROJECT_CYCLE.budgetUSD
@@ -965,5 +982,4 @@ export const RETRO_USD_BUDGET = PROJECT_CYCLE.retro.usdBudget
 // it does not scale down when projects get funded upfront. Surfaced alongside
 // the project pool so every part of the cycle's spend is visible. Zero when
 // the cycle pays in ETH but no ETH community circle is configured.
-export const RETRO_PRIMARY_COMMUNITY_CIRCLE: number =
-  PROJECT_CYCLE.retro.communityCirclePrimary
+export const RETRO_PRIMARY_COMMUNITY_CIRCLE: number = PROJECT_CYCLE.retro.communityCirclePrimary

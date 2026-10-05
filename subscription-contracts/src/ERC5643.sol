@@ -20,13 +20,12 @@ error CallerNotOwnerNorApproved();
 
 contract MoonDAOTeam is ERC721URIStorage, URITemplate, IERC5643Team, Ownable {
 
-    // For example: targeted subscription = 0.5 eth / 365 days.
-    // pricePerSecond = 5E17 wei / 31536000 (seconds in 365 days)
-
-    // Roughly calculates to 0.1 (1E17 wei) ether per 365 days.
+    // Owner-set. The pricing batch sets this to 11415525114 wei/s (0.36 ETH/year)
+    // and sets discount to 0. The initializer below is the value from the
+    // original deployment, before that batch.
     uint256 public pricePerSecond = 15854895991;
 
-    // Discount for renewal more than 12 dmonths. Denominator is 1000.
+    // Parts-per-thousand taken off the public price. The pricing batch sets this to 0.
     uint256 public discount = 933;
 
     string private _baseURIString = "https://tableland.network/api/v1/query?unwrap=true&extract=true&statement=";

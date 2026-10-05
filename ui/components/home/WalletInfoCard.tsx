@@ -327,7 +327,9 @@ export default function WalletInfoCard({
             href="/lock"
             className="block w-full text-center py-1.5 px-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-medium transition-all mt-auto"
           >
-            Lock $MOONEY
+            {!isUnlockedLoading && Number(unlockedMooney) > 0
+              ? 'Claim voting power'
+              : 'Lock $MOONEY'}
           </NavLink>
         </div>
 
@@ -352,6 +354,15 @@ export default function WalletInfoCard({
           </div>
         </div>
       </div>
+
+      {!isUnlockedLoading && Number(unlockedMooney) > 0 && (
+        <NavLink
+          href="/lock"
+          className="mb-4 block rounded-lg border border-yellow-500/30 bg-yellow-600/15 px-3 py-2 text-xs leading-relaxed text-yellow-100 hover:bg-yellow-600/25 transition-colors"
+        >
+          Voting power available to claim. Lock your MOONEY to use it.
+        </NavLink>
+      )}
 
       {/* Action Buttons */}
       <div className="grid grid-cols-3 gap-2">

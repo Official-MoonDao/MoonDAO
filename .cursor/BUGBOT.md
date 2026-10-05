@@ -73,9 +73,11 @@ keep comments concise and actionable.
   scaling, and `BigInt`→`Number` precision. Flag mismatched time bases (e.g. a
   30-day "month" that's later multiplied by 12 to imply an annual figure, or
   mixing 365 vs 365.25 day-years).
-- **Magic constants:** Flag duplicated financial constants (e.g. `TEAM_DISCOUNT`
-  / `TEAM_PRICE_DISCOUNT = 0.067`) copied across files with only a "keep in sync"
-  comment — they should be exported from one module and imported.
+- **Magic constants:** Flag duplicated financial constants (citizen year 0.036 ETH,
+  treasury share 0.027 ETH / `pricePerSecond` 856165313, team year 0.36 ETH /
+  `pricePerSecond` 11415525114) copied across files with only a "keep in sync"
+  comment — they should be exported from one module and imported. The public
+  citizen price is 4/3 of the treasury share once CitizenCheckout is live.
 - **Silent fallbacks:** Flag `catch {}` blocks that swallow errors and return
   hardcoded/fabricated values (prices, counts, revenue) without logging AND
   without signaling to the consumer that the data is estimated/stale. For
