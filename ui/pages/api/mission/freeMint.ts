@@ -992,7 +992,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // totalPaid stays 0, but user is still eligible due to the allowlist
       }
     } else if (listed === false) {
-      totalPaid = await getTotalPaid(address as string)
+      // Off the allowlist, so eligibility depends on contributions. A subgraph
+      // outage is a retryable 503, same as the RPC-failure path below.
+      try {
+        totalPaid = await getTotalPaid(address as string)
+      } catch (err) {
+        console.error('getTotalPaid failed:', err)
+        return res.status(503).json({ error: 'Unable to verify eligibility. Please try again.' })
+      }
     } else {
       // listed === null (RPC error): fall back to contribution check only
       try {

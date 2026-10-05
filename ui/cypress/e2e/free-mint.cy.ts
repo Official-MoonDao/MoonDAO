@@ -1,5 +1,20 @@
 describe('Free Mint API', () => {
   const endpoint = '/api/mission/freeMint'
+  const eligibilityUnavailable = 'Unable to verify eligibility. Please try again.'
+
+  // Contribution totals come from the subgraph. When that host is down the
+  // route answers 503 instead of guessing. Assert the payload when it is up,
+  // and the retry error when it is not.
+  function assertEligibilityOrUnavailable(res, onAvailable) {
+    if (res.status === 503) {
+      expect(res.body.error).to.eq(eligibilityUnavailable)
+      return
+    }
+    expect(res.status).to.eq(200)
+    expect(res.body).to.have.property('success', true)
+    expect(res.body).to.have.property('data')
+    onAvailable(res.body.data)
+  }
 
   describe('GET /api/mission/freeMint', () => {
     it('returns 400 when no address is provided', () => {
@@ -22,14 +37,13 @@ describe('Free Mint API', () => {
         url: `${endpoint}?address=${address}`,
         failOnStatusCode: false,
       }).then((res) => {
-        expect(res.status).to.eq(200)
-        expect(res.body).to.have.property('success', true)
-        expect(res.body).to.have.property('data')
-        expect(res.body.data).to.have.property('totalPaid')
-        expect(res.body.data).to.have.property('eligible')
-        // A zero-address should not be eligible
-        expect(res.body.data.eligible).to.eq(false)
-        expect(res.body.data.totalPaid).to.eq('0')
+        assertEligibilityOrUnavailable(res, (data) => {
+          expect(data).to.have.property('totalPaid')
+          expect(data).to.have.property('eligible')
+          // A zero-address should not be eligible
+          expect(data.eligible).to.eq(false)
+          expect(data.totalPaid).to.eq('0')
+        })
       })
     })
 
@@ -39,25 +53,29 @@ describe('Free Mint API', () => {
       cy.request({
         method: 'GET',
         url: `${endpoint}?address=${address}`,
+        failOnStatusCode: false,
       }).then((res) => {
-        expect(res.body.data.totalPaid).to.be.a('string')
+        assertEligibilityOrUnavailable(res, (data) => {
+          expect(data.totalPaid).to.be.a('string')
+        })
       })
     })
 
-    it('returns 200 for a known address (subgraph totals may vary by env)', () => {
+    it('returns eligibility for a known address (subgraph totals may vary by env)', () => {
       const address = '0x2db6d704058e552defe415753465df8df0361846'
 
       cy.request({
         method: 'GET',
         url: `${endpoint}?address=${address}`,
+        failOnStatusCode: false,
       }).then((res) => {
-        expect(res.status).to.eq(200)
-        expect(res.body.success).to.eq(true)
-        expect(res.body.data).to.have.property('totalPaid')
-        expect(res.body.data).to.have.property('eligible')
-        expect(res.body.data.totalPaid).to.be.a('string')
-        const totalPaidBigInt = BigInt(res.body.data.totalPaid)
-        expect(totalPaidBigInt >= 0n).to.eq(true)
+        assertEligibilityOrUnavailable(res, (data) => {
+          expect(data).to.have.property('totalPaid')
+          expect(data).to.have.property('eligible')
+          expect(data.totalPaid).to.be.a('string')
+          const totalPaidBigInt = BigInt(data.totalPaid)
+          expect(totalPaidBigInt >= 0n).to.eq(true)
+        })
       })
     })
   })
