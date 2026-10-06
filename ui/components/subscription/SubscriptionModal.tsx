@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { useActiveAccount } from 'thirdweb/react'
+import { clearCachedCitizenExpiry } from '@/lib/citizen/citizenSubscription'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import {
@@ -176,6 +177,12 @@ export function SubscriptionModal({
           }),
           account,
         })
+      }
+      if (type === 'citizen') {
+        const tokenId = nft?.metadata?.id ?? nft?.id
+        if (tokenId != null && tokenId !== '') {
+          clearCachedCitizenExpiry(String(tokenId), selectedChain?.id)
+        }
       }
       setEnabled(false)
       router.reload()
