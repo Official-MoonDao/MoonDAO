@@ -1,5 +1,14 @@
 describe('Free Mint API', () => {
   const endpoint = '/api/mission/freeMint'
+  const subgraphDownError = 'Unable to verify eligibility. Please try again.'
+
+  function getEligibility(address: string) {
+    return cy.request({
+      method: 'GET',
+      url: `${endpoint}?address=${address}`,
+      failOnStatusCode: false,
+    })
+  }
 
   describe('GET /api/mission/freeMint', () => {
     it('returns 400 when no address is provided', () => {
@@ -17,11 +26,12 @@ describe('Free Mint API', () => {
       // Use a random address that almost certainly has no contributions
       const address = '0x0000000000000000000000000000000000000001'
 
-      cy.request({
-        method: 'GET',
-        url: `${endpoint}?address=${address}`,
-        failOnStatusCode: false,
-      }).then((res) => {
+      getEligibility(address).then((res) => {
+        // Bendystraw 502s surface as 503. That is a retry, not a zero balance.
+        if (res.status === 503) {
+          expect(res.body.error).to.eq(subgraphDownError)
+          return
+        }
         expect(res.status).to.eq(200)
         expect(res.body).to.have.property('success', true)
         expect(res.body).to.have.property('data')
@@ -36,10 +46,12 @@ describe('Free Mint API', () => {
     it('returns totalPaid as a string (BigInt serialization)', () => {
       const address = '0x0000000000000000000000000000000000000001'
 
-      cy.request({
-        method: 'GET',
-        url: `${endpoint}?address=${address}`,
-      }).then((res) => {
+      getEligibility(address).then((res) => {
+        if (res.status === 503) {
+          expect(res.body.error).to.eq(subgraphDownError)
+          return
+        }
+        expect(res.status).to.eq(200)
         expect(res.body.data.totalPaid).to.be.a('string')
       })
     })
@@ -47,10 +59,11 @@ describe('Free Mint API', () => {
     it('returns 200 for a known address (subgraph totals may vary by env)', () => {
       const address = '0x2db6d704058e552defe415753465df8df0361846'
 
-      cy.request({
-        method: 'GET',
-        url: `${endpoint}?address=${address}`,
-      }).then((res) => {
+      getEligibility(address).then((res) => {
+        if (res.status === 503) {
+          expect(res.body.error).to.eq(subgraphDownError)
+          return
+        }
         expect(res.status).to.eq(200)
         expect(res.body.success).to.eq(true)
         expect(res.body.data).to.have.property('totalPaid')

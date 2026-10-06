@@ -89,6 +89,7 @@ import { SendModal } from '@/components/privy/PrivyConnectWallet'
 import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 import CitizenRenewalStatus from '@/components/subscription/CitizenRenewalStatus'
+import ClaimCitizenshipMooney from '@/components/subscription/ClaimCitizenshipMooney'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
@@ -713,6 +714,8 @@ export default function SignedInDashboard({
           </div>
 
         </div>
+
+        <ClaimCitizenshipMooney address={address} />
 
         {/* ──────────────── ROW 1: Activity + Citizens/Teams + Wallet/Rewards ──────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">

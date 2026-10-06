@@ -20,10 +20,9 @@ error CallerNotOwnerNorApproved();
 
 contract MoonDAOCitizen is ERC721URIStorage, URITemplate, IERC5643, Ownable {
 
-    // For example: targeted subscription = 0.5 eth / 365 days.
-    // pricePerSecond = 5E17 wei / 31536000 (seconds in 365 days)
-
-    // Roughly calculates to 0.1 (1E17 wei) ether per 365 days.
+    // Owner-set. The pricing batch sets this to 856165313 wei/s, the 0.027 ETH
+    // treasury share of a 0.036 ETH citizen year. Wallets pay 0.036 ETH through
+    // CitizenCheckout; the extra quarter buys MOONEY.
     uint256 public pricePerSecond = 351978691;
 
 

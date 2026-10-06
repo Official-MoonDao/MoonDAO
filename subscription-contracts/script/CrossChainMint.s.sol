@@ -32,6 +32,7 @@ contract MyScript is Script {
         address sourceAddress = 0xfF113d31149F63732B8943a9Ea12b738cB343202;
         
         CrossChainMinter minter = CrossChainMinter(sourceAddress);
+        // Native gas drop for the destination call, not the citizen membership price.
         bytes memory _options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(300000, 0.0111 ether);
 
         minter.crossChainMint{value:0.022 ether}(destinationEid , _options, 0x7a524e73eaB5D7A7fad9FA9fE11A24eBF11971a0, "name", "bio", "image", "location", "discord", "twitter", "website", "_view", "formId");

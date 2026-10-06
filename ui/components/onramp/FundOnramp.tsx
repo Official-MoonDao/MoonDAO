@@ -202,7 +202,7 @@ export function FundOnramp({
 
   return (
     <div
-      className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
+      className={`${shellWidthClass} bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 border border-white/10 rounded-2xl shadow-2xl text-white overflow-hidden`}
     >
       {/* Selected provider (embedded so it shares this single card). The
           provider selector renders inside, just below the "Fund Wallet" header. */}

@@ -561,10 +561,33 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
   const address = account?.address
   const activeWallet = useActiveWallet()
   const { disconnect: disconnectThirdwebWallet } = useDisconnect()
-  const { data: _ensData } = useENS(address)
+  const { logout, user, authenticated, ready, connectWallet, exportWallet }: any =
+    usePrivy()
+  const { login } = useLogin()
+  const { wallets } = useWallets()
+  const [loginQueued, setLoginQueued] = useState(false)
+
+  // The header used to require `user && wallets[0]`. A Privy embedded wallet
+  // is often missing from useWallets() for a moment after the modal closes,
+  // so the button stayed on "Sign in" and the next click logged the session out.
+  const linkedPrivyAddress = user?.linkedAccounts?.find(
+    (linked: any) =>
+      linked?.type === 'wallet' &&
+      linked?.chainType === 'ethereum' &&
+      linked?.walletClientType === 'privy' &&
+      typeof linked?.address === 'string'
+  )?.address
+  const displayAddress: string | undefined =
+    address ||
+    wallets?.[selectedWallet]?.address ||
+    wallets?.[0]?.address ||
+    linkedPrivyAddress ||
+    user?.wallet?.address
+  const isSignedIn = Boolean(authenticated)
+
+  const { data: _ensData } = useENS(displayAddress)
   const ens = _ensData?.name
   const [walletChainId, setWalletChainId] = useState(1)
-  const { logout, user, authenticated, connectWallet, exportWallet }: any = usePrivy()
 
   // Available chains for the network selector
   const availableChains = [
@@ -577,8 +600,53 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
     optimismSepolia,
   ]
 
-  const { login } = useLogin()
-  const { wallets } = useWallets()
+  const openLogin = useCallback(async () => {
+    // Privy's first getAuthenticatedUser() can return null after a fast wallet
+    // login and overwrite the session. Wait until `ready` so that request has
+    // finished before the modal opens.
+    if (!ready) {
+      setLoginQueued(true)
+      return
+    }
+    setLoginQueued(false)
+    if (user && !authenticated) {
+      try {
+        if (activeWallet) disconnectThirdwebWallet(activeWallet)
+      } catch (err) {
+        console.warn('Failed to disconnect thirdweb wallet:', err)
+      }
+      try {
+        wallets.forEach((wallet) => wallet.disconnect())
+      } catch (err) {
+        console.warn('Failed to disconnect Privy wallets:', err)
+      }
+      try {
+        clearAllCitizenCache()
+      } catch (err) {
+        console.warn('Failed to clear citizen cache:', err)
+      }
+      try {
+        await logout()
+      } catch (err) {
+        console.warn('Privy logout failed:', err)
+      }
+    }
+    login()
+  }, [
+    ready,
+    user,
+    authenticated,
+    activeWallet,
+    wallets,
+    logout,
+    login,
+    disconnectThirdwebWallet,
+  ])
+
+  useEffect(() => {
+    if (!loginQueued || !ready) return
+    void openLogin()
+  }, [loginQueued, ready, openLogin])
 
   const [enabled, setEnabled] = useState(false)
   const [sendModalEnabled, setSendModalEnabled] = useState(false)
@@ -590,13 +658,13 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
     tokens: walletTokens,
     loading: tokensLoading,
     error: tokensError,
-  } = useWalletTokens(address, chainSlug)
+  } = useWalletTokens(displayAddress, chainSlug)
 
   const overviewBalance = useWatchTokenBalance(arbitrum, OVERVIEW_TOKEN_ADDRESS)
 
   // Open the combined fund modal (MoonPay primary, Coinbase secondary)
   const openFundModal = () => {
-    if (!address) {
+    if (!displayAddress) {
       return toast.error('Please connect your wallet.')
     }
     setFundModalOpen(true)
@@ -762,7 +830,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
 
   return (
     <>
-      {user && wallets?.[0] ? (
+      {isSignedIn ? (
         <div className="w-full">
           <div
             id="privy-connect-wallet"
@@ -774,7 +842,11 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
             {/*Address and Toggle open/close button*/}
             <div className="flex items-center w-full h-full justify-between">
               <p className="text-xs">
-                {ens ? ens : address ? `${address?.slice(0, 6)}...${address?.slice(-4)}` : ''}
+                {ens
+                  ? ens
+                  : displayAddress
+                    ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`
+                    : 'Connecting…'}
               </p>
               <ChevronDownIcon
                 className={`w-4 h-4 text-black dark:text-white cursor-pointer transition-all duration-150 ${
@@ -802,11 +874,11 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                   />
                 )}
 
-                {address && (
+                {displayAddress && (
                   <FundOnrampModal
                     enabled={fundModalOpen}
                     setEnabled={setFundModalOpen}
-                    address={address}
+                    address={displayAddress}
                     selectedChain={selectedChain}
                     ethAmount={0}
                     context="wallet-fund"
@@ -822,16 +894,17 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                     </div>
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold text-white">Wallet</h3>
-                      {address && (
+                      {displayAddress && (
                         <button
                           onClick={() => {
-                            navigator.clipboard.writeText(address || '')
+                            navigator.clipboard.writeText(displayAddress)
                             toast.success('Address copied to clipboard.')
                           }}
                           className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors group"
                         >
                           <span className="font-mono">
-                            {ens || `${address?.slice(0, 6)}...${address?.slice(-4)}`}
+                            {ens ||
+                              `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`}
                           </span>
                           <ClipboardDocumentIcon className="w-3.5 h-3.5 group-hover:text-blue-400" />
                         </button>
@@ -1213,40 +1286,10 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
       ) : (
         <div className="w-full">
           <button
+            type="button"
             id={type === 'mobile' ? 'sign-in-button-mobile' : 'sign-in-button'}
-            onClick={async () => {
-              // Always end by opening the login modal. The pre-login cleanup
-              // (disconnecting a stale wallet / Privy session) can throw or hang;
-              // if it isn't guarded, login() never runs and the button looks
-              // dead. Wrap every step so login() is guaranteed to fire.
-              try {
-                if (user) {
-                  if (activeWallet) {
-                    try {
-                      disconnectThirdwebWallet(activeWallet)
-                    } catch (err) {
-                      console.warn('Failed to disconnect thirdweb wallet:', err)
-                    }
-                  }
-                  try {
-                    wallets.forEach((wallet) => wallet.disconnect())
-                  } catch (err) {
-                    console.warn('Failed to disconnect Privy wallets:', err)
-                  }
-                  try {
-                    clearAllCitizenCache()
-                  } catch (err) {
-                    console.warn('Failed to clear citizen cache:', err)
-                  }
-                  try {
-                    await logout()
-                  } catch (err) {
-                    console.warn('Privy logout failed:', err)
-                  }
-                }
-              } finally {
-                login()
-              }
+            onClick={() => {
+              void openLogin()
             }}
             className="rounded-full border border-white/20 px-3.5 py-1.5 text-[13px] font-medium text-white/90 transition-colors duration-150 hover:border-white/40 hover:text-white"
           >

@@ -2,6 +2,7 @@ import { XMarkIcon } from '@heroicons/react/20/solid'
 import { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Toaster } from 'react-hot-toast'
+import { splitBackdropBlur } from '@/lib/layout/splitBackdropBlur'
 import { modalStyles } from '@/lib/layout/styles'
 import { ModalSize, modalSizes } from '@/lib/layout/variants'
 
@@ -44,19 +45,26 @@ export default function Modal({
   const overlayClassName =
     className ||
     'fixed top-0 left-0 w-screen h-screen bg-[#00000080] backdrop-blur-sm flex justify-center items-start z-[9999] overflow-auto bg-gradient-to-t from-[#3F3FA690] via-[#00000080] to-transparent animate-fadeIn'
+  const { scrollClassName, blurClassName, blurZClassName } = splitBackdropBlur(overlayClassName)
   const contentClassName = className
     ? 'relative'
     : `${sizeClass} mx-auto ${modalStyles.base} relative`
 
   return (
     <Portal>
+      {blurClassName && (
+        <div
+          aria-hidden
+          className={`pointer-events-none fixed inset-0 ${blurZClassName} ${blurClassName}`}
+        />
+      )}
       <div
         onMouseDown={(e: any) => {
           e.stopPropagation()
           if (e.target.id === id) handleClose()
         }}
         id={id}
-        className={overlayClassName}
+        className={scrollClassName}
       >
         {className ? (
           <div className={contentClassName}>

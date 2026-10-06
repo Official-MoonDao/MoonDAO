@@ -39,6 +39,13 @@ import { enforceRegionNotRestricted } from '@/lib/geo'
 import { createHSMWallet, getHSMAddress, sendEthFromHSM } from '@/lib/google/hsm-signer'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import { L2_GAS_BUDGET_WEI } from '@/lib/rpc/gasBudget'
+import {
+  checkoutProfileTuple,
+  citizenCheckoutContract,
+  citizenCheckoutIsLive,
+  quoteMinMooneyOut,
+  walletPaymentForTreasury,
+} from '@/lib/subscription/citizenCheckout'
 import { escapeSingleQuotes } from '@/lib/tableland/cleanData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -208,7 +215,7 @@ type LoadedPayment = {
   status: number | null
 }
 
-async function readRenewalPrice(address: string): Promise<bigint> {
+async function readTreasuryPrice(address: string): Promise<bigint> {
   const citizenContract = getContract({
     client: serverClient,
     address: CITIZEN_ADDRESSES[chainSlug],
@@ -221,6 +228,11 @@ async function readRenewalPrice(address: string): Promise<bigint> {
     params: [address, ONE_YEAR_SECONDS],
   })
   return BigInt(cost)
+}
+
+async function quotedInviteFullPrice(address: string): Promise<bigint> {
+  const treasury = await readTreasuryPrice(address)
+  return walletPaymentForTreasury(chain, treasury)
 }
 
 async function loadDiscountPayment(txHash: string): Promise<LoadedPayment | null> {
@@ -264,7 +276,7 @@ async function settlePartialDiscountPayment(params: {
   const { inviteToken, invite, discountBps, address } = params
   let fullPrice: bigint
   try {
-    fullPrice = await readRenewalPrice(address)
+    fullPrice = await quotedInviteFullPrice(address)
   } catch (err) {
     console.error('[freeMint] getRenewalPrice failed:', err)
     return {
@@ -689,30 +701,52 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         method: 'getRenewalPrice' as string,
         params: [address, 365 * 24 * 60 * 60],
       })
-      const transaction = prepareContractCall({
-        contract: citizenContract,
-        method: 'mintTo' as string,
-        // Escape single quotes on every free-text field. The Citizen contract
-        // builds the Tableland INSERT with SQLHelpers.quote(), which does NOT
-        // escape embedded quotes, so an apostrophe (e.g. a bio with "Brazil's")
-        // yields malformed SQL the validator rejects — the NFT mints but the
-        // metadata row is never created. `location` already arrives escaped from
-        // the client (buildCitizenProfileMintFields) and `privacy` is a fixed
-        // enum, so neither is re-escaped here.
-        params: [
-          address,
-          escapeSingleQuotes(name),
-          escapeSingleQuotes(bio),
-          image,
-          location,
-          escapeSingleQuotes(discord),
-          escapeSingleQuotes(twitter),
-          escapeSingleQuotes(website),
-          privacy,
-          escapeSingleQuotes(formId),
-        ],
-        value: cost,
+      const treasury = BigInt(cost)
+      const checkout = citizenCheckoutContract(chain)
+      const useCheckout = Boolean(checkout) && (await citizenCheckoutIsLive(chain))
+      // A partial invite already paid the discounted wallet total to the
+      // sponsor. One quarter of that payment buys MOONEY. Fully sponsored
+      // invites buy none.
+      const stakeWei =
+        useCheckout && partialDiscount && discountPayment
+          ? discountPayment.valueWei / BigInt(4)
+          : BigInt(0)
+      // Escape single quotes on every free-text field. The Citizen contract
+      // builds the Tableland INSERT with SQLHelpers.quote(), which does NOT
+      // escape embedded quotes, so an apostrophe (e.g. a bio with "Brazil's")
+      // yields malformed SQL the validator rejects — the NFT mints but the
+      // metadata row is never created. `location` already arrives escaped from
+      // the client (buildCitizenProfileMintFields) and `privacy` is a fixed
+      // enum, so neither is re-escaped here.
+      const profile = checkoutProfileTuple({
+        to: address,
+        name: escapeSingleQuotes(name),
+        bio: escapeSingleQuotes(bio),
+        image,
+        location,
+        discord: escapeSingleQuotes(discord),
+        twitter: escapeSingleQuotes(twitter),
+        website: escapeSingleQuotes(website),
+        viewData: privacy,
+        formId: escapeSingleQuotes(formId),
       })
+      const transaction = useCheckout
+        ? prepareContractCall({
+            contract: checkout!,
+            method: 'mintSponsored' as string,
+            params: [
+              profile,
+              stakeWei,
+              stakeWei > BigInt(0) ? await quoteMinMooneyOut(chain, stakeWei) : BigInt(1),
+            ],
+            value: treasury + stakeWei,
+          })
+        : prepareContractCall({
+            contract: citizenContract,
+            method: 'mintTo' as string,
+            params: profile,
+            value: cost,
+          })
       const receipt = await sendAndConfirmTransaction({
         transaction,
         account,
@@ -926,7 +960,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
       let fullPrice: bigint
       try {
-        fullPrice = await readRenewalPrice(address as string)
+        fullPrice = await quotedInviteFullPrice(address as string)
       } catch (err) {
         console.error('[freeMint] getRenewalPrice failed:', err)
         return res.status(503).json({
@@ -992,7 +1026,14 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         // totalPaid stays 0, but user is still eligible due to the allowlist
       }
     } else if (listed === false) {
-      totalPaid = await getTotalPaid(address as string)
+      // Contribution total is the only remaining eligibility signal. A subgraph
+      // outage must not 500 the request; tell the client to retry.
+      try {
+        totalPaid = await getTotalPaid(address as string)
+      } catch (err) {
+        console.error('getTotalPaid failed for unlisted user:', err)
+        return res.status(503).json({ error: 'Unable to verify eligibility. Please try again.' })
+      }
     } else {
       // listed === null (RPC error): fall back to contribution check only
       try {
