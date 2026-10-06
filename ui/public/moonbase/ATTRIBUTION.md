@@ -1,7 +1,7 @@
 # Moon Base Zero — asset attribution
 
 Terrain assets are derived from **public-domain NASA data**; the 3D models are a
-mix of **NASA 3D Resources** and one third-party community model (noted below).
+mix of **NASA 3D Resources** and third-party models (noted below).
 
 ## 3D models (`models/`)
 
@@ -10,13 +10,14 @@ Except where noted, every GLB is from **NASA 3D Resources**
 <https://github.com/nasa/NASA-3D-Resources>). NASA 3D Resources assets are free
 and without copyright; see the
 [NASA Images and Media Usage Guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/).
-Models marked "optimized" were Draco-compressed with `@gltf-transform`
-(geometry only; no remodeling) to keep web payloads small.
+Models marked "optimized" were compressed with `@gltf-transform` (no
+remodeling) to keep web payloads small.
 
 | File | Source model | Used for |
 |---|---|---|
 | `starship-hls.glb` (edited) | Third-party "SpaceX Starship Ship 24 / Booster 7" community model (Sketchfab; verify license before production use) | Starship HLS — see note |
-| `viking-lander.glb` | Viking Lander (NASA) | Blue Moon MK1 cargo lander (stand-in) |
+| `bluemoon-mk1.glb` (optimized) | Purchased "Blue Moon MK1 lunar lander" (Sketchfab Standard License, FAB conversion). Textures resized to 2048² WebP and Draco-compressed, 40 MB → 1.7 MB; no remodeling. | Blue Moon MK1 cargo lander |
+| `viking-lander.glb` | Viking Lander (NASA) | Not currently rendered — Blue Moon MK1 now uses `bluemoon-mk1.glb`. Kept because the file ships in `public/`. |
 | `insight-lander.glb` (optimized) | InSight Cruise Lander (NASA) | Not currently rendered — Blue Moon MK2 is now a purpose-built procedural model (`BlueMoonMk2` in `ProjectModel.tsx`). Kept because the file ships in `public/`. |
 | `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | NASA LTV (rover stand-in) |
 | `rassor.glb` | RASSOR (Regolith Advanced Surface Systems Operations Robot) (NASA) | Not currently rendered — the ISRU site uses a procedural solar-thermal plant. Kept because the file ships in `public/`. |
@@ -29,11 +30,10 @@ the **upper-stage Ship** — the part that lands on the Moon — then Draco-comp
 the result (36 MB → ~1.9 MB). Its upstream Sketchfab source/license should be
 confirmed and recorded here before any production release.
 
-The other commercial vehicles (Blue Origin Blue Moon, the LTV competitors) have
-**no free, brand-accurate, photoreal model** available; the closest real NASA
-spacecraft are used as honest, visually-distinct stand-ins. Types without any
-suitable model (fission surface power, regolith construction / ISRU plants) fall
-back to procedural geometry in `ProjectModel.tsx`.
+Blue Moon MK1 is the purchased model above. MK2 and the other commercial
+vehicles that are not Starship still have no photoreal file; they are
+procedural geometry in `ProjectModel.tsx`, and the LTV still uses the
+Perseverance rover as a stand-in.
 
 ## Earth backdrop (`earth/`)
 

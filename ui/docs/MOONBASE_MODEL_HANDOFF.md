@@ -163,18 +163,14 @@ softgoods module uses for its own power feed.
   docking hatch, two open lattice bays exposing the propellant tanks, and a
   tapered ascent hull and nose, built off NASA's own Artemis renders of the
   selected lander. `spacex-starship-hls` still uses its GLB.
-- `blue-origin-blue-moon-mk1` used to render `viking-lander.glb`, which was
-  close to the inverse silhouette — a Mars lander is a low tripod deck, MK1 is
-  a tall barrel that is mostly tankage. It now renders `BlueMoonMk1`, built off
-  Blue Origin's full-scale mockup: a ring-seamed white cargo barrel under a
-  chamfered top deck, two gold MLI pressurant pods on the shoulders with a
-  harness run down to the skirt, a faceted gold MLI adapter skirt with an arch
-  cut in the front, four white ovoid tanks round the BE-7 under it, and four
-  splayed legs whose gold bipod turns bare metal at the knee. Note that
-  **dropping the `modelURI` from the dataset entry is half the change**:
-  `ProjectModel` branches on `modelURI` before it reaches `ProceduralModel`, so
-  a `PROJECT_MODEL` entry alone would have rendered nothing. The GLB file itself
-  is left in `public/` unreferenced, the same as `insight-lander.glb`.
+- `blue-origin-blue-moon-mk1` used to render `viking-lander.glb`, then a
+  purpose-built `BlueMoonMk1`. It now renders `bluemoon-mk1.glb` (purchased
+  model; `modelURI` on the dataset entry). `BlueMoonMk1` remains the loading
+  fallback only — `ProjectModel` branches on `modelURI` before
+  `ProceduralModel`, so removing the URI would put the procedural lander back.
+  VIPER still stands beside it. The GLB's feet are on the cardinal axes and
+  its named front is +Z, so the rover sits on the diagonal between the +X and
+  -Z feet rather than on the +X gap, which only clears the procedural legs.
 
 ### The landing zone — Touchdown (DONE — 6 of 6)
 
@@ -190,7 +186,7 @@ edit "harmonises" two of them back into looking alike:
 
 | | Body | Gear |
 |---|---|---|
-| Blue Moon MK1 | tall barrel, mostly tankage | 4 gold bipods, gold stops at the knee |
+| Blue Moon MK1 | purchased GLB, tall barrel | 4 legs on the cardinal axes |
 | Chang'e-7 | low boxy bus, two flat wings | 4 gold tubes, gold runs to the pad |
 | Griffin | hexagonal basket of solar panels | 4 bare aluminium, no gold at all |
 | Nova-C | 4 m column tapering to a cone | **6** legs, lattice of thin tubes |
