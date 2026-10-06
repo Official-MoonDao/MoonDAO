@@ -52,10 +52,12 @@ export default function GoogleDocsImport({
         body: JSON.stringify({ url }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => null)
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch document')
+      if (!response.ok || !data) {
+        throw new Error(
+          data?.error || 'Could not import that document. Please try again.'
+        )
       }
 
       setMarkdown(data.content)
