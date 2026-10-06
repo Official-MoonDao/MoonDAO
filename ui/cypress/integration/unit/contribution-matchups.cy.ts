@@ -3,6 +3,7 @@ import {
   computeStandings,
   eligibleCards,
   pairKey,
+  parseAreas,
   parseLinks,
   parseSheetTimestamp,
   pickPair,
@@ -44,6 +45,21 @@ describe('contribution matchups', () => {
       'https://www.b.org/',
       'https://github.com/moondao/repo',
     ])
+  })
+
+  it('splits multi-select areas and drops the form hints', () => {
+    expect(
+      parseAreas(
+        'Space Exploration & Research (e.g., payloads, research, development), Community Growth & Engagement (e.g., events, moderation, onboarding), Other (Please describe in the next question)'
+      )
+    ).to.deep.equal([
+      'Space Exploration & Research',
+      'Community Growth & Engagement',
+      'Other',
+    ])
+    expect(parseAreas('Technical')).to.deep.equal(['Technical'])
+    expect(parseAreas('')).to.deep.equal([])
+    expect(parseAreas('Content (e.g., articles')).to.deep.equal(['Content'])
   })
 
   it('hides author identity on cards', () => {
@@ -97,6 +113,7 @@ describe('contribution matchups', () => {
     expect(Math.round(byDesc.w45.share! * 100)).to.equal(15)
     expect(byDesc.w30.status).to.equal('cut')
     expect(byDesc.new.status).to.equal('needs-votes')
+    expect(byDesc.w90.flags).to.equal(0)
     expect(standings.map((s) => s.card.description)).to.deep.equal([
       'w90',
       'w60',
@@ -114,7 +131,15 @@ describe('contribution matchups', () => {
       wins[c.id] = i === 0 ? 8 : 5
       matchups[c.id] = 10
     })
-    const standings = computeStandings(cards, { wins, matchups })
+    const standings = computeStandings(cards, {
+      wins,
+      matchups,
+      flags: { [cards[1].id]: 2 },
+    })
     expect(standings.every((s) => s.status === 'paid')).to.equal(true)
+    // Flags are reported but don't change scores.
+    const flaggedRow = standings.find((s) => s.card.id === cards[1].id)!
+    expect(flaggedRow.flags).to.equal(2)
+    expect(flaggedRow.share).to.equal(standings.find((s) => s.card.id === cards[2].id)!.share)
   })
 })

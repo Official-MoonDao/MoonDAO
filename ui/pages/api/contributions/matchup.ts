@@ -1,6 +1,10 @@
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import {
+  getMatchupAuthors,
+  type MatchupAuthor,
+} from '@/lib/contributions/matchupAuthors'
 import { getMatchupPool, parseVoterId } from '@/lib/contributions/matchupPool'
 import {
   getMatchupRedis,
@@ -26,8 +30,15 @@ export type MatchupResponse = {
   storage: boolean
 }
 
+export type PickResponse = {
+  votesToday: number
+  /** Authors of both contributions, keyed by id; only sent after a counted pick. */
+  authors: Record<string, MatchupAuthor> | null
+}
+
 // GET  ?voter=<id>  → a fresh pair of contributions to compare
-// POST { voter, matchupId, winnerId | null } → record the pick (null = skip)
+// POST { voter, matchupId, winnerId, ignoreDailyLimit? } → record the pick.
+//      winnerId is a contribution id, 'neither' (both lose) or null (skip).
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Cache-Control', 'no-store')
 
@@ -62,14 +73,17 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === 'POST') {
-    const { voter: rawVoter, matchupId, winnerId } = req.body || {}
+    const { voter: rawVoter, matchupId, winnerId, ignoreDailyLimit } =
+      req.body || {}
     const voter = parseVoterId(rawVoter)
     if (!voter) return res.status(400).json({ message: 'Invalid voter id' })
     if (typeof matchupId !== 'string' || !matchupId) {
       return res.status(400).json({ message: 'Missing matchupId' })
     }
     if (winnerId !== null && typeof winnerId !== 'string') {
-      return res.status(400).json({ message: 'winnerId must be a string or null' })
+      return res
+        .status(400)
+        .json({ message: "winnerId must be a contribution id, 'neither' or null" })
     }
 
     const redis = getMatchupRedis()
@@ -79,9 +93,20 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
         .json({ message: 'Vote storage is not configured on this deployment.' })
     }
 
-    const result = await recordPick(redis, voter, matchupId, winnerId)
+    const result = await recordPick(redis, voter, matchupId, winnerId, {
+      ignoreDailyLimit: ignoreDailyLimit === true,
+    })
     if (!result.ok) return res.status(result.status).json({ message: result.message })
-    return res.status(200).json({ votesToday: result.votesToday })
+
+    // Reveal who did the work only once the pick is saved (not on a skip).
+    let authors: PickResponse['authors'] = null
+    if (winnerId !== null) {
+      const pool = await getMatchupPool()
+      const pair = pool.filter((c) => result.contributionIds.includes(c.id))
+      authors = await getMatchupAuthors(pair)
+    }
+    const body: PickResponse = { votesToday: result.votesToday, authors }
+    return res.status(200).json(body)
   }
 
   return res.status(405).json({ message: 'Method not allowed' })

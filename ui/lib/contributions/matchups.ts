@@ -19,12 +19,20 @@ export const PAYOUT_CUTOFF_FRACTION = 0.25
 // Win rate is raised to this power before normalizing into shares.
 export const PAYOUT_EXPONENT = 2
 export const MAX_VOTES_PER_DAY = 10
+export const MAX_AREAS_SHOWN = 3
+
+export const FLAG_REASONS = {
+  'not-a-contribution': 'Not a real contribution',
+  duplicate: 'Duplicate of another entry',
+  spam: 'Spam or off-topic',
+} as const
+export type FlagReason = keyof typeof FLAG_REASONS
 
 // What the matchup screen shows. Author name, email and wallet are left out on
 // purpose so votes judge the work, not the person.
 export type MatchupCard = {
   id: string
-  area: string
+  areas: string[]
   description: string
   timeCommitment: string
   links: string[]
@@ -34,6 +42,8 @@ export type MatchupCard = {
 export type MatchupStats = {
   wins: Record<string, number>
   matchups: Record<string, number>
+  /** Number of distinct voters who flagged each contribution. */
+  flags?: Record<string, number>
 }
 
 export type Standing = {
@@ -41,6 +51,7 @@ export type Standing = {
   wins: number
   matchups: number
   winRate: number | null
+  flags: number
   /** Projected share of the peer reward pool (0-1); null when not eligible. */
   share: number | null
   status: 'paid' | 'cut' | 'needs-votes'
@@ -84,11 +95,40 @@ export function parseLinks(raw: string): string[] {
   return Array.from(seen).slice(0, 5)
 }
 
+// The form's area question is multi-select, so the cell holds every ticked
+// option joined by ", ", and each option carries an "(e.g., …)" hint that has
+// commas of its own. Split only on commas outside parentheses, then drop the
+// hints: "Community Growth & Engagement (e.g., events, …), Other (Please …)"
+// becomes ["Community Growth & Engagement", "Other"].
+export function parseAreas(raw: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let current = ''
+  for (const ch of raw || '') {
+    if (ch === '(') depth++
+    else if (ch === ')') depth = Math.max(0, depth - 1)
+    if (ch === ',' && depth === 0) {
+      parts.push(current)
+      current = ''
+    } else {
+      current += ch
+    }
+  }
+  parts.push(current)
+
+  const seen = new Set<string>()
+  for (const part of parts) {
+    const label = part.replace(/\([^)]*\)?/g, '').replace(/\s+/g, ' ').trim()
+    if (label) seen.add(label)
+  }
+  return Array.from(seen)
+}
+
 export function toMatchupCard(c: IdentifiedContribution): MatchupCard {
   const submitted = parseSheetTimestamp(c.timestamp)
   return {
     id: c.id,
-    area: c.area || '',
+    areas: parseAreas(c.area),
     description: c.description,
     timeCommitment: c.timeCommitment || '',
     links: parseLinks(c.links),
@@ -169,6 +209,7 @@ export function computeStandings(
       wins,
       matchups,
       winRate: matchups > 0 ? wins / matchups : null,
+      flags: stats.flags?.[card.id] || 0,
     }
   })
 

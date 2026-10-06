@@ -32,8 +32,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     redis ? getMatchupStats(redis) : emptyStats,
   ])
   const standings = computeStandings(eligibleCards(pool), stats)
-  // Each pick adds one win, so total wins across the pool is the pick count.
-  const totalPicks = Object.values(stats.wins).reduce((sum, n) => sum + n, 0)
+  // Every counted pick (including "Neither") adds one matchup to each side.
+  const totalPicks = Math.round(
+    Object.values(stats.matchups).reduce((sum, n) => sum + n, 0) / 2
+  )
 
   res.setHeader('Cache-Control', 's-maxage=15, stale-while-revalidate=60')
   const body: StandingsResponse = {

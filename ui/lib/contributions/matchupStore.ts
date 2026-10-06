@@ -4,6 +4,10 @@
 //   contrib-vote:wins                 HASH contributionId -> matchups won
 //   contrib-vote:matchups             HASH contributionId -> matchups judged
 //   contrib-vote:log                  LIST of JSON picks {voter, winner, loser, ts}
+//                                     ("Neither" logs winner: null, losers: [a, b])
+//   contrib-vote:flags                HASH contributionId -> distinct voters who flagged it
+//   contrib-vote:flaggers:<id>        SET of voters who flagged that contribution
+//   contrib-vote:flag-log             LIST of JSON flags {voter, contribution, reason, ts}
 //   contrib-vote:issued:<matchupId>   JSON {a, b, voter}, expires after an hour
 //   contrib-vote:voter:<id>:pairs     SET of pair keys this voter has judged
 //   contrib-vote:voter:<id>:day:<d>   picks this voter made on UTC day d
@@ -13,11 +17,18 @@
 // or replay a pick.
 import crypto from 'crypto'
 import { Redis } from '@upstash/redis'
-import { MAX_VOTES_PER_DAY, pairKey, type MatchupStats } from './matchups'
+import {
+  MAX_VOTES_PER_DAY,
+  pairKey,
+  type FlagReason,
+  type MatchupStats,
+} from './matchups'
 
 const WINS_KEY = 'contrib-vote:wins'
 const MATCHUPS_KEY = 'contrib-vote:matchups'
 const LOG_KEY = 'contrib-vote:log'
+const FLAGS_KEY = 'contrib-vote:flags'
+const FLAG_LOG_KEY = 'contrib-vote:flag-log'
 const ISSUED_TTL_SECONDS = 60 * 60
 const DAY_TTL_SECONDS = 2 * 24 * 60 * 60
 
@@ -36,6 +47,7 @@ export function getMatchupRedis(): Redis | null {
 
 const issuedKey = (id: string) => `contrib-vote:issued:${id}`
 const pairsKey = (voter: string) => `contrib-vote:voter:${voter}:pairs`
+const flaggersKey = (id: string) => `contrib-vote:flaggers:${id}`
 const dayKey = (voter: string, now = new Date()) =>
   `contrib-vote:voter:${voter}:day:${now.toISOString().slice(0, 10)}`
 
@@ -46,11 +58,16 @@ function toCounts(raw: Record<string, unknown> | null): Record<string, number> {
 }
 
 export async function getMatchupStats(redis: Redis): Promise<MatchupStats> {
-  const [wins, matchups] = await Promise.all([
+  const [wins, matchups, flags] = await Promise.all([
     redis.hgetall<Record<string, unknown>>(WINS_KEY),
     redis.hgetall<Record<string, unknown>>(MATCHUPS_KEY),
+    redis.hgetall<Record<string, unknown>>(FLAGS_KEY),
   ])
-  return { wins: toCounts(wins), matchups: toCounts(matchups) }
+  return {
+    wins: toCounts(wins),
+    matchups: toCounts(matchups),
+    flags: toCounts(flags),
+  }
 }
 
 export async function getVoterState(
@@ -81,17 +98,22 @@ export async function issueMatchup(
   return id
 }
 
+export type PickChoice = string | 'neither' | null
+
 export type RecordPickResult =
-  | { ok: true; votesToday: number }
+  | { ok: true; votesToday: number; contributionIds: [string, string] }
   | { ok: false; status: number; message: string }
 
-// `winnerId` null means the voter skipped: the matchup is consumed but
-// nothing is counted.
+// `choice` is the winning contribution id, 'neither' (both count as a loss),
+// or null for a skip (the matchup is consumed but nothing is counted).
+// `ignoreDailyLimit` is the prototype's "continue anyway" override; picks past
+// the limit still count toward votesToday so they show up as e.g. 12 / 10.
 export async function recordPick(
   redis: Redis,
   voter: string,
   matchupId: string,
-  winnerId: string | null
+  choice: PickChoice,
+  options: { ignoreDailyLimit?: boolean } = {}
 ): Promise<RecordPickResult> {
   const raw = await redis.getdel<IssuedMatchup | string>(issuedKey(matchupId))
   const issued: IssuedMatchup | null =
@@ -103,21 +125,21 @@ export async function recordPick(
       message: 'This matchup expired or was already used. Load a new one.',
     }
   }
+  const contributionIds: [string, string] = [issued.a, issued.b]
 
   const today = dayKey(voter)
-  if (winnerId === null) {
+  if (choice === null) {
     const votesToday = Number(await redis.get<number>(today)) || 0
-    return { ok: true, votesToday }
+    return { ok: true, votesToday, contributionIds }
   }
 
-  if (winnerId !== issued.a && winnerId !== issued.b) {
+  if (choice !== 'neither' && choice !== issued.a && choice !== issued.b) {
     return { ok: false, status: 400, message: 'Winner is not in this matchup.' }
   }
-  const loserId = winnerId === issued.a ? issued.b : issued.a
 
   const votesToday = await redis.incr(today)
   if (votesToday === 1) await redis.expire(today, DAY_TTL_SECONDS)
-  if (votesToday > MAX_VOTES_PER_DAY) {
+  if (votesToday > MAX_VOTES_PER_DAY && !options.ignoreDailyLimit) {
     await redis.decr(today)
     return {
       ok: false,
@@ -127,15 +149,43 @@ export async function recordPick(
   }
 
   const pipeline = redis.pipeline()
-  pipeline.hincrby(WINS_KEY, winnerId, 1)
-  pipeline.hincrby(MATCHUPS_KEY, winnerId, 1)
-  pipeline.hincrby(MATCHUPS_KEY, loserId, 1)
-  pipeline.sadd(pairsKey(voter), pairKey(winnerId, loserId))
-  pipeline.lpush(
-    LOG_KEY,
-    JSON.stringify({ voter, winner: winnerId, loser: loserId, ts: Date.now() })
-  )
+  pipeline.hincrby(MATCHUPS_KEY, issued.a, 1)
+  pipeline.hincrby(MATCHUPS_KEY, issued.b, 1)
+  pipeline.sadd(pairsKey(voter), pairKey(issued.a, issued.b))
+  if (choice === 'neither') {
+    pipeline.lpush(
+      LOG_KEY,
+      JSON.stringify({ voter, winner: null, losers: [issued.a, issued.b], ts: Date.now() })
+    )
+  } else {
+    const loser = choice === issued.a ? issued.b : issued.a
+    pipeline.hincrby(WINS_KEY, choice, 1)
+    pipeline.lpush(
+      LOG_KEY,
+      JSON.stringify({ voter, winner: choice, loser, ts: Date.now() })
+    )
+  }
   await pipeline.exec()
 
-  return { ok: true, votesToday }
+  return { ok: true, votesToday, contributionIds }
+}
+
+// One flag per voter per contribution. Flags go to the Senate for review and
+// don't change scores, so they can't be used to bury a competitor.
+export async function recordFlag(
+  redis: Redis,
+  voter: string,
+  contributionId: string,
+  reason: FlagReason
+): Promise<{ alreadyFlagged: boolean }> {
+  const added = await redis.sadd(flaggersKey(contributionId), voter)
+  if (!added) return { alreadyFlagged: true }
+  const pipeline = redis.pipeline()
+  pipeline.hincrby(FLAGS_KEY, contributionId, 1)
+  pipeline.lpush(
+    FLAG_LOG_KEY,
+    JSON.stringify({ voter, contribution: contributionId, reason, ts: Date.now() })
+  )
+  await pipeline.exec()
+  return { alreadyFlagged: false }
 }
