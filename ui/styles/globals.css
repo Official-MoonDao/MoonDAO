@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap');
+/* Archivo at the expanded width. Google serves that face as family "Archivo" with font-stretch: expanded. */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,600;125,700;125,800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -172,7 +173,8 @@ a {
   justify-content: left;
   align-items: center;
   text-align: left;
-  font-family: Montserrat, sans-serif;
+  font-family: Archivo, sans-serif;
+  font-stretch: expanded;
   letter-spacing: 1px;
   width: 300px;
   max-width: 325px;
@@ -212,6 +214,10 @@ a {
 
   .component-background {
     @apply relative bg-gradient-to-br from-white via-gray-50 to-zinc-50 dark:from-black dark:via-slate-950 dark:to-gray-950;
+  }
+
+  .font-heading {
+    font-stretch: expanded;
   }
 
   .page-title {

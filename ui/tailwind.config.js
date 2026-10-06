@@ -18,9 +18,8 @@ module.exports = {
         navwide: '1650px',
       },
       fontFamily: {
-        heading: ['Montserrat', 'sans-serif'],
+        heading: ['Archivo', 'sans-serif'],
         RobotoMono: ['Roboto Mono', 'sans-serif'],
-        Montserrat: ['Montserrat', 'sans-serif'],
         Lato: ['Lato', 'sans-serif'],
       },
       animation: {

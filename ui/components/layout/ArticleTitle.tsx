@@ -7,7 +7,7 @@ interface ArticleTitle {
 const ArticleTitle = ({ text, loading, link }: ArticleTitle) => {
   return (
     <h3
-      className={`font-Montserrat text-[22px] font-bold leading-10 tracking-wide text-title-light  dark:text-title-dark lg:text-2xl ${
+      className={`font-heading text-[22px] font-bold leading-10 tracking-wide text-title-light  dark:text-title-dark lg:text-2xl ${
         loading
           ? 'loading-line'
           : link &&
