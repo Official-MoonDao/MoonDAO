@@ -252,6 +252,16 @@ export const FORECASTS_TABLE_NAMES: Index = {
   arbitrum: '',
   sepolia: 'Forecasts_11155111_2089',
 }
+// Citizen contributions. Filled in from the deploy script's logged address and
+// table name. Empty until Contributions.sol is deployed on that chain.
+export const CONTRIBUTIONS_ADDRESSES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
+export const CONTRIBUTIONS_TABLE_NAMES: Index = {
+  arbitrum: '',
+  sepolia: '',
+}
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1
 export const OVERVIEW_DELEGATION_VOTE_ID = 2
