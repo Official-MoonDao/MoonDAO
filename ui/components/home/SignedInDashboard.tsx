@@ -88,6 +88,7 @@ import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import { SendModal } from '@/components/privy/PrivyConnectWallet'
 import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
+import CitizenRenewalStatus from '@/components/subscription/CitizenRenewalStatus'
 import ClaimCitizenshipMooney from '@/components/subscription/ClaimCitizenshipMooney'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
 import IPFSRenderer from '../layout/IPFSRenderer'
@@ -597,6 +598,7 @@ export default function SignedInDashboard({
             >
               Edit
             </Link>
+            <CitizenRenewalStatus />
           </div>
         </div>
 
@@ -705,6 +707,7 @@ export default function SignedInDashboard({
                     <PencilSquareIcon className="w-4 h-4" />
                     Edit Profile
                   </Link>
+                  <CitizenRenewalStatus />
                 </div>
               )}
             </div>

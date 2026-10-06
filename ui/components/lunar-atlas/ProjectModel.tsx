@@ -423,6 +423,11 @@ const MODEL_FRONT_AZ: Record<string, number> = {
   // centroid at local azimuth -91.5°, so the un-tiled side faces +88.5°.
   // Without this the ship shows the camera its black heat shield.
   '/moonbase/models/starship-hls.glb': 1.545,
+  // Height is the long axis (authored Y 0.0195 > X 0.0147 > Z 0.0146, before
+  // the loader normalizes). The named front — Tank_mid_front, Front_piece —
+  // is local +Z, which is also the slightly shorter plan axis, so broadside
+  // and the vehicle's own front are the same heading.
+  '/moonbase/models/bluemoon-mk1.glb': 0,
 }
 
 const MODEL_UP = new THREE.Vector3(0, 1, 0)
@@ -1607,6 +1612,14 @@ export const SAME_VEHICLE: Record<string, string> = {
 // ---------------------------------------------------------------------------
 // Blue Origin Blue Moon MK1 — uncrewed cargo lander
 // ---------------------------------------------------------------------------
+//
+// The mesh on screen is bluemoon-mk1.glb. ProjectModel prefers a modelURI over
+// this component, so the geometry below is only the stand-in while that file
+// loads or if it fails. The GLB's feet sit on the cardinal axes and its named
+// front is +Z, so the rover parked beside the loaded mesh is on the diagonal
+// between the +X and -Z feet (see ProjectModel). The +X spot further down is
+// the gap in THIS stand-in, whose legs are on the diagonals, and would land
+// on a foot of the purchased mesh.
 //
 // Replaces the Viking-lander stand-in (viking-lander.glb), which was close to
 // the opposite silhouette: a Mars lander is a low tripod deck, and MK1 is a
@@ -17493,12 +17506,9 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // The crewed-lander race's second competitor, replacing the InSight-lander
   // stand-in. See BlueMoonMk2. `spacex-starship-hls` keeps its GLB.
   'blue-origin-blue-moon-mk2': BlueMoonMk2,
-  // Touchdown's largest entrant, replacing a Viking-lander GLB. Its `modelURI`
-  // had to come off the dataset entry as well: ProjectModel below branches on
-  // modelURI BEFORE it ever reaches ProceduralModel, so registering the
-  // component while the GLB stayed would have changed nothing on screen. The
-  // other four in that race still fall through to the generic `Lander`.
-  // See BlueMoonMk1.
+  // Touchdown's largest entrant. The mesh on screen is bluemoon-mk1.glb;
+  // this component is only the Suspense fallback, because ProjectModel
+  // branches on modelURI before it reaches ProceduralModel. See BlueMoonMk1.
   'blue-origin-blue-moon-mk1': BlueMoonMk1,
   // Registered even though the layout gives VIPER no plot, because the entry
   // is what makes hasOwnModel true and what would draw it correctly the day
@@ -18072,12 +18082,28 @@ export default function ProjectModel({
               further out than it had any reason to be. */}
           {project.type === 'lander' && (
             <LandingPad
-              r={0.85}
+              // MK1's graded deck is 0.6 × 8 m, one local unit. The generic
+              // 0.85 leaves VIPER, parked 3.5 m out, hanging off the pad.
+              r={project.id === 'blue-origin-blue-moon-mk1' ? 1 : 0.85}
               yaw={frontAz + PAD_CUT_OFFSET}
               accent={accent}
             />
           )}
           <GLBModel url={project.modelURI} transform={project.modelTransform} />
+          {project.id === 'blue-origin-blue-moon-mk1' && (
+            <group scale={MK1_M}>
+              {/* Feet of the purchased mesh are on the cardinal axes, so the
+                  +X gap the procedural stand-in uses is a leg here. Same
+                  3.5 m radius, on the diagonal between the +X and -Z feet,
+                  mast pointing out. See BlueMoonMk1. */}
+              <group
+                position={[3.5 * Math.SQRT1_2, 0, -3.5 * Math.SQRT1_2]}
+                rotation={[0, Math.PI / 4, 0]}
+              >
+                <ViperGeometry accent={accent} />
+              </group>
+            </group>
+          )}
           {isBase && <AstronautCompanion accent={accent} />}
         </Suspense>
       ) : (
@@ -18094,6 +18120,6 @@ export default function ProjectModel({
 // Warm the cache so drilling into a project shows its model immediately.
 ;[
   '/moonbase/models/perseverance-rover.glb',
-  '/moonbase/models/viking-lander.glb',
+  '/moonbase/models/bluemoon-mk1.glb',
   '/moonbase/models/starship-hls.glb',
 ].forEach((u) => useGLTF.preload(u, DRACO_PATH))

@@ -1101,6 +1101,7 @@
       "orgId": "blue-origin",
       "name": "Blue Moon MK1 Cargo Lander",
       "type": "lander",
+      "modelURI": "/moonbase/models/bluemoon-mk1.glb",
       "summary": "An uncrewed cargo lander able to deliver several tonnes to the lunar surface, serving as a precursor and logistics platform for the crewed MK2 lander.",
       "location": {
         "lat": -86,
