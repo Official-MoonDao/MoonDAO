@@ -123,30 +123,14 @@ contract Contributions is ERC721Holder, Ownable {
         countInCycle[cycleId][msg.sender] += 1;
         entries[id] = Entry({author: msg.sender, cycleId: cycleId, hasResult: false});
 
-        string memory values = string.concat(
-            Strings.toString(id),
-            ",",
-            Strings.toString(cycleId),
-            ",",
-            SqlString.quote(Strings.toHexString(msg.sender)),
-            ",",
-            _text(title, TITLE_MAX, true),
-            ",",
-            _text(description, DESCRIPTION_MAX, true),
-            ",",
-            _text(area, AREA_MAX, true),
-            ",",
-            _text(links, LINKS_MAX, false),
-            ",",
-            _text(metadata, METADATA_MAX, false),
-            ",0,",
-            Strings.toString(block.timestamp),
-            ",",
-            Strings.toString(block.timestamp),
-            ",0,",
-            SqlString.quote("")
+        _mutate(
+            SQLHelpers.toInsert(
+                _tablePrefix,
+                _tableId,
+                _COLUMNS,
+                _insertValues(id, cycleId, msg.sender, title, description, area, links, metadata)
+            )
         );
-        _mutate(SQLHelpers.toInsert(_tablePrefix, _tableId, _COLUMNS, values));
         emit ContributionSubmitted(id, cycleId, msg.sender);
     }
 
@@ -159,21 +143,11 @@ contract Contributions is ERC721Holder, Ownable {
         string calldata metadata
     ) external {
         _requireAuthorOpen(id);
-        string memory setters = string.concat(
-            "title=",
-            _text(title, TITLE_MAX, true),
-            ",description=",
-            _text(description, DESCRIPTION_MAX, true),
-            ",area=",
-            _text(area, AREA_MAX, true),
-            ",links=",
-            _text(links, LINKS_MAX, false),
-            ",metadata=",
-            _text(metadata, METADATA_MAX, false),
-            ",updatedAt=",
-            Strings.toString(block.timestamp)
+        _mutate(
+            SQLHelpers.toUpdate(
+                _tablePrefix, _tableId, _updateSetters(title, description, area, links, metadata), _idFilter(id)
+            )
         );
-        _mutate(SQLHelpers.toUpdate(_tablePrefix, _tableId, setters, _idFilter(id)));
         emit ContributionUpdated(id);
     }
 
@@ -229,20 +203,7 @@ contract Contributions is ERC721Holder, Ownable {
             entries[ids[i]].hasResult = true;
 
             statements[i] = ITablelandTables.Statement({
-                tableId: _tableId,
-                statement: SQLHelpers.toUpdate(
-                    _tablePrefix,
-                    _tableId,
-                    string.concat(
-                        "shareBps=",
-                        Strings.toString(shareBps[i]),
-                        ",reward=",
-                        _text(rewards[i], REWARD_MAX, false),
-                        ",updatedAt=",
-                        Strings.toString(block.timestamp)
-                    ),
-                    _idFilter(ids[i])
-                )
+                tableId: _tableId, statement: _resultStatement(ids[i], shareBps[i], rewards[i])
             });
             emit ResultRecorded(cycleId, ids[i], shareBps[i]);
         }
@@ -287,6 +248,55 @@ contract Contributions is ERC721Holder, Ownable {
         if (entry.author != msg.sender) revert NotAuthor();
         if (entry.cycleId != currentCycleId) revert CycleClosedForEdits();
         _requireCitizen(msg.sender);
+    }
+
+    /// @dev Built in short pieces. One `string.concat` of every column blows the
+    /// Yul stack under `forge coverage --ir-minimum` (one slot too deep).
+    function _insertValues(
+        uint256 id,
+        uint256 cycleId,
+        address author,
+        string calldata title,
+        string calldata description,
+        string calldata area,
+        string calldata links,
+        string calldata metadata
+    ) internal view returns (string memory values) {
+        values = string.concat(Strings.toString(id), ",", Strings.toString(cycleId));
+        values = string.concat(values, ",", SqlString.quote(Strings.toHexString(author)));
+        values = string.concat(values, ",", _text(title, TITLE_MAX, true));
+        values = string.concat(values, ",", _text(description, DESCRIPTION_MAX, true));
+        values = string.concat(values, ",", _text(area, AREA_MAX, true));
+        values = string.concat(values, ",", _text(links, LINKS_MAX, false));
+        values = string.concat(values, ",", _text(metadata, METADATA_MAX, false));
+        string memory ts = Strings.toString(block.timestamp);
+        values = string.concat(values, ",0,", ts, ",", ts, ",0,", SqlString.quote(""));
+    }
+
+    function _updateSetters(
+        string calldata title,
+        string calldata description,
+        string calldata area,
+        string calldata links,
+        string calldata metadata
+    ) internal view returns (string memory setters) {
+        setters = string.concat("title=", _text(title, TITLE_MAX, true));
+        setters = string.concat(setters, ",description=", _text(description, DESCRIPTION_MAX, true));
+        setters = string.concat(setters, ",area=", _text(area, AREA_MAX, true));
+        setters = string.concat(setters, ",links=", _text(links, LINKS_MAX, false));
+        setters = string.concat(setters, ",metadata=", _text(metadata, METADATA_MAX, false));
+        setters = string.concat(setters, ",updatedAt=", Strings.toString(block.timestamp));
+    }
+
+    function _resultStatement(uint256 id, uint256 shareBps, string calldata reward)
+        internal
+        view
+        returns (string memory)
+    {
+        string memory setters = string.concat("shareBps=", Strings.toString(shareBps));
+        setters = string.concat(setters, ",reward=", _text(reward, REWARD_MAX, false));
+        setters = string.concat(setters, ",updatedAt=", Strings.toString(block.timestamp));
+        return SQLHelpers.toUpdate(_tablePrefix, _tableId, setters, _idFilter(id));
     }
 
     function _text(string calldata s, uint256 maxLen, bool required) internal pure returns (string memory) {
