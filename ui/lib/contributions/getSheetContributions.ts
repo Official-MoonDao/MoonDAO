@@ -14,6 +14,7 @@ export type Contribution = {
   description: string
   links: string
   area: string
+  timeCommitment: string
 }
 
 export const CONTRIBUTIONS_SHEET_CSV_URL =
@@ -106,6 +107,7 @@ export async function getSheetContributions(): Promise<Contribution[]> {
       description: row[6] || '',
       links: row[8] || '',
       area: row[5] || '',
+      timeCommitment: row[7] || '',
     }))
     .reverse() // newest first
 }
