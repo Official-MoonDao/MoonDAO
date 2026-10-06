@@ -13,6 +13,7 @@ import {
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
+import { rememberCheckoutLiveness } from '@/lib/subscription/checkoutLivenessCache'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 
@@ -210,8 +211,11 @@ export function citizenCheckoutIsLive(chain: { id: number }): Promise<boolean> {
   })
     .then(() => true)
     .catch(() => false)
-  liveCache.set(chainSlug, pending)
-  return pending
+  // Do not keep a miss. The pricing Safe batch deploys this contract and, in
+  // the same transaction, makes direct mintTo revert. A cached false — from
+  // the pre-deploy eth_call, or from one RPC blip — would keep paid and
+  // sponsored mints on that closed path for the life of the process.
+  return rememberCheckoutLiveness(liveCache, chainSlug, pending)
 }
 
 export async function quoteMinMooneyOut(chain: { id: number }, stakeWei: bigint): Promise<bigint> {
