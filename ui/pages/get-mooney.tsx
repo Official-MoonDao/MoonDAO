@@ -24,7 +24,6 @@ export default function GetMooney() {
           mode="compact"
           popOverEffect={false}
           isProfile
-          centerHeader
           preFooter={
             <NoticeFooter
               defaultTitle="Need Help?"
@@ -34,7 +33,7 @@ export default function GetMooney() {
             />
           }
         >
-          <div className="max-w-2xl mx-auto w-full px-4 sm:px-5 md:px-0">
+          <div className="w-full max-w-2xl">
             {/* Swap Tokens */}
             <div className="mb-4 sm:mb-6">
               <NativeToMooney selectedChain={selectedChain} />

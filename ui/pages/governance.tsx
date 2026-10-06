@@ -183,7 +183,7 @@ const Governance: React.FC = () => {
             />
 
             {/* Glassmorphism container with cards */}
-            <div className="relative mx-4">
+            <div className="relative">
               <div className="p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                   {governanceCards.map((card, index) => (
@@ -204,7 +204,7 @@ const Governance: React.FC = () => {
 
             {/* Latest Proposals Section */}
             <div className="mt-10 mb-10">
-              <div className="mb-6 px-4">
+              <div className="mb-6">
                 <h2 className="text-lg md:text-xl font-heading font-semibold text-white mb-2">
                   Latest Proposals
                 </h2>

@@ -30,7 +30,7 @@ const JoinUs: React.FC = () => {
               </>
             }
           >
-            <Frame backgroundColor="#090D21">
+            <Frame backgroundColor="#090D21" noPadding>
               <h1 className="pb-5 header font-heading font-semibold">MoonDAO makes HISTORY!</h1>
               <p className="pb-5">
                 We were the first DAO to send someone to space! Join 12,000+ subscribers and find

@@ -104,7 +104,7 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
           isProfile
           preFooter={<NoticeFooter />}
         >
-          <div className="max-w-6xl mx-auto w-full">
+          <div className="w-full">
             {/* Enhanced info section */}
             <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 mb-6 shadow-xl">
               <div className="grid md:grid-cols-2 gap-6">
@@ -163,7 +163,7 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
           </div>
 
           {/* Summaries list */}
-          <div className="max-w-6xl mx-auto w-full mt-6 space-y-6">
+          <div className="mt-6 w-full space-y-6">
             {searchLoading ? (
               <div className="flex justify-center items-center py-12">
                 <LoadingSpinner width="w-8" height="h-8" />

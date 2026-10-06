@@ -289,7 +289,6 @@ export default function Lock() {
           mode="compact"
           popOverEffect={false}
           isProfile
-          centerHeader
           description="Lock MOONEY to receive vMOONEY and gain voting power."
           preFooter={
             <NoticeFooter
@@ -300,7 +299,7 @@ export default function Lock() {
             />
           }
         >
-          <div className="max-w-2xl mx-auto w-full px-4 sm:px-5 md:px-0">
+          <div className="w-full max-w-2xl">
             {/* vMOONEY Withdraw Section */}
             <div className="mb-4 sm:mb-6">
               <RetroactiveRewards />

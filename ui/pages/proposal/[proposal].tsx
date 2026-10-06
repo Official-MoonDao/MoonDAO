@@ -257,7 +257,7 @@ function Proposal({ proposalPacket }: { proposalPacket: ProposalPacket }) {
         popOverEffect={false}
         isProfile
       >
-        <div className="mt-6 md:mt-10 mb-6 md:mb-10 w-full px-4 md:px-0">
+        <div className="mb-6 mt-6 w-full md:mb-10 md:mt-10">
           <div className={`grid ${gridCols} gap-4 md:gap-8 w-full max-w-full`}>
             <div className="lg:col-span-2 relative w-full">
               <div className="w-full pr-8 md:pr-0">

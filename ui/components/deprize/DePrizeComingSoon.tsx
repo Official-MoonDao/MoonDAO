@@ -21,7 +21,7 @@ export default function DePrizeComingSoon() {
           description=""
           preFooter={<NoticeFooter />}
         >
-          <div className="w-full max-w-[760px] mx-auto">
+          <div className="w-full max-w-[760px]">
             <div className="p-10 sm:p-14 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg text-center">
               <p className="text-white font-heading font-semibold text-2xl sm:text-3xl tracking-wide">
                 Coming soon!

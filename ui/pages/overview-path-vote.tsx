@@ -440,7 +440,7 @@ export default function OverviewPathVote({
           description="Token holders choose the next step for the Overview Effect Flight. About $172k has been raised or pledged, and none of it has been spent."
           preFooter={<NoticeFooter />}
         >
-          <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px] mx-auto">
+          <div className="flex w-full flex-col gap-6 md:gap-8">
             {/* Community update video */}
             <YouTubeEmbed videoId="YzecKAp9V8U" />
 

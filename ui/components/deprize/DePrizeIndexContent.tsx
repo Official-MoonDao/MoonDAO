@@ -182,7 +182,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
           isProfile
           preFooter={<NoticeFooter />}
         >
-          <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
+          <div className="flex w-full flex-col gap-4">
             <p id="deprize-intro" className="text-sm text-gray-400 leading-relaxed max-w-3xl">
               A DePrize is a market on who reaches a lunar capability first. You back a competitor,
               and every bet grows the prize. See each one in Moonbase:{' '}
@@ -387,7 +387,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                 )}
               </>
             ) : (
-              <div className="flex flex-col gap-4 w-full max-w-[760px] mx-auto">
+              <div className="flex w-full max-w-[760px] flex-col gap-4">
                 {filteredRaces.map(({ goal, competitors }) => (
                   <RaceMarketCard
                     key={goal.id}

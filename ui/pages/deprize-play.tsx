@@ -1418,7 +1418,7 @@ export default function DePrizePlay() {
           description="Bet ETH on an outcome, watch live odds and payouts, and claim after the market resolves."
           preFooter={<NoticeFooter />}
         >
-          <div className="flex flex-col gap-6 w-full max-w-[760px] mx-auto">
+          <div className="flex w-full max-w-[760px] flex-col gap-6">
             {!configured ? (
               <div className="p-5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-200 text-sm">
                 No market is configured for the current chain (

@@ -197,7 +197,7 @@ export default function Network({
           }
         >
           <Frame noPadding>
-            <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
+            <div id="network-controls" className="mb-8">
               <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
                 <div
                   className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${
@@ -262,7 +262,7 @@ export default function Network({
               </div>
             </div>
 
-            <div id="network-content" className="max-w-6xl mx-auto px-6 pb-16">
+            <div id="network-content" className="pb-16">
               {isMapTab ? (
                 <div className={`${networkCard.base} p-6 md:p-8`}>
                   <div className="mb-6">

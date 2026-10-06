@@ -162,7 +162,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           isProfile
         >
           <div className="flex flex-row w-full">
-            <div className="p-4 md:px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
+            <div className="flex w-full flex-col rounded-[2vmax] border border-white/10 bg-black/20 p-4 backdrop-blur-sm md:px-8 lg:p-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
                 {filteredListings && filteredListings.length > 0 ? (
                   (() => {

@@ -23,8 +23,9 @@ interface ContentProps {
   branded?: boolean
   isProfile?: boolean
   maxWidth?: string
-  /** Center the title over a narrow centered tool (bridge, lock, buy). */
+  /** @deprecated Titles stay left-aligned with the content column. */
   centerHeader?: boolean
+  /** @deprecated Unused. The content column sets the width. */
   centerHeaderWidth?: string
   toolbar?: ReactNode
   actions?: ReactNode
@@ -40,55 +41,51 @@ const ContentLayout: React.FC<ContentProps> = ({
   preFooter,
   contentwide = false,
   maxWidth = '1200px',
-  centerHeader = false,
-  align,
+  align = 'left',
   toolbar,
   actions,
   back,
 }) => {
-  const resolvedAlign = align ?? (centerHeader ? 'center' : 'left')
   const showTitle = Boolean(
     (header != null && header !== '') || subHeader || description || toolbar || actions || back
   )
+  const showFrame = showTitle || Boolean(children)
   const frameStyle = contentwide ? { width: '100%', maxWidth: '100%' } : { maxWidth }
 
   return (
     <div className="w-full min-w-0">
-      {showTitle && (
-        <section id="title-section" className="relative z-0">
-          <div
-            id="title-section-container"
-            className="relative mx-auto w-full min-w-0 px-4 sm:px-5"
-            style={frameStyle}
-          >
-            <div id="title" className="relative w-full min-w-0">
-              <div id="content-container" className="w-full min-w-0">
-                <PageHeader
-                  title={header}
-                  subHeader={subHeader}
-                  description={description}
-                  toolbar={toolbar}
-                  actions={actions}
-                  back={back}
-                  align={resolvedAlign}
-                />
+      {showFrame && (
+        <div className="mx-auto w-full min-w-0 px-4 sm:px-5" style={frameStyle}>
+          {showTitle && (
+            <section id="title-section" className="relative z-0">
+              <div id="title-section-container" className="relative w-full min-w-0">
+                <div id="title" className="relative w-full min-w-0">
+                  <div id="content-container" className="w-full min-w-0">
+                    <PageHeader
+                      title={header}
+                      subHeader={subHeader}
+                      description={description}
+                      toolbar={toolbar}
+                      actions={actions}
+                      back={back}
+                      align={align}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
-      )}
+            </section>
+          )}
 
-      {children && (
-        <section id="main-section-container" className="relative z-20">
-          <div id="main-section" className="relative mx-auto w-full" style={frameStyle}>
-            <div
-              id="content"
-              className={`relative z-50 w-full min-w-0 pb-8 ${contentwide ? '' : 'px-4 sm:px-5'}`}
-            >
-              {children}
-            </div>
-          </div>
-        </section>
+          {children && (
+            <section id="main-section-container" className="relative z-20">
+              <div id="main-section" className="relative w-full">
+                <div id="content" className="relative z-50 w-full min-w-0 pb-8">
+                  {children}
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
       )}
 
       {preFooter && (
