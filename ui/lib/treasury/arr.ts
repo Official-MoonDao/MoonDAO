@@ -38,11 +38,6 @@ interface DeFiData {
   }>
 }
 
-const TEAM_DISCOUNT = 0.067
-// Re-exported so other modules (e.g. the EB tracker endpoint) can apply the
-// exact same team-price discount without copying the magic number.
-export { TEAM_DISCOUNT }
-
 async function getEthPrice(): Promise<number> {
   try {
     const response = await fetch(
@@ -77,25 +72,25 @@ async function getSANContractPrices() {
       abi: TeamABI as any,
     })
 
-    const [citizenPricePerSecond, teamPricePerSecond] = await Promise.all([
+    const [citizenPricePerSecond, teamPricePerSecond, teamDiscount] = await Promise.all([
       readContract({ contract: citizenContract, method: 'pricePerSecond' }),
       readContract({ contract: teamContract, method: 'pricePerSecond' }),
+      readContract({ contract: teamContract, method: 'discount' }),
     ])
 
     const citizenPrice = Number(citizenPricePerSecond)
-    const teamPrice = Number(teamPricePerSecond) * TEAM_DISCOUNT
+    const discountFactor = (1000 - Number(teamDiscount)) / 1000
+    const teamPrice = Number(teamPricePerSecond) * discountFactor
 
     return {
-      citizenPricePerSecond: isNaN(citizenPrice) ? 351978691 : citizenPrice,
-      teamPricePerSecond: isNaN(teamPrice)
-        ? 15854895991 * TEAM_DISCOUNT
-        : teamPrice,
+      citizenPricePerSecond: isNaN(citizenPrice) ? 856165313 : citizenPrice,
+      teamPricePerSecond: isNaN(teamPrice) ? 11415525114 : teamPrice,
     }
   } catch (error) {
     console.error('Failed to fetch SAN contract prices:', error)
     return {
-      citizenPricePerSecond: 351978691,
-      teamPricePerSecond: 15854895991 * TEAM_DISCOUNT,
+      citizenPricePerSecond: 856165313,
+      teamPricePerSecond: 11415525114,
     }
   }
 }
@@ -112,10 +107,7 @@ function convertTransfersToSANSubscriptions(
     try {
       const timestamp = parseInt(transfer.blockTimestamp) * 1000
       if (isNaN(timestamp) || !transfer.blockTimestamp) {
-        console.warn(
-          `Invalid timestamp for ${type} transfer ${index}:`,
-          transfer.blockTimestamp
-        )
+        console.warn(`Invalid timestamp for ${type} transfer ${index}:`, transfer.blockTimestamp)
         return
       }
 
@@ -129,11 +121,7 @@ function convertTransfersToSANSubscriptions(
         tokenId: transfer.tokenId,
       })
     } catch (error) {
-      console.warn(
-        `Error processing ${type} transfer ${index}:`,
-        error,
-        transfer
-      )
+      console.warn(`Error processing ${type} transfer ${index}:`, error, transfer)
     }
   })
 
@@ -201,10 +189,7 @@ export async function getHistoricalARR(
       }
     }
 
-    const [contractPrices, ethPrice] = await Promise.all([
-      getSANContractPrices(),
-      getEthPrice(),
-    ])
+    const [contractPrices, ethPrice] = await Promise.all([getSANContractPrices(), getEthPrice()])
 
     if (ethPrice === 0) {
       return {
@@ -236,11 +221,7 @@ export async function getHistoricalARR(
     const endDate = new Date()
     const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000)
 
-    for (
-      let date = new Date(startDate);
-      date <= endDate;
-      date.setDate(date.getDate() + 7)
-    ) {
+    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 7)) {
       const timestamp = date.getTime()
       const arrData = calculateSANARRAtTimestamp(timestamp, allSubscriptions)
 
@@ -258,10 +239,7 @@ export async function getHistoricalARR(
     }
 
     const currentTimestamp = Date.now()
-    const currentARRData = calculateSANARRAtTimestamp(
-      currentTimestamp,
-      allSubscriptions
-    )
+    const currentARRData = calculateSANARRAtTimestamp(currentTimestamp, allSubscriptions)
 
     return {
       arrHistory,

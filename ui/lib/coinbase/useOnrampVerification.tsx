@@ -1,5 +1,5 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 
 const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000
 
@@ -19,23 +19,21 @@ export interface OnrampVerification {
   email: string | null
   /** True when a phone is linked but its verification is older than 60 days. */
   phoneVerificationStale: boolean
+  /** Linked phone, including one whose verification is older than 60 days. */
+  linkedPhoneNumber: string | null
   hasPhone: boolean
   hasEmail: boolean
   /** True when both a fresh phone and an email are available. */
   isReady: boolean
-  /** Trigger Privy's phone link/verify flow (refreshes the timestamp). */
-  linkPhone: () => void
-  /** Trigger Privy's email link flow. */
-  linkEmail: () => void
 }
 
 /**
  * Reads the user's Privy-linked phone and email to satisfy Coinbase Headless
  * Onramp's verification requirement (US phone verified within 60 days + email).
- * We rely on Privy's own OTP flows for linking/verification.
+ * Phone and email are collected inline with Privy's headless OTP hooks.
  */
 export default function useOnrampVerification(): OnrampVerification {
-  const { user, linkPhone, linkEmail } = usePrivy()
+  const { user } = usePrivy()
 
   return useMemo(() => {
     const accounts: any[] = (user?.linkedAccounts as any[]) || []
@@ -70,11 +68,10 @@ export default function useOnrampVerification(): OnrampVerification {
           : null,
       email,
       phoneVerificationStale,
+      linkedPhoneNumber: phoneNumberRaw,
       hasPhone,
       hasEmail,
       isReady: hasPhone && hasEmail,
-      linkPhone,
-      linkEmail,
     }
-  }, [user?.linkedAccounts, linkPhone, linkEmail])
+  }, [user?.linkedAccounts])
 }

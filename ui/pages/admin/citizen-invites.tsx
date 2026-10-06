@@ -132,7 +132,7 @@ export default function CitizenInvitesAdmin() {
               ? 'Each link lets one person sign up and mint a free 1-year citizenship, fully sponsored. A link can be redeemed exactly once.'
               : `Each link takes ${
                   discountBps / 10
-                }% off the first year. The recipient pays the rest on Arbitrum, and the link still works exactly once. Renewal is full price.`}
+                }% off the first year. A full year is 0.036 ETH. The recipient pays the rest on Arbitrum, and a quarter of what they pay buys MOONEY. The link still works exactly once. Renewal is full price.`}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -260,7 +260,7 @@ export default function CitizenInvitesAdmin() {
           <ContentLayout
             header="Citizen Invite Links"
             headerSize="40px"
-            description="Generate one-time links that discount the first year of citizenship. 100% off is a fully sponsored mint. 50% and 20% off links ask the recipient to pay the rest."
+            description="Generate one-time links that discount the first year of citizenship. A full year is 0.036 ETH. 100% off is a fully sponsored mint and does not buy MOONEY. 50% and 20% off links ask the recipient to pay the rest, and a quarter of what they pay buys MOONEY."
             mainPadding
             mode="compact"
             isProfile={true}

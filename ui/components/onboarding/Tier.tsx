@@ -14,6 +14,7 @@ type TierProps = {
   tierDescription?: string
   type: string
   compact?: boolean
+  priceNote?: string
   /** When true (default), clicking the card prompts Privy login before
    *  invoking `onClick` if no wallet is connected. Set to false to let the
    *  user proceed into the flow while signed out (sign-in happens later). */
@@ -32,6 +33,7 @@ export default function Tier({
   type,
   compact = false,
   gateOnAuth = true,
+  priceNote,
 }: TierProps) {
   const account = useActiveAccount()
   const address = account?.address
@@ -65,11 +67,7 @@ export default function Tier({
           <div className="w-full h-full flex flex-col md:flex-row">
             <div className="pt-5 md:pt-0 flex items-center rounded-2xl overflow-hidden">
               <Image
-                src={
-                  type === 'team'
-                    ? '/assets/team_image.png'
-                    : '/assets/citizen-default.png'
-                }
+                src={type === 'team' ? '/assets/team_image.png' : '/assets/citizen-default.png'}
                 width={506}
                 height={506}
                 alt=""
@@ -80,12 +78,8 @@ export default function Tier({
             <div className="flex flex-col p-6 justify-between w-full items-start">
               <div className="w-full flex-col space-y-6">
                 <div className="md:rounded-2xl">
-                  <h2 className={'mt-6 font-GoodTimes text-3xl text-white'}>
-                    {label}
-                  </h2>
-                  <p className="text-slate-300 mt-3 leading-relaxed">
-                    {description}
-                  </p>
+                  <h2 className={'mt-6 font-GoodTimes text-3xl text-white'}>{label}</h2>
+                  <p className="text-slate-300 mt-3 leading-relaxed">{description}</p>
 
                   <div className="flex flex-col w-full mt-6">
                     <div className="flex flex-col pt-5 items-start">
@@ -95,15 +89,16 @@ export default function Tier({
                             <p className="text-xl md:text-2xl font-semibold text-white">
                               {`~$${Math.round(usdPrice)} / Year`}
                             </p>
-                            <p className="text-sm text-slate-400">
-                              ({price} Arbitrum ETH)
-                            </p>
+                            <p className="text-sm text-slate-400">({price} Arbitrum ETH)</p>
                           </div>
                         </div>
                       </div>
                       <p className="text-green-400 text-sm md:text-base font-medium mt-2">
                         ✓ 12 Month Passport
                       </p>
+                      {priceNote && (
+                        <p className="text-slate-400 text-sm mt-2 max-w-sm">{priceNote}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -111,9 +106,7 @@ export default function Tier({
               {compact && (
                 <div className="inline-block">
                   <div className="mt-6 rounded-2xl gradient-2 hover:scale-105 transition-transform">
-                    <button className="py-3 px-6 font-medium text-white">
-                      {buttoncta}
-                    </button>
+                    <button className="py-3 px-6 font-medium text-white">{buttoncta}</button>
                   </div>
                 </div>
               )}
@@ -136,23 +129,18 @@ export default function Tier({
                       className="mt-1 flex-shrink-0"
                     ></Image>
                     <p className="text-slate-300 leading-relaxed">
-                      <strong className="text-white">{title}:</strong>{' '}
-                      {description}
+                      <strong className="text-white">{title}:</strong> {description}
                     </p>
                   </div>
                 )
               })}
-            {tierDescription && (
-              <p className="text-slate-300 mt-4">{tierDescription}</p>
-            )}
+            {tierDescription && <p className="text-slate-300 mt-4">{tierDescription}</p>}
           </div>
 
           {!compact && (
             <div className="inline-block mt-6">
               <div className="rounded-2xl gradient-2 hover:scale-105 transition-transform">
-                <button className="py-3 px-6 font-medium text-white">
-                  {buttoncta}
-                </button>
+                <button className="py-3 px-6 font-medium text-white">{buttoncta}</button>
               </div>
             </div>
           )}

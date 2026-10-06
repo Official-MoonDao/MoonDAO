@@ -1,24 +1,26 @@
 import { useFundWallet } from '@privy-io/react-auth'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { L2_GAS_BUDGET_ETH } from '@/lib/rpc/gasBudget'
+import {
+  useCitizenCheckoutLive,
+  walletPaymentForTreasury,
+} from '@/lib/subscription/citizenCheckout'
 import viemChains from '@/lib/viem/viemChains'
 import Frame from '@/components/layout/Frame'
 import Action from './Action'
 
-export default function GuestActions({
-  address,
-  nativeBalance,
-  citizenContract,
-}: any) {
+export default function GuestActions({ address, nativeBalance, citizenContract }: any) {
   const router = useRouter()
 
   const [canBuyCitizen, setCanBuyCitizen] = useState(false)
 
   const { fundWallet } = useFundWallet()
+  const checkoutLive = useCitizenCheckoutLive()
 
   useEffect(() => {
     async function checkIfCanBuyCitizen() {
@@ -28,7 +30,11 @@ export default function GuestActions({
         params: [address, 365 * 24 * 60 * 60],
       })
 
-      const formattedCost = ethers.utils.formatEther(cost.toString()).toString()
+      const pay = await walletPaymentForTreasury(
+        citizenContract.chain ?? DEFAULT_CHAIN_V5,
+        BigInt(cost.toString())
+      )
+      const formattedCost = ethers.utils.formatEther(pay.toString()).toString()
       const estimatedMaxGas = L2_GAS_BUDGET_ETH
       const totalCost = Number(formattedCost) + estimatedMaxGas
 
@@ -63,19 +69,18 @@ export default function GuestActions({
               title="Become a Citizen"
               description="Create your profile and join the Space Acceleration Network to take the next step in your journey and join a global movement dedicated to humanity expanding beyond Earth."
               icon={
-                <Image
-                  src="/assets/icon-job.svg"
-                  alt="Browse open jobs"
-                  height={30}
-                  width={30}
-                />
+                <Image src="/assets/icon-job.svg" alt="Browse open jobs" height={30} width={30} />
               }
               onClick={() => router.push('/citizen')}
             />
           ) : (
             <Action
               title="Fund Wallet"
-              description="Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. You will need 0.012 Arbitrum ETH."
+              description={
+                checkoutLive
+                  ? 'Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. A year is 0.036 ETH on Arbitrum, plus a little gas. A quarter of that buys MOONEY. Claim the voting power from your dashboard.'
+                  : 'Fund your wallet directly within the website in order to proceed with purchasing Citizenship to the Space Acceleration Network. You will need enough Arbitrum ETH for one year of citizenship, plus a little gas.'
+              }
               icon={
                 <Image
                   src="/assets/icon-project.svg"

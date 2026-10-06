@@ -1,19 +1,13 @@
 describe('Free Mint API', () => {
   const endpoint = '/api/mission/freeMint'
-  const eligibilityUnavailable = 'Unable to verify eligibility. Please try again.'
+  const subgraphDownError = 'Unable to verify eligibility. Please try again.'
 
-  // Contribution totals come from the subgraph. When that host is down the
-  // route answers 503 instead of guessing. Assert the payload when it is up,
-  // and the retry error when it is not.
-  function assertEligibilityOrUnavailable(res, onAvailable) {
-    if (res.status === 503) {
-      expect(res.body.error).to.eq(eligibilityUnavailable)
-      return
-    }
-    expect(res.status).to.eq(200)
-    expect(res.body).to.have.property('success', true)
-    expect(res.body).to.have.property('data')
-    onAvailable(res.body.data)
+  function getEligibility(address: string) {
+    return cy.request({
+      method: 'GET',
+      url: `${endpoint}?address=${address}`,
+      failOnStatusCode: false,
+    })
   }
 
   describe('GET /api/mission/freeMint', () => {
@@ -32,50 +26,51 @@ describe('Free Mint API', () => {
       // Use a random address that almost certainly has no contributions
       const address = '0x0000000000000000000000000000000000000001'
 
-      cy.request({
-        method: 'GET',
-        url: `${endpoint}?address=${address}`,
-        failOnStatusCode: false,
-      }).then((res) => {
-        assertEligibilityOrUnavailable(res, (data) => {
-          expect(data).to.have.property('totalPaid')
-          expect(data).to.have.property('eligible')
-          // A zero-address should not be eligible
-          expect(data.eligible).to.eq(false)
-          expect(data.totalPaid).to.eq('0')
-        })
+      getEligibility(address).then((res) => {
+        // Bendystraw 502s surface as 503. That is a retry, not a zero balance.
+        if (res.status === 503) {
+          expect(res.body.error).to.eq(subgraphDownError)
+          return
+        }
+        expect(res.status).to.eq(200)
+        expect(res.body).to.have.property('success', true)
+        expect(res.body).to.have.property('data')
+        expect(res.body.data).to.have.property('totalPaid')
+        expect(res.body.data).to.have.property('eligible')
+        // A zero-address should not be eligible
+        expect(res.body.data.eligible).to.eq(false)
+        expect(res.body.data.totalPaid).to.eq('0')
       })
     })
 
     it('returns totalPaid as a string (BigInt serialization)', () => {
       const address = '0x0000000000000000000000000000000000000001'
 
-      cy.request({
-        method: 'GET',
-        url: `${endpoint}?address=${address}`,
-        failOnStatusCode: false,
-      }).then((res) => {
-        assertEligibilityOrUnavailable(res, (data) => {
-          expect(data.totalPaid).to.be.a('string')
-        })
+      getEligibility(address).then((res) => {
+        if (res.status === 503) {
+          expect(res.body.error).to.eq(subgraphDownError)
+          return
+        }
+        expect(res.status).to.eq(200)
+        expect(res.body.data.totalPaid).to.be.a('string')
       })
     })
 
-    it('returns eligibility for a known address (subgraph totals may vary by env)', () => {
+    it('returns 200 for a known address (subgraph totals may vary by env)', () => {
       const address = '0x2db6d704058e552defe415753465df8df0361846'
 
-      cy.request({
-        method: 'GET',
-        url: `${endpoint}?address=${address}`,
-        failOnStatusCode: false,
-      }).then((res) => {
-        assertEligibilityOrUnavailable(res, (data) => {
-          expect(data).to.have.property('totalPaid')
-          expect(data).to.have.property('eligible')
-          expect(data.totalPaid).to.be.a('string')
-          const totalPaidBigInt = BigInt(data.totalPaid)
-          expect(totalPaidBigInt >= 0n).to.eq(true)
-        })
+      getEligibility(address).then((res) => {
+        if (res.status === 503) {
+          expect(res.body.error).to.eq(subgraphDownError)
+          return
+        }
+        expect(res.status).to.eq(200)
+        expect(res.body.success).to.eq(true)
+        expect(res.body.data).to.have.property('totalPaid')
+        expect(res.body.data).to.have.property('eligible')
+        expect(res.body.data.totalPaid).to.be.a('string')
+        const totalPaidBigInt = BigInt(res.body.data.totalPaid)
+        expect(totalPaidBigInt >= 0n).to.eq(true)
       })
     })
   })
