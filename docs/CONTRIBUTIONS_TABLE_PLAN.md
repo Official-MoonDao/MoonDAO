@@ -9,6 +9,10 @@ table name in `ui/const/config.ts`.
 Start simple and add features later (§7). Each later feature is either a new table that references
 contribution IDs, or a v2 contract with a row migration, as we did for `CitizenTableV2`.
 
+The contract, tests and deploy script below are in the repo. The table is not deployed yet:
+running `script/Contributions.s.sol` fills in `CONTRIBUTIONS_ADDRESSES` and
+`CONTRIBUTIONS_TABLE_NAMES` in `ui/const/config.ts`.
+
 ---
 
 ## 1. Simplifying assumptions
@@ -19,9 +23,10 @@ contribution IDs, or a v2 contract with a row migration, as we did for `CitizenT
    goes into it. When the payout script runs for that cycle, it calls `closeCycle()`, which
    increments the counter. No dates are stored. A cycle is simply the time between two payouts,
    so moving from quarterly to monthly or weekly payouts needs no change.
-3. **The contract doesn't score anything.** The payout script decides each contribution's share
-   and records the outcome on the contribution's row. There is one result per contribution and no
-   separate Senate result.
+3. **The contract doesn't score anything.** An ELO-style wrap-up script, run on a schedule,
+   decides each contribution's share. It does not send the transaction itself: it queues
+   `closeCycle` and `recordResults` to the payout Safe, and signers execute them together with
+   the payments. There is one result per contribution and no separate Senate result.
 4. **One contract and one table.** Results are columns on the contribution row, so there are no
    joins.
 5. **Citizens pay their own gas.** That's a few cents on Arbitrum, the same as votes and profile
@@ -114,10 +119,8 @@ This follows the `Ownable` plus `operators` pattern from `JobBoardTable`.
 | --- | --- | --- |
 | **Citizen** (holds an unexpired Citizen NFT) | `submit` into the current cycle | `balanceOf(sender) > 0` and `expiresAt(getOwnedToken(sender)) > now`. Below `maxPerCycle` for this cycle. Field size limits |
 | **Author** | `update` or `remove` their own contribution | Caller is the stored author, is still a citizen, and the contribution's cycle is still the current one |
-| **Operator** (ops wallets, or the payout script's wallet) | `setHidden(id, bool)` | The contribution exists |
-| **Operator** | `closeCycle()` | None. Increments `currentCycleId` and emits `CycleClosed(cycleId)` |
-| **Operator** | `recordResults(cycleId, ids, shareBps, rewards)` | `cycleId < currentCycleId`. Every ID belongs to that cycle, still exists, and has no result yet |
-| **Owner** (Admin Safe) | Everything operators can do, plus `setOperator`, `setCitizenNFT` and `setMaxPerCycle` | `onlyOwner` |
+| **Operator** | `setHidden(id, bool)` | The contribution exists. Hiding does not need a Safe transaction |
+| **Owner** (the payout Safe) | `closeCycle()`, `recordResults(...)`, everything an operator can do, plus `setOperator`, `setCitizenNFT` and `setMaxPerCycle` | `onlyOwner`. A cron wallet cannot call these; it only proposes the Safe transaction |
 
 ### 4.2 What nobody can do
 
@@ -154,22 +157,22 @@ function _sqlString(string memory s) internal pure returns (string memory) {
 }
 ```
 
-The UI renders every field as plain text, never as HTML.
+The helper is `SqlString.quote` in `subscription-contracts/src/tables/SqlString.sol`. The UI renders
+every field as plain text, never as HTML.
 
 ### 4.4 The cycle and payout flow
 
-1. Citizens submit during the cycle. Authors can fix or remove their own contributions while the
-   cycle is still open.
-2. The payout script reads the cycle's rows and works out shares and rewards, by Senate review
-   today and by matchups later.
-3. The script calls `closeCycle()`. New submissions now go into the next cycle, and the closed
-   cycle's contributions are locked.
-4. The script calls `recordResults(...)` for the closed cycle, in batches if needed. The batches
-   use the registry's multi-statement `mutate`, one `UPDATE` per contribution.
-
-The script can send these calls from an operator wallet, or add them to the payout Safe batch so
-they land in the same transaction as the payments. If reviewers want a frozen list before the
-payout, run `closeCycle()` when review starts instead; the contract works either way.
+1. Citizens submit during the cycle, up to 5 each. Authors can fix or remove their own
+   contributions while the cycle is still open.
+2. On a schedule, a cron job reads the open cycle and computes an ELO-style wrap-up: each
+   contribution's share of the pool and what it should be paid. That scoring script is separate
+   from this contract.
+3. The cron wallet queues one transaction to the payout Safe. The batch contains `closeCycle()`,
+   `recordResults(...)` for the cycle it just closed, and the payment calls. Signers have to
+   approve it. Nothing is recorded and nothing is paid until they do.
+4. Once the Safe executes, `currentCycleId` has moved on, the closed cycle's contributions are
+   locked, and each recorded row has its `shareBps` and `reward`. `recordResults` can be split
+   across more than one call in the batch if the list is long.
 
 ---
 
@@ -197,10 +200,10 @@ contract Contributions is ERC721Holder, Ownable {
         string calldata area, string calldata links, string calldata metadata) external;
     function remove(uint256 id) external;
 
-    function setHidden(uint256 id, bool hidden) external;
-    function closeCycle() external;
+    function setHidden(uint256 id, bool hidden) external;          // owner or operator
+    function closeCycle() external;                                 // onlyOwner (the Safe)
     function recordResults(uint256 cycleId, uint256[] calldata ids, uint256[] calldata shareBps,
-        string[] calldata rewards) external;
+        string[] calldata rewards) external;                        // onlyOwner (the Safe)
 
     function setOperator(address operator, bool enabled) external onlyOwner;
     function setCitizenNFT(address citizenNFT_) external onlyOwner;
@@ -212,8 +215,8 @@ contract Contributions is ERC721Holder, Ownable {
 ```
 
 Events: `ContributionSubmitted`, `ContributionUpdated`, `ContributionRemoved`, `HiddenSet`,
-`CycleClosed` and `ResultRecorded`, each indexed by `id` or `cycleId`. `maxPerCycle = 0` means
-no cap.
+`CycleClosed` and `ResultRecorded`, each indexed by `id` or `cycleId`. Deployed with
+`maxPerCycle = 5`. The owner can set it to `0` later to remove the cap.
 
 ---
 
@@ -233,10 +236,10 @@ emits.
 **Launch**
 
 1. Contract and tests PR in `subscription-contracts/`.
-2. Deploy script `script/Contributions.s.sol`, following `Forecasts.s.sol` and
-   `DeployTableOperators.s.sol`. It deploys `Contributions("CONTRIBUTIONS", citizenNFT, 5)`,
-   enables the ops and payout wallets as operators, transfers ownership to the Admin Safe, and
-   logs the address and `getTableName()`.
+2. Deploy script `script/Contributions.s.sol`. It deploys
+   `Contributions("CONTRIBUTIONS", citizenNFT, 5)`, optionally enables one `OPERATOR` (hide
+   only), transfers ownership to `ADMIN_SAFE` (the Safe the cron proposes payout batches to),
+   and logs the address and `getTableName()`.
 
    ```bash
    cd subscription-contracts
@@ -295,10 +298,12 @@ Vote.
 
 ---
 
-## 9. Decisions needed
+## 9. Decisions
 
-- [ ] **Cap:** `maxPerCycle` of 5 (from the spec), or no cap (`0`) to start?
-- [ ] **When to close:** does the payout script call `closeCycle()` at payout, or when Senate
-      review starts so reviewers see a frozen list?
-- [ ] **Who calls it:** an operator wallet, or the payout Safe batch?
-- [ ] **Starting cycle:** is cycle 1 the first cycle paid from the table (e.g. Q4 2026)?
+- [x] **Cap:** 5 submissions per citizen per cycle.
+- [x] **Wrap-up:** Senate review is replaced by an ELO-style script on a schedule. The contract
+      stores the script's output; it does not compute it.
+- [x] **Who closes a cycle:** the cron wallet only proposes. `closeCycle` and `recordResults` run
+      inside a Safe transaction, signed before any payment goes out.
+- [ ] **Starting cycle:** cycle 1 is the first cycle paid from the table. Say which quarter that is
+      when the table is deployed, so the UI can label it.
