@@ -10,12 +10,12 @@ describe('<LaunchHero />', () => {
     }
   })
 
-  it('Renders hero section with logo and heading', () => {
+  it('Renders hero section with image and heading', () => {
     cy.mount(<LaunchHero {...defaultProps} />)
 
     cy.contains('Launchpad').should('be.visible')
     cy.contains('Fund the future of space exploration').should('be.visible')
-    cy.get('img[alt="MoonDAO"]').should('exist')
+    cy.get('img[alt="MoonDAO Launchpad Hero"]').should('exist')
   })
 
   it('Shows launch button when citizenHasAccess is true', () => {

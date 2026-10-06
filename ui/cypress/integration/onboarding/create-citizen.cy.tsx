@@ -30,7 +30,7 @@ describe('<CreateCitizen />', () => {
   })
 
   it('Should render the component', () => {
-    cy.get('div').contains('Join The Network').should('exist')
+    cy.contains('Become a Citizen').should('exist')
   })
 
   it('Should complete citizen onboarding flow', () => {

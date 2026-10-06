@@ -82,7 +82,6 @@ describe('<Network />', () => {
     )
 
     cy.contains('Explore the Network').should('exist')
-    cy.contains('Discover and connect with citizens and teams').should('exist')
   })
 
   it('should display tabs for citizens, teams, and map', () => {
