@@ -14,36 +14,34 @@ export default function SubmissionPage() {
   const submissionTypes = [
     {
       title: 'Submit a Project Proposal',
-      description: 'Submit a proposal to receive financing or special permissions from the MoonDAO community.',
+      description:
+        'Submit a proposal to receive financing or special permissions from the MoonDAO community.',
       href: '/proposals',
       icon: '📝',
-      buttonText: 'Create Project'
+      buttonText: 'Create Project',
     },
     {
       title: 'Submit Your Contribution',
-      description: 'Document your mission-aligned work to participate in quarterly retroactive rewards. The community votes on contribution value, and rewards are distributed from a shared ETH and vMOONEY pool based on community evaluation of impact.',
+      description:
+        'Document your mission-aligned work to participate in quarterly retroactive rewards. The community votes on contribution value, and rewards are distributed from a shared ETH and vMOONEY pool based on community evaluation of impact.',
       href: '/contributions',
       icon: '🚀',
-      buttonText: 'Submit Contribution'
-    }
+      buttonText: 'Submit Contribution',
+    },
   ]
 
   return (
     <>
-      <WebsiteHead 
-        title={title} 
-        description="Share your work, submit proposals, and contribute to MoonDAO's mission to establish a lunar settlement. Choose how you want to contribute to the space program." 
+      <WebsiteHead
+        title={title}
+        description="Share your work, submit proposals, and contribute to MoonDAO's mission to establish a lunar settlement. Choose how you want to contribute to the space program."
       />
       <section className="flex flex-col justify-start px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
         <Container>
           <ContentLayout
             header="Collaborate & Contribute"
             headerSize="40px"
-            description={
-              <div className="text-gray-300 text-lg leading-relaxed">
-                Share your work, submit proposals, and contribute to MoonDAO's mission to establish a lunar settlement. Choose how you want to contribute to the space program.
-              </div>
-            }
+            description="Share work, submit proposals, or contribute another way."
             mainPadding
             mode="compact"
             isProfile={true}
@@ -51,10 +49,17 @@ export default function SubmissionPage() {
             <div className="flex flex-col gap-6 p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 {submissionTypes.map((type, index) => (
-                  <div key={index} className="bg-black/20 rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all duration-200 hover:transform hover:scale-[1.02] flex flex-col h-full">
+                  <div
+                    key={index}
+                    className="bg-black/20 rounded-xl p-6 border border-white/10 hover:border-white/20 transition-all duration-200 hover:transform hover:scale-[1.02] flex flex-col h-full"
+                  >
                     <div className="text-4xl mb-4 text-center">{type.icon}</div>
-                    <h3 className="text-white font-GoodTimes text-lg mb-3 text-center min-h-[3.5rem] flex items-center justify-center">{type.title}</h3>
-                    <p className="text-gray-300 text-sm mb-6 text-center leading-relaxed flex-grow">{type.description}</p>
+                    <h3 className="text-white font-heading font-semibold text-lg mb-3 text-center min-h-[3.5rem] flex items-center justify-center">
+                      {type.title}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-6 text-center leading-relaxed flex-grow">
+                      {type.description}
+                    </p>
                     <div className="flex justify-center mt-auto">
                       <Link
                         href={type.href}
@@ -68,9 +73,12 @@ export default function SubmissionPage() {
               </div>
 
               <div className="mt-8 bg-black/20 rounded-xl p-6 border border-white/10">
-                <h3 className="text-white font-GoodTimes text-lg mb-3">Not Sure Where to Start?</h3>
+                <h3 className="text-white font-heading font-semibold text-lg mb-3">
+                  Not Sure Where to Start?
+                </h3>
                 <p className="text-gray-300 mb-4">
-                  Check out our documentation to learn more about each submission type and find the best fit for your contribution.
+                  Check out our documentation to learn more about each submission type and find the
+                  best fit for your contribution.
                 </p>
                 <div className="flex flex-wrap gap-4">
                   <Link
@@ -91,7 +99,7 @@ export default function SubmissionPage() {
               </div>
             </div>
           </ContentLayout>
-          <NoticeFooter 
+          <NoticeFooter
             defaultImage="../assets/MoonDAO-Logo-White.svg"
             defaultTitle="Need Help?"
             defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"

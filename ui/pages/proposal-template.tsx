@@ -3,11 +3,11 @@ import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { getProposalTemplate } from '@/lib/nance'
 import Container from '@/components/layout/Container'
 import WebsiteHead from '@/components/layout/Head'
 import StandardButton from '@/components/layout/StandardButton'
-import { getProposalTemplate } from '@/lib/nance'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 
 export default function ProposalTemplatePage() {
   const template = useMemo(() => getProposalTemplate(MAX_BUDGET_USD), [])
@@ -43,10 +43,10 @@ export default function ProposalTemplatePage() {
       <section className="w-full px-4 py-10 md:px-8 md:py-16">
         <Container>
           <div className="mx-auto max-w-4xl">
-            <p className="mb-3 font-GoodTimes text-sm tracking-[0.2em] text-blue-300/80">
+            <p className="mb-3 font-heading font-semibold text-sm tracking-[0.2em] text-blue-300/80">
               PROJECT SYSTEM
             </p>
-            <h1 className="mb-4 font-GoodTimes text-3xl text-white md:text-5xl">
+            <h1 className="mb-3 font-heading font-semibold text-2xl text-white md:text-3xl">
               Proposal Template
             </h1>
             <p className="mb-8 max-w-2xl text-lg text-gray-300">
@@ -94,7 +94,7 @@ export default function ProposalTemplatePage() {
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-black/40 p-5 md:p-8">
-              <article className="prose prose-invert max-w-none prose-headings:font-GoodTimes prose-a:text-blue-300">
+              <article className="prose prose-invert max-w-none prose-headings:font-heading prose-headings:font-semibold prose-a:text-blue-300">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{template}</ReactMarkdown>
               </article>
             </div>

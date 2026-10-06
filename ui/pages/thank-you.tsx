@@ -1,15 +1,15 @@
+import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import React from 'react'
-import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 
 const ThankYou: React.FC = () => {
   return (
     <>
-      <WebsiteHead 
-        title="Thank You" 
-        description="Thank you for your submission. We've received your response and will be in touch soon." 
+      <WebsiteHead
+        title="Thank You"
+        description="Thank you for your submission. We've received your response and will be in touch soon."
       />
       <Container>
         <div className="min-h-screen flex items-center justify-center p-4">
@@ -21,11 +21,10 @@ const ThankYou: React.FC = () => {
                   <CheckCircleIcon className="w-10 h-10 text-green-400" />
                 </div>
                 <div>
-                  <h1 className="font-GoodTimes text-2xl font-bold text-white mb-2">
-                    Thank You!
-                  </h1>
+                  <h1 className="font-heading text-2xl font-bold text-white mb-2">Thank You!</h1>
                   <p className="text-gray-300 text-sm leading-relaxed">
-                    We've received your response. Our team will review your submission and get back to you soon.
+                    We've received your response. Our team will review your submission and get back
+                    to you soon.
                   </p>
                 </div>
               </div>

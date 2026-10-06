@@ -20,8 +20,7 @@ const STEPS: {
 }[] = [
   {
     title: 'Contribute to the campaign',
-    description:
-      'Every contribution earns $OVERVIEW — your voting power for who flies with Frank.',
+    description: 'Every contribution earns $OVERVIEW — your voting power for who flies with Frank.',
   },
   {
     title: 'Become a citizen',
@@ -32,8 +31,7 @@ const STEPS: {
   },
   {
     title: 'Back a citizen\u2019s candidacy',
-    description:
-      'Pledge your $OVERVIEW to the citizen you want to send to space.',
+    description: 'Pledge your $OVERVIEW to the citizen you want to send to space.',
   },
 ]
 
@@ -71,9 +69,7 @@ export default function MissionFlyWithFrankExplainer({
   // can't bake this into the static STEPS array because it depends on the
   // mission ID prop.
   const steps = STEPS.map((step, index) =>
-    index === 2
-      ? { ...step, href: leaderboardHref, cta: 'Back a candidate \u2192' }
-      : step
+    index === 2 ? { ...step, href: leaderboardHref, cta: 'Back a candidate \u2192' } : step
   )
 
   return (
@@ -86,9 +82,7 @@ export default function MissionFlyWithFrankExplainer({
         <h3 className="text-gray-400 font-medium text-xs uppercase tracking-wider">
           How to fly with Frank
         </h3>
-        <span className="text-[10px] uppercase tracking-wider text-indigo-300/80">
-          3 steps
-        </span>
+        <span className="text-[10px] uppercase tracking-wider text-indigo-300/80">3 steps</span>
       </div>
 
       <ol className="flex flex-col gap-2.5 list-none m-0 p-0">
@@ -101,9 +95,7 @@ export default function MissionFlyWithFrankExplainer({
               {index + 1}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-white font-medium text-xs sm:text-sm leading-snug">
-                {step.title}
-              </p>
+              <p className="text-white font-medium text-xs sm:text-sm leading-snug">{step.title}</p>
               <p className="text-gray-500 text-[11px] sm:text-xs leading-relaxed mt-0.5">
                 {step.description}
               </p>
@@ -126,7 +118,7 @@ export default function MissionFlyWithFrankExplainer({
         </p>
         {hasThreshold ? (
           <>
-            <p className="mt-1 text-white font-GoodTimes text-base sm:text-lg tabular-nums leading-tight">
+            <p className="mt-1 text-white font-heading font-semibold text-base sm:text-lg tabular-nums leading-tight">
               {formatThreshold(top25Threshold as number)}
               <span className="ml-1.5 text-[11px] sm:text-xs uppercase tracking-wide text-indigo-200/80">
                 $OVERVIEW
@@ -143,18 +135,18 @@ export default function MissionFlyWithFrankExplainer({
           // threshold (e.g. RPC hiccup). Be neutral instead of claiming
           // "Open" which would be misleading.
           <>
-            <p className="mt-1 text-white font-GoodTimes text-base sm:text-lg leading-tight">
+            <p className="mt-1 text-white font-heading font-semibold text-base sm:text-lg leading-tight">
               {rankedCount} ranked
             </p>
             <p className="text-gray-500 text-[11px] sm:text-xs leading-relaxed mt-1">
-              Top 25 is contested. Check the leaderboard for the live minimum
-              backing required to crack it.
+              Top 25 is contested. Check the leaderboard for the live minimum backing required to
+              crack it.
             </p>
           </>
         ) : knowsCount ? (
           // Genuinely fewer than 25 ranked candidates.
           <>
-            <p className="mt-1 text-white font-GoodTimes text-base sm:text-lg leading-tight">
+            <p className="mt-1 text-white font-heading font-semibold text-base sm:text-lg leading-tight">
               Open
             </p>
             <p className="text-gray-500 text-[11px] sm:text-xs leading-relaxed mt-1">
@@ -164,12 +156,12 @@ export default function MissionFlyWithFrankExplainer({
         ) : (
           // We don't know the count at all. Stay neutral.
           <>
-            <p className="mt-1 text-white font-GoodTimes text-base sm:text-lg leading-tight">
+            <p className="mt-1 text-white font-heading font-semibold text-base sm:text-lg leading-tight">
               Live
             </p>
             <p className="text-gray-500 text-[11px] sm:text-xs leading-relaxed mt-1">
-              Check the leaderboard for the current top 25 and the minimum
-              backing required to break in.
+              Check the leaderboard for the current top 25 and the minimum backing required to break
+              in.
             </p>
           </>
         )}

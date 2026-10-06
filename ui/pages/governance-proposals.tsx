@@ -1,9 +1,5 @@
 import ProposalsABI from 'const/abis/Proposals.json'
-import {
-  DEFAULT_CHAIN_V5,
-  PROJECT_TABLE_NAMES,
-  PROPOSALS_ADDRESSES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, PROJECT_TABLE_NAMES, PROPOSALS_ADDRESSES } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { gql, GraphQLClient } from 'graphql-request'
 import { GetStaticProps } from 'next'
@@ -20,8 +16,8 @@ import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { isFetchableUrl } from '@/lib/utils/links'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -30,9 +26,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
 import StandardButton from '@/components/layout/StandardButton'
 import ProposalList from '@/components/nance/ProposalList'
-import SnapshotProposalCard, {
-  SnapshotProposal,
-} from '@/components/nance/SnapshotProposalCard'
+import SnapshotProposalCard, { SnapshotProposal } from '@/components/nance/SnapshotProposalCard'
 
 type GovernanceProposalsPageProps = {
   pendingProposals: Project[]
@@ -51,10 +45,7 @@ export default function GovernanceProposalsPage({
 
   const SNAPSHOT_PER_PAGE = 8
   const [snapshotPage, setSnapshotPage] = useState(1)
-  const snapshotMaxPage = Math.max(
-    1,
-    Math.ceil(snapshotProposals.length / SNAPSHOT_PER_PAGE)
-  )
+  const snapshotMaxPage = Math.max(1, Math.ceil(snapshotProposals.length / SNAPSHOT_PER_PAGE))
   const pagedSnapshots = snapshotProposals.slice(
     (snapshotPage - 1) * SNAPSHOT_PER_PAGE,
     snapshotPage * SNAPSHOT_PER_PAGE
@@ -72,12 +63,7 @@ export default function GovernanceProposalsPage({
           <ContentLayout
             header="Governance Proposals"
             headerSize="40px"
-            description={
-              <div className="text-gray-300 text-lg leading-relaxed max-w-3xl">
-                Non-project governance proposals — constitutional amendments, policy changes, and
-                other governance decisions that shape MoonDAO.
-              </div>
-            }
+            description="Amendments, policy, and other decisions that are not project funding."
             mainPadding
             mode="compact"
             isProfile={true}
@@ -99,46 +85,37 @@ export default function GovernanceProposalsPage({
               {/* Pending / Active Proposals */}
               {pendingProposals.length > 0 && (
                 <div>
-                  <h2 className="text-2xl font-GoodTimes text-white mb-6">
+                  <h2 className="text-lg font-heading font-semibold text-white mb-4">
                     Active Proposals
                   </h2>
-                  <ProposalList
-                    projects={pendingProposals}
-                    noPagination
-                  />
+                  <ProposalList projects={pendingProposals} noPagination />
                 </div>
               )}
 
               {/* Passed Proposals */}
               {passedProposals.length > 0 && (
                 <div>
-                  <h2 className="text-2xl font-GoodTimes text-white mb-6">
+                  <h2 className="text-lg font-heading font-semibold text-white mb-4">
                     Passed Proposals
                   </h2>
-                  <ProposalList
-                    projects={passedProposals}
-                    noPagination
-                  />
+                  <ProposalList projects={passedProposals} noPagination />
                 </div>
               )}
 
               {/* Failed Proposals */}
               {failedProposals.length > 0 && (
                 <div>
-                  <h2 className="text-2xl font-GoodTimes text-white mb-6">
+                  <h2 className="text-lg font-heading font-semibold text-white mb-4">
                     Failed Proposals
                   </h2>
-                  <ProposalList
-                    projects={failedProposals}
-                    noPagination
-                  />
+                  <ProposalList projects={failedProposals} noPagination />
                 </div>
               )}
 
               {/* Historical Snapshot Proposals */}
               {snapshotProposals.length > 0 && (
                 <div>
-                  <h2 className="text-2xl font-GoodTimes text-white mb-2">
+                  <h2 className="text-lg font-heading font-semibold text-white mb-2">
                     Historical Snapshot Votes
                   </h2>
                   <p className="text-gray-400 text-sm mb-6">
@@ -275,10 +252,7 @@ export const getStaticProps: GetStaticProps = async () => {
             passedProposals.push(project)
           }
         } catch (error) {
-          console.error(
-            `Error fetching proposal IPFS for project ${project.id}:`,
-            error
-          )
+          console.error(`Error fetching proposal IPFS for project ${project.id}:`, error)
         }
       })
     )

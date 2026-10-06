@@ -30,12 +30,7 @@ export default function TeamJoin() {
 
   // If "team" is selected, render CreateTeam component
   if (selectedTier === 'team') {
-    return (
-      <CreateTeam
-        selectedChain={selectedChain}
-        setSelectedTier={setSelectedTier}
-      />
-    )
+    return <CreateTeam selectedChain={selectedChain} setSelectedTier={setSelectedTier} />
   }
 
   return (
@@ -43,19 +38,11 @@ export default function TeamJoin() {
       {head}
       <Container>
         <ContentLayout
-          header="Join the Network"
-          headerSize="max(20px, 3vw)"
+          header="Create a Team"
           mainPadding
           mode="compact"
           popOverEffect={false}
           isProfile
-          description={
-            <>
-              The Space Acceleration Network is an onchain startup society
-              focused on building a permanent settlement on the Moon and beyond.
-              Together we can unlock a multiplanetary future.
-            </>
-          }
           preFooter={
             <>
               <NoticeFooter
@@ -68,9 +55,7 @@ export default function TeamJoin() {
           }
         >
           {/* Apply Modal for teams */}
-          {applyModalEnabled && (
-            <ApplyModal type="team" setEnabled={setApplyModalEnabled} />
-          )}
+          {applyModalEnabled && <ApplyModal type="team" setEnabled={setApplyModalEnabled} />}
 
           {/* Use the TeamTier component to display team tier */}
           <div className="flex flex-col">

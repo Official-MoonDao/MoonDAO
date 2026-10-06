@@ -20,8 +20,8 @@ interface Phase {
   icon: string
   iconAlt: string
   iconSize?: number
-  color: string      // tailwind gradient from-color
-  glowColor: string  // glow ring colour
+  color: string // tailwind gradient from-color
+  glowColor: string // glow ring colour
   milestones: {
     label: string
     detail: string
@@ -204,14 +204,12 @@ const phases: Phase[] = [
     milestones: [
       {
         label: 'First Settlers Selected',
-        detail:
-          'A global open process to select the first crew for the lunar settlement.',
+        detail: 'A global open process to select the first crew for the lunar settlement.',
         done: false,
       },
       {
         label: 'Component Manufacturing',
-        detail:
-          'Key settlement components manufactured and tested with Earth-based simulations.',
+        detail: 'Key settlement components manufactured and tested with Earth-based simulations.',
         done: false,
       },
     ],
@@ -234,14 +232,12 @@ const phases: Phase[] = [
     milestones: [
       {
         label: 'Earth-Based Simulation Complete',
-        detail:
-          'Full end-to-end simulation of lunar settlement operations completed on Earth.',
+        detail: 'Full end-to-end simulation of lunar settlement operations completed on Earth.',
         done: false,
       },
       {
         label: 'Components Tested & Flight-Ready',
-        detail:
-          'All settlement components pass final testing and are prepared for lunar transit.',
+        detail: 'All settlement components pass final testing and are prepared for lunar transit.',
         done: false,
       },
     ],
@@ -269,8 +265,7 @@ const phases: Phase[] = [
       },
       {
         label: 'First Crew Begins Construction',
-        detail:
-          'The first human crew arrives on the Moon and begins assembling the settlement.',
+        detail: 'The first human crew arrives on the Moon and begins assembling the settlement.',
         done: false,
       },
     ],
@@ -360,9 +355,7 @@ function MilestoneCheck({ done }: { done: boolean }) {
   return (
     <div
       className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-        done
-          ? 'bg-green-500/20 border-green-400'
-          : 'bg-white/5 border-white/20'
+        done ? 'bg-green-500/20 border-green-400' : 'bg-white/5 border-white/20'
       }`}
     >
       {done && (
@@ -373,11 +366,7 @@ function MilestoneCheck({ done }: { done: boolean }) {
           stroke="currentColor"
           strokeWidth={3}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M5 13l4 4L19 7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       )}
     </div>
@@ -419,13 +408,7 @@ function StatusBadge({ status }: { status: Phase['status'] }) {
   PHASE CARD – the main visual unit
 ──────────────────────────────────────────────────────────────────────────────*/
 
-function PhaseCard({
-  phase,
-  index,
-}: {
-  phase: Phase
-  index: number
-}) {
+function PhaseCard({ phase, index }: { phase: Phase; index: number }) {
   const isEven = index % 2 === 0
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -455,9 +438,7 @@ function PhaseCard({
           className={`absolute -inset-1 rounded-2xl bg-gradient-to-r ${phase.color} opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-500`}
         />
 
-        <div
-          className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm hover:border-white/20 hover:bg-white/[0.06] transition-all duration-500"
-        >
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm hover:border-white/20 hover:bg-white/[0.06] transition-all duration-500">
           {/* Optional phase image banner */}
           {phase.image && (
             <div className="relative h-44 sm:h-52 overflow-hidden">
@@ -465,7 +446,9 @@ function PhaseCard({
                 src={phase.image}
                 alt={phase.title}
                 fill
-                className={`object-cover ${phase.imagePosition || 'object-center'} opacity-60 group-hover:opacity-80 transition-opacity duration-500`}
+                className={`object-cover ${
+                  phase.imagePosition || 'object-center'
+                } opacity-60 group-hover:opacity-80 transition-opacity duration-500`}
                 sizes="(max-width: 768px) 100vw, 45vw"
               />
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-dark-cool" />
@@ -484,19 +467,19 @@ function PhaseCard({
                     alt={phase.iconAlt}
                     width={phase.iconSize || 28}
                     height={phase.iconSize || 28}
-                    className={`opacity-90 ${phase.icon.includes('moondao-logo') ? '' : 'brightness-0 invert'}`}
+                    className={`opacity-90 ${
+                      phase.icon.includes('moondao-logo') ? '' : 'brightness-0 invert'
+                    }`}
                   />
                 </div>
                 <div>
                   <p className="text-xs font-mono uppercase tracking-widest text-gray-400">
                     {phase.era} &middot; {phase.year}
                   </p>
-                  <h3 className="text-xl sm:text-2xl font-GoodTimes text-white leading-tight">
+                  <h3 className="text-xl sm:text-2xl font-heading font-semibold text-white leading-tight">
                     {phase.title}
                   </h3>
-                  <p className="text-sm text-gray-400 mt-0.5">
-                    {phase.subtitle}
-                  </p>
+                  <p className="text-sm text-gray-400 mt-0.5">{phase.subtitle}</p>
                 </div>
               </div>
               <StatusBadge status={phase.status} />
@@ -514,9 +497,7 @@ function PhaseCard({
                   <MilestoneCheck done={m.done} />
                   <div>
                     <p
-                      className={`font-semibold text-sm ${
-                        m.done ? 'text-white' : 'text-gray-300'
-                      }`}
+                      className={`font-semibold text-sm ${m.done ? 'text-white' : 'text-gray-300'}`}
                     >
                       {m.label}
                     </p>
@@ -527,8 +508,6 @@ function PhaseCard({
                 </div>
               ))}
             </div>
-
-
           </div>
         </div>
       </div>
@@ -561,7 +540,6 @@ export default function Roadmap() {
     return () => observer.disconnect()
   }, [])
 
-
   return (
     <Container>
       <WebsiteHead
@@ -570,7 +548,7 @@ export default function Roadmap() {
       />
 
       {/* ───── HERO ───── */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[60svh] flex items-center justify-center overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0">
           <Image
@@ -586,11 +564,11 @@ export default function Roadmap() {
 
         <StarField />
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center px-6 py-32">
+        <div className="relative z-10 max-w-4xl mx-auto text-center px-6 py-16 md:py-20">
           <p className="text-sm font-mono uppercase tracking-[0.3em] text-purple-400 mb-6">
             The Internet's Space Program
           </p>
-          <h1 className="font-GoodTimes text-5xl sm:text-6xl md:text-7xl lg:text-8xl text-white leading-none mb-8">
+          <h1 className="font-heading font-semibold text-4xl md:text-6xl text-white leading-none mb-6">
             Roadmap to
             <br />
             <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
@@ -598,15 +576,14 @@ export default function Roadmap() {
             </span>
           </h1>
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto mb-12 leading-relaxed">
-            From a decentralized community to a lunar settlement. Every phase
-            brings humanity closer to a permanent presence on the Moon — funded,
-            built, and governed by the people.
+            From a decentralized community to a lunar settlement. Every phase brings humanity closer
+            to a permanent presence on the Moon — funded, built, and governed by the people.
           </p>
 
           <ProgressBar phases={phases} />
 
           {/* Scroll hint */}
-          <div className="mt-16 animate-bounce">
+          <div className="mt-8 animate-bounce">
             <svg
               className="w-6 h-6 mx-auto text-gray-500"
               fill="none"
@@ -646,10 +623,7 @@ export default function Roadmap() {
               }`}
               style={{ zIndex: phases.length - index }}
             >
-              <PhaseCard
-                phase={phase}
-                index={index}
-              />
+              <PhaseCard phase={phase} index={index} />
             </div>
           ))}
         </div>
@@ -672,14 +646,13 @@ export default function Roadmap() {
           <p className="text-sm font-mono uppercase tracking-[0.3em] text-yellow-400 mb-6">
             The Destination
           </p>
-          <h2 className="font-GoodTimes text-4xl sm:text-5xl md:text-6xl text-white mb-8">
+          <h2 className="font-heading font-semibold text-3xl md:text-4xl text-white mb-6">
             Everyone's Moon
           </h2>
           <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed mb-12">
-            Not one nation's flag — everyone's Moon. MoonDAO is building the
-            first permanent lunar settlement owned and governed by a global
-            decentralized community. When we celebrate New Year's Eve 2030 on
-            the Moon, it will be humanity's achievement — not any single
+            Not one nation's flag — everyone's Moon. MoonDAO is building the first permanent lunar
+            settlement owned and governed by a global decentralized community. When we celebrate New
+            Year's Eve 2030 on the Moon, it will be humanity's achievement — not any single
             government's or corporation's.
           </p>
 
@@ -708,11 +681,7 @@ export default function Roadmap() {
       </section>
 
       <PreFooter />
-      <ExpandedFooter
-        hasCallToAction={false}
-        darkBackground={true}
-        isFullwidth={true}
-      />
+      <ExpandedFooter hasCallToAction={false} darkBackground={true} isFullwidth={true} />
     </Container>
   )
 }

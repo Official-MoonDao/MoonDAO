@@ -13,10 +13,7 @@ interface VotingResultsProps {
   votes?: any[]
 }
 
-export default function VotingResults({
-  voteOutcome,
-  votes,
-}: VotingResultsProps) {
+export default function VotingResults({ voteOutcome, votes }: VotingResultsProps) {
   // New shape: an explicit MemberVoteTally with For/Against percentages
   // computed against decided VP (Abstain excluded), plus a separate
   // abstain-share-of-turnout metric for informational display.
@@ -25,18 +22,16 @@ export default function VotingResults({
   // field and fall back to the old normalization otherwise so the
   // existing project-vote callers keep working.
   const isStructuredTally =
-    voteOutcome &&
-    typeof voteOutcome === 'object' &&
-    'forPctOfDecided' in voteOutcome
+    voteOutcome && typeof voteOutcome === 'object' && 'forPctOfDecided' in voteOutcome
   const forPercentage = isStructuredTally
     ? Number(voteOutcome.forPctOfDecided ?? 0).toFixed(1)
-    : (Number(voteOutcome?.[1] ?? 0)).toFixed(1)
+    : Number(voteOutcome?.[1] ?? 0).toFixed(1)
   const againstPercentage = isStructuredTally
     ? Number(voteOutcome.againstPctOfDecided ?? 0).toFixed(1)
-    : (Number(voteOutcome?.[2] ?? 0)).toFixed(1)
+    : Number(voteOutcome?.[2] ?? 0).toFixed(1)
   const abstainPercentage = isStructuredTally
     ? Number(voteOutcome.abstainShareOfTurnout ?? 0).toFixed(1)
-    : (Number(voteOutcome?.[3] ?? 0)).toFixed(1)
+    : Number(voteOutcome?.[3] ?? 0).toFixed(1)
 
   // Pass/fail: prefer the explicit `passed` flag from the structured
   // tally (mirrors the on-chain decision exactly, including the 66.6%
@@ -45,15 +40,13 @@ export default function VotingResults({
   // project-vote callers that pass an older `Record<choice, pct>`.
   const forPctNum = Number(forPercentage) || 0
   const againstPctNum = Number(againstPercentage) || 0
-  const passed = isStructuredTally
-    ? Boolean(voteOutcome.passed)
-    : forPctNum > againstPctNum
+  const passed = isStructuredTally ? Boolean(voteOutcome.passed) : forPctNum > againstPctNum
 
   return (
     <div className="p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white font-GoodTimes">Voting Results</h3>
+          <h3 className="text-xl font-bold text-white font-heading">Voting Results</h3>
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
               passed
@@ -61,11 +54,7 @@ export default function VotingResults({
                 : 'bg-red-500/20 text-red-400 border border-red-500/30'
             }`}
           >
-            {passed ? (
-              <CheckCircleIcon className="w-4 h-4" />
-            ) : (
-              <XCircleIcon className="w-4 h-4" />
-            )}
+            {passed ? <CheckCircleIcon className="w-4 h-4" /> : <XCircleIcon className="w-4 h-4" />}
             {passed ? 'PASSED' : 'FAILED'}
           </div>
         </div>

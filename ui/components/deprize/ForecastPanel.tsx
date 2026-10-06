@@ -7,10 +7,10 @@ import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
-import { rankOutcomes } from '@/lib/deprize/rank-outcomes'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
+import { rankOutcomes } from '@/lib/deprize/rank-outcomes'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { aggregateForecastVotes, votingPowerByOutcome } from '@/lib/forecasts/aggregate'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
@@ -450,7 +450,7 @@ export default function ForecastPanel(props: {
 
   return (
     <section id="deprize-forecast" className={CARD}>
-      <h2 className="title-text-colors text-lg font-GoodTimes">Competitors</h2>
+      <h2 className="title-text-colors text-lg font-heading font-semibold">Competitors</h2>
       <p className="mt-1 text-sm text-gray-300">{FORECAST_COPY.panelIntro}</p>
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">

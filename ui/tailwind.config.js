@@ -1,8 +1,5 @@
 module.exports = {
-  content: [
-    './pages/**/*.{js,ts,jsx,tsx}',
-    './components/**/*.{js,ts,jsx,tsx}',
-  ],
+  content: ['./pages/**/*.{js,ts,jsx,tsx}', './components/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       screens: {
@@ -21,7 +18,7 @@ module.exports = {
         navwide: '1650px',
       },
       fontFamily: {
-        GoodTimes: ['Good Times', 'sans-serif'],
+        heading: ['Montserrat', 'sans-serif'],
         RobotoMono: ['Roboto Mono', 'sans-serif'],
         Montserrat: ['Montserrat', 'sans-serif'],
         Lato: ['Lato', 'sans-serif'],

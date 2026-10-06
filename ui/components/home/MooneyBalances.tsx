@@ -54,7 +54,7 @@ export default function MooneyBalances({
   return (
     <div className="flex flex-col items-left justify-between gap-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 sm:px-4 sm:py-2.5 text-white backdrop-blur-xl">
       <div className="flex items-center gap-3 w-full">
-        <h3 className="text-white/80 font-medium font-GoodTimes">MOONEY</h3>
+        <h3 className="text-white/80 font-medium font-heading">MOONEY</h3>
         {/* MOONEY Logo */}
         <div className="flex-shrink-0">
           <Image

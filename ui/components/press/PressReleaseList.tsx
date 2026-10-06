@@ -24,7 +24,7 @@ function FeaturedRelease({ release }: { release: PressRelease }) {
       className="group block rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-6 transition-all duration-200 hover:border-blue-400/50 md:p-8"
     >
       <ReleaseMeta release={release} />
-      <h3 className="mt-3 font-GoodTimes text-xl leading-snug text-white transition-colors group-hover:text-slate-200 md:text-2xl">
+      <h3 className="mt-3 font-heading font-semibold text-xl leading-snug text-white transition-colors group-hover:text-slate-200 md:text-2xl">
         {release.title}
       </h3>
       <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">{release.summary}</p>

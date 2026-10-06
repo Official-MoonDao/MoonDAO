@@ -17,7 +17,7 @@ export default function GoFurtherTogether() {
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         <div className="text-center mb-12 md:mb-16 lg:mb-20">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white mb-4 md:mb-6">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold text-white mb-4 md:mb-6">
             Go Further Together
           </h2>
         </div>
@@ -56,9 +56,8 @@ export default function GoFurtherTogether() {
               immediately coordinate governance, access liquidity, and grow into a viral movement.
             </span>
             <span className="inline md:hidden">
-              Join a revolution in space funding. Unlike traditional fundraising, your community
-              can immediately coordinate governance, access liquidity, and grow into a viral
-              movement.
+              Join a revolution in space funding. Unlike traditional fundraising, your community can
+              immediately coordinate governance, access liquidity, and grow into a viral movement.
             </span>
           </p>
         </div>
@@ -66,4 +65,3 @@ export default function GoFurtherTogether() {
     </section>
   )
 }
-

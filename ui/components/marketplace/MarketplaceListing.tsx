@@ -52,7 +52,7 @@ export default function MarketplaceListing({ listing }: MarketplaceListingProps)
           </div>
         )}
         <div className="flex min-w-0 flex-1 flex-col">
-          <h3 className="font-GoodTimes text-lg leading-tight text-white break-words line-clamp-2 transition-colors group-hover:text-slate-200">
+          <h3 className="font-heading font-semibold text-lg leading-tight text-white break-words line-clamp-2 transition-colors group-hover:text-slate-200">
             {listing.title}
           </h3>
           <button
@@ -67,7 +67,7 @@ export default function MarketplaceListing({ listing }: MarketplaceListingProps)
             </ExpandableText>
           </div>
           <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
-            <p className="font-GoodTimes text-base text-white">{price.display}</p>
+            <p className="font-heading font-semibold text-base text-white">{price.display}</p>
             {!price.isFree && citizen ? (
               <span className="text-xs text-slate-400 line-through opacity-70">{price.full}</span>
             ) : null}

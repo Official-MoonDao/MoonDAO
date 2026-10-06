@@ -6,10 +6,7 @@ type GetStartedTodayProps = {
   onLaunchClick: () => void
 }
 
-export default function GetStartedToday({
-  citizenHasAccess,
-  onLaunchClick,
-}: GetStartedTodayProps) {
+export default function GetStartedToday({ citizenHasAccess, onLaunchClick }: GetStartedTodayProps) {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
@@ -36,7 +33,7 @@ export default function GetStartedToday({
           </div>
 
           <div className="space-y-6 md:space-y-8">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white mb-4 md:mb-6">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold text-white mb-4 md:mb-6">
               Get Started Today
             </h2>
             <p className="text-white/90 text-sm md:text-lg lg:text-xl xl:text-2xl max-w-3xl mx-auto leading-relaxed px-4">
@@ -86,4 +83,3 @@ export default function GetStartedToday({
     </section>
   )
 }
-

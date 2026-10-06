@@ -30,26 +30,17 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import toast from 'react-hot-toast'
-import {
-  prepareContractCall,
-  readContract,
-  sendTransaction,
-  waitForReceipt,
-} from 'thirdweb'
+import { prepareContractCall, readContract, sendTransaction, waitForReceipt } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizens } from '@/lib/citizen/useCitizen'
 import { useAssets } from '@/lib/dashboard/hooks'
 import { fetchProposalJsonCached } from '@/lib/ipfs/fetchProposalJsonCached'
-import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
-import {
-  getProposalCycle,
-  getRetroCohort,
-  shiftQuarter,
-} from '@/lib/projectCycle/cycleQuarters'
 import { Project } from '@/lib/project/useProjectData'
+import { getProposalCycle, getRetroCohort, shiftQuarter } from '@/lib/projectCycle/cycleQuarters'
 import { ethereum } from '@/lib/rpc/chains'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import useWindowSize from '@/lib/team/use-window-size'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -137,9 +128,7 @@ async function fetchExistingRowExists(
     const lower = address.toLowerCase()
     const statement = `SELECT id FROM ${tableName} WHERE quarter = ${quarter} AND year = ${year} AND address = '${lower}' LIMIT 1`
     // Cache-bust the API so we never hit the 30s CDN cache for this check.
-    const url = `/api/tableland/query?statement=${encodeURIComponent(
-      statement
-    )}&_t=${Date.now()}`
+    const url = `/api/tableland/query?statement=${encodeURIComponent(statement)}&_t=${Date.now()}`
     const res = await fetch(url, { cache: 'no-store' })
     if (!res.ok) return null
     const rows = await res.json()
@@ -155,13 +144,9 @@ async function fetchExistingRowExists(
 // same generic toast.
 function formatTxError(error: any): string {
   if (!error) return 'Unknown error.'
-  const message: string =
-    typeof error?.message === 'string' ? error.message : String(error)
+  const message: string = typeof error?.message === 'string' ? error.message : String(error)
 
-  if (
-    error?.code === 4001 ||
-    /user rejected|user denied|rejected the request/i.test(message)
-  ) {
+  if (error?.code === 4001 || /user rejected|user denied|rejected the request/i.test(message)) {
     return 'Transaction was cancelled in your wallet.'
   }
 
@@ -195,9 +180,7 @@ function formatTxError(error: any): string {
   // RPC being behind the chain head. The transaction was almost certainly
   // broadcast successfully — the user just needs to give the indexer a
   // moment and retry.
-  if (
-    /block not found|transaction not found|receipt not found/i.test(message)
-  ) {
+  if (/block not found|transaction not found|receipt not found/i.test(message)) {
     return "Couldn't confirm your transaction yet — the network is catching up. Check your wallet for the tx hash; if it shows confirmed, refresh in a moment. Otherwise, try submitting again."
   }
 
@@ -246,12 +229,9 @@ async function sendTxAndWaitWithRetry({
       return receipt
     } catch (err: any) {
       lastError = err
-      const msg: string =
-        typeof err?.message === 'string' ? err.message : String(err ?? '')
+      const msg: string = typeof err?.message === 'string' ? err.message : String(err ?? '')
       const isIndexerLag =
-        /block not found|transaction not found|receipt not found|could not be found/i.test(
-          msg
-        )
+        /block not found|transaction not found|receipt not found|could not be found/i.test(msg)
 
       if (attempt >= receiptAttempts - 1) break
 
@@ -306,9 +286,7 @@ export function ProjectRewards({
   )
   const isSenateVote = livePhase === 'senate'
   const isMemberVote = livePhase === 'member'
-  const [rewardVotingActive, setRewardVotingActive] = useState(
-    livePhase === 'member'
-  )
+  const [rewardVotingActive, setRewardVotingActive] = useState(livePhase === 'member')
   // Member-vote submissions are gated separately so we can keep the rest
   // of the Member Vote UI (badge, results panel, phase callout) live while
   // closing off new distribution submits/edits at the end of the window.
@@ -371,11 +349,13 @@ export function ProjectRewards({
     ? 'active'
     : 'past'
   const [activeTab, setActiveTab] = useState<ProjectTab>(initialTab)
-  
+
   // Separate state for proposal allocations
   const [proposalEdit, setProposalEdit] = useState(false)
   const [proposalDistribution, setProposalDistribution] = useState<{ [key: string]: number }>({})
-  const [originalProposalDistribution, setOriginalProposalDistribution] = useState<{ [key: string]: number }>({})
+  const [originalProposalDistribution, setOriginalProposalDistribution] = useState<{
+    [key: string]: number
+  }>({})
 
   // Equal-weight confirmation modal. We open this when a member tries to
   // submit a vote that gives every scored proposal the exact same weight,
@@ -404,13 +384,9 @@ export function ProjectRewards({
     if (!proposals?.length) return new Set<string>()
     let visible = proposals
     if (isSenateVote) {
-      visible = proposals.filter(
-        (p: any) => !p.tempCheckApproved && !p.tempCheckFailed
-      )
+      visible = proposals.filter((p: any) => !p.tempCheckApproved && !p.tempCheckFailed)
     } else if (isMemberVote) {
-      visible = proposals.filter(
-        (p: any) => p.tempCheckApproved && !p.tempCheckFailed
-      )
+      visible = proposals.filter((p: any) => p.tempCheckApproved && !p.tempCheckFailed)
     } else {
       visible = proposals.filter((p: any) => !p.tempCheckFailed)
     }
@@ -422,11 +398,7 @@ export function ProjectRewards({
     // Mirror `eligibleProjects`: any active (`currentProjects`) project the
     // operator has explicitly flagged eligible is part of the current retro
     // cohort, regardless of the quarter it was originally proposed in.
-    return new Set(
-      currentProjects
-        .filter((p: any) => p.eligible)
-        .map((p: any) => String(p.id))
-    )
+    return new Set(currentProjects.filter((p: any) => p.eligible).map((p: any) => String(p.id)))
   }, [currentProjects])
 
   // Helper: keep only the entries whose key appears in `validKeys`. Used to
@@ -521,9 +493,7 @@ export function ProjectRewards({
   // freshness query to fire on mount + when its key changes — re-fetching
   // every time the window regains focus risks racing with a user mid-typing
   // and overwriting their edit if SWR ever returns a new array reference.
-  const { data: freshProposalAllocations } = useTablelandQuery(
-    proposalAllocationStatement
-  )
+  const { data: freshProposalAllocations } = useTablelandQuery(proposalAllocationStatement)
 
   // Check if the user already has a proposal allocation for the *submission*
   // quarter (the quarter the proposals being voted on belong to). NOTE: do
@@ -552,10 +522,7 @@ export function ProjectRewards({
     if (seededProposalKey.current === seedKey) return
 
     const candidates: any[] = []
-    if (
-      Array.isArray(freshProposalAllocations) &&
-      freshProposalAllocations.length > 0
-    ) {
+    if (Array.isArray(freshProposalAllocations) && freshProposalAllocations.length > 0) {
       candidates.push(...freshProposalAllocations)
     } else if (proposalAllocations?.length) {
       candidates.push(...proposalAllocations)
@@ -711,20 +678,12 @@ export function ProjectRewards({
     })
       .then((result: unknown) => {
         if (isCancelled) return
-        const owner =
-          typeof result === 'string'
-            ? result
-            : Array.isArray(result)
-            ? result[0]
-            : null
+        const owner = typeof result === 'string' ? result : Array.isArray(result) ? result[0] : null
         setProposalsContractOwner(owner != null ? String(owner).toLowerCase() : null)
       })
       .catch((err: unknown) => {
         if (isCancelled) return
-        console.error(
-          '[ProjectRewards] Proposals contract owner() read failed:',
-          err
-        )
+        console.error('[ProjectRewards] Proposals contract owner() read failed:', err)
         setProposalsContractOwner(null)
       })
 
@@ -923,14 +882,8 @@ export function ProjectRewards({
     // Strip any orphan keys (project ids no longer in the eligible set)
     // before validating, comparing, or sending — see filterToKeys note above.
     const scopedDistribution = filterToKeys(distribution, validEligibleIds)
-    const scopedOriginalDistribution = filterToKeys(
-      originalDistribution,
-      validEligibleIds
-    )
-    const totalPercentage = Object.values(scopedDistribution).reduce(
-      (sum, value) => sum + value,
-      0
-    )
+    const scopedOriginalDistribution = filterToKeys(originalDistribution, validEligibleIds)
+    const totalPercentage = Object.values(scopedDistribution).reduce((sum, value) => sum + value, 0)
     if (totalPercentage !== 100) {
       toast.error('Total distribution must equal 100%.', {
         style: toastStyle,
@@ -987,9 +940,7 @@ export function ProjectRewards({
         // Fire-and-forget Discord notification. We pass the count of
         // projects the user actually allocated to (entries with a non-zero
         // weight) so the message has more signal than just "submitted".
-        const allocatedProjectCount = Object.values(scopedDistribution).filter(
-          (v) => v > 0
-        ).length
+        const allocatedProjectCount = Object.values(scopedDistribution).filter((v) => v > 0).length
         void sendOnchainNotification(
           '/api/distribution/distribution-notification',
           {
@@ -1003,10 +954,7 @@ export function ProjectRewards({
         )
 
         setTimeout(
-          () =>
-            router.push(
-              `/projects/thank-you?quarter=${quarter}&year=${year}&type=retro`
-            ),
+          () => router.push(`/projects/thank-you?quarter=${quarter}&year=${year}&type=retro`),
           3000
         )
       }
@@ -1019,17 +967,11 @@ export function ProjectRewards({
     }
   }
 
-  const handleProposalSubmit = async (
-    contract: any,
-    opts: { bypassEqualCheck?: boolean } = {}
-  ) => {
+  const handleProposalSubmit = async (contract: any, opts: { bypassEqualCheck?: boolean } = {}) => {
     // Scope to the proposals currently visible in this voting tab, then
     // compare against the (also-scoped) original to keep the edit-detection
     // honest if the loaded row contained orphan keys from a previous cycle.
-    const scopedProposalDistribution = filterToKeys(
-      proposalDistribution,
-      validProposalIds
-    )
+    const scopedProposalDistribution = filterToKeys(proposalDistribution, validProposalIds)
     const scopedOriginalProposalDistribution = filterToKeys(
       originalProposalDistribution,
       validProposalIds
@@ -1058,9 +1000,7 @@ export function ProjectRewards({
     // burning a transaction on it. The modal calls back into this
     // function with `bypassEqualCheck: true` if the user opts to proceed.
     if (!opts.bypassEqualCheck) {
-      const nonZeroValues = Object.values(scopedProposalDistribution).filter(
-        (v) => v > 0
-      )
+      const nonZeroValues = Object.values(scopedProposalDistribution).filter((v) => v > 0)
       if (nonZeroValues.length > 1 && new Set(nonZeroValues).size === 1) {
         setEqualWarningOpen(true)
         return
@@ -1139,9 +1079,7 @@ export function ProjectRewards({
         // proposals the user *actually* allocated to (post author-exclusion
         // / normalization) — that's the most accurate signal of how many
         // proposals they weighed in on.
-        const proposalCount = Object.values(normalizedDistribution).filter(
-          (v) => v > 0
-        ).length
+        const proposalCount = Object.values(normalizedDistribution).filter((v) => v > 0).length
         void sendOnchainNotification(
           '/api/proposals/vote-notification',
           {
@@ -1181,12 +1119,7 @@ export function ProjectRewards({
         <ContentLayout
           header="Projects"
           headerSize="max(20px, 3vw)"
-          description={
-            <>
-              View active projects and allocate retroactive rewards to completed projects and their
-              contributors based on impact and results.
-            </>
-          }
+          description="Active projects, and retroactive rewards for work that's already done."
           preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"
@@ -1205,14 +1138,14 @@ export function ProjectRewards({
             {/* Project System Intro */}
             <div className="bg-black/20 rounded-none sm:rounded-xl px-3 py-4 sm:p-5 border-y sm:border border-white/10">
               <div className="flex flex-col gap-4">
-                <h2 className="font-GoodTimes text-white text-base sm:text-lg">
+                <h2 className="font-heading font-semibold text-white text-base sm:text-lg">
                   The Project System
                 </h2>
                 <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
-                  Each quarter, contributors submit project proposals that go through a Senate
-                  Vote for approval and a Member Vote for prioritization. Approved projects are
-                  funded upfront, and once complete, submit a final report to earn retroactive
-                  rewards based on community voting.
+                  Each quarter, contributors submit project proposals that go through a Senate Vote
+                  for approval and a Member Vote for prioritization. Approved projects are funded
+                  upfront, and once complete, submit a final report to earn retroactive rewards
+                  based on community voting.
                 </p>
 
                 {/* Phase Timeline */}
@@ -1224,7 +1157,7 @@ export function ProjectRewards({
                       subtitle: 'Proposal',
                       active: !isSenateVote && !isMemberVote,
                       tooltip:
-                        "Anyone can submit a project proposal through the proposal portal. Each proposal lays out the problem, the solution, the team, and a requested budget. A winner receives min(their ask, ¼ of the quarterly pot). Proposals can be edited at any time leading up to the Townhall.",
+                        'Anyone can submit a project proposal through the proposal portal. Each proposal lays out the problem, the solution, the team, and a requested budget. A winner receives min(their ask, ¼ of the quarterly pot). Proposals can be edited at any time leading up to the Townhall.',
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -1270,7 +1203,7 @@ export function ProjectRewards({
                       subtitle: 'Review',
                       active: isSenateVote,
                       tooltip:
-                        "After the Townhall, the Senate votes to approve or reject each proposal under the rules in the Constitution. Each Senator has one vote. Approval requires a super-majority (more than 66.6%) of Senate votes in favor, with a quorum of at least 70% of all Senators participating. Only proposals that pass the Senate advance to the Member Vote.",
+                        'After the Townhall, the Senate votes to approve or reject each proposal under the rules in the Constitution. Each Senator has one vote. Approval requires a super-majority (more than 66.6%) of Senate votes in favor, with a quorum of at least 70% of all Senators participating. Only proposals that pass the Senate advance to the Member Vote.',
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -1293,7 +1226,7 @@ export function ProjectRewards({
                       subtitle: 'Vote',
                       active: isMemberVote,
                       tooltip:
-                        "Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top three by voting power are funded at min(ask, ¼ of the pot). If fewer than three Senate-passed proposals are considered, all of them are funded. Contributors cannot vote on their own project.",
+                        'Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top three by voting power are funded at min(ask, ¼ of the pot). If fewer than three Senate-passed proposals are considered, all of them are funded. Contributors cannot vote on their own project.',
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -1339,7 +1272,7 @@ export function ProjectRewards({
                       subtitle: 'Rewards',
                       active: isMemberVote && rewardVotingActive,
                       tooltip:
-                        "At the end of the quarter, each completed project submits a Final Report with its contributor split. Citizens and Voting Members then allocate their voting power across the projects to determine retroactive ETH and vMOONEY rewards based on impact.",
+                        'At the end of the quarter, each completed project submits a Final Report with its contributor split. Citizens and Voting Members then allocate their voting power across the projects to determine retroactive ETH and vMOONEY rewards based on impact.',
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -1406,7 +1339,7 @@ export function ProjectRewards({
                             <span className="text-[10px] font-RobotoMono font-bold uppercase tracking-wider text-emerald-300 bg-emerald-400/15 border border-emerald-400/30 px-1.5 py-0.5 rounded">
                               Now
                             </span>
-                            <span className="text-sm font-GoodTimes text-white">
+                            <span className="text-sm font-heading font-semibold text-white">
                               {activePhase.label}
                               {activePhase.subtitle ? (
                                 <span className="text-blue-300 font-normal">
@@ -1427,10 +1360,7 @@ export function ProjectRewards({
                       <div className="hidden sm:block">
                         <div className="flex items-start justify-between gap-2">
                           {phases.map((phase, idx) => (
-                            <div
-                              key={phase.id}
-                              className="flex items-start flex-1 min-w-0"
-                            >
+                            <div key={phase.id} className="flex items-start flex-1 min-w-0">
                               <div className="flex flex-col items-center flex-1 min-w-0">
                                 <div className="relative">
                                   <div
@@ -1610,7 +1540,7 @@ export function ProjectRewards({
                     lives in the Retroactive Rewards tab. */}
                 <div className="mb-4 sm:mb-6 px-1 sm:px-0">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 sm:gap-4 mb-2 sm:mb-4">
-                    <h1 className="font-GoodTimes text-white/80 text-base sm:text-lg">{`Q${proposalQuarter}: ${proposalYear} Rewards`}</h1>
+                    <h1 className="font-heading font-semibold text-white/80 text-base sm:text-lg">{`Q${proposalQuarter}: ${proposalYear} Rewards`}</h1>
                     {/* "Close voting" triggers the Member Vote tally
                         (`POST /api/proposals/vote`), which is the call that
                         flips approved proposals to PROJECT_ACTIVE on the
@@ -1660,9 +1590,7 @@ export function ProjectRewards({
                     <div className="bg-black/20 rounded-lg p-2 sm:p-3 border border-white/10">
                       <RewardAsset
                         name="MOONEY"
-                        value={Number(
-                          proposalsMooneyBudget.toPrecision(3)
-                        ).toLocaleString()}
+                        value={Number(proposalsMooneyBudget.toPrecision(3)).toLocaleString()}
                         usdValue={proposalsMooneyBudgetUSD.toFixed(2)}
                         approximateUSD
                       />
@@ -1670,33 +1598,41 @@ export function ProjectRewards({
                   </div>
                 </div>
 
-                <h2 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
+                <h2 className="font-heading font-semibold text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
                   {isSenateVote ? (
                     <>
                       Project Proposals
-                      <span className="ml-2 text-sm font-normal text-orange-400">(Senate Vote)</span>
+                      <span className="ml-2 text-sm font-normal text-orange-400">
+                        (Senate Vote)
+                      </span>
                     </>
                   ) : isMemberVote ? (
                     <Tooltip text="Distribute voting power among the proposals by percentage." wrap>
                       Project Proposals
-                      <span className="ml-2 text-sm font-normal text-emerald-400">(Member Vote)</span>
+                      <span className="ml-2 text-sm font-normal text-emerald-400">
+                        (Member Vote)
+                      </span>
                     </Tooltip>
                   ) : (
                     <>
                       Pending Proposals
-                      <span className="ml-2 text-sm font-normal text-blue-400">({proposals?.length ?? 0})</span>
+                      <span className="ml-2 text-sm font-normal text-blue-400">
+                        ({proposals?.length ?? 0})
+                      </span>
                     </>
                   )}
                 </h2>
                 {isMemberVote && !isSenateVote && memberVoteSubmissionsOpen && (
                   <p className="mb-4">
-                    Member Vote: Distribute 100% of your voting power between eligible projects that have passed the Senate vote. Give a higher percent to the projects with a bigger impact, and click Submit Distribution.
+                    Member Vote: Distribute 100% of your voting power between eligible projects that
+                    have passed the Senate vote. Give a higher percent to the projects with a bigger
+                    impact, and click Submit Distribution.
                   </p>
                 )}
                 {isMemberVote && !isSenateVote && !memberVoteSubmissionsOpen && (
                   <p className="mb-4 text-gray-400 text-sm">
-                    Member Vote submissions are closed for this cycle. Final
-                    results are tallied below.
+                    Member Vote submissions are closed for this cycle. Final results are tallied
+                    below.
                   </p>
                 )}
                 {!isSenateVote && !isMemberVote && (
@@ -1714,10 +1650,7 @@ export function ProjectRewards({
                     budget from the API response itself so the header can't
                     drift from the budget cap the tally actually used. */}
                 {!memberVoteSubmissionsOpen && (
-                  <MemberVoteResults
-                    quarter={proposalQuarter}
-                    year={proposalYear}
-                  />
+                  <MemberVoteResults quarter={proposalQuarter} year={proposalYear} />
                 )}
                 <div className="flex flex-col gap-1.5 sm:gap-6">
                   {proposals && proposals.length > 0 ? (
@@ -1744,9 +1677,15 @@ export function ProjectRewards({
                             projectContract={projectContract}
                             hatsContract={hatsContract}
                             distribute={isSenateVote || memberVoteSubmissionsOpen}
-                            distribution={userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen) ? proposalDistribution : undefined}
+                            distribution={
+                              userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen)
+                                ? proposalDistribution
+                                : undefined
+                            }
                             handleDistributionChange={
-                              userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen) ? handleProposalDistributionChange : undefined
+                              userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen)
+                                ? handleProposalDistributionChange
+                                : undefined
                             }
                             userHasVotingPower={userHasVotingPower}
                             isVotingPeriod={isSenateVote || memberVoteSubmissionsOpen}
@@ -1763,117 +1702,122 @@ export function ProjectRewards({
                       </p>
                     </div>
                   )}
-                  {memberVoteSubmissionsOpen && proposals && proposals.length > 0 && (() => {
-                    const proposalAllocatedPct = lodashSum(
-                      Object.entries(proposalDistribution)
-                        .filter(([id]) => validProposalIds.has(id))
-                        .map(([, v]) => v)
-                    )
-                    return (
-                      <div className="mt-6 w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                          <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 min-w-0">
-                            <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
-                              <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
-                                Allocated
-                              </div>
-                              <div
-                                className={`mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider ${
-                                  proposalAllocatedPct === 100
-                                    ? 'text-green-400'
-                                    : 'text-white'
-                                }`}
-                              >
-                                {proposalAllocatedPct}%
-                              </div>
-                            </div>
-                            <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
-                              <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
-                                Voting Power
-                              </div>
-                              <div className="mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider text-white truncate">
-                                {Math.round(userVotingPower ?? 0)}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="w-full sm:w-auto sm:shrink-0">
-                            {userHasVotingPower ? (
-                              proposalSubmitting ? (
-                                <button
-                                  type="button"
-                                  disabled
-                                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-RobotoMono rounded-lg shadow-lg border-0 text-sm min-w-[180px] opacity-80 cursor-wait"
+                  {memberVoteSubmissionsOpen &&
+                    proposals &&
+                    proposals.length > 0 &&
+                    (() => {
+                      const proposalAllocatedPct = lodashSum(
+                        Object.entries(proposalDistribution)
+                          .filter(([id]) => validProposalIds.has(id))
+                          .map(([, v]) => v)
+                      )
+                      return (
+                        <div className="mt-6 w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 min-w-0">
+                              <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
+                                <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
+                                  Allocated
+                                </div>
+                                <div
+                                  className={`mt-0.5 sm:mt-1 font-heading font-semibold text-lg sm:text-xl tracking-wider ${
+                                    proposalAllocatedPct === 100 ? 'text-green-400' : 'text-white'
+                                  }`}
                                 >
-                                  <span className="w-full flex justify-center items-center gap-2">
-                                    <LoadingSpinner width="w-5" height="h-5" />
-                                    <span className="text-sm font-medium leading-snug">
-                                      Check your wallet…
+                                  {proposalAllocatedPct}%
+                                </div>
+                              </div>
+                              <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
+                                <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
+                                  Voting Power
+                                </div>
+                                <div className="mt-0.5 sm:mt-1 font-heading font-semibold text-lg sm:text-xl tracking-wider text-white truncate">
+                                  {Math.round(userVotingPower ?? 0)}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="w-full sm:w-auto sm:shrink-0">
+                              {userHasVotingPower ? (
+                                proposalSubmitting ? (
+                                  <button
+                                    type="button"
+                                    disabled
+                                    className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-RobotoMono rounded-lg shadow-lg border-0 text-sm min-w-[180px] opacity-80 cursor-wait"
+                                  >
+                                    <span className="w-full flex justify-center items-center gap-2">
+                                      <LoadingSpinner width="w-5" height="h-5" />
+                                      <span className="text-sm font-medium leading-snug">
+                                        Check your wallet…
+                                      </span>
                                     </span>
-                                  </span>
-                                </button>
+                                  </button>
+                                ) : (
+                                  <PrivyWeb3Button
+                                    action={() => handleProposalSubmit(proposalContract)}
+                                    requiredChain={chain}
+                                    className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
+                                    label={
+                                      proposalEdit ? 'Edit Distribution' : 'Submit Distribution'
+                                    }
+                                    loadingLabel="Check your wallet…"
+                                  />
+                                )
                               ) : (
                                 <PrivyWeb3Button
-                                  action={() => handleProposalSubmit(proposalContract)}
-                                  requiredChain={chain}
-                                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
-                                  label={proposalEdit ? 'Edit Distribution' : 'Submit Distribution'}
-                                  loadingLabel="Check your wallet…"
+                                  v5
+                                  requiredChain={DEFAULT_CHAIN_V5}
+                                  label="Get Voting Power"
+                                  action={() => router.push('/lock')}
+                                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
                                 />
-                              )
-                            ) : (
-                              <PrivyWeb3Button
-                                v5
-                                requiredChain={DEFAULT_CHAIN_V5}
-                                label="Get Voting Power"
-                                action={() => router.push('/lock')}
-                                className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
-                              />
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })()}
+                      )
+                    })()}
                 </div>
               </div>
             )}
 
             {activeTab === 'active' && (
-            <div
-              id="projects-container"
-              className="bg-black/20 rounded-none sm:rounded-b-xl px-1 py-2 sm:p-6 border-y sm:border sm:border-t-0 border-white/10"
-            >
-              <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">Active Projects</h1>
+              <div
+                id="projects-container"
+                className="bg-black/20 rounded-none sm:rounded-b-xl px-1 py-2 sm:p-6 border-y sm:border sm:border-t-0 border-white/10"
+              >
+                <h1 className="font-heading font-semibold text-white/80 text-base sm:text-xl mb-2 sm:mb-6 px-1 sm:px-0">
+                  Active Projects
+                </h1>
 
-              <div className="flex flex-col gap-1.5 sm:gap-6">
-                {ineligibleProjects && ineligibleProjects.length > 0 ? (
-                  ineligibleProjects.map((project: any, i) => (
-                    <ProjectCard
-                      key={`project-card-${i}`}
-                      project={project}
-                      projectContract={projectContract}
-                      hatsContract={hatsContract}
-                      distribute={false}
-                      userHasVotingPower={userHasVotingPower}
-                      isVotingPeriod={rewardVotingActive}
-                      active={true}
-                      isSenateVote={isSenateVote}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <p>No active projects in flight.</p>
-                    {eligibleProjects && eligibleProjects.length > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Projects eligible for retroactive rewards live in the
-                        <span className="text-gray-300"> Retroactive Rewards </span>
-                        tab.
-                      </p>
-                    )}
-                  </div>
-                )}
+                <div className="flex flex-col gap-1.5 sm:gap-6">
+                  {ineligibleProjects && ineligibleProjects.length > 0 ? (
+                    ineligibleProjects.map((project: any, i) => (
+                      <ProjectCard
+                        key={`project-card-${i}`}
+                        project={project}
+                        projectContract={projectContract}
+                        hatsContract={hatsContract}
+                        distribute={false}
+                        userHasVotingPower={userHasVotingPower}
+                        isVotingPeriod={rewardVotingActive}
+                        active={true}
+                        isSenateVote={isSenateVote}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-400">
+                      <p>No active projects in flight.</p>
+                      {eligibleProjects && eligibleProjects.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Projects eligible for retroactive rewards live in the
+                          <span className="text-gray-300"> Retroactive Rewards </span>
+                          tab.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
             )}
             {activeTab === 'retroactive' && (
               <div
@@ -1882,21 +1826,21 @@ export function ProjectRewards({
               >
                 <div className="px-1 sm:px-0 mb-3 sm:mb-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                   <div>
-                    <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl">
+                    <h1 className="font-heading font-semibold text-white/80 text-base sm:text-xl">
                       Retroactive Rewards
                       <span className="ml-2 text-sm font-normal text-emerald-400">
                         Q{quarter} {year}
                       </span>
                     </h1>
                     <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-prose">
-                      Projects eligible for this cycle’s retroactive rewards. The pool
-                      is split proportionally based on Citizen and Voting Member
-                      allocations.
+                      Projects eligible for this cycle’s retroactive rewards. The pool is split
+                      proportionally based on Citizen and Voting Member allocations.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className="bg-blue-500/10 text-blue-200 border border-blue-400/30 px-3 py-1.5 rounded-full font-RobotoMono">
-                      Pool: {retroPrimaryBudget.toLocaleString(undefined, {
+                      Pool:{' '}
+                      {retroPrimaryBudget.toLocaleString(undefined, {
                         maximumFractionDigits: 4,
                       })}{' '}
                       {retroPrimaryAssetName}
@@ -1907,8 +1851,7 @@ export function ProjectRewards({
                         })})`}
                     </span>
                     <span className="bg-purple-500/10 text-purple-200 border border-purple-400/30 px-3 py-1.5 rounded-full font-RobotoMono">
-                      +{' '}
-                      {Number(mooneyBudget.toPrecision(3)).toLocaleString()} MOONEY
+                      + {Number(mooneyBudget.toPrecision(3)).toLocaleString()} MOONEY
                     </span>
                   </div>
                 </div>
@@ -1917,21 +1860,17 @@ export function ProjectRewards({
                   <div className="flex flex-col gap-1.5 sm:gap-6">
                     {rewardVotingActive && (
                       <p className="text-xs sm:text-sm text-emerald-300/90 px-1 sm:px-0">
-                        Distribute 100% of your voting power across the eligible
-                        projects below — give a higher percentage to higher-impact
-                        projects, then click <em>Submit Distribution</em>.
+                        Distribute 100% of your voting power across the eligible projects below —
+                        give a higher percentage to higher-impact projects, then click{' '}
+                        <em>Submit Distribution</em>.
                       </p>
                     )}
 
                     {eligibleProjects.map((project, i) => {
                       const pct = projectIdToEstimatedPercentage[project.id]
                       const hasPct = typeof pct === 'number' && pct > 0
-                      const primaryShare = hasPct
-                        ? (pct / 100) * retroPrimaryBudget
-                        : null
-                      const mooneyShare = hasPct
-                        ? (pct / 100) * mooneyBudget
-                        : null
+                      const primaryShare = hasPct ? (pct / 100) * retroPrimaryBudget : null
+                      const mooneyShare = hasPct ? (pct / 100) * mooneyBudget : null
                       return (
                         <div key={`retro-card-${project.id}`} className="flex flex-col gap-1">
                           <ProjectCard
@@ -1944,13 +1883,9 @@ export function ProjectRewards({
                                 (project.finalReportLink || project.finalReportIPFS)
                               )
                             }
-                            distribution={
-                              userHasVotingPower ? distribution : undefined
-                            }
+                            distribution={userHasVotingPower ? distribution : undefined}
                             handleDistributionChange={
-                              userHasVotingPower
-                                ? handleDistributionChange
-                                : undefined
+                              userHasVotingPower ? handleDistributionChange : undefined
                             }
                             userHasVotingPower={userHasVotingPower}
                             isVotingPeriod={rewardVotingActive}
@@ -1965,9 +1900,7 @@ export function ProjectRewards({
                             // them away mid-vote. The project name itself
                             // remains a link via ProjectCardContent so
                             // intentional navigation still works.
-                            linkToProjectPage={
-                              !(rewardVotingActive && userHasVotingPower)
-                            }
+                            linkToProjectPage={!(rewardVotingActive && userHasVotingPower)}
                           />
                           {/* Per-project share preview — only render when we
                               have a real tally; otherwise the row is a no-op
@@ -1984,10 +1917,7 @@ export function ProjectRewards({
                                 {retroPrimaryAssetName}
                               </span>
                               <span className="text-purple-200">
-                                {Number(
-                                  mooneyShare!.toPrecision(3)
-                                ).toLocaleString()}{' '}
-                                MOONEY
+                                {Number(mooneyShare!.toPrecision(3)).toLocaleString()} MOONEY
                               </span>
                             </div>
                           )}
@@ -1997,86 +1927,84 @@ export function ProjectRewards({
 
                     {!readyToRunVoting && (
                       <p className="text-[11px] text-gray-500 mt-2 px-1 sm:px-0">
-                        Per-project amounts populate once Citizen and Voting Member
-                        distributions are submitted and tallied. Until then this lists
-                        the eligible cohort and the total pool.
+                        Per-project amounts populate once Citizen and Voting Member distributions
+                        are submitted and tallied. Until then this lists the eligible cohort and the
+                        total pool.
                       </p>
                     )}
 
-                    {rewardVotingActive && (() => {
-                      const retroAllocatedPct = lodashSum(
-                        Object.entries(distribution)
-                          .filter(([id]) => validEligibleIds.has(id))
-                          .map(([, v]) => v)
-                      )
-                      return (
-                      <div className="mt-4 sm:mt-6 w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-                          {userHasVotingPower ? (
-                            <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 min-w-0">
-                              <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
-                                <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
-                                  Allocated
+                    {rewardVotingActive &&
+                      (() => {
+                        const retroAllocatedPct = lodashSum(
+                          Object.entries(distribution)
+                            .filter(([id]) => validEligibleIds.has(id))
+                            .map(([, v]) => v)
+                        )
+                        return (
+                          <div className="mt-4 sm:mt-6 w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-3 sm:p-5">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+                              {userHasVotingPower ? (
+                                <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 min-w-0">
+                                  <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
+                                    <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
+                                      Allocated
+                                    </div>
+                                    <div
+                                      className={`mt-0.5 sm:mt-1 font-heading font-semibold text-lg sm:text-xl tracking-wider ${
+                                        retroAllocatedPct === 100 ? 'text-green-400' : 'text-white'
+                                      }`}
+                                    >
+                                      {retroAllocatedPct}%
+                                    </div>
+                                  </div>
+                                  <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
+                                    <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
+                                      Voting Power
+                                    </div>
+                                    <div className="mt-0.5 sm:mt-1 font-heading font-semibold text-lg sm:text-xl tracking-wider text-white truncate">
+                                      {Math.round(userVotingPower ?? 0)}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div
-                                  className={`mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider ${
-                                    retroAllocatedPct === 100
-                                      ? 'text-green-400'
-                                      : 'text-white'
-                                  }`}
-                                >
-                                  {retroAllocatedPct}%
-                                </div>
-                              </div>
-                              <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
-                                <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
-                                  Voting Power
-                                </div>
-                                <div className="mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider text-white truncate">
-                                  {Math.round(userVotingPower ?? 0)}
-                                </div>
+                              ) : (
+                                <p className="flex-1 min-w-0 text-xs sm:text-sm text-gray-300 leading-relaxed">
+                                  You need vMOONEY voting power to weigh in on retroactive rewards.
+                                  Lock MOONEY to participate.
+                                </p>
+                              )}
+                              <div className="w-full sm:w-auto sm:shrink-0">
+                                {userHasVotingPower ? (
+                                  <PrivyWeb3Button
+                                    action={() => handleSubmit(distributionTableContract)}
+                                    requiredChain={chain}
+                                    className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
+                                    label={edit ? 'Edit Distribution' : 'Submit Distribution'}
+                                    loadingLabel="Check your wallet…"
+                                  />
+                                ) : (
+                                  <PrivyWeb3Button
+                                    v5
+                                    requiredChain={DEFAULT_CHAIN_V5}
+                                    label="Get Voting Power"
+                                    action={() => router.push('/lock')}
+                                    className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
+                                  />
+                                )}
                               </div>
                             </div>
-                          ) : (
-                            <p className="flex-1 min-w-0 text-xs sm:text-sm text-gray-300 leading-relaxed">
-                              You need vMOONEY voting power to weigh in on
-                              retroactive rewards. Lock MOONEY to participate.
-                            </p>
-                          )}
-                          <div className="w-full sm:w-auto sm:shrink-0">
-                            {userHasVotingPower ? (
-                              <PrivyWeb3Button
-                                action={() => handleSubmit(distributionTableContract)}
-                                requiredChain={chain}
-                                className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
-                                label={edit ? 'Edit Distribution' : 'Submit Distribution'}
-                                loadingLabel="Check your wallet…"
-                              />
-                            ) : (
-                              <PrivyWeb3Button
-                                v5
-                                requiredChain={DEFAULT_CHAIN_V5}
-                                label="Get Voting Power"
-                                action={() => router.push('/lock')}
-                                className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-RobotoMono rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl border-0 text-sm min-w-[180px]"
-                              />
-                            )}
                           </div>
-                        </div>
-                      </div>
-                      )
-                    })()}
+                        )
+                      })()}
                   </div>
                 ) : (
                   <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 rounded-lg sm:rounded-xl p-4 sm:p-6 text-sm text-gray-300 space-y-3">
-                    <h2 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
+                    <h2 className="font-heading font-semibold text-base sm:text-lg text-white tracking-wider">
                       No projects in the current cycle yet
                     </h2>
                     <p>
-                      Q{quarter} {year} retroactives don&apos;t have any
-                      projects yet — no team has submitted a final report for
-                      this cohort, so there&apos;s nothing for Citizens and
-                      Voting Members to allocate against.
+                      Q{quarter} {year} retroactives don&apos;t have any projects yet — no team has
+                      submitted a final report for this cohort, so there&apos;s nothing for Citizens
+                      and Voting Members to allocate against.
                     </p>
                     <div className="bg-black/30 border border-white/10 rounded-md p-3 sm:p-4 space-y-2 text-xs sm:text-sm text-gray-300">
                       <p className="font-RobotoMono uppercase tracking-wider text-[11px] text-gray-400">
@@ -2084,23 +2012,20 @@ export function ProjectRewards({
                       </p>
                       <ol className="list-decimal pl-5 space-y-1">
                         <li>
-                          Project teams complete their funded work during the
-                          quarter and submit a final report.
+                          Project teams complete their funded work during the quarter and submit a
+                          final report.
                         </li>
                         <li>
-                          The Executive Branch reviews the report and marks
-                          the project <code>eligible = 1</code> via the
-                          operator panel.
+                          The Executive Branch reviews the report and marks the project{' '}
+                          <code>eligible = 1</code> via the operator panel.
                         </li>
                         <li>
-                          Once the cycle&apos;s voting window opens, Citizens
-                          and Voting Members distribute 100% of their voting
-                          power across the eligible cohort.
+                          Once the cycle&apos;s voting window opens, Citizens and Voting Members
+                          distribute 100% of their voting power across the eligible cohort.
                         </li>
                         <li>
-                          A quadratic tally splits the cycle&apos;s ETH/USDC +
-                          MOONEY pool between projects in proportion to the
-                          weighted vote.
+                          A quadratic tally splits the cycle&apos;s ETH/USDC + MOONEY pool between
+                          projects in proportion to the weighted vote.
                         </li>
                       </ol>
                       <p className="text-[11px] text-gray-500 pt-1">
@@ -2132,31 +2057,27 @@ export function ProjectRewards({
                   return (
                     <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10">
                       <div className="px-1 sm:px-0 mb-3 sm:mb-4">
-                        <h2 className="font-GoodTimes text-sm sm:text-base text-white/80 tracking-wider uppercase">
+                        <h2 className="font-heading font-semibold text-sm sm:text-base text-white/80 tracking-wider uppercase">
                           Previous Cycle Results
                           <span className="ml-2 text-xs font-normal text-gray-400 normal-case">
                             Q{prev.quarter} {prev.year}
                           </span>
                         </h2>
                         <p className="text-[11px] sm:text-xs text-gray-400 mt-1">
-                          Final per-project breakdown of the most recently
-                          completed retro tally, plus a link to the full
-                          public audit.
+                          Final per-project breakdown of the most recently completed retro tally,
+                          plus a link to the full public audit.
                         </p>
                       </div>
-                      <RetroactiveResults
-                        quarter={prev.quarter}
-                        year={prev.year}
-                      />
+                      <RetroactiveResults quarter={prev.quarter} year={prev.year} />
                     </div>
                   )
                 })()}
               </div>
             )}
             {activeTab === 'past' && (
-            <div className="bg-black/20 rounded-none sm:rounded-b-xl border-y sm:border sm:border-t-0 border-white/10">
-              <PastProjects projects={pastProjects} />
-            </div>
+              <div className="bg-black/20 rounded-none sm:rounded-b-xl border-y sm:border sm:border-t-0 border-white/10">
+                <PastProjects projects={pastProjects} />
+              </div>
             )}
           </div>
         </ContentLayout>
@@ -2172,14 +2093,13 @@ export function ProjectRewards({
         >
           <div className="flex flex-col gap-5 text-sm p-1 sm:p-2">
             <div className="flex flex-col gap-2">
-              <h2 className="text-lg sm:text-xl font-GoodTimes text-white tracking-wider">
+              <h2 className="text-lg sm:text-xl font-heading font-semibold text-white tracking-wider">
                 Hey! A quick gut-check
               </h2>
               <p className="text-gray-300 leading-relaxed">
-                Try to really think about your allocation for proposals. We
-                noticed you gave the same weight to each project — this is
-                the same as not voting at all. Try to really consider where
-                MoonDAO&apos;s funds are best spent!
+                Try to really think about your allocation for proposals. We noticed you gave the
+                same weight to each project — this is the same as not voting at all. Try to really
+                consider where MoonDAO&apos;s funds are best spent!
               </p>
             </div>
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">

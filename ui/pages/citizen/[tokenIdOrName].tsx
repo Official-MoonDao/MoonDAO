@@ -285,7 +285,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
       image={
         nft?.metadata?.image ? (
           <div id="citizen-image-container" className="relative">
-            <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px]">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36">
               <IPFSRenderer
                 src={nft?.metadata?.image}
                 className="w-full h-full object-cover rounded-2xl border-4 border-slate-500/50"
@@ -295,14 +295,14 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               />
             </div>
             <div id="star-asset-container" className="absolute -bottom-2 -right-2">
-              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-1">
+                <Image src="/../.././assets/icon-star.svg" alt="" width={18} height={18} />
               </div>
             </div>
           </div>
         ) : (
-          <div className="w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center">
-            <div className="text-slate-400 text-6xl">👤</div>
+          <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex items-center justify-center">
+            <div className="text-slate-400 text-3xl">👤</div>
           </div>
         )
       }
@@ -321,7 +321,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
             </button>
           )}
           {nft ? (
-            <h1 className="font-GoodTimes text-white text-xl sm:text-2xl lg:text-4xl font-bold mb-3 w-full max-w-full break-words [overflow-wrap:anywhere]">
+            <h1 className="font-heading text-white text-xl sm:text-2xl font-bold mb-2 w-full max-w-full break-words [overflow-wrap:anywhere]">
               {nft?.metadata?.name}
             </h1>
           ) : (
@@ -413,7 +413,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
             <div className="bg-slate-600/30 backdrop-blur-sm border border-slate-500/50 rounded-xl px-4 py-2 flex items-center gap-2 min-h-[52px] max-w-full min-w-0">
               <MapPinIcon width={20} height={20} className="flex-shrink-0 text-slate-300" />
               <Link
-                className="font-GoodTimes text-white hover:text-slate-200 transition-colors min-w-0 break-words [overflow-wrap:anywhere]"
+                className="font-heading font-semibold text-white hover:text-slate-200 transition-colors min-w-0 break-words [overflow-wrap:anywhere]"
                 href="/map"
               >
                 {location.startsWith('[object') ? '' : location}
@@ -492,7 +492,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
             )}
             {(citizen || isOwner) && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <h2 className="font-GoodTimes text-2xl text-white mb-6">Governance</h2>
+                <h2 className="font-heading font-semibold text-2xl text-white mb-6">Governance</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-slate-600/20 rounded-xl p-4">
                     <div className="flex items-center gap-2 mb-2">
@@ -571,7 +571,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
             */}
             {(citizen || isOwner) && hats && hats?.length > 0 && (
               <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-                <h2 className="font-GoodTimes text-2xl text-white mb-6">Teams</h2>
+                <h2 className="font-heading font-semibold text-2xl text-white mb-6">Teams</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {Array.from(new Map(hats.map((hat: any) => [hat.teamId, hat])).values()).map(
                     (hat: any) => (
@@ -598,7 +598,9 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               <>
                 <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
                   <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-6">
-                    <h2 className="font-GoodTimes text-2xl text-white">Newest Listings</h2>
+                    <h2 className="font-heading font-semibold text-2xl text-white">
+                      Newest Listings
+                    </h2>
                     <StandardButton
                       className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
                       onClick={() => router.push('/marketplace')}
@@ -657,7 +659,7 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
                 <LockClosedIcon className="w-8 h-8 text-red-400" />
               </div>
-              <h3 className="text-xl font-GoodTimes text-white mb-2">
+              <h3 className="text-xl font-heading font-semibold text-white mb-2">
                 {isDeleted ? 'Profile Deleted' : 'Subscription Expired'}
               </h3>
               <p className="text-slate-300">

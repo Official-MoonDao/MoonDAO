@@ -85,7 +85,9 @@ export default function VoicesSection() {
                   </span>
                 </div>
                 <div>
-                  <h3 className="font-GoodTimes text-sm text-white md:text-lg">{speaker.name}</h3>
+                  <h3 className="font-heading font-semibold text-sm text-white md:text-lg">
+                    {speaker.name}
+                  </h3>
                   <p className="mt-1 text-xs text-white/60 md:text-sm">{speaker.subtitle}</p>
                 </div>
               </Link>

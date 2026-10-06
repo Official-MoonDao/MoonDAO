@@ -127,7 +127,7 @@ export function DePrize({ competitors, refreshRewards }: DePrizeProps) {
           )}
           <div className="pb-32 w-full flex flex-col gap-4 py-2">
             <div className="flex justify-between items-center">
-              <h3 className="title-text-colors text-2xl font-GoodTimes">Competitors</h3>
+              <h3 className="title-text-colors text-2xl font-heading font-semibold">Competitors</h3>
             </div>
             {/* <div>
               {competitors && (

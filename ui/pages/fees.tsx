@@ -144,7 +144,9 @@ function StatCard({
           </div>
         ) : (
           <>
-            <div className="text-white font-GoodTimes text-xl sm:text-2xl break-words">{value}</div>
+            <div className="text-white font-heading font-semibold text-xl sm:text-2xl break-words">
+              {value}
+            </div>
             {subValue && <div className="text-gray-400 text-xs sm:text-sm mt-1">{subValue}</div>}
           </>
         )}
@@ -175,7 +177,7 @@ function HowItWorksStep({
         </div>
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="font-GoodTimes text-white text-sm sm:text-base">{title}</h3>
+        <h3 className="font-heading font-semibold text-white text-sm sm:text-base">{title}</h3>
         <p className="mt-1 text-sm text-gray-300 leading-relaxed">{description}</p>
       </div>
     </div>
@@ -733,49 +735,8 @@ export default function Fees() {
       <section id="fees-container" className="overflow-hidden">
         <Container>
           <ContentLayout
-            header={
-              // Render the title + tagline together so we can control the
-              // spacing tightly. ContentLayout's built-in `description` slot
-              // injects a wrapper with `md:mt-20` (when `branded={false}`)
-              // that pushes the tagline ~80px below the title on desktop —
-              // way too airy. Passing both in `header` sidesteps that.
-              //
-              // Visibility hardening:
-              // - `pt-24 md:pt-28` keeps the title clear of the fixed
-              //   navbar on every viewport (the layout pulls the wrapper up
-              //   ~80px via `mt-[-80px]`, which on small screens used to
-              //   tuck the title behind the nav).
-              // - `!important` font-size: the global `.header-responsive`
-              //   rule on the parent uses `!important`, so an inline style
-              //   on a *child* span normally wins, but we still mark it to
-              //   be safe.
-              // - Layered text-shadows + a subtle backdrop pill give the
-              //   white type guaranteed contrast over the dark gradient
-              //   regardless of what scrolls behind it.
-              <div className="pt-24 md:pt-28 lg:pt-20 pb-2 flex flex-col gap-3 sm:gap-4 max-w-3xl">
-                <h1
-                  className="font-GoodTimes text-white block"
-                  style={{
-                    fontSize: 'clamp(36px, 5.5vw, 60px)',
-                    lineHeight: 1.05,
-                    letterSpacing: '0.01em',
-                    textShadow:
-                      '0 2px 4px rgba(0,0,0,0.85), 0 4px 18px rgba(0,0,0,0.6), 0 0 1px rgba(255,255,255,0.25)',
-                  }}
-                >
-                  Liquidity Rewards
-                </h1>
-                <p
-                  className="text-white font-RobotoMono leading-snug max-w-2xl"
-                  style={{
-                    fontSize: 'clamp(15px, 1.6vw, 18px)',
-                    textShadow: '0 1px 4px rgba(0,0,0,0.7)',
-                  }}
-                >
-                  Earn a share of MoonDAO&apos;s weekly trading-fee reward pool by checking in.
-                </p>
-              </div>
-            }
+            header="Liquidity Rewards"
+            description="Earn a share of MoonDAO's weekly trading-fee reward pool by checking in."
             preFooter={
               <NoticeFooter
                 defaultImage="../assets/MoonDAO-Logo-White.svg"
@@ -793,12 +754,12 @@ export default function Fees() {
             popOverEffect={false}
             branded={false}
           >
-            <div className="mt-8 md:mt-12 flex flex-col gap-3 sm:gap-6">
+            <div className="flex flex-col gap-3 sm:gap-6">
               {/* How it works */}
               <div className="bg-black/20 rounded-none sm:rounded-xl px-3 py-4 sm:p-5 border-y sm:border border-white/10">
                 <div className="flex flex-col gap-4">
                   <div>
-                    <h2 className="font-GoodTimes text-white text-base sm:text-lg">
+                    <h2 className="font-heading font-semibold text-white text-base sm:text-lg">
                       How Liquidity Rewards Work
                     </h2>
                     <p className="mt-2 text-sm sm:text-base text-gray-300 leading-relaxed">
@@ -917,7 +878,7 @@ export default function Fees() {
                 {!authenticated ? (
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                      <h2 className="font-GoodTimes text-white text-base sm:text-lg">
+                      <h2 className="font-heading font-semibold text-white text-base sm:text-lg">
                         Connect your wallet to check in
                       </h2>
                       <p className="mt-1 text-sm text-gray-300">
@@ -936,7 +897,7 @@ export default function Fees() {
                 ) : !hasVMooney ? (
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                      <h2 className="font-GoodTimes text-white text-base sm:text-lg">
+                      <h2 className="font-heading font-semibold text-white text-base sm:text-lg">
                         Lock MOONEY to start earning
                       </h2>
                       <p className="mt-1 text-sm text-gray-300">
@@ -955,7 +916,7 @@ export default function Fees() {
                 ) : (
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1">
-                      <h2 className="font-GoodTimes text-white text-base sm:text-lg">
+                      <h2 className="font-heading font-semibold text-white text-base sm:text-lg">
                         {isCheckedIn ? "You're checked in for this week" : 'Check in for this week'}
                       </h2>
                       <p className="mt-1 text-sm text-gray-300">
@@ -982,7 +943,7 @@ export default function Fees() {
               {/* Per-chain breakdown */}
               {address && hasVMooney && feeData.length > 0 && (
                 <div className="bg-black/20 rounded-none sm:rounded-xl px-3 py-4 sm:p-5 border-y sm:border border-white/10">
-                  <h2 className="font-GoodTimes text-white text-base sm:text-lg mb-3">
+                  <h2 className="font-heading font-semibold text-white text-base sm:text-lg mb-3">
                     Your Status By Chain
                   </h2>
                   <div className="overflow-x-auto -mx-3 sm:mx-0">

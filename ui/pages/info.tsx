@@ -43,7 +43,7 @@ const InfoCard = ({
           </div>
         )}
         <div className="flex-1 min-w-0 text-left flex flex-col justify-start">
-          <h3 className="font-bold font-GoodTimes text-lg text-white mb-2 break-words group-hover:text-slate-200 transition-colors">
+          <h3 className="font-bold font-heading text-lg text-white mb-2 break-words group-hover:text-slate-200 transition-colors">
             {header}
           </h3>
           <div className="text-sm text-slate-300 leading-relaxed break-words">{paragraph}</div>
@@ -115,13 +115,7 @@ const Info: React.FC = () => {
           <ContentLayout
             header="Info Center"
             headerSize="max(20px, 3vw)"
-            description={
-              <>
-                Learn more about the Internet's Space Program with the latest news and project
-                updates, dive into the documentation, join an upcoming online event, or explore
-                transparent analytics about our treasury and transactions.
-              </>
-            }
+            description="News, docs, events, and treasury analytics."
             preFooter={
               <NoticeFooter
                 defaultImage="../assets/MoonDAO-Logo-White.svg"

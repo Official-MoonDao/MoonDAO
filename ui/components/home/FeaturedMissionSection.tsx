@@ -5,22 +5,19 @@ import MissionCreator from 'const/abis/MissionCreator.json'
 import MissionTableABI from 'const/abis/MissionTable.json'
 import { DEFAULT_CHAIN_V5, FEATURED_MISSION } from 'const/config'
 import {
-  getMissionMinimumUsdGoal,
-  MISSION_MINIMUM_GOAL_TOOLTIP,
-} from 'const/missionMilestones'
-import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
-import {
   JBV5_CONTROLLER_ADDRESS,
   JBV5_DIRECTORY_ADDRESS,
   JBV5_TOKENS_ADDRESS,
   MISSION_CREATOR_ADDRESSES,
   MISSION_TABLE_ADDRESSES,
 } from 'const/config'
+import { getMissionMinimumUsdGoal, MISSION_MINIMUM_GOAL_TOOLTIP } from 'const/missionMilestones'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import useMissionData from '@/lib/mission/useMissionData'
+import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { truncateTokenValue } from '@/lib/utils/numbers'
@@ -65,31 +62,27 @@ function FeaturedMissionSectionInner({ missions, featuredMissionData }: any) {
 
   const featuredMission =
     featuredMissionData?.mission ||
-    (FEATURED_MISSION
-      ? missions?.find((m: any) => String(m.id) === FEATURED_MISSION!.id)
-      : null) ||
+    (FEATURED_MISSION ? missions?.find((m: any) => String(m.id) === FEATURED_MISSION!.id) : null) ||
     missions?.[0] ||
     null
 
-  const {
-    subgraphData: featuredMissionSubgraphData,
-    fundingGoal: featuredMissionFundingGoal,
-  } = useMissionData({
-    mission: featuredMission,
-    missionTableContract,
-    missionCreatorContract,
-    jbControllerContract,
-    jbDirectoryContract,
-    jbTokensContract,
-    projectMetadata: featuredMissionData?.projectMetadata,
-    _stage: featuredMissionData?._stage,
-    _deadline: featuredMissionData?._deadline,
-    _refundPeriod: featuredMissionData?._refundPeriod,
-    _primaryTerminalAddress: featuredMissionData?._primaryTerminalAddress,
-    _token: featuredMissionData?._token,
-    _fundingGoal: featuredMissionData?._fundingGoal,
-    _ruleset: featuredMissionData?._ruleset,
-  })
+  const { subgraphData: featuredMissionSubgraphData, fundingGoal: featuredMissionFundingGoal } =
+    useMissionData({
+      mission: featuredMission,
+      missionTableContract,
+      missionCreatorContract,
+      jbControllerContract,
+      jbDirectoryContract,
+      jbTokensContract,
+      projectMetadata: featuredMissionData?.projectMetadata,
+      _stage: featuredMissionData?._stage,
+      _deadline: featuredMissionData?._deadline,
+      _refundPeriod: featuredMissionData?._refundPeriod,
+      _primaryTerminalAddress: featuredMissionData?._primaryTerminalAddress,
+      _token: featuredMissionData?._token,
+      _fundingGoal: featuredMissionData?._fundingGoal,
+      _ruleset: featuredMissionData?._ruleset,
+    })
 
   const {
     raisedUsd,
@@ -133,7 +126,7 @@ function FeaturedMissionSectionInner({ missions, featuredMissionData }: any) {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 py-16 md:py-24 lg:py-32">
         {/* Featured Mission Header */}
         <div className="text-center mb-8 md:mb-12 lg:mb-16 xl:mb-20">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white whitespace-nowrap">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold text-white whitespace-nowrap">
             Featured Mission
           </h2>
         </div>
@@ -179,9 +172,7 @@ function FeaturedMissionSectionInner({ missions, featuredMissionData }: any) {
               {/* Mission Title & Tagline */}
               <div className="min-w-0 space-y-2 md:space-y-3 lg:space-y-4">
                 <MissionSingleLineTitle
-                  text={
-                    featuredMission?.metadata?.name || 'Welcome to the MoonDAO Launchpad'
-                  }
+                  text={featuredMission?.metadata?.name || 'Welcome to the MoonDAO Launchpad'}
                   minPx={24}
                   maxPx={60}
                   data-testid="mission-featured-title"
@@ -269,8 +260,8 @@ function FeaturedMissionSectionInner({ missions, featuredMissionData }: any) {
                     {minUsdGoal != null
                       ? `$${minUsdGoal.toLocaleString('en-US')}`
                       : featuredMissionFundingGoal
-                        ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
-                        : '0'}
+                      ? truncateTokenValue(featuredMissionFundingGoal / 1e18, 'ETH')
+                      : '0'}
                     {minUsdGoal != null ? '' : ' ETH'}
                   </p>
                 </div>
@@ -302,10 +293,7 @@ function FeaturedMissionSectionInner({ missions, featuredMissionData }: any) {
                     Funding Progress
                   </span>
                   <span className="text-white font-bold text-sm md:text-base">
-                    {milestoneProgressPercent != null
-                      ? Math.round(milestoneProgressPercent)
-                      : 0}
-                    %
+                    {milestoneProgressPercent != null ? Math.round(milestoneProgressPercent) : 0}%
                   </span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-2 md:h-3 overflow-hidden">
@@ -317,9 +305,7 @@ function FeaturedMissionSectionInner({ missions, featuredMissionData }: any) {
                   />
                 </div>
                 {milestoneCaption && (
-                  <p className="text-white/60 text-xs md:text-sm">
-                    {milestoneCaption}
-                  </p>
+                  <p className="text-white/60 text-xs md:text-sm">{milestoneCaption}</p>
                 )}
               </div>
 

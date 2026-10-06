@@ -79,14 +79,14 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
     if (selectedTeam !== 'all') {
       result = result.filter(
-        (listing: MarketplaceListing) => String(listing.teamId) === selectedTeam,
+        (listing: MarketplaceListing) => String(listing.teamId) === selectedTeam
       )
     }
 
     if (input.trim() !== '') {
       const query = input.toLowerCase()
       result = result.filter((listing: MarketplaceListing) =>
-        listing.title.toLowerCase().includes(query),
+        listing.title.toLowerCase().includes(query)
       )
     }
 
@@ -101,11 +101,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   }, [listings, input, selectedTeam])
 
   const descriptionSection = (
-    <div className="pt-2">
-      <div className="mb-4">
-        Discover space products and services from top innovators and teams in the Space Acceleration
-        Network, available for direct on-chain purchase.
-      </div>
+    <div>
       <div className="relative w-full flex flex-col gap-3">
         {/* Search Bar */}
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">

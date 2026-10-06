@@ -17,8 +17,7 @@ const RANK_BADGE_STYLES = [
   'bg-gradient-to-br from-orange-400/30 to-orange-600/20 text-orange-100 ring-1 ring-orange-300/40',
 ]
 
-const DEFAULT_RANK_STYLE =
-  'bg-white/5 text-gray-300 ring-1 ring-white/10'
+const DEFAULT_RANK_STYLE = 'bg-white/5 text-gray-300 ring-1 ring-white/10'
 
 function formatTotal(amount: number): string {
   return amount.toLocaleString(undefined, { maximumFractionDigits: 0 })
@@ -46,7 +45,7 @@ export default function OverviewLeaderboardPreview({
             <span className="text-xl">🚀</span>
           </div>
           <div className="min-w-0">
-            <h2 className="text-xl md:text-2xl font-GoodTimes text-white truncate">
+            <h2 className="text-xl md:text-2xl font-heading font-semibold text-white truncate">
               Fly with Frank Leaderboard
             </h2>
             <p className="text-indigo-200/80 text-xs sm:text-sm">
@@ -61,17 +60,11 @@ export default function OverviewLeaderboardPreview({
           <ol className="flex flex-col gap-2 sm:gap-3">
             {leaderboard.map((entry, index) => {
               const rankStyle =
-                index < RANK_BADGE_STYLES.length
-                  ? RANK_BADGE_STYLES[index]
-                  : DEFAULT_RANK_STYLE
+                index < RANK_BADGE_STYLES.length ? RANK_BADGE_STYLES[index] : DEFAULT_RANK_STYLE
               const citizenHref = entry.citizenName
-                ? `/citizen/${generatePrettyLinkWithId(
-                    entry.citizenName,
-                    entry.citizenId
-                  )}`
+                ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
                 : `/citizen/${entry.citizenId}`
-              const displayName =
-                entry.citizenName || `Citizen #${entry.citizenId}`
+              const displayName = entry.citizenName || `Citizen #${entry.citizenId}`
               return (
                 <li
                   key={entry.delegateeAddress}
@@ -127,8 +120,8 @@ export default function OverviewLeaderboardPreview({
               No backers yet — be the first to back a candidate.
             </p>
             <p className="text-gray-500 text-xs sm:text-sm mt-1">
-              Contribute to earn $OVERVIEW, then pledge it to the citizen you
-              want to fly with Frank.
+              Contribute to earn $OVERVIEW, then pledge it to the citizen you want to fly with
+              Frank.
             </p>
           </div>
         )}

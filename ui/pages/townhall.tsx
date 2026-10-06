@@ -2,15 +2,15 @@ import { ChatBubbleLeftRightIcon, VideoCameraIcon } from '@heroicons/react/24/ou
 import type { GetStaticProps } from 'next'
 import { useState, useEffect } from 'react'
 import { getSummaries, type TownHallSummary } from '../lib/townhall/summaries'
+import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
-import Container from '../components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
 import Search from '../components/layout/Search'
 import Tooltip from '../components/layout/Tooltip'
 import NextTownHall from '../components/townhall/NextTownHall'
 import TownHallSummaryCard from '../components/townhall/TownHallSummaryCard'
 import TownhallSocials from '../components/townhall/TownhallSocials'
+import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 interface TownHallProps {
@@ -102,16 +102,9 @@ export default function TownHall({ initialSummaries, total }: TownHallProps) {
           mode="compact"
           popOverEffect={false}
           isProfile
-          description={
-            <>
-              Weekly Town Hall meetings with key topics discussed, decisions made, action items,
-              and important updates for community members.
-            </>
-          }
           preFooter={<NoticeFooter />}
         >
-        <div className="max-w-6xl mx-auto w-full">
-
+          <div className="max-w-6xl mx-auto w-full">
             {/* Enhanced info section */}
             <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-xl p-6 mb-6 shadow-xl">
               <div className="grid md:grid-cols-2 gap-6">

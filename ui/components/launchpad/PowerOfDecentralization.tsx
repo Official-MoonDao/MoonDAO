@@ -11,35 +11,40 @@ const features = [
   },
   {
     title: 'Trustless',
-    description: 'All transactions are onchain, ensuring that everyone can see how funds are spent.',
+    description:
+      'All transactions are onchain, ensuring that everyone can see how funds are spent.',
     icon: '/assets/icon-signature.svg',
     gradientFrom: 'from-[#5F4BA2]',
     gradientTo: 'to-[#5159CC]',
   },
   {
     title: 'Battle Tested',
-    description: 'Powered by Juicebox, a proven and audited platform with 1,000+ projects and over $200,000,000 raised.',
+    description:
+      'Powered by Juicebox, a proven and audited platform with 1,000+ projects and over $200,000,000 raised.',
     icon: '/assets/icon-checkmark.svg',
     gradientFrom: 'from-[#5159CC]',
     gradientTo: 'to-[#4660E7]',
   },
   {
     title: 'Scalable',
-    description: 'Adapt your fundraising strategy as your mission evolves with our quick launch guidelines and templates.',
+    description:
+      'Adapt your fundraising strategy as your mission evolves with our quick launch guidelines and templates.',
     icon: '/assets/icon-scalable.svg',
     gradientFrom: 'from-[#4660E7]',
     gradientTo: 'to-[#6C407D]',
   },
   {
     title: 'Power of the Network',
-    description: 'The Space Acceleration Network brings leading space companies, enthusiasts, and professionals onchain from around the globe.',
+    description:
+      'The Space Acceleration Network brings leading space companies, enthusiasts, and professionals onchain from around the globe.',
     icon: '/assets/icon-powerful.svg',
     gradientFrom: 'from-[#6C407D]',
     gradientTo: 'to-[#5F4BA2]',
   },
   {
     title: 'Internet Speed',
-    description: 'Launch and fund your mission in minutes, not months, with instant global access to capital.',
+    description:
+      'Launch and fund your mission in minutes, not months, with instant global access to capital.',
     icon: '/assets/icon-fasttrack.svg',
     gradientFrom: 'from-[#5F4BA2]',
     gradientTo: 'to-[#5159CC]',
@@ -62,7 +67,7 @@ export default function PowerOfDecentralization() {
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         <div className="absolute top-8 md:top-16 lg:top-20 left-1/2 transform -translate-x-1/2 z-20 px-4">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white text-center mb-2 md:mb-4">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold text-white text-center mb-2 md:mb-4">
             The Power of Decentralization
           </h2>
           <p className="text-white/80 text-sm md:text-base lg:text-lg xl:text-xl text-center max-w-3xl mx-auto">
@@ -91,4 +96,3 @@ export default function PowerOfDecentralization() {
     </section>
   )
 }
-

@@ -1,12 +1,12 @@
-import { NanceProvider } from '@nance/nance-hooks'
-import { BLOCKED_PROPOSALS } from 'const/whitelist'
-import { ProposalPacket, getActionsFromBody, getProposal } from '@nance/nance-sdk'
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline'
+import { NanceProvider } from '@nance/nance-hooks'
+import { ProposalPacket, getActionsFromBody, getProposal } from '@nance/nance-sdk'
+import { BLOCKED_PROPOSALS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
-import Image from 'next/image'
 import { createEnumParam, useQueryParams, withDefault } from 'next-query-params'
-import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
+import Image from 'next/image'
 import { formatNumberUSStyle } from '@/lib/nance'
+import { NANCE_API_URL, NANCE_SPACE_NAME } from '@/lib/nance/constants'
 import { STATUS_CONFIG, STATUS_DISPLAY_LABELS } from '@/lib/nance/useProposalStatus'
 import {
   useVotesOfProposal,
@@ -94,7 +94,7 @@ function SnapshotVotingResults({
     <div className="p-6">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white font-GoodTimes">Voting Results</h3>
+          <h3 className="text-xl font-bold text-white font-heading">Voting Results</h3>
           <div
             className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
               passed && quorumMet
@@ -123,7 +123,9 @@ function SnapshotVotingResults({
             <p className="text-xs text-gray-400 uppercase tracking-wide">Support</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-white">{formatNumberUSStyle(scoresTotal, true)}</p>
+            <p className="text-2xl font-bold text-white">
+              {formatNumberUSStyle(scoresTotal, true)}
+            </p>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Total VP</p>
           </div>
         </div>
@@ -136,7 +138,9 @@ function SnapshotVotingResults({
       <div className="space-y-3">
         {choices.map((choice, i) => (
           <div key={i} className="flex justify-between text-sm">
-            <span className={i === 0 ? 'text-green-400' : i === 1 ? 'text-red-400' : 'text-gray-400'}>
+            <span
+              className={i === 0 ? 'text-green-400' : i === 1 ? 'text-red-400' : 'text-gray-400'}
+            >
               {choice}
             </span>
             <span className="text-white">{formatNumberUSStyle(scores[i] || 0, true)} VP</span>
@@ -163,14 +167,17 @@ function SnapshotVotesList({
         id="votes"
         onClick={onToggleSort}
       >
-        <h3 className="font-GoodTimes pb-2 text-gray-400">Votes</h3>
+        <h3 className="font-heading font-semibold pb-2 text-gray-400">Votes</h3>
         <span className="ml-2 text-center text-xs text-gray-300">
           sort by {sortBy === 'vp' ? 'voting power' : 'time'}
         </span>
       </button>
       <div className="pb-4 md:pb-5 mt-4 space-y-2">
         {votesData.votes?.map((vote) => (
-          <div key={vote.id} className="flex items-center justify-between py-2 border-b border-white/10">
+          <div
+            key={vote.id}
+            className="flex items-center justify-between py-2 border-b border-white/10"
+          >
             <div className="flex items-center gap-2">
               <ShortAddressLink address={vote.voter} />
               <span

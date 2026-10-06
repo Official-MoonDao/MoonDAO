@@ -65,7 +65,7 @@ export default function IndexCard({
           )}
           <h2
             id="index-main-header"
-            className="z-20 pt-[12px] 2xl:pt-[16px] 3xl:pt-[20px] mb-2 md:mb-3 2xl:mb-4 3xl:mb-5 static-sub-header font-GoodTimes text-center text-lg md:text-xl 2xl:text-2xl 3xl:text-3xl"
+            className="z-20 pt-[12px] 2xl:pt-[16px] 3xl:pt-[20px] mb-2 md:mb-3 2xl:mb-4 3xl:mb-5 static-sub-header font-heading font-semibold text-center text-lg md:text-xl 2xl:text-2xl 3xl:text-3xl"
           >
             {header && header}
             {metadata?.name}
@@ -79,7 +79,9 @@ export default function IndexCard({
               className="description text-left relative z-50 w-full opacity-100 !opacity-100"
               style={{ opacity: '1 !important' }}
             >
-              <div className="flex justify-center text-center text-sm md:text-base 2xl:text-lg 3xl:text-xl">{paragraph}</div>
+              <div className="flex justify-center text-center text-sm md:text-base 2xl:text-lg 3xl:text-xl">
+                {paragraph}
+              </div>
               {metadata?.id && (
                 <div id="index-details-container" className="mt-4">
                   <p id="index-org-description">
@@ -88,9 +90,7 @@ export default function IndexCard({
                       : metadata.description}
                   </p>
                   {citizenDiscord && (
-                    <div id="index-handle-container">
-                      Discord: @{citizenDiscord}
-                    </div>
+                    <div id="index-handle-container">Discord: @{citizenDiscord}</div>
                   )}
                 </div>
               )}

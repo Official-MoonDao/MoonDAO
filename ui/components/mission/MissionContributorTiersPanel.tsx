@@ -6,7 +6,9 @@ type MissionContributorTiersPanelProps = {
 }
 
 /** Shown under the mission pay / receive card when tiers exist for this mission. */
-export default function MissionContributorTiersPanel({ missionId }: MissionContributorTiersPanelProps) {
+export default function MissionContributorTiersPanel({
+  missionId,
+}: MissionContributorTiersPanelProps) {
   const tiers = useMemo(() => getMissionContributorTiers(missionId), [missionId])
   if (tiers.length === 0) return null
 
@@ -19,11 +21,13 @@ export default function MissionContributorTiersPanel({ missionId }: MissionContr
             key={tier.amountUsd}
             className="w-full rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2.5 flex flex-col gap-1"
           >
-            <p className="text-indigo-300/90 font-GoodTimes text-sm font-semibold tracking-tight">
+            <p className="text-indigo-300/90 font-heading text-sm font-semibold tracking-tight">
               ${tier.amountUsd.toLocaleString('en-US')}
             </p>
             <p className="text-white font-medium text-xs sm:text-sm">{tier.title}</p>
-            <p className="text-gray-500 text-[11px] sm:text-xs leading-relaxed">{tier.description}</p>
+            <p className="text-gray-500 text-[11px] sm:text-xs leading-relaxed">
+              {tier.description}
+            </p>
           </li>
         ))}
       </ul>

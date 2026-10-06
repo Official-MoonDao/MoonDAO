@@ -2,10 +2,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
-import {
-  generatePrettyLink,
-  generatePrettyLinkWithId,
-} from '@/lib/subscription/pretty-links'
+import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import Frame from '../layout/Frame'
 import StandardButton from '../layout/StandardButton'
 import AdaptiveImage from './AdaptiveImage'
@@ -49,10 +46,7 @@ export default function Card({
   horizontalscroll = false,
   profile = false,
 }: CardProps) {
-  icon =
-    type === 'team'
-      ? '/assets/icon-org.svg'
-      : icon ?? '/assets/icon-passport.svg'
+  icon = type === 'team' ? '/assets/icon-org.svg' : icon ?? '/assets/icon-passport.svg'
   iconAlt = iconAlt ?? 'Star'
 
   const [citizenDiscord, setCitizenDiscord] = useState<string | undefined>()
@@ -75,10 +69,7 @@ export default function Card({
         id="content-container"
         className="h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between"
       >
-        <span
-          id="content"
-          className="animate-fadeIn relative z-50 flex flex-col"
-        >
+        <span id="content" className="animate-fadeIn relative z-50 flex flex-col">
           {orgimage && (
             <div id="featured-image-container" className="z-50 animate-fadeIn">
               <Frame noPadding marginBottom="0px">
@@ -130,20 +121,14 @@ export default function Card({
               width="250"
               height="250"
               className={`z-20 ${
-                inline
-                  ? 'pt-[20px] w-[50px] h-[50px]'
-                  : 'w-[100px] h-[100px] pb-5'
+                inline ? 'pt-[20px] w-[50px] h-[50px]' : 'w-[100px] h-[100px] pb-5'
               }`}
             />
             <h2
               id="main-header"
               className={`
-                                z-20 pt-[20px] static-sub-header font-GoodTimes flex items-center 
-                                ${
-                                  inline
-                                    ? 'text-left'
-                                    : 'text-left md:justify-start'
-                                }
+                                z-20 pt-[20px] static-sub-header font-heading font-semibold flex items-center 
+                                ${inline ? 'text-left' : 'text-left md:justify-start'}
                             `}
             >
               {header && header}
@@ -152,13 +137,8 @@ export default function Card({
           </span>
           {subheader && subheader}
           <div id="description-and-id-container" className="relative z-50">
-            <div
-              id="description-and-id"
-              className={metadata?.name && 'description'}
-            >
-              <div className="flex opacity-[70%] text-left items-start">
-                {paragraph}
-              </div>
+            <div id="description-and-id" className={metadata?.name && 'description'}>
+              <div className="flex opacity-[70%] text-left items-start">{paragraph}</div>
               {metadata?.id ? (
                 <div id="details-container" className="mt-4 font-RobotoMono">
                   <p id="org-description">
@@ -173,9 +153,7 @@ export default function Card({
               ) : (
                 profile && (
                   <div id="details-container" className="mt-4 font-RobotoMono">
-                    <p id="org-description">
-                      This citizen has yet to add a profile
-                    </p>
+                    <p id="org-description">This citizen has yet to add a profile</p>
                     <div id="handle-container">Discord: NONE</div>
                   </div>
                 )
@@ -215,9 +193,7 @@ export default function Card({
   )
 
   if (!metadata) {
-    return (
-      <div className="min-w-[300px] min-h-[400px] bg-dark-cool rounded-[20px] animate-pulse" />
-    )
+    return <div className="min-w-[300px] min-h-[400px] bg-dark-cool rounded-[20px] animate-pulse" />
   }
 
   return (
@@ -229,12 +205,7 @@ export default function Card({
             `}
     >
       {link ? (
-        <Link
-          id="card-link"
-          prefetch={true}
-          href={link}
-          className="w-full h-full block"
-        >
+        <Link id="card-link" prefetch={true} href={link} className="w-full h-full block">
           {cardContent}
         </Link>
       ) : metadata?.name ? (

@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { useContext } from 'react'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import Container from '../components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
+import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import NativeToMooney from '@/components/uniswap/NativeToMooney'
 
@@ -25,12 +25,6 @@ export default function GetMooney() {
           popOverEffect={false}
           isProfile
           centerHeader
-          description={
-            <>
-              Get MOONEY tokens to participate in MoonDAO governance. After buying, lock them for
-              voting power.
-            </>
-          }
           preFooter={
             <NoticeFooter
               defaultTitle="Need Help?"

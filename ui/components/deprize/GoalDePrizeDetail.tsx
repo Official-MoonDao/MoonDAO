@@ -1,12 +1,9 @@
 import { useLogin } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
-import {
-  deprizeIndexHref,
-  ROSTER_DISCLAIMER,
-  isCompetitiveRace,
-} from '@/lib/deprize/competitions'
+import { deprizeIndexHref, ROSTER_DISCLAIMER, isCompetitiveRace } from '@/lib/deprize/competitions'
 import { deprizeOgDescription, OUTCOME_COLORS } from '@/lib/deprize/constants'
 import { fmt, fmtPrizeEth } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
@@ -19,14 +16,13 @@ import {
   PROJECT_TYPE_LABEL,
 } from '@/lib/lunar-atlas/display'
 import type { SharedGoal } from '@/lib/lunar-atlas/types'
-import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import CategoryIcon from '@/components/deprize/CategoryIcon'
+import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
+import DemoBetModal from '@/components/deprize/DemoBetModal'
 import Container from '@/components/layout/Container'
 import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import CategoryIcon from '@/components/deprize/CategoryIcon'
-import DemoBetModal from '@/components/deprize/DemoBetModal'
-import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 
 /**
  * Prize detail for a Moon Base Zero capability race that is not (yet) bound
@@ -55,50 +51,43 @@ export default function GoalDePrizeDetail({
           return { project, organization: orgById(SEED_ATLAS, project.orgId) }
         })
         .filter(
-          (c): c is { project: NonNullable<typeof c>['project']; organization: ReturnType<typeof orgById> } =>
-            !!c,
+          (
+            c
+          ): c is {
+            project: NonNullable<typeof c>['project']
+            organization: ReturnType<typeof orgById>
+          } => !!c
         ),
-    [goal.projectIds],
+    [goal.projectIds]
   )
 
-  const projectIds = useMemo(
-    () => competitors.map((c) => c.project.id),
-    [competitors],
-  )
+  const projectIds = useMemo(() => competitors.map((c) => c.project.id), [competitors])
   const hasRace = isCompetitiveRace(competitors.length)
-  const market = useMockMarket(
-    goal.id,
-    projectIds,
-    goal.market?.impliedOdds,
-    userAddress,
-  )
+  const market = useMockMarket(goal.id, projectIds, goal.market?.impliedOdds, userAddress)
 
   const category = goalIndexCategory(goal) ?? 'other'
   const categoryLabel = PROJECT_TYPE_LABEL[category]
   const categoryColor = PROJECT_TYPE_COLOR[category]
 
-  const outcomes: { projectId: string; outcome: Outcome; name: string }[] =
-    useMemo(
-      () =>
-        competitors.map((c, i) => {
-          const pos = market.positions[c.project.id]
-          return {
-            projectId: c.project.id,
-            name: c.organization?.name || c.project.name,
-            outcome: {
-              index: i,
-              probability: hasRace ? (market.odds[c.project.id] ?? 0) : Number.NaN,
-              balance: pos && pos.qty > 0 ? pos.qty : 0,
-              positionId: 0n,
-            },
-          }
-        }),
-      [competitors, hasRace, market.odds, market.positions],
-    )
+  const outcomes: { projectId: string; outcome: Outcome; name: string }[] = useMemo(
+    () =>
+      competitors.map((c, i) => {
+        const pos = market.positions[c.project.id]
+        return {
+          projectId: c.project.id,
+          name: c.organization?.name || c.project.name,
+          outcome: {
+            index: i,
+            probability: hasRace ? market.odds[c.project.id] ?? 0 : Number.NaN,
+            balance: pos && pos.qty > 0 ? pos.qty : 0,
+            positionId: 0n,
+          },
+        }
+      }),
+    [competitors, hasRace, market.odds, market.positions]
+  )
 
-  const betRow = betProjectId
-    ? outcomes.find((o) => o.projectId === betProjectId)
-    : undefined
+  const betRow = betProjectId ? outcomes.find((o) => o.projectId === betProjectId) : undefined
 
   const handleBet = (projectId: string) => {
     if (!userAddress) {
@@ -117,10 +106,7 @@ export default function GoalDePrizeDetail({
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head
-        title={goal.title}
-        description={deprizeOgDescription(goal.description.slice(0, 160))}
-      />
+      <Head title={goal.title} description={deprizeOgDescription(goal.description.slice(0, 160))} />
       <Container>
         <div className="w-full max-w-[860px] mx-auto pt-6 sm:pt-8 pb-10 px-4 sm:px-5 md:px-0">
           <div className="flex flex-col gap-4 w-full">
@@ -138,7 +124,7 @@ export default function GoalDePrizeDetail({
                     <CategoryIcon category={category} className="w-6 h-6" />
                   </div>
                   <div className="min-w-0">
-                    <h1 className="text-white font-GoodTimes text-lg sm:text-xl leading-snug">
+                    <h1 className="text-white font-heading font-semibold text-lg sm:text-xl leading-snug">
                       {goal.title}
                     </h1>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
@@ -184,9 +170,7 @@ export default function GoalDePrizeDetail({
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Providers</p>
-                  <p className="text-sm font-semibold text-white">
-                    {competitors.length || '—'}
-                  </p>
+                  <p className="text-sm font-semibold text-white">{competitors.length || '—'}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400">Target window</p>
@@ -201,13 +185,9 @@ export default function GoalDePrizeDetail({
 
             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
               <p className="text-gray-300 text-sm">{goal.description}</p>
-              {goal.regionLabel && (
-                <p className="text-gray-500 text-xs mt-2">{goal.regionLabel}</p>
-              )}
+              {goal.regionLabel && <p className="text-gray-500 text-xs mt-2">{goal.regionLabel}</p>}
               {hasRace && (
-                <p className="text-gray-500 text-xs leading-relaxed mt-3">
-                  {ROSTER_DISCLAIMER}
-                </p>
+                <p className="text-gray-500 text-xs leading-relaxed mt-3">{ROSTER_DISCLAIMER}</p>
               )}
               <p className="text-gray-500 text-xs mt-3">
                 {hasRace
@@ -234,9 +214,7 @@ export default function GoalDePrizeDetail({
                       <span className="text-gray-500 mr-2">{i + 1}</span>
                       {c.statement}
                       {c.threshold && (
-                        <p className="text-xs text-gray-500 mt-0.5 pl-5">
-                          {c.threshold}
-                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5 pl-5">{c.threshold}</p>
                       )}
                     </li>
                   ))}
@@ -253,8 +231,7 @@ export default function GoalDePrizeDetail({
                       key={o.projectId}
                       style={{
                         width: `${Math.max(0, Math.min(100, o.outcome.probability))}%`,
-                        background:
-                          OUTCOME_COLORS[o.outcome.index % OUTCOME_COLORS.length],
+                        background: OUTCOME_COLORS[o.outcome.index % OUTCOME_COLORS.length],
                       }}
                     />
                   ))}
@@ -265,8 +242,7 @@ export default function GoalDePrizeDetail({
                       <span
                         className="inline-block w-2.5 h-2.5 rounded-full"
                         style={{
-                          background:
-                            OUTCOME_COLORS[o.outcome.index % OUTCOME_COLORS.length],
+                          background: OUTCOME_COLORS[o.outcome.index % OUTCOME_COLORS.length],
                         }}
                       />
                       <span className="text-gray-300 text-xs">
@@ -283,7 +259,7 @@ export default function GoalDePrizeDetail({
 
             <div className="flex flex-col gap-3">
               <div>
-                <h3 className="title-text-colors text-lg font-GoodTimes">
+                <h3 className="title-text-colors text-lg font-heading font-semibold">
                   Competitors
                 </h3>
                 {hasRace && (
@@ -304,9 +280,7 @@ export default function GoalDePrizeDetail({
                 const pos = market.positions[o.projectId]
                 const sellQuoteEth =
                   pos && pos.qty > 0
-                    ? Math.round(
-                        pos.qty * ((market.odds[o.projectId] ?? 0) / 100) * 1e6,
-                      ) / 1e6
+                    ? Math.round(pos.qty * ((market.odds[o.projectId] ?? 0) / 100) * 1e6) / 1e6
                     : undefined
                 return (
                   <DePrizeTeamCard

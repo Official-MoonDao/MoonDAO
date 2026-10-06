@@ -1,3 +1,4 @@
+import { useLogin, useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ConditionalTokensABI from 'const/abis/ConditionalTokens.json'
 import DePrizeRedeemABI from 'const/abis/DePrizeRedeem.json'
@@ -15,7 +16,6 @@ import {
   DEPRIZE_QUESTION_ID,
   DEPRIZE_PLAY_ID,
 } from 'const/config'
-import { useLogin, useWallets } from '@privy-io/react-auth'
 import dynamic from 'next/dynamic'
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -31,13 +31,13 @@ import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
+import type { OddsSample } from '@/components/deprize/OddsHistoryChart'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
 import Modal from '@/components/layout/Modal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import StandardButton from '@/components/layout/StandardButton'
-import type { OddsSample } from '@/components/deprize/OddsHistoryChart'
 
 // Charting lib touches window; load it client-side only to avoid SSR mismatch.
 const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryChart'), {
@@ -332,7 +332,7 @@ export default function DePrizePlay() {
   // accumulates over time even though there's no on-chain price series.
   const oddsStorageKey = useMemo(
     () => (lmsrAddress ? `deprize:oddsHistory:v1:${lmsrAddress}` : null),
-    [lmsrAddress],
+    [lmsrAddress]
   )
 
   useEffect(() => {
@@ -369,7 +369,7 @@ export default function DePrizePlay() {
         return next
       })
     },
-    [oddsStorageKey],
+    [oddsStorageKey]
   )
 
   const loadMarket = useCallback(async () => {
@@ -425,8 +425,8 @@ export default function DePrizePlay() {
               params: [i],
             })
               .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
-              .catch(() => NaN),
-          ),
+              .catch(() => NaN)
+          )
         ),
         userAddress
           ? Promise.all(
@@ -437,8 +437,8 @@ export default function DePrizePlay() {
                   params: [userAddress, pid],
                 })
                   .then((b) => b as bigint)
-                  .catch(() => undefined),
-              ),
+                  .catch(() => undefined)
+              )
             )
           : Promise.resolve(positionIds.map(() => undefined)),
         userAddress
@@ -481,8 +481,8 @@ export default function DePrizePlay() {
               params: [cond, BigInt(i)],
             })
               .then((v) => v as bigint)
-              .catch(() => 0n),
-          ),
+              .catch(() => 0n)
+          )
         ),
         rpcRead({
           contract: weth,
@@ -517,7 +517,7 @@ export default function DePrizePlay() {
             balanceWei: balWei,
             positionId: pid,
           }
-        }),
+        })
       )
     } catch (err: any) {
       console.error('[deprize-play] loadMarket failed', err)
@@ -551,8 +551,8 @@ export default function DePrizePlay() {
               params: [i],
             })
               .then((p) => (Number(p as bigint) / 2 ** 64) * 100)
-              .catch(() => NaN),
-          ),
+              .catch(() => NaN)
+          )
         )
         recordOddsSample(prices)
       } catch {
@@ -585,7 +585,7 @@ export default function DePrizePlay() {
     }
     if (resolvedSnapRef.current) return
     const finalOdds = Array.from({ length: MAX_OUTCOMES }, (_, i) =>
-      i < payoutNums.length ? (Number(payoutNums[i]) / Number(den)) * 100 : NaN,
+      i < payoutNums.length ? (Number(payoutNums[i]) / Number(den)) * 100 : NaN
     )
     recordOddsSample(finalOdds)
     resolvedSnapRef.current = true
@@ -620,7 +620,7 @@ export default function DePrizePlay() {
   const costStorageKey = useMemo(
     () =>
       lmsrAddress && userAddress ? `deprize:costBasis:v1:${lmsrAddress}:${userAddress}` : null,
-    [lmsrAddress, userAddress],
+    [lmsrAddress, userAddress]
   )
 
   useEffect(() => {
@@ -646,7 +646,7 @@ export default function DePrizePlay() {
         }
       }
     },
-    [costStorageKey],
+    [costStorageKey]
   )
 
   const addCostBasis = useCallback(
@@ -660,7 +660,7 @@ export default function DePrizePlay() {
         return next
       })
     },
-    [persistCostBasis],
+    [persistCostBasis]
   )
 
   const resetCostBasis = useCallback(
@@ -671,7 +671,7 @@ export default function DePrizePlay() {
         return next
       })
     },
-    [persistCostBasis],
+    [persistCostBasis]
   )
 
   const clearCostBasis = useCallback(() => {
@@ -689,7 +689,7 @@ export default function DePrizePlay() {
   // Persist the harness inputs per market so they survive reloads.
   const helperStorageKey = useMemo(
     () => (lmsrAddress ? `deprize:redeemHelper:v1:${lmsrAddress}` : null),
-    [lmsrAddress],
+    [lmsrAddress]
   )
 
   useEffect(() => {
@@ -749,7 +749,7 @@ export default function DePrizePlay() {
       setHelperPreview(
         preview === undefined
           ? undefined
-          : Number(preview / UNIT) + Number(preview % UNIT) / Number(UNIT),
+          : Number(preview / UNIT) + Number(preview % UNIT) / Number(UNIT)
       )
       setHelperApproved(approved)
     })()
@@ -791,7 +791,7 @@ export default function DePrizePlay() {
           try {
             const balWei = o.balanceWei ?? BigInt(Math.floor(o.balance * 1e18))
             const amounts = Array.from({ length: MAX_OUTCOMES }, (_, j) =>
-              j === o.index ? -balWei : 0n,
+              j === o.index ? -balWei : 0n
             )
             const net = await rpcRead<bigint>({
               contract: lmsr,
@@ -802,7 +802,7 @@ export default function DePrizePlay() {
           } catch {
             return null
           }
-        }),
+        })
       )
       if (cancelled) return
       setSellQuotes(new Map(entries.filter((e): e is [number, number] => e !== null)))
@@ -823,7 +823,7 @@ export default function DePrizePlay() {
         params: [amounts],
       })
     },
-    [lmsr],
+    [lmsr]
   )
 
   // How many outcome tokens does `targetWei` of collateral actually buy, given
@@ -851,7 +851,7 @@ export default function DePrizePlay() {
       }
       return lo
     },
-    [lmsr, lmsrNetCost],
+    [lmsr, lmsrNetCost]
   )
 
   // Live payout for the open Bet modal: the REAL, price-impact-aware amount from
@@ -913,7 +913,7 @@ export default function DePrizePlay() {
         }
       }
     },
-    [account],
+    [account]
   )
 
   const addWethToWallet = async () => {
@@ -953,7 +953,7 @@ export default function DePrizePlay() {
           method: 'deposit' as string,
           params: [],
           value: depositAmountWei,
-        }),
+        })
       )
       toast.dismiss('wrap')
       toast.success(`Added ${fmt(Number(depositAmountWei) / Number(UNIT))} ETH to your balance.`, {
@@ -1021,7 +1021,7 @@ export default function DePrizePlay() {
         const toWrap = buffered - balWei
         const nativeWei = await eth_getBalance(
           getRpcClient({ client: readClient, chain: readChain }),
-          { address: account.address },
+          { address: account.address }
         )
         if (nativeWei < toWrap + GAS_RESERVE_WEI) {
           toast.error('Not enough ETH for this bet (including gas). Try a smaller amount.', {
@@ -1036,7 +1036,7 @@ export default function DePrizePlay() {
             method: 'deposit' as string,
             params: [],
             value: toWrap,
-          }),
+          })
         )
         toast.dismiss('wrap')
         balWei += toWrap
@@ -1060,7 +1060,7 @@ export default function DePrizePlay() {
             contract: wethW,
             method: 'approve' as string,
             params: [lmsrAddress, MAX_UINT256],
-          }),
+          })
         )
         toast.dismiss('approve')
       }
@@ -1071,17 +1071,17 @@ export default function DePrizePlay() {
           contract: lmsrW,
           method: 'trade' as string,
           params: [amounts, limit],
-        }),
+        })
       )
       toast.dismiss('trade')
       const qtyNum = Number(qty) / Number(UNIT)
       addCostBasis(index, Number(cost) / Number(UNIT))
       fireConfetti()
       toast.success(
-        `Bet ${fmt(Number(cost) / Number(UNIT))} ETH on outcome #${
-          index + 1
-        }. To win ≈ ${fmt(qtyNum)} ETH if it happens.`,
-        { style: toastStyle, duration: 8000 },
+        `Bet ${fmt(Number(cost) / Number(UNIT))} ETH on outcome #${index + 1}. To win ≈ ${fmt(
+          qtyNum
+        )} ETH if it happens.`,
+        { style: toastStyle, duration: 8000 }
       )
       setBetIndex(null)
       refreshSoon()
@@ -1123,7 +1123,7 @@ export default function DePrizePlay() {
             contract: ctfW,
             method: 'setApprovalForAll' as string,
             params: [lmsrAddress, true],
-          }),
+          })
         )
         toast.dismiss('approve')
       }
@@ -1142,13 +1142,13 @@ export default function DePrizePlay() {
           contract: lmsrW,
           method: 'trade' as string,
           params: [amounts, limit],
-        }),
+        })
       )
       toast.dismiss('sell')
       resetCostBasis(index)
       toast.success(
         `Cashed out outcome #${index + 1} for ≈ ${fmt(Number(-net) / Number(UNIT))} ETH.`,
-        { style: toastStyle },
+        { style: toastStyle }
       )
       refreshSoon()
     } catch (err: any) {
@@ -1174,7 +1174,7 @@ export default function DePrizePlay() {
           contract: ctfW,
           method: 'redeemPositions' as string,
           params: [wethAddress, ZERO_BYTES32, conditionId, indexSets],
-        }),
+        })
       )
       clearCostBasis()
       setClaimed(true)
@@ -1203,7 +1203,7 @@ export default function DePrizePlay() {
           contract: lmsrW,
           method: method as string,
           params: [],
-        }),
+        })
       )
       toast.success(doneMsg, { style: toastStyle })
       refreshSoon()
@@ -1240,7 +1240,7 @@ export default function DePrizePlay() {
       })
       if (computed.toLowerCase() !== marketConditionId.toLowerCase()) {
         throw new Error(
-          `Pre-flight: conditionId mismatch — keccak(yourAddress, questionId, ${MAX_OUTCOMES}) != the market's condition. Check the question id and that you are the oracle.`,
+          `Pre-flight: conditionId mismatch — keccak(yourAddress, questionId, ${MAX_OUTCOMES}) != the market's condition. Check the question id and that you are the oracle.`
         )
       }
       // Re-read the gating state fresh on-chain rather than trusting the
@@ -1260,11 +1260,11 @@ export default function DePrizePlay() {
           contract: lmsr,
           method: 'stage' as string,
           params: [],
-        }),
+        })
       )
       if (freshStage !== MarketStage.Paused && freshStage !== MarketStage.Closed) {
         throw new Error(
-          'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.',
+          'Pre-flight: pause or close the market first — resolving a live market gives away free trades against the known outcome.'
         )
       }
       await sendTx(
@@ -1272,7 +1272,7 @@ export default function DePrizePlay() {
           contract: ctfW,
           method: 'reportPayouts' as string,
           params: [questionId, payouts],
-        }),
+        })
       )
       toast.success(`Resolved: ${label}.`, { style: toastStyle })
       refreshSoon()
@@ -1289,14 +1289,14 @@ export default function DePrizePlay() {
   const resolveWinner = (winningIndex: number) =>
     resolve(
       Array.from({ length: MAX_OUTCOMES }, (_, i) => (i === winningIndex ? 1n : 0n)),
-      `outcome #${winningIndex + 1} wins`,
+      `outcome #${winningIndex + 1} wins`
     )
 
   // M4b: terminal no-winner/cancelled — every outcome token refunds 1/N.
   const resolveNoWinner = () =>
     resolve(
       Array.from({ length: MAX_OUTCOMES }, () => 1n),
-      `no winner — every position refunds 1/${MAX_OUTCOMES}`,
+      `no winner — every position refunds 1/${MAX_OUTCOMES}`
     )
 
   // ---- DePrizeRedeem helper actions (M4a) ----
@@ -1309,7 +1309,7 @@ export default function DePrizePlay() {
           contract: ctfW,
           method: 'setApprovalForAll' as string,
           params: [helperAddress, true],
-        }),
+        })
       )
       setHelperApproved(true)
       toast.success('Helper approved to pull your outcome tokens.', {
@@ -1340,7 +1340,7 @@ export default function DePrizePlay() {
           contract: helperW,
           method: 'redeem' as string,
           params: [BigInt(deprizeId)],
-        }),
+        })
       )
       toast.dismiss('helper')
       clearCostBasis()
@@ -1350,7 +1350,7 @@ export default function DePrizePlay() {
         helperPreview !== undefined
           ? `Redeemed ≈ ${fmt(helperPreview)} ETH via DePrizeRedeem.`
           : 'Redeemed via DePrizeRedeem.',
-        { style: toastStyle, duration: 8000 },
+        { style: toastStyle, duration: 8000 }
       )
       refreshSoon()
     } catch (err: any) {
@@ -1374,8 +1374,8 @@ export default function DePrizePlay() {
     stage === MarketStage.Paused
       ? 'Market paused'
       : stage === MarketStage.Closed
-        ? 'Market closed'
-        : ''
+      ? 'Market closed'
+      : ''
   // CTF-level resolution is what actually gates redemption (market stage is
   // only the trading state). claimable = what the connected wallet's positions
   // redeem for under the reported payout vector (mirrors previewRedeem).
@@ -1415,8 +1415,6 @@ export default function DePrizePlay() {
           mode="compact"
           popOverEffect={false}
           isProfile
-          centerHeader
-          centerHeaderWidth="760px"
           description="Bet ETH on an outcome, watch live odds and payouts, and claim after the market resolves."
           preFooter={<NoticeFooter />}
         >
@@ -1455,12 +1453,12 @@ export default function DePrizePlay() {
                         {payoutDen === undefined
                           ? '—'
                           : !resolved
-                            ? 'Unresolved'
-                            : isRefundVector
-                              ? `Refund 1/${MAX_OUTCOMES}`
-                              : winningIndex >= 0
-                                ? `#${winningIndex + 1} won`
-                                : `[${payoutNums.map((n) => n.toString()).join(',')}]`}
+                          ? 'Unresolved'
+                          : isRefundVector
+                          ? `Refund 1/${MAX_OUTCOMES}`
+                          : winningIndex >= 0
+                          ? `#${winningIndex + 1} won`
+                          : `[${payoutNums.map((n) => n.toString()).join(',')}]`}
                       </p>
                     </div>
                     <StandardButton
@@ -1608,8 +1606,8 @@ export default function DePrizePlay() {
                                     ? isWinningSlot
                                       ? 'text-moon-green'
                                       : isRefundVector
-                                        ? 'text-white'
-                                        : 'text-gray-500'
+                                      ? 'text-white'
+                                      : 'text-gray-500'
                                     : 'text-white'
                                 }`}
                               >
@@ -1617,13 +1615,13 @@ export default function DePrizePlay() {
                                   ? isWinningSlot
                                     ? 'WON'
                                     : isRefundVector
-                                      ? 'Refund'
-                                      : 'Lost'
+                                    ? 'Refund'
+                                    : 'Lost'
                                   : Number.isNaN(o.probability)
-                                    ? loading
-                                      ? '…'
-                                      : '—'
-                                    : `${fmt(o.probability, 0)}%`}
+                                  ? loading
+                                    ? '…'
+                                    : '—'
+                                  : `${fmt(o.probability, 0)}%`}
                               </p>
                               {!resolved && (
                                 <p className="text-gray-500 text-[10px] mt-1">chance</p>
@@ -1682,10 +1680,10 @@ export default function DePrizePlay() {
                                     ? `${fmt(redeemValue)} ETH`
                                     : '—'
                                   : isTradingHalted
-                                    ? '—'
-                                    : valueNow !== undefined
-                                      ? `${fmt(valueNow)} ETH`
-                                      : '…'}
+                                  ? '—'
+                                  : valueNow !== undefined
+                                  ? `${fmt(valueNow)} ETH`
+                                  : '…'}
                               </p>
                             </div>
                             {!resolved && (
@@ -1703,8 +1701,8 @@ export default function DePrizePlay() {
                                   pnl === undefined
                                     ? 'text-gray-400'
                                     : pnl >= 0
-                                      ? 'text-moon-green'
-                                      : 'text-red-400'
+                                    ? 'text-moon-green'
+                                    : 'text-red-400'
                                 }`}
                               >
                                 {pnl === undefined ? '—' : `${pnl >= 0 ? '+' : ''}${fmt(pnl)} ETH`}
@@ -1737,8 +1735,8 @@ export default function DePrizePlay() {
                           {isRefundVector
                             ? 'No winner — everyone refunded'
                             : winningIndex >= 0
-                              ? `Outcome #${winningIndex + 1} won`
-                              : 'Resolved'}
+                            ? `Outcome #${winningIndex + 1} won`
+                            : 'Resolved'}
                         </p>
                         {nothingToClaim || claimed ? (
                           <p className="text-white text-2xl font-bold mt-1">
@@ -1846,8 +1844,8 @@ export default function DePrizePlay() {
                             {helperApproved === undefined
                               ? '—'
                               : helperApproved
-                                ? 'granted'
-                                : 'not granted'}
+                              ? 'granted'
+                              : 'not granted'}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1927,7 +1925,7 @@ export default function DePrizePlay() {
                             {marketFeesWei !== undefined
                               ? `Withdraw fees (${fmt(
                                   Number(marketFeesWei) / Number(UNIT),
-                                  4,
+                                  4
                                 )} WETH)`
                               : 'Withdraw fees'}
                           </StandardButton>
@@ -2151,10 +2149,10 @@ export default function DePrizePlay() {
                 {busy
                   ? 'Placing bet…'
                   : isTradingHalted
-                    ? tradingHaltLabel
-                    : betAmountNum > 0
-                      ? `Bet ${fmt(betAmountNum)} ETH`
-                      : 'Enter an amount'}
+                  ? tradingHaltLabel
+                  : betAmountNum > 0
+                  ? `Bet ${fmt(betAmountNum)} ETH`
+                  : 'Enter an amount'}
               </StandardButton>
             )}
           </div>

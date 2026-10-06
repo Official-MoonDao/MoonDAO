@@ -10,12 +10,7 @@ type GeneralActionProps = {
   href: string
 }
 
-function GeneralAction({
-  logo,
-  description,
-  points,
-  href,
-}: GeneralActionProps) {
+function GeneralAction({ logo, description, points, href }: GeneralActionProps) {
   return (
     <button
       className="w-full hover:scale-105 ease-in-out duration-300 group"
@@ -23,10 +18,15 @@ function GeneralAction({
     >
       <div className="bg-slate-600/20 backdrop-blur-sm border border-slate-500/50 rounded-xl p-5 h-full hover:bg-slate-600/30 transition-colors">
         <div className="h-[75px] flex items-center justify-start">{logo}</div>
-        <p className="mt-4 h-[120px] text-start text-slate-300 text-sm leading-relaxed">{description}</p>
+        <p className="mt-4 h-[120px] text-start text-slate-300 text-sm leading-relaxed">
+          {description}
+        </p>
         <div className="mt-6 flex gap-2 flex-wrap">
           {points.map((p, i) => (
-            <span key={p + i} className="py-1 px-3 bg-slate-700/50 text-slate-200 rounded-full text-xs">
+            <span
+              key={p + i}
+              className="py-1 px-3 bg-slate-700/50 text-slate-200 rounded-full text-xs"
+            >
               {p}
             </span>
           ))}
@@ -47,7 +47,7 @@ export default function GeneralActions() {
           height={30}
           className="opacity-70"
         />
-        <h2 className="font-GoodTimes text-2xl text-white">On-Chain Tools</h2>
+        <h2 className="font-heading font-semibold text-2xl text-white">On-Chain Tools</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -64,14 +64,7 @@ export default function GeneralActions() {
           href="https://juicebox.money/"
         />
         <GeneralAction
-          logo={
-            <Image
-              src="/logos/gitcoin-passport-logo.png"
-              width={150}
-              height={50}
-              alt=""
-            />
-          }
+          logo={<Image src="/logos/gitcoin-passport-logo.png" width={150} height={50} alt="" />}
           description={`Gitcoin Passport is an identity verification platform enabling users to collect verifiable credentials ("Stamps") from Web2 and Web3 authenticators, building a personal verified identity ledger for organizations to assess.`}
           points={['Reputation', 'Identification']}
           href="https://passport.gitcoin.co/"

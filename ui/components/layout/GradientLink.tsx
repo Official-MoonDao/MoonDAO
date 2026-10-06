@@ -11,7 +11,7 @@ export default function GradientLink({ text, href }: GradientLinkProps) {
     return (
       <Link id="gradient-link" href={href} passHref>
         <p
-          className={`my-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
+          className={`my-5 block text-md font-heading font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text`}
         >
           {text} →
         </p>
@@ -21,7 +21,7 @@ export default function GradientLink({ text, href }: GradientLinkProps) {
     return (
       <button
         id="gradient-link"
-        className="my-5 block text-md font-GoodTimes font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text"
+        className="my-5 block text-md font-heading font-semibold bg-gradient-to-r from-n3blue  to-n3blue text-transparent bg-clip-text"
         onClick={() => window.open(href)}
       >
         {text} →

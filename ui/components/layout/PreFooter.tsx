@@ -44,7 +44,7 @@ export default function PreFooter({ mode = 'Default' }) {
                 mode === 'compact' ? 'max-w-full lg:ml-0' : 'max-w-[600px] lg:ml-[-20%]'
               }`}
             >
-              <h1 className="header font-GoodTimes leading-none flex flex-col text-white">
+              <h1 className="header font-heading font-semibold leading-none flex flex-col text-white">
                 <span
                   style={{ fontSize: 'calc(max(4vmin, 30px))' }}
                   className={mode === 'compact' ? 'mt-0 md:mt-[5vmax]' : 'mt-[5vmax]'}

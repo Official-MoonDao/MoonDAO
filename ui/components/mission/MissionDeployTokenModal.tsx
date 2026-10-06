@@ -112,7 +112,7 @@ export default function MissionDeployTokenModal({
     <Modal id="mission-deploy-token-modal" setEnabled={setEnabled}>
       <div className="mt-12 w-screen h-full rounded-[2vmax] max-w-full md:max-w-[800px] flex flex-col gap-4 items-start justify-start p-5 bg-gradient-to-b from-dark-cool to-darkest-cool">
         <div className="w-full flex gap-4 items-start justify-between">
-          <h3 className="text- font-GoodTimes">{`Deploy Token`}</h3>
+          <h3 className="text- font-heading font-semibold">{`Deploy Token`}</h3>
           <button
             type="button"
             className="flex h-10 w-10 border-2 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"

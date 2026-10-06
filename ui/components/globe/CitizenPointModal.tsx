@@ -21,7 +21,7 @@ export default function CitizenPointModal({ selectedPoint, setEnabled }: Citizen
       <div className="w-[90vw] max-w-[700px] rounded-2xl flex flex-col gap-5 bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-slate-600/30 shadow-2xl p-6 md:p-8">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <h2 className="font-GoodTimes text-white text-base md:text-xl leading-tight">
+            <h2 className="font-heading font-semibold text-white text-base md:text-xl leading-tight">
               {selectedPoint?.formattedAddress}
             </h2>
             <p className="text-slate-300 text-sm mt-2">

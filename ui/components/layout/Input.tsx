@@ -217,7 +217,11 @@ export default function Input({
       {(label || tooltip) && (
         <div className="flex flex-row items-center gap-2">
           {label && (
-            <p className={`text-sm font-GoodTimes ${variant === 'modern' ? 'text-white' : ''}`}>
+            <p
+              className={`text-sm font-heading font-semibold ${
+                variant === 'modern' ? 'text-white' : ''
+              }`}
+            >
               {label}
             </p>
           )}

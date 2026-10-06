@@ -34,7 +34,15 @@ export default function FormInput({
   return (
     <div className="w-full h-full py-1 flex flex-col justify-between gap-2 max-w-[400px]">
       <div className="flex flex-row items-center gap-2">
-        {label && <p className={`text-sm font-GoodTimes ${mode === 'modern' ? 'text-white' : ''}`}>{label}</p>}
+        {label && (
+          <p
+            className={`text-sm font-heading font-semibold ${
+              mode === 'modern' ? 'text-white' : ''
+            }`}
+          >
+            {label}
+          </p>
+        )}
         {tooltip && (
           <Tooltip text={tooltip} disabled={disabled}>
             ?

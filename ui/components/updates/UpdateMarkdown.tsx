@@ -28,12 +28,15 @@ export default function UpdateMarkdown({ body }: { body: string }) {
         components={{
           h1: ({ node: _n, ...props }) => (
             <h1
-              className="mb-6 mt-12 scroll-mt-24 font-GoodTimes text-2xl md:text-3xl"
+              className="mb-6 mt-12 scroll-mt-24 font-heading font-semibold text-2xl md:text-3xl"
               {...props}
             />
           ),
           h2: ({ node: _n, ...props }) => (
-            <h2 className="mb-4 mt-10 scroll-mt-24 font-GoodTimes text-xl md:text-2xl" {...props} />
+            <h2
+              className="mb-4 mt-10 scroll-mt-24 font-heading font-semibold text-xl md:text-2xl"
+              {...props}
+            />
           ),
           h3: ({ node: _n, ...props }) => (
             <h3

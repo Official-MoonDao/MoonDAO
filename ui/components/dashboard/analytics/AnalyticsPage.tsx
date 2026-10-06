@@ -38,7 +38,7 @@ export default function AnalyticsPage({ vMooneyData }: any) {
   return (
     <div className="flex flex-col gap-6 md:gap-8 w-full">
       <Card className="w-full" variant="launchpad" maxWidthClassNames="max-w-full">
-        <h2 className="font-GoodTimes text-3xl md:text-4xl text-center sm:text-left mb-6">
+        <h2 className="font-heading font-semibold text-3xl md:text-4xl text-center sm:text-left mb-6">
           Voting Power Over Time
         </h2>
         <div className="w-full overflow-x-auto">
@@ -51,7 +51,7 @@ export default function AnalyticsPage({ vMooneyData }: any) {
       </Card>
       <Card className="!w-full" variant="launchpad" maxWidthClassNames="max-w-full" layout="wide">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <h2 className="font-GoodTimes text-3xl md:text-4xl text-center sm:text-left">
+          <h2 className="font-heading font-semibold text-3xl md:text-4xl text-center sm:text-left">
             $MOONEY Key Figures
           </h2>
           <div className="w-full md:w-auto flex-shrink-0">

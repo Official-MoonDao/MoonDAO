@@ -107,10 +107,7 @@ export default function BuyTeamListingModal({
     chain: selectedChain,
   })
 
-  const numericPrice = useMemo(
-    () => parseListingPrice(listing.price),
-    [listing.price]
-  )
+  const numericPrice = useMemo(() => parseListingPrice(listing.price), [listing.price])
 
   // Final USDC/ETH/etc amount the buyer will pay (includes non-citizen markup).
   const purchasePrice = useMemo(
@@ -139,8 +136,7 @@ export default function BuyTeamListingModal({
   })
 
   const usdcBalance = useMemo(
-    () =>
-      isUsdcListing ? parseUsdcBalance(usdcBalanceData?.displayValue) : null,
+    () => (isUsdcListing ? parseUsdcBalance(usdcBalanceData?.displayValue) : null),
     [isUsdcListing, usdcBalanceData]
   )
 
@@ -167,12 +163,7 @@ export default function BuyTeamListingModal({
       refetchUsdcBalance()
     }, 10_000)
     return () => clearInterval(id)
-  }, [
-    awaitingUsdcOnramp,
-    isUsdcListing,
-    hasEnoughUsdc,
-    refetchUsdcBalance,
-  ])
+  }, [awaitingUsdcOnramp, isUsdcListing, hasEnoughUsdc, refetchUsdcBalance])
 
   useEffect(() => {
     async function getTeamNFT() {
@@ -235,10 +226,7 @@ export default function BuyTeamListingModal({
         const transaction = prepareContractCall({
           contract: currencyContract,
           method: 'transfer' as string,
-          params: [
-            resolvedRecipient,
-            toUnits(String(price), currencyDecimals[listing.currency]),
-          ],
+          params: [resolvedRecipient, toUnits(String(price), currencyDecimals[listing.currency])],
         })
         const receipt = await sendAndConfirmTransaction({
           transaction,
@@ -352,11 +340,10 @@ export default function BuyTeamListingModal({
     >
       {giftLink ? (
         <div className="w-full flex flex-col gap-4 items-start justify-start">
-          <p className="font-GoodTimes">Your gift is ready!</p>
+          <p className="font-heading font-semibold">Your gift is ready!</p>
           <p className="opacity-80 text-[90%]">
-            Share this one-time link with the person you want to gift a
-            citizenship to. They can use it to mint their free citizenship. A
-            copy has also been sent to your email.
+            Share this one-time link with the person you want to gift a citizenship to. They can use
+            it to mint their free citizenship. A copy has also been sent to your email.
           </p>
           <div className="w-full flex gap-2 items-center bg-darkest-cool rounded-[10px] p-3">
             <p className="break-all text-[85%]">{giftLink}</p>
@@ -386,246 +373,231 @@ export default function BuyTeamListingModal({
           </div>
         </div>
       ) : (
-      <form
-        className="w-full flex flex-col gap-3 items-start justify-start"
-        onSubmit={(e) => {
-          e.preventDefault()
-        }}
-      >
-        <div className="w-full flex gap-3 rounded-2xl border border-white/10 bg-black/30 p-3">
-          {listing.image && (
-            <div
-              id="image-container"
-              className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl"
-            >
-              <IPFSRenderer
-                src={listing.image}
-                width={160}
-                height={160}
-                alt="Listing Image"
-                className="object-cover"
-                fillContainer
-              />
-              <span className="absolute left-1 top-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
-                {`#${listing.id}`}
-              </span>
-            </div>
-          )}
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <h3 className="font-GoodTimes text-base leading-tight text-white break-words">
-              {listing.title}
-            </h3>
-            <ExpandableText
-              className="text-xs leading-snug text-white/60"
-              lines={4}
-            >
-              {listing.description}
-            </ExpandableText>
-            <div className="mt-auto flex flex-wrap items-center gap-2">
-              <p id="listing-price" className="font-GoodTimes text-lg text-white">{`${
-                truncateTokenValue(purchasePrice, listing.currency)
-              } ${listing.currency}`}</p>
-              {!citizen && !isGift && (
-                <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/50">
-                  +10% non-citizen fee
+        <form
+          className="w-full flex flex-col gap-3 items-start justify-start"
+          onSubmit={(e) => {
+            e.preventDefault()
+          }}
+        >
+          <div className="w-full flex gap-3 rounded-2xl border border-white/10 bg-black/30 p-3">
+            {listing.image && (
+              <div
+                id="image-container"
+                className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl"
+              >
+                <IPFSRenderer
+                  src={listing.image}
+                  width={160}
+                  height={160}
+                  alt="Listing Image"
+                  className="object-cover"
+                  fillContainer
+                />
+                <span className="absolute left-1 top-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white/80 backdrop-blur-sm">
+                  {`#${listing.id}`}
                 </span>
-              )}
+              </div>
+            )}
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <h3 className="font-heading font-semibold text-base leading-tight text-white break-words">
+                {listing.title}
+              </h3>
+              <ExpandableText className="text-xs leading-snug text-white/60" lines={4}>
+                {listing.description}
+              </ExpandableText>
+              <div className="mt-auto flex flex-wrap items-center gap-2">
+                <p
+                  id="listing-price"
+                  className="font-heading font-semibold text-lg text-white"
+                >{`${truncateTokenValue(purchasePrice, listing.currency)} ${listing.currency}`}</p>
+                {!citizen && !isGift && (
+                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-white/50">
+                    +10% non-citizen fee
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <p className="text-xs opacity-60">
-          {isGift
-            ? 'Enter your email and confirm the transaction. You will receive a one-time link to gift a free citizenship to whoever you choose.'
-            : "Enter your details and confirm the transaction. You'll receive a confirmation email from the vendor."}
-        </p>
-        <Input
-          type="text"
-          variant="dark"
-          label="Email"
-          className="text-white"
-          maxWidth="max-w-full"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          formatNumbers={false}
-        />
-        {listing.shipping === 'true' && (
-          <div className="w-full flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/20 p-3">
-            <p className="font-GoodTimes text-xs text-white">Shipping Address</p>
-            <Input
-              type="text"
-              variant="dark"
-              className="text-white"
-              maxWidth="max-w-full"
-              placeholder="Street Address"
-              value={shippingInfo.streetAddress}
-              onChange={(e) =>
-                setShippingInfo({
-                  ...shippingInfo,
-                  streetAddress: e.target.value,
-                })
-              }
-              formatNumbers={false}
-            />
-            <div className="w-full flex flex-col sm:flex-row gap-2">
+          <p className="text-xs opacity-60">
+            {isGift
+              ? 'Enter your email and confirm the transaction. You will receive a one-time link to gift a free citizenship to whoever you choose.'
+              : "Enter your details and confirm the transaction. You'll receive a confirmation email from the vendor."}
+          </p>
+          <Input
+            type="text"
+            variant="dark"
+            label="Email"
+            className="text-white"
+            maxWidth="max-w-full"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            formatNumbers={false}
+          />
+          {listing.shipping === 'true' && (
+            <div className="w-full flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/20 p-3">
+              <p className="font-heading font-semibold text-xs text-white">Shipping Address</p>
               <Input
                 type="text"
                 variant="dark"
                 className="text-white"
                 maxWidth="max-w-full"
-                placeholder="City"
-                value={shippingInfo.city}
-                onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
-                formatNumbers={false}
-              />
-              <Input
-                type="text"
-                variant="dark"
-                className="text-white"
-                maxWidth="max-w-full"
-                placeholder="State"
-                value={shippingInfo.state}
-                onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
-                formatNumbers={false}
-              />
-            </div>
-            <div className="w-full flex flex-col sm:flex-row gap-2">
-              <Input
-                type="text"
-                variant="dark"
-                className="text-white"
-                maxWidth="max-w-full"
-                placeholder="Postal Code"
-                value={shippingInfo.postalCode}
+                placeholder="Street Address"
+                value={shippingInfo.streetAddress}
                 onChange={(e) =>
                   setShippingInfo({
                     ...shippingInfo,
-                    postalCode: e.target.value,
+                    streetAddress: e.target.value,
                   })
                 }
                 formatNumbers={false}
               />
-              <Input
-                type="text"
-                variant="dark"
-                className="text-white"
-                maxWidth="max-w-full"
-                placeholder="Country"
-                value={shippingInfo.country}
-                onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
-                formatNumbers={false}
-              />
+              <div className="w-full flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="text"
+                  variant="dark"
+                  className="text-white"
+                  maxWidth="max-w-full"
+                  placeholder="City"
+                  value={shippingInfo.city}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
+                  formatNumbers={false}
+                />
+                <Input
+                  type="text"
+                  variant="dark"
+                  className="text-white"
+                  maxWidth="max-w-full"
+                  placeholder="State"
+                  value={shippingInfo.state}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
+                  formatNumbers={false}
+                />
+              </div>
+              <div className="w-full flex flex-col sm:flex-row gap-2">
+                <Input
+                  type="text"
+                  variant="dark"
+                  className="text-white"
+                  maxWidth="max-w-full"
+                  placeholder="Postal Code"
+                  value={shippingInfo.postalCode}
+                  onChange={(e) =>
+                    setShippingInfo({
+                      ...shippingInfo,
+                      postalCode: e.target.value,
+                    })
+                  }
+                  formatNumbers={false}
+                />
+                <Input
+                  type="text"
+                  variant="dark"
+                  className="text-white"
+                  maxWidth="max-w-full"
+                  placeholder="Country"
+                  value={shippingInfo.country}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, country: e.target.value })}
+                  formatNumbers={false}
+                />
+              </div>
             </div>
-          </div>
-        )}
-        {isUsdcListing && account?.address && !hasEnoughUsdc && (
-          <div
-            data-testid="marketplace-usdc-onramp"
-            className="w-full flex flex-col gap-3"
-          >
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-              <p className="text-amber-100 text-sm font-medium">
-                You need USDC on Arbitrum to buy this listing
-              </p>
-              <p className="text-amber-100/70 text-xs mt-1 leading-relaxed">
-                {isUsdcBalanceLoading || usdcBalance == null
-                  ? `Add ${truncateTokenValue(
-                      purchasePrice,
-                      'USDC'
-                    )} USDC to your wallet to continue.`
-                  : `Your wallet has ${truncateTokenValue(
-                      usdcBalance,
-                      'USDC'
-                    )} USDC. Add ${truncateTokenValue(
-                      usdcDeficit,
-                      'USDC'
-                    )} more to cover this purchase.`}
-              </p>
-              {awaitingUsdcOnramp && (
-                <p className="text-amber-100/60 text-xs mt-2">
-                  Waiting for USDC to arrive…
+          )}
+          {isUsdcListing && account?.address && !hasEnoughUsdc && (
+            <div data-testid="marketplace-usdc-onramp" className="w-full flex flex-col gap-3">
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                <p className="text-amber-100 text-sm font-medium">
+                  You need USDC on Arbitrum to buy this listing
                 </p>
+                <p className="text-amber-100/70 text-xs mt-1 leading-relaxed">
+                  {isUsdcBalanceLoading || usdcBalance == null
+                    ? `Add ${truncateTokenValue(
+                        purchasePrice,
+                        'USDC'
+                      )} USDC to your wallet to continue.`
+                    : `Your wallet has ${truncateTokenValue(
+                        usdcBalance,
+                        'USDC'
+                      )} USDC. Add ${truncateTokenValue(
+                        usdcDeficit,
+                        'USDC'
+                      )} more to cover this purchase.`}
+                </p>
+                {awaitingUsdcOnramp && (
+                  <p className="text-amber-100/60 text-xs mt-2">Waiting for USDC to arrive…</p>
+                )}
+              </div>
+              {usdcDeficit > 0 && (
+                <FundOnramp
+                  fullWidth
+                  address={account.address}
+                  selectedChain={DEFAULT_CHAIN_V5}
+                  ethAmount={usdcDeficit}
+                  asset="USDC"
+                  coinbaseRedirectUrl={`${DEPLOYED_ORIGIN}/marketplace?onrampSuccess=true`}
+                  checkBalanceSufficient={async () => {
+                    const result = await refetchUsdcBalance()
+                    const next = result?.data?.displayValue
+                    if (next == null) return false
+                    const n = Number(next)
+                    return Number.isFinite(n) && n >= purchasePrice
+                  }}
+                  refetchBalance={async () => {
+                    await refetchUsdcBalance()
+                  }}
+                  onBalanceSufficient={() => {
+                    setAwaitingUsdcOnramp(false)
+                  }}
+                  onCoinbaseSuccessInApp={() => {
+                    setAwaitingUsdcOnramp(true)
+                  }}
+                  onMoonPayPurchaseSubmitted={() => {
+                    setAwaitingUsdcOnramp(true)
+                  }}
+                />
               )}
             </div>
-            {usdcDeficit > 0 && (
-              <FundOnramp
-                fullWidth
-                address={account.address}
-                selectedChain={DEFAULT_CHAIN_V5}
-                ethAmount={usdcDeficit}
-                asset="USDC"
-                coinbaseRedirectUrl={`${DEPLOYED_ORIGIN}/marketplace?onrampSuccess=true`}
-                checkBalanceSufficient={async () => {
-                  const result = await refetchUsdcBalance()
-                  const next = result?.data?.displayValue
-                  if (next == null) return false
-                  const n = Number(next)
-                  return Number.isFinite(n) && n >= purchasePrice
-                }}
-                refetchBalance={async () => {
-                  await refetchUsdcBalance()
-                }}
-                onBalanceSufficient={() => {
-                  setAwaitingUsdcOnramp(false)
-                }}
-                onCoinbaseSuccessInApp={() => {
-                  setAwaitingUsdcOnramp(true)
-                }}
-                onMoonPayPurchaseSubmitted={() => {
-                  setAwaitingUsdcOnramp(true)
-                }}
-              />
-            )}
-          </div>
-        )}
-        {(!isUsdcListing || !account?.address || hasEnoughUsdc) && (
-          <PrivyWeb3Button
-            v5
-            requiredChain={DEFAULT_CHAIN_V5}
-            label={
-              isLoading
-                ? 'Processing...'
-                : resolvedRecipient
-                ? 'Buy'
-                : 'Loading vendor...'
-            }
-            action={async () => {
-              if (!resolvedRecipient)
-                return toast.error(
-                  'Still loading the vendor details. Please try again in a moment.'
-                )
-              if (!email || email.trim() === '' || !email.includes('@'))
-                return toast.error('Please enter a valid email.')
-              if (listing.shipping === 'true') {
-                if (
-                  shippingInfo.streetAddress.trim() === '' ||
-                  shippingInfo.city.trim() === '' ||
-                  shippingInfo.state.trim() === '' ||
-                  shippingInfo.postalCode.trim() === '' ||
-                  shippingInfo.country.trim() === ''
-                )
-                  return toast.error('Please fill out all fields.')
-              }
-              if (isUsdcListing && !hasEnoughUsdc) {
-                return toast.error(
-                  'You need more USDC on Arbitrum before purchasing.'
-                )
-              }
-              await buyListing()
-            }}
-            className="w-full gradient-2 rounded-[5vmax]"
-            isDisabled={isLoading || !resolvedRecipient}
-          />
-        )}
-        {!resolvedRecipient && !isLoading && (
-          <p className="w-full text-center text-sm opacity-60">Loading vendor details...</p>
-        )}
-        {isLoading && (
-          <p className="w-full text-center text-sm opacity-60">
-            Do not leave the page until the transaction is complete.
-          </p>
-        )}
-      </form>
+          )}
+          {(!isUsdcListing || !account?.address || hasEnoughUsdc) && (
+            <PrivyWeb3Button
+              v5
+              requiredChain={DEFAULT_CHAIN_V5}
+              label={isLoading ? 'Processing...' : resolvedRecipient ? 'Buy' : 'Loading vendor...'}
+              action={async () => {
+                if (!resolvedRecipient)
+                  return toast.error(
+                    'Still loading the vendor details. Please try again in a moment.'
+                  )
+                if (!email || email.trim() === '' || !email.includes('@'))
+                  return toast.error('Please enter a valid email.')
+                if (listing.shipping === 'true') {
+                  if (
+                    shippingInfo.streetAddress.trim() === '' ||
+                    shippingInfo.city.trim() === '' ||
+                    shippingInfo.state.trim() === '' ||
+                    shippingInfo.postalCode.trim() === '' ||
+                    shippingInfo.country.trim() === ''
+                  )
+                    return toast.error('Please fill out all fields.')
+                }
+                if (isUsdcListing && !hasEnoughUsdc) {
+                  return toast.error('You need more USDC on Arbitrum before purchasing.')
+                }
+                await buyListing()
+              }}
+              className="w-full gradient-2 rounded-[5vmax]"
+              isDisabled={isLoading || !resolvedRecipient}
+            />
+          )}
+          {!resolvedRecipient && !isLoading && (
+            <p className="w-full text-center text-sm opacity-60">Loading vendor details...</p>
+          )}
+          {isLoading && (
+            <p className="w-full text-center text-sm opacity-60">
+              Do not leave the page until the transaction is complete.
+            </p>
+          )}
+        </form>
       )}
     </Modal>
   )

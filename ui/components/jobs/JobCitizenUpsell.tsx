@@ -35,14 +35,18 @@ export default function JobCitizenUpsell({
           : 'rounded-xl border border-white/10 bg-white/5 p-4'
       }
     >
-      <div className={isBanner ? 'flex flex-col md:flex-row md:items-center gap-4' : 'flex flex-col gap-3'}>
+      <div
+        className={
+          isBanner ? 'flex flex-col md:flex-row md:items-center gap-4' : 'flex flex-col gap-3'
+        }
+      >
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-3">
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500/20 text-blue-300">
               <LockClosedIcon className="h-5 w-5" />
             </span>
             <div>
-              <p className="font-GoodTimes text-white text-base leading-tight">
+              <p className="font-heading font-semibold text-white text-base leading-tight">
                 {headline || copy.headline}
               </p>
               <p className="text-sm text-slate-300 mt-2 leading-relaxed">{body || copy.body}</p>
@@ -50,7 +54,9 @@ export default function JobCitizenUpsell({
           </div>
         </div>
         <StandardButton
-          className={`${isBanner ? 'md:w-auto w-full shrink-0' : 'w-full'} gradient-2 hover:opacity-90 transition-opacity`}
+          className={`${
+            isBanner ? 'md:w-auto w-full shrink-0' : 'w-full'
+          } gradient-2 hover:opacity-90 transition-opacity`}
           textColor="text-white"
           borderRadius="rounded-xl"
           hoverEffect={false}

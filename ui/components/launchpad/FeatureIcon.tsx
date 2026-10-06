@@ -38,7 +38,7 @@ export default function FeatureIcon({
         )}
       </div>
       <div id="feature-icon-title" className="text-center">
-        <h2 className="mt-[3vw] mb-[2vw] md:mt-0 md:mb-[1vw] text-[4vw] md:text-[1.5vw] font-GoodTimes font-semibold">
+        <h2 className="mt-[3vw] mb-[2vw] md:mt-0 md:mb-[1vw] text-[4vw] md:text-[1.5vw] font-heading font-semibold">
           {title}
         </h2>
         <p

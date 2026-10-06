@@ -8,8 +8,8 @@ interface ProfileHeaderFrameProps {
 
 /**
  * Shared chrome for citizen/team profile headers.
- * Stretch-aligns the text column so long GoodTimes names wrap inside the
- * card instead of expanding it past overflow-hidden parents.
+ * Stretch-aligns the text column so long names wrap inside the card
+ * instead of expanding it past overflow-hidden parents.
  */
 export default function ProfileHeaderFrame({ id, image, children }: ProfileHeaderFrameProps) {
   return (
@@ -18,12 +18,12 @@ export default function ProfileHeaderFrame({ id, image, children }: ProfileHeade
         <div id="frame-content-container" className="w-full min-w-0 p-4 sm:p-6">
           <div
             id="profile-description-section"
-            className="flex w-full min-w-0 flex-col lg:flex-row items-stretch gap-6"
+            className="flex w-full min-w-0 flex-row items-start gap-4 sm:gap-6"
           >
             <div className="relative flex-shrink-0 self-center">{image}</div>
             <div
               id="profile-text-column"
-              className="flex-1 min-w-0 w-full flex flex-col justify-center min-h-[200px] lg:min-h-[250px]"
+              className="flex-1 min-w-0 w-full flex flex-col justify-center"
             >
               {children}
             </div>

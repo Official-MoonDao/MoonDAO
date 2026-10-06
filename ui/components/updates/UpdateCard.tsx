@@ -15,7 +15,7 @@ export default function UpdateCard({ update }: { update: UpdateMeta }) {
             date={update.date}
             readingMinutes={update.readingMinutes}
           />
-          <h3 className="mt-2 font-GoodTimes text-lg leading-snug text-white transition-colors group-hover:text-slate-200 md:text-xl">
+          <h3 className="mt-2 font-heading font-semibold text-lg leading-snug text-white transition-colors group-hover:text-slate-200 md:text-xl">
             {update.title}
           </h3>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">

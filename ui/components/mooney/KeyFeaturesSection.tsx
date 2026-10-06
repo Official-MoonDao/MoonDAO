@@ -32,7 +32,7 @@ export default function KeyFeaturesSection({
   return (
     <section className="py-20 px-6 bg-gradient-to-br from-gray-900/50 to-blue-900/20 w-full">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-center text-white mb-8">
+        <h2 className="text-3xl md:text-4xl font-bold font-heading text-center text-white mb-8">
           {title}
         </h2>
         <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -75,4 +75,3 @@ export default function KeyFeaturesSection({
     </section>
   )
 }
-

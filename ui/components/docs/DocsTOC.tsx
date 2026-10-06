@@ -4,7 +4,7 @@ export default function DocsTOC({ items }: { items: DocsTocItem[] }) {
   if (items.length === 0) return null
   return (
     <nav aria-label="On this page" className="text-sm">
-      <h2 className="font-GoodTimes text-xs uppercase tracking-wider text-white/40 mb-3">
+      <h2 className="font-heading font-semibold text-xs uppercase tracking-wider text-white/40 mb-3">
         On this page
       </h2>
       <ul className="space-y-1.5 border-l border-white/10">

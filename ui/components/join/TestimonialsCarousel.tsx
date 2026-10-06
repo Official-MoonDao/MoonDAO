@@ -1,9 +1,9 @@
+import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import AdaptiveImage from '@/components/layout/AdaptiveImage'
 import Reveal from '@/components/home/landing/Reveal'
 import SectionHeading from '@/components/home/landing/SectionHeading'
-import type { TestimonialWithPhoto } from 'const/joinPageContent'
+import AdaptiveImage from '@/components/layout/AdaptiveImage'
 
 function getInitials(name: string) {
   return name
@@ -17,13 +17,7 @@ function getInitials(name: string) {
 
 const AUTOPLAY_MS = 7000
 
-function Slide({
-  testimonial,
-  active,
-}: {
-  testimonial: TestimonialWithPhoto
-  active: boolean
-}) {
+function Slide({ testimonial, active }: { testimonial: TestimonialWithPhoto; active: boolean }) {
   const reduceMotion = useReducedMotion()
   return (
     <motion.div
@@ -50,7 +44,7 @@ function Slide({
             />
           </div>
         ) : (
-          <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-[#3044A9] to-[#743F72] font-GoodTimes text-3xl text-white md:h-40 md:w-40">
+          <div className="relative flex h-32 w-32 items-center justify-center rounded-full bg-gradient-to-br from-[#3044A9] to-[#743F72] font-heading font-semibold text-3xl text-white md:h-40 md:w-40">
             {getInitials(testimonial.name)}
           </div>
         )}
@@ -70,7 +64,7 @@ function Slide({
       </p>
 
       <div>
-        <p className="font-GoodTimes text-base text-white">{testimonial.name}</p>
+        <p className="font-heading font-semibold text-base text-white">{testimonial.name}</p>
         <p className="mt-1 text-sm text-white/55">{testimonial.affiliation}</p>
       </div>
     </motion.div>
@@ -96,7 +90,8 @@ export default function TestimonialsCarousel({
 
   if (!testimonials.length) return null
 
-  const goTo = (i: number) => setIndex(((i % testimonials.length) + testimonials.length) % testimonials.length)
+  const goTo = (i: number) =>
+    setIndex(((i % testimonials.length) + testimonials.length) % testimonials.length)
 
   return (
     <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
@@ -135,7 +130,16 @@ export default function TestimonialsCarousel({
                 onClick={() => goTo(index - 1)}
                 className="absolute left-0 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/15 bg-white/5 p-2 text-white/60 backdrop-blur-md transition-all hover:border-white/30 hover:text-white md:block"
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
                   <path d="m15 18-6-6 6-6" />
                 </svg>
               </button>
@@ -145,7 +149,16 @@ export default function TestimonialsCarousel({
                 onClick={() => goTo(index + 1)}
                 className="absolute right-0 top-1/2 hidden -translate-y-1/2 rounded-full border border-white/15 bg-white/5 p-2 text-white/60 backdrop-blur-md transition-all hover:border-white/30 hover:text-white md:block"
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
                   <path d="m9 18 6-6-6-6" />
                 </svg>
               </button>

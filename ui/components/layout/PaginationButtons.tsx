@@ -18,7 +18,7 @@ export default function PaginationButtons({
       id="pagination-container"
       className="w-full mb-5 bg-black/20 backdrop-blur-sm border border-white/10 rounded-xl p-2 sm:p-4 md:p-6"
     >
-      <div className="flex font-GoodTimes text-base sm:text-xl md:text-2xl flex-row justify-center items-center gap-2 sm:gap-4 md:gap-8">
+      <div className="flex font-heading font-semibold text-base sm:text-xl md:text-2xl flex-row justify-center items-center gap-2 sm:gap-4 md:gap-8">
         <button
           onClick={() => {
             if (pageIdx > 1) {

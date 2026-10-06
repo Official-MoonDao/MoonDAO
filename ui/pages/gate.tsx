@@ -55,7 +55,7 @@ export default function Gate() {
                 <LockClosedIcon className="h-10 w-10 text-blue-300" />
               </div>
               <div>
-                <h1 className="mb-2 font-GoodTimes text-2xl font-bold text-white">Not open yet</h1>
+                <h1 className="mb-2 font-heading text-2xl font-bold text-white">Not open yet</h1>
                 <p className="text-sm leading-relaxed text-gray-300">
                   This part of the site is still being built. Enter the access password to have a
                   look around.

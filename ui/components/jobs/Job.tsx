@@ -186,7 +186,7 @@ export default function Job({
         )}
 
         <Link href={href} className="flex-1 flex flex-col">
-          <h3 className="font-GoodTimes text-white text-base leading-tight group-hover:text-blue-200 transition-colors">
+          <h3 className="font-heading font-semibold text-white text-base leading-tight group-hover:text-blue-200 transition-colors">
             {job.title}
           </h3>
 
@@ -217,8 +217,8 @@ export default function Job({
                 {daysSincePosting === 0
                   ? 'Posted today'
                   : daysSincePosting === 1
-                    ? '1 day ago'
-                    : `${daysSincePosting} days ago`}
+                  ? '1 day ago'
+                  : `${daysSincePosting} days ago`}
               </span>
               {countdown && !isExpired && (
                 <span className="ml-2 text-slate-400">· {countdown}</span>

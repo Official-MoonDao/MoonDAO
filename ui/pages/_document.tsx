@@ -14,14 +14,6 @@ class WebsiteDocument extends Document {
             type="font/ttf"
             crossOrigin="anonymous"
           />
-          <link
-            rel="preload"
-            href="/fonts/goodtimesrg.otf"
-            as="font"
-            type="font/otf"
-            crossOrigin="anonymous"
-          />
-
           {/* Montserrat is loaded from Google Fonts via globals.css */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" />

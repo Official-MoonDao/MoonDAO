@@ -2452,7 +2452,7 @@ export default function CreateCitizen({
       <ContentLayout
         isProfile
         mode="compact"
-        header="Join The Network"
+        header="Become a Citizen"
         mainPadding
         headerSize="max(20px, 3vw)"
         preFooter={
@@ -2521,7 +2521,7 @@ export default function CreateCitizen({
               >
                 {stage === 0 && (
                   <div className="mb-6">
-                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
+                    <h2 className="text-2xl font-heading font-semibold text-white mb-2">Design</h2>
                     <p className="text-slate-400 text-sm leading-relaxed">
                       Upload a photo with a clear face — yourself or an avatar — position the crop,
                       and we&apos;ll generate your AI passport photo. It renders in the background
@@ -2575,7 +2575,7 @@ export default function CreateCitizen({
             {stage === 1 && (
               <div className="animate-fadeIn">
                 <div className="mb-6">
-                  <h2 className="text-2xl font-GoodTimes text-white mb-2">Profile</h2>
+                  <h2 className="text-2xl font-heading font-semibold text-white mb-2">Profile</h2>
                   <p className="text-slate-400 text-sm">Complete your citizen profile below.</p>
                 </div>
                 {isSubmittingTypeform ? (
@@ -2605,7 +2605,7 @@ export default function CreateCitizen({
                   </div>
                 ) : pendingTypeform && !authenticated ? (
                   <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
-                    <h3 className="font-GoodTimes text-lg text-white">
+                    <h3 className="font-heading font-semibold text-lg text-white">
                       One last step — sign in to finish
                     </h3>
                     <p className="text-slate-400 text-sm max-w-[420px]">
@@ -2621,7 +2621,7 @@ export default function CreateCitizen({
                   </div>
                 ) : typeformProcessingFailed ? (
                   <div className="flex flex-col items-center gap-4 py-12 px-6 text-center">
-                    <h3 className="font-GoodTimes text-lg text-white">
+                    <h3 className="font-heading font-semibold text-lg text-white">
                       Still finalizing your profile
                     </h3>
                     <p className="text-slate-400 text-sm max-w-[420px]">
@@ -2651,7 +2651,9 @@ export default function CreateCitizen({
             {stage === 2 && (
               <div className="animate-fadeIn flex flex-col gap-8">
                 <div>
-                  <h2 className="text-2xl font-GoodTimes text-white mb-2">Review & Mint</h2>
+                  <h2 className="text-2xl font-heading font-semibold text-white mb-2">
+                    Review & Mint
+                  </h2>
                   <p className="text-slate-400 text-sm">
                     Review your profile before finalizing your registration on-chain.
                   </p>
@@ -2782,7 +2784,9 @@ export default function CreateCitizen({
                 {/* Optional profile details — editable while image generates */}
                 <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
                   <div className="mb-4">
-                    <h3 className="font-GoodTimes text-base text-white">Additional Details</h3>
+                    <h3 className="font-heading font-semibold text-base text-white">
+                      Additional Details
+                    </h3>
                     <p className="text-slate-500 text-xs mt-1">
                       {isAwaitingAiPortrait && !hasAiPortrait
                         ? 'Fill this in while your portrait generates — all fields are optional.'
@@ -2881,7 +2885,9 @@ export default function CreateCitizen({
 
                 {/* Cost breakdown */}
                 <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
-                  <h3 className="font-GoodTimes text-base mb-3 text-white">Mint cost</h3>
+                  <h3 className="font-heading font-semibold text-base mb-3 text-white">
+                    Mint cost
+                  </h3>
                   {isLoadingMintCosts ? (
                     <p className="text-slate-400 text-sm">Calculating costs…</p>
                   ) : (
@@ -3004,7 +3010,9 @@ export default function CreateCitizen({
 
                 {/* Info box */}
                 <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
-                  <h3 className="font-GoodTimes text-base mb-3 text-white">Citizenship</h3>
+                  <h3 className="font-heading font-semibold text-base mb-3 text-white">
+                    Citizenship
+                  </h3>
                   <p className="text-slate-400 text-sm leading-relaxed">
                     Citizenship lasts for one year and can be renewed at any time.
                     {checkoutLive
@@ -3164,7 +3172,7 @@ export default function CreateCitizen({
             </p>
             <h2
               id="citizen-welcome-heading"
-              className="font-GoodTimes text-2xl sm:text-3xl text-white mb-3"
+              className="font-heading font-semibold text-2xl sm:text-3xl text-white mb-3"
             >
               You&apos;re a Citizen!
             </h2>

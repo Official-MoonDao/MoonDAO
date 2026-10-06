@@ -1,3 +1,9 @@
+import {
+  DocumentDuplicateIcon,
+  ArrowTopRightOnSquareIcon,
+  ChatBubbleLeftRightIcon,
+  QuestionMarkCircleIcon,
+} from '@heroicons/react/24/outline'
 import { NanceProvider } from '@nance/nance-hooks'
 import {
   PROJECT_TABLE_NAMES,
@@ -7,15 +13,17 @@ import {
   ANNOUNCE_PROJECT_BUDGET,
   PROJECT_CYCLE,
 } from 'const/config'
-import Image from 'next/image'
-import Link from 'next/link'
 import { GetServerSideProps } from 'next'
 import { StringParam, useQueryParams } from 'next-query-params'
-import queryTable from '@/lib/tableland/queryTable'
+import Image from 'next/image'
+import Link from 'next/link'
 import React from 'react'
 import { NANCE_API_URL } from '../lib/nance/constants'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useLivePhase } from '@/lib/operator/useLivePhase'
+import { Project } from '@/lib/project/useProjectData'
+import queryTable from '@/lib/tableland/queryTable'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { daysUntilDate, endOfConfigDeadline } from '@/lib/utils/dates'
 import Container from '../components/layout/Container'
@@ -23,10 +31,7 @@ import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
 import ProposalEditor from '../components/nance/ProposalEditor'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import { Project } from '@/lib/project/useProjectData'
 import RewardAsset from '@/components/project/RewardAsset'
-import { DocumentDuplicateIcon, ArrowTopRightOnSquareIcon, ChatBubbleLeftRightIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline'
 
 export default function ProposalsPage({ project }: { project: Project }) {
   const title = 'Propose Project'
@@ -37,9 +42,7 @@ export default function ProposalsPage({ project }: { project: Project }) {
   const submissionDeadline = endOfConfigDeadline(PROJECT_CYCLE.submissionDeadline)
   const daysLeft = daysUntilDate(submissionDeadline)
   const submissionsClosed =
-    PROJECT_CYCLE.enforceSubmissionDeadline &&
-    isIntake &&
-    Date.now() > submissionDeadline.getTime()
+    PROJECT_CYCLE.enforceSubmissionDeadline && isIntake && Date.now() > submissionDeadline.getTime()
   const isEditingExisting = Boolean(project)
 
   return (
@@ -50,21 +53,9 @@ export default function ProposalsPage({ project }: { project: Project }) {
       />
       <section className="flex flex-col justify-start px-2 md:px-5 mt-3 md:mt-5 items-start animate-fadeIn w-full">
         <Container>
-          <ContentLayout
-            header="Propose Project"
-            headerSize="40px"
-            description={
-              <div className="text-gray-300 text-lg leading-relaxed">
-                Submit a proposal to receive funding from MoonDAO.
-              </div>
-            }
-            mainPadding
-            mode="compact"
-            isProfile={true}
-          >
+          <ContentLayout header="Propose Project" mainPadding mode="compact" isProfile={true}>
             {/* Main Content Area */}
             <div className="flex flex-col gap-5 md:gap-8 max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
-              
               <div className="bg-black/20 rounded-xl p-3 md:p-4 border border-white/10">
                 <p className="text-xs uppercase tracking-wider text-white/50 mb-1">
                   Q{PROJECT_CYCLE.quarter} {PROJECT_CYCLE.year}{' '}
@@ -78,10 +69,9 @@ export default function ProposalsPage({ project }: { project: Project }) {
                 </p>
                 {submissionsClosed ? (
                   <p className="text-sm text-amber-200">
-                    Submissions closed on {PROJECT_CYCLE.submissionDeadline}.
-                    You can still edit a proposal you already submitted until{' '}
-                    {PROJECT_CYCLE.editingDeadline}. New proposals will open
-                    for the next cycle after Senate Vote begins.
+                    Submissions closed on {PROJECT_CYCLE.submissionDeadline}. You can still edit a
+                    proposal you already submitted until {PROJECT_CYCLE.editingDeadline}. New
+                    proposals will open for the next cycle after Senate Vote begins.
                   </p>
                 ) : (
                   <p className="text-sm text-gray-300">
@@ -89,11 +79,9 @@ export default function ProposalsPage({ project }: { project: Project }) {
                     <span className="font-semibold text-white">
                       {PROJECT_CYCLE.submissionDeadline}
                     </span>
-                    {daysLeft > 0
-                      ? ` — ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`
-                      : ''}
-                    . Edits close {PROJECT_CYCLE.editingDeadline}. Senate Vote
-                    opens {PROJECT_CYCLE.votingDate}.
+                    {daysLeft > 0 ? ` — ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining` : ''}
+                    . Edits close {PROJECT_CYCLE.editingDeadline}. Senate Vote opens{' '}
+                    {PROJECT_CYCLE.votingDate}.
                   </p>
                 )}
               </div>
@@ -102,7 +90,9 @@ export default function ProposalsPage({ project }: { project: Project }) {
                 <div className="bg-black/20 rounded-xl p-3 md:p-4 border border-white/10">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                     <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
-                      <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Total Quarter Budget</h2>
+                      <h2 className="font-heading font-semibold text-white/80 text-xs md:text-sm mb-1">
+                        Total Quarter Budget
+                      </h2>
                       <RewardAsset
                         name="USDC"
                         value={`$${NEXT_QUARTER_BUDGET_USD.toLocaleString()}`}
@@ -110,7 +100,9 @@ export default function ProposalsPage({ project }: { project: Project }) {
                       />
                     </div>
                     <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
-                      <h2 className="font-GoodTimes text-white/80 text-xs md:text-sm mb-1">Max Project Budget</h2>
+                      <h2 className="font-heading font-semibold text-white/80 text-xs md:text-sm mb-1">
+                        Max Project Budget
+                      </h2>
                       <RewardAsset
                         name="USDC"
                         value={`$${MAX_BUDGET_USD.toLocaleString()}`}
@@ -128,10 +120,12 @@ export default function ProposalsPage({ project }: { project: Project }) {
                     1
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl md:text-2xl font-bold text-white mb-2">Get the Proposal Template</h2>
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-2">
+                      Get the Proposal Template
+                    </h2>
                     <p className="text-gray-300">
-                      Use the canonical markdown template (novelty &amp; prior art, lunar bridge, budget
-                      classes, IP, checklist). Ask must stay within the posted quarterly max.
+                      Use the canonical markdown template (novelty &amp; prior art, lunar bridge,
+                      budget classes, IP, checklist). Ask must stay within the posted quarterly max.
                     </p>
                   </div>
                 </div>
@@ -168,14 +162,16 @@ export default function ProposalsPage({ project }: { project: Project }) {
                   <div className="p-3 md:p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                     <p className="text-sm text-blue-200">
                       <strong>Import tip:</strong> Paste into a Google Doc, set sharing to{' '}
-                      <span className="font-semibold">&quot;Anyone with the link can view&quot;</span>, then
-                      import below.
+                      <span className="font-semibold">
+                        &quot;Anyone with the link can view&quot;
+                      </span>
+                      , then import below.
                     </p>
                   </div>
                   <div className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-lg">
                     <p className="text-sm text-gray-300">
-                      <strong>Required sections:</strong> Novelty &amp; Prior Art, Lunar Bridge, Community
-                      Standing, SMART Key Results, Budget classes (no foundational PCs /
+                      <strong>Required sections:</strong> Novelty &amp; Prior Art, Lunar Bridge,
+                      Community Standing, SMART Key Results, Budget classes (no foundational PCs /
                       entity fees), IP disclosure, COTS rationale for hardware.
                     </p>
                   </div>
@@ -189,17 +185,20 @@ export default function ProposalsPage({ project }: { project: Project }) {
                     2
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl md:text-2xl font-bold text-white mb-2">Import & Submit Your Proposal</h2>
+                    <h2 className="text-xl md:text-2xl font-bold text-white mb-2">
+                      Import & Submit Your Proposal
+                    </h2>
                     <p className="text-gray-300">
-                      Paste your Google Doc link below to import your proposal, then submit it for review.
+                      Paste your Google Doc link below to import your proposal, then submit it for
+                      review.
                     </p>
                   </div>
                 </div>
-                
+
                 {submissionsClosed && !isEditingExisting ? (
                   <p className="text-sm text-amber-200">
-                    New submissions are closed for this cycle. Come back after
-                    Senate Vote opens to file for the next quarter.
+                    New submissions are closed for this cycle. Come back after Senate Vote opens to
+                    file for the next quarter.
                   </p>
                 ) : (
                   <ProposalEditor project={project} />

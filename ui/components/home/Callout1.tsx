@@ -3,8 +3,8 @@ import StandardButton from '../layout/StandardButton'
 
 export default function Callout1() {
   return (
-    <section 
-      id="callout1-section" 
+    <section
+      id="callout1-section"
       className="min-h-[800px] md:h-[80vh] md:min-h-[90vmin] lg:min-h-[800px] 2xl:min-h-[900px] 3xl:min-h-[1000px] flex items-end relative"
     >
       <div className="absolute inset-0 z-0">
@@ -29,17 +29,16 @@ export default function Callout1() {
             className="overflow-visible relative w-full lg:w-[50%] 2xl:w-[45%] 3xl:w-[50%] text-left lg:pl-[80px] 2xl:pl-[100px] 3xl:pl-[120px]"
           >
             <div className="w-full">
-              <h1 className="header flex overflow-visible flex-col text-4xl 2xl:text-6xl 3xl:text-7xl font-GoodTimes font-bold leading-none text-white max-w-[500px] 2xl:max-w-[800px] 3xl:max-w-[900px]">
+              <h1 className="header flex overflow-visible flex-col text-4xl 2xl:text-6xl 3xl:text-7xl font-heading font-bold leading-none text-white max-w-[500px] 2xl:max-w-[800px] 3xl:max-w-[900px]">
                 Bringing the Space Industry Onchain
               </h1>
               <p
                 id="paragraph"
                 className="pt-2 pb-5 text-white text-lg 2xl:text-xl 3xl:text-2xl max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] text-left"
               >
-                The Space Acceleration Network is an onchain startup society
-                that connects space visionaries and organizations with the
-                funding, tools, and support needed to turn bold ideas into
-                reality.
+                The Space Acceleration Network is an onchain startup society that connects space
+                visionaries and organizations with the funding, tools, and support needed to turn
+                bold ideas into reality.
               </p>
               <StandardButton
                 backgroundColor="bg-white"

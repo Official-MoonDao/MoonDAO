@@ -214,7 +214,9 @@ function MetricTile({
         {icon}
         <span className="text-[11px] uppercase tracking-wider">{label}</span>
       </div>
-      <p className={`mt-3 text-3xl font-GoodTimes leading-tight ${toneClasses}`}>{value}</p>
+      <p className={`mt-3 text-3xl font-heading font-semibold leading-tight ${toneClasses}`}>
+        {value}
+      </p>
       {sub && <p className="mt-2 text-xs text-slate-400 leading-relaxed">{sub}</p>}
     </div>
   )
@@ -340,14 +342,13 @@ export default function ExecutiveFinancials() {
   const grossMonthly = burn.grossMonthlyUSD
   const maxStream = Math.max(...revenue.streams.map((s) => s.annualUSD), 1)
   const wallets = assets.wallets || []
-  const uncollected: Uncollected =
-    revenue.uncollected ?? {
-      receivableUSD: 0,
-      contingentUSD: 0,
-      lines: [],
-      missionsConsidered: 0,
-      note: 'Projected launchpad revenue was not returned by the API.',
-    }
+  const uncollected: Uncollected = revenue.uncollected ?? {
+    receivableUSD: 0,
+    contingentUSD: 0,
+    lines: [],
+    missionsConsidered: 0,
+    note: 'Projected launchpad revenue was not returned by the API.',
+  }
   const projectedTotal =
     uncollected.projectedUSD ?? uncollected.receivableUSD + uncollected.contingentUSD
   const lpNote =
@@ -426,7 +427,7 @@ export default function ExecutiveFinancials() {
 
       <div className={PANEL}>
         <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-          <h2 className="font-GoodTimes text-white text-sm">Assets</h2>
+          <h2 className="font-heading font-semibold text-white text-sm">Assets</h2>
           <button
             type="button"
             onClick={load}
@@ -464,7 +465,9 @@ export default function ExecutiveFinancials() {
           <p className="text-[11px] text-slate-500 mb-3">
             Official AUM is these eight Safes on their home chains
             {assets.defiLpUSD > 0
-              ? `, plus ${usd(assets.defiLpUSD)} Uniswap V3 LP (non-MOONEY side) held by the ETH and Polygon treasuries`
+              ? `, plus ${usd(
+                  assets.defiLpUSD
+                )} Uniswap V3 LP (non-MOONEY side) held by the ETH and Polygon treasuries`
               : ''}
             . MOONEY is excluded.
           </p>
@@ -525,7 +528,7 @@ export default function ExecutiveFinancials() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className={PANEL}>
-          <h2 className="font-GoodTimes text-white text-sm mb-4">Monthly cost</h2>
+          <h2 className="font-heading font-semibold text-white text-sm mb-4">Monthly cost</h2>
           <div className="space-y-3 text-sm">
             {burn.ebCoreLines.map((line) => (
               <Row
@@ -560,7 +563,7 @@ export default function ExecutiveFinancials() {
         </div>
 
         <div className={PANEL}>
-          <h2 className="font-GoodTimes text-white text-sm mb-4">Revenue</h2>
+          <h2 className="font-heading font-semibold text-white text-sm mb-4">Revenue</h2>
           <div className="space-y-3 text-sm">
             {revenue.streams.map((stream) => (
               <Row
@@ -593,7 +596,9 @@ export default function ExecutiveFinancials() {
             </span>{' '}
             of gross cost. Gap to break-even:{' '}
             <span className="text-white font-semibold">
-              {usd(Math.max(0, burn.annual.grossUSD - (revenue.cashAnnualUSD ?? revenue.annualUSD)))}
+              {usd(
+                Math.max(0, burn.annual.grossUSD - (revenue.cashAnnualUSD ?? revenue.annualUSD))
+              )}
             </span>
             /year.
           </p>
@@ -611,7 +616,9 @@ export default function ExecutiveFinancials() {
               <ul className="mt-2 space-y-1">
                 {revenue.unattributedInflows.topSources.map((s) => (
                   <li key={s.address} className="flex justify-between gap-3 text-[11px]">
-                    <span className="font-mono text-slate-400 truncate">{shortAddr(s.address)}</span>
+                    <span className="font-mono text-slate-400 truncate">
+                      {shortAddr(s.address)}
+                    </span>
                     <span className="text-slate-300 shrink-0">{usd(s.totalUSD)}</span>
                   </li>
                 ))}
@@ -622,7 +629,7 @@ export default function ExecutiveFinancials() {
       </div>
 
       <div className={PANEL}>
-        <h2 className="font-GoodTimes text-white text-sm mb-1">
+        <h2 className="font-heading font-semibold text-white text-sm mb-1">
           Projected revenue — launchpad raises
         </h2>
         <p className="text-[11px] text-slate-500 leading-relaxed mb-4">{uncollected.note}</p>
@@ -679,7 +686,7 @@ export default function ExecutiveFinancials() {
       </div>
 
       <div className={PANEL}>
-        <h2 className="font-GoodTimes text-white text-sm mb-4">Runway</h2>
+        <h2 className="font-heading font-semibold text-white text-sm mb-4">Runway</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[520px]">
             <thead>

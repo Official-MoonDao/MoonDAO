@@ -10,7 +10,7 @@ export default function LaunchpadSection() {
         <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-gradient-to-r from-[#6C407D] to-[#5F4BA2] rounded-full opacity-20 blur-xl animate-pulse"></div>
         <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-gradient-to-r from-[#5159CC] to-[#4660E7] rounded-full opacity-30 blur-lg animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 right-1/3 w-20 h-20 bg-gradient-to-r from-[#4660E7] to-[#6C407D] rounded-full opacity-25 blur-lg animate-pulse delay-2000"></div>
-        
+
         {/* Constellation dots */}
         <div className="absolute top-1/5 right-1/3 w-1 h-1 bg-white/30 rounded-full"></div>
         <div className="absolute top-2/5 left-1/5 w-1 h-1 bg-cyan-400/40 rounded-full"></div>
@@ -21,12 +21,12 @@ export default function LaunchpadSection() {
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         {/* Section Header */}
         <div className="text-center mb-12 md:mb-16 lg:mb-20">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-GoodTimes text-white mb-6 md:mb-8">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold text-white mb-4 md:mb-6">
             MoonDAO Launchpad
           </h2>
           <p className="text-white/90 text-lg md:text-xl lg:text-2xl max-w-4xl mx-auto leading-relaxed">
-            Fund the future of space exploration with decentralized crowdfunding.
-            Join our proven platform that has already sent people to space.
+            Fund the future of space exploration with decentralized crowdfunding. Join our proven
+            platform that has already sent people to space.
           </p>
         </div>
 
@@ -58,12 +58,12 @@ export default function LaunchpadSection() {
             {/* Right Column - Key Features */}
             <div className="space-y-6 md:space-y-8">
               <div className="space-y-4 md:space-y-6">
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-GoodTimes text-white">
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold text-white">
                   Decentralized Space Funding
                 </h3>
                 <p className="text-white/80 text-base md:text-lg leading-relaxed">
-                  Experience the next generation of space funding with transparent, 
-                  community-driven support for missions that matter.
+                  Experience the next generation of space funding with transparent, community-driven
+                  support for missions that matter.
                 </p>
               </div>
 
@@ -118,7 +118,8 @@ export default function LaunchpadSection() {
                   <div>
                     <h4 className="text-white font-semibold text-lg mb-1">Launch in Minutes</h4>
                     <p className="text-white/70 text-sm md:text-base">
-                      Fund your mission in minutes, not months, with instant global access to capital.
+                      Fund your mission in minutes, not months, with instant global access to
+                      capital.
                     </p>
                   </div>
                 </div>
@@ -140,7 +141,7 @@ export default function LaunchpadSection() {
           {/* Stats Section */}
           <div className="bg-black/40 backdrop-blur-sm rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-12 border border-white/20">
             <div className="text-center mb-8 md:mb-12">
-              <h3 className="text-2xl md:text-3xl lg:text-4xl font-GoodTimes text-white mb-4">
+              <h3 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold text-white mb-4">
                 Proven Track Record
               </h3>
               <p className="text-white/80 text-base md:text-lg">
@@ -159,7 +160,7 @@ export default function LaunchpadSection() {
                     height={48}
                     className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-3"
                   />
-                  <h4 className="text-xl md:text-2xl lg:text-3xl font-GoodTimes text-white mb-2">
+                  <h4 className="text-xl md:text-2xl lg:text-3xl font-heading font-semibold text-white mb-2">
                     $8M
                   </h4>
                   <p className="text-white/70 text-xs md:text-sm">
@@ -178,12 +179,10 @@ export default function LaunchpadSection() {
                     height={48}
                     className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-3"
                   />
-                  <h4 className="text-xl md:text-2xl lg:text-3xl font-GoodTimes text-white mb-2">
+                  <h4 className="text-xl md:text-2xl lg:text-3xl font-heading font-semibold text-white mb-2">
                     12K
                   </h4>
-                  <p className="text-white/70 text-xs md:text-sm">
-                    $MOONEY token holders.
-                  </p>
+                  <p className="text-white/70 text-xs md:text-sm">$MOONEY token holders.</p>
                 </div>
               </div>
 
@@ -197,12 +196,10 @@ export default function LaunchpadSection() {
                     height={48}
                     className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-3"
                   />
-                  <h4 className="text-xl md:text-2xl lg:text-3xl font-GoodTimes text-white mb-2">
+                  <h4 className="text-xl md:text-2xl lg:text-3xl font-heading font-semibold text-white mb-2">
                     80+
                   </h4>
-                  <p className="text-white/70 text-xs md:text-sm">
-                    Projects successfully funded.
-                  </p>
+                  <p className="text-white/70 text-xs md:text-sm">Projects successfully funded.</p>
                 </div>
               </div>
 
@@ -216,12 +213,10 @@ export default function LaunchpadSection() {
                     height={48}
                     className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-3"
                   />
-                  <h4 className="text-xl md:text-2xl lg:text-3xl font-GoodTimes text-white mb-2">
+                  <h4 className="text-xl md:text-2xl lg:text-3xl font-heading font-semibold text-white mb-2">
                     2
                   </h4>
-                  <p className="text-white/70 text-xs md:text-sm">
-                    People sent to space.
-                  </p>
+                  <p className="text-white/70 text-xs md:text-sm">People sent to space.</p>
                 </div>
               </div>
             </div>

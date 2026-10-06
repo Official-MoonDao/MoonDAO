@@ -1,11 +1,11 @@
-import DocsLink from './DocsLink'
 import type { DocsBacklink } from '@/lib/docs/types'
+import DocsLink from './DocsLink'
 
 export default function DocsBacklinks({ items }: { items: DocsBacklink[] }) {
   if (items.length === 0) return null
   return (
     <section className="mt-12 pt-6 border-t border-white/10">
-      <h2 className="font-GoodTimes text-sm uppercase tracking-wider text-white/40 mb-3">
+      <h2 className="font-heading font-semibold text-sm uppercase tracking-wider text-white/40 mb-3">
         Linked from
       </h2>
       <ul className="flex flex-wrap gap-2">
