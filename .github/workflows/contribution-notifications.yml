@@ -18,7 +18,27 @@ jobs:
           SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          BASE="${SITE_URL:-https://moondao.com}"
-          curl -fsS -X POST "$BASE/api/cron/contribution-notifications" \
+          # Apex moondao.com 307s to www.moondao.com with a "Redirecting..." body.
+          # curl does not follow redirects unless -L is set, and -f does not treat
+          # 307 as failure, so a poll of the apex exits 0 without calling the
+          # notifier. A cross-host -L redirect would also drop Authorization.
+          # Post straight to www. An empty MOONDAO_SITE_URL used to select the apex.
+          BASE="${SITE_URL:-https://www.moondao.com}"
+          BASE="${BASE%/}"
+          case "$BASE" in
+            http://moondao.com|https://moondao.com)
+              BASE="https://www.moondao.com"
+              ;;
+          esac
+          response=$(curl -fsS -X POST "$BASE/api/cron/contribution-notifications" \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Content-Type: application/json"
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json")
+          echo "$response"
+          case "$response" in
+            *'"ok":true'*|*'"ok": true'*) ;;
+            *)
+              echo "Contribution notifier did not succeed" >&2
+              exit 1
+              ;;
+          esac
