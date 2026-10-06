@@ -14,19 +14,23 @@
 //   citizen invites and rate limiting):
 //     - `contributions:notified`        SET of already-announced row hashes
 //     - `contributions:notified:seeded` flag set after the initial backfill
-//   On the very first run we record every existing row as "seen" WITHOUT
-//   posting, so turning this on doesn't dump the entire historical backlog into
-//   Discord. After that, only genuinely new rows are announced.
-import crypto from 'crypto'
+//   On the very first run we record older rows as "seen" WITHOUT posting, so
+//   turning this on doesn't dump the entire historical backlog into Discord.
+//   Rows inside FIRST_RUN_ANNOUNCE_WINDOW_MS stay unseen and are posted,
+//   because this poller 307'd on apex moondao.com for months and never
+//   announced anything. After that, only genuinely new rows are announced.
 import { Redis } from '@upstash/redis'
 import { DEPLOYED_ORIGIN, GENERAL_CHANNEL_ID, TEST_CHANNEL_ID } from 'const/config'
-import {
-  getSheetContributions,
-  type Contribution,
-} from '@/lib/contributions/getSheetContributions'
+import crypto from 'crypto'
+import { getSheetContributions, type Contribution } from '@/lib/contributions/getSheetContributions'
 
 const NOTIFIED_SET_KEY = 'contributions:notified'
 const SEEDED_FLAG_KEY = 'contributions:notified:seeded'
+
+// First successful poll announces this much recent history and marks everything
+// older as already seen. Fourteen days covers the submissions people are
+// waiting on without replaying the sheet back to April.
+export const FIRST_RUN_ANNOUNCE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000
 
 // Per-run lock so overlapping cron invocations can't both read the seen-set and
 // double-post the same row (the gap between SMEMBERS and SADD). The release is a
@@ -53,9 +57,7 @@ const DISCORD_FETCH_TIMEOUT_MS = 10_000
 
 // Same channel selection the rest of the network notifications use.
 const NOTIFICATION_CHANNEL_ID =
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? GENERAL_CHANNEL_ID
-    : TEST_CHANNEL_ID
+  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? GENERAL_CHANNEL_ID : TEST_CHANNEL_ID
 
 export type NotifyResult = {
   ok: boolean
@@ -91,6 +93,54 @@ function contributionKey(c: Contribution): string {
     .createHash('sha1')
     .update(`${c.timestamp}|${c.walletAddress}|${c.description}`)
     .digest('hex')
+}
+
+// Google Form / Sheets timestamps look like "10/6/2026 15:44:02" (24-hour,
+// spreadsheet timezone). Returns UTC epoch ms, or null when the cell isn't a
+// timestamp we can trust for the first-run window.
+export function parseContributionTimestamp(timestamp: string): number | null {
+  const match = timestamp
+    .trim()
+    .match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*([AaPp][Mm]))?/)
+  if (!match) return null
+
+  const month = Number(match[1])
+  const day = Number(match[2])
+  const year = Number(match[3])
+  let hour = Number(match[4])
+  const minute = Number(match[5])
+  const second = Number(match[6] ?? '0')
+  const ampm = match[7]?.toLowerCase()
+
+  if (ampm === 'pm' && hour < 12) hour += 12
+  if (ampm === 'am' && hour === 12) hour = 0
+
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) {
+    return null
+  }
+
+  const ms = Date.UTC(year, month - 1, day, hour, minute, second)
+  const check = new Date(ms)
+  if (
+    check.getUTCFullYear() !== year ||
+    check.getUTCMonth() !== month - 1 ||
+    check.getUTCDate() !== day
+  ) {
+    return null
+  }
+  return ms
+}
+
+export function isWithinAnnounceWindow(
+  timestamp: string,
+  nowMs: number,
+  windowMs = FIRST_RUN_ANNOUNCE_WINDOW_MS
+): boolean {
+  const parsed = parseContributionTimestamp(timestamp)
+  if (parsed == null) return false
+  // A day of clock skew is fine. Far-future cells are bad data, not announcements.
+  if (parsed > nowMs + 24 * 60 * 60 * 1000) return false
+  return nowMs - parsed <= windowMs
 }
 
 function truncate(text: string, max: number): string {
@@ -149,9 +199,7 @@ async function postToDiscord(content: string): Promise<boolean> {
     )
     if (!resp.ok) {
       const body = await resp.text().catch(() => '')
-      console.error(
-        `[contribution-notify] Discord post failed (${resp.status}): ${body}`
-      )
+      console.error(`[contribution-notify] Discord post failed (${resp.status}): ${body}`)
       return false
     }
     return true
@@ -191,6 +239,8 @@ export async function notifyNewContributions(): Promise<NotifyResult> {
     const ordered = [...contributions].reverse()
     const keys = ordered.map(contributionKey)
 
+    let didSeed = false
+    let seen: Set<string>
     const seeded = await redis.get(SEEDED_FLAG_KEY)
     if (!seeded) {
       // Only seed once we've actually read rows. `getSheetContributions()`
@@ -200,16 +250,22 @@ export async function notifyNewContributions(): Promise<NotifyResult> {
       if (keys.length === 0) {
         return { ok: true, seeded: false, posted: 0, total: 0 }
       }
-      await redis.sadd(NOTIFIED_SET_KEY, keys[0], ...keys.slice(1))
+      const now = Date.now()
+      const seedKeys = keys.filter((_, i) => !isWithinAnnounceWindow(ordered[i].timestamp, now))
+      if (seedKeys.length > 0) {
+        await redis.sadd(NOTIFIED_SET_KEY, seedKeys[0], ...seedKeys.slice(1))
+      }
       await redis.set(SEEDED_FLAG_KEY, '1')
-      return { ok: true, seeded: true, posted: 0, total: keys.length }
+      didSeed = true
+      // Use the keys we just wrote. Re-reading the set in this same call could
+      // miss them and announce the backlog the seed exists to suppress.
+      seen = new Set(seedKeys)
+    } else {
+      if (ordered.length === 0) {
+        return { ok: true, seeded: false, posted: 0, total: 0 }
+      }
+      seen = new Set((await redis.smembers(NOTIFIED_SET_KEY)) as string[])
     }
-
-    if (ordered.length === 0) {
-      return { ok: true, seeded: false, posted: 0, total: 0 }
-    }
-
-    const seen = new Set(await redis.smembers(NOTIFIED_SET_KEY))
     const newOnes: { c: Contribution; key: string }[] = []
     for (let i = 0; i < ordered.length; i++) {
       if (!seen.has(keys[i])) newOnes.push({ c: ordered[i], key: keys[i] })
@@ -226,7 +282,7 @@ export async function notifyNewContributions(): Promise<NotifyResult> {
 
     return {
       ok: true,
-      seeded: false,
+      seeded: didSeed,
       posted,
       total: keys.length,
       pending: Math.max(0, newOnes.length - posted),

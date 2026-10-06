@@ -13,6 +13,7 @@
     "scripts/tableland-clean-data.test.ts",
     "scripts/new-citizen-discord-notification-source.test.ts",
     "scripts/new-team-discord-notification-source.test.ts",
+    "scripts/contribution-discord-notification.test.ts",
     "cypress/integration/unit/job-metadata.cy.ts",
     "cypress/integration/unit/google-docs-title.cy.ts",
     "cypress/integration/unit/google-docs-html.cy.ts",
