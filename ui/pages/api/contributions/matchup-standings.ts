@@ -8,6 +8,7 @@ import {
   eligibleCards,
   MIN_MATCHUPS_FOR_PAYOUT,
   PAYOUT_CUTOFF_FRACTION,
+  type MatchupStats,
   type Standing,
 } from '@/lib/contributions/matchups'
 
@@ -25,9 +26,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   const redis = getMatchupRedis()
+  const emptyStats: MatchupStats = { wins: {}, matchups: {} }
   const [pool, stats] = await Promise.all([
     getMatchupPool(),
-    redis ? getMatchupStats(redis) : Promise.resolve({ wins: {}, matchups: {} }),
+    redis ? getMatchupStats(redis) : emptyStats,
   ])
   const standings = computeStandings(eligibleCards(pool), stats)
   // Each pick adds one win, so total wins across the pool is the pick count.

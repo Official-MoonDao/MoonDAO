@@ -4,8 +4,10 @@
 //
 // Everything here is free of I/O so the pairing and scoring rules can be unit
 // tested; Redis access lives in `matchupStore.ts`.
-import crypto from 'crypto'
 import type { Contribution } from './getSheetContributions'
+
+// A sheet row plus the stable id assigned in `matchupPool.ts`.
+export type IdentifiedContribution = Contribution & { id: string }
 
 // Matchups only draw from contributions submitted in this rolling window.
 export const MATCHUP_WINDOW_DAYS = 90
@@ -42,15 +44,6 @@ export type Standing = {
   /** Projected share of the peer reward pool (0-1); null when not eligible. */
   share: number | null
   status: 'paid' | 'cut' | 'needs-votes'
-}
-
-// Stable per-row identity, matching the inputs the Discord notifier hashes.
-export function contributionId(c: Contribution): string {
-  return crypto
-    .createHash('sha1')
-    .update(`${c.timestamp}|${c.walletAddress}|${c.description}`)
-    .digest('hex')
-    .slice(0, 16)
 }
 
 // Google Forms writes timestamps as "M/D/YYYY H:mm:ss". Fall back to
@@ -91,10 +84,10 @@ export function parseLinks(raw: string): string[] {
   return Array.from(seen).slice(0, 5)
 }
 
-export function toMatchupCard(c: Contribution): MatchupCard {
+export function toMatchupCard(c: IdentifiedContribution): MatchupCard {
   const submitted = parseSheetTimestamp(c.timestamp)
   return {
-    id: contributionId(c),
+    id: c.id,
     area: c.area || '',
     description: c.description,
     timeCommitment: c.timeCommitment || '',
@@ -106,7 +99,7 @@ export function toMatchupCard(c: Contribution): MatchupCard {
 // Contributions eligible for matchups: inside the window, de-duplicated by id,
 // and never the voter's own (matched on the typed-in wallet address).
 export function eligibleCards(
-  contributions: Contribution[],
+  contributions: IdentifiedContribution[],
   options: { now?: Date; excludeWallet?: string } = {}
 ): MatchupCard[] {
   const now = options.now ?? new Date()

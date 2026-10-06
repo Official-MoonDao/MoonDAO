@@ -1,5 +1,5 @@
-import type { Contribution } from '@/lib/contributions/getSheetContributions'
 import {
+  type IdentifiedContribution,
   computeStandings,
   eligibleCards,
   pairKey,
@@ -11,8 +11,9 @@ import {
 
 const NOW = new Date('2026-10-06T12:00:00Z')
 
-function row(overrides: Partial<Contribution> = {}): Contribution {
+function row(overrides: Partial<IdentifiedContribution> = {}): IdentifiedContribution {
   return {
+    id: overrides.description || 'id',
     timestamp: '10/1/2026 9:30:00',
     walletAddress: '0x1111111111111111111111111111111111111111',
     name: 'Ada',
@@ -49,7 +50,6 @@ describe('contribution matchups', () => {
     const card = toMatchupCard(row()) as Record<string, unknown>
     expect(card).to.not.have.property('name')
     expect(card).to.not.have.property('walletAddress')
-    expect(card.id).to.match(/^[a-f0-9]{16}$/)
   })
 
   it('limits the pool to the last 90 days, dedupes, and drops the voter’s own work', () => {

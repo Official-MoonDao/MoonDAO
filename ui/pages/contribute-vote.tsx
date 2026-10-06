@@ -155,15 +155,15 @@ function Standings({ data }: { data: StandingsResponse | null }) {
   }
 
   return (
-    <div className="overflow-x-auto -mx-1">
-      <table className="w-full text-left text-sm min-w-[560px]">
+    <div>
+      <table className="w-full text-left text-sm">
         <thead>
           <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/10">
             <th className="py-2 px-1 font-medium">#</th>
             <th className="py-2 px-1 font-medium">Contribution</th>
-            <th className="py-2 px-1 font-medium text-right">Matchups</th>
-            <th className="py-2 px-1 font-medium text-right">Win rate</th>
-            <th className="py-2 px-1 font-medium text-right">Projected share</th>
+            <th className="py-2 px-1 font-medium text-right hidden sm:table-cell">Matchups</th>
+            <th className="py-2 px-1 font-medium text-right hidden sm:table-cell">Win rate</th>
+            <th className="py-2 px-1 font-medium text-right">Share</th>
           </tr>
         </thead>
         <tbody>
@@ -175,12 +175,16 @@ function Standings({ data }: { data: StandingsResponse | null }) {
                   <span className="text-blue-300 text-xs block mb-0.5">{s.card.area}</span>
                 )}
                 <span className="text-gray-300 line-clamp-2 break-words">{s.card.description}</span>
+                <span className="sm:hidden block text-gray-500 text-xs mt-1 tabular-nums">
+                  {s.matchups} matchups
+                  {s.winRate === null ? '' : ` · ${Math.round(s.winRate * 100)}% won`}
+                </span>
               </td>
-              <td className="py-3 px-1 text-right text-gray-300 tabular-nums">{s.matchups}</td>
-              <td className="py-3 px-1 text-right text-gray-300 tabular-nums">
+              <td className="py-3 px-1 text-right text-gray-300 tabular-nums hidden sm:table-cell">{s.matchups}</td>
+              <td className="py-3 px-1 text-right text-gray-300 tabular-nums hidden sm:table-cell">
                 {s.winRate === null ? '—' : `${Math.round(s.winRate * 100)}%`}
               </td>
-              <td className="py-3 px-1 text-right tabular-nums">
+              <td className="py-3 pl-3 pr-1 text-right tabular-nums whitespace-nowrap">
                 {s.status === 'paid' && (
                   <span className="text-emerald-300 font-semibold">
                     {((s.share ?? 0) * 100).toFixed(1)}%
