@@ -95,6 +95,50 @@ describe('marketplace purchase notifications', () => {
     assert.equal(result.success, true)
   })
 
+  it('a gift replay without the invite link is not success', async () => {
+    let attempts = 0
+    const result = await postMarketplacePurchase({
+      accessToken: 'privy-token',
+      payload: { txHash: '0xabc', isGift: true },
+      backoffMs: 0,
+      maxAttempts: 3,
+      fetchImpl: async () => {
+        attempts += 1
+        return {
+          ok: false,
+          status: 400,
+          text: async () =>
+            JSON.stringify({
+              message: 'Transaction has already been processed for marketplace purchase',
+            }),
+        }
+      },
+    })
+    assert.equal(attempts, 1)
+    assert.equal(result.success, false)
+    assert.equal(result.giftLink, undefined)
+  })
+
+  it('a gift replay that returns the same link is success', async () => {
+    const result = await postMarketplacePurchase({
+      accessToken: 'privy-token',
+      payload: { txHash: '0xabc', isGift: true },
+      backoffMs: 0,
+      maxAttempts: 1,
+      fetchImpl: async () => ({
+        ok: false,
+        status: 400,
+        text: async () =>
+          JSON.stringify({
+            message: 'Transaction has already been processed for marketplace purchase',
+            giftLink: 'https://example.test/citizen?invite=same',
+          }),
+      }),
+    })
+    assert.equal(result.success, true)
+    assert.equal(result.giftLink, 'https://example.test/citizen?invite=same')
+  })
+
   it('retries a 500 from the mailer and does not retry a 400', async () => {
     assert.equal(isRetryablePurchaseStatus(500), true)
     assert.equal(isRetryablePurchaseStatus(400), false)
@@ -210,6 +254,8 @@ describe('marketplace purchase notifications', () => {
     )
     assert.equal(api.includes('deliverMarketplaceReceipts'), true)
     assert.equal(api.includes('maxDuration: 60'), true)
+    assert.equal(api.includes('issueMarketplaceGiftInvite'), true)
+    assert.equal(api.includes('readyMarketplaceGiftToken'), true)
   })
 
 })

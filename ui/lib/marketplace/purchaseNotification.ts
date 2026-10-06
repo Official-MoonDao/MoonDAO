@@ -178,12 +178,19 @@ function messageFromBody(parsed: unknown, raw: string): string {
   return raw
 }
 
+function giftLinkFromBody(parsed: unknown): string | undefined {
+  if (!parsed || typeof parsed !== 'object') return undefined
+  const giftLink = (parsed as { giftLink?: unknown }).giftLink
+  return typeof giftLink === 'string' && giftLink ? giftLink : undefined
+}
+
 /**
  * POST the purchase receipt. Always sends the Privy access token as a Bearer
  * header so authMiddleware lets the request through when the NextAuth cookie
  * is absent. Retries platform and mailer failures; a replay of a tx the server
  * already accepted counts as success so a dropped response doesn't look like
- * a failed purchase.
+ * a failed purchase. A gift replay is success only when that response includes
+ * the invite link.
  */
 export async function postMarketplacePurchase(options: {
   payload: Record<string, unknown>
@@ -229,16 +236,17 @@ export async function postMarketplacePurchase(options: {
         parsed = {}
       }
       lastMessage = messageFromBody(parsed, raw)
+      const giftLink = giftLinkFromBody(parsed)
 
       if (purchaseAlreadyRecorded(response.status, lastMessage)) {
-        return { success: true, status: response.status, message: lastMessage }
+        // Non-gift replays already mailed the buyer. A gift replay only counts
+        // as success when the server handed back the same invite link — a bare
+        // "already processed" means this response cannot show the link.
+        if (options.payload.isGift === true && !giftLink) {
+          return { success: false, status: response.status, message: lastMessage }
+        }
+        return { success: true, status: response.status, message: lastMessage, giftLink }
       }
-
-      const parsedGift =
-        parsed && typeof parsed === 'object'
-          ? (parsed as { giftLink?: unknown }).giftLink
-          : undefined
-      const giftLink = typeof parsedGift === 'string' ? parsedGift : undefined
 
       if (response.ok) {
         const success =
