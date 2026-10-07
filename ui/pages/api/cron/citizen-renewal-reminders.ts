@@ -2,7 +2,11 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import {
   buildRenewalCoverageReport,
   countWindowPositions,
+  envVarPresent,
   nonDryRunRejection,
+  renewalCountsComplete,
+  renewalDryRunSources,
+  type RenewalDryRunReadFlags,
 } from '@/lib/citizen/renewalCoverage'
 import {
   assembleCoverageInputs,
@@ -26,6 +30,12 @@ function providedSecret(req: NextApiRequest): string | undefined {
   return bearer || first(req.headers['x-cron-secret']) || first(req.query.secret)
 }
 
+const INCOMPLETE_COUNTS = 'Email bucket counts are incomplete and are not reported as zero.'
+
+function dryRunSources(read: RenewalDryRunReadFlags) {
+  return renewalDryRunSources(process.env, read)
+}
+
 /**
  * Dry-run coverage for citizen renewal reminders.
  * Always read-only. A request that asks for a live run is rejected.
@@ -46,19 +56,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ ok: false, dryRun: true, error: rejection })
   }
 
+  const read: RenewalDryRunReadFlags = {
+    tableland: false,
+    arbitrumExpiresAt: false,
+    typeform: false,
+    kit: false,
+    firstRunExclusion: false,
+  }
+  const warnings: string[] = []
+
   try {
     const nowMs = Date.now()
     const profiles = await loadCitizenProfiles()
+    read.tableland = true
     const expiresAt = await loadExpiresAt(profiles.map((profile) => profile.tokenId))
+    read.arbitrumExpiresAt = true
     const positions = countWindowPositions(
       profiles.map((profile) => expiresAt.get(profile.tokenId) ?? null),
       nowMs
     )
     const formIds = citizenTypeformFormIds()
     const typeformToken = process.env.TYPEFORM_PERSONAL_ACCESS_TOKEN?.trim() || null
-    const kitConfigured = Boolean(
-      process.env.CONVERT_KIT_V4_API_KEY || process.env.CONVERT_KIT_API_KEY
-    )
+    const kitConfigured =
+      envVarPresent(process.env, 'CONVERT_KIT_V4_API_KEY') ||
+      envVarPresent(process.env, 'CONVERT_KIT_API_KEY')
+    const exclusions = await loadExclusions(kitConfigured)
+    read.firstRunExclusion = exclusions.firstRunRedisChecked
+    warnings.push(...exclusions.warnings)
+
     const missing: string[] = []
     if (!typeformToken) missing.push('TYPEFORM_PERSONAL_ACCESS_TOKEN')
     if (formIds.length === 0) {
@@ -69,10 +94,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!kitConfigured) missing.push('CONVERT_KIT_V4_API_KEY or CONVERT_KIT_API_KEY')
 
     if (missing.length > 0) {
+      warnings.push(
+        `Missing ${missing.join('; ')}. Typeform or Kit was not read. ${INCOMPLETE_COUNTS}`
+      )
       return res.status(503).json({
         ok: false,
         dryRun: true,
         readOnly: true,
+        countsComplete: renewalCountsComplete(read),
+        sources: dryRunSources(read),
+        warnings,
         missing,
         positionCounts: positions,
         buckets: null,
@@ -81,7 +112,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
     }
 
-    const exclusions = await loadExclusions(true)
     const assembled = await assembleCoverageInputs({
       profiles,
       expiresAt,
@@ -91,10 +121,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       kitConfigured: true,
       exclusions,
     })
-    if (!assembled.ok) {
-      return res
-        .status(503)
-        .json({ ok: false, dryRun: true, error: assembled.error, positionCounts: positions })
+    read.typeform = assembled.typeformRead
+    read.kit = assembled.kitRead
+    if (!assembled.ok || !renewalCountsComplete(read)) {
+      const error = assembled.ok
+        ? `Typeform or Kit was not read. ${INCOMPLETE_COUNTS}`
+        : assembled.error
+      warnings.push(error)
+      if (error !== INCOMPLETE_COUNTS) warnings.push(INCOMPLETE_COUNTS)
+      return res.status(503).json({
+        ok: false,
+        dryRun: true,
+        readOnly: true,
+        countsComplete: renewalCountsComplete(read),
+        sources: dryRunSources(read),
+        warnings,
+        error,
+        positionCounts: positions,
+        buckets: null,
+      })
     }
 
     const report = buildRenewalCoverageReport(assembled.rows, nowMs, {
@@ -108,14 +153,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       '[citizen-renewal-dry-run]',
       JSON.stringify({
         counts: report.counts,
+        countsComplete: true,
         expiryUnknown: positions.unknown,
-        warnings: exclusions.warnings,
+        warnings,
       })
     )
 
     return res.status(200).json({
       ...report,
       expiryUnknown: assembled.expiryUnknown,
+      countsComplete: renewalCountsComplete(read),
+      sources: dryRunSources(read),
+      warnings,
       exclusions: {
         suppressionChecked: exclusions.suppressionChecked,
         firstRunRedisChecked: exclusions.firstRunRedisChecked,
@@ -127,11 +176,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     })
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    warnings.push(message)
+    warnings.push(INCOMPLETE_COUNTS)
     console.error('[citizen-renewal-dry-run]', error)
     return res.status(500).json({
       ok: false,
       dryRun: true,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      countsComplete: false,
+      sources: dryRunSources(read),
+      warnings,
+      error: message,
     })
   }
 }

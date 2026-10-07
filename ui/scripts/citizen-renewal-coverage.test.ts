@@ -10,7 +10,9 @@ import {
   futureKitAddPlan,
   KitResubscribeBlocked,
   kitSubscriberLookupPath,
+  renewalCountsComplete,
   renewalDedupeKey,
+  renewalDryRunSources,
   windowPosition,
 } from '../lib/citizen/renewalCoverage'
 
@@ -205,6 +207,83 @@ describe('renewal dry run stays read-only', () => {
   it('reads the Arbitrum citizen NFT from the plan', () => {
     expect(ARBITRUM_CITIZEN_NFT).to.equal('0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002')
     expect(reads).to.include('ARBITRUM_CITIZEN_NFT')
+  })
+
+  it('reads Multicall3 aggregate3 with callStatic so ethers does not send a transaction', () => {
+    expect(reads).to.include('multicall.callStatic.aggregate3(')
+    expect(reads).to.not.include('multicall.aggregate3(')
+    expect(reads).to.include(
+      'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) view returns ((bool success, bytes returnData)[] returnData)'
+    )
+    expect(reads).to.not.include('payable')
+    expect(reads).to.not.include('sendTransaction')
+    expect(reads).to.include("method: 'GET'")
+    const contractCalls = reads.match(/new ethers\.Contract/g) || []
+    expect(contractCalls).to.have.length(1)
+  })
+
+  it('marks email bucket counts incomplete unless Typeform and Kit were read', () => {
+    expect(route).to.include('countsComplete')
+    expect(route).to.include('sources: dryRunSources(read)')
+    expect(route).to.include('buckets: null')
+    expect(route).to.include('INCOMPLETE_COUNTS')
+    expect(renewalCountsComplete({ typeform: true, kit: true })).to.equal(true)
+    expect(renewalCountsComplete({ typeform: false, kit: true })).to.equal(false)
+    expect(renewalCountsComplete({ typeform: true, kit: false })).to.equal(false)
+  })
+})
+
+describe('renewal dry-run sources', () => {
+  it('is booleans only and never includes env values', () => {
+    const typeformToken = 'tf_pat_do_not_leak'
+    const kitKey = 'kit_key_do_not_leak'
+    const redisUrl = 'https://example.upstash.io'
+    const redisToken = 'redis_token_do_not_leak'
+    const shortForm = 'shortFormId'
+    const longForm = 'longFormId'
+    const sources = renewalDryRunSources(
+      {
+        TYPEFORM_PERSONAL_ACCESS_TOKEN: typeformToken,
+        CONVERT_KIT_V4_API_KEY: '   ',
+        CONVERT_KIT_API_KEY: kitKey,
+        UPSTASH_REDIS_URL: redisUrl,
+        UPSTASH_REDIS_TOKEN: redisToken,
+        NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID: shortForm,
+        NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID: longForm,
+        NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID: '',
+      },
+      {
+        tableland: true,
+        arbitrumExpiresAt: false,
+        typeform: false,
+        kit: false,
+        firstRunExclusion: true,
+      }
+    )
+
+    expect(sources).to.deep.equal({
+      TYPEFORM_PERSONAL_ACCESS_TOKEN: true,
+      CONVERT_KIT_V4_API_KEY: false,
+      CONVERT_KIT_API_KEY: true,
+      UPSTASH_REDIS_URL: true,
+      UPSTASH_REDIS_TOKEN: true,
+      NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID: true,
+      NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID: true,
+      NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID: false,
+      tableland: true,
+      arbitrumExpiresAt: false,
+      typeform: false,
+      kit: false,
+      'renewal:exclude:first-run': true,
+    })
+    for (const value of Object.values(sources)) {
+      expect(value).to.be.a('boolean')
+    }
+    const encoded = JSON.stringify(sources)
+    for (const secret of [typeformToken, kitKey, redisUrl, redisToken, shortForm, longForm]) {
+      expect(encoded).to.not.include(secret)
+    }
+    expect(renewalCountsComplete(sources)).to.equal(false)
   })
 })
 

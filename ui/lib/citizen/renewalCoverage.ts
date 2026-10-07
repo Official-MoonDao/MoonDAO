@@ -9,6 +9,13 @@
 
 export const ARBITRUM_CITIZEN_NFT = '0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002'
 
+/** Typeform forms the dry run searches. Presence is reported per env var, never the id. */
+export const CITIZEN_TYPEFORM_FORM_ENV_KEYS = [
+  'NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID',
+  'NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID',
+  'NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID',
+] as const
+
 /** Ops loads the Oct 2 triage batch here. The repo never stores those addresses. */
 export const FIRST_RUN_EXCLUSION_SET = 'renewal:exclude:first-run'
 
@@ -464,6 +471,75 @@ export function buildRenewalCoverageReport(
     firstRunOverlap,
     laterKitAdd: futureKitAddPlan(null),
   }
+}
+
+export type RenewalDryRunReadFlags = {
+  tableland: boolean
+  arbitrumExpiresAt: boolean
+  typeform: boolean
+  kit: boolean
+  firstRunExclusion: boolean
+}
+
+/**
+ * Boolean diagnostics for the dry-run JSON. Env entries are presence only.
+ * Read entries are true only after that source returned successfully.
+ * Values, form ids, emails, and key material never appear here.
+ */
+export type RenewalDryRunSources = {
+  TYPEFORM_PERSONAL_ACCESS_TOKEN: boolean
+  CONVERT_KIT_V4_API_KEY: boolean
+  CONVERT_KIT_API_KEY: boolean
+  UPSTASH_REDIS_URL: boolean
+  UPSTASH_REDIS_TOKEN: boolean
+  NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID: boolean
+  NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID: boolean
+  NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID: boolean
+  tableland: boolean
+  arbitrumExpiresAt: boolean
+  typeform: boolean
+  kit: boolean
+  'renewal:exclude:first-run': boolean
+}
+
+export function envVarPresent(env: NodeJS.ProcessEnv, key: string): boolean {
+  const value = env[key]
+  return typeof value === 'string' && value.trim().length > 0
+}
+
+export function renewalDryRunSources(
+  env: NodeJS.ProcessEnv,
+  read: RenewalDryRunReadFlags
+): RenewalDryRunSources {
+  return {
+    TYPEFORM_PERSONAL_ACCESS_TOKEN: envVarPresent(env, 'TYPEFORM_PERSONAL_ACCESS_TOKEN'),
+    CONVERT_KIT_V4_API_KEY: envVarPresent(env, 'CONVERT_KIT_V4_API_KEY'),
+    CONVERT_KIT_API_KEY: envVarPresent(env, 'CONVERT_KIT_API_KEY'),
+    UPSTASH_REDIS_URL: envVarPresent(env, 'UPSTASH_REDIS_URL'),
+    UPSTASH_REDIS_TOKEN: envVarPresent(env, 'UPSTASH_REDIS_TOKEN'),
+    NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID: envVarPresent(
+      env,
+      'NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID'
+    ),
+    NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID: envVarPresent(
+      env,
+      'NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID'
+    ),
+    NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID: envVarPresent(
+      env,
+      'NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID'
+    ),
+    tableland: read.tableland,
+    arbitrumExpiresAt: read.arbitrumExpiresAt,
+    typeform: read.typeform,
+    kit: read.kit,
+    [FIRST_RUN_EXCLUSION_SET]: read.firstRunExclusion,
+  }
+}
+
+/** Email bucket counts are real only after both Typeform and Kit were read. */
+export function renewalCountsComplete(sources: { typeform: boolean; kit: boolean }): boolean {
+  return sources.typeform === true && sources.kit === true
 }
 
 /**

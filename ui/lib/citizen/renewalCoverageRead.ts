@@ -8,6 +8,7 @@ import { CITIZEN_ADDRESSES, CITIZEN_TABLE_NAMES } from 'const/config'
 import { ethers } from 'ethers'
 import {
   ARBITRUM_CITIZEN_NFT,
+  CITIZEN_TYPEFORM_FORM_ENV_KEYS,
   FIRST_RUN_EXCLUSION_SET,
   kitListTagsPath,
   kitReadRequest,
@@ -59,11 +60,9 @@ function arbitrumRpcUrl(): string {
 }
 
 export function citizenTypeformFormIds(): string[] {
-  return [
-    process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID,
-    process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_FORM_ID,
-    process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_EMAIL_FORM_ID,
-  ].filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+  return CITIZEN_TYPEFORM_FORM_ENV_KEYS.map((key) => process.env[key]).filter(
+    (id): id is string => typeof id === 'string' && id.trim().length > 0
+  )
 }
 
 export async function loadCitizenProfiles(): Promise<CitizenProfile[]> {
@@ -100,7 +99,7 @@ export async function loadExpiresAt(tokenIds: string[]): Promise<Map<string, num
   const multicall = new ethers.Contract(
     MULTICALL3,
     [
-      'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[] returnData)',
+      'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) view returns ((bool success, bytes returnData)[] returnData)',
     ],
     provider
   )
@@ -113,7 +112,8 @@ export async function loadExpiresAt(tokenIds: string[]): Promise<Map<string, num
       allowFailure: true,
       callData: expiresIface.encodeFunctionData('expiresAt', [tokenId]),
     }))
-    const results = (await multicall.aggregate3(calls)) as Array<{
+    // callStatic forces eth_call. ethers v5 would otherwise try to send a transaction.
+    const results = (await multicall.callStatic.aggregate3(calls)) as Array<{
       success: boolean
       returnData: string
     }>
@@ -309,7 +309,7 @@ async function typeformEmailOnForm(
   formId: string,
   responseId: string,
   token: string
-): Promise<string | null | 'unauthorized'> {
+): Promise<string | null | 'unauthorized' | 'failed'> {
   const url = `https://api.typeform.com/forms/${encodeURIComponent(
     formId
   )}/responses?included_response_ids=${encodeURIComponent(responseId)}`
@@ -319,7 +319,7 @@ async function typeformEmailOnForm(
   })
   if (res.status === 401 || res.status === 403) return 'unauthorized'
   if (res.status === 404) return null
-  if (!res.ok) return null
+  if (!res.ok) return 'failed'
   const data = (await res.json()) as { items?: Array<{ answers?: unknown }> }
   const answers = data.items?.[0]?.answers
   return extractEmailFromTypeformAnswers(answers)
@@ -329,10 +329,10 @@ export async function loadTypeformEmail(
   responseId: string,
   formIds: string[],
   token: string
-): Promise<string | null | 'unauthorized'> {
+): Promise<string | null | 'unauthorized' | 'failed'> {
   for (const formId of formIds) {
     const email = await typeformEmailOnForm(formId, responseId, token)
-    if (email === 'unauthorized') return 'unauthorized'
+    if (email === 'unauthorized' || email === 'failed') return email
     if (email) return normalizeEmail(email)
   }
   return null
@@ -356,6 +356,16 @@ export async function mapWithConcurrency<T, R>(
   return results
 }
 
+export type AssembleCoverageResult =
+  | {
+      ok: true
+      rows: CoverageInput[]
+      expiryUnknown: number
+      typeformRead: true
+      kitRead: true
+    }
+  | { ok: false; error: string; typeformRead: boolean; kitRead: boolean }
+
 export async function assembleCoverageInputs(args: {
   profiles: CitizenProfile[]
   expiresAt: Map<string, number | null>
@@ -364,9 +374,7 @@ export async function assembleCoverageInputs(args: {
   typeformToken: string | null
   kitConfigured: boolean
   exclusions: LoadedExclusions
-}): Promise<
-  { ok: true; rows: CoverageInput[]; expiryUnknown: number } | { ok: false; error: string }
-> {
+}): Promise<AssembleCoverageResult> {
   const { isInReminderWindow } = await import('@/lib/citizen/renewalCoverage')
   const inWindow = args.profiles.filter((profile) => {
     const expires = args.expiresAt.get(profile.tokenId)
@@ -377,27 +385,60 @@ export async function assembleCoverageInputs(args: {
   ).length
 
   if (!args.typeformToken || args.formIds.length === 0) {
-    return { ok: false, error: 'Typeform is not configured' }
+    return {
+      ok: false,
+      error: 'Typeform is not configured',
+      typeformRead: false,
+      kitRead: false,
+    }
+  }
+  if (!args.kitConfigured) {
+    return {
+      ok: false,
+      error: 'Kit is not configured',
+      typeformRead: false,
+      kitRead: false,
+    }
   }
 
-  const lookedUp = await mapWithConcurrency(inWindow, 6, async (profile) => {
-    if (!profile.formId) return { profile, email: null as string | null }
-    const email = await loadTypeformEmail(
-      profile.formId,
-      args.formIds,
-      args.typeformToken as string
-    )
-    if (email === 'unauthorized') {
-      throw new Error('Typeform rejected TYPEFORM_PERSONAL_ACCESS_TOKEN')
+  let lookedUp: Array<{ profile: CitizenProfile; email: string | null }>
+  try {
+    lookedUp = await mapWithConcurrency(inWindow, 6, async (profile) => {
+      if (!profile.formId) return { profile, email: null as string | null }
+      const email = await loadTypeformEmail(
+        profile.formId,
+        args.formIds,
+        args.typeformToken as string
+      )
+      if (email === 'unauthorized') {
+        throw new Error('Typeform rejected TYPEFORM_PERSONAL_ACCESS_TOKEN')
+      }
+      if (email === 'failed') {
+        throw new Error('Typeform read failed')
+      }
+      return { profile, email }
+    })
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Typeform read failed',
+      typeformRead: false,
+      kitRead: false,
     }
-    return { profile, email }
-  })
+  }
 
   let kitStates = new Map<string, string | null>()
-  if (args.kitConfigured) {
+  try {
     kitStates = await loadKitStates(
       lookedUp.map((row) => row.email).filter((email): email is string => Boolean(email))
     )
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Kit read failed',
+      typeformRead: true,
+      kitRead: false,
+    }
   }
 
   const rows: CoverageInput[] = lookedUp.map(({ profile, email }) => {
@@ -414,5 +455,5 @@ export async function assembleCoverageInputs(args: {
     }
   })
 
-  return { ok: true, rows, expiryUnknown }
+  return { ok: true, rows, expiryUnknown, typeformRead: true, kitRead: true }
 }
