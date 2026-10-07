@@ -1,0 +1,40 @@
+name: Citizen renewal coverage dry run
+
+# Manual only. Do not add a schedule until a dry run has been reviewed.
+# This calls the read-only coverage route and prints the report.
+on:
+  workflow_dispatch:
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the dry run and print the report
+        env:
+          SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          BASE="${SITE_URL:-https://www.moondao.com}"
+          BASE="${BASE%/}"
+          case "$BASE" in
+            http://moondao.com|https://moondao.com)
+              BASE="https://www.moondao.com"
+              ;;
+          esac
+          response=$(curl -fsS -X POST "$BASE/api/cron/citizen-renewal-reminders?dryRun=1" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Accept: application/json")
+          {
+            echo '## Citizen renewal coverage dry run'
+            echo ''
+            echo '```json'
+            echo "$response"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          case "$response" in
+            *'"ok":true'*|*'"ok": true'*) ;;
+            *)
+              echo "Dry run did not succeed" >&2
+              exit 1
+              ;;
+          esac
