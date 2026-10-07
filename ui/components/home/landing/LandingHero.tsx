@@ -78,9 +78,9 @@ export default function LandingHero() {
           <motion.div variants={container} initial="hidden" animate="visible">
             <motion.h1
               variants={item}
-              className="font-heading font-semibold leading-[0.92] text-white"
+              className="font-heading font-semibold uppercase leading-[0.92] text-white"
             >
-              <span className="block font-RobotoMono text-[0.7rem] font-medium uppercase tracking-[0.28em] text-white/50 md:text-xs">
+              <span className="block text-[0.7rem] tracking-[0.28em] text-white/50 md:text-xs">
                 The Internet&apos;s
               </span>
               <span className="mt-3 block text-[clamp(2.25rem,6vw,4.5rem)]">
