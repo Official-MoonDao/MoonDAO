@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import { LogoSidebar } from '../components/assets'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 
@@ -77,17 +78,13 @@ const LinkTree: React.FC = () => {
       <Container>
         <div className="mx-auto flex w-full max-w-md flex-col px-5 pb-16 pt-8 sm:pt-12">
           <header className="mb-6 text-center">
-            <Image
-              src="/assets/linktree/logo-mark-240.png"
-              alt="MoonDAO"
-              width={96}
-              height={96}
-              className="mx-auto"
-            />
-            <p className="mt-5 font-RobotoMono text-[11px] uppercase tracking-[0.22em] text-moon-gold">
+            <h1 className="sr-only">MoonDAO</h1>
+            <div className="mx-auto w-56 text-white sm:w-64">
+              <LogoSidebar />
+            </div>
+            <p className="mt-4 font-RobotoMono text-[11px] uppercase tracking-[0.22em] text-moon-gold">
               Space Acceleration Network
             </p>
-            <h1 className="mt-3 font-GoodTimes text-3xl text-white sm:text-4xl">MoonDAO</h1>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-gray-300">
               A community working toward a settlement on the Moon.
             </p>
