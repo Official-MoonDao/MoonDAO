@@ -1,0 +1,272 @@
+# Executive Branch Proposal Q2 2026 – Q3 2026: Final Report
+
+> **Draft v0.1 — 7 October 2026.** Outcomes are measured as of 7 October 2026. Grades are **provisional** proposals for the Executive Leads, not final. Items marked **⚠ TBC** are awaiting confirmation from the Executive Branch before submission.
+
+**Project:** MDP-249 · Project #131 · Executive Branch (Team #0)
+**Term funded:** 1 May – 3 September 2026 (five months)
+**Team:** @pmoncada (Pablo), @ryand2d (Ryan), @.moguel. (Miguel)
+**EB Safe:** [`arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291`](https://app.safe.global/home?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291)
+
+## At a glance
+
+| Area | Target (MDP-249) | Result at 7 Oct 2026 | Status |
+| :--- | :--- | :--- | :--- |
+| DePrize core contracts | Live by end of month 2 | Live on Arbitrum 25 Aug (month 4); 5 competitions registered on mainnet, 8 on Sepolia | Delivered late |
+| Lunar simulation | Simulator + analog prototype test, results published | Moon Base Zero built in-house and live behind an access gate; no prototype test | Partly delivered |
+| Overview Flight | Seat for Frank or DePrize pilot | Community chose to keep fundraising (92.9%); campaign reopened 9 Jul; seat not yet contracted ⚠ TBC | In progress |
+| Citizens | 199 → 300 | 265 minted (+33%), 238 active | 65% of growth target |
+| Teams | 20 → 30 | 25 (+5) | 50% of growth target |
+| Team utilization | ≥ 60% of Teams | 44% posted a job or listing | 73% of target |
+| Job / marketplace listings | 15 / 15 new | 7 / 17 new | Jobs missed, marketplace met |
+| Project system | New system, 100% migrated | Launched, 100% migrated; v9 (MDP-267) followed | Met |
+| EB election | Run by end of Q3 | Opened 18 Jun, then postponed; special election for the third seat under way ⚠ TBC | Not met |
+| Budget | $132,000 core | $132,727 paid ($120,501 payroll + $12,227 ops/flex) | Within 0.6% |
+| Bonus pool | $24,000 at risk | $0 paid; claims ⚠ TBC | — |
+
+![Objective 2 scorecard](charts/01-objective-2-scorecard.png)
+
+## Original Proposal
+
+**Link to Original Proposal:** [https://www.moondao.com/project/131](https://www.moondao.com/project/131) (MDP-249). Member House vote passed 26 May 2026 with 91% approval from 21 voters; funding covered 1 May – 3 September 2026.
+
+**Original Abstract:** A five-month budget for the Executive Branch is proposed to continue work on scaling the Launchpad to more initiatives and cultivating a strong network of citizens and organizations in service to increasing the DAO's revenue and improving operational efficiency. In addition, the core team is responsible for maintaining core operations including governance, communications, marketing, financial operations, proposal system management, managing billing, treasury management, token liquidity management, website development, sales, community management, outreach, and everything in between. The EB will continue these operations while keeping an eye on reducing costs and dependencies for the DAO and furthering the DAO's mission by providing strategic leadership for the organization and increasing revenue to achieve our goal of full cash-flow sustainability for the DAO by the end of 2027. This cycle the EB will also prioritize deployment of the DePrize framework using the recently completed Frank White raise capital and launch a competitive lunar-focused simulation and prototyping initiative in the second half of the period to directly advance hardware and simulation progress toward the lunar base roadmap.
+
+## Results
+
+1. **Objective: Secure at least one seat for Frank to go to space, either by contracting directly with a provider, or by deploying the DePrize framework using the completed Frank White capital and launch a prize model competitive lunar simulation and prototyping initiative to generate revenue and advance concrete progress toward the lunar base.**
+
+   **Summary:** The technical work under this objective went further than the proposal asked; the revenue side did not. After Phase 1 of the Overview Effect Flight closed on 27 April, the team approached 12 carriers (stratospheric balloon, suborbital and orbital) and took the findings to a formal `$OVERVIEW`-weighted vote (15–22 June). Contributors chose **Option B, "Keep options open, continue fundraising"**, with 92.9% of voting weight, so the Phase 1 capital was not converted into a DePrize seed pool. The campaign reopened on 9 July with a single $250k goal and a live second-seat competition. In parallel, the team built DePrize as general-purpose MoonDAO infrastructure. It was deployed to Arbitrum on 25 August with a live demonstration prize, *The Moon Is A Harsh Mistress*, and four lunar capability races were registered on mainnet on 26 September after rehearsal on Sepolia. Instead of running the lunar simulation as an external challenge, the team built it in-house as **Moon Base Zero** (`/moonbase`): a true-to-scale settlement on the Shackleton connecting ridge in which every competitor in every race stands on its own lot. It is live behind an access gate and has been shown in internal demos to reviewers outside MoonDAO. No analog prototype test was run and no treasury inflow has come from DePrize yet.
+
+   **Learnings:** Letting `$OVERVIEW` holders decide the mission's direction was the right call: it produced a clear mandate (22 of 31 voters, 92.9% of weight) and kept trust in the campaign. The cost was that the DePrize seed capital assumed in the proposal never materialised, so DePrize launched with small treasury-funded seeds (0.012–0.064 ETH per market) instead of a ~$172k pool. Re-engaging a campaign after a two-month pause is hard: the reopened campaign raised 0.64 ETH from 21 contributions, against 26.75 ETH in Phase 1. Building the simulation in-house was faster and more coherent than a challenge would have been. It also turned the simulator into the visual front end for DePrize, so each race can be *seen* rather than read. Deploying from the Phase 2 LMSR factory exposed a bug (H-01, `tradeWithTWAP`), which was fixed and redeployed on 11 September before any capability race went live. Commissioning a security review before mainnet paid for itself.
+
+   **Maintenance:** The DePrize address ledgers ([`DEPRIZE_ARBITRUM_ADDRESSES.md`](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_ARBITRUM_ADDRESSES.md), [`DEPRIZE_SEPOLIA_ADDRESSES.md`](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_SEPOLIA_ADDRESSES.md)) are the source of truth for every contract, market, `questionId` and `conditionId`. Losing a `questionId` blocks resolution, so these must be preserved. Oracle and owner roles are moving from the deployer EOA to the 3-of-4 Executive Safe [`0xE514…6127`](https://app.safe.global/home?safe=arb1:0xE5148e4399e3D849F629E0FECEcf6fC986e96127). The Sepolia Touchdown v2 rehearsal (id 7) has already run on that Safe; `acceptOwnership()` on the registry is still pending. Moon Base Zero has a model-building handoff ([`MOONBASE_MODEL_HANDOFF.md`](https://github.com/Official-MoonDao/MoonDAO/blob/main/ui/docs/MOONBASE_MODEL_HANDOFF.md)) and an access-gate runbook ([`ACCESS_GATE.md`](https://github.com/Official-MoonDao/MoonDAO/blob/main/ui/docs/ACCESS_GATE.md)).
+
+   **Results:**
+
+   ![Overview Flight path vote](charts/09-overview-path-vote.png)
+
+   ![Overview Flight contributions](charts/10-overview-flight-contributions.png)
+
+   ![DePrize timeline](charts/11-deprize-timeline.png)
+
+   1. **Key Result:** Deploy core DePrize smart contracts, voting/allocation mechanics, and arbitration process by end of month 2.
+      **Results:** Delivered about eight weeks late. The DePrize 0.8 stack (`DePrizeRegistry`, `DePrizeMint`, `DePrizeRedeem`, `DePrizeFeeRouter`, a registry-aware `MissionCreator` and a DePrize-only `MissionTable`) went live on Arbitrum with DePrize #1 registered and opened on **25 August 2026**. The market layer reuses MoonDAO's Gnosis Conditional Tokens and `LMSRWithTWAP` stack with a 1% fee. Resolution (winner declared by the Senate, payouts reported by the Safe), redemption, cancellation/refund and the 30/70 milestone disbursement runbook are all implemented: milestones M1–M5 in [`DEPRIZE.md`](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE.md). The full lifecycle (register → open → bet → declare winner → redeem) was run end to end on Sepolia on 18 September: winner team 601 declared, plus one on-chain redemption. The stack has 173 Foundry tests across 4,535 lines of test code, a security audit ([`DEPRIZE_SECURITY_AUDIT.md`](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_SECURITY_AUDIT.md)), and jurisdictional controls with a point-of-bet Terms acceptance flow (PRs #1572, #1573).
+   2. **Key Result:** Launch the first lunar-component competitive challenge (open-source Lunar Base Operations Simulator + at least one validated analog prototype test) via Launchpad by month 4–5, with clear milestones and treasury inflow from platform activity.
+      **Results:** Partly delivered. Four capability races are registered on Arbitrum (ids 2–5, 26 September): **Touchdown** (next upright working lunar landing, 6 slots), **Night Shift** (first machine to work through a lunar night, 8 slots), **First Tracks** (commercial rover egress and drive, 6 slots) and **Water Ice** (first in-situ surface water ice, 4 slots). Each has its own Juicebox mission (JB 83–86) and an H-01-fixed LMSR market seeded at 0.012–0.064 ETH. Mainnet betting on the races is not yet public; it is live on Sepolia (ids 2–7). The simulator was built in-house instead of as a challenge (see 1.3). No analog prototype test was run. Mainnet treasury inflow from DePrize to date is nil: 5 bets, 0.0127 ETH of volume, and 0.00068 ETH routed to the prize slice. All of it came from internal test wallets.
+   3. **Key Result:** Achieve measurable progress on the defined lunar objective (simulator live and prototype test results published on-chain) with documented fund allocation and outcomes by end of the five-month period.
+      **Results:** The simulator is live; prototype results are not. **Moon Base Zero** (`/moonbase`, first shipped 23 July) models **50 projects from 33 organizations across 12 shared capability goals**. It renders a true-to-scale base on the Shackleton connecting ridge with live sun position, terrain-derived street plan, a 63-array solar farm, orbital relay satellites and per-competitor hardware models. It reads DePrize odds live, so each race doubles as a betting surface. About 33,400 lines of code across 21 components, with 336 unit tests. It is access-gated and has been shown in internal demos to external reviewers; a public launch is pending ⚠ TBC. A live demonstration is planned for the final report presentation.
+   4. **Key Result:** Produce and ratify a reusable DePrize playbook based on the pilot so future challenges can be stood up rapidly.
+      **Results:** Delivered; ratification was not pursued. The playbook is a set of repo docs:
+      - [Capability ladder](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_CAPABILITY_LADDER.md): rung order and rationale.
+      - [Touchdown prize rules v0.2](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_TOUCHDOWN.md): definitions, resolution, a uniform confirmation standard and a nine-step supersede procedure.
+      - [Payload purse](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_PAYLOAD_PURSE.md): the purse is a community payload purchase, with a fallback waterfall.
+      - [Go-to-market plan](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_GTM_TOUCHDOWN.md), [jurisdictional controls](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_JURISDICTIONAL_CONTROLS.md), the [QA run](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/DEPRIZE_QA.md), and provisioning scripts (`ui/scripts/provision-arbitrum-races.cjs`).
+
+      Following this playbook, four races went from rehearsal to mainnet registration within eight days (18–26 September).
+   5. **Key Result (Overview Flight, from the objective text):** Secure at least one seat for Frank.
+      **Results:** Not yet secured ⚠ TBC. The announcement at the 9 July reopening says enough has been raised for a stratospheric balloon seat for Frank and the campaign is close to funding a second seat. The path vote (vote id 3, 31 voters, 10,444 `$OVERVIEW`) mandated continued fundraising over an immediate single balloon seat (A: 0.2%) or refunds (C: 0.7%). On-chain to date: **27.39 ETH from 180 contributions** (26.75 ETH from 159 before reopening; 0.64 ETH from 21 contributions by 16 wallets since).
+
+   **Grade (provisional, Exec Leads to confirm):** Meets Expectations. The infrastructure delivered (mainnet DePrize, four registered races, an operational simulator) goes beyond the original scope. The revenue and prototype elements, and the timing of KR 1.1, were missed.
+
+2. **Objective: Grow the Space Acceleration Network from current baselines while driving higher utilization of jobs listings, marketplace, and discovery services.**
+
+   **Summary:** The network grew at its fastest rate on record, but short of targets set for a period that was supposed to include a mid-cycle raise. Citizens went from **199 to 265 minted (+33%)**, adding 66 Citizens in five months versus 35 in the preceding five; 238 are active today. Teams grew from **20 to 25**: Habitat Marte, A Heart for Space, the U.S. Space & Rocket Center Education Foundation, Geração de Marte Institute and Zephalto. Marketplace activity beat its target with 17 new listings, but job listings (7) and overall team utilization (44% against 60%) fell short. The EB contacted every Team in the network for discovery calls; the number of calls held is ⚠ TBC.
+
+   **Learnings:** Growth tracked activity. The steepest Citizen growth came during the Overview Flight campaign and the July–September town halls with astronaut guests, and Team growth came from real partners (Habitat Marte's analog missions, the USSRC's Space Camp with Frank, Zephalto). Without a live mid-cycle raise the main acquisition engine was missing, and the 300-Citizen target assumed one. The marketplace now works as a channel for real space experiences (analog missions, zero-g flights, training, MDRS seats). Job posting remains concentrated in a few Teams, so the job board needs seeding and nudging, not just availability. Measuring "active" Citizens matters: 27 of 265 have lapsed, so renewal prompts (PR #1690) and expiry-gated features (#1569 era) are now in place. On-chain subscription revenue per new Citizen is low because many joined through discounted invites, card checkout or the free-mint donation path. This is worth reviewing for pricing (see Financial position).
+
+   **Maintenance:** Network metrics in this report are reproducible from public on-chain data with `docs/reports/eb-mdp-249/scripts/fetch_data.py`. Citizen and Team counts come from the NFT contracts (mints and `expiresAt`), and listings from the Tableland job board and marketplace tables. Citizenship renewal now surfaces on the dashboard before expiry, and lapsed Citizens lose gated features automatically.
+
+   **Results:**
+
+   ![Citizen growth](charts/02-citizen-growth.png)
+
+   ![Team growth](charts/03-team-growth.png)
+
+   ![Listings per month](charts/04-listings-per-month.png)
+
+   ![Team utilization](charts/05-team-utilization.png)
+
+   1. **Key Result:** Increase Citizen count from 199 to at least 300 by end of month 4.
+      **Results:** Not met. 247 Citizens at month 4 (1 September); **265 minted / 238 active at 7 October**. That is +66 minted (+33%) against a +101 target, or 65% of the growth target.
+   2. **Key Result:** Increase active Teams from 20 to at least 30 by end of month 4.
+      **Results:** Not met. 24 Teams at month 4; **25 at 7 October, all active** (+5, 50% of the growth target).
+   3. **Key Result:** Achieve at least 60% Team utilization of jobs and marketplace services, producing a minimum of 15 new active job listings and 15 new marketplace listings.
+      **Results:** Partly met. **11 of 25 Teams (44%)** used at least one service in the period: 6 posted jobs (24%), 8 listed in the marketplace (32%), and 3 did both. New listings: **17 marketplace (met)** and **7 jobs (not met; one posted by the EB)**. Six job listings are open today.
+   4. **Key Result:** Complete structured 1:1 discovery calls with at least 15 Teams and ship the top two highest-impact service enhancements.
+      **Results:** ⚠ TBC. The EB reached out to every Team in the network; the number of calls completed is being confirmed with Ryan. Candidate service enhancements shipped this term (top two ⚠ TBC):
+      - EU/EEA team registration (#1494).
+      - MoonDAO stewards as co-signers on new team Safes.
+      - Marketplace purchase receipts and vendor sale emails (#1688).
+      - Gift citizenships through the marketplace.
+      - Live Discord announcements on the dashboard (#1507).
+
+   **Grade (provisional, Exec Leads to confirm):** Does Not Meet Expectations. Growth was strong in absolute terms, but three of the four quantitative targets were missed.
+
+3. **Objective: Manage executive functions and budget for the DAO to operate securely and efficiently while reducing costs, exploring a for-profit arm, and locking in realistic goals with project-system discipline, also running an election cycle for the executive branch.**
+
+   **Summary:** Core operations ran without interruption across two full project cycles (Q2 retro / Q3 intake and Q3 cohort / Q4 intake). The new project system launched with 100% of active initiatives migrated, and was then refined into Project System v9 (MDP-267). Spending landed within 0.6% of the $132k core envelope. The operational audit produced a compiled financial disclosure and burn report (14 August) and an executive financial dashboard with live on-chain revenue and runway. However, operating costs rose because of heavier AI tooling, and no cost reductions were made. GDPR compliance for Europe was implemented in the product. A for-profit arm plan and business case were drafted but held back for strategic reasons. The Executive Lead election opened on 18 June but was postponed; a special election for the third seat was under way in September.
+
+   **Learnings:** A continuously updated dashboard turned out to be more useful than a monthly PDF, but it is internal; the community-facing side needs a regular published extract. AI-assisted development roughly doubled engineering throughput (359 merged PRs) but moved cost from salaries to tooling, so cost targets should be set on total cost per shipped outcome, not on subscription line items. Elections need contingency for personal circumstances; a postponement mechanism in the Constitution would avoid ad-hoc handling. Moving payroll from monthly USDC transfers to LlamaPay vesting streams cut payroll transactions from roughly 12 to 2 for the term, but exposed payroll to ETH price movement after funding.
+
+   **Maintenance:** Approved cost lines live in `ui/const/executiveFinance.ts`; roll them forward when MDP-271 passes. The dashboard is at `/admin/financial-overview` (operators only) and its data at `/api/eb/financial-summary`. The project cycle is advanced with the one-click phase control (PR #1481) and the runbooks `ui/docs/PROJECT_CYCLE_OPERATOR_RUNBOOK.md`, `Q3_2026_CYCLE_CLOSE_CHECKLIST.md` and `Q4_2026_CYCLE_OPEN_CHECKLIST.md`.
+
+   **Results:**
+
+   ![Budget vs actual](charts/07-budget-vs-actual.png)
+
+   ![EB spend by month](charts/08-eb-spend-by-month.png)
+
+   1. **Key Result:** Implement the new project system and migrate all active initiatives by month 3, achieving 100% coverage.
+      **Results:** Met. 100% of active initiatives were migrated. The cycle was then hardened with frozen per-cycle voting power (#1303), a public tally audit page (#1285, #1286), one-click phase advance with a `PROJECT_CYCLE` config (#1481) and v9 pot and Q4 intake (#1591, MDP-267). Throughput this term: the Q3 cohort approved 5 projects (MDP-258, 259, 260, 262, 265); Q2 retro rewards paid $7,970 USDC to 7 projects and 19 Citizens, plus 7.32M vMOONEY to 25+ contributors.
+   2. **Key Result:** Deliver the for-profit arm proposal (structure, revenue models, lunar-track capital path, governance integration) ready for discussion by end of Q3.
+      **Results:** Partly met. The plan and business case are drafted, including an option for the DAO to hold equity in the new venture. They have not been presented to the DAO, for strategic reasons.
+   3. **Key Result:** Complete operational audit and implement changes delivering measurable cost reduction starting month 4.
+      **Results:** Partly met. The audit was completed and published as the [Q3 2026 Financial Disclosure and Burn Report](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/FINANCIAL_DISCLOSURE_AND_BURN_REPORT_2026-08-14.md) (14 August), alongside an executive financial dashboard (#1520). No cost reduction was made; AI-tooling costs went up. Operations and flex spend was $12,227 against a $12,500 budget.
+   4. **Key Result:** Produce and ratify the Realistic Goals 2026–2027 document sequencing major deliverables, resource envelopes, and success metrics by month 4.
+      **Results:** ⚠ TBC. No such document was found in the repository or in announcements.
+   5. **Key Result:** Maintain core operations and budget within the approved five-month envelope with monthly public burn reporting.
+      **Results:** Budget met; reporting changed. $132,727 was paid against the $132,000 core budget (+0.6%; see Table B). Reporting moved from monthly reports to a continuously updated internal dashboard, plus one public disclosure.
+   6. **Key Result:** Run an election cycle for the executive branch by the end of Q3.
+      **Results:** Not met. The 2026 Executive Lead election opened on 18 June; nominations closed on 13 July. The election was then postponed for personal reasons affecting a candidate. A special election for the third Executive Lead seat, with two candidates, held its candidate town hall on 10 September. Outcome ⚠ TBC.
+   7. **Key Result:** Expand in Europe by adapting GDPR compliant practices.
+      **Results:** Met in product. EU/EEA/UK visitors can browse while on-chain profile creation is restricted (#1382), and Team registration is open to EU/EEA visitors (#1494). The cookie consent banner is region-aware (#1362, #1699), and the geoblock fails open on geolocation errors (#1536). DePrize has a Privacy Notice and eligibility gate (#1572, #1573). Whether the GDPR deep-dive itself is published is ⚠ TBC.
+   8. **Key Result:** Engage luminaries in the space industry to support MoonDAO as a strategic advisory board and put together a plan for how they may help guide the organization.
+      **Results:** Partly met. An informal group of advisors gave feedback on the simulation and the prize design, including Phil Metzger and Ian Long (Anthrofuturism). The group has not been formalised or published.
+
+   **Grade (provisional, Exec Leads to confirm):** Meets Expectations. This is borderline: operations, budget, the project system and GDPR were delivered, but the election, cost reduction and the public for-profit proposal were not. The grade depends on KR 3.4 and the special-election outcome.
+
+## Performance Bonus Milestones
+
+MDP-249 set a $24,000 at-risk pool. **No bonus has been paid.** The status of each milestone below is the drafter's provisional reading for the Executive Leads; claims are ⚠ TBC.
+
+| # | Milestone | Tranche | Evidence | Provisional status |
+| :- | :- | :- | :- | :- |
+| 1 | DePrize framework live with the Frank pilot pool or a Lunar Simulation prize by end of month 3 | $6,000 | Mainnet 25 Aug (month 4); capability races registered 26 Sep | Delivered after the deadline |
+| 2 | Lunar Simulation & Prototyping initiative launched on Launchpad and first meaningful capital raised by end of cycle | $8,000 | Simulator live (gated); races registered; no raise | Not met |
+| 3 | Network targets: ≥300 Citizens, ≥30 Teams, ≥60% utilization ($2,000 each) | $6,000 | 265 / 25 / 44% | Not met (0 of 3) |
+| 4 | Subscriptions below $1,000 a month; project system 100% live; Constitution update live; EB election completed; for-profit proposal delivered ($1,000 each) | $4,000 | Project system ✓; costs up ✗; election ✗; for-profit drafted, not delivered; Constitution ⚠ TBC | 1 met, Constitution TBC |
+
+## Member Contributions
+
+*Draft paragraphs based on merged pull requests, on-chain activity and announcements. Each member should edit their own.*
+
+**@pmoncada (Pablo):** Executive Lead. Set priorities and ran daily triage, and led the strategic decisions this term: taking the Overview Flight carrier findings to a formal holder vote, then reopening the campaign. Designed and shipped DePrize end to end: architecture, the M1–M5 contracts and the Safe runbooks, the security review and H-01 fix, mainnet deployment on 25 August, registration of the four capability races, and the full prize-rules, purse and go-to-market playbook (58 merged PRs on DePrize alone). Led the project system work: the frozen voting-power tally audit, the one-click cycle-phase advance, and the MDP-267 v9 implementation and Q4 intake. Ran the operational audit: compiled the Q3 financial disclosure and burn report and built the executive financial dashboard. Also handled pricing changes (Citizen and Team prices, a MOONEY stake on citizenship, 20%/50% invite discounts) and the DePrize Terms, Privacy Notice and eligibility gate. Presented at town halls. 160 merged PRs.
+
+**@ryand2d (Ryan):** Communications, community and partnerships. Ran the announcement and newsletter cadence and the weekly town halls, booking an exceptional run of guests: Jeanette Epps, Sharon Hagle, Alan Stern, Loretta Whitesides, and the book launch of Dr. Eiman Jahangir, MoonDAO's second astronaut. Ran the Overview Flight path vote outreach (31 voters) and the 9 July relaunch across X, Instagram and LinkedIn. Coordinated the Q2 and Q3 project cycles (deadlines, pitch day, member votes, retro distributions) and the Executive Lead election and special-election town hall. Represented MoonDAO on the ground at the Space Industry Workshop in Brazil. Contacted every Team in the network for discovery calls. Shipped conversion work on the site: a redesigned `/join` sales page, an on-chain Citizen counter, an onramp prompt on subscription renewal and a lower free-mint threshold (9 merged PRs). ⚠ Ryan to add partnership and outreach detail.
+
+**@.moguel. (Miguel):** Lead frontend and product engineer. Built Moon Base Zero, MoonDAO's lunar base simulator: terrain, sun model, district street plan, the solar farm, orbital relays and the per-competitor hardware models (Blue Moon MK1, Chang'e-7, ULTRA, ispace and others), wired to live DePrize odds (31 moonbase PRs). Owned Citizen and Team lifecycle UX: renewal prompts, expiry gating, AI portrait reliability, and the dashboard overhaul with live Discord announcements. Implemented the GDPR work (EU/EEA/UK browse-only access, EU team registration, region-aware cookie consent, fail-open geoblock). Hardened the proposal importer and mission funding flows (Apple Pay and MoonPay onramp, Citizen-gated contributions). Added steward co-signers to Team Safes and fixed Safe signing UX, collapsed the navbar from 9 groups to 5, and cut Vercel build times from about 16 minutes to 6–8 minutes. 172 merged PRs, the most of anyone this term.
+
+![Engineering throughput](charts/12-engineering-throughput.png)
+
+![Engineering by workstream](charts/13-engineering-by-workstream.png)
+
+## Reward Distribution (Table A)
+
+Upfront payments are reconstructed from the EB Safe. LlamaPay vesting streams are valued at the ETH price implied at funding ($1,843.17/ETH), which matches the approved monthly rates exactly. ⚠ The team should confirm the reward wallets and whether any vMOONEY was received this term.
+
+| Member Name | % of total rewards | Upfront Payment Received | Wallet to receive ETH |
+| :---------- | :----------------- | :----------------------- | :-------------------- |
+| *@pmoncada* |  | 12,514.29 USDC (May) + 26.0423 WETH LlamaPay stream, 1 Jun – 29 Sep (≈ $48,000) | 0x679d87D8640e66778c3419D164998E720D7495f6 |
+| *@ryand2d* |  | 7,871.43 USDC (May) + 16.2764 WETH LlamaPay stream, 1 Jun – 29 Sep (≈ $30,000) | 0x78176eAAbCB3255E898079dC67428e15149cdc99 ⚠ confirm (payout wallet; Citizen wallet is 0xB2d3…0D42) |
+| *@.moguel.* |  | 2,864.29 USDC (May) + 8.9520 WETH stream, 1 Jun – 30 Aug (≈ $16,500) + 1.4920 WETH stream, 1 Jun – 1 Jul (≈ $2,750) | 0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da |
+
+## Treasury Transparency (Table B)
+
+*Link to Treasury with **unused funds returned to the [MoonDAO Treasury](https://app.safe.global/home?safe=eth:0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9).***
+
+*EB Safe: [arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291](https://app.safe.global/home?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291)*
+
+**Funding received for MDP-249:** 26,400 USDC (28 May, from the Arbitrum treasury: one month of the core budget), plus 52.7627 ETH and 9,990 USDC (18 June: four months of payroll, and operations and flex). That is ≈ $133,640 at the funding price. Separately, 3.5603 ETH arrived from the Arbitrum treasury on 7 and 14 May and was passed straight through to the team in nonces 38–39 (purpose ⚠ TBC).
+
+**Balance at 7 October 2026:** 1,112.25 USDC, 0.0121 WETH, 100 MOONEY, 11,966.24 OVERVIEW, 181.00 NANA. Return of the unused USDC to the treasury is ⚠ TBC.
+
+| Txn Title | Date | Reason | Amount | Recipient | Etherscan Link or Gnosis Link |
+| :-------- | :--- | :----- | :----- | :-------- | :---------------------------- |
+| Nonce 36 | 2026-05-06 | Reimbursement — Miguel (detail TBC) | 192.36 USDC | Miguel | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0xf8d57ef1e9b2ca3560118fbaa88be522e9a867f60993382bfc66b29cf4af13d1) · [Arbiscan](https://arbiscan.io/tx/0x4b13f65b3113b1f691d86b947bb65594205916014873346106ece2f9f66d3882) |
+| Nonce 37 | 2026-05-06 | Team payments before MDP-249 funding landed (purpose TBC) | 3,985.71 USDC<br>885.71 USDC<br>2,878.57 USDC | Pablo<br>Miguel<br>Ryan | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0x0a95e9c4cf2311935a5c0661ba9290a39e820d603e95cdb691eb651bc5329d93) · [Arbiscan](https://arbiscan.io/tx/0x27f4e056dcbbbb374ea097920d840d09f8b5e9ce5600990a659c06639affb2ea) |
+| Nonce 38 | 2026-05-13 | ETH distribution to EB team, funded by treasury 7 May (purpose TBC) | 0.4650 ETH<br>0.4650 ETH<br>0.1641 ETH | Pablo<br>Ryan<br>Miguel | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0x3b36221635ea4ee70d858c5d58de410633dfb7bfd8986764d2524426df660b68) · [Arbiscan](https://arbiscan.io/tx/0x10f8141850863513a192c5eddfd9b664870d84c30886c9e105d93d905c754fc2) |
+| Nonce 39 | 2026-05-16 | ETH distribution to EB team, funded by treasury 14 May (purpose TBC) | 1.0481 ETH<br>1.0481 ETH<br>0.3699 ETH | Pablo<br>Ryan<br>Miguel | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0x07d078085fc1900b1489e6142b735c286f4358886c8cd875c2f7b428e7805dc8) · [Arbiscan](https://arbiscan.io/tx/0x673c3b9cf8bd6f80dfb92f3341b114ee61cc46415690aa5e201ca6d7f623c3f7) |
+| Nonce 40 | 2026-05-29 | May 2026 payroll (month 1 of MDP-249) | 12,514.29 USDC<br>7,871.43 USDC<br>2,864.29 USDC | Pablo<br>Ryan<br>Miguel | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0xd1601c26677b9693453486f8753d8e21ce5b61142559c2aa9397201b2db60781) · [Arbiscan](https://arbiscan.io/tx/0x6259f08bce59ec63d455c139cb0246804f75627304fd870991991cd1257b2d60) |
+| Nonce 41 | 2026-06-18 | Wrap ETH → WETH to fund LlamaPay streams | 52.7748 ETH → WETH | EB Safe | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0x82f1af091fe4f2ac2016dbf7455bfef7ba8ba01ddfece9151d457d93ebb66824) · [Arbiscan](https://arbiscan.io/tx/0x3ec743297312a5ebfef9b1506368949ef5ad47d338c6758d555cc9e213d359a8) |
+| Nonce 42 | 2026-06-19 | Deploy four LlamaPay vesting streams (1 Jun start): payroll June–September | 52.7627 WETH (26.0423 / 16.2764 / 8.9520 / 1.4920) | Pablo, Ryan, Miguel ×2 | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0x22595b6fc9cca7a230059963011b2a0bb57a2cb33c1ff85d9767567546d270f2) · [Arbiscan](https://arbiscan.io/tx/0x66e42ddfc39a67973d2316770926ee6dc2817acf1052e8b33c0de530d2d87a28) |
+| Nonce 43 | 2026-06-23 | Vendor / operations (detail TBC) | 816.00 USDC | 0xb2AC…B721 | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0x607b3488276558edca6225203c7f9222ae8665df22c1a0622e1643ee07da26f5) · [Arbiscan](https://arbiscan.io/tx/0x956a205244ce82ea77567a9093e5270dd9b37d546bbf9cbea541f643920dbde2) |
+| Nonce 44 | 2026-06-23 | Reimbursement — Pablo (operations card) | 1,397.77 USDC | Pablo | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0xa5dab6cb77de0c6991a34ac8cb6966c5cfbe0bab93236dd77b811c5a7c3548c7) · [Arbiscan](https://arbiscan.io/tx/0x956a205244ce82ea77567a9093e5270dd9b37d546bbf9cbea541f643920dbde2) |
+| Nonce 45 | 2026-06-23 | Reimbursement — Pablo (operations card) | 985.23 USDC | Pablo | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0x8484496c0bdd5cec70468db8114a01fdaa95a1231b9bcf2419d1b31eaea5070b) · [Arbiscan](https://arbiscan.io/tx/0x956a205244ce82ea77567a9093e5270dd9b37d546bbf9cbea541f643920dbde2) |
+| Nonce 46 | 2026-07-23 | Vendor / operations (detail TBC) | 1,970.00 USDC | 0xBdB6…D88c | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0xe0ab2b636e63d38b067d733c9f049874611d4d66a13cbee3add014f1093bd273) · [Arbiscan](https://arbiscan.io/tx/0xda618aafdef22b7d1cfc937d178ce8e2569b2a83ad71ba1592fa444ba541be16) |
+| Nonce 47 | 2026-08-17 | Reimbursements — Ryan, Miguel | 3,147.71 USDC<br>912.44 USDC | Ryan<br>Miguel | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0xe618e86540e7685e6b54ba764a56c4aac6b21b54da5950a11f1825921696f71e) · [Arbiscan](https://arbiscan.io/tx/0xc5ef20f7ebee922514b09279bcec8a75a786f4c66223ae7f537c57ed3df18270) |
+| Nonce 48 | 2026-08-29 | Reimbursements — Pablo, Miguel | 1,362.10 USDC<br>584.18 USDC<br>858.83 USDC | Pablo<br>Miguel<br>Miguel | [Safe](https://app.safe.global/transactions/tx?safe=arb1:0xdFc31084ad3887076913e5d0759a27C65A3C5291&id=multisig_0xdFc31084ad3887076913e5d0759a27C65A3C5291_0xa648eb0b395ce57fff2982bcf4927a47cb72f5b722fd1d70b5b11cac0cb41a34) · [Arbiscan](https://arbiscan.io/tx/0xbee223f2398e0576a9050c4bdcd3b1f938b11697a213e6bfa2db0b340e5f2884) |
+
+**LlamaPay vesting streams (nonce 42).** All four streams start on 1 June 2026 at 05:00 UTC and are denominated in WETH.
+
+| Payee | WETH | Duration | End | USD at funding | USD / 30 days |
+| :- | -: | :- | :- | -: | -: |
+| Pablo | 26.0423 | 120 days | 29 Sep 2026 | $48,000 | $12,000 |
+| Ryan | 16.2764 | 120 days | 29 Sep 2026 | $30,000 | $7,500 |
+| Miguel (full-time) | 8.9520 | 90 days | 30 Aug 2026 | $16,500 | $5,500 |
+| Miguel (half-time) | 1.4920 | 30 days | 1 Jul 2026 | $2,750 | $2,750 |
+
+**Budget reconciliation.**
+
+| Line | Budget | Paid | Variance |
+| :- | -: | -: | -: |
+| Pablo | $60,000 | $60,514.60 | +$514.60 |
+| Ryan | $37,500 | $37,871.62 | +$371.62 |
+| Miguel | $22,000 | $22,114.42 | +$114.42 |
+| Operations + flexible | $12,500 | $12,226.62 | −$273.38 |
+| **Core total** | **$132,000** | **$132,727.26** | **+$727.26 (+0.6%)** |
+| Performance bonus pool (at risk) | $24,000 | $0 | — |
+
+Payroll is the May USDC transfer (nonce 40) plus the streams at the funding price. The May amounts are slightly above the monthly rates for Pablo and Ryan, and below the rate for Miguel. ⚠ TBC whether the differences are reimbursements bundled into payroll. Nonces 37–39 are excluded from the reconciliation pending their classification.
+
+**Security note: address poisoning.** The EB Safe received four dust USDC transfers from lookalike addresses that mimic legitimate payees: `0x679D8E4D…95F6` (Pablo), `0x781754…Dc99` (Ryan's payout), and `0xBdB6E389…188c` / `0xbDB6baa4…D88C` (the nonce 46 vendor). Every outgoing payment went to the correct address. Signers should keep copying payee addresses from a verified address book, never from transaction history.
+
+## Financial position and revenue
+
+![Revenue by month](charts/06-revenue-by-month.png)
+
+Revenue was reconstructed with the same rule as `/api/eb/financial-summary`: ETH reaching the Arbitrum treasury [`0xAF26…70c0`](https://app.safe.global/home?safe=arb1:0xAF26a002d716508b7e375f1f620338442F5470c0), classified by sending contract and valued at spot ($2,574.50 per ETH on 7 October 2026).
+
+| Stream | Trailing 365 days | Term (1 May – 3 Sep) | 1 May – 7 Oct |
+| :- | -: | -: | -: |
+| Citizen subscriptions | 0.9546 ETH | 0.3885 ETH | 0.5661 ETH |
+| Team subscriptions | 0.6675 ETH | 0.6675 ETH | 0.6675 ETH |
+| Launchpad fees | 0.0476 ETH | 0 | 0 |
+| DePrize fees | 0 | 0 | 0 |
+| **Total** | **1.6697 ETH ≈ $4,299** | **1.0560 ETH ≈ $2,719** | **1.2336 ETH ≈ $3,176** |
+
+Measured cash revenue covers about 1% of gross annual burn. This figure leaves out accrued Uniswap LP fees, which the dashboard counts separately as non-cash. MDP-249 cited roughly $24,500 a year. The difference is mostly that the stated figure includes revenue streams that do not reach the Arbitrum treasury as ETH: card and fiat checkouts, and LP fees. ⚠ **Dashboard reconciliation pending:** the dashboard is restricted to operators, so its live figures still need to be compared against the numbers above (see open questions). Net assets at the last compiled statement (14 August) were $524,822 recognized, giving about ten months of unrestricted runway at constant burn ([burn report](https://github.com/Official-MoonDao/MoonDAO/blob/main/docs/FINANCIAL_DISCLOSURE_AND_BURN_REPORT_2026-08-14.md)).
+
+## Appendix A — Methodology and reproducibility
+
+Every number in this report can be regenerated from public data:
+
+```bash
+pip install matplotlib pycryptodome
+python3 docs/reports/eb-mdp-249/scripts/fetch_data.py   # writes data/snapshot.json
+python3 docs/reports/eb-mdp-249/scripts/build_charts.py # writes data/metrics.json and charts/
+```
+
+| Data | Source |
+| :- | :- |
+| Citizens | Citizen NFT `0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002`: `Transfer` events from the zero address (mint time) and `expiresAt(id)` (active = expiry after the measurement date). Historical "active" uses the current expiry, so renewals after a date can slightly overstate active counts at that date. |
+| Teams | Team NFT `0xAB2C354eC32880C143e87418f80ACc06334Ff55F`; Team #0 (Executive Branch) excluded |
+| Jobs / marketplace | Tableland `JOBBOARD_42161_158`, `MARKETPLACE_42161_159`; utilization = external Teams with at least one listing created 1 May – 7 Oct |
+| DePrize | `DePrizeRegistry` and `DePrizeMint` events on Arbitrum and Sepolia (addresses in the DePrize ledgers), via Etherscan V2 |
+| Overview Flight | Juicebox V5 terminal `0x2dB6d704058E552DeFE415753465df8dF0361846` `Pay` events for project 73. On-chain only: 86 distinct paying wallets, while the mission page reports 103 backers because it also counts beneficiaries and cross-chain contributions. |
+| Path vote | `ui/lib/overview-path-vote/closed-snapshot.json` (vote id 3, frozen 22 June 2026) |
+| EB Safe | Safe Transaction Service (Arbitrum): executed multisig transactions, incoming transfers and balances |
+| Revenue | Safe Transaction Service incoming ETH transfers to the Arbitrum treasury, classified by sender as in `ui/lib/treasury/programRevenue.ts` |
+| Engineering | GitHub merged PRs 1 May – 7 Oct 2026; workstreams classified by PR-title keywords |
+| Governance timeline | MoonDAO Discord `#announcements` via `moondao.com/api/discord/messages` |
+
+## Appendix B — Address register
+
+| Role | Address |
+| :- | :- |
+| EB Safe (Team #0) | `0xdFc31084ad3887076913e5d0759a27C65A3C5291` (Arbitrum) |
+| Executive Safe (3 of 4: Pablo, Ryan, Miguel, Eiman) | `0xE5148e4399e3D849F629E0FECEcf6fC986e96127` |
+| Arbitrum treasury | `0xAF26a002d716508b7e375f1f620338442F5470c0` |
+| Constitutional treasury (Ethereum) | `0xce4a1E86a5c47CD677338f53DA22A91d85cab2c9` |
+| LlamaPay vesting factory (nonce 42) | `0x62E13BE78af77C86D38a027ae432F67d9EcD4c10` |
+| DePrizeRegistry / Mint / Redeem / FeeRouter (Arbitrum) | `0xf8B2244634c6eCeF32de10BFe0D7436413A59924` / `0xfa36cAb21415B4e23a1eecCFe7B07693A690d838` / `0xb0E06ed72cf6E0CcF21b4D00B002fdfDc198C3fA` / `0x0EF00977e37e2e106BB6E9fa15952bB43a2761e1` |
+| Overview Flight (Juicebox project 73) / `$OVERVIEW` | Mission 4 · `0xc868dFc4Ad388F5d7A8A5c3ECa0cff226d77152a` |
