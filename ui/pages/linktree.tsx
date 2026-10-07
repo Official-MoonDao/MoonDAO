@@ -1,23 +1,24 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import React from 'react'
-import { 
-  GlobeAltIcon, 
-  ChatBubbleLeftRightIcon, 
+import {
+  GlobeAltIcon,
+  ChatBubbleLeftRightIcon,
   DocumentTextIcon,
   NewspaperIcon,
   ShoppingBagIcon,
   CameraIcon,
   PlayIcon,
-  AtSymbolIcon
+  AtSymbolIcon,
 } from '@heroicons/react/24/outline'
+import Image from 'next/image'
+import Link from 'next/link'
+import React from 'react'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import MailingList from '../components/layout/MailingList'
 
 const LinkTree: React.FC = () => {
   const title = 'Follow MoonDAO'
-  const description = '🚀 Connect with MoonDAO across all platforms and stay updated on our journey to the Moon'
+  const description =
+    '🚀 Connect with MoonDAO across all platforms and stay updated on our journey to the Moon'
 
   const socialLinks = [
     {
@@ -25,7 +26,7 @@ const LinkTree: React.FC = () => {
       description: 'Explore our main platform',
       url: 'https://moondao.com',
       icon: GlobeAltIcon,
-      external: false
+      external: false,
     },
     {
       name: 'Discord Community',
@@ -62,7 +63,7 @@ const LinkTree: React.FC = () => {
       description: 'Space missions & educational content',
       url: 'https://youtube.com/@officialmoondao',
       icon: PlayIcon,
-    }
+    },
   ]
 
   return (
@@ -71,20 +72,18 @@ const LinkTree: React.FC = () => {
       <Container>
         <div className="min-h-screen py-8 px-4">
           {/* Header Section */}
-          <div className="max-w-2xl mx-auto text-center mb-12">
-            {/* Logo */}
-            <div className="mb-8">
+          <div className="max-w-2xl mx-auto text-center mb-8">
+            <div className="mb-4">
               <Image
                 src="/Original_White.png"
                 alt="MoonDAO Logo"
-                width={120}
-                height={120}
-                className="mx-auto rounded-full border-4 border-white/20 shadow-2xl"
+                width={72}
+                height={72}
+                className="mx-auto rounded-full border-2 border-white/20 shadow-2xl"
               />
             </div>
 
-            {/* Title & Description */}
-            <h1 className="font-GoodTimes text-4xl md:text-5xl font-bold text-white mb-4">
+            <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-2">
               Follow MoonDAO
             </h1>
             <p className="text-gray-300 text-lg mb-6 leading-relaxed">
@@ -114,8 +113,8 @@ const LinkTree: React.FC = () => {
               <Link
                 key={index}
                 href={link.url}
-                target={link.external !== false ? "_blank" : undefined}
-                rel={link.external !== false ? "noopener noreferrer" : undefined}
+                target={link.external !== false ? '_blank' : undefined}
+                rel={link.external !== false ? 'noopener noreferrer' : undefined}
                 className="block group"
               >
                 <div className="w-full bg-gradient-to-r from-blue-500 to-purple-600 p-[1px] rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]">
@@ -134,13 +133,18 @@ const LinkTree: React.FC = () => {
                       </p>
                     </div>
                     <div className="flex-shrink-0">
-                      <svg 
-                        className="w-5 h-5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-200" 
-                        fill="none" 
-                        stroke="currentColor" 
+                      <svg
+                        className="w-5 h-5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-200"
+                        fill="none"
+                        stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -151,9 +155,7 @@ const LinkTree: React.FC = () => {
 
           {/* Newsletter Signup */}
           <div className="max-w-lg mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
-            <h2 className="font-GoodTimes text-2xl font-bold text-white mb-4">
-              Stay Connected
-            </h2>
+            <h2 className="font-heading text-2xl font-bold text-white mb-4">Stay Connected</h2>
             <p className="text-gray-300 mb-6">
               Get the latest news and updates from MoonDAO delivered to your inbox
             </p>
@@ -163,7 +165,8 @@ const LinkTree: React.FC = () => {
           {/* Footer */}
           <div className="max-w-2xl mx-auto text-center mt-12">
             <p className="text-gray-500 text-sm">
-              MoonDAO is an international collective united by the mission of decentralizing access to space research and exploration.
+              MoonDAO is an international collective united by the mission of decentralizing access
+              to space research and exploration.
             </p>
           </div>
         </div>

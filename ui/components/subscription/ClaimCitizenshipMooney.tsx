@@ -152,7 +152,9 @@ export default function ClaimCitizenshipMooney({ address }: { address?: string }
       id="claim-citizenship-mooney"
       className="mb-6 rounded-2xl border border-indigo-400/30 bg-gradient-to-br from-indigo-900/50 via-blue-900/30 to-purple-900/40 p-5"
     >
-      <h3 className="font-GoodTimes text-white text-lg mb-2">Claim your voting power</h3>
+      <h3 className="font-heading font-semibold text-white text-lg mb-2">
+        Claim your voting power
+      </h3>
       {view.kind === 'missing' ? (
         <p className="text-slate-300 text-sm leading-relaxed">
           The MOONEY from your citizenship is no longer in this wallet, so it can&apos;t be locked

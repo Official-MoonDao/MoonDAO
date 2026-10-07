@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
  *
  * Render goal: drop into the existing "Deadline" stat card in
  * `MissionProfileHeader` in place of the static `duration` string and look
- * native to the surrounding GoodTimes typography. The unit letters (`d` /
+ * native to the surrounding heading typography. The unit letters (`d` /
  * `h` / `m` / `s`) are rendered in a muted gray so the digits read first;
  * `tabular-nums` keeps the digits from jittering as they tick.
  *
@@ -74,7 +74,7 @@ export default function MissionDeadlineCountdown({
 
   return (
     <div
-      className={`text-white font-GoodTimes leading-tight tabular-nums text-[10px] sm:text-sm flex flex-col sm:flex-row sm:items-baseline sm:flex-nowrap sm:gap-1 ${className}`}
+      className={`text-white font-heading font-semibold leading-tight tabular-nums text-[10px] sm:text-sm flex flex-col sm:flex-row sm:items-baseline sm:flex-nowrap sm:gap-1 ${className}`}
       role="timer"
       aria-label={`Time remaining: ${days} days, ${hours} hours, ${minutes} minutes, ${seconds}.${pad(
         millis,
@@ -89,8 +89,7 @@ export default function MissionDeadlineCountdown({
           </>
         ) : null}
         {pad(hours)}
-        <span className="text-gray-400">h</span>{' '}
-        {pad(minutes)}
+        <span className="text-gray-400">h</span> {pad(minutes)}
         <span className="text-gray-400">m</span>
       </span>
       <span className="whitespace-nowrap">

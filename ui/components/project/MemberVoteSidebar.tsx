@@ -20,8 +20,8 @@ import { Project } from '@/lib/project/useProjectData'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import NewVoteButton from '@/components/nance/NewVoteButton'
 import { AddressLink } from '@/components/nance/AddressLink'
+import NewVoteButton from '@/components/nance/NewVoteButton'
 
 const CHOICE_LABELS: Record<string, string> = {
   '1': 'For',
@@ -63,9 +63,7 @@ function parseVoteDist(
 // weighting each voter's VP by their allocation pct (see the
 // useMemo below) so it still agrees with the canonical
 // `computeMemberProposalTally` for legacy split votes.
-function dominantChoice(
-  vote: Record<string, number> | string | undefined
-): string {
+function dominantChoice(vote: Record<string, number> | string | undefined): string {
   const dist = parseVoteDist(vote)
   let best: [string, number] | null = null
   for (const [k, v] of Object.entries(dist)) {
@@ -151,18 +149,13 @@ export default function MemberVoteSidebar({
         const addr = String(v.address || '').toLowerCase()
         const vp = addressToVotingPower?.[v.address] ?? addressToVotingPower?.[addr] ?? 0
         const choice = dominantChoice(v.vote)
-        const citizen = votingCitizens?.find?.(
-          (c: any) => String(c.owner).toLowerCase() === addr
-        )
+        const citizen = votingCitizens?.find?.((c: any) => String(c.owner).toLowerCase() === addr)
         return { ...v, vp, choice, citizen }
       })
       .sort((a, b) => (b.vp || 0) - (a.vp || 0))
   }, [votes, addressToVotingPower, votingCitizens])
 
-  const totalVP = useMemo(
-    () => enriched.reduce((acc, v) => acc + (v.vp || 0), 0),
-    [enriched]
-  )
+  const totalVP = useMemo(() => enriched.reduce((acc, v) => acc + (v.vp || 0), 0), [enriched])
 
   // VP-weighted tally — mirrors `computeMemberProposalTally` line-for-
   // line so the rendered sidebar breakdown can never diverge from the
@@ -206,9 +199,7 @@ export default function MemberVoteSidebar({
       forPctOfDecided: decided > 0 ? (tally.For / decided) * 100 : 0,
       againstPctOfDecided: decided > 0 ? (tally.Against / decided) * 100 : 0,
       abstainPctOfTurnout:
-        tally.totalParticipationVP > 0
-          ? (tally.Abstain / tally.totalParticipationVP) * 100
-          : 0,
+        tally.totalParticipationVP > 0 ? (tally.Abstain / tally.totalParticipationVP) * 100 : 0,
     }
   }, [tally])
 
@@ -241,8 +232,8 @@ export default function MemberVoteSidebar({
         <h3
           className={
             isActive
-              ? 'font-GoodTimes text-base text-white'
-              : 'font-GoodTimes text-base text-white/90'
+              ? 'font-heading font-semibold text-base text-white'
+              : 'font-heading font-semibold text-base text-white/90'
           }
         >
           Member Vote
@@ -264,18 +255,15 @@ export default function MemberVoteSidebar({
           capture and won't drift; 'live' (the brief window between
           close and the EB pinning a snapshot) tells them the numbers
           may still move slightly until the snapshot lands. */}
-      {!isActive &&
-        snapshotMeta &&
-        snapshotMeta.source === 'snapshot' &&
-        enriched.length > 0 && (
-          <div
-            className="inline-flex items-center gap-1.5 self-start rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200"
-            title="Tally is locked from a vMOONEY snapshot pinned at vote close — values won't drift even if voters change their locks later."
-          >
-            <span className="w-1 h-1 rounded-full bg-emerald-400" />
-            Final tally
-          </div>
-        )}
+      {!isActive && snapshotMeta && snapshotMeta.source === 'snapshot' && enriched.length > 0 && (
+        <div
+          className="inline-flex items-center gap-1.5 self-start rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200"
+          title="Tally is locked from a vMOONEY snapshot pinned at vote close — values won't drift even if voters change their locks later."
+        >
+          <span className="w-1 h-1 rounded-full bg-emerald-400" />
+          Final tally
+        </div>
+      )}
       {!isActive &&
         snapshotMeta &&
         snapshotMeta.source === 'live' &&
@@ -301,9 +289,7 @@ export default function MemberVoteSidebar({
         <div className="rounded-lg border border-white/10 bg-white/5 p-3 flex flex-col gap-2">
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-green-300/80">
-                For
-              </p>
+              <p className="text-[10px] uppercase tracking-wider text-green-300/80">For</p>
               <p className="text-sm font-semibold text-green-300">
                 {tallyPercents.forPctOfDecided.toFixed(1)}%
               </p>
@@ -312,9 +298,7 @@ export default function MemberVoteSidebar({
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-red-300/80">
-                Against
-              </p>
+              <p className="text-[10px] uppercase tracking-wider text-red-300/80">Against</p>
               <p className="text-sm font-semibold text-red-300">
                 {tallyPercents.againstPctOfDecided.toFixed(1)}%
               </p>
@@ -323,9 +307,7 @@ export default function MemberVoteSidebar({
               </p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-gray-300/80">
-                Abstain
-              </p>
+              <p className="text-[10px] uppercase tracking-wider text-gray-300/80">Abstain</p>
               <p className="text-sm font-semibold text-gray-300">
                 {tallyPercents.abstainPctOfTurnout.toFixed(1)}%
               </p>
@@ -367,11 +349,7 @@ export default function MemberVoteSidebar({
       )}
 
       {isActive && (
-        <NewVoteButton
-          proposalStatus={proposalStatus}
-          votes={votes}
-          project={project}
-        />
+        <NewVoteButton proposalStatus={proposalStatus} votes={votes} project={project} />
       )}
 
       {/* Participation summary — voter count + total committed VP.
@@ -381,20 +359,12 @@ export default function MemberVoteSidebar({
           which side is winning). */}
       <div className="grid grid-cols-2 gap-2 text-center">
         <div className="rounded-lg bg-white/5 px-2 py-2 border border-white/10">
-          <p className="text-[10px] uppercase tracking-wider text-white/50">
-            Voters
-          </p>
-          <p className="text-sm font-semibold text-white">
-            {enriched.length}
-          </p>
+          <p className="text-[10px] uppercase tracking-wider text-white/50">Voters</p>
+          <p className="text-sm font-semibold text-white">{enriched.length}</p>
         </div>
         <div className="rounded-lg bg-white/5 px-2 py-2 border border-white/10">
-          <p className="text-[10px] uppercase tracking-wider text-white/50">
-            Total VP
-          </p>
-          <p className="text-sm font-semibold text-white">
-            {formatNumberUSStyle(totalVP, true)}
-          </p>
+          <p className="text-[10px] uppercase tracking-wider text-white/50">Total VP</p>
+          <p className="text-sm font-semibold text-white">{formatNumberUSStyle(totalVP, true)}</p>
         </div>
       </div>
 
@@ -427,10 +397,7 @@ export default function MemberVoteSidebar({
                 <div className="flex items-center gap-2 min-w-0">
                   {v.citizen ? (
                     <Link
-                      href={`/citizen/${generatePrettyLinkWithId(
-                        v.citizen.name,
-                        v.citizen.id
-                      )}`}
+                      href={`/citizen/${generatePrettyLinkWithId(v.citizen.name, v.citizen.id)}`}
                       className="text-white/90 hover:underline truncate"
                     >
                       {v.citizen.name}

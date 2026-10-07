@@ -592,7 +592,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
         <ContentLayout
           isProfile
           mode="compact"
-          header="Join The Network"
+          header="Create a Team"
           mainPadding
           headerSize="max(20px, 3vw)"
           preFooter={
@@ -635,7 +635,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
               {stage === 0 && (
                 <div className="animate-fadeIn">
                   <div className="mb-6">
-                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Design</h2>
+                    <h2 className="text-2xl font-heading font-semibold text-white mb-2">Design</h2>
                     <p className="text-slate-400 text-sm leading-relaxed">
                       Upload your team logo or image. For best results, use an image with a white or
                       transparent background.
@@ -653,7 +653,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
               {stage === 1 && (
                 <div className="animate-fadeIn">
                   <div className="mb-6">
-                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Team Profile</h2>
+                    <h2 className="text-2xl font-heading font-semibold text-white mb-2">
+                      Team Profile
+                    </h2>
                     <p className="text-slate-400 text-sm">Fill out your team information below.</p>
                   </div>
                   <div className="w-full rounded-xl overflow-hidden border border-white/[0.06]">
@@ -671,7 +673,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
               {stage === 2 && (
                 <div className="animate-fadeIn flex flex-col gap-8">
                   <div>
-                    <h2 className="text-2xl font-GoodTimes text-white mb-2">Review & Mint</h2>
+                    <h2 className="text-2xl font-heading font-semibold text-white mb-2">
+                      Review & Mint
+                    </h2>
                     <p className="text-slate-400 text-sm">
                       Review your team information before registering on the blockchain.
                     </p>
@@ -705,7 +709,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
 
                   <div className="flex flex-col gap-4">
                     <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
-                      <h3 className="font-GoodTimes text-base mb-3 text-white">Treasury</h3>
+                      <h3 className="font-heading font-semibold text-base mb-3 text-white">
+                        Treasury
+                      </h3>
                       <p className="text-slate-400 text-sm leading-relaxed">
                         A self-custodied multisignature treasury will secure your organization's
                         assets. Your wallet plus two MoonDAO stewards are added as co-signers so we
@@ -714,7 +720,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                       </p>
                     </div>
                     <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
-                      <h3 className="font-GoodTimes text-base mb-3 text-white">Manager</h3>
+                      <h3 className="font-heading font-semibold text-base mb-3 text-white">
+                        Manager
+                      </h3>
                       <p className="text-slate-400 text-sm leading-relaxed">
                         The connected wallet will act as Manager. You can add managers or members
                         later via your Team Management Portal.
@@ -723,7 +731,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                   </div>
 
                   <div className="bg-slate-800/30 border border-white/[0.06] rounded-2xl p-5">
-                    <h3 className="font-GoodTimes text-base mb-3 text-white">Team passport</h3>
+                    <h3 className="font-heading font-semibold text-base mb-3 text-white">
+                      Team passport
+                    </h3>
                     <p className="text-slate-400 text-sm leading-relaxed">
                       {teamPriceEth == null
                         ? 'A team passport is one year on Arbitrum.'

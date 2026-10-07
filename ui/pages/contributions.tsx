@@ -1,16 +1,16 @@
+import { usePrivy } from '@privy-io/react-auth'
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
-import { usePrivy } from '@privy-io/react-auth'
 import { useActiveAccount } from 'thirdweb/react'
-import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { useCitizen } from '@/lib/citizen/useCitizen'
-import type { Contribution } from './api/contributions/feed'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
-import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import type { Contribution } from './api/contributions/feed'
 
 const CONTRIBUTION_FORM_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform'
@@ -38,8 +38,17 @@ function CitizenSubmitButton() {
     'flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 whitespace-nowrap'
 
   const arrowIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-4 w-4"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+    >
+      <path
+        fillRule="evenodd"
+        d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+        clipRule="evenodd"
+      />
     </svg>
   )
 
@@ -125,9 +134,7 @@ function ContributionFeed() {
           fetch(`/api/citizens/images-by-address?${params.toString()}`)
             .then((r) => (r.ok ? r.json() : {}))
             .then((map) => setCitizenImages(map))
-            .catch((err) =>
-              console.warn('[ContributionFeed] citizen image fetch failed', err)
-            )
+            .catch((err) => console.warn('[ContributionFeed] citizen image fetch failed', err))
         }
       })
       .catch((err) => {
@@ -148,7 +155,9 @@ function ContributionFeed() {
   if (!contributions.length) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
-        <p className="text-white/50 text-sm">No contributions have been submitted yet this quarter.</p>
+        <p className="text-white/50 text-sm">
+          No contributions have been submitted yet this quarter.
+        </p>
         <p className="text-white/30 text-xs">Be the first — use the button above!</p>
       </div>
     )
@@ -168,7 +177,11 @@ function ContributionFeed() {
       {entries.map(([name, items]) => {
         const open = expanded[name]
         return (
-          <div key={name} id={`contribution-${encodeURIComponent(name)}`} className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-all">
+          <div
+            key={name}
+            id={`contribution-${encodeURIComponent(name)}`}
+            className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-all"
+          >
             <button
               type="button"
               aria-expanded={!!open}
@@ -208,18 +221,32 @@ function ContributionFeed() {
                 </div>
               </div>
               <svg
-                className={`w-4 h-4 text-white/40 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                className={`w-4 h-4 text-white/40 flex-shrink-0 transition-transform duration-200 ${
+                  open ? 'rotate-180' : ''
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
 
             {open && (
-              <div id={`contributions-panel-${name}`} className="px-5 pb-5 pt-4 border-t border-white/10">
+              <div
+                id={`contributions-panel-${name}`}
+                className="px-5 pb-5 pt-4 border-t border-white/10"
+              >
                 {items.map((c) => (
                   <div key={`${c.walletAddress || 'anonymous'}:${c.timestamp}:${c.description}`}>
-                    <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">{c.description}</p>
+                    <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
+                      {c.description}
+                    </p>
                     {c.links && (
                       <a
                         href={c.links.startsWith('http') ? c.links : `https://${c.links}`}
@@ -258,17 +285,17 @@ export default function ContributionsPage() {
             popOverEffect={false}
             isProfile
             description={
-              <>
-                Did something that advances MoonDAO's mission? Submit it here. Each quarter, senators evaluate all submissions and distribute a reward pool in ETH and vMOONEY based on impact.{' '}
+              <p className="text-sm md:text-base text-white/60">
+                Submit work that advances the mission. Senators score it each quarter.{' '}
                 <a
                   href="/docs/Reference/Nested-Docs/Community-Rewards"
                   className="text-blue-400 hover:text-blue-300 underline"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Learn more ↗
+                  How rewards work
                 </a>
-              </>
+              </p>
             }
             preFooter={
               <NoticeFooter
@@ -283,16 +310,27 @@ export default function ContributionsPage() {
             }
           >
             <div className="flex flex-col gap-8 max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
-
               {/* How it works */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { step: '01', title: 'Submit', body: 'Describe your work using the form. Any contribution that moves the mission forward counts.' },
-                  { step: '02', title: 'Evaluate', body: 'Senators independently review all submissions and distribute the reward pool based on impact.' },
-                  { step: '03', title: 'Get Paid', body: 'Rewards in ETH and vMOONEY are sent to your wallet at the end of each quarter.' },
+                  {
+                    step: '01',
+                    title: 'Submit',
+                    body: 'Describe your work using the form. Any contribution that moves the mission forward counts.',
+                  },
+                  {
+                    step: '02',
+                    title: 'Evaluate',
+                    body: 'Senators independently review all submissions and distribute the reward pool based on impact.',
+                  },
+                  {
+                    step: '03',
+                    title: 'Get Paid',
+                    body: 'Rewards in ETH and vMOONEY are sent to your wallet at the end of each quarter.',
+                  },
                 ].map(({ step, title, body }) => (
                   <div key={step} className="bg-white/5 border border-white/10 rounded-xl p-5">
-                    <p className="text-blue-400 font-GoodTimes text-xs mb-2">{step}</p>
+                    <p className="text-blue-400 font-heading font-semibold text-xs mb-2">{step}</p>
                     <p className="text-white font-semibold text-sm mb-1">{title}</p>
                     <p className="text-gray-400 text-xs leading-relaxed">{body}</p>
                   </div>
@@ -303,17 +341,21 @@ export default function ContributionsPage() {
               <div className="flex flex-col sm:flex-row items-center gap-4 bg-gradient-to-r from-blue-900/40 to-purple-900/30 border border-blue-500/20 rounded-2xl px-6 py-5">
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-semibold text-sm mb-1">Ready to submit?</p>
-                  <p className="text-gray-400 text-xs">The form takes about 5 minutes. Submissions are reviewed at the end of each quarter.</p>
+                  <p className="text-gray-400 text-xs">
+                    The form takes about 5 minutes. Submissions are reviewed at the end of each
+                    quarter.
+                  </p>
                 </div>
                 <CitizenSubmitButton />
               </div>
 
               {/* Feed */}
               <div>
-                <h2 className="text-white font-GoodTimes text-xl mb-5">Recent Submissions</h2>
+                <h2 className="text-white font-heading font-semibold text-xl mb-5">
+                  Recent Submissions
+                </h2>
                 <ContributionFeed />
               </div>
-
             </div>
           </ContentLayout>
         </Container>
@@ -321,6 +363,3 @@ export default function ContributionsPage() {
     </>
   )
 }
-
-
-

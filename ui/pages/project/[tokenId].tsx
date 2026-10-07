@@ -2,7 +2,6 @@ import Safe from '@safe-global/protocol-kit'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
-
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
   CITIZEN_ADDRESSES,
@@ -24,17 +23,14 @@ import { getRpcUrlForChain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import { PROJECT_PENDING } from '@/lib/nance/types'
-import { getProposalStatus, STATUS_CONFIG, STATUS_DISPLAY_LABELS, ProposalStatus } from '@/lib/nance/useProposalStatus'
+import {
+  getProposalStatus,
+  STATUS_CONFIG,
+  STATUS_DISPLAY_LABELS,
+  ProposalStatus,
+} from '@/lib/nance/useProposalStatus'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
-import useSafe from '@/lib/safe/useSafe'
-import queryTable from '@/lib/tableland/queryTable'
-import { DistributionVote } from '@/lib/tableland/types'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/serverClient'
-import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import useContract from '@/lib/thirdweb/hooks/useContract'
 import { computeMemberProposalTally } from '@/lib/proposals/computeMemberProposalTally'
 import {
   getMemberProposalVMooneySnapshot,
@@ -42,10 +38,15 @@ import {
   resolveSnapshotVMooney,
   snapshotHasDistributions,
 } from '@/lib/proposals/vMooneySnapshots'
-import {
-  fetchTotalVMOONEYs,
-  fetchTotalVMOONEYsAtBlocks,
-} from '@/lib/tokens/hooks/useTotalVMOONEY'
+import useSafe from '@/lib/safe/useSafe'
+import queryTable from '@/lib/tableland/queryTable'
+import { DistributionVote } from '@/lib/tableland/types'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
+import useContract from '@/lib/thirdweb/hooks/useContract'
+import { serverClient } from '@/lib/thirdweb/serverClient'
+import { fetchTotalVMOONEYs, fetchTotalVMOONEYsAtBlocks } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import { isFetchableUrl } from '@/lib/utils/links'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -54,9 +55,8 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import SectionCard from '@/components/layout/SectionCard'
 import SlidingCardMenu from '@/components/layout/SlidingCardMenu'
 import MarkdownWithTOC from '@/components/nance/MarkdownWithTOC'
-
-import VotingResults from '@/components/nance/VotingResults'
 import ProposalEditSection from '@/components/nance/ProposalEditSection'
+import VotingResults from '@/components/nance/VotingResults'
 import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import CloseAndTallyButton from '@/components/project/CloseAndTallyButton'
 import MemberVoteSidebar from '@/components/project/MemberVoteSidebar'
@@ -125,8 +125,7 @@ function TallyProvenanceTag({
   // the EB needs to retry. Surfacing it as a distinct state makes
   // that retry path obvious.
   const nowSec = Math.floor(Date.now() / 1000)
-  const closeHasPassed =
-    meta.voteCloseTimestamp != null && nowSec >= meta.voteCloseTimestamp
+  const closeHasPassed = meta.voteCloseTimestamp != null && nowSec >= meta.voteCloseTimestamp
   if (closeHasPassed) {
     return (
       <div
@@ -282,10 +281,7 @@ export default function ProjectProfile({
     const urlTab = router.query.tab
     if (
       typeof urlTab === 'string' &&
-      (urlTab === 'proposal' ||
-        urlTab === 'results' ||
-        urlTab === 'treasury' ||
-        urlTab === 'team')
+      (urlTab === 'proposal' || urlTab === 'results' || urlTab === 'treasury' || urlTab === 'team')
     ) {
       setTab(urlTab)
     }
@@ -302,10 +298,7 @@ export default function ProjectProfile({
     router.replace(
       {
         pathname: router.pathname,
-        query:
-          nextTab === 'proposal'
-            ? restQuery
-            : { ...restQuery, tab: nextTab },
+        query: nextTab === 'proposal' ? restQuery : { ...restQuery, tab: nextTab },
       },
       undefined,
       { shallow: true, scroll: false }
@@ -322,7 +315,7 @@ export default function ProjectProfile({
             alt="Loading..."
             className="w-20 h-20 mb-6"
           />
-          <h1 className="text-2xl font-bold text-white mb-3 font-GoodTimes">
+          <h1 className="text-2xl font-bold text-white mb-3 font-heading">
             Setting Up Your Proposal...
           </h1>
           <p className="text-gray-300 text-lg mb-2 max-w-md">
@@ -332,9 +325,25 @@ export default function ProjectProfile({
             This page will automatically refresh. It usually takes a few seconds.
           </p>
           <div className="mt-6 flex items-center gap-2 text-gray-400 text-sm">
-            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            <svg
+              className="animate-spin h-4 w-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
             Waiting for on-chain confirmation...
           </div>
@@ -442,10 +451,7 @@ export default function ProjectProfile({
           const proposalPane = (
             <div className="flex flex-col gap-4 sm:gap-6 min-w-0">
               {finalReportMarkdown && (
-                <SectionCard
-                  header="Final Report"
-                  iconSrc="/assets/icon-star.svg"
-                >
+                <SectionCard header="Final Report" iconSrc="/assets/icon-star.svg">
                   <div className="prose prose-invert max-w-none">
                     <MarkdownWithTOC body={finalReportMarkdown} />
                   </div>
@@ -461,17 +467,13 @@ export default function ProjectProfile({
                   Cancelled without consuming main-column real estate).
                   Project proposals don't carry the on-chain Senate
                   vote in the same way, so they're excluded. */}
-              {project.active === PROJECT_PENDING &&
-                proposalStatus === 'Temperature Check' && (
-                  <SectionCard
-                    header="Senate Vote"
-                    iconSrc="/assets/icon-star.svg"
-                  >
-                    <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
-                      <SenateVote mdp={project.MDP} />
-                    </div>
-                  </SectionCard>
-                )}
+              {project.active === PROJECT_PENDING && proposalStatus === 'Temperature Check' && (
+                <SectionCard header="Senate Vote" iconSrc="/assets/icon-star.svg">
+                  <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-4 sm:p-6">
+                    <SenateVote mdp={project.MDP} />
+                  </div>
+                </SectionCard>
+              )}
 
               {/* Proposal body. The "Proposal" tab is the navigation;
                   no need for a duplicate `Proposal` SectionCard
@@ -485,9 +487,7 @@ export default function ProjectProfile({
                         const full = proposalJSON.body || ''
                         const idx = full.search(/^#{1,6}\s*Abstract/im)
                         if (idx !== -1) return full.slice(idx)
-                        const plainIdx = full.search(
-                          /^\*{0,2}Abstract\*{0,2}\s*$/im
-                        )
+                        const plainIdx = full.search(/^\*{0,2}Abstract\*{0,2}\s*$/im)
                         if (plainIdx !== -1) return full.slice(plainIdx)
                         return full
                       })()}
@@ -504,16 +504,12 @@ export default function ProjectProfile({
           // so members can correlate their own vote against the
           // tally.
           const hasVotingResults =
-            project.active !== PROJECT_PENDING &&
-            Boolean(proposalJSON?.nonProjectProposal)
+            project.active !== PROJECT_PENDING && Boolean(proposalJSON?.nonProjectProposal)
           const resultsPane = hasVotingResults ? (
             <div className="md:bg-gradient-to-br md:from-slate-700/20 md:to-slate-800/30 md:backdrop-blur-xl md:border md:border-white/10 md:rounded-xl px-4 py-3 md:p-6 md:shadow-lg w-full">
               <div className="bg-dark-cool lg:bg-darkest-cool rounded-[20px] p-5 flex flex-col gap-3">
                 <TallyProvenanceTag meta={voteSnapshotMeta} />
-                <VotingResults
-                  voteOutcome={voteOutcome}
-                  votes={votes}
-                />
+                <VotingResults voteOutcome={voteOutcome} votes={votes} />
               </div>
             </div>
           ) : null
@@ -579,8 +575,7 @@ export default function ProjectProfile({
           // If the user deep-links to ?tab=results on a proposal that
           // doesn't (yet) have results, fall back to the proposal tab
           // rather than rendering blank content.
-          const effectiveTab: ProjectTab =
-            tab === 'results' && !showResultsTab ? 'proposal' : tab
+          const effectiveTab: ProjectTab = tab === 'results' && !showResultsTab ? 'proposal' : tab
 
           // Underline-style tab bar matching the Mission/Launchpad
           // pattern (`MissionInfo.tsx`): text-only, gray-500
@@ -595,9 +590,7 @@ export default function ProjectProfile({
                 type="button"
                 onClick={() => handleTabChange(key)}
                 className={`relative px-5 py-3 text-base md:text-lg font-semibold tracking-wide whitespace-nowrap transition-all duration-200 ${
-                  isActive
-                    ? 'text-white'
-                    : 'text-gray-500 hover:text-gray-300'
+                  isActive ? 'text-white' : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
                 {label}
@@ -626,10 +619,7 @@ export default function ProjectProfile({
 
           if (!showVoteSidebar) {
             return (
-              <div
-                id="page-container"
-                className="pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8"
-              >
+              <div id="page-container" className="pt-2 sm:pt-3 md:pt-4 pb-4 sm:pb-6 md:pb-8">
                 {mainColumn}
               </div>
             )
@@ -680,10 +670,7 @@ export default function ProjectProfile({
                     ) : null
                   }
                 />
-                <SenateVoteSidebar
-                  mdp={project.MDP}
-                  secondary={sidebarMode === 'voting'}
-                />
+                <SenateVoteSidebar mdp={project.MDP} secondary={sidebarMode === 'voting'} />
               </div>
               <div className="lg:order-1 lg:col-span-2">{mainColumn}</div>
             </div>
@@ -719,7 +706,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
     // If this is a newly submitted or updated proposal, retry a few times to allow Tableland to index
     const isNewSubmission = pageQuery?.new === '1'
     const isUpdated = pageQuery?.updated === '1'
-    const maxRetries = (isNewSubmission || isUpdated) ? 4 : 1
+    const maxRetries = isNewSubmission || isUpdated ? 4 : 1
     const retryDelay = 3000 // 3 seconds between retries
 
     let project: Project | undefined
@@ -731,16 +718,14 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
       let projects = (
         await queryTable(chain, `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`)
       ).filter(
-        (p: Project) =>
-          !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP))
+        (p: Project) => !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP))
       )
 
       if (!projects[0]) {
         projects = (
           await queryTable(chain, `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`)
         ).filter(
-          (p: Project) =>
-            !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP))
+          (p: Project) => !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP))
         )
       }
 
@@ -805,9 +790,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
       try {
         const proposalResponse = await fetch(project.proposalIPFS)
         if (!proposalResponse.ok) {
-          console.error(
-            `Failed to fetch proposal IPFS: ${proposalResponse.status}`
-          )
+          console.error(`Failed to fetch proposal IPFS: ${proposalResponse.status}`)
         } else {
           proposalJSON = await proposalResponse.json()
         }
@@ -825,10 +808,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
     // Non-project proposals do not exist in nance and are tallied on-chain
     // via the NonProjectProposal Tableland table, so the nance status overlay
     // would only mask the correct on-chain status. Skip it for those.
-    if (
-      proposalStatus === 'Temperature Check' &&
-      !proposalJSON?.nonProjectProposal
-    ) {
+    if (proposalStatus === 'Temperature Check' && !proposalJSON?.nonProjectProposal) {
       try {
         const { NANCE_API_URL, NANCE_SPACE_NAME } = await import('@/lib/nance/constants')
         const nanceRes = await fetch(`${NANCE_API_URL}/${NANCE_SPACE_NAME}/proposal/${mdp}`)
@@ -871,8 +851,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
         // ui/scripts/snapshot-vmooney.mjs so the previewed outcome here,
         // the on-chain tally, and the snapshot capture all use the same
         // close moment.
-        const votingPeriodClosedTimestamp =
-          parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 5
+        const votingPeriodClosedTimestamp = parseInt(tempCheckApprovedTimestamp) + 60 * 60 * 24 * 5
 
         // Resolve votes for this proposal, with three layered fallbacks
         // for the vMOONEY voting-power lookup so the rendered tally is
@@ -906,20 +885,11 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
           // distributions standalone — no Tableland round-trip needed.
           votes = resolveSnapshotMemberProposalVotes(constantsSnapshot) as any[]
           const voteAddresses = votes.map((v) => v.address)
-          const vMOONEYs = resolveSnapshotVMooney(
-            constantsSnapshot,
-            voteAddresses
-          )
+          const vMOONEYs = resolveSnapshotVMooney(constantsSnapshot, voteAddresses)
           addressToVotingPower = Object.fromEntries(
-            voteAddresses.map((address, index) => [
-              address,
-              Math.sqrt(vMOONEYs[index]),
-            ])
+            voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
           )
-          voteOutcome = computeMemberProposalTally(
-            votes as any,
-            addressToVotingPower
-          )
+          voteOutcome = computeMemberProposalTally(votes as any, addressToVotingPower)
           voteSnapshotMeta = {
             source: 'snapshot',
             voteCloseTimestamp: constantsSnapshot.voteCloseTimestamp,
@@ -929,10 +899,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
           }
         } else {
           const voteStatement = `SELECT * FROM ${NON_PROJECT_PROPOSAL_TABLE_NAMES[chainSlug]} WHERE MDP = ${mdp}`
-          const allRows = (await queryTable(
-            chain,
-            voteStatement
-          )) as DistributionVote[]
+          const allRows = (await queryTable(chain, voteStatement)) as DistributionVote[]
 
           // Pull the auto-snapshot sentinel row out of the vote list
           // so it doesn't show up as a "voter" in the sidebar list or
@@ -978,32 +945,19 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
                 autoSnapshotPayload.closeBlocks
               )
             } else if (constantsSnapshot) {
-              vMOONEYs = resolveSnapshotVMooney(
-                constantsSnapshot,
-                voteAddresses
-              )
+              vMOONEYs = resolveSnapshotVMooney(constantsSnapshot, voteAddresses)
             } else {
-              vMOONEYs = await fetchTotalVMOONEYs(
-                voteAddresses,
-                votingPeriodClosedTimestamp
-              )
+              vMOONEYs = await fetchTotalVMOONEYs(voteAddresses, votingPeriodClosedTimestamp)
             }
             addressToVotingPower = Object.fromEntries(
-              voteAddresses.map((address, index) => [
-                address,
-                Math.sqrt(vMOONEYs![index] ?? 0),
-              ])
+              voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs![index] ?? 0)])
             )
-            voteOutcome = computeMemberProposalTally(
-              votes as any,
-              addressToVotingPower
-            )
+            voteOutcome = computeMemberProposalTally(votes as any, addressToVotingPower)
             if (autoSnapshotPayload?.closeBlocks) {
               voteSnapshotMeta = {
                 source: 'snapshot',
                 voteCloseTimestamp:
-                  autoSnapshotPayload.voteCloseTimestamp ??
-                  votingPeriodClosedTimestamp,
+                  autoSnapshotPayload.voteCloseTimestamp ?? votingPeriodClosedTimestamp,
                 method: 'historical',
                 blockAtClose: autoSnapshotPayload.closeBlocks,
                 snapshotTakenAt: autoSnapshotPayload.capturedAt,

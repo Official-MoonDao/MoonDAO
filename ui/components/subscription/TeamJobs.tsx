@@ -115,7 +115,7 @@ export default function TeamJobs({
         >
           <div className="flex gap-5 items-center">
             <Image src={jobIcon} alt="Job icon" width={30} height={30} className="opacity-70" />
-            <h2 className="font-GoodTimes text-2xl text-white">Open Job Board</h2>
+            <h2 className="font-heading font-semibold text-2xl text-white">Open Job Board</h2>
           </div>
           {isManager && (
             <StandardButton

@@ -262,7 +262,7 @@ function TeamDetailPageContent({
         nft?.metadata?.image ? (
           <div id="team-image-container" className="relative">
             <div
-              className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] relative${
+              className={`w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 relative${
                 subIsValid && isManager ? ' group cursor-pointer' : ''
               }`}
               onClick={() => {
@@ -285,13 +285,13 @@ function TeamDetailPageContent({
             </div>
             <div id="star-asset-container" className="absolute -bottom-2 -right-2">
               <div className="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full p-2">
-                <Image src="/../.././assets/icon-star.svg" alt="" width={40} height={40} />
+                <Image src="/../.././assets/icon-star.svg" alt="" width={18} height={18} />
               </div>
             </div>
           </div>
         ) : (
           <div
-            className={`w-[200px] h-[200px] lg:w-[250px] lg:h-[250px] bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex flex-col items-center justify-center gap-2${
+            className={`w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 bg-gradient-to-b from-slate-600/50 to-slate-700/50 rounded-2xl border-4 border-slate-500/50 flex flex-col items-center justify-center gap-2${
               subIsValid && isManager
                 ? ' group cursor-pointer hover:border-slate-400/70 transition-colors'
                 : ''
@@ -300,7 +300,7 @@ function TeamDetailPageContent({
               if (subIsValid && isManager) setTeamMetadataModalEnabled(true)
             }}
           >
-            <div className="text-slate-400 text-6xl">🏢</div>
+            <div className="text-slate-400 text-3xl">🏢</div>
             {subIsValid && isManager && (
               <span className="text-slate-400 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                 Add Photo
@@ -324,7 +324,7 @@ function TeamDetailPageContent({
             </button>
           )}
           {nft ? (
-            <h1 className="font-GoodTimes text-white text-xl sm:text-2xl lg:text-4xl font-bold mb-3 w-full max-w-full break-words [overflow-wrap:anywhere]">
+            <h1 className="font-heading text-white text-xl sm:text-2xl font-bold mb-2 w-full max-w-full break-words [overflow-wrap:anywhere]">
               {nft?.metadata?.name}
             </h1>
           ) : (
@@ -611,7 +611,7 @@ function TeamDetailPageContent({
                     height={30}
                     className="opacity-70"
                   />
-                  <h2 className="font-GoodTimes text-2xl text-white">Meet the Team</h2>
+                  <h2 className="font-heading font-semibold text-2xl text-white">Meet the Team</h2>
                 </div>
                 {(isManager || isSuperManager) && hats?.[0]?.id && (
                   <TeamManageMembers
@@ -679,7 +679,7 @@ function TeamDetailPageContent({
             (isManager || isTableOperator || address === nft.owner) && (
               <div className="bg-gradient-to-b from-red-900/20 to-red-800/30 rounded-2xl border border-red-600/30 p-6 mb-10">
                 <div className="text-center mb-6">
-                  <h3 className="text-xl font-GoodTimes text-white mb-2">
+                  <h3 className="text-xl font-heading font-semibold text-white mb-2">
                     {isDeleted ? 'Profile Deleted' : 'Subscription Expired'}
                   </h3>
                   <p className="text-slate-300">

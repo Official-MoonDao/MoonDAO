@@ -1,16 +1,16 @@
+import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import React from 'react'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import { ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 
 // Resource category component with modern card styling
-const ResourceCategory = ({ 
-  title, 
-  description, 
-  resources 
+const ResourceCategory = ({
+  title,
+  description,
+  resources,
 }: {
   title: string
   description: string
@@ -18,7 +18,7 @@ const ResourceCategory = ({
 }) => (
   <div className="mb-8">
     <div className="mb-4">
-      <h2 className="font-GoodTimes text-2xl text-white mb-2">{title}</h2>
+      <h2 className="font-heading font-semibold text-2xl text-white mb-2">{title}</h2>
       <p className="text-slate-300 text-sm leading-relaxed">{description}</p>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -52,308 +52,357 @@ const ResourceCategory = ({
 const resourceCategories = [
   {
     title: 'Space Data & Archives',
-    description: 'Comprehensive databases and archives for space research, imagery, and planetary data.',
+    description:
+      'Comprehensive databases and archives for space research, imagery, and planetary data.',
     resources: [
       {
-        name: 'NASA\'s Planetary Data System (PDS)',
+        name: "NASA's Planetary Data System (PDS)",
         url: 'https://pds.jpl.nasa.gov/',
-        description: 'Archive of data products from NASA planetary missions, astronomical observations, and laboratory measurements.'
+        description:
+          'Archive of data products from NASA planetary missions, astronomical observations, and laboratory measurements.',
       },
       {
-        name: 'NASA\'s Image Archive',
+        name: "NASA's Image Archive",
         url: 'https://images.nasa.gov/',
-        description: 'NASA\'s comprehensive collection of images, videos, and audio from space missions and research.'
+        description:
+          "NASA's comprehensive collection of images, videos, and audio from space missions and research.",
       },
       {
         name: 'Celestrak',
         url: 'https://celestrak.org/',
-        description: 'Satellite tracking data, orbital elements, and space situational awareness information.'
+        description:
+          'Satellite tracking data, orbital elements, and space situational awareness information.',
       },
       {
         name: 'Asterank',
         url: 'https://www.asterank.com/',
-        description: 'Database of asteroids and their economic potential for mining operations.'
+        description: 'Database of asteroids and their economic potential for mining operations.',
       },
       {
-        name: 'NASA\'s Solar System Treks',
+        name: "NASA's Solar System Treks",
         url: 'https://trek.nasa.gov/',
-        description: 'Interactive visualization and analysis portal for planetary surfaces and data.'
+        description:
+          'Interactive visualization and analysis portal for planetary surfaces and data.',
       },
       {
-        name: 'JPL\'s HORIZONS',
+        name: "JPL's HORIZONS",
         url: 'https://ssd.jpl.nasa.gov/horizons.cgi',
-        description: 'System for computing highly accurate ephemerides for solar system objects.'
+        description: 'System for computing highly accurate ephemerides for solar system objects.',
       },
       {
         name: 'Launch Library 2',
         url: 'https://thespacedevs.com/llapi',
-        description: 'Comprehensive database of past and upcoming space launches with detailed information.'
-      }
-    ]
+        description:
+          'Comprehensive database of past and upcoming space launches with detailed information.',
+      },
+    ],
   },
   {
     title: 'Geospatial & Earth Observation',
-    description: 'Tools and platforms for satellite data processing, geospatial analysis, and Earth observation.',
+    description:
+      'Tools and platforms for satellite data processing, geospatial analysis, and Earth observation.',
     resources: [
       {
         name: 'Rasdaman',
         url: 'http://www.rasdaman.org/',
-        description: 'Array database system for multi-dimensional geospatial data management and analytics.'
+        description:
+          'Array database system for multi-dimensional geospatial data management and analytics.',
       },
       {
         name: 'SciDB',
         url: 'http://www.paradigm4.com/',
-        description: 'Computational database management system designed for scientific applications.'
+        description:
+          'Computational database management system designed for scientific applications.',
       },
       {
         name: 'Satpy',
         url: 'https://satpy.readthedocs.io/',
-        description: 'Python library for reading, manipulating, and writing data from meteorological satellites.'
+        description:
+          'Python library for reading, manipulating, and writing data from meteorological satellites.',
       },
       {
         name: 'Sentinelsat',
         url: 'https://github.com/sentinelsat/sentinelsat',
-        description: 'Python API for searching, downloading and retrieving products from Copernicus Sentinel satellites.'
+        description:
+          'Python API for searching, downloading and retrieving products from Copernicus Sentinel satellites.',
       },
       {
         name: 'pyroSAR',
         url: 'https://github.com/johntruckenbrodt/pyroSAR',
-        description: 'Framework for large-scale SAR satellite data processing with Python.'
+        description: 'Framework for large-scale SAR satellite data processing with Python.',
       },
       {
         name: 'Orbit-predictor',
         url: 'https://github.com/satellogic/orbit-predictor',
-        description: 'Python library to propagate satellite orbits and predict passes.'
+        description: 'Python library to propagate satellite orbits and predict passes.',
       },
       {
         name: 'SNAP',
         url: 'https://step.esa.int/main/download/snap-download/',
-        description: 'ESA\'s Sentinel Application Platform for Earth Observation processing and analysis.'
+        description:
+          "ESA's Sentinel Application Platform for Earth Observation processing and analysis.",
       },
       {
         name: 'PolSARpro',
         url: 'https://earth.esa.int/web/polsarpro',
-        description: 'ESA\'s polarimetric SAR data processing and educational toolbox.'
-      }
-    ]
+        description: "ESA's polarimetric SAR data processing and educational toolbox.",
+      },
+    ],
   },
   {
     title: 'Open Source Software',
-    description: 'Government and agency repositories featuring open source space-related software and tools.',
+    description:
+      'Government and agency repositories featuring open source space-related software and tools.',
     resources: [
       {
         name: 'NASA Open Source Software',
         url: 'https://code.nasa.gov/',
-        description: 'NASA\'s official portal for open source software projects and developer resources.'
+        description:
+          "NASA's official portal for open source software projects and developer resources.",
       },
       {
         name: 'NASA Technical Standards',
         url: 'https://standards.nasa.gov/',
-        description: 'NASA\'s official technical standards and requirements for space missions and aerospace systems.'
+        description:
+          "NASA's official technical standards and requirements for space missions and aerospace systems.",
       },
       {
         name: 'ESA Open Source Resources',
         url: 'https://www.esa.int/Enabling_Support/Space_Engineering_Technology/Radio_Frequency_Systems/Open_Source_Software_Resources_for_Space_Downstream_Applications',
-        description: 'ESA\'s collection of open source software resources for space downstream applications.'
+        description:
+          "ESA's collection of open source software resources for space downstream applications.",
       },
       {
         name: 'GeneLab',
         url: 'https://genelab.nasa.gov/',
-        description: 'NASA\'s omics database for spaceflight and space-relevant experiments.'
-      }
-    ]
+        description: "NASA's omics database for spaceflight and space-relevant experiments.",
+      },
+    ],
   },
   {
     title: 'Simulation & Modeling',
-    description: 'Platforms and tools for space mission simulation, orbital mechanics, and space environment modeling.',
+    description:
+      'Platforms and tools for space mission simulation, orbital mechanics, and space environment modeling.',
     resources: [
       {
         name: 'Orekit',
         url: 'https://www.orekit.org/',
-        description: 'Low level space dynamics library written in Java for space mission analysis and design.'
+        description:
+          'Low level space dynamics library written in Java for space mission analysis and design.',
       },
       {
         name: 'OpenSpace',
         url: 'https://www.openspaceproject.com/',
-        description: 'Open source interactive data visualization software designed for rendering the universe.'
+        description:
+          'Open source interactive data visualization software designed for rendering the universe.',
       },
       {
         name: 'GAMA Platform',
         url: 'https://gama-platform.org/',
-        description: 'Modeling and simulation development environment for spatially explicit agent-based simulations.'
+        description:
+          'Modeling and simulation development environment for spatially explicit agent-based simulations.',
       },
       {
         name: 'Python in Heliophysics Community (PyHC)',
         url: 'https://heliopython.org/',
-        description: 'Community-driven effort to coordinate and promote Python packages for heliophysics.'
-      }
-    ]
+        description:
+          'Community-driven effort to coordinate and promote Python packages for heliophysics.',
+      },
+    ],
   },
   {
     title: 'News & Media',
-    description: 'Leading space news sources and media platforms for staying updated on industry developments.',
+    description:
+      'Leading space news sources and media platforms for staying updated on industry developments.',
     resources: [
       {
         name: 'SpaceNews',
         url: 'https://spacenews.com/',
-        description: 'Leading source for space industry news, analysis, and insights covering commercial, government, and international space activities.'
+        description:
+          'Leading source for space industry news, analysis, and insights covering commercial, government, and international space activities.',
       },
       {
         name: 'Space.com',
         url: 'https://www.space.com/',
-        description: 'Comprehensive space news, exploration updates, and astronomy information for enthusiasts and professionals.'
-      }
-    ]
+        description:
+          'Comprehensive space news, exploration updates, and astronomy information for enthusiasts and professionals.',
+      },
+    ],
   },
   {
     title: 'Community & Learning',
-    description: 'Educational platforms, communities, and initiatives for space technology and research collaboration.',
+    description:
+      'Educational platforms, communities, and initiatives for space technology and research collaboration.',
     resources: [
       {
         name: 'MIT Space Exploration Initiative',
         url: 'https://www.media.mit.edu/groups/space-exploration/overview/',
-        description: 'MIT\'s open source platforms and projects for space exploration research.'
+        description: "MIT's open source platforms and projects for space exploration research.",
       },
       {
         name: 'Space Stack Exchange',
         url: 'https://space.stackexchange.com/',
-        description: 'Question and answer site for spacecraft operators, scientists, engineers, and enthusiasts.'
+        description:
+          'Question and answer site for spacecraft operators, scientists, engineers, and enthusiasts.',
       },
       {
         name: 'NASA Astronaut Appearances',
         url: 'https://www.nasa.gov/humans-in-space/astronauts/request-astronaut-appearance/',
-        description: 'Request NASA astronaut appearances for educational and outreach events.'
+        description: 'Request NASA astronaut appearances for educational and outreach events.',
       },
       {
         name: 'Astronautics Institute',
         url: 'https://astronauticsinstitute.org/',
-        description: 'Professional organization advancing astronautics and space technology education.'
+        description:
+          'Professional organization advancing astronautics and space technology education.',
       },
       {
         name: 'B2 Science - Center for Human Space Exploration (CHASE)',
         url: 'https://www.b2science.org/center-human-space-exploration-chase',
-        description: 'Research center focused on human space exploration science and technology development.'
+        description:
+          'Research center focused on human space exploration science and technology development.',
       },
       {
         name: 'DeSci World',
         url: 'https://desci.world/',
-        description: 'Decentralized science platform connecting researchers, funding, and collaboration in the web3 ecosystem.'
+        description:
+          'Decentralized science platform connecting researchers, funding, and collaboration in the web3 ecosystem.',
       },
       {
         name: 'AuraSci',
         url: 'https://aurasci.xyz/',
-        description: 'Platform for scientific research and collaboration in the decentralized science ecosystem.'
+        description:
+          'Platform for scientific research and collaboration in the decentralized science ecosystem.',
       },
       {
-        name: 'Yuri\'s Night',
+        name: "Yuri's Night",
         url: 'https://yurisnight.net/',
-        description: 'Global celebration of human space achievements and international space program outreach.'
+        description:
+          'Global celebration of human space achievements and international space program outreach.',
       },
       {
         name: 'Space for Humanity',
         url: 'https://spaceforhumanity.org/',
-        description: 'Nonprofit expanding access to space for all of humanity through citizen astronaut programs.'
+        description:
+          'Nonprofit expanding access to space for all of humanity through citizen astronaut programs.',
       },
       {
         name: 'Space Talent',
         url: 'https://www.spacetalent.org/',
-        description: 'Platform connecting space professionals and fostering career development in the space industry.'
+        description:
+          'Platform connecting space professionals and fostering career development in the space industry.',
       },
       {
         name: 'The Planetary Society',
         url: 'https://www.planetary.org/',
-        description: 'World\'s largest and most influential nonprofit space organization advocating for space exploration.'
+        description:
+          "World's largest and most influential nonprofit space organization advocating for space exploration.",
       },
       {
         name: 'National Test Pilot School',
         url: 'https://ntps.edu/',
-        description: 'Leading institution for test pilot and flight test engineer training and education.'
+        description:
+          'Leading institution for test pilot and flight test engineer training and education.',
       },
       {
         name: 'International Test Pilots School Canada',
         url: 'https://itpscanada.com/',
-        description: 'Professional flight test training and aerospace education programs in Canada.'
+        description:
+          'Professional flight test training and aerospace education programs in Canada.',
       },
       {
         name: 'Karman Project',
         url: 'https://www.karmanproject.org/',
-        description: 'Educational initiative promoting space exploration and STEM education through innovative programs.'
+        description:
+          'Educational initiative promoting space exploration and STEM education through innovative programs.',
       },
       {
         name: 'Telecommunications, Satellites, and Space Exploration',
         url: 'https://www.ooma.com/blog/telecommunications-satellites-and-space-exploration/',
-        description: 'Overview of how satellite technology supports communication, research, and our understanding of Earth and the environment.'
-      }
-    ]
+        description:
+          'Overview of how satellite technology supports communication, research, and our understanding of Earth and the environment.',
+      },
+    ],
   },
   {
     title: 'Organizations & Foundations',
-    description: 'Professional organizations, foundations, and industry associations supporting space exploration and aerospace development.',
+    description:
+      'Professional organizations, foundations, and industry associations supporting space exploration and aerospace development.',
     resources: [
       {
         name: 'International Astronautical Federation (IAF)',
         url: 'https://www.iafastro.org/',
-        description: 'Global space advocacy organization connecting space professionals and promoting international cooperation.'
+        description:
+          'Global space advocacy organization connecting space professionals and promoting international cooperation.',
       },
       {
         name: 'Space Foundation',
         url: 'https://www.spacefoundation.org/',
-        description: 'Leading advocate for space exploration and STEM education through research and outreach programs.'
+        description:
+          'Leading advocate for space exploration and STEM education through research and outreach programs.',
       },
       {
         name: 'Space Angels',
         url: 'https://www.spaceangels.com/',
-        description: 'Investment platform and community focused on space industry funding and market intelligence.'
-      }
-    ]
+        description:
+          'Investment platform and community focused on space industry funding and market intelligence.',
+      },
+    ],
   },
   {
     title: 'Industry Resources',
-    description: 'Specialized resources for space industry professionals, including technical standards and equipment suppliers.',
+    description:
+      'Specialized resources for space industry professionals, including technical standards and equipment suppliers.',
     resources: [
       {
         name: 'NASA Electronic Parts and Packaging (NEPP)',
         url: 'https://nepp.nasa.gov/npsl/Wire/stranded_wire.htm',
-        description: 'NASA\'s technical resource for electronic parts, packaging, and wire specifications for space applications.'
+        description:
+          "NASA's technical resource for electronic parts, packaging, and wire specifications for space applications.",
       },
       {
         name: 'Survival Systems Inc.',
         url: 'https://www.survivalsystemsinc.com/',
-        description: 'Specialized equipment and training for aerospace, defense, and survival applications.'
+        description:
+          'Specialized equipment and training for aerospace, defense, and survival applications.',
       },
       {
         name: 'SpaceCrew Directory',
         url: 'https://spacecrew.com/space-companies',
-        description: 'Comprehensive directory of space companies and organizations worldwide.'
+        description: 'Comprehensive directory of space companies and organizations worldwide.',
       },
       {
         name: 'Rocket Launch Directory',
         url: 'https://rocketlaunch.org/launch-providers',
-        description: 'Database of rocket launch providers and launch services information.'
+        description: 'Database of rocket launch providers and launch services information.',
       },
       {
         name: 'Space Bandits',
         url: 'https://www.spacebandits.io/',
-        description: 'Community platform for space enthusiasts and professionals sharing industry insights.'
-      }
-    ]
+        description:
+          'Community platform for space enthusiasts and professionals sharing industry insights.',
+      },
+    ],
   },
   {
     title: 'Curated Lists',
-    description: 'Community-maintained "awesome" lists featuring comprehensive collections of space and geospatial resources.',
+    description:
+      'Community-maintained "awesome" lists featuring comprehensive collections of space and geospatial resources.',
     resources: [
       {
         name: 'Awesome Space',
         url: 'https://github.com/orbitalindex/awesome-space',
-        description: 'Curated list of space-related packages, resources, and links for developers and researchers.'
+        description:
+          'Curated list of space-related packages, resources, and links for developers and researchers.',
       },
       {
         name: 'Awesome Geospatial',
         url: 'https://github.com/sacridini/Awesome-Geospatial',
-        description: 'Comprehensive list of geospatial libraries, software, data sources, and resources.'
-      }
-    ]
-  }
+        description:
+          'Comprehensive list of geospatial libraries, software, data sources, and resources.',
+      },
+    ],
+  },
 ]
 
 export default function Resources() {
@@ -361,8 +410,8 @@ export default function Resources() {
 
   return (
     <>
-      <WebsiteHead 
-        title="Resources" 
+      <WebsiteHead
+        title="Resources"
         description="Comprehensive collection of space, geospatial, and research resources curated for the MoonDAO community. Access databases, tools, and platforms for space exploration and research."
       />
       <section className="flex flex-col justify-start px-5 mt-5 items-start animate-fadeIn w-[90vw] md:w-full">
@@ -370,11 +419,7 @@ export default function Resources() {
           <ContentLayout
             header="Community Resources"
             headerSize="40px"
-            description={
-              <div className="text-gray-300 text-lg leading-relaxed">
-                A comprehensive collection of tools, databases, and platforms curated for space exploration, research, and development. These resources support the MoonDAO community in advancing our mission to establish humanity's presence beyond Earth.
-              </div>
-            }
+            description="Tools, databases, and platforms for space exploration and research."
             mainPadding
             mode="compact"
             isProfile={true}
@@ -389,12 +434,16 @@ export default function Resources() {
                     resources={category.resources}
                   />
                 ))}
-                
+
                 {/* Call to action section */}
                 <div className="mt-12 p-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl border border-blue-500/30">
-                  <h2 className="font-GoodTimes text-xl text-white mb-3">Contribute Resources</h2>
+                  <h2 className="font-heading font-semibold text-xl text-white mb-3">
+                    Contribute Resources
+                  </h2>
                   <p className="text-slate-300 text-sm mb-4 leading-relaxed">
-                    Know of valuable resources that would benefit the MoonDAO community? We're always looking to expand this collection with high-quality tools, databases, and platforms that support space exploration and research.
+                    Know of valuable resources that would benefit the MoonDAO community? We're
+                    always looking to expand this collection with high-quality tools, databases, and
+                    platforms that support space exploration and research.
                   </p>
                   <a
                     href="https://moondao.com/discord"

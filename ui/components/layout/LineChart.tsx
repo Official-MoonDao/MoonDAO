@@ -118,9 +118,7 @@ const calculateYAxisScale = (values: number[], compact: boolean) => {
 
     const step = (yMax - yMin) / tickCount
     return {
-      ticks: Array.from({ length: tickCount + 1 }, (_, i) =>
-        Math.round(yMin + step * i)
-      ),
+      ticks: Array.from({ length: tickCount + 1 }, (_, i) => Math.round(yMin + step * i)),
       domain: [yMin, yMax],
     }
   }
@@ -129,9 +127,7 @@ const calculateYAxisScale = (values: number[], compact: boolean) => {
   const step = yMax / tickCount
 
   return {
-    ticks: Array.from({ length: tickCount + 1 }, (_, i) =>
-      Math.round(step * i)
-    ),
+    ticks: Array.from({ length: tickCount + 1 }, (_, i) => Math.round(step * i)),
     domain: [0, yMax],
   }
 }
@@ -191,8 +187,7 @@ export default function LineChart({
 
   const xDomain = useMemo(() => {
     const nowInSeconds = Math.floor(now / 1000)
-    const startOfToday =
-      Math.floor(nowInSeconds / (24 * 60 * 60)) * (24 * 60 * 60)
+    const startOfToday = Math.floor(nowInSeconds / (24 * 60 * 60)) * (24 * 60 * 60)
     const endOfToday = startOfToday + 24 * 60 * 60
     const days = compact ? timeRange.compactDays || 365 : +range
 
@@ -223,11 +218,7 @@ export default function LineChart({
       }
 
       const ticks = []
-      for (
-        let day = startDay;
-        day <= endDay;
-        day += tickInterval * 24 * 60 * 60
-      ) {
+      for (let day = startDay; day <= endDay; day += tickInterval * 24 * 60 * 60) {
         ticks.push(day)
       }
       return ticks
@@ -246,9 +237,7 @@ export default function LineChart({
     if (dataProcessing === 'cumulative') {
       // Sort data by timestamp
       const sortedData = [...data].sort(
-        (a, b) =>
-          parseInt(String(a[timestampField])) -
-          parseInt(String(b[timestampField]))
+        (a, b) => parseInt(String(a[timestampField])) - parseInt(String(b[timestampField]))
       )
 
       // Count entries that happened before the range starts
@@ -307,11 +296,8 @@ export default function LineChart({
           }))
           .sort((a, b) => a.timestamp - b.timestamp)
 
-        const lastPointBeforeRange =
-          pointsBeforeRange[pointsBeforeRange.length - 1]
-        points = lastPointBeforeRange
-          ? [lastPointBeforeRange, ...pointsInRange]
-          : pointsInRange
+        const lastPointBeforeRange = pointsBeforeRange[pointsBeforeRange.length - 1]
+        points = lastPointBeforeRange ? [lastPointBeforeRange, ...pointsInRange] : pointsInRange
       } else {
         points = pointsInRange
       }
@@ -324,8 +310,7 @@ export default function LineChart({
 
       const pointsByDay = new Map()
       points.forEach((point) => {
-        const dayTimestamp =
-          Math.floor(point.timestamp / (24 * 60 * 60)) * (24 * 60 * 60)
+        const dayTimestamp = Math.floor(point.timestamp / (24 * 60 * 60)) * (24 * 60 * 60)
         pointsByDay.set(dayTimestamp, point[valueField])
       })
 
@@ -333,9 +318,7 @@ export default function LineChart({
       let lastValue = points[0][valueField]
 
       // Look for any data points before the start of our range to get a better starting value
-      const pointsBeforeRange = points.filter(
-        (point) => point.timestamp < startDay
-      )
+      const pointsBeforeRange = points.filter((point) => point.timestamp < startDay)
       if (pointsBeforeRange.length > 0) {
         // Use the most recent value before our range
         lastValue = pointsBeforeRange[pointsBeforeRange.length - 1][valueField]
@@ -364,19 +347,10 @@ export default function LineChart({
     }
 
     return points
-  }, [
-    data,
-    xDomain,
-    isLoading,
-    dataProcessing,
-    timestampField,
-    valueField,
-    fillMissingDays,
-  ])
+  }, [data, xDomain, isLoading, dataProcessing, timestampField, valueField, fillMissingDays])
 
   const yAxisScale = useMemo(() => {
-    if (!processedPoints?.length)
-      return { ticks: [0, 1, 2, 3, 4, 5], domain: [0, 5] }
+    if (!processedPoints?.length) return { ticks: [0, 1, 2, 3, 4, 5], domain: [0, 5] }
 
     const values = processedPoints.map((point) => Number(point[valueField]))
     return calculateYAxisScale(values, compact)
@@ -401,8 +375,7 @@ export default function LineChart({
     ]
 
     const config = formatConfigs.find((c) => totalDays <= c.threshold)!
-    return (timestampSecs: number) =>
-      moment.utc(timestampSecs * 1000).format(config.format)
+    return (timestampSecs: number) => moment.utc(timestampSecs * 1000).format(config.format)
   }, [xDomain])
 
   if (compact) {
@@ -421,13 +394,7 @@ export default function LineChart({
           <YAxis hide domain={[yDomain[0], yDomain[1]]} type="number" />
           <XAxis hide domain={xDomain} type="number" dataKey="timestamp" />
           <defs>
-            <linearGradient
-              id={`colorGradient-${valueField}-compact`}
-              x1="0"
-              y1="0"
-              x2="1"
-              y2="0"
-            >
+            <linearGradient id={`colorGradient-${valueField}-compact`} x1="0" y1="0" x2="1" y2="0">
               <stop offset="5%" stopColor="#425eeb" />
               <stop offset="90%" stopColor="#6d3f79" />
             </linearGradient>
@@ -457,11 +424,7 @@ export default function LineChart({
           <div className="flex flex-col md:flex-row items-center gap-2">
             {dataCategories.map((category: any) => {
               return (
-                <div
-                  key={category.name}
-                  className={`text-sm`}
-                  style={{ color: '#425eeb' }}
-                >
+                <div key={category.name} className={`text-sm`} style={{ color: '#425eeb' }}>
                   {`◉ ${category.name}`}
                 </div>
               )
@@ -472,20 +435,14 @@ export default function LineChart({
       <div className="mt-4 w-full relative">
         {!isLoading && data && allZeroValues && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-            <div
-              className="text-white text-xl font-semibold font-GoodTimes"
-              id="no-activity-message"
-            >
+            <div className="text-white text-xl font-semibold font-heading" id="no-activity-message">
               {labels.emptyMessage}
             </div>
           </div>
         )}
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-            <div
-              className="text-white text-xl font-semibold font-GoodTimes"
-              id="no-activity-message"
-            >
+            <div className="text-white text-xl font-semibold font-heading" id="no-activity-message">
               <LoadingSpinner />
             </div>
           </div>
@@ -500,11 +457,7 @@ export default function LineChart({
             }}
             data={processedPoints}
           >
-            <CartesianGrid
-              stroke={stroke}
-              strokeDasharray="1 2"
-              vertical={false}
-            />
+            <CartesianGrid stroke={stroke} strokeDasharray="1 2" vertical={false} />
             <YAxis
               stroke={stroke}
               tickLine={false}
@@ -558,9 +511,7 @@ export default function LineChart({
             />
             <defs>
               <linearGradient
-                id={`colorGradient-${valueField}-${
-                  compact ? 'compact' : 'full'
-                }`}
+                id={`colorGradient-${valueField}-${compact ? 'compact' : 'full'}`}
                 x1="0"
                 y1="0"
                 x2="1"
@@ -572,9 +523,7 @@ export default function LineChart({
               </linearGradient>
               {fillMissingDays && (
                 <linearGradient
-                  id={`fillColorGradient-${valueField}-${
-                    compact ? 'compact' : 'full'
-                  }`}
+                  id={`fillColorGradient-${valueField}-${compact ? 'compact' : 'full'}`}
                   x1="0%"
                   y1="0%"
                   x2="100%"
@@ -591,12 +540,8 @@ export default function LineChart({
                 dot={false}
                 stroke={
                   fillMissingDays
-                    ? `url(#fillColorGradient-${valueField}-${
-                        compact ? 'compact' : 'full'
-                      })`
-                    : `url(#colorGradient-${valueField}-${
-                        compact ? 'compact' : 'full'
-                      })`
+                    ? `url(#fillColorGradient-${valueField}-${compact ? 'compact' : 'full'})`
+                    : `url(#colorGradient-${valueField}-${compact ? 'compact' : 'full'})`
                 }
                 strokeWidth={strokeWidth}
                 type="linear"

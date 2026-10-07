@@ -1,3 +1,4 @@
+import { getMissionMinimumUsdGoal, MISSION_MINIMUM_GOAL_TOOLTIP } from 'const/missionMilestones'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
@@ -7,10 +8,6 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
-import {
-  getMissionMinimumUsdGoal,
-  MISSION_MINIMUM_GOAL_TOOLTIP,
-} from 'const/missionMilestones'
 import Card from '../layout/Card'
 import StandardButton from '../layout/StandardButton'
 import { Mission } from './MissionCard'
@@ -127,7 +124,7 @@ export default function MissionWideCard({
         <div className="w-full flex flex-col px-8 md:px-0 gap-6">
           <div className="w-full flex flex-col gap-4">
             {ethPrice && subgraphData?.volume > 0 && (
-              <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-GoodTimes py-2 px-4 md:px-6 rounded-full inline-flex items-start w-fit flex-col">
+              <div className="bg-gradient-to-r from-[#51285C] to-[#6D3F79] text-white font-heading font-semibold py-2 px-4 md:px-6 rounded-full inline-flex items-start w-fit flex-col">
                 <div className="flex items-center flex-wrap md:min-w-[200px]">
                   <Image
                     src="/assets/icon-raised-tokens.svg"
@@ -170,8 +167,8 @@ export default function MissionWideCard({
                   minUsdGoal != null
                     ? MISSION_MINIMUM_GOAL_TOOLTIP
                     : ethPrice
-                      ? `~ $${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()} USD`
-                      : undefined
+                    ? `~ $${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()} USD`
+                    : undefined
                 }
               />
             </div>

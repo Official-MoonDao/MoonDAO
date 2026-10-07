@@ -1,5 +1,5 @@
-import React from 'react'
 import { CalendarIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
+import React from 'react'
 import type { ProposalAIReviewResult } from '@/lib/proposals/aiReview'
 
 interface ProposalSubmissionCTAProps {
@@ -22,11 +22,21 @@ export default function ProposalSubmissionCTA({
       <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <svg
+              className="w-8 h-8 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-white mb-2 font-GoodTimes">
+          <h2 className="text-3xl font-bold text-white mb-2 font-heading">
             Proposal Submitted Successfully! 🚀
           </h2>
           <p className="text-gray-300 text-lg">
@@ -73,7 +83,8 @@ export default function ProposalSubmissionCTA({
                   1. Attend the Next Town Hall
                 </h4>
                 <p className="text-gray-300 mb-4">
-                  Present your proposal to the community and answer questions during our weekly town hall meetings. This is crucial for building support and gathering feedback.
+                  Present your proposal to the community and answer questions during our weekly town
+                  hall meetings. This is crucial for building support and gathering feedback.
                 </p>
                 <a
                   href={LUMA_CALENDAR}
@@ -82,8 +93,18 @@ export default function ProposalSubmissionCTA({
                   className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
                 >
                   View Town Hall Schedule
-                  <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg
+                    className="ml-2 w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
                   </svg>
                 </a>
               </div>
@@ -97,11 +118,10 @@ export default function ProposalSubmissionCTA({
                 <ChatBubbleLeftIcon className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
-                <h4 className="text-lg font-semibold text-white mb-2">
-                  2. Follow Up in Discord
-                </h4>
+                <h4 className="text-lg font-semibold text-white mb-2">2. Follow Up in Discord</h4>
                 <p className="text-gray-300 mb-4">
-                  Share your proposal in the #ideation channel to engage with the community, gather feedback, and build consensus before the voting period.
+                  Share your proposal in the #ideation channel to engage with the community, gather
+                  feedback, and build consensus before the voting period.
                 </p>
                 <a
                   href={PROPOSALS_CHANNEL}
@@ -110,8 +130,18 @@ export default function ProposalSubmissionCTA({
                   className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
                 >
                   Join Proposals Discussion
-                  <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  <svg
+                    className="ml-2 w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
                   </svg>
                 </a>
               </div>

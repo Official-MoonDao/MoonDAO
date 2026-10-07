@@ -12,7 +12,7 @@ type ApplyModalProps = {
 
 export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
   const submitTypeform = useCallback(async () => {
-    toast.success('Application submitted — we\'ll be in touch!')
+    toast.success("Application submitted — we'll be in touch!")
     setEnabled(false)
   }, [setEnabled])
 
@@ -21,7 +21,9 @@ export default function ApplyModal({ type, setEnabled }: ApplyModalProps) {
       <div className="w-[95vw] md:w-[700px] flex flex-col gap-4 md:gap-6 p-4 md:p-8 bg-gradient-to-b from-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-slate-700/50 rounded-2xl md:rounded-[2vmax] shadow-2xl max-h-[90vh] md:max-h-[85vh]">
         <div className="w-full flex items-start md:items-center justify-between flex-shrink-0 gap-4">
           <div className="flex flex-col gap-1 md:gap-2 flex-1 min-w-0">
-            <h2 className="text-xl md:text-2xl font-GoodTimes text-white">Apply to MoonDAO</h2>
+            <h2 className="text-xl md:text-2xl font-heading font-semibold text-white">
+              Apply to MoonDAO
+            </h2>
             <p className="text-slate-300 text-xs md:text-sm">
               Complete the application form below to join our community
             </p>

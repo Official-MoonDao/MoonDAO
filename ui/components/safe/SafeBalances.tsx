@@ -34,12 +34,12 @@ export function SafeAsset({ label, balance }: { label: string; balance: string }
           />
         </div>
         <div>
-          <p className="font-GoodTimes text-white text-sm">{label}</p>
+          <p className="font-heading font-semibold text-white text-sm">{label}</p>
           <p className="text-xs text-slate-400">Available Balance</p>
         </div>
       </div>
       <div className="text-right">
-        <p className="font-GoodTimes text-white text-lg">{displayBalance}</p>
+        <p className="font-heading font-semibold text-white text-lg">{displayBalance}</p>
         <p className="text-xs text-slate-400">{label}</p>
       </div>
     </div>

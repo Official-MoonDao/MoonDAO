@@ -5,8 +5,8 @@ import { useRouter } from 'next/router'
 import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { useActiveAccount } from 'thirdweb/react'
+import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { clearCachedCitizenExpiry } from '@/lib/citizen/citizenSubscription'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
@@ -216,7 +216,7 @@ export function SubscriptionModal({
 
         {/* Subscription Extension */}
         <div data-testid="extension-section" className="mb-8">
-          <h3 data-testid="extension-title" className="text-xl font-GoodTimes mb-4">
+          <h3 data-testid="extension-title" className="text-xl font-heading font-semibold mb-4">
             Extension Details
           </h3>
           <p className="text-gray-300 mb-4">
@@ -259,10 +259,7 @@ export function SubscriptionModal({
                   <span className="text-white font-medium">
                     {payCost != null ? formatEthCeil(payEth) : '0.00'} ETH
                     {costUsd > 0 && (
-                      <span className="text-gray-400 font-normal">
-                        {' '}
-                        (~${costUsd.toFixed(2)})
-                      </span>
+                      <span className="text-gray-400 font-normal"> (~${costUsd.toFixed(2)})</span>
                     )}
                   </span>
                 )}

@@ -1,11 +1,11 @@
 import Image from 'next/image'
-import toast from 'react-hot-toast'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
+import { useCitizenNameByAddress } from '@/lib/citizen/useCitizenNameByAddress'
 import { useSafeBalances } from '@/lib/nance/SafeHooks'
 import { PROJECT_PENDING } from '@/lib/nance/types'
 import { useENS } from '@/lib/utils/hooks/useENS'
-import { useCitizenNameByAddress } from '@/lib/citizen/useCitizenNameByAddress'
 import StandardButton from '../layout/StandardButton'
 import SafeBalances from '../safe/SafeBalances'
 import SafeModal from '../safe/SafeModal'
@@ -31,8 +31,7 @@ type TeamTreasuryProps = {
 // hideHeader / default render paths share one source of truth, and so
 // the markup doesn't shift around at the responsive breakpoints.
 function MultisigAddressPill({ address }: { address: string }) {
-  const safePrefix =
-    process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
+  const safePrefix = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
   return (
     <div className="flex items-center gap-2 min-w-0">
       <a
@@ -52,12 +51,7 @@ function MultisigAddressPill({ address }: { address: string }) {
           toast.success('Treasury address copied to clipboard!')
         }}
       >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -73,8 +67,7 @@ function MultisigAddressPill({ address }: { address: string }) {
 function SignerAddress({ address }: { address: string }) {
   const { data: ens } = useENS(address)
   const citizenName = useCitizenNameByAddress(address)
-  const displayName =
-    citizenName || ens?.name || `${address.slice(0, 6)}...${address.slice(-4)}`
+  const displayName = citizenName || ens?.name || `${address.slice(0, 6)}...${address.slice(-4)}`
   return (
     <a
       href={`https://etherscan.io/address/${address}`}
@@ -83,7 +76,11 @@ function SignerAddress({ address }: { address: string }) {
       className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
     >
       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex-shrink-0" />
-      <span className={`text-xs sm:text-sm truncate ${citizenName ? 'text-white font-medium' : 'text-gray-300 font-mono'}`}>
+      <span
+        className={`text-xs sm:text-sm truncate ${
+          citizenName ? 'text-white font-medium' : 'text-gray-300 font-mono'
+        }`}
+      >
         {displayName}
       </span>
     </a>
@@ -149,13 +146,11 @@ export default function TeamTreasury({
                 />
               </svg>
               <div className="min-w-0">
-                <p className="text-sm text-yellow-200 font-medium">
-                  Multisig Setup Required
-                </p>
+                <p className="text-sm text-yellow-200 font-medium">Multisig Setup Required</p>
                 <p className="text-xs text-yellow-200/70 mt-1">
                   This project&apos;s multisig currently has {safeOwners.length} signer
-                  {safeOwners.length === 1 ? '' : 's'}. Projects must have a 3/5 multisig
-                  (5 signers with a threshold of 3) to be included in the member vote.
+                  {safeOwners.length === 1 ? '' : 's'}. Projects must have a 3/5 multisig (5 signers
+                  with a threshold of 3) to be included in the member vote.
                 </p>
               </div>
             </div>
@@ -185,13 +180,11 @@ export default function TeamTreasury({
                   height={30}
                   className="opacity-70 flex-shrink-0"
                 />
-                <h2 className="font-GoodTimes text-xl sm:text-2xl text-white truncate">
+                <h2 className="font-heading font-semibold text-xl sm:text-2xl text-white truncate">
                   Treasury
                 </h2>
               </div>
-              {multisigAddress && (
-                <MultisigAddressPill address={multisigAddress} />
-              )}
+              {multisigAddress && <MultisigAddressPill address={multisigAddress} />}
             </div>
           )}
           {hideHeader && multisigAddress && (
@@ -245,11 +238,7 @@ export default function TeamTreasury({
 
         {isSigner && safeData && (
           <div className="mt-4 pt-4 border-t border-slate-600/30">
-            <SafeTransactions
-              address={address}
-              safeData={safeData}
-              tokenBalances={safeBalances}
-            />
+            <SafeTransactions address={address} safeData={safeData} tokenBalances={safeBalances} />
           </div>
         )}
       </div>

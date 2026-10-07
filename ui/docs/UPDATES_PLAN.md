@@ -39,7 +39,7 @@ blog is the same idea with a much smaller feature set and a reading-first layout
 
 - Comments, reactions, or accounts.
 - Draft previews for non-technical authors. Authoring means opening a PR; the PR
-  preview deploy *is* the draft preview.
+  preview deploy _is_ the draft preview.
 - Replacing the ConvertKit newsletter at `/news`, or the curated announcement list on
   `/press`. See "How this relates to /news and /press" below.
 - Multi-language posts. The app has `i18n` configured but the blog ships English-only.
@@ -49,7 +49,7 @@ blog is the same idea with a much smaller feature set and a reading-first layout
 
 Looking at a16z, USV, Sequoia, Stripe's blog, and the space-company update pages
 (SpaceX Updates, Varda, Stoke Space, Anduril, Hadrian), the pattern is remarkably
-consistent, and it is consistent precisely because it is *restrained*:
+consistent, and it is consistent precisely because it is _restrained_:
 
 **Index page.** Reverse-chronological. One optional featured post at the top with a
 larger treatment, then a simple list. The list rows are text-forward — title, a
@@ -110,23 +110,22 @@ tags:
 featured: true
 draft: false
 ---
-
 Body starts here. Standard markdown, GFM tables, images.
 ```
 
 Field rules:
 
-| Field | Required | Notes |
-|---|---|---|
-| `title` | yes | Build fails without it. Also the `og:title`. |
-| `description` | yes | The dek on the index and post page, and the `og:description`. Keep under 160 characters or `Head.tsx` truncates it. |
-| `date` | yes | `YYYY-MM-DD`. Sort key and the `article:published_time`. |
-| `author` | yes | Free text. Not tied to a Citizen NFT in v1. |
-| `authorRole` | no | Shown next to the author in the byline. |
-| `image` | no | Post hero and OG image. Falls back to the site default. |
-| `tags` | no | Rendered as labels. No archive pages in v1. |
-| `featured` | no | At most one; the newest one wins if several are set. |
-| `draft` | no | `true` excludes the post from the index, the sitemap, and RSS, and returns 404 in production while remaining visible on preview deploys. |
+| Field         | Required | Notes                                                                                                                                    |
+| ------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`       | yes      | Build fails without it. Also the `og:title`.                                                                                             |
+| `description` | yes      | The dek on the index and post page, and the `og:description`. Keep under 160 characters or `Head.tsx` truncates it.                      |
+| `date`        | yes      | `YYYY-MM-DD`. Sort key and the `article:published_time`.                                                                                 |
+| `author`      | yes      | Free text. Not tied to a Citizen NFT in v1.                                                                                              |
+| `authorRole`  | no       | Shown next to the author in the byline.                                                                                                  |
+| `image`       | no       | Post hero and OG image. Falls back to the site default.                                                                                  |
+| `tags`        | no       | Rendered as labels. No archive pages in v1.                                                                                              |
+| `featured`    | no       | At most one; the newest one wins if several are set.                                                                                     |
+| `draft`       | no       | `true` excludes the post from the index, the sitemap, and RSS, and returns 404 in production while remaining visible on preview deploys. |
 
 Reading time is computed from the body, not authored.
 
@@ -168,7 +167,7 @@ a real 404.
 
 Four small files. This deliberately does not reuse `lib/docs/loadDocs.ts`: that module
 carries wikilinks, transclusions, backlinks, tag trees, folder indexes, and a
-Quartz-compat alias table, none of which a blog wants. It *does* reuse the
+Quartz-compat alias table, none of which a blog wants. It _does_ reuse the
 frontmatter parser.
 
 **`lib/updates/types.ts`**
@@ -229,7 +228,7 @@ are both wrong here:
   their local env straight from production with `vercel env pull`, so locally it
   reports `mainnet`. Keying on it would hide drafts on the author's own machine,
   which defeats the point.
-- The host check in `const/flags.ts` is a *runtime* test against `window.location.host`
+- The host check in `const/flags.ts` is a _runtime_ test against `window.location.host`
   or the request's `Host` header. Neither exists inside `getStaticProps`.
 
 Use `process.env.VERCEL_ENV === 'production'`. Vercel sets it automatically to
@@ -254,12 +253,12 @@ anywhere in this repo yet, so treat it as a new convention and comment it. Local
 **Why `UpdateMarkdown` rather than reusing `DocMarkdown`.** Same plugin stack
 (`remarkGfm`, `rehypeSlug`, `rehypeAutolinkHeadings`, `rehypeRaw` — all already
 installed), different type scale. `DocMarkdown` is tuned for documentation: 16px
-body, `font-GoodTimes` on every heading down to `h4`, bordered tables, heading
+body, `font-heading` on every heading down to `h4`, bordered tables, heading
 anchors. For essays we want:
 
 - Body at `text-[19px] leading-[1.7]` with `max-w-[68ch]`.
-- `font-GoodTimes` on `h1`/`h2` only; `h3`/`h4` in the body sans at a heavier weight,
-  because GoodTimes is a display face and gets shouty at small sizes.
+- `font-heading` on `h1`/`h2` only; `h3`/`h4` in the body sans at a heavier weight,
+  because the heading face gets shouty at small sizes.
 - Blockquotes styled as real pull quotes — larger, no italic, a left rule in
   `light-cool`.
 - First-paragraph lead treatment (slightly larger, lighter).
@@ -322,7 +321,7 @@ against `DEPLOYED_ORIGIN`. So the post page passes:
 
 The `ogType` prop does not exist yet and needs adding. `WebsiteHead` currently
 hardcodes `og:type` as `website` with `key="meta-ogweb"`; passing an override as a
-child would emit *both* tags, because React's `Head` dedupes on the `key` prop and a
+child would emit _both_ tags, because React's `Head` dedupes on the `key` prop and a
 child `<meta>` would carry a different one. So add an optional `ogType` prop
 defaulting to `'website'` — one small edit to a shared component, no behavior change
 for existing callers. The `article:*` tags have no conflicting defaults and are fine

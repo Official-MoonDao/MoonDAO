@@ -63,9 +63,7 @@ describe('Mission Refund Flow — E2E', () => {
       // because tokenBalance and tokenCredit are 0. We verify the pay form is hidden.
       cy.get('body').then(($body) => {
         if ($body.find('#redeem-button').length > 0) {
-          cy.contains('This mission did not reach its funding goal').should(
-            'be.visible'
-          )
+          cy.contains('This mission did not reach its funding goal').should('be.visible')
         } else {
           // No tokens to redeem — refund card is correctly hidden for users without tokens
           cy.log(
@@ -106,7 +104,7 @@ describe('Mission Refund Flow — E2E', () => {
       cy.get('body', { timeout: 60000 }).then(($body) => {
         // "REFUND" text specifically in the stats row should not exist
         // (the word "Refunds" may appear in tooltip text, but "REFUND" as a status should not)
-        const headerText = $body.find('[class*="font-GoodTimes"]').text()
+        const headerText = $body.find('[class*="font-heading"]').text()
         expect(headerText).to.not.include('REFUND')
       })
     })
@@ -135,7 +133,7 @@ describe('Mission Refund Flow — E2E', () => {
 
     it('should NOT display "REFUND" status', () => {
       cy.get('body', { timeout: 60000 }).then(($body) => {
-        const headerText = $body.find('[class*="font-GoodTimes"]').text()
+        const headerText = $body.find('[class*="font-heading"]').text()
         expect(headerText).to.not.include('REFUND')
       })
     })
@@ -212,4 +210,3 @@ describe('Mission Refund Flow — E2E', () => {
     })
   })
 })
-

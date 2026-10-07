@@ -205,7 +205,7 @@ export default function JourneyTimeline() {
                             {state === 'now' ? ' · Now' : ''}
                           </span>
                           <h3
-                            className={`mt-2 font-GoodTimes text-lg md:text-xl ${
+                            className={`mt-2 font-heading font-semibold text-lg md:text-xl ${
                               state === 'next' ? 'text-white/75' : 'text-white'
                             }`}
                             style={{ textWrap: 'balance' } as any}
@@ -249,7 +249,7 @@ export default function JourneyTimeline() {
                 Jan 2030
               </span>
               <h3
-                className="mt-2 font-GoodTimes text-2xl text-white md:text-3xl"
+                className="mt-2 font-heading font-semibold text-2xl text-white md:text-3xl"
                 style={{ textWrap: 'balance' } as any}
               >
                 Lunar Settlement Complete

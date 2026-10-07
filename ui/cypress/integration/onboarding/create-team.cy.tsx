@@ -20,7 +20,7 @@ describe('<CreateTeam />', () => {
   })
 
   it('Should render the component', () => {
-    cy.get('div').contains('Join The Network').should('exist')
+    cy.contains('Create a Team').should('exist')
   })
 
   it('Should complete team onboarding flow', () => {

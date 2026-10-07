@@ -95,7 +95,7 @@ export default function TownHallSummaryCard({
               <div
                 className="prose prose-invert prose-lg max-w-none text-slate-300 leading-relaxed
                   prose-headings:text-white prose-headings:font-bold prose-headings:mt-8 prose-headings:mb-4
-                  prose-h2:text-xl prose-h2:font-GoodTimes prose-h2:text-blue-300
+                  prose-h2:text-xl prose-h2:font-heading prose-h2:font-semibold prose-h2:text-blue-300
                   prose-h3:text-lg prose-h3:font-semibold prose-h3:text-slate-200
                   prose-p:text-slate-300 prose-p:leading-relaxed prose-p:mb-4
                   prose-ul:text-slate-300 prose-ul:list-disc prose-ul:pl-6 prose-ul:mb-4

@@ -36,7 +36,7 @@ export default function CoverageGrid({ coverage }: { coverage: CoverageItem[] })
     <div className="flex flex-col gap-8">
       {years.map((year) => (
         <div key={year}>
-          <h3 className="mb-4 font-GoodTimes text-lg text-slate-400">{year}</h3>
+          <h3 className="mb-4 font-heading font-semibold text-lg text-slate-400">{year}</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {coverage
               .filter((item) => pressYear(item.date) === year)

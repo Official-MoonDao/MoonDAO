@@ -15,12 +15,12 @@ import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Head from '../components/layout/Head'
+import JobCitizenUpsell from '@/components/jobs/JobCitizenUpsell'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Search from '@/components/layout/Search'
-import JobCitizenUpsell from '@/components/jobs/JobCitizenUpsell'
 import TeamABI from '../const/abis/Team.json'
 
 type JobsProps = {
@@ -153,10 +153,7 @@ export default function Jobs({ jobs }: JobsProps) {
     category !== ALL || commitment !== ALL || location !== ALL || paidOnly || input.trim() !== ''
 
   const descriptionSection = (
-    <div className="pt-2 flex flex-col gap-4">
-      <p className="text-slate-400">
-        Explore opportunities with teams building the future of space exploration
-      </p>
+    <div className="flex flex-col gap-4">
       <div className="w-fit max-w-[500px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-1">
         <Search
           input={input}

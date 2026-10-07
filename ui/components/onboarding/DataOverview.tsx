@@ -16,7 +16,7 @@ export function DataOverview({
   return (
     <div className="rounded-2xl border border-white/[0.08] overflow-hidden">
       <div className="px-5 py-4 bg-white/[0.03] border-b border-white/[0.06]">
-        <h3 className="font-GoodTimes text-base text-white">{title}</h3>
+        <h3 className="font-heading font-semibold text-base text-white">{title}</h3>
       </div>
       <div className="divide-y divide-white/[0.06]">
         {filteredKeys.map((key, i) => (

@@ -140,7 +140,7 @@ export function CreateMissionStage({
   const { login } = usePrivy()
   return (
     <div className="w-full flex flex-col gap-4" id={id}>
-      <h2 className="font-GoodTimes text-2xl md:text-4xl">{header}</h2>
+      <h2 className="font-heading font-semibold text-2xl md:text-4xl">{header}</h2>
       <p className="opacity-50">{description}</p>
       <div className="flex flex-col gap-5 w-full md:max-w-[600px] lg:max-w-[800px]">
         {children}
@@ -508,7 +508,7 @@ export default function CreateMission({
     <Container containerwidth={true}>
       <div className="flex flex-col items-center w-full min-h-screen">
         <div className="w-full max-w-[1200px] flex flex-col items-center px-4 pb-4 md:px-8">
-          <h1 className="font-GoodTimes text-[max(20px,3vw)] mt-[100px] mb-4 text-center">
+          <h1 className="font-heading font-semibold text-[max(20px,3vw)] mt-[100px] mb-4 text-center">
             Launch A Mission
           </h1>
 
@@ -637,7 +637,7 @@ export default function CreateMission({
                       </div>
                     )}
                   {selectedTeamNFT && (
-                    <p className="mt-4 font-GoodTimes">
+                    <p className="mt-4 font-heading font-semibold">
                       {`Selected Team : `}
                       <Link
                         className="text-lg text-light-warm font-bold hover:underline"
@@ -798,7 +798,7 @@ export default function CreateMission({
                   }}
                 >
                   <div className="">
-                    <h1 className="font-GoodTimes text-2xl">Tokenomics</h1>
+                    <h1 className="font-heading font-semibold text-2xl">Tokenomics</h1>
                     <p className="my-2">
                       {
                         'When you launch a mission on the MoonDAO Launchpad, your fundraising structure follows a transparent, standardized model designed for long-term sustainability and success.'

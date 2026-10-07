@@ -33,7 +33,9 @@ export default function MissionFundingMilestonesList({
               )}
             </span>
             <div className="min-w-0 flex-1">
-              <span className="font-GoodTimes text-white text-sm">{formatUsdCompact(m.usd)}</span>
+              <span className="font-heading font-semibold text-white text-sm">
+                {formatUsdCompact(m.usd)}
+              </span>
               <span className="text-gray-500 mx-1.5">·</span>
               <span className="text-gray-400 text-sm">{m.label}</span>
               {isNext && (

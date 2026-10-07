@@ -9,7 +9,7 @@ const BIO =
 const viewports: Cypress.ViewportPreset[] = ['iphone-x', 'ipad-2', 'macbook-15']
 
 function assertFitsBox(el: HTMLElement, label: string) {
-  // GoodTimes display glyphs can ink a few pixels past the em box.
+  // Display glyphs can ink a few pixels past the em box.
   expect(el.scrollWidth, label).to.be.at.most(el.clientWidth + 8)
 }
 
@@ -24,13 +24,13 @@ function mountProfileHeader() {
           <ProfileHeaderFrame
             id="citizenheader-container"
             image={
-              <div className="w-[200px] h-[200px] rounded-2xl border-4 border-slate-500/50 bg-slate-700" />
+              <div className="w-24 h-24 rounded-2xl border-4 border-slate-500/50 bg-slate-700" />
             }
           >
             <div className="flex flex-col gap-4 w-full min-w-0">
               <h1
                 data-testid="profile-name"
-                className="font-GoodTimes text-white text-xl sm:text-2xl lg:text-4xl font-bold mb-3 w-full max-w-full break-words [overflow-wrap:anywhere]"
+                className="font-heading text-white text-xl sm:text-2xl lg:text-4xl font-bold mb-3 w-full max-w-full break-words [overflow-wrap:anywhere]"
               >
                 {LONG_NAME}
               </h1>
@@ -90,7 +90,7 @@ describe('<ProfileHeaderFrame />', () => {
   it('does not use a 350px min-width spacer in compact profile layout', () => {
     cy.viewport('iphone-x')
     mountProfileHeader()
-    cy.get('#image').should('not.have.class', 'min-w-[350px]')
+    cy.get('#image').should('not.exist')
     cy.get('#title-wrapper').should('have.class', 'min-w-0')
   })
 })
@@ -101,7 +101,7 @@ describe('<StandardDetailCard /> profile listings', () => {
   })
 
   viewports.forEach((viewport) => {
-    it(`wraps long GoodTimes titles on ${viewport}`, () => {
+    it(`wraps long display titles on ${viewport}`, () => {
       cy.viewport(viewport)
       cy.mount(
         <div className="w-full max-w-[100vw] px-4">

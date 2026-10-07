@@ -183,9 +183,7 @@ export function ExpandedFooter({
                     height={2000}
                   />
                 </div>
-                <h2 className="z-50 text-2xl font-bold font-GoodTimes mb-3">
-                  {callToAction.title}
-                </h2>
+                <h2 className="z-50 text-2xl font-bold font-heading mb-3">{callToAction.title}</h2>
                 {callToAction.body && (
                   <p className="max-w-[400px] mb-4 opacity-80">{callToAction.body}</p>
                 )}
@@ -220,9 +218,10 @@ export function ExpandedFooter({
                   <LinkList
                     title={group.name.toUpperCase()}
                     titleHref={group.href}
-                    links={[...group.children, ...(group.footerOnly ?? [])].map(
-                      (link) => ({ text: link.name, href: link.href })
-                    )}
+                    links={[...group.children, ...(group.footerOnly ?? [])].map((link) => ({
+                      text: link.name,
+                      href: link.href,
+                    }))}
                   />
                 </div>
               ))}

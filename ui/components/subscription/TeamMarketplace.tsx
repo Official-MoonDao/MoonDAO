@@ -99,7 +99,7 @@ export default function TeamMarketplace({
             height={30}
             className="opacity-70"
           />
-          <h2 className="font-GoodTimes text-2xl text-white">Marketplace</h2>
+          <h2 className="font-heading font-semibold text-2xl text-white">Marketplace</h2>
         </div>
         {isManager && (
           <StandardButton

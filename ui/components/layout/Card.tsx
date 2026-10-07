@@ -201,7 +201,7 @@ function renderWideCardContent({
 
           <div className="p-[32px] md:p-0 w-full flex flex-col text-left">
             <div className="flex flex-col gap-2">
-              <h2 className="font-GoodTimes text-2xl text-white">
+              <h2 className="font-heading font-semibold text-2xl text-white">
                 {header || title || (profile && 'Anon')}
               </h2>
               {subheader && <div className="text-gray-400 text-lg">{subheader}</div>}
@@ -403,9 +403,9 @@ export default function Card({
           <div className={layout === 'launchpad' ? 'flex-1' : ''}>
             {stats && layout === 'launchpad' ? (
               <>
-                <h3 className="text-base md:text-xl lg:text-2xl font-GoodTimes text-white mb-1 md:mb-2">
-                  {typeof stats.value === 'number' 
-                    ? formatNumberWithCommas(stats.value.toString()) 
+                <h3 className="text-base md:text-xl lg:text-2xl font-heading font-semibold text-white mb-1 md:mb-2">
+                  {typeof stats.value === 'number'
+                    ? formatNumberWithCommas(stats.value.toString())
                     : stats.value}
                   <br />
                   {header || title}
@@ -423,7 +423,9 @@ export default function Card({
                     layout === 'launchpad'
                       ? 'text-lg md:text-xl lg:text-2xl xl:text-3xl'
                       : 'text-lg font-bold'
-                  } font-GoodTimes text-white ${layout === 'launchpad' ? 'mb-2 md:mb-4' : 'mb-2'}`}
+                  } font-heading font-semibold text-white ${
+                    layout === 'launchpad' ? 'mb-2 md:mb-4' : 'mb-2'
+                  }`}
                 >
                   {header || title}
                 </h3>
@@ -460,9 +462,10 @@ export default function Card({
   }
 
   if (layout === 'stats') {
-    const formattedValue = typeof stats?.value === 'number' 
-      ? formatNumberWithCommas(stats.value.toString()) 
-      : stats?.value
+    const formattedValue =
+      typeof stats?.value === 'number'
+        ? formatNumberWithCommas(stats.value.toString())
+        : stats?.value
 
     return (
       <div
@@ -486,9 +489,7 @@ export default function Card({
             <h3 className="text-3xl font-bold text-white">{formattedValue}</h3>
             {stats?.subtitle && <p className="text-sm text-gray-400 mt-1">{stats.subtitle}</p>}
           </div>
-          {header && (
-            <p className="text-sm font-medium text-gray-300">{header}</p>
-          )}
+          {header && <p className="text-sm font-medium text-gray-300">{header}</p>}
         </div>
       </div>
     )
@@ -635,7 +636,7 @@ export default function Card({
                       e.stopPropagation()
                       router.push(headerLink)
                     }}
-                    className="w-fit text-light-cool hover:text-light-warm font-GoodTimes text-sm text-left relative z-[60]"
+                    className="w-fit text-light-cool hover:text-light-warm font-heading font-semibold text-sm text-left relative z-[60]"
                   >
                     {headerLinkLabel}
                   </button>
@@ -646,7 +647,7 @@ export default function Card({
                 <h2
                   id="main-header"
                   className={`
-                    z-20 static-sub-header font-GoodTimes flex min-h-[50px] items-center
+                    z-20 static-sub-header font-heading font-semibold flex min-h-[50px] items-center
                     ${inline ? 'text-left' : 'text-center justify-center md:justify-start'}
                 `}
                 >
@@ -750,7 +751,7 @@ export default function Card({
                 {iconSrc && <div className="opacity-70">{iconElement}</div>}
                 {(header || title) && (
                   <h2
-                    className={`font-GoodTimes text-white ${
+                    className={`font-heading font-semibold text-white ${
                       variant === 'slate' || variant === 'slateBorder'
                         ? 'text-2xl lg:text-3xl'
                         : 'text-lg'

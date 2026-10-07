@@ -7,25 +7,17 @@ export type CheckboxProps = {
   tooltip?: string
 }
 
-export default function Checkbox({
-  label,
-  checked,
-  onChange,
-  tooltip,
-}: CheckboxProps) {
+export default function Checkbox({ label, checked, onChange, tooltip }: CheckboxProps) {
   return (
     <div className="flex flex-col gap-2 items-start">
       <label
         className="flex gap-4 font-light text-gray-700 select-none max-w-[550px]"
         htmlFor="link"
       >
-        <p className="dark:text-white font-GoodTimes opacity-50">{label}</p>
+        <p className="dark:text-white font-heading font-semibold opacity-50">{label}</p>
         {tooltip && <Tooltip text={tooltip}>?</Tooltip>}
       </label>
-      <label
-        className="relative flex items-center p-3 rounded-full cursor-pointer"
-        htmlFor="link"
-      >
+      <label className="relative flex items-center p-3 rounded-full cursor-pointer" htmlFor="link">
         <input
           checked={checked}
           onChange={onChange}

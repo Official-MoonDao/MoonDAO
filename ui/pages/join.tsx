@@ -332,7 +332,7 @@ export default function Join({
 
           <div className="relative z-10 max-w-6xl mx-auto px-6">
             <div className="text-center mb-8">
-              <h2 className="header font-GoodTimes text-white mb-4 drop-shadow-lg">
+              <h2 className="header font-heading font-semibold text-white mb-4 drop-shadow-lg">
                 Ready to Join?
               </h2>
               <p className="sub-header text-white/90 max-w-3xl mx-auto drop-shadow-lg">
@@ -356,7 +356,9 @@ export default function Join({
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <h3 className="text-2xl font-GoodTimes text-white mb-4">Become a Citizen</h3>
+                    <h3 className="text-2xl font-heading font-semibold text-white mb-4">
+                      Become a Citizen
+                    </h3>
                     <ul className="text-slate-300 mb-6 leading-relaxed text-left space-y-2 w-full max-w-xs">
                       <li>✓ Vote on proposals &amp; funding</li>
                       <li>✓ Apply to roles on the jobs board</li>
@@ -406,7 +408,9 @@ export default function Join({
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <h3 className="text-2xl font-GoodTimes text-white mb-4">Create a Team</h3>
+                    <h3 className="text-2xl font-heading font-semibold text-white mb-4">
+                      Create a Team
+                    </h3>
                     <ul className="text-slate-300 mb-6 leading-relaxed text-left space-y-2 w-full max-w-xs">
                       <li>✓ List roles on the jobs board</li>
                       <li>✓ Raise funding through missions</li>
@@ -448,7 +452,9 @@ export default function Join({
 
         {/* Explore the Network Header */}
         <div id="explore-network-header" className="max-w-6xl mx-auto mb-8 px-6 pt-12">
-          <h2 className="header font-GoodTimes text-white text-center mb-4">Explore the Network</h2>
+          <h2 className="header font-heading font-semibold text-white text-center mb-4">
+            Explore the Network
+          </h2>
           <p className="sub-header text-white/80 text-center mb-8 max-w-3xl mx-auto">
             Discover and connect with citizens and teams building the future of space exploration
           </p>
@@ -602,7 +608,7 @@ export default function Join({
         {/* Jobs Section */}
         <div id="space-careers" className="max-w-6xl mx-auto mb-16 px-6 pt-16">
           <div className="text-center mb-8">
-            <h2 className="header font-GoodTimes text-white mb-4">Jobs Board</h2>
+            <h2 className="header font-heading font-semibold text-white mb-4">Jobs Board</h2>
             <p className="sub-header text-white/80 max-w-3xl mx-auto mb-8">
               Join the mission to expand humanity to the Moon and beyond. Explore opportunities with
               teams in the Space Acceleration Network.
@@ -644,7 +650,7 @@ export default function Join({
                           {job.tag || 'Open'}
                         </span>
                       </div>
-                      <h3 className="text-lg font-GoodTimes text-white mb-2 line-clamp-1">
+                      <h3 className="text-lg font-heading font-semibold text-white mb-2 line-clamp-1">
                         {job.title}
                       </h3>
                       <p className="text-slate-300 text-sm mb-4 line-clamp-3">{job.description}</p>
@@ -669,7 +675,9 @@ export default function Join({
                   <div className="w-24 h-24 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
                     <ListBulletIcon width={48} height={48} className="text-blue-400" />
                   </div>
-                  <h3 className="text-xl font-GoodTimes text-white mb-4">No Jobs Available</h3>
+                  <h3 className="text-xl font-heading font-semibold text-white mb-4">
+                    No Jobs Available
+                  </h3>
                   <p className="text-slate-300 mb-6">
                     Check back soon for new opportunities in the Space Acceleration Network.
                   </p>
@@ -705,7 +713,9 @@ export default function Join({
         {/* Help Section */}
         <div className="max-w-6xl mx-auto mb-16 px-6">
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-8 text-center">
-            <h3 className="text-2xl font-GoodTimes text-white mb-4">Need Help Getting Started?</h3>
+            <h3 className="text-2xl font-heading font-semibold text-white mb-4">
+              Need Help Getting Started?
+            </h3>
             <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
               Have questions about joining MoonDAO or need assistance with the onboarding process?
               Our community is here to help.

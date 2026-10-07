@@ -18,13 +18,10 @@ export default function ComingSoon() {
                 <ClockIcon className="w-10 h-10 text-blue-400" />
               </div>
               <div>
-                <h1 className="font-GoodTimes text-2xl font-bold text-white mb-2">
-                  Coming Soon!
-                </h1>
+                <h1 className="font-heading text-2xl font-bold text-white mb-2">Coming Soon!</h1>
                 <p className="text-gray-300 text-sm leading-relaxed">
-                  We're working hard to bring you{' '}
-                  {from ? `the ${from} page` : 'this feature'}. Stay tuned for
-                  updates!
+                  We're working hard to bring you {from ? `the ${from} page` : 'this feature'}. Stay
+                  tuned for updates!
                 </p>
               </div>
             </div>

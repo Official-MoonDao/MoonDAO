@@ -39,7 +39,7 @@ export default function LaunchpadShowcase() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#010208]/85 via-transparent to-transparent" />
               <div className="absolute bottom-6 left-6 right-6">
-                <p className="font-GoodTimes text-lg text-white md:text-xl">
+                <p className="font-heading font-semibold text-lg text-white md:text-xl">
                   Launch Your Space Mission
                 </p>
                 <p className="mt-1 text-sm text-white/70 md:text-base">

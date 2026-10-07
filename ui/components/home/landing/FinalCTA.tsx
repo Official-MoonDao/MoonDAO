@@ -27,7 +27,7 @@ export default function FinalCTA() {
           </span>
         </Reveal>
         <Reveal delay={0.1}>
-          <h2 className="mt-5 max-w-3xl font-GoodTimes text-3xl leading-[1.15] text-white md:text-5xl">
+          <h2 className="mt-5 max-w-3xl font-heading font-semibold text-2xl leading-[1.15] text-white md:text-4xl">
             Take Humanity Back to the Moon
           </h2>
         </Reveal>

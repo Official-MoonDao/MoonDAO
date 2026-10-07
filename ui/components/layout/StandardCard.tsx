@@ -66,15 +66,9 @@ export default function StandardCard({
           id="content-container"
           className={`h-full p-[20px] md:pb-10 rounded-[20px] overflow-hidden flex flex-col justify-between`}
         >
-          <span
-            id="content"
-            className={`animate-fadeIn relative z-50 flex flex-col`}
-          >
+          <span id="content" className={`animate-fadeIn relative z-50 flex flex-col`}>
             {orgimage && (
-              <div
-                id="featured-image-container"
-                className="z-50 animate-fadeIn"
-              >
+              <div id="featured-image-container" className="z-50 animate-fadeIn">
                 <Frame noPadding marginBottom="0px">
                   <Image
                     id="featured-image"
@@ -126,7 +120,7 @@ export default function StandardCard({
                     e.stopPropagation()
                     router.push(headerLink)
                   }}
-                  className="w-fit text-light-cool hover:text-light-warm font-GoodTimes text-sm text-left relative z-[60]"
+                  className="w-fit text-light-cool hover:text-light-warm font-heading font-semibold text-sm text-left relative z-[60]"
                 >
                   {headerLinkLabel}
                 </button>
@@ -151,9 +145,7 @@ export default function StandardCard({
                       width="250"
                       height="250"
                       className={`z-20 ${
-                        inline
-                          ? 'pt-[20px] w-[50px] h-[50px]'
-                          : 'w-[100px] h-[100px] pb-5'
+                        inline ? 'pt-[20px] w-[50px] h-[50px]' : 'w-[100px] h-[100px] pb-5'
                       }`}
                     />
                   )}
@@ -164,12 +156,8 @@ export default function StandardCard({
               <h2
                 id="main-header"
                 className={`
-                    w-full z-20 static-sub-header font-GoodTimes flex min-h-[50px]
-                    ${
-                      inline
-                        ? 'text-left'
-                        : 'text-center justify-center md:justify-start'
-                    }
+                    w-full z-20 static-sub-header font-heading font-semibold flex min-h-[50px]
+                    ${inline ? 'text-left' : 'text-center justify-center md:justify-start'}
                 `}
               >
                 {header && header}
@@ -180,19 +168,12 @@ export default function StandardCard({
 
             {subheader && subheader}
             <div id="description-and-id-container" className="relative z-50">
-              <div
-                id="description-and-id"
-                className={`text-left ${hovertext && 'description'}`}
-              >
+              <div id="description-and-id" className={`text-left ${hovertext && 'description'}`}>
                 {fullParagraph ? (
-                  <CollapsibleContainer minHeight="100px">
-                    {paragraph}
-                  </CollapsibleContainer>
+                  <CollapsibleContainer minHeight="100px">{paragraph}</CollapsibleContainer>
                 ) : (
                   <div
-                    className={`flex opacity-[70%] ${
-                      paragraph ? 'min-h-[100px]' : 'min-h-[20px]'
-                    }`}
+                    className={`flex opacity-[70%] ${paragraph ? 'min-h-[100px]' : 'min-h-[20px]'}`}
                   >
                     <div className="flex opacity-[70%] min-h-[100px] break-words">
                       {paragraph &&
@@ -248,7 +229,6 @@ export default function StandardCard({
                 ${link ? 'cursor-pointer' : ''}
             `}
     >
-
       {onClick ? (
         <button onClick={onClick} className="w-full h-full block">
           {cardContent}

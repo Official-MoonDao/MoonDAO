@@ -33,9 +33,7 @@ export default function FileInput({
 }: FileInputProps) {
   const reactId = useId()
   const inputId = id || `file-upload-${reactId}`
-  const [fileName, setFileName] = useState(
-    uri ? uri : file?.name || ''
-  )
+  const [fileName, setFileName] = useState(uri ? uri : file?.name || '')
   const [isDragOver, setIsDragOver] = useState(false)
 
   const processFile = useCallback(
@@ -88,7 +86,7 @@ export default function FileInput({
     <div id={id} className="relative flex flex-col gap-2 w-full">
       {(label || tooltip) && (
         <div className="flex flex-row items-center gap-2">
-          {label && <p className="text-sm font-GoodTimes text-white">{label}</p>}
+          {label && <p className="text-sm font-heading font-semibold text-white">{label}</p>}
           {tooltip && <Tooltip text={tooltip}>?</Tooltip>}
         </div>
       )}
@@ -121,9 +119,7 @@ export default function FileInput({
         {/* Upload icon */}
         <div
           className={`rounded-xl p-3 transition-colors ${
-            fileName
-              ? 'bg-emerald-500/10'
-              : 'bg-white/[0.04] group-hover:bg-white/[0.08]'
+            fileName ? 'bg-emerald-500/10' : 'bg-white/[0.04] group-hover:bg-white/[0.08]'
           }`}
         >
           {fileName ? (
@@ -167,15 +163,11 @@ export default function FileInput({
         ) : (
           <>
             <div className="text-center">
-              <span className="text-sm text-slate-300 font-medium">
-                Drop your image here
-              </span>
+              <span className="text-sm text-slate-300 font-medium">Drop your image here</span>
               <span className="text-sm text-slate-500"> or </span>
               <span className="text-sm text-indigo-400 font-medium">browse</span>
             </div>
-            {acceptText && (
-              <span className="text-xs text-slate-500">{acceptText}</span>
-            )}
+            {acceptText && <span className="text-xs text-slate-500">{acceptText}</span>}
           </>
         )}
       </label>

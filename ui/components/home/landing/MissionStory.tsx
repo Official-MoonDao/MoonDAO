@@ -79,7 +79,9 @@ export default function MissionStory() {
               <div className="absolute inset-0 bg-gradient-to-t from-[#010208] via-[#010208]/35 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-6 pb-6 pt-16">
                 <div>
-                  <p className="font-GoodTimes text-sm text-white">Space Acceleration Network</p>
+                  <p className="font-heading font-semibold text-sm text-white">
+                    Space Acceleration Network
+                  </p>
                   <p className="mt-1 max-w-xs text-sm text-white/60">
                     An onchain startup society for the space economy
                   </p>

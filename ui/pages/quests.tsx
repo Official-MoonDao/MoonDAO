@@ -1,34 +1,27 @@
+import Link from 'next/link'
+import { useContext } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
+import CitizenContext from '@/lib/citizen/citizen-context'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import CitizenTier from '@/components/onboarding/CitizenTier'
 import CitizenExpiredPanel from '@/components/subscription/CitizenExpiredPanel'
 import Quests from '@/components/xp/Quests'
-import CitizenContext from '@/lib/citizen/citizen-context'
-import { useContext } from 'react'
-import Link from 'next/link'
-import CitizenTier from '@/components/onboarding/CitizenTier'
-import { useActiveAccount } from 'thirdweb/react'
 
 export default function QuestsPage() {
   const { citizen, expiredCitizen } = useContext(CitizenContext)
   const account = useActiveAccount()
 
-  const descriptionSection = (
-    <div className="pt-2">
-      <p className="text-slate-300 text-lg max-w-3xl">
-        Complete quests to earn XP and unlock rewards in the Space Acceleration Network. 
-        Build your reputation as a contributor to humanity's multiplanetary future.
-      </p>
-    </div>
-  )
+  const descriptionSection = 'Earn XP and unlock rewards by completing quests.'
 
   return (
     <section id="quests-container" className="overflow-hidden">
       <Head
         title="Quests"
         description={
-          'Complete quests to earn XP and unlock rewards in the Space Acceleration Network. Build your reputation as a contributor to humanity\'s multiplanetary future.'
+          "Complete quests to earn XP and unlock rewards in the Space Acceleration Network. Build your reputation as a contributor to humanity's multiplanetary future."
         }
         image="https://ipfs.io/ipfs/QmXY1axN4tQGV7CQBFtoE4hMZM3TRGMqqg5DD5LG3dz1dA"
       />

@@ -1,14 +1,12 @@
 import { usePrivy } from '@privy-io/react-auth'
 import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import Image from 'next/image'
-import Container from '../components/layout/Container'
-import ContentLayout from '../components/layout/ContentLayout'
-import WebsiteHead from '../components/layout/Head'
-import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import StandardButton from '../components/layout/StandardButton'
-import ProposalList from '../components/nance/ProposalList'
 import { NANCE_API_URL } from '../lib/nance/constants'
+import Container from '../components/layout/Container'
+import WebsiteHead from '../components/layout/Head'
+import PageHeader from '../components/layout/PageHeader'
+import StandardButton from '../components/layout/StandardButton'
+import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 // Define a new governance card component with the new styling
 const GovernanceCard = ({
@@ -52,7 +50,7 @@ const GovernanceCard = ({
           </div>
         )}
         <div className="flex-1 min-w-0 text-left flex flex-col justify-start">
-          <h3 className="font-bold font-GoodTimes text-lg text-white mb-2 break-words group-hover:text-slate-200 transition-colors">
+          <h3 className="font-bold font-heading text-lg text-white mb-2 break-words group-hover:text-slate-200 transition-colors">
             {header}
           </h3>
           <div className="text-sm text-slate-300 leading-relaxed break-words">{paragraph}</div>
@@ -87,7 +85,8 @@ const Governance: React.FC = () => {
       header: 'Governance Proposals',
       link: '/governance-proposals',
       hovertext: 'Governance Proposals',
-      paragraph: 'View and vote on non-project governance proposals — amendments, policy changes, and more.',
+      paragraph:
+        'View and vote on non-project governance proposals — amendments, policy changes, and more.',
     },
     {
       icon: '/assets/icon-constitution.svg',
@@ -130,7 +129,9 @@ const Governance: React.FC = () => {
       paragraph: 'Export your embedded wallet to an external wallet.',
       onClick: () => {
         if (isClient) {
-          exportWallet().catch(() => toast.error('No Privy wallet found. Select one before exporting.'))
+          exportWallet().catch(() =>
+            toast.error('No Privy wallet found. Select one before exporting.')
+          )
         }
       },
     },
@@ -162,55 +163,27 @@ const Governance: React.FC = () => {
     <>
       <WebsiteHead title={title} description={description} image="/assets/MoonDAO-OG.png" />
 
-      {/* Hero Section */}
-      <Container>
-        <div className="relative w-full h-screen rounded-3xl overflow-hidden">
-          <Image
-            src="/assets/governance-hero.png"
-            alt="MoonDAO Governance"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center max-w-4xl px-8">
-              <h1 className="header font-GoodTimes text-white drop-shadow-lg mb-4">Governance</h1>
-              <p className="sub-header text-white/90 drop-shadow-lg">
-                MoonDAO is governed by its Citizens. Our decentralized governance system ensures
-                every voice is heard in shaping humanity's multiplanetary future.
-              </p>
-              <StandardButton
-                className="gradient-2 hover:opacity-90 transition-opacity"
-                textColor="text-white"
-                borderRadius="rounded-xl"
-                hoverEffect={false}
-                link="/projects"
-              >
-                Vote on Proposals
-              </StandardButton>
-            </div>
-          </div>
-        </div>
-      </Container>
-
-      {/* Governance Cards Section */}
-      <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+      <section className="relative px-4 sm:px-6 lg:px-8 pb-12">
         <Container>
           <div className="max-w-6xl mx-auto">
-            {/* Centered title and description */}
-            <div className="text-center mb-12 px-4">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-GoodTimes text-white mb-6">
-                Get Started with Governance
-              </h2>
-              <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
-                Access all governance tools and resources in one place. From voting on proposals to
-                becoming a citizen, everything you need to participate in MoonDAO's governance.
-              </p>
-            </div>
+            <PageHeader
+              title="Governance"
+              description="MoonDAO is governed by its Citizens. Vote on proposals, or read the constitution to see how decisions get made."
+              actions={
+                <StandardButton
+                  className="gradient-2 hover:opacity-90 transition-opacity"
+                  textColor="text-white"
+                  borderRadius="rounded-xl"
+                  hoverEffect={false}
+                  link="/projects"
+                >
+                  Vote on Proposals
+                </StandardButton>
+              }
+            />
 
             {/* Glassmorphism container with cards */}
-            <div className="relative mx-4">
+            <div className="relative">
               <div className="p-4 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
                   {governanceCards.map((card, index) => (
@@ -230,16 +203,15 @@ const Governance: React.FC = () => {
             </div>
 
             {/* Latest Proposals Section */}
-            <div className="mt-16 mb-16">
-              <div className="text-center mb-12 px-4">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-GoodTimes text-white mb-6">
+            <div className="mt-10 mb-10">
+              <div className="mb-6">
+                <h2 className="text-lg md:text-xl font-heading font-semibold text-white mb-2">
                   Latest Proposals
                 </h2>
-                <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-                  Stay updated with the latest proposals from the MoonDAO community. Your
-                  participation shapes our future.
+                <p className="text-sm md:text-base text-gray-300 max-w-3xl">
+                  Recent proposals from the community.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <div className="mt-4 flex flex-col sm:flex-row gap-3">
                   <StandardButton
                     backgroundColor="bg-gradient-to-r from-blue-600 to-purple-600"
                     textColor="text-white"

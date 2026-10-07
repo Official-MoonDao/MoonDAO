@@ -58,10 +58,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
 
   const [input, setInput] = useState('')
 
-  const yearGroups = useMemo(
-    () => buildYearIndex(projects),
-    [projects]
-  )
+  const yearGroups = useMemo(() => buildYearIndex(projects), [projects])
 
   const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null)
@@ -74,8 +71,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
       return
     }
     setSelectedYear((prevYear) => {
-      const stillValid =
-        prevYear != null && yearGroups.some((yg) => yg.year === prevYear)
+      const stillValid = prevYear != null && yearGroups.some((yg) => yg.year === prevYear)
       return stillValid ? prevYear : yearGroups[0].year
     })
   }, [yearGroups])
@@ -113,15 +109,11 @@ export default function PastProjects({ projects }: PastProjectProps) {
     const list = activeYearGroup.quarters.get(selectedQuarter) ?? []
     const term = input.trim().toLowerCase()
     if (!term) return list
-    return list.filter((p) =>
-      p.name?.toString().toLowerCase().includes(term)
-    )
+    return list.filter((p) => p.name?.toString().toLowerCase().includes(term))
   }, [activeYearGroup, selectedQuarter, input])
 
   const activeLabel =
-    selectedYear != null && selectedQuarter != null
-      ? `Q${selectedQuarter} ${selectedYear}`
-      : null
+    selectedYear != null && selectedQuarter != null ? `Q${selectedQuarter} ${selectedYear}` : null
 
   useChainDefault()
 
@@ -129,7 +121,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
     <div className="p-3 sm:p-6 flex flex-col gap-3 sm:gap-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1 sm:px-0">
         <div className="flex items-baseline gap-3">
-          <h1 className="font-GoodTimes text-white/80 text-base sm:text-xl">
+          <h1 className="font-heading font-semibold text-white/80 text-base sm:text-xl">
             Past Projects
           </h1>
           <span className="text-[11px] sm:text-xs font-RobotoMono uppercase tracking-wider text-gray-500">
@@ -158,9 +150,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
             value={input}
             type="text"
             name="search"
-            placeholder={
-              activeLabel ? `Search ${activeLabel}...` : 'Search past projects...'
-            }
+            placeholder={activeLabel ? `Search ${activeLabel}...` : 'Search past projects...'}
           />
         </div>
       </div>

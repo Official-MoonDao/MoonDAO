@@ -124,7 +124,7 @@ export default function StandardWideCard({
                 <div className="p-[32px] md:p-0 w-full flex flex-col text-left">
                   {/* Title and tagline section */}
                   <div className="flex flex-col gap-2">
-                    <h2 className="font-GoodTimes text-2xl text-white">
+                    <h2 className="font-heading font-semibold text-2xl text-white">
                       {header || title || (profile && 'Anon')}
                     </h2>
                     {subheader && <div className="text-gray-400 text-lg">{subheader}</div>}

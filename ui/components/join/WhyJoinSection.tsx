@@ -1,7 +1,7 @@
+import { whyJoinPillars } from 'const/joinPageContent'
 import Image from 'next/image'
 import Reveal from '@/components/home/landing/Reveal'
 import SectionHeading from '@/components/home/landing/SectionHeading'
-import { whyJoinPillars } from 'const/joinPageContent'
 
 export default function WhyJoinSection() {
   return (
@@ -36,7 +36,7 @@ export default function WhyJoinSection() {
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-3">
-                  <h3 className="font-GoodTimes text-lg text-white md:text-xl">
+                  <h3 className="font-heading font-semibold text-lg text-white md:text-xl">
                     {pillar.header}
                   </h3>
                   <p className="text-sm leading-relaxed text-white/65 md:text-base">

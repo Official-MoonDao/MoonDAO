@@ -17,8 +17,8 @@ import { useAssets } from '@/lib/dashboard/hooks'
 import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { Project } from '@/lib/project/useProjectData'
-import queryTable from '@/lib/tableland/queryTable'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
+import queryTable from '@/lib/tableland/queryTable'
 import { getBudget } from '@/lib/utils/rewards'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
@@ -178,7 +178,7 @@ const ProjectsOverview: React.FC<{
       <Container>
         <div className="bg-[#010208]">
           {/* Hero — one composition: brand, headline, line, CTAs, full-bleed image */}
-          <section className="relative min-h-[100svh] w-full overflow-hidden bg-[#010208]">
+          <section className="relative min-h-[60svh] w-full overflow-hidden bg-[#010208]">
             <motion.div
               className="absolute inset-0"
               initial={{ scale: reduceMotion ? 1 : 1.06 }}
@@ -197,16 +197,16 @@ const ProjectsOverview: React.FC<{
             <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/75 via-[#010208]/40 to-[#010208]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(34,211,238,0.18),transparent_50%)]" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#010208] to-transparent" />
-            <div className="relative z-10 flex min-h-[100svh] flex-col justify-end px-4 pb-16 pt-32 md:justify-center md:px-8 md:pb-28 md:pt-24">
+            <div className="relative z-10 flex min-h-[60svh] flex-col justify-end px-4 pb-10 pt-20 md:justify-center md:px-8 md:pb-12 md:pt-16">
               <motion.div
                 initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.9, delay: 0.15, ease: EASE }}
               >
-                <p className="mb-5 font-GoodTimes text-xs tracking-[0.4em] text-cyan-200/80 md:text-sm">
+                <p className="mb-5 font-heading font-semibold text-xs tracking-[0.4em] text-cyan-200/80 md:text-sm">
                   MOONDAO
                 </p>
-                <h1 className="max-w-4xl font-GoodTimes text-4xl leading-[1.05] text-white md:text-6xl lg:text-7xl">
+                <h1 className="max-w-4xl font-heading font-semibold text-3xl leading-[1.05] text-white md:text-5xl">
                   Fund the work
                   <span className="mt-2 block bg-gradient-to-r from-cyan-200 to-sky-400 bg-clip-text text-transparent">
                     that settles the Moon
@@ -255,7 +255,7 @@ const ProjectsOverview: React.FC<{
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">
                       Max per project · Q{quarter} {year}
                     </p>
-                    <p className="mt-2 font-GoodTimes text-4xl text-white md:text-5xl">
+                    <p className="mt-2 font-heading font-semibold text-4xl text-white md:text-5xl">
                       ${MAX_BUDGET_USD.toLocaleString()}
                     </p>
                     <p className="mt-2 text-sm text-white/45">¼ of the quarterly project pot</p>
@@ -263,14 +263,14 @@ const ProjectsOverview: React.FC<{
                 )}
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">Submit by</p>
-                  <p className="mt-2 font-GoodTimes text-2xl text-white md:text-3xl">
+                  <p className="mt-2 font-heading font-semibold text-2xl text-white md:text-3xl">
                     {PROJECT_SYSTEM_CONFIG.submissionDeadline}
                   </p>
                   <p className="mt-2 text-sm text-white/45">2nd Thursday of the quarter</p>
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">Member vote</p>
-                  <p className="mt-2 font-GoodTimes text-2xl text-white md:text-3xl">
+                  <p className="mt-2 font-heading font-semibold text-2xl text-white md:text-3xl">
                     {PROJECT_SYSTEM_CONFIG.votingDate}
                   </p>
                   <p className="mt-2 text-sm text-white/45">After Town Hall presentations</p>
@@ -282,7 +282,7 @@ const ProjectsOverview: React.FC<{
           {/* Mission line */}
           <section className="px-4 py-20 md:px-8 md:py-28">
             <Reveal className="mx-auto max-w-3xl text-center">
-              <h2 className="font-GoodTimes text-3xl leading-tight text-white md:text-5xl">
+              <h2 className="font-heading font-semibold text-2xl leading-tight text-white md:text-3xl">
                 Self-sustaining lunar settlement by 2030
               </h2>
               <p className="mt-6 text-lg leading-relaxed text-gray-300">
@@ -298,7 +298,9 @@ const ProjectsOverview: React.FC<{
             <div className="pointer-events-none absolute -right-24 top-0 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />{' '}
             <div className="mx-auto max-w-6xl">
               <Reveal>
-                <h2 className="font-GoodTimes text-3xl text-white md:text-4xl">What we fund</h2>
+                <h2 className="font-heading font-semibold text-2xl text-white md:text-3xl">
+                  What we fund
+                </h2>
                 <p className="mt-4 max-w-2xl text-lg text-gray-300">
                   Pay for mission outputs and tools the work uniquely needs. Do not ask for setup.
                 </p>
@@ -309,10 +311,12 @@ const ProjectsOverview: React.FC<{
                   <div className="space-y-10">
                     {FUND_YES.map((item, i) => (
                       <div key={item.title} className="border-l border-cyan-400/50 pl-6">
-                        <p className="font-GoodTimes text-xs tracking-widest text-cyan-300/70">
+                        <p className="font-heading font-semibold text-xs tracking-widest text-cyan-300/70">
                           0{i + 1}
                         </p>
-                        <h3 className="mt-2 font-GoodTimes text-xl text-white">{item.title}</h3>
+                        <h3 className="mt-2 font-heading font-semibold text-xl text-white">
+                          {item.title}
+                        </h3>
                         <p className="mt-2 text-gray-400">{item.body}</p>
                       </div>
                     ))}
@@ -320,7 +324,9 @@ const ProjectsOverview: React.FC<{
                 </Reveal>
                 <Reveal delay={0.2}>
                   <div className="border border-white/10 bg-black/30 p-8 md:p-10">
-                    <h3 className="font-GoodTimes text-lg text-white/80">Do not fund</h3>
+                    <h3 className="font-heading font-semibold text-lg text-white/80">
+                      Do not fund
+                    </h3>
                     <ul className="mt-6 space-y-4">
                       {FUND_NO.map((item) => (
                         <li key={item} className="flex gap-3 text-gray-400">
@@ -343,7 +349,9 @@ const ProjectsOverview: React.FC<{
           <section className="px-4 py-20 md:px-8 md:py-28">
             <div className="mx-auto max-w-6xl">
               <Reveal>
-                <h2 className="font-GoodTimes text-3xl text-white md:text-4xl">Is this for you?</h2>
+                <h2 className="font-heading font-semibold text-2xl text-white md:text-3xl">
+                  Is this for you?
+                </h2>
                 <p className="mt-4 max-w-2xl text-lg text-gray-300">
                   Strong proposals clear these bars before Senate review. Weak ones get returned for
                   rewrite.
@@ -351,7 +359,7 @@ const ProjectsOverview: React.FC<{
               </Reveal>
               <div className="mt-12 grid gap-12 md:grid-cols-2">
                 <Reveal delay={0.1}>
-                  <h3 className="font-GoodTimes text-sm tracking-[0.2em] text-cyan-300/80">
+                  <h3 className="font-heading font-semibold text-sm tracking-[0.2em] text-cyan-300/80">
                     GOOD FIT
                   </h3>
                   <ul className="mt-6 space-y-4">
@@ -363,7 +371,7 @@ const ProjectsOverview: React.FC<{
                   </ul>
                 </Reveal>
                 <Reveal delay={0.2}>
-                  <h3 className="font-GoodTimes text-sm tracking-[0.2em] text-white/40">
+                  <h3 className="font-heading font-semibold text-sm tracking-[0.2em] text-white/40">
                     NOT A FIT
                   </h3>
                   <ul className="mt-6 space-y-4">
@@ -382,15 +390,19 @@ const ProjectsOverview: React.FC<{
           <section className="bg-[#050810] px-4 py-20 md:px-8 md:py-28">
             <div className="mx-auto max-w-6xl">
               <Reveal>
-                <h2 className="font-GoodTimes text-3xl text-white md:text-4xl">How it works</h2>
+                <h2 className="font-heading font-semibold text-2xl text-white md:text-3xl">
+                  How it works
+                </h2>
               </Reveal>
               <div className="mt-14 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
                 {STEPS.map((step, i) => (
                   <Reveal key={step.n} delay={0.08 * i}>
-                    <p className="font-GoodTimes text-sm tracking-[0.25em] text-cyan-300/60">
+                    <p className="font-heading font-semibold text-sm tracking-[0.25em] text-cyan-300/60">
                       {step.n}
                     </p>
-                    <h3 className="mt-3 font-GoodTimes text-xl text-white">{step.title}</h3>
+                    <h3 className="mt-3 font-heading font-semibold text-xl text-white">
+                      {step.title}
+                    </h3>
                     <p className="mt-3 text-sm leading-relaxed text-gray-400">{step.body}</p>
                   </Reveal>
                 ))}
@@ -402,7 +414,9 @@ const ProjectsOverview: React.FC<{
           <section className="px-4 py-20 md:px-8 md:py-28">
             <div className="mx-auto grid max-w-6xl gap-16 lg:grid-cols-2">
               <Reveal>
-                <h2 className="font-GoodTimes text-3xl text-white">This quarter&apos;s pool</h2>
+                <h2 className="font-heading font-semibold text-2xl text-white md:text-3xl">
+                  This quarter&apos;s pool
+                </h2>
                 <p className="mt-4 text-gray-300">
                   Proposal asks stay at or under the per-project max. Retroactive rewards for
                   completed work sit alongside that pool.
@@ -413,7 +427,7 @@ const ProjectsOverview: React.FC<{
                       <p className="text-xs uppercase tracking-[0.2em] text-white/45">
                         Stablecoin retro pool
                       </p>
-                      <p className="mt-2 font-GoodTimes text-4xl text-white">
+                      <p className="mt-2 font-heading font-semibold text-4xl text-white">
                         ${NEXT_QUARTER_BUDGET_USD.toLocaleString()}
                       </p>
                     </div>
@@ -422,7 +436,7 @@ const ProjectsOverview: React.FC<{
                     <p className="text-xs uppercase tracking-[0.2em] text-white/45">
                       vMOONEY retro pool
                     </p>
-                    <p className="mt-2 font-GoodTimes text-3xl text-white">
+                    <p className="mt-2 font-heading font-semibold text-3xl text-white">
                       {mooneyBudget > 0 ? (
                         <>
                           {Number(mooneyBudget.toPrecision(3)).toLocaleString()}
@@ -448,7 +462,9 @@ const ProjectsOverview: React.FC<{
               </Reveal>
 
               <Reveal delay={0.15}>
-                <h2 className="font-GoodTimes text-3xl text-white">Before you submit</h2>
+                <h2 className="font-heading font-semibold text-3xl text-white">
+                  Before you submit
+                </h2>
                 <p className="mt-4 text-gray-300">
                   Incomplete proposals are returned. Work through the template checklist first.
                 </p>
@@ -496,7 +512,7 @@ const ProjectsOverview: React.FC<{
               <Reveal>
                 <div className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <h2 className="font-GoodTimes text-3xl text-white md:text-4xl">
+                    <h2 className="font-heading font-semibold text-2xl text-white md:text-3xl">
                       Active projects
                     </h2>
                     <p className="mt-3 text-gray-400">Work already funded this cycle.</p>
@@ -522,7 +538,7 @@ const ProjectsOverview: React.FC<{
           <section className="relative overflow-hidden px-4 py-24 md:px-8 md:py-32">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,rgba(34,211,238,0.12),transparent_55%)]" />{' '}
             <Reveal className="relative z-10 mx-auto max-w-3xl text-center">
-              <h2 className="font-GoodTimes text-3xl text-white md:text-5xl">
+              <h2 className="font-heading font-semibold text-3xl text-white md:text-5xl">
                 Bring a lunar-ready idea
               </h2>
               <p className="mx-auto mt-6 max-w-xl text-lg text-gray-300">

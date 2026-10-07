@@ -4,26 +4,14 @@ import TreasuryPage from '../components/dashboard/treasury/TreasuryPage'
 import Head from '../components/layout/Head'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
-import { LoadingSpinner } from '@/components/layout/LoadingSpinner'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 export default function Treasury({ dateUpdated }: any) {
   const { t } = useTranslation('common')
 
-  const descriptionSection = (
-    <div className="flex flex-col gap-2">
-      {
-        "Detailed and transparent analytics on treasury holdings, transaction history, and more to stay informed about MoonDAO's financial health."
-      }
-      {dateUpdated ? (
-        <span className="font-bold">{dateUpdated}</span>
-      ) : (
-        <div className="ml-4 w-[20px]">
-          <LoadingSpinner />
-        </div>
-      )}
-    </div>
-  )
+  const descriptionSection = dateUpdated
+    ? `Updated ${dateUpdated}`
+    : 'Treasury holdings and transactions.'
 
   return (
     <section id="treasury-container" className="overflow-hidden">

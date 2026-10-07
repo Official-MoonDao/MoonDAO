@@ -1,16 +1,16 @@
-import Link from 'next/link'
-import { useContext, useEffect, useMemo, useState } from 'react'
 import ProjectABI from 'const/abis/Project.json'
 import { PROJECT_ADDRESSES, PROJECT_TABLE_NAMES } from 'const/config'
+import Link from 'next/link'
+import { useContext, useEffect, useMemo, useState } from 'react'
 import { useProjectWearer } from '@/lib/hats/useProjectWearer'
 import { proposalIdPrefix } from '@/lib/nance/constants'
 import { PROJECT_ACTIVE, PROJECT_ENDED, PROJECT_PENDING } from '@/lib/nance/types'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { Project } from '@/lib/project/useProjectData'
+import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
-import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 
 type CitizenProjectsProps = {
   ownerAddress: string
@@ -117,13 +117,12 @@ export default function CitizenProjects({ ownerAddress }: CitizenProjectsProps) 
   }, [projects])
 
   const isLoading =
-    isLoadingHats ||
-    (projectIds.length > 0 && (isLoadingRows || rows === undefined))
+    isLoadingHats || (projectIds.length > 0 && (isLoadingRows || rows === undefined))
 
   if (isLoading) {
     return (
       <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
-        <h2 className="font-GoodTimes text-2xl text-white mb-6">Projects</h2>
+        <h2 className="font-heading font-semibold text-2xl text-white mb-6">Projects</h2>
         <div className="flex flex-col gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
@@ -143,7 +142,7 @@ export default function CitizenProjects({ ownerAddress }: CitizenProjectsProps) 
   return (
     <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-2xl border border-slate-600/30 p-6">
       <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-6">
-        <h2 className="font-GoodTimes text-2xl text-white">Projects</h2>
+        <h2 className="font-heading font-semibold text-2xl text-white">Projects</h2>
         <p className="text-sm text-slate-400">
           On-chain proof of work across {projects.length} project
           {projects.length === 1 ? '' : 's'}
@@ -151,13 +150,10 @@ export default function CitizenProjects({ ownerAddress }: CitizenProjectsProps) 
       </div>
       <div className="flex flex-col gap-3">
         {projects.map((project) => {
-          const displayName =
-            resolvedNames[project.id] ?? getProjectDisplayName(project)
+          const displayName = resolvedNames[project.id] ?? getProjectDisplayName(project)
           const href = project.MDP ? `/project/${project.MDP}` : `/project/${project.id}`
           const quarterLabel =
-            project.year && project.quarter
-              ? `Q${project.quarter} ${project.year}`
-              : null
+            project.year && project.quarter ? `Q${project.quarter} ${project.year}` : null
 
           return (
             <Link
@@ -167,14 +163,12 @@ export default function CitizenProjects({ ownerAddress }: CitizenProjectsProps) 
             >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-GoodTimes text-white text-lg truncate">
+                  <p className="font-heading font-semibold text-white text-lg truncate">
                     {project.MDP
                       ? `${proposalIdPrefix}${project.MDP}: ${displayName}`
                       : displayName}
                   </p>
-                  {quarterLabel && (
-                    <p className="text-sm text-slate-400 mt-1">{quarterLabel}</p>
-                  )}
+                  {quarterLabel && <p className="text-sm text-slate-400 mt-1">{quarterLabel}</p>}
                 </div>
                 <span
                   className={`inline-flex self-start sm:self-center shrink-0 items-center px-2.5 py-1 rounded-md text-xs font-RobotoMono uppercase tracking-wide border ${projectStatusClass(

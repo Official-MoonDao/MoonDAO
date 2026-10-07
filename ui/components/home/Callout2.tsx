@@ -29,23 +29,20 @@ export default function Callout2() {
         >
           <div className="max-w-[1200px] 2xl:max-w-[1400px] 3xl:max-w-[1600px] mx-auto lg:mx-0">
             <div className="md:w-[95%] lg:w-[70%] 2xl:w-[85%] 3xl:w-[90%]">
-              <h1 className="header font-GoodTimes text-left 2xl:text-6xl 3xl:text-7xl max-w-[500px] 2xl:max-w-[800px] 3xl:max-w-[900px] mx-auto lg:mx-0">
+              <h1 className="header font-heading font-semibold text-left 2xl:text-6xl 3xl:text-7xl max-w-[500px] 2xl:max-w-[800px] 3xl:max-w-[900px] mx-auto lg:mx-0">
                 <span className="whitespace-nowrap">MoonDAO is</span> <br></br>Permissionless
               </h1>
               <p
                 id="paragraph"
                 className="pt-2 pb-5 text-lg 2xl:text-xl 3xl:text-2xl max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] text-left mx-auto lg:mx-0"
               >
-                This is an open source space platform where everything is proposed,
-                governed, and created by members. Co-govern the treasury by locking
-                $MOONEY to become a voter.
+                This is an open source space platform where everything is proposed, governed, and
+                created by members. Co-govern the treasury by locking $MOONEY to become a voter.
               </p>
               <div className="flex items-center justify-start gap-2 mb-5 max-w-[500px] 2xl:max-w-[600px] 3xl:max-w-[700px] mx-auto lg:mx-0">
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(
-                      '0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395'
-                    )
+                    navigator.clipboard.writeText('0x20d4DB1946859E2Adb0e5ACC2eac58047aD41395')
                     toast.success('Address copied to clipboard.')
                   }}
                   className="flex items-center gap-2 hover:opacity-80 transition-opacity min-w-0 flex-1"

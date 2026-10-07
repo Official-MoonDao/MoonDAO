@@ -46,7 +46,10 @@ export default function ListingPurchasePanel({
   return (
     <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-slate-700/30 to-slate-800/40 backdrop-blur-xl p-5 flex flex-col gap-4">
       <div>
-        <p id="listing-price" className="font-GoodTimes text-white text-2xl leading-tight">
+        <p
+          id="listing-price"
+          className="font-heading font-semibold text-white text-2xl leading-tight"
+        >
           {price.display}
         </p>
         {!price.isFree && !isGift && citizen && (

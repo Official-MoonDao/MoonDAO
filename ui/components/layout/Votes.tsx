@@ -78,7 +78,7 @@ export default function Votes({
           onClick={onTitleClick}
           disabled={!onTitleClick}
         >
-          <h3 className="font-GoodTimes pb-2 text-gray-400">{title}</h3>
+          <h3 className="font-heading font-semibold pb-2 text-gray-400">{title}</h3>
           {subtitle && <span className="text-xs text-gray-300">{subtitle}</span>}
         </button>
       )}

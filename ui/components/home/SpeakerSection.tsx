@@ -16,7 +16,7 @@ export default function SpeakerSection() {
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool mb-2 lg:mb-4 xl:mb-6 2xl:mb-8 3xl:mb-10 text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl 3xl:text-7xl"
+            className="header font-heading font-semibold text-center text-dark-cool mb-2 lg:mb-4 xl:mb-6 2xl:mb-8 3xl:mb-10 text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl 3xl:text-7xl"
           >
             Past Speakers
           </h2>

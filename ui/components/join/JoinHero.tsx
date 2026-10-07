@@ -57,7 +57,7 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
 
   return (
     <>
-      <section className="relative flex h-[100svh] w-full flex-col overflow-hidden bg-[#010208]">
+      <section className="relative flex h-[60svh] min-h-[480px] w-full flex-col overflow-hidden bg-[#010208]">
         <div className="absolute inset-0 scale-[1.1]">
           <Image
             src="/assets/NetworkHero.webp"
@@ -73,7 +73,7 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
 
         <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-6 py-24 text-center md:px-10">
           <Reveal>
-            <h1 className="font-GoodTimes leading-[1.1] text-white text-4xl md:text-6xl 2xl:text-7xl drop-shadow-lg">
+            <h1 className="font-heading font-semibold leading-[1.1] text-white text-3xl md:text-5xl drop-shadow-lg">
               Join the Space Acceleration Network
             </h1>
           </Reveal>
@@ -107,13 +107,15 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
               }`}
             >
               {stat.value == null ? (
-                <span className="font-GoodTimes text-2xl text-white md:text-4xl">—</span>
+                <span className="font-heading font-semibold text-2xl text-white md:text-4xl">
+                  —
+                </span>
               ) : (
                 <CountUp
                   to={stat.value}
                   prefix={stat.prefix}
                   suffix={stat.suffix}
-                  className="font-GoodTimes text-2xl text-white md:text-4xl"
+                  className="font-heading font-semibold text-2xl text-white md:text-4xl"
                 />
               )}
               <span className="font-RobotoMono text-[10px] uppercase tracking-[0.2em] text-white/50 md:text-xs">

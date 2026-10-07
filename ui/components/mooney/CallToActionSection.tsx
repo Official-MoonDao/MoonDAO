@@ -53,7 +53,7 @@ export default function CallToActionSection({
   return (
     <section className="py-16 px-6 bg-gradient-to-br from-purple-900/30 to-blue-900/30 w-full">
       <div className="max-w-4xl mx-auto text-center space-y-6">
-        <h2 className="text-3xl md:text-4xl font-bold text-white font-GoodTimes">{title}</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-white font-heading">{title}</h2>
         <p className="text-lg text-gray-300 max-w-3xl mx-auto">{description}</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           {buttons.map((button, index) => {
@@ -62,7 +62,11 @@ export default function CallToActionSection({
                 <a
                   key={index}
                   href={button.href}
-                  className={`bg-gradient-to-r ${button.gradientFrom} ${button.gradientTo} ${button.hoverFrom || ''} ${button.hoverTo || ''} text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center`}
+                  className={`bg-gradient-to-r ${button.gradientFrom} ${button.gradientTo} ${
+                    button.hoverFrom || ''
+                  } ${
+                    button.hoverTo || ''
+                  } text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center`}
                 >
                   {button.label} <ArrowRightIcon className="w-5 h-5" />
                 </a>
@@ -73,7 +77,11 @@ export default function CallToActionSection({
               <Link
                 key={index}
                 href={button.href}
-                className={`bg-gradient-to-r ${button.gradientFrom} ${button.gradientTo} ${button.hoverFrom || ''} ${button.hoverTo || ''} text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center`}
+                className={`bg-gradient-to-r ${button.gradientFrom} ${button.gradientTo} ${
+                  button.hoverFrom || ''
+                } ${
+                  button.hoverTo || ''
+                } text-white py-3 px-8 rounded-xl text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg flex items-center gap-2 justify-center`}
               >
                 {button.label} <ArrowRightIcon className="w-5 h-5" />
               </Link>

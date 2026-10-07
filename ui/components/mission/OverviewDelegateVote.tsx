@@ -38,10 +38,7 @@ type OverviewDelegateProps = {
   tokenAddress: string
 }
 
-export default function OverviewDelegateVote({
-  leaderboard,
-  tokenAddress,
-}: OverviewDelegateProps) {
+export default function OverviewDelegateVote({ leaderboard, tokenAddress }: OverviewDelegateProps) {
   const router = useRouter()
   const overviewChain = arbitrum
   const overviewChainSlug = getChainSlug(overviewChain)
@@ -109,12 +106,8 @@ export default function OverviewDelegateVote({
       if (entry.totalDelegated >= liveAmount) return entry
       // Server total < live balance => server is stale (likely fell back to
       // stored amount). Swap the user's stored portion for the live balance.
-      const userServerContribution = Math.min(
-        entry.totalDelegated,
-        storedAmount
-      )
-      const adjusted =
-        entry.totalDelegated - userServerContribution + liveAmount
+      const userServerContribution = Math.min(entry.totalDelegated, storedAmount)
+      const adjusted = entry.totalDelegated - userServerContribution + liveAmount
       if (adjusted === entry.totalDelegated) return entry
       touched = true
       return { ...entry, totalDelegated: Math.max(0, adjusted) }
@@ -142,18 +135,14 @@ export default function OverviewDelegateVote({
         // submit to `insertIntoTable` — that then reverts due to the
         // `unique(address, voteId)` constraint and the user gets the generic
         // "Failed to submit delegation" toast on every re-back.
-        const res = await fetch(
-          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
-        )
+        const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`)
         if (res.ok) {
           const data = await res.json()
           if (Array.isArray(data) && data.length > 0) {
             setHasExistingDelegation(true)
             try {
               const vote =
-                typeof data[0].vote === 'string'
-                  ? JSON.parse(data[0].vote)
-                  : data[0].vote
+                typeof data[0].vote === 'string' ? JSON.parse(data[0].vote) : data[0].vote
               const entries = Object.entries(vote)
               if (entries.length > 0) {
                 const [delegatee, amount] = entries[0]
@@ -173,19 +162,17 @@ export default function OverviewDelegateVote({
                   citizenId = match.citizenId
                 } else {
                   try {
-                    const citizenTableName =
-                      CITIZEN_TABLE_NAMES[overviewChainSlug]
+                    const citizenTableName = CITIZEN_TABLE_NAMES[overviewChainSlug]
                     if (citizenTableName) {
                       const citizenStmt = `SELECT id, name, image FROM ${citizenTableName} WHERE LOWER(owner) = '${delegateeLower}'`
                       const citizenRes = await fetch(
-                        `${TABLELAND_ENDPOINT}/api/v1/query?statement=${encodeURIComponent(citizenStmt)}`
+                        `${TABLELAND_ENDPOINT}/api/v1/query?statement=${encodeURIComponent(
+                          citizenStmt
+                        )}`
                       )
                       if (citizenRes.ok) {
                         const citizenData = await citizenRes.json()
-                        if (
-                          Array.isArray(citizenData) &&
-                          citizenData.length > 0
-                        ) {
+                        if (Array.isArray(citizenData) && citizenData.length > 0) {
                           citizenName = citizenData[0].name
                           citizenImage = citizenData[0].image
                           citizenId = citizenData[0].id
@@ -262,10 +249,7 @@ export default function OverviewDelegateVote({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
       }
     }
@@ -293,11 +277,7 @@ export default function OverviewDelegateVote({
     // the cryptic "invalid BigNumber string (value=\"NaN\")" toast. Reject
     // here with copy the user can act on instead of bouncing them to the
     // generic catch-all.
-    if (
-      userBalance == null ||
-      !Number.isFinite(userBalance) ||
-      userBalance <= 0
-    ) {
+    if (userBalance == null || !Number.isFinite(userBalance) || userBalance <= 0) {
       toast.error(
         userBalance == null || !Number.isFinite(userBalance)
           ? 'Your $OVERVIEW balance is still loading. Please wait a moment and try again.'
@@ -345,9 +325,7 @@ export default function OverviewDelegateVote({
       let existsNow = hasExistingDelegation
       try {
         const stmt = `SELECT id FROM ${votesTableName} WHERE voteId = ${OVERVIEW_DELEGATION_VOTE_ID} AND address = '${userAddress!.toLowerCase()}'`
-        const res = await fetch(
-          `${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`
-        )
+        const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(stmt)}`)
         if (res.ok) {
           const data = await res.json()
           existsNow = Array.isArray(data) && data.length > 0
@@ -388,7 +366,9 @@ export default function OverviewDelegateVote({
         shapes: ['circle', 'star'],
         colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
-      toast.success('Delegation successful! Votes assigned to selected citizen.', { style: toastStyle })
+      toast.success('Delegation successful! Votes assigned to selected citizen.', {
+        style: toastStyle,
+      })
 
       const updatedLeaderboard = applyOptimisticUpdate(
         displayLeaderboard,
@@ -449,18 +429,14 @@ export default function OverviewDelegateVote({
         lower.includes('action_rejected')
       ) {
         toastMessage = 'Transaction cancelled in your wallet.'
-      } else if (
-        lower.includes('insufficient funds') ||
-        lower.includes('insufficient balance')
-      ) {
+      } else if (lower.includes('insufficient funds') || lower.includes('insufficient balance')) {
         toastMessage =
           'Not enough ETH on Arbitrum to cover gas. Add a small amount of ETH to your wallet on Arbitrum and try again.'
       } else if (
         lower.includes('chain') &&
         (lower.includes('mismatch') || lower.includes('switch'))
       ) {
-        toastMessage =
-          'Wallet is on the wrong network. Please switch to Arbitrum and try again.'
+        toastMessage = 'Wallet is on the wrong network. Please switch to Arbitrum and try again.'
       } else if (
         // ethers v5 surface for "BigNumber.from(NaN)" — almost always means
         // a numeric tx field (gas price / nonce / chain id) was missing or
@@ -472,7 +448,7 @@ export default function OverviewDelegateVote({
         lower.includes("value='nan'")
       ) {
         toastMessage =
-          "Your wallet returned an unexpected value. Please refresh the page (or disconnect + reconnect your wallet) and try again."
+          'Your wallet returned an unexpected value. Please refresh the page (or disconnect + reconnect your wallet) and try again.'
       } else if (rawMessage) {
         toastMessage = `Failed to submit delegation: ${rawMessage.slice(0, 160)}`
       }
@@ -505,8 +481,8 @@ export default function OverviewDelegateVote({
               You contributed! Back a candidate to support the community.
             </p>
             <p className="text-indigo-300/80 text-sm mt-1">
-              Pledge your $OVERVIEW balance to your chosen candidate. Your
-              tokens stay in your wallet — only your voting power is recorded.
+              Pledge your $OVERVIEW balance to your chosen candidate. Your tokens stay in your
+              wallet — only your voting power is recorded.
             </p>
             {missionId && (
               <Link
@@ -522,334 +498,344 @@ export default function OverviewDelegateVote({
 
       {/* Delegation Form */}
       <div className="relative z-10 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-visible">
-              <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
-                Back a Candidate
-              </h2>
-              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                Pledge your $OVERVIEW balance to your chosen candidate. Your tokens remain securely in your wallet. Only your voting power is recorded. You can only back one candidate, but you can change your vote at any time until the voting period ends or accrue more voting power.
-              </p>
+        <h2 className="text-lg sm:text-xl font-heading font-semibold text-white mb-2 sm:mb-3">
+          Back a Candidate
+        </h2>
+        <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+          Pledge your $OVERVIEW balance to your chosen candidate. Your tokens remain securely in
+          your wallet. Only your voting power is recorded. You can only back one candidate, but you
+          can change your vote at any time until the voting period ends or accrue more voting power.
+        </p>
 
-              {/* Balance */}
-              <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-gray-400 text-xs sm:text-sm">Your $OVERVIEW Balance</p>
-                  <p className="text-white text-xl sm:text-2xl font-semibold">
-                    {userAddress
-                      ? userBalance != null && Number.isFinite(userBalance)
-                        ? userBalance.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })
-                        : '...'
-                      : 'Connect wallet'}
-                  </p>
-                </div>
-                <Link
-                  href="/mission/4"
-                  className="flex-shrink-0 px-3 sm:px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 hover:text-indigo-200 text-xs sm:text-sm font-medium rounded-lg transition-colors"
-                >
-                  Get $OVERVIEW
-                </Link>
+        {/* Balance */}
+        <div className="mb-4 sm:mb-6 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-gray-400 text-xs sm:text-sm">Your $OVERVIEW Balance</p>
+            <p className="text-white text-xl sm:text-2xl font-semibold">
+              {userAddress
+                ? userBalance != null && Number.isFinite(userBalance)
+                  ? userBalance.toLocaleString(undefined, {
+                      maximumFractionDigits: 2,
+                    })
+                  : '...'
+                : 'Connect wallet'}
+            </p>
+          </div>
+          <Link
+            href="/mission/4"
+            className="flex-shrink-0 px-3 sm:px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 hover:text-indigo-200 text-xs sm:text-sm font-medium rounded-lg transition-colors"
+          >
+            Get $OVERVIEW
+          </Link>
+        </div>
+
+        {/* Current Vote */}
+        {previousDelegation && (
+          <div className="mb-4 sm:mb-6 bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 sm:p-4">
+            <p className="text-indigo-300 text-xs sm:text-sm font-medium mb-2">Your Current Vote</p>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0">
+                {previousDelegation.citizenImage ? (
+                  <IPFSRenderer
+                    src={previousDelegation.citizenImage}
+                    alt={previousDelegation.citizenName || 'Citizen'}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
+                    {previousDelegation.citizenName?.[0]?.toUpperCase() || '?'}
+                  </div>
+                )}
               </div>
-
-              {/* Current Vote */}
-              {previousDelegation && (
-                <div className="mb-4 sm:mb-6 bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 sm:p-4">
-                  <p className="text-indigo-300 text-xs sm:text-sm font-medium mb-2">
-                    Your Current Vote
+              <div className="flex-1 min-w-0">
+                {previousDelegation.citizenName ? (
+                  <Link
+                    href={
+                      previousDelegation.citizenId
+                        ? `/citizen/${generatePrettyLinkWithId(
+                            previousDelegation.citizenName,
+                            String(previousDelegation.citizenId)
+                          )}`
+                        : '#'
+                    }
+                    className="text-white text-sm sm:text-base font-medium hover:underline truncate block"
+                  >
+                    {previousDelegation.citizenName}
+                  </Link>
+                ) : (
+                  <p className="text-white text-sm sm:text-base font-medium truncate">
+                    {previousDelegation.delegatee.slice(0, 6)}...
+                    {previousDelegation.delegatee.slice(-4)}
                   </p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0">
-                      {previousDelegation.citizenImage ? (
+                )}
+                <p className="text-gray-400 text-xs sm:text-sm">
+                  {(userBalance != null && Number.isFinite(userBalance)
+                    ? userBalance
+                    : previousDelegation.amount
+                  ).toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  $OVERVIEW delegated
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Citizen Search */}
+        <div className="mb-4 relative z-10" ref={dropdownRef}>
+          <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+            <label className="text-xs sm:text-sm font-medium text-white">Find a Citizen</label>
+            <Link
+              href="/network"
+              className="text-xs sm:text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              Browse Directory →
+            </Link>
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Search by name or citizen ID..."
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/20 rounded-xl text-sm sm:text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+            {isSearching && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              </div>
+            )}
+          </div>
+
+          {showDropdown && searchResults.length > 0 && (
+            <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+              {searchResults.map((citizen) => (
+                <button
+                  key={citizen.id}
+                  onClick={() => handleCitizenSelect(citizen)}
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0"
+                >
+                  <div className="text-white text-sm sm:text-base font-medium">
+                    {citizen.displayName}
+                  </div>
+                  <div className="text-gray-400 text-xs sm:text-sm truncate">{citizen.owner}</div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {showDropdown &&
+            searchResults.length === 0 &&
+            searchQuery.trim().length >= 2 &&
+            !isSearching && (
+              <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg p-4">
+                <div className="text-gray-400 text-sm text-center">No citizens found</div>
+              </div>
+            )}
+        </div>
+
+        {/* Selected Citizen */}
+        {selectedCitizen && (
+          <div className="mb-4 bg-white/5 border border-white/20 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-white text-sm sm:text-base font-medium truncate">
+                {selectedCitizen.displayName}
+              </div>
+              <div className="text-gray-400 text-xs sm:text-sm truncate">
+                {selectedCitizen.owner}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedCitizen(null)
+                setSearchQuery('')
+              }}
+              className="flex-shrink-0 text-gray-400 hover:text-white transition-colors text-xl leading-none"
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
+        {/* Submit */}
+        <PrivyWeb3Button
+          label={isSubmitting ? 'Submitting...' : 'Back This Candidate'}
+          action={handleSubmit}
+          requiredChain={overviewChain}
+          isDisabled={isSubmitting || !selectedCitizen || !userBalance || userBalance <= 0}
+          className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
+        />
+      </div>
+
+      {/* Leaderboard */}
+      <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <h2 className="text-lg sm:text-xl font-heading font-semibold text-white">
+            Overview Flight Leaderboard
+          </h2>
+          {isRefreshing && (
+            <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
+              <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+              Updating...
+            </div>
+          )}
+        </div>
+        <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
+          The 25 citizens with the most $OVERVIEW support advance to Round 2.
+        </p>
+
+        {visibleLeaderboard.length === 0 ? (
+          <p className="text-gray-400 text-center py-6 sm:py-8 text-sm">
+            No delegations yet. Be the first to back a candidate!
+          </p>
+        ) : (
+          <div className="space-y-2 sm:space-y-3">
+            {visibleLeaderboard.map((entry, index) => {
+              const citizenLink = entry.citizenName
+                ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
+                : `/citizen/${entry.citizenId}`
+              const isQualifying = index < 25
+              const isCutoffBoundary = index === 25
+
+              return (
+                <div key={entry.delegateeAddress}>
+                  {isCutoffBoundary && (
+                    <div className="flex items-center gap-3 py-3 sm:py-4 my-1">
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+                      <span className="text-amber-400/80 text-xs font-medium tracking-wide uppercase whitespace-nowrap">
+                        Round 2 cutoff
+                      </span>
+                      <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+                    </div>
+                  )}
+                  <div
+                    className={`flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl transition-opacity ${
+                      isQualifying
+                        ? 'bg-black/20 border border-white/10'
+                        : 'bg-black/10 border border-white/5 opacity-90'
+                    }`}
+                  >
+                    <div
+                      className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold text-xs sm:text-sm ${
+                        isQualifying ? 'bg-white/10 text-white' : 'bg-white/5 text-gray-500'
+                      }`}
+                    >
+                      {index + 1}
+                    </div>
+
+                    <div
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0 ${
+                        isQualifying ? '' : 'grayscale'
+                      }`}
+                    >
+                      {entry.citizenImage ? (
                         <IPFSRenderer
-                          src={previousDelegation.citizenImage}
-                          alt={previousDelegation.citizenName || 'Citizen'}
+                          src={entry.citizenImage}
+                          alt={entry.citizenName || 'Citizen'}
                           width={40}
                           height={40}
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
-                          {previousDelegation.citizenName?.[0]?.toUpperCase() || '?'}
+                        <div
+                          className={`w-full h-full flex items-center justify-center font-bold text-xs sm:text-sm ${
+                            isQualifying
+                              ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
+                              : 'bg-gray-700 text-gray-400'
+                          }`}
+                        >
+                          {entry.citizenName?.[0]?.toUpperCase() || 'C'}
                         </div>
                       )}
                     </div>
+
                     <div className="flex-1 min-w-0">
-                      {previousDelegation.citizenName ? (
-                        <Link
-                          href={
-                            previousDelegation.citizenId
-                              ? `/citizen/${generatePrettyLinkWithId(previousDelegation.citizenName, String(previousDelegation.citizenId))}`
-                              : '#'
-                          }
-                          className="text-white text-sm sm:text-base font-medium hover:underline truncate block"
-                        >
-                          {previousDelegation.citizenName}
-                        </Link>
-                      ) : (
-                        <p className="text-white text-sm sm:text-base font-medium truncate">
-                          {previousDelegation.delegatee.slice(0, 6)}...{previousDelegation.delegatee.slice(-4)}
-                        </p>
-                      )}
-                      <p className="text-gray-400 text-xs sm:text-sm">
-                        {(userBalance != null && Number.isFinite(userBalance)
-                          ? userBalance
-                          : previousDelegation.amount
-                        ).toLocaleString(undefined, {
+                      <Link
+                        href={citizenLink}
+                        className={`text-sm sm:text-base font-medium hover:underline truncate block ${
+                          isQualifying ? 'text-white' : 'text-gray-400'
+                        }`}
+                      >
+                        {entry.citizenName || `Citizen #${entry.citizenId}`}
+                      </Link>
+                      <p
+                        className={`text-xs sm:text-sm ${
+                          isQualifying ? 'text-gray-400' : 'text-gray-500'
+                        }`}
+                      >
+                        {entry.delegatorCount} backer
+                        {entry.delegatorCount !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+
+                    <div className="text-right flex-shrink-0">
+                      <p
+                        className={`text-sm sm:text-base font-semibold ${
+                          isQualifying ? 'text-white' : 'text-gray-400'
+                        }`}
+                      >
+                        {entry.totalDelegated.toLocaleString(undefined, {
                           maximumFractionDigits: 2,
-                        })}{' '}
-                        $OVERVIEW delegated
+                        })}
+                      </p>
+                      <p
+                        className={`text-xs sm:text-sm ${
+                          isQualifying ? 'text-gray-400' : 'text-gray-500'
+                        }`}
+                      >
+                        $OVERVIEW
                       </p>
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Citizen Search */}
-              <div className="mb-4 relative z-10" ref={dropdownRef}>
-                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                  <label className="text-xs sm:text-sm font-medium text-white">
-                    Find a Citizen
-                  </label>
-                  <Link
-                    href="/network"
-                    className="text-xs sm:text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
-                  >
-                    Browse Directory →
-                  </Link>
-                </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    placeholder="Search by name or citizen ID..."
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-white/5 border border-white/20 rounded-xl text-sm sm:text-base text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  {isSearching && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    </div>
-                  )}
-                </div>
-
-                {showDropdown && searchResults.length > 0 && (
-                  <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                    {searchResults.map((citizen) => (
-                      <button
-                        key={citizen.id}
-                        onClick={() => handleCitizenSelect(citizen)}
-                        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left hover:bg-white/10 transition-colors border-b border-white/10 last:border-b-0"
-                      >
-                        <div className="text-white text-sm sm:text-base font-medium">
-                          {citizen.displayName}
-                        </div>
-                        <div className="text-gray-400 text-xs sm:text-sm truncate">
-                          {citizen.owner}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {showDropdown &&
-                  searchResults.length === 0 &&
-                  searchQuery.trim().length >= 2 &&
-                  !isSearching && (
-                    <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-white/20 rounded-xl shadow-lg p-4">
-                      <div className="text-gray-400 text-sm text-center">
-                        No citizens found
-                      </div>
-                    </div>
-                  )}
-              </div>
-
-              {/* Selected Citizen */}
-              {selectedCitizen && (
-                <div className="mb-4 bg-white/5 border border-white/20 rounded-xl p-3 sm:p-4 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-white text-sm sm:text-base font-medium truncate">
-                      {selectedCitizen.displayName}
-                    </div>
-                    <div className="text-gray-400 text-xs sm:text-sm truncate">
-                      {selectedCitizen.owner}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedCitizen(null)
-                      setSearchQuery('')
-                    }}
-                    className="flex-shrink-0 text-gray-400 hover:text-white transition-colors text-xl leading-none"
-                  >
-                    &times;
-                  </button>
-                </div>
-              )}
-
-              {/* Submit */}
-              <PrivyWeb3Button
-                label={isSubmitting ? 'Submitting...' : 'Back This Candidate'}
-                action={handleSubmit}
-                requiredChain={overviewChain}
-                isDisabled={
-                  isSubmitting ||
-                  !selectedCitizen ||
-                  !userBalance ||
-                  userBalance <= 0
-                }
-                className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
-              />
-            </div>
-
-            {/* Leaderboard */}
-            <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">
-                  Overview Flight Leaderboard
-                </h2>
-                {isRefreshing && (
-                  <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
-                    <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
-                    Updating...
-                  </div>
-                )}
-              </div>
-              <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
-                The 25 citizens with the most $OVERVIEW support advance to Round 2.
-              </p>
-
-              {visibleLeaderboard.length === 0 ? (
-                <p className="text-gray-400 text-center py-6 sm:py-8 text-sm">
-                  No delegations yet. Be the first to back a candidate!
-                </p>
-              ) : (
-                <div className="space-y-2 sm:space-y-3">
-                  {visibleLeaderboard.map((entry, index) => {
-                    const citizenLink = entry.citizenName
-                      ? `/citizen/${generatePrettyLinkWithId(entry.citizenName, entry.citizenId)}`
-                      : `/citizen/${entry.citizenId}`
-                    const isQualifying = index < 25
-                    const isCutoffBoundary = index === 25
-
-                    return (
-                      <div key={entry.delegateeAddress}>
-                        {isCutoffBoundary && (
-                          <div className="flex items-center gap-3 py-3 sm:py-4 my-1">
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
-                            <span className="text-amber-400/80 text-xs font-medium tracking-wide uppercase whitespace-nowrap">
-                              Round 2 cutoff
-                            </span>
-                            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
-                          </div>
-                        )}
-                        <div
-                          className={`flex items-center gap-2.5 sm:gap-4 p-3 sm:p-4 rounded-xl transition-opacity ${
-                            isQualifying
-                              ? 'bg-black/20 border border-white/10'
-                              : 'bg-black/10 border border-white/5 opacity-90'
-                          }`}
-                        >
-                          <div
-                            className={`flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full font-bold text-xs sm:text-sm ${
-                              isQualifying
-                                ? 'bg-white/10 text-white'
-                                : 'bg-white/5 text-gray-500'
-                            }`}
-                          >
-                            {index + 1}
-                          </div>
-
-                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0 ${isQualifying ? '' : 'grayscale'}`}>
-                            {entry.citizenImage ? (
-                              <IPFSRenderer
-                                src={entry.citizenImage}
-                                alt={entry.citizenName || 'Citizen'}
-                                width={40}
-                                height={40}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className={`w-full h-full flex items-center justify-center font-bold text-xs sm:text-sm ${
-                                isQualifying
-                                  ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white'
-                                  : 'bg-gray-700 text-gray-400'
-                              }`}>
-                                {entry.citizenName?.[0]?.toUpperCase() || 'C'}
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <Link
-                              href={citizenLink}
-                              className={`text-sm sm:text-base font-medium hover:underline truncate block ${
-                                isQualifying ? 'text-white' : 'text-gray-400'
-                              }`}
-                            >
-                              {entry.citizenName || `Citizen #${entry.citizenId}`}
-                            </Link>
-                            <p className={`text-xs sm:text-sm ${isQualifying ? 'text-gray-400' : 'text-gray-500'}`}>
-                              {entry.delegatorCount} backer
-                              {entry.delegatorCount !== 1 ? 's' : ''}
-                            </p>
-                          </div>
-
-                          <div className="text-right flex-shrink-0">
-                            <p className={`text-sm sm:text-base font-semibold ${
-                              isQualifying ? 'text-white' : 'text-gray-400'
-                            }`}>
-                              {entry.totalDelegated.toLocaleString(undefined, {
-                                maximumFractionDigits: 2,
-                              })}
-                            </p>
-                            <p className={`text-xs sm:text-sm ${isQualifying ? 'text-gray-400' : 'text-gray-500'}`}>
-                              $OVERVIEW
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* CTAs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              {/* Get $OVERVIEW CTA */}
-              <Link
-                href="/mission/4"
-                className="group p-4 sm:p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border border-indigo-500/20 hover:border-indigo-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10"
-              >
-                <div className="text-2xl sm:text-3xl mb-3">🚀</div>
-                <h3 className="font-GoodTimes text-white text-sm sm:text-base mb-2">
-                  Get $OVERVIEW Tokens
-                </h3>
-                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                  Contribute to the spaceflight mission. Every contribution grants you $OVERVIEW so you can back a candidate. Contributions of $100 or more include one sponsored year of MoonDAO citizenship; the yearly passport on Join is otherwise paid.
-                </p>
-                <span className="inline-block mt-3 text-indigo-400 text-xs sm:text-sm font-medium group-hover:text-indigo-300 transition-colors">
-                  Go to Mission &rarr;
-                </span>
-              </Link>
-
-              {/* Want to Compete CTA */}
-              <Link
-                href="/citizen"
-                className="group p-4 sm:p-6 bg-gradient-to-br from-emerald-900/40 to-teal-900/30 border border-emerald-500/20 hover:border-emerald-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10"
-              >
-                <div className="text-2xl sm:text-3xl mb-3">🌍</div>
-                <h3 className="font-GoodTimes text-white text-sm sm:text-base mb-2">
-                  Want to Compete?
-                </h3>
-                <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
-                  Only MoonDAO Citizens are eligible for the leaderboard. Rally your network to back you and secure your spot in the top 25.
-                </p>
-                <span className="inline-block mt-3 text-emerald-400 text-xs sm:text-sm font-medium group-hover:text-emerald-300 transition-colors">
-                  Become a Citizen &rarr;
-                </span>
-              </Link>
-            </div>
+              )
+            })}
           </div>
+        )}
+      </div>
+
+      {/* CTAs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        {/* Get $OVERVIEW CTA */}
+        <Link
+          href="/mission/4"
+          className="group p-4 sm:p-6 bg-gradient-to-br from-indigo-900/40 to-purple-900/30 border border-indigo-500/20 hover:border-indigo-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-indigo-500/10"
+        >
+          <div className="text-2xl sm:text-3xl mb-3">🚀</div>
+          <h3 className="font-heading font-semibold text-white text-sm sm:text-base mb-2">
+            Get $OVERVIEW Tokens
+          </h3>
+          <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+            Contribute to the spaceflight mission. Every contribution grants you $OVERVIEW so you
+            can back a candidate. Contributions of $100 or more include one sponsored year of
+            MoonDAO citizenship; the yearly passport on Join is otherwise paid.
+          </p>
+          <span className="inline-block mt-3 text-indigo-400 text-xs sm:text-sm font-medium group-hover:text-indigo-300 transition-colors">
+            Go to Mission &rarr;
+          </span>
+        </Link>
+
+        {/* Want to Compete CTA */}
+        <Link
+          href="/citizen"
+          className="group p-4 sm:p-6 bg-gradient-to-br from-emerald-900/40 to-teal-900/30 border border-emerald-500/20 hover:border-emerald-400/40 rounded-2xl transition-all duration-300 hover:shadow-lg hover:shadow-emerald-500/10"
+        >
+          <div className="text-2xl sm:text-3xl mb-3">🌍</div>
+          <h3 className="font-heading font-semibold text-white text-sm sm:text-base mb-2">
+            Want to Compete?
+          </h3>
+          <p className="text-gray-400 text-xs sm:text-sm leading-relaxed">
+            Only MoonDAO Citizens are eligible for the leaderboard. Rally your network to back you
+            and secure your spot in the top 25.
+          </p>
+          <span className="inline-block mt-3 text-emerald-400 text-xs sm:text-sm font-medium group-hover:text-emerald-300 transition-colors">
+            Become a Citizen &rarr;
+          </span>
+        </Link>
+      </div>
+    </div>
   )
 }

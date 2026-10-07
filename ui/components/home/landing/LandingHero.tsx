@@ -50,7 +50,7 @@ export default function LandingHero() {
       <section
         ref={sectionRef}
         id="landing-hero"
-        className="relative flex h-[100svh] w-full flex-col overflow-hidden bg-[#010208]"
+        className="relative flex h-[70svh] min-h-[520px] w-full flex-col overflow-hidden bg-[#010208]"
       >
         {/* Parallax lunar colony backdrop */}
         <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.2]">
@@ -76,11 +76,14 @@ export default function LandingHero() {
           className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 py-24 text-center md:px-10"
         >
           <motion.div variants={container} initial="hidden" animate="visible">
-            <motion.h1 variants={item} className="font-GoodTimes leading-[0.92] text-white">
-              <span className="block font-RobotoMono text-[0.7rem] font-medium uppercase tracking-[0.28em] text-white/50 md:text-xs">
+            <motion.h1
+              variants={item}
+              className="font-heading font-semibold uppercase leading-[0.92] text-white"
+            >
+              <span className="block text-[0.7rem] tracking-[0.28em] text-white/50 md:text-xs">
                 The Internet&apos;s
               </span>
-              <span className="mt-5 block text-[clamp(2.75rem,8.6vw,7.5rem)]">
+              <span className="mt-3 block text-[clamp(2.25rem,6vw,4.5rem)]">
                 <span className="text-moon-gold">Space</span> Program
               </span>
             </motion.h1>
@@ -125,7 +128,7 @@ export default function LandingHero() {
                 to={stat.value}
                 prefix={stat.prefix}
                 suffix={stat.suffix}
-                className="font-GoodTimes text-2xl text-white md:text-3xl"
+                className="font-heading font-semibold text-2xl text-white md:text-3xl"
               />
               <span className="font-RobotoMono text-[10px] uppercase tracking-[0.18em] text-white/45 md:text-[11px]">
                 {stat.label}

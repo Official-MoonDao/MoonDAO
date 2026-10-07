@@ -32,7 +32,7 @@ export default function RequestBudgetActionForm({ disableRequiredFields = false 
     <div>
       <div className="space-y-12">
         <div className="pb-10">
-          <h2 className="text-base font-semibold font-GoodTimes leading-7 text-white">Budget</h2>
+          <h2 className="text-base font-semibold font-heading leading-7 text-white">Budget</h2>
           <p className="mt-1 text-sm leading-6 text-gray-400">
             Tokens will be sent to the newly created multisig.
           </p>
@@ -45,7 +45,9 @@ export default function RequestBudgetActionForm({ disableRequiredFields = false 
                   fieldName={`budget.${index}.amount`}
                   required={!disableRequiredFields}
                   max={
-                    getValues().budget[index].token == 'USD' || getValues().budget[index].token == 'USDC' || getValues().budget[index].token == 'DAI'
+                    getValues().budget[index].token == 'USD' ||
+                    getValues().budget[index].token == 'USDC' ||
+                    getValues().budget[index].token == 'DAI'
                       ? MAX_BUDGET_USD
                       : Number.MAX_SAFE_INTEGER
                   }

@@ -24,10 +24,13 @@ describe('<LatestJobs />', () => {
   beforeEach(() => {
     // Encode BigInt response for expiresAt (future timestamp)
     const futureTimestampHex = '0x' + BigInt(futureTimestamp).toString(16).padStart(64, '0')
-    
+
     // Intercept thirdweb RPC calls
     cy.intercept('POST', '**/*.thirdweb.com/**', (req) => {
-      if (req.body?.method === 'eth_call' || (Array.isArray(req.body) && req.body[0]?.method === 'eth_call')) {
+      if (
+        req.body?.method === 'eth_call' ||
+        (Array.isArray(req.body) && req.body[0]?.method === 'eth_call')
+      ) {
         const requests = Array.isArray(req.body) ? req.body : [req.body]
         const responses = requests.map((r: any) => ({
           jsonrpc: '2.0',
@@ -81,11 +84,11 @@ describe('<LatestJobs />', () => {
 
   it('Renders the component and jobs', () => {
     // Verify the component renders with the title
-    cy.get('h2.font-GoodTimes').contains('Latest Jobs')
-    
+    cy.get('h2.font-heading').contains('Latest Jobs')
+
     // Verify the container exists
     cy.get('#latest-jobs-container').should('exist')
-    
+
     // Verify the "See More" button exists
     cy.contains('See More').should('exist')
   })

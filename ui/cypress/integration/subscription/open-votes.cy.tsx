@@ -28,7 +28,7 @@ describe('OpenVotes Component', () => {
   })
 
   it('Renders the component and proposals', () => {
-    cy.get('h2.font-GoodTimes').contains('Open Votes')
+    cy.get('h2.font-heading').contains('Open Votes')
     cy.get('#proposal-card').should('exist')
   })
 })

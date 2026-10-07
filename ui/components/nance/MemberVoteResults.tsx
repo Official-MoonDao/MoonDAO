@@ -12,8 +12,8 @@
  */
 import Link from 'next/link'
 import useSWR from 'swr'
-import fetcher from '@/lib/swr/fetcher'
 import type { MemberVoteOutcome } from '@/lib/proposals/computeMemberVoteOutcome'
+import fetcher from '@/lib/swr/fetcher'
 
 type Props = {
   quarter: number
@@ -53,7 +53,7 @@ export default function MemberVoteResults({ quarter, year }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-GoodTimes text-white text-base sm:text-lg">
+            <h3 className="font-heading font-semibold text-white text-base sm:text-lg">
               Member Vote Results
             </h3>
             <span className="text-[10px] font-RobotoMono uppercase tracking-wider text-emerald-300 bg-emerald-400/15 border border-emerald-400/30 px-1.5 py-0.5 rounded">
@@ -61,9 +61,8 @@ export default function MemberVoteResults({ quarter, year }: Props) {
             </span>
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Snapshot at vote close ({closeDate.toLocaleDateString()}). Voting
-            power is √vMOONEY across all chains; author self-votes are
-            stripped before the tally.
+            Snapshot at vote close ({closeDate.toLocaleDateString()}). Voting power is √vMOONEY
+            across all chains; author self-votes are stripped before the tally.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-RobotoMono">
@@ -74,8 +73,7 @@ export default function MemberVoteResults({ quarter, year }: Props) {
             {approvedCount}/{outcome.results.length} approved
           </span>
           <span className="bg-blue-500/10 border border-blue-400/30 text-blue-200 px-2 py-1 rounded">
-            ${totalApprovedBudget.toLocaleString()} of $
-            {quarterBudgetUsd.toLocaleString()}
+            ${totalApprovedBudget.toLocaleString()} of ${quarterBudgetUsd.toLocaleString()}
           </span>
           <Link
             href={`/projects/audit?quarter=${outcome.quarter}&year=${outcome.year}`}
@@ -92,8 +90,7 @@ export default function MemberVoteResults({ quarter, year }: Props) {
           // the legacy Nance-only proposal viewer (`/proposal/<MDP>`) so
           // each row lands on the same surface the rest of the UI
           // (dashboard, ProposalInfo, ProjectCard) navigates to.
-          const projectLink =
-            r.MDP != null && r.MDP !== '' ? `/project/${r.MDP}` : null
+          const projectLink = r.MDP != null && r.MDP !== '' ? `/project/${r.MDP}` : null
           return (
             <div
               key={r.projectId}
@@ -140,7 +137,7 @@ export default function MemberVoteResults({ quarter, year }: Props) {
               </div>
               <div className="text-right flex-shrink-0 min-w-[72px]">
                 <p
-                  className={`font-GoodTimes text-base sm:text-lg leading-none ${
+                  className={`font-heading font-semibold text-base sm:text-lg leading-none ${
                     r.approved ? 'text-emerald-300' : 'text-gray-400'
                   }`}
                 >

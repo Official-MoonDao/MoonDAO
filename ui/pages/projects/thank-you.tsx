@@ -10,9 +10,9 @@ import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -47,19 +47,13 @@ export default function RewardsThankYou() {
     const rawQuarter = Array.isArray(router.query.quarter)
       ? router.query.quarter[0]
       : router.query.quarter
-    const rawYear = Array.isArray(router.query.year)
-      ? router.query.year[0]
-      : router.query.year
-    const rawType = Array.isArray(router.query.type)
-      ? router.query.type[0]
-      : router.query.type
+    const rawYear = Array.isArray(router.query.year) ? router.query.year[0] : router.query.year
+    const rawType = Array.isArray(router.query.type) ? router.query.type[0] : router.query.type
     const parsedQuarter = rawQuarter ? Number(rawQuarter) : undefined
     const parsedYear = rawYear ? Number(rawYear) : undefined
     return {
       quarter:
-        parsedQuarter && parsedQuarter >= 1 && parsedQuarter <= 4
-          ? parsedQuarter
-          : fallbackQuarter,
+        parsedQuarter && parsedQuarter >= 1 && parsedQuarter <= 4 ? parsedQuarter : fallbackQuarter,
       year: parsedYear && parsedYear >= 2020 ? parsedYear : fallbackYear,
       type: (rawType === 'member' ? 'member' : 'retro') as SubmissionType,
     }
@@ -72,8 +66,7 @@ export default function RewardsThankYou() {
     fallbackYear,
   ])
 
-  const allocationTableName =
-    type === 'member' ? PROPOSALS_TABLE_NAME : DISTRIBUTION_TABLE_NAME
+  const allocationTableName = type === 'member' ? PROPOSALS_TABLE_NAME : DISTRIBUTION_TABLE_NAME
 
   // Query the correct allocation table (proposals vs distributions). We need
   // both `router.isReady` and a connected wallet before we can fire the
@@ -84,25 +77,23 @@ export default function RewardsThankYou() {
       ? `SELECT * FROM ${allocationTableName} WHERE year = ${year} AND quarter = ${quarter} AND address = '${address.toLowerCase()}' LIMIT 1`
       : null
 
-  const { data: distributions, isLoading: allocationsApiLoading } =
-    useTablelandQuery(allocationStatement, {
+  const { data: distributions, isLoading: allocationsApiLoading } = useTablelandQuery(
+    allocationStatement,
+    {
       revalidateOnFocus: false,
-    })
+    }
+  )
 
   const userDistribution = useMemo(() => {
     if (!distributions || !address) return undefined
     return distributions.find(
-      (distribution: any) =>
-        distribution?.address?.toLowerCase() === address.toLowerCase()
+      (distribution: any) => distribution?.address?.toLowerCase() === address.toLowerCase()
     )
   }, [distributions, address])
 
   // Parsed { id -> percent } map from the raw distribution column.
   const distributionMap = useMemo<Record<string, number>>(() => {
-    let dist = userDistribution?.distribution as
-      | Record<string, number>
-      | string
-      | undefined
+    let dist = userDistribution?.distribution as Record<string, number> | string | undefined
     if (!dist) return {}
     if (typeof dist === 'string') {
       try {
@@ -130,13 +121,17 @@ export default function RewardsThankYou() {
 
   const projectsStatement =
     router.isReady && PROJECT_TABLE_NAME && allocatedProjectIds.length > 0
-      ? `SELECT id, name, proposalIPFS, MDP FROM ${PROJECT_TABLE_NAME} WHERE id IN (${allocatedProjectIds.join(',')})`
+      ? `SELECT id, name, proposalIPFS, MDP FROM ${PROJECT_TABLE_NAME} WHERE id IN (${allocatedProjectIds.join(
+          ','
+        )})`
       : null
 
-  const { data: projectsForQuarter, isLoading: projectsLoading } =
-    useTablelandQuery(projectsStatement, {
+  const { data: projectsForQuarter, isLoading: projectsLoading } = useTablelandQuery(
+    projectsStatement,
+    {
       revalidateOnFocus: false,
-    })
+    }
+  )
 
   // For any allocated project whose stored `name` is missing / "Untitled",
   // pull its proposal JSON from IPFS so we can derive a real title via
@@ -213,9 +208,7 @@ export default function RewardsThankYou() {
         // If we have the project record, defer to the same resolver the
         // projects page uses. Only when we don't even have a record do we
         // fall back to a generic "Project #ID" label.
-        const resolved = project
-          ? getProjectDisplayName(project, proposalJSON)
-          : `Project #${id}`
+        const resolved = project ? getProjectDisplayName(project, proposalJSON) : `Project #${id}`
         return {
           id: String(id),
           name: resolved,
@@ -234,9 +227,7 @@ export default function RewardsThankYou() {
   // metadata for its ids have loaded — otherwise we'd briefly render
   // "Project #ID" placeholders before titles resolve.
   const allocationsLoading =
-    !!address &&
-    (allocationsApiLoading ||
-      (allocatedProjectIds.length > 0 && projectsLoading))
+    !!address && (allocationsApiLoading || (allocatedProjectIds.length > 0 && projectsLoading))
   const hasAllocations = allocations.length > 0 && !allocationsLoading
   const showLoadingState = allocationsLoading && !hasAllocations
   const showEmptyState =
@@ -245,9 +236,7 @@ export default function RewardsThankYou() {
   const submissionLabel = type === 'member' ? 'project vote' : 'reward distribution'
 
   const descriptionSection = (
-    <p>
-      {`You've successfully submitted your Q${quarter} ${year} ${submissionLabel}!`}
-    </p>
+    <p>{`You've successfully submitted your Q${quarter} ${year} ${submissionLabel}!`}</p>
   )
 
   return (
@@ -277,20 +266,16 @@ export default function RewardsThankYou() {
               />
               <div className="relative flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center shadow-lg ring-4 ring-emerald-400/20">
-                  <CheckIcon
-                    className="w-8 h-8 sm:w-9 sm:h-9 text-white"
-                    strokeWidth={3}
-                  />
+                  <CheckIcon className="w-8 h-8 sm:w-9 sm:h-9 text-white" strokeWidth={3} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-GoodTimes text-xl sm:text-2xl text-white tracking-wider">
+                  <h2 className="font-heading font-semibold text-xl sm:text-2xl text-white tracking-wider">
                     Vote Submitted
                   </h2>
                   <p className="text-gray-300 text-sm sm:text-base mt-1 leading-relaxed">
                     Your Q{quarter} {year}{' '}
-                    {type === 'member' ? 'project vote' : 'reward distribution'}{' '}
-                    is recorded on-chain. Thanks for helping shape the next
-                    chapter of MoonDAO.
+                    {type === 'member' ? 'project vote' : 'reward distribution'} is recorded
+                    on-chain. Thanks for helping shape the next chapter of MoonDAO.
                   </p>
                 </div>
               </div>
@@ -309,7 +294,7 @@ export default function RewardsThankYou() {
             {/* Allocation breakdown */}
             <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-6">
               <div className="flex items-end justify-between flex-wrap gap-2 mb-1">
-                <h3 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
+                <h3 className="font-heading font-semibold text-base sm:text-lg text-white tracking-wider">
                   Your Submitted Allocation
                 </h3>
                 {hasAllocations && (
@@ -351,7 +336,7 @@ export default function RewardsThankYou() {
                         >
                           {a.name}
                         </span>
-                        <span className="font-GoodTimes text-base sm:text-lg text-white tracking-wider shrink-0">
+                        <span className="font-heading font-semibold text-base sm:text-lg text-white tracking-wider shrink-0">
                           {a.percent}%
                         </span>
                       </div>
@@ -368,9 +353,9 @@ export default function RewardsThankYou() {
 
               {showEmptyState && (
                 <p className="text-sm text-gray-400">
-                  We couldn&apos;t find a {submissionLabel} for this wallet in
-                  Q{quarter} {year}. Try connecting the wallet you voted with,
-                  or head back to the projects page to submit one.
+                  We couldn&apos;t find a {submissionLabel} for this wallet in Q{quarter} {year}.
+                  Try connecting the wallet you voted with, or head back to the projects page to
+                  submit one.
                 </p>
               )}
 
@@ -381,8 +366,8 @@ export default function RewardsThankYou() {
               )}
 
               <p className="mt-4 text-xs sm:text-sm text-gray-400 leading-relaxed">
-                Changed your mind? You can resubmit a new allocation any time
-                before the quarter ends — it will replace the one above.
+                Changed your mind? You can resubmit a new allocation any time before the quarter
+                ends — it will replace the one above.
               </p>
             </div>
 
@@ -390,12 +375,12 @@ export default function RewardsThankYou() {
             <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div className="min-w-0">
-                  <h4 className="font-GoodTimes text-sm sm:text-base text-white tracking-wider">
+                  <h4 className="font-heading font-semibold text-sm sm:text-base text-white tracking-wider">
                     Want to change your vote?
                   </h4>
                   <p className="text-xs sm:text-sm text-gray-400 mt-1 leading-relaxed">
-                    Head back to the projects page to submit a new allocation
-                    and overwrite this one.
+                    Head back to the projects page to submit a new allocation and overwrite this
+                    one.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:shrink-0">
@@ -428,7 +413,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
         {label}
       </div>
-      <div className="mt-0.5 sm:mt-1 font-GoodTimes text-lg sm:text-xl tracking-wider text-white truncate">
+      <div className="mt-0.5 sm:mt-1 font-heading font-semibold text-lg sm:text-xl tracking-wider text-white truncate">
         {value}
       </div>
     </div>

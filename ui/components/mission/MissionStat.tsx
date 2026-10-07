@@ -18,9 +18,12 @@ function MissionStat({ label, value, icon, tooltip }: MissionStatProps) {
           <Image src={icon} alt={label} width={18} height={18} className="opacity-70" />
         </div>
       )}
-      <div id="mission-stat-content" className="flex flex-col font-GoodTimes">
+      <div id="mission-stat-content" className="flex flex-col font-heading font-semibold">
         <div className="flex items-center gap-1.5">
-          <p id="mission-stat-label" className="text-[11px] text-gray-500 uppercase tracking-wider font-medium">
+          <p
+            id="mission-stat-label"
+            className="text-[11px] text-gray-500 uppercase tracking-wider font-medium"
+          >
             {label || ''}
           </p>
           {tooltip && (
@@ -30,7 +33,9 @@ function MissionStat({ label, value, icon, tooltip }: MissionStatProps) {
           )}
         </div>
         {value !== undefined && value !== '' ? (
-          <p id="mission-stat-value" className="text-white text-sm">{value}</p>
+          <p id="mission-stat-value" className="text-white text-sm">
+            {value}
+          </p>
         ) : (
           <LoadingSpinner id="mission-stat-loading" className="relative w-[20px] scale-[0.5]" />
         )}

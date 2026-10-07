@@ -30,7 +30,7 @@ export default function MissionSingleLineTitle({
   metricsClassName = 'tracking-tight',
   'data-testid': dataTestId,
 }: MissionSingleLineTitleProps) {
-  const measureClassName = `font-GoodTimes leading-tight ${metricsClassName}`.trim()
+  const measureClassName = `font-heading font-semibold leading-tight ${metricsClassName}`.trim()
   const { containerRef, measureRef, fontSizePx } = useFitSingleLineFontPx(
     text,
     minPx,
@@ -74,7 +74,7 @@ export default function MissionSingleLineTitle({
       </span>
       <Heading
         data-testid={dataTestId}
-        className={`font-GoodTimes text-white leading-tight ${metricsClassName} ${className} ${
+        className={`font-heading font-semibold text-white leading-tight ${metricsClassName} ${className} ${
           allowWrap ? 'whitespace-normal break-words' : 'whitespace-nowrap'
         }`.trim()}
         style={{ fontSize: `${fontSizePx}px` }}

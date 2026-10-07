@@ -62,9 +62,8 @@ export default function Press({ recentUpdates }: PressProps) {
             header="Press"
             headerSize="40px"
             description={
-              <div className="text-lg leading-relaxed text-gray-300">
-                Announcements, media coverage, and downloadable assets for journalists writing about
-                MoonDAO. For interviews, imagery, or comment, email{' '}
+              <p className="text-sm text-white/60 md:text-base">
+                Announcements, coverage, and assets. Email{' '}
                 <a
                   href={`mailto:${PRESS_CONTACT_EMAIL}`}
                   className="text-blue-300 underline underline-offset-4 hover:text-blue-200"
@@ -72,7 +71,7 @@ export default function Press({ recentUpdates }: PressProps) {
                   {PRESS_CONTACT_EMAIL}
                 </a>
                 .
-              </div>
+              </p>
             }
             mainPadding
             mode="compact"
@@ -174,7 +173,9 @@ export default function Press({ recentUpdates }: PressProps) {
 
               <section id="contact" className="scroll-mt-24">
                 <div className="rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-600/20 to-purple-600/20 p-6">
-                  <h2 className="mb-3 font-GoodTimes text-xl text-white">Media enquiries</h2>
+                  <h2 className="mb-3 font-heading font-semibold text-xl text-white">
+                    Media enquiries
+                  </h2>
                   <p className="mb-4 text-sm leading-relaxed text-slate-300">
                     Looking to feature MoonDAO in an upcoming publication? Email{' '}
                     <a
