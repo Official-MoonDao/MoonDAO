@@ -1,55 +1,67 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
-import { 
-  GlobeAltIcon, 
-  ChatBubbleLeftRightIcon, 
+import {
+  ChatBubbleLeftRightIcon,
   DocumentTextIcon,
-  NewspaperIcon,
-  ShoppingBagIcon,
   CameraIcon,
   PlayIcon,
-  AtSymbolIcon
+  AtSymbolIcon,
+  UserPlusIcon,
+  RocketLaunchIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
-import MailingList from '../components/layout/MailingList'
+
+type HubLink = {
+  name: string
+  description: string
+  url: string
+  icon: React.ComponentType<{ className?: string }>
+  external?: boolean
+  /** HOLD entries stay in source but are not rendered. */
+  hidden?: boolean
+}
 
 const LinkTree: React.FC = () => {
   const title = 'Follow MoonDAO'
   const description = '🚀 Connect with MoonDAO across all platforms and stay updated on our journey to the Moon'
 
-  const socialLinks = [
+  const socialLinks: HubLink[] = [
     {
-      name: 'MoonDAO Website',
-      description: 'Explore our main platform',
-      url: 'https://moondao.com',
-      icon: GlobeAltIcon,
-      external: false
+      name: 'Become a Citizen',
+      description: 'Join MoonDAO and take part in the network',
+      url: 'https://moondao.com/join?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-join',
+      icon: UserPlusIcon,
+      external: false,
     },
     {
-      name: 'Discord Community',
-      description: 'Join 10,000+ space enthusiasts',
-      url: '/discord',
+      name: 'Help send Frank',
+      description: 'Support the mission to fly with Frank White',
+      url: 'https://moondao.com/frank?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-frank',
+      icon: RocketLaunchIcon,
+      external: false,
+    },
+    {
+      name: 'Events',
+      description: 'See upcoming MoonDAO events',
+      url: 'https://moondao.com/events?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-events',
+      icon: CalendarDaysIcon,
+      external: false,
+    },
+    {
+      name: 'Discord',
+      description: 'Join the MoonDAO community',
+      url: 'https://moondao.com/discord?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-discord',
       icon: ChatBubbleLeftRightIcon,
+      external: false,
     },
     {
       name: 'Documentation',
-      description: 'Learn about our mission & governance',
+      description: 'Learn about our mission and governance',
       url: '/docs',
       icon: DocumentTextIcon,
-    },
-    {
-      name: 'Twitter/X',
-      description: 'Daily updates & space news',
-      url: '/twitter',
-      icon: AtSymbolIcon,
-    },
-    {
-      name: 'Newsletter',
-      description: 'Weekly space industry insights',
-      url: 'https://moondao.ck.page/profile',
-      icon: NewspaperIcon,
     },
     {
       name: 'Instagram',
@@ -57,12 +69,21 @@ const LinkTree: React.FC = () => {
       url: '/instagram',
       icon: CameraIcon,
     },
+    // HOLD: parked off the IG hub. Do not render while hidden is true.
+    {
+      name: 'Twitter/X',
+      description: 'Daily updates and space news',
+      url: '/twitter',
+      icon: AtSymbolIcon,
+      hidden: true,
+    },
     {
       name: 'YouTube',
-      description: 'Space missions & educational content',
+      description: 'Space missions and educational content',
       url: 'https://youtube.com/@officialmoondao',
       icon: PlayIcon,
-    }
+      hidden: true,
+    },
   ]
 
   return (
@@ -110,7 +131,7 @@ const LinkTree: React.FC = () => {
 
           {/* Social Links Grid */}
           <div className="max-w-2xl mx-auto space-y-4 mb-12">
-            {socialLinks.map((link, index) => (
+            {socialLinks.filter((link) => !link.hidden).map((link, index) => (
               <Link
                 key={index}
                 href={link.url}
@@ -147,17 +168,6 @@ const LinkTree: React.FC = () => {
                 </div>
               </Link>
             ))}
-          </div>
-
-          {/* Newsletter Signup */}
-          <div className="max-w-lg mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
-            <h2 className="font-GoodTimes text-2xl font-bold text-white mb-4">
-              Stay Connected
-            </h2>
-            <p className="text-gray-300 mb-6">
-              Get the latest news and updates from MoonDAO delivered to your inbox
-            </p>
-            <MailingList />
           </div>
 
           {/* Footer */}
