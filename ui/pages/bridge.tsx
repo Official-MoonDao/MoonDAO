@@ -20,6 +20,7 @@ export default function Bridge() {
           mode="compact"
           popOverEffect={false}
           isProfile
+          maxWidth="42rem"
           preFooter={
             <NoticeFooter
               defaultTitle="Need Help?"
@@ -29,7 +30,7 @@ export default function Bridge() {
             />
           }
         >
-          <div className="w-full max-w-2xl">
+          <div className="w-full">
             {/* Bridge Interface */}
             <div className="mb-4 sm:mb-6">
               <ArbitrumBridge />

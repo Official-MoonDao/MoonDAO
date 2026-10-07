@@ -43,7 +43,7 @@ export default function PageHeader({
           {hasTitle ? (
             <h1
               id="header-element"
-              className="font-heading font-semibold text-2xl leading-tight text-white break-words [overflow-wrap:anywhere] md:text-3xl"
+              className="font-heading font-semibold text-3xl leading-tight text-white break-words [overflow-wrap:anywhere] md:text-4xl"
             >
               {title}
             </h1>

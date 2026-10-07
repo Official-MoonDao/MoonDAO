@@ -221,7 +221,7 @@ a {
   }
 
   .page-title {
-    @apply text-[#071732] dark:text-white font-heading font-semibold text-center text-2xl md:text-3xl lg:text-left;
+    @apply text-[#071732] dark:text-white font-heading font-semibold text-center text-3xl md:text-4xl lg:text-left;
   }
 
   .sub-title {

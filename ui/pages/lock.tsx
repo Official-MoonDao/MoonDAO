@@ -290,6 +290,7 @@ export default function Lock() {
           popOverEffect={false}
           isProfile
           description="Lock MOONEY to receive vMOONEY and gain voting power."
+          maxWidth="42rem"
           preFooter={
             <NoticeFooter
               defaultTitle="Need Help?"
@@ -299,7 +300,7 @@ export default function Lock() {
             />
           }
         >
-          <div className="w-full max-w-2xl">
+          <div className="w-full">
             {/* vMOONEY Withdraw Section */}
             <div className="mb-4 sm:mb-6">
               <RetroactiveRewards />

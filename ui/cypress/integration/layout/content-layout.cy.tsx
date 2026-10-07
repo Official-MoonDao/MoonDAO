@@ -50,7 +50,7 @@ describe('ContentLayout', () => {
     )
 
     cy.get('#image').should('not.exist')
-    cy.get('#header-element').should('have.class', 'text-2xl')
+    cy.get('#header-element').should('have.class', 'text-3xl')
     cy.get('#title-wrapper').should('have.class', 'min-w-0')
     cy.get('#content-container').should('have.class', 'min-w-0')
   })
