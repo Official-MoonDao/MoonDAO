@@ -352,16 +352,16 @@ def transfers_of(tx):
 
 CATEGORY = {
     36: 'Reimbursement',
-    37: 'Payroll before MDP-249 funding (TBC)',
-    38: 'ETH distribution (purpose TBC)',
-    39: 'ETH distribution (purpose TBC)',
+    37: 'Prior-cycle pay owed',
+    38: 'Prior-cycle rewards & bonus (pass-through)',
+    39: 'Prior-cycle rewards & bonus (pass-through)',
     40: 'Payroll — May 2026',
     41: 'Wrap ETH for streams',
     42: 'Payroll — LlamaPay vesting Jun–Sep',
-    43: 'Operations / vendor',
+    43: 'Operations / sponsorship',
     44: 'Reimbursement',
     45: 'Reimbursement',
-    46: 'Operations / vendor',
+    46: 'Reimbursement',
     47: 'Reimbursement',
     48: 'Reimbursement',
 }
@@ -396,13 +396,16 @@ for s in streams:
 metrics['streams'] = streams
 
 may_payroll = {'Pablo': 12514.29, 'Ryan': 7871.43, 'Miguel': 2864.29}
-paid = collections.Counter(may_payroll)
+# Nonce 40 also settled each member's unpaid April (prior-cycle) balance on top of the May rate.
+may_rate = {'Pablo': 12000, 'Ryan': 7500, 'Miguel': 2750}
+april_balance = {p: round(may_payroll[p] - may_rate[p], 2) for p in may_payroll}
+paid = collections.Counter(may_rate)
 for s in streams:
     paid[s['payee']] += s['usdAtFunding']
 budget = {'Pablo': 60000, 'Ryan': 37500, 'Miguel': 22000}
 reimb = collections.Counter()
 for row in ledger:
-    if row['category'] in ('Reimbursement', 'Operations / vendor'):
+    if row['category'] in ('Reimbursement', 'Operations / sponsorship'):
         for t in row['transfers']:
             if t['asset'] in ('USDC', 'DAI'):
                 reimb[row['category']] += t['amount']
@@ -414,6 +417,7 @@ metrics['budgetVsActual'] = {
     'opsFlexPaidUSD': round(sum(reimb.values()), 2),
     'bonusPoolBudget': 24000,
     'bonusPaid': 0,
+    'aprilBalanceInNonce40': april_balance,
 }
 
 fig, ax = plt.subplots(figsize=(9, 3.8))
@@ -422,7 +426,7 @@ bud = [budget['Pablo'], budget['Ryan'], budget['Miguel'], 12500]
 act = [paid['Pablo'], paid['Ryan'], paid['Miguel'], sum(reimb.values())]
 xs = range(len(cats))
 ax.bar([i - 0.2 for i in xs], bud, width=0.38, color=LIGHT, edgecolor=GREY, label='MDP-249 budget')
-ax.bar([i + 0.2 for i in xs], act, width=0.38, color=BLUE, label='Paid from EB Safe (USD at funding)')
+ax.bar([i + 0.2 for i in xs], act, width=0.38, color=BLUE, label='Paid for MDP-249 (USD at funding)')
 for i, (b, a) in enumerate(zip(bud, act)):
     ax.text(i - 0.2, b + 800, f'${b/1000:,.1f}k', ha='center', fontsize=8, color=GREY)
     ax.text(i + 0.2, a + 800, f'${a/1000:,.1f}k', ha='center', fontsize=8, color=NAVY)
@@ -448,10 +452,10 @@ fmonths = ['2026-05', '2026-06', '2026-07', '2026-08', '2026-09']
 fcats = [
     ('Payroll — May 2026', BLUE),
     ('Payroll — LlamaPay (accrued)', VIOLET),
-    ('Payroll before MDP-249 funding (TBC)', GREY),
-    ('ETH distribution (purpose TBC)', '#C4B5FD'),
+    ('Prior-cycle pay owed', GREY),
+    ('Prior-cycle rewards & bonus (pass-through)', '#C4B5FD'),
     ('Reimbursement', TEAL),
-    ('Operations / vendor', AMBER),
+    ('Operations / sponsorship', AMBER),
 ]
 fig, ax = plt.subplots(figsize=(9, 3.8))
 bottom = [0] * len(fmonths)

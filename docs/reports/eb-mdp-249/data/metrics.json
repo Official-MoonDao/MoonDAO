@@ -128,38 +128,43 @@
   "personnel": {
    "Pablo": {
     "budget": 60000,
-    "paidUSD": 60514.6
+    "paidUSD": 60000.31
    },
    "Ryan": {
     "budget": 37500,
-    "paidUSD": 37871.62
+    "paidUSD": 37500.19
    },
    "Miguel": {
     "budget": 22000,
-    "paidUSD": 22114.42
+    "paidUSD": 22000.13
    }
   },
   "personnelBudget": 119500,
-  "personnelPaidUSD": 120500.64,
+  "personnelPaidUSD": 119500.63,
   "opsFlexBudget": 12500,
   "opsFlexPaidUSD": 12226.62,
   "bonusPoolBudget": 24000,
-  "bonusPaid": 0
+  "bonusPaid": 0,
+  "aprilBalanceInNonce40": {
+   "Pablo": 514.29,
+   "Ryan": 371.43,
+   "Miguel": 114.29
+  }
  },
  "spendByMonth": {
   "2026-05": {
    "Reimbursement": 192.36,
-   "Payroll before MDP-249 funding (TBC)": 7749.99,
-   "ETH distribution (purpose TBC)": 6562.26,
+   "Prior-cycle pay owed": 7749.99,
+   "Prior-cycle rewards & bonus (pass-through)": 6562.26,
    "Payroll \u2014 May 2026": 23250.01
   },
   "2026-06": {
-   "Operations / vendor": 816.0,
+   "Operations / sponsorship": 816.0,
    "Reimbursement": 2383.0,
    "Payroll \u2014 LlamaPay (accrued)": 27750.18
   },
   "2026-07": {
-   "Operations / vendor": 1970.0,
+   "Reimbursement": 1970.0,
    "Payroll \u2014 LlamaPay (accrued)": 25833.5
   },
   "2026-08": {
@@ -191,7 +196,7 @@
    "date": "2026-05-06",
    "txHash": "0x27f4e056dcbbbb374ea097920d840d09f8b5e9ce5600990a659c06639affb2ea",
    "safeTxHash": "0x0a95e9c4cf2311935a5c0661ba9290a39e820d603e95cdb691eb651bc5329d93",
-   "category": "Payroll before MDP-249 funding (TBC)",
+   "category": "Prior-cycle pay owed",
    "transfers": [
     {
      "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
@@ -218,7 +223,7 @@
    "date": "2026-05-13",
    "txHash": "0x10f8141850863513a192c5eddfd9b664870d84c30886c9e105d93d905c754fc2",
    "safeTxHash": "0x3b36221635ea4ee70d858c5d58de410633dfb7bfd8986764d2524426df660b68",
-   "category": "ETH distribution (purpose TBC)",
+   "category": "Prior-cycle rewards & bonus (pass-through)",
    "transfers": [
     {
      "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
@@ -245,7 +250,7 @@
    "date": "2026-05-16",
    "txHash": "0x673c3b9cf8bd6f80dfb92f3341b114ee61cc46415690aa5e201ca6d7f623c3f7",
    "safeTxHash": "0x07d078085fc1900b1489e6142b735c286f4358886c8cd875c2f7b428e7805dc8",
-   "category": "ETH distribution (purpose TBC)",
+   "category": "Prior-cycle rewards & bonus (pass-through)",
    "transfers": [
     {
      "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
@@ -315,7 +320,7 @@
    "date": "2026-06-23",
    "txHash": "0x956a205244ce82ea77567a9093e5270dd9b37d546bbf9cbea541f643920dbde2",
    "safeTxHash": "0x607b3488276558edca6225203c7f9222ae8665df22c1a0622e1643ee07da26f5",
-   "category": "Operations / vendor",
+   "category": "Operations / sponsorship",
    "transfers": [
     {
      "to": "0xb2ac53898ae280475e67e1951b976e331511b721",
@@ -360,7 +365,7 @@
    "date": "2026-07-23",
    "txHash": "0xda618aafdef22b7d1cfc937d178ce8e2569b2a83ad71ba1592fa444ba541be16",
    "safeTxHash": "0xe0ab2b636e63d38b067d733c9f049874611d4d66a13cbee3add014f1093bd273",
-   "category": "Operations / vendor",
+   "category": "Reimbursement",
    "transfers": [
     {
      "to": "0xbdb65f5334b459e685775e84fd77838cda5bd88c",
