@@ -561,7 +561,7 @@ names = {
     'arbitrum': {1: 'The Moon Is A Harsh Mistress', 2: 'Touchdown', 3: 'Night Shift', 4: 'First Tracks', 5: 'Water Ice'},
     'sepolia': {
         1: 'Touchdown (gen 1)', 2: 'Touchdown (gen 2)', 3: 'Night Shift', 4: 'Crewed lunar rover (withdrawn)',
-        5: 'First Tracks', 6: 'Water Ice', 7: 'Touchdown v2 (Safe-owned)', 8: 'Unlabeled (JB 276)',
+        5: 'First Tracks', 6: 'Water Ice', 7: 'Touchdown v2 (Safe-owned)', 8: 'Demo prize (JB 276)',
     },
 }
 dp = {}
