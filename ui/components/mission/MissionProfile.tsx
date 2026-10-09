@@ -1,3 +1,4 @@
+import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import CitizenABI from 'const/abis/Citizen.json'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
@@ -27,44 +28,38 @@ import { useRouter } from 'next/router'
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useWindowSize } from 'react-use'
-import { ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { getContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
-import { useDeadlineTracking } from '@/lib/mission/useDeadlineTracking'
-import type { MissionFundingStats } from '@/lib/mission/fetchMissionFundingStats'
 import {
   fetchNativeBalanceWei,
   pickChainWithMaxNativeBalance,
 } from '@/lib/mission/contributeModalDefaultChain'
-import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFundingChain'
+import { defaultContributionUsd } from '@/lib/mission/contributionAmount'
+import type { MissionFundingStats } from '@/lib/mission/fetchMissionFundingStats'
+import { useDeadlineTracking } from '@/lib/mission/useDeadlineTracking'
 import { useManagerActions } from '@/lib/mission/useManagerActions'
 import useMissionData from '@/lib/mission/useMissionData'
+import { useMissionDefaultFundingChain } from '@/lib/mission/useMissionDefaultFundingChain'
 import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
-import { defaultContributionUsd } from '@/lib/mission/contributionAmount'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
-import {
-  type Chain,
-  arbitrum,
-  ethereum,
-  optimismSepolia,
-  sepolia,
-} from '@/lib/rpc/chains'
+import { type Chain, arbitrum, ethereum, optimismSepolia, sepolia } from '@/lib/rpc/chains'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { serverClient } from '@/lib/thirdweb/serverClient'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useElementVisibility } from '@/lib/utils/hooks/useElementVisibility'
 import { getAttribute } from '@/lib/utils/nft'
-import Modal from '@/components/layout/Modal'
+import { TwitterIcon } from '@/components/assets'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayoutMission'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
+import Modal from '@/components/layout/Modal'
 import { Mission } from '@/components/mission/MissionCard'
 import MissionContributeModal from '@/components/mission/MissionContributeModal'
 import MissionDeployTokenModal from '@/components/mission/MissionDeployTokenModal'
@@ -76,7 +71,6 @@ import MissionPayRedeem from '@/components/mission/MissionPayRedeem'
 import MissionProfileHeader from '@/components/mission/MissionProfileHeader'
 import MissionTeamSection from '@/components/mission/MissionTeamSection'
 import TeamMembers from '@/components/subscription/TeamMembers'
-import { TwitterIcon } from '@/components/assets'
 
 const CHAIN = DEFAULT_CHAIN_V5
 const CHAIN_SLUG = getChainSlug(CHAIN)
@@ -191,12 +185,8 @@ export default function MissionProfile({
   const chainSlug = getChainSlug(selectedChain)
 
   // Use custom hooks for extracted logic
-  const {
-    usdInput,
-    setUsdInput,
-    contributeModalEnabled,
-    setContributeModalEnabled,
-  } = useOnrampFlow(router, chainSlugs, defaultContributionUsd(mission?.id))
+  const { usdInput, setUsdInput, contributeModalEnabled, setContributeModalEnabled } =
+    useOnrampFlow(router, chainSlugs, defaultContributionUsd(mission?.id))
 
   /**
    * Contribute: re-fetch balances at click time, pick richest chain. If app network ≠ that chain,
@@ -206,9 +196,7 @@ export default function MissionProfile({
     async (nextUsdInput?: string) => {
       if (process.env.NEXT_PUBLIC_TEST_ENV !== 'true') {
         const canResolveRichest =
-          !!walletAddress &&
-          mission?.projectId != null &&
-          Number(_stage) !== 4
+          !!walletAddress && mission?.projectId != null && Number(_stage) !== 4
         if (canResolveRichest && walletAddress) {
           const entries = await Promise.all(
             chains.map(async (chain) => ({
@@ -340,8 +328,7 @@ export default function MissionProfile({
     primaryTerminalAddress !== '0x0000000000000000000000000000000000000000' &&
     Number(effectiveStage) !== 4
 
-  const fundingBannerEnabled =
-    fundingChainCompareEnabled || missionDefaultFundingChainEnabled
+  const fundingBannerEnabled = fundingChainCompareEnabled || missionDefaultFundingChainEnabled
 
   // Use deadline tracking hook
   const { duration, deadlinePassed, refundPeriodPassed } = useDeadlineTracking(
@@ -467,16 +454,14 @@ export default function MissionProfile({
         setDeployTokenModalEnabled={setDeployTokenModalEnabled}
         token={token}
         overviewStats={
-          mission?.id === 4 || String(mission?.id) === '4'
-            ? _overviewStats ?? null
-            : undefined
+          mission?.id === 4 || String(mission?.id) === '4' ? _overviewStats ?? null : undefined
         }
         overviewRaiseClosed={
-          (mission?.id === 4 || String(mission?.id) === '4') &&
-          OVERVIEW_FLIGHT_RAISE_CLOSED
+          (mission?.id === 4 || String(mission?.id) === '4') && OVERVIEW_FLIGHT_RAISE_CLOSED
         }
         contributeButton={
-          !deadlinePassed && Number(effectiveStage) !== 3 && (
+          !deadlinePassed &&
+          Number(effectiveStage) !== 3 && (
             <MissionPayRedeem
               mission={mission}
               teamNFT={teamNFT}
@@ -670,7 +655,7 @@ export default function MissionProfile({
                         height={18}
                       />
                     </div>
-                    <h2 className="text-xl md:text-2xl font-GoodTimes text-white">
+                    <h2 className="text-xl md:text-2xl font-heading font-semibold text-white">
                       Meet the Team
                     </h2>
                   </div>
@@ -716,10 +701,7 @@ export default function MissionProfile({
                 as a dedicated tab so it surfaces above the fold instead of
                 being hidden at the bottom of the page. See MissionInfo's
                 `_overviewLeaderboard` prop wiring above. */}
-            <MissionJuiceboxFooter
-              projectId={mission?.projectId ?? 0}
-              isManager={isManager}
-            />
+            <MissionJuiceboxFooter projectId={mission?.projectId ?? 0} isManager={isManager} />
           </div>
         </ContentLayout>
       </Container>
@@ -743,8 +725,8 @@ export default function MissionProfile({
               <span className="font-semibold text-white">
                 {(selectedChain.name ?? 'network').replace(' One', '')}
               </span>
-              . Switch the app to use that balance, or stay on your current app network and contribute
-              from there.
+              . Switch the app to use that balance, or stay on your current app network and
+              contribute from there.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end">
               <button
@@ -794,7 +776,10 @@ export default function MissionProfile({
                   setContributeModalEnabled(true)
                 }}
               >
-                {`Switch to ${(payChainGate.target.name ?? 'network').replace(' One', '')} and continue`}
+                {`Switch to ${(payChainGate.target.name ?? 'network').replace(
+                  ' One',
+                  ''
+                )} and continue`}
               </button>
             </div>
           </div>

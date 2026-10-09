@@ -20,7 +20,7 @@ export default function Spokespeople({ people }: { people: Spokesperson[] }) {
               className={person.image ? 'object-cover' : 'object-contain p-3 opacity-60'}
             />
           </div>
-          <h3 className="font-GoodTimes text-lg text-white">{person.name}</h3>
+          <h3 className="font-heading font-semibold text-lg text-white">{person.name}</h3>
           <p className="mt-1 font-RobotoMono text-xs uppercase tracking-[0.2em] text-slate-400">
             {person.role}
           </p>

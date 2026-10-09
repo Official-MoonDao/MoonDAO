@@ -1,10 +1,10 @@
+import { JOBS_TABLE_NAMES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
-import { JOBS_TABLE_NAMES } from 'const/config'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import Job, { Job as JobType } from '../jobs/Job'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
@@ -21,7 +21,7 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [tableName, setTableName] = useState<string | null>(null)
-  
+
   // Memoize 'now' to prevent unnecessary re-renders and effect re-runs
   const now = useMemo(() => Math.floor(Date.now() / 1000), [])
 
@@ -101,7 +101,7 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
   return (
     <div className="w-full">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-6">
-        <h2 className="font-GoodTimes text-2xl text-white">Latest Jobs</h2>
+        <h2 className="font-heading font-semibold text-2xl text-white">Latest Jobs</h2>
         <StandardButton
           className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
           onClick={() => router.push('/jobs')}
@@ -112,18 +112,16 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
 
       <SlidingCardMenu>
         <div id="latest-jobs-container" className="flex gap-5">
-          {isLoading ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={`skeleton-${i}`}
-                className="w-[300px] flex-shrink-0 h-[200px] rounded-xl bg-slate-700/40 animate-pulse"
-              />
-            ))
-          ) : (
-            latestJobs.map((job, i) => (
-              <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
-            ))
-          )}
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={`skeleton-${i}`}
+                  className="w-[300px] flex-shrink-0 h-[200px] rounded-xl bg-slate-700/40 animate-pulse"
+                />
+              ))
+            : latestJobs.map((job, i) => (
+                <Job key={`job-${i}`} job={job} showTeam teamContract={teamContract} />
+              ))}
         </div>
       </SlidingCardMenu>
       {!isLoading && latestJobs.length === 0 && (

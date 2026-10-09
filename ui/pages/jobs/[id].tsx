@@ -188,8 +188,16 @@ export default function JobDetail({
       <Container>
         <ContentLayout
           header={job.title}
-          headerSize="max(20px, 3vw)"
           description={titleSection}
+          back={
+            <Link
+              href="/jobs"
+              className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              Jobs
+            </Link>
+          }
           preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"
@@ -197,21 +205,15 @@ export default function JobDetail({
           isProfile
         >
           <div className="pb-24 lg:pb-10">
-            <Link
-              href="/jobs"
-              className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300"
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-              All open roles
-            </Link>
-
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
               <div className="min-w-0">
                 <JobFacts facts={facts} />
 
                 {isGated && (
                   <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-                    <h3 className="font-GoodTimes text-white text-lg mb-2">Citizens Only</h3>
+                    <h3 className="font-heading font-semibold text-white text-lg mb-2">
+                      Citizens Only
+                    </h3>
                     <p className="text-slate-300 mb-5 max-w-md mx-auto">
                       Become a MoonDAO Citizen to read the full role description and apply.
                     </p>

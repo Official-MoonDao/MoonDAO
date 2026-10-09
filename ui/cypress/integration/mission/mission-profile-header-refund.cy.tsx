@@ -82,12 +82,8 @@ const setupMocks = () => {
   // without guarding. The catch-all above returns {} for auth.privy.io, which
   // makes Privy overwrite its safe built-in default with an empty object and
   // crash. Force that request to error instead so Privy keeps its default.
-  cy.intercept({ hostname: 'auth.privy.io' }, { forceNetworkError: true }).as(
-    'privyConfig'
-  )
-  cy.intercept('GET', '**/etherscan/**', { fixture: 'empty.json' }).as(
-    'etherscan'
-  )
+  cy.intercept({ hostname: 'auth.privy.io' }, { forceNetworkError: true }).as('privyConfig')
+  cy.intercept('GET', '**/etherscan/**', { fixture: 'empty.json' }).as('etherscan')
 }
 
 describe('MissionProfileHeader — Refund stage behavior', () => {
@@ -124,7 +120,7 @@ describe('MissionProfileHeader — Refund stage behavior', () => {
         </TestnetProviders>
       )
       cy.get('body').then(($body) => {
-        const goodTimesElements = $body.find('[class*="font-GoodTimes"]')
+        const goodTimesElements = $body.find('[class*="font-heading"]')
         goodTimesElements.each((_i, el) => {
           expect(el.textContent).to.not.equal('REFUND')
         })
@@ -163,10 +159,7 @@ describe('MissionProfileHeader — Refund stage behavior', () => {
     it('should display "REFUND" as the status value', () => {
       cy.mount(
         <TestnetProviders>
-          <MissionProfileHeader
-            {...refundProps}
-            deadlinePassed={false}
-          />
+          <MissionProfileHeader {...refundProps} deadlinePassed={false} />
         </TestnetProviders>
       )
       cy.contains('REFUND').should('be.visible')
@@ -255,10 +248,11 @@ describe('MissionProfileHeader — Refund stage behavior', () => {
         </TestnetProviders>
       )
       // When refundPeriodPassed and deadlinePassed, it shows the formatted date
-      const closedDate = new Date(closedProps.deadline).toLocaleDateString(
-        'en-US',
-        { month: 'short', day: 'numeric', year: 'numeric' }
-      )
+      const closedDate = new Date(closedProps.deadline).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
       cy.contains(closedDate).should('be.visible')
     })
 

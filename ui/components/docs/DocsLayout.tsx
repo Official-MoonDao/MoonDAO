@@ -32,7 +32,9 @@ export default function DocsLayout({ page }: { page: DocsPageProps }) {
             <p className="text-[11px] uppercase tracking-wider text-white/30 mb-2">
               {page.kind === 'doc' ? page.slug : page.kind}
             </p>
-            <h1 className="font-GoodTimes text-3xl md:text-4xl text-white mb-6">{page.title}</h1>
+            <h1 className="font-heading font-semibold text-2xl md:text-3xl text-white mb-4">
+              {page.title}
+            </h1>
             {page.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-6">
                 {page.tags.map((tag) => (

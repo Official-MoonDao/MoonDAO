@@ -133,8 +133,16 @@ export default function ListingDetail({
       <Container>
         <ContentLayout
           header={listing.title}
-          headerSize="max(20px, 3vw)"
           description={titleSection}
+          back={
+            <Link
+              href="/marketplace"
+              className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white"
+            >
+              <ArrowLeftIcon className="h-4 w-4" />
+              Marketplace
+            </Link>
+          }
           preFooter={<NoticeFooter />}
           mainPadding
           mode="compact"
@@ -142,15 +150,7 @@ export default function ListingDetail({
           isProfile
         >
           <div className="pb-24 lg:pb-10">
-            <Link
-              href="/marketplace"
-              className="inline-flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300"
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-              All marketplace items
-            </Link>
-
-            <div className="mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8 items-start">
               <div className="min-w-0">
                 <div className="relative w-full aspect-square max-w-[560px] overflow-hidden rounded-2xl border border-white/10 bg-white/5">
                   {listing.image ? (
@@ -171,7 +171,7 @@ export default function ListingDetail({
                 </div>
 
                 <section className="mt-8">
-                  <h2 className="font-GoodTimes text-white text-lg md:text-xl mb-4">
+                  <h2 className="font-heading font-semibold text-white text-lg md:text-xl mb-4">
                     About this item
                   </h2>
                   <p className="text-white/90 text-base leading-relaxed whitespace-pre-line break-words">
@@ -180,7 +180,9 @@ export default function ListingDetail({
                 </section>
 
                 <section className="mt-10">
-                  <h2 className="font-GoodTimes text-white text-lg md:text-xl mb-4">Details</h2>
+                  <h2 className="font-heading font-semibold text-white text-lg md:text-xl mb-4">
+                    Details
+                  </h2>
                   <dl className="rounded-xl border border-white/10 bg-gradient-to-br from-slate-700/20 to-slate-800/30 px-4 py-2">
                     {team?.name && <DetailRow label="Sold by" value={team.name} />}
                     {listing.currency && <DetailRow label="Paid in" value={listing.currency} />}
@@ -216,7 +218,9 @@ export default function ListingDetail({
 
             {relatedListings.length > 0 && (
               <section className="mt-12">
-                <h2 className="font-GoodTimes text-white text-lg md:text-xl mb-4">Other items</h2>
+                <h2 className="font-heading font-semibold text-white text-lg md:text-xl mb-4">
+                  Other items
+                </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {relatedListings.map((related) => (
                     <MarketplaceListingCard

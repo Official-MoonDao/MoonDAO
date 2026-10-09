@@ -26,15 +26,14 @@ export default function CitizenExpiredPanel({
       className="w-full max-w-2xl mx-auto my-16 p-8 rounded-2xl bg-gradient-to-b from-slate-700/20 to-slate-800/30 border border-slate-600/30 flex flex-col items-center text-center gap-4"
     >
       <LockClosedIcon className="w-10 h-10 text-moon-orange" />
-      <h1 className="font-GoodTimes text-2xl text-white">
+      <h1 className="font-heading font-semibold text-2xl text-white">
         Your Citizenship Has Expired
       </h1>
       <p className="text-slate-300 max-w-md">
         {expirationDate
           ? `Your citizenship lapsed on ${expirationDate}. `
           : 'Your citizenship has lapsed. '}
-        {feature} is available to active citizens of the Space Acceleration
-        Network.
+        {feature} is available to active citizens of the Space Acceleration Network.
       </p>
       <button
         data-testid="open-renewal-modal-button"

@@ -8,7 +8,7 @@ type LaunchHeroProps = {
 
 export default function LaunchHero({ citizenHasAccess, onLaunchClick }: LaunchHeroProps) {
   return (
-    <section className="relative h-screen overflow-hidden">
+    <section className="relative h-[60svh] min-h-[480px] overflow-hidden">
       <div className="absolute inset-0 -top-18 md:-top-22 lg:-top-26">
         <Image
           src="/assets/launchpad/moondao-launchpad-hero.png"
@@ -22,19 +22,9 @@ export default function LaunchHero({ citizenHasAccess, onLaunchClick }: LaunchHe
       </div>
 
       <div className="relative z-10 h-full flex flex-col justify-end">
-        <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pb-24 md:pb-28 lg:pb-32 xl:pb-36">
+        <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 pb-16 md:pb-20">
           <div className="max-w-2xl">
-            <div className="mb-4 md:mb-6">
-              <Image
-                src="/assets/Tagline Animation - inline centered.svg"
-                alt="MoonDAO"
-                width={300}
-                height={75}
-                className="w-32 sm:w-40 md:w-48 lg:w-64 xl:w-72"
-              />
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-GoodTimes text-white mb-4 md:mb-6 leading-tight">
+            <h1 className="text-3xl md:text-5xl font-heading font-semibold text-white mb-3 md:mb-4 leading-tight">
               Launchpad
             </h1>
 
@@ -128,4 +118,3 @@ export default function LaunchHero({ citizenHasAccess, onLaunchClick }: LaunchHe
     </section>
   )
 }
-

@@ -1,4 +1,11 @@
-import { TrashIcon, UserPlusIcon, ShieldCheckIcon, ExclamationTriangleIcon, XMarkIcon, ArrowUpCircleIcon } from '@heroicons/react/24/outline'
+import {
+  TrashIcon,
+  UserPlusIcon,
+  ShieldCheckIcon,
+  ExclamationTriangleIcon,
+  XMarkIcon,
+  ArrowUpCircleIcon,
+} from '@heroicons/react/24/outline'
 import { DEFAULT_CHAIN_V5, HATS_ADDRESS } from 'const/config'
 import { TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES } from 'const/teams'
 import { ethers } from 'ethers'
@@ -60,9 +67,7 @@ function HatOption({ hat, managerHatId }: any) {
     let active = true
     async function getHatMetadata() {
       try {
-        const res = await fetch(
-          `https://ipfs.io/ipfs/${hat.details.split('ipfs://')[1]}`
-        )
+        const res = await fetch(`https://ipfs.io/ipfs/${hat.details.split('ipfs://')[1]}`)
         const data = await res.json()
         if (active) setIpfsName(data?.data?.name)
       } catch {
@@ -140,9 +145,7 @@ function TeamMembers({
   // Whether this member already wears the manager hat (so we can offer to
   // promote members who don't). Comparing against the team's manager hat id
   // is deterministic and doesn't depend on IPFS metadata.
-  const isAlreadyManager = wearer.hatIds?.some((hatId: string) =>
-    isManagerHat(hatId, managerHatId)
-  )
+  const isAlreadyManager = wearer.hatIds?.some((hatId: string) => isManagerHat(hatId, managerHatId))
 
   async function promoteToManager() {
     if (managerHatId == null) return toast.error('Manager role unavailable.')
@@ -200,22 +203,13 @@ function TeamMembers({
                   <button
                     disabled={removingHat === hatName.hatId}
                     onClick={async () => {
-                      const removingManagerHat = isManagerHat(
-                        hatName.hatId,
-                        managerHatId
-                      )
+                      const removingManagerHat = isManagerHat(hatName.hatId, managerHatId)
 
                       // Guard: never allow a team to be left with zero managers.
                       // A team with no manager can no longer manage its own roles
                       // (only the manager hat or Safe owner can), so it would need
                       // super-manager intervention to recover.
-                      if (
-                        wouldRemoveLastManager(
-                          hatName.hatId,
-                          managerHatId,
-                          managerCount ?? 0
-                        )
-                      ) {
+                      if (wouldRemoveLastManager(hatName.hatId, managerHatId, managerCount ?? 0)) {
                         return toast.error(
                           "You can't remove the team's only manager. Assign another manager first, then remove this one."
                         )
@@ -236,11 +230,14 @@ function TeamMembers({
                       setRemovingHat(hatName.hatId)
                       try {
                         const v2TeamCreatorPatchedPassthroughModuleAddress =
-                          TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES?.[chainSlug]?.[teamId]
+                          TEAM_CREATOR_V2_PASSTHROUGH_MODULE_PATCHED_ADDRESSES?.[chainSlug]?.[
+                            teamId
+                          ]
 
                         let memberHatPassthroughModuleAddress: any = ''
                         if (v2TeamCreatorPatchedPassthroughModuleAddress) {
-                          memberHatPassthroughModuleAddress = v2TeamCreatorPatchedPassthroughModuleAddress
+                          memberHatPassthroughModuleAddress =
+                            v2TeamCreatorPatchedPassthroughModuleAddress
                         } else {
                           memberHatPassthroughModuleAddress = await readContract({
                             contract: teamContract,
@@ -255,18 +252,19 @@ function TeamMembers({
                           managerHatId,
                           adminHatId,
                           hatsAddress: HATS_ADDRESS,
-                          memberPassthroughModuleAddress:
-                            memberHatPassthroughModuleAddress,
+                          memberPassthroughModuleAddress: memberHatPassthroughModuleAddress,
                         })
 
                         const iface = new ethers.utils.Interface(HatsABI)
-                        const txData = iface.encodeFunctionData(
-                          tx.functionName,
-                          tx.args
-                        )
+                        const txData = iface.encodeFunctionData(tx.functionName, tx.args)
 
                         if (tx.routing === 'safe') {
-                          await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: DEFAULT_SAFE_TX_GAS })
+                          await queueSafeTx({
+                            to: tx.to,
+                            data: txData,
+                            value: '0',
+                            safeTxGas: DEFAULT_SAFE_TX_GAS,
+                          })
                           setHasDeletedMember(true)
                         } else {
                           await account?.sendTransaction({
@@ -359,11 +357,7 @@ function TeamManageMembersModal({
   const safeNetwork = process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'arb1' : 'sep'
   const safeUrl = `https://app.safe.global/home?safe=${safeNetwork}:${multisigAddress}`
 
-  const isPrivilegedSelection = requiresSafeTx(
-    selectedHatId,
-    managerHatId,
-    adminHatId
-  )
+  const isPrivilegedSelection = requiresSafeTx(selectedHatId, managerHatId, adminHatId)
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
@@ -388,11 +382,12 @@ function TeamManageMembersModal({
         }}
         className="relative z-[10000] flex flex-col w-full md:w-[520px] overflow-y-auto bg-[#0a0f1e] rounded-2xl border border-[#1e2a45] shadow-2xl"
       >
-
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-[#1e2a45] flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-GoodTimes text-xl text-white tracking-wide">Manage Team</h2>
+            <h2 className="font-heading font-semibold text-xl text-white tracking-wide">
+              Manage Team
+            </h2>
             <p className="text-xs text-slate-400 mt-1">Add or remove roles for team members</p>
           </div>
           <button
@@ -409,9 +404,8 @@ function TeamManageMembersModal({
           <div className="mx-6 mt-4 flex items-start gap-2 p-3 rounded-lg bg-purple-900/20 border border-purple-500/30 text-purple-200 text-xs">
             <ShieldCheckIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>
-              You have super manager access. Manager role changes are queued to
-              the team Safe and must be signed by an authorized Safe signer to
-              finalize.
+              You have super manager access. Manager role changes are queued to the team Safe and
+              must be signed by an authorized Safe signer to finalize.
             </span>
           </div>
         )}
@@ -450,7 +444,10 @@ function TeamManageMembersModal({
               <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>
                 Removal queued.{' '}
-                <button className="underline font-semibold hover:text-amber-200" onClick={() => window.open(safeUrl)}>
+                <button
+                  className="underline font-semibold hover:text-amber-200"
+                  onClick={() => window.open(safeUrl)}
+                >
                   Sign & execute in Safe
                 </button>{' '}
                 to finalize.
@@ -482,10 +479,20 @@ function TeamManageMembersModal({
 
             try {
               if (tx.routing === 'safe') {
-                await queueSafeTx({ to: tx.to, data: txData, value: '0', safeTxGas: DEFAULT_SAFE_TX_GAS })
+                await queueSafeTx({
+                  to: tx.to,
+                  data: txData,
+                  value: '0',
+                  safeTxGas: DEFAULT_SAFE_TX_GAS,
+                })
                 setHasAddedMember(true)
               } else {
-                await account?.sendTransaction({ to: tx.to, data: txData, value: '0', gas: 1000000 })
+                await account?.sendTransaction({
+                  to: tx.to,
+                  data: txData,
+                  value: '0',
+                  gas: 1000000,
+                })
                 toast.success('Member added and role granted!')
               }
               setNewMemberAddress('')
@@ -500,7 +507,9 @@ function TeamManageMembersModal({
         >
           <div className="flex items-center gap-2">
             <UserPlusIcon className="w-4 h-4 text-slate-400" />
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Add a Teammate</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              Add a Teammate
+            </p>
           </div>
 
           {/* Role selector */}
@@ -527,16 +536,16 @@ function TeamManageMembersModal({
             <div className="flex items-start gap-2 p-2.5 rounded-lg bg-blue-900/20 border border-blue-500/25 text-blue-300 text-xs">
               <ShieldCheckIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>
-                Managers get full administrative access. Granting this role
-                requires Safe multisig approval after submission.
+                Managers get full administrative access. Granting this role requires Safe multisig
+                approval after submission.
               </span>
             </div>
           ) : (
             <div className="flex items-start gap-2 p-2.5 rounded-lg bg-[#0d1424] border border-[#1e2a45] text-slate-400 text-xs">
               <UserPlusIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
               <span>
-                Members get standard access. To give someone admin-level
-                control, assign the Manager role instead.
+                Members get standard access. To give someone admin-level control, assign the Manager
+                role instead.
               </span>
             </div>
           )}
@@ -571,7 +580,10 @@ function TeamManageMembersModal({
               <ExclamationTriangleIcon className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>
                 Transaction queued.{' '}
-                <button className="underline font-semibold hover:text-green-200" onClick={() => window.open(safeUrl)}>
+                <button
+                  className="underline font-semibold hover:text-green-200"
+                  onClick={() => window.open(safeUrl)}
+                >
                   Sign & execute in Safe
                 </button>{' '}
                 to complete.

@@ -116,8 +116,7 @@ const timelineEvents: TimelineEvent[] = [
     date: '2028',
     year: 2028,
     title: 'Ready for Launch',
-    description:
-      'Components tested and ready for launch with Earth-based simulation complete.',
+    description: 'Components tested and ready for launch with Earth-based simulation complete.',
     icon: '/assets/icon-lander.svg',
     iconAlt: 'Ready for Launch',
   },
@@ -215,9 +214,7 @@ export default function Timeline() {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true)
-    setStartX(
-      e.touches[0].pageX - (scrollContainerRef.current?.offsetLeft || 0)
-    )
+    setStartX(e.touches[0].pageX - (scrollContainerRef.current?.offsetLeft || 0))
     setScrollLeft(scrollContainerRef.current?.scrollLeft || 0)
   }
 
@@ -235,9 +232,7 @@ export default function Timeline() {
   const scrollToEvent = (index: number) => {
     setSelectedEvent(index)
     if (scrollContainerRef.current) {
-      const eventElement = scrollContainerRef.current.children[
-        index
-      ] as HTMLElement
+      const eventElement = scrollContainerRef.current.children[index] as HTMLElement
       if (eventElement) {
         // Use the browser's native scrollIntoView with smooth behavior
         // This works better with scroll snap
@@ -268,7 +263,7 @@ export default function Timeline() {
 
       <div className="px-8 md:px-12 lg:px-16 2xl:px-24 3xl:px-32 relative z-10">
         <div className="w-full max-w-[1400px] 2xl:max-w-[1600px] 3xl:max-w-[1800px] mx-auto flex flex-col items-center">
-          <h2 className="header font-GoodTimes text-center text-white mb-8 lg:mb-12 xl:mb-16 2xl:mb-20 3xl:mb-24 text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl 3xl:text-7xl">
+          <h2 className="header font-heading font-semibold text-center text-white mb-8 lg:mb-12 xl:mb-16 2xl:mb-20 3xl:mb-24 text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl 3xl:text-7xl">
             Journey to the Moon
           </h2>
 
@@ -284,13 +279,7 @@ export default function Timeline() {
                 preserveAspectRatio="none"
               >
                 <defs>
-                  <linearGradient
-                    id="timelineGradient"
-                    x1="0%"
-                    y1="100%"
-                    x2="100%"
-                    y2="0%"
-                  >
+                  <linearGradient id="timelineGradient" x1="0%" y1="100%" x2="100%" y2="0%">
                     <stop offset="0%" stopColor="#3B82F6" />
                     <stop offset="50%" stopColor="#8B5CF6" />
                     <stop offset="100%" stopColor="#06B6D4" />
@@ -346,9 +335,7 @@ export default function Timeline() {
                     <div
                       key={index}
                       className={`absolute cursor-pointer transition-all duration-300 ${
-                        selectedEvent === index
-                          ? 'scale-110 z-20'
-                          : 'hover:scale-105 z-10'
+                        selectedEvent === index ? 'scale-110 z-20' : 'hover:scale-105 z-10'
                       }`}
                       style={{
                         left: `${xPercent}%`,
@@ -414,9 +401,7 @@ export default function Timeline() {
                       {/* Event info - Absolutely positioned and centered */}
                       <div
                         className={`absolute text-center transition-all duration-300 ${
-                          selectedEvent === index
-                            ? 'opacity-100'
-                            : 'opacity-60 hover:opacity-80'
+                          selectedEvent === index ? 'opacity-100' : 'opacity-60 hover:opacity-80'
                         }`}
                         style={{
                           left: '50%',
@@ -428,29 +413,23 @@ export default function Timeline() {
                       >
                         {isLastEvent ? (
                           <>
-                            <div className="text-gray-300 text-sm font-bold font-GoodTimes">
+                            <div className="text-gray-300 text-sm font-bold font-heading">
                               THE MOON
                             </div>
-                            <div className="text-white text-xs mt-1">
-                              Settlement Complete
-                            </div>
+                            <div className="text-white text-xs mt-1">Settlement Complete</div>
                             <div className="text-purple-300 text-xs">2030</div>
                           </>
                         ) : (
                           <>
                             <div
                               className={`text-sm font-bold ${
-                                isCurrentEvent
-                                  ? 'text-green-300'
-                                  : 'text-purple-300'
+                                isCurrentEvent ? 'text-green-300' : 'text-purple-300'
                               }`}
                             >
                               {event.date}
                             </div>
                             <div className="text-white text-xs mt-1 leading-tight min-h-[2.5rem] flex items-center justify-center">
-                              <span className="break-words hyphens-auto">
-                                {event.title}
-                              </span>
+                              <span className="break-words hyphens-auto">{event.title}</span>
                             </div>
                           </>
                         )}
@@ -469,8 +448,7 @@ export default function Timeline() {
                     <Image
                       src={timelineEvents[selectedEvent].icon}
                       alt={
-                        timelineEvents[selectedEvent].iconAlt ||
-                        timelineEvents[selectedEvent].title
+                        timelineEvents[selectedEvent].iconAlt || timelineEvents[selectedEvent].title
                       }
                       width={timelineEvents[selectedEvent].iconSize || 32}
                       height={timelineEvents[selectedEvent].iconSize || 32}
@@ -482,7 +460,7 @@ export default function Timeline() {
                   {timelineEvents[selectedEvent].date}
                 </div>
               </div>
-              <h3 className="text-white text-2xl font-GoodTimes mb-4">
+              <h3 className="text-white text-2xl font-heading font-semibold mb-4">
                 {timelineEvents[selectedEvent].title}
               </h3>
               <p className="text-gray-300 leading-relaxed text-lg flex-1 overflow-hidden">
@@ -523,16 +501,12 @@ export default function Timeline() {
                         />
                       )}
                     </div>
-                    <div className="text-purple-300 text-lg font-bold">
-                      {event.date}
-                    </div>
+                    <div className="text-purple-300 text-lg font-bold">{event.date}</div>
                   </div>
-                  <h3 className="text-white text-xl font-GoodTimes mb-4 leading-tight">
+                  <h3 className="text-white text-xl font-heading font-semibold mb-4 leading-tight">
                     {event.title}
                   </h3>
-                  <p className="text-gray-300 leading-relaxed">
-                    {event.description}
-                  </p>
+                  <p className="text-gray-300 leading-relaxed">{event.description}</p>
                 </div>
               ))}
             </div>

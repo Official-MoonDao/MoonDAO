@@ -11,8 +11,7 @@ export type TooltipProps = {
   wrap?: boolean
 }
 
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 export default function Tooltip({
   text,
@@ -77,13 +76,7 @@ export default function Tooltip({
 
   // Handle entry animation and horizontal viewport-clamping
   useEffect(() => {
-    if (
-      isHovered &&
-      isVisible &&
-      contentRef.current &&
-      triggerRef.current &&
-      tooltipRef.current
-    ) {
+    if (isHovered && isVisible && contentRef.current && triggerRef.current && tooltipRef.current) {
       const contentRect = contentRef.current.getBoundingClientRect()
       const triggerRect = triggerRef.current.getBoundingClientRect()
       const viewportWidth = window.innerWidth
@@ -171,10 +164,8 @@ export default function Tooltip({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node
-      const clickedInsideTrigger =
-        containerRef.current && containerRef.current.contains(target)
-      const clickedInsideTooltip =
-        tooltipRef.current && tooltipRef.current.contains(target)
+      const clickedInsideTrigger = containerRef.current && containerRef.current.contains(target)
+      const clickedInsideTooltip = tooltipRef.current && tooltipRef.current.contains(target)
       if (!clickedInsideTrigger && !clickedInsideTooltip && isTouched && isVisible) {
         setIsHovered(false)
         setIsTouched(false)
@@ -211,8 +202,7 @@ export default function Tooltip({
 
   // Handle toggle on desktop (click)
   const handleTriggerClick = (e: React.MouseEvent) => {
-    const isTouchDevice =
-      'ontouchstart' in window || navigator.maxTouchPoints > 0
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 
     if (!isTouchDevice) {
       if (isHovered && isTouched) {
@@ -249,9 +239,7 @@ export default function Tooltip({
             <div
               ref={contentRef}
               className={`w-max ${
-                compact
-                  ? 'max-w-[85vw] md:max-w-[400px]'
-                  : 'max-w-[85vw] md:max-w-[200px]'
+                compact ? 'max-w-[85vw] md:max-w-[400px]' : 'max-w-[85vw] md:max-w-[200px]'
               }  bg-white text-black px-3 py-2 rounded-[1vmax] break-words pointer-events-auto`}
               style={{ transform: `translateX(${contentOffset}px)` }}
             >
@@ -287,8 +275,7 @@ export default function Tooltip({
       className={`relative ${wrap ? 'cursor-pointer' : ''}`}
       onMouseEnter={() => {
         if (!wrap) return
-        const isTouchDevice =
-          'ontouchstart' in window || navigator.maxTouchPoints > 0
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
         if (!isTouchDevice || !isTouched) {
           setIsHovered(true)
         }
@@ -304,12 +291,11 @@ export default function Tooltip({
         <div
           id="tooltip-icon"
           ref={triggerRef}
-          className={`flex justify-center items-center h-6 w-6 bg-white rounded-full font-GoodTimes text-black pl-[1.5px] ${buttonClassName} ${
+          className={`flex justify-center items-center h-6 w-6 bg-white rounded-full font-heading font-semibold text-black pl-[1.5px] ${buttonClassName} ${
             !disabled && isHovered ? 'opacity-100' : 'opacity-50'
           } ${!disabled && 'cursor-pointer'}`}
           onMouseEnter={() => {
-            const isTouchDevice =
-              'ontouchstart' in window || navigator.maxTouchPoints > 0
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
             if (!isTouchDevice || !isTouched) {
               setIsHovered(true)
             }
@@ -327,11 +313,7 @@ export default function Tooltip({
       )}
 
       {wrap && (
-        <div
-          ref={triggerRef}
-          onClick={handleTriggerClick}
-          onTouchStart={handleTriggerTouch}
-        >
+        <div ref={triggerRef} onClick={handleTriggerClick} onTouchStart={handleTriggerTouch}>
           {children}
         </div>
       )}

@@ -8,7 +8,7 @@ export default function OpenVotes({ proposals }: any) {
   return (
     <div className="w-full">
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 mb-6">
-        <h2 className="font-GoodTimes text-2xl text-white">Open Votes</h2>
+        <h2 className="font-heading font-semibold text-2xl text-white">Open Votes</h2>
         <StandardButton
           className="min-w-[200px] gradient-2 rounded-[5vmax] rounded-bl-[10px]"
           onClick={() => router.push('/projects')}
@@ -17,10 +17,7 @@ export default function OpenVotes({ proposals }: any) {
         </StandardButton>
       </div>
       {proposals && proposals.length > 0 ? (
-        <div
-          className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-1"
-          id="scrollableUl"
-        >
+        <div className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-1" id="scrollableUl">
           {proposals?.map((proposal: any) => (
             <div
               key={proposal.id}

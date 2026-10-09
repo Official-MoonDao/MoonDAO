@@ -13,31 +13,26 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import type { MissionFundingStats } from '@/lib/mission/fetchMissionFundingStats'
+import { formatUsdCompact, milestoneSegmentProgress } from '@/lib/mission/milestoneProgress'
+import {
+  jbSubgraphVolumeToBigIntWei,
+  weiBigintToEthNumber,
+} from '@/lib/mission/useMissionRaisedProgress'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import IPFSRenderer from '../layout/IPFSRenderer'
 import StandardButton from '../layout/StandardButton'
 import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
-import { formatUsdCompact, milestoneSegmentProgress } from '@/lib/mission/milestoneProgress'
-import {
-  jbSubgraphVolumeToBigIntWei,
-  weiBigintToEthNumber,
-} from '@/lib/mission/useMissionRaisedProgress'
 import MissionDeadlineCountdown from './MissionDeadlineCountdown'
 import MissionFundingMilestonesList from './MissionFundingMilestonesList'
 import MissionFundingProgressBar from './MissionFundingProgressBar'
 import MissionSingleLineTitle from './MissionSingleLineTitle'
 
 // Loading skeleton components
-const TextSkeleton = ({
-  width,
-  height = 'h-4',
-}: {
-  width: string
-  height?: string
-}) => <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
-
+const TextSkeleton = ({ width, height = 'h-4' }: { width: string; height?: string }) => (
+  <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
+)
 
 function exactClosingTooltipText(deadline: number | undefined): string {
   if (deadline == null || deadline === 0) {
@@ -137,10 +132,7 @@ const MissionProfileHeader = React.memo(
     const account = useActiveAccount()
     const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
 
-    const missionTagline = getMissionTagline(
-      mission?.id,
-      mission?.metadata?.tagline
-    )
+    const missionTagline = getMissionTagline(mission?.id, mission?.metadata?.tagline)
     const minUsdGoal = getMissionMinimumUsdGoal(mission?.id)
     const offChainCommittedUsd = getMissionOffChainCommittedUsd(mission?.id)
     const terminalWei = totalFunding ?? BigInt(0)
@@ -152,8 +144,7 @@ const MissionProfileHeader = React.memo(
      *  the title + tagline span the full content width, with the image and
      *  funding card sitting side-by-side underneath. Other missions keep the
      *  original side-by-side title/image arrangement. */
-    const isOverviewMission =
-      mission?.id === 4 || String(mission?.id) === '4'
+    const isOverviewMission = mission?.id === 4 || String(mission?.id) === '4'
 
     /** The Overview Flight (mission 4) raise being wrapped up. Only this drives
      *  the "closed" funding UI (success stats + Seat Procurement panel);
@@ -168,8 +159,7 @@ const MissionProfileHeader = React.memo(
       // bar/list never render even momentarily). Once the raise re-opens this
       // guard clears and mission 4 gets the standard live milestone UI.
       if (isOverviewRaiseClosed) return null
-      const steps =
-        mission?.id != null ? MISSION_FUNDING_MILESTONES_USD[mission.id] : undefined
+      const steps = mission?.id != null ? MISSION_FUNDING_MILESTONES_USD[mission.id] : undefined
       if (!steps?.length || !ethPrice || ethPrice <= 0 || isLoadingTotalFunding) return null
       const raisedUsd = onChainEthRaised * ethPrice + offChainCommittedUsd
       const seg = milestoneSegmentProgress(raisedUsd, steps)
@@ -204,10 +194,11 @@ const MissionProfileHeader = React.memo(
       if (!isOverviewRaiseClosed || deadline == null || deadline <= 0) return null
       const procurementEndMs = deadline + SEAT_PROCUREMENT_MS
       const procurementEndDate = new Date(procurementEndMs)
-      const procurementEndLabel = procurementEndDate.toLocaleDateString(
-        'en-US',
-        { month: 'long', day: 'numeric', year: 'numeric' }
-      )
+      const procurementEndLabel = procurementEndDate.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })
       const periodElapsed = now != null && now >= procurementEndMs
       let countdownLabel: string | null = null
       if (now != null && !periodElapsed) {
@@ -217,11 +208,7 @@ const MissionProfileHeader = React.memo(
         const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
         const minutes = totalMinutes % 60
         countdownLabel =
-          days >= 1
-            ? `${days}d ${hours}h`
-            : hours >= 1
-            ? `${hours}h ${minutes}m`
-            : `${minutes}m`
+          days >= 1 ? `${days}d ${hours}h` : hours >= 1 ? `${hours}h ${minutes}m` : `${minutes}m`
       }
       return {
         procurementEndMs,
@@ -321,8 +308,8 @@ const MissionProfileHeader = React.memo(
      *  Other missions keep the existing fill-to-match behaviour so wider
      *  mission images can still match the copy column. */
     const imageAspectClass = isOverviewMission
-      ? 'aspect-square w-full'
-      : 'aspect-square lg:aspect-auto lg:h-full lg:min-h-[260px] w-full'
+      ? 'h-40 sm:h-52 w-full lg:aspect-square lg:h-auto'
+      : 'h-40 sm:h-56 w-full lg:aspect-auto lg:h-full lg:min-h-[220px]'
     const imageWrapperClass = isOverviewMission
       ? 'w-full min-w-0 flex flex-col'
       : 'w-full min-w-0 lg:h-full lg:min-h-0 flex flex-col'
@@ -385,7 +372,7 @@ const MissionProfileHeader = React.memo(
             className={`w-full max-w-[1200px] mx-auto ${
               isOverviewMission
                 ? // Overview Mission layout: title spans full width up top,
-                //   then image + funding card side-by-side below.
+                  //   then image + funding card side-by-side below.
                   'flex flex-col gap-6 lg:gap-8'
                 : ''
             }`}
@@ -442,205 +429,231 @@ const MissionProfileHeader = React.memo(
                     balanced look without big midsection gaps. */}
                 <div
                   className={`bg-white/[0.03] backdrop-blur-sm rounded-2xl p-3 sm:p-5 border border-white/[0.06] w-full ${
-                    isOverviewMission
-                      ? 'lg:flex-1 lg:min-h-0 lg:flex lg:flex-col'
-                      : ''
+                    isOverviewMission ? 'lg:flex-1 lg:min-h-0 lg:flex lg:flex-col' : ''
                   }`}
                 >
-                {/* Amount Raised + CTA Row */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                  <div className="min-w-0 w-full sm:w-auto">
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      {isLoadingTotalFunding || !ethPrice || ethPrice <= 0 ? (
-                        <TextSkeleton width="w-24" height="h-8" />
-                      ) : (
-                        <span className="text-2xl sm:text-3xl font-GoodTimes text-white">
-                          {`$${Math.round(onChainEthRaised * ethPrice + offChainCommittedUsd).toLocaleString()}`}
-                        </span>
-                      )}
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <span className="text-xs sm:text-sm font-medium text-indigo-400 uppercase tracking-wider">
-                          raised
-                        </span>
-                        <Tooltip
-                          compact
-                          text={
-                            isLoadingTotalFunding
-                              ? 'Loading...'
-                              : offChainCommittedUsd > 0
-                              ? `The total includes both on-chain and off-chain committed funds. On-chain: ${truncateTokenValue(onChainEthRaised, 'ETH')} ETH (about $${Math.round(onChainEthRaised * (ethPrice ?? 0)).toLocaleString()} at the current ETH price). Off-chain committed: $${offChainCommittedUsd.toLocaleString()}.`
-                              : `${truncateTokenValue(onChainEthRaised, 'ETH').toLocaleString()} ETH has been raised. The USD equivalent fluctuates based on the current price of Ethereum.`
-                          }
-                          buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
-                        >
-                          ?
-                        </Tooltip>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-stretch sm:items-end gap-2">
-                    {contributeButton}
-                    {/* Manager Actions */}
-                    {account && isManager && (
-                      <div className="flex flex-wrap gap-2">
-                        {deadlinePassed && Number(stage) !== 3 && (
-                          <>
-                            <PrivyWeb3Button
-                              requiredChain={DEFAULT_CHAIN_V5}
-                              className="group bg-white/5 hover:bg-indigo-500/10 text-white py-1.5 px-3 rounded-lg transition-all duration-200 border border-white/10 hover:border-indigo-400/30 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
-                              label={
-                                <div className="flex items-center gap-1.5">
-                                  <Image src="/assets/icon-raised-tokens.svg" alt="Tokens" width={12} height={12} className="opacity-60 group-hover:opacity-100" />
-                                  <span>Tokens</span>
-                                </div>
-                              }
-                              action={sendReservedTokens}
-                              isDisabled={!availableTokens}
-                            />
-                            <PrivyWeb3Button
-                              requiredChain={DEFAULT_CHAIN_V5}
-                              className="group bg-white/5 hover:bg-blue-500/10 text-white py-1.5 px-3 rounded-lg transition-all duration-200 border border-white/10 hover:border-blue-400/30 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
-                              label={
-                                <div className="flex items-center gap-1.5">
-                                  <Image src="/assets/icon-crowdfunding.svg" alt="Payouts" width={12} height={12} className="opacity-60 group-hover:opacity-100" />
-                                  <span>Payouts</span>
-                                </div>
-                              }
-                              action={sendPayouts}
-                              isDisabled={!availablePayouts}
-                            />
-                            {stage === 2 && (
-                              <PrivyWeb3Button
-                                requiredChain={DEFAULT_CHAIN_V5}
-                                className="group bg-white/5 hover:bg-emerald-500/10 text-white py-1.5 px-3 rounded-lg transition-all duration-200 border border-white/10 hover:border-emerald-400/30 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
-                                label={
-                                  <div className="flex items-center gap-1.5">
-                                    <Image src="/assets/icon-ethereum.svg" alt="Liquidity" width={12} height={12} className="opacity-60 group-hover:opacity-100" />
-                                    <span>Liquidity</span>
-                                  </div>
-                                }
-                                action={deployLiquidityPool}
-                                isDisabled={!poolDeployerAddress}
-                              />
-                            )}
-                          </>
+                  {/* Amount Raised + CTA Row */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                    <div className="min-w-0 w-full sm:w-auto">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        {isLoadingTotalFunding || !ethPrice || ethPrice <= 0 ? (
+                          <TextSkeleton width="w-24" height="h-8" />
+                        ) : (
+                          <span className="text-2xl sm:text-3xl font-heading font-semibold text-white">
+                            {`$${Math.round(
+                              onChainEthRaised * ethPrice + offChainCommittedUsd
+                            ).toLocaleString()}`}
+                          </span>
                         )}
-                        {setDeployTokenModalEnabled && !token?.tokenAddress && (
-                          <StandardButton
-                            id="deploy-token-button"
-                            className="bg-white/5 hover:bg-indigo-500/10 text-white py-1.5 px-3 rounded-lg transition-all duration-200 border border-white/10 hover:border-indigo-400/30 text-xs"
-                            borderRadius="rounded-lg"
-                            onClick={() => setDeployTokenModalEnabled(true)}
-                          >
-                            Deploy Token
-                          </StandardButton>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress Bar — hidden while the Overview Flight raise is
-                    wrapped up (mission 4). All other missions, and mission 4
-                    once its raise re-opens, get the live bar + milestone list. */}
-                {!isOverviewRaiseClosed && (
-                  <div className="mb-4">
-                    <MissionFundingProgressBar
-                      fundingGoal={fundingGoal}
-                      volume={onChainEthRaised}
-                      compact={true}
-                      progressOverride={
-                        milestoneBar ? milestoneBar.seg.progressPercent : undefined
-                      }
-                      caption={milestoneBar?.caption}
-                    />
-                    {milestoneBar ? (
-                      <MissionFundingMilestonesList
-                        milestones={milestoneBar.steps}
-                        raisedUsd={milestoneBar.raisedUsd}
-                        nextMilestoneIndex={milestoneBar.seg.nextMilestoneIndex}
-                      />
-                    ) : null}
-                  </div>
-                )}
-
-                {/* Contributions-closed banner — Overview Flight only. Sits
-                    directly above the Seat Procurement panel so the reader
-                    immediately understands why the live progress / pay UI
-                    is gone before reading about the 30-day refund window. */}
-                {isOverviewRaiseClosed && (
-                  <div
-                    data-testid="overview-contributions-closed-banner"
-                    className="mb-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 flex items-start gap-3"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18)]"
-                    />
-                    <div className="min-w-0">
-                      <p className="text-white text-sm font-semibold leading-snug">
-                        Contributions are now closed
-                      </p>
-                      <p className="text-gray-400 text-xs sm:text-[13px] leading-relaxed mt-0.5">
-                        The Overview Flight raise has wrapped up — no further
-                        contributions are being accepted.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Seat Procurement Period — Overview Flight only. Replaces
-                    the milestone progress UI now that the raise has wrapped
-                    up. Anchored to the on-chain deadline, hydrated client
-                    side so SSR doesn't bake a stale countdown into HTML. */}
-                {isOverviewRaiseClosed && seatProcurement && (
-                  <div
-                    data-testid="overview-seat-procurement-panel"
-                    className="mb-4 rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent p-4 sm:p-5"
-                  >
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-indigo-300/90">
-                            Seat Procurement Period
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className="text-xs sm:text-sm font-medium text-indigo-400 uppercase tracking-wider">
+                            raised
                           </span>
                           <Tooltip
                             compact
-                            text={`A ${SEAT_PROCUREMENT_DAYS}-day window (starting at the close of the raise) during which Frank's team works to convert raised funds into a confirmed seat to space. After this window closes, contributors become eligible for a refund if a seat could not be secured.`}
+                            text={
+                              isLoadingTotalFunding
+                                ? 'Loading...'
+                                : offChainCommittedUsd > 0
+                                ? `The total includes both on-chain and off-chain committed funds. On-chain: ${truncateTokenValue(
+                                    onChainEthRaised,
+                                    'ETH'
+                                  )} ETH (about $${Math.round(
+                                    onChainEthRaised * (ethPrice ?? 0)
+                                  ).toLocaleString()} at the current ETH price). Off-chain committed: $${offChainCommittedUsd.toLocaleString()}.`
+                                : `${truncateTokenValue(
+                                    onChainEthRaised,
+                                    'ETH'
+                                  ).toLocaleString()} ETH has been raised. The USD equivalent fluctuates based on the current price of Ethereum.`
+                            }
                             buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
                           >
                             ?
                           </Tooltip>
                         </div>
-                        <p className="text-white font-GoodTimes text-base sm:text-lg leading-tight mt-1">
-                          {seatProcurement.periodElapsed
-                            ? 'Period Closed'
-                            : `Ends ${seatProcurement.procurementEndLabel}`}
-                        </p>
                       </div>
-                      {!seatProcurement.periodElapsed && (
-                        <div className="text-right">
-                          <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-gray-400">
-                            Time Remaining
-                          </span>
-                          <p
-                            data-testid="overview-seat-procurement-countdown"
-                            className="text-white font-GoodTimes text-base sm:text-lg leading-tight mt-1"
-                          >
-                            {seatProcurement.countdownLabel ?? '\u2014'}
-                          </p>
+                    </div>
+                    <div className="flex flex-col items-stretch sm:items-end gap-2">
+                      {contributeButton}
+                      {/* Manager Actions */}
+                      {account && isManager && (
+                        <div className="flex flex-wrap gap-2">
+                          {deadlinePassed && Number(stage) !== 3 && (
+                            <>
+                              <PrivyWeb3Button
+                                requiredChain={DEFAULT_CHAIN_V5}
+                                className="group bg-white/5 hover:bg-indigo-500/10 text-white py-1.5 px-3 rounded-lg transition-all duration-200 border border-white/10 hover:border-indigo-400/30 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                                label={
+                                  <div className="flex items-center gap-1.5">
+                                    <Image
+                                      src="/assets/icon-raised-tokens.svg"
+                                      alt="Tokens"
+                                      width={12}
+                                      height={12}
+                                      className="opacity-60 group-hover:opacity-100"
+                                    />
+                                    <span>Tokens</span>
+                                  </div>
+                                }
+                                action={sendReservedTokens}
+                                isDisabled={!availableTokens}
+                              />
+                              <PrivyWeb3Button
+                                requiredChain={DEFAULT_CHAIN_V5}
+                                className="group bg-white/5 hover:bg-blue-500/10 text-white py-1.5 px-3 rounded-lg transition-all duration-200 border border-white/10 hover:border-blue-400/30 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                                label={
+                                  <div className="flex items-center gap-1.5">
+                                    <Image
+                                      src="/assets/icon-crowdfunding.svg"
+                                      alt="Payouts"
+                                      width={12}
+                                      height={12}
+                                      className="opacity-60 group-hover:opacity-100"
+                                    />
+                                    <span>Payouts</span>
+                                  </div>
+                                }
+                                action={sendPayouts}
+                                isDisabled={!availablePayouts}
+                              />
+                              {stage === 2 && (
+                                <PrivyWeb3Button
+                                  requiredChain={DEFAULT_CHAIN_V5}
+                                  className="group bg-white/5 hover:bg-emerald-500/10 text-white py-1.5 px-3 rounded-lg transition-all duration-200 border border-white/10 hover:border-emerald-400/30 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                                  label={
+                                    <div className="flex items-center gap-1.5">
+                                      <Image
+                                        src="/assets/icon-ethereum.svg"
+                                        alt="Liquidity"
+                                        width={12}
+                                        height={12}
+                                        className="opacity-60 group-hover:opacity-100"
+                                      />
+                                      <span>Liquidity</span>
+                                    </div>
+                                  }
+                                  action={deployLiquidityPool}
+                                  isDisabled={!poolDeployerAddress}
+                                />
+                              )}
+                            </>
+                          )}
+                          {setDeployTokenModalEnabled && !token?.tokenAddress && (
+                            <StandardButton
+                              id="deploy-token-button"
+                              className="bg-white/5 hover:bg-indigo-500/10 text-white py-1.5 px-3 rounded-lg transition-all duration-200 border border-white/10 hover:border-indigo-400/30 text-xs"
+                              borderRadius="rounded-lg"
+                              onClick={() => setDeployTokenModalEnabled(true)}
+                            >
+                              Deploy Token
+                            </StandardButton>
+                          )}
                         </div>
                       )}
                     </div>
-                    <p className="text-gray-300/90 text-xs sm:text-sm leading-relaxed mt-3">
-                      {seatProcurement.periodElapsed
-                        ? `The ${SEAT_PROCUREMENT_DAYS}-day seat procurement period has ended. If Frank is unable to secure a seat to space, contributors are eligible for a refund.`
-                        : `Frank's team has ${SEAT_PROCUREMENT_DAYS} days from the close of the raise to secure a confirmed seat to space. Once this window ends, refunds will be made available if a seat cannot be secured.`}
-                    </p>
                   </div>
-                )}
 
-                {/* Stats Row. On the Overview layout the funding card is
+                  {/* Progress Bar — hidden while the Overview Flight raise is
+                    wrapped up (mission 4). All other missions, and mission 4
+                    once its raise re-opens, get the live bar + milestone list. */}
+                  {!isOverviewRaiseClosed && (
+                    <div className="mb-4">
+                      <MissionFundingProgressBar
+                        fundingGoal={fundingGoal}
+                        volume={onChainEthRaised}
+                        compact={true}
+                        progressOverride={
+                          milestoneBar ? milestoneBar.seg.progressPercent : undefined
+                        }
+                        caption={milestoneBar?.caption}
+                      />
+                      {milestoneBar ? (
+                        <MissionFundingMilestonesList
+                          milestones={milestoneBar.steps}
+                          raisedUsd={milestoneBar.raisedUsd}
+                          nextMilestoneIndex={milestoneBar.seg.nextMilestoneIndex}
+                        />
+                      ) : null}
+                    </div>
+                  )}
+
+                  {/* Contributions-closed banner — Overview Flight only. Sits
+                    directly above the Seat Procurement panel so the reader
+                    immediately understands why the live progress / pay UI
+                    is gone before reading about the 30-day refund window. */}
+                  {isOverviewRaiseClosed && (
+                    <div
+                      data-testid="overview-contributions-closed-banner"
+                      className="mb-3 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 flex items-start gap-3"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="mt-1 inline-block h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,0.18)]"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-white text-sm font-semibold leading-snug">
+                          Contributions are now closed
+                        </p>
+                        <p className="text-gray-400 text-xs sm:text-[13px] leading-relaxed mt-0.5">
+                          The Overview Flight raise has wrapped up — no further contributions are
+                          being accepted.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Seat Procurement Period — Overview Flight only. Replaces
+                    the milestone progress UI now that the raise has wrapped
+                    up. Anchored to the on-chain deadline, hydrated client
+                    side so SSR doesn't bake a stale countdown into HTML. */}
+                  {isOverviewRaiseClosed && seatProcurement && (
+                    <div
+                      data-testid="overview-seat-procurement-panel"
+                      className="mb-4 rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-transparent p-4 sm:p-5"
+                    >
+                      <div className="flex items-start justify-between gap-3 flex-wrap">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-indigo-300/90">
+                              Seat Procurement Period
+                            </span>
+                            <Tooltip
+                              compact
+                              text={`A ${SEAT_PROCUREMENT_DAYS}-day window (starting at the close of the raise) during which Frank's team works to convert raised funds into a confirmed seat to space. After this window closes, contributors become eligible for a refund if a seat could not be secured.`}
+                              buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                            >
+                              ?
+                            </Tooltip>
+                          </div>
+                          <p className="text-white font-heading font-semibold text-base sm:text-lg leading-tight mt-1">
+                            {seatProcurement.periodElapsed
+                              ? 'Period Closed'
+                              : `Ends ${seatProcurement.procurementEndLabel}`}
+                          </p>
+                        </div>
+                        {!seatProcurement.periodElapsed && (
+                          <div className="text-right">
+                            <span className="text-[10px] sm:text-[11px] uppercase tracking-wider font-medium text-gray-400">
+                              Time Remaining
+                            </span>
+                            <p
+                              data-testid="overview-seat-procurement-countdown"
+                              className="text-white font-heading font-semibold text-base sm:text-lg leading-tight mt-1"
+                            >
+                              {seatProcurement.countdownLabel ?? '\u2014'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-gray-300/90 text-xs sm:text-sm leading-relaxed mt-3">
+                        {seatProcurement.periodElapsed
+                          ? `The ${SEAT_PROCUREMENT_DAYS}-day seat procurement period has ended. If Frank is unable to secure a seat to space, contributors are eligible for a refund.`
+                          : `Frank's team has ${SEAT_PROCUREMENT_DAYS} days from the close of the raise to secure a confirmed seat to space. Once this window ends, refunds will be made available if a seat cannot be secured.`}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Stats Row. On the Overview layout the funding card is
                     stretched to match the hero image; mt-auto pushes this
                     row to the card's bottom so the extra height shows up
                     as breathing room above the stats rather than a gap
@@ -651,204 +664,236 @@ const MissionProfileHeader = React.memo(
                     success metrics, drops the Deadline tile (the Seat
                     Procurement Period panel above already contains the
                     relevant date), and keeps the Contributions tile. */}
-                <div
-                  className={`grid gap-2 sm:gap-3 ${
-                    isOverviewMission
-                      ? 'grid-cols-3'
-                      : 'grid-cols-3'
-                  } ${isOverviewMission ? 'lg:mt-auto' : ''}`}
-                  data-testid={
-                    isOverviewRaiseClosed ? 'overview-stats-row' : undefined
-                  }
-                >
-                  {/* Goal — hidden only while the Overview raise is wrapped up
+                  <div
+                    className={`grid gap-2 sm:gap-3 ${
+                      isOverviewMission ? 'grid-cols-3' : 'grid-cols-3'
+                    } ${isOverviewMission ? 'lg:mt-auto' : ''}`}
+                    data-testid={isOverviewRaiseClosed ? 'overview-stats-row' : undefined}
+                  >
+                    {/* Goal — hidden only while the Overview raise is wrapped up
                       (goal/progress not relevant then); shown for every other
                       mission and for mission 4 once the raise re-opens. */}
-                  {!isOverviewRaiseClosed && (
-                    <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
-                      <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
-                        <Image src="/assets/launchpad/target.svg" alt="Goal" width={14} height={14} className="opacity-60 flex-shrink-0" />
-                        <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">Goal</span>
-                        <span className="flex-shrink-0">
-                          <Tooltip
-                            compact
-                            text={
-                              minUsdGoal != null
-                                ? MISSION_MINIMUM_GOAL_TOOLTIP
-                                : 'This is an all-or-nothing mission. Refunds are available if the goal is not met.'
-                            }
-                            buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
-                          >
-                            ?
-                          </Tooltip>
-                        </span>
-                      </div>
-                      {minUsdGoal != null ? (
-                        <p className="text-white font-GoodTimes text-[11px] sm:text-sm truncate">
-                          ${minUsdGoal.toLocaleString('en-US')}
-                        </p>
-                      ) : (
-                        <Tooltip
-                          text={
-                            !isLoadingTotalFunding && ethPrice && ethPrice > 0
-                              ? `$${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()}`
-                              : `Loading...`
-                          }
-                          wrap
-                        >
-                          <p className="text-white font-GoodTimes text-[11px] sm:text-sm truncate">
-                            {+(fundingGoal / 1e18).toFixed(3)} ETH
-                          </p>
-                        </Tooltip>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Deadline — hidden only while the Overview raise is wrapped
-                      up (the Seat Procurement Period panel renders the relevant
-                      closing context then). Shown again once it re-opens. */}
-                  {!isOverviewRaiseClosed && (
-                    <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
-                      <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
-                        <Image src="/assets/launchpad/clock.svg" alt="Deadline" width={14} height={14} className="opacity-60 flex-shrink-0" />
-                        <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
-                          {refundPeriodPassed || Number(stage) === 3
-                            ? 'Status'
-                            : deadlinePassed
-                            ? 'Closed'
-                            : 'Deadline'}
-                        </span>
-                        {/* Hide the exact-closing tooltip for the Overview
-                            mission while it's open — the tile reads "Open"
-                            (no meaningful closing date), so surfacing the
-                            far-out on-chain deadline would contradict it. */}
-                        {deadline != null &&
-                        deadline > 0 &&
-                        (!isOverviewMission || deadlinePassed) ? (
+                    {!isOverviewRaiseClosed && (
+                      <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
+                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
+                          <Image
+                            src="/assets/launchpad/target.svg"
+                            alt="Goal"
+                            width={14}
+                            height={14}
+                            className="opacity-60 flex-shrink-0"
+                          />
+                          <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
+                            Goal
+                          </span>
                           <span className="flex-shrink-0">
                             <Tooltip
-                              text={exactClosingTooltipText(deadline)}
                               compact
+                              text={
+                                minUsdGoal != null
+                                  ? MISSION_MINIMUM_GOAL_TOOLTIP
+                                  : 'This is an all-or-nothing mission. Refunds are available if the goal is not met.'
+                              }
                               buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
                             >
                               ?
                             </Tooltip>
                           </span>
-                        ) : null}
-                      </div>
-                      {refundPeriodPassed || deadlinePassed ? (
-                        <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
-                          {deadlinePassed
-                            ? `${new Date(deadline || 0).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}`
-                            : 'REFUNDED'}
-                        </p>
-                      ) : Number(stage) === 3 ? (
-                        <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
-                          REFUND
-                        </p>
-                      ) : isOverviewMission ? (
-                        // The Overview Flight re-open runs without a meaningful
-                        // closing date (the on-chain deadline is set far out),
-                        // so a day-countdown would read as noise. Show a simple
-                        // open status instead.
-                        <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
-                          Open
-                        </p>
-                      ) : deadline != null && deadline > 0 ? (
-                        <MissionDeadlineCountdown deadline={deadline} />
-                      ) : (
-                        <p className="text-white font-GoodTimes text-[10px] sm:text-sm break-words leading-tight">
-                          {duration}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Contributions */}
-                  <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
-                    <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
-                      <Image src="/assets/icon-backers.svg" alt="Contributions" width={14} height={14} className="opacity-60 flex-shrink-0" />
-                      <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
-                        Contributions
-                      </span>
-                    </div>
-                    <p className="text-white font-GoodTimes text-[11px] sm:text-sm">
-                      {(isOverviewRaiseClosed && overviewStats?.totalContributions != null
-                        ? overviewStats.totalContributions
-                        : paymentsCount) || 0}
-                    </p>
-                  </div>
-
-                  {/* Unique Backers — Overview Flight, wrapped-up raise only */}
-                  {isOverviewRaiseClosed && (
-                    <div
-                      className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0"
-                      data-testid="overview-unique-backers"
-                    >
-                      <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
-                        <Image src="/assets/icon-backers.svg" alt="Unique backers" width={14} height={14} className="opacity-60 flex-shrink-0" />
-                        <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
-                          Unique Backers
-                        </span>
-                        <span className="flex-shrink-0">
+                        </div>
+                        {minUsdGoal != null ? (
+                          <p className="text-white font-heading font-semibold text-[11px] sm:text-sm truncate">
+                            ${minUsdGoal.toLocaleString('en-US')}
+                          </p>
+                        ) : (
                           <Tooltip
-                            compact
-                            text="Distinct wallets that contributed to this raise (counted by pay-event beneficiary on the Juicebox subgraph)."
-                            buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                            text={
+                              !isLoadingTotalFunding && ethPrice && ethPrice > 0
+                                ? `$${Math.round((fundingGoal / 1e18) * ethPrice).toLocaleString()}`
+                                : `Loading...`
+                            }
+                            wrap
                           >
-                            ?
+                            <p className="text-white font-heading font-semibold text-[11px] sm:text-sm truncate">
+                              {+(fundingGoal / 1e18).toFixed(3)} ETH
+                            </p>
                           </Tooltip>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Deadline — hidden only while the Overview raise is wrapped
+                      up (the Seat Procurement Period panel renders the relevant
+                      closing context then). Shown again once it re-opens. */}
+                    {!isOverviewRaiseClosed && (
+                      <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
+                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
+                          <Image
+                            src="/assets/launchpad/clock.svg"
+                            alt="Deadline"
+                            width={14}
+                            height={14}
+                            className="opacity-60 flex-shrink-0"
+                          />
+                          <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
+                            {refundPeriodPassed || Number(stage) === 3
+                              ? 'Status'
+                              : deadlinePassed
+                              ? 'Closed'
+                              : 'Deadline'}
+                          </span>
+                          {/* Hide the exact-closing tooltip for the Overview
+                            mission while it's open — the tile reads "Open"
+                            (no meaningful closing date), so surfacing the
+                            far-out on-chain deadline would contradict it. */}
+                          {deadline != null &&
+                          deadline > 0 &&
+                          (!isOverviewMission || deadlinePassed) ? (
+                            <span className="flex-shrink-0">
+                              <Tooltip
+                                text={exactClosingTooltipText(deadline)}
+                                compact
+                                buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                              >
+                                ?
+                              </Tooltip>
+                            </span>
+                          ) : null}
+                        </div>
+                        {refundPeriodPassed || deadlinePassed ? (
+                          <p className="text-white font-heading font-semibold text-[10px] sm:text-sm break-words leading-tight">
+                            {deadlinePassed
+                              ? `${new Date(deadline || 0).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                })}`
+                              : 'REFUNDED'}
+                          </p>
+                        ) : Number(stage) === 3 ? (
+                          <p className="text-white font-heading font-semibold text-[10px] sm:text-sm break-words leading-tight">
+                            REFUND
+                          </p>
+                        ) : isOverviewMission ? (
+                          // The Overview Flight re-open runs without a meaningful
+                          // closing date (the on-chain deadline is set far out),
+                          // so a day-countdown would read as noise. Show a simple
+                          // open status instead.
+                          <p className="text-white font-heading font-semibold text-[10px] sm:text-sm break-words leading-tight">
+                            Open
+                          </p>
+                        ) : deadline != null && deadline > 0 ? (
+                          <MissionDeadlineCountdown deadline={deadline} />
+                        ) : (
+                          <p className="text-white font-heading font-semibold text-[10px] sm:text-sm break-words leading-tight">
+                            {duration}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Contributions */}
+                    <div className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0">
+                      <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
+                        <Image
+                          src="/assets/icon-backers.svg"
+                          alt="Contributions"
+                          width={14}
+                          height={14}
+                          className="opacity-60 flex-shrink-0"
+                        />
+                        <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
+                          Contributions
                         </span>
                       </div>
-                      <p className="text-white font-GoodTimes text-[11px] sm:text-sm">
-                        {overviewStats?.uniqueBackers != null
-                          ? overviewStats.uniqueBackers.toLocaleString('en-US')
-                          : '—'}
+                      <p className="text-white font-heading font-semibold text-[11px] sm:text-sm">
+                        {(isOverviewRaiseClosed && overviewStats?.totalContributions != null
+                          ? overviewStats.totalContributions
+                          : paymentsCount) || 0}
                       </p>
                     </div>
-                  )}
 
-                  {/* Median Contribution — Overview Flight, wrapped-up raise only */}
-                  {isOverviewRaiseClosed && (
-                    <div
-                      className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0"
-                      data-testid="overview-median-contribution"
-                    >
-                      <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
-                        <Image src="/assets/launchpad/target.svg" alt="Median" width={14} height={14} className="opacity-60 flex-shrink-0" />
-                        <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
-                          Median Contribution
-                        </span>
-                        <span className="flex-shrink-0">
-                          <Tooltip
-                            compact
-                            text="Median on-chain pay event amount. Converted to USD using the current ETH/USD rate, so it's an approximation across the raise's price range."
-                            buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
-                          >
-                            ?
-                          </Tooltip>
-                        </span>
+                    {/* Unique Backers — Overview Flight, wrapped-up raise only */}
+                    {isOverviewRaiseClosed && (
+                      <div
+                        className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0"
+                        data-testid="overview-unique-backers"
+                      >
+                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
+                          <Image
+                            src="/assets/icon-backers.svg"
+                            alt="Unique backers"
+                            width={14}
+                            height={14}
+                            className="opacity-60 flex-shrink-0"
+                          />
+                          <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
+                            Unique Backers
+                          </span>
+                          <span className="flex-shrink-0">
+                            <Tooltip
+                              compact
+                              text="Distinct wallets that contributed to this raise (counted by pay-event beneficiary on the Juicebox subgraph)."
+                              buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                            >
+                              ?
+                            </Tooltip>
+                          </span>
+                        </div>
+                        <p className="text-white font-heading font-semibold text-[11px] sm:text-sm">
+                          {overviewStats?.uniqueBackers != null
+                            ? overviewStats.uniqueBackers.toLocaleString('en-US')
+                            : '—'}
+                        </p>
                       </div>
-                      {overviewMedianUsd == null ? (
-                        <p className="text-white font-GoodTimes text-[11px] sm:text-sm">—</p>
-                      ) : overviewMedianUsd <= 0 ? (
-                        <p className="text-white font-GoodTimes text-[11px] sm:text-sm">$0</p>
-                      ) : overviewMedianUsd >= 1 ? (
-                        <p className="text-white font-GoodTimes text-[11px] sm:text-sm">
-                          ${Math.round(overviewMedianUsd).toLocaleString('en-US')}
-                        </p>
-                      ) : (
-                        <p className="text-white font-GoodTimes text-[11px] sm:text-sm">
-                          ${overviewMedianUsd.toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    )}
+
+                    {/* Median Contribution — Overview Flight, wrapped-up raise only */}
+                    {isOverviewRaiseClosed && (
+                      <div
+                        className="bg-white/[0.03] rounded-xl p-2 sm:p-3 border border-white/[0.05] min-w-0"
+                        data-testid="overview-median-contribution"
+                      >
+                        <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 min-w-0">
+                          <Image
+                            src="/assets/launchpad/target.svg"
+                            alt="Median"
+                            width={14}
+                            height={14}
+                            className="opacity-60 flex-shrink-0"
+                          />
+                          <span className="text-gray-500 text-[11px] uppercase tracking-wider font-medium truncate">
+                            Median Contribution
+                          </span>
+                          <span className="flex-shrink-0">
+                            <Tooltip
+                              compact
+                              text="Median on-chain pay event amount. Converted to USD using the current ETH/USD rate, so it's an approximation across the raise's price range."
+                              buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 -ml-0.5"
+                            >
+                              ?
+                            </Tooltip>
+                          </span>
+                        </div>
+                        {overviewMedianUsd == null ? (
+                          <p className="text-white font-heading font-semibold text-[11px] sm:text-sm">
+                            —
+                          </p>
+                        ) : overviewMedianUsd <= 0 ? (
+                          <p className="text-white font-heading font-semibold text-[11px] sm:text-sm">
+                            $0
+                          </p>
+                        ) : overviewMedianUsd >= 1 ? (
+                          <p className="text-white font-heading font-semibold text-[11px] sm:text-sm">
+                            ${Math.round(overviewMedianUsd).toLocaleString('en-US')}
+                          </p>
+                        ) : (
+                          <p className="text-white font-heading font-semibold text-[11px] sm:text-sm">
+                            ${overviewMedianUsd.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

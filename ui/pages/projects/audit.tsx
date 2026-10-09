@@ -16,12 +16,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import useSWR from 'swr'
-import fetcher from '@/lib/swr/fetcher'
-import type {
-  MemberVoteAudit,
-  MemberVoteOutcome,
-} from '@/lib/proposals/computeMemberVoteOutcome'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
+import type { MemberVoteAudit, MemberVoteOutcome } from '@/lib/proposals/computeMemberVoteOutcome'
+import fetcher from '@/lib/swr/fetcher'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -53,35 +50,21 @@ export default function ProjectsAuditPage() {
   // (the whole point of the page), which a piece of internal state would
   // not give us.
   const { quarter, year } = useMemo(() => {
-    if (!router.isReady)
-      return { quarter: fallback.quarter, year: fallback.year }
+    if (!router.isReady) return { quarter: fallback.quarter, year: fallback.year }
     const rawQuarter = Array.isArray(router.query.quarter)
       ? router.query.quarter[0]
       : router.query.quarter
-    const rawYear = Array.isArray(router.query.year)
-      ? router.query.year[0]
-      : router.query.year
+    const rawYear = Array.isArray(router.query.year) ? router.query.year[0] : router.query.year
     const parsedQuarter = rawQuarter ? Number(rawQuarter) : NaN
     const parsedYear = rawYear ? Number(rawYear) : NaN
     return {
-      quarter:
-        parsedQuarter >= 1 && parsedQuarter <= 4
-          ? parsedQuarter
-          : fallback.quarter,
+      quarter: parsedQuarter >= 1 && parsedQuarter <= 4 ? parsedQuarter : fallback.quarter,
       year: parsedYear >= 2020 ? parsedYear : fallback.year,
     }
-  }, [
-    router.isReady,
-    router.query.quarter,
-    router.query.year,
-    fallback.quarter,
-    fallback.year,
-  ])
+  }, [router.isReady, router.query.quarter, router.query.year, fallback.quarter, fallback.year])
 
   const { data, error, isLoading } = useSWR<AuditResponse>(
-    router.isReady
-      ? `/api/proposals/vote-audit?quarter=${quarter}&year=${year}`
-      : null,
+    router.isReady ? `/api/proposals/vote-audit?quarter=${quarter}&year=${year}` : null,
     fetcher,
     { revalidateOnFocus: false, dedupingInterval: 60_000, errorRetryCount: 1 }
   )
@@ -129,22 +112,11 @@ export default function ProjectsAuditPage() {
         <ContentLayout
           header="Member Vote Audit"
           headerSize="max(20px, 3vw)"
-          description={
-            <p>
-              Public, reproducible breakdown of the quarterly Member Vote
-              tally — voters and their voting power, every project&apos;s
-              supporters, and the knapsack-style budget approval. Voting
-              power is √vMOONEY at vote close; an author&apos;s own
-              project is filled with the column average of the other
-              voters; non-author silence counts as 0.{' '}
-              <Link
-                href="/projects"
-                className="underline text-blue-300 hover:text-blue-200"
-              >
-                Back to projects
-              </Link>
-              .
-            </p>
+          description="Voters, voting power, and how the quarterly budget was approved."
+          back={
+            <Link href="/projects" className="text-sm text-blue-300 hover:text-blue-200">
+              ← Projects
+            </Link>
           }
           preFooter={<NoticeFooter />}
           mainPadding
@@ -153,6 +125,13 @@ export default function ProjectsAuditPage() {
           isProfile
         >
           <div className="flex flex-col gap-4 sm:gap-6 w-full">
+            <details className="text-sm text-white/60">
+              <summary className="cursor-pointer text-white/80">How this is calculated</summary>
+              <p className="mt-2 max-w-3xl leading-relaxed">
+                Voting power is √vMOONEY at vote close. An author&apos;s own project is filled with
+                the column average of the other voters. Non-author silence counts as 0.
+              </p>
+            </details>
             <QuarterPicker
               quarter={quarter}
               year={year}
@@ -313,32 +292,25 @@ function SummaryCard({
     <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 rounded-lg sm:rounded-xl p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
         <div>
-          <h2 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
+          <h2 className="font-heading font-semibold text-base sm:text-lg text-white tracking-wider">
             Q{outcome.quarter} {outcome.year} Tally
           </h2>
           <p className="text-xs sm:text-sm text-gray-400 mt-1">
-            Snapshot at vote close ({closeDate.toLocaleString()}). Voting
-            power = √vMOONEY across all chains; author self-votes are
-            stripped before normalization.
+            Snapshot at vote close ({closeDate.toLocaleString()}). Voting power = √vMOONEY across
+            all chains; author self-votes are stripped before normalization.
           </p>
         </div>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <StatTile label="Voters" value={String(voterCount)} />
-        <StatTile
-          label="Total power"
-          value={formatNumber(outcome.totalVotingPower, 0)}
-        />
-        <StatTile
-          label="Approved"
-          value={`${approvedCount}/${outcome.results.length}`}
-        />
+        <StatTile label="Total power" value={formatNumber(outcome.totalVotingPower, 0)} />
+        <StatTile label="Approved" value={`${approvedCount}/${outcome.results.length}`} />
         <StatTile
           label="Allocated"
-          value={`$${formatNumber(
-            approvedBudget,
+          value={`$${formatNumber(approvedBudget, 0)} / $${formatNumber(
+            outcome.quarterBudgetUsd,
             0
-          )} / $${formatNumber(outcome.quarterBudgetUsd, 0)}`}
+          )}`}
         />
       </div>
     </div>
@@ -351,7 +323,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
         {label}
       </div>
-      <div className="mt-0.5 sm:mt-1 font-GoodTimes text-base sm:text-lg tracking-wider text-white truncate">
+      <div className="mt-0.5 sm:mt-1 font-heading font-semibold text-base sm:text-lg tracking-wider text-white truncate">
         {value}
       </div>
     </div>
@@ -379,12 +351,11 @@ function VotersTable({
         className="w-full flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 text-left hover:bg-white/5 rounded-lg sm:rounded-xl transition-colors"
       >
         <div>
-          <h3 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
+          <h3 className="font-heading font-semibold text-base sm:text-lg text-white tracking-wider">
             Voters ({voters.length})
           </h3>
           <p className="text-xs text-gray-400 mt-1">
-            Voting power per address at vote close. √vMOONEY summed across
-            chains.
+            Voting power per address at vote close. √vMOONEY summed across chains.
           </p>
         </div>
         {expanded ? (
@@ -409,16 +380,12 @@ function VotersTable({
             </thead>
             <tbody>
               {voters.map((v, idx) => {
-                const share =
-                  totalPower > 0 ? (v.power / totalPower) * 100 : 0
+                const share = totalPower > 0 ? (v.power / totalPower) * 100 : 0
                 const nonZeroAlloc = Object.values(v.rawDistribution).filter(
                   (n) => Number(n) > 0
                 ).length
                 return (
-                  <tr
-                    key={v.address}
-                    className="border-t border-white/5 text-gray-200"
-                  >
+                  <tr key={v.address} className="border-t border-white/5 text-gray-200">
                     <td className="py-2 px-2 sm:px-3 text-gray-500">{idx + 1}</td>
                     <td className="py-2 px-2 sm:px-3 font-RobotoMono text-xs">
                       <a
@@ -476,7 +443,7 @@ function ProjectsList({
   return (
     <div className="flex flex-col gap-2 sm:gap-3">
       <div className="flex items-end justify-between flex-wrap gap-2">
-        <h3 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
+        <h3 className="font-heading font-semibold text-base sm:text-lg text-white tracking-wider">
           Projects ({ranked.length})
         </h3>
         <span className="text-[11px] uppercase tracking-wider text-gray-400 font-RobotoMono">
@@ -492,9 +459,7 @@ function ProjectsList({
             outcomeRow={r}
             contributions={contributions}
             expanded={expanded}
-            onToggle={() =>
-              setExpandedId(expanded ? null : r.projectId)
-            }
+            onToggle={() => setExpandedId(expanded ? null : r.projectId)}
             addressToPower={addressToPower}
             totalPower={totalPower}
             authorAddress={audit.projectIdToAuthor[r.projectId] || ''}
@@ -531,10 +496,7 @@ function ProjectRow({
   // by the cycle's TOTAL voting power (across all voters), which is
   // what the footer surfaces — and it matches the displayed final %.
   const totalWeighted = contributions.reduce(
-    (sum, c) =>
-      sum +
-      ((c.normalizedPct || 0) / 100) *
-        (addressToPower[c.voterAddress] || 0),
+    (sum, c) => sum + ((c.normalizedPct || 0) / 100) * (addressToPower[c.voterAddress] || 0),
     0
   )
   // Reproduce the displayed `outcomeRow.percentage` from first principles
@@ -545,9 +507,7 @@ function ProjectRow({
   const outcomeShare = totalPower > 0 ? (totalWeighted / totalPower) * 100 : 0
 
   const projectLink =
-    outcomeRow.MDP != null && outcomeRow.MDP !== ''
-      ? `/project/${outcomeRow.MDP}`
-      : null
+    outcomeRow.MDP != null && outcomeRow.MDP !== '' ? `/project/${outcomeRow.MDP}` : null
 
   return (
     <div
@@ -585,16 +545,18 @@ function ProjectRow({
             {outcomeRow.approved &&
             outcomeRow.grant != null &&
             outcomeRow.grant !== outcomeRow.budget
-              ? `Grant: $${formatNumber(outcomeRow.grant, 0)} (asked $${formatNumber(outcomeRow.budget, 0)})`
+              ? `Grant: $${formatNumber(outcomeRow.grant, 0)} (asked $${formatNumber(
+                  outcomeRow.budget,
+                  0
+                )})`
               : `Ask: $${formatNumber(outcomeRow.budget, 0)}`}{' '}
-            •{' '}
-            {contributions.length} supporter
+            • {contributions.length} supporter
             {contributions.length === 1 ? '' : 's'}
           </p>
         </div>
         <div className="text-right flex-shrink-0 min-w-[72px]">
           <p
-            className={`font-GoodTimes text-base sm:text-lg leading-none ${
+            className={`font-heading font-semibold text-base sm:text-lg leading-none ${
               outcomeRow.approved ? 'text-emerald-300' : 'text-gray-400'
             }`}
           >
@@ -680,10 +642,7 @@ function ProjectRow({
                       const power = addressToPower[c.voterAddress] || 0
                       const weighted = ((c.normalizedPct || 0) / 100) * power
                       return (
-                        <tr
-                          key={c.voterAddress}
-                          className="border-t border-white/5 text-gray-200"
-                        >
+                        <tr key={c.voterAddress} className="border-t border-white/5 text-gray-200">
                           <td className="py-2 px-2 sm:px-3 font-RobotoMono text-xs">
                             <a
                               href={`https://arbiscan.io/address/${c.voterAddress}`}
@@ -703,9 +662,7 @@ function ProjectRow({
                             {formatNumber(power, 1)}
                           </td>
                           <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs text-gray-400">
-                            {c.rawPct == null
-                              ? '—'
-                              : `${c.rawPct.toFixed(1)}%`}
+                            {c.rawPct == null ? '—' : `${c.rawPct.toFixed(1)}%`}
                           </td>
                           <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
                             {c.normalizedPct.toFixed(2)}%
@@ -755,9 +712,7 @@ function ProjectFooter({
         <span className="text-white">{formatNumber(totalPower, 2)}</span>
       </div>
       <div className="border-t border-white/10 mt-2 pt-2 flex items-center justify-between gap-4 flex-wrap">
-        <span className="text-gray-400">
-          Outcome = Σ weighted ÷ total power
-        </span>
+        <span className="text-gray-400">Outcome = Σ weighted ÷ total power</span>
         <span className="text-emerald-200">
           {outcomeShare.toFixed(4)}%
           {Math.abs(outcomeShare - finalPercentage) > 0.01 && (

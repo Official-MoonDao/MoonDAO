@@ -42,24 +42,16 @@ export default function UpdatesIndex({ updates, featured }: UpdatesIndexProps) {
             header="Updates"
             headerSize="40px"
             description={
-              <div className="text-lg leading-relaxed text-gray-300">
-                Announcements, mission updates, and long-form essays from MoonDAO. For the weekly
-                email, see the{' '}
+              <p className="text-sm text-white/60 md:text-base">
+                Announcements and essays. Weekly email on the{' '}
                 <Link
                   href="/news"
                   className="text-blue-300 underline underline-offset-4 hover:text-blue-200"
                 >
                   newsletter
                 </Link>
-                . For media enquiries and our press kit, visit{' '}
-                <Link
-                  href="/press"
-                  className="text-blue-300 underline underline-offset-4 hover:text-blue-200"
-                >
-                  Press
-                </Link>
                 .
-              </div>
+              </p>
             }
             mainPadding
             mode="compact"

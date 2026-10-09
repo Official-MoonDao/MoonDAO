@@ -17,12 +17,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useMemo, useState } from 'react'
 import useSWR from 'swr'
-import fetcher from '@/lib/swr/fetcher'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import type {
   RetroactiveAudit,
   RetroactiveOutcome,
 } from '@/lib/proposals/computeRetroactiveOutcome'
-import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
+import fetcher from '@/lib/swr/fetcher'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -50,8 +50,7 @@ const formatPrimary = (amount: number, asset: 'ETH' | 'USDC') =>
     ? `${amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ETH`
     : `$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
 
-const formatMooney = (amount: number) =>
-  `${Number(amount.toPrecision(3)).toLocaleString()} MOONEY`
+const formatMooney = (amount: number) => `${Number(amount.toPrecision(3)).toLocaleString()} MOONEY`
 
 export default function ProjectsRetroAuditPage() {
   const router = useRouter()
@@ -60,35 +59,21 @@ export default function ProjectsRetroAuditPage() {
   const fallback = getRetroCohort()
 
   const { quarter, year } = useMemo(() => {
-    if (!router.isReady)
-      return { quarter: fallback.quarter, year: fallback.year }
+    if (!router.isReady) return { quarter: fallback.quarter, year: fallback.year }
     const rawQuarter = Array.isArray(router.query.quarter)
       ? router.query.quarter[0]
       : router.query.quarter
-    const rawYear = Array.isArray(router.query.year)
-      ? router.query.year[0]
-      : router.query.year
+    const rawYear = Array.isArray(router.query.year) ? router.query.year[0] : router.query.year
     const parsedQuarter = rawQuarter ? Number(rawQuarter) : NaN
     const parsedYear = rawYear ? Number(rawYear) : NaN
     return {
-      quarter:
-        parsedQuarter >= 1 && parsedQuarter <= 4
-          ? parsedQuarter
-          : fallback.quarter,
+      quarter: parsedQuarter >= 1 && parsedQuarter <= 4 ? parsedQuarter : fallback.quarter,
       year: parsedYear >= 2020 ? parsedYear : fallback.year,
     }
-  }, [
-    router.isReady,
-    router.query.quarter,
-    router.query.year,
-    fallback.quarter,
-    fallback.year,
-  ])
+  }, [router.isReady, router.query.quarter, router.query.year, fallback.quarter, fallback.year])
 
   const { data, error, isLoading } = useSWR<AuditResponse>(
-    router.isReady
-      ? `/api/proposals/retro-audit?quarter=${quarter}&year=${year}`
-      : null,
+    router.isReady ? `/api/proposals/retro-audit?quarter=${quarter}&year=${year}` : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -116,8 +101,7 @@ export default function ProjectsRetroAuditPage() {
   // voters list so the ratios match what the tally actually saw.
   const addressToPower = useMemo(() => {
     const map: Record<string, number> = {}
-    if (audit?.voters)
-      for (const v of audit.voters) if (v.isCitizen) map[v.address] = v.power
+    if (audit?.voters) for (const v of audit.voters) if (v.isCitizen) map[v.address] = v.power
     return map
   }, [audit])
 
@@ -149,24 +133,11 @@ export default function ProjectsRetroAuditPage() {
         <ContentLayout
           header="Retroactive Rewards Audit"
           headerSize="max(20px, 3vw)"
-          description={
-            <p>
-              Public, reproducible breakdown of the quarterly Retroactive
-              Rewards tally — voters and their voting power, every
-              project&apos;s citizen supporters, and the resulting share
-              of the ETH/USDC and MOONEY pools. Voting power is √vMOONEY
-              at vote close; citizen votes get zeroed for projects they
-              contributed to and refilled with the column average;
-              non-citizen votes are projected onto the citizen-vote basis
-              via L1 best-fit before the quadratic tally.{' '}
-              <Link
-                href="/projects"
-                className="underline text-blue-300 hover:text-blue-200"
-              >
-                Back to projects
-              </Link>
-              .
-            </p>
+          description="Voters, voting power, and each project's share of the reward pools."
+          back={
+            <Link href="/projects" className="text-sm text-blue-300 hover:text-blue-200">
+              ← Projects
+            </Link>
           }
           preFooter={<NoticeFooter />}
           mainPadding
@@ -175,6 +146,14 @@ export default function ProjectsRetroAuditPage() {
           isProfile
         >
           <div className="flex flex-col gap-4 sm:gap-6 w-full">
+            <details className="text-sm text-white/60">
+              <summary className="cursor-pointer text-white/80">How this is calculated</summary>
+              <p className="mt-2 max-w-3xl leading-relaxed">
+                Voting power is √vMOONEY at vote close. Citizen votes are zeroed for projects they
+                contributed to and refilled with the column average. Non-citizen votes are projected
+                onto the citizen-vote basis via L1 best-fit before the quadratic tally.
+              </p>
+            </details>
             <QuarterPicker
               quarter={quarter}
               year={year}
@@ -300,11 +279,7 @@ function AuditBody({
 
   return (
     <>
-      <SummaryCard
-        outcome={outcome}
-        closeDate={closeDate}
-        voterCount={audit.voters.length}
-      />
+      <SummaryCard outcome={outcome} closeDate={closeDate} voterCount={audit.voters.length} />
       <ProjectsList
         outcome={outcome}
         audit={audit}
@@ -328,14 +303,13 @@ function SummaryCard({
     <div className="bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 rounded-lg sm:rounded-xl p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
         <div>
-          <h2 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
+          <h2 className="font-heading font-semibold text-base sm:text-lg text-white tracking-wider">
             Q{outcome.quarter} {outcome.year} Retro Tally
           </h2>
           <p className="text-xs sm:text-sm text-gray-400 mt-1">
-            Snapshot at vote close ({closeDate.toLocaleString()}). Voting
-            power = √vMOONEY across all chains. Citizens drive the
-            tally; non-citizen votes are projected onto the citizen-vote
-            basis via L1 best-fit.
+            Snapshot at vote close ({closeDate.toLocaleString()}). Voting power = √vMOONEY across
+            all chains. Citizens drive the tally; non-citizen votes are projected onto the
+            citizen-vote basis via L1 best-fit.
           </p>
         </div>
       </div>
@@ -348,10 +322,7 @@ function SummaryCard({
         />
         <StatTile
           label={`Project pool (${outcome.pool.primaryAsset})`}
-          value={formatPrimary(
-            outcome.pool.primaryAmount,
-            outcome.pool.primaryAsset
-          )}
+          value={formatPrimary(outcome.pool.primaryAmount, outcome.pool.primaryAsset)}
           sub="Distributed via this tally"
         />
         <StatTile
@@ -361,10 +332,7 @@ function SummaryCard({
         />
         <StatTile
           label={`Community circle (${outcome.pool.primaryAsset})`}
-          value={formatPrimary(
-            outcome.pool.communityCirclePrimary,
-            outcome.pool.primaryAsset
-          )}
+          value={formatPrimary(outcome.pool.communityCirclePrimary, outcome.pool.primaryAsset)}
           sub="Parallel 10% cohort (not in tally)"
         />
         <StatTile
@@ -377,27 +345,17 @@ function SummaryCard({
   )
 }
 
-function StatTile({
-  label,
-  value,
-  sub,
-}: {
-  label: string
-  value: string
-  sub?: string
-}) {
+function StatTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 sm:px-4 sm:py-3 min-w-0">
       <div className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400 font-RobotoMono truncate">
         {label}
       </div>
-      <div className="mt-0.5 sm:mt-1 font-GoodTimes text-sm sm:text-base tracking-wider text-white truncate">
+      <div className="mt-0.5 sm:mt-1 font-heading font-semibold text-sm sm:text-base tracking-wider text-white truncate">
         {value}
       </div>
       {sub && (
-        <div className="mt-0.5 text-[10px] font-RobotoMono text-gray-500 truncate">
-          {sub}
-        </div>
+        <div className="mt-0.5 text-[10px] font-RobotoMono text-gray-500 truncate">{sub}</div>
       )}
     </div>
   )
@@ -423,7 +381,7 @@ function ProjectsList({
   return (
     <div className="flex flex-col gap-2 sm:gap-3">
       <div className="flex items-end justify-between flex-wrap gap-2">
-        <h3 className="font-GoodTimes text-base sm:text-lg text-white tracking-wider">
+        <h3 className="font-heading font-semibold text-base sm:text-lg text-white tracking-wider">
           Projects ({ranked.length})
         </h3>
         <span className="text-[11px] uppercase tracking-wider text-gray-400 font-RobotoMono">
@@ -443,9 +401,7 @@ function ProjectsList({
             onToggle={() => setExpandedId(expanded ? null : r.projectId)}
             addressToPower={addressToPower}
             totalCitizenPower={totalCitizenPower}
-            contributorAddresses={
-              audit.projectIdToContributors[r.projectId] || []
-            }
+            contributorAddresses={audit.projectIdToContributors[r.projectId] || []}
           />
         )
       })}
@@ -478,10 +434,7 @@ function ProjectRow({
   // across the project's citizen supporters, that gives the project's
   // total weighted citizen support feeding into `runQuadraticVoting`.
   const totalWeighted = contributions.reduce(
-    (sum, c) =>
-      sum +
-      ((c.normalizedPct || 0) / 100) *
-        (addressToPower[c.voterAddress] || 0),
+    (sum, c) => sum + ((c.normalizedPct || 0) / 100) * (addressToPower[c.voterAddress] || 0),
     0
   )
   // Reproduce `outcomeRow.percentage` from first principles. After
@@ -507,21 +460,16 @@ function ProjectRow({
   // bogus integer keys (the L1 best-fit returns array coefficients,
   // not project IDs). They still count as voters in the audit voter
   // list, but don't directly move project percentages.
-  const reproducedFinal =
-    totalCitizenPower > 0 ? (totalWeighted * 100) / totalCitizenPower : 0
+  const reproducedFinal = totalCitizenPower > 0 ? (totalWeighted * 100) / totalCitizenPower : 0
 
   const projectLink =
-    outcomeRow.MDP != null && outcomeRow.MDP !== ''
-      ? `/project/${outcomeRow.MDP}`
-      : null
+    outcomeRow.MDP != null && outcomeRow.MDP !== '' ? `/project/${outcomeRow.MDP}` : null
   const hasShare = outcomeRow.percentage > 0
 
   return (
     <div
       className={`border rounded-lg ${
-        hasShare
-          ? 'bg-emerald-500/5 border-emerald-400/20'
-          : 'bg-black/20 border-white/10'
+        hasShare ? 'bg-emerald-500/5 border-emerald-400/20' : 'bg-black/20 border-white/10'
       }`}
     >
       <button
@@ -541,13 +489,9 @@ function ProjectRow({
         </div>
         <div className="flex-1 min-w-0">
           <p
-            className={`text-sm font-medium truncate ${
-              hasShare ? 'text-white' : 'text-gray-300'
-            }`}
+            className={`text-sm font-medium truncate ${hasShare ? 'text-white' : 'text-gray-300'}`}
           >
-            {outcomeRow.MDP != null && outcomeRow.MDP !== ''
-              ? `MDP-${outcomeRow.MDP}: `
-              : ''}
+            {outcomeRow.MDP != null && outcomeRow.MDP !== '' ? `MDP-${outcomeRow.MDP}: ` : ''}
             {outcomeRow.name}
           </p>
           <p className="text-[11px] text-gray-500">
@@ -561,7 +505,7 @@ function ProjectRow({
         </div>
         <div className="text-right flex-shrink-0 min-w-[72px]">
           <p
-            className={`font-GoodTimes text-base sm:text-lg leading-none ${
+            className={`font-heading font-semibold text-base sm:text-lg leading-none ${
               hasShare ? 'text-emerald-300' : 'text-gray-400'
             }`}
           >
@@ -639,10 +583,7 @@ function ProjectRow({
                       const power = addressToPower[c.voterAddress] || 0
                       const weighted = ((c.normalizedPct || 0) / 100) * power
                       return (
-                        <tr
-                          key={c.voterAddress}
-                          className="border-t border-white/5 text-gray-200"
-                        >
+                        <tr key={c.voterAddress} className="border-t border-white/5 text-gray-200">
                           <td className="py-2 px-2 sm:px-3 font-RobotoMono text-xs">
                             <a
                               href={`https://arbiscan.io/address/${c.voterAddress}`}
@@ -662,9 +603,7 @@ function ProjectRow({
                             {formatNumber(power, 1)}
                           </td>
                           <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs text-gray-400">
-                            {c.rawPct == null
-                              ? '—'
-                              : `${c.rawPct.toFixed(1)}%`}
+                            {c.rawPct == null ? '—' : `${c.rawPct.toFixed(1)}%`}
                           </td>
                           <td className="py-2 px-2 sm:px-3 text-right font-RobotoMono text-xs">
                             {c.normalizedPct.toFixed(2)}%
@@ -716,14 +655,10 @@ function ProjectFooter({
       </div>
       <div className="flex items-center justify-between gap-4 flex-wrap mt-1">
         <span className="text-gray-400">Total citizen power</span>
-        <span className="text-white">
-          {formatNumber(totalCitizenPower, 2)}
-        </span>
+        <span className="text-white">{formatNumber(totalCitizenPower, 2)}</span>
       </div>
       <div className="border-t border-white/10 mt-2 pt-2 flex items-center justify-between gap-4 flex-wrap">
-        <span className="text-gray-400">
-          Final share = Σ weighted ÷ total citizen power × 100
-        </span>
+        <span className="text-gray-400">Final share = Σ weighted ÷ total citizen power × 100</span>
         <span className={matches ? 'text-emerald-200' : 'text-amber-200'}>
           {reproducedFinal.toFixed(4)}%
           {matches ? (

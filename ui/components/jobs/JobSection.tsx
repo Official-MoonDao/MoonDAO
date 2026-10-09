@@ -10,7 +10,7 @@ type JobSectionProps = {
 export default function JobSection({ id, header, children }: JobSectionProps) {
   return (
     <section id={id} className="mt-10">
-      <h2 className="font-GoodTimes text-white text-lg md:text-xl mb-4">{header}</h2>
+      <h2 className="font-heading font-semibold text-white text-lg md:text-xl mb-4">{header}</h2>
       {children}
     </section>
   )

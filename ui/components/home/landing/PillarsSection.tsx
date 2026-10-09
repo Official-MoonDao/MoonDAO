@@ -80,7 +80,7 @@ function PillarCard({ pillar }: { pillar: Pillar }) {
       </div>
 
       <div className="flex flex-1 flex-col gap-3">
-        <h3 className="font-GoodTimes text-lg leading-tight text-white md:text-xl">
+        <h3 className="font-heading font-semibold text-lg leading-tight text-white md:text-xl">
           {pillar.header}
         </h3>
         <p className="text-sm leading-relaxed text-white/65 md:text-base">{pillar.paragraph}</p>

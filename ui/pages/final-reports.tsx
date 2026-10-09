@@ -4,11 +4,11 @@ import Link from 'next/link'
 import React from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { Project } from '@/lib/project/useProjectData'
+import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
-import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { getRetroCohort } from '@/lib/projectCycle/cycleQuarters'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -35,12 +35,7 @@ export default function FinalReportsPage({
           <ContentLayout
             header="Submit Project Report"
             headerSize="40px"
-            description={
-              <div className="text-gray-300 text-lg leading-relaxed">
-                Submit the final report for your completed project. Document project outcomes,
-                deliverables, and team contributions for transparency and accountability.
-              </div>
-            }
+            description="Document outcomes, deliverables, and who did the work."
             mainPadding
             mode="compact"
             isProfile={true}

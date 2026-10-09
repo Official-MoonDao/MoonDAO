@@ -108,7 +108,7 @@ export default function GovernanceSection() {
                   />
                 </div>
                 <div>
-                  <h3 className="font-GoodTimes text-base text-white md:text-lg">
+                  <h3 className="font-heading font-semibold text-base text-white md:text-lg">
                     {astronaut.name}
                   </h3>
                   <p className="mt-1 text-sm text-white/65">{astronaut.subtitle}</p>

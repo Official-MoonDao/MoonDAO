@@ -15,8 +15,8 @@
  */
 import Link from 'next/link'
 import useSWR from 'swr'
-import fetcher from '@/lib/swr/fetcher'
 import type { RetroactiveOutcome } from '@/lib/proposals/computeRetroactiveOutcome'
+import fetcher from '@/lib/swr/fetcher'
 
 type Props = {
   quarter: number
@@ -28,8 +28,7 @@ const formatPrimary = (amount: number, asset: 'ETH' | 'USDC') =>
     ? `${amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} ETH`
     : `$${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
 
-const formatMooney = (amount: number) =>
-  `${Number(amount.toPrecision(3)).toLocaleString()} MOONEY`
+const formatMooney = (amount: number) => `${Number(amount.toPrecision(3)).toLocaleString()} MOONEY`
 
 export default function RetroactiveResults({ quarter, year }: Props) {
   // SWR with conservative refresh: results only change when new
@@ -39,40 +38,27 @@ export default function RetroactiveResults({ quarter, year }: Props) {
     outcome: RetroactiveOutcome | null
     quarter: number
     year: number
-  }>(
-    `/api/proposals/retro-results?quarter=${quarter}&year=${year}`,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60_000,
-      errorRetryCount: 1,
-    }
-  )
+  }>(`/api/proposals/retro-results?quarter=${quarter}&year=${year}`, fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
+    errorRetryCount: 1,
+  })
 
   if (isLoading || error) return null
   const outcome = data?.outcome
   if (!outcome || !outcome.results?.length) return null
 
   const closeDate = new Date(outcome.voteCloseTimestamp * 1000)
-  const totalPctAllocated = outcome.results.reduce(
-    (s, r) => s + (r.percentage || 0),
-    0
-  )
-  const totalPrimaryAllocated = outcome.results.reduce(
-    (s, r) => s + (r.primaryShare || 0),
-    0
-  )
-  const totalMooneyAllocated = outcome.results.reduce(
-    (s, r) => s + (r.mooneyShare || 0),
-    0
-  )
+  const totalPctAllocated = outcome.results.reduce((s, r) => s + (r.percentage || 0), 0)
+  const totalPrimaryAllocated = outcome.results.reduce((s, r) => s + (r.primaryShare || 0), 0)
+  const totalMooneyAllocated = outcome.results.reduce((s, r) => s + (r.mooneyShare || 0), 0)
 
   return (
     <div className="mb-4 sm:mb-6 bg-gradient-to-br from-emerald-900/20 via-slate-800/30 to-slate-900/40 border border-emerald-400/20 rounded-xl p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-GoodTimes text-white text-base sm:text-lg">
+            <h3 className="font-heading font-semibold text-white text-base sm:text-lg">
               Retroactive Rewards Results
             </h3>
             <span className="text-[10px] font-RobotoMono uppercase tracking-wider text-emerald-300 bg-emerald-400/15 border border-emerald-400/30 px-1.5 py-0.5 rounded">
@@ -80,11 +66,10 @@ export default function RetroactiveResults({ quarter, year }: Props) {
             </span>
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            Snapshot at vote close ({closeDate.toLocaleDateString()}).
-            Voting power is √vMOONEY across all chains; citizen votes get
-            zeroed for projects they contributed to and refilled with the
-            column average. Non-citizen votes are projected onto the
-            citizen-vote basis via L1 best-fit before the quadratic tally.
+            Snapshot at vote close ({closeDate.toLocaleDateString()}). Voting power is √vMOONEY
+            across all chains; citizen votes get zeroed for projects they contributed to and
+            refilled with the column average. Non-citizen votes are projected onto the citizen-vote
+            basis via L1 best-fit before the quadratic tally.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-[11px] font-RobotoMono">
@@ -97,8 +82,7 @@ export default function RetroactiveResults({ quarter, year }: Props) {
             className="bg-blue-500/10 border border-blue-400/30 text-blue-200 px-2 py-1 rounded"
             title="The pool distributed to projects via this retroactive tally (post-upfront remainder of the quarterly project budget)."
           >
-            Project pool:{' '}
-            {formatPrimary(outcome.pool.primaryAmount, outcome.pool.primaryAsset)}
+            Project pool: {formatPrimary(outcome.pool.primaryAmount, outcome.pool.primaryAsset)}
             {' + '}
             {formatMooney(outcome.pool.mooneyAmount)}
           </span>
@@ -107,10 +91,7 @@ export default function RetroactiveResults({ quarter, year }: Props) {
             title="The community circle's parallel slice (10% of the original quarterly budget, set aside before upfront project funding). Distributed separately and not part of this tally."
           >
             Community circle:{' '}
-            {formatPrimary(
-              outcome.pool.communityCirclePrimary,
-              outcome.pool.primaryAsset
-            )}
+            {formatPrimary(outcome.pool.communityCirclePrimary, outcome.pool.primaryAsset)}
             {' + '}
             {formatMooney(outcome.pool.communityCircleMooney)}
           </span>
@@ -125,16 +106,13 @@ export default function RetroactiveResults({ quarter, year }: Props) {
 
       <div className="flex flex-col gap-1.5">
         {outcome.results.map((r) => {
-          const projectLink =
-            r.MDP != null && r.MDP !== '' ? `/project/${r.MDP}` : null
+          const projectLink = r.MDP != null && r.MDP !== '' ? `/project/${r.MDP}` : null
           const hasShare = r.percentage > 0
           return (
             <div
               key={r.projectId}
               className={`flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 rounded-lg border ${
-                hasShare
-                  ? 'bg-emerald-500/5 border-emerald-400/20'
-                  : 'bg-black/20 border-white/10'
+                hasShare ? 'bg-emerald-500/5 border-emerald-400/20' : 'bg-black/20 border-white/10'
               }`}
             >
               <div
@@ -174,7 +152,7 @@ export default function RetroactiveResults({ quarter, year }: Props) {
               </div>
               <div className="text-right flex-shrink-0 min-w-[72px]">
                 <p
-                  className={`font-GoodTimes text-base sm:text-lg leading-none ${
+                  className={`font-heading font-semibold text-base sm:text-lg leading-none ${
                     hasShare ? 'text-emerald-300' : 'text-gray-400'
                   }`}
                 >
@@ -204,9 +182,7 @@ export default function RetroactiveResults({ quarter, year }: Props) {
           <div className="text-[10px] uppercase tracking-wider text-gray-400 truncate">
             Allocated
           </div>
-          <div className="mt-0.5 text-white truncate">
-            {totalPctAllocated.toFixed(2)}%
-          </div>
+          <div className="mt-0.5 text-white truncate">{totalPctAllocated.toFixed(2)}%</div>
         </div>
         <div className="bg-slate-800/40 border border-white/10 rounded-lg px-3 py-2 min-w-0">
           <div className="text-[10px] uppercase tracking-wider text-gray-400 truncate">
@@ -220,9 +196,7 @@ export default function RetroactiveResults({ quarter, year }: Props) {
           <div className="text-[10px] uppercase tracking-wider text-gray-400 truncate">
             Distributed (MOONEY)
           </div>
-          <div className="mt-0.5 text-white truncate">
-            {formatMooney(totalMooneyAllocated)}
-          </div>
+          <div className="mt-0.5 text-white truncate">{formatMooney(totalMooneyAllocated)}</div>
         </div>
       </div>
     </div>

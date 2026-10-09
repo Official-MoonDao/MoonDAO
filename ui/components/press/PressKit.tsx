@@ -39,7 +39,9 @@ export default function PressKit({
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h3 className="mb-4 font-GoodTimes text-lg text-slate-400">Logos &amp; brand assets</h3>
+        <h3 className="mb-4 font-heading font-semibold text-lg text-slate-400">
+          Logos &amp; brand assets
+        </h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {brandAssets.map((asset) => (
             <AssetLink key={asset.href} asset={asset} />
@@ -48,7 +50,7 @@ export default function PressKit({
       </div>
 
       <div>
-        <h3 className="mb-4 font-GoodTimes text-lg text-slate-400">Approved imagery</h3>
+        <h3 className="mb-4 font-heading font-semibold text-lg text-slate-400">Approved imagery</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           {imagery.map((image) => (
             <a

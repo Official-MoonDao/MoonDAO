@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useDebounce } from 'react-use'
+import { networkCard } from '@/lib/layout/styles'
 import { NetworkTab } from '@/lib/network/types'
 import { useMapData } from '@/lib/network/useMapData'
 import { useTeams, useCitizens } from '@/lib/network/useNetworkData'
@@ -19,12 +20,11 @@ import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
-import { networkCard } from '@/lib/layout/styles'
 import Container from '../components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
 import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
 import CardGridContainer from '@/components/layout/CardGridContainer'
+import ContentLayout from '@/components/layout/ContentLayout'
 import NetworkCardSkeleton from '@/components/layout/NetworkCardSkeleton'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import PaginationButtons from '@/components/layout/PaginationButtons'
@@ -135,7 +135,7 @@ export default function Network({
           <div className="text-slate-400 mb-4">
             <ListBulletIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
           </div>
-          <h3 className="text-xl font-GoodTimes text-white mb-2">No {tab} found</h3>
+          <h3 className="text-xl font-heading font-semibold text-white mb-2">No {tab} found</h3>
           <p className="text-slate-400">
             {debouncedSearch
               ? `No results for "${debouncedSearch}"`
@@ -182,11 +182,6 @@ export default function Network({
           mode="compact"
           popOverEffect={false}
           isProfile
-          description={
-            <>
-              Discover and connect with citizens and teams building the future of space exploration.
-            </>
-          }
           preFooter={
             <>
               <NoticeFooter
@@ -201,134 +196,136 @@ export default function Network({
             </>
           }
         >
-        <Frame noPadding>
-          <div id="network-controls" className="max-w-6xl mx-auto mb-8 px-6">
-            <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-              <div
-                className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${
-                  isMapTab ? 'invisible' : ''
-                }`}
-              >
-                <Search
-                  className="w-full"
-                  input={input}
-                  setInput={setInput}
-                  placeholder={
-                    isTeamsTab
-                      ? 'Search teams'
-                      : isCitizensTab
-                      ? 'Search citizens'
-                      : 'Search network'
-                  }
-                />
-              </div>
+          <Frame noPadding>
+            <div id="network-controls" className="mb-8">
+              <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                <div
+                  className={`w-full lg:w-auto min-w-0 max-w-[320px] bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 px-4 py-3 ${
+                    isMapTab ? 'invisible' : ''
+                  }`}
+                >
+                  <Search
+                    className="w-full"
+                    input={input}
+                    setInput={setInput}
+                    placeholder={
+                      isTeamsTab
+                        ? 'Search teams'
+                        : isCitizensTab
+                        ? 'Search citizens'
+                        : 'Search network'
+                    }
+                  />
+                </div>
 
-              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
-                <div className="flex text-sm gap-1">
-                  <Tab
-                    tab="citizens"
-                    currentTab={tab}
-                    setTab={handleTabChange}
-                    icon="/assets/icon-passport.svg"
+                <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
+                  <div className="flex text-sm gap-1">
+                    <Tab
+                      tab="citizens"
+                      currentTab={tab}
+                      setTab={handleTabChange}
+                      icon="/assets/icon-passport.svg"
+                    >
+                      Citizens
+                    </Tab>
+                    <Tab
+                      tab="teams"
+                      currentTab={tab}
+                      setTab={handleTabChange}
+                      icon="/assets/icon-org.svg"
+                    >
+                      Teams
+                    </Tab>
+                    <Tab
+                      tab="map"
+                      currentTab={tab}
+                      setTab={handleTabChange}
+                      icon={<GlobeAmericasIcon width={20} height={20} />}
+                    >
+                      Map
+                    </Tab>
+                  </div>
+                </div>
+
+                <div className="w-full lg:w-auto min-w-0 max-w-[320px] flex justify-end">
+                  <StandardButton
+                    className="gradient-2 rounded-xl hover:scale-105 transition-transform"
+                    hoverEffect={false}
+                    link="/join"
                   >
-                    Citizens
-                  </Tab>
-                  <Tab
-                    tab="teams"
-                    currentTab={tab}
-                    setTab={handleTabChange}
-                    icon="/assets/icon-org.svg"
-                  >
-                    Teams
-                  </Tab>
-                  <Tab
-                    tab="map"
-                    currentTab={tab}
-                    setTab={handleTabChange}
-                    icon={<GlobeAmericasIcon width={20} height={20} />}
-                  >
-                    Map
-                  </Tab>
+                    <div className="flex items-center justify-center gap-2">
+                      <PlusCircleIcon width={16} height={16} />
+                      <span className="text-sm">Join Network</span>
+                    </div>
+                  </StandardButton>
                 </div>
               </div>
-
-              <div className="w-full lg:w-auto min-w-0 max-w-[320px] flex justify-end">
-                <StandardButton
-                  className="gradient-2 rounded-xl hover:scale-105 transition-transform"
-                  hoverEffect={false}
-                  link="/join"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    <PlusCircleIcon width={16} height={16} />
-                    <span className="text-sm">Join Network</span>
-                  </div>
-                </StandardButton>
-              </div>
             </div>
-          </div>
 
-          <div id="network-content" className="max-w-6xl mx-auto px-6 pb-16">
-            {isMapTab ? (
-              <div className={`${networkCard.base} p-6 md:p-8`}>
-                <div className="mb-6">
-                  <div className="flex justify-center">
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
-                      <div className="flex text-sm gap-1">
-                        <Tab
-                          tab="earth"
-                          setTab={setMapView}
-                          currentTab={mapView}
-                          icon={<GlobeAmericasIcon width={20} height={20} />}
-                        >
-                          Earth
-                        </Tab>
-                        <Tab
-                          tab="moon"
-                          setTab={setMapView}
-                          currentTab={mapView}
-                          icon={<MoonIcon width={20} height={20} />}
-                        >
-                          Moon
-                        </Tab>
+            <div id="network-content" className="pb-16">
+              {isMapTab ? (
+                <div className={`${networkCard.base} p-6 md:p-8`}>
+                  <div className="mb-6">
+                    <div className="flex justify-center">
+                      <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
+                        <div className="flex text-sm gap-1">
+                          <Tab
+                            tab="earth"
+                            setTab={setMapView}
+                            currentTab={mapView}
+                            icon={<GlobeAmericasIcon width={20} height={20} />}
+                          >
+                            Earth
+                          </Tab>
+                          <Tab
+                            tab="moon"
+                            setTab={setMapView}
+                            currentTab={mapView}
+                            icon={<MoonIcon width={20} height={20} />}
+                          >
+                            Moon
+                          </Tab>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-full flex justify-center">
+                    <div
+                      className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}
+                    >
+                      <div
+                        className={`flex items-center justify-center ${
+                          mapView !== 'earth' && 'hidden'
+                        }`}
+                      >
+                        <Earth pointsData={mapData.data || []} />
+                      </div>
+                      <div className={`${mapView !== 'moon' && 'hidden'}`}>
+                        <Moon />
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="w-full flex justify-center">
-                  <div className={`w-full max-w-4xl rounded-lg z-[100] min-h-[60vh] ${networkCard.base} shadow-xl overflow-hidden`}>
-                    <div
-                      className={`flex items-center justify-center ${
-                        mapView !== 'earth' && 'hidden'
-                      }`}
-                    >
-                      <Earth pointsData={mapData.data || []} />
-                    </div>
-                    <div className={`${mapView !== 'moon' && 'hidden'}`}>
-                      <Moon />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className={`${networkCard.base} p-6 md:p-8`}>
-                <CardGridContainer xsCols={1} smCols={1} mdCols={2} lgCols={2} maxCols={2} center>
-                  {renderNFTs()}
-                </CardGridContainer>
+              ) : (
+                <div className={`${networkCard.base} p-6 md:p-8`}>
+                  <CardGridContainer xsCols={1} smCols={1} mdCols={2} lgCols={2} maxCols={2} center>
+                    {renderNFTs()}
+                  </CardGridContainer>
 
-                {!isMapTab && (
-                  <div className="mt-8">
-                    <PaginationButtons
-                      handlePageChange={handlePageChange}
-                      maxPage={currentData.maxPage}
-                      pageIdx={pageIdx}
-                      label="Page"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </Frame>
+                  {!isMapTab && (
+                    <div className="mt-8">
+                      <PaginationButtons
+                        handlePageChange={handlePageChange}
+                        maxPage={currentData.maxPage}
+                        pageIdx={pageIdx}
+                        label="Page"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Frame>
         </ContentLayout>
       </Container>
     </div>

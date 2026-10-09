@@ -39,18 +39,13 @@ export default function MissionTimelineChart({
   const bg = 'black'
   const fontSize = '0.75rem'
 
-  const [view, setView] = useState<'volume' | 'balance' | 'trendingScore'>(
-    'volume'
-  )
+  const [view, setView] = useState<'volume' | 'balance' | 'trendingScore'>('volume')
 
   // Use official Juicebox x-domain calculation pattern
   const xDomain = useMemo(() => {
     const now = Date.now().valueOf()
     const daysToMS = (days: number) => days * 24 * 60 * 60 * 1000
-    return [
-      Math.floor((now - daysToMS(range)) / 1000),
-      Math.floor(now / 1000),
-    ] as [number, number]
+    return [Math.floor((now - daysToMS(range)) / 1000), Math.floor(now / 1000)] as [number, number]
   }, [range])
 
   // Process points to ensure all values exist - keep it simple like official Juicebox
@@ -107,10 +102,7 @@ export default function MissionTimelineChart({
     ? wadToFloat(trendingProjects[0].trendingScore)
     : undefined
   const highTrendingPoint =
-    points?.reduce(
-      (acc, curr) => (curr.trendingScore > acc ? curr.trendingScore : acc),
-      0
-    ) ?? 0
+    points?.reduce((acc, curr) => (curr.trendingScore > acc ? curr.trendingScore : acc), 0) ?? 0
 
   const yAxisScale = useMemo(() => {
     if (!processedPoints?.length)
@@ -141,9 +133,7 @@ export default function MissionTimelineChart({
           { threshold: 10000000, rate: 0.02 },
           { threshold: Infinity, rate: 0.01 },
         ]
-        return (
-          paddingRates.find((p) => maxValue <= p.threshold)!.rate * maxValue
-        )
+        return paddingRates.find((p) => maxValue <= p.threshold)!.rate * maxValue
       }
 
       if (maxValue <= 10) {
@@ -248,20 +238,14 @@ export default function MissionTimelineChart({
       <div className="mt-4 w-full relative">
         {!isLoadingPoints && points && allZeroValues && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-            <div
-              className="text-white text-xl font-semibold font-GoodTimes"
-              id="no-activity-message"
-            >
+            <div className="text-white text-xl font-semibold font-heading" id="no-activity-message">
               No Activity Yet
             </div>
           </div>
         )}
         {isLoadingPoints && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-            <div
-              className="text-white text-xl font-semibold font-GoodTimes"
-              id="no-activity-message"
-            >
+            <div className="text-white text-xl font-semibold font-heading" id="no-activity-message">
               <LoadingSpinner />
             </div>
           </div>
@@ -276,23 +260,17 @@ export default function MissionTimelineChart({
             }}
             data={processedPoints}
           >
-            <CartesianGrid
-              stroke={stroke}
-              strokeDasharray="1 2"
-              vertical={false}
-            />
+            <CartesianGrid stroke={stroke} strokeDasharray="1 2" vertical={false} />
             <YAxis
               stroke={stroke}
               tickLine={false}
               tickSize={0}
               tick={(props) => {
-                if (view === 'trendingScore' || !processedPoints?.length)
-                  return <g></g>
+                if (view === 'trendingScore' || !processedPoints?.length) return <g></g>
 
                 const { value } = props.payload
 
-                const formattedValue =
-                  value < 1 ? value.toFixed(4) : value.toLocaleString()
+                const formattedValue = value < 1 ? value.toFixed(4) : value.toLocaleString()
 
                 return (
                   <g>
@@ -339,26 +317,24 @@ export default function MissionTimelineChart({
               dataKey="timestamp"
               scale="time"
             />
-            {view === 'trendingScore' &&
-              highTrendingScore &&
-              processedPoints?.length && (
-                <ReferenceLine
-                  label={
-                    <Label
-                      fill={color}
-                      style={{
-                        fontSize,
-                        fontWeight: 500,
-                      }}
-                      position="insideTopLeft"
-                      offset={8}
-                      value={`Current #1 trending`}
-                    />
-                  }
-                  stroke={color}
-                  y={highTrendingScore}
-                />
-              )}
+            {view === 'trendingScore' && highTrendingScore && processedPoints?.length && (
+              <ReferenceLine
+                label={
+                  <Label
+                    fill={color}
+                    style={{
+                      fontSize,
+                      fontWeight: 500,
+                    }}
+                    position="insideTopLeft"
+                    offset={8}
+                    value={`Current #1 trending`}
+                  />
+                }
+                stroke={color}
+                y={highTrendingScore}
+              />
+            )}
             <defs>
               <linearGradient
                 id={`colorGradient`}

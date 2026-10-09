@@ -15,18 +15,12 @@ export default function PartnerSection() {
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool text-2xl md:text-3xl lg:text-4xl"
+            className="header font-heading font-semibold text-center text-dark-cool text-2xl md:text-3xl lg:text-4xl"
           >
             Our Network
           </h2>
-          <div
-            id="network-container"
-            className="w-full max-w-[1200px] m-2 md:m-5 mb-0"
-          >
-            <div
-              id="teams"
-              className="flex flex-row flex flex-row flex-wrap justify-center"
-            >
+          <div id="network-container" className="w-full max-w-[1200px] m-2 md:m-5 mb-0">
+            <div id="teams" className="flex flex-row flex flex-row flex-wrap justify-center">
               <BrandLogo
                 alt="Blue Origin Logo"
                 logo="./../assets/logo-blue-origin.svg"
@@ -46,22 +40,14 @@ export default function PartnerSection() {
                 alt="OpenLunar Logo"
                 logo="./../assets/logo-openlunar.svg"
                 link="/network"
-              />           
-              <BrandLogo
-                alt="Lifeship Logo"
-                logo="./../assets/logo-lifeship.svg"
-                link="/network"
               />
+              <BrandLogo alt="Lifeship Logo" logo="./../assets/logo-lifeship.svg" link="/network" />
               <BrandLogo
                 alt="Desci Labs Logo"
                 logo="./../assets/logo-desci-labs.svg"
                 link="/network"
               />
-              <BrandLogo
-                alt="CryoDAO Logo"
-                logo="./../assets/logo-cryodao.svg"
-                link="/network"
-              />
+              <BrandLogo alt="CryoDAO Logo" logo="./../assets/logo-cryodao.svg" link="/network" />
             </div>
           </div>
         </div>
@@ -77,14 +63,11 @@ export default function PartnerSection() {
         >
           <h2
             id="section-header"
-            className="header font-GoodTimes text-center text-dark-cool text-2xl md:text-3xl lg:text-4xl"
+            className="header font-heading font-semibold text-center text-dark-cool text-2xl md:text-3xl lg:text-4xl"
           >
             As Featured On
           </h2>
-          <div
-            id="Network-container"
-            className="w-full max-w-[1200px] m-2 md:m-5 mb-0"
-          >
+          <div id="Network-container" className="w-full max-w-[1200px] m-2 md:m-5 mb-0">
             <div
               id="teams"
               className="p-2 md:p-5 pt-0 flex flex-row flex flex-row flex-wrap justify-center"

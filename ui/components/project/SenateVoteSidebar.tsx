@@ -35,19 +35,12 @@ export default function SenateVoteSidebar({
     abi: ProposalsABI.abi as any,
   })
 
-  const { proposalData, senatorVotes, isLoading } = useProposalData(
-    proposalContract,
-    mdp
-  )
+  const { proposalData, senatorVotes, isLoading } = useProposalData(proposalContract, mdp)
 
   const approvalCount =
-    'tempCheckApprovalCount' in proposalData
-      ? Number(proposalData?.tempCheckApprovalCount || 0)
-      : 0
+    'tempCheckApprovalCount' in proposalData ? Number(proposalData?.tempCheckApprovalCount || 0) : 0
   const totalVoteCount =
-    'tempCheckVoteCount' in proposalData
-      ? Number(proposalData?.tempCheckVoteCount || 0)
-      : 0
+    'tempCheckVoteCount' in proposalData ? Number(proposalData?.tempCheckVoteCount || 0) : 0
   const rejectionCount = Math.max(totalVoteCount - approvalCount, 0)
   const tempCheckApproved = Boolean(
     'tempCheckApproved' in proposalData && proposalData?.tempCheckApproved
@@ -85,9 +78,7 @@ export default function SenateVoteSidebar({
       }
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="font-GoodTimes text-base text-white/80">
-          Senate Vote
-        </h3>
+        <h3 className="font-heading font-semibold text-base text-white/80">Senate Vote</h3>
         <span
           className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-semibold uppercase tracking-wider ${outcome.className}`}
         >
@@ -98,25 +89,15 @@ export default function SenateVoteSidebar({
 
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-lg bg-green-500/10 border border-green-500/20 px-2 py-2 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-green-300/80">
-            For
-          </p>
-          <p className="text-base font-semibold text-green-200">
-            {approvalCount}
-          </p>
+          <p className="text-[10px] uppercase tracking-wider text-green-300/80">For</p>
+          <p className="text-base font-semibold text-green-200">{approvalCount}</p>
         </div>
         <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-2 py-2 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-red-300/80">
-            Against
-          </p>
-          <p className="text-base font-semibold text-red-200">
-            {rejectionCount}
-          </p>
+          <p className="text-[10px] uppercase tracking-wider text-red-300/80">Against</p>
+          <p className="text-base font-semibold text-red-200">{rejectionCount}</p>
         </div>
         <div className="rounded-lg bg-white/5 border border-white/10 px-2 py-2 text-center">
-          <p className="text-[10px] uppercase tracking-wider text-white/50">
-            Voted
-          </p>
+          <p className="text-[10px] uppercase tracking-wider text-white/50">Voted</p>
           <p className="text-base font-semibold text-white">
             {votedCount}/{senatorTotal}
           </p>
@@ -126,18 +107,12 @@ export default function SenateVoteSidebar({
       {senatorTotal > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between">
-            <h4 className="text-[10px] uppercase tracking-wider text-white/50">
-              Senators
-            </h4>
+            <h4 className="text-[10px] uppercase tracking-wider text-white/50">Senators</h4>
             <span className="text-[10px] text-white/40">
               {votedCount}/{senatorTotal}
             </span>
           </div>
-          <div
-            className={`flex flex-wrap gap-1.5 ${
-              isLoading ? 'opacity-60' : ''
-            }`}
-          >
+          <div className={`flex flex-wrap gap-1.5 ${isLoading ? 'opacity-60' : ''}`}>
             {senatorVotes.map((s) => {
               const tone = !s.hasVoted
                 ? 'bg-slate-700/40 border-white/10 text-white/50'
@@ -146,13 +121,7 @@ export default function SenateVoteSidebar({
                 : s.votedDeny
                 ? 'bg-red-500/20 border-red-500/40 text-red-200'
                 : 'bg-slate-700/40 border-white/10 text-white/70'
-              const icon = !s.hasVoted
-                ? '○'
-                : s.votedApprove
-                ? '✓'
-                : s.votedDeny
-                ? '✗'
-                : '•'
+              const icon = !s.hasVoted ? '○' : s.votedApprove ? '✓' : s.votedDeny ? '✗' : '•'
               return (
                 <span
                   key={s.address}

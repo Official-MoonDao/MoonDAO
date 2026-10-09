@@ -15,21 +15,21 @@ export default function UpdateHeader({ update }: { update: UpdateMeta }) {
   }
 
   return (
-    <header className="mb-10">
+    <header className="mb-6">
       <Link href="/updates" className="text-sm font-medium text-blue-300 hover:text-blue-200">
         ← All updates
       </Link>
-      <div className="mt-6">
+      <div className="mt-3">
         <UpdateMetaLine
           category={update.category}
           date={update.date}
           readingMinutes={update.readingMinutes}
         />
       </div>
-      <h1 className="mt-4 font-GoodTimes text-3xl leading-tight text-white md:text-5xl">
+      <h1 className="mt-2 font-heading font-semibold text-2xl leading-tight text-white md:text-3xl">
         {update.title}
       </h1>
-      <p className="mt-5 text-lg leading-relaxed text-slate-300 md:text-xl">{update.description}</p>
+      <p className="mt-3 text-base leading-relaxed text-slate-300">{update.description}</p>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-white/10 py-4">
         <p className="text-sm text-slate-300">
           <span className="text-white">{update.author}</span>
@@ -47,8 +47,11 @@ export default function UpdateHeader({ update }: { update: UpdateMeta }) {
         </button>
       </div>
       {update.image && (
-        // No fixed height: the natural aspect ratio never crops the artwork.
-        <img src={update.image} alt="" className="mt-8 h-auto w-full rounded-2xl" />
+        <img
+          src={update.image}
+          alt=""
+          className="mt-6 max-h-[420px] w-full rounded-2xl object-cover object-center"
+        />
       )}
     </header>
   )

@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import AdaptiveImage from '@/components/layout/AdaptiveImage'
-import Reveal from '@/components/home/landing/Reveal'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
+import Reveal from '@/components/home/landing/Reveal'
+import AdaptiveImage from '@/components/layout/AdaptiveImage'
 
 export type FeaturedTeam = {
   id: string | number
@@ -24,7 +24,7 @@ function TeamCard({ team }: { team: FeaturedTeam }) {
           className="h-full w-full rounded-2xl object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </div>
-      <h3 className="font-GoodTimes text-sm text-white md:text-base">{team.name}</h3>
+      <h3 className="font-heading font-semibold text-sm text-white md:text-base">{team.name}</h3>
     </Link>
   )
 }

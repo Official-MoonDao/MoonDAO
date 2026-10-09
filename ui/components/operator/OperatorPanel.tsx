@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import toast from 'react-hot-toast'
 import { PROJECT_CYCLE } from 'const/config'
 import type { ProjectCyclePhase } from 'const/config'
-import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
+import { useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
 import { Project } from '@/lib/project/useProjectData'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import AddToRetroactivesModal from './AddToRetroactivesModal'
 
 type Props = {
@@ -139,8 +139,7 @@ export default function OperatorPanel({
         : phase === 'member'
         ? 'Wrap up the cycle (close the Member Vote UI)? Make sure the Member Vote on-chain tally has already been run.'
         : 'Advance the cycle phase?'
-    if (!window.confirm(confirmMsg + (force ? '\n\nFORCING past blockers.' : '')))
-      return
+    if (!window.confirm(confirmMsg + (force ? '\n\nFORCING past blockers.' : ''))) return
     setAdvancing(true)
     try {
       const res = await fetch('/api/operator/advance-phase', {
@@ -303,9 +302,7 @@ export default function OperatorPanel({
         })
         const json = await res.json()
         if (!res.ok) {
-          throw new Error(
-            json?.error || `Request failed with status ${res.status}`
-          )
+          throw new Error(json?.error || `Request failed with status ${res.status}`)
         }
         setClearProgress((prev) =>
           prev
@@ -359,13 +356,12 @@ export default function OperatorPanel({
     >
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h3 className="text-sm sm:text-base font-GoodTimes text-purple-200 uppercase tracking-wider">
+          <h3 className="text-sm sm:text-base font-heading font-semibold text-purple-200 uppercase tracking-wider">
             Operator Panel
           </h3>
           <p className="text-xs text-gray-400 mt-1">
-            Visible only to Executive Branch members. Advance the cycle phase
-            and run project-level actions — all on-chain calls are signed by
-            the GCP HSM owner wallet.
+            Visible only to Executive Branch members. Advance the cycle phase and run project-level
+            actions — all on-chain calls are signed by the GCP HSM owner wallet.
           </p>
         </div>
       </div>
@@ -382,17 +378,14 @@ export default function OperatorPanel({
             <>
               <p className="text-xs text-gray-300">
                 Live phase:{' '}
-                <span className="font-semibold text-white">
-                  {phaseLabel(phaseInfo.livePhase)}
-                </span>{' '}
+                <span className="font-semibold text-white">{phaseLabel(phaseInfo.livePhase)}</span>{' '}
                 <span className="text-gray-500">
                   (Q{phaseInfo.quarter} {phaseInfo.year})
                 </span>
               </p>
               {phaseInfo.livePhase !== phaseInfo.configPhase && (
                 <p className="text-[11px] text-amber-300">
-                  Runtime override active — config default is{' '}
-                  {phaseLabel(phaseInfo.configPhase)}.
+                  Runtime override active — config default is {phaseLabel(phaseInfo.configPhase)}.
                   {phaseInfo.override?.setBy
                     ? ` Set by ${phaseInfo.override.setBy.slice(0, 6)}…`
                     : ''}
@@ -400,18 +393,17 @@ export default function OperatorPanel({
               )}
               {phaseInfo.overrideIsStale && (
                 <p className="text-[11px] text-amber-300">
-                  A previous cycle&apos;s override is being ignored. Live
-                  phase follows the config default.
+                  A previous cycle&apos;s override is being ignored. Live phase follows the config
+                  default.
                 </p>
               )}
 
               {phaseInfo.livePhase === 'intake' && (
                 <>
                   <p className="text-xs text-gray-400">
-                    Collecting Q{phaseInfo.quarter} {phaseInfo.year} proposals.
-                    Submit by {PROJECT_CYCLE.submissionDeadline}; edits close{' '}
-                    {PROJECT_CYCLE.editingDeadline}; Senate Vote opens{' '}
-                    {PROJECT_CYCLE.votingDate}.
+                    Collecting Q{phaseInfo.quarter} {phaseInfo.year} proposals. Submit by{' '}
+                    {PROJECT_CYCLE.submissionDeadline}; edits close {PROJECT_CYCLE.editingDeadline};
+                    Senate Vote opens {PROJECT_CYCLE.votingDate}.
                   </p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     <button
@@ -437,9 +429,8 @@ export default function OperatorPanel({
               {phaseInfo.livePhase === 'senate' && (
                 <>
                   <p className="text-xs text-gray-400">
-                    Closes the Senate Vote on-chain (signs{' '}
-                    <code>tallyVotes(mdp)</code> for every pending proposal in
-                    Q{phaseInfo.quarter} {phaseInfo.year}), then opens the
+                    Closes the Senate Vote on-chain (signs <code>tallyVotes(mdp)</code> for every
+                    pending proposal in Q{phaseInfo.quarter} {phaseInfo.year}), then opens the
                     Member Vote + Retroactive rewards.
                   </p>
                   <div className="flex flex-wrap gap-2 mt-1">
@@ -457,9 +448,7 @@ export default function OperatorPanel({
                       disabled={advancing}
                       className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {advancing
-                        ? 'Advancing…'
-                        : 'Close Senate & Open Member Vote'}
+                      {advancing ? 'Advancing…' : 'Close Senate & Open Member Vote'}
                     </button>
                   </div>
                 </>
@@ -468,8 +457,8 @@ export default function OperatorPanel({
               {phaseInfo.livePhase === 'member' && (
                 <>
                   <p className="text-xs text-gray-400">
-                    Run the Member Vote on-chain tally first (flips winners to
-                    active), then wrap up the cycle UI.
+                    Run the Member Vote on-chain tally first (flips winners to active), then wrap up
+                    the cycle UI.
                   </p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     <button
@@ -494,9 +483,8 @@ export default function OperatorPanel({
 
               {phaseInfo.livePhase === 'idle' && (
                 <p className="text-xs text-gray-400">
-                  Cycle is idle. Start the next cycle by editing{' '}
-                  <code>PROJECT_CYCLE</code> in <code>const/config.ts</code>{' '}
-                  (new quarter, budget, retro pool, phase: intake) and
+                  Cycle is idle. Start the next cycle by editing <code>PROJECT_CYCLE</code> in{' '}
+                  <code>const/config.ts</code> (new quarter, budget, retro pool, phase: intake) and
                   deploying.
                 </p>
               )}
@@ -515,24 +503,21 @@ export default function OperatorPanel({
               {advanceResult?.blockers?.length > 0 && (
                 <div className="mt-1">
                   <p className="text-[11px] text-rose-300">
-                    {advanceResult.blockers.length} proposal(s) block the
-                    advance (below quorum or errored):
+                    {advanceResult.blockers.length} proposal(s) block the advance (below quorum or
+                    errored):
                   </p>
                   <ul className="mt-1 ml-4 list-disc text-[11px] text-rose-200 space-y-0.5">
                     {(advanceResult.blockers as SenateTallyRow[]).map((b) => (
                       <li key={b.mdp}>
                         MDP-{b.mdp} {b.name ? `“${b.name}” ` : ''}— {b.status}
-                        {b.status === 'below-quorum' &&
-                        b.voteCount != null &&
-                        b.quorum != null
+                        {b.status === 'below-quorum' && b.voteCount != null && b.quorum != null
                           ? ` (${b.voteCount}/${b.quorum})`
                           : ''}
                         {b.error ? `: ${b.error}` : ''}
                       </li>
                     ))}
                   </ul>
-                  {(phaseInfo.livePhase === 'intake' ||
-                    phaseInfo.livePhase === 'senate') && (
+                  {(phaseInfo.livePhase === 'intake' || phaseInfo.livePhase === 'senate') && (
                     <button
                       type="button"
                       onClick={() => doAdvance(true)}
@@ -575,8 +560,8 @@ export default function OperatorPanel({
             Add Final Report &amp; Mark Eligible
           </h4>
           <p className="text-xs text-gray-400">
-            Pick a project, fill in its final report URL and reward split, then
-            sign the owner-only updates with one click.
+            Pick a project, fill in its final report URL and reward split, then sign the owner-only
+            updates with one click.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 mt-1 min-w-0">
             <select
@@ -590,8 +575,7 @@ export default function OperatorPanel({
                 .sort((a, b) => b.id - a.id)
                 .map((p) => {
                   const label = `#${p.id} — ${p.name} (Q${p.quarter} ${p.year})`
-                  const truncated =
-                    label.length > 60 ? label.slice(0, 57) + '…' : label
+                  const truncated = label.length > 60 ? label.slice(0, 57) + '…' : label
                   return (
                     <option key={p.id} value={String(p.id)} title={label}>
                       {truncated}
@@ -623,12 +607,11 @@ export default function OperatorPanel({
           </h4>
           <p className="text-xs text-gray-400">
             Sets <code>eligible = 0</code> on every project currently flagged
-            <code className="mx-1">eligible = 1</code> and retires any that are
-            still <code className="mx-1">active = 2</code> to
-            <code className="mx-1">active = 0</code> (ended), removing them from
-            both the Retroactives and Active tabs. Run this once a cycle&apos;s
-            retro voting has closed and payouts have been settled, before
-            marking next cycle&apos;s projects eligible.
+            <code className="mx-1">eligible = 1</code> and retires any that are still{' '}
+            <code className="mx-1">active = 2</code> to
+            <code className="mx-1">active = 0</code> (ended), removing them from both the
+            Retroactives and Active tabs. Run this once a cycle&apos;s retro voting has closed and
+            payouts have been settled, before marking next cycle&apos;s projects eligible.
           </p>
           {eligibleCohort.length === 0 ? (
             <p className="text-[11px] text-gray-500 italic">
@@ -658,21 +641,15 @@ export default function OperatorPanel({
             className="self-start mt-1 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-600 hover:to-rose-700 text-white text-xs font-RobotoMono shadow disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isClearing
-              ? `Clearing… ${clearProgress?.done ?? 0}/${
-                  clearProgress?.total ?? 0
-                }`
+              ? `Clearing… ${clearProgress?.done ?? 0}/${clearProgress?.total ?? 0}`
               : `Clear ${eligibleCohort.length} project(s)`}
           </button>
           {clearProgress && !isClearing && (
             <div className="mt-1 text-[11px] text-gray-300">
               <p>
-                Done: {clearProgress.done - clearProgress.failed.length}/
-                {clearProgress.total}
+                Done: {clearProgress.done - clearProgress.failed.length}/{clearProgress.total}
                 {clearProgress.failed.length > 0 && (
-                  <span className="text-rose-400">
-                    {' '}
-                    • {clearProgress.failed.length} failed
-                  </span>
+                  <span className="text-rose-400"> • {clearProgress.failed.length} failed</span>
                 )}
               </p>
               {clearProgress.failed.length > 0 && (

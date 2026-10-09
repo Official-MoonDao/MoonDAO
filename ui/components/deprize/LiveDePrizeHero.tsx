@@ -7,12 +7,7 @@ import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import { deprizePrefixedHref, getDePrizeCompetition } from '@/lib/deprize/competitions'
-import {
-  DEPRIZE_PREDICT_CTA,
-  DePrizeState,
-  OUTCOME_COLORS,
-  UNIT,
-} from '@/lib/deprize/constants'
+import { DEPRIZE_PREDICT_CTA, DePrizeState, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
@@ -20,9 +15,9 @@ import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
-import { TOUCH } from '@/components/deprize/detail/primitives'
-import PrizeAvailable from '@/components/deprize/PrizeAvailable'
 import { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
+import PrizeAvailable from '@/components/deprize/PrizeAvailable'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 
 type Props = {
   deprizeId: number
@@ -65,8 +60,7 @@ export default function LiveDePrizeHero({
 
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
   const { balanceWei, loading: poolLoading } = useDePrizePrizePool(jbProjectId, chain.id)
-  const poolEth =
-    balanceWei != null && !poolLoading ? Number(balanceWei) / Number(UNIT) : undefined
+  const poolEth = balanceWei != null && !poolLoading ? Number(balanceWei) / Number(UNIT) : undefined
 
   const teamContract = useMemo(
     () =>
@@ -125,7 +119,7 @@ export default function LiveDePrizeHero({
               href={detailHref}
               className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
             >
-              <p className="text-white font-GoodTimes text-xl sm:text-2xl leading-snug">
+              <p className="text-white font-heading font-semibold text-xl sm:text-2xl leading-snug">
                 {competition.title}
               </p>
             </a>
@@ -198,9 +192,7 @@ export default function LiveDePrizeHero({
           )}
         </div>
 
-        {showPredict && (
-          <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>
-        )}
+        {showPredict && <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>}
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {showPredict && (

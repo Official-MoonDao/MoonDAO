@@ -26,7 +26,7 @@ export default function LaunchpadFAQ() {
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
         <div className="text-center mb-12 md:mb-16 lg:mb-20">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-GoodTimes text-white mb-6 md:mb-8">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold text-white mb-6 md:mb-8">
             Frequently Asked Questions
           </h2>
           <p className="text-white/80 text-base md:text-lg lg:text-xl xl:text-2xl text-center max-w-3xl mx-auto leading-relaxed">

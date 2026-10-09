@@ -79,14 +79,14 @@ export default function Marketplace({ listings }: MarketplaceProps) {
 
     if (selectedTeam !== 'all') {
       result = result.filter(
-        (listing: MarketplaceListing) => String(listing.teamId) === selectedTeam,
+        (listing: MarketplaceListing) => String(listing.teamId) === selectedTeam
       )
     }
 
     if (input.trim() !== '') {
       const query = input.toLowerCase()
       result = result.filter((listing: MarketplaceListing) =>
-        listing.title.toLowerCase().includes(query),
+        listing.title.toLowerCase().includes(query)
       )
     }
 
@@ -101,11 +101,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
   }, [listings, input, selectedTeam])
 
   const descriptionSection = (
-    <div className="pt-2">
-      <div className="mb-4">
-        Discover space products and services from top innovators and teams in the Space Acceleration
-        Network, available for direct on-chain purchase.
-      </div>
+    <div>
       <div className="relative w-full flex flex-col gap-3">
         {/* Search Bar */}
         <div className="flex w-full md:w-5/6 flex-col min-[1200px]:flex-row md:gap-2">
@@ -166,7 +162,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
           isProfile
         >
           <div className="flex flex-row w-full">
-            <div className="p-4 md:px-8 bg-black/20 backdrop-blur-sm border border-white/10 lg:p-8 rounded-[2vmax] md:m-5 mb-0 md:mb-0 w-full flex flex-col lg:max-w-[1400px]">
+            <div className="flex w-full flex-col rounded-[2vmax] border border-white/10 bg-black/20 p-4 backdrop-blur-sm md:px-8 lg:p-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 auto-rows-fr">
                 {filteredListings && filteredListings.length > 0 ? (
                   (() => {

@@ -78,7 +78,7 @@ export default function Tier({
             <div className="flex flex-col p-6 justify-between w-full items-start">
               <div className="w-full flex-col space-y-6">
                 <div className="md:rounded-2xl">
-                  <h2 className={'mt-6 font-GoodTimes text-3xl text-white'}>{label}</h2>
+                  <h2 className={'mt-3 font-heading font-semibold text-xl text-white'}>{label}</h2>
                   <p className="text-slate-300 mt-3 leading-relaxed">{description}</p>
 
                   <div className="flex flex-col w-full mt-6">

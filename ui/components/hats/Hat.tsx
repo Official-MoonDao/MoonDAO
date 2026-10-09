@@ -25,13 +25,9 @@ const ImageSkeleton = ({ size }: { size: number }) => (
   />
 )
 
-const TextSkeleton = ({
-  width,
-  height = 'h-4',
-}: {
-  width: string
-  height?: string
-}) => <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
+const TextSkeleton = ({ width, height = 'h-4' }: { width: string; height?: string }) => (
+  <div className={`animate-pulse bg-gray-300 rounded ${height} ${width}`} />
+)
 
 export function Hat({
   selectedChain,
@@ -82,20 +78,16 @@ export function Hat({
 
   return (
     <button
-      className={`text-left px-4 flex flex-col w-full ${
-        compact && 'lg:max-w-[200px]'
-      } ${vertical ? 'items-center text-center' : ''}`}
+      className={`text-left px-4 flex flex-col w-full ${compact && 'lg:max-w-[200px]'} ${
+        vertical ? 'items-center text-center' : ''
+      }`}
       onClick={() => {
         if (hat.teamId && !isDisabled) {
           router.push(`/team/${hat.teamId}`)
         }
       }}
     >
-      <div
-        className={`flex items-center gap-5 ${
-          vertical ? 'flex-col justify-center' : ''
-        }`}
-      >
+      <div className={`flex items-center gap-5 ${vertical ? 'flex-col justify-center' : ''}`}>
         {/* Team NFT Image or Loading State */}
         {teamContract && hat?.teamId && (
           <div className="rounded-[2.5vmax] rounded-tl-[10px] overflow-hidden">
@@ -133,9 +125,7 @@ export function Hat({
             </>
           ) : hatError ? (
             compact && teamNFT?.metadata?.name ? (
-              <p className="w-full font-GoodTimes text-xs">
-                {teamNFT.metadata.name}
-              </p>
+              <p className="w-full font-heading font-semibold text-xs">{teamNFT.metadata.name}</p>
             ) : (
               <div className="text-red-500 text-sm">
                 <p>Error loading hat data</p>
@@ -143,12 +133,8 @@ export function Hat({
             )
           ) : (
             <>
-              <p
-                className={`w-full font-GoodTimes ${compact ? 'text-xs' : ''}`}
-              >
-                {compact
-                  ? teamNFT?.metadata?.name || hatData.name
-                  : hatData.name}
+              <p className={`w-full font-heading font-semibold ${compact ? 'text-xs' : ''}`}>
+                {compact ? teamNFT?.metadata?.name || hatData.name : hatData.name}
               </p>
               {!compact && <p>{hatData.description}</p>}
             </>
@@ -158,11 +144,7 @@ export function Hat({
         {/* Arrow Icon */}
         {!compact && !isHatLoading && (
           <div>
-            <ArrowUpRightIcon
-              height={20}
-              width={20}
-              className="text-light-warm"
-            />
+            <ArrowUpRightIcon height={20} width={20} className="text-light-warm" />
           </div>
         )}
       </div>

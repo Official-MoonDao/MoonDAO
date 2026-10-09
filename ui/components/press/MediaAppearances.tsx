@@ -6,7 +6,7 @@ import type { MediaAppearance } from '@/lib/press/press-data'
 function AppearanceList({ title, appearances }: { title: string; appearances: MediaAppearance[] }) {
   return (
     <div>
-      <h3 className="mb-4 font-GoodTimes text-lg text-slate-400">{title}</h3>
+      <h3 className="mb-4 font-heading font-semibold text-lg text-slate-400">{title}</h3>
       <ul className="flex flex-col gap-2">
         {appearances.map((appearance) => (
           <li key={appearance.url}>

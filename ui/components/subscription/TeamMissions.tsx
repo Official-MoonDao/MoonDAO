@@ -101,7 +101,7 @@ export default function TeamMissions({
             height={30}
             className="opacity-70 flex-shrink-0"
           />
-          <h2 className="font-GoodTimes text-2xl text-white">
+          <h2 className="font-heading font-semibold text-2xl text-white">
             {missions.length > 1 ? 'Missions' : 'Mission'}
           </h2>
         </div>

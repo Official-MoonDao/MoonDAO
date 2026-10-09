@@ -8,7 +8,7 @@ type AddressProps = {
 export default function Address({ address, className }: AddressProps) {
   return (
     <button
-      className={`flex items-center gap-4 text-2xl font-GoodTimes hover:font-bold ${className}`}
+      className={`flex items-center gap-4 text-2xl font-heading hover:font-bold ${className}`}
       onClick={() => {
         if (address) {
           navigator.clipboard.writeText(address)

@@ -18,11 +18,7 @@ export default function NetworkMap({ citizensLocationData }: { citizensLocationD
   const [tab, setTab] = useState('earth')
 
   const descriptionSection = (
-    <div className="pt-2">
-      <div className="mb-6 text-white/80">
-        Explore an interactive map of Citizens in the Space Acceleration Network to make connections
-        locally and globally.
-      </div>
+    <div>
       <div className="flex gap-4">
         <div className="w-fit h-fit bg-white/10 backdrop-blur-sm rounded-xl border border-white/10 p-1.5">
           <div className="flex text-sm gap-1">

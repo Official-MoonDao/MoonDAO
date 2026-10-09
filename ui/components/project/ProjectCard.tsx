@@ -2,14 +2,13 @@
 import { trimActionsFromBody } from '@nance/nance-sdk'
 import { usePrivy } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
-import {
-  CITIZEN_ADDRESSES,
-  DEFAULT_CHAIN_V5,
-} from 'const/config'
+import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { getProposalVideoUrl } from 'const/proposalVideos'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { useContext, memo, useState, useMemo, useEffect, useRef } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
@@ -22,8 +21,6 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useOnceVisible } from '@/lib/utils/hooks/useOnceVisible'
 import { normalizeJsonString } from '@/lib/utils/rewards'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import { SenateVoteButtons, SenatorsStatus } from '@/components/project/SenateVote'
 import NumberStepper from '../layout/NumberStepper'
@@ -43,16 +40,28 @@ const ProposalMarkdown = ({ body }: { body: string }) => (
       remarkPlugins={[remarkGfm]}
       components={{
         h1: ({ node, ...props }) => (
-          <h1 className="font-GoodTimes text-2xl md:text-3xl mt-6 mb-4 text-white" {...props} />
+          <h1
+            className="font-heading font-semibold text-2xl md:text-3xl mt-6 mb-4 text-white"
+            {...props}
+          />
         ),
         h2: ({ node, ...props }) => (
-          <h2 className="font-GoodTimes text-xl md:text-2xl mt-6 mb-3 text-white" {...props} />
+          <h2
+            className="font-heading font-semibold text-xl md:text-2xl mt-6 mb-3 text-white"
+            {...props}
+          />
         ),
         h3: ({ node, ...props }) => (
-          <h3 className="font-GoodTimes text-lg md:text-xl mt-5 mb-2 text-white" {...props} />
+          <h3
+            className="font-heading font-semibold text-lg md:text-xl mt-5 mb-2 text-white"
+            {...props}
+          />
         ),
         h4: ({ node, ...props }) => (
-          <h4 className="font-GoodTimes text-base md:text-lg mt-4 mb-2 text-white" {...props} />
+          <h4
+            className="font-heading font-semibold text-base md:text-lg mt-4 mb-2 text-white"
+            {...props}
+          />
         ),
         table: ({ node, ...props }) => (
           <div className="mb-6 overflow-x-auto -mx-2 md:mx-0">
@@ -61,15 +70,9 @@ const ProposalMarkdown = ({ body }: { body: string }) => (
             </div>
           </div>
         ),
-        thead: ({ node, ...props }) => (
-          <thead className="bg-slate-800/50" {...props} />
-        ),
-        tbody: ({ node, ...props }) => (
-          <tbody {...props} />
-        ),
-        tr: ({ node, ...props }) => (
-          <tr className="border-b border-white/10" {...props} />
-        ),
+        thead: ({ node, ...props }) => <thead className="bg-slate-800/50" {...props} />,
+        tbody: ({ node, ...props }) => <tbody {...props} />,
+        tr: ({ node, ...props }) => <tr className="border-b border-white/10" {...props} />,
         th: ({ node, ...props }) => (
           <th
             className="whitespace-normal border-b border-white/10 text-white font-semibold py-2 px-2 md:py-4 md:px-6 bg-slate-800/30 text-xs md:text-base"
@@ -97,26 +100,29 @@ const ProposalMarkdown = ({ body }: { body: string }) => (
             {...props}
           />
         ),
-        ul: ({ node, ...props }) => (
-          <ul className="list-disc ml-6 mb-4 text-white" {...props} />
-        ),
-        ol: ({ node, ...props }) => (
-          <ol className="list-decimal ml-6 mb-4 text-white" {...props} />
-        ),
-        li: ({ node, ...props }) => (
-          <li className="text-white mb-2 leading-relaxed" {...props} />
-        ),
+        ul: ({ node, ...props }) => <ul className="list-disc ml-6 mb-4 text-white" {...props} />,
+        ol: ({ node, ...props }) => <ol className="list-decimal ml-6 mb-4 text-white" {...props} />,
+        li: ({ node, ...props }) => <li className="text-white mb-2 leading-relaxed" {...props} />,
         blockquote: ({ node, ...props }) => (
-          <blockquote className="border-l-4 border-blue-500 pl-4 my-4 text-white/80 italic" {...props} />
+          <blockquote
+            className="border-l-4 border-blue-500 pl-4 my-4 text-white/80 italic"
+            {...props}
+          />
         ),
         code: ({ node, className, children, ...props }) => {
           const isInline = !className
           return isInline ? (
-            <code className="bg-slate-700/50 px-1.5 py-0.5 rounded text-sm text-orange-300" {...props}>
+            <code
+              className="bg-slate-700/50 px-1.5 py-0.5 rounded text-sm text-orange-300"
+              {...props}
+            >
               {children}
             </code>
           ) : (
-            <code className="block bg-slate-800/50 p-4 rounded-lg overflow-x-auto text-sm" {...props}>
+            <code
+              className="block bg-slate-800/50 p-4 rounded-lg overflow-x-auto text-sm"
+              {...props}
+            >
               {children}
             </code>
           )
@@ -236,9 +242,7 @@ const ProjectCardContent = memo(
         id="card-container"
         onClick={handleCardClick}
         className={`p-3 sm:p-6 pb-3 sm:pb-4 flex flex-col gap-2 sm:gap-3 relative w-full transition-all duration-300 bg-gradient-to-br from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-lg sm:rounded-xl shadow-lg hover:bg-gradient-to-br hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl ${
-          isExpanded 
-            ? 'h-auto' 
-            : 'h-full min-h-[180px] hover:scale-[1.02]'
+          isExpanded ? 'h-auto' : 'h-full min-h-[180px] hover:scale-[1.02]'
         } ${onToggleExpand ? 'cursor-pointer' : ''}`}
       >
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
@@ -256,10 +260,7 @@ const ProjectCardContent = memo(
                       </span>
                     )}
                     {proposalJSON?.authorAddress && (
-                      <div
-                        data-testid="project-author"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <div data-testid="project-author" onClick={(e) => e.stopPropagation()}>
                         <AuthorCitizenLink
                           authorAddress={proposalJSON.authorAddress}
                           citizenContract={citizenContract}
@@ -278,16 +279,13 @@ const ProjectCardContent = memo(
                     // children of an inline `<a>` during parse, which causes
                     // a hydration mismatch ("Expected server HTML to contain
                     // a matching <div> in <a>") in dev mode.
-                    <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
-                      <Link
-                        href={`/project/${project?.MDP}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                    <h1 className="font-heading font-semibold text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
+                      <Link href={`/project/${project?.MDP}`} onClick={(e) => e.stopPropagation()}>
                         {displayName}
                       </Link>
                     </h1>
                   ) : (
-                    <h1 className="font-GoodTimes text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
+                    <h1 className="font-heading font-semibold text-white text-lg sm:text-xl hover:text-moon-gold transition-colors cursor-pointer break-words">
                       {displayName}
                     </h1>
                   )}
@@ -359,17 +357,19 @@ const ProjectCardContent = memo(
           {/* Senate Vote mode: show budget badge and vote buttons together on the right (desktop) or below title (mobile) */}
           {isSenateVote && project?.MDP && project.active === PROJECT_PENDING && (
             <div className="w-full sm:w-auto">
-              <SenateVoteButtons 
-                mdp={project.MDP} 
-                budgetLabel={proposalJSON?.nonProjectProposal 
-                  ? 'Non-project Proposal' 
-                  : `Budget: $${proposalJSON?.usdBudget?.toLocaleString()}`
+              <SenateVoteButtons
+                mdp={project.MDP}
+                budgetLabel={
+                  proposalJSON?.nonProjectProposal
+                    ? 'Non-project Proposal'
+                    : `Budget: $${proposalJSON?.usdBudget?.toLocaleString()}`
                 }
                 onSenatorVotesChange={handleSenatorVotesChange}
               />
             </div>
           )}
-          {!isSenateVote && distribute &&
+          {!isSenateVote &&
+            distribute &&
             (isProposalAuthor ? (
               <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                 <p className="text-gray-400 text-sm">Author</p>
@@ -416,16 +416,26 @@ const ProjectCardContent = memo(
 
         {/* Footer - Always visible */}
         <div className="pt-3 border-t border-green-500/10 flex-shrink-0 mt-auto">
-          <div className={`text-xs font-medium transition-colors flex items-center gap-1 ${
-            onToggleExpand 
-              ? 'text-orange-400 hover:text-orange-300' 
-              : 'text-green-300 hover:text-green-200'
-          }`}>
-            {onToggleExpand 
-              ? (isExpanded 
-                  ? <><span className="text-base">▲</span> Click to collapse</> 
-                  : <><span className="text-base">▼</span> Click to expand proposal</>)
-              : 'Click to view details →'}
+          <div
+            className={`text-xs font-medium transition-colors flex items-center gap-1 ${
+              onToggleExpand
+                ? 'text-orange-400 hover:text-orange-300'
+                : 'text-green-300 hover:text-green-200'
+            }`}
+          >
+            {onToggleExpand ? (
+              isExpanded ? (
+                <>
+                  <span className="text-base">▲</span> Click to collapse
+                </>
+              ) : (
+                <>
+                  <span className="text-base">▼</span> Click to expand proposal
+                </>
+              )
+            ) : (
+              'Click to view details →'
+            )}
           </div>
         </div>
       </div>

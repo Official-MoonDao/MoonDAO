@@ -32,7 +32,7 @@ export default function SectionHeading({
       </Reveal>
       <Reveal delay={0.1}>
         <h2
-          className={`font-GoodTimes leading-[1.1] text-3xl md:text-4xl lg:text-5xl 2xl:text-6xl ${
+          className={`font-heading font-semibold leading-[1.15] text-2xl md:text-3xl lg:text-4xl ${
             light ? 'text-dark-cool' : 'text-white'
           }`}
         >

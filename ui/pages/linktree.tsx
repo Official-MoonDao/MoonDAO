@@ -116,7 +116,7 @@ const LinkTree: React.FC = () => {
                   className="h-12 w-12 shrink-0"
                 />
                 <span className="min-w-0 flex-1 text-left">
-                  <span className="block font-GoodTimes text-sm text-white sm:text-base">
+                  <span className="block font-heading text-sm font-semibold text-white sm:text-base">
                     {link.name}
                   </span>
                   <span className="mt-1 block font-RobotoMono text-[11px] leading-snug text-white/55">

@@ -18,8 +18,6 @@ import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { emptyPathVoteResults, fetchPathVoteResults } from '@/lib/overview-path-vote/fetchResults'
 import type { PathVoteResults, PathVoteVoter } from '@/lib/overview-path-vote/fetchResults'
-import { formatVoteClosedMessage } from '@/lib/overview-path-vote/tally'
-import { getPathVoteSnapshot, hasPathVoteSnapshot } from '@/lib/overview-path-vote/snapshot'
 import {
   getPathVoteOption,
   isPathVoteOptionId,
@@ -29,6 +27,8 @@ import {
   PATH_VOTE_OPTIONS,
 } from '@/lib/overview-path-vote/options'
 import type { PathVoteOptionId } from '@/lib/overview-path-vote/options'
+import { getPathVoteSnapshot, hasPathVoteSnapshot } from '@/lib/overview-path-vote/snapshot'
+import { formatVoteClosedMessage } from '@/lib/overview-path-vote/tally'
 import { arbitrum } from '@/lib/rpc/chains'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -40,8 +40,8 @@ import Head from '@/components/layout/Head'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Votes, { VoteItem, VoteItemHeader } from '@/components/layout/Votes'
 import { ShortAddressLink } from '@/components/nance/AddressLink'
-import YouTubeEmbed from '@/components/townhall/YouTubeEmbed'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import YouTubeEmbed from '@/components/townhall/YouTubeEmbed'
 
 type OverviewPathVoteProps = {
   voteResults: PathVoteResults
@@ -192,7 +192,7 @@ export default function OverviewPathVote({
             ...r,
             totalVoted: Math.max(0, r.totalVoted - userServerContribution + liveAmount),
           }
-        : r,
+        : r
     )
     const totalVoted = adjustedResults.reduce((s, r) => s + r.totalVoted, 0)
     return {
@@ -220,7 +220,7 @@ export default function OverviewPathVote({
         userBalance == null || !Number.isFinite(userBalance)
           ? 'Your $OVERVIEW balance is still loading. Please wait a moment and try again.'
           : 'You need $OVERVIEW tokens to vote.',
-        { style: toastStyle },
+        { style: toastStyle }
       )
       return
     }
@@ -258,7 +258,7 @@ export default function OverviewPathVote({
       } catch (lookupErr) {
         console.warn(
           '[overview-path-vote] pre-submit existence check failed; falling back to cached value',
-          lookupErr,
+          lookupErr
         )
       }
 
@@ -280,8 +280,10 @@ export default function OverviewPathVote({
       })
       const optionTitle = getPathVoteOption(selectedOption)?.title
       toast.success(
-        `Vote submitted for Option ${getPathVoteOption(selectedOption)?.letter}${optionTitle ? ` — ${optionTitle}` : ''}.`,
-        { style: toastStyle },
+        `Vote submitted for Option ${getPathVoteOption(selectedOption)?.letter}${
+          optionTitle ? ` — ${optionTitle}` : ''
+        }.`,
+        { style: toastStyle }
       )
 
       // Optimistic tally update: move the user's weight from their previous
@@ -435,33 +437,17 @@ export default function OverviewPathVote({
           popOverEffect={false}
           isProfile
           maxWidth="900px"
-          logo={
-            <div className="w-full h-full flex items-center justify-center md:justify-start pt-6 md:pt-0">
-              <img
-                src="/assets/feature-4.svg"
-                alt=""
-                aria-hidden
-                className="w-auto max-h-[160px] md:max-h-[220px] object-contain"
-              />
-            </div>
-          }
-          description={
-            <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-3xl">
-              A formal $OVERVIEW-weighted vote on the next step for the Overview Effect Flight
-              (&quot;Send Frank to Space&quot;). ~$172k has been raised or pledged and none of it
-              has been spent. Token holders now decide between three paths.
-            </p>
-          }
+          description="Token holders choose the next step for the Overview Effect Flight. About $172k has been raised or pledged, and none of it has been spent."
           preFooter={<NoticeFooter />}
         >
-          <div className="flex flex-col gap-6 md:gap-8 w-full max-w-[900px] mx-auto">
+          <div className="flex w-full flex-col gap-6 md:gap-8">
             {/* Community update video */}
             <YouTubeEmbed videoId="YzecKAp9V8U" />
 
             {/* Results (sealed until voting closes) */}
             {resultsRevealed && (
               <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-                <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+                <h2 className="text-lg sm:text-xl font-heading font-semibold text-white mb-2 sm:mb-3">
                   Final Results
                 </h2>
                 <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
@@ -494,8 +480,8 @@ export default function OverviewPathVote({
                           {winningResult?.totalVoted.toLocaleString(undefined, {
                             maximumFractionDigits: 0,
                           })}{' '}
-                          $OVERVIEW ({winningResult?.percentage}%) ·{' '}
-                          {winningResult?.voterCount} voter
+                          $OVERVIEW ({winningResult?.percentage}%) · {winningResult?.voterCount}{' '}
+                          voter
                           {winningResult?.voterCount !== 1 ? 's' : ''}
                         </p>
                       </div>
@@ -552,7 +538,7 @@ export default function OverviewPathVote({
 
             {/* Proposal */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+              <h2 className="text-lg sm:text-xl font-heading font-semibold text-white mb-2 sm:mb-3">
                 The Proposal
               </h2>
               <div className="text-gray-300 text-xs sm:text-sm leading-relaxed space-y-3">
@@ -685,7 +671,7 @@ export default function OverviewPathVote({
             {/* Voters (who voted + voting power; choices stay sealed) */}
             <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
               <div className="flex items-center justify-between mb-2 sm:mb-3">
-                <h2 className="text-lg sm:text-xl font-GoodTimes text-white">Votes</h2>
+                <h2 className="text-lg sm:text-xl font-heading font-semibold text-white">Votes</h2>
                 {isRefreshing && (
                   <div className="flex items-center gap-2 text-indigo-400 text-xs sm:text-sm">
                     <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
@@ -719,7 +705,7 @@ export default function OverviewPathVote({
                           <Link
                             href={`/citizen/${generatePrettyLinkWithId(
                               voter.citizenName,
-                              String(voter.citizenId),
+                              String(voter.citizenId)
                             )}`}
                             className="text-white hover:underline break-all"
                           >
@@ -763,7 +749,7 @@ export default function OverviewPathVote({
 
             {/* Vote panel */}
             <div className="relative z-10 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
-              <h2 className="text-lg sm:text-xl font-GoodTimes text-white mb-2 sm:mb-3">
+              <h2 className="text-lg sm:text-xl font-heading font-semibold text-white mb-2 sm:mb-3">
                 Cast Your Vote
               </h2>
               <p className="text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 leading-relaxed">
@@ -823,9 +809,9 @@ export default function OverviewPathVote({
                   const isExpanded = expandedOption === option.id
                   const hasDetails = Boolean(
                     option.fundsImpact ||
-                    option.candidateImpact ||
-                    option.realRisk ||
-                    option.bestCase,
+                      option.candidateImpact ||
+                      option.realRisk ||
+                      option.bestCase
                   )
                   return (
                     <div
@@ -883,7 +869,9 @@ export default function OverviewPathVote({
                             className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors pb-2"
                           >
                             <span
-                              className={`transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+                              className={`transition-transform duration-200 ${
+                                isExpanded ? 'rotate-90' : ''
+                              }`}
                             >
                               ▶
                             </span>
@@ -923,8 +911,8 @@ export default function OverviewPathVote({
                     isSubmitting
                       ? 'Submitting...'
                       : previousVote
-                        ? 'Update Your Vote'
-                        : 'Submit Your Vote'
+                      ? 'Update Your Vote'
+                      : 'Submit Your Vote'
                   }
                   action={handleSubmit}
                   requiredChain={overviewChain}

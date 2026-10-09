@@ -15,7 +15,7 @@ export default function InlineJoinCTA({ headline, subtext }: InlineJoinCTAProps)
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,rgba(66,94,235,0.12),transparent_60%)]" />
       <div className="relative z-10 mx-auto flex w-full max-w-[800px] flex-col items-center gap-6 px-6 text-center md:px-10">
         <Reveal>
-          <h3 className="font-GoodTimes text-xl text-white md:text-2xl">{headline}</h3>
+          <h3 className="font-heading font-semibold text-xl text-white md:text-2xl">{headline}</h3>
         </Reveal>
         {subtext && (
           <Reveal delay={0.1}>

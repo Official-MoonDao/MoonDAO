@@ -40,7 +40,7 @@ export default function PrizeHeader(props: {
     <div className={CARD}>
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
-          <h1 className="text-white font-GoodTimes text-lg sm:text-xl">
+          <h1 className="text-white font-heading font-semibold text-lg sm:text-xl">
             {knownCompetition ? title : `DePrize #${deprizeId}`}
           </h1>
           {showBadge && (
@@ -91,8 +91,8 @@ export default function PrizeHeader(props: {
             {state === DePrizeState.NO_WINNER
               ? 'No winner — positions redeem on an equal-payout basis.'
               : state === DePrizeState.CANCELLED
-                ? 'Cancelled — refunds are available.'
-                : 'Delivery failed after Milestone 1 — refunds are available.'}
+              ? 'Cancelled — refunds are available.'
+              : 'Delivery failed after Milestone 1 — refunds are available.'}
           </div>
         )}
     </div>

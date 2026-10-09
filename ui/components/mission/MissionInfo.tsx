@@ -15,11 +15,7 @@ import MissionTimelineChart from './MissionTimelineChart'
 import MissionTokenInfo from './MissionTokenInfo'
 import OverviewDelegateVote from './OverviewDelegateVote'
 
-export type MissionInfoTabType =
-  | 'activity'
-  | 'about'
-  | 'tokenomics'
-  | 'leaderboard'
+export type MissionInfoTabType = 'activity' | 'about' | 'tokenomics' | 'leaderboard'
 
 /** Human-readable label for each tab. We map explicitly so we can use a
  *  multi-word label (e.g. "Fly with Frank") for the leaderboard tab without
@@ -44,9 +40,7 @@ function MissionInfoTab({
   return (
     <button
       className={`relative px-5 py-3 text-base md:text-lg font-semibold tracking-wide whitespace-nowrap transition-all duration-200 ${
-        isActive
-          ? 'text-white'
-          : 'text-gray-500 hover:text-gray-300'
+        isActive ? 'text-white' : 'text-gray-500 hover:text-gray-300'
       }`}
       onClick={() => setTab(tab)}
     >
@@ -64,9 +58,7 @@ function MissionInfoHeader({ title, icon }: { title: string; icon: string }) {
       <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
         <Image src={icon} alt="Section Icon" width={18} height={18} />
       </div>
-      <h2 className="text-xl md:text-2xl font-GoodTimes text-white">
-        {title}
-      </h2>
+      <h2 className="text-xl md:text-2xl font-heading font-semibold text-white">{title}</h2>
     </div>
   )
 }
@@ -129,18 +121,13 @@ export default function MissionInfo({
    *  URL specifies a tab that isn't valid for this mission (e.g. someone
    *  shares a `?tab=leaderboard` link to a non-mission-4 page). */
   const resolveTab = (raw: unknown): MissionInfoTabType => {
-    if (
-      typeof raw === 'string' &&
-      (visibleTabs as string[]).includes(raw)
-    ) {
+    if (typeof raw === 'string' && (visibleTabs as string[]).includes(raw)) {
       return raw as MissionInfoTabType
     }
     return 'about'
   }
 
-  const [tab, setTab] = useState<MissionInfoTabType>(
-    resolveTab(router.query.tab)
-  )
+  const [tab, setTab] = useState<MissionInfoTabType>(resolveTab(router.query.tab))
 
   useEffect(() => {
     if (router.query.tab) {
@@ -196,12 +183,7 @@ export default function MissionInfo({
       <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-1 border-b border-white/[0.08] overflow-x-auto max-w-full -mx-1 px-1">
           {visibleTabs.map((t) => (
-            <MissionInfoTab
-              key={t}
-              tab={t}
-              currentTab={tab}
-              setTab={setTab}
-            />
+            <MissionInfoTab key={t} tab={t} currentTab={tab} setTab={setTab} />
           ))}
         </div>
         <div className="hidden md:flex items-center gap-2">
@@ -221,39 +203,30 @@ export default function MissionInfo({
       <div
         id="mission-info-content"
         className={`w-full relative flex flex-col gap-8 lg:gap-10 lg:items-start ${
-          tab === 'leaderboard'
-            ? ''
-            : 'lg:grid lg:grid-cols-[3fr_2fr]'
+          tab === 'leaderboard' ? '' : 'lg:grid lg:grid-cols-[3fr_2fr]'
         }`}
       >
         <div className="min-w-0 pr-2 lg:pr-0">
           {tab === 'about' && (
             <div className="w-full mb-8">
-              <MissionInfoHeader
-                title="About the Mission"
-                icon="/assets/icon-star-blue.svg"
-              />
-              {mission?.metadata?.youtubeLink &&
-                mission?.metadata?.youtubeLink !== '' && (
-                  <div className="w-full mb-6">
-                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/[0.06]">
-                      <iframe
-                        src={mission?.metadata?.youtubeLink
-                          ?.replace('watch?v=', 'embed/')
-                          ?.replace('youtu.be/', 'www.youtube.com/embed/')}
-                        className="absolute inset-0 w-full h-full"
-                        allowFullScreen
-                      />
-                    </div>
+              <MissionInfoHeader title="About the Mission" icon="/assets/icon-star-blue.svg" />
+              {mission?.metadata?.youtubeLink && mission?.metadata?.youtubeLink !== '' && (
+                <div className="w-full mb-6">
+                  <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/[0.06]">
+                    <iframe
+                      src={mission?.metadata?.youtubeLink
+                        ?.replace('watch?v=', 'embed/')
+                        ?.replace('youtu.be/', 'www.youtube.com/embed/')}
+                      className="absolute inset-0 w-full h-full"
+                      allowFullScreen
+                    />
                   </div>
-                )}
+                </div>
+              )}
               <div
                 className="prose prose-invert prose-lg max-w-none [&>p]:text-gray-300 [&>p]:leading-relaxed [&>h1]:text-white [&>h2]:text-white [&>h3]:text-white [&>ul]:text-gray-300 [&>ol]:text-gray-300 [&>a]:text-indigo-400"
                 dangerouslySetInnerHTML={{
-                  __html: getMissionDescription(
-                    mission?.id,
-                    mission?.metadata?.description
-                  ),
+                  __html: getMissionDescription(mission?.id, mission?.metadata?.description),
                 }}
               />
               {mission?.projectId != null && mission?.projectId !== '' && (
@@ -290,19 +263,14 @@ export default function MissionInfo({
           {tab === 'leaderboard' && showLeaderboardTab && (
             <div className="w-full mb-8">
               <OverviewDelegateVote
-                leaderboard={
-                  (_overviewLeaderboard as LeaderboardEntry[]) ?? []
-                }
+                leaderboard={(_overviewLeaderboard as LeaderboardEntry[]) ?? []}
                 tokenAddress={OVERVIEW_TOKEN_ADDRESS}
               />
             </div>
           )}
           {tab === 'activity' && (
             <div className="w-full mb-8">
-              <MissionInfoHeader
-                title="Mission Activity"
-                icon="/assets/icon-star-blue.svg"
-              />
+              <MissionInfoHeader title="Mission Activity" icon="/assets/icon-star-blue.svg" />
               <div className="mb-6">
                 <MissionTimelineChart
                   points={points}
@@ -322,10 +290,7 @@ export default function MissionInfo({
           )}
           {tab === 'tokenomics' && (
             <div className="w-full mb-8">
-              <MissionInfoHeader
-                title="Mission Tokenomics"
-                icon="/assets/icon-star-blue.svg"
-              />
+              <MissionInfoHeader title="Mission Tokenomics" icon="/assets/icon-star-blue.svg" />
               <MissionTokenInfo mission={mission} token={token} />
             </div>
           )}

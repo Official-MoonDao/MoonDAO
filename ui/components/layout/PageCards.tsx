@@ -1,10 +1,10 @@
-import { useRouter } from 'next/router';
-import { ReactNode } from 'react';
+import { useRouter } from 'next/router'
+import { ReactNode } from 'react'
 
 interface CardProps {
-  icon: ReactNode;
-  header: string;
-  paragraph: ReactNode;
+  icon: ReactNode
+  header: string
+  paragraph: ReactNode
 }
 
 function Card({ icon, header, paragraph }: CardProps) {
@@ -17,29 +17,27 @@ function Card({ icon, header, paragraph }: CardProps) {
             {icon}
           </div>
           <div>
-            <h2 className="sub-header min-h-[80px] font-GoodTimes flex items-center">
+            <h2 className="sub-header min-h-[80px] font-heading font-semibold flex items-center">
               {header}
             </h2>
-            <p className="ml-[-20%] md:ml-0">
-              {paragraph}
-            </p>
+            <p className="ml-[-20%] md:ml-0">{paragraph}</p>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 type PageCardsProps = {
-  sections: any;
-  id: string;
-  header?: string;
-  title: string;
-  description: any;
-};
+  sections: any
+  id: string
+  header?: string
+  title: string
+  description: any
+}
 
 export function PageCards({ sections, id, header, title, description }: PageCardsProps) {
-  const router = useRouter();
+  const router = useRouter()
 
   return (
     <div className="clipped-div w-[336px] sm:w-[400px] lg:w-[600px] lg:max-w-[1080px] font-[Lato] flex flex-col">
@@ -56,7 +54,7 @@ export function PageCards({ sections, id, header, title, description }: PageCard
       <div id={id} className="mx-auto mt-8 max-w-2xl lg:mt-12 xl:mt-14 lg:max-w-none">
         {sections.map((section: any, i: number) => (
           <div key={id + 'page-cards' + i} className="mb-8">
-            <p className="text-2xl text-center lg:text-left text-gray-950 dark:text-white font-GoodTimes">
+            <p className="text-2xl text-center lg:text-left text-gray-950 dark:text-white font-heading font-semibold">
               {section.sectionName}
             </p>
             <div className="flex flex-col gap-4" id={id + '-pages'}>
@@ -99,5 +97,5 @@ export function PageCards({ sections, id, header, title, description }: PageCard
         ))}
       </div>
     </div>
-  );
+  )
 }

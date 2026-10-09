@@ -6,8 +6,7 @@ import rehypeSlug from 'rehype-slug'
 import remarkGfm from 'remark-gfm'
 import DocsLink from './DocsLink'
 
-const LINK_CLASS =
-  'text-blue-400 hover:text-blue-300 underline transition-colors break-words'
+const LINK_CLASS = 'text-blue-400 hover:text-blue-300 underline transition-colors break-words'
 
 function isRoute(href?: string): boolean {
   return !!href && href.startsWith('/') && !href.startsWith('//')
@@ -38,16 +37,28 @@ export default function DocMarkdown({ body }: { body: string }) {
         ]}
         components={{
           h1: ({ node: _n, ...props }) => (
-            <h1 className="group font-GoodTimes text-xl md:text-2xl mt-8 mb-4" {...props} />
+            <h1
+              className="group font-heading font-semibold text-xl md:text-2xl mt-8 mb-4"
+              {...props}
+            />
           ),
           h2: ({ node: _n, ...props }) => (
-            <h2 className="group font-GoodTimes text-lg md:text-xl mt-6 mb-3" {...props} />
+            <h2
+              className="group font-heading font-semibold text-lg md:text-xl mt-6 mb-3"
+              {...props}
+            />
           ),
           h3: ({ node: _n, ...props }) => (
-            <h3 className="group font-GoodTimes text-base md:text-lg mt-5 mb-2" {...props} />
+            <h3
+              className="group font-heading font-semibold text-base md:text-lg mt-5 mb-2"
+              {...props}
+            />
           ),
           h4: ({ node: _n, ...props }) => (
-            <h4 className="group font-GoodTimes text-sm md:text-base mt-4 mb-2" {...props} />
+            <h4
+              className="group font-heading font-semibold text-sm md:text-base mt-4 mb-2"
+              {...props}
+            />
           ),
           table: ({ node: _n, ...props }) => (
             <div className="mb-6 overflow-x-auto -mx-2 md:mx-0">

@@ -1,7 +1,7 @@
 import Link from 'next/link'
-import AdaptiveImage from '@/components/layout/AdaptiveImage'
-import Reveal from '@/components/home/landing/Reveal'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import Reveal from '@/components/home/landing/Reveal'
+import AdaptiveImage from '@/components/layout/AdaptiveImage'
 
 export type FeaturedCitizen = {
   id: string | number
@@ -29,18 +29,16 @@ function CitizenCard({ citizen }: { citizen: FeaturedCitizen }) {
         </div>
       </div>
       <div>
-        <h3 className="font-GoodTimes text-sm text-white md:text-base">{citizen.name}</h3>
+        <h3 className="font-heading font-semibold text-sm text-white md:text-base">
+          {citizen.name}
+        </h3>
         <p className="mt-1 text-xs text-white/60 md:text-sm">{citizen.role}</p>
       </div>
     </Link>
   )
 }
 
-export default function FeaturedCitizensMarquee({
-  citizens,
-}: {
-  citizens: FeaturedCitizen[]
-}) {
+export default function FeaturedCitizensMarquee({ citizens }: { citizens: FeaturedCitizen[] }) {
   if (!citizens?.length) return null
 
   // Duplicate the list so the -50% translate loops seamlessly

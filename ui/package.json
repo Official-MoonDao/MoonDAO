@@ -21,7 +21,7 @@
     "analyze": "ANALYZE=true NODE_OPTIONS='--max-old-space-size=8192' next build",
     "postbuild": "next-sitemap",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint && node scripts/check-no-goodtimes.mjs",
     "cy:open": "cypress open",
     "cy:run": "cypress run",
     "cy:run-ct": "cypress run --component",

@@ -27,14 +27,9 @@ export default function MissionTeamSection({
         <div className="px-6 md:px-8 pt-6 pb-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-              <Image
-                src={'/assets/icon-star-blue.svg'}
-                alt="Team icon"
-                width={18}
-                height={18}
-              />
+              <Image src={'/assets/icon-star-blue.svg'} alt="Team icon" width={18} height={18} />
             </div>
-            <h2 className="text-xl md:text-2xl font-GoodTimes text-white">
+            <h2 className="text-xl md:text-2xl font-heading font-semibold text-white">
               Meet the Team
             </h2>
           </div>
@@ -54,4 +49,3 @@ export default function MissionTeamSection({
     </div>
   )
 }
-

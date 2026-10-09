@@ -1,8 +1,8 @@
 import Link from 'next/link'
 import Container from '../components/layout/Container'
-import ContentLayout from '@/components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import ArbitrumBridge from '@/components/bridge/ArbitrumBridge'
+import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 
 export default function Bridge() {
@@ -20,14 +20,7 @@ export default function Bridge() {
           mode="compact"
           popOverEffect={false}
           isProfile
-          centerHeader
-          centerHeaderWidth="52rem"
-          description={
-            <>
-              Transfer your ETH and MOONEY tokens from Ethereum mainnet to Arbitrum for faster
-              transactions and lower fees.
-            </>
-          }
+          maxWidth="42rem"
           preFooter={
             <NoticeFooter
               defaultTitle="Need Help?"
@@ -37,7 +30,7 @@ export default function Bridge() {
             />
           }
         >
-          <div className="max-w-2xl mx-auto w-full">
+          <div className="w-full">
             {/* Bridge Interface */}
             <div className="mb-4 sm:mb-6">
               <ArbitrumBridge />

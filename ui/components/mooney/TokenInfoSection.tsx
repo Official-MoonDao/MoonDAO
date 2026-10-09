@@ -1,13 +1,13 @@
-import React from 'react'
 import { ChartPieIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import Link from 'next/link'
+import React from 'react'
+import { useGeometricDecayData } from '@/lib/mooney/hooks/useGeometricDecayData'
+import { useTokenDistribution } from '@/lib/mooney/hooks/useTokenDistribution'
+import { DISTRIBUTION_LAST_UPDATED } from '@/lib/mooney/utils/tokenData'
 import ContractAddressCard from './ContractAddressCard'
+import GeometricDecayChart from './GeometricDecayChart'
 import QuadraticVotingCard from './QuadraticVotingCard'
 import TokenDistributionChart from './TokenDistributionChart'
-import GeometricDecayChart from './GeometricDecayChart'
-import { useTokenDistribution } from '@/lib/mooney/hooks/useTokenDistribution'
-import { useGeometricDecayData } from '@/lib/mooney/hooks/useGeometricDecayData'
-import { DISTRIBUTION_LAST_UPDATED } from '@/lib/mooney/utils/tokenData'
-import Link from 'next/link'
 
 export default function TokenInfoSection() {
   const { data: distributionData } = useTokenDistribution()
@@ -16,7 +16,7 @@ export default function TokenInfoSection() {
   return (
     <section className="py-16 px-6 bg-gradient-to-br from-gray-900/60 to-black/40 w-full">
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-3xl md:text-4xl font-bold font-GoodTimes text-center text-white mb-12">
+        <h2 className="text-3xl md:text-4xl font-bold font-heading text-center text-white mb-12">
           Token Information
         </h2>
 
@@ -41,9 +41,7 @@ export default function TokenInfoSection() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="flex flex-col h-full">
               <div className="bg-black/20 rounded-lg p-4 flex-1">
-                <h4 className="text-orange-300 font-semibold mb-6">
-                  Quarterly Reward Pool
-                </h4>
+                <h4 className="text-orange-300 font-semibold mb-6">Quarterly Reward Pool</h4>
                 <div className="space-y-6 text-sm text-gray-300 mb-6">
                   <div className="flex justify-between">
                     <span>Starting Quarter ({scheduleInfo.startingQuarter}):</span>
@@ -59,39 +57,29 @@ export default function TokenInfoSection() {
                   </div>
                   <div className="flex justify-between">
                     <span>Schedule Type:</span>
-                    <span className="text-orange-300 font-medium">
-                      {scheduleInfo.scheduleType}
-                    </span>
+                    <span className="text-orange-300 font-medium">{scheduleInfo.scheduleType}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>MOONEY Rewards:</span>
-                    <span className="text-purple-300 font-medium">
-                      {scheduleInfo.lockPeriod}
-                    </span>
+                    <span className="text-purple-300 font-medium">{scheduleInfo.lockPeriod}</span>
                   </div>
                 </div>
               </div>
               <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-400/20 mt-4">
                 <p className="text-orange-300 text-sm">
-                  Retroactive rewards incentivize projects that advance
-                  MoonDAO's mission
+                  Retroactive rewards incentivize projects that advance MoonDAO's mission
                 </p>
               </div>
             </div>
 
             <div className="flex flex-col h-full">
               <div className="bg-black/20 rounded-lg p-4 flex-1">
-                <h4 className="text-blue-300 font-semibold mb-3">
-                  Geometric Decay Visualization
-                </h4>
+                <h4 className="text-blue-300 font-semibold mb-3">Geometric Decay Visualization</h4>
                 <GeometricDecayChart data={quarterlyData} />
               </div>
               <div className="bg-green-500/10 rounded-lg p-3 border border-green-400/20 mt-4">
                 <p className="text-green-300 text-sm">
-                  <Link
-                    href="/project-system-docs"
-                    className="underline hover:text-green-200"
-                  >
+                  <Link href="/project-system-docs" className="underline hover:text-green-200">
                     Learn more about the Projects System
                   </Link>
                 </p>
@@ -103,4 +91,3 @@ export default function TokenInfoSection() {
     </section>
   )
 }
-

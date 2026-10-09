@@ -10,10 +10,9 @@
 // odds, a pool figure, and a working Buy flow — backed by the local demo
 // ledger in `lib/deprize/mockMarket.ts` so the whole product can be tested
 // before every race has a contract.
-
 import { useEffect, useMemo, useState } from 'react'
+import toast from 'react-hot-toast'
 import type { Chain } from 'thirdweb'
-import { raceCardHeading } from '@/lib/deprize/raceCardHeading'
 import {
   deprizeForecastHref,
   deprizePrefixedHref,
@@ -22,14 +21,10 @@ import {
   isCompetitiveRace,
   isDePrizeGoalMarketBound,
 } from '@/lib/deprize/competitions'
-import {
-  DEPRIZE_PREDICT_CTA,
-  MarketStage,
-  OUTCOME_COLORS,
-  UNIT,
-} from '@/lib/deprize/constants'
+import { DEPRIZE_PREDICT_CTA, MarketStage, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
+import { raceCardHeading } from '@/lib/deprize/raceCardHeading'
 import { isMintConfigured } from '@/lib/deprize/status'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
@@ -39,14 +34,13 @@ import {
   PROJECT_TYPE_LABEL,
 } from '@/lib/lunar-atlas/display'
 import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import BetModal from '@/components/deprize/BetModal'
-import PrizeAvailable from '@/components/deprize/PrizeAvailable'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DemoBetModal from '@/components/deprize/DemoBetModal'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
-import toast from 'react-hot-toast'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import PrizeAvailable from '@/components/deprize/PrizeAvailable'
 
 export type IndexTab = 'all' | 'positions'
 
@@ -76,7 +70,9 @@ function RaceCardTitle({
     <>
       <p className={titleClassName}>{name}</p>
       {subtitle && (
-        <p className="mt-0.5 text-[11px] sm:text-xs leading-snug text-gray-400 line-clamp-2">{subtitle}</p>
+        <p className="mt-0.5 text-[11px] sm:text-xs leading-snug text-gray-400 line-clamp-2">
+          {subtitle}
+        </p>
       )}
     </>
   )
@@ -121,7 +117,9 @@ function StatusPill({
     concept: 'text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10',
   } as const
   return (
-    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls[tone]}`}>
+    <span
+      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${cls[tone]}`}
+    >
       {label}
     </span>
   )
@@ -153,8 +151,13 @@ function OutcomeBetRow({
           }}
         />
       )}
-      <span className="relative z-10 w-2 h-2 rounded-full shrink-0" style={{ background: outcome.color }} />
-      <span className="relative z-10 flex-1 min-w-0 truncate text-sm text-white/90">{outcome.name}</span>
+      <span
+        className="relative z-10 w-2 h-2 rounded-full shrink-0"
+        style={{ background: outcome.color }}
+      />
+      <span className="relative z-10 flex-1 min-w-0 truncate text-sm text-white/90">
+        {outcome.name}
+      </span>
       {!!outcome.heldQty && (
         <span className="relative z-10 shrink-0 text-[10px] font-medium text-moon-green">
           Holding {fmt(outcome.heldQty, 3)}
@@ -249,7 +252,7 @@ export default function RaceMarketCard({
         const color = OUTCOME_COLORS[i % OUTCOME_COLORS.length]
         if (bound) {
           const outcomeIndex = binding?.outcomes.findIndex(
-            (o) => !o.field && o.projectId === c.project.id,
+            (o) => !o.field && o.projectId === c.project.id
           )
           const idx = outcomeIndex !== undefined && outcomeIndex >= 0 ? outcomeIndex : undefined
           const marketOutcome = idx !== undefined ? live.outcomes[idx] : undefined
@@ -280,7 +283,7 @@ export default function RaceMarketCard({
           balanceWei: undefined,
         }
       }),
-    [competitors, bound, binding, live.outcomes, live.oddsByProjectId, demo.odds, demo.positions],
+    [competitors, bound, binding, live.outcomes, live.oddsByProjectId, demo.odds, demo.positions]
   )
 
   const heldOutcomes = useMemo(() => outcomes.filter((o) => !!o.heldQty), [outcomes])
@@ -321,14 +324,14 @@ export default function RaceMarketCard({
   const statusTone: 'live' | 'paused' | 'demo' | 'resolved' | 'concept' | null = !hasRace
     ? 'concept'
     : !bound
-      ? 'demo'
-      : live.resolved
-        ? 'resolved'
-        : awaitingMarket
-          ? null
-          : marketTradable
-            ? 'live'
-            : 'paused'
+    ? 'demo'
+    : live.resolved
+    ? 'resolved'
+    : awaitingMarket
+    ? null
+    : marketTradable
+    ? 'live'
+    : 'paused'
   const statusLabel = statusTone
     ? {
         live: 'Live',
@@ -356,7 +359,7 @@ export default function RaceMarketCard({
 
   const ranked = useMemo(
     () => [...outcomes].sort((a, b) => (b.probability || 0) - (a.probability || 0)),
-    [outcomes],
+    [outcomes]
   )
   // Unbound races keep roster order. Sorting them by mock odds would present
   // a fake leader.
@@ -384,12 +387,17 @@ export default function RaceMarketCard({
 
   const handleDemoExit = (outcome: OutcomeRowVM) => {
     const valueEth = exitMockPosition(goal.id, outcome.projectId, userAddress)
-    toast.success(`Cashed out ${outcome.name} (demo) for ≈ ${fmt(valueEth)} ETH.`, { style: toastStyle })
+    toast.success(`Cashed out ${outcome.name} (demo) for ≈ ${fmt(valueEth)} ETH.`, {
+      style: toastStyle,
+    })
     onDone()
   }
 
-  const betOutcome = realBetIndex !== null ? outcomes.find((o) => o.outcomeIndex === realBetIndex) : undefined
-  const demoBetOutcome = demoBetProjectId ? outcomes.find((o) => o.projectId === demoBetProjectId) : undefined
+  const betOutcome =
+    realBetIndex !== null ? outcomes.find((o) => o.outcomeIndex === realBetIndex) : undefined
+  const demoBetOutcome = demoBetProjectId
+    ? outcomes.find((o) => o.projectId === demoBetProjectId)
+    : undefined
 
   // Bet/exit modals are identical across variants — rendered once, reused below.
   const marketModals = (
@@ -438,12 +446,22 @@ export default function RaceMarketCard({
         <div className="p-4 sm:p-5 flex items-start gap-3">
           <div
             className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
-            style={{ background: `${categoryColor}22`, border: `1px solid ${categoryColor}55`, color: categoryColor }}
+            style={{
+              background: `${categoryColor}22`,
+              border: `1px solid ${categoryColor}55`,
+              color: categoryColor,
+            }}
           >
             <CategoryIcon category={category} className="w-5 h-5" />
           </div>
-          <a href={detailHref} className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg">
-            <RaceCardTitle goal={goal} titleClassName="text-white font-GoodTimes text-base" />
+          <a
+            href={detailHref}
+            className="min-w-0 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
+          >
+            <RaceCardTitle
+              goal={goal}
+              titleClassName="text-white font-heading font-semibold text-base"
+            />
             <p className="text-gray-500 text-xs mt-0.5">{categoryLabel}</p>
           </a>
           <MoonbaseLink goalId={goal.id} />
@@ -464,8 +482,8 @@ export default function RaceMarketCard({
                     ? o.outcomeIndex === live.winningIndex
                       ? 'Won'
                       : live.isRefundVector
-                        ? 'Refund'
-                        : 'Lost'
+                      ? 'Refund'
+                      : 'Lost'
                     : `${fmt(o.heldQty ?? 0)} ${bound ? 'ETH' : 'demo ETH'} if wins`}
                 </p>
               </div>
@@ -542,14 +560,18 @@ export default function RaceMarketCard({
         >
           <div
             className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: `${categoryColor}22`, border: `1px solid ${categoryColor}55`, color: categoryColor }}
+            style={{
+              background: `${categoryColor}22`,
+              border: `1px solid ${categoryColor}55`,
+              color: categoryColor,
+            }}
           >
             <CategoryIcon category={category} className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
             <RaceCardTitle
               goal={goal}
-              titleClassName="text-white font-GoodTimes text-sm leading-snug"
+              titleClassName="text-white font-heading font-semibold text-sm leading-snug"
             />
             <div className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500">
               <span className="truncate">{categoryLabel}</span>
@@ -571,11 +593,19 @@ export default function RaceMarketCard({
                 {showLiveMarket && (
                   <div
                     className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
-                    style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
+                    style={{
+                      width: `${Math.max(0, Math.min(100, o.probability))}%`,
+                      background: o.color,
+                    }}
                   />
                 )}
-                <span className="relative z-10 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.color }} />
-                <span className="relative z-10 flex-1 min-w-0 truncate text-xs text-white/90">{o.name}</span>
+                <span
+                  className="relative z-10 w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: o.color }}
+                />
+                <span className="relative z-10 flex-1 min-w-0 truncate text-xs text-white/90">
+                  {o.name}
+                </span>
                 {showLiveMarket && (
                   <span className="relative z-10 shrink-0 text-xs font-semibold tabular-nums text-gray-200">
                     {pct !== undefined ? `${pct}%` : '—'}
@@ -596,7 +626,10 @@ export default function RaceMarketCard({
             )
           })}
           {gridMore > 0 && (
-            <a href={detailHref} className="text-gray-500 hover:text-gray-300 text-[11px] mt-0.5 transition-colors">
+            <a
+              href={detailHref}
+              className="text-gray-500 hover:text-gray-300 text-[11px] mt-0.5 transition-colors"
+            >
               +{gridMore} more
             </a>
           )}
@@ -634,7 +667,11 @@ export default function RaceMarketCard({
             <div className="flex items-start gap-3 min-w-0">
               <div
                 className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: `${categoryColor}22`, border: `1px solid ${categoryColor}55`, color: categoryColor }}
+                style={{
+                  background: `${categoryColor}22`,
+                  border: `1px solid ${categoryColor}55`,
+                  color: categoryColor,
+                }}
               >
                 <CategoryIcon category={category} className="w-6 h-6" />
               </div>
@@ -648,7 +685,7 @@ export default function RaceMarketCard({
                 >
                   <RaceCardTitle
                     goal={goal}
-                    titleClassName="text-white font-GoodTimes text-xl sm:text-2xl leading-snug"
+                    titleClassName="text-white font-heading font-semibold text-xl sm:text-2xl leading-snug"
                   />
                 </a>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
@@ -686,7 +723,10 @@ export default function RaceMarketCard({
               {ordered.map((o) => (
                 <div
                   key={o.projectId}
-                  style={{ width: `${Math.max(0, Math.min(100, o.probability))}%`, background: o.color }}
+                  style={{
+                    width: `${Math.max(0, Math.min(100, o.probability))}%`,
+                    background: o.color,
+                  }}
                 />
               ))}
             </div>
@@ -703,7 +743,10 @@ export default function RaceMarketCard({
               />
             ))}
             {featuredMore > 0 && (
-              <a href={detailHref} className="text-gray-500 hover:text-gray-300 text-xs mt-0.5 transition-colors">
+              <a
+                href={detailHref}
+                className="text-gray-500 hover:text-gray-300 text-xs mt-0.5 transition-colors"
+              >
                 +{featuredMore} more · View all →
               </a>
             )}
@@ -730,7 +773,11 @@ export default function RaceMarketCard({
       <div className="p-4 sm:p-5 flex items-start gap-3">
         <div
           className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
-          style={{ background: `${categoryColor}22`, border: `1px solid ${categoryColor}55`, color: categoryColor }}
+          style={{
+            background: `${categoryColor}22`,
+            border: `1px solid ${categoryColor}55`,
+            color: categoryColor,
+          }}
         >
           <CategoryIcon category={category} className="w-6 h-6" />
         </div>
@@ -743,7 +790,7 @@ export default function RaceMarketCard({
               >
                 <RaceCardTitle
                   goal={goal}
-                  titleClassName="text-white font-GoodTimes text-base sm:text-lg leading-snug"
+                  titleClassName="text-white font-heading font-semibold text-base sm:text-lg leading-snug"
                 />
               </a>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
@@ -768,9 +815,7 @@ export default function RaceMarketCard({
                   <PrizeAvailable eth={poolEth} loading={poolLoading} />
                 </>
               ) : !hasRace ? (
-                <p className="text-gray-500 text-[11px] max-w-[9rem]">
-                  No committed developer yet
-                </p>
+                <p className="text-gray-500 text-[11px] max-w-[9rem]">No committed developer yet</p>
               ) : null}
             </div>
           </div>
@@ -786,7 +831,10 @@ export default function RaceMarketCard({
               />
             ))}
             {more > 0 && (
-              <a href={detailHref} className="text-gray-500 hover:text-gray-300 text-xs mt-0.5 transition-colors">
+              <a
+                href={detailHref}
+                className="text-gray-500 hover:text-gray-300 text-xs mt-0.5 transition-colors"
+              >
                 +{more} more · View all →
               </a>
             )}

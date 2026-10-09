@@ -21,7 +21,7 @@ export default function FormTextArea({
 }: FormTextAreaProps) {
   return (
     <>
-      {label && <p className="text-sm font-GoodTimes">{label}</p>}
+      {label && <p className="text-sm font-heading font-semibold">{label}</p>}
       <textarea
         id={id}
         placeholder={placeholder}

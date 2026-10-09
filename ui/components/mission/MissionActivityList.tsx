@@ -104,8 +104,7 @@ export default function MissionActivityList({
     if (addresses.length === 0) return null
     const inList = addresses.map((a) => `'${a}'`).join(',')
     const blocked = [...BLOCKED_CITIZENS]
-    const blockedClause =
-      blocked.length > 0 ? ` AND id NOT IN (${blocked.join(',')})` : ''
+    const blockedClause = blocked.length > 0 ? ` AND id NOT IN (${blocked.join(',')})` : ''
     return `SELECT id, name, owner, image FROM ${table} WHERE LOWER(owner) IN (${inList})${blockedClause}`
   }, [selectedChain, contributorAddressesKey])
 
@@ -135,9 +134,7 @@ export default function MissionActivityList({
         .map(transformEventData)
         .filter((event) => !!event)
         .filter((event) => event.type !== 'mintTokensEvent')
-        .map((e) =>
-          translateEventDataToPresenter(e, tokenSymbol, citizens, ethPrice)
-        ) ?? [],
+        .map((e) => translateEventDataToPresenter(e, tokenSymbol, citizens, ethPrice)) ?? [],
     [projectEventsQueryResult?.pages, tokenSymbol, citizens, ethPrice]
   )
 
@@ -259,11 +256,9 @@ function RichNote({ note }: { note: string }) {
 function ethPaidInSubject(event: any, ethPrice: number | null) {
   const usdLabel = weiToEthUsdLabel(event.amount?.value, ethPrice)
   return (
-    <span className="font-heading text-lg inline-flex flex-wrap items-baseline gap-x-2 gap-y-1">
+    <span className="font-heading font-semibold text-lg inline-flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <NativeTokenValue decimals={8} wei={event.amount.value} />
-      {usdLabel != null && (
-        <span className="text-sm font-normal text-white/55">(~{usdLabel})</span>
-      )}
+      {usdLabel != null && <span className="text-sm font-normal text-white/55">(~{usdLabel})</span>}
     </span>
   )
 }
@@ -275,9 +270,7 @@ function translateEventDataToPresenter(
   ethPrice: number | null
 ) {
   const addr = contributorAddressForEvent(event)
-  const citizen =
-    addr &&
-    citizens.find((c) => c.owner?.toLowerCase() === addr.toLowerCase())
+  const citizen = addr && citizens.find((c) => c.owner?.toLowerCase() === addr.toLowerCase())
   switch (event.type) {
     case 'payEvent':
       return {
@@ -302,7 +295,7 @@ function translateEventDataToPresenter(
         event,
         header: 'Minted tokens',
         subject: (
-          <span className="font-heading text-lg">
+          <span className="font-heading font-semibold text-lg">
             To: {event.beneficiary.slice(0, 6) + '...' + event.beneficiary.slice(-4)}
           </span>
         ),
@@ -315,7 +308,7 @@ function translateEventDataToPresenter(
       return {
         event,
         header: 'Deployed ERC20',
-        subject: <span className="font-heading text-lg">{event.symbol}</span>,
+        subject: <span className="font-heading font-semibold text-lg">{event.symbol}</span>,
         extra: null,
       }
     case 'projectCreateEvent':
@@ -331,7 +324,7 @@ function translateEventDataToPresenter(
         event,
         header: 'Burned',
         subject: (
-          <span className="font-heading text-lg">
+          <span className="font-heading font-semibold text-lg">
             {Number(event.amount.toFloat())}{' '}
             {tokenSymbolText({
               tokenSymbol,

@@ -5,10 +5,14 @@ import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { CAPABILITY_LADDER } from '@/lib/deprize/capabilityLadder'
 import { getFeaturedLiveDePrizeId, isDePrizeGoalMarketBound } from '@/lib/deprize/competitions'
-import { DEPRIZE_RESTRICTED_PREDICT_COPY, deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
-import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
+import {
+  DEPRIZE_RESTRICTED_PREDICT_COPY,
+  deprizeOgDescription,
+  UNIT,
+} from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { resetMockData } from '@/lib/deprize/mockMarket'
+import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
 import { goalIndexCategory, PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
@@ -16,9 +20,9 @@ import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import CategoryIcon from '@/components/deprize/CategoryIcon'
-import { TOUCH } from '@/components/deprize/detail/primitives'
 import LiveDePrizeHero from '@/components/deprize/LiveDePrizeHero'
 import RaceMarketCard, { type IndexTab } from '@/components/deprize/RaceMarketCard'
+import { TOUCH } from '@/components/deprize/detail/primitives'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
 import Head from '@/components/layout/Head'
@@ -45,23 +49,25 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   // night-power prize — neither is a tech-tree site). The index stays
   // atlas-sourced so it cannot drift into on-chain registry fixtures.
   const races = useMemo(() => {
-    return SEED_ATLAS.sharedGoals
-      // Crewed HLS is the same landing question as Touchdown. Keep Touchdown.
-      // The crewed terrain vehicle was registered as Sepolia id 4 by mistake
-      // and is withdrawn; First Tracks is the rover prize.
-      .filter((g) => g.id !== 'shared-crewed-lander' && g.id !== 'shared-lunar-rover')
-      .filter((g) => !!g.category || !!g.market)
-      .map((goal) => ({
-        goal,
-        competitors: goal.projectIds
-          .map((id) => {
-            const project = projectById(SEED_ATLAS, id)
-            if (!project) return undefined
-            return { project, organization: orgById(SEED_ATLAS, project.orgId) }
-          })
-          .filter((c): c is { project: any; organization: any } => !!c),
-      }))
-      .filter((r) => r.competitors.length > 0)
+    return (
+      SEED_ATLAS.sharedGoals
+        // Crewed HLS is the same landing question as Touchdown. Keep Touchdown.
+        // The crewed terrain vehicle was registered as Sepolia id 4 by mistake
+        // and is withdrawn; First Tracks is the rover prize.
+        .filter((g) => g.id !== 'shared-crewed-lander' && g.id !== 'shared-lunar-rover')
+        .filter((g) => !!g.category || !!g.market)
+        .map((goal) => ({
+          goal,
+          competitors: goal.projectIds
+            .map((id) => {
+              const project = projectById(SEED_ATLAS, id)
+              if (!project) return undefined
+              return { project, organization: orgById(SEED_ATLAS, project.orgId) }
+            })
+            .filter((c): c is { project: any; organization: any } => !!c),
+        }))
+        .filter((r) => r.competitors.length > 0)
+    )
   }, [])
 
   const categories = useMemo(() => {
@@ -174,14 +180,12 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
           mode="compact"
           popOverEffect={false}
           isProfile
-          centerHeader
-          centerHeaderWidth="72rem"
           preFooter={<NoticeFooter />}
         >
-          <div className="flex flex-col gap-4 w-full max-w-6xl mx-auto">
+          <div className="flex w-full flex-col gap-4">
             <p id="deprize-intro" className="text-sm text-gray-400 leading-relaxed max-w-3xl">
-              A DePrize is a market on who reaches a lunar capability first. You back a
-              competitor, and every bet grows the prize. See each one in Moonbase:{' '}
+              A DePrize is a market on who reaches a lunar capability first. You back a competitor,
+              and every bet grows the prize. See each one in Moonbase:{' '}
               {CAPABILITY_LADDER.filter((rung) => rung.sharedGoalId).map((rung, i, list) => (
                 <span key={rung.key}>
                   <a
@@ -345,7 +349,10 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                 )}
 
                 {plannedRaces.length > 0 && (
-                  <section aria-labelledby="deprize-planned-heading" className="flex flex-col gap-4">
+                  <section
+                    aria-labelledby="deprize-planned-heading"
+                    className="flex flex-col gap-4"
+                  >
                     <h2 id="deprize-planned-heading" className="text-sm font-semibold text-white">
                       Planned
                     </h2>
@@ -380,7 +387,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                 )}
               </>
             ) : (
-              <div className="flex flex-col gap-4 w-full max-w-[760px] mx-auto">
+              <div className="flex w-full max-w-[760px] flex-col gap-4">
                 {filteredRaces.map(({ goal, competitors }) => (
                   <RaceMarketCard
                     key={goal.id}

@@ -14,9 +14,7 @@ import TransactionSkeletons from './transactions/TransactionSkeletons'
 function Frame(props: any) {
   return (
     <div className="bg-gradient-to-b from-slate-700/20 to-slate-800/30 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-lg w-full transition-all duration-300 hover:bg-gradient-to-b hover:from-slate-600/30 hover:to-slate-700/40 hover:shadow-xl">
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 h-full">
-        {props.children}
-      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 h-full">{props.children}</div>
     </div>
   )
 }
@@ -31,12 +29,7 @@ export default function TreasuryPage() {
     error: etherscanError,
   } = useTransactions(page)
 
-  const {
-    tokens,
-    balanceSum,
-    isLoading: loadingAssets,
-    error: assetsError,
-  } = useAssets()
+  const { tokens, balanceSum, isLoading: loadingAssets, error: assetsError } = useAssets()
 
   const { t } = useTranslation('common')
   //Some margin left added on md screen size to compensate for change in layout
@@ -45,10 +38,12 @@ export default function TreasuryPage() {
       {/*Assets Section*/}
       <section className="flex flex-col h-full">
         <div className="flex-shrink-0">
-          <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-GoodTimes">Treasury</h2>
+          <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-heading font-semibold">
+            Treasury
+          </h2>
           <div className="mt-4 h-[1px] bg-white/20 w-full"></div>
         </div>
-        
+
         <div className="flex-1 flex flex-col justify-between mt-6">
           <div className="flex-1 space-y-0">
             {loadingAssets || !tokens[0] ? (
@@ -60,7 +55,7 @@ export default function TreasuryPage() {
               </div>
             )}
           </div>
-          
+
           <div className="flex-shrink-0 mt-8">
             <a
               className="inline-block w-full text-base text-center underline text-blue-200 hover:text-blue-100 transition-colors duration-300"
@@ -77,7 +72,7 @@ export default function TreasuryPage() {
       {/*Transactions Section*/}
       <section className="flex flex-col h-full">
         <div className="flex-shrink-0">
-          <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-GoodTimes">
+          <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-heading font-semibold">
             Transactions
           </h2>
           <div className="mt-4 h-[1px] bg-white/20 w-full"></div>
@@ -98,11 +93,10 @@ export default function TreasuryPage() {
                 ))}
               </div>
             )}
-            
+
             {/*Going through the transactions to check if some involve suspicious assets*/}
-            {transactions?.filter(
-              (transaction: any) => allowedAssets[transaction.tokenSymbol]
-            ).length < 10 && <TransactionDisclaimer />}
+            {transactions?.filter((transaction: any) => allowedAssets[transaction.tokenSymbol])
+              .length < 10 && <TransactionDisclaimer />}
           </div>
 
           {/*Pagination*/}
@@ -130,18 +124,16 @@ export default function TreasuryPage() {
                     />
                   ))
                 : page >= pageMax - 2
-                ? [pageMax - 4, pageMax - 3, pageMax - 2, pageMax - 1, pageMax].map(
-                    (e, i) => (
-                      <TransactionPagination
-                        key={i}
-                        currentPage={page}
-                        pageNumber={e}
-                        setPage={setPage}
-                        pageMax={pageMax}
-                        isLoaded={loadingTransactions}
-                      />
-                    )
-                  )
+                ? [pageMax - 4, pageMax - 3, pageMax - 2, pageMax - 1, pageMax].map((e, i) => (
+                    <TransactionPagination
+                      key={i}
+                      currentPage={page}
+                      pageNumber={e}
+                      setPage={setPage}
+                      pageMax={pageMax}
+                      isLoaded={loadingTransactions}
+                    />
+                  ))
                 : [page - 2, page - 1, page, page + 1, page + 2].map((e, i) => (
                     <TransactionPagination
                       key={i}

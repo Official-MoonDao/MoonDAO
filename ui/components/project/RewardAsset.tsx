@@ -1,12 +1,11 @@
-import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 import Image from 'next/image'
+import { assetImageExtension } from '@/lib/dashboard/dashboard-utils.ts/asset-config'
 
 function formatValueForDisplay(value: string | number): {
   full: string
   abbreviated: string
 } {
-  const trimmed =
-    typeof value === 'string' ? value.trim().replace(/,/g, '') : String(value)
+  const trimmed = typeof value === 'string' ? value.trim().replace(/,/g, '') : String(value)
   const numValue = typeof value === 'string' ? parseFloat(trimmed) : value
 
   if (isNaN(numValue)) {
@@ -66,7 +65,7 @@ export default function RewardAsset({ name, value, usdValue, approximateUSD }: R
         height={name === 'ETH' ? 42 : 50}
       />
       <div className="flex flex-col min-w-0 flex-1">
-        <div className="flex gap-1 md:gap-2 font-GoodTimes text-sm md:text-lg text-white">
+        <div className="flex gap-1 md:gap-2 font-heading font-semibold text-sm md:text-lg text-white">
           <p className="text-white/80">{name}</p>
           {/* Show abbreviated on small screens, full on larger screens */}
           <p className="text-white font-bold whitespace-nowrap">

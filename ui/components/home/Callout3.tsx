@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
 import Image from 'next/image'
+import React, { useState } from 'react'
 import IndexCardGrid from '../layout/IndexCardGrid'
 
 const indexCardData = [
@@ -11,7 +11,8 @@ const indexCardData = [
     hovertext: 'Explore Experiences',
     paragraph: (
       <>
-        Sent the first crowdraised astronaut to space, selected via onchain voting, and a second everyday person randomly via onchain sweepstakes.
+        Sent the first crowdraised astronaut to space, selected via onchain voting, and a second
+        everyday person randomly via onchain sweepstakes.
       </>
     ),
   },
@@ -21,12 +22,7 @@ const indexCardData = [
     header: 'Fund Space R&D',
     link: '/propose',
     hovertext: 'Submit An Idea',
-    paragraph: (
-      <>
-        Allocated $600,000+ to over 75 projects via community
-        governance.
-      </>
-    ),
+    paragraph: <>Allocated $600,000+ to over 75 projects via community governance.</>,
   },
   {
     icon: '/assets/icon-plane.svg',
@@ -35,9 +31,7 @@ const indexCardData = [
     link: '/marketplace',
     hovertext: 'Train for Space',
     paragraph: (
-      <>
-        Training future space travelers with zero gravity flights and other innovative missions.
-      </>
+      <>Training future space travelers with zero gravity flights and other innovative missions.</>
     ),
   },
   {
@@ -48,8 +42,8 @@ const indexCardData = [
     hovertext: 'Join the Network',
     paragraph: (
       <>
-        The Space Acceleration Network connects individuals and organizations with the funding, tools, and support
-        to turn bold ideas into reality.
+        The Space Acceleration Network connects individuals and organizations with the funding,
+        tools, and support to turn bold ideas into reality.
       </>
     ),
   },
@@ -61,8 +55,8 @@ const indexCardData = [
     hovertext: 'Read the Constitution',
     paragraph: (
       <>
-        Established a constitution for self-governance, which landed on
-        the surface of the Moon in early 2025.
+        Established a constitution for self-governance, which landed on the surface of the Moon in
+        early 2025.
       </>
     ),
   },
@@ -74,8 +68,7 @@ const indexCardData = [
     hovertext: 'View Treasury',
     paragraph: (
       <>
-        As a DAO, we utilize blockchain technologies offering
-        full transparency and accountability.
+        As a DAO, we utilize blockchain technologies offering full transparency and accountability.
       </>
     ),
   },
@@ -96,7 +89,7 @@ export default function Callout3() {
       </div>
 
       <div className="relative z-10 container mx-auto px-5 py-12 md:py-16">
-        <h2 className="header text-center font-GoodTimes pb-4 2xl:pb-6 3xl:pb-8 text-4xl 2xl:text-6xl 3xl:text-7xl text-white">
+        <h2 className="header text-center font-heading font-semibold pb-4 2xl:pb-6 3xl:pb-8 text-4xl 2xl:text-6xl 3xl:text-7xl text-white">
           At A Glance
         </h2>
         <div

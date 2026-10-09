@@ -16,7 +16,7 @@ export function NewsletterSubModal({ setEnabled }: any) {
       className="fixed top-0 left-0 w-screen h-screen bg-black/50 backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
       <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg p-8 w-[300px] md:w-[500px] max-w-lg mx-4">
-        <h1 className="text-2xl font-GoodTimes text-white mb-4">SUBSCRIBE</h1>
+        <h1 className="text-2xl font-heading font-semibold text-white mb-4">SUBSCRIBE</h1>
         <p className="text-white/70 mb-6">
           Enter your email and subscribe to the MoonDAO Newsletter.
         </p>

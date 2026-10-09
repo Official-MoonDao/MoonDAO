@@ -14,16 +14,11 @@ const JoinUs: React.FC = () => {
 
   return (
     <>
-      <WebsiteHead
-        title={title}
-        description={description}
-      />
+      <WebsiteHead title={title} description={description} />
       <section className="w-[calc(100vw-20px)]">
         <Container>
           <ContentLayout
             header="Let's go to space together!"
-            sub-header="Follow @OfficialMoonDAO"
-            headerSize="max(20px, 3vmax)"
             description={
               <>
                 <MailingList />
@@ -36,36 +31,26 @@ const JoinUs: React.FC = () => {
             }
           >
             <Frame backgroundColor="#090D21">
-              <h1 className="pb-5 header font-GoodTimes">
-                MoonDAO makes HISTORY!
-              </h1>
+              <h1 className="pb-5 header font-heading font-semibold">MoonDAO makes HISTORY!</h1>
               <p className="pb-5">
-                We were the first DAO to send someone to space! Join 12,000+
-                subscribers and find out how we can revolutionize the space
-                industry together. MoonDAO is an international collective of
-                people united by the mission of decentralizing access to space
-                research and exploration and making space accessible to
-                everyone, not just the rich and well-connected.
+                We were the first DAO to send someone to space! Join 12,000+ subscribers and find
+                out how we can revolutionize the space industry together. MoonDAO is an
+                international collective of people united by the mission of decentralizing access to
+                space research and exploration and making space accessible to everyone, not just the
+                rich and well-connected.
               </p>
               <Frame noPadding>
-                <Image
-                  src="/assets/dp-og.jpg"
-                  width={1250}
-                  height={500}
-                  alt="Dude Perfect"
-                ></Image>
+                <Image src="/assets/dp-og.jpg" width={1250} height={500} alt="Dude Perfect"></Image>
               </Frame>
               <p className="pt-5">
-                Launching Coby Cotton of Dude Perfect to space was only the
-                beginning! MoonDAO aims to make space accessible to anyone in
-                the world, regardless of their financial means, and Coby’s
-                monumental flight sets the stage for what DAOs are capable of
-                achieving. Find out how to get involved in the Internet's Space
-                Program and learn more about some of the exciting stuff we've
-                got in the works... MoonDAO’s mission is to create a
-                self-sustaining, self-governing colony on the Moon to act as a
-                launch point for humanity to explore the cosmos. Yes, we're
-                serious -- and the Moon parties are going to be epic.
+                Launching Coby Cotton of Dude Perfect to space was only the beginning! MoonDAO aims
+                to make space accessible to anyone in the world, regardless of their financial
+                means, and Coby’s monumental flight sets the stage for what DAOs are capable of
+                achieving. Find out how to get involved in the Internet's Space Program and learn
+                more about some of the exciting stuff we've got in the works... MoonDAO’s mission is
+                to create a self-sustaining, self-governing colony on the Moon to act as a launch
+                point for humanity to explore the cosmos. Yes, we're serious -- and the Moon parties
+                are going to be epic.
               </p>
             </Frame>
           </ContentLayout>

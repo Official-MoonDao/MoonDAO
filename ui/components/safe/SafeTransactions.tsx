@@ -95,7 +95,10 @@ export default function SafeTransactions({
   return (
     <div className="max-h-[600px] overflow-y-auto pr-1" data-testid="transactions-section">
       <div className="flex items-center justify-between mb-4">
-        <h3 data-testid="transactions-title" className="text-lg font-GoodTimes text-white">
+        <h3
+          data-testid="transactions-title"
+          className="text-lg font-heading font-semibold text-white"
+        >
           Recent Transactions
         </h3>
         {isLoadingTransactions ? (

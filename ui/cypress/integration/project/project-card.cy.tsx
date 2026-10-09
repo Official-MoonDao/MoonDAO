@@ -2,22 +2,22 @@ import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import React from 'react'
 
 // Simplified mock components for testing project card layout
-const MockProjectCard = ({ 
-  project, 
+const MockProjectCard = ({
+  project,
   senatorVotes = [],
   senatorVotesLoading = false,
   isSenatVoteMode = true,
-}: { 
+}: {
   project: any
   senatorVotes?: any[]
   senatorVotesLoading?: boolean
   isSenatVoteMode?: boolean
 }) => {
-  const votedSenators = senatorVotes.filter(s => s.hasVoted)
-  const pendingSenators = senatorVotes.filter(s => !s.hasVoted)
+  const votedSenators = senatorVotes.filter((s) => s.hasVoted)
+  const pendingSenators = senatorVotes.filter((s) => !s.hasVoted)
 
   return (
-    <div 
+    <div
       data-testid="project-card"
       className="p-4 sm:p-6 pb-4 flex flex-col gap-3 relative w-full bg-gradient-to-br from-slate-700/20 to-slate-800/30 border border-white/10 rounded-xl"
     >
@@ -25,16 +25,16 @@ const MockProjectCard = ({
         {/* Left side: Title and senators status */}
         <div className="flex-1 min-w-0 flex flex-col gap-3">
           <div className="flex flex-col gap-2">
-            <h1 
+            <h1
               data-testid="project-title"
-              className="font-GoodTimes text-white text-lg sm:text-xl"
+              className="font-heading font-semibold text-white text-lg sm:text-xl"
             >
               {project?.name || ''}
             </h1>
-            
+
             {/* Senator participation status - aligned with title on the left */}
             {isSenatVoteMode && senatorVotes.length > 0 && (
-              <div 
+              <div
                 data-testid="senators-status"
                 className="p-2 rounded-lg bg-slate-800/40 border border-white/10 w-fit"
               >
@@ -43,7 +43,7 @@ const MockProjectCard = ({
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {votedSenators.map((senator) => (
-                    <div 
+                    <div
                       key={senator.address}
                       data-testid={`senator-voted-${senator.name}`}
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/20 border border-green-500/30"
@@ -53,7 +53,7 @@ const MockProjectCard = ({
                     </div>
                   ))}
                   {pendingSenators.map((senator) => (
-                    <div 
+                    <div
                       key={senator.address}
                       data-testid={`senator-pending-${senator.name}`}
                       className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-500/20 border border-gray-500/30"
@@ -67,25 +67,25 @@ const MockProjectCard = ({
             )}
           </div>
         </div>
-        
+
         {/* Right side: Vote buttons */}
         {isSenatVoteMode && (
           <div data-testid="vote-buttons" className="w-full sm:w-auto">
             <div className="flex flex-wrap items-center gap-2">
-              <span 
+              <span
                 data-testid="budget-label"
                 className="px-3 py-1.5 h-[36px] flex items-center rounded-lg text-sm font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30"
               >
                 Budget: {project?.budget || '0'} ETH
               </span>
               <div className="flex items-center gap-2">
-                <div 
+                <div
                   data-testid="approve-button"
                   className="px-3 py-2 h-[36px] rounded-lg bg-green-600/50 text-white font-medium text-sm flex items-center"
                 >
                   👍 0
                 </div>
-                <div 
+                <div
                   data-testid="reject-button"
                   className="px-3 py-2 h-[36px] rounded-lg bg-red-600/50 text-white font-medium text-sm flex items-center"
                 >
@@ -96,7 +96,7 @@ const MockProjectCard = ({
           </div>
         )}
       </div>
-      
+
       {/* Description */}
       <div data-testid="project-description" className="flex-1">
         <p className="text-green-100 text-sm">
@@ -145,7 +145,10 @@ describe('<ProjectCard /> Layout', () => {
         </TestnetProviders>
       )
 
-      cy.get('[data-testid="project-description"]').should('contain', 'This is a test project description')
+      cy.get('[data-testid="project-description"]').should(
+        'contain',
+        'This is a test project description'
+      )
     })
   })
 
@@ -153,13 +156,17 @@ describe('<ProjectCard /> Layout', () => {
     it('should display senators status below the title on the left', () => {
       cy.mount(
         <TestnetProviders>
-          <MockProjectCard project={mockProject} senatorVotes={mockSenators} isSenatVoteMode={true} />
+          <MockProjectCard
+            project={mockProject}
+            senatorVotes={mockSenators}
+            isSenatVoteMode={true}
+          />
         </TestnetProviders>
       )
 
       // Senators status should exist
       cy.get('[data-testid="senators-status"]').should('exist')
-      
+
       // Senators status should be a sibling of the title (both in the left column)
       cy.get('[data-testid="project-title"]')
         .parent()
@@ -170,7 +177,11 @@ describe('<ProjectCard /> Layout', () => {
     it('should display vote buttons on the right side', () => {
       cy.mount(
         <TestnetProviders>
-          <MockProjectCard project={mockProject} senatorVotes={mockSenators} isSenatVoteMode={true} />
+          <MockProjectCard
+            project={mockProject}
+            senatorVotes={mockSenators}
+            isSenatVoteMode={true}
+          />
         </TestnetProviders>
       )
 
@@ -182,7 +193,11 @@ describe('<ProjectCard /> Layout', () => {
     it('should display budget label', () => {
       cy.mount(
         <TestnetProviders>
-          <MockProjectCard project={mockProject} senatorVotes={mockSenators} isSenatVoteMode={true} />
+          <MockProjectCard
+            project={mockProject}
+            senatorVotes={mockSenators}
+            isSenatVoteMode={true}
+          />
         </TestnetProviders>
       )
 
@@ -194,7 +209,11 @@ describe('<ProjectCard /> Layout', () => {
     it('should show correct vote count in left-aligned senators status', () => {
       cy.mount(
         <TestnetProviders>
-          <MockProjectCard project={mockProject} senatorVotes={mockSenators} isSenatVoteMode={true} />
+          <MockProjectCard
+            project={mockProject}
+            senatorVotes={mockSenators}
+            isSenatVoteMode={true}
+          />
         </TestnetProviders>
       )
 
@@ -204,13 +223,17 @@ describe('<ProjectCard /> Layout', () => {
     it('should display voted and pending senators correctly', () => {
       cy.mount(
         <TestnetProviders>
-          <MockProjectCard project={mockProject} senatorVotes={mockSenators} isSenatVoteMode={true} />
+          <MockProjectCard
+            project={mockProject}
+            senatorVotes={mockSenators}
+            isSenatVoteMode={true}
+          />
         </TestnetProviders>
       )
 
       // Frank has voted
       cy.get('[data-testid="senator-voted-Frank"]').should('exist')
-      
+
       // Kara and Alex have not voted
       cy.get('[data-testid="senator-pending-Kara"]').should('exist')
       cy.get('[data-testid="senator-pending-Alex"]').should('exist')
@@ -221,7 +244,11 @@ describe('<ProjectCard /> Layout', () => {
     it('should not show senators status when not in senate vote mode', () => {
       cy.mount(
         <TestnetProviders>
-          <MockProjectCard project={mockProject} senatorVotes={mockSenators} isSenatVoteMode={false} />
+          <MockProjectCard
+            project={mockProject}
+            senatorVotes={mockSenators}
+            isSenatVoteMode={false}
+          />
         </TestnetProviders>
       )
 
@@ -233,10 +260,14 @@ describe('<ProjectCard /> Layout', () => {
   describe('Mobile Responsiveness', () => {
     it('should have proper layout structure for mobile', () => {
       cy.viewport('iphone-x')
-      
+
       cy.mount(
         <TestnetProviders>
-          <MockProjectCard project={mockProject} senatorVotes={mockSenators} isSenatVoteMode={true} />
+          <MockProjectCard
+            project={mockProject}
+            senatorVotes={mockSenators}
+            isSenatVoteMode={true}
+          />
         </TestnetProviders>
       )
 
@@ -248,10 +279,14 @@ describe('<ProjectCard /> Layout', () => {
 
     it('should stack elements vertically on mobile', () => {
       cy.viewport('iphone-x')
-      
+
       cy.mount(
         <TestnetProviders>
-          <MockProjectCard project={mockProject} senatorVotes={mockSenators} isSenatVoteMode={true} />
+          <MockProjectCard
+            project={mockProject}
+            senatorVotes={mockSenators}
+            isSenatVoteMode={true}
+          />
         </TestnetProviders>
       )
 
