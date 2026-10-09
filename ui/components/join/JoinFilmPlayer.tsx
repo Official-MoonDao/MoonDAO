@@ -108,7 +108,7 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
 
   if (!JOIN_FILM_VIMEO_ID) return null
 
-  const embedSrc = `${VIMEO_ORIGIN}/video/${JOIN_FILM_VIMEO_ID}?autoplay=1&muted=0&controls=1&loop=0&badge=0&autopause=0&byline=0&title=0&portrait=0&dnt=1&texttrack=en`
+  const embedSrc = `${VIMEO_ORIGIN}/video/${JOIN_FILM_VIMEO_ID}?autoplay=1&muted=0&controls=1&loop=0&badge=0&autopause=0&byline=0&title=0&portrait=0&dnt=1`
 
   return (
     <figure className={className}>
