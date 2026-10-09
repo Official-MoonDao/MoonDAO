@@ -1,10 +1,13 @@
-import { JOBS_TABLE_NAMES } from 'const/config'
+import ProjectABI from 'const/abis/Project.json'
+import { JOBS_TABLE_NAMES, PROJECT_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { isOwnerActive } from '@/lib/project/isOwnerActive'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import Job, { Job as JobType } from '../jobs/Job'
 import SlidingCardMenu from '../layout/SlidingCardMenu'
 import StandardButton from '../layout/StandardButton'
@@ -18,6 +21,11 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
   const router = useRouter()
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)
+  const projectContract = useContract({
+    chain: selectedChain,
+    address: PROJECT_ADDRESSES[chainSlug],
+    abi: ProjectABI as any,
+  })
   const [latestJobs, setLatestJobs] = useState<JobType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [tableName, setTableName] = useState<string | null>(null)
@@ -75,18 +83,17 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
       }
 
       const resolvedJobs = await Promise.all(
-        jobs.map(async (job: JobType) => {
-          try {
-            const teamExpiration = await readContract({
-              contract: teamContract,
-              method: 'expiresAt' as string,
-              params: [job.teamId],
-            })
-            return +teamExpiration.toString() > now ? job : null
-          } catch {
-            return null
-          }
-        })
+        jobs.map(async (job: JobType) =>
+          (await isOwnerActive({
+            teamId: job.teamId,
+            kind: 'job',
+            teamContract,
+            projectContract,
+            now,
+          }))
+            ? job
+            : null
+        )
       )
 
       const validJobs = resolvedJobs.filter((job): job is JobType => job !== null)
@@ -96,7 +103,7 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
     }
 
     processJobs()
-  }, [jobs, teamContract, now])
+  }, [jobs, teamContract, projectContract, now])
 
   return (
     <div className="w-full">

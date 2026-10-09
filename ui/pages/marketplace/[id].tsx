@@ -19,7 +19,6 @@ import {
   buildListingOgImageUrl,
   listingOgFieldsFrom,
 } from '@/lib/og/preview'
-import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { serializeJsonLd } from '@/lib/utils/jsonLd'
@@ -38,6 +37,7 @@ type ListingTeam = {
   name: string
   image: string
   owner: string
+  href: string
 }
 
 type ListingDetailProps = {
@@ -78,7 +78,7 @@ export default function ListingDetail({
   const availability = getListingAvailability(listing)
   const shareUrl = getListingShareUrl(listing)
   const ogImage = buildListingOgImageUrl(listingOgFieldsFrom(listing, team?.name))
-  const teamHref = team ? `/team/${team.name ? generatePrettyLink(team.name) : team.id}` : undefined
+  const teamHref = team?.href
   const jsonLd = buildListingJsonLd({ listing, teamName: team?.name })
 
   const startDate = formatListingDate(listing.startTime)
@@ -303,15 +303,8 @@ export const getStaticProps: GetStaticProps<ListingDetailProps> = async ({ param
 
 async function loadListingTeam(chain: any, teamId: number): Promise<ListingTeam | null> {
   try {
-    const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
-    const team = await fetchTeamWithOwner(chain, teamId)
-    if (!team) return null
-    return {
-      id: teamId,
-      name: (team.metadata?.name as string) || `Team #${teamId}`,
-      image: (team.metadata?.image as string) || '',
-      owner: (team as any).owner || '',
-    }
+    const { loadOwnerSummary } = await import('@/lib/project/ownerSummary')
+    return await loadOwnerSummary(chain, teamId, { prettyTeamLink: true })
   } catch (error) {
     console.error(`Failed to load team ${teamId} for listing page:`, error)
     return null

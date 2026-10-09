@@ -3,6 +3,9 @@ import JobsABI from 'const/abis/JobBoardTable.json'
 import TeamABI from 'const/abis/Team.json'
 import { JOBS_TABLE_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
+import { fetchProjectSummaries } from '@/lib/project/projectAccess'
+import { isProjectOwnerId, parseOwnerId } from '@/lib/project/projectOwnerId'
 import { Chain } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -51,8 +54,13 @@ export async function filterJobsByActiveTeam(
 ): Promise<Job[]> {
   if (!jobs?.length) return []
 
+  const projectJobs = jobs.filter((job) => isProjectOwnerId(job.teamId))
+  const activeProjectIds = await resolveActiveProjectIds(chain, projectJobs)
+
   const contract = teamsContract(chain)
-  const teamIds = Array.from(new Set(jobs.map((job) => job.teamId)))
+  const teamIds = Array.from(
+    new Set(jobs.filter((job) => !isProjectOwnerId(job.teamId)).map((job) => job.teamId))
+  )
 
   const expirations = await Promise.all(
     teamIds.map(async (teamId) => {
@@ -71,7 +79,30 @@ export async function filterJobsByActiveTeam(
   )
 
   const expiresByTeam = new Map(expirations)
-  return jobs.filter((job) => (expiresByTeam.get(job.teamId) ?? 0) > now)
+  return jobs.filter((job) =>
+    isProjectOwnerId(job.teamId)
+      ? !activeProjectIds || activeProjectIds.has(parseOwnerId(job.teamId).id)
+      : (expiresByTeam.get(job.teamId) ?? 0) > now
+  )
+}
+
+/** Project jobs stay up only while the project is active. `null` means fail open. */
+async function resolveActiveProjectIds(chain: Chain, jobs: Job[]): Promise<Set<number> | null> {
+  if (!jobs.length) return new Set()
+  try {
+    const projects = await fetchProjectSummaries(
+      chain,
+      jobs.map((job) => parseOwnerId(job.teamId).id)
+    )
+    return new Set(
+      Array.from(projects.values())
+        .filter((project) => Number(project.active) === PROJECT_ACTIVE)
+        .map((project) => Number(project.id))
+    )
+  } catch (error) {
+    console.error('Failed to read project status for jobs:', error)
+    return null
+  }
 }
 
 export async function fetchActiveJobs(

@@ -26,6 +26,8 @@ import {
   parseListingPrice,
   parseUsdcBalance,
 } from '@/lib/marketplace/usdcListingPurchase'
+import { ownerHref } from '@/lib/project/projectOwnerId'
+import useOwnerNFT from '@/lib/project/useOwnerNFT'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
@@ -72,7 +74,6 @@ export default function BuyTeamListingModal({
     chain: selectedChain,
   })
 
-  const [teamNFT, setTeamNFT] = useState<any>()
   const [citizenNFT, setCitizenNFT] = useState<any>()
 
   const [email, setEmail] = useState<string>()
@@ -165,15 +166,13 @@ export default function BuyTeamListingModal({
     return () => clearInterval(id)
   }, [awaitingUsdcOnramp, isUsdcListing, hasEnoughUsdc, refetchUsdcBalance])
 
+  const {
+    nft: teamNFT,
+    owner: listingOwner,
+    href: ownerProfileHref,
+  } = useOwnerNFT(listing.teamId, { includeOwner: true, teamContract })
+
   useEffect(() => {
-    async function getTeamNFT() {
-      const nft = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(listing.teamId),
-        includeOwner: true,
-      })
-      setTeamNFT(nft)
-    }
     async function getCitizenNFT() {
       const owns: any = await readContract({
         contract: citizenContract,
@@ -187,9 +186,8 @@ export default function BuyTeamListingModal({
       })
       setCitizenNFT(nft)
     }
-    if (teamContract) getTeamNFT()
     if (account && citizenContract) getCitizenNFT()
-  }, [account, teamContract, citizenContract, listing.teamId])
+  }, [account, citizenContract])
 
   useEffect(() => {
     setEmail(citizenEmail)
@@ -258,6 +256,11 @@ export default function BuyTeamListingModal({
           : listing.teamName
           ? generatePrettyLink(listing.teamName)
           : listing.teamId
+        const teamPath =
+          listingOwner?.kind === 'project'
+            ? ownerProfileHref ||
+              ownerHref(listing.teamId, { projectMDP: (listing as any).projectMDP })
+            : `/team/${teamSlug}`
 
         // Receipt mail is behind authMiddleware. The Privy token has to be a
         // Bearer header — a NextAuth cookie is not always present — or the
@@ -282,7 +285,7 @@ export default function BuyTeamListingModal({
             recipient: resolvedRecipient,
             isCitizen: citizen ? true : false,
             shipping,
-            teamLink: `${DEPLOYED_ORIGIN}/team/${teamSlug}`,
+            teamLink: `${DEPLOYED_ORIGIN}${teamPath}`,
             isGift,
             listingId: listing.id,
             teamId: listing.teamId,

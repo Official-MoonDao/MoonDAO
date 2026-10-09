@@ -2,7 +2,6 @@ import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useContext, useEffect, useState } from 'react'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import {
@@ -11,6 +10,9 @@ import {
   getJobHref,
   parseJobMetadata,
 } from '@/lib/jobs/jobMetadata'
+import { isProjectOwnerId, parseOwnerId } from '@/lib/project/projectOwnerId'
+import { writeProjectTable } from '@/lib/project/projectTableWrite'
+import useOwnerNFT from '@/lib/project/useOwnerNFT'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { daysSinceTimestamp } from '@/lib/utils/timestamp'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -67,7 +69,9 @@ export default function Job({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isActive, setIsActive] = useState(false)
   const [isExpired, setIsExpired] = useState(false)
-  const [teamNFT, setTeamNFT] = useState<any>()
+  const { name: ownerName, href: ownerProfileHref } = useOwnerNFT(showTeam ? job.teamId : null, {
+    teamContract,
+  })
 
   const currTime = useCurrUnixTime()
 
@@ -76,17 +80,6 @@ export default function Job({
   const deadline = getApplicationDeadline(metadata, job?.endTime)
   const countdown = formatDeadlineCountdown(deadline, currTime)
   const href = getJobHref(job)
-
-  useEffect(() => {
-    async function getTeamNFT() {
-      const teamNFT = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(job.teamId),
-      })
-      setTeamNFT(teamNFT)
-    }
-    if (teamContract) getTeamNFT()
-  }, [job, teamContract])
 
   useEffect(() => {
     if (currTime <= job.endTime || job.endTime === 0 || editable) {
@@ -141,15 +134,25 @@ export default function Job({
                 setIsDeleting(true)
                 try {
                   if (!account) throw new Error('No account found')
-                  const transaction = prepareContractCall({
-                    contract: jobTableContract,
-                    method: 'deleteFromTable' as string,
-                    params: [job.id, job.teamId],
-                  })
-                  const receipt = await sendAndConfirmTransaction({
-                    transaction,
-                    account,
-                  })
+                  let receipt: any
+                  if (isProjectOwnerId(job.teamId)) {
+                    receipt = await writeProjectTable({
+                      table: 'jobs',
+                      action: 'delete',
+                      projectId: parseOwnerId(job.teamId).id,
+                      rowId: job.id,
+                    })
+                  } else {
+                    const transaction = prepareContractCall({
+                      contract: jobTableContract,
+                      method: 'deleteFromTable' as string,
+                      params: [job.id, job.teamId],
+                    })
+                    receipt = await sendAndConfirmTransaction({
+                      transaction,
+                      account,
+                    })
+                  }
                   if (receipt) {
                     setTimeout(() => {
                       refreshJobs()
@@ -176,12 +179,12 @@ export default function Job({
         id={id}
         className="group bg-gradient-to-b from-slate-700/20 to-slate-800/30 rounded-xl border border-slate-600/30 p-5 flex flex-col h-full hover:border-slate-500/50 transition-all duration-200"
       >
-        {showTeam && teamNFT && (
+        {showTeam && ownerName && ownerProfileHref && (
           <Link
-            href={`/team/${job.teamId}`}
+            href={ownerProfileHref}
             className="text-xs text-blue-400 hover:text-blue-300 mb-1 block w-fit"
           >
-            {teamNFT.metadata.name}
+            {ownerName}
           </Link>
         )}
 

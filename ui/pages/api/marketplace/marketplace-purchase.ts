@@ -1,4 +1,5 @@
 import CitizenABI from 'const/abis/Citizen.json'
+import ProjectABI from 'const/abis/Project.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   CITIZEN_ADDRESSES,
@@ -7,6 +8,7 @@ import {
   DEPLOYED_ORIGIN,
   EB_TEAM_ID,
   MARKETPLACE_TABLE_NAMES,
+  PROJECT_ADDRESSES,
   TEAM_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
@@ -41,6 +43,7 @@ import {
 } from '@/lib/marketplace/vendorEmail'
 import { getMoonDaoGmailTransport, opEmail } from '@/lib/nodemailer/nodemailer'
 import { getPrivyUserData } from '@/lib/privy'
+import { parseOwnerId } from '@/lib/project/projectOwnerId'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
@@ -70,6 +73,13 @@ const teamContract = getContract({
   abi: TeamABI as any,
 })
 
+const projectContract = getContract({
+  address: PROJECT_ADDRESSES[chainSlug],
+  chain: DEFAULT_CHAIN_V5,
+  client: serverClient,
+  abi: ProjectABI as any,
+})
+
 const citizenContract = getContract({
   address: CITIZEN_ADDRESSES[chainSlug],
   chain: DEFAULT_CHAIN_V5,
@@ -84,6 +94,8 @@ async function fetchTypeformEmail(formIds: string[], responseId: string): Promis
 }
 
 async function getTeamFormId(teamId: string): Promise<string | null> {
+  // Projects have no team form; their vendor email comes from the Safe's signers.
+  if (parseOwnerId(teamId).kind === 'project') return null
   const teamRows = await queryTable(
     DEFAULT_CHAIN_V5,
     `SELECT formId FROM ${TEAM_TABLE_NAMES[chainSlug]} WHERE id = '${teamId}'`
@@ -93,11 +105,12 @@ async function getTeamFormId(teamId: string): Promise<string | null> {
 }
 
 async function getTeamOwner(teamId: string): Promise<string | null> {
+  const ownerRef = parseOwnerId(teamId)
   try {
     const owner = (await readContract({
-      contract: teamContract,
+      contract: ownerRef.kind === 'project' ? projectContract : teamContract,
       method: 'ownerOf' as string,
-      params: [teamId],
+      params: [BigInt(ownerRef.id)],
     })) as string
     return owner || null
   } catch {

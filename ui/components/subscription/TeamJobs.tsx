@@ -17,6 +17,8 @@ type TeamJobsProps = {
   isCitizen: any
   hasFullAccess?: boolean
   jobs?: JobType[] // Optional: can be provided externally to avoid fetching
+  /** Render for managers even with no jobs, so they can post the first one. */
+  showWhenEmpty?: boolean
 }
 
 export default function TeamJobs({
@@ -26,6 +28,7 @@ export default function TeamJobs({
   isCitizen,
   hasFullAccess = false,
   jobs: externalJobs,
+  showWhenEmpty = false,
 }: TeamJobsProps) {
   const router = useRouter()
   const [internalJobs, setInternalJobs] = useState<JobType[]>()
@@ -104,7 +107,7 @@ export default function TeamJobs({
     }
   }, [router])
 
-  if (!jobs?.[0]) return null
+  if (!jobs?.[0] && !(showWhenEmpty && isManager)) return null
 
   return (
     <section id="jobs section" className="p-6">
@@ -137,7 +140,7 @@ export default function TeamJobs({
             />
           )}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {jobs.map((job) => (
+            {jobs?.map((job) => (
               <Job
                 id={`team-job-${job.id}`}
                 key={`team-job-${job.id}`}

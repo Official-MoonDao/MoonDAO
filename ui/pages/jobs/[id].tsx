@@ -47,7 +47,7 @@ type JobDetailProps = {
   job: JobType
   metadata: JobMetadataEnvelope
   doc: JobPostingDoc | null
-  team: { id: number; name: string; image: string } | null
+  team: { id: number; name: string; image: string; href: string } | null
   relatedJobs: JobType[]
   otherRolesCount: number
 }
@@ -111,7 +111,7 @@ export default function JobDetail({
   const deadline = getApplicationDeadline(metadata, job.endTime)
   const summary = posting?.summary || job.description
   const applyUrl = canSeeApplication ? fullPosting?.applyUrl || job.contactInfo : undefined
-  const teamHref = team ? `/team/${team.id}` : undefined
+  const teamHref = team?.href
   const shareUrl = getJobShareUrl(job)
   const ogFields = jobOgFieldsFrom({ job, envelope: metadata, doc: posting, teamName: team?.name })
   const ogImage = buildJobOgImageUrl(ogFields)
@@ -140,7 +140,7 @@ export default function JobDetail({
     <div className="pt-2 flex flex-col gap-4">
       {team && (
         <Link
-          href={`/team/${team.id}`}
+          href={team.href}
           className="flex items-center gap-3 w-fit text-blue-400 hover:text-blue-300"
         >
           {team.image && (
@@ -452,14 +452,10 @@ export const getStaticProps: GetStaticProps<JobDetailProps> = async ({ params })
 
 async function loadTeamSummary(chain: any, teamId: number) {
   try {
-    const { fetchTeamWithOwner } = await import('@/lib/team/teamDataService')
-    const team = await fetchTeamWithOwner(chain, teamId)
-    if (!team) return null
-    return {
-      id: teamId,
-      name: (team.metadata?.name as string) || `Team #${teamId}`,
-      image: (team.metadata?.image as string) || '',
-    }
+    const { loadOwnerSummary } = await import('@/lib/project/ownerSummary')
+    const owner = await loadOwnerSummary(chain, teamId)
+    if (!owner) return null
+    return { id: owner.id, name: owner.name, image: owner.image, href: owner.href }
   } catch (error) {
     console.error(`Failed to load team ${teamId} for job page:`, error)
     return null
