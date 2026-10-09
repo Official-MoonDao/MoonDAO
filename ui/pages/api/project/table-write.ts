@@ -206,6 +206,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export const maxDuration = 60
+// Pages Router reads the timeout from `config.maxDuration`. The bare
+// `export const maxDuration` form is App Router only and is silently ignored,
+// so this route stayed on the ~10s default — shorter than an HSM sign plus
+// confirmation, which killed the request after the table write had landed.
+export const config = {
+  maxDuration: 60,
+}
 
 export default withMiddleware(handler, rateLimit, authMiddleware)

@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import { readContract } from 'thirdweb'
 import { isOwnerActive } from '@/lib/project/isOwnerActive'
+import { isProjectOwnerId } from '@/lib/project/projectOwnerId'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -82,6 +83,16 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
         return
       }
 
+      // The project contract arrives a render after `teamContract`. Filtering
+      // before then would commit an empty project-job list and clear the skeleton.
+      if (
+        PROJECT_ADDRESSES[chainSlug] &&
+        !projectContract &&
+        jobs.some((job: JobType) => isProjectOwnerId(job.teamId))
+      ) {
+        return
+      }
+
       const resolvedJobs = await Promise.all(
         jobs.map(async (job: JobType) =>
           (await isOwnerActive({
@@ -103,7 +114,7 @@ export default function LatestJobs({ teamContract, jobTableContract }: LatestJob
     }
 
     processJobs()
-  }, [jobs, teamContract, projectContract, now])
+  }, [jobs, teamContract, projectContract, now, chainSlug])
 
   return (
     <div className="w-full">

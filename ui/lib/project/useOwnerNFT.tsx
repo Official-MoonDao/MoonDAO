@@ -63,6 +63,9 @@ export default function useOwnerNFT(
     nft,
     name: nft?.metadata?.name as string | undefined,
     href: teamId === null || teamId === undefined ? undefined : ownerHref(teamId, { projectMDP }),
+    // For a project, `href` is the `/projects` index when this trait is missing.
+    // That string is truthy, so callers that have another MDP must read this field.
+    projectMDP,
     ownerAddress: nft?.owner as string | undefined,
     contract,
   }

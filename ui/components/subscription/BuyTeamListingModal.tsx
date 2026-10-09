@@ -169,7 +169,7 @@ export default function BuyTeamListingModal({
   const {
     nft: teamNFT,
     owner: listingOwner,
-    href: ownerProfileHref,
+    projectMDP: nftProjectMDP,
   } = useOwnerNFT(listing.teamId, { includeOwner: true, teamContract })
 
   useEffect(() => {
@@ -256,10 +256,16 @@ export default function BuyTeamListingModal({
           : listing.teamName
           ? generatePrettyLink(listing.teamName)
           : listing.teamId
+        // The NFT trait is missing while metadata is loading or the MDP is absent.
+        // The hook's href is `/projects` in that case, so the receipt uses the
+        // listing's server-attached MDP instead.
+        const projectMDP =
+          nftProjectMDP === null || nftProjectMDP === undefined || nftProjectMDP === ''
+            ? listing.projectMDP
+            : nftProjectMDP
         const teamPath =
           listingOwner?.kind === 'project'
-            ? ownerProfileHref ||
-              ownerHref(listing.teamId, { projectMDP: (listing as any).projectMDP })
+            ? ownerHref(listing.teamId, { projectMDP })
             : `/team/${teamSlug}`
 
         // Receipt mail is behind authMiddleware. The Privy token has to be a

@@ -277,40 +277,48 @@ export default function TeamMarketplaceListingModal({
               listingId = parseInt(receipt.logs[1].topics[1], 16).toString()
               listingTeamId = parseInt(receipt.logs[1].topics[2], 16).toString()
             }
-            const owner = parseOwnerId(listingTeamId!)
-            const team = await getNFT({
-              contract: owner.kind === 'project' ? projectContract : teamContract,
-              tokenId: BigInt(owner.id),
-            })
-            const teamName = team?.metadata.name as string
-            const link = listingId
-              ? `${DEPLOYED_ORIGIN}/marketplace/${listingId}`
-              : `${DEPLOYED_ORIGIN}/marketplace`
-            const fields = listingOgFieldsFrom(
-              {
-                title: cleanedData.title,
-                price: cleanedData.price,
-                currency: cleanedData.currency,
-                tag: cleanedData.tag,
-                image: imageIpfsLink,
-                teamName,
-              },
-              teamName
-            )
-            sendDiscordMessage(
-              'networkNotifications',
-              `## [**${teamName}** has ${
-                edit ? 'updated a' : 'posted a new'
-              } listing ](${link}) <@&${DISCORD_CITIZEN_ROLE_ID}>`,
-              [
-                listingDiscordEmbed({
-                  fields,
-                  summary: cleanedData.description,
-                  url: link,
+
+            // The row is already on-chain. A failed NFT read (project contract
+            // still unset, or the RPC errors) must not look like the save failed,
+            // or another submit inserts a second listing.
+            try {
+              const owner = parseOwnerId(listingTeamId!)
+              const team = await getNFT({
+                contract: owner.kind === 'project' ? projectContract : teamContract,
+                tokenId: BigInt(owner.id),
+              })
+              const teamName = team?.metadata.name as string
+              const link = listingId
+                ? `${DEPLOYED_ORIGIN}/marketplace/${listingId}`
+                : `${DEPLOYED_ORIGIN}/marketplace`
+              const fields = listingOgFieldsFrom(
+                {
+                  title: cleanedData.title,
+                  price: cleanedData.price,
+                  currency: cleanedData.currency,
+                  tag: cleanedData.tag,
+                  image: imageIpfsLink,
                   teamName,
-                }),
-              ]
-            )
+                },
+                teamName
+              )
+              sendDiscordMessage(
+                'networkNotifications',
+                `## [**${teamName}** has ${
+                  edit ? 'updated a' : 'posted a new'
+                } listing ](${link}) <@&${DISCORD_CITIZEN_ROLE_ID}>`,
+                [
+                  listingDiscordEmbed({
+                    fields,
+                    summary: cleanedData.description,
+                    url: link,
+                    teamName,
+                  }),
+                ]
+              )
+            } catch (error) {
+              console.error('Failed to send listing Discord notification:', error)
+            }
 
             setTimeout(() => {
               refreshListings()

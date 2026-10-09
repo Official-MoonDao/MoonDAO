@@ -25,12 +25,16 @@ export async function isOwnerActive({
   const owner = parseOwnerId(teamId)
   if (owner.kind === 'project') {
     if (kind === 'listing') return true
-    if (!projectContract) return false
+    // `useContract` is unset on the first render, and `getNFT` throws when the
+    // RPC is rate-limited. Fail open like `filterJobsByActiveTeam` so a project
+    // job is not dropped before we know it is inactive.
+    if (!projectContract) return true
     try {
       const nft = await getNFT({ contract: projectContract, tokenId: BigInt(owner.id) })
       return Number(getAttribute(nft?.metadata?.attributes as any, 'active')?.value) === PROJECT_ACTIVE
-    } catch {
-      return false
+    } catch (error) {
+      console.error('Failed to read project status for job:', error)
+      return true
     }
   }
   try {
