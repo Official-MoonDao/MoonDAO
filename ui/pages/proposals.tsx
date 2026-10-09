@@ -25,7 +25,11 @@ import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
-import { daysUntilDate, endOfConfigDeadline } from '@/lib/utils/dates'
+import {
+  daysUntilDate,
+  formatSubmissionWindowClose,
+  getSubmissionWindowClose,
+} from '@/lib/utils/dates'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -39,10 +43,13 @@ export default function ProposalsPage({ project }: { project: Project }) {
   useChainDefault()
   const { ethPrice } = useETHPrice(1, 'ETH_TO_USD')
   const { phase, isIntake } = useLivePhase()
-  const submissionDeadline = endOfConfigDeadline(PROJECT_CYCLE.submissionDeadline)
+  const submissionDeadline = getSubmissionWindowClose()
+  const submissionCloseLabel = formatSubmissionWindowClose(submissionDeadline).label
   const daysLeft = daysUntilDate(submissionDeadline)
   const submissionsClosed =
-    PROJECT_CYCLE.enforceSubmissionDeadline && isIntake && Date.now() > submissionDeadline.getTime()
+    PROJECT_CYCLE.enforceSubmissionDeadline &&
+    isIntake &&
+    Date.now() >= submissionDeadline.getTime()
   const isEditingExisting = Boolean(project)
 
   return (
@@ -69,16 +76,14 @@ export default function ProposalsPage({ project }: { project: Project }) {
                 </p>
                 {submissionsClosed ? (
                   <p className="text-sm text-amber-200">
-                    Submissions closed on {PROJECT_CYCLE.submissionDeadline}. You can still edit a
-                    proposal you already submitted until {PROJECT_CYCLE.editingDeadline}. New
-                    proposals will open for the next cycle after Senate Vote begins.
+                    Submissions closed at {submissionCloseLabel}. You can still edit a proposal you
+                    already submitted until {PROJECT_CYCLE.editingDeadline}. New proposals will open
+                    for the next cycle after Senate Vote begins.
                   </p>
                 ) : (
                   <p className="text-sm text-gray-300">
                     Submit by{' '}
-                    <span className="font-semibold text-white">
-                      {PROJECT_CYCLE.submissionDeadline}
-                    </span>
+                    <span className="font-semibold text-white">{submissionCloseLabel}</span>
                     {daysLeft > 0 ? ` — ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining` : ''}
                     . Edits close {PROJECT_CYCLE.editingDeadline}. Senate Vote opens{' '}
                     {PROJECT_CYCLE.votingDate}.

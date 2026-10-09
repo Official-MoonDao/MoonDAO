@@ -1,5 +1,9 @@
 import { ANNOUNCE_PROJECT_BUDGET, PROJECT_SYSTEM_CONFIG } from 'const/config'
+import { formatSubmissionWindowClose, getSubmissionWindowClose } from '@/lib/utils/dates'
 import ProjectBanner from '@/components/layout/ProjectBanner'
+
+const submissionClose = getSubmissionWindowClose()
+const submissionCloseLabel = formatSubmissionWindowClose(submissionClose).label
 
 describe('<ProjectBanner />', () => {
   beforeEach(() => {
@@ -28,9 +32,8 @@ describe('<ProjectBanner />', () => {
   })
 
   it('Does not render when deadline has passed', () => {
-    // Set clock to a date after the deadline
-    const afterDeadline = new Date(PROJECT_SYSTEM_CONFIG.submissionDeadline)
-    afterDeadline.setDate(afterDeadline.getDate() + 1) // One day after deadline
+    // One minute after the submission window closes (3:00 AM Pacific).
+    const afterDeadline = new Date(submissionClose.getTime() + 60 * 1000)
     cy.clock(afterDeadline)
 
     cy.mount(<ProjectBanner />)
@@ -120,7 +123,7 @@ describe('<ProjectBanner />', () => {
     if (!hideBanner) {
       cy.mount(<ProjectBanner />)
 
-      cy.contains(`Deadline: ${PROJECT_SYSTEM_CONFIG.submissionDeadline}`).should('be.visible')
+      cy.contains(`Deadline: ${submissionCloseLabel}`).should('be.visible')
     } else {
       cy.log('Skipping test: Banner is hidden by budget-announce flag or environment variable')
     }

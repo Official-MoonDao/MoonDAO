@@ -804,6 +804,7 @@ export const OVERVIEW_FLIGHT_TERMS_AND_CONDITIONS_DOCS_URL =
 //   4. Update `retro` for the cohort being paid out this cycle (the prior
 //      quarter's completed projects) — see the field comments below.
 //   5. Reset `memberVoteExcludedAddresses` to [].
+//   6. Reset `submissionGraceDays` to 0 (only set it for a one-cycle extension).
 //
 // Advancing WITHIN a cycle (intake -> Senate -> Member -> idle) no longer
 // requires a redeploy: an operator clicks "Advance Phase" on /projects, which
@@ -825,10 +826,15 @@ export interface ProjectCycleConfig {
   // vote cohort). The retro cohort is always the PRIOR quarter.
   quarter: number
   year: number
-  // When true, POST /api/proposals/submit rejects *new* proposals after
-  // `submissionDeadline` while the live phase is still `intake`. Author
-  // edits stay open through `editingDeadline`.
+  // When true, POST /api/proposals/submit rejects *new* proposals after the
+  // submission window closes while the live phase is still `intake`. The
+  // window closes at 3:00 AM Pacific on the morning after `submissionDeadline`,
+  // plus `submissionGraceDays`. Author edits stay open through `editingDeadline`.
   enforceSubmissionDeadline: boolean
+  // Extra calendar days after the usual 3:00 AM Pacific close. 0 is the
+  // standing rule (an October 8 deadline closes at 3:00 AM Pacific on
+  // October 9). Reset to 0 when rolling the next quarter.
+  submissionGraceDays: number
   // When false, the Member Vote phase is still on (results panel, badge, etc.
   // still render) but the submit/edit Distribution UI is hidden — used to
   // close member-vote submissions while keeping the rest of the cycle intact.
@@ -839,7 +845,9 @@ export interface ProjectCycleConfig {
   // one-off disqualifications; the row stays in the table for the audit trail.
   memberVoteExcludedAddresses: string[]
   // Deadlines shown on /projects and the project banner.
-  submissionDeadline: string // second Thursday of the quarter
+  // Second Thursday of the quarter. The submission window stays open until
+  // 3:00 AM Pacific the next morning (see submissionGraceDays).
+  submissionDeadline: string
   editingDeadline: string // 48 hours before the third Thursday
   votingDate: string // third Thursday of the quarter
   // Quarterly project pot in USD (stablecoins): 3% of official liquid AUM
@@ -872,6 +880,9 @@ export const PROJECT_CYCLE: ProjectCycleConfig = {
   quarter: 4,
   year: 2026,
   enforceSubmissionDeadline: true,
+  // Q4 2026 closed early (end of October 8 UTC, still afternoon Pacific).
+  // One extra day keeps submissions open until 3:00 AM Pacific on October 10.
+  submissionGraceDays: 1,
   memberVoteSubmissionsOpen: false,
   memberVoteExcludedAddresses: [],
   // Q4 2026 deadlines (second Thursday / 48h before third Thursday / third Thursday).

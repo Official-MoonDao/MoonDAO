@@ -62,7 +62,7 @@ const generateHTML = (
               <td style="background: #dbeafe; border-radius: 12px; padding: 20px; border: 1px solid #93c5fd; margin-bottom: 24px;">
                 <h3 style="color: #1e40af; font-size: 16px; margin: 0 0 8px 0;">📅 ${quarterLabel} Governance Cycle</h3>
                 <p style="color: #1e3a8a; font-size: 14px; margin: 0; line-height: 1.5;">
-                  Your proposal has been submitted for the <strong>${quarterLabel}</strong> governance cycle. The submission deadline for this cycle is <strong>${deadlineFormatted}</strong> (2nd Thursday of the quarter). Voting will begin shortly after the deadline closes.
+                  Your proposal has been submitted for the <strong>${quarterLabel}</strong> governance cycle. The submission window for this cycle closes at <strong>${deadlineFormatted}</strong>. Voting will begin shortly after the window closes.
                 </p>
               </td>
             </tr>

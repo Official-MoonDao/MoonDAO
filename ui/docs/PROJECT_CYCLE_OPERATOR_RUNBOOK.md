@@ -39,6 +39,7 @@ Do this once when opening a new cycle. Requires a PR + deploy.
    - `phase` → `'intake'`
    - `enforceSubmissionDeadline` → `true`
    - `submissionDeadline` / `editingDeadline` / `votingDate`
+   - `submissionGraceDays` → `0` (only raise it for a one-cycle extension)
    - `budgetUSD` → new quarterly pot (`node scripts/calculate-budget.mjs --year Y --quarter Q`; 3% of official liquid AUM, nearest $500)
    - `memberVoteSubmissionsOpen` → `false` until Member Vote opens (or leave false; Advance will open the phase, and you can set this `true` in the same PR if you want submissions ready when Member Vote starts)
    - `memberVoteExcludedAddresses` → `[]`
@@ -56,8 +57,11 @@ Do this once when opening a new cycle. Requires a PR + deploy.
 
 ## 1. During Intake
 
-Proposers submit until `submissionDeadline`. Authors can still edit until
-`editingDeadline`. The banner and `/proposals` show the countdown.
+Proposers submit until **3:00 AM Pacific on the morning after**
+`submissionDeadline` (Thursday night stays open). `submissionGraceDays`
+adds extra calendar days for a one-cycle extension; Q4 2026 is `1`, so that
+window closes at 3:00 AM Pacific on October 10, 2026. Authors can still edit
+until `editingDeadline`. The banner and `/proposals` show the countdown.
 
 After the Townhall (typically `votingDate`):
 

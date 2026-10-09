@@ -31,7 +31,7 @@ When you’re ready to submit a more formal proposal, you can do so [here](https
 **Step 3: Townhall Discussion**
 **Every Thursday at 3PM Eastern** we discuss proposals in Discord in the [Ground-Control](https://moondao.com/meet) voice channel. Everyone is welcome to listen and participate. We record these meetings as well and you can view previous town halls on our [YouTube channel](https://www.youtube.com/@officialmoondao/streams).
 
-- **Project proposals** must be submitted by the **second Thursday of the quarter**. They may be edited up to **48 hours** before the third Thursday of the quarter. Project contributors must present at that townhall. See the [Project System](/docs/Projects/Project-System) for the full quarterly timeline.
+- **Project proposals** must be submitted by **3:00 AM Pacific Time on the morning after the second Thursday of the quarter**, so Thursday night stays open. They may be edited up to **48 hours** before the third Thursday of the quarter. Project contributors must present at that townhall. See the [Project System](/docs/Projects/Project-System) for the full quarterly timeline.
 - Other proposals can be submitted at any time. Be prepared to present at the next town hall after submission and answer questions.
 
 ## High-level Governance Overview
@@ -62,7 +62,7 @@ We are trying to optimize the speed that our DAO moves without sacrificing on qu
 
 General timing expectations:
 
-1. **Project proposals:** submit by the second Thursday of the quarter; present at the townhall on the third Thursday. See the [Project System](/docs/Projects/Project-System).
+1. **Project proposals:** submit by 3:00 AM Pacific Time on the morning after the second Thursday of the quarter; present at the townhall on the third Thursday. See the [Project System](/docs/Projects/Project-System).
 2. **Member House** voting lasts no less than five days.
 3. **On-chain execution** of funding within five days of Member House approval.
 
