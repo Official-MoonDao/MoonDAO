@@ -8,13 +8,20 @@ import {
   CITIZEN_TABLE_ADDRESSES,
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
+  DEPLOYED_ORIGIN,
   JOBS_TABLE_ADDRESSES,
   JOBS_TABLE_NAMES,
   TEAM_ADDRESSES,
   TEAM_TABLE_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
-import { testimonials as testimonialsContent, TESTIMONIAL_CITIZEN_IDS } from 'const/joinPageContent'
+import {
+  JOIN_FILM_UPLOAD_DATE,
+  JOIN_FILM_VIMEO_ID,
+  joinFilm,
+  testimonials as testimonialsContent,
+  TESTIMONIAL_CITIZEN_IDS,
+} from 'const/joinPageContent'
 import type { TestimonialWithPhoto } from 'const/joinPageContent'
 import {
   BLOCKED_CITIZENS,
@@ -46,6 +53,7 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { serverClient } from '@/lib/thirdweb/serverClient'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
+import { serializeJsonLd } from '@/lib/utils/jsonLd'
 import { getAttribute } from '@/lib/utils/nft'
 import Job, { Job as JobType } from '../components/jobs/Job'
 import Card from '../components/layout/Card'
@@ -292,6 +300,24 @@ export default function Join({
         <link rel="preload" as="image" href="/assets/JoinImage.webp" />
         <link rel="preload" as="image" href="/assets/citizen-default.webp" />
         <link rel="preload" as="image" href="/assets/team_image.webp" />
+        {JOIN_FILM_VIMEO_ID && (
+          <script
+            type="application/ld+json"
+            key="join-film-jsonld"
+            dangerouslySetInnerHTML={{
+              __html: serializeJsonLd({
+                '@context': 'https://schema.org',
+                '@type': 'VideoObject',
+                name: joinFilm.name,
+                description: joinFilm.description,
+                thumbnailUrl: `${DEPLOYED_ORIGIN}${joinFilm.poster}`,
+                ...(JOIN_FILM_UPLOAD_DATE && { uploadDate: JOIN_FILM_UPLOAD_DATE }),
+                duration: joinFilm.duration,
+                embedUrl: `https://player.vimeo.com/video/${JOIN_FILM_VIMEO_ID}`,
+              }),
+            }}
+          />
+        )}
       </Head>
       <JoinHero citizenCount={citizenCount} teamCount={teamCount} />
 

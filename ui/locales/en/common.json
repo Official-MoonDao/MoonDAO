@@ -58,5 +58,8 @@
   "eventsTitle": "Events",
   "eventsDesc": "Get involved with MoonDAO by attending one of our upcoming online events or find out how you can contribute to our ambitious plans by helping out on a project.",
   "bridgeTitle": "Bridge",
-  "bridgeDesc": "Bridge ETH or MOONEY from Ethereum to Arbitrum."
+  "bridgeDesc": "Bridge ETH or MOONEY from Ethereum to Arbitrum.",
+  "joinFilmTitle": "Why become a citizen",
+  "joinFilmSub": "95 seconds on what's waiting inside.",
+  "joinFilmPlay": "Watch the film"
 }
