@@ -1,0 +1,831 @@
+{
+ "citizens": {
+  "mintedAtTermStart": 199,
+  "activeAtTermStart": 196,
+  "mintedAtMonth4": 247,
+  "mintedAtTermEnd": 248,
+  "mintedAsOf": 265,
+  "activeAsOf": 238,
+  "target": 300,
+  "baseline": 199
+ },
+ "teams": {
+  "externalAtTermStart": 20,
+  "externalAtMonth4": 24,
+  "externalAsOf": 25,
+  "activeAsOf": 25,
+  "target": 30,
+  "baseline": 20,
+  "newInTerm": [
+   {
+    "id": 21,
+    "mintedAt": "2026-06-03",
+    "name": "Habitat Marte"
+   },
+   {
+    "id": 22,
+    "mintedAt": "2026-06-12",
+    "name": "A Heart for Space"
+   },
+   {
+    "id": 23,
+    "mintedAt": "2026-06-16",
+    "name": "U.S. Space & Rocket Center Education Foundation"
+   },
+   {
+    "id": 24,
+    "mintedAt": "2026-08-31",
+    "name": "Gera\u00e7\u00e3o de Marte Institute"
+   },
+   {
+    "id": 25,
+    "mintedAt": "2026-09-01",
+    "name": "Zephalto"
+   }
+  ]
+ },
+ "utilization": {
+  "externalTeams": 25,
+  "newJobListings": 7,
+  "newJobListingsByEB": 1,
+  "newMarketplaceListings": 17,
+  "teamsWithJobs": 6,
+  "teamsWithMarketplace": 8,
+  "teamsWithEither": 11,
+  "teamsWithBoth": 3,
+  "pctJobs": 24.0,
+  "pctMarketplace": 32.0,
+  "pctEither": 44.0,
+  "jobsTotalAllTime": 17,
+  "marketplaceTotalAllTime": 27,
+  "openJobsAsOf": 6
+ },
+ "revenue": {
+  "ethPriceUSD": 2574.5,
+  "trailing365": {
+   "Citizen subscriptions": 0.9546,
+   "Team subscriptions": 0.6675,
+   "Launchpad fees": 0.04763,
+   "totalETH": 1.66973,
+   "totalUSDAtSpot": 4299
+  },
+  "term": {
+   "Team subscriptions": 0.6675,
+   "Citizen subscriptions": 0.3885,
+   "totalETH": 1.056,
+   "totalUSDAtSpot": 2719
+  },
+  "sinceTermStart": {
+   "Citizen subscriptions": 0.5661,
+   "Team subscriptions": 0.6675,
+   "totalETH": 1.2336,
+   "totalUSDAtSpot": 3176
+  }
+ },
+ "streams": [
+  {
+   "payee": "Pablo",
+   "wallet": "0x679d87d8640e66778c3419d164998e720d7495f6",
+   "weth": 26.0422581,
+   "days": 120,
+   "usdAtFunding": 48000.31,
+   "start": "2026-06-01",
+   "end": "2026-09-29",
+   "usdPer30Days": 12000.08
+  },
+  {
+   "payee": "Ryan",
+   "wallet": "0x78176eaabcb3255e898079dc67428e15149cdc99",
+   "weth": 16.27641131,
+   "days": 120,
+   "usdAtFunding": 30000.19,
+   "start": "2026-06-01",
+   "end": "2026-09-29",
+   "usdPer30Days": 7500.05
+  },
+  {
+   "payee": "Miguel",
+   "wallet": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+   "weth": 8.952026221,
+   "days": 90,
+   "usdAtFunding": 16500.11,
+   "start": "2026-06-01",
+   "end": "2026-08-30",
+   "usdPer30Days": 5500.04
+  },
+  {
+   "payee": "Miguel",
+   "wallet": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+   "weth": 1.49200437,
+   "days": 30,
+   "usdAtFunding": 2750.02,
+   "start": "2026-06-01",
+   "end": "2026-07-01",
+   "usdPer30Days": 2750.02
+  }
+ ],
+ "budgetVsActual": {
+  "personnel": {
+   "Pablo": {
+    "budget": 60000,
+    "paidUSD": 60000.31
+   },
+   "Ryan": {
+    "budget": 37500,
+    "paidUSD": 37500.19
+   },
+   "Miguel": {
+    "budget": 22000,
+    "paidUSD": 22000.13
+   }
+  },
+  "personnelBudget": 119500,
+  "personnelPaidUSD": 119500.63,
+  "opsFlexBudget": 12500,
+  "opsFlexPaidUSD": 12226.62,
+  "bonusPoolBudget": 24000,
+  "bonusPaid": 0,
+  "aprilBalanceInNonce40": {
+   "Pablo": 514.29,
+   "Ryan": 371.43,
+   "Miguel": 114.29
+  }
+ },
+ "spendByMonth": {
+  "2026-05": {
+   "Reimbursement": 192.36,
+   "Prior-cycle pay owed": 7749.99,
+   "Prior-cycle rewards & bonus (pass-through)": 6562.26,
+   "Payroll \u2014 May 2026": 23250.01
+  },
+  "2026-06": {
+   "Operations / sponsorship": 816.0,
+   "Reimbursement": 2383.0,
+   "Payroll \u2014 LlamaPay (accrued)": 27750.18
+  },
+  "2026-07": {
+   "Reimbursement": 1970.0,
+   "Payroll \u2014 LlamaPay (accrued)": 25833.5
+  },
+  "2026-08": {
+   "Reimbursement": 6865.26,
+   "Payroll \u2014 LlamaPay (accrued)": 25466.83
+  },
+  "2026-09": {
+   "Payroll \u2014 LlamaPay (accrued)": 18200.12
+  }
+ },
+ "ebLedger": [
+  {
+   "nonce": 36,
+   "date": "2026-05-06",
+   "txHash": "0x4b13f65b3113b1f691d86b947bb65594205916014873346106ece2f9f66d3882",
+   "safeTxHash": "0xf8d57ef1e9b2ca3560118fbaa88be522e9a867f60993382bfc66b29cf4af13d1",
+   "category": "Reimbursement",
+   "transfers": [
+    {
+     "to": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+     "asset": "USDC",
+     "amount": 192.36,
+     "payee": "Miguel"
+    }
+   ]
+  },
+  {
+   "nonce": 37,
+   "date": "2026-05-06",
+   "txHash": "0x27f4e056dcbbbb374ea097920d840d09f8b5e9ce5600990a659c06639affb2ea",
+   "safeTxHash": "0x0a95e9c4cf2311935a5c0661ba9290a39e820d603e95cdb691eb651bc5329d93",
+   "category": "Prior-cycle pay owed",
+   "transfers": [
+    {
+     "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
+     "asset": "USDC",
+     "amount": 3985.71,
+     "payee": "Pablo"
+    },
+    {
+     "to": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+     "asset": "USDC",
+     "amount": 885.71,
+     "payee": "Miguel"
+    },
+    {
+     "to": "0xb2d3900807094d4fe47405871b0c8adb58e10d42",
+     "asset": "USDC",
+     "amount": 2878.57,
+     "payee": "Ryan"
+    }
+   ]
+  },
+  {
+   "nonce": 38,
+   "date": "2026-05-13",
+   "txHash": "0x10f8141850863513a192c5eddfd9b664870d84c30886c9e105d93d905c754fc2",
+   "safeTxHash": "0x3b36221635ea4ee70d858c5d58de410633dfb7bfd8986764d2524426df660b68",
+   "category": "Prior-cycle rewards & bonus (pass-through)",
+   "transfers": [
+    {
+     "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
+     "asset": "ETH",
+     "amount": 0.46503925,
+     "payee": "Pablo"
+    },
+    {
+     "to": "0xb2d3900807094d4fe47405871b0c8adb58e10d42",
+     "asset": "ETH",
+     "amount": 0.46503925,
+     "payee": "Ryan"
+    },
+    {
+     "to": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+     "asset": "ETH",
+     "amount": 0.1641315,
+     "payee": "Miguel"
+    }
+   ]
+  },
+  {
+   "nonce": 39,
+   "date": "2026-05-16",
+   "txHash": "0x673c3b9cf8bd6f80dfb92f3341b114ee61cc46415690aa5e201ca6d7f623c3f7",
+   "safeTxHash": "0x07d078085fc1900b1489e6142b735c286f4358886c8cd875c2f7b428e7805dc8",
+   "category": "Prior-cycle rewards & bonus (pass-through)",
+   "transfers": [
+    {
+     "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
+     "asset": "ETH",
+     "amount": 1.0480925,
+     "payee": "Pablo"
+    },
+    {
+     "to": "0xb2d3900807094d4fe47405871b0c8adb58e10d42",
+     "asset": "ETH",
+     "amount": 1.0480925,
+     "payee": "Ryan"
+    },
+    {
+     "to": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+     "asset": "ETH",
+     "amount": 0.369915,
+     "payee": "Miguel"
+    }
+   ]
+  },
+  {
+   "nonce": 40,
+   "date": "2026-05-29",
+   "txHash": "0x6259f08bce59ec63d455c139cb0246804f75627304fd870991991cd1257b2d60",
+   "safeTxHash": "0xd1601c26677b9693453486f8753d8e21ce5b61142559c2aa9397201b2db60781",
+   "category": "Payroll \u2014 May 2026",
+   "transfers": [
+    {
+     "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
+     "asset": "USDC",
+     "amount": 12514.29,
+     "payee": "Pablo"
+    },
+    {
+     "to": "0x78176eaabcb3255e898079dc67428e15149cdc99",
+     "asset": "USDC",
+     "amount": 7871.43,
+     "payee": "Ryan"
+    },
+    {
+     "to": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+     "asset": "USDC",
+     "amount": 2864.29,
+     "payee": "Miguel"
+    }
+   ]
+  },
+  {
+   "nonce": 41,
+   "date": "2026-06-18",
+   "txHash": "0x3ec743297312a5ebfef9b1506368949ef5ad47d338c6758d555cc9e213d359a8",
+   "safeTxHash": "0x82f1af091fe4f2ac2016dbf7455bfef7ba8ba01ddfece9151d457d93ebb66824",
+   "category": "Wrap ETH for streams",
+   "transfers": []
+  },
+  {
+   "nonce": 42,
+   "date": "2026-06-19",
+   "txHash": "0x66e42ddfc39a67973d2316770926ee6dc2817acf1052e8b33c0de530d2d87a28",
+   "safeTxHash": "0x22595b6fc9cca7a230059963011b2a0bb57a2cb33c1ff85d9767567546d270f2",
+   "category": "Payroll \u2014 LlamaPay vesting Jun\u2013Sep",
+   "transfers": []
+  },
+  {
+   "nonce": 43,
+   "date": "2026-06-23",
+   "txHash": "0x956a205244ce82ea77567a9093e5270dd9b37d546bbf9cbea541f643920dbde2",
+   "safeTxHash": "0x607b3488276558edca6225203c7f9222ae8665df22c1a0622e1643ee07da26f5",
+   "category": "Operations / sponsorship",
+   "transfers": [
+    {
+     "to": "0xb2ac53898ae280475e67e1951b976e331511b721",
+     "asset": "USDC",
+     "amount": 816.0,
+     "payee": "0xb2ac53898ae280475e67e1951b976e331511b721"
+    }
+   ]
+  },
+  {
+   "nonce": 44,
+   "date": "2026-06-23",
+   "txHash": "0x956a205244ce82ea77567a9093e5270dd9b37d546bbf9cbea541f643920dbde2",
+   "safeTxHash": "0xa5dab6cb77de0c6991a34ac8cb6966c5cfbe0bab93236dd77b811c5a7c3548c7",
+   "category": "Reimbursement",
+   "transfers": [
+    {
+     "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
+     "asset": "USDC",
+     "amount": 1397.77,
+     "payee": "Pablo"
+    }
+   ]
+  },
+  {
+   "nonce": 45,
+   "date": "2026-06-23",
+   "txHash": "0x956a205244ce82ea77567a9093e5270dd9b37d546bbf9cbea541f643920dbde2",
+   "safeTxHash": "0x8484496c0bdd5cec70468db8114a01fdaa95a1231b9bcf2419d1b31eaea5070b",
+   "category": "Reimbursement",
+   "transfers": [
+    {
+     "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
+     "asset": "USDC",
+     "amount": 985.23,
+     "payee": "Pablo"
+    }
+   ]
+  },
+  {
+   "nonce": 46,
+   "date": "2026-07-23",
+   "txHash": "0xda618aafdef22b7d1cfc937d178ce8e2569b2a83ad71ba1592fa444ba541be16",
+   "safeTxHash": "0xe0ab2b636e63d38b067d733c9f049874611d4d66a13cbee3add014f1093bd273",
+   "category": "Reimbursement",
+   "transfers": [
+    {
+     "to": "0xbdb65f5334b459e685775e84fd77838cda5bd88c",
+     "asset": "USDC",
+     "amount": 1970.0,
+     "payee": "0xbdb65f5334b459e685775e84fd77838cda5bd88c"
+    }
+   ]
+  },
+  {
+   "nonce": 47,
+   "date": "2026-08-17",
+   "txHash": "0xc5ef20f7ebee922514b09279bcec8a75a786f4c66223ae7f537c57ed3df18270",
+   "safeTxHash": "0xe618e86540e7685e6b54ba764a56c4aac6b21b54da5950a11f1825921696f71e",
+   "category": "Reimbursement",
+   "transfers": [
+    {
+     "to": "0x78176eaabcb3255e898079dc67428e15149cdc99",
+     "asset": "USDC",
+     "amount": 3147.71,
+     "payee": "Ryan"
+    },
+    {
+     "to": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+     "asset": "USDC",
+     "amount": 912.44,
+     "payee": "Miguel"
+    }
+   ]
+  },
+  {
+   "nonce": 48,
+   "date": "2026-08-29",
+   "txHash": "0xbee223f2398e0576a9050c4bdcd3b1f938b11697a213e6bfa2db0b340e5f2884",
+   "safeTxHash": "0xa648eb0b395ce57fff2982bcf4927a47cb72f5b722fd1d70b5b11cac0cb41a34",
+   "category": "Reimbursement",
+   "transfers": [
+    {
+     "to": "0x679d87d8640e66778c3419d164998e720d7495f6",
+     "asset": "USDC",
+     "amount": 1362.1,
+     "payee": "Pablo"
+    },
+    {
+     "to": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+     "asset": "USDC",
+     "amount": 584.18,
+     "payee": "Miguel"
+    },
+    {
+     "to": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+     "asset": "USDC",
+     "amount": 858.83,
+     "payee": "Miguel"
+    }
+   ]
+  }
+ ],
+ "ebIncoming": [
+  {
+   "date": "2026-09-09",
+   "type": "ERC20_TRANSFER",
+   "asset": "USDC",
+   "amount": 1.9e-05,
+   "from": "0xbDB6baa43453B29fC7a44c409C6de6aa9d4Dd88C",
+   "txHash": "0x638c7de034132e315c7d1321b2edb50b7abc587a16e5de73e80c30c631bef246"
+  },
+  {
+   "date": "2026-09-09",
+   "type": "ERC20_TRANSFER",
+   "asset": "USDC",
+   "amount": 3.1e-05,
+   "from": "0x781754253A5B529C27354e9cA9bc8Ee2f62bDc99",
+   "txHash": "0xc947a97929e566488ebf960265c4b6b0b0fc6c19209b1a48896aea9386b3c359"
+  },
+  {
+   "date": "2026-09-09",
+   "type": "ERC20_TRANSFER",
+   "asset": "USDC",
+   "amount": 1.3e-05,
+   "from": "0x679D8E4D614f989d3759D2FFA0F150BC59bA95F6",
+   "txHash": "0x945f330bbe031b30c8ad5623dd344c3d70bc51d66a42f0f89889edbfef584c91"
+  },
+  {
+   "date": "2026-07-23",
+   "type": "ERC20_TRANSFER",
+   "asset": "USDC",
+   "amount": 1.9e-05,
+   "from": "0xBdB6E389E031187443B59e09a3827E72D536188c",
+   "txHash": "0x14659e42fa58960280f8967863a2913295fccb266c184830d69175f9040722fc"
+  },
+  {
+   "date": "2026-06-24",
+   "type": "ERC20_TRANSFER",
+   "asset": "JBP6",
+   "amount": 181.00258686,
+   "from": "0x4dc161eF837fF1C4485b08DDFcDB182F2157bE18",
+   "txHash": "0xaea7fb6c13a502e7efebdebcd6c3465886ef018e31c2383b09d1df711f18f478"
+  },
+  {
+   "date": "2026-06-18",
+   "type": "ERC20_TRANSFER",
+   "asset": "WETH",
+   "amount": 52.77483880324751,
+   "from": "0x0000000000000000000000000000000000000000",
+   "txHash": "0x3ec743297312a5ebfef9b1506368949ef5ad47d338c6758d555cc9e213d359a8"
+  },
+  {
+   "date": "2026-06-18",
+   "type": "ERC20_TRANSFER",
+   "asset": "USDC",
+   "amount": 9990.0,
+   "from": "0x0000000000000000000000000000000000000000",
+   "txHash": "0x0cef79917241252e4fd9f80ce7d3244013e79f058b97d05e3d4ed3dc7bc0bb2d"
+  },
+  {
+   "date": "2026-06-18",
+   "type": "ETHER_TRANSFER",
+   "asset": "ETH",
+   "amount": 52.76269938176787,
+   "from": "0xb92fe925DC43a0ECdE6c8b1a2709c170Ec4fFf4f",
+   "txHash": "0xe80086cafdf5353a215d5b159792be943cf7ede681ed1e98b04cd212833aa828"
+  },
+  {
+   "date": "2026-05-28",
+   "type": "ERC20_TRANSFER",
+   "asset": "USDC",
+   "amount": 26400.0,
+   "from": "0xAF26a002d716508b7e375f1f620338442F5470c0",
+   "txHash": "0xe0d558956dc5a87050671eda989c060005b33cc1b3b7bac8549a52a5e44d9051"
+  },
+  {
+   "date": "2026-05-14",
+   "type": "ETHER_TRANSFER",
+   "asset": "ETH",
+   "amount": 2.4661,
+   "from": "0xAF26a002d716508b7e375f1f620338442F5470c0",
+   "txHash": "0xba1d0dbeeb6cdb6bdab8983c0b75b888e9d9d65558a57f55d1877852aa6dfbca"
+  },
+  {
+   "date": "2026-05-14",
+   "type": "ETHER_TRANSFER",
+   "asset": "ETH",
+   "amount": 2.4661,
+   "from": "0xAF26a002d716508b7e375f1f620338442F5470c0",
+   "txHash": "0xba1d0dbeeb6cdb6bdab8983c0b75b888e9d9d65558a57f55d1877852aa6dfbca"
+  },
+  {
+   "date": "2026-05-07",
+   "type": "ETHER_TRANSFER",
+   "asset": "ETH",
+   "amount": 1.09421,
+   "from": "0xAF26a002d716508b7e375f1f620338442F5470c0",
+   "txHash": "0x300269126399d332799d00d13dc42c77a81abf1f9a71460559d765cc587a8af0"
+  }
+ ],
+ "ebBalances": [
+  {
+   "asset": "ETH",
+   "amount": 0.0
+  },
+  {
+   "asset": "WETH",
+   "amount": 0.012138802247511238
+  },
+  {
+   "asset": "NANA",
+   "amount": 181.00258686
+  },
+  {
+   "asset": "JBP6",
+   "amount": 181.00258686
+  },
+  {
+   "asset": "MOONEY",
+   "amount": 100.0
+  },
+  {
+   "asset": "OVERVIEW",
+   "amount": 11966.24
+  },
+  {
+   "asset": "USDC",
+   "amount": 1112.24509
+  }
+ ],
+ "overviewVote": {
+  "generatedAt": "2026-06-22T22:21:15.420Z",
+  "results": [
+   {
+    "optionId": "option-a",
+    "totalVoted": 18.17,
+    "voterCount": 3,
+    "percentage": 0.2
+   },
+   {
+    "optionId": "option-b",
+    "totalVoted": 9702.04,
+    "voterCount": 22,
+    "percentage": 92.9
+   },
+   {
+    "optionId": "option-c",
+    "totalVoted": 76.31,
+    "voterCount": 2,
+    "percentage": 0.7
+   },
+   {
+    "optionId": "abstain",
+    "totalVoted": 647.6,
+    "voterCount": 4,
+    "percentage": 6.2
+   }
+  ],
+  "totalVoted": 10444.11,
+  "totalVoters": 31,
+  "winningOptionId": "option-b"
+ },
+ "overviewFlight": {
+  "totalETH": 27.39,
+  "contributions": 180,
+  "uniqueBackers": 86,
+  "preReopenETH": 26.7497,
+  "preReopenContributions": 159,
+  "postReopenETH": 0.6404,
+  "postReopenContributions": 21,
+  "postReopenUniqueBackers": 16
+ },
+ "deprize": {
+  "arbitrum": {
+   "registered": [
+    {
+     "id": 1,
+     "jbProject": 82,
+     "name": "The Moon Is A Harsh Mistress",
+     "date": "2026-08-25"
+    },
+    {
+     "id": 2,
+     "jbProject": 83,
+     "name": "Touchdown",
+     "date": "2026-09-26"
+    },
+    {
+     "id": 3,
+     "jbProject": 84,
+     "name": "Night Shift",
+     "date": "2026-09-26"
+    },
+    {
+     "id": 4,
+     "jbProject": 85,
+     "name": "First Tracks",
+     "date": "2026-09-26"
+    },
+    {
+     "id": 5,
+     "jbProject": 86,
+     "name": "Water Ice",
+     "date": "2026-09-26"
+    }
+   ],
+   "bets": 5,
+   "uniqueBettors": 4,
+   "volumeETH": 0.012721,
+   "prizeSliceETH": 0.000676,
+   "winners": [],
+   "cancellations": [],
+   "betsByWallet": {
+    "Deployer": 1,
+    "Pablo": 1,
+    "Ryan": 1,
+    "Miguel": 2
+   }
+  },
+  "sepolia": {
+   "registered": [
+    {
+     "id": 1,
+     "jbProject": 269,
+     "name": "Touchdown (gen 1)",
+     "date": "2026-09-18"
+    },
+    {
+     "id": 2,
+     "jbProject": 270,
+     "name": "Touchdown (gen 2)",
+     "date": "2026-09-22"
+    },
+    {
+     "id": 3,
+     "jbProject": 271,
+     "name": "Night Shift",
+     "date": "2026-09-24"
+    },
+    {
+     "id": 4,
+     "jbProject": 272,
+     "name": "Crewed lunar rover (withdrawn)",
+     "date": "2026-09-24"
+    },
+    {
+     "id": 5,
+     "jbProject": 273,
+     "name": "First Tracks",
+     "date": "2026-09-24"
+    },
+    {
+     "id": 6,
+     "jbProject": 274,
+     "name": "Water Ice",
+     "date": "2026-09-24"
+    },
+    {
+     "id": 7,
+     "jbProject": 275,
+     "name": "Touchdown v2 (Safe-owned)",
+     "date": "2026-09-28"
+    },
+    {
+     "id": 8,
+     "jbProject": 276,
+     "name": "Demo prize (JB 276)",
+     "date": "2026-09-30"
+    }
+   ],
+   "bets": 10,
+   "uniqueBettors": 3,
+   "volumeETH": 0.020722,
+   "prizeSliceETH": 0.00138,
+   "winners": [
+    {
+     "id": 1,
+     "team": 601,
+     "date": "2026-09-18"
+    }
+   ],
+   "cancellations": [
+    4
+   ],
+   "betsByWallet": {
+    "Deployer": 7,
+    "Pablo": 1,
+    "Other": 2
+   }
+  }
+ },
+ "engineering": {
+  "mergedPRs": 359,
+  "byAuthor": {
+   "Cursor agent (unattributed)": {
+    "Other (UX, infra, docs)": 3,
+    "Network (Citizens, Teams, jobs, marketplace)": 10,
+    "Moonbase": 1,
+    "DePrize": 1,
+    "Project system & governance": 2,
+    "Treasury & finance": 1
+   },
+   "Pablo": {
+    "Security, privacy & compliance": 1,
+    "Network (Citizens, Teams, jobs, marketplace)": 33,
+    "Other (UX, infra, docs)": 19,
+    "DePrize": 58,
+    "Treasury & finance": 3,
+    "Project system & governance": 31,
+    "Launchpad / Overview Flight": 15
+   },
+   "Miguel": {
+    "Moonbase": 37,
+    "Other (UX, infra, docs)": 25,
+    "Security, privacy & compliance": 3,
+    "Network (Citizens, Teams, jobs, marketplace)": 52,
+    "Project system & governance": 18,
+    "DePrize": 9,
+    "Launchpad / Overview Flight": 21,
+    "Treasury & finance": 7
+   },
+   "Ryan": {
+    "Launchpad / Overview Flight": 2,
+    "Network (Citizens, Teams, jobs, marketplace)": 4,
+    "Other (UX, infra, docs)": 3
+   }
+  },
+  "byAuthorTotal": {
+   "Cursor agent (unattributed)": 18,
+   "Pablo": 160,
+   "Miguel": 172,
+   "Ryan": 9
+  },
+  "byMonth": {
+   "2026-05": {
+    "Miguel": 22,
+    "Cursor agent (unattributed)": 1,
+    "Pablo": 21
+   },
+   "2026-06": {
+    "Miguel": 51,
+    "Cursor agent (unattributed)": 5,
+    "Pablo": 23
+   },
+   "2026-07": {
+    "Pablo": 31,
+    "Miguel": 44,
+    "Cursor agent (unattributed)": 1,
+    "Ryan": 1
+   },
+   "2026-08": {
+    "Miguel": 9,
+    "Pablo": 24,
+    "Cursor agent (unattributed)": 2
+   },
+   "2026-09": {
+    "Miguel": 41,
+    "Pablo": 56,
+    "Ryan": 5,
+    "Cursor agent (unattributed)": 5
+   },
+   "2026-10": {
+    "Cursor agent (unattributed)": 4,
+    "Pablo": 5,
+    "Miguel": 5,
+    "Ryan": 3
+   }
+  }
+ },
+ "scorecard": [
+  {
+   "kr": "Citizens 199 \u2192 300",
+   "progress": 66,
+   "target": 101,
+   "pct": 65.3,
+   "label": "265 minted / 238 active"
+  },
+  {
+   "kr": "Teams 20 \u2192 30",
+   "progress": 5,
+   "target": 10,
+   "pct": 50.0,
+   "label": "25 Teams"
+  },
+  {
+   "kr": "Team utilization \u2265 60%",
+   "progress": 44.0,
+   "target": 60,
+   "pct": 73.3,
+   "label": "44% of Teams"
+  },
+  {
+   "kr": "15 new job listings",
+   "progress": 7,
+   "target": 15,
+   "pct": 46.7,
+   "label": "7 listings"
+  },
+  {
+   "kr": "15 new marketplace listings",
+   "progress": 17,
+   "target": 15,
+   "pct": 113.3,
+   "label": "17 listings"
+  }
+ ]
+}
