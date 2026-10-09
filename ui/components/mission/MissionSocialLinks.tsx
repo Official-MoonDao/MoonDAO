@@ -17,8 +17,15 @@ type SocialLinksProps = {
 
 function getLinkLabel(url: string): string {
   try {
-    const hostname = new URL(url).hostname.replace('www.', '')
-    if (hostname.includes('discord')) return 'Discord'
+    const parsed = new URL(url)
+    const hostname = parsed.hostname.replace(/^www\./, '')
+    const path = parsed.pathname.replace(/\/$/, '')
+    if (
+      hostname.includes('discord') ||
+      (hostname === 'moondao.com' && path === '/discord')
+    ) {
+      return 'Discord'
+    }
     if (hostname.includes('twitter') || hostname.includes('x.com')) return 'Twitter'
     if (hostname.includes('telegram')) return 'Telegram'
     if (hostname.includes('github')) return 'GitHub'

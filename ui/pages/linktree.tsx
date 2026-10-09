@@ -1,174 +1,135 @@
-import {
-  GlobeAltIcon,
-  ChatBubbleLeftRightIcon,
-  DocumentTextIcon,
-  NewspaperIcon,
-  ShoppingBagIcon,
-  CameraIcon,
-  PlayIcon,
-  AtSymbolIcon,
-} from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import { LogoSidebar } from '../components/assets'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
-import MailingList from '../components/layout/MailingList'
+
+type HubLink = {
+  name: string
+  description: string
+  url: string
+  icon?: string
+  /** HOLD entries stay in source but are not rendered. */
+  hidden?: boolean
+}
+
+const HUB_LINKS: HubLink[] = [
+  {
+    name: 'Become a Citizen',
+    description: 'Join the Space Acceleration Network',
+    url: 'https://moondao.com/join?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-join',
+    icon: '/assets/linktree/icon-citizen-96.png',
+  },
+  {
+    name: 'Send Frank to Space',
+    description: 'The mission to fly with Frank White',
+    url: 'https://moondao.com/frank?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-frank',
+    icon: '/assets/linktree/icon-frank-96.png',
+  },
+  {
+    name: 'Events and Town Hall',
+    description: 'Gatherings for the MoonDAO community',
+    url: 'https://moondao.com/events?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-events',
+    icon: '/assets/linktree/icon-events-96.png',
+  },
+  {
+    name: 'Join our Discord',
+    description: 'Talk with the MoonDAO community',
+    url: 'https://moondao.com/discord?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-discord',
+    icon: '/assets/linktree/icon-discord-96.png',
+  },
+  // HOLD: not primary buttons on the Instagram hub.
+  {
+    name: 'Website',
+    description: 'MoonDAO home',
+    url: 'https://moondao.com',
+    hidden: true,
+  },
+  {
+    name: 'Newsletter',
+    description: 'Weekly updates',
+    url: 'https://moondao.ck.page/profile',
+    hidden: true,
+  },
+  {
+    name: 'Twitter/X',
+    description: 'Daily updates and space news',
+    url: '/twitter',
+    hidden: true,
+  },
+  {
+    name: 'YouTube',
+    description: 'Space missions and educational content',
+    url: 'https://youtube.com/@officialmoondao',
+    hidden: true,
+  },
+]
 
 const LinkTree: React.FC = () => {
-  const title = 'Follow MoonDAO'
-  const description =
-    '🚀 Connect with MoonDAO across all platforms and stay updated on our journey to the Moon'
-
-  const socialLinks = [
-    {
-      name: 'MoonDAO Website',
-      description: 'Explore our main platform',
-      url: 'https://moondao.com',
-      icon: GlobeAltIcon,
-      external: false,
-    },
-    {
-      name: 'Discord Community',
-      description: 'Join 10,000+ space enthusiasts',
-      url: '/discord',
-      icon: ChatBubbleLeftRightIcon,
-    },
-    {
-      name: 'Documentation',
-      description: 'Learn about our mission & governance',
-      url: '/docs',
-      icon: DocumentTextIcon,
-    },
-    {
-      name: 'Twitter/X',
-      description: 'Daily updates & space news',
-      url: '/twitter',
-      icon: AtSymbolIcon,
-    },
-    {
-      name: 'Newsletter',
-      description: 'Weekly space industry insights',
-      url: 'https://moondao.ck.page/profile',
-      icon: NewspaperIcon,
-    },
-    {
-      name: 'Instagram',
-      description: 'Behind-the-scenes space content',
-      url: '/instagram',
-      icon: CameraIcon,
-    },
-    {
-      name: 'YouTube',
-      description: 'Space missions & educational content',
-      url: 'https://youtube.com/@officialmoondao',
-      icon: PlayIcon,
-    },
-  ]
+  const visibleLinks = HUB_LINKS.filter((link) => !link.hidden && link.icon)
 
   return (
     <>
-      <WebsiteHead title={title} description={description} />
+      <WebsiteHead
+        title="MoonDAO"
+        description="Become a Citizen, follow the mission to send Frank White to space, and find MoonDAO events and Discord."
+      />
       <Container>
-        <div className="min-h-screen py-8 px-4">
-          {/* Header Section */}
-          <div className="max-w-2xl mx-auto text-center mb-8">
-            <div className="mb-4">
-              <Image
-                src="/Original_White.png"
-                alt="MoonDAO Logo"
-                width={72}
-                height={72}
-                className="mx-auto rounded-full border-2 border-white/20 shadow-2xl"
-              />
+        <div className="mx-auto flex w-full max-w-md flex-col px-5 pb-16 pt-8 sm:pt-12">
+          <header className="mb-6 text-center">
+            <h1 className="sr-only">MoonDAO</h1>
+            <div className="mx-auto w-56 text-white sm:w-64">
+              <LogoSidebar />
             </div>
-
-            <h1 className="font-heading text-2xl md:text-3xl font-bold text-white mb-2">
-              Follow MoonDAO
-            </h1>
-            <p className="text-gray-300 text-lg mb-6 leading-relaxed">
-              Join the Space Acceleration Network and be part of humanity's multiplanetary future
+            <p className="mt-4 font-RobotoMono text-[11px] uppercase tracking-[0.22em] text-moon-gold">
+              Space Acceleration Network
             </p>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-gray-300">
+              A community working toward a settlement on the Moon.
+            </p>
+          </header>
 
-            {/* Featured Image */}
-            <div className="relative mb-8 rounded-2xl overflow-hidden shadow-2xl">
-              <Image
-                src="/assets/dude-perfect.jpg"
-                width={600}
-                height={300}
-                alt="MoonDAO Space Mission"
-                className="w-full h-48 object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-              <div className="absolute bottom-4 left-4 text-white">
-                <p className="text-sm font-medium">Latest Mission Update</p>
-                <p className="text-xs text-gray-300">Astronaut Selection Program</p>
-              </div>
-            </div>
+          <div className="mb-6 overflow-hidden rounded-[20px] border border-white/10">
+            <Image
+              src="/assets/linktree/hero-1200x600.webp"
+              alt="Earth and the Moon"
+              width={1200}
+              height={600}
+              priority
+              className="h-auto w-full"
+            />
           </div>
 
-          {/* Social Links Grid */}
-          <div className="max-w-2xl mx-auto space-y-4 mb-12">
-            {socialLinks.map((link, index) => (
+          <nav className="flex flex-col gap-3" aria-label="MoonDAO links">
+            {visibleLinks.map((link) => (
               <Link
-                key={index}
+                key={link.url}
                 href={link.url}
-                target={link.external !== false ? '_blank' : undefined}
-                rel={link.external !== false ? 'noopener noreferrer' : undefined}
-                className="block group"
+                className="group flex items-center gap-4 rounded-[20px] border border-white/10 bg-dark-cool px-4 py-3.5 transition duration-150 hover:border-moon-gold"
               >
-                <div className="w-full bg-gradient-to-r from-blue-500 to-purple-600 p-[1px] rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]">
-                  <div className="bg-gray-900/90 backdrop-blur-xl rounded-xl p-4 flex items-center space-x-4 hover:bg-gray-800/90 transition-colors">
-                    <div className="flex-shrink-0">
-                      <div className="w-12 h-12 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                        <link.icon className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold text-lg group-hover:text-gray-100 transition-colors">
-                        {link.name}
-                      </h3>
-                      <p className="text-gray-400 text-sm group-hover:text-gray-300 transition-colors">
-                        {link.description}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="w-5 h-5 text-gray-400 group-hover:text-white group-hover:translate-x-1 transition-all duration-200"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+                <Image
+                  src={link.icon as string}
+                  alt=""
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 shrink-0"
+                />
+                <span className="min-w-0 flex-1 text-left">
+                  <span className="block font-heading text-sm font-semibold text-white sm:text-base">
+                    {link.name}
+                  </span>
+                  <span className="mt-1 block font-RobotoMono text-[11px] leading-snug text-white/55">
+                    {link.description}
+                  </span>
+                </span>
               </Link>
             ))}
-          </div>
+          </nav>
 
-          {/* Newsletter Signup */}
-          <div className="max-w-lg mx-auto bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
-            <h2 className="font-heading text-2xl font-bold text-white mb-4">Stay Connected</h2>
-            <p className="text-gray-300 mb-6">
-              Get the latest news and updates from MoonDAO delivered to your inbox
-            </p>
-            <MailingList />
-          </div>
-
-          {/* Footer */}
-          <div className="max-w-2xl mx-auto text-center mt-12">
-            <p className="text-gray-500 text-sm">
-              MoonDAO is an international collective united by the mission of decentralizing access
-              to space research and exploration.
-            </p>
-          </div>
+          <p className="mt-10 text-center font-RobotoMono text-[11px] uppercase tracking-[0.18em] text-white/40">
+            moondao.com
+          </p>
         </div>
       </Container>
     </>

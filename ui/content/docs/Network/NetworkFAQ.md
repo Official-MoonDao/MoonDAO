@@ -37,7 +37,7 @@ A year of citizenship is **0.036 ETH** on Arbitrum. Three quarters of that (0.02
 Sign in with the wallet that owns your Citizen NFT and open your [citizen profile](https://moondao.com/network?tab=citizens). If the plan has expired, the profile prompts the owner to renew. A paid renewal uses the same split as a new citizenship: three quarters to the membership, one quarter buys MOONEY in that payment. If it is not added to a lock you already have, claim the voting power from your dashboard. Confirm the amount on [Join](https://moondao.com/join) or [/citizen](https://moondao.com/citizen).
 
 **Do I need to be a Citizen to participate in MoonDAO?**
-Anyone can participate in our community, even if they are not Citizens. They can [join Discord](https://discord.gg/moondao), acquire our governance token, and vote on proposals without being a Citizen. Although it’s not required, it’s highly encouraged to become a Citizen to access the full opportunities MoonDAO can offer.
+Anyone can participate in our community, even if they are not Citizens. They can [join Discord](https://moondao.com/discord), acquire our governance token, and vote on proposals without being a Citizen. Although it’s not required, it’s highly encouraged to become a Citizen to access the full opportunities MoonDAO can offer.
 
 **How do I fund my wallet?**
 You do not need this step to join. To add ETH yourself, use the wallet button in the **top right** and choose **Fund** (Coinbase or MoonPay). For help, open a Discord ticket [here](https://discord.com/channels/914720248140279868/1212113005836247050) or email info@moondao.com.

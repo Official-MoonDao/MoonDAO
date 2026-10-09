@@ -100,6 +100,40 @@ export function getMissionDescription(
   return onChainDescription || ''
 }
 
+/** Canonical public Discord CTA. Raw discord.gg invites stay off public copy. */
+export const MOONDAO_DISCORD_URL = 'https://moondao.com/discord'
+
+const RAW_MOONDAO_DISCORD_INVITE = /^https?:\/\/discord\.gg\/moondao\/?$/i
+
+/**
+ * Social-link overrides (mission id → URL). Same precedence idea as
+ * {@link MISSION_TAGLINE_OVERRIDES}: the Frank mission (id 4) still stores
+ * `https://discord.gg/moondao` in on-chain metadata. Public pages should show
+ * the shortlink until that metadata is updated. Other social links are left
+ * alone. Remove a mission's entry once its on-chain socialLink is the shortlink.
+ */
+export const MISSION_SOCIAL_LINK_OVERRIDES: Partial<Record<number, string>> = {
+  4: MOONDAO_DISCORD_URL,
+}
+
+export function getMissionSocialLink(
+  missionId: unknown,
+  onChainSocialLink: string | undefined | null
+): string | undefined {
+  const normalized =
+    typeof onChainSocialLink === 'string' ? onChainSocialLink.trim() : ''
+  const id = Number(missionId)
+  if (
+    Number.isFinite(id) &&
+    normalized &&
+    RAW_MOONDAO_DISCORD_INVITE.test(normalized)
+  ) {
+    const override = MISSION_SOCIAL_LINK_OVERRIDES[id]
+    if (typeof override === 'string' && override.trim()) return override
+  }
+  return normalized || undefined
+}
+
 /**
  * Token symbol overrides for missions where the on-chain ERC20 hasn't been deployed via
  * Juicebox yet but the intended symbol is known (e.g. mission 4 / Overview Flight → OVERVIEW).

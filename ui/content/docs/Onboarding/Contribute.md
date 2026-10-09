@@ -28,7 +28,7 @@ MoonDAO does not work like most traditional corporate organizations, in fact, we
 ## There are many levels of involvement with MoonDAO.
 
 ## Level 0: Join the MoonDAO Contributor Community
-The most successful contributors at MoonDAO are self-starters, and the most direct path to successful contribution is through networking by joining our [Discord](https://discord.gg/moondao), introducing yourself, and sharing your skills and interests. We encourage members to attend our weekly meetings to gain context on the DAO's goals, current needs, and key players before taking action to contribute.
+The most successful contributors at MoonDAO are self-starters, and the most direct path to successful contribution is through networking by joining our [Discord](https://moondao.com/discord), introducing yourself, and sharing your skills and interests. We encourage members to attend our weekly meetings to gain context on the DAO's goals, current needs, and key players before taking action to contribute.
 
 Any contributions that help the DAO and our mission can receive retroactive rewards. **Citizens** can share their proof of work and the impact of their efforts on the [Submit Contribution](https://moondao.com/contributions) page. Senators review and accept contributions into that quarter’s Contributor Circle. [Learn more](/docs/Reference/Nested-Docs/Community-Rewards). If the work helps advance MoonDAO, or our mission, it is eligible!
 

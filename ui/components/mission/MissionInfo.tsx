@@ -1,5 +1,8 @@
 import { OVERVIEW_TOKEN_ADDRESS } from 'const/config'
-import { getMissionDescription } from 'const/missionMilestones'
+import {
+  getMissionDescription,
+  getMissionSocialLink,
+} from 'const/missionMilestones'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
@@ -156,13 +159,18 @@ export default function MissionInfo({
     shallowQueryRoute(queryParams)
   }, [tab, router.isReady, mission?.id])
 
+  const socialLink = getMissionSocialLink(
+    mission?.id,
+    mission?.metadata?.socialLink
+  )
+
   return (
     <div className="w-full">
       {/* Mobile Social Links */}
       <div className="block md:hidden flex items-center justify-center mb-4">
         <MissionSocialLinks
           socials={{
-            socialLink: mission?.metadata?.socialLink,
+            socialLink,
             infoUri: mission?.metadata?.infoUri,
           }}
           className="justify-center w-full"
@@ -181,7 +189,7 @@ export default function MissionInfo({
         <div className="hidden md:flex items-center gap-2">
           <MissionSocialLinks
             socials={{
-              socialLink: mission?.metadata?.socialLink,
+              socialLink,
               infoUri: mission?.metadata?.infoUri,
             }}
             className="justify-end"
