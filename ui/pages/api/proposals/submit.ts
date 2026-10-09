@@ -16,7 +16,7 @@ import {
   getSubmissionTargetCycle,
   shiftQuarter,
 } from '@/lib/projectCycle/cycleQuarters'
-import { endOfConfigDeadline } from '@/lib/utils/dates'
+import { formatSubmissionWindowClose, getSubmissionWindowClose } from '@/lib/utils/dates'
 import { DISCORD_TO_ETH_ADDRESS } from 'const/usernames'
 import { ethers } from 'ethers'
 import { rateLimit } from 'middleware/rateLimit'
@@ -542,14 +542,15 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         return 'ipfs://' + hatMetadataIpfsHash
       }
       const livePhase = resolveLivePhase(await getLivePhaseOverride())
+      const submissionClosesAt = getSubmissionWindowClose()
       if (
         PROJECT_CYCLE.enforceSubmissionDeadline &&
         livePhase === 'intake' &&
-        Date.now() > endOfConfigDeadline(PROJECT_CYCLE.submissionDeadline).getTime()
+        Date.now() >= submissionClosesAt.getTime()
       ) {
         const next = shiftQuarter(getProposalCycle(), 1)
         return res.status(422).json({
-          error: `The Q${PROJECT_CYCLE.quarter} ${PROJECT_CYCLE.year} submission deadline (${PROJECT_CYCLE.submissionDeadline}) has passed. New proposals will open for Q${next.quarter} ${next.year} after this cycle's Senate Vote begins.`,
+          error: `The Q${PROJECT_CYCLE.quarter} ${PROJECT_CYCLE.year} submission window closed at ${formatSubmissionWindowClose(submissionClosesAt).label}. New proposals will open for Q${next.quarter} ${next.year} after this cycle's Senate Vote begins.`,
         })
       }
       const { quarter, year } = getSubmissionTargetCycle(livePhase)

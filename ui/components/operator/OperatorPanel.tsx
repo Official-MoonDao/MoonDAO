@@ -7,6 +7,7 @@ import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
 import { Project } from '@/lib/project/useProjectData'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
+import { formatSubmissionWindowClose, getSubmissionWindowClose } from '@/lib/utils/dates'
 import AddToRetroactivesModal from './AddToRetroactivesModal'
 
 type Props = {
@@ -402,8 +403,8 @@ export default function OperatorPanel({
                 <>
                   <p className="text-xs text-gray-400">
                     Collecting Q{phaseInfo.quarter} {phaseInfo.year} proposals. Submit by{' '}
-                    {PROJECT_CYCLE.submissionDeadline}; edits close {PROJECT_CYCLE.editingDeadline};
-                    Senate Vote opens {PROJECT_CYCLE.votingDate}.
+                    {formatSubmissionWindowClose(getSubmissionWindowClose()).label}; edits close{' '}
+                    {PROJECT_CYCLE.editingDeadline}; Senate Vote opens {PROJECT_CYCLE.votingDate}.
                   </p>
                   <div className="flex flex-wrap gap-2 mt-1">
                     <button

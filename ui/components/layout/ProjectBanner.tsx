@@ -4,7 +4,7 @@ import {
   NEXT_QUARTER_BUDGET_USD,
   MAX_BUDGET_USD,
 } from 'const/config'
-import { endOfConfigDeadline } from '@/lib/utils/dates'
+import { formatSubmissionWindowClose, getSubmissionWindowClose } from '@/lib/utils/dates'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -24,8 +24,9 @@ const PROJECT_PAGES = [
 // as well as /moonbase itself.
 const FULLSCREEN_PAGES = ['/moonbase']
 
-// Check if deadline has passed (computed once on module load)
-const SUBMISSION_DEADLINE = endOfConfigDeadline(PROJECT_SYSTEM_CONFIG.submissionDeadline)
+// Close instant for this cycle (3:00 AM Pacific, including any grace day).
+const SUBMISSION_DEADLINE = getSubmissionWindowClose()
+const SUBMISSION_DEADLINE_LABEL = formatSubmissionWindowClose(SUBMISSION_DEADLINE).label
 
 export default function ProjectBanner() {
   const router = useRouter()
@@ -40,7 +41,7 @@ export default function ProjectBanner() {
   )
 
   // Hide banner if submission deadline has passed
-  const isDeadlinePassed = new Date() > SUBMISSION_DEADLINE
+  const isDeadlinePassed = new Date() >= SUBMISSION_DEADLINE
 
   if (
     !ANNOUNCE_PROJECT_BUDGET ||
@@ -93,7 +94,7 @@ export default function ProjectBanner() {
                   </span>
                   <span className="mx-3 text-white/15">·</span>
                   <span className="font-medium text-white/90">
-                    Deadline: {PROJECT_SYSTEM_CONFIG.submissionDeadline}
+                    Deadline: {SUBMISSION_DEADLINE_LABEL}
                   </span>
                   <span className="mx-3 text-white/15">·</span>
                   <span className="text-white/55">

@@ -19,6 +19,7 @@ import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { Project } from '@/lib/project/useProjectData'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import queryTable from '@/lib/tableland/queryTable'
+import { formatSubmissionWindowClose, getSubmissionWindowClose } from '@/lib/utils/dates'
 import { getBudget } from '@/lib/utils/rewards'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
@@ -28,6 +29,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
 
 const EASE: [number, number, number, number] = [0.21, 0.47, 0.32, 0.98]
+const SUBMISSION_CLOSE = formatSubmissionWindowClose(getSubmissionWindowClose())
 
 const STEPS = [
   {
@@ -264,9 +266,9 @@ const ProjectsOverview: React.FC<{
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">Submit by</p>
                   <p className="mt-2 font-heading font-semibold text-2xl text-white md:text-3xl">
-                    {PROJECT_SYSTEM_CONFIG.submissionDeadline}
+                    {SUBMISSION_CLOSE.date}
                   </p>
-                  <p className="mt-2 text-sm text-white/45">2nd Thursday of the quarter</p>
+                  <p className="mt-2 text-sm text-white/45">{SUBMISSION_CLOSE.timeLabel}</p>
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em] text-white/45">Member vote</p>
