@@ -1,8 +1,10 @@
+import ProjectABI from 'const/abis/Project.json'
 import {
   CITIZENSHIP_GIFT_TAG,
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
   EB_TEAM_ID,
+  PROJECT_ADDRESSES,
   TEAM_ADDRESSES,
   DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
@@ -15,6 +17,8 @@ import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { listingDiscordEmbed, listingOgFieldsFrom } from '@/lib/og/preview'
+import { isProjectOwnerId, parseOwnerId } from '@/lib/project/projectOwnerId'
+import { writeProjectTable } from '@/lib/project/projectTableWrite'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import cleanData from '@/lib/tableland/cleanData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -109,6 +113,11 @@ export default function TeamMarketplaceListingModal({
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI,
   })
+  const projectContract = useContract({
+    chain: selectedChain,
+    address: PROJECT_ADDRESSES[chainSlug],
+    abi: ProjectABI,
+  })
 
   useEffect(() => {
     if (listing) {
@@ -191,9 +200,33 @@ export default function TeamMarketplaceListingModal({
           }
 
           let transaction
+          let listingId: string | undefined
+          let listingTeamId: string
 
           try {
-            if (edit) {
+            if (isProjectOwnerId(teamId)) {
+              const result = await writeProjectTable({
+                table: 'marketplace',
+                action: edit ? 'update' : 'insert',
+                projectId: parseOwnerId(teamId).id,
+                rowId: edit ? listing?.id : undefined,
+                fields: {
+                  title: cleanedData.title,
+                  description: cleanedData.description,
+                  image: imageIpfsLink,
+                  price: cleanedData.price,
+                  currency: cleanedData.currency,
+                  startTime,
+                  endTime,
+                  timestamp: currTime,
+                  tag: cleanedData.tag,
+                  metadata: '',
+                  shipping: cleanedData.shipping,
+                },
+              })
+              listingId = result.rowId
+              listingTeamId = String(teamId)
+            } else if (edit) {
               transaction = prepareContractCall({
                 contract: marketplaceTableContract,
                 method: 'updateTable' as string,
@@ -234,45 +267,58 @@ export default function TeamMarketplaceListingModal({
               })
             }
 
-            const receipt: any = await sendAndConfirmTransaction({
-              transaction,
-              account,
-            })
+            if (transaction) {
+              const receipt: any = await sendAndConfirmTransaction({
+                transaction,
+                account,
+              })
 
-            //Get listing id from receipt and send discord notification
-            const listingId = parseInt(receipt.logs[1].topics[1], 16).toString()
-            const listingTeamId = parseInt(receipt.logs[1].topics[2], 16).toString()
-            const team = await getNFT({
-              contract: teamContract,
-              tokenId: BigInt(listingTeamId),
-            })
-            const teamName = team?.metadata.name as string
-            const link = `${DEPLOYED_ORIGIN}/marketplace/${listingId}`
-            const fields = listingOgFieldsFrom(
-              {
-                title: cleanedData.title,
-                price: cleanedData.price,
-                currency: cleanedData.currency,
-                tag: cleanedData.tag,
-                image: imageIpfsLink,
-                teamName,
-              },
-              teamName
-            )
-            sendDiscordMessage(
-              'networkNotifications',
-              `## [**${teamName}** has ${
-                edit ? 'updated a' : 'posted a new'
-              } listing ](${link}) <@&${DISCORD_CITIZEN_ROLE_ID}>`,
-              [
-                listingDiscordEmbed({
-                  fields,
-                  summary: cleanedData.description,
-                  url: link,
+              //Get listing id from receipt and send discord notification
+              listingId = parseInt(receipt.logs[1].topics[1], 16).toString()
+              listingTeamId = parseInt(receipt.logs[1].topics[2], 16).toString()
+            }
+
+            // The row is already on-chain. A failed NFT read (project contract
+            // still unset, or the RPC errors) must not look like the save failed,
+            // or another submit inserts a second listing.
+            try {
+              const owner = parseOwnerId(listingTeamId!)
+              const team = await getNFT({
+                contract: owner.kind === 'project' ? projectContract : teamContract,
+                tokenId: BigInt(owner.id),
+              })
+              const teamName = team?.metadata.name as string
+              const link = listingId
+                ? `${DEPLOYED_ORIGIN}/marketplace/${listingId}`
+                : `${DEPLOYED_ORIGIN}/marketplace`
+              const fields = listingOgFieldsFrom(
+                {
+                  title: cleanedData.title,
+                  price: cleanedData.price,
+                  currency: cleanedData.currency,
+                  tag: cleanedData.tag,
+                  image: imageIpfsLink,
                   teamName,
-                }),
-              ]
-            )
+                },
+                teamName
+              )
+              sendDiscordMessage(
+                'networkNotifications',
+                `## [**${teamName}** has ${
+                  edit ? 'updated a' : 'posted a new'
+                } listing ](${link}) <@&${DISCORD_CITIZEN_ROLE_ID}>`,
+                [
+                  listingDiscordEmbed({
+                    fields,
+                    summary: cleanedData.description,
+                    url: link,
+                    teamName,
+                  }),
+                ]
+              )
+            } catch (error) {
+              console.error('Failed to send listing Discord notification:', error)
+            }
 
             setTimeout(() => {
               refreshListings()

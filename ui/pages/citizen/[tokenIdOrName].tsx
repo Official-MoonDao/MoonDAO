@@ -36,6 +36,7 @@ import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { PROJECT_PENDING } from '@/lib/nance/types'
+import { isOwnerActive } from '@/lib/project/isOwnerActive'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { citizenRowToNFT } from '@/lib/tableland/convertRow'
@@ -250,18 +251,11 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
         const batch = listings.slice(i, i + BATCH_SIZE)
 
         const batchResults = await Promise.all(
-          batch.map(async (listing: TeamListingType) => {
-            try {
-              const teamExpiration = await readContract({
-                contract: teamContract,
-                method: 'expiresAt' as string,
-                params: [listing.teamId],
-              })
-              return +teamExpiration.toString() > now ? listing : null
-            } catch {
-              return null
-            }
-          })
+          batch.map(async (listing: TeamListingType) =>
+            (await isOwnerActive({ teamId: listing.teamId, kind: 'listing', teamContract, now }))
+              ? listing
+              : null
+          )
         )
 
         validListings.push(...batchResults.filter((listing: any) => listing !== null))

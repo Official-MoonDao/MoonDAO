@@ -38,6 +38,7 @@ import {
   usePublicYearEth,
   useTeamMintOpen,
 } from '@/lib/subscription/citizenCheckout'
+import { ownerFallbackName } from '@/lib/project/projectOwnerId'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
@@ -655,7 +656,9 @@ export default function Join({
                       </h3>
                       <p className="text-slate-300 text-sm mb-4 line-clamp-3">{job.description}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-400">Team #{job.teamId}</span>
+                        <span className="text-sm text-slate-400">
+                          {ownerFallbackName(job.teamId)}
+                        </span>
                         <StandardButton
                           backgroundColor="bg-blue-600 hover:bg-blue-700"
                           textColor="text-white"

@@ -8,6 +8,8 @@ import {
   TEAM_TABLE_NAMES,
 } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
+import { fetchProjectSummaries, ProjectSummary } from '@/lib/project/projectAccess'
+import { isProjectOwnerId, parseOwnerId } from '@/lib/project/projectOwnerId'
 import { Chain } from '@/lib/rpc/chains'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -113,15 +115,20 @@ export async function filterListingsByActiveTeam(
   if (!listings?.length) return []
   const expirations = await resolveTeamExpirations(
     chain,
-    listings.map((listing) => listing.teamId),
+    listings.filter((listing) => !isProjectOwnerId(listing.teamId)).map((listing) => listing.teamId),
   )
   return listings.filter((listing) => {
+    // Projects have no subscription; their listings stay up until they end.
+    if (isProjectOwnerId(listing.teamId)) return true
     const expiration = expirations.get(listing.teamId)
     return expiration === null || expiration === undefined || expiration > now
   })
 }
 
-/** Team names are a nice-to-have label; a failure here must not discard listings. */
+/**
+ * Owner names are a nice-to-have label; a failure here must not discard
+ * listings. Project-owned listings also get the MDP their profile is linked by.
+ */
 export async function attachTeamNames(
   chain: Chain,
   listings: TeamListing[],
@@ -132,12 +139,28 @@ export async function attachTeamNames(
     teams = await queryTable(chain, `SELECT id, name FROM ${TEAM_TABLE_NAMES[chainSlug]}`)
   } catch (error) {
     console.error('Failed to fetch team names for marketplace listings:', error)
-    return listings
   }
-  return listings.map((listing) => ({
-    ...listing,
-    teamName: teams.find((team: any) => team.id === listing.teamId)?.name,
-  }))
+  let projects = new Map<number, ProjectSummary>()
+  try {
+    projects = await fetchProjectSummaries(
+      chain,
+      listings
+        .filter((listing) => isProjectOwnerId(listing.teamId))
+        .map((listing) => parseOwnerId(listing.teamId).id),
+    )
+  } catch (error) {
+    console.error('Failed to fetch project names for marketplace listings:', error)
+  }
+  return listings.map((listing) => {
+    if (isProjectOwnerId(listing.teamId)) {
+      const project = projects.get(parseOwnerId(listing.teamId).id)
+      return project
+        ? { ...listing, teamName: project.name, projectMDP: Number(project.MDP) }
+        : listing
+    }
+    const teamName = teams.find((team: any) => team.id === listing.teamId)?.name
+    return teamName ? { ...listing, teamName } : listing
+  })
 }
 
 export async function fetchActiveListings(
