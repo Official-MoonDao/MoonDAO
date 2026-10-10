@@ -83,6 +83,13 @@ export const whyJoinPillars: WhyJoinPillar[] = [
       'Read every high-signal role from teams already building in space, then apply as a Citizen — no mass-applicant noise, just people genuinely aligned with the mission.',
   },
   {
+    icon: '/assets/icon-contributions.svg',
+    iconAlt: 'Rewards',
+    header: 'Get Rewarded for Your Work',
+    paragraph:
+      "Every quarter, citizens submit what they've built to advance the mission, and the community rewards it from a shared pool, paid straight to your wallet. Your independent contributions count.",
+  },
+  {
     icon: '/assets/icon-astronaut.svg',
     iconAlt: 'Astronaut',
     header: 'Flights & Experiences',
