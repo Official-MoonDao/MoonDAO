@@ -111,3 +111,22 @@ export const whyJoinPillars: WhyJoinPillar[] = [
       'Meet friends and collaborators across the space industry, from founders to astronauts — a place where working on space is celebrated, not strange.',
   },
 ]
+
+// "Why become a citizen" film (95 s, voiceover) embedded under the /join hero.
+// The section stays hidden while JOIN_FILM_VIMEO_ID is empty. Set it to the
+// Vimeo video ID once the film is uploaded, and set JOIN_FILM_UPLOAD_DATE
+// (YYYY-MM-DD) for the VideoObject structured data.
+export const JOIN_FILM_VIMEO_ID: string = '1234510451'
+export const JOIN_FILM_UPLOAD_DATE: string = '2026-10-09'
+
+export const joinFilm = {
+  name: 'Why become a MoonDAO Citizen',
+  description:
+    'Space access has always needed the right passport, the right funding, or the right connections. MoonDAO is changing that. Citizenship in the Space Acceleration Network unlocks your mission control: a global network of space builders, paid space work, citizens-only jobs, community funding for your ideas, and a real vote. Become a Citizen: https://moondao.com/join',
+  duration: 'PT1M35S',
+  durationLabel: '1:35',
+  poster: '/assets/join-film-poster.jpg',
+  loopPoster: '/assets/join-loop-poster.jpg',
+  loopWebm: '/assets/join-loop.webm',
+  loopMp4: '/assets/join-loop.mp4',
+}
