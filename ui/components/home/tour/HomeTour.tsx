@@ -39,9 +39,9 @@ export default function HomeTour({ missions, featuredMissionData }: any) {
   if (activeId) lastId.current = activeId
   const stop = TOUR_STOPS[lastId.current]
 
-  const [roadmapYear, setRoadmapYear] = useState<number | null>(null)
-  const onYearChange = useCallback((y: number | null) => setRoadmapYear(y), [])
-  const year = activeId === 'roadmap' ? roadmapYear : null
+  const [roadmapBuild, setRoadmapBuild] = useState(0)
+  const onBuildChange = useCallback((b: number) => setRoadmapBuild(b), [])
+  const build = activeId === 'roadmap' ? roadmapBuild : null
 
   const mode = useTourRenderMode()
 
@@ -67,7 +67,7 @@ export default function HomeTour({ missions, featuredMissionData }: any) {
         description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement."
       />
       <div className="relative bg-[#010208]">
-        <TourScene stop={stop} year={year} visible={activeId !== null} mode={mode} />
+        <TourScene stop={stop} build={build} visible={activeId !== null} mode={mode} />
         <TourRail active={activeId} />
 
         <div className="relative z-10">
@@ -173,8 +173,8 @@ export default function HomeTour({ missions, featuredMissionData }: any) {
             </TourCard>
           </TourChapter>
 
-          <TourChapter id="roadmap" heightSvh={400}>
-            {(pinned) => <RoadmapCard pinned={pinned} onYearChange={onYearChange} />}
+          <TourChapter id="roadmap" heightSvh={300}>
+            {(pinned) => <RoadmapCard pinned={pinned} onBuildChange={onBuildChange} />}
           </TourChapter>
 
           <TourChapter id="join">

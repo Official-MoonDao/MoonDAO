@@ -10,30 +10,26 @@ const TourGlobe = dynamic(() => import('./TourGlobe'), { ssr: false })
 
 type TourSceneProps = {
   stop: TourStop
-  year: number | null
+  build: number | null
   // False once the page has scrolled past the last stop.
   visible: boolean
   mode: TourRenderMode | null
 }
 
-export default function TourScene({ stop, year, visible, mode }: TourSceneProps) {
+export default function TourScene({ stop, build, visible, mode }: TourSceneProps) {
   const [mountGlobe, setMountGlobe] = useState(false)
   const [ready, setReady] = useState(false)
 
-  // Start fetching the scene only once the hero has painted and the main
-  // thread has a moment, so it never competes with the copy for first load.
+  // The scene is a chain of fetches that each only start once the one before
+  // has run: this chunk, the globe chunk inside it, then the terrain height map
+  // the poster waits on. Start all three at once as soon as the page hydrates.
   useEffect(() => {
     if (mode !== 'globe' || mountGlobe) return
-    const w = window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number
-      cancelIdleCallback?: (id: number) => void
-    }
-    if (w.requestIdleCallback) {
-      const id = w.requestIdleCallback(() => setMountGlobe(true), { timeout: 2500 })
-      return () => w.cancelIdleCallback?.(id)
-    }
-    const t = setTimeout(() => setMountGlobe(true), 1200)
-    return () => clearTimeout(t)
+    void import('@/components/lunar-atlas/MoonGlobe')
+    void import('@/components/lunar-atlas/useTerrainSampler').then((m) =>
+      m.loadInnerField().catch(() => {})
+    )
+    setMountGlobe(true)
   }, [mode, mountGlobe])
 
   const still = mode === 'still' ? stop.still ?? TOUR_POSTER : TOUR_POSTER
@@ -48,7 +44,7 @@ export default function TourScene({ stop, year, visible, mode }: TourSceneProps)
     >
       {mountGlobe && (
         <div className="absolute inset-0">
-          <TourGlobe target={stop.target} year={year} onReady={() => setReady(true)} />
+          <TourGlobe target={stop.target} build={build} onReady={() => setReady(true)} />
         </div>
       )}
 

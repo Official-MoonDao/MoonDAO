@@ -6,6 +6,7 @@ import { TIME_STATUS_OPACITY } from '@/lib/lunar-atlas/display'
 import {
   atlasNowYear,
   datasetYearRange,
+  projectDateRange,
   projectStateAtYear,
   raceArrivalYear,
 } from '@/lib/lunar-atlas/selectors'
@@ -15,12 +16,13 @@ import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
 
 export type TourGlobeProps = {
   target: TourTarget
-  // Calendar year the base is shown at; null shows it complete.
-  year: number | null
+  // Share of the base's arrivals standing on the surface, 0 to 1; null shows
+  // it complete.
+  build: number | null
   onReady?: () => void
 }
 
-export default function TourGlobe({ target, year, onReady }: TourGlobeProps) {
+export default function TourGlobe({ target, build, onReady }: TourGlobeProps) {
   const dataset = SEED_ATLAS
   const { layout, sitedTrees } = useSitedColony(
     dataset.projects,
@@ -30,8 +32,6 @@ export default function TourGlobe({ target, year, onReady }: TourGlobeProps) {
   const focus = useMemo(() => stopFocus(target, layout), [target, layout])
 
   const range = useMemo(() => datasetYearRange(dataset), [dataset])
-  const sceneYear =
-    year == null ? range.max : Math.min(range.max, Math.max(range.min, year))
 
   const raceYears = useMemo(() => {
     const now = atlasNowYear()
@@ -42,18 +42,43 @@ export default function TourGlobe({ target, year, onReady }: TourGlobeProps) {
     return years
   }, [dataset.projects, dataset.sharedGoals])
 
+  // Arrivals bunch into the last couple of years, so stepping the calendar
+  // leaves the ground empty for most of the scroll and then fills it at once.
+  // Revealing in arrival order instead puts sites down at an even pace. The
+  // roads, lights and solar fields follow the construction race
+  // (settlementPresence), so it goes first: otherwise the whole street grid
+  // lands in a single step partway through.
+  const arrivalRank = useMemo(() => {
+    const now = atlasNowYear()
+    const dated = dataset.projects
+      .map((p) => ({
+        id: p.id,
+        first: p.type === 'construction' ? 0 : 1,
+        at: projectDateRange(p, now, raceYears.get(p.id))?.earliest,
+      }))
+      .filter((d): d is { id: string; first: number; at: number } => d.at != null)
+      .sort((a, b) => a.first - b.first || a.at - b.at)
+    return new Map(dated.map((d, i) => [d.id, i]))
+  }, [dataset.projects, raceYears])
+
+  const revealed = build == null ? Infinity : Math.round(build * arrivalRank.size)
+
   const getProjectStyle = useMemo(
     () =>
       (project: Project): MarkerStyle => {
+        const rank = arrivalRank.get(project.id)
+        if (rank != null && rank >= revealed) {
+          return { opacity: TIME_STATUS_OPACITY.future, visible: true }
+        }
         const st = projectStateAtYear(
           project,
-          sceneYear,
+          range.max,
           atlasNowYear(),
           raceYears.get(project.id)
         )
         return { opacity: TIME_STATUS_OPACITY[st.status], visible: true }
       },
-    [sceneYear, raceYears]
+    [arrivalRank, revealed, range.max, raceYears]
   )
 
   return (

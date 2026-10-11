@@ -1,9 +1,13 @@
 import { AnimatePresence, motion, useMotionValueEvent, type MotionValue } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { timelineEvents } from '@/components/home/landing/JourneyTimeline'
 
+// Only the stretch still ahead: nothing stands on the Moon before it, so
+// scrolling the years already behind us would just show empty ground.
+const AHEAD = timelineEvents.slice(Math.max(0, timelineEvents.findIndex((e) => e.isCurrent)))
+
 const MILESTONES = [
-  ...timelineEvents.map((e) => ({
+  ...AHEAD.map((e) => ({
     date: e.date,
     title: e.title,
     description: e.description,
@@ -20,27 +24,27 @@ const MILESTONES = [
 
 const LAST = MILESTONES.length - 1
 
+// Coarse enough that scrolling re-styles the scene a few dozen times across
+// the whole chapter rather than every frame.
+const BUILD_STEPS = 60
+
 type RoadmapCardProps = {
   pinned: MotionValue<number>
-  // The year the base behind the card should be shown at; null once the
-  // settlement is complete.
-  onYearChange: (year: number | null) => void
+  // Share of the base standing behind the card, 0 to 1; reaches 1 as the
+  // last milestone comes up.
+  onBuildChange: (build: number) => void
 }
 
-export default function RoadmapCard({ pinned, onYearChange }: RoadmapCardProps) {
+export default function RoadmapCard({ pinned, onBuildChange }: RoadmapCardProps) {
   const [index, setIndex] = useState(0)
 
   useMotionValueEvent(pinned, 'change', (p) => {
     setIndex(Math.min(LAST, Math.max(0, Math.floor(p * MILESTONES.length))))
+    const build = Math.min(1, Math.max(0, (p * MILESTONES.length) / LAST))
+    onBuildChange(Math.round(build * BUILD_STEPS) / BUILD_STEPS)
   })
 
-  useEffect(() => {
-    if (index === LAST) onYearChange(null)
-    else onYearChange(Number(MILESTONES[index].date.match(/\d{4}/)?.[0]))
-  }, [index, onYearChange])
-
   const m = MILESTONES[index]
-  const currentIndex = MILESTONES.findIndex((e) => e.isCurrent)
 
   return (
     <div className="max-w-xl">
@@ -49,13 +53,14 @@ export default function RoadmapCard({ pinned, onYearChange }: RoadmapCardProps) 
         The whole settlement
       </p>
       <h2 className="mt-4 font-heading font-semibold text-[clamp(1.9rem,4vw,3.25rem)] leading-[1.05] text-white [text-shadow:0_2px_24px_rgba(1,2,8,0.6)]">
-        Journey to the Moon
+        The road to 2030
       </h2>
       <p className="mt-3 max-w-lg text-base text-white/60 md:text-lg">
-        From an internet community to a permanent settlement — watch the base go up.
+        Since 2021 MoonDAO has sent two members to space and landed its constitution on the Moon.
+        Next, the base itself.
       </p>
 
-      <div className="relative mt-8 min-h-[170px]">
+      <div className="relative mt-8 min-h-[150px]">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={index}
@@ -66,7 +71,7 @@ export default function RoadmapCard({ pinned, onYearChange }: RoadmapCardProps) 
           >
             <span className="font-RobotoMono text-sm uppercase tracking-[0.2em] text-moon-gold">
               {m.date}
-              {index === currentIndex ? ' · Now' : ''}
+              {m.isCurrent ? ' · Now' : ''}
             </span>
             <h3 className="mt-2 font-heading text-xl font-semibold text-white md:text-2xl">
               {m.title}
@@ -83,7 +88,7 @@ export default function RoadmapCard({ pinned, onYearChange }: RoadmapCardProps) 
           <span
             key={e.date + e.title}
             className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
-              i <= index ? 'bg-moon-gold/90' : i <= currentIndex ? 'bg-white/30' : 'bg-white/10'
+              i <= index ? 'bg-moon-gold/90' : 'bg-white/10'
             }`}
           />
         ))}
