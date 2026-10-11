@@ -5,6 +5,7 @@ import {
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { useLogin } from '@privy-io/react-auth'
+import Link from 'next/link'
 import {
   useCallback,
   useContext,
@@ -485,7 +486,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                   )}
                 </button>
 
-                <a
+                <Link
                   href="/moonbase"
                   className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 p-5 text-white"
                 >
@@ -497,7 +498,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                   <span className="mt-4 inline-flex rounded-lg bg-white/15 px-4 py-1.5 text-sm font-semibold backdrop-blur group-hover:bg-white/25">
                     Open Moonbase
                   </span>
-                </a>
+                </Link>
 
                 <div className="rounded-xl border border-white/[0.08] bg-white/[0.035] p-4">
                   <p className="text-xs text-gray-500">How it works</p>
