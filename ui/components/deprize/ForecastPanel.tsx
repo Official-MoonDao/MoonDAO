@@ -42,7 +42,6 @@ import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import CitizenPredictNotice from '@/components/deprize/CitizenPredictNotice'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
 import PredictModal from '@/components/deprize/PredictModal'
-import { CARD } from '@/components/deprize/detail/primitives'
 
 export default function ForecastPanel(props: {
   chainSlug: string
@@ -449,9 +448,9 @@ export default function ForecastPanel(props: {
   if (numOutcomes <= 0) return null
 
   return (
-    <section id="deprize-forecast" className={CARD}>
-      <h2 className="title-text-colors text-lg font-heading font-semibold">Competitors</h2>
-      <p className="mt-1 text-sm text-gray-300">{FORECAST_COPY.panelIntro}</p>
+    <section id="deprize-forecast" className="scroll-mt-24">
+      <h2 className="text-white text-lg font-heading font-semibold">Competitors</h2>
+      <p className="mt-1 text-sm text-gray-400">{FORECAST_COPY.panelIntro}</p>
       {restricted && (
         <p className="mt-2 text-sm text-amber-200">
           Betting isn&apos;t available in your region — you can still make a prediction.
@@ -479,7 +478,18 @@ export default function ForecastPanel(props: {
         <p className="mt-3 text-sm text-gray-300">Your skill score is {mine.skill.toFixed(2)}.</p>
       )}
 
-      <div className="mt-4 flex flex-col gap-3" aria-live="polite">
+      <div
+        aria-hidden
+        className="mt-4 flex items-center gap-3 sm:gap-4 border-b border-white/[0.08] px-3 sm:px-4 pb-2 text-[11px] uppercase tracking-wide text-gray-500"
+      >
+        <span className="flex-1">Outcome</span>
+        <span className="w-16 sm:w-20 text-right">
+          {rankSource === 'mooney' ? 'Share' : 'Chance'}
+        </span>
+        <span className="hidden sm:block w-12" />
+        <span className="w-[4.5rem] sm:w-24" />
+      </div>
+      <div className="mt-1 flex flex-col gap-1" aria-live="polite">
         {orderedOutcomes.map((o) => {
           const teamId = teamIds[o.index] ?? 0n
           const outcomeBinding = raceBinding?.outcomes[o.index]

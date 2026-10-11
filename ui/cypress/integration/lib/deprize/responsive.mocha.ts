@@ -33,6 +33,8 @@ const TOUCH_CONSUMERS = [
   'components/deprize/BetModal.tsx',
   'components/deprize/LiveDePrizeHero.tsx',
   'components/deprize/DePrizeIndexContent.tsx',
+  'components/deprize/MarketOutcomeRow.tsx',
+  'components/deprize/HeroCarousel.tsx',
   'components/deprize/detail/PrizeHeader.tsx',
   'components/deprize/detail/PrizePoolSlot.tsx',
 ]
@@ -192,9 +194,9 @@ describe('deprize responsive layout', () => {
     expect(page).to.match(/volumeEth=\{[\s\S]*totalStakedEth/)
   })
 
-  it('left-aligns the hero prize figure once it wraps under the title', () => {
+  it('keeps the hero prize figure under the outcomes, not beside the title', () => {
     const src = readUi('components/deprize/LiveDePrizeHero.tsx')
-    expect(src).to.match(/w-full sm:w-auto text-left sm:text-right/)
+    expect(src).to.match(/pool=\{<PrizeAvailable/)
     expect(src, 'a shrink-0 block cannot share a line with a long title').to.not.match(
       /className="text-right shrink-0"/
     )

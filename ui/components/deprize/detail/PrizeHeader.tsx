@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { deprizeIndexHref } from '@/lib/deprize/competitions'
 import { DePrizeState } from '@/lib/deprize/constants'
+import { goalIndexCategory, PROJECT_TYPE_LABEL } from '@/lib/lunar-atlas/display'
+import type { SharedGoal } from '@/lib/lunar-atlas/types'
+import CategoryIcon from '@/components/deprize/CategoryIcon'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
-import { CARD, StateBadge, TOUCH } from './primitives'
+import { StateBadge, TOUCH } from './primitives'
 
 export default function PrizeHeader(props: {
   knownCompetition: boolean
@@ -13,7 +16,7 @@ export default function PrizeHeader(props: {
   statusLabelOverride?: string
   badgeTitle?: string
   abnormalStatus: boolean
-  raceGoal: { id: string } | undefined
+  raceGoal: SharedGoal | undefined
   winningTeamId: bigint
   teamContract: any
   showResolved: boolean
@@ -35,39 +38,59 @@ export default function PrizeHeader(props: {
     chainSlug,
   } = props
   const indexHref = deprizeIndexHref(chainSlug)
+  const category = raceGoal ? goalIndexCategory(raceGoal) : undefined
+  const live = state === DePrizeState.OPEN && !abnormalStatus
 
   return (
-    <div className={CARD}>
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
-          <h1 className="text-white font-heading font-semibold text-lg sm:text-xl">
-            {knownCompetition ? title : `DePrize #${deprizeId}`}
-          </h1>
-          {showBadge && (
-            <StateBadge
-              state={state}
-              labelOverride={abnormalStatus ? statusLabelOverride : undefined}
-              toneOverride={abnormalStatus ? 'amber' : undefined}
-              title={badgeTitle}
-            />
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          {raceGoal && (
-            <Link
-              href={`/moonbase?race=${raceGoal.id}`}
-              className={`inline-flex items-center text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded ${TOUCH}`}
-            >
-              Open in Moon Base Zero
-            </Link>
-          )}
+    <div>
+      <div className="flex items-center justify-between gap-3 flex-wrap text-xs text-gray-400">
+        <div className="flex items-center gap-1.5 flex-wrap min-w-0">
           <Link
             href={indexHref}
+            className={`inline-flex items-center hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded ${TOUCH}`}
+          >
+            All prizes
+          </Link>
+          {category && (
+            <>
+              <span className="text-gray-600">·</span>
+              <span className="inline-flex items-center gap-1">
+                <CategoryIcon category={category} className="w-3.5 h-3.5" />
+                {PROJECT_TYPE_LABEL[category]}
+              </span>
+            </>
+          )}
+          {live && (
+            <>
+              <span className="text-gray-600">·</span>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-red-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                Live
+              </span>
+            </>
+          )}
+        </div>
+        {raceGoal && (
+          <Link
+            href={`/moonbase?race=${raceGoal.id}`}
             className={`inline-flex items-center text-indigo-300/90 hover:text-indigo-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 rounded ${TOUCH}`}
           >
-            ← All prizes
+            Open in Moon Base Zero
           </Link>
-        </div>
+        )}
+      </div>
+      <div className="mt-1 flex items-center gap-3 flex-wrap">
+        <h1 className="text-white font-heading font-bold uppercase tracking-tight text-2xl sm:text-3xl leading-tight">
+          {knownCompetition ? title : `DePrize #${deprizeId}`}
+        </h1>
+        {showBadge && (
+          <StateBadge
+            state={state}
+            labelOverride={abnormalStatus ? statusLabelOverride : undefined}
+            toneOverride={abnormalStatus ? 'amber' : undefined}
+            title={badgeTitle}
+          />
+        )}
       </div>
       {winningTeamId > 0n && (
         <div className="mt-3 flex items-center gap-2 flex-wrap px-3 py-2.5 rounded-xl bg-moon-green/10 border border-moon-green/35">

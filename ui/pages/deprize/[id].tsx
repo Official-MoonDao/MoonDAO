@@ -75,6 +75,7 @@ import PositionSection from '@/components/deprize/detail/PositionSection'
 import PrizeHeader from '@/components/deprize/detail/PrizeHeader'
 import PrizePoolSlot from '@/components/deprize/detail/PrizePoolSlot'
 import StickyRail from '@/components/deprize/detail/StickyRail'
+import TradeTicket from '@/components/deprize/detail/TradeTicket'
 import ProvenanceFooter from '@/components/deprize/detail/ProvenanceFooter'
 import { Notice, NoticeStack, type NoticeItem } from '@/components/deprize/detail/primitives'
 import {
@@ -395,6 +396,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const handleBet = useCallback((index: number) => {
     setBetIndex(index)
   }, [])
+  const [ticketAmountEth, setTicketAmountEth] = useState('')
 
   // Moon Base Zero "Back this team" deep-links here with ?outcome=N. Wait for
   // the market + chart to settle so the layout above the card stops shifting.
@@ -710,8 +712,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
 
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
-      <div className="flex flex-col gap-4 w-full lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <div className="flex flex-col gap-4 min-w-0 lg:col-start-1 lg:row-start-1">
+      <div className="flex flex-col gap-6 w-full lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-8 lg:items-start">
+        <div className="flex flex-col gap-6 min-w-0 lg:col-start-1 lg:row-start-1">
         <PrizeHeader
           knownCompetition={knownCompetition}
           title={competition.title}
@@ -811,7 +813,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
                     chain={chain}
                     account={account}
                     spendableEth={spendable}
-                    initialAmountEth={onrampReturn.prefillEth}
+                    initialAmountEth={onrampReturn.prefillEth ?? (ticketAmountEth || undefined)}
                     fundsArrived={onrampReturn.fundsArrived}
                     onClose={onClose}
                     onDone={() => {
@@ -832,6 +834,19 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         )}
         </div>
         <StickyRail>
+        <div className="flex flex-col gap-4">
+        <TradeTicket
+          title={knownCompetition ? competition.title : `DePrize #${deprizeId}`}
+          labels={predictionLabels}
+          colors={outcomeColors}
+          probabilities={market.outcomes.map((o) => o.probability)}
+          order={rankedOutcomes.map((o) => o.index)}
+          resolved={showResolved}
+          bettingAllowed={bettingAllowed && !tradingHalted}
+          amountEth={ticketAmountEth}
+          onAmountChange={setTicketAmountEth}
+          onPredict={handleBet}
+        />
         <PrizePoolSlot
           poolUsd={poolUsd}
           asOf={poolAsOf}
@@ -853,6 +868,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           labels={predictionLabels}
           bettorAddresses={bettorAddresses}
         />
+        </div>
         </StickyRail>
         <div className="flex flex-col gap-4 min-w-0 lg:col-start-1 lg:row-start-2">
         <ClaimSection>

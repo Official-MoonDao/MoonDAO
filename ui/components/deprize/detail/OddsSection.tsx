@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { votingPowerByOutcome } from '@/lib/forecasts/aggregate'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
 import type { ForecastConsensus } from '@/lib/forecasts/consensusTypes'
-import { CARD } from './primitives'
+const CHART_HEIGHT = 300
 
 const OddsHistoryChart = dynamic(() => import('@/components/deprize/OddsHistoryChart'), {
   ssr: false,
@@ -69,11 +69,11 @@ export default function OddsSection(props: {
   const ethEmpty = !props.activityLoading && !props.activityError && props.betsLength === 0
 
   return (
-    <div className={CARD}>
+    <div className="border-b border-white/[0.08] pb-5">
       {props.question && (
-        <p className="text-white text-base font-semibold leading-snug">{props.question}</p>
+        <p className="text-gray-300 text-sm leading-snug">{props.question}</p>
       )}
-      <div className={`mb-3 flex items-center justify-between gap-3 ${props.question ? 'mt-1' : ''}`}>
+      <div className={`mb-3 flex items-center justify-between gap-3 ${props.question ? 'mt-2' : ''}`}>
         <p className="text-xs font-normal text-gray-500">
           {source === 'eth'
             ? ethEmpty
@@ -112,6 +112,8 @@ export default function OddsSection(props: {
       </div>
       {source === 'eth' ? (
         <OddsHistoryChart
+          variant="hero"
+          height={CHART_HEIGHT}
           history={props.history}
           labels={props.labels}
           colors={props.colors}
@@ -122,6 +124,8 @@ export default function OddsSection(props: {
       ) : mooney && mooney.length > 0 ? (
         <>
           <OddsHistoryChart
+            variant="hero"
+            height={CHART_HEIGHT}
             history={mooneyHistory}
             labels={props.labels}
             colors={props.colors}
@@ -133,7 +137,10 @@ export default function OddsSection(props: {
           </p>
         </>
       ) : (
-        <div className="flex h-[220px] items-center justify-center px-4 text-center text-xs text-gray-500">
+        <div
+          className="flex items-center justify-center px-4 text-center text-xs text-gray-500"
+          style={{ height: CHART_HEIGHT }}
+        >
           {mooneyLoading
             ? 'Loading MOONEY votes…'
             : 'No MOONEY votes yet. A prediction without a Citizen is saved at 0 voting power and does not move this chart.'}

@@ -8,14 +8,16 @@ import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import { deprizePrefixedHref, getDePrizeCompetition } from '@/lib/deprize/competitions'
 import { DEPRIZE_PREDICT_CTA, DePrizeState, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
-import { fmt } from '@/lib/deprize/format'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
 import client from '@/lib/thirdweb/client'
 import BetModal from '@/components/deprize/BetModal'
-import { useDePrizeTeamName } from '@/components/deprize/DePrizeTeamLink'
+import { useDePrizeTeamNames } from '@/components/deprize/DePrizeTeamLink'
+import HeroOddsChart from '@/components/deprize/HeroOddsChart'
+import MarketHero from '@/components/deprize/MarketHero'
+import MarketOutcomeRow from '@/components/deprize/MarketOutcomeRow'
 import PrizeAvailable from '@/components/deprize/PrizeAvailable'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 
@@ -28,12 +30,11 @@ type Props = {
   spendableEth: number
   bettingBlockedReason?: string
   onDone: () => void
+  /** False while this slide is off-screen in the carousel — skips the chart's log scan. */
+  active?: boolean
 }
 
-function OutcomeName({ teamId, teamContract }: { teamId: bigint; teamContract: any }) {
-  const name = useDePrizeTeamName(teamId, teamContract)
-  return <>{name}</>
-}
+const HERO_ROWS = 5
 
 export default function LiveDePrizeHero({
   deprizeId,
@@ -44,6 +45,7 @@ export default function LiveDePrizeHero({
   spendableEth,
   bettingBlockedReason,
   onDone,
+  active = true,
 }: Props) {
   const competition = getDePrizeCompetition(chainSlug, deprizeId)
   const { deprize, loading: registryLoading } = useDePrize(deprizeId, chain)
@@ -74,6 +76,7 @@ export default function LiveDePrizeHero({
         : undefined,
     [chain, chainSlug]
   )
+  const teamNames = useDePrizeTeamNames(deprize?.teamIds, teamContract)
 
   const mintAddress = DEPRIZE_MINT_ADDRESSES[chainSlug] ?? ''
   const betting = reconcileBettingStatus({
@@ -93,135 +96,119 @@ export default function LiveDePrizeHero({
 
   const [betIndex, setBetIndex] = useState<number | null>(null)
 
+  const colors = useMemo(
+    () => (deprize?.teamIds ?? []).map((_, i) => OUTCOME_COLORS[i % OUTCOME_COLORS.length]),
+    [deprize?.teamIds]
+  )
+
   const ranked = useMemo(() => {
     if (!deprize?.teamIds.length) return []
     return deprize.teamIds
       .map((teamId, index) => ({
         index,
         teamId,
-        color: OUTCOME_COLORS[index % OUTCOME_COLORS.length],
+        color: colors[index],
         probability: market.outcomes[index]?.probability ?? 0,
       }))
       .sort((a, b) => b.probability - a.probability)
-  }, [deprize?.teamIds, market.outcomes])
+  }, [deprize?.teamIds, market.outcomes, colors])
 
   const detailHref = deprizePrefixedHref(chainSlug, deprizeId)
   const forecastHref = `${detailHref}#deprize-forecast`
   const betOutcome = betIndex !== null ? market.outcomes[betIndex] : undefined
   const showPredict = !!bettingBlockedReason
+  const more = ranked.length - HERO_ROWS
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-indigo-950/50 backdrop-blur-xl border border-indigo-400/25 shadow-xl overflow-hidden">
-      <div className="p-5 sm:p-7">
-        <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-          <div className="min-w-0">
-            <a
-              href={detailHref}
-              className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
-            >
-              <p className="text-white font-heading font-semibold text-xl sm:text-2xl leading-snug">
-                {competition.title}
-              </p>
-            </a>
-            <p className="mt-1.5 text-sm text-gray-400 max-w-xl">{competition.tagline}</p>
-          </div>
-          {/* Wrapped onto its own line on a phone, this block kept its right
-              alignment and read as detached from the prize it belongs to. */}
-          <div className="w-full sm:w-auto text-left sm:text-right sm:shrink-0">
-            <PrizeAvailable eth={poolEth} loading={poolLoading} size="hero" />
-          </div>
-        </div>
-
-        {ranked.length > 0 && (
-          <div className="flex w-full h-2 rounded-full overflow-hidden bg-white/5 mb-4">
-            {ranked.map((o) => (
-              <div
+    <>
+      <MarketHero
+        eyebrow={
+          <>
+            <span className="inline-flex items-center gap-1.5 font-semibold text-red-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+              Live
+            </span>
+            <span className="text-gray-600">·</span>
+            <span>{chain.name ?? 'On-chain'}</span>
+          </>
+        }
+        title={competition.title}
+        subtitle={competition.tagline}
+        href={detailHref}
+        rows={
+          <>
+            {ranked.slice(0, HERO_ROWS).map((o) => (
+              <MarketOutcomeRow
                 key={o.index}
-                style={{
-                  width: `${Math.max(0, Math.min(100, o.probability))}%`,
-                  background: o.color,
-                }}
+                size="hero"
+                name={teamNames[o.index] ?? `Team #${o.teamId.toString()}`}
+                color={o.color}
+                probability={o.probability}
+                showOdds
+                heldQty={
+                  (market.outcomes[o.index]?.balance ?? 0) > 0
+                    ? market.outcomes[o.index]?.balance
+                    : undefined
+                }
+                onPredict={bettingEnabled ? () => setBetIndex(o.index) : undefined}
               />
             ))}
-          </div>
-        )}
-
-        <div className="flex flex-col gap-1.5">
-          {ranked.map((o) => {
-            const pct = Number.isFinite(o.probability) ? fmt(o.probability, 0) : undefined
-            return (
-              <div
-                key={o.index}
-                className="relative flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-2 overflow-hidden"
+            {more > 0 && (
+              <a href={detailHref} className="mt-1 text-xs text-gray-500 hover:text-gray-300">
+                +{more} more
+              </a>
+            )}
+            {!registryLoading && ranked.length === 0 && (
+              <p className="py-2 text-sm text-gray-500">
+                Loading market… or switch your wallet to Arbitrum.
+              </p>
+            )}
+          </>
+        }
+        chart={
+          active && numOutcomes > 0 ? (
+            <HeroOddsChart
+              deprizeId={deprizeId}
+              market={market}
+              chain={chain}
+              labels={teamNames}
+              colors={colors}
+            />
+          ) : null
+        }
+        pool={<PrizeAvailable eth={poolEth} loading={poolLoading} />}
+        footer={
+          <div className="flex flex-wrap items-center gap-3">
+            {showPredict && (
+              <a
+                href={forecastHref}
+                className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold
+                  bg-white/10 hover:bg-white/15 text-white transition-all
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
               >
-                <div
-                  className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
-                  style={{
-                    width: `${Math.max(0, Math.min(100, o.probability))}%`,
-                    background: o.color,
-                  }}
-                />
-                <span
-                  className="relative z-10 w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: o.color }}
-                />
-                <span className="relative z-10 flex-1 min-w-0 truncate text-sm text-white/90">
-                  <OutcomeName teamId={o.teamId} teamContract={teamContract} />
-                </span>
-                <span className="relative z-10 shrink-0 text-sm font-semibold tabular-nums text-gray-200">
-                  {pct !== undefined ? `${pct}%` : '—'}
-                </span>
-                {bettingEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => setBetIndex(o.index)}
-                    className={`relative z-10 shrink-0 px-3 py-1.5 rounded-md text-xs font-semibold
-                      bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
-                      transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
-                  >
-                    {DEPRIZE_PREDICT_CTA}
-                  </button>
-                )}
-              </div>
-            )
-          })}
-          {!registryLoading && ranked.length === 0 && (
-            <p className="text-sm text-gray-500 py-2">
-              Loading market… or switch your wallet to Arbitrum.
-            </p>
-          )}
-        </div>
-
-        {showPredict && <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>}
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          {showPredict && (
+                {DEPRIZE_PREDICT_CTA}
+              </a>
+            )}
             <a
-              href={forecastHref}
-              className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold
-                bg-white/10 hover:bg-white/15 text-white transition-all
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${TOUCH}`}
+              href={detailHref}
+              className="text-sm text-indigo-300 hover:text-indigo-200 transition-colors"
             >
-              {DEPRIZE_PREDICT_CTA}
+              Open market →
             </a>
-          )}
-          <a
-            href={detailHref}
-            className="inline-flex text-sm text-indigo-300 hover:text-indigo-200 transition-colors"
-          >
-            Open full market →
-          </a>
-        </div>
-      </div>
+          </div>
+        }
+        notice={
+          showPredict ? (
+            <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>
+          ) : undefined
+        }
+      />
 
       {betOutcome && account && market.marketAddress && (
         <BetModal
           deprizeId={deprizeId}
           outcomeIndex={betIndex!}
-          teamName={
-            // Resolved on the detail page via NFT; here the modal just needs a label.
-            `Team #${deprize?.teamIds[betIndex!]?.toString() ?? betIndex}`
-          }
+          teamName={teamNames[betIndex!] ?? `Team #${betIndex}`}
           probability={betOutcome.probability}
           numOutcomes={numOutcomes}
           mintAddress={mintAddress}
@@ -237,6 +224,6 @@ export default function LiveDePrizeHero({
           }}
         />
       )}
-    </div>
+    </>
   )
 }

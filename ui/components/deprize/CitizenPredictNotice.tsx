@@ -60,16 +60,20 @@ export default function CitizenPredictNotice(props: {
 
   if (props.linkedCitizenAddress) {
     return (
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-amber-200">
-          Your Citizen is on <WalletLabel address={props.linkedCitizenAddress} />. A prediction
-          from <WalletLabel address={props.activeAddress} /> is saved with 0 voting power, so it
-          does not move the MOONEY outcome.
-        </p>
+      <div className="flex flex-col gap-3 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] px-4 py-3 sm:flex-row sm:items-center">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-amber-100">
+            Your Citizen is on <WalletLabel address={props.linkedCitizenAddress} />
+          </p>
+          <p className="mt-0.5 text-xs text-gray-400">
+            Predictions from <WalletLabel address={props.activeAddress} /> have 0 voting power
+            and won&apos;t move the MOONEY outcome.
+          </p>
+        </div>
         <button
           type="button"
           onClick={props.canSwitch ? props.onSwitch : props.onConnectLinked}
-          className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 ${TOUCH}`}
+          className={`shrink-0 whitespace-nowrap rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-gray-200 ${TOUCH}`}
         >
           {props.canSwitch ? 'Switch to that wallet' : 'Connect that wallet'}
         </button>
