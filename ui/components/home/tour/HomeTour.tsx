@@ -71,7 +71,7 @@ export default function HomeTour({ missions, featuredMissionData }: any) {
         <TourRail active={activeId} />
 
         <div className="relative z-10">
-          <TourChapter id="arrival" heightSvh={130} fadeIn={false}>
+          <TourChapter id="arrival" heightSvh={150} fadeIn={false}>
             <TourCard
               as="h1"
               location="Moon Base Zero · Lunar south pole"

@@ -90,6 +90,7 @@ export default function TourGlobe({ target, build, onReady }: TourGlobeProps) {
       getProjectStyle={getProjectStyle}
       cinematic
       interactive={false}
+      glide={2.5}
       onReady={onReady}
     />
   )

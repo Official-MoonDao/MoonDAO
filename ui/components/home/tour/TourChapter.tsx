@@ -23,7 +23,7 @@ type TourChapterProps = {
 
 export default function TourChapter({
   id,
-  heightSvh = 170,
+  heightSvh = 220,
   fadeIn = true,
   children,
 }: TourChapterProps) {
@@ -32,21 +32,21 @@ export default function TourChapter({
 
   // Progress from the section's top entering the bottom of the screen to its
   // bottom leaving the top, which is heightSvh + 100 viewport heights of
-  // scroll. The card arrives over the half screen before it pins (the same
-  // moment useActiveStop starts the camera flight), holds while pinned, and
-  // leaves over the half screen after.
+  // scroll. The card starts arriving half a screen before its stretch begins
+  // (the moment useActiveStop starts the camera flight) and slides in over
+  // most of a screen while the camera glides, holds, then slides out over the
+  // same distance.
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
   const span = heightSvh + 100
   const at = (svh: number) => svh / span
-  const opacity = useTransform(
-    scrollYProgress,
-    fadeIn ? [at(50), at(100), at(heightSvh), at(heightSvh + 50)] : [at(heightSvh), at(heightSvh + 50)],
-    fadeIn ? [0, 1, 1, 0] : [1, 0]
-  )
+  const stops = fadeIn
+    ? [at(50), at(130), at(heightSvh - 30), at(heightSvh + 50)]
+    : [at(heightSvh - 30), at(heightSvh + 50)]
+  const opacity = useTransform(scrollYProgress, stops, fadeIn ? [0, 1, 1, 0] : [1, 0])
   const y = useTransform(
     scrollYProgress,
-    fadeIn ? [at(50), at(100), at(heightSvh), at(heightSvh + 50)] : [at(heightSvh), at(heightSvh + 50)],
-    reduceMotion ? (fadeIn ? [0, 0, 0, 0] : [0, 0]) : fadeIn ? [32, 0, 0, -32] : [0, -32]
+    stops,
+    reduceMotion ? (fadeIn ? [0, 0, 0, 0] : [0, 0]) : fadeIn ? [72, 0, 0, -72] : [0, -72]
   )
 
   // Every chapter's card shares one fixed frame, so a faded-out card must not

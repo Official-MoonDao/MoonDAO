@@ -147,6 +147,8 @@ export type MoonGlobeProps = {
   // hover handling, and the canvas lets every pointer and wheel event through
   // to the document. The camera is then driven by `focus` alone.
   interactive?: boolean
+  // Stretches every camera transition by this factor (1 = default speed).
+  glide?: number
   children?: ReactNode
 }
 
@@ -209,11 +211,13 @@ function CameraRig({
   userInteracting,
   onAnimatingChange,
   radiusAt,
+  glide,
 }: {
   focus: GlobeFocus
   controlsRef: React.MutableRefObject<any>
   userInteracting: boolean
   onAnimatingChange: (animating: boolean) => void
+  glide: number
   // Rendered terrain radius lookup — framings and the camera floor work
   // against the real ground height, not the analytic sphere.
   radiusAt?: RadiusAt | null
@@ -361,7 +365,7 @@ function CameraRig({
         return
       }
 
-      const t = 1 - Math.pow(easeBase.current, delta) // frame-rate-independent easing
+      const t = 1 - Math.pow(easeBase.current, delta / glide) // frame-rate-independent easing
       const curOffset = camera.position.clone().sub(curTarget)
       const dstOffset = desiredPos.current.clone().sub(desiredTarget.current)
 
@@ -706,6 +710,7 @@ export default function MoonGlobe({
   cinematic,
   sunPhase,
   interactive = true,
+  glide = 1,
   children,
 }: MoonGlobeProps) {
   const controlsRef = useRef<any>(null)
@@ -994,6 +999,7 @@ export default function MoonGlobe({
         userInteracting={userInteracting}
         onAnimatingChange={setIsAnimating}
         radiusAt={radiusAt}
+        glide={glide}
       />
 
       {/* Trackball gives full free tumble around the current pivot. The pivot
