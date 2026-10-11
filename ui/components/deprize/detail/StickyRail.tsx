@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 
 /** Clears the fixed top nav (4rem) plus a small gap. */
 const STICK_TOP = 80
+/** A column taller than the viewport pins by its bottom edge instead. */
+const BOTTOM_GAP = 16
 
 type Mode = 'flow' | 'pinned'
 
@@ -40,9 +42,10 @@ export default function StickyRail({ children }: { children: ReactNode }) {
       const height = panel.offsetHeight
       if (height <= 0 || railRect.width <= 0) return
 
-      const next: Mode = gridRect.top >= STICK_TOP ? 'flow' : 'pinned'
-      const top =
-        next === 'pinned' ? Math.min(STICK_TOP, gridRect.bottom - height) : STICK_TOP
+      const fitsViewport = STICK_TOP + height + BOTTOM_GAP <= window.innerHeight
+      const pinTop = fitsViewport ? STICK_TOP : window.innerHeight - BOTTOM_GAP - height
+      const next: Mode = gridRect.top >= pinTop ? 'flow' : 'pinned'
+      const top = next === 'pinned' ? Math.min(pinTop, gridRect.bottom - height) : pinTop
 
       if (next !== modeRef.current) {
         modeRef.current = next
@@ -84,11 +87,7 @@ export default function StickyRail({ children }: { children: ReactNode }) {
       className="relative min-w-0 lg:col-start-2 lg:row-start-1 lg:row-span-2"
     >
       {mode === 'pinned' && <div aria-hidden="true" style={{ height: box.height }} />}
-      <div
-        ref={panelRef}
-        className="lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto lg:overscroll-contain"
-        style={panelStyle}
-      >
+      <div ref={panelRef} style={panelStyle}>
         {children}
       </div>
     </aside>
