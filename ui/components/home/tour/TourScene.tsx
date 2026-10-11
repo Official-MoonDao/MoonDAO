@@ -69,10 +69,11 @@ export default function TourScene({ stop, year, visible, mode }: TourSceneProps)
         />
       </div>
 
-      {/* Keeps the nav and the top of every section legible over a bright
-          sunlit ridge without dimming the base itself. */}
-      <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#010208]/80 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#010208]/70 to-transparent" />
+      {/* The tour card sits on the left on desktop and along the bottom on
+          phones; shade only that side so the camera's subject stays clear. */}
+      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#010208]/80 to-transparent" />
+      <div className="absolute inset-y-0 left-0 hidden w-[60%] bg-gradient-to-r from-[#010208]/80 via-[#010208]/40 to-transparent md:block" />
+      <div className="absolute inset-x-0 bottom-0 h-[65%] bg-gradient-to-t from-[#010208]/90 via-[#010208]/50 to-transparent md:h-32 md:from-[#010208]/60 md:via-transparent" />
     </div>
   )
 }

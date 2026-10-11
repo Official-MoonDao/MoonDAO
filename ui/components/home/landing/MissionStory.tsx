@@ -5,7 +5,7 @@ import CtaButton from './CtaButton'
 import Reveal from './Reveal'
 import SectionHeading from './SectionHeading'
 
-export default function MissionStory({ transparent = false }: { transparent?: boolean }) {
+export default function MissionStory() {
   const sectionRef = useRef<HTMLElement>(null)
   const reduceMotion = useReducedMotion()
   const { scrollYProgress } = useScroll({
@@ -19,10 +19,7 @@ export default function MissionStory({ transparent = false }: { transparent?: bo
   )
 
   return (
-    <section
-      ref={sectionRef}
-      className={`relative overflow-hidden py-24 md:py-36 ${transparent ? '' : 'bg-[#010208]'}`}
-    >
+    <section ref={sectionRef} className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_85%_30%,rgba(108,64,125,0.08),transparent_55%)]" />
 
       <div className="relative z-10 mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-14 px-5 md:px-10 lg:grid-cols-2 lg:gap-20">

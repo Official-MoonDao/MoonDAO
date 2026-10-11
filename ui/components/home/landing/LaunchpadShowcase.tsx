@@ -21,11 +21,9 @@ const features = [
   },
 ]
 
-export default function LaunchpadShowcase({ transparent = false }: { transparent?: boolean }) {
+export default function LaunchpadShowcase() {
   return (
-    <section
-      className={`relative overflow-hidden py-24 md:py-36 ${transparent ? '' : 'bg-[#010208]'}`}
-    >
+    <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_15%_50%,rgba(95,75,162,0.08),transparent_55%)]" />
 
       <div className="relative z-10 mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-14 px-5 md:px-10 lg:grid-cols-2 lg:gap-20">

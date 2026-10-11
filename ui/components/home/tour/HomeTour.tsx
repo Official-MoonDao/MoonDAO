@@ -2,16 +2,20 @@ import { FEATURED_MISSION } from 'const/config'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { TOUR_POSTER, TOUR_STOPS, type TourStopId } from '@/lib/home-tour/stops'
 import CitizenContext from '@/lib/citizen/citizen-context'
-import LandingHero from '@/components/home/landing/LandingHero'
+import CtaButton from '@/components/home/landing/CtaButton'
 import Container from '@/components/layout/Container'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
 import WebsiteHead from '@/components/layout/Head'
+import MailingList from '@/components/layout/MailingList'
 import { MissionSkeleton, SectionSkeleton } from '@/components/layout/SkeletonLoader'
+import RoadmapCard from './RoadmapCard'
+import TourCard from './TourCard'
+import TourChapter from './TourChapter'
+import TourRail from './TourRail'
 import TourScene from './TourScene'
-import TourStop from './TourStop'
 import useActiveStop from './useActiveStop'
 import useTourRenderMode from './useTourRenderMode'
 
@@ -20,56 +24,26 @@ const FeaturedMissionSection = dynamic(() => import('@/components/home/FeaturedM
   ssr: false,
 })
 
-const MissionStory = dynamic(() => import('@/components/home/landing/MissionStory'), {
-  loading: () => <SectionSkeleton />,
-})
-
-const PillarsSection = dynamic(() => import('@/components/home/landing/PillarsSection'), {
-  loading: () => <SectionSkeleton />,
-})
-
-const GovernanceSection = dynamic(() => import('@/components/home/landing/GovernanceSection'), {
-  loading: () => <SectionSkeleton />,
-})
-
-const LaunchpadShowcase = dynamic(() => import('@/components/home/landing/LaunchpadShowcase'), {
-  loading: () => <SectionSkeleton />,
-})
-
-const JourneyTimeline = dynamic(() => import('@/components/home/landing/JourneyTimeline'), {
-  loading: () => <SectionSkeleton />,
-})
-
-const VoicesSection = dynamic(() => import('@/components/home/landing/VoicesSection'), {
-  loading: () => <SectionSkeleton />,
-})
-
 const PartnersMarquee = dynamic(() => import('@/components/home/landing/PartnersMarquee'), {
   loading: () => <SectionSkeleton minHeight="min-h-[300px]" />,
-})
-
-const FinalCTA = dynamic(() => import('@/components/home/landing/FinalCTA'), {
-  loading: () => <SectionSkeleton />,
 })
 
 export default function HomeTour({ missions, featuredMissionData }: any) {
   const router = useRouter()
   const { citizen, isLoading } = useContext(CitizenContext)
 
-  const activeId = useActiveStop<TourStopId>('hero')
+  const activeId = useActiveStop<TourStopId>('arrival')
   // Past the last stop the scene fades out, but it keeps the stop it was on so
   // scrolling back up does not fly it in from somewhere else.
-  const lastId = useRef<TourStopId>('hero')
+  const lastId = useRef<TourStopId>('arrival')
   if (activeId) lastId.current = activeId
   const stop = TOUR_STOPS[lastId.current]
 
-  const [journeyYear, setJourneyYear] = useState<number | null>(null)
-  const year = activeId === 'journey' ? journeyYear : null
+  const [roadmapYear, setRoadmapYear] = useState<number | null>(null)
+  const onYearChange = useCallback((y: number | null) => setRoadmapYear(y), [])
+  const year = activeId === 'roadmap' ? roadmapYear : null
 
   const mode = useTourRenderMode()
-  // The open window above each section only shows something when the camera
-  // has flown somewhere; over a still it is just an empty band of poster.
-  const windows = mode === 'globe'
 
   // Redirect citizens to dashboard
   useEffect(() => {
@@ -94,43 +68,147 @@ export default function HomeTour({ missions, featuredMissionData }: any) {
       />
       <div className="relative bg-[#010208]">
         <TourScene stop={stop} year={year} visible={activeId !== null} mode={mode} />
+        <TourRail active={activeId} />
 
         <div className="relative z-10">
-          <TourStop stop={TOUR_STOPS.hero} showWindow={false} veil={false}>
-            <LandingHero variant="tour" />
-          </TourStop>
-          {FEATURED_MISSION && (
-            <TourStop showWindow={windows} stop={TOUR_STOPS.featured}>
-              <FeaturedMissionSection missions={missions} featuredMissionData={featuredMissionData} />
-            </TourStop>
-          )}
-          <TourStop showWindow={windows} stop={TOUR_STOPS.network}>
-            <MissionStory transparent />
-          </TourStop>
-          <TourStop showWindow={windows} stop={TOUR_STOPS.pillars}>
-            <PillarsSection transparent />
-          </TourStop>
-          <TourStop showWindow={windows} stop={TOUR_STOPS.governance}>
-            <GovernanceSection transparent />
-          </TourStop>
-          <TourStop showWindow={windows} stop={TOUR_STOPS.launchpad}>
-            <LaunchpadShowcase transparent />
-          </TourStop>
-          <TourStop showWindow={windows} stop={TOUR_STOPS.journey} veil="light">
-            <JourneyTimeline transparent onYearChange={setJourneyYear} />
-          </TourStop>
-          <TourStop showWindow={windows} stop={TOUR_STOPS.voices}>
-            <VoicesSection transparent />
-          </TourStop>
-          <TourStop showWindow={windows} stop={TOUR_STOPS.partners}>
-            <PartnersMarquee transparent />
-          </TourStop>
-          <TourStop showWindow={windows} stop={TOUR_STOPS.cta}>
-            <FinalCTA transparent />
-          </TourStop>
+          <TourChapter id="arrival" heightSvh={130} fadeIn={false}>
+            <TourCard
+              as="h1"
+              location="Moon Base Zero · Lunar south pole"
+              title={
+                <>
+                  The Internet&apos;s <span className="text-moon-gold">Space</span> Program
+                </>
+              }
+              actions={
+                <>
+                  <CtaButton href="/join" variant="primary">
+                    Join the Network
+                  </CtaButton>
+                  <CtaButton href="/launch" variant="quiet">
+                    Explore Missions
+                  </CtaButton>
+                </>
+              }
+            >
+              This is the lunar settlement MoonDAO is working toward. MoonDAO is an open platform to
+              fund, collaborate, and compete on the challenges that get us here, governed by its
+              members and transparent by design.
+            </TourCard>
+            <p className="mt-10 flex items-center gap-3 font-RobotoMono text-[11px] uppercase tracking-[0.24em] text-white/50">
+              <span className="block h-px w-8 bg-white/40" />
+              Scroll to tour the base
+            </p>
+          </TourChapter>
+
+          <TourChapter id="landing">
+            <TourCard
+              location={TOUR_STOPS.landing.label}
+              title="Every settlement starts with a landing."
+              stat={{ value: '$8M+', label: 'Raised onchain' }}
+              actions={
+                <CtaButton href="/launch" variant="primary">
+                  Launch a Mission
+                </CtaButton>
+              }
+            >
+              The first arrivals are the commercial landers heading for the lunar south pole right
+              now. MoonDAO&apos;s Launchpad lets anyone crowdfund missions like these onchain, from
+              anywhere on Earth.
+            </TourCard>
+          </TourChapter>
+
+          <TourChapter id="habitat">
+            <TourCard
+              location={TOUR_STOPS.habitat.label}
+              title="Governed by the people who'll live here."
+              stat={{ value: '12,000+', label: 'Token holders' }}
+              actions={
+                <>
+                  <CtaButton href="/get-mooney" variant="primary">
+                    Get $MOONEY
+                  </CtaButton>
+                  <CtaButton href="/constitution" variant="quiet">
+                    Read the Constitution
+                  </CtaButton>
+                </>
+              }
+            >
+              Every decision about this base goes to a vote. Our constitution was ratified onchain,
+              then landed on the Moon in early 2025. Lock $MOONEY to have a say in what gets built
+              next.
+            </TourCard>
+          </TourChapter>
+
+          <TourChapter id="construction">
+            <TourCard
+              location={TOUR_STOPS.construction.label}
+              title="Built in the open."
+              stat={{ value: '$750,000+', label: 'Granted to 100+ projects' }}
+              actions={
+                <CtaButton href="/proposals" variant="primary">
+                  See What&apos;s Being Funded
+                </CtaButton>
+              }
+            >
+              Each module you see maps to real work underway today. Members choose what gets
+              funded by open vote, and every dollar is traceable onchain.
+            </TourCard>
+          </TourChapter>
+
+          <TourChapter id="network">
+            <TourCard
+              location={TOUR_STOPS.network.label}
+              title="A network, not a company."
+              stat={{ value: '2', label: 'Astronauts sent to space' }}
+              actions={
+                <CtaButton href="/network" variant="primary">
+                  Explore the Network
+                </CtaButton>
+              }
+            >
+              These towers keep the base talking to Earth. The Space Acceleration Network does the
+              same for people: builders, researchers and teams around the world coordinating on one
+              goal.
+            </TourCard>
+          </TourChapter>
+
+          <TourChapter id="roadmap" heightSvh={400}>
+            {(pinned) => <RoadmapCard pinned={pinned} onYearChange={onYearChange} />}
+          </TourChapter>
+
+          <TourChapter id="join">
+            <TourCard
+              location={TOUR_STOPS.join.label}
+              title="Take humanity back to the Moon."
+              actions={
+                <>
+                  <CtaButton href="/join" variant="primary">
+                    Join the Network
+                  </CtaButton>
+                  <CtaButton href="/docs" variant="quiet">
+                    Learn More
+                  </CtaButton>
+                </>
+              }
+            >
+              Whether you&apos;re new to Web3 or a space industry veteran, there&apos;s a place for
+              you in building this.
+            </TourCard>
+            <div className="mt-10 max-w-md">
+              <p className="mb-3 font-RobotoMono text-[11px] uppercase tracking-[0.24em] text-white/50">
+                Or get weekly mission updates
+              </p>
+              <MailingList submitLabel="Subscribe" quietSubmit compact />
+            </div>
+          </TourChapter>
         </div>
 
         <div className="relative z-10 bg-[#010208]">
+          {FEATURED_MISSION && (
+            <FeaturedMissionSection missions={missions} featuredMissionData={featuredMissionData} />
+          )}
+          <PartnersMarquee />
           <ExpandedFooter hasCallToAction={false} darkBackground={true} isFullwidth={true} />
         </div>
       </div>

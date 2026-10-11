@@ -29,14 +29,7 @@ const stats = [
   { value: 2, suffix: '', label: 'Astronauts sent to space' },
 ]
 
-type LandingHeroProps = {
-  // 'tour' drops the backdrop for the live Moon Base Zero scene pinned behind
-  // the page, and lifts the copy so the base reads below it.
-  variant?: 'default' | 'tour'
-}
-
-export default function LandingHero({ variant = 'default' }: LandingHeroProps) {
-  const isTour = variant === 'tour'
+export default function LandingHero() {
   const sectionRef = useRef<HTMLElement>(null)
   const reduceMotion = useReducedMotion()
 
@@ -57,40 +50,30 @@ export default function LandingHero({ variant = 'default' }: LandingHeroProps) {
       <section
         ref={sectionRef}
         id="landing-hero"
-        className={`relative flex w-full flex-col overflow-hidden ${
-          isTour ? 'h-[100svh]' : 'h-[70svh] min-h-[520px] bg-[#010208]'
-        }`}
+        className="relative flex h-[70svh] min-h-[520px] w-full flex-col overflow-hidden bg-[#010208]"
       >
-        {isTour ? (
-          <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/75 via-[#010208]/10 to-transparent" />
-        ) : (
-          <>
-            {/* Parallax lunar colony backdrop */}
-            <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.2]">
-              <Image
-                src="/assets/Lunar-Colony-Dark.webp"
-                alt=""
-                fill
-                priority
-                className="object-cover"
-                style={{ objectPosition: 'center 75%' }}
-                sizes="100vw"
-              />
-            </motion.div>
+        {/* Parallax lunar colony backdrop */}
+        <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.2]">
+          <Image
+            src="/assets/Lunar-Colony-Dark.webp"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+            style={{ objectPosition: 'center 75%' }}
+            sizes="100vw"
+          />
+        </motion.div>
 
-            {/* Atmosphere: vignette + color wash + stars */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/85 via-[#010208]/30 to-[#010208]" />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(66,94,235,0.16),transparent_55%)]" />
-            <Starfield className="opacity-80" />
-          </>
-        )}
+        {/* Atmosphere: vignette + color wash + stars */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/85 via-[#010208]/30 to-[#010208]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(66,94,235,0.16),transparent_55%)]" />
+        <Starfield className="opacity-80" />
 
         {/* Content */}
         <motion.div
           style={{ opacity: contentOpacity, y: contentY }}
-          className={`relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center px-5 text-center md:px-10 ${
-            isTour ? 'justify-start pb-24 pt-[16svh]' : 'justify-center py-24'
-          }`}
+          className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 py-24 text-center md:px-10"
         >
           <motion.div variants={container} initial="hidden" animate="visible">
             <motion.h1

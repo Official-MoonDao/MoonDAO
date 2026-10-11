@@ -20,75 +20,70 @@ export type TourTarget =
   | { kind: 'orbit'; altitudeM: number }
 
 export type TourStopId =
-  | 'hero'
-  | 'featured'
+  | 'arrival'
+  | 'landing'
+  | 'habitat'
+  | 'construction'
   | 'network'
-  | 'pillars'
-  | 'governance'
-  | 'launchpad'
-  | 'journey'
-  | 'voices'
-  | 'partners'
-  | 'cta'
+  | 'roadmap'
+  | 'join'
 
 export type TourStop = {
   id: TourStopId
   target: TourTarget
-  // Shown on the chip in the open window above the section copy, so the
-  // visitor knows which part of the base the camera has just flown to.
-  label?: string
+  // Where the camera is, in the visitor's terms: the card's eyebrow and the
+  // tour rail's entry.
+  label: string
   // Shown instead of the live scene on the reduced-motion and low-power path.
   still?: string
 }
 
 export const TOUR_POSTER = '/assets/Lunar-Colony-Dark.webp'
 
+// In the order the tour walks them, which is the order they stand along the
+// spine from the landing pads at its south-west end: you arrive, you live,
+// you build, you connect, then the camera pulls back to see the whole of it.
+export const TOUR_ORDER: TourStopId[] = [
+  'arrival',
+  'landing',
+  'habitat',
+  'construction',
+  'network',
+  'roadmap',
+  'join',
+]
+
 export const TOUR_STOPS: Record<TourStopId, TourStop> = {
-  hero: { id: 'hero', target: { kind: 'home' } },
-  featured: {
-    id: 'featured',
-    target: { kind: 'district', category: 'mass_driver' },
-    label: 'Mass driver',
+  arrival: { id: 'arrival', target: { kind: 'home' }, label: 'Moon Base Zero' },
+  landing: {
+    id: 'landing',
+    target: { kind: 'district', category: 'lander' },
+    label: 'Landing zone',
+  },
+  habitat: {
+    id: 'habitat',
+    target: { kind: 'district', category: 'habitat' },
+    label: 'Habitat district',
+  },
+  construction: {
+    id: 'construction',
+    target: { kind: 'district', category: 'construction' },
+    label: 'Construction district',
   },
   network: {
     id: 'network',
     target: { kind: 'district', category: 'comms_pnt' },
     label: 'Comms & navigation',
   },
-  pillars: {
-    id: 'pillars',
-    target: { kind: 'district', category: 'construction' },
-    label: 'Construction district',
-  },
-  governance: {
-    id: 'governance',
-    target: { kind: 'district', category: 'habitat' },
-    label: 'Habitat district',
-  },
-  launchpad: {
-    id: 'launchpad',
-    target: { kind: 'district', category: 'lander' },
-    label: 'Landing zone',
-  },
-  journey: {
-    id: 'journey',
+  roadmap: {
+    id: 'roadmap',
     target: { kind: 'home' },
     label: 'The whole settlement',
   },
-  voices: {
-    id: 'voices',
-    target: { kind: 'district', category: 'rover' },
-    label: 'Rover depot',
-  },
-  partners: {
-    id: 'partners',
-    target: { kind: 'sky', projectId: 'im-near-space-network' },
-    label: 'Relay constellation',
-  },
-  cta: {
-    id: 'cta',
+  join: {
+    id: 'join',
     target: { kind: 'orbit', altitudeM: 4000 },
-    label: 'Shackleton connecting ridge',
+    label: 'Shackleton ridge',
   },
 }
 

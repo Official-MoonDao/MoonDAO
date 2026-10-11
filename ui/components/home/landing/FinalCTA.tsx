@@ -4,27 +4,21 @@ import CtaButton from './CtaButton'
 import Reveal from './Reveal'
 import Starfield from './Starfield'
 
-export default function FinalCTA({ transparent = false }: { transparent?: boolean }) {
+export default function FinalCTA() {
   return (
-    <section
-      className={`relative overflow-hidden py-24 md:py-36 ${transparent ? '' : 'bg-[#010208]'}`}
-    >
-      {!transparent && (
-        <>
-          <div className="absolute inset-0">
-            <Image
-              src="/assets/landing/earthrise.jpg"
-              alt=""
-              fill
-              className="object-cover opacity-50"
-              style={{ objectPosition: 'center 35%' }}
-              sizes="100vw"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#010208] via-[#010208]/55 to-dark-cool" />
-          </div>
-          <Starfield className="opacity-60" />
-        </>
-      )}
+    <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
+      <div className="absolute inset-0">
+        <Image
+          src="/assets/landing/earthrise.jpg"
+          alt=""
+          fill
+          className="object-cover opacity-50"
+          style={{ objectPosition: 'center 35%' }}
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#010208] via-[#010208]/55 to-dark-cool" />
+      </div>
+      <Starfield className="opacity-60" />
 
       <div className="relative z-10 mx-auto flex w-full max-w-[900px] flex-col items-center px-5 text-center md:px-10">
         <Reveal>
