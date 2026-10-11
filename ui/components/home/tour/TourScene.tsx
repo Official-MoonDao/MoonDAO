@@ -32,8 +32,7 @@ export default function TourScene({ stop, build, visible, mode }: TourSceneProps
     setMountGlobe(true)
   }, [mode, mountGlobe])
 
-  const still = mode === 'still' ? stop.still ?? TOUR_POSTER : TOUR_POSTER
-  const showPoster = mode !== 'globe' || !ready
+  const still = stop.still ?? TOUR_POSTER
 
   return (
     <div
@@ -42,28 +41,32 @@ export default function TourScene({ stop, build, visible, mode }: TourSceneProps
         visible ? 'opacity-100' : 'opacity-0'
       }`}
     >
+      {/* Held invisible until the terrain is in, so the loading spinner and a
+          half-built frame never show; the page's dark ground stands in. */}
       {mountGlobe && (
-        <div className="absolute inset-0">
+        <div
+          className={`absolute inset-0 transition-opacity duration-1000 ${
+            ready ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
           <TourGlobe target={stop.target} build={build} onReady={() => setReady(true)} />
         </div>
       )}
 
-      <div
-        className={`absolute inset-0 transition-opacity duration-1000 ${
-          showPoster ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        <Image
-          key={still}
-          src={still}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="animate-fadeIn object-cover"
-          style={{ objectPosition: 'center 75%' }}
-        />
-      </div>
+      {mode === 'still' && (
+        <div className="absolute inset-0">
+          <Image
+            key={still}
+            src={still}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="animate-fadeIn object-cover"
+            style={{ objectPosition: 'center 75%' }}
+          />
+        </div>
+      )}
 
       {/* The tour card sits on the left on desktop and along the bottom on
           phones; shade only that side so the camera's subject stays clear. */}

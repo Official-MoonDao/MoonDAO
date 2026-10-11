@@ -1,9 +1,8 @@
 import { FEATURED_MISSION } from 'const/config'
 import dynamic from 'next/dynamic'
-import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
-import { TOUR_POSTER, TOUR_STOPS, type TourStopId } from '@/lib/home-tour/stops'
+import { TOUR_STOPS, type TourStopId } from '@/lib/home-tour/stops'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import CtaButton from '@/components/home/landing/CtaButton'
 import Container from '@/components/layout/Container'
@@ -59,9 +58,6 @@ export default function HomeTour({ missions, featuredMissionData }: any) {
 
   return (
     <Container>
-      <Head>
-        <link rel="preload" as="image" href={TOUR_POSTER} />
-      </Head>
       <WebsiteHead
         title="Welcome"
         description="MoonDAO is accelerating our multiplanetary future with an open platform to fund, collaborate, and compete on challenges that get us closer to a lunar settlement."
