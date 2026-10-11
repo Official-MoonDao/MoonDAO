@@ -42,9 +42,11 @@ const speakers = [
   },
 ]
 
-export default function VoicesSection() {
+export default function VoicesSection({ transparent = false }: { transparent?: boolean }) {
   return (
-    <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
+    <section
+      className={`relative overflow-hidden py-24 md:py-36 ${transparent ? '' : 'bg-[#010208]'}`}
+    >
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(108,64,125,0.07),transparent_55%)]" />
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 md:px-10">

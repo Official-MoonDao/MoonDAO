@@ -1,6 +1,6 @@
 import { motion, useScroll, useSpring } from 'framer-motion'
 import Image from 'next/image'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import Reveal from './Reveal'
 import SectionHeading from './SectionHeading'
 
@@ -112,8 +112,44 @@ const timelineEvents: TimelineEvent[] = [
   },
 ]
 
-export default function JourneyTimeline() {
+type JourneyTimelineProps = {
+  transparent?: boolean
+  // Fired with the year of the milestone in the middle of the viewport, and
+  // with null once the closing "settlement complete" caption takes over.
+  onYearChange?: (year: number | null) => void
+}
+
+const COMPLETE = 'complete'
+
+function yearOf(date: string): string {
+  return date.match(/\d{4}/)?.[0] ?? COMPLETE
+}
+
+export default function JourneyTimeline({
+  transparent = false,
+  onYearChange,
+}: JourneyTimelineProps) {
+  const sectionRef = useRef<HTMLElement>(null)
   const lineRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const root = sectionRef.current
+    if (!onYearChange || !root) return
+    const els = Array.from(root.querySelectorAll<HTMLElement>('[data-journey-year]'))
+    const hits = new Map<Element, boolean>()
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) hits.set(e.target, e.isIntersecting)
+        const el = els.find((e) => hits.get(e))
+        if (!el) return
+        const y = el.dataset.journeyYear
+        onYearChange(!y || y === COMPLETE ? null : Number(y))
+      },
+      { rootMargin: '-45% 0px -45% 0px' }
+    )
+    els.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [onYearChange])
   const { scrollYProgress } = useScroll({
     target: lineRef,
     offset: ['start 0.75', 'end 0.65'],
@@ -126,7 +162,10 @@ export default function JourneyTimeline() {
   const currentIndex = timelineEvents.findIndex((event) => event.isCurrent)
 
   return (
-    <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
+    <section
+      ref={sectionRef}
+      className={`relative overflow-hidden py-24 md:py-36 ${transparent ? '' : 'bg-[#010208]'}`}
+    >
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_100%,rgba(66,94,235,0.07),transparent_60%)]" />
 
       <div className="relative z-10 mx-auto w-full max-w-[1100px] px-5 md:px-10">
@@ -153,6 +192,7 @@ export default function JourneyTimeline() {
                 return (
                   <div
                     key={`${event.date}-${event.title}`}
+                    data-journey-year={yearOf(event.date)}
                     className={`relative flex items-start gap-6 md:gap-0 ${
                       isLeft ? 'md:flex-row' : 'md:flex-row-reverse'
                     }`}
@@ -184,7 +224,11 @@ export default function JourneyTimeline() {
                         isLeft ? 'md:mr-auto' : 'md:ml-auto'
                       }`}
                     >
-                      <Reveal x={isLeft ? -24 : 24} y={0}>
+                      <Reveal
+                        x={isLeft ? -24 : 24}
+                        y={0}
+                        className={transparent ? 'rounded-2xl bg-[#010208]/70 backdrop-blur-sm' : undefined}
+                      >
                         <div
                           className={`rounded-2xl border p-5 md:p-6 ${
                             state === 'now'
@@ -229,7 +273,10 @@ export default function JourneyTimeline() {
             </div>
 
             {/* Destination: the Moon — image lives inside lineRef so the line reaches its center */}
-            <div className="relative flex flex-col items-center pt-16">
+            <div
+              data-journey-year={COMPLETE}
+              className="relative flex flex-col items-center pt-16"
+            >
               <Reveal y={36}>
                 <Image
                   src="/assets/landing/moon-full.jpg"

@@ -100,7 +100,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   ]
 
   const isFullscreen = fullscreenPaths.includes(router.pathname)
-  const isHomepage = router.pathname === '/'
+  const isHomepage = router.pathname === '/' || router.pathname === '/home-tour'
 
   return (
     <div

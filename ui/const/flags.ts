@@ -18,6 +18,11 @@ const PRODUCTION_HOSTS = new Set(['moondao.com', 'www.moondao.com'])
 // lib/gate/access.ts) and reachable on production, so they are not listed.
 const UNRELEASED_PATHS: string[] = []
 
+// Serves the Moon Base Zero scroll tour (components/home/tour) at `/` in place
+// of the static landing page. Off until the tour is signed off at the gated
+// /home-tour preview; flipping it back is the rollback.
+export const HOME_TOUR_ENABLED = false
+
 // Bare hostname, no port, lower-cased. Accepts either a `Host` header value or
 // a `window.location.host`.
 function bareHost(host?: string | null): string {

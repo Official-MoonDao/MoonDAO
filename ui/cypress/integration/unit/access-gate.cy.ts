@@ -32,6 +32,7 @@ describe('access gate', () => {
         '/deprize',
         '/deprize/1',
         '/deprize-play',
+        '/home-tour',
       ]) {
         expect(isGatedPath(p), p).to.equal(true)
       }
@@ -70,6 +71,7 @@ describe('access gate', () => {
         '/deprize',
         '/deprize/:path*',
         '/deprize-play',
+        '/home-tour',
       ])
     })
   })

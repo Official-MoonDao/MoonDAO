@@ -24,20 +24,22 @@ const astronauts = [
   },
 ]
 
-export default function GovernanceSection() {
+export default function GovernanceSection({ transparent = false }: { transparent?: boolean }) {
   return (
     <section className="relative overflow-hidden py-24 md:py-36">
-      <div className="absolute inset-0">
-        <Image
-          src="/assets/mission-hero-bg.webp"
-          alt=""
-          fill
-          className="object-cover object-center"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-[#010208]/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#010208] via-transparent to-[#010208]" />
-      </div>
+      {!transparent && (
+        <div className="absolute inset-0">
+          <Image
+            src="/assets/mission-hero-bg.webp"
+            alt=""
+            fill
+            className="object-cover object-center"
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-[#010208]/70" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#010208] via-transparent to-[#010208]" />
+        </div>
+      )}
 
       <div className="relative z-10 mx-auto grid w-full max-w-[1400px] grid-cols-1 items-center gap-16 px-5 md:px-10 lg:grid-cols-2">
         <div className="flex flex-col gap-8">

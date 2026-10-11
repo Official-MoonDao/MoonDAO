@@ -9,7 +9,7 @@ interface BodyProps {
 
 function Container({ children, containerwidth, is_fullwidth }: BodyProps) {
   const router = useRouter()
-  const isHomepage = router.pathname === '/'
+  const isHomepage = router.pathname === '/' || router.pathname === '/home-tour'
 
   // Assert that the children are React elements with the additional prop
   const childrenWithProps = React.Children.map(children, (child) => {

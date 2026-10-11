@@ -106,9 +106,11 @@ function PillarCard({ pillar }: { pillar: Pillar }) {
   )
 }
 
-export default function PillarsSection() {
+export default function PillarsSection({ transparent = false }: { transparent?: boolean }) {
   return (
-    <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
+    <section
+      className={`relative overflow-hidden py-24 md:py-36 ${transparent ? '' : 'bg-[#010208]'}`}
+    >
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(66,94,235,0.07),transparent_55%)]" />
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 md:px-10">
