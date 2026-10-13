@@ -113,7 +113,9 @@ export default function FilmPlayer({
 
   const replay = () => {
     setEnded(false)
+    // setCurrentTime is the current API's name, seekTo the legacy one.
     postToVimeo(iframeRef.current, 'setCurrentTime', 0)
+    postToVimeo(iframeRef.current, 'seekTo', 0)
     postToVimeo(iframeRef.current, 'play')
   }
 
@@ -166,6 +168,8 @@ export default function FilmPlayer({
           return
         }
       }
+      // We message the player with JSON strings, and it replies with the
+      // legacy event names (playProgress, finish), so accept both forms.
       switch (msg?.event) {
         case 'ready':
           readyRef.current = true
@@ -182,9 +186,11 @@ export default function FilmPlayer({
           track('play')
           break
         case 'timeupdate':
+        case 'playProgress':
           if (msg.data?.percent >= 0.5) track('50')
           break
         case 'ended':
+        case 'finish':
           track('complete')
           setEnded(true)
           break
