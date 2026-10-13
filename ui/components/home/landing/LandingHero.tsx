@@ -70,7 +70,7 @@ export default function LandingHero() {
         <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.2]">
           <video
             ref={plateRef}
-            className="h-full w-full object-cover"
+            className="ambient-video pointer-events-none h-full w-full object-cover"
             style={{ objectPosition: 'center 70%' }}
             poster={homePlate.poster}
             autoPlay

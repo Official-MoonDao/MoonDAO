@@ -277,7 +277,7 @@ export default function FilmPlayer({
           >
             <video
               ref={loopRef}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="ambient-video absolute inset-0 h-full w-full object-cover"
               poster={film.loopPoster}
               autoPlay
               muted
