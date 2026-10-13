@@ -97,22 +97,23 @@ export default function LandingHero() {
           // runs on the text-only hero.
           style={hasFilm ? undefined : { opacity: contentOpacity, y: contentY }}
           className={`relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 py-24 text-center md:px-10 ${
-            hasFilm
-              ? 'gap-12 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-14 lg:py-20 lg:text-left'
-              : ''
+            hasFilm ? 'gap-12 lg:grid lg:grid-cols-2 lg:gap-14 lg:py-20 lg:text-left' : ''
           }`}
         >
           <motion.div variants={container} initial="hidden" animate="visible">
             <motion.h1
               variants={item}
-              className="font-heading font-semibold uppercase leading-[0.92] text-white"
+              // One size for the whole line: "Internet's" is what sets MoonDAO
+              // apart, so it carries the accent. The split hero's narrower
+              // column takes a smaller cap.
+              className={`font-heading font-semibold uppercase leading-[0.95] text-white text-[clamp(1.5rem,7.2vw,4.25rem)] ${
+                hasFilm ? 'lg:text-[clamp(2rem,3.4vw,3.4rem)]' : ''
+              }`}
             >
-              <span className="block text-[0.7rem] tracking-[0.28em] text-white/50 md:text-xs">
-                The Internet&apos;s
+              <span className="block whitespace-nowrap">
+                The <span className="text-moon-gold">Internet&apos;s</span>
               </span>
-              <span className="mt-3 block text-[clamp(2.25rem,6vw,4.5rem)]">
-                <span className="text-moon-gold">Space</span> Program
-              </span>
+              <span className="block whitespace-nowrap">Space Program</span>
             </motion.h1>
 
             <motion.p
@@ -153,6 +154,7 @@ export default function LandingHero() {
                 film={homeFilm}
                 playLabel={t('homeFilmPlay')}
                 eventPrefix="home_film"
+                pillPosition="top-right"
                 caption={
                   <>
                     <span className="font-semibold text-white/85">{t('homeFilmTitle')}</span> ·{' '}
