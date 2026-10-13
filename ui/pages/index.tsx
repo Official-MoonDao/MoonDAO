@@ -1,4 +1,11 @@
-import { DEFAULT_CHAIN_V5, JBV5_CONTROLLER_ADDRESS, MISSION_TABLE_ADDRESSES, FEATURED_MISSION } from 'const/config'
+import {
+  DEFAULT_CHAIN_V5,
+  DEPLOYED_ORIGIN,
+  JBV5_CONTROLLER_ADDRESS,
+  MISSION_TABLE_ADDRESSES,
+  FEATURED_MISSION,
+} from 'const/config'
+import { HOME_FILM_UPLOAD_DATE, HOME_FILM_VIMEO_ID, homeFilm, homePlate } from 'const/homePageContent'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
 import ProjectTableABI from 'const/abis/ProjectTable.json'
@@ -11,6 +18,7 @@ import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
+import { serializeJsonLd } from '@/lib/utils/jsonLd'
 import LandingHero from '../components/home/landing/LandingHero'
 import Container from '../components/layout/Container'
 import { ExpandedFooter } from '../components/layout/ExpandedFooter'
@@ -73,8 +81,26 @@ export default function Home({ missions, featuredMissionData }: any) {
   return (
     <Container>
       <Head>
-        {/* Preload critical background images */}
-        <link rel="preload" as="image" href="/assets/Lunar-Colony-Dark.webp" />
+        {/* Preload the hero plate's poster: it is the hero's first paint */}
+        <link rel="preload" as="image" href={homePlate.poster} />
+        {HOME_FILM_VIMEO_ID && (
+          <script
+            type="application/ld+json"
+            key="home-film-jsonld"
+            dangerouslySetInnerHTML={{
+              __html: serializeJsonLd({
+                '@context': 'https://schema.org',
+                '@type': 'VideoObject',
+                name: homeFilm.name,
+                description: homeFilm.description,
+                thumbnailUrl: `${DEPLOYED_ORIGIN}${homeFilm.poster}`,
+                ...(HOME_FILM_UPLOAD_DATE && { uploadDate: HOME_FILM_UPLOAD_DATE }),
+                duration: homeFilm.duration,
+                embedUrl: `https://player.vimeo.com/video/${HOME_FILM_VIMEO_ID}`,
+              }),
+            }}
+          />
+        )}
       </Head>
       <WebsiteHead
         title="Welcome"

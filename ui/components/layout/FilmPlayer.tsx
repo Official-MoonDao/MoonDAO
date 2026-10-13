@@ -1,17 +1,28 @@
-import { JOIN_FILM_VIMEO_ID, joinFilm } from 'const/joinPageContent'
-import { useReducedMotion } from 'framer-motion'
-import useTranslation from 'next-translate/useTranslation'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { networkCard } from '@/lib/layout/styles'
+import { useAmbientVideo } from '@/lib/utils/hooks/useAmbientVideo'
 
 const VIMEO_ORIGIN = 'https://player.vimeo.com'
 
-function trackFilmEvent(action: string) {
-  if (typeof window === 'undefined' || typeof window.gtag !== 'function') return
-  window.gtag('event', action, {
-    event_category: 'join_film',
-    video_title: joinFilm.name,
-  })
+export type Film = {
+  /** Shown as the iframe title and in the play button's accessible name. */
+  name: string
+  /** e.g. '1:35' */
+  durationLabel: string
+  /** The silent teaser loop that plays as the film's live poster. */
+  loopPoster: string
+  loopWebm: string
+  loopMp4: string
+}
+
+type FilmPlayerProps = {
+  vimeoId: string
+  film: Film
+  playLabel: string
+  /** GA event prefix: sends `<prefix>_play`, `<prefix>_50`, `<prefix>_complete`. */
+  eventPrefix: string
+  caption?: ReactNode
+  className?: string
 }
 
 // Talks to the Vimeo iframe over its postMessage API rather than loading
@@ -31,13 +42,21 @@ function canPreload() {
   return !conn.saveData && !/(^|-)2g$|^3g$/.test(conn.effectiveType ?? '')
 }
 
-// The film's 16:9 frame for the /join hero. The silent loop plays as a live
-// poster. The Vimeo player loads hidden underneath it once the page is idle,
-// or as soon as the visitor shows intent (hover, focus, touch), so a click
-// starts the film without waiting on Vimeo.
-export default function JoinFilmPlayer({ className = '' }: { className?: string }) {
-  const { t } = useTranslation('common')
-  const reduceMotion = useReducedMotion()
+/**
+ * A 16:9 film frame. A silent teaser loop plays as the film's live poster.
+ * The Vimeo player loads hidden underneath it once the page is idle, or as
+ * soon as the visitor shows intent (hover, focus, touch), so a click starts
+ * the film with sound without waiting on Vimeo. Renders nothing without a
+ * `vimeoId`.
+ */
+export default function FilmPlayer({
+  vimeoId,
+  film,
+  playLabel,
+  eventPrefix,
+  caption,
+  className = '',
+}: FilmPlayerProps) {
   // 'preload': mounted early, waits for a play command. 'click': mounted by
   // the click itself, so it autoplays from its URL like a plain embed.
   const [mounted, setMounted] = useState<null | 'preload' | 'click'>(null)
@@ -47,6 +66,8 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const readyRef = useRef(false)
   const pendingPlayRef = useRef(false)
+
+  useAmbientVideo(loopRef, frameRef, !playing)
 
   const preload = useCallback(() => {
     setMounted((m) => m ?? 'preload')
@@ -65,7 +86,7 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
 
   // Preload once the page has loaded and gone idle.
   useEffect(() => {
-    if (!JOIN_FILM_VIMEO_ID || !canPreload()) return
+    if (!vimeoId || !canPreload()) return
     let idleId: number | undefined
     let timeoutId: ReturnType<typeof setTimeout> | undefined
     const schedule = () => {
@@ -82,7 +103,7 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
       if (idleId !== undefined) window.cancelIdleCallback(idleId)
       if (timeoutId !== undefined) clearTimeout(timeoutId)
     }
-  }, [preload])
+  }, [vimeoId, preload])
 
   // Player messages: subscribe on ready, flush a queued play, and send the
   // play / 50% / complete analytics (each once per page view).
@@ -90,10 +111,14 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
     if (!mounted) return
     readyRef.current = false
     const sent = new Set<string>()
-    const once = (action: string) => {
-      if (sent.has(action)) return
-      sent.add(action)
-      trackFilmEvent(action)
+    const track = (step: string) => {
+      if (sent.has(step)) return
+      sent.add(step)
+      if (typeof window.gtag !== 'function') return
+      window.gtag('event', `${eventPrefix}_${step}`, {
+        event_category: eventPrefix,
+        video_title: film.name,
+      })
     }
 
     const onMessage = (e: MessageEvent) => {
@@ -119,53 +144,24 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
           }
           break
         case 'play':
-          once('join_film_play')
+          track('play')
           break
         case 'timeupdate':
-          if (msg.data?.percent >= 0.5) once('join_film_50')
+          if (msg.data?.percent >= 0.5) track('50')
           break
         case 'ended':
-          once('join_film_complete')
+          track('complete')
           break
       }
     }
 
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [mounted])
+  }, [mounted, eventPrefix, film.name])
 
-  // The loop is the film's live poster. The autoPlay attribute starts it
-  // straight from the server HTML, without waiting for hydration. Once
-  // hydrated, it pauses while off screen and stops under
-  // prefers-reduced-motion (the poster frame shows instead).
-  useEffect(() => {
-    const video = loopRef.current
-    const frame = frameRef.current
-    if (playing || !video || !frame) return
-    if (reduceMotion) {
-      video.pause()
-      return
-    }
-    video.muted = true
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          video.play().catch(() => {
-            // Autoplay refused (e.g. low-power mode): the poster stays up.
-          })
-        } else {
-          video.pause()
-        }
-      },
-      { threshold: 0.25 }
-    )
-    observer.observe(frame)
-    return () => observer.disconnect()
-  }, [playing, reduceMotion])
+  if (!vimeoId) return null
 
-  if (!JOIN_FILM_VIMEO_ID) return null
-
-  const embedSrc = `${VIMEO_ORIGIN}/video/${JOIN_FILM_VIMEO_ID}?autoplay=${
+  const embedSrc = `${VIMEO_ORIGIN}/video/${vimeoId}?autoplay=${
     mounted === 'click' ? 1 : 0
   }&muted=0&controls=1&loop=0&badge=0&autopause=0&byline=0&title=0&portrait=0&dnt=1`
 
@@ -179,7 +175,7 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
           <iframe
             ref={iframeRef}
             src={embedSrc}
-            title={joinFilm.name}
+            title={film.name}
             className="absolute inset-0 h-full w-full"
             allow="autoplay; fullscreen; picture-in-picture"
             allowFullScreen
@@ -196,13 +192,13 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
             onPointerEnter={preload}
             onTouchStart={preload}
             onFocus={preload}
-            aria-label={`${t('joinFilmPlay')}: ${joinFilm.name} (${joinFilm.durationLabel})`}
+            aria-label={`${playLabel}: ${film.name} (${film.durationLabel})`}
             className="group absolute inset-0 z-10 h-full w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
           >
             <video
               ref={loopRef}
               className="absolute inset-0 h-full w-full object-cover"
-              poster={joinFilm.loopPoster}
+              poster={film.loopPoster}
               autoPlay
               muted
               loop
@@ -211,30 +207,35 @@ export default function JoinFilmPlayer({ className = '' }: { className?: string 
               aria-hidden="true"
               tabIndex={-1}
             >
-              <source src={joinFilm.loopWebm} type="video/webm" />
-              <source src={joinFilm.loopMp4} type="video/mp4" />
+              <source src={film.loopWebm} type="video/webm" />
+              <source src={film.loopMp4} type="video/mp4" />
             </video>
             <span className="absolute inset-0 bg-black/15 transition-colors duration-300 group-hover:bg-black/5" />
-            {/* Bottom-right is the one corner the loop's burned-in titles and
-                  "Become a Citizen" end card never use. */}
-            <span className="absolute bottom-3 right-3 flex min-h-[44px] items-center gap-2 rounded-full bg-white/90 py-1.5 pl-1.5 pr-4 text-[#010208] shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/40 backdrop-blur-sm transition-transform duration-300 group-hover:scale-105 md:bottom-4 md:right-4">
+            {/* Bottom-right: the teaser loops keep their burned-in titles and
+                end cards clear of this corner. */}
+            <span className="absolute bottom-3 right-3 flex min-h-[44px] items-center gap-2 rounded-full bg-white/90 py-1.5 pl-1.5 pr-3 sm:pr-4 text-[#010208] shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/40 backdrop-blur-sm transition-transform duration-300 group-hover:scale-105 md:bottom-4 md:right-4">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#425EEB] text-white">
                 <svg className="ml-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               </span>
-              <span className="font-heading text-sm font-semibold">{t('joinFilmPlay')}</span>
+              {/* On phones the frame is narrow enough that the full label would
+                  run into the loop's centred titles: icon + duration only. */}
+              <span className="hidden font-heading text-sm font-semibold sm:inline">
+                {playLabel}
+              </span>
               <span className="font-RobotoMono text-xs text-[#010208]/60">
-                {joinFilm.durationLabel}
+                {film.durationLabel}
               </span>
             </span>
           </button>
         )}
       </div>
-      <figcaption className="mt-3 text-center text-sm text-white/60 lg:text-left">
-        <span className="font-semibold text-white/85">{t('joinFilmTitle')}</span> ·{' '}
-        {t('joinFilmSub')}
-      </figcaption>
+      {caption && (
+        <figcaption className="mt-3 text-center text-sm text-white/60 lg:text-left">
+          {caption}
+        </figcaption>
+      )}
     </figure>
   )
 }

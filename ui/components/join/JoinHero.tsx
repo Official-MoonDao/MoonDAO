@@ -1,6 +1,7 @@
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
-import { JOIN_FILM_VIMEO_ID } from 'const/joinPageContent'
+import { JOIN_FILM_VIMEO_ID, joinFilm } from 'const/joinPageContent'
+import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -9,7 +10,7 @@ import CountUp from '@/components/home/landing/CountUp'
 import CtaButton from '@/components/home/landing/CtaButton'
 import Reveal from '@/components/home/landing/Reveal'
 import Starfield from '@/components/home/landing/Starfield'
-import JoinFilmPlayer from '@/components/join/JoinFilmPlayer'
+import FilmPlayer from '@/components/layout/FilmPlayer'
 
 type JoinHeroProps = {
   citizenCount: number | null
@@ -28,6 +29,7 @@ function supplyToNumber(supply: unknown): number | null {
 }
 
 export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
+  const { t } = useTranslation('common')
   const hasServerSupply = typeof citizenCount === 'number' && citizenCount > 0
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const citizenContract = useContract({
@@ -121,7 +123,18 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
           </div>
           {hasFilm && (
             <Reveal delay={0.25} className="w-full max-w-2xl lg:max-w-none">
-              <JoinFilmPlayer />
+              <FilmPlayer
+                vimeoId={JOIN_FILM_VIMEO_ID}
+                film={joinFilm}
+                playLabel={t('joinFilmPlay')}
+                eventPrefix="join_film"
+                caption={
+                  <>
+                    <span className="font-semibold text-white/85">{t('joinFilmTitle')}</span> ·{' '}
+                    {t('joinFilmSub')}
+                  </>
+                }
+              />
             </Reveal>
           )}
         </div>

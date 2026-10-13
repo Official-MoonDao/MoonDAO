@@ -1,6 +1,9 @@
+import { HOME_FILM_VIMEO_ID, homeFilm, homePlate } from 'const/homePageContent'
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
-import Image from 'next/image'
+import useTranslation from 'next-translate/useTranslation'
 import { useRef } from 'react'
+import { useAmbientVideo } from '@/lib/utils/hooks/useAmbientVideo'
+import FilmPlayer from '@/components/layout/FilmPlayer'
 import CountUp from './CountUp'
 import CtaButton from './CtaButton'
 import Starfield from './Starfield'
@@ -30,8 +33,15 @@ const stats = [
 ]
 
 export default function LandingHero() {
+  const { t } = useTranslation('common')
   const sectionRef = useRef<HTMLElement>(null)
+  const plateRef = useRef<HTMLVideoElement>(null)
   const reduceMotion = useReducedMotion()
+  // With the film live, the hero splits: copy on the left, the film's frame on
+  // the right (stacked under the CTAs on mobile).
+  const hasFilm = !!HOME_FILM_VIMEO_ID
+
+  useAmbientVideo(plateRef, sectionRef)
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -50,30 +60,47 @@ export default function LandingHero() {
       <section
         ref={sectionRef}
         id="landing-hero"
-        className="relative flex h-[70svh] min-h-[520px] w-full flex-col overflow-hidden bg-[#010208]"
+        className={`relative flex w-full flex-col overflow-hidden bg-[#010208] ${
+          hasFilm ? 'min-h-[70svh]' : 'h-[70svh] min-h-[520px]'
+        }`}
       >
-        {/* Parallax lunar colony backdrop */}
+        {/* Parallax backdrop: the text-free plate (Earth's lit horizon low in
+            frame, the Moon beyond). Its poster is the first paint; the H1 never
+            waits on the video. */}
         <motion.div style={{ y: bgY }} className="absolute inset-0 scale-[1.2]">
-          <Image
-            src="/assets/Lunar-Colony-Dark.webp"
-            alt=""
-            fill
-            priority
-            className="object-cover"
-            style={{ objectPosition: 'center 75%' }}
-            sizes="100vw"
-          />
+          <video
+            ref={plateRef}
+            className="h-full w-full object-cover"
+            style={{ objectPosition: 'center 70%' }}
+            poster={homePlate.poster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden="true"
+          >
+            <source src={homePlate.webm} type="video/webm" />
+            <source src={homePlate.mp4} type="video/mp4" />
+          </video>
         </motion.div>
 
-        {/* Atmosphere: vignette + color wash + stars */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/85 via-[#010208]/30 to-[#010208]" />
+        {/* Atmosphere: vignette + color wash + stars. The bottom stop stays
+            light so the plate's lit horizon shows through. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/85 via-[#010208]/35 to-[#010208]/70" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(66,94,235,0.16),transparent_55%)]" />
         <Starfield className="opacity-80" />
 
         {/* Content */}
         <motion.div
-          style={{ opacity: contentOpacity, y: contentY }}
-          className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 py-24 text-center md:px-10"
+          // The scroll fade would fade a playing film out mid-watch, so it only
+          // runs on the text-only hero.
+          style={hasFilm ? undefined : { opacity: contentOpacity, y: contentY }}
+          className={`relative z-10 mx-auto flex w-full max-w-[1400px] flex-1 flex-col items-center justify-center px-5 py-24 text-center md:px-10 ${
+            hasFilm
+              ? 'gap-12 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-14 lg:py-20 lg:text-left'
+              : ''
+          }`}
         >
           <motion.div variants={container} initial="hidden" animate="visible">
             <motion.h1
@@ -90,7 +117,9 @@ export default function LandingHero() {
 
             <motion.p
               variants={item}
-              className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 md:text-lg"
+              className={`mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 md:text-lg ${
+                hasFilm ? 'lg:mx-0' : ''
+              }`}
             >
               MoonDAO is an open platform to fund, collaborate, and compete on challenges that get
               humanity closer to a permanent lunar settlement — governed by its members, transparent
@@ -99,7 +128,9 @@ export default function LandingHero() {
 
             <motion.div
               variants={item}
-              className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6"
+              className={`mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6 ${
+                hasFilm ? 'lg:justify-start' : ''
+              }`}
             >
               <CtaButton href="/join" variant="primary">
                 Join the Network
@@ -109,6 +140,28 @@ export default function LandingHero() {
               </CtaButton>
             </motion.div>
           </motion.div>
+
+          {hasFilm && (
+            <motion.div
+              initial={{ y: 30 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.9, delay: 0.5, ease: EASE }}
+              className="w-full max-w-2xl lg:max-w-none"
+            >
+              <FilmPlayer
+                vimeoId={HOME_FILM_VIMEO_ID}
+                film={homeFilm}
+                playLabel={t('homeFilmPlay')}
+                eventPrefix="home_film"
+                caption={
+                  <>
+                    <span className="font-semibold text-white/85">{t('homeFilmTitle')}</span> ·{' '}
+                    {t('homeFilmSub')}
+                  </>
+                }
+              />
+            </motion.div>
+          )}
         </motion.div>
       </section>
 
