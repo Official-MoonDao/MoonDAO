@@ -3,12 +3,18 @@ import { useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
+import ProjectABI from 'const/abis/Project.json'
+import { PROJECT_ADDRESSES } from 'const/config'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { getListingHref } from '@/lib/marketplace/listing'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { ownerFallbackName, parseOwnerId } from '@/lib/project/projectOwnerId'
+import { writeProjectTable } from '@/lib/project/projectTableWrite'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import useContract from '@/lib/thirdweb/hooks/useContract'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
@@ -23,6 +29,8 @@ export type TeamListing = {
   id: number
   teamId: number
   teamName?: string
+  /** Set server-side for project-owned listings. */
+  projectMDP?: number
   title: string
   description: string
   image: string
@@ -82,15 +90,23 @@ export default function TeamListing({
 
   const [teamNFT, setTeamNFT] = useState<any>()
 
+  const projectContract = useContract({
+    chain: selectedChain,
+    address: PROJECT_ADDRESSES[getChainSlug(selectedChain)],
+    abi: ProjectABI as any,
+  })
+  const owner = listing ? parseOwnerId(listing.teamId) : undefined
+  const ownerContract = owner?.kind === 'project' ? projectContract : teamContract
+
   const retriesRef = useRef(0)
 
   useEffect(() => {
     async function getTeamNFT() {
-      if (!listing) return
+      if (!listing || !owner) return
       try {
         const nft = await getNFT({
-          contract: teamContract,
-          tokenId: BigInt(listing.teamId),
+          contract: ownerContract,
+          tokenId: BigInt(owner.id),
           includeOwner: true,
         })
         if (listing.title?.startsWith('Cultura')) console.log(nft)
@@ -105,11 +121,12 @@ export default function TeamListing({
         }
       }
     }
-    if (teamContract && listing?.teamId !== undefined) {
+    if (ownerContract && listing?.teamId !== undefined) {
       retriesRef.current = 0
       getTeamNFT()
     }
-  }, [listing?.teamId, teamContract, listing])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listing?.teamId, ownerContract, listing])
 
   useEffect(() => {
     if (!listing) return
@@ -179,7 +196,7 @@ export default function TeamListing({
           {(teamNFT?.metadata?.name || listing?.teamId) && (
             <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm rounded-lg px-2 py-1">
               <span className="text-white/70 text-xs truncate max-w-[120px] block">
-                {teamNFT?.metadata?.name || `Team ${listing?.teamId}`}
+                {teamNFT?.metadata?.name || ownerFallbackName(listing.teamId)}
               </span>
             </div>
           )}
@@ -284,19 +301,28 @@ export default function TeamListing({
                         return
                       }
 
-                      if (!marketplaceTableContract) {
+                      if (!marketplaceTableContract && owner?.kind !== 'project') {
                         toast.error('Marketplace contract not ready. Please try again.')
                         setIsDeleting(false)
                         return
                       }
 
                       try {
-                        const transaction = prepareContractCall({
-                          contract: marketplaceTableContract,
-                          method: 'deleteFromTable' as string,
-                          params: [listing?.id, listing?.teamId],
-                        })
-                        await sendAndConfirmTransaction({ transaction, account })
+                        if (owner?.kind === 'project') {
+                          await writeProjectTable({
+                            table: 'marketplace',
+                            action: 'delete',
+                            projectId: owner.id,
+                            rowId: listing.id,
+                          })
+                        } else {
+                          const transaction = prepareContractCall({
+                            contract: marketplaceTableContract,
+                            method: 'deleteFromTable' as string,
+                            params: [listing?.id, listing?.teamId],
+                          })
+                          await sendAndConfirmTransaction({ transaction, account })
+                        }
                         toast.success('Listing deleted.')
                         setIsDeleting(false)
                         setIsDeletedLocally(true)

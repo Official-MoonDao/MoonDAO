@@ -3,6 +3,7 @@ import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 import { fetchActiveListings } from '@/lib/marketplace/marketplaceTable'
+import { ownerFallbackName } from '@/lib/project/projectOwnerId'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks/useShallowQueryRoute'
 import Container from '@/components/layout/Container'
@@ -28,6 +29,7 @@ type MarketplaceListing = {
   shipping: string
   tag: string
   teamName?: string
+  projectMDP?: number
 }
 
 type MarketplaceProps = {
@@ -49,7 +51,7 @@ export default function Marketplace({ listings }: MarketplaceProps) {
     const teams = new Map<string, string>()
     ;(listings || []).forEach((listing: MarketplaceListing) => {
       const id = String(listing.teamId)
-      if (!teams.has(id)) teams.set(id, listing.teamName || `Team ${listing.teamId}`)
+      if (!teams.has(id)) teams.set(id, listing.teamName || ownerFallbackName(listing.teamId))
     })
     const sorted = Array.from(teams.entries())
       .map(([value, label]) => ({ value, label }))
