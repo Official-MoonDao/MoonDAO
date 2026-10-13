@@ -154,7 +154,6 @@ export default function LandingHero() {
                 film={homeFilm}
                 playLabel={t('homeFilmPlay')}
                 eventPrefix="home_film"
-                pillPosition="top-right"
                 caption={
                   <>
                     <span className="font-semibold text-white/85">{t('homeFilmTitle')}</span> ·{' '}

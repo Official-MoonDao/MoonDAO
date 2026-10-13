@@ -21,8 +21,6 @@ type FilmPlayerProps = {
   playLabel: string
   /** GA event prefix: sends `<prefix>_play`, `<prefix>_50`, `<prefix>_complete`. */
   eventPrefix: string
-  /** The corner the teaser loop's burned-in titles leave clear. */
-  pillPosition?: 'bottom-right' | 'top-right'
   caption?: ReactNode
   className?: string
 }
@@ -56,7 +54,6 @@ export default function FilmPlayer({
   film,
   playLabel,
   eventPrefix,
-  pillPosition = 'bottom-right',
   caption,
   className = '',
 }: FilmPlayerProps) {
@@ -214,11 +211,9 @@ export default function FilmPlayer({
               <source src={film.loopMp4} type="video/mp4" />
             </video>
             <span className="absolute inset-0 bg-black/15 transition-colors duration-300 group-hover:bg-black/5" />
-            <span
-              className={`absolute right-3 md:right-4 ${
-                pillPosition === 'top-right' ? 'top-3 md:top-4' : 'bottom-3 md:bottom-4'
-              } flex min-h-[44px] items-center gap-2 rounded-full bg-white/90 py-1.5 pl-1.5 pr-3 sm:pr-4 text-[#010208] shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/40 backdrop-blur-sm transition-transform duration-300 group-hover:scale-105`}
-            >
+            {/* Bottom-right: the teaser loops keep their burned-in titles and
+                end cards clear of this corner. */}
+            <span className="absolute bottom-3 right-3 flex min-h-[44px] items-center gap-2 rounded-full bg-white/90 py-1.5 pl-1.5 pr-3 sm:pr-4 text-[#010208] shadow-[0_8px_30px_rgba(0,0,0,0.45)] ring-1 ring-white/40 backdrop-blur-sm transition-transform duration-300 group-hover:scale-105 md:bottom-4 md:right-4">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#425EEB] text-white">
                 <svg className="ml-0.5 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
