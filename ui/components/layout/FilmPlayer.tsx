@@ -1,6 +1,7 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { networkCard } from '@/lib/layout/styles'
 import { useAmbientVideo } from '@/lib/utils/hooks/useAmbientVideo'
+import CtaButton from '@/components/home/landing/CtaButton'
 
 const VIMEO_ORIGIN = 'https://player.vimeo.com'
 
@@ -15,12 +16,24 @@ export type Film = {
   loopMp4: string
 }
 
+/** Shown over the player when the film ends: the next step in the funnel. */
+export type FilmEndCard = {
+  title: string
+  ctaLabel: string
+  ctaHref: string
+  replayLabel: string
+}
+
 type FilmPlayerProps = {
   vimeoId: string
   film: Film
   playLabel: string
-  /** GA event prefix: sends `<prefix>_play`, `<prefix>_50`, `<prefix>_complete`. */
+  /**
+   * GA event prefix: sends `<prefix>_play`, `<prefix>_50`, `<prefix>_complete`,
+   * and `<prefix>_cta_click` from the end card.
+   */
   eventPrefix: string
+  endCard?: FilmEndCard
   caption?: ReactNode
   className?: string
 }
@@ -28,7 +41,7 @@ type FilmPlayerProps = {
 // Talks to the Vimeo iframe over its postMessage API rather than loading
 // player.js: the SDK is not in the CSP script-src, and everything we need
 // (ready, play, timeupdate, ended, and the play command) works without it.
-function postToVimeo(iframe: HTMLIFrameElement | null, method: string, value?: string) {
+function postToVimeo(iframe: HTMLIFrameElement | null, method: string, value?: string | number) {
   iframe?.contentWindow?.postMessage(
     JSON.stringify(value === undefined ? { method } : { method, value }),
     VIMEO_ORIGIN
@@ -54,6 +67,7 @@ export default function FilmPlayer({
   film,
   playLabel,
   eventPrefix,
+  endCard,
   caption,
   className = '',
 }: FilmPlayerProps) {
@@ -61,11 +75,13 @@ export default function FilmPlayer({
   // the click itself, so it autoplays from its URL like a plain embed.
   const [mounted, setMounted] = useState<null | 'preload' | 'click'>(null)
   const [playing, setPlaying] = useState(false)
+  const [ended, setEnded] = useState(false)
   const frameRef = useRef<HTMLDivElement>(null)
   const loopRef = useRef<HTMLVideoElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const readyRef = useRef(false)
   const pendingPlayRef = useRef(false)
+  const endCardRef = useRef<HTMLDivElement>(null)
 
   useAmbientVideo(loopRef, frameRef, !playing)
 
@@ -83,6 +99,28 @@ export default function FilmPlayer({
       pendingPlayRef.current = true
     }
   }
+
+  const sendEvent = useCallback(
+    (step: string) => {
+      if (typeof window.gtag !== 'function') return
+      window.gtag('event', `${eventPrefix}_${step}`, {
+        event_category: eventPrefix,
+        video_title: film.name,
+      })
+    },
+    [eventPrefix, film.name]
+  )
+
+  const replay = () => {
+    setEnded(false)
+    postToVimeo(iframeRef.current, 'setCurrentTime', 0)
+    postToVimeo(iframeRef.current, 'play')
+  }
+
+  // Move focus to the end card's CTA so keyboard users land on it.
+  useEffect(() => {
+    if (ended) endCardRef.current?.querySelector('a')?.focus()
+  }, [ended])
 
   // Preload once the page has loaded and gone idle.
   useEffect(() => {
@@ -114,11 +152,7 @@ export default function FilmPlayer({
     const track = (step: string) => {
       if (sent.has(step)) return
       sent.add(step)
-      if (typeof window.gtag !== 'function') return
-      window.gtag('event', `${eventPrefix}_${step}`, {
-        event_category: eventPrefix,
-        video_title: film.name,
-      })
+      sendEvent(step)
     }
 
     const onMessage = (e: MessageEvent) => {
@@ -144,6 +178,7 @@ export default function FilmPlayer({
           }
           break
         case 'play':
+          setEnded(false)
           track('play')
           break
         case 'timeupdate':
@@ -151,13 +186,14 @@ export default function FilmPlayer({
           break
         case 'ended':
           track('complete')
+          setEnded(true)
           break
       }
     }
 
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-  }, [mounted, eventPrefix, film.name])
+  }, [mounted, sendEvent])
 
   if (!vimeoId) return null
 
@@ -184,6 +220,44 @@ export default function FilmPlayer({
             tabIndex={playing ? undefined : -1}
             aria-hidden={playing ? undefined : true}
           />
+        )}
+        {ended && endCard && (
+          // Covers Vimeo's own end screen ("more videos") with the next step.
+          <div
+            ref={endCardRef}
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-[#010208]/80 p-4 text-center backdrop-blur-sm md:gap-6"
+          >
+            <p className="font-heading text-lg font-semibold text-white md:text-2xl">
+              {endCard.title}
+            </p>
+            <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-5">
+              <div onClickCapture={() => sendEvent('cta_click')}>
+                <CtaButton href={endCard.ctaHref} variant="primary">
+                  {endCard.ctaLabel}
+                </CtaButton>
+              </div>
+              <button
+                type="button"
+                onClick={replay}
+                className="inline-flex min-h-[44px] items-center gap-1.5 px-2 text-sm font-medium tracking-wide text-white/60 transition-colors duration-200 hover:text-white"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M3 12a9 9 0 1 0 3-6.7" />
+                  <path d="M3 4v5h5" />
+                </svg>
+                {endCard.replayLabel}
+              </button>
+            </div>
+          </div>
         )}
         {!playing && (
           <button

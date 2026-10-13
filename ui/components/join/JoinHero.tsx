@@ -128,6 +128,12 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
                 film={joinFilm}
                 playLabel={t('joinFilmPlay')}
                 eventPrefix="join_film"
+                endCard={{
+                  title: t('joinFilmEndTitle'),
+                  ctaLabel: t('joinFilmEndCta'),
+                  ctaHref: '/citizen',
+                  replayLabel: t('filmReplay'),
+                }}
                 caption={
                   <>
                     <span className="font-semibold text-white/85">{t('joinFilmTitle')}</span> ·{' '}

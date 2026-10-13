@@ -154,6 +154,12 @@ export default function LandingHero() {
                 film={homeFilm}
                 playLabel={t('homeFilmPlay')}
                 eventPrefix="home_film"
+                endCard={{
+                  title: t('homeFilmEndTitle'),
+                  ctaLabel: t('homeFilmEndCta'),
+                  ctaHref: '/join',
+                  replayLabel: t('filmReplay'),
+                }}
                 caption={
                   <>
                     <span className="font-semibold text-white/85">{t('homeFilmTitle')}</span> ·{' '}
