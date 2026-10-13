@@ -21,7 +21,6 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import Container from '../components/layout/Container'
-import Frame from '../components/layout/Frame'
 import Head from '../components/layout/Head'
 import CardGridContainer from '@/components/layout/CardGridContainer'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -196,7 +195,9 @@ export default function Network({
             </>
           }
         >
-          <Frame noPadding>
+          {/* No rounded overflow frame here. Its 5vmax corner and overflow
+              hidden cut through the Join Network button at the top right. */}
+          <div className="mb-5">
             <div id="network-controls" className="mb-8">
               <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
                 <div
@@ -325,7 +326,7 @@ export default function Network({
                 </div>
               )}
             </div>
-          </Frame>
+          </div>
         </ContentLayout>
       </Container>
     </div>
