@@ -4,8 +4,8 @@ import type { Film } from '@/components/layout/FilmPlayer'
 // frame stays hidden while HOME_FILM_VIMEO_ID is empty. Set it to the Vimeo
 // video ID once the film is uploaded, and set HOME_FILM_UPLOAD_DATE
 // (YYYY-MM-DD) for the VideoObject structured data.
-export const HOME_FILM_VIMEO_ID: string = ''
-export const HOME_FILM_UPLOAD_DATE: string = ''
+export const HOME_FILM_VIMEO_ID: string = '1235606252'
+export const HOME_FILM_UPLOAD_DATE: string = '2026-10-13'
 
 export const homeFilm: Film & { description: string; duration: string; poster: string } = {
   name: 'What is MoonDAO?',
