@@ -9,22 +9,30 @@ import type { GlobeFocus } from '@/components/lunar-atlas/MoonGlobe'
 export type TourTarget =
   | { kind: 'home' }
   | { kind: 'district'; category: ProjectType }
+  | { kind: 'site'; projectId: string; fallback: ProjectType }
   | { kind: 'sky'; projectId: string }
   | { kind: 'orbit'; altitudeM: number }
 
 export type TourStopId =
   | 'arrival'
+  | 'power'
+  | 'comms'
+  | 'habitat'
+  | 'rover'
   | 'race'
   | 'market'
   | 'predict'
   | 'bet'
-  | 'prize'
   | 'resolve'
+  | 'prize'
   | 'ladder'
   | 'explore'
 
+export type TourAct = 'base' | 'race' | 'whole'
+
 export type TourStop = {
   id: TourStopId
+  act: TourAct
   target: TourTarget
   // Where the camera is, in the visitor's terms: the card's eyebrow and the
   // tour rail's entry.
@@ -35,37 +43,92 @@ export type TourStop = {
 
 export const TOUR_POSTER = '/assets/Lunar-Colony-Dark.webp'
 
-// The base first, then one race followed from market to payout, then the
-// ladder of races that builds the rest of it. The DePrize stops all hold on
-// the landing zone, so the camera stays on the race being explained.
+export const TOUR_ACT_LABELS: Record<TourAct, string> = {
+  base: 'The base',
+  race: 'One race',
+  whole: 'The whole base',
+}
+
+// The race the second act follows, and the competitor its bet and payout
+// close in on.
+export const STORY_RACE = 'Touchdown'
+export const STORY_SITE = 'firefly-blue-ghost'
+
+// The first act walks the spine from the power fields at its east end to the
+// rover district, which ends beside the landing zone; the second act holds on
+// the landing zone, then closes in on one lander; the third pulls back out
+// over the whole base. The camera never returns to a place it has left.
 export const TOUR_ORDER: TourStopId[] = [
   'arrival',
+  'power',
+  'comms',
+  'habitat',
+  'rover',
   'race',
   'market',
   'predict',
   'bet',
-  'prize',
   'resolve',
+  'prize',
   'ladder',
   'explore',
 ]
 
+// Shared objects, not equal copies: the globe only flies when the target
+// changes identity, so stops that share one hold the shot still.
 const LANDING_ZONE: TourTarget = { kind: 'district', category: 'lander' }
+const STORY_LANDER: TourTarget = { kind: 'site', projectId: STORY_SITE, fallback: 'lander' }
+const WHOLE_BASE: TourTarget = { kind: 'home' }
 
 export const TOUR_STOPS: Record<TourStopId, TourStop> = {
-  arrival: { id: 'arrival', target: { kind: 'home' }, label: 'Moon Base Zero' },
-  race: { id: 'race', target: LANDING_ZONE, label: 'Landing zone' },
-  market: { id: 'market', target: LANDING_ZONE, label: 'Live odds' },
-  predict: { id: 'predict', target: LANDING_ZONE, label: 'Predict' },
-  bet: { id: 'bet', target: LANDING_ZONE, label: 'Bet' },
-  prize: { id: 'prize', target: { kind: 'home' }, label: 'Prize pool' },
-  resolve: { id: 'resolve', target: LANDING_ZONE, label: 'Resolution' },
-  ladder: { id: 'ladder', target: { kind: 'home' }, label: 'Capability ladder' },
+  arrival: { id: 'arrival', act: 'base', target: { kind: 'home' }, label: 'Moon Base Zero' },
+  power: {
+    id: 'power',
+    act: 'base',
+    target: { kind: 'district', category: 'power' },
+    label: 'Power fields',
+  },
+  comms: {
+    id: 'comms',
+    act: 'base',
+    target: { kind: 'district', category: 'comms_pnt' },
+    label: 'Comms & navigation',
+  },
+  habitat: {
+    id: 'habitat',
+    act: 'base',
+    target: { kind: 'district', category: 'habitat' },
+    label: 'Habitat district',
+  },
+  rover: {
+    id: 'rover',
+    act: 'base',
+    target: { kind: 'district', category: 'rover' },
+    label: 'Rover district',
+  },
+  race: { id: 'race', act: 'race', target: LANDING_ZONE, label: 'Landing zone' },
+  market: { id: 'market', act: 'race', target: LANDING_ZONE, label: 'The market' },
+  predict: { id: 'predict', act: 'race', target: LANDING_ZONE, label: 'Predict' },
+  bet: { id: 'bet', act: 'race', target: STORY_LANDER, label: 'Bet' },
+  resolve: { id: 'resolve', act: 'race', target: STORY_LANDER, label: 'Resolution' },
+  prize: { id: 'prize', act: 'whole', target: WHOLE_BASE, label: 'Prize pool' },
+  ladder: { id: 'ladder', act: 'whole', target: WHOLE_BASE, label: 'Capability ladder' },
   explore: {
     id: 'explore',
+    act: 'whole',
     target: { kind: 'orbit', altitudeM: 4000 },
     label: 'Explore',
   },
+}
+
+function districtDir(category: ProjectType, layout: ColonyLayout) {
+  const raceId = layout.districtOwner.get(category)
+  const dir = raceId ? layout.districts.get(raceId) : undefined
+  if (dir) return dir
+  const plan = BASE_PLAN[category]
+  if (!plan) return undefined
+  const ll = capOffsetLatLon(plan.east, plan.north)
+  return latLonToVector3(ll.lat, ll.lon, 1)
 }
 
 // The camera framing for a stop, built the same way /moonbase builds it for
@@ -76,16 +139,16 @@ export function stopFocus(target: TourTarget, layout: ColonyLayout): GlobeFocus 
     case 'home':
       return null
     case 'district': {
-      const raceId = layout.districtOwner.get(target.category)
-      let dir = raceId ? layout.districts.get(raceId) : undefined
-      if (!dir) {
-        const plan = BASE_PLAN[target.category]
-        if (!plan) return null
-        const ll = capOffsetLatLon(plan.east, plan.north)
-        dir = latLonToVector3(ll.lat, ll.lon, 1)
-      }
+      const dir = districtDir(target.category, layout)
+      if (!dir) return null
       const ll = vector3ToLatLon(dir)
       return { lat: ll.lat, lon: ll.lon, view: 'surface' }
+    }
+    case 'site': {
+      const dir = layout.plots.get(target.projectId)?.dir ?? districtDir(target.fallback, layout)
+      if (!dir) return null
+      const ll = vector3ToLatLon(dir)
+      return { lat: ll.lat, lon: ll.lon, view: 'surface', subjectM: 3 }
     }
     case 'sky': {
       const station = SKY_STATIONS[target.projectId]?.[0]

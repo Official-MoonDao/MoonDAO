@@ -1,50 +1,103 @@
-import { AnimatePresence, motion, useInView, useReducedMotion } from 'framer-motion'
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useInView,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  type MotionValue,
+} from 'framer-motion'
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { OUTCOME_COLORS } from '@/lib/deprize/constants'
 
+// One race, followed through every scene: the same four landers, and numbers
+// that carry over from one scene to the next (the odds the bet starts from are
+// the odds the market ended on, and so on). Illustrative, not live data.
 const TEAMS = [
-  { name: 'Team Aurora', color: OUTCOME_COLORS[0] },
-  { name: 'Team Basalt', color: OUTCOME_COLORS[1] },
-  { name: 'Open Field', color: '#6b7280' },
+  { name: 'Blue Ghost', color: OUTCOME_COLORS[1] },
+  { name: 'Nova-C', color: OUTCOME_COLORS[3] },
+  { name: 'Blue Moon MK1', color: OUTCOME_COLORS[6] },
+  { name: 'Griffin', color: OUTCOME_COLORS[5] },
 ]
+const PICK = 0
 
-/**
- * Steps through a scene while it is on screen. Each entry in `durations` is how
- * long that step holds. Reduced motion shows the last step without looping.
- */
-function useSceneStep(ref: RefObject<Element>, durations: number[]): number {
-  const inView = useInView(ref, { amount: 0.35 })
-  const reduce = useReducedMotion()
-  const [step, setStep] = useState(0)
+const ETH = { label: 'ETH market', text: 'text-emerald-300', bg: 'bg-emerald-400/15' }
+const MOONEY = { label: 'MOONEY forecast · free', text: 'text-indigo-200', bg: 'bg-indigo-400/15' }
 
-  useEffect(() => {
-    if (!inView || reduce) return
-    const id = setTimeout(() => setStep((s) => (s + 1) % durations.length), durations[step])
-    return () => clearTimeout(id)
-  }, [inView, reduce, step, durations])
-
-  return reduce ? durations.length - 1 : step
-}
+const SPRING = { type: 'spring', stiffness: 120, damping: 20 } as const
 
 /** `tour` sits over the Moon Base Zero scene, so it is shorter and opaque enough to read. */
 export type SceneVariant = 'page' | 'tour'
 
-type SceneProps = { variant?: SceneVariant }
+type SceneProps = {
+  variant?: SceneVariant
+  /**
+   * Scroll progress through the tour stop, 0 to 1. Scrolling plays the scene
+   * forward and back. Without it the scene plays once when it comes into view.
+   */
+  progress?: MotionValue<number>
+}
 
 const FRAME_CLASS: Record<SceneVariant, string> = {
-  page: 'h-[320px] bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-5 sm:p-6',
-  tour: 'h-[290px] bg-[#05070d]/85 p-4 backdrop-blur-md sm:p-5',
+  page: 'h-[340px] bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-5 sm:p-6',
+  tour: 'h-[290px] bg-[#070a12]/90 p-4 backdrop-blur-md sm:p-5',
+}
+
+// The scroll stretch a scene plays over. It finishes before the card starts
+// to leave, so the last frame holds while the visitor reads it.
+const SCROLL_END = 0.7
+
+/**
+ * Which step of `steps` the scene is on. Steps change on scroll (tour) or on
+ * a one-shot timeline when the scene is first seen (page). Reduced motion
+ * jumps to the last step.
+ */
+function useSceneStep(
+  ref: RefObject<Element>,
+  steps: number,
+  progress: MotionValue<number> | undefined,
+  replayKey: number
+): { step: number; done: boolean } {
+  const reduce = useReducedMotion()
+  const inView = useInView(ref, { amount: 0.4, once: true })
+  const timeline = useMotionValue(0)
+  const source = progress ?? timeline
+  const toStep = (v: number) => {
+    const p = progress ? v / SCROLL_END : v
+    return Math.max(0, Math.min(steps - 1, Math.floor(p * steps)))
+  }
+  const [step, setStep] = useState(() => toStep(source.get()))
+  useMotionValueEvent(source, 'change', (v) => setStep(toStep(v)))
+
+  useEffect(() => {
+    if (progress || reduce || !inView) return
+    timeline.set(0)
+    const controls = animate(timeline, 1, { duration: steps * 1.15, ease: 'linear' })
+    return () => controls.stop()
+  }, [progress, reduce, inView, timeline, steps, replayKey])
+
+  const shown = reduce ? steps - 1 : step
+  return { step: shown, done: shown === steps - 1 }
 }
 
 function SceneFrame({
   sceneRef,
   label,
   variant = 'page',
+  tag,
+  title,
+  caption,
+  onReplay,
   children,
 }: {
   sceneRef: RefObject<HTMLDivElement>
   label: string
   variant?: SceneVariant
+  tag: typeof ETH
+  title: string
+  caption: ReactNode
+  onReplay?: () => void
   children: ReactNode
 }) {
   return (
@@ -52,436 +105,553 @@ function SceneFrame({
       ref={sceneRef}
       role="img"
       aria-label={label}
-      className={`relative w-full overflow-hidden rounded-2xl border border-white/[0.08] ${FRAME_CLASS[variant]}`}
+      className={`relative flex w-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] ${FRAME_CLASS[variant]}`}
     >
-      {children}
+      <div className="flex items-center justify-between gap-2">
+        <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tag.bg} ${tag.text}`}>
+          {tag.label}
+        </span>
+        <span className="truncate text-[11px] text-gray-500">{title} · illustration</span>
+      </div>
+      <div className="relative mt-3 min-h-0 flex-1">{children}</div>
+      <div className="mt-2 flex items-end justify-between gap-3">
+        <div className="min-h-[2.5em] text-xs leading-snug text-gray-400">{caption}</div>
+        {onReplay && (
+          <button
+            type="button"
+            onClick={onReplay}
+            className="shrink-0 rounded-full border border-white/15 px-2.5 py-1 text-[11px] font-medium text-gray-300 hover:border-white/30 hover:text-white"
+          >
+            Replay
+          </button>
+        )}
+      </div>
     </div>
   )
 }
 
-const HERO_ODDS = [
-  [46, 34, 20],
-  [41, 40, 19],
-  [36, 47, 17],
-  [31, 54, 15],
-]
-const HERO_DURATIONS = [1800, 1800, 1800, 2400]
-
-function ExampleTag() {
+/** Caption that cross-fades per step, so each step says one thing. */
+function StepCaption({ step, lines }: { step: number; lines: ReactNode[] }) {
   return (
-    <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-      Example
-    </span>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.p
+        key={step}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.2 }}
+      >
+        {lines[Math.min(step, lines.length - 1)]}
+      </motion.p>
+    </AnimatePresence>
   )
 }
 
-export function OddsRaceScene({ variant }: SceneProps) {
+function useReplay(progress?: MotionValue<number>) {
+  const [key, setKey] = useState(0)
+  return { key, replay: progress ? undefined : () => setKey((k) => k + 1) }
+}
+
+function OddsBar({
+  team,
+  pct,
+  dim = false,
+  compact = false,
+}: {
+  team: (typeof TEAMS)[number]
+  pct: number
+  dim?: boolean
+  compact?: boolean
+}) {
+  return (
+    <div className={`transition-opacity duration-300 ${dim ? 'opacity-35' : ''}`}>
+      <div className="mb-1 flex items-baseline justify-between gap-2">
+        <span className={`truncate font-medium text-white ${compact ? 'text-xs' : 'text-sm'}`}>
+          {team.name}
+        </span>
+        <motion.span
+          key={pct}
+          initial={{ opacity: 0.4, y: 3 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`font-bold tabular-nums ${compact ? 'text-xs' : 'text-sm'}`}
+          style={{ color: team.color }}
+        >
+          {pct}%
+        </motion.span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: team.color }}
+          initial={false}
+          animate={{ width: `${pct}%` }}
+          transition={SPRING}
+        />
+      </div>
+    </div>
+  )
+}
+
+// ── 1. The market ─────────────────────────────────────────────────────────
+
+const MARKET_ODDS = [
+  [25, 25, 25, 25],
+  [23, 31, 23, 23],
+  [30, 28, 21, 21],
+  [29, 27, 20, 24],
+  [26, 33, 19, 22],
+  [26, 33, 19, 22],
+]
+const MARKET_BETS = [
+  null,
+  { team: 1, eth: '0.05' },
+  { team: 0, eth: '0.10' },
+  { team: 3, eth: '0.02' },
+  { team: 1, eth: '0.08' },
+  null,
+]
+const MARKET_CAPTIONS = [
+  'A new market starts every team at even odds.',
+  'Someone bets on Nova-C. Its chance goes up, the rest go down.',
+  'Each bet moves the odds toward the team it backs.',
+  'The chance shown is the market price of that team winning.',
+  'More bets, more movement.',
+  'Chance to win = what bettors are paying for it right now.',
+]
+
+export function OddsRaceScene({ variant, progress }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const step = useSceneStep(ref, HERO_DURATIONS)
-  const odds = HERO_ODDS[step]
+  const { key, replay } = useReplay(progress)
+  const { step, done } = useSceneStep(ref, MARKET_ODDS.length, progress, key)
+  const odds = MARKET_ODDS[step]
+  const ticker = MARKET_BETS.slice(0, step + 1)
+    .flatMap((bet, id) => (bet ? [{ ...bet, id }] : []))
+    .reverse()
 
   return (
     <SceneFrame
       sceneRef={ref}
       variant={variant}
-      label="Three competitors with chances to win that shift as people bet"
+      tag={ETH}
+      title="Touchdown"
+      label="Four landers start at even odds; each ETH bet moves the odds toward the team it backs"
+      caption={<StepCaption step={step} lines={MARKET_CAPTIONS} />}
+      onReplay={done ? replay : undefined}
     >
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-          Next working lunar landing
-        </p>
-        <ExampleTag />
-      </div>
-      <div className={`flex flex-col ${variant === 'tour' ? 'mt-4 gap-4' : 'mt-6 gap-5'}`}>
-        {TEAMS.map((team, i) => (
-          <div key={team.name}>
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <span className="text-sm font-semibold text-white">{team.name}</span>
-              <motion.span
-                key={odds[i]}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-lg font-bold tabular-nums"
-                style={{ color: team.color }}
-              >
-                {odds[i]}%
-              </motion.span>
-            </div>
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
+      <div className="grid h-full grid-cols-[minmax(0,1fr)_7.5rem] gap-4">
+        <div className="flex flex-col justify-center gap-2.5">
+          {TEAMS.map((team, i) => (
+            <OddsBar key={team.name} team={team} pct={odds[i]} />
+          ))}
+        </div>
+        <div className="flex flex-col gap-1.5 overflow-hidden border-l border-white/[0.06] pl-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-500">Bets</p>
+          <AnimatePresence initial={false}>
+            {ticker.slice(0, 4).map((bet, i) => (
               <motion.div
-                className="h-full rounded-full"
-                style={{ background: team.color }}
-                animate={{ width: `${odds[i]}%` }}
-                transition={{ type: 'spring', stiffness: 80, damping: 18 }}
-              />
-            </div>
-          </div>
-        ))}
+                key={bet.id}
+                layout
+                initial={{ opacity: 0, x: 12 }}
+                animate={{ opacity: i === 0 ? 1 : 0.55, x: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-1.5 text-[11px]"
+              >
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: TEAMS[bet.team].color }} />
+                <span className="truncate text-gray-300">{TEAMS[bet.team].name}</span>
+                <span className="ml-auto tabular-nums text-emerald-300">{bet.eth}</span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {ticker.length === 0 && <p className="text-[11px] text-gray-600">No bets yet</p>}
+        </div>
       </div>
-      <p className="absolute bottom-5 left-5 right-5 text-xs text-gray-500 sm:left-6 sm:right-6">
-        Chance to win. It moves every time someone bets.
-      </p>
     </SceneFrame>
   )
 }
 
-const VOTERS = [
-  { size: 18, pick: 1 },
-  { size: 10, pick: 0 },
-  { size: 14, pick: 1 },
-  { size: 8, pick: 2 },
-  { size: 22, pick: 1 },
-  { size: 12, pick: 0 },
-  { size: 9, pick: 1 },
-]
-const PREDICT_DURATIONS = [900, 1100, 1300, 1800, 2600]
+// ── 2. Predict (MOONEY) ───────────────────────────────────────────────────
 
-export function PredictScene({ variant }: SceneProps) {
+// Each Citizen's dot is sized by voting power. `at` is the step it arrives on.
+const VOTERS = [
+  { team: 1, size: 14, at: 1 },
+  { team: 0, size: 10, at: 1 },
+  { team: 1, size: 8, at: 2 },
+  { team: 3, size: 16, at: 2 },
+  { team: 0, size: 12, at: 2 },
+  { team: 2, size: 8, at: 3 },
+  { team: 1, size: 10, at: 3 },
+  { team: 0, size: 18, at: 3 },
+]
+const YOU = { team: PICK, size: 12, at: 4 }
+const PREDICT_STEPS = 6
+const PREDICT_CAPTIONS = [
+  'Citizens pick who they think lands first. It costs nothing.',
+  'Each pick counts by the Citizen’s voting power. Bigger dot, more weight.',
+  'Picks add up into the MOONEY forecast.',
+  'Anyone can see where the community stands.',
+  'You pick Blue Ghost. Your dot joins the forecast.',
+  'The forecast moved. The ETH odds did not: no money changed hands.',
+]
+
+export function PredictScene({ variant, progress }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const step = useSceneStep(ref, PREDICT_DURATIONS)
-  const picked = step >= 2
-  const forecast = step >= 4 ? [30, 52, 18] : [38, 40, 22]
-  const rowPad = variant === 'tour' ? 'py-2' : 'py-2.5'
+  const { key, replay } = useReplay(progress)
+  const { step, done } = useSceneStep(ref, PREDICT_STEPS, progress, key)
+  const shown = [...VOTERS, YOU]
+    .map((v, id) => ({ ...v, id, you: v === YOU }))
+    .filter((v) => v.at <= step)
+  const power = TEAMS.map((_, i) => shown.filter((v) => v.team === i).reduce((s, v) => s + v.size, 0))
+  const total = power.reduce((s, v) => s + v, 0)
+  const share = power.map((v) => (total ? Math.round((v / total) * 100) : 0))
 
   return (
     <SceneFrame
       sceneRef={ref}
       variant={variant}
-      label="Picking a competitor for free, then Citizen picks weighted by voting power forming the DAO forecast"
+      tag={MOONEY}
+      title="Touchdown"
+      label="Citizens pick a lander for free; picks weighted by voting power form the MOONEY forecast, and the ETH odds do not move"
+      caption={<StepCaption step={step} lines={PREDICT_CAPTIONS} />}
+      onReplay={done ? replay : undefined}
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex h-full flex-col justify-center gap-2">
         {TEAMS.map((team, i) => {
-          const mine = i === 1 && picked
+          const mine = step >= YOU.at && i === PICK
           return (
             <div
               key={team.name}
-              className={`relative flex items-center gap-3 rounded-xl border px-3 ${rowPad} transition-colors duration-300 ${
-                mine ? 'border-blue-400/60 bg-blue-500/10' : 'border-white/[0.06] bg-white/[0.02]'
+              className={`flex items-center gap-3 rounded-lg border px-2.5 py-1.5 transition-colors duration-300 ${
+                mine ? 'border-indigo-400/50 bg-indigo-400/[0.08]' : 'border-white/[0.05] bg-white/[0.015]'
               }`}
             >
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: team.color }} />
-              <span className="flex-1 text-sm font-medium text-white">{team.name}</span>
-              <AnimatePresence>
-                {mine && (
-                  <motion.span
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="rounded-full bg-blue-500 px-2 py-0.5 text-[11px] font-semibold text-white"
-                  >
-                    Your prediction
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {i === 1 && (
-                <motion.div
-                  className="pointer-events-none absolute right-28 top-1/2"
-                  animate={{
-                    x: step >= 1 ? 0 : 90,
-                    y: step >= 1 ? 0 : 80,
-                    opacity: step >= 1 && step < 3 ? 1 : 0,
-                  }}
-                  transition={{ duration: 0.7, ease: 'easeOut' }}
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                    <path d="M4 2l16 10-7 1.5L9.5 21z" />
-                  </svg>
-                  {step === 2 && (
-                    <motion.span
-                      className="absolute -left-2 -top-2 h-6 w-6 rounded-full border-2 border-white"
-                      initial={{ scale: 0.3, opacity: 1 }}
-                      animate={{ scale: 1.6, opacity: 0 }}
-                      transition={{ duration: 0.6 }}
-                    />
-                  )}
-                </motion.div>
-              )}
+              <span className="w-24 shrink-0 truncate text-xs font-medium text-white sm:w-28">
+                {team.name}
+              </span>
+              <div className="flex h-5 min-w-0 flex-1 items-center gap-1">
+                <AnimatePresence initial={false}>
+                  {shown
+                    .filter((v) => v.team === i)
+                    .map((v) => (
+                      <motion.span
+                        key={v.id}
+                        initial={{ opacity: 0, y: -14, scale: 0.4 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.4 }}
+                        transition={SPRING}
+                        className={`shrink-0 rounded-full ${v.you ? 'ring-2 ring-white' : ''}`}
+                        style={{ width: v.size, height: v.size, background: team.color }}
+                      />
+                    ))}
+                </AnimatePresence>
+              </div>
+              <span className="w-10 shrink-0 text-right text-xs font-bold tabular-nums text-indigo-200">
+                {total ? `${share[i]}%` : '—'}
+              </span>
             </div>
           )
         })}
-      </div>
-
-      <div className={variant === 'tour' ? 'mt-3' : 'mt-5'}>
-        <div className="flex h-7 items-end gap-1.5">
-          {VOTERS.map((voter, i) => (
-            <motion.span
-              key={i}
-              className="rounded-full"
-              style={{
-                width: voter.size,
-                height: voter.size,
-                background: TEAMS[voter.pick].color,
-              }}
-              animate={{ opacity: step >= 3 ? 1 : 0, y: step >= 3 ? 0 : -24 }}
-              transition={{ delay: step >= 3 ? i * 0.12 : 0, duration: 0.4 }}
-            />
-          ))}
-          <span className="ml-auto text-[11px] text-gray-500">Bigger dot = more voting power</span>
-        </div>
-        <p className="mb-1.5 mt-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-          DAO forecast
-        </p>
-        <div className="flex h-3 w-full overflow-hidden rounded-full bg-white/[0.06]">
-          {TEAMS.map((team, i) => (
-            <motion.div
-              key={team.name}
-              className="h-full"
-              style={{ background: team.color }}
-              animate={{ width: `${forecast[i]}%` }}
-              transition={{ type: 'spring', stiffness: 70, damping: 16 }}
-            />
-          ))}
-        </div>
+        <motion.div
+          initial={false}
+          animate={{ opacity: step >= PREDICT_STEPS - 1 ? 1 : 0 }}
+          className="flex items-center justify-between rounded-lg bg-emerald-400/[0.06] px-2.5 py-1 text-[11px] text-emerald-200/80"
+        >
+          <span>ETH odds</span>
+          <span className="tabular-nums">
+            {MARKET_ODDS[MARKET_ODDS.length - 1].map((p) => `${p}%`).join(' · ')} — unchanged
+          </span>
+        </motion.div>
       </div>
     </SceneFrame>
   )
 }
 
-const BET_DURATIONS = [900, 1200, 1900, 1300, 2600]
+// ── 3. Bet (ETH) ──────────────────────────────────────────────────────────
 
-export function BetScene({ variant }: SceneProps) {
+const BET_BEFORE = MARKET_ODDS[MARKET_ODDS.length - 1]
+const BET_AFTER = [29, 31, 18, 22]
+const BET_STEPS = 6
+const BET_CAPTIONS = [
+  'Back your pick with real ETH instead.',
+  'Pick Blue Ghost at 26%.',
+  'Bet 0.1 ETH. At about 27¢ a share, that buys about 0.35 shares.',
+  '5% of the bet goes straight into the prize pool.',
+  'Your bet moves the odds: Blue Ghost is now 29%.',
+  'Each share pays 1 ETH if Blue Ghost wins. Cash out any time before then.',
+]
+
+export function BetScene({ variant, progress }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const step = useSceneStep(ref, BET_DURATIONS)
-  const placed = step >= 4
+  const { key, replay } = useReplay(progress)
+  const { step, done } = useSceneStep(ref, BET_STEPS, progress, key)
+  const odds = step >= 4 ? BET_AFTER : BET_BEFORE
+  const team = TEAMS[PICK]
 
   return (
     <SceneFrame
       sceneRef={ref}
       variant={variant}
-      label="Betting 0.1 ETH at a 25% chance: about 0.38 ETH if they win, with 5% going to the prize pool"
+      tag={ETH}
+      title="Touchdown"
+      label="Betting 0.1 ETH on Blue Ghost at 26%: about 0.35 shares that pay 1 ETH each if it wins, 5% to the prize pool, and the odds move to 29%"
+      caption={<StepCaption step={step} lines={BET_CAPTIONS} />}
+      onReplay={done ? replay : undefined}
     >
-      <div className="grid h-full grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-4">
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 gap-2">
+      <div className="grid h-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
+        <div className="flex flex-col gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
+          <div className="flex items-center justify-between">
             <span
-              className={`rounded-lg px-2 py-2 text-center text-xs font-semibold transition-colors duration-300 ${
-                step >= 1 ? 'text-white' : 'bg-white/[0.05] text-gray-300'
-              }`}
-              style={step >= 1 ? { background: TEAMS[0].color } : undefined}
+              className="rounded-md px-2 py-1 text-xs font-semibold text-white transition-colors duration-300"
+              style={{ background: step >= 1 ? team.color : 'rgba(255,255,255,0.06)' }}
             >
-              Aurora {placed ? '27%' : '25%'}
-            </span>
-            <span className="rounded-lg bg-white/[0.05] px-2 py-2 text-center text-xs font-semibold text-gray-300">
-              Basalt {placed ? '55%' : '57%'}
+              {team.name} {odds[PICK]}%
             </span>
           </div>
-          <div className="rounded-lg border border-white/[0.08] px-3 py-2">
-            <p className="text-[11px] text-gray-500">Amount</p>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Amount</p>
             <p className="text-xl font-bold tabular-nums text-white">
-              {step >= 1 ? '0.1' : '0'} <span className="text-sm text-gray-400">ETH</span>
+              {step >= 2 ? '0.1' : '0'} <span className="text-xs text-gray-400">ETH</span>
             </p>
           </div>
           <motion.div
-            className="flex flex-col gap-1 text-[11px] text-gray-400"
+            initial={false}
             animate={{ opacity: step >= 2 ? 1 : 0 }}
+            className="flex flex-col gap-0.5 text-[11px] text-gray-400"
           >
-            <div className="flex justify-between">
-              <span>To the prize pool (5%)</span>
-              <span className="tabular-nums text-amber-300">0.005 ETH</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Buys shares at 25¢</span>
-              <span className="tabular-nums">≈0.38 shares</span>
-            </div>
-            <div className="flex justify-between text-xs font-semibold text-white">
-              <span>To win</span>
-              <span className="tabular-nums text-emerald-400">≈0.38 ETH</span>
-            </div>
+            <span className="flex justify-between">
+              Shares <span className="tabular-nums text-gray-200">≈0.35</span>
+            </span>
+            <span className="flex justify-between">
+              To win <span className="tabular-nums text-emerald-300">≈0.35 ETH</span>
+            </span>
           </motion.div>
           <motion.span
-            className="mt-auto rounded-lg py-2 text-center text-sm font-bold text-white"
-            style={{ background: TEAMS[0].color }}
-            animate={{ scale: step === 3 ? 0.94 : 1 }}
+            className="mt-auto rounded-lg py-1.5 text-center text-xs font-bold text-white"
+            style={{ background: team.color }}
+            initial={false}
+            animate={{ scale: step === 3 ? 0.94 : 1, opacity: step >= 1 ? 1 : 0.4 }}
             transition={{ duration: 0.15 }}
           >
-            Bet on Aurora
+            {step >= 4 ? 'Bet placed' : `Bet on ${team.name}`}
           </motion.span>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
-            <p className="text-[11px] text-gray-500">Aurora&apos;s chance</p>
-            <motion.p
-              key={placed ? 'after' : 'before'}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-2xl font-bold tabular-nums"
-              style={{ color: TEAMS[0].color }}
-            >
-              {placed ? '27%' : '25%'}
-            </motion.p>
-            <p className="text-[11px] text-gray-500">{placed ? 'Your bet moved it' : '\u00a0'}</p>
+        <div className="relative flex flex-col justify-between gap-2">
+          <div className="flex flex-col gap-1.5">
+            {TEAMS.map((t, i) => (
+              <OddsBar key={t.name} team={t} pct={odds[i]} dim={i !== PICK && step >= 1} compact />
+            ))}
           </div>
-          <div className="rounded-xl border border-amber-400/20 bg-amber-400/[0.05] p-3">
-            <p className="text-[11px] text-amber-200/80">Prize pool</p>
-            <motion.p
-              key={placed ? 'after' : 'before'}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-2xl font-bold tabular-nums text-amber-300"
+          <div className="flex items-center justify-between rounded-lg border border-amber-400/20 bg-amber-400/[0.05] px-2.5 py-1.5">
+            <span className="text-[11px] text-amber-200/80">Prize pool</span>
+            <motion.span
+              key={step >= 3 ? 'after' : 'before'}
+              initial={{ opacity: 0.4 }}
+              animate={{ opacity: 1 }}
+              className="text-sm font-bold tabular-nums text-amber-300"
             >
-              {placed ? '2.405' : '2.400'}
-            </motion.p>
-            <p className="text-[11px] text-amber-200/60">ETH</p>
+              {step >= 3 ? '2.405' : '2.400'} ETH
+            </motion.span>
           </div>
+          <AnimatePresence>
+            {step === 3 && (
+              <motion.span
+                className="absolute -left-6 top-1/2 h-3 w-3 rounded-full bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,0.8)]"
+                initial={{ x: 0, y: 0, opacity: 0 }}
+                animate={{ x: 60, y: 70, opacity: [0, 1, 1, 0] }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.9, ease: 'easeInOut' }}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </div>
-
-      <AnimatePresence>
-        {step === 3 && (
-          <motion.span
-            className="absolute bottom-10 left-[30%] h-4 w-4 rounded-full bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,0.8)]"
-            initial={{ x: 0, y: 0, opacity: 1 }}
-            animate={{ x: '900%', y: -40, opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1, ease: 'easeInOut' }}
-          />
-        )}
-      </AnimatePresence>
     </SceneFrame>
   )
 }
 
-const PRIZE_TOTALS = ['2.400', '2.405', '2.905', '2.912', '2.920', '3.420']
-const PRIZE_SOURCES = ['bet', 'bet', 'fund', 'bet', 'bet', 'fund'] as const
-const PRIZE_DURATIONS = [1000, 1000, 1000, 1000, 1000, 1800]
+// ── 4. Resolution ─────────────────────────────────────────────────────────
 
-export function PrizeScene({ variant }: SceneProps) {
+const RESOLVE_STAGES = ['Evidence checked', 'Senate vote', '72h challenge', 'Result on-chain']
+const RESOLVE_STEPS = 6
+const RESOLVE_CAPTIONS = [
+  'Experts check the evidence against rules published before betting opened.',
+  'The Senate votes on the result.',
+  'Anyone can challenge it for 72 hours.',
+  'The result is reported on-chain.',
+  'Say Blue Ghost lands first.',
+  'Winning shares pay 1 ETH each. If nobody wins or the race is cancelled, bets are refunded.',
+]
+
+export function ResolveScene({ variant, progress }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const step = useSceneStep(ref, PRIZE_DURATIONS)
-  const source = PRIZE_SOURCES[step]
-  const fill = 30 + step * 10
+  const { key, replay } = useReplay(progress)
+  const { step, done } = useSceneStep(ref, RESOLVE_STEPS, progress, key)
+  const lit = Math.min(step, RESOLVE_STAGES.length - 1)
+  const decided = step >= RESOLVE_STAGES.length
 
   return (
     <SceneFrame
       sceneRef={ref}
       variant={variant}
-      label="The prize pool fills from a 5% share of every bet and from direct funding"
+      tag={ETH}
+      title="Touchdown"
+      label="Evidence review, Senate vote, a 72 hour challenge, then the result goes on-chain; if Blue Ghost wins, its shares pay 1 ETH each"
+      caption={<StepCaption step={step} lines={RESOLVE_CAPTIONS} />}
+      onReplay={done ? replay : undefined}
     >
-      <div className="grid h-full grid-cols-2 gap-4">
-        <div className="flex flex-col justify-center gap-3">
+      <ol className="relative flex justify-between">
+        <span className="absolute left-4 right-4 top-3.5 h-0.5 bg-white/10" aria-hidden />
+        <motion.span
+          className="absolute left-4 top-3.5 h-0.5 bg-emerald-400"
+          aria-hidden
+          initial={false}
+          animate={{ width: `calc(${(lit / (RESOLVE_STAGES.length - 1)) * 100}% - 2rem)` }}
+          transition={{ duration: 0.5 }}
+        />
+        {RESOLVE_STAGES.map((stage, i) => (
+          <li key={stage} className="relative z-10 flex w-16 flex-col items-center gap-1.5 sm:w-20">
+            <motion.span
+              className="flex h-7 w-7 items-center justify-center rounded-full border-2 text-[11px] font-bold"
+              initial={false}
+              animate={{
+                backgroundColor: i <= lit ? '#34d399' : '#0b0d12',
+                borderColor: i <= lit ? '#34d399' : 'rgba(255,255,255,0.2)',
+                color: i <= lit ? '#052e16' : '#9ca3af',
+                scale: i === step ? 1.12 : 1,
+              }}
+              transition={{ duration: 0.25 }}
+            >
+              {i + 1}
+            </motion.span>
+            <span className={`text-center text-[10px] leading-tight ${i <= lit ? 'text-white' : 'text-gray-500'}`}>
+              {stage}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-4 grid grid-cols-2 gap-1.5">
+        {TEAMS.map((team, i) => {
+          const won = decided && i === PICK
+          return (
+            <motion.div
+              key={team.name}
+              initial={false}
+              animate={{ opacity: decided && !won ? 0.35 : 1 }}
+              className={`flex items-center justify-between rounded-lg border px-2.5 py-1.5 text-xs ${
+                won ? 'border-emerald-400/50 bg-emerald-400/[0.08]' : 'border-white/[0.06] bg-white/[0.02]'
+              }`}
+            >
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: team.color }} />
+                <span className="truncate text-white">{team.name}</span>
+              </span>
+              <span className={`shrink-0 tabular-nums ${won ? 'font-semibold text-emerald-300' : 'text-gray-500'}`}>
+                {decided ? (won ? '1 ETH/share' : '0') : '…'}
+              </span>
+            </motion.div>
+          )
+        })}
+      </div>
+      <motion.p
+        initial={false}
+        animate={{ opacity: step >= RESOLVE_STEPS - 1 ? 1 : 0 }}
+        className="mt-2 text-xs font-semibold text-white"
+      >
+        Your ≈0.35 shares → <span className="text-emerald-300">≈0.35 ETH</span>
+      </motion.p>
+    </SceneFrame>
+  )
+}
+
+// ── 5. Prize pool ─────────────────────────────────────────────────────────
+
+const PRIZE = [
+  { total: '2.400', fill: 40, source: null },
+  { total: '2.405', fill: 44, source: 'bet' },
+  { total: '2.418', fill: 50, source: 'bet' },
+  { total: '2.918', fill: 70, source: 'fund' },
+  { total: '2.931', fill: 76, source: 'bet' },
+  { total: '2.931', fill: 76, source: null },
+] as const
+const PRIZE_CAPTIONS = [
+  'Every race has a prize pool.',
+  'Your bet sent 0.005 ETH in: 5% of every bet goes to the pool.',
+  'So does every other bet.',
+  'Anyone can also fund the prize directly.',
+  'The pool keeps growing while the race runs.',
+  'Bettors don’t share it. It goes to the winning team, as a community payload on their next flight.',
+]
+
+export function PrizeScene({ variant, progress }: SceneProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const { key, replay } = useReplay(progress)
+  const { step, done } = useSceneStep(ref, PRIZE.length, progress, key)
+  const now = PRIZE[step]
+  const awarded = step === PRIZE.length - 1
+
+  return (
+    <SceneFrame
+      sceneRef={ref}
+      variant={variant}
+      tag={{ label: 'Prize pool', text: 'text-amber-200', bg: 'bg-amber-400/15' }}
+      title="Touchdown"
+      label="The prize pool fills from 5% of every bet and from direct funding, and goes to the winning team"
+      caption={<StepCaption step={step} lines={PRIZE_CAPTIONS} />}
+      onReplay={done ? replay : undefined}
+    >
+      <div className="grid h-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+        <div className="flex flex-col gap-2">
           {(['bet', 'fund'] as const).map((kind) => (
             <div
               key={kind}
-              className={`rounded-xl border px-3 py-2.5 transition-colors duration-300 ${
-                source === kind
-                  ? 'border-amber-400/50 bg-amber-400/10'
-                  : 'border-white/[0.06] bg-white/[0.02]'
+              className={`rounded-lg border px-2.5 py-2 transition-colors duration-300 ${
+                now.source === kind ? 'border-amber-400/50 bg-amber-400/10' : 'border-white/[0.06] bg-white/[0.02]'
               }`}
             >
-              <p className="text-sm font-semibold text-white">
-                {kind === 'bet' ? 'Every bet' : 'Funders'}
-              </p>
-              <p className="text-xs text-gray-400">
-                {kind === 'bet' ? '≈5% goes to the prize' : 'Anyone can add ETH'}
-              </p>
+              <p className="text-xs font-semibold text-white">{kind === 'bet' ? 'Every bet' : 'Funders'}</p>
+              <p className="text-[11px] text-gray-400">{kind === 'bet' ? '5% to the pool' : 'Add ETH directly'}</p>
             </div>
           ))}
         </div>
 
-        <div className="relative flex flex-col items-center justify-end">
+        <div className="relative flex flex-col items-center">
           <AnimatePresence>
-            <motion.span
-              key={step}
-              className="absolute top-2 h-5 w-5 rounded-full bg-amber-300 shadow-[0_0_14px_rgba(252,211,77,0.8)]"
-              initial={{ y: -10, opacity: 0 }}
-              animate={{ y: 120, opacity: [0, 1, 1, 0] }}
-              transition={{ duration: 0.8, ease: 'easeIn' }}
-            />
+            {now.source && (
+              <motion.span
+                key={step}
+                className="absolute -top-3 h-3.5 w-3.5 rounded-full bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,0.8)]"
+                initial={{ y: -8, opacity: 0 }}
+                animate={{ y: 60, opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 0.7, ease: 'easeIn' }}
+              />
+            )}
           </AnimatePresence>
-          <div className="relative h-44 w-32 overflow-hidden rounded-b-3xl rounded-t-lg border-2 border-white/15 bg-white/[0.02]">
+          <div className="relative h-32 w-20 overflow-hidden rounded-b-2xl rounded-t-md border-2 border-white/15 bg-white/[0.02]">
             <motion.div
               className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-amber-500/70 to-amber-300/50"
-              animate={{ height: `${fill}%` }}
-              transition={{ type: 'spring', stiffness: 60, damping: 14 }}
+              initial={false}
+              animate={{ height: `${now.fill}%` }}
+              transition={SPRING}
             />
           </div>
-          <motion.p
-            key={PRIZE_TOTALS[step]}
-            initial={{ opacity: 0.4 }}
-            animate={{ opacity: 1 }}
-            className="mt-3 text-xl font-bold tabular-nums text-amber-300"
-          >
-            {PRIZE_TOTALS[step]} ETH
-          </motion.p>
+          <p className="mt-2 text-sm font-bold tabular-nums text-amber-300">{now.total} ETH</p>
         </div>
-      </div>
-    </SceneFrame>
-  )
-}
 
-const RESOLVE_STAGES = ['Expert review', 'Senate vote', '72h challenge', 'On-chain result']
-const RESOLVE_DURATIONS = [1000, 1000, 1000, 1000, 3200]
-
-export function ResolveScene({ variant }: SceneProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const step = useSceneStep(ref, RESOLVE_DURATIONS)
-  const done = step >= RESOLVE_STAGES.length
-
-  return (
-    <SceneFrame
-      sceneRef={ref}
-      variant={variant}
-      label="Expert review, a Senate vote, a 72 hour challenge window, then the result goes on-chain and winning shares pay out"
-    >
-      <ol className="relative flex justify-between">
-        <span className="absolute left-4 right-4 top-4 h-0.5 bg-white/10" aria-hidden="true" />
-        <motion.span
-          className="absolute left-4 top-4 h-0.5 bg-emerald-400"
-          aria-hidden="true"
-          animate={{
-            width: `calc(${
-              (Math.min(step, RESOLVE_STAGES.length - 1) / (RESOLVE_STAGES.length - 1)) * 100
-            }% - 2rem)`,
-          }}
-          transition={{ duration: 0.6 }}
-        />
-        {RESOLVE_STAGES.map((stage, i) => {
-          const lit = step >= i
-          return (
-            <li key={stage} className="relative z-10 flex w-16 flex-col items-center gap-2 sm:w-20">
-              <motion.span
-                className="flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold"
-                animate={{
-                  backgroundColor: lit ? '#34d399' : '#0b0d12',
-                  borderColor: lit ? '#34d399' : 'rgba(255,255,255,0.2)',
-                  color: lit ? '#052e16' : '#9ca3af',
-                  scale: step === i ? 1.15 : 1,
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                {i + 1}
-              </motion.span>
-              <span
-                className={`text-center text-[11px] leading-tight ${
-                  lit ? 'text-white' : 'text-gray-500'
-                }`}
-              >
-                {stage}
-              </span>
-            </li>
-          )
-        })}
-      </ol>
-
-      <motion.div
-        className="mt-6 grid grid-cols-2 gap-3"
-        animate={{ opacity: done ? 1 : 0, y: done ? 0 : 12 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.07] p-3">
-          <p className="text-xs font-semibold text-emerald-300">Team Basalt wins</p>
-          <p className="mt-1 text-sm font-bold text-white">Each winning share pays 1 ETH</p>
-          <p className="mt-1 text-[11px] text-gray-400">
-            Other shares pay 0. The prize goes to the winner.
+        <motion.div
+          initial={false}
+          animate={{ opacity: awarded ? 1 : 0.25, x: awarded ? 0 : -8 }}
+          transition={{ duration: 0.4 }}
+          className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-2.5 py-2"
+        >
+          <p className="text-[10px] uppercase tracking-wider text-gray-500">Goes to</p>
+          <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-white">
+            <span className="h-2 w-2 rounded-full" style={{ background: TEAMS[PICK].color }} />
+            The winning team
           </p>
-        </div>
-        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-3">
-          <p className="text-xs font-semibold text-gray-300">No winner or cancelled</p>
-          <p className="mt-1 text-sm font-bold text-white">Bets are refundable</p>
-          <p className="mt-1 text-[11px] text-gray-400">Also if a required milestone fails.</p>
-        </div>
-      </motion.div>
+          <p className="mt-0.5 text-[11px] text-gray-400">Not to bettors</p>
+        </motion.div>
+      </div>
     </SceneFrame>
   )
 }

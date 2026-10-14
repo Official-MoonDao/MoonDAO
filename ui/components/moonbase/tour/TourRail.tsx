@@ -1,4 +1,9 @@
-import { TOUR_ORDER, TOUR_STOPS, type TourStopId } from '@/lib/moonbase-tour/stops'
+import {
+  TOUR_ACT_LABELS,
+  TOUR_ORDER,
+  TOUR_STOPS,
+  type TourStopId,
+} from '@/lib/moonbase-tour/stops'
 
 type TourRailProps = {
   active: TourStopId | null
@@ -20,11 +25,23 @@ export default function TourRail({ active }: TourRailProps) {
         active ? 'opacity-100' : 'pointer-events-none opacity-0'
       }`}
     >
-      <ol className="flex flex-col items-end gap-4">
-        {TOUR_ORDER.map((id) => {
+      <ol className="flex flex-col items-end gap-3.5">
+        {TOUR_ORDER.map((id, i) => {
           const isActive = id === active
+          const act = TOUR_STOPS[id].act
+          const startsAct = i === 0 || TOUR_STOPS[TOUR_ORDER[i - 1]].act !== act
+          const inActiveAct = active != null && TOUR_STOPS[active].act === act
           return (
-            <li key={id}>
+            <li key={id} className="flex flex-col items-end">
+              {startsAct && (
+                <span
+                  className={`mb-2 font-RobotoMono text-[9px] uppercase tracking-[0.24em] transition-colors duration-300 ${
+                    inActiveAct ? 'text-[#22d3ee]' : 'text-white/30'
+                  } ${i === 0 ? '' : 'mt-3'}`}
+                >
+                  {TOUR_ACT_LABELS[act]}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => go(id)}

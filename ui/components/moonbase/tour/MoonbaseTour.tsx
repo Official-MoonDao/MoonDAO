@@ -20,6 +20,9 @@ import TourScene from './TourScene'
 import useActiveStop from './useActiveStop'
 import useTourRenderMode from './useTourRenderMode'
 
+// Stops with an animation get more scroll, which is what the animation plays over.
+const SCENE_SVH = 260
+
 export default function MoonbaseTour() {
   const activeId = useActiveStop<TourStopId>('arrival')
   // Past the last stop the scene fades out, but it keeps the stop it was on so
@@ -38,7 +41,7 @@ export default function MoonbaseTour() {
     <Container>
       <WebsiteHead
         title="Moon Base Zero tour"
-        description="A walkthrough of Moon Base Zero and DePrize: how lunar capability races work, how predictions and bets set the odds, how prize pools grow, and how a winner is decided."
+        description="A walkthrough of Moon Base Zero and DePrize: the districts of the base, how one race becomes a market, how predictions and bets work, how a winner is decided and where the prize goes."
       />
       <div className="relative bg-[#010208]">
         <TourScene stop={stop} build={build} visible={activeId !== null} mode={mode} />
@@ -63,8 +66,8 @@ export default function MoonbaseTour() {
             >
               A model of the first lunar base, built from real hardware. Every lander, rover and
               habitat here is a real project from a real company or space agency, standing where it
-              would on the Shackleton ridge. Scroll to see how the base works and how DePrize lets
-              you back who builds it first.
+              would on the Shackleton ridge. First a walk down the base, then one of its races from
+              first bet to payout.
             </TourCard>
             <p className="mt-10 flex items-center gap-3 font-RobotoMono text-[11px] uppercase tracking-[0.24em] text-white/50">
               <span className="block h-px w-8 bg-white/40" />
@@ -72,83 +75,121 @@ export default function MoonbaseTour() {
             </p>
           </TourChapter>
 
+          <TourChapter id="power">
+            <TourCard location={TOUR_STOPS.power.label} title="Every district is a race.">
+              The base is laid out along one road, a district for each thing the Moon needs. Each
+              district holds the teams racing to deliver it. Out here at the east end is power:
+              two weeks of sunlight, then two weeks of night, and the base has to survive both.
+              Working through that night is a race of its own, called Night Shift.
+            </TourCard>
+          </TourChapter>
+
+          <TourChapter id="comms">
+            <TourCard location={TOUR_STOPS.comms.label} title="A line home.">
+              Relays and beacons that keep the base talking to Earth and let everything on the
+              surface know where it is. Like every machine on this map, each one is a real mission
+              from a real team, placed where it would stand.
+            </TourCard>
+          </TourChapter>
+
+          <TourChapter id="habitat">
+            <TourCard location={TOUR_STOPS.habitat.label} title="Where people will live.">
+              The heart of the base. Pressurized modules, from single habitats up to flagship
+              programs like Artemis Base Camp and ILRS, stand here side by side, racing to keep
+              people living on the Moon.
+            </TourCard>
+          </TourChapter>
+
+          <TourChapter id="rover">
+            <TourCard location={TOUR_STOPS.rover.label} title="First Tracks.">
+              The rovers driving the base road are racing for First Tracks: the first commercial
+              rover to roll off its lander and drive. Every race like this one can have a DePrize,
+              where anyone can predict or bet on who gets there first. Just past the rovers is
+              where it all starts.
+            </TourCard>
+          </TourChapter>
+
           <TourChapter id="race">
             <TourCard
               location={TOUR_STOPS.race.label}
-              title="Every district is a race."
+              title="Follow one race: Touchdown."
               actions={
-                <CtaButton href="/moonbase" variant="primary">
-                  Explore the districts
+                <CtaButton href="/deprize" variant="primary">
+                  See live DePrizes
                 </CtaButton>
               }
             >
-              The base is split into districts, one for each capability the Moon needs: landing,
-              roving, power, habitats, construction, communications. The teams trying to deliver a
-              capability stand in its district. This is the landing zone, home to Touchdown: the
-              race to the next upright, working lunar landing.
+              Six landers stand in the landing zone: Blue Ghost, Nova-C, Blue Moon MK1, Griffin,
+              HAKUTO-R and Chang&apos;e-7. Touchdown asks which one makes the next upright, working
+              lunar landing. Here is how a DePrize turns that question into a market, from the
+              first bet to the payout.
             </TourCard>
           </TourChapter>
 
-          <TourChapter id="market">
-            <TourCard
-              location={TOUR_STOPS.market.label}
-              title="Every race has a market."
-              visual={<OddsRaceScene variant="tour" />}
-            >
-              A DePrize turns a race into a prediction market. Each competitor has a live chance to
-              win, and it moves every time someone backs them.
-            </TourCard>
+          <TourChapter id="market" heightSvh={SCENE_SVH}>
+            {(p) => (
+              <TourCard
+                location={TOUR_STOPS.market.label}
+                title="The race becomes a market."
+                visual={<OddsRaceScene variant="tour" progress={p} />}
+              >
+                Every competitor has a live chance to win, set by what people are paying to back
+                them. It starts even and moves with every bet.
+              </TourCard>
+            )}
           </TourChapter>
 
-          <TourChapter id="predict">
-            <TourCard
-              location={TOUR_STOPS.predict.label}
-              title="Predict for free."
-              visual={<PredictScene variant="tour" />}
-            >
-              Pick who you think gets there first. It costs nothing. Citizens&apos; picks are
-              weighted by voting power and combine into the DAO forecast, and accurate predictions
-              climb the leaderboard when the race ends.
-            </TourCard>
+          <TourChapter id="predict" heightSvh={SCENE_SVH}>
+            {(p) => (
+              <TourCard
+                location={TOUR_STOPS.predict.label}
+                title="Predict for free with MOONEY."
+                visual={<PredictScene variant="tour" progress={p} />}
+              >
+                Citizens pick who they think wins, weighted by voting power. Picks form the MOONEY
+                forecast, which sits beside the ETH odds and never moves them.
+              </TourCard>
+            )}
           </TourChapter>
 
-          <TourChapter id="bet">
-            <TourCard
-              location={TOUR_STOPS.bet.label}
-              title="Or back your pick with ETH."
-              visual={<BetScene variant="tour" />}
-            >
-              A share costs the current chance and pays 1 ETH if that team wins, so a 25% pick pays
-              about 4x. Your bet moves the odds, and you can cash out at the current price any time
-              the market is open.
-              <span className="mt-2 block text-xs text-white/50">
-                {DEPRIZE_AVAILABILITY_LEGEND}
-              </span>
-            </TourCard>
+          <TourChapter id="bet" heightSvh={SCENE_SVH}>
+            {(p) => (
+              <TourCard
+                location={TOUR_STOPS.bet.label}
+                title="Or bet real ETH."
+                visual={<BetScene variant="tour" progress={p} />}
+              >
+                A share costs the current chance and pays 1 ETH if that team wins.
+                <span className="mt-1 block text-xs text-white/50">
+                  {DEPRIZE_AVAILABILITY_LEGEND}
+                </span>
+              </TourCard>
+            )}
           </TourChapter>
 
-          <TourChapter id="prize">
-            <TourCard
-              location={TOUR_STOPS.prize.label}
-              title="Every bet grows the prize."
-              visual={<PrizeScene variant="tour" />}
-            >
-              About 5% of every bet goes into the prize pool, and anyone can fund it directly.
-              Bettors don&apos;t share in it: it goes to the team that wins, as a community payload
-              on their next flight.
-            </TourCard>
+          <TourChapter id="resolve" heightSvh={SCENE_SVH}>
+            {(p) => (
+              <TourCard
+                location={TOUR_STOPS.resolve.label}
+                title="A winner is decided in the open."
+                visual={<ResolveScene variant="tour" progress={p} />}
+              >
+                Against rules published before betting opened, with time for anyone to object.
+              </TourCard>
+            )}
           </TourChapter>
 
-          <TourChapter id="resolve">
-            <TourCard
-              location={TOUR_STOPS.resolve.label}
-              title="A winner is decided in the open."
-              visual={<ResolveScene variant="tour" />}
-            >
-              Experts check the evidence against rules published before betting opened. The Senate
-              votes, anyone can challenge for 72 hours, then the result goes on-chain. Winning
-              shares pay out; if nobody wins or the race is cancelled, bets are refunded.
-            </TourCard>
+          <TourChapter id="prize" heightSvh={SCENE_SVH}>
+            {(p) => (
+              <TourCard
+                location={TOUR_STOPS.prize.label}
+                title="The prize builds the base."
+                visual={<PrizeScene variant="tour" progress={p} />}
+              >
+                Every bet feeds the winner&apos;s prize, and the prize flies a community payload on
+                their next mission.
+              </TourCard>
+            )}
           </TourChapter>
 
           <TourChapter id="ladder" heightSvh={300}>
@@ -171,7 +212,7 @@ export default function MoonbaseTour() {
               }
             >
               Fly around the base, open any district to see who&apos;s racing, and follow a race
-              into its market to predict or back a team.
+              into its market to predict or bet on a team.
             </TourCard>
           </TourChapter>
         </div>
