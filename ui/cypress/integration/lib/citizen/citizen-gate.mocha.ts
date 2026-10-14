@@ -100,6 +100,7 @@ describe('prize-chain citizen gate', () => {
     expect(panel).to.include('CitizenPredictNotice')
     expect(notice).to.include('Switch to that wallet')
     expect(notice).to.include('check your Citizen')
-    expect(notice).to.include('Mint a Citizen')
+    expect(notice).to.include('0 voting power')
+    expect(notice).not.to.include('want it to count')
   })
 })
