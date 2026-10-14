@@ -64,6 +64,24 @@ export function uniqueBackers(bets: BetRow[]): number {
   return new Set(bets.map((b) => b.bettor.toLowerCase())).size
 }
 
+/**
+ * Splits a DePrize's Bet events by whether they traded on `trades`' market.
+ * DePrizeMint routes every bet into the market it is bound to *at that moment*,
+ * so the same transaction carries the market's trade log. A bet with no trade in
+ * its transaction went to a market the DePrize was bound to earlier (a rebind,
+ * e.g. the 2026-09-11 H-01 redeploy) and never moved the current prices.
+ */
+export function splitBetsByMarket(
+  bets: BetRow[],
+  trades: readonly { txHash: string }[]
+): { bets: BetRow[]; priorBets: BetRow[] } {
+  const onMarket = new Set(trades.map((t) => t.txHash.toLowerCase()))
+  const current: BetRow[] = []
+  const prior: BetRow[] = []
+  for (const b of bets) (onMarket.has(b.txHash.toLowerCase()) ? current : prior).push(b)
+  return { bets: current, priorBets: prior }
+}
+
 /** Total ETH bettors have put into the market side (costEth only; the slice is prize pool). */
 export function totalStaked(bets: BetRow[]): number {
   return totalBet(bets)

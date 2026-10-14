@@ -509,8 +509,16 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   // Everyone who put ETH behind an outcome. They belong on the callers list
   // next to the Citizens who wrote a prediction.
   const bettorAddresses = useMemo(
-    () => [...new Set(activity.bets.map((bet) => bet.bettor.toLowerCase()))],
-    [activity.bets],
+    () => [
+      ...new Set(
+        [...activity.priorBets, ...activity.bets].map((bet) => bet.bettor.toLowerCase()),
+      ),
+    ],
+    [activity.bets, activity.priorBets],
+  )
+  const positionBets = useMemo(
+    () => [...activity.priorBets, ...activity.bets],
+    [activity.bets, activity.priorBets],
   )
 
   const stakedEthByOutcome = useMemo(() => {
@@ -585,8 +593,21 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         body: notice.message,
       })
     }
+    const prior = activity.priorBets
+    if (prior.length > 0) {
+      const eth = prior.reduce((s, b) => s + b.costEth, 0)
+      const since = market.marketStartMs
+        ? ` on ${new Date(market.marketStartMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+        : ''
+      items.push({
+        id: 'prior-market-bets',
+        tone: 'amber',
+        priority: 10,
+        body: `${prior.length === 1 ? '1 bet' : `${prior.length} bets`} (${eth.toFixed(4)} ETH) went into this prize's previous market, before it was upgraded${since}. Those positions still pay out if their team wins, but they don't count toward the current odds.`,
+      })
+    }
     return items
-  }, [market.error, onrampReturn.notice])
+  }, [market.error, onrampReturn.notice, activity.priorBets, market.marketStartMs])
 
   const shellTitle =
     knownCompetition && deprizeId !== undefined
@@ -752,7 +773,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           outcomes={market.outcomes}
           labels={predictionLabels}
           colors={outcomeColors}
-          bets={activity.bets}
+          bets={positionBets}
           sells={activity.sells}
           sellQuotes={sellQuotes}
           redeemValues={redeemValues}
