@@ -2,6 +2,7 @@ import { useRouter } from 'next/router'
 import { useContext } from 'react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { formatListingPrice, getListingHref } from '@/lib/marketplace/listing'
+import { ownerFallbackName, ownerHref } from '@/lib/project/projectOwnerId'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
 import AdaptiveImage from '@/components/layout/AdaptiveImage'
 import ExpandableText from '@/components/layout/ExpandableText'
@@ -20,7 +21,12 @@ export default function MarketplaceListing({ listing }: MarketplaceListingProps)
 
   const handleTeamClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    router.push(`/team/${listing.teamName ? generatePrettyLink(listing.teamName) : listing.teamId}`)
+    router.push(
+      ownerHref(listing.teamId, {
+        teamSlug: listing.teamName ? generatePrettyLink(listing.teamName) : undefined,
+        projectMDP: listing.projectMDP,
+      })
+    )
   }
 
   return (
@@ -59,7 +65,7 @@ export default function MarketplaceListing({ listing }: MarketplaceListingProps)
             onClick={handleTeamClick}
             className="mt-1 w-fit text-left text-xs text-slate-400 transition-colors hover:text-white hover:underline"
           >
-            {listing.teamName || `Team ${listing.teamId}`}
+            {listing.teamName || ownerFallbackName(listing.teamId)}
           </button>
           <div className="mt-1.5">
             <ExpandableText className="text-sm leading-relaxed text-slate-300/80" lines={2}>

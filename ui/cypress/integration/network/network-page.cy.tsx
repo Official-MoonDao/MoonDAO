@@ -107,13 +107,48 @@ describe('<Network />', () => {
   })
 
   it('should display join network button', () => {
+    cy.viewport(1536, 844)
     cy.mount(
       <TestnetProviders>
         <Network />
       </TestnetProviders>
     )
 
-    cy.contains('Join Network').should('exist')
+    cy.get('a[href="/join"]').should('exist')
+    // Frame's 5vmax top-right radius plus overflow:hidden sliced this corner
+    // at 1536x844. A point inside the button's own radius must not be clipped.
+    cy.get('a[href="/join"]').then(($el) => {
+      const button = $el[0]
+      const rect = button.getBoundingClientRect()
+      const x = rect.right - 6
+      const y = rect.top + 6
+      let clipped = false
+      let node = button.parentElement
+      while (node && node !== document.body) {
+        const style = window.getComputedStyle(node)
+        const clips =
+          style.overflowX === 'hidden' ||
+          style.overflowX === 'clip' ||
+          style.overflowY === 'hidden' ||
+          style.overflowY === 'clip'
+        if (clips) {
+          const box = node.getBoundingClientRect()
+          const dx = box.right - x
+          const dy = y - box.top
+          const outside = x < box.left || x > box.right || y < box.top || y > box.bottom
+          const radius = parseFloat(style.borderTopRightRadius) || 0
+          const inCorner = radius > 0 && dx >= 0 && dy >= 0 && dx < radius && dy < radius
+          if (outside) clipped = true
+          if (inCorner) {
+            const nx = (radius - dx) / radius
+            const ny = (radius - dy) / radius
+            if (nx * nx + ny * ny > 1) clipped = true
+          }
+        }
+        node = node.parentElement
+      }
+      expect(clipped, 'Join Network button corner is clipped').to.eq(false)
+    })
   })
 
   describe('Citizens Tab', () => {

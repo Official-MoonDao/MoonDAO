@@ -2,8 +2,9 @@ import { getNFT } from 'thirdweb/extensions/erc721'
 import { readContract } from 'thirdweb'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { useENS } from '@/lib/utils/hooks/useENS'
+import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { useENS } from '@/lib/utils/hooks/useENS'
 
 type AuthorCitizenLinkProps = {
   authorAddress: string
@@ -53,8 +54,9 @@ export default function AuthorCitizenLink({
 
   const displayName = citizenMeta?.name || authorName || null
   const addressLabel = ensData?.name || shortAddress
-  const avatarSrc =
+  const avatarSrc = getIPFSGateway(
     citizenMeta?.image || `https://cdn.stamp.fyi/avatar/${authorAddress}`
+  )
   const href = citizenMeta
     ? `/citizen/${generatePrettyLinkWithId(citizenMeta.name, citizenMeta.id)}`
     : undefined
@@ -94,11 +96,7 @@ export default function AuthorCitizenLink({
       <div className={containerClasses}>
         <div className={avatarWrapperClasses}>
           <img
-            src={
-              avatarSrc.startsWith('ipfs://')
-                ? `https://ipfs.io/ipfs/${avatarSrc.replace('ipfs://', '')}`
-                : avatarSrc
-            }
+            src={avatarSrc}
             alt={displayName || addressLabel}
             width={24}
             height={24}
