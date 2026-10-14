@@ -598,6 +598,8 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
         account,
       })
 
+      const DISCORD_THREAD_NAME_MAX = 100
+      const threadNameChars = Array.from(`MDP-${proposalId}: ${proposalTitle}`)
       const discordResponse = await fetch(
         `https://discord.com/api/v10/channels/${proposalsForumId}/threads`,
         {
@@ -607,7 +609,10 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
             Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
           },
           body: JSON.stringify({
-            name: `MDP-${proposalId}: ${proposalTitle}`,
+            name:
+              threadNameChars.length > DISCORD_THREAD_NAME_MAX
+                ? threadNameChars.slice(0, DISCORD_THREAD_NAME_MAX - 1).join('').trimEnd() + '…'
+                : threadNameChars.join(''),
             message: { content: `https://moondao.com/project/${proposalId}` },
           }),
         }
