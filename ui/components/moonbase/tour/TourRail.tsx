@@ -1,4 +1,4 @@
-import { TOUR_ORDER, TOUR_STOPS, type TourStopId } from '@/lib/home-tour/stops'
+import { TOUR_ORDER, TOUR_STOPS, type TourStopId } from '@/lib/moonbase-tour/stops'
 
 type TourRailProps = {
   active: TourStopId | null

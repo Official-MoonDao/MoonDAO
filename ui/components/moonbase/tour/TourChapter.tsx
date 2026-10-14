@@ -6,7 +6,7 @@ import {
   type MotionValue,
 } from 'framer-motion'
 import { ReactNode, useRef } from 'react'
-import type { TourStopId } from '@/lib/home-tour/stops'
+import type { TourStopId } from '@/lib/moonbase-tour/stops'
 
 type TourChapterProps = {
   id: TourStopId

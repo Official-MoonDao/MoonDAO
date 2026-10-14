@@ -1,5 +1,6 @@
 import { CameraIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import { useLogin } from '@privy-io/react-auth'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
@@ -954,6 +955,12 @@ export default function MoonBaseZeroIndex() {
                   every serious program is racing here. Click a site to explore
                   its capability race, competitors, and sources.
                 </p>
+                <Link
+                  href="/moonbase/tour"
+                  className="mt-2 inline-flex text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+                >
+                  New here? Take the tour →
+                </Link>
               </div>
 
               {/* Detail panel sits under the name card on desktop and fills the

@@ -1,11 +1,11 @@
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
-import { TOUR_POSTER, type TourStop } from '@/lib/home-tour/stops'
+import { TOUR_POSTER, type TourStop } from '@/lib/moonbase-tour/stops'
 import type { TourRenderMode } from './useTourRenderMode'
 
 // The scene, its layout and the 5,700-line model library stay out of the
-// homepage's first-load bundle entirely.
+// tour's first-load bundle entirely.
 const TourGlobe = dynamic(() => import('./TourGlobe'), { ssr: false })
 
 type TourSceneProps = {

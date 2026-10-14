@@ -39,7 +39,7 @@
 // this list (Next requires the matcher be a static literal) — a unit test
 // fails if GATED_PREFIXES and GATED_MIDDLEWARE_MATCHERS drift apart. When you
 // change either, update middleware.ts `config.matcher` to the same strings.
-export const GATED_PREFIXES = ['/moonbase', '/deprize', '/deprize-play', '/home-tour']
+export const GATED_PREFIXES = ['/moonbase', '/deprize', '/deprize-play']
 
 // Exact strings that must appear in middleware.ts `config.matcher`. Kept here
 // so the Cypress unit suite can assert the pairing without reading the file
@@ -53,7 +53,6 @@ export const GATED_MIDDLEWARE_MATCHERS = [
   '/deprize',
   '/deprize/:path*',
   '/deprize-play',
-  '/home-tour',
 ]
 
 // Where the gate form lives, and the query parameter holding the route the

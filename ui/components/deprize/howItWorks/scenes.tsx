@@ -26,13 +26,25 @@ function useSceneStep(ref: RefObject<Element>, durations: number[]): number {
   return reduce ? durations.length - 1 : step
 }
 
+/** `tour` sits over the Moon Base Zero scene, so it is shorter and opaque enough to read. */
+export type SceneVariant = 'page' | 'tour'
+
+type SceneProps = { variant?: SceneVariant }
+
+const FRAME_CLASS: Record<SceneVariant, string> = {
+  page: 'h-[320px] bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-5 sm:p-6',
+  tour: 'h-[290px] bg-[#05070d]/85 p-4 backdrop-blur-md sm:p-5',
+}
+
 function SceneFrame({
   sceneRef,
   label,
+  variant = 'page',
   children,
 }: {
   sceneRef: RefObject<HTMLDivElement>
   label: string
+  variant?: SceneVariant
   children: ReactNode
 }) {
   return (
@@ -40,7 +52,7 @@ function SceneFrame({
       ref={sceneRef}
       role="img"
       aria-label={label}
-      className="relative h-[320px] w-full overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-5 sm:p-6"
+      className={`relative w-full overflow-hidden rounded-2xl border border-white/[0.08] ${FRAME_CLASS[variant]}`}
     >
       {children}
     </div>
@@ -55,7 +67,15 @@ const HERO_ODDS = [
 ]
 const HERO_DURATIONS = [1800, 1800, 1800, 2400]
 
-export function OddsRaceScene() {
+function ExampleTag() {
+  return (
+    <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+      Example
+    </span>
+  )
+}
+
+export function OddsRaceScene({ variant }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
   const step = useSceneStep(ref, HERO_DURATIONS)
   const odds = HERO_ODDS[step]
@@ -63,18 +83,16 @@ export function OddsRaceScene() {
   return (
     <SceneFrame
       sceneRef={ref}
+      variant={variant}
       label="Three competitors with chances to win that shift as people bet"
     >
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-          First commercial lunar landing
+          Next working lunar landing
         </p>
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-red-400">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
-          Live
-        </span>
+        <ExampleTag />
       </div>
-      <div className="mt-6 flex flex-col gap-5">
+      <div className={`flex flex-col ${variant === 'tour' ? 'mt-4 gap-4' : 'mt-6 gap-5'}`}>
         {TEAMS.map((team, i) => (
           <div key={team.name}>
             <div className="mb-1.5 flex items-baseline justify-between">
@@ -118,15 +136,17 @@ const VOTERS = [
 ]
 const PREDICT_DURATIONS = [900, 1100, 1300, 1800, 2600]
 
-export function PredictScene() {
+export function PredictScene({ variant }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
   const step = useSceneStep(ref, PREDICT_DURATIONS)
   const picked = step >= 2
   const forecast = step >= 4 ? [30, 52, 18] : [38, 40, 22]
+  const rowPad = variant === 'tour' ? 'py-2' : 'py-2.5'
 
   return (
     <SceneFrame
       sceneRef={ref}
+      variant={variant}
       label="Picking a competitor for free, then Citizen picks weighted by voting power forming the DAO forecast"
     >
       <div className="flex flex-col gap-2">
@@ -135,7 +155,7 @@ export function PredictScene() {
           return (
             <div
               key={team.name}
-              className={`relative flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors duration-300 ${
+              className={`relative flex items-center gap-3 rounded-xl border px-3 ${rowPad} transition-colors duration-300 ${
                 mine ? 'border-blue-400/60 bg-blue-500/10' : 'border-white/[0.06] bg-white/[0.02]'
               }`}
             >
@@ -181,7 +201,7 @@ export function PredictScene() {
         })}
       </div>
 
-      <div className="mt-5">
+      <div className={variant === 'tour' ? 'mt-3' : 'mt-5'}>
         <div className="flex h-7 items-end gap-1.5">
           {VOTERS.map((voter, i) => (
             <motion.span
@@ -219,7 +239,7 @@ export function PredictScene() {
 
 const BET_DURATIONS = [900, 1200, 1900, 1300, 2600]
 
-export function BetScene() {
+export function BetScene({ variant }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
   const step = useSceneStep(ref, BET_DURATIONS)
   const placed = step >= 4
@@ -227,6 +247,7 @@ export function BetScene() {
   return (
     <SceneFrame
       sceneRef={ref}
+      variant={variant}
       label="Betting 0.1 ETH at a 25% chance: about 0.38 ETH if they win, with 5% going to the prize pool"
     >
       <div className="grid h-full grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-4">
@@ -325,7 +346,7 @@ const PRIZE_TOTALS = ['2.400', '2.405', '2.905', '2.912', '2.920', '3.420']
 const PRIZE_SOURCES = ['bet', 'bet', 'fund', 'bet', 'bet', 'fund'] as const
 const PRIZE_DURATIONS = [1000, 1000, 1000, 1000, 1000, 1800]
 
-export function PrizeScene() {
+export function PrizeScene({ variant }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
   const step = useSceneStep(ref, PRIZE_DURATIONS)
   const source = PRIZE_SOURCES[step]
@@ -334,6 +355,7 @@ export function PrizeScene() {
   return (
     <SceneFrame
       sceneRef={ref}
+      variant={variant}
       label="The prize pool fills from a 5% share of every bet and from direct funding"
     >
       <div className="grid h-full grid-cols-2 gap-4">
@@ -391,7 +413,7 @@ export function PrizeScene() {
 const RESOLVE_STAGES = ['Expert review', 'Senate vote', '72h challenge', 'On-chain result']
 const RESOLVE_DURATIONS = [1000, 1000, 1000, 1000, 3200]
 
-export function ResolveScene() {
+export function ResolveScene({ variant }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
   const step = useSceneStep(ref, RESOLVE_DURATIONS)
   const done = step >= RESOLVE_STAGES.length
@@ -399,6 +421,7 @@ export function ResolveScene() {
   return (
     <SceneFrame
       sceneRef={ref}
+      variant={variant}
       label="Expert review, a Senate vote, a 72 hour challenge window, then the result goes on-chain and winning shares pay out"
     >
       <ol className="relative flex justify-between">

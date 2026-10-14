@@ -1,17 +1,10 @@
-import type { GlobeFocus } from '@/components/lunar-atlas/MoonGlobe'
-import type { ColonyLayout } from '@/components/lunar-atlas/MarkerLayer'
 import { BASE_PLAN } from '@/lib/lunar-atlas/baseplan'
-import {
-  latLonToVector3,
-  MOON_RADIUS_M,
-  vector3ToLatLon,
-} from '@/lib/lunar-atlas/geo'
+import { latLonToVector3, MOON_RADIUS_M, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
 import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
-import {
-  capCenterLatLon,
-  capOffsetLatLon,
-} from '@/lib/lunar-atlas/southpole'
+import { capCenterLatLon, capOffsetLatLon } from '@/lib/lunar-atlas/southpole'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
+import type { ColonyLayout } from '@/components/lunar-atlas/MarkerLayer'
+import type { GlobeFocus } from '@/components/lunar-atlas/MoonGlobe'
 
 export type TourTarget =
   | { kind: 'home' }
@@ -21,12 +14,14 @@ export type TourTarget =
 
 export type TourStopId =
   | 'arrival'
-  | 'landing'
-  | 'habitat'
-  | 'construction'
-  | 'network'
-  | 'roadmap'
-  | 'join'
+  | 'race'
+  | 'market'
+  | 'predict'
+  | 'bet'
+  | 'prize'
+  | 'resolve'
+  | 'ladder'
+  | 'explore'
 
 export type TourStop = {
   id: TourStopId
@@ -40,60 +35,43 @@ export type TourStop = {
 
 export const TOUR_POSTER = '/assets/Lunar-Colony-Dark.webp'
 
-// In the order the tour walks them, which is the order they stand along the
-// spine from the landing pads at its south-west end: you arrive, you live,
-// you build, you connect, then the camera pulls back to see the whole of it.
+// The base first, then one race followed from market to payout, then the
+// ladder of races that builds the rest of it. The DePrize stops all hold on
+// the landing zone, so the camera stays on the race being explained.
 export const TOUR_ORDER: TourStopId[] = [
   'arrival',
-  'landing',
-  'habitat',
-  'construction',
-  'network',
-  'roadmap',
-  'join',
+  'race',
+  'market',
+  'predict',
+  'bet',
+  'prize',
+  'resolve',
+  'ladder',
+  'explore',
 ]
+
+const LANDING_ZONE: TourTarget = { kind: 'district', category: 'lander' }
 
 export const TOUR_STOPS: Record<TourStopId, TourStop> = {
   arrival: { id: 'arrival', target: { kind: 'home' }, label: 'Moon Base Zero' },
-  landing: {
-    id: 'landing',
-    target: { kind: 'district', category: 'lander' },
-    label: 'Landing zone',
-  },
-  habitat: {
-    id: 'habitat',
-    target: { kind: 'district', category: 'habitat' },
-    label: 'Habitat district',
-  },
-  construction: {
-    id: 'construction',
-    target: { kind: 'district', category: 'construction' },
-    label: 'Construction district',
-  },
-  network: {
-    id: 'network',
-    target: { kind: 'district', category: 'comms_pnt' },
-    label: 'Comms & navigation',
-  },
-  roadmap: {
-    id: 'roadmap',
-    target: { kind: 'home' },
-    label: 'The whole settlement',
-  },
-  join: {
-    id: 'join',
+  race: { id: 'race', target: LANDING_ZONE, label: 'Landing zone' },
+  market: { id: 'market', target: LANDING_ZONE, label: 'Live odds' },
+  predict: { id: 'predict', target: LANDING_ZONE, label: 'Predict' },
+  bet: { id: 'bet', target: LANDING_ZONE, label: 'Bet' },
+  prize: { id: 'prize', target: { kind: 'home' }, label: 'Prize pool' },
+  resolve: { id: 'resolve', target: LANDING_ZONE, label: 'Resolution' },
+  ladder: { id: 'ladder', target: { kind: 'home' }, label: 'Capability ladder' },
+  explore: {
+    id: 'explore',
     target: { kind: 'orbit', altitudeM: 4000 },
-    label: 'Shackleton ridge',
+    label: 'Explore',
   },
 }
 
 // The camera framing for a stop, built the same way /moonbase builds it for
 // a legend click (flyToSite) or a satellite pick (flyToProject), so the tour
 // and the explorer frame a district identically.
-export function stopFocus(
-  target: TourTarget,
-  layout: ColonyLayout
-): GlobeFocus {
+export function stopFocus(target: TourTarget, layout: ColonyLayout): GlobeFocus {
   switch (target.kind) {
     case 'home':
       return null

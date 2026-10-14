@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { stopFocus, type TourTarget } from '@/lib/home-tour/stops'
+import { stopFocus, type TourTarget } from '@/lib/moonbase-tour/stops'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
 import { useSitedColony } from '@/lib/lunar-atlas/colonyLayout'
 import { TIME_STATUS_OPACITY } from '@/lib/lunar-atlas/display'

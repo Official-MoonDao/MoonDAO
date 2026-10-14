@@ -31,7 +31,6 @@ export const config = {
     '/deprize',
     '/deprize/:path*',
     '/deprize-play',
-    '/home-tour',
     '/docs/Press',
     '/docs/Press/:path*',
     '/docs/tags/press',

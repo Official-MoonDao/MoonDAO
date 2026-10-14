@@ -5,6 +5,8 @@ type TourCardProps = {
   title: ReactNode
   children?: ReactNode
   stat?: { value: string; label: string }
+  // An animation under the copy. The heading shrinks so both fit one screen.
+  visual?: ReactNode
   actions?: ReactNode
   // The arrival card carries the page's <h1>; every other stop is an <h2>.
   as?: 'h1' | 'h2'
@@ -15,6 +17,7 @@ export default function TourCard({
   title,
   children,
   stat,
+  visual,
   actions,
   as: Heading = 'h2',
 }: TourCardProps) {
@@ -27,11 +30,19 @@ export default function TourCard({
         </span>
         {location}
       </p>
-      <Heading className="mt-4 font-heading font-semibold text-[clamp(1.9rem,4vw,3.25rem)] leading-[1.05] text-white [text-shadow:0_2px_24px_rgba(1,2,8,0.6)]">
+      <Heading
+        className={`font-heading font-semibold leading-[1.05] text-white [text-shadow:0_2px_24px_rgba(1,2,8,0.6)] ${
+          visual ? 'mt-3 text-[clamp(1.6rem,3vw,2.5rem)]' : 'mt-4 text-[clamp(1.9rem,4vw,3.25rem)]'
+        }`}
+      >
         {title}
       </Heading>
       {children && (
-        <div className="mt-5 max-w-lg text-base leading-relaxed text-white/75 md:text-lg [text-shadow:0_1px_12px_rgba(1,2,8,0.7)]">
+        <div
+          className={`max-w-lg leading-relaxed text-white/75 [text-shadow:0_1px_12px_rgba(1,2,8,0.7)] ${
+            visual ? 'mt-3 text-sm md:text-base' : 'mt-5 text-base md:text-lg'
+          }`}
+        >
           {children}
         </div>
       )}
@@ -45,8 +56,13 @@ export default function TourCard({
           </span>
         </div>
       )}
+      {visual && <div className="mt-5">{visual}</div>}
       {actions && (
-        <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6">
+        <div
+          className={`flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6 ${
+            visual ? 'mt-5' : 'mt-8'
+          }`}
+        >
           {actions}
         </div>
       )}

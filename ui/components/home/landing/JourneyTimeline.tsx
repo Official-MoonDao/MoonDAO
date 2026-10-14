@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import Reveal from './Reveal'
 import SectionHeading from './SectionHeading'
 
-export type TimelineEvent = {
+type TimelineEvent = {
   date: string
   title: string
   description: string
@@ -13,7 +13,7 @@ export type TimelineEvent = {
   isCurrent?: boolean
 }
 
-export const timelineEvents: TimelineEvent[] = [
+const timelineEvents: TimelineEvent[] = [
   {
     date: 'Nov 2021',
     title: 'MoonDAO Launch',

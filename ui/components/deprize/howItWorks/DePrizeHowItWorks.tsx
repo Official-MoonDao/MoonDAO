@@ -106,9 +106,9 @@ export default function DePrizeHowItWorks({ restricted }: { restricted: boolean 
                   <Link href="/deprize" className={PRIMARY_CTA}>
                     Browse prizes
                   </Link>
-                  <a href="#step-1" className={SECONDARY_CTA}>
-                    See how it works
-                  </a>
+                  <Link href="/moonbase/tour" className={SECONDARY_CTA}>
+                    Take the Moon Base Zero tour
+                  </Link>
                 </div>
               </div>
               <OddsRaceScene />
