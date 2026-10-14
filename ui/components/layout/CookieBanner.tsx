@@ -1,6 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/20/solid'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { applyConsentToAttribution } from '@/lib/analytics/attribution'
 import { cookieBannerDecision, type CookieBannerDecision } from '@/lib/geo/countryCode'
 
 type BannerStatus = 'pending' | 'granted' | 'denied' | 'prompt'
@@ -97,6 +98,7 @@ export default function CookieBanner() {
       // Private mode can reject storage. The in-memory choice still applies.
     }
     applyAnalyticsConsent(granted)
+    applyConsentToAttribution(granted)
   }, [status])
 
   if (status !== 'prompt') return null

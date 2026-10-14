@@ -1,5 +1,4 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
-import { Widget } from '@typeform/embed-react'
 import { DEFAULT_TEAM_MULTISIG_SIGNERS, TEAM_ADDRESSES, TEAM_CREATOR_ADDRESSES } from 'const/config'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -40,6 +39,7 @@ import {
 import { useClientHydrated } from '@/lib/utils/hooks/useClientHydrated'
 import { useFormCache } from '@/lib/utils/hooks/useFormCache'
 import { compressImageForStorage } from '@/lib/utils/images'
+import AttributedTypeformWidget from '@/components/analytics/AttributedTypeformWidget'
 import MoonDAOTeamCreatorABI from '../../const/abis/MoonDAOTeamCreator.json'
 import TeamABI from '../../const/abis/Team.json'
 import Container from '../layout/Container'
@@ -659,7 +659,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
                     <p className="text-slate-400 text-sm">Fill out your team information below.</p>
                   </div>
                   <div className="w-full rounded-xl overflow-hidden border border-white/[0.06]">
-                    <Widget
+                    <AttributedTypeformWidget
                       className="w-full"
                       id={process.env.NEXT_PUBLIC_TYPEFORM_TEAM_FORM_ID as string}
                       onSubmit={submitTypeform}

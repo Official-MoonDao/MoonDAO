@@ -19,6 +19,7 @@ import { privyDefaultChain } from '@/lib/privy/privyDefaultChain'
 import { WalletChainSync } from '@/lib/privy/WalletChainSync'
 import CitizenProvider from '@/lib/citizen/CitizenProvider'
 import { reportWebVitals as reportVitals, monitorLongTasks, monitorPageVisibility, NextWebVitalsMetric } from '@/lib/performance/webVitals'
+import AttributionCapture from '@/components/analytics/AttributionCapture'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
 import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
@@ -93,6 +94,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
   return (
     <SessionProvider session={session}>
       <GTag GTAG={process.env.NEXT_PUBLIC_GTAG as string} />
+      <AttributionCapture />
       <ChainContextV5.Provider value={chainContextValue}>
         <PrivyWalletContext.Provider value={walletContextValue}>
           <PrivyProvider

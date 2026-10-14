@@ -7,6 +7,7 @@
   "extensions": ["ts", "tsx"],
   "spec": [
     "scripts/citizen-onboarding-image.test.ts",
+    "scripts/attribution.test.ts",
     "scripts/typeform-parse-body.test.ts",
     "scripts/gift-purchase-validation.test.ts",
     "scripts/marketplace-vendor-email.test.ts",
