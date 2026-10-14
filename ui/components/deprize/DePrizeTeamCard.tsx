@@ -82,6 +82,11 @@ type DePrizeTeamCardProps = {
    * listing never reads as an endorsement. See ROSTER_DISCLAIMER.
    */
   unclaimed?: boolean
+  /**
+   * Which market this row belongs to. 'bet' shows ETH staked and payout;
+   * 'predict' shows Citizen voting power. Omit for the combined row.
+   */
+  mode?: 'bet' | 'predict'
 }
 
 /** Dashed-circle mark for the Open Field slot, which has no Team NFT. */
@@ -140,6 +145,7 @@ export default function DePrizeTeamCard({
   vehicleLabel,
   imageOverride,
   unclaimed = false,
+  mode,
 }: DePrizeTeamCardProps) {
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
   const showHoldings = !!onCashOut && holding
@@ -158,8 +164,11 @@ export default function DePrizeTeamCard({
   const votingPowerText =
     citizenVotingPower === undefined ? undefined : formatVotingPower(citizenVotingPower)
   const predictionNoun = predictionCount === 1 ? 'prediction' : 'predictions'
+  const ctaLabel = mode === 'bet' ? 'Bet' : DEPRIZE_PREDICT_CTA
   const predictAria = !cardIsButton
     ? undefined
+    : mode === 'bet'
+    ? `Bet ETH on ${predictName}`
     : votingPowerText === undefined
     ? `Predict ${predictName} as the winner`
     : predictionCount
@@ -236,7 +245,33 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {votingPowerText !== undefined && (
+        {mode === 'bet' && (
+          <div className="hidden md:block shrink-0 text-right" data-staked-eth={stakedEth ?? 0}>
+            <p className="text-sm font-semibold leading-none tabular-nums text-white">
+              <EthUsd eth={stakedEth ?? 0} />
+            </p>
+            <p className="mt-1 text-[11px] leading-tight text-gray-400">bet on this market</p>
+          </div>
+        )}
+
+        {mode === 'predict' && votingPowerText !== undefined && (
+          <div
+            className="hidden md:block shrink-0 text-right"
+            data-citizen-voting-power={citizenVotingPower}
+            data-prediction-count={predictionCount ?? 0}
+          >
+            <p className="text-sm font-semibold leading-none tabular-nums text-white">
+              {votingPowerText} {FORECAST_COPY.votingPower}
+            </p>
+            <p className="mt-1 text-[11px] leading-tight text-gray-400">
+              {predictionCount
+                ? `from ${predictionCount} ${predictionCount === 1 ? 'person' : 'people'}`
+                : 'no predictions yet'}
+            </p>
+          </div>
+        )}
+
+        {mode === undefined && votingPowerText !== undefined && (
           <div
             className="hidden md:block shrink-0 text-right"
             data-citizen-voting-power={citizenVotingPower}
@@ -288,7 +323,7 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {!resolved && (
+        {!resolved && mode !== 'predict' && (
           <span
             className="hidden sm:block shrink-0 w-12 text-right text-xs tabular-nums text-gray-400"
             title="ETH paid per 1 ETH predicted if this wins, at the current price"
@@ -303,7 +338,7 @@ export default function DePrizeTeamCard({
             className="shrink-0 rounded-lg px-3 sm:px-5 py-2 text-sm font-semibold text-white shadow-sm transition-[filter] group-hover:brightness-110"
             style={{ background: color }}
           >
-            {DEPRIZE_PREDICT_CTA}
+            {ctaLabel}
           </span>
         )}
 

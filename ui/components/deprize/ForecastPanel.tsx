@@ -69,17 +69,19 @@ export default function ForecastPanel(props: {
   /** Which competitor's prediction window is open. The page owns this so deep links share it. */
   modalIndex: number | null
   onModalClose: () => void
-  /** Open the embedded bet form as soon as the prediction window appears. */
-  resumeBet?: boolean
   /**
    * ETH bet form for the open competitor. The page omits this when betting
-   * is not allowed; the prediction itself does not need it.
+   * is not allowed or no wallet is connected.
    */
-  renderBet?: (input: { index: number; onClose: () => void; onPlaced: () => void }) => ReactNode
+  renderBet?: (input: { index: number; onClose: () => void }) => ReactNode
   /** ETH staked on each outcome, same order as `labels`. */
   stakedEthByOutcome?: number[]
-  /** Competitor order. ETH uses market odds; MOONEY uses voting-power share. */
-  rankSource?: 'eth' | 'mooney'
+  /**
+   * Which market the rows show and act on. 'bet' ranks by ETH odds and opens
+   * the bet form; 'predict' ranks by voting-power share and saves a prediction.
+   */
+  mode: 'bet' | 'predict'
+  onModeChange?: (mode: 'bet' | 'predict') => void
 }) {
   const {
     chainSlug,
@@ -105,11 +107,12 @@ export default function ForecastPanel(props: {
     onBet,
     modalIndex,
     onModalClose,
-    resumeBet,
     renderBet,
     stakedEthByOutcome,
-    rankSource = 'eth',
+    mode,
+    onModeChange,
   } = props
+  const isBetMode = mode === 'bet'
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
   const { login } = useLogin()
@@ -147,7 +150,7 @@ export default function ForecastPanel(props: {
     [consensus, shownLeaderboard, n]
   )
   const orderedOutcomes = useMemo(() => {
-    if (rankSource !== 'mooney' || !citizenVotingPowerByOutcome) return rankedOutcomes
+    if (isBetMode || !citizenVotingPowerByOutcome) return rankedOutcomes
     const total = citizenVotingPowerByOutcome.reduce((sum, value) => sum + value, 0)
     const scored = rankedOutcomes.map((outcome) => ({
       ...outcome,
@@ -159,7 +162,7 @@ export default function ForecastPanel(props: {
       winningIndex: showResolved && winningIndex >= 0 ? winningIndex : undefined,
     })
   }, [
-    rankSource,
+    isBetMode,
     citizenVotingPowerByOutcome,
     rankedOutcomes,
     raceBinding,
@@ -389,7 +392,7 @@ export default function ForecastPanel(props: {
     }
     if (plan.action === 'write') {
       const ok = await commitPick(plan.index)
-      if (ok && !showBet) onModalClose()
+      if (ok) onModalClose()
     }
   }
 
@@ -402,18 +405,6 @@ export default function ForecastPanel(props: {
     })
     if (plan.action === 'write') void commitPick(plan.index)
     if (plan.action === 'clear') void clearPick()
-  }
-
-  function attachPrediction(index: number) {
-    const plan = tapPlan({
-      index,
-      savedPick,
-      writing,
-      connected: !!account,
-      isCitizen,
-      locked: inputsLocked,
-    })
-    if (plan.action === 'write') void commitPick(plan.index)
   }
 
   const mine = consensus?.leaderboard.find(
@@ -450,10 +441,29 @@ export default function ForecastPanel(props: {
   return (
     <section id="deprize-forecast" className="scroll-mt-24">
       <h2 className="text-white text-lg font-heading font-semibold">Competitors</h2>
-      <p className="mt-1 text-sm text-gray-400">{FORECAST_COPY.panelIntro}</p>
-      {restricted && (
+      <p className="mt-1 text-sm text-gray-400">
+        {isBetMode
+          ? 'Pick a team to bet ETH on. Each share pays 1 ETH if that team wins, and every bet moves the odds.'
+          : FORECAST_COPY.panelIntro}
+      </p>
+      {isBetMode && restricted && (
         <p className="mt-2 text-sm text-amber-200">
-          Betting isn&apos;t available in your region — you can still make a prediction.
+          Betting isn&apos;t available in your region — you can still make a prediction
+          {onModeChange ? (
+            <>
+              {' '}
+              <button
+                type="button"
+                onClick={() => onModeChange('predict')}
+                className="font-semibold text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
+              >
+                in the MOONEY forecast
+              </button>
+              .
+            </>
+          ) : (
+            '.'
+          )}
         </p>
       )}
 
@@ -473,8 +483,10 @@ export default function ForecastPanel(props: {
           This prize has reported — forecasting is closed.
         </p>
       )}
-      {account && !isCitizen ? <div className="mt-3">{renderCitizenNotice()}</div> : null}
-      {mine?.skill != null && (
+      {!isBetMode && account && !isCitizen ? (
+        <div className="mt-3">{renderCitizenNotice()}</div>
+      ) : null}
+      {!isBetMode && mine?.skill != null && (
         <p className="mt-3 text-sm text-gray-300">Your skill score is {mine.skill.toFixed(2)}.</p>
       )}
 
@@ -483,10 +495,8 @@ export default function ForecastPanel(props: {
         className="mt-4 flex items-center gap-3 sm:gap-4 border-b border-white/[0.08] px-3 sm:px-4 pb-2 text-[11px] uppercase tracking-wide text-gray-500"
       >
         <span className="flex-1">Outcome</span>
-        <span className="w-16 sm:w-20 text-right">
-          {rankSource === 'mooney' ? 'Share' : 'Chance'}
-        </span>
-        <span className="hidden sm:block w-12" />
+        <span className="w-16 sm:w-20 text-right">{isBetMode ? 'Chance' : 'Share'}</span>
+        {isBetMode && <span className="hidden sm:block w-12 text-right">Pays</span>}
         <span className="w-[4.5rem] sm:w-24" />
       </div>
       <div className="mt-1 flex flex-col gap-1" aria-live="polite">
@@ -500,7 +510,7 @@ export default function ForecastPanel(props: {
               : undefined
           const atlasOrg = atlasProject ? orgById(SEED_ATLAS, atlasProject.orgId) : undefined
           const claimed = isCompetitorClaimed(outcomeBinding)
-          const isSaved = savedPick === o.index
+          const isSaved = !isBetMode && savedPick === o.index
           return (
             <div id={`deprize-outcome-${o.index}`} key={o.index}>
               <DePrizeTeamCard
@@ -512,11 +522,16 @@ export default function ForecastPanel(props: {
                 resolved={showResolved}
                 isRefundVector={isRefundVector}
                 isWinningSlot={showResolved && o.index === winningIndex}
+                mode={mode}
                 bettingOpen={false}
-                selectable={!showResolved && !inputsLocked}
+                selectable={
+                  isBetMode
+                    ? !showResolved && bettingOpen && !tradingHalted && !marketLoading
+                    : !showResolved && !inputsLocked
+                }
                 highlighted={isSaved}
                 badge={isSaved ? FORECAST_COPY.predicted : undefined}
-                chanceLabel={rankSource === 'mooney' ? 'share' : 'chance'}
+                chanceLabel={isBetMode ? 'chance' : 'share'}
                 stakedEth={stakedEthByOutcome?.[o.index] ?? 0}
                 citizenVotingPower={
                   citizenVotingPowerByOutcome
@@ -543,17 +558,19 @@ export default function ForecastPanel(props: {
         })}
       </div>
 
-      {savedPick != null && (
+      {!isBetMode && savedPick != null && (
         <p className="mt-2 text-xs text-gray-400">{FORECAST_COPY.singlePick}</p>
       )}
-      {error && <p className="mt-2 text-xs text-amber-200">{error}</p>}
+      {!isBetMode && error && <p className="mt-2 text-xs text-amber-200">{error}</p>}
       {modalIndex != null && (
         <PredictModal
+          mode={mode}
           teamName={labels[modalIndex] || 'this competitor'}
           probability={
-            orderedOutcomes.find((outcome) => outcome.index === modalIndex)?.probability ??
-            marketPercents[modalIndex] ??
-            NaN
+            isBetMode
+              ? marketPercents[modalIndex] ?? NaN
+              : orderedOutcomes.find((outcome) => outcome.index === modalIndex)?.probability ??
+                NaN
           }
           chanceLoading={marketLoading}
           bettingAvailable={showBet}
@@ -571,16 +588,9 @@ export default function ForecastPanel(props: {
           onConnect={login}
           onClose={onModalClose}
           outcomeIndex={modalIndex}
-          resumeBet={resumeBet}
           bet={
-            showBet && renderBet ? (
-              <div key={modalIndex}>
-                {renderBet({
-                  index: modalIndex,
-                  onClose: onModalClose,
-                  onPlaced: () => attachPrediction(modalIndex),
-                })}
-              </div>
+            isBetMode && showBet && renderBet ? (
+              <div key={modalIndex}>{renderBet({ index: modalIndex, onClose: onModalClose })}</div>
             ) : undefined
           }
         />

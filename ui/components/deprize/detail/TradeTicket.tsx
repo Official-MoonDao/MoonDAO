@@ -1,17 +1,18 @@
 // Polymarket-style order ticket for the prize page rail. It only picks the
-// competitor (and, where betting is allowed, a starting amount); the button
-// opens the same prediction window as tapping a competitor row, so citizen
-// checks, the saved pick and the bet form all stay in one place.
+// competitor (and, in the ETH market, a starting amount); the button opens the
+// same window as tapping a competitor row in the selected market.
 import { useEffect, useState } from 'react'
 import { DEPRIZE_PREDICT_CTA } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import EthUsd from '@/components/deprize/EthUsd'
 import { payoutMultiple } from '@/components/deprize/MarketOutcomeRow'
+import type { MarketMode } from './MarketModeTabs'
 import { TOUCH } from './primitives'
 
 const QUICK_ADD_ETH = [0.001, 0.01, 0.05]
 
 export default function TradeTicket({
+  mode,
   title,
   labels,
   colors,
@@ -19,23 +20,30 @@ export default function TradeTicket({
   order,
   resolved,
   bettingAllowed,
+  betUnavailableReason,
   amountEth,
   onAmountChange,
   onPredict,
+  onModeChange,
 }: {
+  mode: MarketMode
   title: string
   labels: string[]
   colors: string[]
-  /** Percent per outcome, outcome-index order. */
+  /** Percent per outcome, outcome-index order: ETH chance or voting-power share. */
   probabilities: number[]
   /** Outcome indexes, best first. */
   order: number[]
   resolved: boolean
   bettingAllowed: boolean
+  /** Why the ETH market is closed to this visitor, without a trailing period. */
+  betUnavailableReason?: string
   amountEth: string
   onAmountChange: (eth: string) => void
   onPredict: (index: number) => void
+  onModeChange: (mode: MarketMode) => void
 }) {
+  const isBet = mode === 'bet'
   const [selected, setSelected] = useState<number | null>(null)
   useEffect(() => {
     if (selected === null && order.length) setSelected(order[0])
@@ -48,7 +56,7 @@ export default function TradeTicket({
   const multiple = payoutMultiple(probability)
   const amount = Number(amountEth)
   const payout =
-    bettingAllowed && amount > 0 && Number.isFinite(probability) && probability > 0
+    isBet && bettingAllowed && amount > 0 && Number.isFinite(probability) && probability > 0
       ? (amount * 100) / probability
       : undefined
 
@@ -59,7 +67,16 @@ export default function TradeTicket({
 
   return (
     <section className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 sm:p-5">
-      <p className="truncate text-xs text-gray-400">{title}</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="min-w-0 truncate text-xs text-gray-400">{title}</p>
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+            isBet ? 'bg-emerald-400/15 text-emerald-300' : 'bg-indigo-400/15 text-indigo-200'
+          }`}
+        >
+          {isBet ? 'ETH market' : 'MOONEY forecast'}
+        </span>
+      </div>
       <p className="mt-0.5 truncate text-base font-semibold text-white">{name}</p>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
@@ -88,7 +105,7 @@ export default function TradeTicket({
         })}
       </div>
 
-      {bettingAllowed && !resolved && (
+      {isBet && bettingAllowed && !resolved && (
         <div className="mt-5">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor="deprize-ticket-amount" className="text-sm text-gray-300">
@@ -124,7 +141,13 @@ export default function TradeTicket({
         </div>
       )}
 
-      {!resolved && (
+      {!resolved && !isBet && (
+        <p className="mt-4 text-xs leading-snug text-gray-400">
+          Free. Your pick is weighted by your Citizen voting power and does not touch the ETH odds.
+        </p>
+      )}
+
+      {!resolved && isBet && (
         <div className="mt-4 flex items-center justify-between text-xs text-gray-400">
           <span>{payout !== undefined ? 'To win' : 'Payout per 1 ETH'}</span>
           <span className="tabular-nums text-gray-200">
@@ -143,6 +166,17 @@ export default function TradeTicket({
         <p className="mt-5 rounded-lg bg-white/[0.04] px-3 py-3 text-center text-sm text-gray-400">
           This market has resolved.
         </p>
+      ) : isBet && !bettingAllowed ? (
+        <div className="mt-4 rounded-lg bg-white/[0.04] px-3 py-3 text-center text-sm text-gray-400">
+          <p>{betUnavailableReason || 'Betting is closed right now'}.</p>
+          <button
+            type="button"
+            onClick={() => onModeChange('predict')}
+            className={`mt-2 font-semibold text-indigo-300 hover:text-indigo-200 ${TOUCH}`}
+          >
+            Make a free MOONEY prediction →
+          </button>
+        </div>
       ) : (
         <button
           type="button"
@@ -150,7 +184,7 @@ export default function TradeTicket({
           className={`mt-4 w-full rounded-lg px-4 py-3 text-[15px] font-semibold text-white transition-[filter] hover:brightness-110 ${TOUCH}`}
           style={{ background: colors[index] }}
         >
-          {DEPRIZE_PREDICT_CTA} {name}
+          {isBet ? `Bet on ${name}` : `${DEPRIZE_PREDICT_CTA} ${name}`}
         </button>
       )}
     </section>
