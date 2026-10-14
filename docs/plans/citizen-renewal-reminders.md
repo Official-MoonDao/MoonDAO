@@ -1,71 +1,121 @@
 # Citizen renewal reminders
 
-Dry run only. The route reads chain, Tableland, Typeform, Kit, and Redis. It does not tag, unsubscribe, create subscribers, or send email.
+Dry run by default. The route reads chain, Tableland, Typeform, Kit, and Redis. It does not send email. Kit sends the sequence after a tag is applied.
 
-Reminders are on by default. A citizen with a findable email is in the reminder set unless they opted out. Opt-out is Kit's unsubscribe (state `cancelled`), a bounce or complaint, or the Redis set `renewal:suppress`. There is no opt-in checkbox. A later change can add a "stop renewal reminders" link in the email and on Edit Profile that writes one of those opt-outs. This pull request does not add that control.
+Live Kit writes run only when both of these are true:
+
+- server env `RENEWAL_REMINDERS_LIVE` is exactly `true`
+- the request query includes `live=1`
+
+Either one alone stays a dry run: no tag adds, no tag removes, and no Redis dedupe writes. `dryRun=0` is still rejected. Omit `dryRun` or pass `dryRun=1`.
+
+This job does not create, re-subscribe, or re-activate subscribers. It does not call form subscribe or sequence subscribe. Typeform-only addresses are counted and masked. They are not added to Kit in this change.
+
+Reminders are on by default. A citizen with a findable email is in the reminder set unless they opted out. Opt-out is Kit state `cancelled`, `unsubscribed`, `bounced`, or `complained`, or the Redis set `renewal:suppress`. There is no opt-in checkbox. A later change can add a "stop renewal reminders" link that writes one of those opt-outs.
 
 ## One tag, one sequence
 
-Working tag name: `Renewal-Reminder`.
+Tag name: `Renewal-Reminder`. Override with `RENEWAL_REMINDER_TAG_NAME`. Id from `RENEWAL_REMINDER_TAG_ID`, or a lookup of that name.
 
-In a future live mode, the job adds that tag when a citizen is exactly 30 days from `expiresAt`. A Kit automation subscribes tagged people to one sequence. The sequence sends on day 0, day 16, day 30, and day 44 after entry. Those dates are 30 days before expiry, 14 days before expiry, expiry day, and 14 days after expiry.
+On day -30 (exactly 30 days before `expiresAt`), live mode adds that tag to an existing active Kit subscriber. A Kit automation subscribes tagged people to one sequence. The sequence sends on day 0, day 16, day 30, and day 44 after entry. Those dates are 30 days before expiry, 14 days before expiry, expiry day, and 14 days after expiry.
 
-Kit times a sequence from the day someone enters it. Tagging a person who is already inside the window would send the first email on the wrong date.
+Kit times a sequence from the day someone enters it. Tagging a person who is already inside the window would send the first email on the wrong date. The code does not start the sequence itself.
 
-When `expiresAt` moves out of the window (they renewed), the future job adds a `Renewed` tag and removes `Renewal-Reminder`. A Kit rule removes anyone tagged `Renewed` from the sequence. That write is not in this pull request.
+## Catch-up tags
 
-## Late entrants
+Anyone already past day -30 when first seen for that `expiresAt` does not get `Renewal-Reminder`. They get one catch-up tag for the next email that is still due. Earlier emails stay unsent.
 
-The dry run marks anyone who is already inside the window, or expired within 14 days, as a late entrant. Each of those rows includes:
+| Next email            | Default tag               | Name env                           | Id env                           |
+| --------------------- | ------------------------- | ---------------------------------- | -------------------------------- |
+| 14 days before expiry | `Renewal-Catchup-minus14` | `RENEWAL_CATCHUP_MINUS14_TAG_NAME` | `RENEWAL_CATCHUP_MINUS14_TAG_ID` |
+| expiry day            | `Renewal-Catchup-expiry`  | `RENEWAL_CATCHUP_EXPIRY_TAG_NAME`  | `RENEWAL_CATCHUP_EXPIRY_TAG_ID`  |
+| 14 days after expiry  | `Renewal-Catchup-plus14`  | `RENEWAL_CATCHUP_PLUS14_TAG_NAME`  | `RENEWAL_CATCHUP_PLUS14_TAG_ID`  |
 
-- `daysToExpiry` (negative once expiry day has passed)
-- `sequence.sequenceDay`, which is `30 - daysToExpiry`
-- `sequence.missedEmails` and `sequence.nextEmail`
+Someone 20 days out has missed the -30 email and gets `Renewal-Catchup-minus14`. Someone on expiry day gets `Renewal-Catchup-expiry`. Someone 14 days past expiry gets `Renewal-Catchup-plus14`.
 
-Live mode should not put late entrants on `Renewal-Reminder`. Use a separate catch-up tag for the next email that is still due, or skip straight to that email, and leave the earlier emails unsent. Someone 20 days out has missed the -30 email and should next get the -14 email. Someone on expiry day should next get the expiry email. This pull request only reports that position.
+Create one Kit automation per catch-up tag that sends only that email. Do not attach catch-up tags to the four-email sequence.
 
-## What the dry run returns
+Tag ids resolve from the env var when it is set, otherwise from `GET /v4/tags` by name. The job does not create tags. If any of the five tags is missing, live mode writes nothing.
 
-`GET` or `POST` `/api/cron/citizen-renewal-reminders`. Bearer `CRON_SECRET`, same header style as the contribution notifier. Omit `dryRun` or pass `dryRun=1`. Any other value is rejected.
+## Renewed swap
 
-Window position counts, one per citizen:
+When `expiresAt` moves forward to more than 30 days out, live mode adds `Renewed` (`RENEWED_TAG_NAME`, `RENEWED_TAG_ID`) and removes `Renewal-Reminder` and every catch-up tag. A Kit rule should remove anyone tagged `Renewed` from the reminder sequence.
 
-| Position | Meaning |
-|---|---|
-| enterToday | Exactly 30 days left. Live mode would add `Renewal-Reminder` today. |
-| inside | 1 to 29 days left. Late if launched now. |
-| expiredWithin14 | Expiry day through 14 days after. Late if launched now. |
-| outOfWindow | More than 30 days left, or more than 14 days past expiry. |
+The open book is Redis set `renewal:open`. Members are dedupe keys from an earlier tag. Time passing out the back of the window is not a renewal, because `expiresAt` did not move forward. A new `expiresAt` that is still inside the window is treated as a new term, not a swap.
 
-Eligibility buckets, for people in the first three positions:
+## Dedupe
 
-1. Active Kit subscriber.
-2. Typeform email only, not in Kit. Later, add them with `POST https://api.kit.com/v4/subscribers` (`X-Kit-Api-Key`), body `{ email_address, state: "active", fields: { citizen_token_id } }`. Create the custom field first. Do not call form subscribe (`POST /v3/forms/{id}/subscribe` or `POST /v4/forms/{id}/subscribers`) or sequence subscribe. Those send the form incentive email and can start a welcome sequence. Docs: https://developers.kit.com/api-reference/subscribers/create-a-subscriber and https://developers.kit.com/api-reference/forms/bulk-add-subscribers-to-forms. Kit says this create endpoint does not change state for someone who already exists, so a cancelled subscriber stays cancelled. The code still refuses to plan that call when state is `cancelled`, `unsubscribed`, `bounced`, or `complained`.
-3. Unsubscribed, cancelled, bounced, complained, inactive, or on `renewal:suppress`.
-4. No email found.
+After the tag calls succeed, the job writes `renewal:{tokenId}:{expiresAt}:{stage}` to Upstash and adds that key to the set `renewal:written`. Stages are `minus30`, `minus14`, `expiry`, `plus14`, and `renewed`. A later run that sees the key does not tag again. A failed tag does not write the key, so the next run can retry. Kit returns 200 when the subscriber already has the tag.
 
-Lookup uses `GET /v4/subscribers?email_address=...&status=all` so a cancelled subscriber is not mistaken for "not in Kit".
+## Hard exclusions
 
-Dedupe key, not written yet: `renewal:{tokenId}:{expiresAt}`. One entry per citizen per term.
+Live mode skips a person when any of these are true:
 
-First-run exclusions stay outside the repo. Redis set `renewal:exclude:first-run` is the Oct 2 triage list (ops loads it). Kit tag id `RENEWAL_EXCLUSION_KIT_TAG_ID`, or a read-only lookup of the tag named `Citizens - renewal window Oct 2026 (tagged before 2025-11-29)`, is this week's broadcast audience. The report lists eligible rows that also sit on those lists. No email address is committed.
+- Redis set `renewal:suppress`
+- Redis set `renewal:exclude:first-run` (the Oct 2 triage list)
+- the Kit broadcast tag named `Citizens - renewal window Oct 2026 (tagged before 2025-11-29)`, or `RENEWAL_EXCLUSION_KIT_TAG_ID`
+- Kit state `cancelled`, `unsubscribed`, `bounced`, or `complained`
+- Kit state is anything other than `active`, including missing and inactive
+- there is no numeric Kit subscriber id
+
+Tag writes use `POST /v4/tags/{tag_id}/subscribers/{subscriber_id}` and `DELETE /v4/tags/{tag_id}/subscribers/{subscriber_id}`. The subscriber must already exist. The code refuses to build that request for an opt-out state (`KitResubscribeBlocked`). It never calls `POST /v4/subscribers`, form subscribe, or sequence subscribe.
+
+If `renewal:suppress` or `renewal:exclude:first-run` was not read, live mode writes nothing.
+
+## Response
+
+`GET` or `POST` `/api/cron/citizen-renewal-reminders` with bearer `CRON_SECRET`.
+
+The JSON keeps the dry-run buckets. `writes.buckets` reports planned and executed counts for `renewalReminder`, `catchupMinus14`, `catchupExpiry`, `catchupPlus14`, `renewed`, and `typeformOnly`. Typeform-only planned and executed writes stay 0. `reported` is the count of those addresses. Actions include a masked email (`a***@domain`) and never the raw address. `live` is true only when this request actually wrote.
+
+Window positions, one per citizen:
+
+| Position        | Meaning                                                   |
+| --------------- | --------------------------------------------------------- |
+| enterToday      | Exactly 30 days left. Live mode adds `Renewal-Reminder`.  |
+| inside          | 1 to 29 days left. Late. Catch-up tag for the next email. |
+| expiredWithin14 | Expiry day through 14 days after. Late. Catch-up tag.     |
+| outOfWindow     | More than 30 days left, or more than 14 days past expiry. |
+
+## Ops: load the Oct 2 list
+
+Do not commit the CSV. From `ui/`:
+
+```bash
+yarn renewal:load-exclusions --csv /secure/oct2.csv --dry-run
+yarn renewal:load-exclusions --csv /secure/oct2.csv
+```
+
+Dry run prints `count=<n>` and does not connect to Redis. The real run requires `UPSTASH_REDIS_URL` and `UPSTASH_REDIS_TOKEN`. It lowercases emails, dedupes them, and SADDs them into `renewal:exclude:first-run`. It prints `added=<n>` only.
+
+The CSV may have a header column named `email`, `email_address`, or `email address`. Without that header, every cell that looks like an email is used.
+
+## Ops: create the Kit tags
+
+Create these tags in Kit before turning live mode on. Point each catch-up tag at a one-email automation. Point `Renewal-Reminder` at the four-email sequence. Point `Renewed` at a rule that removes the subscriber from that sequence.
+
+- `Renewal-Reminder`
+- `Renewal-Catchup-minus14`
+- `Renewal-Catchup-expiry`
+- `Renewal-Catchup-plus14`
+- `Renewed`
+
+Optional: set the matching `*_TAG_ID` env vars so the job does not depend on the name lookup.
 
 ## How to run it
 
-GitHub Actions workflow `Citizen renewal coverage dry run` is `workflow_dispatch` only. It prints the JSON to the job summary. Until this is merged, call a preview:
+GitHub Actions workflow `Citizen renewal coverage dry run` is manual and always calls `dryRun=1`.
 
-```bash
-curl -fsS -X POST "https://<preview>/api/cron/citizen-renewal-reminders?dryRun=1" \
-  -H "Authorization: Bearer $CRON_SECRET" \
-  -H "Accept: application/json"
-```
+Workflow `Citizen renewal reminders` runs daily at 13:15 UTC and calls the route without `live=1`, so it reports only. `workflow_dispatch` input `live` must be exactly `1` to append `live=1`. The schedule cannot set that input. The server still ignores `live=1` until `RENEWAL_REMINDERS_LIVE=true`.
 
-Required on that host: `CRON_SECRET`, `TYPEFORM_PERSONAL_ACCESS_TOKEN`, the three `NEXT_PUBLIC_TYPEFORM_CITIZEN_*` form ids, and `CONVERT_KIT_V4_API_KEY` or `CONVERT_KIT_API_KEY`. Redis (`UPSTASH_REDIS_URL`, `UPSTASH_REDIS_TOKEN`) is needed for the suppression set and the Oct 2 list. Without Redis the report says those lists were not read.
+Both workflows use `CRON_SECRET` and `MOONDAO_SITE_URL`.
+
+Required on the host: `CRON_SECRET`, `TYPEFORM_PERSONAL_ACCESS_TOKEN`, the three `NEXT_PUBLIC_TYPEFORM_CITIZEN_*` form ids, and `CONVERT_KIT_V4_API_KEY` or `CONVERT_KIT_API_KEY`. Redis (`UPSTASH_REDIS_URL`, `UPSTASH_REDIS_TOKEN`) is required before any live write.
 
 Chain reads use Arbitrum citizen `0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002`. Profiles come from Tableland `CITIZENTABLE_42161_126` (`formId` only, no email column).
 
-## Later, not this pull request
+## Later
 
 - Server-side Kit subscribe at mint, with the token id on the subscriber, still without a form subscribe.
 - Edit Profile and the email footer: "stop renewal reminders", which unsubscribes in Kit or adds `renewal:suppress`.
-- The live job that adds `Renewal-Reminder` on day -30, adds `Renewed` and removes `Renewal-Reminder` after a renewal, and handles late entrants with a catch-up tag.
+- Adding Typeform-only addresses with `POST /v4/subscribers`. That call stays described by `futureKitAddPlan` and is not executed.

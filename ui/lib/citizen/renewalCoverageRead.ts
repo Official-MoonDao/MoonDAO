@@ -155,9 +155,14 @@ async function kitGet(pathAndQuery: string): Promise<unknown> {
 }
 
 type KitPage = {
-  subscribers?: Array<{ email_address?: string; state?: string }>
+  subscribers?: Array<{ id?: number | string; email_address?: string; state?: string }>
   tags?: Array<{ id?: number | string; name?: string }>
   pagination?: { has_next_page?: boolean; end_cursor?: string | null }
+}
+
+export type KitSubscriberRecord = {
+  state: string | null
+  id: string | null
 }
 
 async function eachKitPage(
@@ -175,10 +180,12 @@ async function eachKitPage(
   return pages
 }
 
-export async function loadKitStates(emails: string[]): Promise<Map<string, string | null>> {
+export async function loadKitSubscriberRecords(
+  emails: string[]
+): Promise<Map<string, KitSubscriberRecord>> {
   const unique = [...new Set(emails.map(normalizeEmail))]
-  const states = new Map<string, string | null>()
-  unique.forEach((email) => states.set(email, null))
+  const records = new Map<string, KitSubscriberRecord>()
+  unique.forEach((email) => records.set(email, { state: null, id: null }))
   const batchSize = 25
   for (let i = 0; i < unique.length; i += batchSize) {
     const batch = unique.slice(i, i + batchSize)
@@ -189,11 +196,35 @@ export async function loadKitStates(emails: string[]): Promise<Map<string, strin
     for (const page of pages) {
       for (const subscriber of page.subscribers || []) {
         if (!subscriber.email_address || !subscriber.state) continue
-        states.set(normalizeEmail(subscriber.email_address), subscriber.state.toLowerCase())
+        const id = subscriber.id == null ? null : String(subscriber.id)
+        records.set(normalizeEmail(subscriber.email_address), {
+          state: subscriber.state.toLowerCase(),
+          id: id && /^\d+$/.test(id) ? id : null,
+        })
       }
     }
   }
+  return records
+}
+
+export async function loadKitStates(emails: string[]): Promise<Map<string, string | null>> {
+  const records = await loadKitSubscriberRecords(emails)
+  const states = new Map<string, string | null>()
+  records.forEach((record, email) => states.set(email, record.state))
   return states
+}
+
+export async function listKitTags(): Promise<Array<{ id: string; name: string }>> {
+  const pages = await eachKitPage(kitListTagsPath(), (cursor) => kitListTagsPath(cursor))
+  const tags: Array<{ id: string; name: string }> = []
+  for (const page of pages) {
+    for (const tag of page.tags || []) {
+      if (!tag.name || tag.id == null) continue
+      const id = String(tag.id)
+      if (/^\d+$/.test(id)) tags.push({ id, name: tag.name })
+    }
+  }
+  return tags
 }
 
 export async function resolveExclusionKitTagId(): Promise<string | null> {
@@ -427,9 +458,9 @@ export async function assembleCoverageInputs(args: {
     }
   }
 
-  let kitStates = new Map<string, string | null>()
+  let kitRecords = new Map<string, KitSubscriberRecord>()
   try {
-    kitStates = await loadKitStates(
+    kitRecords = await loadKitSubscriberRecords(
       lookedUp.map((row) => row.email).filter((email): email is string => Boolean(email))
     )
   } catch (error) {
@@ -444,11 +475,13 @@ export async function assembleCoverageInputs(args: {
   const rows: CoverageInput[] = lookedUp.map(({ profile, email }) => {
     const expires = args.expiresAt.get(profile.tokenId) as number
     const normalized = email ? normalizeEmail(email) : null
+    const record = normalized ? kitRecords.get(normalized) : undefined
     return {
       tokenId: profile.tokenId,
       expiresAt: expires,
       email: normalized,
-      kitState: normalized ? kitStates.get(normalized) ?? null : null,
+      kitState: record?.state ?? null,
+      kitSubscriberId: record?.id ?? null,
       suppressed: normalized ? args.exclusions.suppressed.has(normalized) : false,
       firstRunRedis: normalized ? args.exclusions.firstRunRedis.has(normalized) : false,
       firstRunKitTag: normalized ? args.exclusions.firstRunKitTag.has(normalized) : false,
