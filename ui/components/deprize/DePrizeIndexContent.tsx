@@ -25,7 +25,6 @@ import {
   UNIT,
 } from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
-import { resetMockData } from '@/lib/deprize/mockMarket'
 import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { orgById, projectById, SEED_ATLAS } from '@/lib/lunar-atlas'
@@ -552,17 +551,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
                     ))}
                   </ul>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetMockData()
-                    setRefreshNonce((n) => n + 1)
-                  }}
-                  className="self-start px-1 text-[11px] text-gray-600 underline-offset-2 transition-colors hover:text-gray-400 hover:underline"
-                >
-                  Reset demo data
-                </button>
               </aside>
             </div>
           </div>
