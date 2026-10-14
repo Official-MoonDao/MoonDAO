@@ -936,3 +936,14 @@ body {
 .docs-callout-note {
   border-left-color: rgba(123, 151, 170, 0.8);
 }
+
+/* Silent background loops (hero plate, film teasers). When iOS refuses to
+   autoplay them (Low Power Mode), Safari draws its own big play button over
+   each one. Hide it: the poster frame is the intended fallback, and the film
+   has its own play control. */
+.ambient-video::-webkit-media-controls,
+.ambient-video::-webkit-media-controls-start-playback-button,
+.ambient-video::-webkit-media-controls-overlay-play-button {
+  display: none !important;
+  -webkit-appearance: none;
+}

@@ -32,6 +32,7 @@ import {
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import { computeMemberProposalTally } from '@/lib/proposals/computeMemberProposalTally'
+import { isProposalAuthor } from '@/lib/proposals/isProposalAuthor'
 import {
   getMemberProposalVMooneySnapshot,
   resolveSnapshotMemberProposalVotes,
@@ -60,6 +61,7 @@ import VotingResults from '@/components/nance/VotingResults'
 import AuthorCitizenLink from '@/components/project/AuthorCitizenLink'
 import CloseAndTallyButton from '@/components/project/CloseAndTallyButton'
 import MemberVoteSidebar from '@/components/project/MemberVoteSidebar'
+import ProjectJobsAndMarketplace from '@/components/project/ProjectJobsAndMarketplace'
 import SenateVote from '@/components/project/SenateVote'
 import SenateVoteSidebar from '@/components/project/SenateVoteSidebar'
 import TeamManageMembers from '@/components/subscription/TeamManageMembers'
@@ -271,8 +273,11 @@ export default function ProjectProfile({
   // Tabbed main column. The right rail (Senate + Member vote
   // sidebars) is intentionally outside the tab system so the
   // primary action stays visible across all four tabs.
-  type ProjectTab = 'proposal' | 'results' | 'treasury' | 'team'
+  type ProjectTab = 'proposal' | 'results' | 'treasury' | 'team' | 'jobs' | 'marketplace'
   const [tab, setTab] = useState<ProjectTab>('proposal')
+
+  // Matches the operator relay's check in `pages/api/project/table-write.ts`.
+  const canManageListings = isManager || isProposalAuthor(proposalJSON?.authorAddress, address)
 
   // Hydrate from `?tab=` so deep links land on the right tab and
   // browser back/forward navigates between tabs the user has
@@ -281,7 +286,12 @@ export default function ProjectProfile({
     const urlTab = router.query.tab
     if (
       typeof urlTab === 'string' &&
-      (urlTab === 'proposal' || urlTab === 'results' || urlTab === 'treasury' || urlTab === 'team')
+      (urlTab === 'proposal' ||
+        urlTab === 'results' ||
+        urlTab === 'treasury' ||
+        urlTab === 'team' ||
+        urlTab === 'jobs' ||
+        urlTab === 'marketplace')
     ) {
       setTab(urlTab)
     }
@@ -608,12 +618,23 @@ export default function ProjectProfile({
                 {showResultsTab && tabButton('results', 'Voting Results')}
                 {tabButton('treasury', 'Treasury')}
                 {tabButton('team', 'Team')}
+                {tabButton('jobs', 'Jobs')}
+                {tabButton('marketplace', 'Marketplace')}
               </div>
 
               {effectiveTab === 'proposal' && proposalPane}
               {effectiveTab === 'results' && resultsPane}
               {effectiveTab === 'treasury' && treasuryPane}
               {effectiveTab === 'team' && teamPane}
+              {(effectiveTab === 'jobs' || effectiveTab === 'marketplace') && (
+                <ProjectJobsAndMarketplace
+                  section={effectiveTab}
+                  projectId={project.id}
+                  selectedChain={selectedChain}
+                  canManage={canManageListings}
+                  isActive={isActive}
+                />
+              )}
             </div>
           )
 

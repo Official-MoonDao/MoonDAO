@@ -1,8 +1,10 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
+import ProjectABI from 'const/abis/Project.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
+  PROJECT_ADDRESSES,
   TEAM_ADDRESSES,
   DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
@@ -30,6 +32,8 @@ import {
 } from '@/lib/jobs/jobMetadata'
 import { fetchJobPostingDoc, pinJobPostingDoc } from '@/lib/jobs/jobPostingDoc'
 import { jobDiscordEmbed, jobOgFieldsFrom } from '@/lib/og/preview'
+import { isProjectOwnerId, parseOwnerId } from '@/lib/project/projectOwnerId'
+import { writeProjectTable } from '@/lib/project/projectTableWrite'
 import cleanData from '@/lib/tableland/cleanData'
 import { waitForRow } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -345,6 +349,11 @@ export default function TeamJobModal({
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI,
   })
+  const projectContract = useContract({
+    chain: selectedChain,
+    address: PROJECT_ADDRESSES[chainSlug],
+    abi: ProjectABI,
+  })
 
   const update = (patch: Partial<JobFormState>) => setForm((prev) => ({ ...prev, ...patch }))
 
@@ -489,7 +498,11 @@ export default function TeamJobModal({
 
   async function announce(jobId: string | undefined, jobTeamId: string) {
     try {
-      const team = await getNFT({ contract: teamContract, tokenId: BigInt(jobTeamId) })
+      const owner = parseOwnerId(jobTeamId)
+      const team = await getNFT({
+        contract: owner.kind === 'project' ? projectContract : teamContract,
+        tokenId: BigInt(owner.id),
+      })
       const teamName = team?.metadata.name as string
       const link = jobId ? `${DEPLOYED_ORIGIN}/jobs/${jobId}` : `${DEPLOYED_ORIGIN}/jobs`
       const doc = buildPostingDoc(0)
@@ -578,6 +591,30 @@ export default function TeamJobModal({
                 : cleanedData.contactInfo
 
             const writtenAt = currTime
+
+            if (isProjectOwnerId(teamId)) {
+              const { rowId } = await writeProjectTable({
+                table: 'jobs',
+                action: edit ? 'update' : 'insert',
+                projectId: parseOwnerId(teamId).id,
+                rowId: edit ? job?.id : undefined,
+                fields: {
+                  title: cleanedData.title,
+                  description: cleanedData.description,
+                  tag: cleanedData.tag,
+                  metadata: cleanedData.metadata,
+                  endTime,
+                  timestamp: writtenAt,
+                  contactInfo: formattedContactInfo,
+                },
+              })
+              await announce(rowId, teamId)
+              await waitForJobRow(rowId, writtenAt)
+              refreshJobs()
+              setIsLoading(false)
+              setEnabled(false)
+              return
+            }
 
             const transaction = edit
               ? prepareContractCall({

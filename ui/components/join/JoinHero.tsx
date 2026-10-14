@@ -1,5 +1,7 @@
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
+import { JOIN_FILM_VIMEO_ID, joinFilm } from 'const/joinPageContent'
+import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -8,6 +10,7 @@ import CountUp from '@/components/home/landing/CountUp'
 import CtaButton from '@/components/home/landing/CtaButton'
 import Reveal from '@/components/home/landing/Reveal'
 import Starfield from '@/components/home/landing/Starfield'
+import FilmPlayer from '@/components/layout/FilmPlayer'
 
 type JoinHeroProps = {
   citizenCount: number | null
@@ -26,6 +29,7 @@ function supplyToNumber(supply: unknown): number | null {
 }
 
 export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
+  const { t } = useTranslation('common')
   const hasServerSupply = typeof citizenCount === 'number' && citizenCount > 0
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
   const citizenContract = useContract({
@@ -55,9 +59,17 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
     { value: 2, suffix: '', label: 'Astronauts sent to space' },
   ]
 
+  // With the film live, the hero splits: copy on the left, the film's frame on
+  // the right (stacked under the CTAs on mobile).
+  const hasFilm = !!JOIN_FILM_VIMEO_ID
+
   return (
     <>
-      <section className="relative flex h-[60svh] min-h-[480px] w-full flex-col overflow-hidden bg-[#010208]">
+      <section
+        className={`relative flex w-full flex-col overflow-hidden bg-[#010208] ${
+          hasFilm ? 'min-h-[60svh]' : 'h-[60svh] min-h-[480px]'
+        }`}
+      >
         <div className="absolute inset-0 scale-[1.1]">
           <Image
             src="/assets/NetworkHero.webp"
@@ -71,28 +83,66 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(66,94,235,0.28),transparent_60%)]" />
         <Starfield className="opacity-70" />
 
-        <div className="relative z-10 mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center px-6 py-24 text-center md:px-10">
-          <Reveal>
-            <h1 className="font-heading font-semibold leading-[1.1] text-white text-3xl md:text-5xl drop-shadow-lg">
-              Join the Space Acceleration Network
-            </h1>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/85 md:text-xl drop-shadow-lg">
-              An onchain startup society funding, training, and flying everyday people to space —
-              governed by its members, transparent by design.
-            </p>
-          </Reveal>
-          <Reveal delay={0.2}>
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <CtaButton href="/citizen" variant="primary">
-                Become a Citizen
-              </CtaButton>
-              <CtaButton href="/team" variant="secondary">
-                Create a Team
-              </CtaButton>
-            </div>
-          </Reveal>
+        <div
+          className={`relative z-10 mx-auto flex w-full flex-1 flex-col items-center justify-center px-6 py-24 text-center md:px-10 ${
+            hasFilm
+              ? 'max-w-[1400px] gap-12 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-14 lg:py-20 lg:text-left'
+              : 'max-w-4xl'
+          }`}
+        >
+          <div>
+            <Reveal>
+              <h1 className="font-heading font-semibold leading-[1.1] text-white text-3xl md:text-5xl drop-shadow-lg">
+                Join the Space Acceleration Network
+              </h1>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <p
+                className={`mx-auto mt-6 max-w-2xl text-base leading-relaxed text-white/85 md:text-xl drop-shadow-lg ${
+                  hasFilm ? 'lg:mx-0' : ''
+                }`}
+              >
+                An onchain startup society funding, training, and flying everyday people to space —
+                governed by its members, transparent by design.
+              </p>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <div
+                className={`mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row ${
+                  hasFilm ? 'lg:justify-start' : ''
+                }`}
+              >
+                <CtaButton href="/citizen" variant="primary">
+                  Become a Citizen
+                </CtaButton>
+                <CtaButton href="/team" variant="secondary">
+                  Create a Team
+                </CtaButton>
+              </div>
+            </Reveal>
+          </div>
+          {hasFilm && (
+            <Reveal delay={0.25} className="w-full max-w-2xl lg:max-w-none">
+              <FilmPlayer
+                vimeoId={JOIN_FILM_VIMEO_ID}
+                film={joinFilm}
+                playLabel={t('joinFilmPlay')}
+                eventPrefix="join_film"
+                endCard={{
+                  title: t('joinFilmEndTitle'),
+                  ctaLabel: t('joinFilmEndCta'),
+                  ctaHref: '/citizen',
+                  replayLabel: t('filmReplay'),
+                }}
+                caption={
+                  <>
+                    <span className="font-semibold text-white/85">{t('joinFilmTitle')}</span> ·{' '}
+                    {t('joinFilmSub')}
+                  </>
+                }
+              />
+            </Reveal>
+          )}
         </div>
       </section>
 
