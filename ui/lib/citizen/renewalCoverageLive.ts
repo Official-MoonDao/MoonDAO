@@ -56,6 +56,55 @@ const TAG_ID_ENV: Record<RenewalTagKey, string> = {
   renewed: 'RENEWED_TAG_ID',
 }
 
+/** Known Kit tag ids. An env *_TAG_ID overrides the matching entry. */
+export const DEFAULT_RENEWAL_TAG_IDS: Record<RenewalTagKey, string> = {
+  reminder: '24636917',
+  catchupMinus14: '24636918',
+  catchupExpiry: '24636919',
+  catchupPlus14: '24636923',
+  renewed: '24636927',
+}
+
+/**
+ * Main sequence, then the one-email catch-up sequences for -14, expiry, and +14.
+ * RENEWAL_SEQUENCE_IDS overrides this list.
+ */
+export const DEFAULT_RENEWAL_SEQUENCE_IDS = ['2929996', '2930045', '2930050', '2930051'] as const
+
+/**
+ * Kit's public API cannot remove one subscriber from one sequence.
+ * Checked against the v4 OpenAPI and the v3 sequence page:
+ * https://developers.kit.com/api-reference/v4.json
+ * https://developers.kit.com/api-reference/sequences/add-subscriber-to-sequence
+ * https://developers.kit.com/api-reference/sequences/list-subscribers-for-a-sequence
+ * https://developers.kit.com/api-reference/sequences/delete-a-sequence
+ * https://developers.kit.com/api-reference/v3/sequences
+ * Account-wide unsubscribe is a different operation and is not called:
+ * https://developers.kit.com/api-reference/subscribers/unsubscribe-subscriber
+ * https://developers.kit.com/api-reference/v3/subscribers
+ * https://developers.kit.com/api-reference/upgrading-to-v4
+ * Stop queued mail in Kit. Exclude the Renewed tag on each sequence
+ * (exclude_subscriber_sources on Update a sequence) or remove the subscriber
+ * in the Kit UI:
+ * https://developers.kit.com/api-reference/sequences/update-a-sequence
+ * https://help.kit.com/en/articles/6211448-how-to-manually-add-or-remove-subscribers-from-a-kit-email-sequence
+ */
+export const SEQUENCE_REMOVAL_NOTE =
+  'Unsupported. Kit v4 and v3 have no endpoint that removes one subscriber from one sequence. Account-wide unsubscribe is not used. In Kit, exclude the Renewed tag on each sequence, or remove the subscriber from the sequence in the Kit UI.'
+
+export const SEQUENCE_REMOVAL_DOCS = [
+  'https://developers.kit.com/api-reference/v4.json',
+  'https://developers.kit.com/api-reference/sequences/add-subscriber-to-sequence',
+  'https://developers.kit.com/api-reference/sequences/list-subscribers-for-a-sequence',
+  'https://developers.kit.com/api-reference/sequences/delete-a-sequence',
+  'https://developers.kit.com/api-reference/v3/sequences',
+  'https://developers.kit.com/api-reference/subscribers/unsubscribe-subscriber',
+  'https://developers.kit.com/api-reference/v3/subscribers',
+  'https://developers.kit.com/api-reference/upgrading-to-v4',
+  'https://developers.kit.com/api-reference/sequences/update-a-sequence',
+  'https://help.kit.com/en/articles/6211448-how-to-manually-add-or-remove-subscribers-from-a-kit-email-sequence',
+] as const
+
 export const WRITE_BUCKETS = [
   'renewalReminder',
   'catchupMinus14',
@@ -168,6 +217,15 @@ export type PublicRenewalWrites = {
   skipped: RenewalSkipCounts
   failures: number
   failed: Array<{ tokenId: string; stage: RenewalStage }>
+  sequenceRemoval: {
+    status: 'unsupported'
+    note: typeof SEQUENCE_REMOVAL_NOTE
+    docs: typeof SEQUENCE_REMOVAL_DOCS
+    sequenceIds: string[]
+    attempted: number
+    failed: number
+    failures: Array<{ tokenId: string; sequenceId: string }>
+  }
   actions: PublicRenewalAction[]
   warnings: string[]
   exclusionKeys: {
@@ -269,10 +327,40 @@ export function resolveRenewalTagIds(
       continue
     }
     const found = byName.get(names[key]) || null
-    ids[key] = found
-    if (!found) missing.push(names[key])
+    if (found) {
+      ids[key] = found
+      continue
+    }
+    if (names[key] === DEFAULT_RENEWAL_TAG_NAMES[key]) {
+      ids[key] = DEFAULT_RENEWAL_TAG_IDS[key]
+      continue
+    }
+    ids[key] = null
+    missing.push(names[key])
   }
   return { ids, missing }
+}
+
+/** Comma-separated digits. Blank falls back to DEFAULT_RENEWAL_SEQUENCE_IDS. */
+export function renewalSequenceIds(env: NodeJS.ProcessEnv): string[] {
+  const raw = env.RENEWAL_SEQUENCE_IDS?.trim()
+  if (!raw) return [...DEFAULT_RENEWAL_SEQUENCE_IDS]
+  const ids: string[] = []
+  const seen = new Set<string>()
+  for (const part of raw.split(',')) {
+    const id = part.trim()
+    if (!id) continue
+    if (!/^\d+$/.test(id)) {
+      throw new Error('RENEWAL_SEQUENCE_IDS must be a comma-separated list of digits')
+    }
+    if (seen.has(id)) continue
+    seen.add(id)
+    ids.push(id)
+  }
+  if (ids.length === 0) {
+    throw new Error('RENEWAL_SEQUENCE_IDS must be a comma-separated list of digits')
+  }
+  return ids
 }
 
 export function parseRenewalStageKey(value: string): OpenRecord | null {
@@ -495,6 +583,20 @@ export function assertActiveTagTarget(
   }
 }
 
+/**
+ * No-op. Kit documents no per-sequence removal, and this does not call Kit.
+ * Returns unsupported so a caller can record the gap without sending a request.
+ */
+export function kitSequenceRemoval(
+  sequenceId: string,
+  subscriberId: string,
+  state: string | null | undefined
+): { status: 'unsupported' } {
+  assertActiveTagTarget(state, subscriberId)
+  if (!/^\d+$/.test(sequenceId)) throw new Error('Kit sequence id must be digits')
+  return { status: 'unsupported' }
+}
+
 export function toPublicRenewalWrites(args: {
   decision: RenewalLiveDecision
   plan: RenewalPlan
@@ -503,6 +605,9 @@ export function toPublicRenewalWrites(args: {
   missingTags: string[]
   executedKeys: ReadonlySet<string>
   failed: Array<{ tokenId: string; stage: RenewalStage }>
+  sequenceIds: string[]
+  sequenceAttempted: number
+  sequenceFailures: Array<{ tokenId: string; sequenceId: string }>
   warnings?: string[]
 }): PublicRenewalWrites {
   const buckets: RenewalWriteBuckets = {
@@ -545,6 +650,15 @@ export function toPublicRenewalWrites(args: {
     skipped: args.plan.skipped,
     failures: args.failed.length,
     failed: args.failed,
+    sequenceRemoval: {
+      status: 'unsupported',
+      note: SEQUENCE_REMOVAL_NOTE,
+      docs: SEQUENCE_REMOVAL_DOCS,
+      sequenceIds: args.sequenceIds,
+      attempted: args.sequenceAttempted,
+      failed: args.sequenceFailures.length,
+      failures: args.sequenceFailures,
+    },
     actions,
     warnings: args.warnings || [],
     exclusionKeys: {

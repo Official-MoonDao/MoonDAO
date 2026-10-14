@@ -189,6 +189,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         expiryUnknown: positions.unknown,
         buckets: writes.buckets,
         failures: writes.failures,
+        sequenceRemoval: writes.sequenceRemoval,
         warnings,
       })
     )

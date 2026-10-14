@@ -131,7 +131,7 @@ export const LATE_ENTRANT_CATCH_UP =
   'Do not add Renewal-Reminder. The sequence times from entry, so a late tag sends the -30 email on the wrong date. Live mode adds one catch-up tag for the next remaining email and leaves the earlier emails unsent.'
 
 export const RENEWAL_EXIT_PLAN =
-  'When expiresAt moves forward out of the window, live mode adds the Renewed tag and removes Renewal-Reminder and the catch-up tags. A Kit rule removes anyone tagged Renewed from the sequence. Writes run only when RENEWAL_REMINDERS_LIVE is true and the request includes live=1.'
+  'When expiresAt moves forward out of the window, live mode adds the Renewed tag and removes Renewal-Reminder and the catch-up tags. Kit has no public API to remove one subscriber from one sequence, so that step is recorded as unsupported. Exclude the Renewed tag on each sequence in Kit. Writes run only when RENEWAL_REMINDERS_LIVE is true and the request includes live=1.'
 
 export function maskEmail(email: string): string {
   const trimmed = email.trim().toLowerCase()

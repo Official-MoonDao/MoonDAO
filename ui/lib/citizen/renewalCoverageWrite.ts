@@ -3,7 +3,9 @@
  * Runs only when renewalLiveDecision says writing is on.
  * Tags an existing active subscriber by id. Never creates a subscriber,
  * never calls form subscribe, and never calls sequence subscribe.
- * The dedupe key is stored after the tag calls succeed.
+ * Renewed also asks to leave each configured sequence. That step is a no-op
+ * which returns unsupported, because Kit has no per-sequence removal API.
+ * The dedupe key is stored after the tag calls and the sequence attempts.
  */
 import { Redis } from '@upstash/redis'
 import { normalizeEmail, type CoverageInput } from '@/lib/citizen/renewalCoverage'
@@ -11,9 +13,11 @@ import {
   assertActiveTagTarget,
   kitAddTagRequest,
   kitRemoveTagRequest,
+  kitSequenceRemoval,
   parseRenewalStageKey,
   planRenewalWrites,
   renewalLiveDecision,
+  renewalSequenceIds,
   renewalTagNames,
   resolveRenewalTagIds,
   RENEWAL_OPEN_SET,
@@ -50,6 +54,11 @@ export type FetchLike = (
 export type KitMutator = {
   addTag(tagId: string, subscriberId: string, state: string | null): Promise<void>
   removeTag(tagId: string, subscriberId: string, state: string | null): Promise<void>
+  removeFromSequence(
+    sequenceId: string,
+    subscriberId: string,
+    state: string | null
+  ): Promise<{ status: 'unsupported' }>
 }
 
 export function upstashRenewalRedis(redis: Redis): RenewalRedis {
@@ -110,6 +119,9 @@ export function createKitMutator(fetchImpl: FetchLike, apiKey: string): KitMutat
       if (res.status === 404 || res.ok) return
       throw new Error(`Kit tag remove failed: HTTP ${res.status}`)
     },
+    async removeFromSequence(sequenceId, subscriberId, state) {
+      return kitSequenceRemoval(sequenceId, subscriberId, state)
+    },
   }
 }
 
@@ -127,15 +139,22 @@ export async function executeRenewalWrites(args: {
   writing: boolean
   writes: PlannedRenewalWrite[]
   tagIds: Record<RenewalTagKey, string>
+  sequenceIds: readonly string[]
   redis: RenewalRedis
   kit: KitMutator
 }): Promise<{
   executedKeys: string[]
   failed: Array<{ tokenId: string; stage: PlannedRenewalWrite['stage'] }>
+  sequenceAttempted: number
+  sequenceFailures: Array<{ tokenId: string; sequenceId: string }>
 }> {
-  if (!args.writing) return { executedKeys: [], failed: [] }
+  if (!args.writing) {
+    return { executedKeys: [], failed: [], sequenceAttempted: 0, sequenceFailures: [] }
+  }
   const executedKeys: string[] = []
   const failed: Array<{ tokenId: string; stage: PlannedRenewalWrite['stage'] }> = []
+  const sequenceFailures: Array<{ tokenId: string; sequenceId: string }> = []
+  let sequenceAttempted = 0
   for (const item of args.writes) {
     try {
       assertActiveTagTarget(item.kitState, item.subscriberId)
@@ -153,13 +172,23 @@ export async function executeRenewalWrites(args: {
           await args.kit.removeTag(tagId, item.subscriberId, item.kitState)
         }
       }
+      if (item.stage === 'renewed') {
+        for (const sequenceId of args.sequenceIds) {
+          sequenceAttempted += 1
+          try {
+            await args.kit.removeFromSequence(sequenceId, item.subscriberId, item.kitState)
+          } catch {
+            sequenceFailures.push({ tokenId: item.tokenId, sequenceId })
+          }
+        }
+      }
       await rememberBook(args.redis, item)
       executedKeys.push(item.dedupeKey)
     } catch {
       failed.push({ tokenId: item.tokenId, stage: item.stage })
     }
   }
-  return { executedKeys, failed }
+  return { executedKeys, failed, sequenceAttempted, sequenceFailures }
 }
 
 async function readBook(redis: RenewalRedis): Promise<{
@@ -241,6 +270,7 @@ export async function runRenewalWritePass(args: {
   allowKitReads?: boolean
 }): Promise<PublicRenewalWrites> {
   const tagNames = renewalTagNames(args.env)
+  const sequenceIds = renewalSequenceIds(args.env)
   const warningsEmails = args.rows
     .map((row) => row.email)
     .filter((email): email is string => Boolean(email))
@@ -295,6 +325,12 @@ export async function runRenewalWritePass(args: {
   if (shouldResolve) {
     try {
       listed = args.listTags ? await args.listTags() : await listKitTags()
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('must be digits')) throw error
+      warnings.push('Kit tag list was not read.')
+      listed = []
+    }
+    try {
       const resolved = resolveRenewalTagIds(tagNames, args.env, listed)
       tagIds = resolved.ids
       missingTags = resolved.missing
@@ -316,6 +352,8 @@ export async function runRenewalWritePass(args: {
 
   let executedKeys: string[] = []
   let failed: Array<{ tokenId: string; stage: PlannedRenewalWrite['stage'] }> = []
+  let sequenceAttempted = 0
+  let sequenceFailures: Array<{ tokenId: string; sequenceId: string }> = []
   let decisionForReport = decision
   if (decision.writing && args.redis && tagIds) {
     const apiKey = args.env.CONVERT_KIT_V4_API_KEY || args.env.CONVERT_KIT_API_KEY || ''
@@ -334,11 +372,21 @@ export async function runRenewalWritePass(args: {
         writing: true,
         writes: plan.writes,
         tagIds: ids,
+        sequenceIds,
         redis: args.redis,
         kit,
       })
       executedKeys = result.executedKeys
       failed = result.failed
+      sequenceAttempted = result.sequenceAttempted
+      sequenceFailures = result.sequenceFailures
+      if (sequenceAttempted > 0) {
+        warnings.push(
+          sequenceFailures.length > 0
+            ? 'Sequence removal is unsupported by the Kit API. A sequence attempt failed and the rest were still processed. Exclude the Renewed tag on each sequence in Kit.'
+            : 'Sequence removal is unsupported by the Kit API, so no subscriber was removed from a sequence. Exclude the Renewed tag on each sequence in Kit.'
+        )
+      }
     }
   }
 
@@ -350,6 +398,9 @@ export async function runRenewalWritePass(args: {
     missingTags,
     executedKeys: new Set(executedKeys),
     failed,
+    sequenceIds,
+    sequenceAttempted,
+    sequenceFailures,
     warnings,
   })
   assertNoRawEmails(publicWrites, warningsEmails)

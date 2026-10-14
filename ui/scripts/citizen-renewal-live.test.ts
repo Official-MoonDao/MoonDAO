@@ -11,8 +11,12 @@ import {
   type CoverageInput,
 } from '../lib/citizen/renewalCoverage'
 import {
+  DEFAULT_RENEWAL_SEQUENCE_IDS,
+  DEFAULT_RENEWAL_TAG_IDS,
   kitAddTagRequest,
+  kitSequenceRemoval,
   planRenewalWrites,
+  renewalSequenceIds,
   resolveRenewalTagIds,
   renewalTagNames,
   selectForwardRenewals,
@@ -299,6 +303,7 @@ describe('renewed swap', () => {
       writing: true,
       writes: plan.writes,
       tagIds: TAG_IDS,
+      sequenceIds: DEFAULT_RENEWAL_SEQUENCE_IDS,
       redis: store.redis,
       kit,
     })
@@ -314,6 +319,194 @@ describe('renewed swap', () => {
     expect(store.keys[plan.writes[0].dedupeKey]).to.equal('1')
     expect([...(store.sets.get('renewal:open') || [])]).to.deep.equal([])
     expect(JSON.stringify(plan.writes[0].emailMasked)).to.not.include('renewed-person@example.com')
+  })
+})
+
+describe('sequence removal', () => {
+  const configured = ['111', '222', '333', '444']
+
+  function renewedWrites(tokenIds: string[]) {
+    return planRenewalWrites({
+      rows: [],
+      renewals: tokenIds.map((tokenId) => ({
+        ...activeRow(tokenId, 200, { email: `renewed-${tokenId}@example.com` }),
+        openMembers: [renewalStageDedupeKey(tokenId, expiresIn(10), 'minus14')],
+      })),
+      nowMs: NOW,
+      writtenKeys: new Set(),
+    }).writes
+  }
+
+  it('makes zero calls when the live flag is off', async () => {
+    const removals: string[] = []
+    const { calls, fetchImpl } = recordingFetch()
+    const base = createKitMutator(fetchImpl, 'kit-test-key')
+    const kit = {
+      addTag: base.addTag.bind(base),
+      removeTag: base.removeTag.bind(base),
+      async removeFromSequence(sequenceId: string, subscriberId: string, state: string | null) {
+        removals.push(`${subscriberId}:${sequenceId}`)
+        return base.removeFromSequence(sequenceId, subscriberId, state)
+      },
+    }
+    const store = memoryRedis()
+    const gated = await executeRenewalWrites({
+      writing: false,
+      writes: renewedWrites(['9']),
+      tagIds: TAG_IDS,
+      sequenceIds: configured,
+      redis: store.redis,
+      kit,
+    })
+    expect(gated.sequenceAttempted).to.equal(0)
+    expect(gated.executedKeys).to.deep.equal([])
+    expect(removals).to.deep.equal([])
+    expect(calls).to.deep.equal([])
+    expect(store.mutations).to.deep.equal([])
+
+    const dry = await runRenewalWritePass(
+      passArgs({
+        env: { RENEWAL_SEQUENCE_IDS: configured.join(',') },
+        liveParam: undefined,
+        rows: [activeRow('1', 30, { email: 'dry-sequence-person@example.com' })],
+        redis: memoryRedis().redis,
+        fetchImpl,
+      })
+    )
+    expect(dry.writing).to.equal(false)
+    expect(dry.sequenceRemoval.attempted).to.equal(0)
+    expect(dry.sequenceRemoval.failed).to.equal(0)
+    expect(dry.sequenceRemoval.status).to.equal('unsupported')
+    expect(dry.sequenceRemoval.sequenceIds).to.deep.equal(configured)
+    expect(calls).to.deep.equal([])
+    expect(JSON.stringify(dry)).to.not.include('dry-sequence-person@example.com')
+  })
+
+  it('removes a renewal from exactly the configured sequences', async () => {
+    const removals: string[] = []
+    const { calls, fetchImpl } = recordingFetch()
+    const base = createKitMutator(fetchImpl, 'kit-test-key')
+    const kit = {
+      addTag: base.addTag.bind(base),
+      removeTag: base.removeTag.bind(base),
+      async removeFromSequence(sequenceId: string, subscriberId: string, state: string | null) {
+        removals.push(`${subscriberId}:${sequenceId}`)
+        return base.removeFromSequence(sequenceId, subscriberId, state)
+      },
+    }
+    const direct = kitSequenceRemoval('2929996', '900009', 'active')
+    expect(direct).to.deep.equal({ status: 'unsupported' })
+    expect(calls).to.deep.equal([])
+
+    const store = memoryRedis()
+    const writes = renewedWrites(['9'])
+    const result = await executeRenewalWrites({
+      writing: true,
+      writes,
+      tagIds: TAG_IDS,
+      sequenceIds: configured,
+      redis: store.redis,
+      kit,
+    })
+    expect(removals).to.deep.equal(configured.map((id) => `900009:${id}`))
+    expect(result.sequenceAttempted).to.equal(configured.length)
+    expect(result.sequenceFailures).to.deep.equal([])
+    expect(result.executedKeys).to.deep.equal([writes[0].dedupeKey])
+    expect(calls.map((call) => call.url)).to.deep.equal([
+      'https://api.kit.com/v4/tags/15/subscribers/900009',
+      'https://api.kit.com/v4/tags/11/subscribers/900009',
+      'https://api.kit.com/v4/tags/12/subscribers/900009',
+      'https://api.kit.com/v4/tags/13/subscribers/900009',
+      'https://api.kit.com/v4/tags/14/subscribers/900009',
+    ])
+    for (const call of calls) {
+      expect(call.url).to.not.include('/unsubscribe')
+      expect(call.url).to.not.include('/sequences/')
+      expect(call.url).to.not.include('/v3/')
+    }
+    expect(
+      DEFAULT_RENEWAL_SEQUENCE_IDS.some((id) => removals.some((entry) => entry.endsWith(id)))
+    ).to.equal(false)
+
+    const reminder = planRenewalWrites({
+      rows: [activeRow('1', 30)],
+      renewals: [],
+      nowMs: NOW,
+      writtenKeys: new Set(),
+    })
+    removals.length = 0
+    await executeRenewalWrites({
+      writing: true,
+      writes: reminder.writes,
+      tagIds: TAG_IDS,
+      sequenceIds: configured,
+      redis: memoryRedis().redis,
+      kit,
+    })
+    expect(removals).to.deep.equal([])
+
+    removals.length = 0
+    const again = await executeRenewalWrites({
+      writing: true,
+      writes,
+      tagIds: TAG_IDS,
+      sequenceIds: configured,
+      redis: store.redis,
+      kit,
+    })
+    expect(again.sequenceAttempted).to.equal(0)
+    expect(removals).to.deep.equal([])
+  })
+
+  it('keeps processing sequences after one failure', async () => {
+    const removals: string[] = []
+    const { calls, fetchImpl } = recordingFetch()
+    const base = createKitMutator(fetchImpl, 'kit-test-key')
+    const kit = {
+      addTag: base.addTag.bind(base),
+      removeTag: base.removeTag.bind(base),
+      async removeFromSequence(sequenceId: string, subscriberId: string, state: string | null) {
+        removals.push(`${subscriberId}:${sequenceId}`)
+        if (sequenceId === '222') throw new Error('sequence failed')
+        return base.removeFromSequence(sequenceId, subscriberId, state)
+      },
+    }
+    const store = memoryRedis()
+    const writes = renewedWrites(['9', '10'])
+    const result = await executeRenewalWrites({
+      writing: true,
+      writes,
+      tagIds: TAG_IDS,
+      sequenceIds: configured,
+      redis: store.redis,
+      kit,
+    })
+    expect(removals).to.deep.equal([
+      ...configured.map((id) => `900009:${id}`),
+      ...configured.map((id) => `900010:${id}`),
+    ])
+    expect(result.sequenceFailures).to.deep.equal([
+      { tokenId: '9', sequenceId: '222' },
+      { tokenId: '10', sequenceId: '222' },
+    ])
+    expect(result.failed).to.deep.equal([])
+    expect(result.executedKeys).to.deep.equal(writes.map((write) => write.dedupeKey))
+    expect(calls.some((call) => call.url.includes('/unsubscribe'))).to.equal(false)
+    expect(calls.some((call) => call.url.includes('/sequences/'))).to.equal(false)
+
+    removals.length = 0
+    const again = await executeRenewalWrites({
+      writing: true,
+      writes,
+      tagIds: TAG_IDS,
+      sequenceIds: configured,
+      redis: store.redis,
+      kit,
+    })
+    expect(removals).to.deep.equal([])
+    expect(again.sequenceAttempted).to.equal(0)
+    expect(store.keys[writes[0].dedupeKey]).to.equal('1')
+    expect(store.keys[writes[1].dedupeKey]).to.equal('1')
   })
 })
 
@@ -376,6 +569,7 @@ describe('renewal dedupe writes', () => {
       writing: true,
       writes: plan.writes,
       tagIds: TAG_IDS,
+      sequenceIds: DEFAULT_RENEWAL_SEQUENCE_IDS,
       redis: store.redis,
       kit,
     })
@@ -517,6 +711,7 @@ describe('never re-add Kit subscribers', () => {
       writing: false,
       writes: [forged],
       tagIds: TAG_IDS,
+      sequenceIds: DEFAULT_RENEWAL_SEQUENCE_IDS,
       redis: store.redis,
       kit,
     })
@@ -528,6 +723,7 @@ describe('never re-add Kit subscribers', () => {
       writing: true,
       writes: [forged],
       tagIds: TAG_IDS,
+      sequenceIds: DEFAULT_RENEWAL_SEQUENCE_IDS,
       redis: store.redis,
       kit,
     })
@@ -554,6 +750,51 @@ describe('renewal tag id resolution', () => {
     expect(resolved.ids.reminder).to.equal('77')
     expect(resolved.ids.catchupExpiry).to.equal('13')
     expect(resolved.missing).to.deep.equal([])
+
+    const defaults = resolveRenewalTagIds(renewalTagNames({}), {}, [])
+    expect(defaults.ids).to.deep.equal(DEFAULT_RENEWAL_TAG_IDS)
+    expect(defaults.missing).to.deep.equal([])
+    const renamed = resolveRenewalTagIds(
+      renewalTagNames({ RENEWAL_REMINDER_TAG_NAME: 'Other-Reminder' }),
+      {},
+      []
+    )
+    expect(renamed.ids.reminder).to.equal(null)
+    expect(renamed.ids.renewed).to.equal(DEFAULT_RENEWAL_TAG_IDS.renewed)
+    expect(renamed.missing).to.deep.equal(['Other-Reminder'])
+    expect(renewalSequenceIds({})).to.deep.equal([...DEFAULT_RENEWAL_SEQUENCE_IDS])
+    expect(renewalSequenceIds({ RENEWAL_SEQUENCE_IDS: '8, 9,8' })).to.deep.equal(['8', '9'])
+    expect(() => renewalSequenceIds({ RENEWAL_SEQUENCE_IDS: '12,nope' })).to.throw(
+      'RENEWAL_SEQUENCE_IDS'
+    )
+  })
+
+  it('writes the default tag ids when the account list is unavailable', async () => {
+    const store = memoryRedis()
+    const { calls, fetchImpl } = recordingFetch()
+    const result = await runRenewalWritePass(
+      passArgs({
+        env: {
+          RENEWAL_REMINDERS_LIVE: 'true',
+          CONVERT_KIT_V4_API_KEY: 'kit-test-key',
+        },
+        liveParam: '1',
+        rows: [activeRow('1', 30, { email: 'default-tag-person@example.com' })],
+        redis: store.redis,
+        fetchImpl,
+        listTags: async () => {
+          throw new Error('tag list failed')
+        },
+      })
+    )
+    expect(result.writing).to.equal(true)
+    expect(result.tagIds).to.deep.equal(DEFAULT_RENEWAL_TAG_IDS)
+    expect(result.missingTags).to.deep.equal([])
+    expect(calls.map((call) => call.url)).to.deep.equal([
+      `https://api.kit.com/v4/tags/${DEFAULT_RENEWAL_TAG_IDS.reminder}/subscribers/900001`,
+    ])
+    expect(result.sequenceRemoval.attempted).to.equal(0)
+    expect(JSON.stringify(result)).to.not.include('default-tag-person@example.com')
   })
 })
 
@@ -641,10 +882,26 @@ describe('renewal live workflow and write guards', () => {
     const source = `${writeSource}\n${liveSource}`
     expect(source).to.not.include('https://api.kit.com/v4/subscribers')
     expect(source).to.not.include('/forms/')
-    expect(source).to.not.include('/sequences/')
+    expect(source).to.not.include('https://api.kit.com/v4/sequences')
+    expect(source).to.not.include('https://api.convertkit.com/v3/sequences')
+    expect(source).to.not.include("'/sequences/")
+    expect(source).to.not.include('"/sequences/')
+    expect(source).to.not.include('`/sequences/')
     expect(source).to.not.include('email_address')
     expect(source).to.include('/v4/tags/')
+    expect(source).to.include("status: 'unsupported'")
     expect(`${source}\n${scriptSource}`).to.not.include('\u2014')
     expect(`${source}\n${scriptSource}`).to.not.include('\u2013')
+  })
+
+  it('never calls the global unsubscribe endpoint', () => {
+    const source = `${writeSource}\n${liveSource}`
+    expect(source).to.not.include('https://api.kit.com/v4/subscribers/')
+    expect(source).to.not.include('/v3/unsubscribe')
+    expect(source).to.not.include('api.convertkit.com/v3/unsubscribe')
+    expect(source).to.not.match(/\/unsubscribe['"`]/)
+    expect(source).to.not.include('PUT /unsubscribe')
+    expect(source).to.not.include("'/unsubscribe'")
+    expect(source).to.not.include('"/unsubscribe"')
   })
 })
