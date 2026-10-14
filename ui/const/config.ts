@@ -243,13 +243,13 @@ export const VOTES_TABLE_NAMES: Index = {
   arbitrum: 'Votes_42161_146',
   sepolia: 'Votes_11155111_1971',
 }
-/** Votes-shaped table with a timestamp column. Arbitrum stays empty until that chain is deployed. */
+/** Votes-shaped table with a timestamp column. */
 export const FORECASTS_TABLE_ADDRESSES: Index = {
-  arbitrum: '',
+  arbitrum: '0xcaA79c0E01363dD9226d268e2cc5f07120fA94C1',
   sepolia: '0x8d6d1ea16c1d6d137BCf8ea03F1D4eE1b0790E98',
 }
 export const FORECASTS_TABLE_NAMES: Index = {
-  arbitrum: '',
+  arbitrum: 'Forecasts_42161_167',
   sepolia: 'Forecasts_11155111_2089',
 }
 // Citizen contributions. Filled in from the deploy script's logged address and
