@@ -599,7 +599,15 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       })
 
       const DISCORD_THREAD_NAME_MAX = 100
-      const threadNameChars = Array.from(`MDP-${proposalId}: ${proposalTitle}`)
+      // Discord counts thread names in UTF-16 code units (string.length), not code points.
+      const threadName = `MDP-${proposalId}: ${proposalTitle}`
+      let discordThreadName = threadName
+      if (threadName.length > DISCORD_THREAD_NAME_MAX) {
+        let end = DISCORD_THREAD_NAME_MAX - 1
+        const cut = threadName.charCodeAt(end - 1)
+        if (cut >= 0xd800 && cut <= 0xdbff) end -= 1
+        discordThreadName = threadName.slice(0, end).trimEnd() + '…'
+      }
       const discordResponse = await fetch(
         `https://discord.com/api/v10/channels/${proposalsForumId}/threads`,
         {
@@ -609,10 +617,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
             Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
           },
           body: JSON.stringify({
-            name:
-              threadNameChars.length > DISCORD_THREAD_NAME_MAX
-                ? threadNameChars.slice(0, DISCORD_THREAD_NAME_MAX - 1).join('').trimEnd() + '…'
-                : threadNameChars.join(''),
+            name: discordThreadName,
             message: { content: `https://moondao.com/project/${proposalId}` },
           }),
         }
