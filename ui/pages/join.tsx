@@ -344,6 +344,7 @@ export default function Join({
         {/* Join MoonDAO Section */}
         <div
           id="join-moondao"
+          data-cta-location="join"
           className="relative w-full py-12 md:py-14 lg:py-20 xl:py-24 2xl:py-32"
         >
           <div className="absolute inset-0">

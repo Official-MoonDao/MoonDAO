@@ -22,6 +22,7 @@ import React, { memo, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import { trackProposalVote } from '@/lib/analytics/ga4'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useProposalData from '@/lib/project/useProposalData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -479,6 +480,7 @@ export default function SenateVote({
       params: [mdp, pass],
     })
     await sendAndConfirmTransaction({ transaction, account })
+    trackProposalVote(mdp)
     VOTE_CONFETTI(pass)
     refetch()
   }

@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router'
 import { useContext } from 'react'
+import { trackJoinCtaClick } from '@/lib/analytics/ga4'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { formatListingPrice, getListingHref } from '@/lib/marketplace/listing'
 import { ownerFallbackName, ownerHref } from '@/lib/project/projectOwnerId'
@@ -81,6 +82,7 @@ export default function MarketplaceListing({ listing }: MarketplaceListingProps)
               <button
                 onClick={(e) => {
                   e.stopPropagation()
+                  trackJoinCtaClick({ cta_location: 'marketplace', plan: 'citizen' })
                   router.push('/citizen')
                 }}
                 className="rounded bg-light-warm px-2 py-1 text-xs text-black transition-colors hover:bg-light-warm/80"

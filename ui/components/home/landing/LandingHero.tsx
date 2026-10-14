@@ -60,6 +60,7 @@ export default function LandingHero() {
       <section
         ref={sectionRef}
         id="landing-hero"
+        data-cta-location="hero"
         className={`relative flex w-full flex-col overflow-hidden bg-[#010208] ${
           hasFilm ? 'min-h-[70svh]' : 'h-[70svh] min-h-[520px]'
         }`}

@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { trackJoinCtaClick } from '@/lib/analytics/ga4'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Frame from '@/components/layout/Frame'
 import AdaptiveImage from './AdaptiveImage'
@@ -86,6 +87,7 @@ export default function StandardDetailCard({
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
+                        trackJoinCtaClick({ cta_location: 'marketplace', plan: 'citizen' })
                         router.push('/citizen')
                       }}
                       className="bg-light-warm px-2 py-1 rounded mr-1 text-black hover:bg-light-warm/80 transition-colors"

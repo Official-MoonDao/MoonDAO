@@ -6,7 +6,10 @@ import Starfield from './Starfield'
 
 export default function FinalCTA() {
   return (
-    <section className="relative overflow-hidden bg-[#010208] py-24 md:py-36">
+    <section
+      data-cta-location="final_cta"
+      className="relative overflow-hidden bg-[#010208] py-24 md:py-36"
+    >
       <div className="absolute inset-0">
         <Image
           src="/assets/landing/earthrise.jpg"
@@ -53,7 +56,7 @@ export default function FinalCTA() {
             <p className="font-RobotoMono text-[11px] uppercase tracking-[0.25em] text-white/45">
               Or get weekly mission updates
             </p>
-            <MailingList submitLabel="Subscribe" quietSubmit compact />
+            <MailingList submitLabel="Subscribe" quietSubmit compact ctaLocation="final_cta" />
           </div>
         </Reveal>
       </div>
