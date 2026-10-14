@@ -20,9 +20,6 @@ import TourScene from './TourScene'
 import useActiveStop from './useActiveStop'
 import useTourRenderMode from './useTourRenderMode'
 
-// Stops with an animation get more scroll, which is what the animation plays over.
-const SCENE_SVH = 260
-
 export default function MoonbaseTour() {
   const activeId = useActiveStop<TourStopId>('arrival')
   // Past the last stop the scene fades out, but it keeps the stop it was on so
@@ -78,9 +75,9 @@ export default function MoonbaseTour() {
           <TourChapter id="power">
             <TourCard location={TOUR_STOPS.power.label} title="Every district is a race.">
               The base is laid out along one road, a district for each thing the Moon needs. Each
-              district holds the teams racing to deliver it. Out here at the east end is power:
-              two weeks of sunlight, then two weeks of night, and the base has to survive both.
-              Working through that night is a race of its own, called Night Shift.
+              district holds the teams racing to deliver it. Out here at the east end is power: two
+              weeks of sunlight, then two weeks of night, and the base has to survive both. Working
+              through that night is a race of its own, called Night Shift.
             </TourCard>
           </TourChapter>
 
@@ -104,8 +101,8 @@ export default function MoonbaseTour() {
             <TourCard location={TOUR_STOPS.rover.label} title="First Tracks.">
               The rovers driving the base road are racing for First Tracks: the first commercial
               rover to roll off its lander and drive. Every race like this one can have a DePrize,
-              where anyone can predict or bet on who gets there first. Just past the rovers is
-              where it all starts.
+              where anyone can predict or bet on who gets there first. Just past the rovers is where
+              it all starts.
             </TourCard>
           </TourChapter>
 
@@ -121,75 +118,65 @@ export default function MoonbaseTour() {
             >
               Six landers stand in the landing zone: Blue Ghost, Nova-C, Blue Moon MK1, Griffin,
               HAKUTO-R and Chang&apos;e-7. Touchdown asks which one makes the next upright, working
-              lunar landing. Here is how a DePrize turns that question into a market, from the
-              first bet to the payout.
+              lunar landing. Here is how a DePrize turns that question into a market, from the first
+              bet to the payout.
             </TourCard>
           </TourChapter>
 
-          <TourChapter id="market" heightSvh={SCENE_SVH}>
-            {(p) => (
-              <TourCard
-                location={TOUR_STOPS.market.label}
-                title="The race becomes a market."
-                visual={<OddsRaceScene variant="tour" progress={p} />}
-              >
-                Every competitor has a live chance to win, set by what people are paying to back
-                them. It starts even and moves with every bet.
-              </TourCard>
-            )}
+          <TourChapter id="market">
+            <TourCard
+              location={TOUR_STOPS.market.label}
+              title="The race becomes a market."
+              visual={<OddsRaceScene variant="tour" active={activeId === 'market'} />}
+            >
+              Every competitor has a live chance to win, set by what people are paying to back them.
+              It starts even and moves with every bet.
+            </TourCard>
           </TourChapter>
 
-          <TourChapter id="predict" heightSvh={SCENE_SVH}>
-            {(p) => (
-              <TourCard
-                location={TOUR_STOPS.predict.label}
-                title="Predict for free with MOONEY."
-                visual={<PredictScene variant="tour" progress={p} />}
-              >
-                Citizens pick who they think wins, weighted by voting power. Picks form the MOONEY
-                forecast, which sits beside the ETH odds and never moves them.
-              </TourCard>
-            )}
+          <TourChapter id="predict">
+            <TourCard
+              location={TOUR_STOPS.predict.label}
+              title="Predict for free with MOONEY."
+              visual={<PredictScene variant="tour" active={activeId === 'predict'} />}
+            >
+              Citizens pick who they think wins, weighted by voting power. Picks form the MOONEY
+              forecast, which sits beside the ETH odds and never moves them.
+            </TourCard>
           </TourChapter>
 
-          <TourChapter id="bet" heightSvh={SCENE_SVH}>
-            {(p) => (
-              <TourCard
-                location={TOUR_STOPS.bet.label}
-                title="Or bet real ETH."
-                visual={<BetScene variant="tour" progress={p} />}
-              >
-                A share costs the current chance and pays 1 ETH if that team wins.
-                <span className="mt-1 block text-xs text-white/50">
-                  {DEPRIZE_AVAILABILITY_LEGEND}
-                </span>
-              </TourCard>
-            )}
+          <TourChapter id="bet">
+            <TourCard
+              location={TOUR_STOPS.bet.label}
+              title="Or bet real ETH."
+              visual={<BetScene variant="tour" active={activeId === 'bet'} />}
+            >
+              A share costs the current chance and pays 1 ETH if that team wins.
+              <span className="mt-1 block text-xs text-white/50">
+                {DEPRIZE_AVAILABILITY_LEGEND}
+              </span>
+            </TourCard>
           </TourChapter>
 
-          <TourChapter id="resolve" heightSvh={SCENE_SVH}>
-            {(p) => (
-              <TourCard
-                location={TOUR_STOPS.resolve.label}
-                title="A winner is decided in the open."
-                visual={<ResolveScene variant="tour" progress={p} />}
-              >
-                Against rules published before betting opened, with time for anyone to object.
-              </TourCard>
-            )}
+          <TourChapter id="resolve">
+            <TourCard
+              location={TOUR_STOPS.resolve.label}
+              title="A winner is decided in the open."
+              visual={<ResolveScene variant="tour" active={activeId === 'resolve'} />}
+            >
+              Against rules published before betting opened, with time for anyone to object.
+            </TourCard>
           </TourChapter>
 
-          <TourChapter id="prize" heightSvh={SCENE_SVH}>
-            {(p) => (
-              <TourCard
-                location={TOUR_STOPS.prize.label}
-                title="The prize builds the base."
-                visual={<PrizeScene variant="tour" progress={p} />}
-              >
-                Every bet feeds the winner&apos;s prize, and the prize flies a community payload on
-                their next mission.
-              </TourCard>
-            )}
+          <TourChapter id="prize">
+            <TourCard
+              location={TOUR_STOPS.prize.label}
+              title="The prize builds the base."
+              visual={<PrizeScene variant="tour" active={activeId === 'prize'} />}
+            >
+              Every bet feeds the winner&apos;s prize, and the prize flies a community payload on
+              their next mission.
+            </TourCard>
           </TourChapter>
 
           <TourChapter id="ladder" heightSvh={300}>

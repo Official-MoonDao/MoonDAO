@@ -6,7 +6,6 @@ import {
   useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
-  type MotionValue,
 } from 'framer-motion'
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { OUTCOME_COLORS } from '@/lib/deprize/constants'
@@ -33,10 +32,12 @@ export type SceneVariant = 'page' | 'tour'
 type SceneProps = {
   variant?: SceneVariant
   /**
-   * Scroll progress through the tour stop, 0 to 1. Scrolling plays the scene
-   * forward and back. Without it the scene plays once when it comes into view.
+   * Plays from the start each time this turns true and resets when it turns
+   * false. The tour sets it from the active stop, since every tour card shares
+   * one fixed frame and would otherwise count as on screen from page load.
+   * Without it the scene plays once when it comes into view.
    */
-  progress?: MotionValue<number>
+  active?: boolean
 }
 
 const FRAME_CLASS: Record<SceneVariant, string> = {
@@ -44,38 +45,31 @@ const FRAME_CLASS: Record<SceneVariant, string> = {
   tour: 'h-[290px] bg-[#070a12]/90 p-4 backdrop-blur-md sm:p-5',
 }
 
-// The scroll stretch a scene plays over. It finishes before the card starts
-// to leave, so the last frame holds while the visitor reads it.
-const SCROLL_END = 0.7
-
 /**
- * Which step of `steps` the scene is on. Steps change on scroll (tour) or on
- * a one-shot timeline when the scene is first seen (page). Reduced motion
- * jumps to the last step.
+ * Which step of `steps` the scene is on, on a one-shot timeline that starts
+ * when the scene is active (or first seen). Reduced motion jumps to the last step.
  */
 function useSceneStep(
   ref: RefObject<Element>,
   steps: number,
-  progress: MotionValue<number> | undefined,
+  active: boolean | undefined,
   replayKey: number
 ): { step: number; done: boolean } {
   const reduce = useReducedMotion()
   const inView = useInView(ref, { amount: 0.4, once: true })
+  const playing = active ?? inView
   const timeline = useMotionValue(0)
-  const source = progress ?? timeline
-  const toStep = (v: number) => {
-    const p = progress ? v / SCROLL_END : v
-    return Math.max(0, Math.min(steps - 1, Math.floor(p * steps)))
-  }
-  const [step, setStep] = useState(() => toStep(source.get()))
-  useMotionValueEvent(source, 'change', (v) => setStep(toStep(v)))
+  const toStep = (v: number) => Math.max(0, Math.min(steps - 1, Math.floor(v * steps)))
+  const [step, setStep] = useState(0)
+  useMotionValueEvent(timeline, 'change', (v) => setStep(toStep(v)))
 
   useEffect(() => {
-    if (progress || reduce || !inView) return
+    if (reduce) return
     timeline.set(0)
+    if (!playing) return
     const controls = animate(timeline, 1, { duration: steps * 1.15, ease: 'linear' })
     return () => controls.stop()
-  }, [progress, reduce, inView, timeline, steps, replayKey])
+  }, [reduce, playing, timeline, steps, replayKey])
 
   const shown = reduce ? steps - 1 : step
   return { step: shown, done: shown === steps - 1 }
@@ -147,9 +141,9 @@ function StepCaption({ step, lines }: { step: number; lines: ReactNode[] }) {
   )
 }
 
-function useReplay(progress?: MotionValue<number>) {
+function useReplay() {
   const [key, setKey] = useState(0)
-  return { key, replay: progress ? undefined : () => setKey((k) => k + 1) }
+  return { key, replay: () => setKey((k) => k + 1) }
 }
 
 function OddsBar({
@@ -219,10 +213,10 @@ const MARKET_CAPTIONS = [
   'Chance to win = what bettors are paying for it right now.',
 ]
 
-export function OddsRaceScene({ variant, progress }: SceneProps) {
+export function OddsRaceScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay(progress)
-  const { step, done } = useSceneStep(ref, MARKET_ODDS.length, progress, key)
+  const { key, replay } = useReplay()
+  const { step, done } = useSceneStep(ref, MARKET_ODDS.length, active, key)
   const odds = MARKET_ODDS[step]
   const ticker = MARKET_BETS.slice(0, step + 1)
     .flatMap((bet, id) => (bet ? [{ ...bet, id }] : []))
@@ -293,10 +287,10 @@ const PREDICT_CAPTIONS = [
   'The forecast moved. The ETH odds did not: no money changed hands.',
 ]
 
-export function PredictScene({ variant, progress }: SceneProps) {
+export function PredictScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay(progress)
-  const { step, done } = useSceneStep(ref, PREDICT_STEPS, progress, key)
+  const { key, replay } = useReplay()
+  const { step, done } = useSceneStep(ref, PREDICT_STEPS, active, key)
   const shown = [...VOTERS, YOU]
     .map((v, id) => ({ ...v, id, you: v === YOU }))
     .filter((v) => v.at <= step)
@@ -379,10 +373,10 @@ const BET_CAPTIONS = [
   'Each share pays 1 ETH if Blue Ghost wins. Cash out any time before then.',
 ]
 
-export function BetScene({ variant, progress }: SceneProps) {
+export function BetScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay(progress)
-  const { step, done } = useSceneStep(ref, BET_STEPS, progress, key)
+  const { key, replay } = useReplay()
+  const { step, done } = useSceneStep(ref, BET_STEPS, active, key)
   const odds = step >= 4 ? BET_AFTER : BET_BEFORE
   const team = TEAMS[PICK]
 
@@ -482,10 +476,10 @@ const RESOLVE_CAPTIONS = [
   'Winning shares pay 1 ETH each. If nobody wins or the race is cancelled, bets are refunded.',
 ]
 
-export function ResolveScene({ variant, progress }: SceneProps) {
+export function ResolveScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay(progress)
-  const { step, done } = useSceneStep(ref, RESOLVE_STEPS, progress, key)
+  const { key, replay } = useReplay()
+  const { step, done } = useSceneStep(ref, RESOLVE_STEPS, active, key)
   const lit = Math.min(step, RESOLVE_STAGES.length - 1)
   const decided = step >= RESOLVE_STAGES.length
 
@@ -583,10 +577,10 @@ const PRIZE_CAPTIONS = [
   'Bettors don’t share it. It goes to the winning team, as a community payload on their next flight.',
 ]
 
-export function PrizeScene({ variant, progress }: SceneProps) {
+export function PrizeScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay(progress)
-  const { step, done } = useSceneStep(ref, PRIZE.length, progress, key)
+  const { key, replay } = useReplay()
+  const { step, done } = useSceneStep(ref, PRIZE.length, active, key)
   const now = PRIZE[step]
   const awarded = step === PRIZE.length - 1
 
