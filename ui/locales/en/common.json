@@ -61,5 +61,13 @@
   "bridgeDesc": "Bridge ETH or MOONEY from Ethereum to Arbitrum.",
   "joinFilmTitle": "Why become a citizen",
   "joinFilmSub": "95 seconds on what's waiting inside.",
-  "joinFilmPlay": "Watch the film"
+  "joinFilmPlay": "Watch the film",
+  "homeFilmTitle": "What is MoonDAO?",
+  "homeFilmSub": "A space program run by its builders.",
+  "homeFilmPlay": "Watch the film",
+  "homeFilmEndTitle": "Join the Internet's Space Program",
+  "homeFilmEndCta": "Join the Network",
+  "joinFilmEndTitle": "Ready to become a citizen?",
+  "joinFilmEndCta": "Become a Citizen",
+  "filmReplay": "Watch again"
 }
