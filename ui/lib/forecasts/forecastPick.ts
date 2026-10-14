@@ -4,7 +4,6 @@ export type TapPlan =
   | { action: 'write'; index: number }
   | { action: 'ignore'; reason: 'locked' | 'writing' | 'already-saved' }
   | { action: 'connect' }
-  | { action: 'need-citizen' }
 
 export type TapInput = {
   index: number
