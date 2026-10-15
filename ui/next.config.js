@@ -6,8 +6,8 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 })
 
 const tablelandGateways = [
-  process.env.NEXT_PUBLIC_TABLELAND_MAINNET_GATEWAY || 'https://tableland.network',
-  process.env.NEXT_PUBLIC_TABLELAND_TESTNET_GATEWAY || 'https://testnets.tableland.network',
+  process.env.NEXT_PUBLIC_TABLELAND_MAINNET_GATEWAY || 'https://tableland.moondao.com',
+  process.env.NEXT_PUBLIC_TABLELAND_TESTNET_GATEWAY || 'https://tableland.moondao.com',
 ].join(' ')
 
 const cspHeaderBase = `
