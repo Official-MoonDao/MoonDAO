@@ -1,6 +1,7 @@
 import { CK_NEWSLETTER_FORM_ID } from 'const/config'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { trackSignUp } from '@/lib/analytics/ga4'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 
 type MailingListProps = {
@@ -8,12 +9,14 @@ type MailingListProps = {
   /** Landing pages pass this so the submit control stays secondary to the section CTA. */
   quietSubmit?: boolean
   compact?: boolean
+  ctaLocation?: string
 }
 
 export default function MailingList({
   submitLabel = 'Learn More',
   quietSubmit = false,
   compact = false,
+  ctaLocation = 'mailing_list',
 }: MailingListProps = {}) {
   const [userEmail, setUserEmail] = useState<any>('')
   const subscribe = useSubscribe(CK_NEWSLETTER_FORM_ID)
@@ -21,16 +24,25 @@ export default function MailingList({
   return (
     <form
       id="mailinglist-form"
-      onSubmit={(e: any) => {
+      onSubmit={async (e: any) => {
         e.preventDefault()
         if (!userEmail || userEmail.trim() === '' || !userEmail.includes('@')) {
           toast.error('Please enter a valid email address.')
-        } else {
-          subscribe(userEmail)
+          return
+        }
+        try {
+          const res = await subscribe(userEmail)
+          if (!res.ok) {
+            toast.error('Could not subscribe. Please try again.')
+            return
+          }
+          trackSignUp({ cta_location: ctaLocation })
           toast.success('Subscribed! Check your email to confirm.', {
             duration: 3000,
           })
           setUserEmail('')
+        } catch {
+          toast.error('Could not subscribe. Please try again.')
         }
       }}
     >

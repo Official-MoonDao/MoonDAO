@@ -66,6 +66,7 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
   return (
     <>
       <section
+        data-cta-location="hero"
         className={`relative flex w-full flex-col overflow-hidden bg-[#010208] ${
           hasFilm ? 'min-h-[60svh]' : 'h-[60svh] min-h-[480px]'
         }`}

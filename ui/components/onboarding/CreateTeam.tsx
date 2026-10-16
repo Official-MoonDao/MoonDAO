@@ -9,9 +9,17 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
+import {
+  classifyMintError,
+  trackBeginCheckout,
+  trackMintError,
+  trackMintSuccess,
+  transactionIdFromReceipt,
+} from '@/lib/analytics/ga4'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
+import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
 import {
@@ -101,6 +109,13 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const [stage, setStage] = useState<number>(0)
   const teamPriceEth = usePublicYearEth('team')
   const teamMintOpen = useTeamMintOpen()
+  const {
+    data: teamUsdPrice,
+    isLoading: isLoadingTeamUsd,
+    ethPrice: teamEthPrice,
+  } = useETHPrice(teamPriceEth ?? 0, 'ETH_TO_USD')
+  const teamCheckoutTracked = useRef(false)
+  const paidWithCardRef = useRef(false)
   const [lastStage, setLastStage] = useState<number>(0)
   const [teamImage, setTeamImage] = useState<any>()
   const [teamData, setTeamData] = useState<TeamData>({
@@ -129,6 +144,29 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
   const hasRestoredFormDataRef = useRef(false)
   const imageRestoredRef = useRef(false)
   const stageRef = useRef(stage)
+
+  useEffect(() => {
+    if (router.isReady && router.query.onrampSuccess === 'true') {
+      paidWithCardRef.current = true
+    }
+  }, [router.isReady, router.query.onrampSuccess])
+
+  useEffect(() => {
+    if (teamCheckoutTracked.current) return
+    if (teamPriceEth == null || isLoadingTeamUsd) return
+    if (teamPriceEth > 0 && !teamEthPrice && !Number(teamUsdPrice)) return
+    const valueUsd =
+      teamPriceEth > 0 && teamEthPrice
+        ? Math.round(teamPriceEth * teamEthPrice)
+        : Math.round(Number(teamUsdPrice) || 0)
+    teamCheckoutTracked.current = true
+    trackBeginCheckout({
+      plan: 'team',
+      payment_method: paidWithCardRef.current ? 'card' : 'crypto',
+      value_eth: teamPriceEth,
+      value: valueUsd,
+    })
+  }, [teamPriceEth, isLoadingTeamUsd, teamEthPrice, teamUsdPrice])
 
   // ===== Custom Hooks =====
   const { effectiveGasPrice } = useGasPrice(selectedChain)
@@ -282,6 +320,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     }
 
     setIsLoadingMint(true)
+    let mintReported = false
 
     try {
       const cost: any = await readContract({
@@ -295,6 +334,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       if (+(nativeBalance ?? '0') < totalCost) {
         const shortfall = totalCost - +(nativeBalance ?? '0')
         const requiredAmount = shortfall * 1.15
+        paidWithCardRef.current = true
         setRequiredEthAmount(requiredAmount)
         setOnrampModalOpen(true)
         setIsLoadingMint(false)
@@ -309,6 +349,7 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedTeamImage)
 
       if (!newImageIpfsHash) {
+        trackMintError({ plan: 'team', error_type: 'network', step: 'ipfs' })
         setIsLoadingMint(false)
         return toast.error('Image upload to IPFS failed. Try a smaller file.')
       }
@@ -356,9 +397,24 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       const mintedTokenId = extractTokenIdFromReceipt(receipt)
 
       if (!mintedTokenId) {
+        trackMintError({ plan: 'team', error_type: 'unknown', step: 'confirm' })
         setIsLoadingMint(false)
         return toast.error('Mint unverified — check your wallet or contact support.')
       }
+
+      const valueEth = Number(ethers.utils.formatEther(cost))
+      const valueUsd =
+        Number.isFinite(valueEth) && valueEth > 0 && teamEthPrice
+          ? Math.round(valueEth * teamEthPrice)
+          : Math.round(Number(teamUsdPrice) || 0)
+      trackMintSuccess({
+        plan: 'team',
+        value_eth: Number.isFinite(valueEth) ? valueEth : 0,
+        value: valueUsd,
+        transaction_id: transactionIdFromReceipt(receipt),
+        payment_method: paidWithCardRef.current ? 'card' : 'crypto',
+      })
+      mintReported = true
 
       // Announce immediately. The old path waited for Tableland metadata
       // (`waitForERC721`, up to 60s) and then another 10s before calling
@@ -393,6 +449,9 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
       handlePostMint(mintedTokenId, metadataReady)
     } catch (err) {
       console.error(err)
+      if (!mintReported) {
+        trackMintError({ plan: 'team', error_type: classifyMintError(err), step: 'mint' })
+      }
       setIsLoadingMint(false)
     }
   }, [
@@ -406,6 +465,8 @@ export default function CreateTeam({ selectedChain, setSelectedTier }: any) {
     teamData,
     teamCreatorContract,
     handlePostMint,
+    teamEthPrice,
+    teamUsdPrice,
   ])
 
   const estimateMintGas = useCallback(async () => {

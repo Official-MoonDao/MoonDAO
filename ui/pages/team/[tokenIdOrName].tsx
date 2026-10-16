@@ -49,6 +49,7 @@ import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { useActiveAccount } from 'thirdweb/react'
+import { trackJoinCtaClick } from '@/lib/analytics/ga4'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useSubHats } from '@/lib/hats/useSubHats'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
@@ -516,7 +517,10 @@ function TeamDetailPageContent({
               title="Unlock Full Profile"
               description="Become a Citizen of the Space Acceleration Network to view the full team profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
               icon={<LockOpenIcon width={30} height={30} />}
-              onClick={() => router.push('/citizen')}
+              onClick={() => {
+                trackJoinCtaClick({ cta_location: 'team_profile', plan: 'citizen' })
+                router.push('/citizen')
+              }}
             />
           )}
 

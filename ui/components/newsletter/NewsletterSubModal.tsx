@@ -1,6 +1,7 @@
 import { CK_NEWSLETTER_FORM_ID } from 'const/config'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { trackSignUp } from '@/lib/analytics/ga4'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 
 export function NewsletterSubModal({ setEnabled }: any) {
@@ -42,6 +43,7 @@ export function NewsletterSubModal({ setEnabled }: any) {
               }
               const subRes = await subscribeToNewsletter(email)
               if (subRes.ok) {
+                trackSignUp({ cta_location: 'modal' })
                 toast.success(
                   'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
                 )

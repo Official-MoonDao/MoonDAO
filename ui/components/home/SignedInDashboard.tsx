@@ -649,6 +649,7 @@ export default function SignedInDashboard({
                   {!citizen && (
                     <Link
                       href="/join"
+                      data-cta-location="dashboard"
                       className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-purple-500/15 border border-purple-400/30 rounded-md text-purple-300 text-xs font-medium hover:bg-purple-500/25 transition-colors"
                     >
                       <SparklesIcon className="w-3.5 h-3.5" />

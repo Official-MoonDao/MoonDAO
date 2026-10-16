@@ -19,6 +19,7 @@ import { privyDefaultChain } from '@/lib/privy/privyDefaultChain'
 import { WalletChainSync } from '@/lib/privy/WalletChainSync'
 import CitizenProvider from '@/lib/citizen/CitizenProvider'
 import { reportWebVitals as reportVitals, monitorLongTasks, monitorPageVisibility, NextWebVitalsMetric } from '@/lib/performance/webVitals'
+import { Ga4Identity } from '@/components/analytics/Ga4Identity'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
 import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
@@ -132,6 +133,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             }}
           >
             <ThirdwebProvider>
+              <Ga4Identity />
               <WalletChainSync />
               <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
                 <CitizenProvider selectedChain={selectedChainV5}>

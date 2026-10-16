@@ -67,6 +67,11 @@ import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useNativeBalance } from '@/lib/thirdweb/hooks/useNativeBalance'
+import {
+  classifyMintError,
+  trackMintError,
+  trackMissionContribution,
+} from '@/lib/analytics/ga4'
 import StandardButton from '@/components/layout/StandardButton'
 import Modal from '@/components/layout/Modal'
 import Tooltip from '@/components/layout/Tooltip'
@@ -1270,6 +1275,19 @@ export default function MissionContributeModal({
   }, [paymentEthAmount, ruleset, toWei])
 
   const buyMissionToken = useCallback(async () => {
+    const reportMissionContribution = (txHash: unknown) => {
+      const usd = parseFloat(String(usdInput || '').replace(/,/g, ''))
+      const value = Number.isFinite(usd) ? usd : 0
+      const valueEth = Number(paymentEthAmount)
+      trackMissionContribution({
+        mission_id: String(mission?.id ?? ''),
+        value_eth: Number.isFinite(valueEth) ? valueEth : 0,
+        value,
+        transaction_id: typeof txHash === 'string' ? txHash : undefined,
+        payment_method: router?.query?.onrampSuccess === 'true' ? 'card' : 'crypto',
+      })
+    }
+
     if (!account || !address) {
       console.error('No account or address available')
       return
@@ -1522,6 +1540,7 @@ export default function MissionContributeModal({
           { style: toastStyle, duration: 10000 }
         )
 
+        reportMissionContribution(originReceipt?.transactionHash)
         setInput('0')
         setUsdInput('0')
         if (isOverviewMission) {
@@ -1652,6 +1671,8 @@ export default function MissionContributeModal({
         receipt = await awaitReceipt(submittedPay)
       }
 
+      reportMissionContribution(receipt?.transactionHash)
+
       // Show success UI immediately on tx confirmation. Same-chain and
       // cross-chain both settle with a Juicebox Pay on `DEFAULT_CHAIN_V5`,
       // so the notification fetch is fired into the background (with
@@ -1760,6 +1781,11 @@ export default function MissionContributeModal({
       }
     } catch (error: any) {
       console.error('Error purchasing tokens:', error)
+      trackMintError({
+        mission_id: String(mission?.id ?? ''),
+        error_type: classifyMintError(error),
+        step: 'contribute',
+      })
       const msg = (error?.message || '').toLowerCase()
       const isUserRejection =
         error?.code === 4001 ||

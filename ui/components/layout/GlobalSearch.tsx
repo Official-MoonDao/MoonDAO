@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
+import { planForJoinHref, trackJoinCtaClick } from '@/lib/analytics/ga4'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 
 // Search mappings for intelligent routing
@@ -563,6 +564,8 @@ export default function GlobalSearch() {
   }
 
   const handleResultClick = (result: any) => {
+    const joinPlan = planForJoinHref(typeof result.link === 'string' ? result.link : '')
+    if (joinPlan) trackJoinCtaClick({ cta_location: 'search', plan: joinPlan })
     setQuery('')
     setIsOpen(false)
     setIsExpanded(false)
