@@ -1,6 +1,6 @@
 # Reference
 
-Bios, nested historical write-ups, and other supporting notes live here. They are source material for pages under About, Press, and Operations.
+Bios, nested historical write-ups, and other supporting notes live here. They are source material for pages under About and Operations.
 
 **Edit in this repo.** There is no Obsidian vault or Quartz publish step. Prefer standard markdown links to `/docs/<slug>`.
 
