@@ -1,20 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next'
+import { isMessageContentRedacted } from '@/lib/discord/messageContent'
 
 const channelIDs: any = {
   announcements: '914976122855374958',
-}
-
-function isMessageContentRedacted(messages: unknown) {
-  if (!Array.isArray(messages) || messages.length === 0) return false
-  return messages.every((message) => {
-    if (!message || typeof message !== 'object') return false
-    const record = message as {
-      content?: string
-      embeds?: unknown[]
-      attachments?: unknown[]
-    }
-    return !record.content && !(record.embeds || []).length && !(record.attachments || []).length
-  })
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

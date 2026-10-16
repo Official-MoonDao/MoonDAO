@@ -1,0 +1,31 @@
+name: Discord Announcements Health
+
+# The dashboard's "Live from Discord" feed went blank for days because Discord
+# revoked the bot's Message Content intent. Discord had posted the revocation
+# deadline four months earlier, and nothing surfaced it. This checks the live
+# feed and the bot's intent status daily and alerts DISCORD_WEBHOOK_URL.
+on:
+  schedule:
+    - cron: "0 16 * * *" # daily, 16:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: ui/scripts/check-discord-announcements.mjs
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check feed and bot
+        env:
+          SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node ui/scripts/check-discord-announcements.mjs
