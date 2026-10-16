@@ -378,18 +378,6 @@ export default function ForecastPanel(props: {
       login()
       return
     }
-    if (plan.action === 'need-citizen') {
-      setError(
-        prizeCitizen.linkedCitizenAddress
-          ? 'Switch to the wallet that holds your Citizen to predict.'
-          : prizeCitizen.lookupFailed
-          ? "Couldn't check your Citizen. Try again."
-          : prizeCitizen.expired
-          ? 'Your Citizen subscription has lapsed.'
-          : 'Predictions count only for Citizens. Mint a Citizen to predict.'
-      )
-      return
-    }
     if (plan.action === 'write') {
       const ok = await commitPick(plan.index)
       if (ok) onModalClose()

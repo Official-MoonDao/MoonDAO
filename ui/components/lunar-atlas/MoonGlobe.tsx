@@ -143,6 +143,12 @@ export type MoonGlobeProps = {
   // default is byte-for-byte the scene that shipped, and true-sun mode is
   // unreachable unless something explicitly asks for it.
   sunPhase?: SunPhase
+  // False for a backdrop the page scrolls over: no trackball, no click or
+  // hover handling, and the canvas lets every pointer and wheel event through
+  // to the document. The camera is then driven by `focus` alone.
+  interactive?: boolean
+  // Stretches every camera transition by this factor (1 = default speed).
+  glide?: number
   children?: ReactNode
 }
 
@@ -205,11 +211,13 @@ function CameraRig({
   userInteracting,
   onAnimatingChange,
   radiusAt,
+  glide,
 }: {
   focus: GlobeFocus
   controlsRef: React.MutableRefObject<any>
   userInteracting: boolean
   onAnimatingChange: (animating: boolean) => void
+  glide: number
   // Rendered terrain radius lookup — framings and the camera floor work
   // against the real ground height, not the analytic sphere.
   radiusAt?: RadiusAt | null
@@ -218,6 +226,8 @@ function CameraRig({
   const desiredPos = useRef(DEFAULT_CAM.clone())
   const desiredTarget = useRef(HOME_TARGET.clone())
   const desiredUp = useRef(HOME_UP.clone())
+  // The look-at point when there is no TrackballControls to hold one.
+  const ownTarget = useRef(HOME_TARGET.clone())
   const animating = useRef(false)
   // Per-transition easing base (larger = slower, more cinematic glide).
   const easeBase = useRef(0.0022)
@@ -302,8 +312,7 @@ function CameraRig({
 
   useFrame((_, delta) => {
     const controls = controlsRef.current
-    if (!controls) return
-    const curTarget = controls.target as THREE.Vector3
+    const curTarget = (controls?.target ?? ownTarget.current) as THREE.Vector3
 
     // Hard floor: free zooming/tumbling must never put the camera under the
     // terrain. Sample the rendered ground below the camera every frame (a
@@ -329,10 +338,12 @@ function CameraRig({
     // from the base overview whips the camera around violently when it is
     // metres off the deck after selecting a site. Scale both with the
     // camera's distance to its pivot so close-in inspection is gentle.
-    const pivotDist = camera.position.distanceTo(curTarget)
-    const feel = Math.sqrt(THREE.MathUtils.clamp(pivotDist / (2000 * M_TO_UNITS), 0, 1))
-    controls.rotateSpeed = THREE.MathUtils.lerp(0.3, 2.2, feel)
-    controls.zoomSpeed = THREE.MathUtils.lerp(0.5, 1.2, feel)
+    if (controls) {
+      const pivotDist = camera.position.distanceTo(curTarget)
+      const feel = Math.sqrt(THREE.MathUtils.clamp(pivotDist / (2000 * M_TO_UNITS), 0, 1))
+      controls.rotateSpeed = THREE.MathUtils.lerp(0.3, 2.2, feel)
+      controls.zoomSpeed = THREE.MathUtils.lerp(0.5, 1.2, feel)
+    }
 
     // Once the camera pulls well away from a drill-in pivot, glide the pivot
     // back to the ridge center. Without this, zooming out from a site leaves
@@ -354,7 +365,7 @@ function CameraRig({
         return
       }
 
-      const t = 1 - Math.pow(easeBase.current, delta) // frame-rate-independent easing
+      const t = 1 - Math.pow(easeBase.current, delta / glide) // frame-rate-independent easing
       const curOffset = camera.position.clone().sub(curTarget)
       const dstOffset = desiredPos.current.clone().sub(desiredTarget.current)
 
@@ -378,7 +389,8 @@ function CameraRig({
       const full = new THREE.Quaternion().setFromUnitVectors(curUp, desiredUp.current)
       const step = new THREE.Quaternion().slerp(full, t)
       camera.up.copy(curUp).applyQuaternion(step).normalize()
-      controls.update()
+      if (controls) controls.update()
+      else camera.lookAt(curTarget)
 
       const angle = newDir.angleTo(dstDir)
       if (
@@ -697,6 +709,8 @@ export default function MoonGlobe({
   onBackgroundClick,
   cinematic,
   sunPhase,
+  interactive = true,
+  glide = 1,
   children,
 }: MoonGlobeProps) {
   const controlsRef = useRef<any>(null)
@@ -899,16 +913,25 @@ export default function MoonGlobe({
         // to fight, only a convex sphere and a terrain patch two kilometers
         // clear of it.
       }}
-      onPointerMissed={(e) => {
-        const down = pointerDownAt.current
-        const moved = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) : 0
-        if (moved <= CLICK_DRAG_TOLERANCE_PX) onBackgroundClick?.()
-      }}
-      onPointerDown={(e) => {
-        setUserInteracting(true)
-        pointerDownAt.current = { x: e.clientX, y: e.clientY }
-      }}
-      onWheel={handleWheel}
+      style={interactive ? undefined : { pointerEvents: 'none' }}
+      onPointerMissed={
+        interactive
+          ? (e) => {
+              const down = pointerDownAt.current
+              const moved = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) : 0
+              if (moved <= CLICK_DRAG_TOLERANCE_PX) onBackgroundClick?.()
+            }
+          : undefined
+      }
+      onPointerDown={
+        interactive
+          ? (e) => {
+              setUserInteracting(true)
+              pointerDownAt.current = { x: e.clientX, y: e.clientY }
+            }
+          : undefined
+      }
+      onWheel={interactive ? handleWheel : undefined}
     >
       <SkyBackdrop elevationDeg={sun.elevationDeg} />
 
@@ -976,6 +999,7 @@ export default function MoonGlobe({
         userInteracting={userInteracting}
         onAnimatingChange={setIsAnimating}
         radiusAt={radiusAt}
+        glide={glide}
       />
 
       {/* Trackball gives full free tumble around the current pivot. The pivot
@@ -990,23 +1014,25 @@ export default function MoonGlobe({
           it pushed the camera a meter clear THROUGH the liner every frame and
           filled the screen with the inside of the end wall. Underground the only
           real limit is the near plane. */}
-      <TrackballControls
-        ref={controlsRef}
-        makeDefault
-        noPan
-        rotateSpeed={2.2}
-        zoomSpeed={1.2}
-        dynamicDampingFactor={0.12}
-        minDistance={
-          (focus?.view === 'sub'
-            ? 1.5
-            : focus?.view === 'surface'
-            ? heroMinDistanceM(focus.subjectM)
-            : 12) * M_TO_UNITS
-        }
-        maxDistance={40000 * M_TO_UNITS}
-        target={[HOME_TARGET.x, HOME_TARGET.y, HOME_TARGET.z]}
-      />
+      {interactive && (
+        <TrackballControls
+          ref={controlsRef}
+          makeDefault
+          noPan
+          rotateSpeed={2.2}
+          zoomSpeed={1.2}
+          dynamicDampingFactor={0.12}
+          minDistance={
+            (focus?.view === 'sub'
+              ? 1.5
+              : focus?.view === 'surface'
+              ? heroMinDistanceM(focus.subjectM)
+              : 12) * M_TO_UNITS
+          }
+          maxDistance={40000 * M_TO_UNITS}
+          target={[HOME_TARGET.x, HOME_TARGET.y, HOME_TARGET.z]}
+        />
+      )}
 
       {/* Bloom on linear HDR, then the tone curve. Every note about the chain
           has to live out here rather than between the effects: EffectComposer

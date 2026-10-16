@@ -735,9 +735,18 @@ export const HATS_ADDRESS = '0x3bc1A0Ad72417f2d411118085256fC53CBdDd137'
 
 export const HATS_PASSTHROUGH_MODULE_ADDRESS = '0x050079a8fbFCE76818C62481BA015b89567D2d35'
 
-export const TABLELAND_ENDPOINT = `https://${
-  process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? 'testnets.' : ''
-}tableland.network/api/v1/query`
+// Origins of the Tableland validator gateways, with no trailing slash. The
+// public tableland.network gateways are gone; tableland.moondao.com is our own
+// validator (GCP project moondao-471622) and indexes both Arbitrum and Sepolia.
+// next.config.js reads the same env vars to allow them in `connect-src`.
+export const TABLELAND_MAINNET_GATEWAY =
+  process.env.NEXT_PUBLIC_TABLELAND_MAINNET_GATEWAY || 'https://tableland.moondao.com'
+export const TABLELAND_TESTNET_GATEWAY =
+  process.env.NEXT_PUBLIC_TABLELAND_TESTNET_GATEWAY || 'https://tableland.moondao.com'
+
+export const TABLELAND_ENDPOINT = `${
+  process.env.NEXT_PUBLIC_CHAIN != 'mainnet' ? TABLELAND_TESTNET_GATEWAY : TABLELAND_MAINNET_GATEWAY
+}/api/v1/query`
 
 export const CHAIN_TOKEN_NAMES: Index = {
   ethereum: 'ETH',
