@@ -407,11 +407,18 @@ type QueryValue = string | string[] | undefined
 
 export function mergeAttributionQuery(
   current: Record<string, QueryValue> | undefined,
-  next: Record<string, QueryValue>
+  next: Record<string, unknown>
 ): Record<string, string | string[]> {
   const merged: Record<string, string | string[]> = {}
   for (const [key, value] of Object.entries(next)) {
-    if (typeof value === 'string' || Array.isArray(value)) merged[key] = value
+    // Next query values are strings, but callers pass route ids as numbers
+    // (mission.id). Dropping those makes shallow routing throw
+    // "missing query values (tokenId)" on /mission/[tokenId].
+    if (typeof value === 'string') merged[key] = value
+    else if (typeof value === 'number' && Number.isFinite(value)) merged[key] = String(value)
+    else if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
+      merged[key] = value
+    }
   }
   const source = current || {}
   for (const key of ATTRIBUTION_PARAM_KEYS) {

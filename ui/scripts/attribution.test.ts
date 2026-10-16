@@ -338,6 +338,20 @@ describe('funnel passthrough', () => {
       )
     ).to.deep.equal({ tab: 'map', page: '1', utm_source: 'ads', gclid: 'abc' })
   })
+
+  it('stringifies numeric route params so dynamic pages keep their id', () => {
+    expect(
+      mergeAttributionQuery(
+        { utm_source: 'ads', onrampSuccess: 'true' },
+        { tokenId: 1, tab: 'about', onrampSuccess: 'true' }
+      )
+    ).to.deep.equal({
+      tokenId: '1',
+      tab: 'about',
+      onrampSuccess: 'true',
+      utm_source: 'ads',
+    })
+  })
 })
 
 describe('browser persistence', () => {
