@@ -8,7 +8,7 @@ sidebar_label: Privacy Policy
 sidebar_position: 1
 slug: /privacy-policy
 ---
-**Last Updated: September 10, 2026**
+**Last Updated: October 16, 2026**
 
 ## **MoonDAO™ Website Privacy Policy**
 
@@ -74,6 +74,8 @@ We may also employ other companies and individuals to perform certain functions 
 
 Without limiting the foregoing, we use a third-party service provider, Verisoul, to conduct Moonlist Membership verification. In connection with the foregoing, Verisoul may gain access to your Discord® handle, Twitter® handle and Photo ID for the sole and exclusive purpose of facilitating your registration as a Moonlist Member. We do not permit Verisoul to use that Personal Data for any other purposes.
 
+We use Kit (our e-mail provider) to send the communications you sign up for, and Typeform to collect citizen and team application forms. Where you have granted analytics consent, the marketing attribution information described below (such as the campaign or ad that brought you to the Site) may be stored with your e-mail address in Kit or with your Typeform submission, so that we can understand which campaigns lead to sign-ups and memberships.
+
 We may also use your Personal Data for internal business purposes, such as analyzing and managing our service offerings including, without limitation, the MoonDAO™ Offerings.
 
 We also reserve the right to release current or past users’ information in the event that we believe that the user is using, or has used, the MoonDAO™ Offerings (including Sensitive Information): (a) in violation of the Terms, this Privacy Policy or any other of our operating rules, policies, price schedules and other supplemental terms and conditions or documents that may be published by us from time to time; (b) to commit unlawful acts; (c) if such information is subpoenaed; _provided, however,_ that, where permitted by applicable law, we shall provide you with e-mail notice, and opportunity to challenge the subpoena, prior to disclosure of any personal information pursuant to a subpoena; (d) if we are sold, merge with a third-party or are acquired by a third-party (collectively, “M&A Transactions”) (including where we share your personal information in connection with the due diligence process associated with a potential M&A Transaction); (e) if we are the subject of bankruptcy proceedings; _provided, however_, that if MoonDAO™ is involved in a bankruptcy proceeding and/or M&A Transaction, you will be notified via e-mail and/or a prominent notice on the Site of any change in ownership or uses of your personal information, as well as any choices that you may have regarding your personal information; and/or (f) when we deem it necessary or appropriate including, without limitation, sharing your e-mail address with other third parties for suppression purposes in compliance with the CAN-SPAM Act of 2003, as amended from time to time, and Federal Trade Commission implementing regulations.
@@ -90,15 +92,17 @@ Cookies are generally divided into the following categories:
 
 1. _Essential Cookies_: Essential Cookies are Cookies that are required for the operation of our Site, such as Cookies that enable you to stay signed in or to access a password-gated area. The Site uses essential Cookies for authentication (including our wallet/login provider, Privy) and for access-control on gated pages.
 
-2. _Analytics Cookies_: Analytics Cookies automatically collect information about your use of the Site. With your consent where required, the Site uses Google Analytics (via Google Tag, with consent mode) and Vercel Analytics. These tools may set Cookies or use local storage and collect page views, events, approximate location, and a pseudonymous identifier.
+2. _Analytics Cookies_: Analytics Cookies automatically collect information about your use of the Site. With your consent where required, the Site uses Google Analytics (via Google Tag, with consent mode) and Vercel Analytics. These tools may set Cookies or use local storage and collect page views, events, approximate location, and a pseudonymous identifier. Events may include whether you hold a MoonDAO™ citizenship NFT, the type of wallet you connect, and the price of a purchase. When you complete an on-chain purchase, events may also include the public blockchain transaction identifier, which can be linked to your Wallet ID on the public blockchain.
 
 3. _Functional Cookies_: Functional Cookies remember choices that you make when you visit the Site. The Site stores a `cookie_consent` value in local storage so we can remember whether you granted or denied analytics consent, and uses a cookie-consent banner except where consent is not required.
+
+4. _Marketing Attribution Cookies_: With your consent where required, the Site stores an `md_attribution` Cookie and a matching local storage entry for up to 90 days. They record how you first and most recently arrived at the Site: campaign parameters (`utm_source`, `utm_medium`, `utm_campaign`, `utm_term` and `utm_content`), advertising click identifiers set by Google (`gclid`, `wbraid` and `gbraid`) and Meta (`fbclid`), the landing page, and the referring website. We use this information to measure which of our campaigns and ads bring visitors to the Site, and it may be included in the analytics events described above. If you decline analytics consent, this Cookie and local storage entry are deleted.
 
 Most Internet browsers are initially set up to accept Cookies, but you can reset your browser to refuse all Cookies or to indicate when a Cookie is being sent. To disable and reject certain Cookies, follow the instructions associated with your Internet browser. You can also change your analytics choice by clearing the Site’s stored consent and reloading the page.
 
 _Behavioral Tracking_
 
-MoonDAO™ and its service providers use Cookies, local storage, pixels, and similar technologies in connection with the Site for the essential, analytics, and functional purposes described above. We do not use these technologies to serve third-party advertising on the Site.
+MoonDAO™ and its service providers use Cookies, local storage, pixels, and similar technologies in connection with the Site for the essential, analytics, functional, and marketing attribution purposes described above. We do not serve third-party advertising on the Site, but we do use advertising click identifiers to measure the performance of our own ads on third-party platforms.
 
 _Location and eligibility data_
 
