@@ -28,6 +28,7 @@ const GUILD_ID = '914720248140279868'
 const ANNOUNCEMENTS_CHANNEL_ID = '914976122855374958'
 const GATEWAY_MESSAGE_CONTENT = 1 << 18
 const GATEWAY_MESSAGE_CONTENT_LIMITED = 1 << 19
+const LIMITED_INTENT_WARN_GUILDS = 75
 
 const problems = []
 const notes = []
@@ -88,13 +89,35 @@ async function checkBot() {
   if (app.status !== 200) {
     problems.push(`Could not read the bot's application (HTTP ${app.status}).`)
   } else {
-    const { name, id, owner, team, flags = 0, privileged_intents_review: review } = app.body
+    const {
+      name,
+      id,
+      owner,
+      team,
+      flags = 0,
+      approximate_guild_count: guildCount,
+      privileged_intents_review: review,
+    } = app.body
     const ownerName = team?.name ? `team ${team.name}` : owner?.username || 'unknown'
     notes.push(`Bot: ${name} (${id}), owned by ${ownerName}.`)
 
     if (!(flags & (GATEWAY_MESSAGE_CONTENT | GATEWAY_MESSAGE_CONTENT_LIMITED))) {
       problems.push(
         `Message Content intent is off for ${name} (${id}). Turn it on in the Developer Portal under Bot → Privileged Gateway Intents, or submit the Privileged Intent review if the toggle is locked.`
+      )
+    } else if (
+      !(flags & GATEWAY_MESSAGE_CONTENT) &&
+      typeof guildCount === 'number' &&
+      guildCount >= LIMITED_INTENT_WARN_GUILDS
+    ) {
+      problems.push(
+        `${name} (${id}) is in ${guildCount} servers with only the limited (unverified) Message Content intent. Discord requires verification and the Privileged Intent review at 100 servers. Submit it from the Developer Portal, logged in as ${ownerName}.`
+      )
+    }
+
+    if (!review) {
+      notes.push(
+        'Discord did not return privileged intent review data; check the Developer Portal for a revocation deadline.'
       )
     }
 
