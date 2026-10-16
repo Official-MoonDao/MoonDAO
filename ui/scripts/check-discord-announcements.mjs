@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Health check for the dashboard's "Live from Discord" feed and the bot behind it.
  *
@@ -13,13 +14,16 @@
  * four months before Discord stripped the text, and nothing surfaced it.
  *
  * Env: SITE_URL (default https://moondao.com), DISCORD_BOT_TOKEN (bot checks are
- * skipped without it), DISCORD_WEBHOOK_URL (alert is skipped without it).
+ * skipped without it), DISCORD_WEBHOOK_URL (alert is skipped without it),
+ * ALERT_FILE (the alert text is also written here, for the workflow's email step).
  */
+import { writeFileSync } from 'node:fs'
 
 const SITE_URL = (process.env.SITE_URL || 'https://moondao.com').replace(/\/$/, '')
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL
 const RUN_URL = process.env.RUN_URL
+const ALERT_FILE = process.env.ALERT_FILE
 const GUILD_ID = '914720248140279868'
 const ANNOUNCEMENTS_CHANNEL_ID = '914976122855374958'
 const GATEWAY_MESSAGE_CONTENT = 1 << 18
@@ -122,15 +126,18 @@ async function checkBot() {
 }
 
 async function alert() {
-  if (!WEBHOOK_URL) {
-    console.log('No DISCORD_WEBHOOK_URL configured; skipping alert.')
-    return
-  }
   const lines = [
     '**Live from Discord health check failed**',
     ...problems.map((p) => `- ${p}`),
     RUN_URL ? `Logs: ${RUN_URL}` : '',
   ].filter(Boolean)
+  if (ALERT_FILE) {
+    writeFileSync(ALERT_FILE, lines.join('\n').replace(/\*\*/g, '') + '\n')
+  }
+  if (!WEBHOOK_URL) {
+    console.log('No DISCORD_WEBHOOK_URL configured; skipping Discord alert.')
+    return
+  }
   const res = await fetch(WEBHOOK_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

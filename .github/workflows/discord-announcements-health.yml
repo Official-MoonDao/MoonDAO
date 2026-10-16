@@ -3,7 +3,8 @@ name: Discord Announcements Health
 # The dashboard's "Live from Discord" feed went blank for days because Discord
 # revoked the bot's Message Content intent. Discord had posted the revocation
 # deadline four months earlier, and nothing surfaced it. This checks the live
-# feed and the bot's intent status daily and alerts DISCORD_WEBHOOK_URL.
+# feed and the bot's intent status daily and alerts DISCORD_WEBHOOK_URL and the
+# addresses in ALERT_EMAILS.
 on:
   schedule:
     - cron: "0 16 * * *" # daily, 16:00 UTC
@@ -12,6 +13,12 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      ALERT_EMAILS: pablo@moondao.com,ryan@moondao.com,miguel@moondao.com
+      ALERT_FILE: ${{ github.workspace }}/discord-health-alert.txt
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      # Same Gmail app password the site uses for its email (Vercel env).
+      NODEMAILER_PASSWORD: ${{ secrets.NODEMAILER_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,5 +34,23 @@ jobs:
           SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: node ui/scripts/check-discord-announcements.mjs
+
+      - name: Prepare email body
+        if: failure()
+        run: |
+          [ -s "$ALERT_FILE" ] || printf 'The Live from Discord health check failed before it could report a reason.\nLogs: %s\n' "$RUN_URL" > "$ALERT_FILE"
+
+      - name: Email alert
+        if: failure() && env.NODEMAILER_PASSWORD != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.NODEMAILER_USER || 'info@moondao.com' }}
+          password: ${{ secrets.NODEMAILER_PASSWORD }}
+          from: MoonDAO Alerts <${{ secrets.NODEMAILER_USER || 'info@moondao.com' }}>
+          to: ${{ env.ALERT_EMAILS }}
+          subject: "Live from Discord is broken on moondao.com"
+          body: file://${{ env.ALERT_FILE }}
