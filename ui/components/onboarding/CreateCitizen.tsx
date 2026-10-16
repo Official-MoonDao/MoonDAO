@@ -1144,6 +1144,13 @@ export default function CreateCitizen({
       setMintComplete(true)
       fireCelebrationConfetti()
 
+      // Flag the dashboard tour for this device. Backs up the ?tour=1 query in
+      // case the citizen closes the tab on the welcome screen or the redirect
+      // loses the query. Renewals don't pass through here, so they never set it.
+      try {
+        localStorage.setItem('dashboardTourPending', '1')
+      } catch {}
+
       // Fire-and-forget: announce the new citizen in Discord. Pass the portrait
       // URI and bio we just wrote on-chain so the server can upload the image
       // with the message instead of relying on Discord to crawl the profile page
@@ -2381,7 +2388,7 @@ export default function CreateCitizen({
   // Navigate to the citizen dashboard (context is already seeded, so it renders
   // immediately instead of bouncing to the marketing homepage).
   const goToDashboard = useCallback(() => {
-    router.push('/dashboard')
+    router.push('/dashboard?tour=1')
   }, [router])
 
   // Memoize the welcome image object URL so the overlay doesn't allocate a new
