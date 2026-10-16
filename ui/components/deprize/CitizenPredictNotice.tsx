@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { useENS } from '@/lib/utils/hooks/useENS'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 
@@ -97,11 +96,7 @@ export default function CitizenPredictNotice(props: {
   return (
     <p className="text-sm text-amber-200">
       You can still predict. It is saved with 0 voting power, so it does not move the MOONEY
-      outcome.{' '}
-      <Link href="/join" className="text-indigo-300 underline">
-        Mint a Citizen
-      </Link>{' '}
-      if you want it to count.
+      outcome.
     </p>
   )
 }

@@ -2,6 +2,7 @@
 import { Database } from '@tableland/sdk'
 import { ethers } from 'ethers'
 import { Chain } from '@/lib/rpc/chains'
+import { tablelandGateway } from '@/lib/tableland/endpoint'
 
 // Signer adapter for Tableland SDK
 function createTablelandSigner(wallet: ethers.Wallet, chainId: number) {
@@ -45,6 +46,7 @@ export default async function queryTable(
 
   const db = new Database({
     signer,
+    baseUrl: `${tablelandGateway(chain.id)}/api/v1`,
   })
 
   const stmt = db.prepare(statement)

@@ -81,6 +81,19 @@ missions, the deployer no longer held 0.008 ETH × 4.
 
 Provision script: `ui/scripts/provision-arbitrum-races.cjs`. Re-running it skips a goal that is already verified in `/tmp/arbitrum-capability-races.json`.
 
+## Predictions table (2026-10-14)
+
+Free Citizen predictions (`ForecastPanel`) write to a Tableland table owned by the
+`Forecasts` contract. One row per address per prize; `voteId` is the `deprizeId`.
+Deployed with `subscription-contracts/script/Forecasts.s.sol` by the deployer.
+
+| | Value |
+|---|---|
+| `Forecasts` | `0xcaA79c0E01363dD9226d268e2cc5f07120fA94C1` (verified) |
+| Table | `Forecasts_42161_167` |
+| Owner | `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011` |
+| Tx | `0x6ac417cd36cd33a4a4716c0e44e002f63daca6297b8ff27fdfd4f1d6faa9f9fe` |
+
 ## H-01 factory + Sepolia live market (2026-09-11)
 
 Redeployed from the fixed `LMSRWithTWAP` source. New markets must come from
