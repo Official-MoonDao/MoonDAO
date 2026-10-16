@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 export function useAnnouncements() {
   const [announcements, setAnnouncements] = useState<any>([])
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<any>()
 
   async function getAnnouncements(id?: string) {
