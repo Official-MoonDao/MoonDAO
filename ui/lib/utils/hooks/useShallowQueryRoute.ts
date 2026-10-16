@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router'
+import { mergeAttributionQuery } from '@/lib/analytics/attribution'
 
 export function useShallowQueryRoute() {
   const router = useRouter()
@@ -6,7 +7,7 @@ export function useShallowQueryRoute() {
   function shallowQueryRoute(query: any) {
     router.push(
       {
-        query: query,
+        query: mergeAttributionQuery(router.query, query),
       },
       undefined,
       { shallow: true }

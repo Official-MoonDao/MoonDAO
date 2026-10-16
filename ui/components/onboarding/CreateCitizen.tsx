@@ -109,6 +109,7 @@ import {
 import { useClientHydrated } from '@/lib/utils/hooks/useClientHydrated'
 import { useFormCache } from '@/lib/utils/hooks/useFormCache'
 import { compressImageForStorage } from '@/lib/utils/images'
+import AttributedTypeformFrame from '@/components/analytics/AttributedTypeformFrame'
 import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import CitizenABI from '../../const/abis/Citizen.json'
 import CrossChainMinterABI from '../../const/abis/CrossChainMinter.json'
@@ -2754,10 +2755,8 @@ export default function CreateCitizen({
                   </div>
                 ) : (
                   <div className="w-full rounded-xl overflow-hidden border border-white/[0.06]">
-                    <iframe
-                      src={`https://form.typeform.com/to/${process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID}`}
-                      style={{ width: '100%', height: '700px', border: 'none' }}
-                      allow="microphone; camera"
+                    <AttributedTypeformFrame
+                      formId={process.env.NEXT_PUBLIC_TYPEFORM_CITIZEN_SHORT_FORM_ID as string}
                     />
                   </div>
                 )}
