@@ -95,6 +95,15 @@ describe('docs breadcrumbs', () => {
 })
 
 describe('docs frontmatter', () => {
+  it('parses CRLF frontmatter like LF', () => {
+    const { frontmatter, body } = parseFrontmatter(
+      '---\r\ntags:\r\n  - docs/legal\r\nslug: /tts-dispute-notice\r\n---\r\n# Hello\r\n'
+    )
+    expectEqual(frontmatter.tags.join(','), 'docs/legal', 'tags')
+    expectEqual(frontmatter.slug, '/tts-dispute-notice', 'slug')
+    expectEqual(body, '# Hello\n', 'body')
+  })
+
   it('parses scalar tags and slug overrides', () => {
     const raw = `---
 tags: docs/onboarding
