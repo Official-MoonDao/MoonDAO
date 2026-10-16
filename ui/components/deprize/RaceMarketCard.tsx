@@ -40,6 +40,9 @@ import CategoryIcon from '@/components/deprize/CategoryIcon'
 import ClaimPanel from '@/components/deprize/ClaimPanel'
 import DemoBetModal from '@/components/deprize/DemoBetModal'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
+import HeroOddsChart from '@/components/deprize/HeroOddsChart'
+import MarketHero from '@/components/deprize/MarketHero'
+import MarketOutcomeRow from '@/components/deprize/MarketOutcomeRow'
 import PrizeAvailable from '@/components/deprize/PrizeAvailable'
 
 export type IndexTab = 'all' | 'positions'
@@ -125,71 +128,12 @@ function StatusPill({
   )
 }
 
-function OutcomeBetRow({
-  outcome,
-  bettingEnabled,
-  showOdds = true,
-  onBet,
-  onCashOut,
-}: {
-  outcome: OutcomeRowVM
-  bettingEnabled: boolean
-  /** False for a single-entrant non-race — see isCompetitiveRace. */
-  showOdds?: boolean
-  onBet: () => void
-  onCashOut?: () => void
-}) {
-  const pct = Number.isFinite(outcome.probability) ? fmt(outcome.probability, 0) : undefined
+function LiveDot() {
   return (
-    <div className="relative flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-2 overflow-hidden">
-      {showOdds && (
-        <div
-          className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
-          style={{
-            width: `${Math.max(0, Math.min(100, outcome.probability))}%`,
-            background: outcome.color,
-          }}
-        />
-      )}
-      <span
-        className="relative z-10 w-2 h-2 rounded-full shrink-0"
-        style={{ background: outcome.color }}
-      />
-      <span className="relative z-10 flex-1 min-w-0 truncate text-sm text-white/90">
-        {outcome.name}
-      </span>
-      {!!outcome.heldQty && (
-        <span className="relative z-10 shrink-0 text-[10px] font-medium text-moon-green">
-          Holding {fmt(outcome.heldQty, 3)}
-        </span>
-      )}
-      {showOdds && (
-        <span className="relative z-10 w-9 shrink-0 text-right text-sm font-semibold tabular-nums text-gray-200">
-          {pct !== undefined ? `${pct}%` : '—'}
-        </span>
-      )}
-      {bettingEnabled ? (
-        <button
-          type="button"
-          onClick={onBet}
-          className="relative z-10 shrink-0 px-3 py-1 rounded-md text-xs font-semibold
-            bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
-            transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
-        >
-          {DEPRIZE_PREDICT_CTA}
-        </button>
-      ) : null}
-      {onCashOut && (
-        <button
-          type="button"
-          onClick={onCashOut}
-          className="relative z-10 shrink-0 px-2.5 py-1 rounded-md text-[11px] font-semibold uppercase tracking-wide
-            bg-white/5 hover:bg-indigo-500/15 text-white border border-white/10 hover:border-indigo-400/35 transition-all"
-        >
-          Cash out
-        </button>
-      )}
-    </div>
+    <span className="inline-flex items-center gap-1.5 font-semibold text-red-400">
+      <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+      Live
+    </span>
   )
 }
 
@@ -210,6 +154,7 @@ export default function RaceMarketCard({
   onHasPosition,
   onDone,
   variant = 'list',
+  active = true,
 }: {
   goal: SharedGoal
   competitors: Competitor[]
@@ -227,6 +172,8 @@ export default function RaceMarketCard({
   onDone: () => void
   /** 'list' (default, full-width row) · 'grid' (compact tile) · 'featured' (hero card). */
   variant?: RaceCardVariant
+  /** Featured only: false while the carousel slide is off-screen, which skips its chart. */
+  active?: boolean
 }) {
   const bound = isDePrizeGoalMarketBound(chainSlug, goal.id)
   const deprizeId = bound ? findDePrizeIdForGoal(chainSlug, goal.id) : undefined
@@ -285,6 +232,16 @@ export default function RaceMarketCard({
       }),
     [competitors, bound, binding, live.outcomes, live.oddsByProjectId, demo.odds, demo.positions]
   )
+
+  // The chart plots market outcomes in on-chain order, including the open field.
+  const chartSeries = useMemo(() => {
+    const byProject = new Map(outcomes.map((o) => [o.projectId, o]))
+    const rows = (binding?.outcomes ?? []).map((o) => {
+      const row = o.field ? undefined : byProject.get(o.projectId)
+      return { label: row?.name ?? 'Open field', color: row?.color ?? '#6b7280' }
+    })
+    return { labels: rows.map((r) => r.label), colors: rows.map((r) => r.color) }
+  }, [binding, outcomes])
 
   const heldOutcomes = useMemo(() => outcomes.filter((o) => !!o.heldQty), [outcomes])
   const hasPosition = heldOutcomes.length > 0
@@ -442,7 +399,7 @@ export default function RaceMarketCard({
   if (activeTab === 'positions') {
     if (!hasPosition) return null
     return (
-      <div className="rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] overflow-hidden shadow-lg">
+      <div className="rounded-xl border border-white/[0.08] bg-white/[0.035] overflow-hidden">
         <div className="p-4 sm:p-5 flex items-start gap-3">
           <div
             className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center"
@@ -553,82 +510,62 @@ export default function RaceMarketCard({
     const gridTop = ordered.slice(0, 3)
     const gridMore = ordered.length - gridTop.length
     return (
-      <div className="rounded-xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] hover:border-white/20 transition-colors overflow-hidden shadow-lg flex flex-col h-full">
+      <div className="flex h-full flex-col rounded-xl border border-white/[0.08] bg-white/[0.035] transition-colors hover:border-white/20 hover:bg-white/[0.05]">
         <a
           href={detailHref}
-          className="p-4 flex items-start gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          className="flex items-start gap-3 rounded-t-xl px-4 pt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
         >
           <div
-            className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{
-              background: `${categoryColor}22`,
-              border: `1px solid ${categoryColor}55`,
-              color: categoryColor,
-            }}
+            className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center"
+            style={{ background: `${categoryColor}1f`, color: categoryColor }}
           >
-            <CategoryIcon category={category} className="w-4 h-4" />
+            <CategoryIcon category={category} className="w-5 h-5" />
           </div>
           <div className="min-w-0 flex-1">
             <RaceCardTitle
               goal={goal}
-              titleClassName="text-white font-heading font-semibold text-sm leading-snug"
+              titleClassName="text-white font-heading font-semibold text-[15px] leading-snug"
             />
-            <div className="mt-1 flex items-center gap-1.5 text-[11px] text-gray-500">
-              <span className="truncate">{categoryLabel}</span>
-              {showStatusPill && statusLabel && statusTone && (
-                <StatusPill label={statusLabel} tone={statusTone} />
-              )}
-            </div>
           </div>
         </a>
 
-        <div className="px-4 pb-3 flex flex-col gap-1.5 flex-1">
-          {gridTop.map((o) => {
-            const pct = Number.isFinite(o.probability) ? fmt(o.probability, 0) : undefined
-            return (
-              <div
-                key={o.projectId}
-                className="relative flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1.5 overflow-hidden"
-              >
-                {showLiveMarket && (
-                  <div
-                    className="absolute inset-y-0 left-0 opacity-[0.14] pointer-events-none"
-                    style={{
-                      width: `${Math.max(0, Math.min(100, o.probability))}%`,
-                      background: o.color,
-                    }}
-                  />
-                )}
-                <span
-                  className="relative z-10 w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: o.color }}
-                />
-                <span className="relative z-10 flex-1 min-w-0 truncate text-xs text-white/90">
-                  {o.name}
-                </span>
-                {showLiveMarket && (
-                  <span className="relative z-10 shrink-0 text-xs font-semibold tabular-nums text-gray-200">
-                    {pct !== undefined ? `${pct}%` : '—'}
-                  </span>
-                )}
-                {bettingEnabled ? (
-                  <button
-                    type="button"
-                    onClick={() => handleBet(o)}
-                    className="relative z-10 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-semibold
-                      bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white
-                      transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50"
-                  >
-                    {DEPRIZE_PREDICT_CTA}
-                  </button>
-                ) : null}
-              </div>
-            )
-          })}
+        <div className="mt-2 flex items-center gap-1.5 px-4 text-[11px] text-gray-400">
+          {statusTone === 'live' && (
+            <>
+              <LiveDot />
+              <span className="text-gray-600">·</span>
+            </>
+          )}
+          <span className="truncate">{categoryLabel}</span>
+          {goal.targetWindow && statusTone !== 'live' && (
+            <>
+              <span className="text-gray-600">·</span>
+              <span className="tabular-nums">
+                {goal.targetWindow.from ?? '?'}–{goal.targetWindow.to ?? '?'}
+              </span>
+            </>
+          )}
+          {showStatusPill && statusLabel && statusTone && (
+            <StatusPill label={statusLabel} tone={statusTone} />
+          )}
+        </div>
+
+        <div className="flex flex-1 flex-col px-4 pb-3 pt-2">
+          {gridTop.map((o) => (
+            <MarketOutcomeRow
+              key={o.projectId}
+              name={o.name}
+              color={o.color}
+              probability={o.probability}
+              showOdds={showLiveMarket}
+              heldQty={o.heldQty}
+              onPredict={bettingEnabled ? () => handleBet(o) : undefined}
+            />
+          ))}
           {gridMore > 0 && (
             <a
               href={detailHref}
-              className="text-gray-500 hover:text-gray-300 text-[11px] mt-0.5 transition-colors"
+              className="mt-1 text-[11px] text-gray-500 transition-colors hover:text-gray-300"
             >
               +{gridMore} more
             </a>
@@ -658,118 +595,99 @@ export default function RaceMarketCard({
 
   // --- Featured view: hero card for the top of the index ---
   if (variant === 'featured') {
-    const featuredTop = ordered.slice(0, 6)
+    const featuredTop = ordered.slice(0, 5)
     const featuredMore = ordered.length - featuredTop.length
+    const heading = raceCardHeading(goal)
     return (
-      <div className="rounded-2xl bg-gradient-to-br from-slate-900/95 via-slate-900/80 to-indigo-950/50 backdrop-blur-xl border border-indigo-400/25 shadow-xl overflow-hidden">
-        <div className="p-5 sm:p-7">
-          <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
-            <div className="flex items-start gap-3 min-w-0">
-              <div
-                className="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{
-                  background: `${categoryColor}22`,
-                  border: `1px solid ${categoryColor}55`,
-                  color: categoryColor,
-                }}
-              >
-                <CategoryIcon category={category} className="w-6 h-6" />
-              </div>
-              <div className="min-w-0">
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-200 mb-1.5">
-                  ★ Featured Race
-                </span>
-                <a
-                  href={detailHref}
-                  className="block min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 rounded-lg"
-                >
-                  <RaceCardTitle
-                    goal={goal}
-                    titleClassName="text-white font-heading font-semibold text-xl sm:text-2xl leading-snug"
-                  />
-                </a>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-400">
-                  <span>{categoryLabel}</span>
-                  {goal.targetWindow && (
-                    <>
-                      <span className="text-gray-600">·</span>
-                      <span>
-                        {goal.targetWindow.from ?? '?'}–{goal.targetWindow.to ?? '?'}
-                      </span>
-                    </>
-                  )}
-                  {showStatusPill && statusLabel && statusTone && (
-                    <StatusPill label={statusLabel} tone={statusTone} />
-                  )}
-                  <MoonbaseLink goalId={goal.id} />
-                </div>
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              {showLiveMarket ? (
+      <>
+        <MarketHero
+          eyebrow={
+            <>
+              <CategoryIcon category={category} className="w-3.5 h-3.5" />
+              <span>{categoryLabel}</span>
+              {statusTone === 'live' && (
                 <>
-                  <PrizeAvailable eth={poolEth} loading={poolLoading} size="hero" />
+                  <span className="text-gray-600">·</span>
+                  <LiveDot />
                 </>
-              ) : !hasRace ? (
-                <p className="text-gray-500 text-[11px] max-w-[10rem]">
-                  No committed developer yet
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          {showLiveMarket && (
-            <div className="flex w-full h-2 rounded-full overflow-hidden bg-white/5 mb-4">
-              {ordered.map((o) => (
-                <div
+              )}
+              {goal.targetWindow && (
+                <>
+                  <span className="text-gray-600">·</span>
+                  <span className="tabular-nums">
+                    {goal.targetWindow.from ?? '?'}–{goal.targetWindow.to ?? '?'}
+                  </span>
+                </>
+              )}
+              {showStatusPill && statusLabel && statusTone && (
+                <StatusPill label={statusLabel} tone={statusTone} />
+              )}
+            </>
+          }
+          title={heading.name}
+          subtitle={heading.subtitle}
+          href={detailHref}
+          rows={
+            <>
+              {featuredTop.map((o) => (
+                <MarketOutcomeRow
                   key={o.projectId}
-                  style={{
-                    width: `${Math.max(0, Math.min(100, o.probability))}%`,
-                    background: o.color,
-                  }}
+                  size="hero"
+                  name={o.name}
+                  color={o.color}
+                  probability={o.probability}
+                  showOdds={showLiveMarket}
+                  heldQty={o.heldQty}
+                  onPredict={bettingEnabled ? () => handleBet(o) : undefined}
                 />
               ))}
-            </div>
-          )}
-
-          <div className="flex flex-col gap-1.5">
-            {featuredTop.map((o) => (
-              <OutcomeBetRow
-                key={o.projectId}
-                outcome={o}
-                bettingEnabled={bettingEnabled}
-                showOdds={showLiveMarket}
-                onBet={() => handleBet(o)}
+              {featuredMore > 0 && (
+                <a
+                  href={detailHref}
+                  className="mt-1 text-xs text-gray-500 transition-colors hover:text-gray-300"
+                >
+                  +{featuredMore} more · View all →
+                </a>
+              )}
+            </>
+          }
+          chart={
+            showLiveMarket && active && chartSeries.labels.length > 0 ? (
+              <HeroOddsChart
+                deprizeId={live.deprizeId}
+                market={live.market}
+                chain={chain}
+                labels={chartSeries.labels}
+                colors={chartSeries.colors}
+                refreshNonce={refreshNonce}
               />
-            ))}
-            {featuredMore > 0 && (
-              <a
-                href={detailHref}
-                className="text-gray-500 hover:text-gray-300 text-xs mt-0.5 transition-colors"
-              >
-                +{featuredMore} more · View all →
-              </a>
-            )}
-          </div>
-
-          {forecastHref && (
-            <div className="mt-3">
-              <PredictLink href={forecastHref} />
+            ) : !hasRace ? (
+              <div className="flex h-full min-h-[160px] items-center justify-center rounded-xl border border-dashed border-white/10 px-6 text-center text-xs text-gray-500">
+                No committed developer yet
+              </div>
+            ) : null
+          }
+          pool={showLiveMarket ? <PrizeAvailable eth={poolEth} loading={poolLoading} /> : undefined}
+          footer={
+            <div className="flex flex-wrap items-center gap-3">
+              {forecastHref && <PredictLink href={forecastHref} />}
+              <MoonbaseLink goalId={goal.id} />
             </div>
-          )}
-          {bound && marketTradable && bettingBlockedReason && (
-            <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
-          )}
-        </div>
-
+          }
+          notice={
+            bound && marketTradable && bettingBlockedReason ? (
+              <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
+            ) : undefined
+          }
+        />
         {marketModals}
-      </div>
+      </>
     )
   }
 
   // --- Market list view ---
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] hover:border-white/20 transition-colors overflow-hidden shadow-lg">
+    <div className="rounded-xl border border-white/[0.08] bg-white/[0.035] hover:border-white/20 transition-colors overflow-hidden">
       <div className="p-4 sm:p-5 flex items-start gap-3">
         <div
           className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center"
@@ -820,14 +738,16 @@ export default function RaceMarketCard({
             </div>
           </div>
 
-          <div className="mt-3 flex flex-col gap-1.5">
+          <div className="mt-3 flex flex-col">
             {top.map((o) => (
-              <OutcomeBetRow
+              <MarketOutcomeRow
                 key={o.projectId}
-                outcome={o}
-                bettingEnabled={bettingEnabled}
+                name={o.name}
+                color={o.color}
+                probability={o.probability}
                 showOdds={showLiveMarket}
-                onBet={() => handleBet(o)}
+                heldQty={o.heldQty}
+                onPredict={bettingEnabled ? () => handleBet(o) : undefined}
               />
             ))}
             {more > 0 && (

@@ -11,7 +11,7 @@ import DePrizeCallers from '@/components/deprize/DePrizeCallers'
 import DePrizePatrons from '@/components/deprize/DePrizePatrons'
 import EthUsd from '@/components/deprize/EthUsd'
 import DePrizeLaunchpadContribute from '@/components/deprize/DePrizeLaunchpadContribute'
-import { CARD, TOUCH } from './primitives'
+import { TOUCH } from './primitives'
 
 function PoolFigure({ eth, loading }: { eth?: number | null; loading?: boolean }) {
   if (loading) {
@@ -84,7 +84,7 @@ export default function PrizePoolSlot(props: {
   return (
     <section
       id="deprize-prize-pool"
-      className={CARD}
+      className="rounded-2xl border border-white/[0.08] bg-white/[0.035] p-4 sm:p-5"
     >
       <div>
         <div className="grid grid-cols-2 gap-4">
@@ -104,16 +104,10 @@ export default function PrizePoolSlot(props: {
             </p>
           </div>
         </div>
-        <a
-          href="#deprize-forecast"
-          className={`mt-4 flex w-full items-center justify-center rounded-lg bg-[#2f5bff] px-4 py-3 text-[15px] font-semibold text-white shadow-[0_3px_0_0_#1e3a8a] ${TOUCH}`}
-        >
-          Place a Prediction
-        </a>
         {showFund && (
           <button
             type="button"
-            className={`mt-2 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-[15px] font-semibold text-white ${TOUCH}`}
+            className={`mt-4 w-full rounded-lg border border-white/15 bg-white/5 px-4 py-3 text-[15px] font-semibold text-white ${TOUCH}`}
             onClick={onFund}
           >
             Fund the prize

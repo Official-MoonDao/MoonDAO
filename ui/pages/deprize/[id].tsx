@@ -55,6 +55,7 @@ import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeActivity } from '@/lib/deprize/useDePrizeActivity'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
 import { useOddsHistory } from '@/lib/deprize/useOddsHistory'
+import { useMooneyShares } from '@/lib/forecasts/useMooneyShares'
 import { DePrizeRestrictedProvider } from '@/lib/deprize/deprizeRestrictedContext'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useDePrizePrizePool } from '@/lib/deprize/useDePrizePrizePool'
@@ -70,11 +71,13 @@ import ClaimPanel from '@/components/deprize/ClaimPanel'
 import AdminSection from '@/components/deprize/detail/AdminSection'
 import ClaimSection from '@/components/deprize/detail/ClaimSection'
 import ForecastSlot from '@/components/deprize/detail/ForecastSlot'
+import MarketModeTabs, { type MarketMode } from '@/components/deprize/detail/MarketModeTabs'
 import OddsSection from '@/components/deprize/detail/OddsSection'
 import PositionSection from '@/components/deprize/detail/PositionSection'
 import PrizeHeader from '@/components/deprize/detail/PrizeHeader'
 import PrizePoolSlot from '@/components/deprize/detail/PrizePoolSlot'
 import StickyRail from '@/components/deprize/detail/StickyRail'
+import TradeTicket from '@/components/deprize/detail/TradeTicket'
 import ProvenanceFooter from '@/components/deprize/detail/ProvenanceFooter'
 import { Notice, NoticeStack, type NoticeItem } from '@/components/deprize/detail/primitives'
 import {
@@ -177,7 +180,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
 
   const [refreshNonce, setRefreshNonce] = useState(0)
-  const [oddsSource, setOddsSource] = useState<'eth' | 'mooney'>('eth')
   const activity = useDePrizeActivity({
     deprizeId,
     marketAddress: market.marketAddress,
@@ -380,6 +382,33 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   // when the country header is missing (getDePrizePageEligibility).
   // Onramp return bypasses only the restricted term; market terms stay.
   const bettingAllowed = acceptsBets && !restricted
+
+  // ETH bets and free MOONEY predictions are separate markets. `?view=` keeps
+  // the selected one in shared links; visitors who can't bet start on MOONEY.
+  const viewQuery = router.query.view
+  const urlMode: MarketMode | null =
+    viewQuery === 'predict' ? 'predict' : viewQuery === 'bet' ? 'bet' : null
+  const [chosenMode, setChosenMode] = useState<MarketMode | null>(null)
+  const marketMode: MarketMode = chosenMode ?? urlMode ?? (restricted ? 'predict' : 'bet')
+  const setMarketMode = useCallback(
+    (next: MarketMode) => {
+      setChosenMode(next)
+      void router.replace(
+        { pathname: router.pathname, query: { ...router.query, view: next } },
+        undefined,
+        { shallow: true, scroll: false }
+      )
+    },
+    [router]
+  )
+  const betUnavailableReason = restricted
+    ? "Betting isn't available where you are"
+    : tradingHalted
+    ? 'Trading is paused on this market'
+    : !acceptsBets
+    ? 'This market is not taking bets right now'
+    : undefined
+  const mooney = useMooneyShares({ chainSlug, deprizeId, numOutcomes })
   const onrampReturn = useDePrizeOnrampReturn({
     userAddress,
     numOutcomes,
@@ -395,12 +424,15 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const handleBet = useCallback((index: number) => {
     setBetIndex(index)
   }, [])
+  const [ticketAmountEth, setTicketAmountEth] = useState('')
 
   // Moon Base Zero "Back this team" deep-links here with ?outcome=N. Wait for
   // the market + chart to settle so the layout above the card stops shifting.
   const [deepLinkHandled, setDeepLinkHandled] = useState(false)
   useEffect(() => {
-    if (onrampReturn.betIndex != null) setBetIndex(onrampReturn.betIndex)
+    if (onrampReturn.betIndex == null) return
+    setChosenMode('bet')
+    setBetIndex(onrampReturn.betIndex)
   }, [onrampReturn.betIndex])
 
   useEffect(() => {
@@ -433,6 +465,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     const el = document.getElementById('deprize-forecast')
     if (!el) return
     setForecastHashHandled(true)
+    setChosenMode((current) => current ?? 'predict')
     el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [forecastHashHandled, router.isReady, deprize, numOutcomes])
 
@@ -503,12 +536,26 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
       }),
     [market.outcomes, raceBinding, showResolved, market.winningIndex],
   )
+  const mooneyOrder = useMemo(() => {
+    const order = rankedOutcomes.map((o) => o.index)
+    const shares = mooney.shares
+    if (!shares || shares.length === 0) return order
+    return [...order].sort((a, b) => (shares[b] ?? 0) - (shares[a] ?? 0))
+  }, [rankedOutcomes, mooney.shares])
 
   // Everyone who put ETH behind an outcome. They belong on the callers list
   // next to the Citizens who wrote a prediction.
   const bettorAddresses = useMemo(
-    () => [...new Set(activity.bets.map((bet) => bet.bettor.toLowerCase()))],
-    [activity.bets],
+    () => [
+      ...new Set(
+        [...activity.priorBets, ...activity.bets].map((bet) => bet.bettor.toLowerCase()),
+      ),
+    ],
+    [activity.bets, activity.priorBets],
+  )
+  const positionBets = useMemo(
+    () => [...activity.priorBets, ...activity.bets],
+    [activity.bets, activity.priorBets],
   )
 
   const stakedEthByOutcome = useMemo(() => {
@@ -583,8 +630,21 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         body: notice.message,
       })
     }
+    const prior = activity.priorBets
+    if (prior.length > 0) {
+      const eth = prior.reduce((s, b) => s + b.costEth, 0)
+      const since = market.marketStartMs
+        ? ` on ${new Date(market.marketStartMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+        : ''
+      items.push({
+        id: 'prior-market-bets',
+        tone: 'amber',
+        priority: 10,
+        body: `${prior.length === 1 ? '1 bet' : `${prior.length} bets`} (${eth.toFixed(4)} ETH) went into this prize's previous market, before it was upgraded${since}. Those positions still pay out if their team wins, but they don't count toward the current odds.`,
+      })
+    }
     return items
-  }, [market.error, onrampReturn.notice])
+  }, [market.error, onrampReturn.notice, activity.priorBets, market.marketStartMs])
 
   const shellTitle =
     knownCompetition && deprizeId !== undefined
@@ -710,8 +770,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
 
   return (
     <Shell title={shellTitle} description={competition.metaDescription}>
-      <div className="flex flex-col gap-4 w-full lg:grid lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <div className="flex flex-col gap-4 min-w-0 lg:col-start-1 lg:row-start-1">
+      <div className="flex flex-col gap-6 w-full lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-x-8 lg:items-start">
+        <div className="flex flex-col gap-6 min-w-0 lg:col-start-1 lg:row-start-1">
         <PrizeHeader
           knownCompetition={knownCompetition}
           title={competition.title}
@@ -727,7 +787,15 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           showResolved={showResolved}
           chainSlug={chainSlug}
         />
+        {numOutcomes > 0 && (
+          <MarketModeTabs
+            mode={marketMode}
+            onChange={setMarketMode}
+            betUnavailable={restricted ? 'Not available in your region.' : undefined}
+          />
+        )}
         <OddsSection
+          mode={marketMode}
           numOutcomes={numOutcomes}
           question={prizeQuestion(competition.tagline)}
           activityLoading={activity.loading}
@@ -739,18 +807,18 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           domainStartMs={market.marketStartMs}
           markers={odds.markers}
           oddsLoading={odds.loading}
-          chainSlug={chainSlug}
-          deprizeId={deprizeId}
-          onSourceChange={setOddsSource}
+          mooneyShares={mooney.shares}
+          mooneyLoading={mooney.loading}
         />
         <NoticeStack items={pageNotices} />
+        {marketMode === 'bet' && (
         <PositionSection
           userAddress={userAddress}
           numOutcomes={numOutcomes}
           outcomes={market.outcomes}
           labels={predictionLabels}
           colors={outcomeColors}
-          bets={activity.bets}
+          bets={positionBets}
           sells={activity.sells}
           sellQuotes={sellQuotes}
           redeemValues={redeemValues}
@@ -762,6 +830,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           onCashOut={(i) => setExitIndex(i)}
           loading={activity.loading}
         />
+        )}
         <ForecastSlot
           chainSlug={chainSlug}
           deprizeId={deprizeId as number}
@@ -789,13 +858,13 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={handleBet}
           stakedEthByOutcome={stakedEthByOutcome}
-          rankSource={oddsSource}
+          mode={marketMode}
+          onModeChange={setMarketMode}
           modalIndex={betIndex}
           onModalClose={() => setBetIndex(null)}
-          resumeBet={onrampReturn.betIndex != null && betIndex === onrampReturn.betIndex}
           renderBet={
             account && market.marketAddress
-              ? ({ index, onClose, onPlaced }) => (
+              ? ({ index, onClose }) => (
                   <BetModal
                     embedded
                     deprizeId={deprizeId}
@@ -811,13 +880,10 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
                     chain={chain}
                     account={account}
                     spendableEth={spendable}
-                    initialAmountEth={onrampReturn.prefillEth}
+                    initialAmountEth={onrampReturn.prefillEth ?? (ticketAmountEth || undefined)}
                     fundsArrived={onrampReturn.fundsArrived}
                     onClose={onClose}
-                    onDone={() => {
-                      onPlaced()
-                      refreshAll()
-                    }}
+                    onDone={refreshAll}
                   />
                 )
               : undefined
@@ -832,6 +898,26 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
         )}
         </div>
         <StickyRail>
+        <div className="flex flex-col gap-4">
+        <TradeTicket
+          mode={marketMode}
+          title={knownCompetition ? competition.title : `DePrize #${deprizeId}`}
+          labels={predictionLabels}
+          colors={outcomeColors}
+          probabilities={
+            marketMode === 'bet'
+              ? market.outcomes.map((o) => o.probability)
+              : market.outcomes.map((_, i) => mooney.shares?.[i] ?? NaN)
+          }
+          order={marketMode === 'bet' ? rankedOutcomes.map((o) => o.index) : mooneyOrder}
+          resolved={showResolved}
+          bettingAllowed={bettingAllowed && !tradingHalted}
+          betUnavailableReason={betUnavailableReason}
+          amountEth={ticketAmountEth}
+          onAmountChange={setTicketAmountEth}
+          onPredict={handleBet}
+          onModeChange={setMarketMode}
+        />
         <PrizePoolSlot
           poolUsd={poolUsd}
           asOf={poolAsOf}
@@ -853,6 +939,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           labels={predictionLabels}
           bettorAddresses={bettorAddresses}
         />
+        </div>
         </StickyRail>
         <div className="flex flex-col gap-4 min-w-0 lg:col-start-1 lg:row-start-2">
         <ClaimSection>

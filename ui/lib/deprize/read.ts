@@ -37,32 +37,43 @@ export function deprizeReadChain(chainId: number) {
 // Never let more than a few reads hit the RPC at once (the app makes its own
 // requests too), and back off + retry the occasional "429 Too Many Requests".
 const MAX_CONCURRENT_READS = 3
+// Extra slots only priority reads may use, so a page with many markets
+// polling cannot starve the one read the user is waiting on.
+const PRIORITY_RESERVE = 2
 let activeReads = 0
-const readQueue: Array<() => void> = []
+const readQueue: Array<{ resolve: () => void; priority: boolean }> = []
 
-const acquireRead = () =>
+const capFor = (priority: boolean) =>
+  priority ? MAX_CONCURRENT_READS + PRIORITY_RESERVE : MAX_CONCURRENT_READS
+
+const acquireRead = (priority: boolean) =>
   new Promise<void>((resolve) => {
-    if (activeReads < MAX_CONCURRENT_READS) {
+    if (activeReads < capFor(priority)) {
       activeReads++
       resolve()
+    } else if (priority) {
+      const firstNormal = readQueue.findIndex((q) => !q.priority)
+      readQueue.splice(firstNormal < 0 ? readQueue.length : firstNormal, 0, { resolve, priority })
     } else {
-      readQueue.push(resolve)
+      readQueue.push({ resolve, priority })
     }
   })
 
 const releaseRead = () => {
   activeReads = Math.max(0, activeReads - 1)
-  const next = readQueue.shift()
-  if (next) {
+  const next = readQueue[0]
+  if (next && activeReads < capFor(next.priority)) {
+    readQueue.shift()
     activeReads++
-    next()
+    next.resolve()
   }
 }
 
 export async function rpcRead<T = any>(
-  args: Parameters<typeof readContract>[0]
+  args: Parameters<typeof readContract>[0],
+  opts?: { priority?: boolean }
 ): Promise<T> {
-  await acquireRead()
+  await acquireRead(!!opts?.priority)
   try {
     for (let attempt = 0; ; attempt++) {
       try {
