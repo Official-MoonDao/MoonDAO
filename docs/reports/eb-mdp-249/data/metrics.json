@@ -154,9 +154,9 @@
  "spendByMonth": {
   "2026-05": {
    "Reimbursement": 192.36,
-   "Prior-cycle pay owed": 7749.99,
+   "Prior-cycle pay owed": 8750.0,
    "Prior-cycle rewards & bonus (pass-through)": 6562.26,
-   "Payroll \u2014 May 2026": 23250.01
+   "Payroll \u2014 May 2026": 22250.0
   },
   "2026-06": {
    "Operations / sponsorship": 816.0,

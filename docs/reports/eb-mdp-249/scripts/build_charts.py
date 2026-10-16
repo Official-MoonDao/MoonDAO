@@ -444,6 +444,9 @@ for row in ledger:
             continue
         usd = t['amount'] if t['asset'] in ('USDC', 'DAI') else t['amount'] * STREAM_ETH_USD
         flow[row['date'][:7]][row['category']] += usd
+nonce40_month = next(r['date'][:7] for r in ledger if r['nonce'] == 40)
+flow[nonce40_month]['Payroll — May 2026'] -= sum(april_balance.values())
+flow[nonce40_month]['Prior-cycle pay owed'] += sum(april_balance.values())
 for s in streams:
     for k in range(s['days']):
         d = dt.date(2026, 6, 1) + dt.timedelta(days=k)
