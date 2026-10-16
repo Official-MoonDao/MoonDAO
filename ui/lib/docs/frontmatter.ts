@@ -28,7 +28,10 @@ function asStringList(value: unknown): string[] {
  * MoonDAO vault (string scalars, numeric scalars, and dash-lists). Not a
  * general YAML implementation — see DOCUMENTATION_EMBEDDING_VERIFICATION.md.
  */
-export function parseFrontmatter(raw: string): { frontmatter: DocsFrontmatter; body: string } {
+export function parseFrontmatter(input: string): { frontmatter: DocsFrontmatter; body: string } {
+  // A Windows checkout with `core.autocrlf=true` has CRLF line endings, which
+  // would otherwise drop every frontmatter key (tags, slug overrides, aliases).
+  const raw = input.replace(/\r\n?/g, '\n')
   const empty: DocsFrontmatter = {
     tags: [],
     keywords: [],
