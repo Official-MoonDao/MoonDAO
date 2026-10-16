@@ -32,6 +32,38 @@ type Props = {
   markers?: OddsMarker[]
   /** True while the on-chain history is still loading. */
   loading?: boolean
+  /** 'hero' — the index carousel: right axis, step lines, labeled end dots. */
+  variant?: 'default' | 'hero'
+}
+
+/** Hero end labels past this many outcomes stack on top of each other. */
+const HERO_END_LABELS = 2
+/** Two-line labels closer than this (percentage points) draw on top of each other. */
+const HERO_LABEL_GAP_PT = 12
+
+function HeroEndLabel(props: {
+  x?: number
+  y?: number
+  index?: number
+  value?: number
+  lastIndex: number
+  color: string
+  name: string
+}) {
+  const { x, y, index, value, lastIndex, color, name } = props
+  if (index !== lastIndex || x == null || y == null || value == null) return null
+  return (
+    <g>
+      <circle cx={x} cy={y} r={7} fill={color} opacity={0.25} />
+      <circle cx={x} cy={y} r={3.5} fill={color} />
+      <text x={x - 10} y={y - 8} textAnchor="end" fill={color} fontSize={11}>
+        {name.length > 18 ? `${name.slice(0, 17)}…` : name}
+      </text>
+      <text x={x - 10} y={y + 10} textAnchor="end" fill={color} fontSize={16} fontWeight={700}>
+        {Math.round(value)}%
+      </text>
+    </g>
+  )
 }
 
 export default function OddsHistoryChart({
@@ -42,7 +74,9 @@ export default function OddsHistoryChart({
   domainStartMs,
   markers = [],
   loading = false,
+  variant = 'default',
 }: Props) {
+  const hero = variant === 'hero'
   const outcomeCount = labels.length
 
   const { data, tMin, tMax, ticks, spanMs, dots } = useMemo(() => {
@@ -86,6 +120,32 @@ export default function OddsHistoryChart({
     return { data: rows, dots, ...domain }
   }, [history, outcomeCount, domainStartMs, markers])
 
+  const labeledOutcomes = useMemo(() => {
+    if (!hero || !data.length) return new Set<number>()
+    const last = data[data.length - 1]
+    const value = (i: number) => last[`v${i}`] ?? 0
+    const ranked = Array.from({ length: outcomeCount }, (_, i) => i).sort(
+      (a, b) => value(b) - value(a)
+    )
+    const picked: number[] = []
+    for (const i of ranked) {
+      if (picked.length >= HERO_END_LABELS) break
+      if (picked.every((p) => Math.abs(value(p) - value(i)) >= HERO_LABEL_GAP_PT)) picked.push(i)
+    }
+    return new Set(picked)
+  }, [hero, data, outcomeCount])
+
+  // The hero chart is narrow; keep ticks at least a sixth of the span apart.
+  const xTicks = useMemo(() => {
+    if (!hero || spanMs <= 0) return ticks
+    const kept: number[] = []
+    for (const t of ticks) {
+      if (!kept.length || t - kept[kept.length - 1] >= spanMs / 6) kept.push(t)
+      else if (t === ticks[ticks.length - 1]) kept[kept.length - 1] = t
+    }
+    return kept
+  }, [hero, ticks, spanMs])
+
   if (data.length < 2) {
     return (
       <div
@@ -99,20 +159,33 @@ export default function OddsHistoryChart({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-        <CartesianGrid stroke="#ffffff12" vertical={false} />
+      <LineChart
+        data={data}
+        margin={
+          hero
+            ? { top: 12, right: 0, bottom: 0, left: 0 }
+            : { top: 8, right: 16, bottom: 8, left: 0 }
+        }
+      >
+        <CartesianGrid
+          stroke={hero ? '#ffffff14' : '#ffffff12'}
+          strokeDasharray={hero ? '2 4' : undefined}
+          vertical={false}
+        />
         <XAxis
           dataKey="t"
           type="number"
           scale="linear"
           domain={[tMin, tMax]}
-          ticks={ticks}
+          ticks={xTicks}
           tickFormatter={(t) => formatOddsTick(Number(t), spanMs)}
           tick={{ fill: '#9ca3af', fontSize: 11, textAnchor: 'middle' }}
           stroke="#ffffff22"
+          axisLine={!hero}
+          tickLine={!hero}
           interval={0}
           minTickGap={0}
-          padding={{ left: 8, right: 8 }}
+          padding={hero ? { left: 20, right: 12 } : { left: 8, right: 8 }}
         />
         <YAxis
           domain={[0, 100]}
@@ -120,7 +193,10 @@ export default function OddsHistoryChart({
           tickFormatter={(v) => `${v}%`}
           tick={{ fill: '#9ca3af', fontSize: 11 }}
           stroke="#ffffff22"
-          width={48}
+          orientation={hero ? 'right' : 'left'}
+          axisLine={!hero}
+          tickLine={!hero}
+          width={hero ? 40 : 48}
         />
         <Tooltip
           contentStyle={{
@@ -136,18 +212,32 @@ export default function OddsHistoryChart({
             return [`${Number(value).toFixed(1)}%`, labels[idx]]
           }}
         />
-        {Array.from({ length: outcomeCount }, (_, i) => (
-          <Line
-            key={i}
-            type="monotone"
-            dataKey={`v${i}`}
-            stroke={colors[i % colors.length]}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-            connectNulls
-          />
-        ))}
+        {Array.from({ length: outcomeCount }, (_, i) => i)
+          .sort((a, b) => Number(labeledOutcomes.has(a)) - Number(labeledOutcomes.has(b)))
+          .map((i) => (
+            <Line
+              key={i}
+              type={hero ? 'stepAfter' : 'monotone'}
+              dataKey={`v${i}`}
+              stroke={colors[i % colors.length]}
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+              connectNulls
+              label={
+                labeledOutcomes.has(i)
+                  ? (p: any) => (
+                      <HeroEndLabel
+                        {...p}
+                        lastIndex={data.length - 1}
+                        color={colors[i % colors.length]}
+                        name={labels[i] ?? ''}
+                      />
+                    )
+                  : undefined
+              }
+            />
+          ))}
         {dots.map((d, i) => (
           <ReferenceDot
             key={`m${i}`}

@@ -2,6 +2,12 @@ import TestnetProviders from '@/cypress/mock/TestnetProviders'
 import { getAttribute } from '@/lib/utils/nft'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
 
+function replaceField(selector: string, current: string, next: string) {
+  cy.get(selector).should('have.value', current)
+  cy.get(selector).scrollIntoView().type(`{selectall}${next}`)
+  cy.get(selector).should('have.value', next)
+}
+
 describe('<CitizenMetadataModal /> ', () => {
   let nft: any
   let props: any
@@ -84,35 +90,32 @@ describe('<CitizenMetadataModal /> ', () => {
   })
 
   it('Allows editing form fields', () => {
-    // Ensure useEffect has populated the form before interacting
-    cy.get('#citizen-name-input').should('have.value', nft.metadata.name)
-
-    cy.get('#citizen-name-input').clear().type('New Name')
-    cy.get('#citizen-name-input').should('have.value', 'New Name')
-
-    cy.get('#citizen-bio-input').clear().type('New Bio')
-    cy.get('#citizen-bio-input').should('have.value', 'New Bio')
-
-    cy.get('#citizen-location-input').clear().type('New Location')
-    cy.get('#citizen-location-input').should('have.value', 'New Location')
-
-    cy.get('#citizen-discord-input').clear().type('newdiscord')
-    cy.get('#citizen-discord-input').should('have.value', 'newdiscord')
+    // Ensure useEffect has populated the form before interacting.
+    // Select-all in one type() call. clear() then type() races these
+    // controlled inputs, and the failure screenshot of the modal times out.
+    replaceField('#citizen-name-input', nft.metadata.name, 'New Name')
+    replaceField('#citizen-bio-input', nft.metadata.description, 'New Bio')
+    replaceField(
+      '#citizen-location-input',
+      getAttribute(nft.metadata.attributes, 'location').value,
+      'New Location'
+    )
+    replaceField(
+      '#citizen-discord-input',
+      getAttribute(nft.metadata.attributes, 'discord').value,
+      'newdiscord'
+    )
   })
 
   it('Keeps Update Profile button disabled until checkbox is checked', () => {
     // Wait for form initialization before asserting button state
     cy.get('#citizen-name-input').should('have.value', nft.metadata.name)
 
-    cy.contains('Update Profile')
-      .closest('button')
-      .should('be.disabled')
+    cy.contains('Update Profile').closest('button').should('be.disabled')
 
     cy.get('input[type="checkbox"]').check({ force: true })
 
-    cy.contains('Update Profile')
-      .closest('button')
-      .should('not.be.disabled')
+    cy.contains('Update Profile').closest('button').should('not.be.disabled')
   })
 
   it('Toggles the Update Email section', () => {

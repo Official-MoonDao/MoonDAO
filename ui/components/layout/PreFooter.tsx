@@ -63,7 +63,7 @@ export default function PreFooter({ mode = 'Default' }) {
                 Want to help? Learn how to contribute to our mission, even if you're new to Web3,
                 and get weekly updates.
               </p>
-              <MailingList />
+              <MailingList ctaLocation="footer" />
             </div>
           </div>
         </div>

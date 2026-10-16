@@ -1,9 +1,11 @@
 import type { KeyboardEvent, ReactNode } from 'react'
+import { DEPRIZE_PREDICT_CTA } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import EthUsd from '@/components/deprize/EthUsd'
+import { payoutMultiple } from '@/components/deprize/MarketOutcomeRow'
 import { TOUCH } from '@/components/deprize/detail/primitives'
 
 type DePrizeTeamCardProps = {
@@ -80,6 +82,11 @@ type DePrizeTeamCardProps = {
    * listing never reads as an endorsement. See ROSTER_DISCLAIMER.
    */
   unclaimed?: boolean
+  /**
+   * Which market this row belongs to. 'bet' shows ETH staked and payout;
+   * 'predict' shows Citizen voting power. Omit for the combined row.
+   */
+  mode?: 'bet' | 'predict'
 }
 
 /** Dashed-circle mark for the Open Field slot, which has no Team NFT. */
@@ -138,6 +145,7 @@ export default function DePrizeTeamCard({
   vehicleLabel,
   imageOverride,
   unclaimed = false,
+  mode,
 }: DePrizeTeamCardProps) {
   const holding = Number.isFinite(outcome.balance) && outcome.balance > 0
   const showHoldings = !!onCashOut && holding
@@ -156,8 +164,11 @@ export default function DePrizeTeamCard({
   const votingPowerText =
     citizenVotingPower === undefined ? undefined : formatVotingPower(citizenVotingPower)
   const predictionNoun = predictionCount === 1 ? 'prediction' : 'predictions'
+  const ctaLabel = mode === 'bet' ? 'Bet' : DEPRIZE_PREDICT_CTA
   const predictAria = !cardIsButton
     ? undefined
+    : mode === 'bet'
+    ? `Bet ETH on ${predictName}`
     : votingPowerText === undefined
     ? `Predict ${predictName} as the winner`
     : predictionCount
@@ -177,61 +188,25 @@ export default function DePrizeTeamCard({
       tabIndex={cardIsButton ? 0 : undefined}
       aria-label={predictAria}
       aria-pressed={cardIsButton ? highlighted : undefined}
-      className={`relative w-full overflow-hidden px-4 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg ${
+      className={`relative w-full overflow-hidden px-3 py-3 sm:px-4 rounded-xl border border-transparent transition-colors ${
         resolved && isWinningSlot
-          ? 'border-emerald-400/40 ring-1 ring-emerald-400/20'
+          ? 'border-emerald-400/40 bg-emerald-500/[0.06]'
           : highlighted
-          ? 'border-amber-300/80 ring-1 ring-amber-300/45'
+          ? 'border-amber-300/70 bg-amber-300/[0.05]'
           : ''
       } ${
         canPredict
-          ? `cursor-pointer hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 transition-colors ${
-              highlighted ? 'hover:border-amber-300' : 'hover:border-indigo-400/40'
+          ? `group cursor-pointer hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/50 ${
+              highlighted ? 'hover:border-amber-300' : ''
             }`
           : ''
       }`}
       onClick={canPredict ? predict : undefined}
       onKeyDown={canPredict ? onCardKeyDown : undefined}
     >
-      {/* Top row: chance/result · team. The card itself is the predict control. */}
-      <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-        {/* Hard minimums here used to wrap the name under the odds on a phone:
-            at 320px the two blocks alone asked for more than the card had. */}
-        <div className="flex items-center gap-3 sm:min-w-[96px]">
-          <span
-            className="inline-block w-1.5 h-8 rounded-full shrink-0"
-            style={{ background: color }}
-          />
-          <div>
-            <p
-              className={`text-xl font-bold leading-none tabular-nums ${
-                resolved
-                  ? isWinningSlot
-                    ? 'text-emerald-400'
-                    : isRefundVector
-                    ? 'text-white'
-                    : 'text-gray-500'
-                  : 'text-white'
-              }`}
-            >
-              {resolved
-                ? isWinningSlot
-                  ? 'WON'
-                  : isRefundVector
-                  ? 'Refund'
-                  : 'Lost'
-                : Number.isNaN(outcome.probability)
-                ? loading
-                  ? '…'
-                  : '—'
-                : `${fmt(outcome.probability, 0)}%`}
-            </p>
-            {!resolved && (
-              <p className="text-gray-500 text-[10px] mt-0.5 uppercase tracking-wide">{chanceLabel}</p>
-            )}
-          </div>
-        </div>
-
+      {/* Polymarket-style row: team · chance · payout · predict pill. The
+          whole row is the predict control; the pill is only its label. */}
+      <div className="flex items-center gap-3 sm:gap-4">
         <div className="flex-1 min-w-0 sm:min-w-[150px] flex flex-col gap-0.5">
           <div className="flex items-center gap-2 flex-wrap">
             <DePrizeTeamLink
@@ -270,9 +245,35 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {votingPowerText !== undefined && (
+        {mode === 'bet' && (
+          <div className="hidden md:block shrink-0 text-right" data-staked-eth={stakedEth ?? 0}>
+            <p className="text-sm font-semibold leading-none tabular-nums text-white">
+              <EthUsd eth={stakedEth ?? 0} />
+            </p>
+            <p className="mt-1 text-[11px] leading-tight text-gray-400">bet on this market</p>
+          </div>
+        )}
+
+        {mode === 'predict' && votingPowerText !== undefined && (
           <div
-            className="ml-auto shrink-0 text-right"
+            className="hidden md:block shrink-0 text-right"
+            data-citizen-voting-power={citizenVotingPower}
+            data-prediction-count={predictionCount ?? 0}
+          >
+            <p className="text-sm font-semibold leading-none tabular-nums text-white">
+              {votingPowerText} {FORECAST_COPY.votingPower}
+            </p>
+            <p className="mt-1 text-[11px] leading-tight text-gray-400">
+              {predictionCount
+                ? `from ${predictionCount} ${predictionCount === 1 ? 'person' : 'people'}`
+                : 'no predictions yet'}
+            </p>
+          </div>
+        )}
+
+        {mode === undefined && votingPowerText !== undefined && (
+          <div
+            className="hidden md:block shrink-0 text-right"
             data-citizen-voting-power={citizenVotingPower}
             data-prediction-count={predictionCount ?? 0}
             title={
@@ -291,6 +292,54 @@ export default function DePrizeTeamCard({
                 : ''}
             </p>
           </div>
+        )}
+
+        <div className="shrink-0 w-16 sm:w-20 text-right">
+          <p
+            className={`text-xl sm:text-2xl font-bold leading-none tabular-nums ${
+              resolved
+                ? isWinningSlot
+                  ? 'text-emerald-400'
+                  : isRefundVector
+                  ? 'text-white'
+                  : 'text-gray-500'
+                : 'text-white'
+            }`}
+          >
+            {resolved
+              ? isWinningSlot
+                ? 'WON'
+                : isRefundVector
+                ? 'Refund'
+                : 'Lost'
+              : Number.isNaN(outcome.probability)
+              ? loading
+                ? '…'
+                : '—'
+              : `${fmt(outcome.probability, 0)}%`}
+          </p>
+          {!resolved && (
+            <p className="text-gray-500 text-[10px] mt-1 uppercase tracking-wide">{chanceLabel}</p>
+          )}
+        </div>
+
+        {!resolved && mode !== 'predict' && (
+          <span
+            className="hidden sm:block shrink-0 w-12 text-right text-xs tabular-nums text-gray-400"
+            title="ETH paid per 1 ETH predicted if this wins, at the current price"
+          >
+            {payoutMultiple(outcome.probability) ?? ''}
+          </span>
+        )}
+
+        {canPredict && !actions && (
+          <span
+            aria-hidden
+            className="shrink-0 rounded-lg px-3 sm:px-5 py-2 text-sm font-semibold text-white shadow-sm transition-[filter] group-hover:brightness-110"
+            style={{ background: color }}
+          >
+            {ctaLabel}
+          </span>
         )}
 
         {actions ? (

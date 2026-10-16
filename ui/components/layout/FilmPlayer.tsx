@@ -3,7 +3,7 @@ import { networkCard } from '@/lib/layout/styles'
 import { useAmbientVideo } from '@/lib/utils/hooks/useAmbientVideo'
 import CtaButton from '@/components/home/landing/CtaButton'
 
-const VIMEO_ORIGIN = 'https://player.vimeo.com'
+export const VIMEO_ORIGIN = 'https://player.vimeo.com'
 
 export type Film = {
   /** Shown as the iframe title and in the play button's accessible name. */
@@ -41,7 +41,7 @@ type FilmPlayerProps = {
 // Talks to the Vimeo iframe over its postMessage API rather than loading
 // player.js: the SDK is not in the CSP script-src, and everything we need
 // (ready, play, timeupdate, ended, and the play command) works without it.
-function postToVimeo(iframe: HTMLIFrameElement | null, method: string, value?: string | number) {
+export function postToVimeo(iframe: HTMLIFrameElement | null, method: string, value?: string | number) {
   iframe?.contentWindow?.postMessage(
     JSON.stringify(value === undefined ? { method } : { method, value }),
     VIMEO_ORIGIN

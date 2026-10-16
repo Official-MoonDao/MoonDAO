@@ -375,5 +375,9 @@ module.exports = defineConfig({
       ...NODE_UNIT_SPECS,
     ],
     video: false,
+    // A hung Chrome renderer on shared GitHub runners fails a test before its
+    // first assertion (e.g. `cy.screenshot()` timing out). One retry absorbs that
+    // without hiding failures that reproduce.
+    retries: { runMode: process.env.GITHUB_ACTIONS === 'true' ? 1 : 0, openMode: 0 },
   },
 })

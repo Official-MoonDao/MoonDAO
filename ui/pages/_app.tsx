@@ -1,27 +1,33 @@
+import { PrivyProvider } from '@privy-io/react-auth'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { DEFAULT_CHAIN_V5 } from 'const/defaultChain'
 import { FlagProvider } from 'const/flags'
-import { nextDeprizeChainPin } from '@/lib/deprize/deprizeChainPin'
-import { chainForDeprizePath } from '@/lib/deprize/route-chain'
 import { SessionProvider } from 'next-auth/react'
 import { NextQueryParamProvider } from 'next-query-params'
 import { useRouter } from 'next/router'
 import React, { useEffect, useState, useMemo, startTransition } from 'react'
 import { Chain as ChainV5 } from 'thirdweb/chains'
-import { useLightMode } from '../lib/utils/hooks/useLightMode'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import { getChainById } from '@/lib/thirdweb/chain'
-import { PrivyProvider } from '@privy-io/react-auth'
 import { ThirdwebProvider } from 'thirdweb/react'
-import { PrivyThirdwebV5Provider } from '@/lib/privy/PrivyThirdwebV5Provider'
-import { privyDefaultChain } from '@/lib/privy/privyDefaultChain'
-import { WalletChainSync } from '@/lib/privy/WalletChainSync'
+import { useLightMode } from '../lib/utils/hooks/useLightMode'
 import CitizenProvider from '@/lib/citizen/CitizenProvider'
-import { reportWebVitals as reportVitals, monitorLongTasks, monitorPageVisibility, NextWebVitalsMetric } from '@/lib/performance/webVitals'
-import AttributionCapture from '@/components/analytics/AttributionCapture'
+import { nextDeprizeChainPin } from '@/lib/deprize/deprizeChainPin'
+import { chainForDeprizePath } from '@/lib/deprize/route-chain'
+import {
+  reportWebVitals as reportVitals,
+  monitorLongTasks,
+  monitorPageVisibility,
+  NextWebVitalsMetric,
+} from '@/lib/performance/webVitals'
+import { PrivyThirdwebV5Provider } from '@/lib/privy/PrivyThirdwebV5Provider'
+import { WalletChainSync } from '@/lib/privy/WalletChainSync'
+import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { privyDefaultChain } from '@/lib/privy/privyDefaultChain'
+import { getChainById } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
+import AttributionCapture from '@/components/analytics/AttributionCapture'
+import { Ga4Identity } from '@/components/analytics/Ga4Identity'
 import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
 import '../styles/globals.css'
 
@@ -134,6 +140,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
             }}
           >
             <ThirdwebProvider>
+              <Ga4Identity />
               <WalletChainSync />
               <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
                 <CitizenProvider selectedChain={selectedChainV5}>

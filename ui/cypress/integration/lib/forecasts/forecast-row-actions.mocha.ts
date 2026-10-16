@@ -128,33 +128,38 @@ describe('deprize forecast row action wiring', () => {
     }
   })
 
-  it('opens one prediction window from the competitor card', () => {
+  it('opens one window per market from the competitor card', () => {
     const src = readUi('components/deprize/ForecastPanel.tsx')
     expect(src).to.include('PredictModal')
+    expect(src).to.include('mode={mode}')
     expect(src).to.not.include('pickLabel')
     expect(src).to.not.include('Back with ETH')
     expect(src).to.not.include('Citizen prediction')
+    // A bet never saves a MOONEY prediction behind the visitor's back.
+    expect(src).to.not.include('attachPrediction')
     const modal = readUi('components/deprize/PredictModal.tsx')
-    expect(modal).to.not.include('No bet attached')
-    expect(modal).to.include('Attach a bet')
-    expect(modal).to.include('aria-expanded={betOpen}')
-    expect(modal).to.include('setBetOpen((open) => !open)')
-    expect(modal).to.include('Optional. Open to add an ETH bet.')
+    expect(modal).to.include("mode: 'bet' | 'predict'")
+    expect(modal).to.include('Bet on ${props.teamName}')
+    expect(modal).to.include('Predict ${props.teamName}')
     expect(modal).to.include('{props.bet}')
-    const shell = modal.slice(
-      modal.indexOf('data-testid="deprize-predict-bet"'),
-      modal.indexOf('id="deprize-predict-bet-panel"')
-    )
-    expect(shell).to.include('overflow-hidden rounded-xl border border-white/15')
-    const attachButton = modal.slice(
-      modal.lastIndexOf('<button', modal.indexOf('aria-expanded={betOpen}')),
-      modal.indexOf('</button>', modal.indexOf('aria-expanded={betOpen}'))
-    )
-    expect(attachButton).to.not.include('rounded-xl')
-    expect(attachButton).to.not.include('border')
-    expect(modal).to.not.include('This spends ETH and changes the odds.')
+    // The bet form is the whole bet window, not an optional panel inside the prediction.
+    expect(modal).to.not.include('Attach a bet')
+    expect(modal).to.not.include('setBetOpen')
+    expect(modal).to.not.include('No bet attached')
     expect(modal).to.not.include('Add a bet')
     expect(modal).to.not.include('Save prediction')
+  })
+
+  it('switches the race page between the ETH market and the MOONEY forecast', () => {
+    const tabs = readUi('components/deprize/detail/MarketModeTabs.tsx')
+    expect(tabs).to.include('role="tablist"')
+    expect(tabs).to.include('ETH market')
+    expect(tabs).to.include('MOONEY forecast')
+    const page = readUi('pages/deprize/[id].tsx')
+    expect(page).to.include('<MarketModeTabs')
+    expect(page).to.match(/viewQuery === 'predict'/)
+    expect(page).to.match(/restricted \? 'predict' : 'bet'/)
+    expect(page).to.include('mode={marketMode}')
   })
 })
 

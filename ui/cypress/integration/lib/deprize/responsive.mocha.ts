@@ -33,6 +33,8 @@ const TOUCH_CONSUMERS = [
   'components/deprize/BetModal.tsx',
   'components/deprize/LiveDePrizeHero.tsx',
   'components/deprize/DePrizeIndexContent.tsx',
+  'components/deprize/MarketOutcomeRow.tsx',
+  'components/deprize/HeroCarousel.tsx',
   'components/deprize/detail/PrizeHeader.tsx',
   'components/deprize/detail/PrizePoolSlot.tsx',
 ]
@@ -63,13 +65,13 @@ describe('deprize responsive layout', () => {
     expect(scroll, 'a nested list must not steal the page scroll').to.match(/overscroll-contain/)
   })
 
-  it('lets the prize column follow the page and scroll itself when it is taller than the viewport', () => {
+  it('lets the prize column follow the page and pin by its bottom when it is taller than the viewport', () => {
     const src = readUi('components/deprize/detail/StickyRail.tsx')
     expect(src, 'css sticky is trapped by the page scroll containers').to.match(/position:\s*'fixed'/)
     expect(src, 'a column taller than the viewport traps its tail').to.match(
-      /lg:max-h-\[calc\(100vh/
+      /window\.innerHeight - BOTTOM_GAP - height/
     )
-    expect(src).to.match(/lg:overflow-y-auto/)
+    expect(src, 'a nested scroll box steals the page scroll').to.not.match(/overflow-y-auto/)
     expect(readUi('pages/deprize/[id].tsx')).to.match(/<StickyRail>/)
   })
 
@@ -192,9 +194,9 @@ describe('deprize responsive layout', () => {
     expect(page).to.match(/volumeEth=\{[\s\S]*totalStakedEth/)
   })
 
-  it('left-aligns the hero prize figure once it wraps under the title', () => {
+  it('keeps the hero prize figure under the outcomes, not beside the title', () => {
     const src = readUi('components/deprize/LiveDePrizeHero.tsx')
-    expect(src).to.match(/w-full sm:w-auto text-left sm:text-right/)
+    expect(src).to.match(/pool=\{<PrizeAvailable/)
     expect(src, 'a shrink-0 block cannot share a line with a long title').to.not.match(
       /className="text-right shrink-0"/
     )

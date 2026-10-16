@@ -34,6 +34,14 @@ import {
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useWindowSize from '../../lib/team/use-window-size'
+import {
+  classifyMintError,
+  setIsCitizen,
+  trackBeginCheckout,
+  trackMintError,
+  trackMintSuccess,
+  transactionIdFromReceipt,
+} from '@/lib/analytics/ga4'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useOnrampAutoTransaction } from '@/lib/coinbase/useOnrampAutoTransaction'
 import { useOnrampInitialStage } from '@/lib/coinbase/useOnrampInitialStage'
@@ -79,6 +87,7 @@ import {
   useCitizenCheckoutLive,
   quoteMinMooneyOut,
   unlockedStakeFromReceipt,
+  usePublicYearEth,
   walletPaymentForTreasury,
 } from '@/lib/subscription/citizenCheckout'
 import { rememberUnlockedCitizenshipMooney } from '@/lib/subscription/citizenshipMooneyClaim'
@@ -527,6 +536,8 @@ export default function CreateCitizen({
 
   // ===== Refs =====
   const hasRestoredFormDataRef = useRef(false)
+  const paidWithCardRef = useRef(false)
+  const citizenCheckoutTracked = useRef(false)
   const imagesRestoredRef = useRef(false)
   const agreedToConditionRef = useRef(agreedToCondition)
   const citizenDataRef = useRef(citizenData)
@@ -694,12 +705,72 @@ export default function CreateCitizen({
     mintCostBreakdown.renewalEth,
     'ETH_TO_USD'
   )
+  const publicYearEth = usePublicYearEth('citizen')
+  const {
+    data: publicYearUsd,
+    isLoading: isLoadingPublicYearUsd,
+    ethPrice: publicEthPrice,
+  } = useETHPrice(publicYearEth ?? 0, 'ETH_TO_USD')
   const { data: totalMintUsd, isLoading: isLoadingTotalMintUsd } = useETHPrice(
     mintCostBreakdown.totalEth,
     'ETH_TO_USD'
   )
 
   const discountDueEth = discountQuote ? Number(ethers.utils.formatEther(discountQuote.dueWei)) : 0
+
+  // Funnel step: /citizen mint flow started. One begin_checkout per visit,
+  // after the on-chain year price (or a resolved invite) is known.
+  useEffect(() => {
+    if (router.isReady && router.query.onrampSuccess === 'true') {
+      paidWithCardRef.current = true
+    }
+  }, [router.isReady, router.query.onrampSuccess])
+
+  useEffect(() => {
+    if (citizenCheckoutTracked.current) return
+    if (inviteToken && invitePending) return
+
+    let valueEth: number | null = null
+    if (freeMint && !discountQuote) valueEth = 0
+    else if (discountQuote) valueEth = discountDueEth
+    else if (publicYearEth != null && !isLoadingPublicYearUsd) valueEth = publicYearEth
+    else if (renewalPriceWei != null && !isLoadingRenewalUsd) {
+      valueEth = Number(ethers.utils.formatEther(renewalPriceWei))
+    }
+    if (valueEth == null || !Number.isFinite(valueEth)) return
+
+    let valueUsd = 0
+    if (valueEth > 0) {
+      if (publicEthPrice) valueUsd = Math.round(valueEth * publicEthPrice)
+      else if (publicYearEth && publicYearEth > 0 && publicYearUsd) {
+        valueUsd = Math.round((Number(publicYearUsd) * valueEth) / publicYearEth)
+      } else if (!isLoadingRenewalUsd && renewalUsd) {
+        valueUsd = Math.round(Number(renewalUsd))
+      } else return
+    }
+
+    citizenCheckoutTracked.current = true
+    trackBeginCheckout({
+      plan: 'citizen',
+      payment_method: paidWithCardRef.current ? 'card' : 'crypto',
+      value_eth: valueEth,
+      value: valueUsd,
+    })
+  }, [
+    inviteToken,
+    invitePending,
+    freeMint,
+    discountQuote,
+    discountDueEth,
+    publicYearEth,
+    publicYearUsd,
+    publicEthPrice,
+    isLoadingPublicYearUsd,
+    renewalPriceWei,
+    renewalUsd,
+    isLoadingRenewalUsd,
+  ])
+
   const discountFullEth = discountQuote
     ? Number(ethers.utils.formatEther(discountQuote.fullPriceWei))
     : 0
@@ -1073,6 +1144,13 @@ export default function CreateCitizen({
       // Celebrate: show the welcome screen and fire confetti.
       setMintComplete(true)
       fireCelebrationConfetti()
+
+      // Flag the dashboard tour for this device. Backs up the ?tour=1 query in
+      // case the citizen closes the tab on the welcome screen or the redirect
+      // loses the query. Renewals don't pass through here, so they never set it.
+      try {
+        localStorage.setItem('dashboardTourPending', '1')
+      } catch {}
 
       // Fire-and-forget: announce the new citizen in Discord. Pass the portrait
       // URI and bio we just wrote on-chain so the server can upload the image
@@ -1551,6 +1629,7 @@ export default function CreateCitizen({
       }
     }
 
+    let mintReported = false
     try {
       // Get cost and check balance
       const cost: any = await readContractWithRetry({
@@ -1576,6 +1655,7 @@ export default function CreateCitizen({
         const needed = due + transferGas
         if ((nativeBalanceWei ?? BigInt(0)) < needed) {
           const shortfall = needed - (nativeBalanceWei ?? BigInt(0))
+          paidWithCardRef.current = true
           setRequiredEthAmount((Number(shortfall) / 1e18) * 1.15)
           setOnrampModalOpen(true)
           setIsLoadingMint(false)
@@ -1593,6 +1673,7 @@ export default function CreateCitizen({
           const shortfall = totalCost - +(nativeBalance ?? '0')
           const requiredAmount = shortfall * 1.15
 
+          paidWithCardRef.current = true
           setRequiredEthAmount(requiredAmount)
           setOnrampModalOpen(true)
           setIsLoadingMint(false)
@@ -1605,6 +1686,7 @@ export default function CreateCitizen({
       const { cid: newImageIpfsHash } = await pinBlobOrFile(renamedCitizenImage)
 
       if (!newImageIpfsHash) {
+        trackMintError({ plan: 'citizen', error_type: 'network', step: 'ipfs' })
         setIsLoadingMint(false)
         return toast.error('Image upload to IPFS failed. Please try again.')
       }
@@ -1668,16 +1750,46 @@ export default function CreateCitizen({
       const mintedTokenId = extractTokenIdFromReceipt(receipt)
 
       if (!mintedTokenId) {
+        trackMintError({ plan: 'citizen', error_type: 'unknown', step: 'confirm' })
         setIsLoadingMint(false)
         return toast.error('Mint unverified — check your wallet or contact support.')
       }
 
       if (mintedTokenId) {
+        let valueEth = 0
+        if (!(freeMint && !discountQuote)) {
+          if (discountQuote) valueEth = discountDueEth
+          else if (renewalPriceWei != null) {
+            valueEth = Number(ethers.utils.formatEther(renewalPriceWei))
+          } else if (publicYearEth != null) valueEth = publicYearEth
+        }
+        const valueUsd =
+          valueEth > 0 && publicEthPrice
+            ? Math.round(valueEth * publicEthPrice)
+            : valueEth > 0 && renewalUsd
+            ? Math.round(Number(renewalUsd))
+            : 0
+        trackMintSuccess({
+          plan: 'citizen',
+          value_eth: valueEth,
+          value: valueUsd,
+          transaction_id: transactionIdFromReceipt(receipt),
+          payment_method: paidWithCardRef.current ? 'card' : 'crypto',
+        })
+        setIsCitizen(true)
+        mintReported = true
         await handlePostMint(mintedTokenId, profile, `ipfs://${newImageIpfsHash}`)
         setIsLoadingMint(false)
       }
     } catch (err: any) {
       console.error(err)
+      if (!mintReported) {
+        trackMintError({
+          plan: 'citizen',
+          error_type: classifyMintError(err),
+          step: 'mint',
+        })
+      }
       // A TypeError mentioning "buffer" is viem failing to decode an empty RPC
       // response — a transient network issue, not a user-actionable error.
       const isRpcDecodeError = err instanceof TypeError && String(err?.message).includes('buffer')
@@ -1714,6 +1826,11 @@ export default function CreateCitizen({
     executeDirectMint,
     handlePostMint,
     selectedChain,
+    discountDueEth,
+    renewalPriceWei,
+    publicYearEth,
+    publicEthPrice,
+    renewalUsd,
   ])
 
   // Balance Check Handler
@@ -2272,7 +2389,7 @@ export default function CreateCitizen({
   // Navigate to the citizen dashboard (context is already seeded, so it renders
   // immediately instead of bouncing to the marketing homepage).
   const goToDashboard = useCallback(() => {
-    router.push('/dashboard')
+    router.push('/dashboard?tour=1')
   }, [router])
 
   // Memoize the welcome image object URL so the overlay doesn't allocate a new

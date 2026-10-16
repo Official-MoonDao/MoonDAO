@@ -24,6 +24,7 @@ import {
   ExclamationTriangleIcon,
   XMarkIcon,
   ChatBubbleLeftRightIcon,
+  PlayCircleIcon,
 } from '@heroicons/react/24/outline'
 import { useFundWallet } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
@@ -49,6 +50,7 @@ import {
   TEAM_ADDRESSES,
   USD_BUDGET,
   ANNOUNCE_PROJECT_BUDGET,
+  DASHBOARD_TOUR_VIMEO_URL,
 } from 'const/config'
 import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import {
@@ -59,7 +61,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useContext, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -88,6 +90,7 @@ import { NewsletterSubModal } from '@/components/newsletter/NewsletterSubModal'
 import { SendModal } from '@/components/privy/PrivyConnectWallet'
 import { useWalletTokens } from '@/components/privy/PrivyConnectWallet'
 import CitizenMetadataModal from '@/components/subscription/CitizenMetadataModal'
+import type { DashboardTourSource } from '@/components/home/DashboardTourModal'
 import CitizenRenewalStatus from '@/components/subscription/CitizenRenewalStatus'
 import ClaimCitizenshipMooney from '@/components/subscription/ClaimCitizenshipMooney'
 import WeeklyRewardPool from '@/components/tokens/WeeklyRewardPool'
@@ -117,6 +120,11 @@ function getCitizenLocation(citizen: any): string | null {
     return trimmed
   }
 }
+
+// Loaded on demand so a normal dashboard visit ships no tour code or iframe.
+const DashboardTourModal = dynamic(() => import('@/components/home/DashboardTourModal'), {
+  ssr: false,
+})
 
 // Get citizen metadata for card (location, or fallback to twitter/discord handle)
 function getCitizenMetadata(citizen: any): string | null {
@@ -410,6 +418,63 @@ export default function SignedInDashboard({
         )}?edit=1`
       : '/join'
 
+  // Dashboard tour. Auto-opens once per citizen per device on the first
+  // dashboard visit after minting (the mint flow sets ?tour=1 and a
+  // localStorage flag); any citizen can replay it from the header link.
+  const [tourOpen, setTourOpen] = useState(false)
+  const [tourSource, setTourSource] = useState<DashboardTourSource>('header')
+  const tourOpenerRef = useRef<HTMLElement | null>(null)
+  const hasCitizen = !!citizen
+  const tourQuery = router.query.tour
+  useEffect(() => {
+    if (!DASHBOARD_TOUR_VIMEO_URL || !router.isReady || router.pathname !== '/dashboard') return
+    // Right after mint the citizen can be seeded before its id resolves; wait.
+    if (!hasCitizen || !citizenId) return
+    const fromQuery = tourQuery === '1'
+    let pending = false
+    let seen = false
+    const seenKey = `dashboardTourSeen:${citizenId}`
+    try {
+      pending = localStorage.getItem('dashboardTourPending') === '1'
+      seen = localStorage.getItem(seenKey) === '1'
+    } catch {}
+    if (!fromQuery && !pending) return
+    const clearSignals = () => {
+      try {
+        localStorage.removeItem('dashboardTourPending')
+      } catch {}
+      // Strip ?tour=1 so a refresh doesn't reopen it.
+      if (fromQuery) router.replace('/dashboard', undefined, { shallow: true })
+    }
+    if (seen) {
+      clearSignals()
+      return
+    }
+    // Let the dashboard paint first so the film opens over it.
+    const timer = setTimeout(() => {
+      // Marked seen on open, so it auto-shows once even if they refresh mid-film.
+      try {
+        localStorage.setItem(seenKey, '1')
+      } catch {}
+      clearSignals()
+      tourOpenerRef.current = null
+      setTourSource('mint')
+      setTourOpen(true)
+    }, 500)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.isReady, router.pathname, hasCitizen, citizenId, tourQuery])
+
+  const openTour = (e: React.MouseEvent<HTMLElement>) => {
+    tourOpenerRef.current = e.currentTarget
+    setTourSource('header')
+    setTourOpen(true)
+  }
+  const closeTour = () => {
+    setTourOpen(false)
+    tourOpenerRef.current?.focus()
+  }
+
   const account = useActiveAccount()
   const address = account?.address
 
@@ -572,6 +637,16 @@ export default function SignedInDashboard({
           </div>
           {/* Edit profile link */}
           <div className="flex items-center gap-2 flex-shrink-0 ml-[60px] sm:ml-0">
+            {citizen && DASHBOARD_TOUR_VIMEO_URL && (
+              <button
+                type="button"
+                onClick={openTour}
+                className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-white transition-colors px-2.5 py-1.5 bg-white/5 rounded-lg border border-white/10"
+              >
+                <PlayCircleIcon className="w-3.5 h-3.5" />
+                Tour
+              </button>
+            )}
             <Link
               href={
                 citizen?.metadata?.name && (citizen?.metadata?.id ?? citizen?.id)
@@ -649,6 +724,7 @@ export default function SignedInDashboard({
                   {!citizen && (
                     <Link
                       href="/join"
+                      data-cta-location="dashboard"
                       className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-purple-500/15 border border-purple-400/30 rounded-md text-purple-300 text-xs font-medium hover:bg-purple-500/25 transition-colors"
                     >
                       <SparklesIcon className="w-3.5 h-3.5" />
@@ -688,6 +764,18 @@ export default function SignedInDashboard({
                       <TrophyIcon className="w-4 h-4 flex-shrink-0" />
                       {claimableQuestsCount} quest{claimableQuestsCount !== 1 ? 's' : ''} to claim
                     </Link>
+                  )}
+                  {DASHBOARD_TOUR_VIMEO_URL && (
+                    <button
+                      type="button"
+                      onClick={openTour}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/70 hover:text-white text-sm font-medium transition-all"
+                    >
+                      <PlayCircleIcon className="w-4 h-4" />
+                      {/* Short label below xl, where this row can carry up to six items. */}
+                      <span className="xl:hidden">Tour</span>
+                      <span className="hidden xl:inline">Tour Dashboard</span>
+                    </button>
                   )}
                   <Link
                     href={
@@ -1429,6 +1517,15 @@ export default function SignedInDashboard({
           nft={citizen}
           selectedChain={selectedChain}
           setEnabled={setCitizenMetadataModalEnabled}
+        />
+      )}
+
+      {/* Dashboard Tour Modal */}
+      {tourOpen && citizen && (
+        <DashboardTourModal
+          source={tourSource}
+          profileEditHref={profileEditHref}
+          onClose={closeTour}
         />
       )}
 

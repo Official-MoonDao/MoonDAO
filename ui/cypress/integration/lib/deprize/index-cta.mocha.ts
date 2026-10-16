@@ -24,21 +24,19 @@ describe('deprize index predict CTA and pool USD', () => {
   })
 
   it('puts Predict on each bettable outcome row', () => {
-    const rowStart = card.indexOf('function OutcomeBetRow')
-    const rowEnd = card.indexOf('export type RaceCardVariant')
-    expect(rowStart).to.be.greaterThan(-1)
-    expect(rowEnd).to.be.greaterThan(rowStart)
-    const row = card.slice(rowStart, rowEnd)
+    const row = readUi('components/deprize/MarketOutcomeRow.tsx')
     expect(row).to.include('DEPRIZE_PREDICT_CTA')
     expect(row).to.not.match(/>\s*Buy\s*</)
 
-    const heroRows = hero.slice(hero.indexOf('{ranked.map'), hero.indexOf('{showPredict &&'))
-    expect(heroRows).to.include('DEPRIZE_PREDICT_CTA')
+    for (const src of [card, hero]) {
+      expect(src).to.include("import MarketOutcomeRow from '@/components/deprize/MarketOutcomeRow'")
+      expect(src).to.match(/onPredict=\{bettingEnabled \?/)
+    }
   })
 
   it('keeps the restricted-region Predict link on each card variant', () => {
-    // import, the outcome-row button, and the restricted-region link
-    expect(hero.split('DEPRIZE_PREDICT_CTA').length - 1).to.equal(3)
+    // import and the restricted-region link; the row button lives in MarketOutcomeRow
+    expect(hero.split('DEPRIZE_PREDICT_CTA').length - 1).to.equal(2)
     expect(card).to.include('function PredictLink')
     expect(card.split('<PredictLink').length - 1).to.equal(3) // grid, featured, list
   })

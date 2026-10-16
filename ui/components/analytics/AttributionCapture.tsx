@@ -3,10 +3,12 @@ import { useEffect } from 'react'
 import {
   captureClientAttribution,
   decorateRouterUrl,
+  getAttribution,
   getPassthroughParams,
   withAttribution,
   type DecoratableUrl,
 } from '@/lib/analytics/attribution'
+import { setAttributionGetter } from '@/lib/analytics/ga4'
 
 /**
  * Records the landing touch and keeps campaign params on later funnel
@@ -18,6 +20,15 @@ export default function AttributionCapture() {
   const router = useRouter()
 
   useEffect(() => {
+    // GA4 reads campaign params through this getter on mint, purchase, and
+    // mint_error. The stored record stays empty until analytics consent.
+    setAttributionGetter(() => {
+      const params: Record<string, string> = {}
+      for (const [key, value] of Object.entries(getAttribution())) {
+        if (value) params[key] = value
+      }
+      return params
+    })
     captureClientAttribution()
 
     const onRoute = () => captureClientAttribution()

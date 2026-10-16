@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { trackJoinCtaClick } from '@/lib/analytics/ga4'
 import { L2_GAS_BUDGET_ETH } from '@/lib/rpc/gasBudget'
 import {
   useCitizenCheckoutLive,
@@ -71,7 +72,10 @@ export default function GuestActions({ address, nativeBalance, citizenContract }
               icon={
                 <Image src="/assets/icon-job.svg" alt="Browse open jobs" height={30} width={30} />
               }
-              onClick={() => router.push('/citizen')}
+              onClick={() => {
+                trackJoinCtaClick({ cta_location: 'dashboard', plan: 'citizen' })
+                router.push('/citizen')
+              }}
             />
           ) : (
             <Action

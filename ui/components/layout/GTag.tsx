@@ -1,41 +1,36 @@
-import { usePathname, useSearchParams } from 'next/navigation'
 import Script from 'next/script'
 import { useEffect } from 'react'
-import pageview from '@/lib/google/gtagHelper'
+import {
+  bindJoinCtaClicks,
+  buildGtagInitScript,
+  flushPendingGa4,
+  safeMeasurementId,
+} from '@/lib/analytics/ga4'
 
 export default function GTag({ GTAG }: { GTAG: string }) {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
   useEffect(() => {
-    const url = pathname + searchParams.toString()
+    const unbind = bindJoinCtaClicks()
+    const timers = [0, 250, 1000, 3000].map((ms) => window.setTimeout(flushPendingGa4, ms))
+    return () => {
+      unbind()
+      timers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [])
 
-    pageview(GTAG, url)
-  }, [pathname, searchParams, GTAG])
+  const measurementId = safeMeasurementId(GTAG)
 
   return (
     <>
       <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GTAG}`}
+        src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`}
         strategy="afterInteractive"
       />
       <Script
         id="gtag-init"
         strategy="afterInteractive"
+        onLoad={() => flushPendingGa4()}
         dangerouslySetInnerHTML={{
-          __html: `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-
-            gtag('consent', 'default', {
-              'analytics_storage': 'denied'
-            });
-
-            gtag('config', '${GTAG}', {
-              page_path: window.location.pathname,
-            });
-            `,
+          __html: buildGtagInitScript(measurementId),
         }}
       />
     </>

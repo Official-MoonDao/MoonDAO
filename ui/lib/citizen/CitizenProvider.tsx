@@ -9,6 +9,7 @@ import {
   useRef,
 } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
+import { setIsCitizen } from '@/lib/analytics/ga4'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { citizenRowToNFT } from '../tableland/convertRow'
 import { getChainSlug } from '../thirdweb/chain'
@@ -197,6 +198,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   const [optimisticActive, setOptimisticActive] = useState(false)
   const optimisticUntilRef = useRef(0)
   const optimisticTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const reportedCitizen = useRef<'true' | 'false' | null>(null)
   const account = useActiveAccount()
   const { authenticated, user } = usePrivy()
   const hasLoadedNonDefaultCache = useRef(false)
@@ -293,6 +295,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   const seedCitizen = useCallback(
     (nft: any) => {
       if (!nft) return
+      setIsCitizen(true)
       optimisticUntilRef.current = Date.now() + OPTIMISTIC_WINDOW_MS
       setOptimisticActive(true)
       setCitizen(nft)
@@ -415,6 +418,47 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       }
     }
   }, [authenticated, mock])
+
+  // Ownership check settled: string "true" / "false" for the Citizens audience.
+  // A query error is not a "no", so the property stays at the last known value.
+  useEffect(() => {
+    if (mock) {
+      if (reportedCitizen.current !== 'true') {
+        reportedCitizen.current = 'true'
+        setIsCitizen(true)
+      }
+      return
+    }
+    if (!authenticated) {
+      if (reportedCitizen.current === 'true') {
+        reportedCitizen.current = 'false'
+        setIsCitizen(false)
+      }
+      return
+    }
+    if (!address) return
+    if (citizen || optimisticActive) {
+      if (reportedCitizen.current !== 'true') {
+        reportedCitizen.current = 'true'
+        setIsCitizen(true)
+      }
+      return
+    }
+    if (isLoading || isLoadingQuery || citizenQueryError) return
+    if (reportedCitizen.current !== 'false') {
+      reportedCitizen.current = 'false'
+      setIsCitizen(false)
+    }
+  }, [
+    mock,
+    authenticated,
+    address,
+    citizen,
+    optimisticActive,
+    isLoading,
+    isLoadingQuery,
+    citizenQueryError,
+  ])
 
   // Cleanup timer on unmount
   useEffect(() => {

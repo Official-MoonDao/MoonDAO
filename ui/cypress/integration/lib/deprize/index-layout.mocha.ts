@@ -28,7 +28,7 @@ describe('deprize index layout', () => {
   })
 
   it('splits the index into Live and Planned sections', () => {
-    expect(index).to.include('id="deprize-live-heading"')
+    expect(index).to.include('headingId="deprize-live-heading"')
     expect(index).to.include('id="deprize-planned-heading"')
     expect(index).to.include('liveRaces')
     expect(index).to.include('plannedRaces')

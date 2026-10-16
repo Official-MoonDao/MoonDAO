@@ -31,6 +31,7 @@ import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import { trackJoinCtaClick } from '@/lib/analytics/ga4'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
@@ -467,7 +468,10 @@ function CitizenDetailPageContent({ nft, tokenId, hats, proposals }: any) {
               title="Unlock Full Profile"
               description="Become a Citizen of the Space Acceleration Network to view the full profile. Citizenship also unlocks access to the jobs board, marketplace discounts, and more benefits."
               icon={<LockOpenIcon width={30} height={30} />}
-              onClick={() => router.push('/citizen')}
+              onClick={() => {
+                trackJoinCtaClick({ cta_location: 'citizen_profile', plan: 'citizen' })
+                router.push('/citizen')
+              }}
             />
           </div>
         )}

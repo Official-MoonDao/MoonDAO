@@ -1013,3 +1013,10 @@ export const RETRO_USD_BUDGET = PROJECT_CYCLE.retro.usdBudget
 // the project pool so every part of the cycle's spend is visible. Zero when
 // the cycle pays in ETH but no ETH community circle is configured.
 export const RETRO_PRIMARY_COMMUNITY_CIRCLE: number = PROJECT_CYCLE.retro.communityCirclePrimary
+
+// Player URL for the "Welcome, Citizen" dashboard tour (1:34). New citizens
+// see it once right after minting; any citizen can replay it from the
+// dashboard header. If the video is unlisted, paste the exact embed URL from
+// Vimeo's Share → Embed, including its `?h=` privacy hash. Leave empty to hide
+// both the modal and the link.
+export const DASHBOARD_TOUR_VIMEO_URL: string = 'https://player.vimeo.com/video/1236002390'

@@ -13,6 +13,7 @@ import { useState, Fragment, useEffect, useMemo, useContext } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import { trackProposalVote } from '@/lib/analytics/ga4'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
@@ -202,6 +203,8 @@ export default function VotingModal({
         })
         toast.success('Vote submitted!')
       }
+
+      trackProposalVote(project?.MDP)
 
       // Post a Discord notification about this Senate vote. Fire-and-forget:
       // never block the UI on it. The helper handles auth, retries, and logs

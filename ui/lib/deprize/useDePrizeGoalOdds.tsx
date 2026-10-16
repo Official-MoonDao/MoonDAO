@@ -9,7 +9,7 @@ import {
 import { DePrizeState, MarketStage } from './constants'
 import { mapOutcomeOddsToProjectIds } from './goal-odds'
 import { useDePrize } from './useDePrize'
-import { useDePrizeMarket, type Outcome } from './useDePrizeMarket'
+import { useDePrizeMarket, type Outcome, type UseDePrizeMarketResult } from './useDePrizeMarket'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 
 /** Atlas SharedGoalMarket.status values the bridge can emit. */
@@ -47,6 +47,8 @@ export type UseDePrizeGoalOddsResult = {
   tradingHalted: boolean
   sunset: bigint | undefined
   cancellationPending: boolean
+  /** The mounted market itself, for consumers that rebuild odds history from it. */
+  market: UseDePrizeMarketResult
   /** Re-reads both the registry record and the market (odds, balances, resolution). */
   refresh: () => void
 }
@@ -168,6 +170,7 @@ export function useDePrizeGoalOdds(
     tradingHalted: market.stage !== undefined && market.stage !== MarketStage.Running,
     sunset: deprize?.sunset,
     cancellationPending: !!deprize?.cancellationPending,
+    market,
     refresh,
   }
 }

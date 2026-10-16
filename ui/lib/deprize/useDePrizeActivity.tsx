@@ -9,11 +9,24 @@ import {
   sellsFromTrades,
   type TradeRow,
 } from './activity-fetch'
-import { totalStaked, uniqueBackers, type BetRow, type SellRow } from './activity-math'
+import {
+  splitBetsByMarket,
+  totalStaked,
+  uniqueBackers,
+  type BetRow,
+  type SellRow,
+} from './activity-math'
 import type { FundingLike } from './lmsr-history'
 
 export type DePrizeActivity = {
+  /** Bets that traded on the current market — the ones behind today's odds. */
   bets: BetRow[]
+  /**
+   * Bets routed to a market this DePrize was bound to before (e.g. the H-01
+   * redeploy, docs/DEPRIZE_MARKET_REBIND_2026-09.md). Their positions still pay
+   * out on the same condition, but they never moved the current market's prices.
+   */
+  priorBets: BetRow[]
   sells: SellRow[]
   trades: TradeRow[]
   fundingChanges: FundingLike[]
@@ -25,6 +38,7 @@ export type DePrizeActivity = {
 
 const EMPTY: Omit<DePrizeActivity, 'loading' | 'error'> = {
   bets: [],
+  priorBets: [],
   sells: [],
   trades: [],
   fundingChanges: [],
@@ -69,9 +83,9 @@ export function useDePrizeActivity(args: {
     setError(undefined)
     ;(async () => {
       try {
-        const bets = await fetchDePrizeBets({ chain, chainSlug, deprizeId, gen: refreshNonce })
+        const allBets = await fetchDePrizeBets({ chain, chainSlug, deprizeId, gen: refreshNonce })
         if (cancelled) return
-        const firstBetBlock = bets.length ? bets[0].blockNumber : undefined
+        const firstBetBlock = allBets.length ? allBets[0].blockNumber : undefined
         // No bets yet still needs the seed-funding log. That timestamp is the
         // chart's open when the market contract has no startTime().
         const { trades, fundingChanges } = await fetchMarketTrades({
@@ -82,8 +96,10 @@ export function useDePrizeActivity(args: {
           gen: refreshNonce,
         })
         if (cancelled) return
+        const { bets, priorBets } = splitBetsByMarket(allBets, trades)
         setData({
           bets,
+          priorBets,
           sells: sellsFromTrades(trades, mintAddress),
           trades,
           fundingChanges,

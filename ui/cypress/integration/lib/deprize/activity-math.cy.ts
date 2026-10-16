@@ -1,4 +1,5 @@
 import {
+  splitBetsByMarket,
   totalStaked,
   uniqueBackers,
   userActiveOutcomes,
@@ -118,5 +119,21 @@ describe('deprize activity math', () => {
       'bet@1',
       'bet@1',
     ])
+  })
+})
+
+describe('splitBetsByMarket', () => {
+  it('keeps bets whose transaction traded on the current market and sets the rest aside', () => {
+    const before = bet({ bettor: A, outcomeIndex: 0, qty: 1, costEth: 0.0094, txHash: '0xOLD' })
+    const after = bet({ bettor: B, outcomeIndex: 2, qty: 1, costEth: 0.002, txHash: '0xnew' })
+    const { bets, priorBets } = splitBetsByMarket([before, after], [{ txHash: '0xNEW' }])
+    expect(bets).to.deep.equal([after])
+    expect(priorBets).to.deep.equal([before])
+    expect(totalStaked(bets)).to.equal(0.002)
+  })
+
+  it('treats every bet as prior when the current market has no trades', () => {
+    const b = bet({ bettor: A, outcomeIndex: 1, qty: 1 })
+    expect(splitBetsByMarket([b], [])).to.deep.equal({ bets: [], priorBets: [b] })
   })
 })
