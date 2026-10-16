@@ -64,7 +64,7 @@ describe('docs slugifier (Quartz parity)', () => {
   it('docsHref treats index as /docs', () => {
     expectEqual(docsHref('index'), '/docs', 'index')
     expectEqual(docsHref('About/FAQ'), '/docs/About/FAQ', 'faq')
-    expectEqual(docsHref('Press/index'), '/docs/Press', 'folder index')
+    expectEqual(docsHref('About/index'), '/docs/About', 'folder index')
     expectEqual(docsHref('Legal/DePrize/index'), '/docs/Legal/DePrize', 'nested folder')
     expectEqual(docsHref('tags/index'), '/docs/tags', 'tags index')
   })
@@ -73,14 +73,14 @@ describe('docs slugifier (Quartz parity)', () => {
 describe('docs breadcrumbs', () => {
   it('links folder crumbs at the parent path, not /index', () => {
     resetDocsCache()
-    const page = getDocPage('Press/Press-Kit')
-    if (!page) throw new Error('Press Kit missing')
+    const page = getDocPage('About/FAQ')
+    if (!page) throw new Error('FAQ missing')
     expectEqual(page.breadcrumbs[0]?.href, '/docs', 'docs crumb')
-    const press = page.breadcrumbs.find((c) => c.title === 'Press')
-    if (!press) throw new Error('no Press crumb')
-    expectEqual(press.href, '/docs/Press', 'press crumb')
+    const about = page.breadcrumbs.find((c) => c.title === 'About')
+    if (!about) throw new Error('no About crumb')
+    expectEqual(about.href, '/docs/About', 'about crumb')
     const last = page.breadcrumbs[page.breadcrumbs.length - 1]
-    expectEqual(last?.href, '/docs/Press/Press-Kit', 'kit crumb')
+    expectEqual(last?.href, '/docs/About/FAQ', 'faq crumb')
   })
 
   it('nests folder crumbs without a trailing /index', () => {
