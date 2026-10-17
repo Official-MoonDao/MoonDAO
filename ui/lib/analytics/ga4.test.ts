@@ -1,4 +1,6 @@
 import assert from 'assert'
+import vm from 'vm'
+import { COOKIE_CONSENT_EXEMPT_REGIONS, cookieBannerDecision } from '../geo/countryCode'
 import {
   buildGtagInitScript,
   buildPagePath,
@@ -86,7 +88,115 @@ describe('gtag init script', () => {
     assert.equal(buildGtagInitScript('not-an-id').includes(GA_MEASUREMENT_ID), true)
     assert.equal(buildGtagInitScript('<script>').includes('<script>'), false)
   })
+
+  it('sets both consent defaults and any stored choice before gtag config', () => {
+    const grantedDefault = script.indexOf(
+      "gtag('consent', 'default', { 'analytics_storage': 'granted'"
+    )
+    const deniedDefault = script.indexOf(
+      "gtag('consent', 'default', { 'analytics_storage': 'denied', 'wait_for_update': 500 }"
+    )
+    const stored = script.indexOf("localStorage.getItem('cookie_consent')")
+    const grantUpdate = script.indexOf("cc === 'true'")
+    const denyUpdate = script.indexOf("cc === 'false'")
+    const config = script.indexOf("gtag('config'")
+    assert.ok(grantedDefault >= 0)
+    assert.ok(grantedDefault < deniedDefault)
+    assert.ok(deniedDefault < stored)
+    assert.ok(stored < grantUpdate)
+    assert.ok(grantUpdate < denyUpdate)
+    assert.ok(denyUpdate < config)
+    assert.deepStrictEqual(JSON.parse(script.match(/'region': (\[[\s\S]*?\])/)?.[1] || 'null'), [
+      ...COOKIE_CONSENT_EXEMPT_REGIONS,
+    ])
+    for (const region of COOKIE_CONSENT_EXEMPT_REGIONS) {
+      assert.strictEqual(cookieBannerDecision(region), 'grant')
+    }
+    // CookieBanner persists JSON.stringify(true|false), which is these exact strings.
+    assert.strictEqual(JSON.stringify(true), 'true')
+    assert.strictEqual(JSON.stringify(false), 'false')
+  })
+
+  it('applies a stored grant or denial before the config hit', () => {
+    const granted = runInitScript('true').map((call) => call[0])
+    const denied = runInitScript('false').map((call) => call[0])
+    const unset = runInitScript(null)
+    const thrown = runInitScript(new Error('storage blocked'))
+    assert.deepStrictEqual(granted, ['js', 'consent', 'consent', 'consent', 'config'])
+    assert.deepStrictEqual(denied, ['js', 'consent', 'consent', 'consent', 'config'])
+    assert.deepStrictEqual(
+      unset.map((call) => call[0]),
+      ['js', 'consent', 'consent', 'config']
+    )
+    assert.deepStrictEqual(
+      thrown.map((call) => call[0]),
+      ['js', 'consent', 'consent', 'config']
+    )
+
+    const grantedCalls = runInitScript('true')
+    const configAt = grantedCalls.findIndex((call) => call[0] === 'config')
+    const updateAt = grantedCalls.findIndex((call) => call[0] === 'consent' && call[1] === 'update')
+    assert.ok(updateAt > 0 && updateAt < configAt)
+    assert.deepStrictEqual(grantedCalls[1][2], {
+      analytics_storage: 'granted',
+      region: [...COOKIE_CONSENT_EXEMPT_REGIONS],
+    })
+    assert.deepStrictEqual(grantedCalls[2][2], {
+      analytics_storage: 'denied',
+      wait_for_update: 500,
+    })
+    assert.deepStrictEqual(grantedCalls[updateAt][2], { analytics_storage: 'granted' })
+    assert.deepStrictEqual(runInitScript('false')[3][2], { analytics_storage: 'denied' })
+    assert.equal(
+      unset.some((call) => call[1] === 'update'),
+      false
+    )
+    assert.equal(
+      runInitScript('null').some((call) => call[1] === 'update'),
+      false
+    )
+  })
 })
+
+function runInitScript(consent: string | null | Error) {
+  const script = buildGtagInitScript(GA_MEASUREMENT_ID)
+  const sandbox: Record<string, any> = {
+    URLSearchParams,
+    document: { cookie: '' },
+    localStorage: {
+      getItem(key: string) {
+        if (key !== 'cookie_consent') return null
+        if (consent instanceof Error) throw consent
+        return consent
+      },
+    },
+    location: { search: '' },
+  }
+  sandbox.window = sandbox
+  vm.createContext(sandbox)
+  vm.runInContext(script, sandbox)
+  // Values created inside the vm have that realm's prototypes, so copy them
+  // into this realm before deepStrictEqual.
+  // dataLayer is an array from the vm realm. Copy with this realm's Array.from
+  // so deepStrictEqual does not reject it for a foreign prototype.
+  return Array.from(sandbox.dataLayer as ArrayLike<ArrayLike<unknown>>, (entry) =>
+    Array.from(entry, (value) => copyOutOfVm(value))
+  )
+}
+
+function copyOutOfVm(value: unknown): unknown {
+  if (typeof value === 'string') return `${value}`
+  if (typeof value === 'number' || typeof value === 'boolean' || value == null) return value
+  if (Array.isArray(value)) return Array.from(value, (item) => copyOutOfVm(item))
+  if (typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const key of Object.keys(value as object)) {
+      out[`${key}`] = copyOutOfVm((value as Record<string, unknown>)[key])
+    }
+    return out
+  }
+  return value
+}
 
 describe('ga4 events', () => {
   afterEach(() => {
@@ -296,6 +406,19 @@ describe('ga4 events', () => {
     )
     assert.deepStrictEqual(calls[1][2], { method: 'kit', cta_location: 'footer' })
     assert.deepStrictEqual(calls[2][2], { proposal_id: '42' })
+  })
+
+  it('adds vote stage and surface when a caller provides them', () => {
+    const calls = installGtag()
+    trackProposalVote(274, { vote_stage: 'senate', surface: 'projects_list' })
+    trackProposalVote('', { vote_stage: 'member', surface: 'modal' })
+    assert.deepStrictEqual(calls, [
+      [
+        'event',
+        'proposal_vote',
+        { proposal_id: '274', vote_stage: 'senate', surface: 'projects_list' },
+      ],
+    ])
   })
 })
 

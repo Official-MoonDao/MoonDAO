@@ -12,7 +12,8 @@ export function normalizeGeoCountry(code: string | null | undefined): string | n
 // Cookie opt-in is not required for the United States or its territories.
 // Everywhere else with a real country code still has to choose. Unknown stays
 // unknown so a failed lookup does not pop the banner.
-const COOKIE_CONSENT_EXEMPT = new Set([
+// GA4's regional consent default is generated from this same list.
+export const COOKIE_CONSENT_EXEMPT_REGIONS = [
   'US',
   'PR', // Puerto Rico
   'GU', // Guam
@@ -20,7 +21,9 @@ const COOKIE_CONSENT_EXEMPT = new Set([
   'AS', // American Samoa
   'MP', // Northern Mariana Islands
   'UM', // U.S. Minor Outlying Islands
-])
+] as const
+
+const COOKIE_CONSENT_EXEMPT = new Set<string>(COOKIE_CONSENT_EXEMPT_REGIONS)
 
 export type CookieBannerDecision = 'grant' | 'prompt' | 'skip'
 
