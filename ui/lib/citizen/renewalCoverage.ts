@@ -81,7 +81,10 @@ export function isInReminderWindow(expiresAtSec: number, nowMs: number): boolean
   return position != null && position !== 'outOfWindow'
 }
 
-/** One reminder entry per citizen per expiry term. Not written in this PR. */
+export const RENEWAL_STAGES = ['minus30', 'minus14', 'expiry', 'plus14', 'renewed'] as const
+export type RenewalStage = (typeof RENEWAL_STAGES)[number]
+
+/** One reminder entry per citizen per expiry term. */
 export function renewalDedupeKey(tokenId: string, expiresAtSec: number): string {
   const id = String(tokenId).trim()
   if (!/^\d+$/.test(id)) {
@@ -91,6 +94,21 @@ export function renewalDedupeKey(tokenId: string, expiresAtSec: number): string 
     throw new Error('expiresAt must be a unix timestamp in seconds')
   }
   return `renewal:${id}:${expiresAtSec}`
+}
+
+/**
+ * Written to Upstash after a successful tag change.
+ * A later run that sees the key does not tag again.
+ */
+export function renewalStageDedupeKey(
+  tokenId: string,
+  expiresAtSec: number,
+  stage: RenewalStage
+): string {
+  if (!(RENEWAL_STAGES as readonly string[]).includes(stage)) {
+    throw new Error('unknown renewal stage')
+  }
+  return `${renewalDedupeKey(tokenId, expiresAtSec)}:${stage}`
 }
 
 export type SequencePosition = {
@@ -110,10 +128,10 @@ export function expectedSequencePosition(daysToExpiry: number): SequencePosition
 }
 
 export const LATE_ENTRANT_CATCH_UP =
-  'Do not add Renewal-Reminder. The sequence times from entry, so a late tag sends the -30 email on the wrong date. Live mode should use a separate catch-up tag for the next remaining email, or skip straight to that email, and leave the earlier emails unsent.'
+  'Do not add Renewal-Reminder. The sequence times from entry, so a late tag sends the -30 email on the wrong date. Live mode adds one catch-up tag for the next remaining email and leaves the earlier emails unsent.'
 
 export const RENEWAL_EXIT_PLAN =
-  'When expiresAt moves out of the window, the future job adds the Renewed tag and removes Renewal-Reminder. A Kit rule removes anyone tagged Renewed from the sequence. This dry run does not add or remove tags.'
+  'When expiresAt moves forward out of the window, live mode adds the Renewed tag and removes Renewal-Reminder and the catch-up tags. Kit has no public API to remove one subscriber from one sequence, so that step is recorded as unsupported. Exclude the Renewed tag on each sequence in Kit. Writes run only when RENEWAL_REMINDERS_LIVE is true and the request includes live=1.'
 
 export function maskEmail(email: string): string {
   const trimmed = email.trim().toLowerCase()
@@ -224,7 +242,7 @@ export type KitReadRequest = {
   url: string
 }
 
-/** The only Kit request this PR is allowed to build. */
+/** Kit reads are GET requests on the v4 API. Tag writes live in a separate module. */
 export function kitReadRequest(pathAndQuery: string): KitReadRequest {
   if (!pathAndQuery.startsWith('/v4/')) {
     throw new Error('Kit reads must use the v4 API')
@@ -268,6 +286,8 @@ export type CoverageInput = {
   expiresAt: number
   email: string | null
   kitState: string | null
+  /** Present when Kit already has this subscriber. Tag writes require it. */
+  kitSubscriberId?: string | null
   suppressed: boolean
   firstRunRedis: boolean
   firstRunKitTag: boolean
@@ -543,12 +563,13 @@ export function renewalCountsComplete(sources: { typeform: boolean; kit: boolean
 }
 
 /**
- * Omit dryRun, or pass 1 / true, and the route stays a dry run.
- * Any explicit non-dry value is rejected.
+ * Omit dryRun, or pass 1 / true, and the route accepts the call.
+ * Any explicit non-dry value is rejected. Live writes are a separate gate:
+ * RENEWAL_REMINDERS_LIVE=true and ?live=1.
  */
 export function nonDryRunRejection(value: unknown): string | null {
   if (value == null || value === '' || value === '1' || value === 'true' || value === true) {
     return null
   }
-  return 'This route is dry-run only. Omit dryRun or pass dryRun=1. Live tagging and sending are not implemented.'
+  return 'Omit dryRun or pass dryRun=1. Live tagging requires RENEWAL_REMINDERS_LIVE=true and live=1.'
 }
