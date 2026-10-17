@@ -52,7 +52,6 @@ import {
   ANNOUNCE_PROJECT_BUDGET,
   DASHBOARD_TOUR_VIMEO_URL,
 } from 'const/config'
-import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import {
   getMissionMinimumUsdGoal,
   MISSION_MINIMUM_GOAL_TOOLTIP,
@@ -68,6 +67,7 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import useMissionData from '@/lib/mission/useMissionData'
 import useMissionRaisedProgress from '@/lib/mission/useMissionRaisedProgress'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
+import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import { generatePrettyLinks, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -359,7 +359,7 @@ export default function SignedInDashboard({
   // the widget silently lags behind the real latest proposal number.
   const allProposals = []
   for (let i = 0; i < projects.length; i++) {
-    if (!BLOCKED_PROJECTS.has(projects[i].id) && !BLOCKED_MDPS.has(projects[i].MDP)) {
+    if (!isBlockedProject(projects[i])) {
       allProposals.push(projects[i])
       const activeStatus = projects[i].active
       if (activeStatus == PROJECT_PENDING) {

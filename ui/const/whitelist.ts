@@ -9,14 +9,27 @@ export const BLOCKED_MISSIONS: any = new Set(
 // unannounced mission. Blocked-but-not-gated missions stay fully 404'd.
 // See pages/mission/[tokenId].tsx.
 export const GATED_MISSIONS: Set<number> = new Set()
-export const BLOCKED_PROJECTS: any = new Set(
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet' ? [4, 10, 14, 90, 116, 118, 124] : [0, 3, 4, 5, 6, 7]
-)
-export const BLOCKED_MDPS: any = new Set(
-  process.env.NEXT_PUBLIC_CHAIN === 'mainnet'
-    ? [229, 243, 244, 246, 247, 252, 253, 256, 257, 263]
-    : []
-)
+const MAINNET_BLOCKED_PROJECTS = [4, 10, 14, 90, 116, 118, 124]
+const TESTNET_BLOCKED_PROJECTS = [0, 3, 4, 5, 6, 7]
+
+// Withdrawn or resubmitted proposals hidden from public listings and the
+// Senate vote. Tableland `active` has no withdrawn value (these rows stay
+// pending), Nance proposal ids do not match MDP numbers, and author-delete
+// is a separate IPFS `deleted` flag. Add the MDP here.
+// 281: Q4 2026, withdrawn while still pending. Stored title
+// "Samantha Tauber_MoonDAO Proposal Template" (project id 163).
+export const MAINNET_BLOCKED_MDPS = [229, 243, 244, 246, 247, 252, 253, 256, 257, 263, 281]
+
+export function blockedProjectsForChain(chain: string | undefined): Set<number> {
+  return new Set(chain === 'mainnet' ? MAINNET_BLOCKED_PROJECTS : TESTNET_BLOCKED_PROJECTS)
+}
+
+export function blockedMdpsForChain(chain: string | undefined): Set<number> {
+  return new Set(chain === 'mainnet' ? MAINNET_BLOCKED_MDPS : [])
+}
+
+export const BLOCKED_PROJECTS: any = blockedProjectsForChain(process.env.NEXT_PUBLIC_CHAIN)
+export const BLOCKED_MDPS: any = blockedMdpsForChain(process.env.NEXT_PUBLIC_CHAIN)
 export const BLOCKED_PROPOSALS: any = new Set([221])
 
 export const FEATURED_TEAMS: any = [6, 7, 8, 13, 1, 9, 5, 4, 2]

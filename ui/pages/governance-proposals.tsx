@@ -1,6 +1,5 @@
 import ProposalsABI from 'const/abis/Proposals.json'
 import { DEFAULT_CHAIN_V5, PROJECT_TABLE_NAMES, PROPOSALS_ADDRESSES } from 'const/config'
-import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { gql, GraphQLClient } from 'graphql-request'
 import { GetStaticProps } from 'next'
 import { useState } from 'react'
@@ -13,6 +12,7 @@ import {
   PROJECT_VOTE_FAILED,
 } from '@/lib/nance/types'
 import { getProposalStatus } from '@/lib/nance/useProposalStatus'
+import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -221,7 +221,7 @@ export const getStaticProps: GetStaticProps = async () => {
 
     await Promise.all(
       projects.map(async (project: Project, index: number) => {
-        if (BLOCKED_PROJECTS.has(project.id) || BLOCKED_MDPS.has(project.MDP)) return
+        if (isBlockedProject(project)) return
 
         if (!isFetchableUrl(project.proposalIPFS)) return
 
