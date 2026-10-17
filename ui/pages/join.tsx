@@ -388,10 +388,10 @@ export default function Join({
                       Become a Citizen
                     </h3>
                     <ul className="text-slate-300 mb-6 leading-relaxed text-left space-y-2 w-full max-w-xs">
-                      <li>✓ Vote on proposals &amp; funding</li>
-                      <li>✓ Apply to roles on the jobs board</li>
-                      <li>✓ Eligible for flights &amp; experiences</li>
-                      <li>✓ A permanent onchain identity</li>
+                      <li>✓ Get your space project funded in weeks</li>
+                      <li>✓ Apply to citizens-only jobs &amp; paid roles</li>
+                      <li>✓ Earn quarterly rewards for your contributions</li>
+                      <li>✓ Eligible for training &amp; spaceflight opportunities</li>
                     </ul>
                     <div className="flex flex-col items-center mb-6">
                       <div className="text-2xl font-semibold text-white">
