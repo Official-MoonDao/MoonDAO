@@ -7,7 +7,6 @@ import {
   PROPOSALS_ADDRESSES,
 } from 'const/config'
 import type { ProjectCyclePhase } from 'const/config'
-import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { useRouter } from 'next/router'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import {
@@ -20,6 +19,7 @@ import {
   isUntitledLike,
   UNTITLED_FALLBACK,
 } from '@/lib/project/getProjectDisplayName'
+import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -114,8 +114,7 @@ export async function getStaticProps() {
       project.active == PROJECT_PENDING &&
       project.quarter === activeProposalQuarter.quarter &&
       project.year === activeProposalQuarter.year &&
-      !BLOCKED_PROJECTS.has(project.id) &&
-      !BLOCKED_MDPS.has(project.MDP)
+      !isBlockedProject(project)
 
     // Temp-check (Senate) approval/failure flags are best-effort metadata that
     // only pending, current-cycle proposals actually consume. Scope the batch
@@ -167,7 +166,7 @@ export async function getStaticProps() {
 
     await Promise.all(
       projects.map(async (project: Project) => {
-        if (BLOCKED_PROJECTS.has(project.id) || BLOCKED_MDPS.has(project.MDP)) {
+        if (isBlockedProject(project)) {
           return
         }
         const activeStatus = project.active

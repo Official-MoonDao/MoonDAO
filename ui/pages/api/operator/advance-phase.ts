@@ -5,7 +5,6 @@ import {
   PROJECT_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
 } from 'const/config'
-import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { isOperator } from 'middleware/isOperator'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
@@ -26,6 +25,7 @@ import {
   resolveLivePhase,
   setLivePhaseOverride,
 } from '@/lib/operator/cyclePhase'
+import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import { endOfConfigDeadline } from '@/lib/utils/dates'
 import { getPrivyUserData } from '@/lib/privy'
@@ -111,8 +111,7 @@ async function tallySenateForCurrentCycle(
       Number(p.active) === PROJECT_PENDING &&
       p.MDP !== undefined &&
       p.MDP !== null &&
-      !BLOCKED_PROJECTS.has(Number(p.id)) &&
-      !BLOCKED_MDPS.has(Number(p.MDP)) &&
+      !isBlockedProject(p) &&
       !!p.proposalIPFS
   )
 

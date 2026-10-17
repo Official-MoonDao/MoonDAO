@@ -12,7 +12,6 @@ import {
   NON_PROJECT_PROPOSAL_TABLE_NAMES,
   PROJECT_TABLE_NAMES,
 } from 'const/config'
-import { BLOCKED_MDPS, BLOCKED_PROJECTS } from 'const/whitelist'
 import { GetServerSideProps } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -30,6 +29,7 @@ import {
   ProposalStatus,
 } from '@/lib/nance/useProposalStatus'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
+import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import { computeMemberProposalTally } from '@/lib/proposals/computeMemberProposalTally'
 import { isProposalAuthor } from '@/lib/proposals/isProposalAuthor'
@@ -738,16 +738,12 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
 
       let projects = (
         await queryTable(chain, `SELECT * FROM ${projectTableName} WHERE MDP = ${tokenId}`)
-      ).filter(
-        (p: Project) => !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP))
-      )
+      ).filter((p: Project) => !isBlockedProject(p))
 
       if (!projects[0]) {
         projects = (
           await queryTable(chain, `SELECT * FROM ${projectTableName} WHERE id = ${tokenId}`)
-        ).filter(
-          (p: Project) => !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP))
-        )
+        ).filter((p: Project) => !isBlockedProject(p))
       }
 
       if (projects[0]) {

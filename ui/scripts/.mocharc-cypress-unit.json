@@ -28,6 +28,7 @@
     "cypress/integration/unit/voting.cy.tsx",
     "cypress/integration/unit/vmooney-snapshots.cy.tsx",
     "cypress/integration/unit/cycle-phase.cy.tsx",
+    "cypress/integration/unit/blocked-projects.cy.ts",
     "cypress/integration/unit/cycle-quarters.cy.tsx",
     "cypress/integration/unit/project-budget.cy.ts",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",

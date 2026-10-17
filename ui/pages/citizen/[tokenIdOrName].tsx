@@ -37,6 +37,7 @@ import { useCitizenData } from '@/lib/citizen/useCitizenData'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { PROJECT_PENDING } from '@/lib/nance/types'
+import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import { isOwnerActive } from '@/lib/project/isOwnerActive'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
@@ -899,7 +900,10 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
 
     const proposalsStatement = `SELECT * FROM ${PROJECT_TABLE_NAMES[chainSlug]} WHERE active = ${PROJECT_PENDING}`
-    const proposals = await queryTable(chain, proposalsStatement)
+    const proposalRows = await queryTable(chain, proposalsStatement)
+    const proposals = Array.isArray(proposalRows)
+      ? proposalRows.filter((project) => !isBlockedProject(project))
+      : []
 
     return {
       props: {
