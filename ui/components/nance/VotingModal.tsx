@@ -204,7 +204,7 @@ export default function VotingModal({
         toast.success('Vote submitted!')
       }
 
-      trackProposalVote(project?.MDP)
+      trackProposalVote(project?.MDP, { vote_stage: 'member', surface: 'modal' })
 
       // Post a Discord notification about this Senate vote. Fire-and-forget:
       // never block the UI on it. The helper handles auth, retries, and logs

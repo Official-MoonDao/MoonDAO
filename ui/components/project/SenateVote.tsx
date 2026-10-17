@@ -20,10 +20,10 @@ import {
 import { useRouter } from 'next/router'
 import React, { memo, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
+import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { trackProposalVote } from '@/lib/analytics/ga4'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { castSenateTempCheckVote } from '@/lib/project/castSenateTempCheckVote'
 import useProposalData from '@/lib/project/useProposalData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -141,14 +141,12 @@ export const SenateVoteButtons = memo(
     const handleVote = (pass: boolean) => {
       return async () => {
         if (!account) return
-        const transaction = prepareContractCall({
-          contract: proposalContract,
-          method: 'voteTempCheck' as string,
-          params: [mdp, pass],
-        })
-        await sendAndConfirmTransaction({
-          transaction,
+        await castSenateTempCheckVote({
           account,
+          proposalContract,
+          mdp,
+          pass,
+          surface: 'projects_list',
         })
         VOTE_CONFETTI(pass)
         refetch()
@@ -474,13 +472,13 @@ export default function SenateVote({
 
   const handleVote = (pass: boolean) => async () => {
     if (!account) return
-    const transaction = prepareContractCall({
-      contract: proposalContract,
-      method: 'voteTempCheck' as string,
-      params: [mdp, pass],
+    await castSenateTempCheckVote({
+      account,
+      proposalContract,
+      mdp,
+      pass,
+      surface: 'proposal_page',
     })
-    await sendAndConfirmTransaction({ transaction, account })
-    trackProposalVote(mdp)
     VOTE_CONFETTI(pass)
     refetch()
   }
