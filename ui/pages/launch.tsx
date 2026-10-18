@@ -26,13 +26,11 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import FeaturedMissionSection from '@/components/home/FeaturedMissionSection'
-import GetStartedToday from '@/components/launchpad/GetStartedToday'
-import GoFurtherTogether from '@/components/launchpad/GoFurtherTogether'
 import LaunchHero from '@/components/launchpad/LaunchHero'
 import LaunchpadFAQ from '@/components/launchpad/LaunchpadFAQ'
-import PowerOfDecentralization from '@/components/launchpad/PowerOfDecentralization'
-import ProvenFinancingModel from '@/components/launchpad/ProvenFinancingModel'
+import LaunchpadHowItWorks from '@/components/launchpad/howItWorks/LaunchpadHowItWorks'
 import { ExpandedFooter } from '@/components/layout/ExpandedFooter'
+import Head from '@/components/layout/Head'
 import CreateMission from '@/components/mission/CreateMission'
 
 type LaunchProps = {
@@ -105,12 +103,16 @@ export default function Launch({ missions, featuredMissionData }: LaunchProps) {
 
   return (
     <>
+      <Head
+        title="Launchpad"
+        description="Crowdfund a space mission on-chain. Set a goal and a deadline, take contributions in ETH or by card, and refund backers if the goal is missed."
+      />
       <LaunchHero citizenHasAccess={citizenHasAccess} onLaunchClick={handleCreateMission} />
+      <LaunchpadHowItWorks
+        citizenHasAccess={citizenHasAccess}
+        onLaunchClick={handleCreateMission}
+      />
       <FeaturedMissionSection missions={missions} featuredMissionData={featuredMissionData} />
-      <GoFurtherTogether />
-      <ProvenFinancingModel />
-      <PowerOfDecentralization />
-      <GetStartedToday citizenHasAccess={citizenHasAccess} onLaunchClick={handleCreateMission} />
       <LaunchpadFAQ />
       <ExpandedFooter
         callToActionTitle="Join the Network"

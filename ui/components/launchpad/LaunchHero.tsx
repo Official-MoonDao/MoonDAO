@@ -82,9 +82,9 @@ export default function LaunchHero({ citizenHasAccess, onLaunchClick }: LaunchHe
         <div
           className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group"
           onClick={() => {
-            const featuredMissionSection = document.getElementById('featured-mission')
-            if (featuredMissionSection) {
-              featuredMissionSection.scrollIntoView({
+            const howItWorksSection = document.getElementById('how-it-works')
+            if (howItWorksSection) {
+              howItWorksSection.scrollIntoView({
                 behavior: 'smooth',
                 block: 'start',
               })
