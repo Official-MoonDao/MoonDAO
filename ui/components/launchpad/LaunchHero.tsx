@@ -8,17 +8,18 @@ type LaunchHeroProps = {
 
 export default function LaunchHero({ citizenHasAccess, onLaunchClick }: LaunchHeroProps) {
   return (
-    <section className="relative h-[60svh] min-h-[480px] overflow-hidden">
+    <section className="relative h-[80svh] min-h-[560px] max-h-[900px] overflow-hidden">
       <div className="absolute inset-0 -top-18 md:-top-22 lg:-top-26">
         <Image
           src="/assets/launchpad/moondao-launchpad-hero.png"
           alt="MoonDAO Launchpad Hero"
           fill
-          className="object-cover object-center"
+          className="object-cover object-[center_70%]"
           priority
           quality={100}
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[#010618]/80 via-[#010618]/60 to-transparent"></div>
+        <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-[#010618]"></div>
       </div>
 
       <div className="relative z-10 h-full flex flex-col justify-end">
@@ -78,7 +79,7 @@ export default function LaunchHero({ citizenHasAccess, onLaunchClick }: LaunchHe
         className="absolute bottom-0 right-0 w-32 md:w-48 opacity-50"
       />
 
-      <div className="absolute bottom-20 sm:bottom-22 md:bottom-24 left-1/2 transform -translate-x-1/2 z-20">
+      <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-20">
         <div
           className="flex flex-col items-center text-white/70 hover:text-white/90 transition-colors duration-300 cursor-pointer group"
           onClick={() => {
