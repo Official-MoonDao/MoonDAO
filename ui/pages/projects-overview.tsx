@@ -26,33 +26,12 @@ import WebsiteHead from '../components/layout/Head'
 import StandardButton from '../components/layout/StandardButton'
 import Reveal from '@/components/home/landing/Reveal'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
+import CountUp from '@/components/project/CountUp'
 import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
+import ProposalJourney from '@/components/project/ProposalJourney'
 
 const EASE: [number, number, number, number] = [0.21, 0.47, 0.32, 0.98]
 const SUBMISSION_CLOSE = formatSubmissionWindowClose(getSubmissionWindowClose())
-
-const STEPS = [
-  {
-    n: '01',
-    title: 'Ideate',
-    body: 'Post the problem in Discord first. Feedback before a locked budget saves rewrite cycles.',
-  },
-  {
-    n: '02',
-    title: 'Propose',
-    body: 'Use the template: novelty, lunar bridge, SMART key results, work-only budget under the max.',
-  },
-  {
-    n: '03',
-    title: 'Present & vote',
-    body: 'Town Hall pitch, Senate diligence, then member vote. Funded leads join the Senate for the project.',
-  },
-  {
-    n: '04',
-    title: 'Ship & rewards',
-    body: 'Weekly updates, final report, return unused funds. Completed work can earn quarterly retro rewards.',
-  },
-]
 
 const FUND_YES = [
   {
@@ -258,7 +237,7 @@ const ProjectsOverview: React.FC<{
                       Max per project · Q{quarter} {year}
                     </p>
                     <p className="mt-2 font-heading font-semibold text-4xl text-white md:text-5xl">
-                      ${MAX_BUDGET_USD.toLocaleString()}
+                      <CountUp value={MAX_BUDGET_USD} prefix="$" />
                     </p>
                     <p className="mt-2 text-sm text-white/45">¼ of the quarterly project pot</p>
                   </div>
@@ -396,19 +375,7 @@ const ProjectsOverview: React.FC<{
                   How it works
                 </h2>
               </Reveal>
-              <div className="mt-14 grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
-                {STEPS.map((step, i) => (
-                  <Reveal key={step.n} delay={0.08 * i}>
-                    <p className="font-heading font-semibold text-sm tracking-[0.25em] text-cyan-300/60">
-                      {step.n}
-                    </p>
-                    <h3 className="mt-3 font-heading font-semibold text-xl text-white">
-                      {step.title}
-                    </h3>
-                    <p className="mt-3 text-sm leading-relaxed text-gray-400">{step.body}</p>
-                  </Reveal>
-                ))}
-              </div>
+              <ProposalJourney />
             </div>{' '}
           </section>
 
@@ -430,7 +397,7 @@ const ProjectsOverview: React.FC<{
                         Stablecoin retro pool
                       </p>
                       <p className="mt-2 font-heading font-semibold text-4xl text-white">
-                        ${NEXT_QUARTER_BUDGET_USD.toLocaleString()}
+                        <CountUp value={NEXT_QUARTER_BUDGET_USD} prefix="$" />
                       </p>
                     </div>
                   )}
