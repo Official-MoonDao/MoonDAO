@@ -33,17 +33,20 @@ const FRAME_CLASS: Record<SceneVariant, string> = {
 }
 
 /**
- * Which step of `steps` the scene is on, on a one-shot timeline that starts
- * when the scene is active (or first seen). Reduced motion jumps to the last step.
+ * Which step of `steps` the scene is on, on a timeline that starts when the
+ * scene is active (or seen). One-shot by default; with `loop` it holds the last
+ * step briefly, starts over, and pauses while off screen. Reduced motion jumps
+ * to the last step.
  */
 export function useSceneStep(
   ref: RefObject<Element>,
   steps: number,
   active: boolean | undefined,
-  replayKey: number
+  replayKey: number,
+  loop = false
 ): { step: number; done: boolean } {
   const reduce = useReducedMotion()
-  const inView = useInView(ref, { amount: 0.4, once: true })
+  const inView = useInView(ref, { amount: 0.4, once: !loop })
   const playing = active ?? inView
   const timeline = useMotionValue(0)
   const toStep = (v: number) => Math.max(0, Math.min(steps - 1, Math.floor(v * steps)))
@@ -54,9 +57,13 @@ export function useSceneStep(
     if (reduce) return
     timeline.set(0)
     if (!playing) return
-    const controls = animate(timeline, 1, { duration: steps * 1.15, ease: 'linear' })
+    const controls = animate(timeline, 1, {
+      duration: steps * 1.15,
+      ease: 'linear',
+      ...(loop ? { repeat: Infinity, repeatDelay: 2.5 } : {}),
+    })
     return () => controls.stop()
-  }, [reduce, playing, timeline, steps, replayKey])
+  }, [reduce, playing, timeline, steps, replayKey, loop])
 
   const shown = reduce ? steps - 1 : step
   return { step: shown, done: shown === steps - 1 }

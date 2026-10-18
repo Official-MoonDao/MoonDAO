@@ -4,7 +4,6 @@ import {
   SPRING,
   SceneFrame,
   StepCaption,
-  useReplay,
   useSceneStep,
   type SceneProps,
   type SceneTag,
@@ -77,8 +76,7 @@ const CAMPAIGN_CAPTIONS = [
 
 export function CampaignScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay()
-  const { step, done } = useSceneStep(ref, RAISED.length, active, key)
+  const { step } = useSceneStep(ref, RAISED.length, active, 0, true)
   const raised = RAISED[step]
   const funded = raised >= MISSION.goal
   const ticker = CONTRIBUTIONS.slice(0, step + 1)
@@ -93,7 +91,6 @@ export function CampaignScene({ variant, active }: SceneProps) {
       title={MISSION.name}
       label="A mission with a 50 ETH goal and 28 days collects contributions in ETH and by card, passes its goal, and closes at 60 ETH"
       caption={<StepCaption step={step} lines={CAMPAIGN_CAPTIONS} />}
-      onReplay={done ? replay : undefined}
     >
       <div className="grid h-full grid-cols-[minmax(0,1fr)_7.5rem] gap-4">
         <div className="flex flex-col justify-center gap-3">
@@ -186,8 +183,7 @@ const CONTRIBUTE_CAPTIONS = [
 
 export function ContributeScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay()
-  const { step, done } = useSceneStep(ref, CONTRIBUTE_STEPS, active, key)
+  const { step } = useSceneStep(ref, CONTRIBUTE_STEPS, active, 0, true)
   const minted = step >= 1
   const shownRows = step >= 3 ? SPLIT.length : step >= 2 ? 1 : 0
 
@@ -199,7 +195,6 @@ export function ContributeScene({ variant, active }: SceneProps) {
       title={MISSION.name}
       label={`1 ETH mints 2,000 ${MISSION.token}: 1,000 to you, 600 to the team, 350 to MoonDAO and 50 to a trading pool, with the reserved tokens locked`}
       caption={<StepCaption step={step} lines={CONTRIBUTE_CAPTIONS} />}
-      onReplay={done ? replay : undefined}
     >
       <div className="grid h-full grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4">
         <div className="flex flex-col items-center gap-2">
@@ -297,8 +292,7 @@ const PAYOUT_CAPTIONS = [
 
 export function PayoutScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay()
-  const { step, done } = useSceneStep(ref, PAYOUT_CAPTIONS.length, active, key)
+  const { step } = useSceneStep(ref, PAYOUT_CAPTIONS.length, active, 0, true)
   const paid = Math.min(step, PAYOUTS.length)
 
   return (
@@ -309,7 +303,6 @@ export function PayoutScene({ variant, active }: SceneProps) {
       title={MISSION.name}
       label={`${RAISED_TOTAL} ETH raised is split 90% to the team, 5% to a trading pool, 2.5% to the MoonDAO treasury and 2.5% to Juicebox`}
       caption={<StepCaption step={step} lines={PAYOUT_CAPTIONS} />}
-      onReplay={done ? replay : undefined}
     >
       <div className="flex h-full flex-col justify-center gap-3">
         <div className="flex items-baseline justify-between">
@@ -377,8 +370,7 @@ const REFUND_CAPTIONS = [
 
 export function RefundScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay()
-  const { step, done } = useSceneStep(ref, MISSED.length, active, key)
+  const { step } = useSceneStep(ref, MISSED.length, active, 0, true)
   const now = MISSED[step]
   const refunded = step >= 4
   const missed = step >= 2
@@ -391,7 +383,6 @@ export function RefundScene({ variant, active }: SceneProps) {
       title="Another mission"
       label="A mission reaches its deadline with 32 of 50 ETH; the goal is missed, a 28-day refund window opens, and you return 1,000 tokens for your 1 ETH"
       caption={<StepCaption step={step} lines={REFUND_CAPTIONS} />}
-      onReplay={done ? replay : undefined}
     >
       <div className="flex h-full flex-col justify-center gap-4">
         <div>
@@ -471,8 +462,7 @@ const VESTING_CAPTIONS = [
 
 export function VestingScene({ variant, active }: SceneProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const { key, replay } = useReplay()
-  const { step, done } = useSceneStep(ref, VEST_YEAR.length, active, key)
+  const { step } = useSceneStep(ref, VEST_YEAR.length, active, 0, true)
   const year = VEST_YEAR[step]
   const unlocked = unlockedAt(year)
 
@@ -484,7 +474,6 @@ export function VestingScene({ variant, active }: SceneProps) {
       title={MISSION.name}
       label="Team and MoonDAO tokens stay locked for one year, a quarter unlocks at the cliff, and the rest unlocks steadily until year four"
       caption={<StepCaption step={step} lines={VESTING_CAPTIONS} />}
-      onReplay={done ? replay : undefined}
     >
       <div className="flex h-full flex-col justify-center gap-4">
         <div className="relative pt-5">
