@@ -1,0 +1,3 @@
+# Quarterly contribution reports are generated elsewhere and served
+# byte-for-byte; never normalize their line endings.
+ui/public/contributions/** -text
