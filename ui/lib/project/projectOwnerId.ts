@@ -50,3 +50,15 @@ export function ownerFallbackName(teamId: number | string | bigint): string {
   const owner = parseOwnerId(teamId)
   return owner.kind === 'project' ? `Project ${owner.id}` : `Team ${owner.id}`
 }
+
+export function ownerDisplayName(
+  teamId: number | string | bigint,
+  teamNames: Map<number, string>
+): string {
+  const owner = parseOwnerId(teamId)
+  if (owner.kind === 'team') {
+    const name = teamNames.get(owner.id)?.trim()
+    if (name) return name
+  }
+  return ownerFallbackName(teamId)
+}
