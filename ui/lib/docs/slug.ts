@@ -75,6 +75,78 @@ export const REMOVED_DOC_REDIRECTS: Record<string, string> = {
 }
 
 /**
+ * `docs.moondao.com` used to be the Quartz site in Official-MoonDao/documentation.
+ * The domain now lands on this app, whose pages live under `/docs`. A request for
+ * the old path is a 404 (`/Reference/Nested-Docs/About-Pablo-Moncada`) or, at
+ * `/`, the marketing homepage.
+ */
+export const LEGACY_DOCS_HOST = 'docs.moondao.com'
+
+/** Apex 307s to www, so send legacy docs links straight to the host that serves them. */
+export const DOCS_CANONICAL_ORIGIN = 'https://www.moondao.com'
+
+/**
+ * `nextUrl.pathname` leaves some sequences encoded (`%E2%80%99` stays as the
+ * characters `%E2%80%99`). Decode, then drop `.` / `..`, before comparing to
+ * a published slug.
+ */
+function normalizeRequestPath(pathname: string): string {
+  const raw = pathname.split('?')[0].split('#')[0] || '/'
+  let decoded = raw
+  try {
+    decoded = decodeURIComponent(raw)
+  } catch {
+    decoded = raw
+  }
+  const parts: string[] = []
+  for (const part of decoded.split('/')) {
+    if (part === '' || part === '.') continue
+    if (part === '..') {
+      parts.pop()
+      continue
+    }
+    parts.push(part)
+  }
+  return `/${parts.join('/')}`
+}
+
+/**
+ * Absolute URL on the main site for a path requested on `docs.moondao.com`.
+ *
+ * Quartz published slugs at the host root. Prefix them with `/docs`, rewrite the
+ * two slugs that could not be reproduced, and send removed Press pages to
+ * `/press` in the same hop. Paths that already start with `/docs` are not
+ * prefixed again.
+ */
+export function legacyDocsHostDestination(pathname: string, search = ''): string {
+  const query = search ? (search.startsWith('?') ? search : `?${search}`) : ''
+  let bare = normalizeRequestPath(pathname)
+  if (bare.length > 1) bare = bare.replace(/\/+$/, '')
+
+  if (bare === '/documentation' || bare.startsWith('/documentation/')) {
+    bare = `/docs${bare.slice('/documentation'.length)}` || '/docs'
+  }
+
+  if (bare === '/' || bare === '/docs') {
+    return `${DOCS_CANONICAL_ORIGIN}/docs${query}`
+  }
+
+  if (bare.startsWith('/docs/')) {
+    const slug = bare.slice('/docs/'.length)
+    const mapped = INTENTIONAL_SLUG_CHANGES[slug]
+    if (mapped) bare = `/docs/${mapped}`
+    const removed = removedDocRedirectForPathname(bare)
+    return `${DOCS_CANONICAL_ORIGIN}${removed || bare}${query}`
+  }
+
+  const slug = bare.slice(1)
+  const mapped = INTENTIONAL_SLUG_CHANGES[slug] || slug
+  const docsPath = `/docs/${mapped}`
+  const removed = removedDocRedirectForPathname(docsPath)
+  return `${DOCS_CANONICAL_ORIGIN}${removed || docsPath}${query}`
+}
+
+/**
  * Destination for a removed docs URL, or undefined when the path is a live page.
  * Accepts the public `/docs/...` path and the `/documentation/...` rewrite target.
  * A folder slug (`Press/index`) also covers the folder URL (`/docs/Press`).
@@ -84,8 +156,8 @@ export function removedDocRedirectForPathname(pathname: string): string | undefi
   const slug = bare.startsWith('/docs/')
     ? bare.slice('/docs/'.length)
     : bare.startsWith('/documentation/')
-      ? bare.slice('/documentation/'.length)
-      : undefined
+    ? bare.slice('/documentation/'.length)
+    : undefined
   if (!slug) return undefined
   return REMOVED_DOC_REDIRECTS[slug] || REMOVED_DOC_REDIRECTS[`${slug}/index`]
 }
@@ -126,10 +198,7 @@ export function slugifyFilePath(filePath: string): string {
 
 /** Frontmatter `slug: /website-terms-and-conditions` → `website-terms-and-conditions`. */
 export function normalizeAliasSlug(raw: string): string {
-  return raw
-    .trim()
-    .replace(/^\/+/, '')
-    .replace(/\/+$/, '')
+  return raw.trim().replace(/^\/+/, '').replace(/\/+$/, '')
 }
 
 /**
