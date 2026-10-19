@@ -4,6 +4,7 @@ import useSWR from 'swr'
 import { readContract } from 'thirdweb'
 import { arbitrum, ethereum, polygon, base } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { vMooneyWeiAtTimestamp } from '../vMooneyAtTimestamp'
 import { votingEscrowContracts } from '../votingEscrowContracts'
 import { LockedBreakdown } from './useTotalLockedMooney'
 
@@ -86,6 +87,72 @@ async function withRetry<T>(
     }
   }
   throw lastError
+}
+
+// `balanceOf(addr, _t)` reverts for any voter whose latest lock checkpoint is
+// newer than `_t`, and Engine reports that as a non-numeric result we parse to
+// 0. For past timestamps, recompute every zero from the checkpoint history so
+// a lock change after the reference time can't erase a voter's power.
+async function repairZeroBalancesFromHistory(
+  chainSlug: string,
+  chainId: number,
+  tokenAddress: string,
+  addresses: string[],
+  values: number[],
+  timestamp: number
+): Promise<number[]> {
+  if (!timestamp || timestamp >= Math.floor(Date.now() / 1000)) return values
+  const zeroIndexes = values.flatMap((value, i) => (value > 0 ? [] : [i]))
+  const contract = votingEscrowContracts[chainSlug]
+  if (zeroIndexes.length === 0 || !contract) return values
+
+  const { engineBatchRead } = await import('@/lib/thirdweb/engine')
+  let epochs: string[]
+  try {
+    epochs = await withRetry(() =>
+      engineBatchRead<string>(
+        tokenAddress,
+        'user_point_epoch',
+        zeroIndexes.map((i) => [addresses[i]]),
+        VMOONEY_ABI,
+        chainId
+      )
+    )
+  } catch (error) {
+    console.error(`[repairZeroBalancesFromHistory] user_point_epoch failed on ${chainSlug}:`, error)
+    return values
+  }
+
+  const repaired = [...values]
+  await Promise.all(
+    zeroIndexes.map(async (addressIndex, j) => {
+      const latestEpoch = parseInt(epochs[j])
+      if (!Number.isFinite(latestEpoch) || latestEpoch <= 0) return
+      const address = addresses[addressIndex]
+      try {
+        const wei = await vMooneyWeiAtTimestamp(latestEpoch, BigInt(timestamp), async (epoch) => {
+          const point: any = await withRetry(() =>
+            readContract({
+              contract,
+              method: 'user_point_history' as any,
+              params: [address, BigInt(epoch)],
+            })
+          )
+          const [bias, slope, ts] = Array.isArray(point)
+            ? point
+            : [point.bias, point.slope, point.ts]
+          return { bias: BigInt(bias), slope: BigInt(slope), ts: BigInt(ts) }
+        })
+        repaired[addressIndex] = Number(wei) / 1e18
+      } catch (error) {
+        console.error(
+          `[repairZeroBalancesFromHistory] history repair failed for ${address} on ${chainSlug}:`,
+          error
+        )
+      }
+    })
+  )
+  return repaired
 }
 
 /**
@@ -206,10 +273,19 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
           )
         )
 
-        return balances.map((balance) => {
+        const values = balances.map((balance) => {
           const parsed = parseInt(balance)
           return isNaN(parsed) ? 0 : parsed / 1e18
         })
+
+        return repairZeroBalancesFromHistory(
+          chainSlug,
+          chainId,
+          tokenAddress,
+          addresses,
+          values,
+          timestamp
+        )
       })
     )
 
