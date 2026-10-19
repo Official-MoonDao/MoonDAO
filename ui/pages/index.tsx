@@ -42,6 +42,14 @@ const GovernanceSection = dynamic(() => import('../components/home/landing/Gover
   loading: () => <SectionSkeleton />,
 })
 
+const MoonBaseShowcase = dynamic(() => import('../components/home/landing/MoonBaseShowcase'), {
+  loading: () => <SectionSkeleton />,
+})
+
+const DePrizeShowcase = dynamic(() => import('../components/home/landing/DePrizeShowcase'), {
+  loading: () => <SectionSkeleton />,
+})
+
 const LaunchpadShowcase = dynamic(() => import('../components/home/landing/LaunchpadShowcase'), {
   loading: () => <SectionSkeleton />,
 })
@@ -114,6 +122,8 @@ export default function Home({ missions, featuredMissionData }: any) {
         <MissionStory />
         <PillarsSection />
         <GovernanceSection />
+        <MoonBaseShowcase />
+        <DePrizeShowcase />
         <LaunchpadShowcase />
         <JourneyTimeline />
         <VoicesSection />
