@@ -142,15 +142,6 @@ module.exports = withBundleAnalyzer(
             source: '/docs/:path*',
             destination: '/documentation/:path*',
           },
-          // Quarterly senate contribution reports. Each cycle is one
-          // self-contained HTML file generated outside this repo and dropped
-          // into public/contributions/<year>-q<n>.html, served as-is (no
-          // site layout, CSS or JS). This maps the clean URL onto the file,
-          // so a new cycle needs no config change.
-          {
-            source: '/contributions/:cycle(\\d{4}-q[1-4])',
-            destination: '/contributions/:cycle.html',
-          },
         ]
       },
       async headers() {
@@ -164,9 +155,10 @@ module.exports = withBundleAnalyzer(
               },
             ],
           },
-          // The contribution reports carry contributor names and claims; keep
-          // them out of search engines. `:path+` leaves /contributions itself
-          // (the submission page) indexable.
+          // The quarterly contribution reports (pages/contributions/[cycle])
+          // carry contributor names and claims; keep them out of search
+          // engines. `:path+` leaves /contributions itself (the submission
+          // page) indexable.
           {
             source: '/contributions/:path+',
             headers: [
