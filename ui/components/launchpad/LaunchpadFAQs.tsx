@@ -32,12 +32,12 @@ const FAQS = [
   {
     question: 'How much does it cost to launch a campaign?',
     answer:
-      'There is no upfront cost to create a Mission, but standard Ethereum network (gas) fees apply when deploying smart contracts. Additionally, MoonDAO/Juicebox receive a small percentage (10% in total) of successfully raised funds to sustain the platform and support other space-related projects within the community-governed treasury. Likewise, 10% of the tokens created for a Mission will be reserved for the MoonDAO treasury to align long-term interests, with a 1-year cliff and three years of streaming, meaning that tokens cannot be immediately sold. Furthermore, any outlays from the MoonDAO treasury require a vote.',
+      'There is no upfront cost to create a Mission, but standard Ethereum network (gas) fees apply when deploying smart contracts. Of the funds raised by a successful Mission, 90% goes to the team, 5% seeds a liquidity pool for the Mission token, and MoonDAO and Juicebox each receive 2.5% to sustain the platform and support other space-related projects within the community-governed treasury. Likewise, 17.5% of the tokens created for a Mission are reserved for the MoonDAO treasury to align long-term interests, with a 1-year cliff and vesting through year four, meaning that tokens cannot be immediately sold. Furthermore, any outlays from the MoonDAO treasury require a vote.',
   },
   {
     question: 'How does the cliff and streaming work?',
     answer:
-      "Funds raised through the MoonDAO Launch Pad are subject to a 1-year cliff, meaning they remain locked for the first year. After this period, they stream gradually over three years, ensuring sustainable, long-term funding. This applies to both the project's funds and MoonDAO's 10% reserve allocation, preventing immediate sell-offs and promoting ecosystem stability.",
+      "The tokens reserved for the Mission team (30% of the supply) and for MoonDAO (17.5%) are subject to a 1-year cliff, meaning none of them can be claimed during the first year. At the cliff a quarter unlocks, and the rest unlocks steadily until the end of year four. This prevents immediate sell-offs and keeps the team invested in the Mission's long-term success.",
   },
   {
     question: 'Should I create an ERC-20 token for my campaign?',
@@ -47,7 +47,7 @@ const FAQS = [
   {
     question: 'Do I need to manage liquidity for my token?',
     answer:
-      'If a mission launches successfully using an ERC-20 token, a liquidity pool (LP) will be created on Uniswap after the funding period ends. 2.5% of the raised ETH and 2.5% of the token supply will be added to the pool. Trading fees from the DEX will accrue to vMOONEY holders.',
+      'If a mission launches successfully using an ERC-20 token, a liquidity pool (LP) will be created on Uniswap after the funding period ends. 5% of the raised ETH and 2.5% of the token supply will be added to the pool. Trading fees from the DEX will accrue to vMOONEY holders.',
   },
   {
     question: 'Can I fundraise in multiple cryptocurrencies?',
