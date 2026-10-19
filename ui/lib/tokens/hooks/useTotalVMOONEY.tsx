@@ -24,7 +24,7 @@ async function fetchTotalVMOONEYForAddress(address: string): Promise<number> {
       })
 
       return Number(balance?.toString() || 0) / 10 ** 18
-    })
+    }),
   )
 
   return results.reduce((sum, result) => {
@@ -48,7 +48,7 @@ const SWR_CONFIG = {
 
 export function useTotalVMOONEY(
   address: string | undefined,
-  _breakdown?: LockedBreakdown[] // No longer used - fetches from all chains like project voting
+  _breakdown?: LockedBreakdown[], // No longer used - fetches from all chains like project voting
 ): {
   totalVMOONEY: number
   isLoading: boolean
@@ -56,7 +56,7 @@ export function useTotalVMOONEY(
   const { data: totalVMOONEY = 0, isLoading } = useSWR(
     address ? `vmooney-total-${address.toLowerCase()}` : null,
     () => fetchTotalVMOONEYForAddress(address!),
-    SWR_CONFIG
+    SWR_CONFIG,
   )
 
   return {
@@ -68,11 +68,7 @@ export function useTotalVMOONEY(
 // Retry an async fn up to `attempts` times with exponential backoff. Used to
 // make per-chain vMOONEY reads resilient to transient RPC blips so we don't
 // silently undercount voting power when a single chain hiccups.
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  attempts = 3,
-  baseDelayMs = 250
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelayMs = 250): Promise<T> {
   let lastError: unknown
   for (let i = 0; i < attempts; i++) {
     try {
@@ -80,9 +76,7 @@ async function withRetry<T>(
     } catch (err) {
       lastError = err
       if (i < attempts - 1) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, baseDelayMs * Math.pow(2, i))
-        )
+        await new Promise((resolve) => setTimeout(resolve, baseDelayMs * Math.pow(2, i)))
       }
     }
   }
@@ -99,7 +93,7 @@ async function repairZeroBalancesFromHistory(
   tokenAddress: string,
   addresses: string[],
   values: number[],
-  timestamp: number
+  timestamp: number,
 ): Promise<number[]> {
   if (!timestamp || timestamp >= Math.floor(Date.now() / 1000)) return values
   const zeroIndexes = values.flatMap((value, i) => (value > 0 ? [] : [i]))
@@ -107,15 +101,21 @@ async function repairZeroBalancesFromHistory(
   if (zeroIndexes.length === 0 || !contract) return values
 
   const { engineBatchRead } = await import('@/lib/thirdweb/engine')
-  const epochs = await withRetry(() =>
-    engineBatchRead<string>(
-      tokenAddress,
-      'user_point_epoch',
-      zeroIndexes.map((i) => [addresses[i]]),
-      VMOONEY_ABI,
-      chainId
+  let epochs: string[]
+  try {
+    epochs = await withRetry(() =>
+      engineBatchRead<string>(
+        tokenAddress,
+        'user_point_epoch',
+        zeroIndexes.map((i) => [addresses[i]]),
+        VMOONEY_ABI,
+        chainId,
+      ),
     )
-  )
+  } catch (error) {
+    console.error(`[repairZeroBalancesFromHistory] user_point_epoch failed on ${chainSlug}:`, error)
+    return values
+  }
 
   const repaired = [...values]
   await Promise.all(
@@ -123,18 +123,28 @@ async function repairZeroBalancesFromHistory(
       const latestEpoch = parseInt(epochs[j])
       if (!Number.isFinite(latestEpoch) || latestEpoch <= 0) return
       const address = addresses[addressIndex]
-      const wei = await vMooneyWeiAtTimestamp(latestEpoch, BigInt(timestamp), async (epoch) => {
-        const [bias, slope, ts] = (await withRetry(() =>
-          readContract({
-            contract,
-            method: 'user_point_history' as any,
-            params: [address, BigInt(epoch)],
-          })
-        )) as unknown as [bigint, bigint, bigint, bigint]
-        return { bias: BigInt(bias), slope: BigInt(slope), ts: BigInt(ts) }
-      })
-      repaired[addressIndex] = Number(wei) / 1e18
-    })
+      try {
+        const wei = await vMooneyWeiAtTimestamp(latestEpoch, BigInt(timestamp), async (epoch) => {
+          const point: any = await withRetry(() =>
+            readContract({
+              contract,
+              method: 'user_point_history' as any,
+              params: [address, BigInt(epoch)],
+            }),
+          )
+          const [bias, slope, ts] = Array.isArray(point)
+            ? point
+            : [point.bias, point.slope, point.ts]
+          return { bias: BigInt(bias), slope: BigInt(slope), ts: BigInt(ts) }
+        })
+        repaired[addressIndex] = Number(wei) / 1e18
+      } catch (error) {
+        console.error(
+          `[repairZeroBalancesFromHistory] history repair failed for ${address} on ${chainSlug}:`,
+          error,
+        )
+      }
+    }),
   )
   return repaired
 }
@@ -166,7 +176,7 @@ export async function fetchTotalVMOONEYsAtBlocks(
     ethereum?: number
     polygon?: number
     base?: number
-  }
+  },
 ) {
   try {
     const { engineBatchRead } = await import('@/lib/thirdweb/engine')
@@ -177,9 +187,7 @@ export async function fetchTotalVMOONEYsAtBlocks(
         const chainSlug = getChainSlug(chain)
         const chainId = chain.id
         const tokenAddress = VMOONEY_ADDRESSES[chainSlug]
-        const blockAtClose = (closeBlocks as any)[chainSlug] as
-          | number
-          | undefined
+        const blockAtClose = (closeBlocks as any)[chainSlug] as number | undefined
 
         if (!process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_SECRET) {
           return addresses.map(() => 0)
@@ -190,7 +198,7 @@ export async function fetchTotalVMOONEYsAtBlocks(
           // outcome. Caller is expected to fall back to the
           // timestamp-based fetcher in this case.
           throw new Error(
-            `[fetchTotalVMOONEYsAtBlocks] missing/invalid blockAtClose for ${chainSlug}`
+            `[fetchTotalVMOONEYsAtBlocks] missing/invalid blockAtClose for ${chainSlug}`,
           )
         }
 
@@ -200,15 +208,15 @@ export async function fetchTotalVMOONEYsAtBlocks(
             'balanceOfAt',
             addresses.map((address) => [address, blockAtClose]),
             VMOONEY_ABI,
-            chainId
-          )
+            chainId,
+          ),
         )
 
         return balances.map((balance) => {
           const parsed = parseInt(balance)
           return isNaN(parsed) ? 0 : parsed / 1e18
         })
-      })
+      }),
     )
 
     const totals: number[] = addresses.map(() => 0)
@@ -253,8 +261,8 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
             'balanceOf',
             addresses.map((address) => (timestamp ? [address, timestamp] : [address])),
             VMOONEY_ABI,
-            chainId
-          )
+            chainId,
+          ),
         )
 
         const values = balances.map((balance) => {
@@ -268,9 +276,9 @@ export async function fetchTotalVMOONEYs(addresses: string[], timestamp: number)
           tokenAddress,
           addresses,
           values,
-          timestamp
+          timestamp,
         )
-      })
+      }),
     )
 
     // Sum across chains. Initialize each address slot to 0 so an empty
