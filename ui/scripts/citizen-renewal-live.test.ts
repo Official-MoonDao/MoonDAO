@@ -15,6 +15,7 @@ import {
   DEFAULT_RENEWAL_TAG_IDS,
   kitAddTagRequest,
   kitSequenceRemoval,
+  parseRenewalStageKey,
   planRenewalWrites,
   renewalSequenceIds,
   resolveRenewalTagIds,
@@ -52,7 +53,6 @@ function activeRow(
     kitSubscriberId: `${900000 + Number(tokenId)}`,
     suppressed: false,
     firstRunRedis: false,
-    firstRunKitTag: false,
     ...extra,
   }
 }
@@ -116,7 +116,7 @@ const LIVE_ENV = {
   RENEWAL_REMINDERS_LIVE: 'true',
   CONVERT_KIT_V4_API_KEY: 'kit-test-key',
   RENEWAL_REMINDER_TAG_ID: '11',
-  RENEWAL_CATCHUP_MINUS14_TAG_ID: '12',
+  RENEWAL_CATCHUP_MINUS7_TAG_ID: '12',
   RENEWAL_CATCHUP_EXPIRY_TAG_ID: '13',
   RENEWAL_CATCHUP_PLUS14_TAG_ID: '14',
   RENEWED_TAG_ID: '15',
@@ -124,7 +124,7 @@ const LIVE_ENV = {
 
 const TAG_IDS = {
   reminder: '11',
-  catchupMinus14: '12',
+  catchupMinus7: '12',
   catchupExpiry: '13',
   catchupPlus14: '14',
   renewed: '15',
@@ -146,7 +146,6 @@ function passArgs(
     exclusionSets: {
       suppressed: new Set<string>(),
       firstRunRedis: new Set<string>(),
-      firstRunKitTag: new Set<string>(),
     },
     allowKitReads: false,
     listTags: async () => [],
@@ -211,9 +210,9 @@ describe('late entrant routing', () => {
     const byToken = new Map(plan.writes.map((write) => [write.tokenId, write]))
     expect(byToken.get('30')?.stage).to.equal('minus30')
     expect(byToken.get('30')?.ops.map((op) => op.tagKey)).to.deep.equal(['reminder'])
-    expect(byToken.get('20')?.stage).to.equal('minus14')
-    expect(byToken.get('20')?.ops.map((op) => op.tagKey)).to.deep.equal(['catchupMinus14'])
-    expect(byToken.get('14')?.stage).to.equal('minus14')
+    expect(byToken.get('20')?.stage).to.equal('minus7')
+    expect(byToken.get('20')?.ops.map((op) => op.tagKey)).to.deep.equal(['catchupMinus7'])
+    expect(byToken.get('14')?.stage).to.equal('minus7')
     expect(byToken.get('0')?.stage).to.equal('expiry')
     expect(byToken.get('44')?.stage).to.equal('plus14')
     for (const write of plan.writes) {
@@ -230,7 +229,7 @@ describe('late entrant routing', () => {
       passArgs({
         env: {
           ...LIVE_ENV,
-          RENEWAL_CATCHUP_MINUS14_TAG_NAME: 'Custom-Catchup-14',
+          RENEWAL_CATCHUP_MINUS7_TAG_NAME: 'Custom-Catchup-14',
         },
         liveParam: '1',
         rows: [activeRow('7', 20, { email: 'late-person@example.com' })],
@@ -238,8 +237,8 @@ describe('late entrant routing', () => {
         fetchImpl,
       })
     )
-    expect(result.buckets.catchupMinus14.planned).to.equal(1)
-    expect(result.buckets.catchupMinus14.executed).to.equal(1)
+    expect(result.buckets.catchupMinus7.planned).to.equal(1)
+    expect(result.buckets.catchupMinus7.executed).to.equal(1)
     expect(result.buckets.renewalReminder.planned).to.equal(0)
     expect(result.actions[0].ops).to.deep.equal([{ op: 'add', tag: 'Custom-Catchup-14' }])
     expect(calls.map((call) => call.method)).to.deep.equal(['POST'])
@@ -274,7 +273,7 @@ describe('renewed swap', () => {
   })
 
   it('adds Renewed and removes the reminder and catch-up tags', async () => {
-    const openKey = renewalStageDedupeKey('9', expiresIn(10), 'minus14')
+    const openKey = renewalStageDedupeKey('9', expiresIn(10), 'minus7')
     const row = activeRow('9', 200, { email: 'renewed-person@example.com' })
     const plan = planRenewalWrites({
       rows: [],
@@ -288,7 +287,7 @@ describe('renewed swap', () => {
     expect(plan.writes[0].ops.map((op) => op.tagKey)).to.deep.equal([
       'renewed',
       'reminder',
-      'catchupMinus14',
+      'catchupMinus7',
       'catchupExpiry',
       'catchupPlus14',
     ])
@@ -330,7 +329,7 @@ describe('sequence removal', () => {
       rows: [],
       renewals: tokenIds.map((tokenId) => ({
         ...activeRow(tokenId, 200, { email: `renewed-${tokenId}@example.com` }),
-        openMembers: [renewalStageDedupeKey(tokenId, expiresIn(10), 'minus14')],
+        openMembers: [renewalStageDedupeKey(tokenId, expiresIn(10), 'minus7')],
       })),
       nowMs: NOW,
       writtenKeys: new Set(),
@@ -579,11 +578,11 @@ describe('renewal dedupe writes', () => {
 })
 
 describe('renewal exclusions', () => {
-  it('does not tag suppressed or first-run addresses', async () => {
+  it('holds the Oct 2 list on pre-expiry stages and still tags expiry', async () => {
     const rows = [
       activeRow('1', 30, { suppressed: true, email: 'suppressed-person@example.com' }),
       activeRow('2', 20, { firstRunRedis: true, email: 'firstrun-person@example.com' }),
-      activeRow('3', 14, { firstRunKitTag: true, email: 'broadcast-person@example.com' }),
+      activeRow('3', 0, { firstRunRedis: true, email: 'expiry-person@example.com' }),
     ]
     const plan = planRenewalWrites({
       rows,
@@ -591,9 +590,10 @@ describe('renewal exclusions', () => {
       nowMs: NOW,
       writtenKeys: new Set(),
     })
-    expect(plan.writes).to.deep.equal([])
+    expect(plan.writes.map((write) => write.tokenId)).to.deep.equal(['3'])
+    expect(plan.writes[0].stage).to.equal('expiry')
     expect(plan.skipped.suppressed).to.equal(1)
-    expect(plan.skipped.firstRun).to.equal(2)
+    expect(plan.skipped.firstRun).to.equal(1)
 
     const { calls, fetchImpl } = recordingFetch()
     const result = await runRenewalWritePass(
@@ -606,14 +606,13 @@ describe('renewal exclusions', () => {
       })
     )
     expect(result.buckets.renewalReminder.executed).to.equal(0)
-    expect(result.buckets.catchupMinus14.executed).to.equal(0)
-    expect(
-      calls.filter((call) => call.method === 'POST' || call.method === 'DELETE')
-    ).to.deep.equal([])
+    expect(result.buckets.catchupMinus7.executed).to.equal(0)
+    expect(result.buckets.catchupExpiry.executed).to.equal(1)
+    expect(calls.map((call) => call.method)).to.deep.equal(['POST'])
     const encoded = JSON.stringify(result)
     expect(encoded).to.not.include('suppressed-person@example.com')
     expect(encoded).to.not.include('firstrun-person@example.com')
-    expect(encoded).to.not.include('broadcast-person@example.com')
+    expect(encoded).to.not.include('expiry-person@example.com')
   })
 
   it('blocks live writes when an exclusion set was not read', async () => {
@@ -734,6 +733,66 @@ describe('never re-add Kit subscribers', () => {
   })
 })
 
+describe('renewed tag clearance', () => {
+  it('removes Renewed at the next cycle and does not unsubscribe', async () => {
+    const row = activeRow('9', 30, { hasRenewedTag: true, email: 'return-person@example.com' })
+    const plan = planRenewalWrites({
+      rows: [row],
+      renewals: [],
+      nowMs: NOW,
+      writtenKeys: new Set(),
+      renewedPresentTokenIds: new Set(['9']),
+    })
+    expect(plan.writes).to.have.length(1)
+    expect(plan.writes[0].ops).to.deep.equal([
+      { op: 'remove', tagKey: 'renewed' },
+      { op: 'add', tagKey: 'reminder' },
+    ])
+
+    const stillOut = planRenewalWrites({
+      rows: [activeRow('9', 200, { hasRenewedTag: true })],
+      renewals: [],
+      nowMs: NOW,
+      writtenKeys: new Set(),
+    })
+    expect(stillOut.writes).to.deep.equal([])
+
+    const store = memoryRedis({ sets: { 'renewal:renewed-present': ['9'] } })
+    const { calls, fetchImpl } = recordingFetch()
+    const kit = createKitMutator(fetchImpl, 'kit-test-key')
+    const executed = await executeRenewalWrites({
+      writing: true,
+      writes: plan.writes,
+      tagIds: TAG_IDS,
+      sequenceIds: DEFAULT_RENEWAL_SEQUENCE_IDS,
+      redis: store.redis,
+      kit,
+    })
+    expect(executed.failed).to.deep.equal([])
+    expect(calls.map((call) => `${call.method} ${call.url}`)).to.deep.equal([
+      'DELETE https://api.kit.com/v4/tags/15/subscribers/900009',
+      'POST https://api.kit.com/v4/tags/11/subscribers/900009',
+    ])
+    expect(calls.some((call) => call.url.toLowerCase().includes('unsubscribe'))).to.equal(false)
+    expect([...(store.sets.get('renewal:renewed-present') || [])]).to.deep.equal([])
+
+    const optedOut = planRenewalWrites({
+      rows: [activeRow('4', 30, { kitState: 'unsubscribed', hasRenewedTag: true })],
+      renewals: [],
+      nowMs: NOW,
+      writtenKeys: new Set(),
+    })
+    expect(optedOut.writes).to.deep.equal([])
+    expect(optedOut.skipped.kitOptOut).to.equal(1)
+  })
+
+  it('reads a legacy minus14 dedupe key as the -7 stage', () => {
+    const parsed = parseRenewalStageKey(`renewal:9:${expiresIn(10)}:minus14`)
+    expect(parsed?.stage).to.equal('minus7')
+    expect(parsed?.key).to.include(':minus14')
+  })
+})
+
 describe('renewal tag id resolution', () => {
   it('prefers an env id and otherwise matches the configured name', () => {
     const names = renewalTagNames({
@@ -742,7 +801,7 @@ describe('renewal tag id resolution', () => {
     expect(names.catchupExpiry).to.equal('Custom-Expiry')
     expect(names.reminder).to.equal('Renewal-Reminder')
     const resolved = resolveRenewalTagIds(names, { RENEWAL_REMINDER_TAG_ID: '77' }, [
-      { id: '12', name: 'Renewal-Catchup-minus14' },
+      { id: '12', name: 'Renewal-Catchup-minus7' },
       { id: '13', name: 'Custom-Expiry' },
       { id: '14', name: 'Renewal-Catchup-plus14' },
       { id: '15', name: 'Renewed' },
@@ -753,6 +812,12 @@ describe('renewal tag id resolution', () => {
 
     const defaults = resolveRenewalTagIds(renewalTagNames({}), {}, [])
     expect(defaults.ids).to.deep.equal(DEFAULT_RENEWAL_TAG_IDS)
+    const overridden = resolveRenewalTagIds(
+      renewalTagNames({}),
+      { RENEWAL_CATCHUP_MINUS7_TAG_ID: '99' },
+      []
+    )
+    expect(overridden.ids.catchupMinus7).to.equal('99')
     expect(defaults.missing).to.deep.equal([])
     const renamed = resolveRenewalTagIds(
       renewalTagNames({ RENEWAL_REMINDER_TAG_NAME: 'Other-Reminder' }),

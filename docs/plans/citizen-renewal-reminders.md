@@ -17,7 +17,9 @@ Reminders are on by default. A citizen with a findable email is in the reminder 
 
 Tag name: `Renewal-Reminder`. Override with `RENEWAL_REMINDER_TAG_NAME`. Id from `RENEWAL_REMINDER_TAG_ID`, or a lookup of that name.
 
-On day -30 (exactly 30 days before `expiresAt`), live mode adds that tag to an existing active Kit subscriber. A Kit automation subscribes tagged people to one sequence. The sequence sends on day 0, day 16, day 30, and day 44 after entry. Those dates are 30 days before expiry, 14 days before expiry, expiry day, and 14 days after expiry.
+On day -30 (exactly 30 days before `expiresAt`), live mode adds that tag to an existing active Kit subscriber. A Kit automation subscribes tagged people to one sequence. The sequence sends on day 0, day 23, day 30, and day 44 after entry. Those dates are 30 days before expiry, 7 days before expiry, expiry day, and 14 days after expiry.
+
+Kit delay change for sequence 2929996: the wait after the first email changes from 16 days to 23 days, and the wait after the second email changes from 14 days to 7 days. The wait after the expiry-day email stays 14 days. Send hour and time zone are unchanged by this code.
 
 Kit times a sequence from the day someone enters it. Tagging a person who is already inside the window would send the first email on the wrong date. The code does not start the sequence itself.
 
@@ -25,13 +27,13 @@ Kit times a sequence from the day someone enters it. Tagging a person who is alr
 
 Anyone already past day -30 when first seen for that `expiresAt` does not get `Renewal-Reminder`. They get one catch-up tag for the next email that is still due. Earlier emails stay unsent.
 
-| Next email            | Default tag               | Name env                           | Id env                           |
-| --------------------- | ------------------------- | ---------------------------------- | -------------------------------- |
-| 14 days before expiry | `Renewal-Catchup-minus14` | `RENEWAL_CATCHUP_MINUS14_TAG_NAME` | `RENEWAL_CATCHUP_MINUS14_TAG_ID` |
-| expiry day            | `Renewal-Catchup-expiry`  | `RENEWAL_CATCHUP_EXPIRY_TAG_NAME`  | `RENEWAL_CATCHUP_EXPIRY_TAG_ID`  |
-| 14 days after expiry  | `Renewal-Catchup-plus14`  | `RENEWAL_CATCHUP_PLUS14_TAG_NAME`  | `RENEWAL_CATCHUP_PLUS14_TAG_ID`  |
+| Next email           | Default tag              | Name env                          | Id env                          |
+| -------------------- | ------------------------ | --------------------------------- | ------------------------------- |
+| 7 days before expiry | `Renewal-Catchup-minus7` | `RENEWAL_CATCHUP_MINUS7_TAG_NAME` | `RENEWAL_CATCHUP_MINUS7_TAG_ID` |
+| expiry day           | `Renewal-Catchup-expiry` | `RENEWAL_CATCHUP_EXPIRY_TAG_NAME` | `RENEWAL_CATCHUP_EXPIRY_TAG_ID` |
+| 14 days after expiry | `Renewal-Catchup-plus14` | `RENEWAL_CATCHUP_PLUS14_TAG_NAME` | `RENEWAL_CATCHUP_PLUS14_TAG_ID` |
 
-Someone 20 days out has missed the -30 email and gets `Renewal-Catchup-minus14`. Someone on expiry day gets `Renewal-Catchup-expiry`. Someone 14 days past expiry gets `Renewal-Catchup-plus14`.
+Someone 20 days out has missed the -30 email and gets `Renewal-Catchup-minus7`. Someone on expiry day gets `Renewal-Catchup-expiry`. Someone 14 days past expiry gets `Renewal-Catchup-plus14`. The -7 tag id stays env-overridable. If `RENEWAL_CATCHUP_MINUS7_TAG_ID` is unset, the job uses tag id `24636918` (the previous -14 catch-up tag) until Beacon sets a new id or retargets that automation to the -7 email.
 
 Create one Kit automation per catch-up tag that sends only that email. Do not attach catch-up tags to the four-email sequence.
 
@@ -41,22 +43,25 @@ Tag ids resolve from the env var when it is set, otherwise from `GET /v4/tags` b
 
 When `expiresAt` moves forward to more than 30 days out, live mode adds `Renewed` (`RENEWED_TAG_NAME`, `RENEWED_TAG_ID`) and removes `Renewal-Reminder` and every catch-up tag. A Kit rule should remove anyone tagged `Renewed` from the reminder sequence.
 
+The Renewed tag is cleared at the start of the next cycle, not in the same run that adds it. The same run has to leave the tag in place so Kit's exit rule can see it. The next cycle starts the first day the new `expiresAt` is back inside the reminder window. Before the new reminder or catch-up tag is added, live mode calls Kit v4 remove-tag-from-subscriber: `DELETE /v4/tags/{tag_id}/subscribers/{subscriber_id}`. It does not call global unsubscribe, and it does not build that request for an unsubscribed, cancelled, bounced, or complained subscriber. The Redis set `renewal:renewed-present` records token ids that received Renewed. A dry run with Kit reads also treats current Renewed-tag subscribers as still tagged.
+
 The open book is Redis set `renewal:open`. Members are dedupe keys from an earlier tag. Time passing out the back of the window is not a renewal, because `expiresAt` did not move forward. A new `expiresAt` that is still inside the window is treated as a new term, not a swap.
 
 ## Dedupe
 
-After the tag calls succeed, the job writes `renewal:{tokenId}:{expiresAt}:{stage}` to Upstash and adds that key to the set `renewal:written`. Stages are `minus30`, `minus14`, `expiry`, `plus14`, and `renewed`. A later run that sees the key does not tag again. A failed tag does not write the key, so the next run can retry. Kit returns 200 when the subscriber already has the tag.
+After the tag calls succeed, the job writes `renewal:{tokenId}:{expiresAt}:{stage}` to Upstash and adds that key to the set `renewal:written`. Stages are `minus30`, `minus7`, `expiry`, `plus14`, and `renewed`. A stored `minus14` key is read as `minus7`. A later run that sees the key does not tag again. A failed tag does not write the key, so the next run can retry. Kit returns 200 when the subscriber already has the tag.
 
 ## Hard exclusions
 
 Live mode skips a person when any of these are true:
 
 - Redis set `renewal:suppress`
-- Redis set `renewal:exclude:first-run` (the Oct 2 triage list)
-- the Kit broadcast tag named `Citizens - renewal window Oct 2026 (tagged before 2025-11-29)`, or `RENEWAL_EXCLUSION_KIT_TAG_ID`
+- Redis set `renewal:exclude:first-run` (the Oct 2 triage list), and only when the next stage is -30 or -7. Expiry day and +14 are not held.
 - Kit state `cancelled`, `unsubscribed`, `bounced`, or `complained`
 - Kit state is anything other than `active`, including missing and inactive
 - there is no numeric Kit subscriber id
+
+The Kit tag `Citizens - renewal window Oct 2026` is not an exclusion. The job does not read it.
 
 Tag writes use `POST /v4/tags/{tag_id}/subscribers/{subscriber_id}` and `DELETE /v4/tags/{tag_id}/subscribers/{subscriber_id}`. The subscriber must already exist. The code refuses to build that request for an opt-out state (`KitResubscribeBlocked`). It never calls `POST /v4/subscribers`, form subscribe, or sequence subscribe.
 
@@ -66,7 +71,9 @@ If `renewal:suppress` or `renewal:exclude:first-run` was not read, live mode wri
 
 `GET` or `POST` `/api/cron/citizen-renewal-reminders` with bearer `CRON_SECRET`.
 
-The JSON keeps the dry-run buckets. `writes.buckets` reports planned and executed counts for `renewalReminder`, `catchupMinus14`, `catchupExpiry`, `catchupPlus14`, `renewed`, and `typeformOnly`. Typeform-only planned and executed writes stay 0. `reported` is the count of those addresses. Actions include a masked email (`a***@domain`) and never the raw address. `live` is true only when this request actually wrote.
+The JSON keeps the dry-run buckets. `writes.buckets` reports planned and executed counts for `renewalReminder`, `catchupMinus7`, `catchupExpiry`, `catchupPlus14`, `renewed`, and `typeformOnly`. Typeform-only planned and executed writes stay 0. `reported` is the count of those addresses. Actions include a masked email (`a***@domain`) and never the raw address. `live` is true only when this request actually wrote.
+
+Profiles are read from the MoonDAO Tableland gateway (`tableland.moondao.com`), not `tableland.network`. A non-JSON body from Tableland, Kit, or Typeform fails with a warning that names that source. A redirect is not followed.
 
 Window positions, one per citizen:
 
@@ -95,7 +102,7 @@ The CSV may have a header column named `email`, `email_address`, or `email addre
 Create these tags in Kit before turning live mode on. Point each catch-up tag at a one-email automation. Point `Renewal-Reminder` at the four-email sequence. Point `Renewed` at a rule that removes the subscriber from that sequence.
 
 - `Renewal-Reminder`
-- `Renewal-Catchup-minus14`
+- `Renewal-Catchup-minus7`
 - `Renewal-Catchup-expiry`
 - `Renewal-Catchup-plus14`
 - `Renewed`

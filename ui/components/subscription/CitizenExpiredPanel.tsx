@@ -40,7 +40,7 @@ export default function CitizenExpiredPanel({
         onClick={openRenewalModal}
         className="gradient-2 rounded-full py-3 px-8 text-white font-medium"
       >
-        Renew Citizenship
+        Extend Citizenship
       </button>
     </div>
   )

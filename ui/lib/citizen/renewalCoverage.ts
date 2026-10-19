@@ -22,14 +22,7 @@ export const FIRST_RUN_EXCLUSION_SET = 'renewal:exclude:first-run'
 /** Permanent opt-out, separate from the one-time first-run list. */
 export const RENEWAL_SUPPRESSION_SET = 'renewal:suppress'
 
-/**
- * This week's renewal broadcast. The numeric tag id comes from
- * RENEWAL_EXCLUSION_KIT_TAG_ID. The name is the fallback lookup key.
- */
-export const RENEWAL_BROADCAST_TAG_NAME =
-  'Citizens - renewal window Oct 2026 (tagged before 2025-11-29)'
-
-/** Working name. Live mode adds this tag on day -30. This PR does not. */
+/** Working name. Live mode adds this tag on day -30. */
 export const RENEWAL_REMINDER_TAG = 'Renewal-Reminder'
 
 /** Live mode adds this when expiresAt leaves the window, and removes Renewal-Reminder. */
@@ -37,14 +30,22 @@ export const RENEWED_TAG = 'Renewed'
 
 /**
  * One Kit sequence, timed from the day Renewal-Reminder is applied.
- * Day 0, 16, 30, and 44 after entry are -30, -14, expiry day, and +14.
+ * Day 0, 23, 30, and 44 after entry are -30, -7, expiry day, and +14.
+ * The Kit delays between those sends are 23 days, then 7 days, then 14 days.
  */
 export const RENEWAL_SEQUENCE_EMAILS = [
   { id: 'minus30', sequenceDay: 0, daysToExpiry: 30 },
-  { id: 'minus14', sequenceDay: 16, daysToExpiry: 14 },
+  { id: 'minus7', sequenceDay: 23, daysToExpiry: 7 },
   { id: 'expiry', sequenceDay: 30, daysToExpiry: 0 },
   { id: 'plus14', sequenceDay: 44, daysToExpiry: -14 },
 ] as const
+
+/** Oct 2 list holds these stages only. Expiry day and +14 still send. */
+export const PRE_EXPIRY_EMAILS = ['minus30', 'minus7'] as const
+
+export function isPreExpiryEmail(id: SequenceEmailId | null): boolean {
+  return id === 'minus30' || id === 'minus7'
+}
 
 export type SequenceEmailId = (typeof RENEWAL_SEQUENCE_EMAILS)[number]['id']
 
@@ -81,7 +82,7 @@ export function isInReminderWindow(expiresAtSec: number, nowMs: number): boolean
   return position != null && position !== 'outOfWindow'
 }
 
-export const RENEWAL_STAGES = ['minus30', 'minus14', 'expiry', 'plus14', 'renewed'] as const
+export const RENEWAL_STAGES = ['minus30', 'minus7', 'expiry', 'plus14', 'renewed'] as const
 export type RenewalStage = (typeof RENEWAL_STAGES)[number]
 
 /** One reminder entry per citizen per expiry term. */
@@ -131,7 +132,7 @@ export const LATE_ENTRANT_CATCH_UP =
   'Do not add Renewal-Reminder. The sequence times from entry, so a late tag sends the -30 email on the wrong date. Live mode adds one catch-up tag for the next remaining email and leaves the earlier emails unsent.'
 
 export const RENEWAL_EXIT_PLAN =
-  'When expiresAt moves forward out of the window, live mode adds the Renewed tag and removes Renewal-Reminder and the catch-up tags. Kit has no public API to remove one subscriber from one sequence, so that step is recorded as unsupported. Exclude the Renewed tag on each sequence in Kit. Writes run only when RENEWAL_REMINDERS_LIVE is true and the request includes live=1.'
+  'When expiresAt moves forward past 30 days, live mode adds the Renewed tag and removes Renewal-Reminder and the catch-up tags. The Renewed tag stays until the next cycle starts. That is the first day the new expiresAt is back inside the reminder window. Removing it in the same run would race the Kit exit rule that needs the tag present. At the start of the next cycle, live mode removes Renewed with DELETE /v4/tags/{tag_id}/subscribers/{subscriber_id} before the new reminder or catch-up tag is added. It never calls a global unsubscribe and never re-adds an unsubscribed subscriber. Kit still has no public API to remove one subscriber from one sequence. Writes run only when RENEWAL_REMINDERS_LIVE is true and the request includes live=1.'
 
 export function maskEmail(email: string): string {
   const trimmed = email.trim().toLowerCase()
@@ -289,8 +290,10 @@ export type CoverageInput = {
   /** Present when Kit already has this subscriber. Tag writes require it. */
   kitSubscriberId?: string | null
   suppressed: boolean
+  /** Oct 2 triage list (`renewal:exclude:first-run`). Holds pre-expiry stages only. */
   firstRunRedis: boolean
-  firstRunKitTag: boolean
+  /** True when this subscriber still has the Renewed tag from an earlier term. */
+  hasRenewedTag?: boolean
 }
 
 export type CoverageRow = {
@@ -304,7 +307,8 @@ export type CoverageRow = {
   exclusionReason: string | null
   emailMasked: string | null
   dedupeKey: string
-  firstRunExclusion: 'redis' | 'kit-tag' | 'redis+kit-tag' | null
+  onOct2List: boolean
+  firstRunExclusion: 'redis' | null
 }
 
 export type PositionCounts = Record<WindowPosition, number>
@@ -330,18 +334,12 @@ export type CoverageReport = {
     excluded: number
     noEmail: number
     firstRunOverlap: number
+    oct2HeldPreExpiry: number
     eligibleAfterFirstRunExclusion: number
   }
   buckets: Record<CoverageBucket, CoverageRow[]>
   firstRunOverlap: CoverageRow[]
   laterKitAdd: ReturnType<typeof futureKitAddPlan>
-}
-
-function firstRunLabel(redis: boolean, kitTag: boolean): CoverageRow['firstRunExclusion'] {
-  if (redis && kitTag) return 'redis+kit-tag'
-  if (redis) return 'redis'
-  if (kitTag) return 'kit-tag'
-  return null
 }
 
 function exclusionForKitState(state: string): string {
@@ -360,15 +358,18 @@ export function classifyRenewalRow(row: CoverageInput, nowMs: number): CoverageR
   if (daysToExpiry === null) return null
   const expiresAt = Math.trunc(row.expiresAt)
   const lateEntrant = position !== 'enterToday'
+  const sequence = expectedSequencePosition(daysToExpiry)
+  const onOct2List = row.firstRunRedis
   const base = {
     tokenId: String(row.tokenId),
     position,
     daysToExpiry,
     lateEntrant,
-    sequence: expectedSequencePosition(daysToExpiry),
+    sequence,
     catchUp: lateEntrant ? LATE_ENTRANT_CATCH_UP : null,
     dedupeKey: renewalDedupeKey(String(row.tokenId), expiresAt),
-    firstRunExclusion: firstRunLabel(row.firstRunRedis, row.firstRunKitTag),
+    onOct2List,
+    firstRunExclusion: null as CoverageRow['firstRunExclusion'],
   }
 
   if (!row.email) {
@@ -398,6 +399,16 @@ export function classifyRenewalRow(row: CoverageInput, nowMs: number): CoverageR
       bucket: 'excluded',
       exclusionReason: 'suppressed',
       emailMasked,
+    }
+  }
+
+  if (onOct2List && isPreExpiryEmail(sequence.nextEmail)) {
+    return {
+      ...base,
+      bucket: 'excluded',
+      exclusionReason: 'oct2-pre-expiry',
+      emailMasked,
+      firstRunExclusion: 'redis',
     }
   }
 
@@ -461,7 +472,10 @@ export function buildRenewalCoverageReport(
 
   const positions = positionCounts ?? fromRows
   const eligible = [...buckets.activeKit, ...buckets.typeformOnly]
-  const firstRunOverlap = eligible.filter((row) => row.firstRunExclusion)
+  const firstRunOverlap = eligible.filter((row) => row.onOct2List)
+  const oct2HeldPreExpiry = buckets.excluded.filter(
+    (row) => row.exclusionReason === 'oct2-pre-expiry'
+  ).length
   const inWindow = positions.enterToday + positions.inside + positions.expiredWithin14
 
   return {
@@ -485,7 +499,8 @@ export function buildRenewalCoverageReport(
       excluded: buckets.excluded.length,
       noEmail: buckets.noEmail.length,
       firstRunOverlap: firstRunOverlap.length,
-      eligibleAfterFirstRunExclusion: eligible.length - firstRunOverlap.length,
+      oct2HeldPreExpiry,
+      eligibleAfterFirstRunExclusion: eligible.length,
     },
     buckets,
     firstRunOverlap,
@@ -554,6 +569,42 @@ export function renewalDryRunSources(
     typeform: read.typeform,
     kit: read.kit,
     [FIRST_RUN_EXCLUSION_SET]: read.firstRunExclusion,
+  }
+}
+
+export class UpstreamNonJsonError extends Error {
+  readonly source: 'Tableland' | 'Kit' | 'Typeform'
+  readonly status: number
+
+  constructor(source: 'Tableland' | 'Kit' | 'Typeform', status: number, detail: string) {
+    super(`${source} returned a non-JSON response (HTTP ${status}). ${detail}`)
+    this.name = 'UpstreamNonJsonError'
+    this.source = source
+    this.status = status
+  }
+}
+
+/**
+ * Parse an upstream body. HTML from a retired gateway or a redirect landing
+ * page becomes a named source error instead of `Unexpected token '<'`.
+ */
+export function parseUpstreamJson(
+  source: 'Tableland' | 'Kit' | 'Typeform',
+  status: number,
+  contentType: string | null,
+  body: string
+): unknown {
+  const trimmed = body.trim()
+  const jsonLike = trimmed.startsWith('{') || trimmed.startsWith('[')
+  if (!jsonLike) {
+    const type = (contentType || '').toLowerCase()
+    const kind = trimmed.startsWith('<') || type.includes('text/html') ? 'HTML' : 'a non-JSON body'
+    throw new UpstreamNonJsonError(source, status, `Expected JSON and received ${kind}.`)
+  }
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    throw new UpstreamNonJsonError(source, status, 'The body started like JSON but did not parse.')
   }
 }
 

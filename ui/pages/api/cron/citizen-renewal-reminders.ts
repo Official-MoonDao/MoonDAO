@@ -6,6 +6,7 @@ import {
   nonDryRunRejection,
   renewalCountsComplete,
   renewalDryRunSources,
+  UpstreamNonJsonError,
   type RenewalDryRunReadFlags,
 } from '@/lib/citizen/renewalCoverage'
 import {
@@ -88,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const kitConfigured =
       envVarPresent(process.env, 'CONVERT_KIT_V4_API_KEY') ||
       envVarPresent(process.env, 'CONVERT_KIT_API_KEY')
-    const exclusions = await loadExclusions(kitConfigured)
+    const exclusions = await loadExclusions()
     read.firstRunExclusion = exclusions.firstRunRedisChecked
     warnings.push(...exclusions.warnings)
 
@@ -173,7 +174,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       exclusionSets: {
         suppressed: exclusions.suppressed,
         firstRunRedis: exclusions.firstRunRedis,
-        firstRunKitTag: exclusions.firstRunKitTag,
       },
       redis: exclusionsReady ? redisFromEnv(process.env) : null,
       allowKitReads: true,
@@ -209,23 +209,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         firstRunRedisChecked: exclusions.firstRunRedisChecked,
         firstRunRedisKey: 'renewal:exclude:first-run',
         suppressionKey: 'renewal:suppress',
-        kitTagChecked: exclusions.kitTagChecked,
-        kitTagId: exclusions.kitTagId,
         warnings: exclusions.warnings,
       },
     })
   } catch (error) {
     const message = safeError(error)
+    const failedSource = error instanceof UpstreamNonJsonError ? error.source : null
     warnings.push(message)
     warnings.push(INCOMPLETE_COUNTS)
     console.error('[citizen-renewal-reminders]', message)
-    return res.status(500).json({
+    return res.status(failedSource ? 503 : 500).json({
       ok: false,
       dryRun: true,
       live: false,
       countsComplete: false,
       sources: dryRunSources(read),
       warnings,
+      failedSource,
       error: message,
     })
   }
