@@ -25,6 +25,7 @@ import {
 } from '@/lib/hats/teamRoles'
 import useHatNames from '@/lib/hats/useHatNames'
 import useUniqueHatWearers from '@/lib/hats/useUniqueHatWearers'
+import { fetchFromIPFSWithFallback } from '@/lib/ipfs/gateway'
 import { DEFAULT_SAFE_TX_GAS } from '@/lib/safe/executionGas'
 import useSafe from '@/lib/safe/useSafe'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -67,8 +68,7 @@ function HatOption({ hat, managerHatId }: any) {
     let active = true
     async function getHatMetadata() {
       try {
-        const res = await fetch(`https://ipfs.io/ipfs/${hat.details.split('ipfs://')[1]}`)
-        const data = await res.json()
+        const data = await fetchFromIPFSWithFallback(hat.details)
         if (active) setIpfsName(data?.data?.name)
       } catch {
         // Fall back to deterministic label from getRoleLabel.
