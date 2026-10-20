@@ -1,13 +1,19 @@
 // Featured card for a live on-chain DePrize that is not bound to a Moon Base
-// Zero race (today: Arbitrum #1, The Moon Is A Harsh Mistress). The index's
-// RaceMarketCard grid only covers atlas races, so without this the real
-// Arbitrum competition would never appear on /deprize.
+// Zero race. The index's RaceMarketCard grid only covers atlas races, so
+// without this an unbound competition would never appear on /deprize.
+// Touchdown is the headliner; this card only renders behind it.
 import TeamABI from 'const/abis/Team.json'
 import { DEPRIZE_MINT_ADDRESSES, TEAM_ADDRESSES } from 'const/config'
 import { useMemo, useState } from 'react'
 import { getContract, type Chain } from 'thirdweb'
 import { deprizePrefixedHref, getDePrizeCompetition } from '@/lib/deprize/competitions'
-import { DEPRIZE_PREDICT_CTA, DePrizeState, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
+import {
+  DEPRIZE_PREDICT_CTA,
+  DEPRIZE_RESTRICTED_PREDICT_COPY,
+  DePrizeState,
+  OUTCOME_COLORS,
+  UNIT,
+} from '@/lib/deprize/constants'
 import { isMintConfigured, reconcileBettingStatus } from '@/lib/deprize/status'
 import { useDePrize } from '@/lib/deprize/useDePrize'
 import { useDePrizeMarket } from '@/lib/deprize/useDePrizeMarket'
@@ -198,7 +204,7 @@ export default function LiveDePrizeHero({
           </div>
         }
         notice={
-          showPredict ? (
+          showPredict && bettingBlockedReason !== DEPRIZE_RESTRICTED_PREDICT_COPY ? (
             <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>
           ) : undefined
         }

@@ -78,9 +78,7 @@ describe('deprize competitions registry', () => {
       'cnsa-change-7',
       '__open-field__',
     ])
-    expect(binding!.outcomes.map((o) => o.teamId)).to.deep.equal([
-      601, 602, 603, 604, 605, 24,
-    ])
+    expect(binding!.outcomes.map((o) => o.teamId)).to.deep.equal([601, 602, 603, 604, 605, 24])
     expect(binding!.outcomes[5].field).to.equal(true)
     expect(binding!.outcomes.map((o) => o.vehicleLabel)).to.deep.equal([
       'Griffin Mission One',
@@ -109,9 +107,7 @@ describe('deprize competitions registry', () => {
       'ispace-apex',
       '__open-field__',
     ])
-    expect(binding!.outcomes.map((o) => o.teamId)).to.deep.equal([
-      601, 602, 603, 604, 605, 606, 24,
-    ])
+    expect(binding!.outcomes.map((o) => o.teamId)).to.deep.equal([601, 602, 603, 604, 605, 606, 24])
     expect(getDePrizeGenerationNumber('sepolia', 7)).to.equal(3)
   })
 
@@ -137,12 +133,15 @@ describe('deprize competitions registry', () => {
       'im-4-volatiles',
       '__open-field__',
     ])
-    expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(1)
+    expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(undefined)
   })
 
-  it('has no unbound Sepolia featured prize', () => {
+  it('keeps Harsh Mistress registered but off the /deprize headliner', () => {
+    expect(getDePrizeCompetition('arbitrum', 1).title).to.equal('The Moon Is A Harsh Mistress')
+    expect(getDePrizeCompetition('arbitrum', 1).unlisted).to.equal(true)
+    expect(isKnownDePrizeCompetition('arbitrum', 1)).to.equal(true)
     expect(getFeaturedLiveDePrizeId('sepolia')).to.equal(undefined)
-    expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(1)
+    expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(undefined)
   })
 
   it('returns a stable binding identity so consumers can memoize on it', () => {
@@ -193,14 +192,9 @@ describe('deprize competitions registry', () => {
     expect(isRaceBindingComplete([])).to.equal(false)
 
     // A field-only roster names nobody, so there is nothing to price.
+    expect(isRaceBindingComplete([{ projectId: '__open-field__', field: true }])).to.equal(false)
     expect(
-      isRaceBindingComplete([{ projectId: '__open-field__', field: true }])
-    ).to.equal(false)
-    expect(
-      isRaceBindingComplete([
-        { projectId: 'a' },
-        { projectId: '__open-field__', field: true },
-      ])
+      isRaceBindingComplete([{ projectId: 'a' }, { projectId: '__open-field__', field: true }])
     ).to.equal(true)
   })
 

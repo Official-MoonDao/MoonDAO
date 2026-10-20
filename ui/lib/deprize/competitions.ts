@@ -84,6 +84,11 @@ export type DePrizeCompetition = {
   supersedes?: number
   /** Next generation that superseded this entry (off-chain lineage mirror). */
   supersededBy?: number
+  /**
+   * Off the /deprize index. The competition stays in the registry so a direct
+   * URL still resolves.
+   */
+  unlisted?: boolean
 }
 
 export const GENERIC_DEPRIZE_COMPETITION: DePrizeCompetition = {
@@ -155,14 +160,15 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
   arbitrum: {
     // First Arbitrum mainnet DePrize — internal end-to-end competition.
     // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.
-    // Roster is placeholder MoonDAOTeam ids [2, 6, 7, 8]; not race-bound, so it
-    // groups under "Other challenges" on the index.
+    // Roster is placeholder MoonDAOTeam ids [2, 6, 7, 8]. Unlisted so Touchdown
+    // is the /deprize headliner; /deprize/arb/1 still opens it.
     1: {
       title: 'The Moon Is A Harsh Mistress',
       tagline: 'Which team posts “The Moon is a harsh mistress” first?',
       metaDescription:
         'Arbitrum DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
       questionId: '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
+      unlisted: true,
     },
     // Arbitrum One registry (0xf8B2244634c6eCeF32de10BFe0D7436413A59924).
     // Same rosters as the Sepolia dress rehearsal. Ids 2–5. H-01 LMSRWithTWAP,
@@ -380,16 +386,16 @@ export function isKnownDePrizeCompetition(
 }
 
 /**
- * Live on-chain DePrize to feature at the top of /deprize — the first registered
- * competition on this chain that is NOT bound to a Moon Base Zero race. Today
- * that is Arbitrum #1 (The Moon Is A Harsh Mistress). Sepolia's prizes are
- * race-bound, so that chain has no featured slot.
+ * Extra live market to show behind the Touchdown headliner: the first
+ * registered competition on this chain that is not bound to a Moon Base Zero
+ * race and is not unlisted. The Moon Is A Harsh Mistress is unlisted, and
+ * Sepolia's prizes are race-bound, so neither chain has one today.
  */
 export function getFeaturedLiveDePrizeId(chainSlug: string): number | undefined {
   const entries = DEPRIZE_COMPETITIONS[chainSlug]
   if (!entries) return undefined
   const unbound = Object.entries(entries)
-    .filter(([, c]) => !c.sharedGoalId)
+    .filter(([, c]) => !c.sharedGoalId && !c.unlisted)
     .map(([id]) => Number(id))
     .filter((id) => Number.isFinite(id) && id > 0)
     .sort((a, b) => a - b)

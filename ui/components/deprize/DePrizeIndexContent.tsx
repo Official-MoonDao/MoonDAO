@@ -176,10 +176,8 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
     [filteredRaces, chainSlug]
   )
 
-  // Live on-chain competitions that aren't bound to a Moon Base Zero race
-  // (Arbitrum #1 — The Moon Is A Harsh Mistress) take the hero slot. Atlas
-  // race demos fill the grid below; fission no longer steals the featured
-  // position when a real market is live on this chain.
+  // Touchdown is the headliner. Unlisted competitions stay off this page.
+  // Any other unbound live market can sit behind it in the carousel.
   const featuredLiveId = useMemo(() => getFeaturedLiveDePrizeId(chainSlug), [chainSlug])
 
   const positionsCount = useMemo(
@@ -267,6 +265,20 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
   }
 
   const heroSlides: HeroSlide[] = []
+  if (featuredLiveRace) {
+    heroSlides.push({
+      key: featuredLiveRace.goal.id,
+      render: (shown) => (
+        <RaceMarketCard
+          goal={featuredLiveRace.goal}
+          competitors={featuredLiveRace.competitors}
+          {...raceCardProps}
+          variant="featured"
+          active={shown}
+        />
+      ),
+    })
+  }
   if (featuredLiveId !== undefined) {
     heroSlides.push({
       key: `live-${featuredLiveId}`,
@@ -280,20 +292,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
           spendableEth={spendableEth}
           bettingBlockedReason={bettingBlockedReason}
           onDone={() => setRefreshNonce((n) => n + 1)}
-          active={shown}
-        />
-      ),
-    })
-  }
-  if (featuredLiveRace) {
-    heroSlides.push({
-      key: featuredLiveRace.goal.id,
-      render: (shown) => (
-        <RaceMarketCard
-          goal={featuredLiveRace.goal}
-          competitors={featuredLiveRace.competitors}
-          {...raceCardProps}
-          variant="featured"
           active={shown}
         />
       ),
@@ -384,12 +382,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]">
               <div className="flex min-w-0 flex-col gap-8">
-                {restricted && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
-                    {DEPRIZE_RESTRICTED_PREDICT_COPY}
-                  </div>
-                )}
-
                 {activeTab === 'positions' && !account ? (
                   <div className="p-8 text-center text-gray-400 text-sm flex flex-col items-center gap-3">
                     <p>Connect a wallet to see the teams you&apos;ve backed.</p>
