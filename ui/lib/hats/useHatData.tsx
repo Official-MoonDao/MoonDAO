@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Chain, readContract } from 'thirdweb'
+import { fetchFromIPFSWithFallback } from '@/lib/ipfs/gateway'
 
 export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
   const [hatData, setHatData] = useState({
@@ -26,14 +27,9 @@ export function useHatData(selectedChain: any, hatsContract: any, hatId: any) {
           params: [hatId],
         })
 
-        const hatMetadataRes = await fetch(
-          `https://ipfs.io/ipfs/${
-            hat?.details
-              ? hat.details.split('ipfs://')[1]
-              : hat[0].split('ipfs://')[1]
-          }`
+        const { data: hatMetadataData } = await fetchFromIPFSWithFallback(
+          hat?.details ?? hat[0]
         )
-        const { data: hatMetadataData } = await hatMetadataRes.json()
 
         const propsParam = encodeURIComponent(
           JSON.stringify({ prettyId: true })
