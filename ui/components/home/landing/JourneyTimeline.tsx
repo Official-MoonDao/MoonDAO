@@ -60,11 +60,7 @@ const timelineEvents: TimelineEvent[] = [
       'Funds 100+ space-related projects, fostering a thriving ecosystem of space entrepreneurs and researchers.',
     icon: '/assets/icon-project.svg',
     iconAlt: 'Project Funding',
-    proof: [
-      { label: 'Projects', href: '/projects' },
-      { label: 'Final reports', href: '/final-reports' },
-      { label: 'Proposals', href: '/proposals' },
-    ],
+    proof: [{ label: 'Projects', href: '/projects' }],
   },
   {
     date: 'Jan 2024',
@@ -125,7 +121,7 @@ const timelineEvents: TimelineEvent[] = [
       'Design of major lunar settlement components completed, ready for manufacturing on Earth.',
     icon: '/assets/icon-project.svg',
     iconAlt: 'Settlement Design',
-    proof: [{ label: 'Moon Base Zero', href: '/moonbase' }],
+    proof: ROADMAP_PROOF,
   },
   {
     date: '2026',
@@ -135,10 +131,7 @@ const timelineEvents: TimelineEvent[] = [
     icon: '/assets/icon-globe.svg',
     iconAlt: 'DePrize and Simulation Models',
     isCurrent: true,
-    proof: [
-      { label: 'DePrize', href: '/deprize' },
-      { label: 'Moon Base Zero', href: '/moonbase' },
-    ],
+    proof: ROADMAP_PROOF,
   },
   {
     date: '2027',
