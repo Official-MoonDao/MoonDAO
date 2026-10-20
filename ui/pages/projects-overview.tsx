@@ -7,9 +7,11 @@ import {
   PROJECT_SYSTEM_CONFIG,
   NEXT_QUARTER_BUDGET_USD,
 } from 'const/config'
+import { PROPOSALS_FILM_VIMEO_ID, proposalsFilm } from 'const/proposalsPageContent'
 import { motion, useReducedMotion } from 'framer-motion'
 import useStakedEth from 'lib/utils/hooks/useStakedEth'
 import { GetServerSideProps } from 'next'
+import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useMemo, useEffect, useState } from 'react'
@@ -25,6 +27,7 @@ import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import StandardButton from '../components/layout/StandardButton'
 import Reveal from '@/components/home/landing/Reveal'
+import FilmPlayer from '@/components/layout/FilmPlayer'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import DashboardActiveProjects from '@/components/project/DashboardActiveProjects'
 
@@ -109,6 +112,10 @@ const ProjectsOverview: React.FC<{
 
   const { quarter, year } = getProposalCycle()
   const reduceMotion = useReducedMotion()
+  const { t } = useTranslation('common')
+  // With the film live, the hero splits: copy on the left, the "Idea to
+  // funded" film on the right (stacked under the CTAs on mobile).
+  const hasFilm = !!PROPOSALS_FILM_VIMEO_ID
 
   const { tokens: mainnetTokens } = useAssets()
   const { tokens: arbitrumTokens } = useAssets(ARBITRUM_ASSETS_URL)
@@ -199,7 +206,13 @@ const ProjectsOverview: React.FC<{
             <div className="absolute inset-0 bg-gradient-to-b from-[#010208]/75 via-[#010208]/40 to-[#010208]" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(34,211,238,0.18),transparent_50%)]" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#010208] to-transparent" />
-            <div className="relative z-10 flex min-h-[60svh] flex-col justify-end px-4 pb-10 pt-20 md:justify-center md:px-8 md:pb-12 md:pt-16">
+            <div
+              className={`relative z-10 flex min-h-[60svh] flex-col justify-end px-4 pb-10 pt-20 md:justify-center md:px-8 md:pb-12 md:pt-16 ${
+                hasFilm
+                  ? 'gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-center lg:gap-14'
+                  : ''
+              }`}
+            >
               <motion.div
                 initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -241,6 +254,34 @@ const ProjectsOverview: React.FC<{
                   </StandardButton>
                 </div>
               </motion.div>
+              {hasFilm && (
+                <motion.div
+                  initial={{ opacity: 0, y: reduceMotion ? 0 : 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.9, delay: 0.3, ease: EASE }}
+                >
+                  <FilmPlayer
+                    vimeoId={PROPOSALS_FILM_VIMEO_ID}
+                    film={proposalsFilm}
+                    playLabel={t('proposalsFilmPlay')}
+                    eventPrefix="projects_overview_film"
+                    endCard={{
+                      title: t('proposalsFilmEndTitle'),
+                      ctaLabel: t('projectsOverviewFilmEndCta'),
+                      ctaHref: '/proposals',
+                      replayLabel: t('filmReplay'),
+                    }}
+                    caption={
+                      <>
+                        <span className="font-semibold text-white/85">
+                          {t('proposalsFilmTitle')}
+                        </span>{' '}
+                        · {t('proposalsFilmSub')}
+                      </>
+                    }
+                  />
+                </motion.div>
+              )}
             </div>{' '}
           </section>
 
