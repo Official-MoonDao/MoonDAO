@@ -25,7 +25,7 @@ Kit times a sequence from the day someone enters it. Tagging a person who is alr
 
 ## Catch-up tags
 
-Anyone already past day -30 when first seen for that `expiresAt` does not get `Renewal-Reminder`. They get one catch-up tag for the next email that is still due. Earlier emails stay unsent.
+Anyone already past day -30 when first seen for that `expiresAt` does not get `Renewal-Reminder`. They get one catch-up tag for the next email that is still due. Earlier emails stay unsent. That catch-up tag is the only stage for the term. Later runs do not add another one.
 
 | Next email           | Default tag              | Name env                          | Id env                          |
 | -------------------- | ------------------------ | --------------------------------- | ------------------------------- |
@@ -36,6 +36,20 @@ Anyone already past day -30 when first seen for that `expiresAt` does not get `R
 Someone 20 days out has missed the -30 email and gets `Renewal-Catchup-minus7`. Someone on expiry day gets `Renewal-Catchup-expiry`. Someone 14 days past expiry gets `Renewal-Catchup-plus14`. The -7 tag id stays env-overridable. If `RENEWAL_CATCHUP_MINUS7_TAG_ID` is unset, the job uses tag id `24636918` (the previous -14 catch-up tag) until Beacon sets a new id or retargets that automation to the -7 email.
 
 Create one Kit automation per catch-up tag that sends only that email. Do not attach catch-up tags to the four-email sequence.
+
+## One stage per term
+
+A term is one token id and one `expiresAt`. The job writes at most one reminder or catch-up stage for that term: `Renewal-Reminder`, `Renewal-Catchup-minus7`, `Renewal-Catchup-expiry`, or `Renewal-Catchup-plus14`.
+
+The first time someone is seen inside the window with no stage written for that term, they get the tag for the stage due that day. Day -30 gets `Renewal-Reminder`. A later first sighting gets the catch-up tag for the next email, same as above. Runs after that write nothing else for the term. A person tagged at day -30 does not later receive the -7, expiry, or +14 catch-up tags. A person first seen at 20 days gets only the -7 catch-up, and does not get the expiry or +14 tags on later days.
+
+After that tag succeeds, the job sets Redis key `renewal:term:{tokenId}:{expiresAt}` to the stage id (`minus30`, `minus7`, `expiry`, or `plus14`). Planning reads that marker. The same fact can be derived from `renewal:written` members shaped `renewal:{tokenId}:{expiresAt}:{stage}` for those four stages. A stored `minus14` member counts as `minus7`. `renewed` does not occupy the slot. Dry runs read the term markers and the written set. They do not write them.
+
+A row blocked by this rule is skipped as `alreadyStagedThisTerm`. That count sits with the other skip counts. Each skipped row includes the token id, the tag name already written, the stage already written, and the stage that would have applied.
+
+When `expiresAt` changes, the pair is a new term and can be staged again. The Renewed swap below is unchanged.
+
+A future win-back stage may be allowed after the staged email. It is not built. The extension point is `WIN_BACK_STAGES` in `ui/lib/citizen/renewalCoverageLive.ts`. Add the stage id there, and teach `stageForReminder` to select it, when that email is ready.
 
 Tag ids resolve from the env var when it is set, otherwise from `GET /v4/tags` by name. The job does not create tags. If any of the five tags is missing, live mode writes nothing.
 
@@ -49,7 +63,7 @@ The open book is Redis set `renewal:open`. Members are dedupe keys from an earli
 
 ## Dedupe
 
-After the tag calls succeed, the job writes `renewal:{tokenId}:{expiresAt}:{stage}` to Upstash and adds that key to the set `renewal:written`. Stages are `minus30`, `minus7`, `expiry`, `plus14`, and `renewed`. A stored `minus14` key is read as `minus7`. A later run that sees the key does not tag again. A failed tag does not write the key, so the next run can retry. Kit returns 200 when the subscriber already has the tag.
+After the tag calls succeed, the job writes `renewal:{tokenId}:{expiresAt}:{stage}` to Upstash and adds that key to the set `renewal:written`. Stages are `minus30`, `minus7`, `expiry`, `plus14`, and `renewed`. A stored `minus14` key is read as `minus7`. A later run that sees the same stage key does not tag that stage again. Any reminder or catch-up stage already written for the term also blocks the other reminder and catch-up stages, via `renewal:term:{tokenId}:{expiresAt}` or those written members. See "One stage per term". A failed tag does not write the key or the term marker, so the next run can retry. Kit returns 200 when the subscriber already has the tag.
 
 ## Hard exclusions
 
@@ -71,18 +85,18 @@ If `renewal:suppress` or `renewal:exclude:first-run` was not read, live mode wri
 
 `GET` or `POST` `/api/cron/citizen-renewal-reminders` with bearer `CRON_SECRET`.
 
-The JSON keeps the dry-run buckets. `writes.buckets` reports planned and executed counts for `renewalReminder`, `catchupMinus7`, `catchupExpiry`, `catchupPlus14`, `renewed`, and `typeformOnly`. Typeform-only planned and executed writes stay 0. `reported` is the count of those addresses. Actions include a masked email (`a***@domain`) and never the raw address. `live` is true only when this request actually wrote.
+The JSON keeps the dry-run buckets. `writes.buckets` reports planned and executed counts for `renewalReminder`, `catchupMinus7`, `catchupExpiry`, `catchupPlus14`, `renewed`, and `typeformOnly`. Typeform-only planned and executed writes stay 0. `reported` is the count of those addresses. `writes.skipped` counts `deduped`, `alreadyStagedThisTerm`, `suppressed`, `firstRun`, `kitOptOut`, `noEmail`, `kitNotActive`, `noSubscriberId`, and `typeformOnly`. `writes.alreadyStagedThisTerm` lists each blocked term: token id, tag name already written, stage already written, and the stage that would have applied. Actions include a masked email (`a***@domain`) and never the raw address. `live` is true only when this request actually wrote.
 
 Profiles are read from the MoonDAO Tableland gateway (`tableland.moondao.com`), not `tableland.network`. A non-JSON body from Tableland, Kit, or Typeform fails with a warning that names that source. A redirect is not followed.
 
 Window positions, one per citizen:
 
-| Position        | Meaning                                                   |
-| --------------- | --------------------------------------------------------- |
-| enterToday      | Exactly 30 days left. Live mode adds `Renewal-Reminder`.  |
-| inside          | 1 to 29 days left. Late. Catch-up tag for the next email. |
-| expiredWithin14 | Expiry day through 14 days after. Late. Catch-up tag.     |
-| outOfWindow     | More than 30 days left, or more than 14 days past expiry. |
+| Position        | Meaning                                                                              |
+| --------------- | ------------------------------------------------------------------------------------ |
+| enterToday      | Exactly 30 days left. Live mode adds `Renewal-Reminder` if the term has no stage.   |
+| inside          | 1 to 29 days left. Late. Catch-up tag for the next email, if the term has no stage. |
+| expiredWithin14 | Expiry day through 14 days after. Late. Catch-up tag, if the term has no stage.     |
+| outOfWindow     | More than 30 days left, or more than 14 days past expiry.                            |
 
 ## Ops: load the Oct 2 list
 

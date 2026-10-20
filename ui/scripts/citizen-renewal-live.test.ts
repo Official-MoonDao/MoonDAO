@@ -8,11 +8,13 @@ import {
   FIRST_RUN_EXCLUSION_SET,
   KitResubscribeBlocked,
   renewalStageDedupeKey,
+  renewalTermMarkerKey,
   type CoverageInput,
 } from '../lib/citizen/renewalCoverage'
 import {
   DEFAULT_RENEWAL_SEQUENCE_IDS,
   DEFAULT_RENEWAL_TAG_IDS,
+  isWinBackStage,
   kitAddTagRequest,
   kitSequenceRemoval,
   parseRenewalStageKey,
@@ -20,7 +22,9 @@ import {
   renewalSequenceIds,
   resolveRenewalTagIds,
   renewalTagNames,
+  RENEWAL_WRITTEN_SET,
   selectForwardRenewals,
+  WIN_BACK_STAGES,
   type PlannedRenewalWrite,
 } from '../lib/citizen/renewalCoverageLive'
 import {
@@ -574,6 +578,225 @@ describe('renewal dedupe writes', () => {
     })
     expect(result.executedKeys).to.deep.equal([])
     expect(calls).to.deep.equal([])
+  })
+})
+
+describe('one stage per term', () => {
+  const DAY_MS = DAY * 1000
+
+  function nowAtDaysLeft(expiresAt: number, daysLeft: number): number {
+    return expiresAt * 1000 - daysLeft * DAY_MS
+  }
+
+  function rowAt(tokenId: string, expiresAt: number, email?: string): CoverageInput {
+    return { ...activeRow(tokenId, 30, email ? { email } : {}), expiresAt }
+  }
+
+  async function runDay(args: {
+    store: ReturnType<typeof memoryRedis>
+    row: CoverageInput
+    daysLeft: number
+    live: boolean
+    env?: NodeJS.ProcessEnv
+  }) {
+    const recorded = recordingFetch()
+    const result = await runRenewalWritePass(
+      passArgs({
+        env: args.env || (args.live ? LIVE_ENV : {}),
+        liveParam: args.live ? '1' : undefined,
+        rows: [args.row],
+        nowMs: nowAtDaysLeft(args.row.expiresAt, args.daysLeft),
+        redis: args.store.redis,
+        fetchImpl: recorded.fetchImpl,
+      })
+    )
+    return { result, calls: recorded.calls }
+  }
+
+  function posts(calls: Array<{ method: string }>) {
+    return calls.filter((call) => call.method === 'POST' || call.method === 'DELETE')
+  }
+
+  it('writes Renewal-Reminder at day 30 and nothing at 29, 6, or -1', async () => {
+    const expiresAt = expiresIn(30)
+    const row = rowAt('1', expiresAt, 'term-person@example.com')
+    const store = memoryRedis()
+    const first = await runDay({ store, row, daysLeft: 30, live: true })
+    expect(first.result.buckets.renewalReminder.executed).to.equal(1)
+    expect(first.result.actions.map((action) => action.stage)).to.deep.equal(['minus30'])
+    expect(first.calls.map((call) => call.method)).to.deep.equal(['POST'])
+    expect(store.keys[renewalTermMarkerKey('1', expiresAt)]).to.equal('minus30')
+    expect(
+      store.sets.get(RENEWAL_WRITTEN_SET)?.has(renewalStageDedupeKey('1', expiresAt, 'minus30'))
+    ).to.equal(true)
+
+    const later: Array<{ daysLeft: number; stageWouldApply: string }> = [
+      { daysLeft: 29, stageWouldApply: 'minus7' },
+      { daysLeft: 6, stageWouldApply: 'expiry' },
+      { daysLeft: -1, stageWouldApply: 'plus14' },
+    ]
+    for (const day of later) {
+      const run = await runDay({ store, row, daysLeft: day.daysLeft, live: true })
+      expect(run.result.buckets.renewalReminder.planned).to.equal(0)
+      expect(run.result.buckets.catchupMinus7.planned).to.equal(0)
+      expect(run.result.buckets.catchupExpiry.planned).to.equal(0)
+      expect(run.result.buckets.catchupPlus14.planned).to.equal(0)
+      expect(run.result.skipped.alreadyStagedThisTerm).to.equal(1)
+      expect(run.result.alreadyStagedThisTerm).to.deep.equal([
+        {
+          tokenId: '1',
+          name: 'Renewal-Reminder',
+          stageWritten: 'minus30',
+          stageWouldApply: day.stageWouldApply,
+        },
+      ])
+      expect(posts(run.calls)).to.deep.equal([])
+      expect(JSON.stringify(run.result)).to.not.include('term-person@example.com')
+    }
+  })
+
+  it('gives a person first seen at 20 days only the minus7 catch-up', async () => {
+    const expiresAt = expiresIn(20)
+    const row = rowAt('2', expiresAt, 'catchup-person@example.com')
+    const store = memoryRedis()
+    const first = await runDay({ store, row, daysLeft: 20, live: true })
+    expect(first.result.buckets.catchupMinus7.executed).to.equal(1)
+    expect(first.result.buckets.renewalReminder.planned).to.equal(0)
+    expect(store.keys[renewalTermMarkerKey('2', expiresAt)]).to.equal('minus7')
+
+    const atSix = await runDay({ store, row, daysLeft: 6, live: true })
+    expect(atSix.result.skipped.alreadyStagedThisTerm).to.equal(1)
+    expect(atSix.result.alreadyStagedThisTerm).to.deep.equal([
+      {
+        tokenId: '2',
+        name: 'Renewal-Catchup-minus7',
+        stageWritten: 'minus7',
+        stageWouldApply: 'expiry',
+      },
+    ])
+    expect(posts(atSix.calls)).to.deep.equal([])
+
+    const after = await runDay({ store, row, daysLeft: -1, live: true })
+    expect(after.result.alreadyStagedThisTerm[0].stageWouldApply).to.equal('plus14')
+    expect(after.result.buckets.catchupPlus14.planned).to.equal(0)
+    expect(posts(after.calls)).to.deep.equal([])
+    expect(JSON.stringify(after.result)).to.not.include('catchup-person@example.com')
+  })
+
+  it('stages a new expiresAt after the previous term was staged', async () => {
+    const firstExpires = expiresIn(30)
+    const store = memoryRedis()
+    const first = await runDay({
+      store,
+      row: rowAt('3', firstExpires, 'extended-person@example.com'),
+      daysLeft: 30,
+      live: true,
+    })
+    expect(first.result.buckets.renewalReminder.executed).to.equal(1)
+
+    const extended = firstExpires + 400 * DAY
+    const second = await runDay({
+      store,
+      row: rowAt('3', extended, 'extended-person@example.com'),
+      daysLeft: 30,
+      live: true,
+    })
+    expect(second.result.buckets.renewalReminder.executed).to.equal(1)
+    expect(second.result.skipped.alreadyStagedThisTerm).to.equal(0)
+    expect(store.keys[renewalTermMarkerKey('3', extended)]).to.equal('minus30')
+    expect(store.keys[renewalTermMarkerKey('3', firstExpires)]).to.equal('minus30')
+    expect(posts(second.calls)).to.have.length(1)
+
+    const renewedOnNewTerm = planRenewalWrites({
+      rows: [rowAt('3', expiresIn(30))],
+      renewals: [],
+      nowMs: NOW,
+      writtenKeys: new Set([
+        renewalStageDedupeKey('3', expiresIn(10), 'minus7'),
+        renewalStageDedupeKey('3', expiresIn(30), 'renewed'),
+      ]),
+    })
+    expect(renewedOnNewTerm.writes.map((write) => write.stage)).to.deep.equal(['minus30'])
+    expect(renewedOnNewTerm.skipped.alreadyStagedThisTerm).to.equal(0)
+  })
+
+  it('treats an existing renewal:written stage key as the term slot', async () => {
+    const expiresAt = expiresIn(6)
+    const key = renewalStageDedupeKey('8', expiresAt, 'minus30')
+    const store = memoryRedis({
+      keys: { [key]: '1' },
+      sets: { [RENEWAL_WRITTEN_SET]: [key] },
+    })
+    const run = await runDay({
+      store,
+      row: rowAt('8', expiresAt, 'legacy-person@example.com'),
+      daysLeft: 6,
+      live: true,
+    })
+    expect(run.result.skipped.alreadyStagedThisTerm).to.equal(1)
+    expect(run.result.skipped.deduped).to.equal(0)
+    expect(run.result.alreadyStagedThisTerm).to.deep.equal([
+      {
+        tokenId: '8',
+        name: 'Renewal-Reminder',
+        stageWritten: 'minus30',
+        stageWouldApply: 'expiry',
+      },
+    ])
+    expect(run.result.buckets.catchupExpiry.planned).to.equal(0)
+    expect(posts(run.calls)).to.deep.equal([])
+    expect(store.keys[renewalTermMarkerKey('8', expiresAt)]).to.equal(undefined)
+
+    const legacyExpires = expiresIn(0)
+    const legacyKey = `renewal:11:${legacyExpires}:minus14`
+    const legacy = planRenewalWrites({
+      rows: [rowAt('11', legacyExpires)],
+      renewals: [],
+      nowMs: NOW,
+      writtenKeys: new Set([legacyKey]),
+    })
+    expect(legacy.writes).to.deep.equal([])
+    expect(legacy.skipped.alreadyStagedThisTerm).to.equal(1)
+    expect(legacy.alreadyStagedThisTerm[0].stageWritten).to.equal('minus7')
+    expect(legacy.alreadyStagedThisTerm[0].stageWouldApply).to.equal('expiry')
+  })
+
+  it('reads term markers on a dry run and reports alreadyStagedThisTerm', async () => {
+    const expiresAt = expiresIn(29)
+    const marker = renewalTermMarkerKey('4', expiresAt)
+    const store = memoryRedis({ keys: { [marker]: 'minus30' } })
+    const seen: string[] = []
+    const originalGet = store.redis.get.bind(store.redis)
+    store.redis.get = async (key) => {
+      seen.push(key)
+      return originalGet(key)
+    }
+    const run = await runDay({
+      store,
+      row: rowAt('4', expiresAt, 'staged-person@example.com'),
+      daysLeft: 29,
+      live: false,
+      env: { RENEWAL_REMINDER_TAG_NAME: 'Custom-Reminder' },
+    })
+    expect(run.result.writing).to.equal(false)
+    expect(run.result.live).to.equal(false)
+    expect(seen).to.include(marker)
+    expect(store.mutations).to.deep.equal([])
+    expect(run.result.skipped.alreadyStagedThisTerm).to.equal(1)
+    expect(run.result.alreadyStagedThisTerm).to.deep.equal([
+      {
+        tokenId: '4',
+        name: 'Custom-Reminder',
+        stageWritten: 'minus30',
+        stageWouldApply: 'minus7',
+      },
+    ])
+    expect(posts(run.calls)).to.deep.equal([])
+    expect(JSON.stringify(run.result)).to.not.include('staged-person@example.com')
+    expect(WIN_BACK_STAGES).to.deep.equal([])
+    for (const stage of ['minus30', 'minus7', 'expiry', 'plus14', 'renewed'] as const) {
+      expect(isWinBackStage(stage)).to.equal(false)
+    }
   })
 })
 
