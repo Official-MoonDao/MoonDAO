@@ -25,6 +25,11 @@ describe('deprize index layout', () => {
     expect(index).to.include("race.goal.id === 'shared-next-landing'")
     expect(index).to.include('variant="featured"')
     expect(index).to.include('otherLiveRaces')
+    const touchdown = index.indexOf('variant="featured"')
+    const unbound = index.indexOf('deprizeId={featuredLiveId}')
+    expect(touchdown).to.be.greaterThan(-1)
+    expect(unbound).to.be.greaterThan(touchdown)
+    expect(index).to.not.include('bg-amber-500/10 border border-amber-500/30')
   })
 
   it('splits the index into Live and Planned sections', () => {
