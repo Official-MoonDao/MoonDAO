@@ -20,6 +20,7 @@ import { Project } from '@/lib/project/useProjectData'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import Tooltip from '@/components/layout/Tooltip'
 import { AddressLink } from '@/components/nance/AddressLink'
 import NewVoteButton from '@/components/nance/NewVoteButton'
 
@@ -32,6 +33,14 @@ const CHOICE_LABELS: Record<string, string> = {
 const FOR_KEY = '1'
 const AGAINST_KEY = '2'
 const ABSTAIN_KEY = '3'
+
+// Plain-language definition of "VP" surfaced next to the Total VP stat.
+// The page shows raw VP numbers everywhere but never defines the term;
+// this tooltip explains the quadratic (sqrt of vMOONEY) basis and why
+// For/Against are shares of *decided* VP while abstaining VP sits out
+// the pass threshold.
+const VP_EXPLAINER =
+  'VP = voting power. Each voter’s VP is the square root of their vMOONEY (MOONEY locked × time left on the lock, up to a 4-year max) at the moment voting closed. For and Against are shares of decided VP (For + Against); abstaining VP is excluded from the pass threshold.'
 
 // Mirrors `parseVote` in `lib/proposals/computeMemberProposalTally`:
 // the Tableland row's `vote` field can come back as either an already-
@@ -287,7 +296,7 @@ export default function MemberVoteSidebar({
           `revealResults`). */}
       {revealResults && enriched.length > 0 && (
         <div className="rounded-lg border border-white/10 bg-white/5 p-3 flex flex-col gap-2">
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-2 gap-2 text-center">
             <div>
               <p className="text-[10px] uppercase tracking-wider text-green-300/80">For</p>
               <p className="text-sm font-semibold text-green-300">
@@ -304,15 +313,6 @@ export default function MemberVoteSidebar({
               </p>
               <p className="text-[10px] text-white/50 font-mono">
                 {formatNumberUSStyle(tally.Against, true)} VP
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-gray-300/80">Abstain</p>
-              <p className="text-sm font-semibold text-gray-300">
-                {tallyPercents.abstainPctOfTurnout.toFixed(1)}%
-              </p>
-              <p className="text-[10px] text-white/50 font-mono">
-                {formatNumberUSStyle(tally.Abstain, true)} VP
               </p>
             </div>
           </div>
@@ -345,6 +345,12 @@ export default function MemberVoteSidebar({
               style={{ width: `${tallyPercents.againstPctOfDecided}%` }}
             />
           </div>
+          {tally.Abstain > 0 && (
+            <p className="text-[10px] text-white/50 text-center">
+              {formatNumberUSStyle(tally.Abstain, true)} VP abstained (
+              {tallyPercents.abstainPctOfTurnout.toFixed(1)}% of total VP cast)
+            </p>
+          )}
         </div>
       )}
 
@@ -363,7 +369,12 @@ export default function MemberVoteSidebar({
           <p className="text-sm font-semibold text-white">{enriched.length}</p>
         </div>
         <div className="rounded-lg bg-white/5 px-2 py-2 border border-white/10">
-          <p className="text-[10px] uppercase tracking-wider text-white/50">Total VP</p>
+          <div className="flex items-center justify-center gap-1">
+            <p className="text-[10px] uppercase tracking-wider text-white/50">Total VP</p>
+            <Tooltip text={VP_EXPLAINER} wrap>
+              <span className="text-[9px] leading-none align-super text-white/50 cursor-help">ⓘ</span>
+            </Tooltip>
+          </div>
           <p className="text-sm font-semibold text-white">{formatNumberUSStyle(totalVP, true)}</p>
         </div>
       </div>
