@@ -8,7 +8,11 @@
  * The dedupe key is stored after the tag calls and the sequence attempts.
  */
 import { Redis } from '@upstash/redis'
-import { normalizeEmail, type CoverageInput } from '@/lib/citizen/renewalCoverage'
+import {
+  normalizeEmail,
+  UpstreamNonJsonError,
+  type CoverageInput,
+} from '@/lib/citizen/renewalCoverage'
 import {
   assertActiveTagTarget,
   kitAddTagRequest,
@@ -22,6 +26,7 @@ import {
   resolveRenewalTagIds,
   RENEWAL_OPEN_SET,
   RENEWAL_WRITTEN_SET,
+  RENEWED_PRESENT_SET,
   selectForwardRenewals,
   toPublicRenewalWrites,
   assertNoRawEmails,
@@ -33,6 +38,7 @@ import {
 import {
   listKitTags,
   loadKitSubscriberRecords,
+  loadKitTagEmails,
   loadTypeformEmail,
   mapWithConcurrency,
   type CitizenProfile,
@@ -129,8 +135,12 @@ async function rememberBook(redis: RenewalRedis, item: PlannedRenewalWrite): Pro
   await redis.set(item.dedupeKey, '1')
   await redis.sadd(RENEWAL_WRITTEN_SET, [item.dedupeKey])
   if (item.stage === 'renewed') {
+    await redis.sadd(RENEWED_PRESENT_SET, [item.tokenId])
     if (item.openMembers.length > 0) await redis.srem(RENEWAL_OPEN_SET, item.openMembers)
     return
+  }
+  if (item.ops.some((op) => op.op === 'remove' && op.tagKey === 'renewed')) {
+    await redis.srem(RENEWED_PRESENT_SET, [item.tokenId])
   }
   await redis.sadd(RENEWAL_OPEN_SET, [item.dedupeKey])
 }
@@ -194,16 +204,19 @@ export async function executeRenewalWrites(args: {
 async function readBook(redis: RenewalRedis): Promise<{
   openRecords: OpenRecord[]
   writtenKeys: Set<string>
+  renewedPresentTokenIds: Set<string>
 }> {
-  const [openRaw, writtenRaw] = await Promise.all([
+  const [openRaw, writtenRaw, renewedRaw] = await Promise.all([
     redis.smembers(RENEWAL_OPEN_SET),
     redis.smembers(RENEWAL_WRITTEN_SET),
+    redis.smembers(RENEWED_PRESENT_SET),
   ])
   return {
     openRecords: openRaw
       .map((value) => parseRenewalStageKey(value))
       .filter((record): record is OpenRecord => record != null && record.stage !== 'renewed'),
     writtenKeys: new Set(writtenRaw),
+    renewedPresentTokenIds: new Set(renewedRaw),
   }
 }
 
@@ -215,7 +228,6 @@ async function hydrateRenewals(args: {
   exclusionSets: {
     suppressed: Set<string>
     firstRunRedis: Set<string>
-    firstRunKitTag: Set<string>
   }
 }): Promise<Array<CoverageInput & { openMembers: string[] }>> {
   if (args.forward.length === 0) return []
@@ -243,7 +255,6 @@ async function hydrateRenewals(args: {
       kitSubscriberId: record?.id ?? null,
       suppressed: normalized ? args.exclusionSets.suppressed.has(normalized) : false,
       firstRunRedis: normalized ? args.exclusionSets.firstRunRedis.has(normalized) : false,
-      firstRunKitTag: normalized ? args.exclusionSets.firstRunKitTag.has(normalized) : false,
       openMembers: item.openMembers,
     }
   })
@@ -262,7 +273,6 @@ export async function runRenewalWritePass(args: {
   exclusionSets: {
     suppressed: Set<string>
     firstRunRedis: Set<string>
-    firstRunKitTag: Set<string>
   }
   redis?: RenewalRedis | null
   fetchImpl?: FetchLike
@@ -276,12 +286,14 @@ export async function runRenewalWritePass(args: {
     .filter((email): email is string => Boolean(email))
   let openRecords: OpenRecord[] = []
   let writtenKeys = new Set<string>()
+  let renewedPresentTokenIds = new Set<string>()
   let dedupeReady = false
   if (args.exclusionsReady && args.redis) {
     try {
       const book = await readBook(args.redis)
       openRecords = book.openRecords
       writtenKeys = book.writtenKeys
+      renewedPresentTokenIds = book.renewedPresentTokenIds
       dedupeReady = true
     } catch {
       dedupeReady = false
@@ -303,18 +315,12 @@ export async function runRenewalWritePass(args: {
       for (const row of renewals) {
         if (row.email) warningsEmails.push(row.email)
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof UpstreamNonJsonError) throw error
       renewals = []
       warnings.push('Renewed swaps were not planned because a profile read failed.')
     }
   }
-
-  const plan = planRenewalWrites({
-    rows: args.rows,
-    renewals,
-    nowMs: args.nowMs,
-    writtenKeys,
-  })
 
   let listed: Array<{ id: string; name: string }> = []
   let tagIds: Record<RenewalTagKey, string | null> | null = null
@@ -326,6 +332,7 @@ export async function runRenewalWritePass(args: {
     try {
       listed = args.listTags ? await args.listTags() : await listKitTags()
     } catch (error) {
+      if (error instanceof UpstreamNonJsonError) throw error
       if (error instanceof Error && error.message.includes('must be digits')) throw error
       warnings.push('Kit tag list was not read.')
       listed = []
@@ -341,6 +348,31 @@ export async function runRenewalWritePass(args: {
       tagIds = null
     }
   }
+
+  let rowsForPlan = args.rows
+  if (args.allowKitReads === true && tagIds?.renewed) {
+    try {
+      const renewedEmails = await loadKitTagEmails(tagIds.renewed)
+      rowsForPlan = args.rows.map((row) => {
+        if (!row.email || !renewedEmails.has(normalizeEmail(row.email))) return row
+        return { ...row, hasRenewedTag: true }
+      })
+    } catch (error) {
+      if (error instanceof UpstreamNonJsonError) throw error
+      if (error instanceof Error && error.message.includes('must be digits')) throw error
+      warnings.push(
+        'Renewed tag subscribers were not read. Clearance still uses the Redis set renewal:renewed-present.'
+      )
+    }
+  }
+
+  const plan = planRenewalWrites({
+    rows: rowsForPlan,
+    renewals,
+    nowMs: args.nowMs,
+    writtenKeys,
+    renewedPresentTokenIds,
+  })
 
   const tagsReady = !tagLookupFailed && missingTags.length === 0 && tagIds != null
   const decision = renewalLiveDecision(args.env, args.liveParam, {

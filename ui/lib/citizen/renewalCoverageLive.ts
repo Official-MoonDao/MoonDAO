@@ -21,10 +21,12 @@ import {
 
 export const RENEWAL_OPEN_SET = 'renewal:open'
 export const RENEWAL_WRITTEN_SET = 'renewal:written'
+/** Token ids whose Renewed tag is still on, waiting for the next cycle. */
+export const RENEWED_PRESENT_SET = 'renewal:renewed-present'
 
 export const RENEWAL_TAG_KEYS = [
   'reminder',
-  'catchupMinus14',
+  'catchupMinus7',
   'catchupExpiry',
   'catchupPlus14',
   'renewed',
@@ -34,7 +36,7 @@ export type RenewalTagKey = (typeof RENEWAL_TAG_KEYS)[number]
 
 export const DEFAULT_RENEWAL_TAG_NAMES: Record<RenewalTagKey, string> = {
   reminder: RENEWAL_REMINDER_TAG,
-  catchupMinus14: 'Renewal-Catchup-minus14',
+  catchupMinus7: 'Renewal-Catchup-minus7',
   catchupExpiry: 'Renewal-Catchup-expiry',
   catchupPlus14: 'Renewal-Catchup-plus14',
   renewed: RENEWED_TAG,
@@ -42,7 +44,7 @@ export const DEFAULT_RENEWAL_TAG_NAMES: Record<RenewalTagKey, string> = {
 
 const TAG_NAME_ENV: Record<RenewalTagKey, string> = {
   reminder: 'RENEWAL_REMINDER_TAG_NAME',
-  catchupMinus14: 'RENEWAL_CATCHUP_MINUS14_TAG_NAME',
+  catchupMinus7: 'RENEWAL_CATCHUP_MINUS7_TAG_NAME',
   catchupExpiry: 'RENEWAL_CATCHUP_EXPIRY_TAG_NAME',
   catchupPlus14: 'RENEWAL_CATCHUP_PLUS14_TAG_NAME',
   renewed: 'RENEWED_TAG_NAME',
@@ -50,23 +52,27 @@ const TAG_NAME_ENV: Record<RenewalTagKey, string> = {
 
 const TAG_ID_ENV: Record<RenewalTagKey, string> = {
   reminder: 'RENEWAL_REMINDER_TAG_ID',
-  catchupMinus14: 'RENEWAL_CATCHUP_MINUS14_TAG_ID',
+  catchupMinus7: 'RENEWAL_CATCHUP_MINUS7_TAG_ID',
   catchupExpiry: 'RENEWAL_CATCHUP_EXPIRY_TAG_ID',
   catchupPlus14: 'RENEWAL_CATCHUP_PLUS14_TAG_ID',
   renewed: 'RENEWED_TAG_ID',
 }
 
-/** Known Kit tag ids. An env *_TAG_ID overrides the matching entry. */
+/**
+ * Known Kit tag ids. An env *_TAG_ID overrides the matching entry.
+ * The -7 catch-up still defaults to the previous -14 tag id until Beacon
+ * points that automation at the -7 email or sets RENEWAL_CATCHUP_MINUS7_TAG_ID.
+ */
 export const DEFAULT_RENEWAL_TAG_IDS: Record<RenewalTagKey, string> = {
   reminder: '24636917',
-  catchupMinus14: '24636918',
+  catchupMinus7: '24636918',
   catchupExpiry: '24636919',
   catchupPlus14: '24636923',
   renewed: '24636927',
 }
 
 /**
- * Main sequence, then the one-email catch-up sequences for -14, expiry, and +14.
+ * Main sequence, then the one-email catch-up sequences for -7, expiry, and +14.
  * RENEWAL_SEQUENCE_IDS overrides this list.
  */
 export const DEFAULT_RENEWAL_SEQUENCE_IDS = ['2929996', '2930045', '2930050', '2930051'] as const
@@ -107,7 +113,7 @@ export const SEQUENCE_REMOVAL_DOCS = [
 
 export const WRITE_BUCKETS = [
   'renewalReminder',
-  'catchupMinus14',
+  'catchupMinus7',
   'catchupExpiry',
   'catchupPlus14',
   'renewed',
@@ -118,7 +124,7 @@ export type WriteBucket = (typeof WRITE_BUCKETS)[number]
 
 const STAGE_BUCKET: Record<RenewalStage, Exclude<WriteBucket, 'typeformOnly'> | null> = {
   minus30: 'renewalReminder',
-  minus14: 'catchupMinus14',
+  minus7: 'catchupMinus7',
   expiry: 'catchupExpiry',
   plus14: 'catchupPlus14',
   renewed: 'renewed',
@@ -126,7 +132,7 @@ const STAGE_BUCKET: Record<RenewalStage, Exclude<WriteBucket, 'typeformOnly'> | 
 
 const STAGE_TAG: Record<Exclude<RenewalStage, 'renewed'>, RenewalTagKey> = {
   minus30: 'reminder',
-  minus14: 'catchupMinus14',
+  minus7: 'catchupMinus7',
   expiry: 'catchupExpiry',
   plus14: 'catchupPlus14',
 }
@@ -180,7 +186,7 @@ export type RenewalPlan = {
 
 export type RenewalWriteBuckets = {
   renewalReminder: { planned: number; executed: number }
-  catchupMinus14: { planned: number; executed: number }
+  catchupMinus7: { planned: number; executed: number }
   catchupExpiry: { planned: number; executed: number }
   catchupPlus14: { planned: number; executed: number }
   renewed: { planned: number; executed: number }
@@ -364,12 +370,14 @@ export function renewalSequenceIds(env: NodeJS.ProcessEnv): string[] {
 }
 
 export function parseRenewalStageKey(value: string): OpenRecord | null {
-  const match = /^renewal:(\d+):(\d+):(minus30|minus14|expiry|plus14|renewed)$/.exec(value)
+  const match = /^renewal:(\d+):(\d+):(minus30|minus14|minus7|expiry|plus14|renewed)$/.exec(value)
   if (!match) return null
+  const rawStage = match[3]
+  const stage = (rawStage === 'minus14' ? 'minus7' : rawStage) as RenewalStage
   return {
     tokenId: match[1],
     expiresAt: Number(match[2]),
-    stage: match[3] as RenewalStage,
+    stage,
     key: value,
   }
 }
@@ -421,7 +429,7 @@ export function stageForReminder(expiresAtSec: number, nowMs: number): RenewalSt
   const days = daysUntilRenewal(expiresAt, nowMs)
   if (days == null) return null
   const next = expectedSequencePosition(days).nextEmail
-  if (next === 'minus14' || next === 'expiry' || next === 'plus14') return next
+  if (next === 'minus7' || next === 'expiry' || next === 'plus14') return next
   return null
 }
 
@@ -440,7 +448,7 @@ function emptySkips(): RenewalSkipCounts {
 
 type SkipReason = keyof RenewalSkipCounts
 
-function skipReason(row: CoverageInput): SkipReason | null {
+function skipReason(row: CoverageInput, stage: RenewalStage): SkipReason | null {
   if (!row.email) return 'noEmail'
   const state = row.kitState?.trim().toLowerCase() || null
   if (state && OPT_OUT.has(state)) return 'kitOptOut'
@@ -449,20 +457,36 @@ function skipReason(row: CoverageInput): SkipReason | null {
     return 'kitNotActive'
   }
   if (row.suppressed) return 'suppressed'
-  if (row.firstRunRedis || row.firstRunKitTag) return 'firstRun'
+  if (stage !== 'renewed' && row.firstRunRedis && (stage === 'minus30' || stage === 'minus7')) {
+    return 'firstRun'
+  }
   if (!row.kitSubscriberId || !/^\d+$/.test(row.kitSubscriberId)) return 'noSubscriberId'
   return null
 }
 
-function reminderOps(stage: Exclude<RenewalStage, 'renewed'>): PlannedRenewalWrite['ops'] {
-  return [{ op: 'add', tagKey: STAGE_TAG[stage] }]
+function shouldClearRenewed(
+  row: CoverageInput,
+  renewedPresentTokenIds?: ReadonlySet<string>
+): boolean {
+  if (row.hasRenewedTag) return true
+  return renewedPresentTokenIds?.has(String(row.tokenId)) === true
+}
+
+function reminderOps(
+  stage: Exclude<RenewalStage, 'renewed'>,
+  clearRenewed: boolean
+): PlannedRenewalWrite['ops'] {
+  const ops: PlannedRenewalWrite['ops'] = []
+  if (clearRenewed) ops.push({ op: 'remove', tagKey: 'renewed' })
+  ops.push({ op: 'add', tagKey: STAGE_TAG[stage] })
+  return ops
 }
 
 function renewedOps(): PlannedRenewalWrite['ops'] {
   return [
     { op: 'add', tagKey: 'renewed' },
     { op: 'remove', tagKey: 'reminder' },
-    { op: 'remove', tagKey: 'catchupMinus14' },
+    { op: 'remove', tagKey: 'catchupMinus7' },
     { op: 'remove', tagKey: 'catchupExpiry' },
     { op: 'remove', tagKey: 'catchupPlus14' },
   ]
@@ -473,6 +497,7 @@ export function planRenewalWrites(args: {
   renewals: Array<CoverageInput & { openMembers: string[] }>
   nowMs: number
   writtenKeys: ReadonlySet<string>
+  renewedPresentTokenIds?: ReadonlySet<string>
 }): RenewalPlan {
   const skipped = emptySkips()
   const writes: PlannedRenewalWrite[] = []
@@ -480,7 +505,7 @@ export function planRenewalWrites(args: {
   for (const row of args.rows) {
     const stage = stageForReminder(row.expiresAt, args.nowMs)
     if (!stage || stage === 'renewed') continue
-    const reason = skipReason(row)
+    const reason = skipReason(row, stage)
     if (reason) {
       skipped[reason] += 1
       continue
@@ -502,13 +527,13 @@ export function planRenewalWrites(args: {
       stage,
       bucket,
       dedupeKey,
-      ops: reminderOps(stage),
+      ops: reminderOps(stage, shouldClearRenewed(row, args.renewedPresentTokenIds)),
       openMembers: [],
     })
   }
 
   for (const row of args.renewals) {
-    const reason = skipReason(row)
+    const reason = skipReason(row, 'renewed')
     if (reason) {
       skipped[reason] += 1
       continue
@@ -612,7 +637,7 @@ export function toPublicRenewalWrites(args: {
 }): PublicRenewalWrites {
   const buckets: RenewalWriteBuckets = {
     renewalReminder: { planned: 0, executed: 0 },
-    catchupMinus14: { planned: 0, executed: 0 },
+    catchupMinus7: { planned: 0, executed: 0 },
     catchupExpiry: { planned: 0, executed: 0 },
     catchupPlus14: { planned: 0, executed: 0 },
     renewed: { planned: 0, executed: 0 },

@@ -16,6 +16,10 @@ import {
   setAttributionGetter,
   setIsCitizen,
   trackBeginCheckout,
+  trackExtendCitizenshipError,
+  trackExtendCitizenshipOpen,
+  trackExtendCitizenshipSubmit,
+  trackExtendCitizenshipSuccess,
   trackJoinCtaClick,
   trackMintError,
   trackMintSuccess,
@@ -463,5 +467,48 @@ describe('join CTA hrefs', () => {
     assert.strictEqual(normalizeWalletType('coinbase_wallet'), 'coinbase')
     assert.strictEqual(normalizeWalletType('walletconnect'), 'walletconnect')
     assert.strictEqual(normalizeWalletType('MetaMask'), 'metamask')
+  })
+})
+
+describe('extend citizenship events', () => {
+  beforeEach(() => {
+    resetAnalyticsState()
+  })
+
+  it('records open, submit, success, and error without a wallet or email', () => {
+    const calls = installGtag()
+    setAttributionGetter(() => ({ utm_source: 'kit', email: 'person@example.com' }))
+    trackExtendCitizenshipOpen({ surface: 'extend_modal' })
+    trackExtendCitizenshipSubmit({ years: 1, value_eth: 0.036, value: 80 })
+    trackExtendCitizenshipSuccess({
+      years: 1,
+      value_eth: 0.036,
+      value: 80,
+      transaction_id: TX,
+    })
+    trackExtendCitizenshipError({ error_type: 'rejected', step: 'extend' })
+    assert.deepStrictEqual(
+      calls.map((call) => call[1]),
+      [
+        'extend_citizenship_open',
+        'extend_citizenship_submit',
+        'extend_citizenship_success',
+        'extend_citizenship_error',
+      ]
+    )
+    includes(calls[0][2], { plan: 'citizen', surface: 'extend_modal', utm_source: 'kit' })
+    includes(calls[2][2], { transaction_id: TX, years: 1, value: 80 })
+    includes(calls[3][2], { error_type: 'rejected', step: 'extend' })
+    const encoded = JSON.stringify(calls)
+    assert.equal(encoded.includes('person@example.com'), false)
+    assert.equal(encoded.includes(WALLET), false)
+  })
+
+  it('drops a success event when years are missing and ignores a non-hash transaction id', () => {
+    const calls = installGtag()
+    trackExtendCitizenshipSubmit({ years: 0 })
+    trackExtendCitizenshipSuccess({ years: 1, transaction_id: WALLET })
+    assert.strictEqual(calls.length, 1)
+    assert.strictEqual((calls[0][2] as { transaction_id?: string }).transaction_id, undefined)
   })
 })

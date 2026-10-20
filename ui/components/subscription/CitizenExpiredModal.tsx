@@ -103,15 +103,12 @@ export default function CitizenExpiredModal() {
             {expirationDate
               ? `Your citizenship lapsed on ${expirationDate}. `
               : 'Your citizenship has lapsed. '}
-            Renew it to restore access to everything the Space Acceleration
-            Network unlocks.
+            Extend it to restore access to everything the Space Acceleration Network unlocks.
           </p>
         </div>
 
         <div className="bg-darkest-cool p-4 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-300 mb-3">
-            Currently locked
-          </h3>
+          <h3 className="text-sm font-medium text-gray-300 mb-3">Currently locked</h3>
           <ul className="flex flex-col gap-2">
             {LOCKED_FEATURES.map((feature) => (
               <li key={feature} className="text-gray-400 text-sm flex gap-2">
@@ -128,7 +125,7 @@ export default function CitizenExpiredModal() {
             onClick={() => setIsRenewing(true)}
             className="flex-1 gradient-2 rounded-full py-3 px-6 text-white font-medium"
           >
-            Renew Citizenship
+            Extend Citizenship
           </button>
           <button
             data-testid="dismiss-renewal-button"

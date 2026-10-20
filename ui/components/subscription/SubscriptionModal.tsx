@@ -7,6 +7,14 @@ import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
+import {
+  classifyMintError,
+  trackExtendCitizenshipError,
+  trackExtendCitizenshipOpen,
+  trackExtendCitizenshipSubmit,
+  trackExtendCitizenshipSuccess,
+  transactionIdFromReceipt,
+} from '@/lib/analytics/ga4'
 import { clearCachedCitizenExpiry } from '@/lib/citizen/citizenSubscription'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
@@ -95,6 +103,11 @@ export function SubscriptionModal({
 
   const { effectiveGasPrice } = useGasPrice(DEFAULT_CHAIN_V5)
 
+  useEffect(() => {
+    if (type !== 'citizen') return
+    trackExtendCitizenshipOpen({ surface: 'extend_modal' })
+  }, [type])
+
   const payEth = payCost != null ? Number(ethers.utils.formatEther(payCost)) : 0
   const { data: costUsd } = useETHPrice(payEth, 'ETH_TO_USD')
 
@@ -117,6 +130,13 @@ export function SubscriptionModal({
 
   async function extendSubscription() {
     setIsLoading(true)
+    if (type === 'citizen') {
+      trackExtendCitizenshipSubmit({
+        years,
+        value_eth: payEth,
+        value: typeof costUsd === 'number' ? costUsd : undefined,
+      })
+    }
 
     try {
       if (!account) throw new Error('No account found')
@@ -157,7 +177,7 @@ export function SubscriptionModal({
         const unlocked = unlockedStakeFromReceipt(receipt)
         if (unlocked && unlocked > BigInt(0)) {
           if (address) rememberUnlockedCitizenshipMooney(address, unlocked)
-          toast('Renewed. Claim the voting power from your dashboard.')
+          toast('Citizenship extended. Claim the voting power from your dashboard.')
         }
       } else {
         const call = buildRenewSubscriptionCall({
@@ -183,6 +203,12 @@ export function SubscriptionModal({
         if (tokenId != null && tokenId !== '') {
           clearCachedCitizenExpiry(String(tokenId), selectedChain?.id)
         }
+        trackExtendCitizenshipSuccess({
+          years,
+          value_eth: payEth,
+          value: typeof costUsd === 'number' ? costUsd : undefined,
+          transaction_id: transactionIdFromReceipt(receipt),
+        })
       }
       setEnabled(false)
       router.reload()
@@ -195,6 +221,12 @@ export function SubscriptionModal({
         const fallback = payCost ?? BigInt(subscriptionCost ?? 0)
         openOnramp(shortfall > BigInt(0) ? shortfall : fallback / BigInt(10))
       } else {
+        if (type === 'citizen') {
+          trackExtendCitizenshipError({
+            error_type: classifyMintError(err),
+            step: 'extend',
+          })
+        }
         toast.error(err?.message || 'Failed to extend subscription. Please try again.')
       }
     }
@@ -202,7 +234,12 @@ export function SubscriptionModal({
   }
 
   return (
-    <Modal id="subscription-modal" setEnabled={setEnabled} title="Extend Subscription" size="2xl">
+    <Modal
+      id="subscription-modal"
+      setEnabled={setEnabled}
+      title={type === 'citizen' ? 'Extend Citizenship' : 'Extend Subscription'}
+      size="2xl"
+    >
       <div data-testid="subscription-modal-content">
         {/* Current Subscription Info */}
         <div data-testid="subscription-info" className="mb-8">
@@ -269,9 +306,9 @@ export function SubscriptionModal({
                 subscriptionCost != null &&
                 payCost > toRenewalValue(subscriptionCost) && (
                   <p className="text-gray-400 text-sm mt-2">
-                    A quarter of this buys MOONEY in this payment. A one-year renewal is 0.036 ETH.
-                    Claim the voting power from your dashboard unless it was added to a lock you
-                    already have.
+                    A quarter of this buys MOONEY in this payment. A one-year extension is 0.036
+                    ETH. Claim the voting power from your dashboard unless it was added to a lock
+                    you already have.
                   </p>
                 )}
               <p className="text-xs text-gray-400 mt-2">
@@ -286,7 +323,7 @@ export function SubscriptionModal({
             <PrivyWeb3Button
               dataTestId="extend-subscription-button"
               requiredChain={DEFAULT_CHAIN_V5}
-              label="Extend Subscription"
+              label={type === 'citizen' ? 'Extend Citizenship' : 'Extend Subscription'}
               action={async () => {
                 await extendSubscription()
               }}

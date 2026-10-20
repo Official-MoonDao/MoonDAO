@@ -260,6 +260,66 @@ export function trackSignUp(params: { cta_location: string }) {
   sendEvent('sign_up', { method: 'kit', cta_location: params.cta_location }, false)
 }
 
+export function trackExtendCitizenshipOpen(params: { surface: string }) {
+  if (!params.surface) return
+  sendEvent('extend_citizenship_open', { plan: 'citizen', surface: params.surface }, true)
+}
+
+export function trackExtendCitizenshipSubmit(params: {
+  years: number
+  value_eth?: number
+  value?: number
+}) {
+  const years = finiteNumber(params.years)
+  if (years === undefined || years < 1) return
+  const valueEth = finiteNumber(params.value_eth)
+  const value = finiteNumber(params.value)
+  sendEvent(
+    'extend_citizenship_submit',
+    {
+      plan: 'citizen',
+      years,
+      ...(valueEth !== undefined ? { value_eth: valueEth } : {}),
+      ...(value !== undefined ? { currency: 'USD', value } : {}),
+    },
+    true
+  )
+}
+
+export function trackExtendCitizenshipSuccess(params: {
+  years: number
+  value_eth?: number
+  value?: number
+  transaction_id?: string
+}) {
+  const years = finiteNumber(params.years)
+  if (years === undefined || years < 1) return
+  const valueEth = finiteNumber(params.value_eth)
+  const value = finiteNumber(params.value)
+  const transactionId =
+    params.transaction_id && TX_HASH.test(params.transaction_id) ? params.transaction_id : undefined
+  sendEvent(
+    'extend_citizenship_success',
+    {
+      plan: 'citizen',
+      years,
+      ...(valueEth !== undefined ? { value_eth: valueEth } : {}),
+      ...(value !== undefined ? { currency: 'USD', value } : {}),
+      ...(transactionId ? { transaction_id: transactionId } : {}),
+    },
+    true
+  )
+}
+
+export function trackExtendCitizenshipError(params: { error_type: string; step: string }) {
+  if (!params.error_type || !params.step) return
+  sendEvent(
+    'extend_citizenship_error',
+    { plan: 'citizen', error_type: params.error_type, step: params.step },
+    true
+  )
+}
+
 export function trackMintError(params: {
   plan?: AnalyticsPlan
   mission_id?: string

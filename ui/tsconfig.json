@@ -115,5 +115,5 @@
     "pages/api/nodemailer",
     "next-sitemap.config.js"
   ],
-  "exclude": ["node_modules", "archive"]
+  "exclude": ["node_modules", "archive", "playwright", "playwright.config.ts"]
 }
