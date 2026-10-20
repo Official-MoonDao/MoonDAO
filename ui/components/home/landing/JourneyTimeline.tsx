@@ -1,8 +1,14 @@
 import { motion, useScroll, useSpring } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useRef } from 'react'
 import Reveal from './Reveal'
 import SectionHeading from './SectionHeading'
+
+type ProofLink = {
+  label: string
+  href: string
+}
 
 type TimelineEvent = {
   date: string
@@ -11,7 +17,10 @@ type TimelineEvent = {
   icon: string
   iconAlt: string
   isCurrent?: boolean
+  proof?: ProofLink[]
 }
+
+const ROADMAP_PROOF: ProofLink[] = [{ label: 'See the roadmap', href: '/roadmap' }]
 
 const timelineEvents: TimelineEvent[] = [
   {
@@ -21,6 +30,7 @@ const timelineEvents: TimelineEvent[] = [
       'MoonDAO launches as the first decentralized autonomous organization focused on space exploration and lunar settlement.',
     icon: '/assets/moondao-logo.svg',
     iconAlt: 'MoonDAO Launch',
+    proof: [{ label: 'About MoonDAO', href: '/about' }],
   },
   {
     date: 'Feb 2022',
@@ -29,6 +39,7 @@ const timelineEvents: TimelineEvent[] = [
       'Raised 2,600 ETH through community funding and purchased two tickets on a Blue Origin flight.',
     icon: '/assets/icon-ethereum.svg',
     iconAlt: 'Fundraising Success',
+    proof: [{ label: 'Juicebox raise', href: 'https://old.juicebox.money/p/moondao' }],
   },
   {
     date: 'Aug 2022',
@@ -37,6 +48,10 @@ const timelineEvents: TimelineEvent[] = [
       "Coby Cotton is selected by the community and launched to space on Blue Origin's NS-22. MoonDAO ratifies its constitution.",
     icon: '/assets/icon-astronaut.svg',
     iconAlt: 'Space Launch',
+    proof: [
+      { label: 'Space.com', href: 'https://www.space.com/blue-origin-ns-22-space-tourist-flight-success' },
+      { label: 'The flight', href: '/dude-perfect' },
+    ],
   },
   {
     date: 'May 2023',
@@ -45,6 +60,7 @@ const timelineEvents: TimelineEvent[] = [
       'Funds 100+ space-related projects, fostering a thriving ecosystem of space entrepreneurs and researchers.',
     icon: '/assets/icon-project.svg',
     iconAlt: 'Project Funding',
+    proof: [{ label: 'Projects', href: '/projects' }],
   },
   {
     date: 'Jan 2024',
@@ -53,14 +69,7 @@ const timelineEvents: TimelineEvent[] = [
       'Organizes a zero-gravity flight experience with three astronauts, advancing space training and research.',
     icon: '/assets/icon-plane.svg',
     iconAlt: 'Zero Gravity',
-  },
-  {
-    date: 'May 2024',
-    title: 'Space Network',
-    description:
-      'Launches the Space Acceleration Network to coordinate and accelerate space technology development.',
-    icon: '/assets/icon-passport.svg',
-    iconAlt: 'Space Network',
+    proof: [{ label: 'Watch the flight', href: 'https://www.youtube.com/watch?v=l8fFZtgBrIY' }],
   },
   {
     date: 'Aug 2024',
@@ -69,6 +78,32 @@ const timelineEvents: TimelineEvent[] = [
       "Dr. Eiman Jahangir completes the journey to space — MoonDAO's second successful astronaut mission.",
     icon: '/assets/icon-astronaut.svg',
     iconAlt: 'Second Space Mission',
+    proof: [
+      { label: 'We did it', href: 'https://news.moondao.com/posts/we-did-it-moondao' },
+      {
+        label: 'Space.com',
+        href: 'https://www.space.com/blue-origin-eiman-jahangir-suborbital-flight-moondao',
+      },
+      {
+        label: 'The Tennessean',
+        href: 'https://www.tennessean.com/story/news/local/2024/08/29/eiman-jahangir-vanderbilt-blue-origin-new-shepard-first-nashvillian-space/74996549007/',
+      },
+    ],
+  },
+  {
+    date: 'Oct 2024',
+    title: 'Space Network',
+    description:
+      'Launches the Space Acceleration Network to coordinate and accelerate space technology development.',
+    icon: '/assets/icon-passport.svg',
+    iconAlt: 'Space Network',
+    proof: [
+      { label: 'The Network', href: '/network' },
+      {
+        label: 'Launch post',
+        href: 'https://news.moondao.com/posts/launching-today-the-space-acceleration-network',
+      },
+    ],
   },
   {
     date: 'May 2025',
@@ -77,6 +112,7 @@ const timelineEvents: TimelineEvent[] = [
       'The MoonDAO Launchpad goes live, enabling decentralized funding for space missions and projects.',
     icon: '/assets/MoonDAOLaunchpad.svg',
     iconAlt: 'Launchpad Platform',
+    proof: [{ label: 'Launchpad', href: '/launch' }],
   },
   {
     date: '2026',
@@ -85,7 +121,17 @@ const timelineEvents: TimelineEvent[] = [
       'Design of major lunar settlement components completed, ready for manufacturing on Earth.',
     icon: '/assets/icon-project.svg',
     iconAlt: 'Settlement Design',
+    proof: ROADMAP_PROOF,
+  },
+  {
+    date: '2026',
+    title: 'DePrize & Simulation Models',
+    description:
+      'DePrize lets anyone forecast which teams will win the races to build lunar settlement technology, while Moon Base Zero simulates the base on real NASA lunar terrain.',
+    icon: '/assets/icon-globe.svg',
+    iconAlt: 'DePrize and Simulation Models',
     isCurrent: true,
+    proof: ROADMAP_PROOF,
   },
   {
     date: '2027',
@@ -94,6 +140,7 @@ const timelineEvents: TimelineEvent[] = [
       'Selection of the first Moon settlers. Manufacturing of key components with Earth-based simulations.',
     icon: '/assets/icon-contract.svg',
     iconAlt: 'Manufacturing',
+    proof: ROADMAP_PROOF,
   },
   {
     date: '2028',
@@ -101,6 +148,7 @@ const timelineEvents: TimelineEvent[] = [
     description: 'Components tested and ready for launch, with Earth-based simulation complete.',
     icon: '/assets/icon-lander.svg',
     iconAlt: 'Ready for Launch',
+    proof: ROADMAP_PROOF,
   },
   {
     date: '2029',
@@ -109,6 +157,7 @@ const timelineEvents: TimelineEvent[] = [
       'Infrastructure is sent to the Moon and the first crew begins construction of the lunar settlement.',
     icon: '/assets/icon-globe.svg',
     iconAlt: 'Lunar Construction',
+    proof: ROADMAP_PROOF,
   },
 ]
 
@@ -220,6 +269,25 @@ export default function JourneyTimeline() {
                           >
                             {event.description}
                           </p>
+                          {event.proof && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {event.proof.map((link) => {
+                                const isExternal = link.href.startsWith('http')
+                                return (
+                                  <Link
+                                    key={link.href}
+                                    href={link.href}
+                                    target={isExternal ? '_blank' : undefined}
+                                    rel={isExternal ? 'noopener noreferrer' : undefined}
+                                    className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 font-RobotoMono text-[11px] uppercase tracking-wider text-white/70 transition-colors hover:border-moon-gold/60 hover:text-white"
+                                  >
+                                    {link.label}
+                                    <span aria-hidden>{isExternal ? '↗' : '→'}</span>
+                                  </Link>
+                                )
+                              })}
+                            </div>
+                          )}
                         </div>
                       </Reveal>
                     </div>
