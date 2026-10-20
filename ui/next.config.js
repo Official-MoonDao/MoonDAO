@@ -155,6 +155,19 @@ module.exports = withBundleAnalyzer(
               },
             ],
           },
+          // The quarterly contribution reports (pages/contributions/[cycle])
+          // carry contributor names and claims; keep them out of search
+          // engines. `:path+` leaves /contributions itself (the submission
+          // page) indexable.
+          {
+            source: '/contributions/:path+',
+            headers: [
+              {
+                key: 'X-Robots-Tag',
+                value: 'noindex',
+              },
+            ],
+          },
         ]
       },
       async redirects() {

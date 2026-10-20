@@ -1,0 +1,1880 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Q3 2026 Contribution Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f1f3f6; --text: #1d2330; --muted: #5d6677;
+  --border: #dfe3ea; --accent: #2563c9; --accent-soft: #e8f0fc;
+  --amber-bg: #fff3dc; --amber-text: #8a4b00; --amber-border: #f2cf8c;
+  --pool-bg: #fff9e8; --pool-border: #eed58a; --pool-text: #6e5200;
+  --ev-up-bg: #e5f5ec; --ev-up-text: #1d6b3f; --ev-link-bg: #e8f0fc; --ev-link-text: #234f96;
+  --c-participation: #8a94a6; --c-outreach: #2f80ed; --c-content: #9b51e0; --c-events: #0f9d8a;
+  --c-research: #e07a1f; --c-governance: #5b5bd6; --c-donation: #c99a0e; --c-other: #7f8c8d; --c-unreviewed: #b0b7c3;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151b; --surface: #1a1f27; --surface-2: #222833; --text: #e6e9ef; --muted: #9aa3b2;
+    --border: #2e3541; --accent: #7aa7ff; --accent-soft: #1f2c45;
+    --amber-bg: #3a2b12; --amber-text: #f3c98a; --amber-border: #6b5222;
+    --pool-bg: #2b2513; --pool-border: #5a4a1e; --pool-text: #f0d68a;
+    --ev-up-bg: #173323; --ev-up-text: #8fdcb0; --ev-link-bg: #1f2c45; --ev-link-text: #a9c4ff;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151b; --surface: #1a1f27; --surface-2: #222833; --text: #e6e9ef; --muted: #9aa3b2;
+  --border: #2e3541; --accent: #7aa7ff; --accent-soft: #1f2c45;
+  --amber-bg: #3a2b12; --amber-text: #f3c98a; --amber-border: #6b5222;
+  --pool-bg: #2b2513; --pool-border: #5a4a1e; --pool-text: #f0d68a;
+  --ev-up-bg: #173323; --ev-up-text: #8fdcb0; --ev-link-bg: #1f2c45; --ev-link-text: #a9c4ff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding-block: 32px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--accent); }
+h1, h2, h3 { text-wrap: balance; }
+h1 { font-size: 28px; line-height: 1.2; margin: 4px 0 8px; }
+h2 { font-size: 20px; margin: 0 0 12px; }
+h3 { font-size: 18px; margin: 0; }
+section { margin-top: 28px; }
+.eyebrow { color: var(--muted); font-size: 13px; letter-spacing: .04em; text-transform: uppercase; }
+.lede { color: var(--muted); margin: 0; }
+.muted { color: var(--muted); }
+.pool { background: var(--pool-bg); border: 1px solid var(--pool-border); border-radius: 10px; padding: 18px 20px; text-align: center; color: var(--pool-text); }
+.pool-label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.pool-amounts { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 36px; margin: 6px 0; }
+.pool-amount { font-size: 28px; font-weight: 700; }
+.pool-amount span { font-size: 14px; font-weight: 500; margin-left: 6px; }
+.pool p { margin: 0; font-size: 13px; }
+.guide, .breakdown, .person, .person-detail { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.guide, .breakdown { padding: 18px 20px; }
+.guide ol { margin: 0 0 12px; padding-left: 20px; }
+.policy { display: grid; gap: 8px; background: var(--surface-2); border-radius: 8px; padding: 12px 14px; font-size: 14px; }
+.ai-note { font-size: 13px; color: var(--muted); margin: 12px 0 0; }
+.legend { margin-top: 12px; font-size: 14px; }
+.legend summary { cursor: pointer; color: var(--accent); }
+.legend table { border-collapse: collapse; margin-top: 8px; }
+.legend td { padding: 5px 10px 5px 0; vertical-align: top; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+.stat-value { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; margin-bottom: 12px; }
+.bar-seg { background: var(--cat); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; line-height: 1; padding: 5px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.chip-count { font-weight: 700; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cat); flex: none; }
+.cat-participation { --cat: var(--c-participation); } .cat-outreach { --cat: var(--c-outreach); } .cat-content { --cat: var(--c-content); }
+.cat-events { --cat: var(--c-events); } .cat-research { --cat: var(--c-research); } .cat-governance { --cat: var(--c-governance); }
+.cat-donation { --cat: var(--c-donation); } .cat-other { --cat: var(--c-other); } .cat-unreviewed { --cat: var(--c-unreviewed); }
+.flag-eligibility { background: var(--amber-bg); color: var(--amber-text); border-color: var(--amber-border); }
+.flag-context { background: transparent; color: var(--muted); }
+.ev-upload { background: var(--ev-up-bg); color: var(--ev-up-text); border-color: transparent; }
+.ev-links { background: var(--ev-link-bg); color: var(--ev-link-text); border-color: transparent; }
+.ev-none { background: transparent; color: var(--muted); border-style: dashed; }
+button.filter-chip { cursor: pointer; font: inherit; font-size: 12.5px; }
+button.filter-chip[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-bottom: 12px; font-size: 14px; }
+.toolbar input[type="search"] { flex: 1 1 240px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+#people { display: grid; gap: 10px; }
+.person { padding: 14px 16px; }
+.person[hidden] { display: none; }
+.person-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.person-name { font-weight: 700; font-size: 16px; text-decoration: none; }
+.person-name:hover { text-decoration: underline; }
+.person-head .muted { font-size: 13px; }
+.summary { margin: 6px 0 10px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.section-head h2 { margin: 0; }
+.buttons { display: flex; gap: 8px; }
+.buttons button { font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+.person-detail { padding: 16px; margin-bottom: 16px; scroll-margin-top: 12px; }
+.detail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.detail-head .back { margin-left: auto; font-size: 13px; }
+.entry { border-top: 1px solid var(--border); padding: 12px 0 4px; scroll-margin-top: 12px; }
+.entry > summary { list-style: none; cursor: pointer; }
+.entry > summary::-webkit-details-marker { display: none; }
+.entry-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13px; }
+.entry-top::before { content: "\25B8"; color: var(--muted); transition: transform .15s; }
+.entry[open] .entry-top::before { transform: rotate(90deg); }
+.toggle { margin-left: auto; color: var(--accent); font-size: 13px; white-space: nowrap; }
+.toggle::after { content: "Show original"; }
+.entry[open] .toggle::after { content: "Hide original"; }
+.entry > summary:hover .toggle { text-decoration: underline; }
+.entry-id { font-family: ui-monospace, Consolas, monospace; font-weight: 700; }
+.entry-headline { font-weight: 600; margin: 6px 0 4px 18px; }
+.entry-body { margin-left: 18px; padding-bottom: 8px; }
+.also { font-size: 13px; color: var(--muted); }
+.note { font-size: 14px; background: var(--amber-bg); color: var(--amber-text); border-radius: 6px; padding: 6px 10px; margin: 6px 0; }
+.original-label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-top: 10px; }
+.original { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface-2); border-left: 3px solid var(--border); border-radius: 4px; padding: 10px 12px; margin-top: 4px; }
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 16px; margin: 10px 0 0; font-size: 13.5px; }
+.meta dt { font-size: 12px; color: var(--muted); }
+.meta dd { margin: 0; overflow-wrap: anywhere; }
+footer { margin-top: 40px; font-size: 13px; color: var(--muted); text-align: center; }
+@media (max-width: 640px) {
+  main { padding-block-start: 20px; }
+  h1 { font-size: 23px; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .pool-amount { font-size: 23px; }
+  .entry-headline, .entry-body { margin-left: 0; }
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .entry-top::before { transition: none; }
+}
+@media print {
+  body { background: var(--surface); }
+  .toolbar, .buttons, .back, button.filter-chip { display: none !important; }
+  .person, .person-detail, .entry { break-inside: avoid; }
+  .person-detail { break-before: page; }
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="eyebrow">MoonDAO senate review</div>
+  <h1>Community contributions: Q3 2026 (Jul-Sep)</h1>
+  <p class="lede">76 submissions from 20 contributors, submitted Jul 16, 2026 to Oct 8, 2026.</p>
+</header>
+
+<section class="pool" aria-label="Distribution pool">
+  <div class="pool-label">Distribution pool</div>
+  <div class="pool-amounts"><div class="pool-amount">$2,340<span>USDC</span></div><div class="pool-amount">695,000<span>MOONEY</span></div></div>
+  <p>To be distributed to the community circle, allocated by senate vote based on this review.</p>
+</section>
+
+<section class="guide">
+  <h2>How to use this report</h2>
+  <ol>
+    <li>Read the <a href="#contributors">contributor summaries</a>. Each one covers everything that person claimed this cycle.</li>
+    <li>Click a name to jump to their claimed work, then click any entry to expand the original submission and proof links.</li>
+    <li>Flags are factual observations, not verdicts. Amber flags relate to the timing policy below; grey flags are context.</li>
+  </ol>
+  <div class="policy">
+    <div><strong>What's rewardable:</strong> any contribution that advances MoonDAO or the space industry generally, including town hall attendance, work for outside groups and donations. How much each is worth is up to you.</div>
+    <div><strong>Timing:</strong> work should be complete and done during this cycle, not planned or from long ago.</div>
+  </div>
+  <p class="ai-note"><strong>About the summaries:</strong> categories, summaries and flags were drafted with Claude (AI) and checked by the review coordinator. They restate what each person claimed and don't judge its value. Every original submission is reproduced in full below.</p>
+  <details class="legend">
+    <summary>Flag and evidence definitions</summary>
+    <table><tr><td><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span></td><td>Some or all of the work is dated outside this cycle, or described as developed over multiple years.</td></tr><tr><td><span class="chip flag flag-eligibility" title="Describes planned or in-progress work.">Not complete</span></td><td>Describes planned or in-progress work.</td></tr><tr><td><span class="chip flag flag-eligibility" title="Text is copied from another submission.">Copied text</span></td><td>Text is copied from another submission.</td></tr><tr><td><span class="chip flag flag-eligibility" title="May claim the same activity as another entry; see the note.">May overlap</span></td><td>May claim the same activity as another entry; see the note.</td></tr><tr><td><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></td><td>The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.</td></tr><tr><td><span class="chip flag flag-context" title="The description says MoonDAO already funded this work.">MoonDAO-funded</span></td><td>The description says MoonDAO already funded this work.</td></tr><tr><td><span class="chip flag flag-context" title="The description says the work advanced the submitter&#x27;s own candidacy or campaign.">Own campaign</span></td><td>The description says the work advanced the submitter&#x27;s own candidacy or campaign.</td></tr><tr><td><span class="chip flag flag-context" title="The submitter states they are a senator.">Senator</span></td><td>The submitter states they are a senator.</td></tr><tr><td><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></td><td>The proof-of-work field contains a link.</td></tr><tr><td><span class="chip ev ev-links" title="No upload, but the description contains links.">Links in description</span></td><td>No upload, but the description contains links.</td></tr><tr><td><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></td><td>No proof link and no links in the description.</td></tr></table>
+  </details>
+</section>
+
+<section class="stats"><div class="stat"><div class="stat-value">76</div><div class="stat-label">Submissions</div></div><div class="stat"><div class="stat-value">20</div><div class="stat-label">Contributors</div></div><div class="stat"><div class="stat-value">37/76</div><div class="stat-label">With evidence</div></div><div class="stat"><div class="stat-value">~26 min</div><div class="stat-label">To read every submission</div></div></section>
+<section class="breakdown">
+  <h2>Submissions by category</h2>
+  <div class="bar" aria-hidden="true"><span class="bar-seg cat-participation" style="flex:32" title="Participation: 32"></span><span class="bar-seg cat-outreach" style="flex:9" title="Outreach &amp; Promotion: 9"></span><span class="bar-seg cat-content" style="flex:10" title="Content &amp; Media: 10"></span><span class="bar-seg cat-events" style="flex:9" title="Events &amp; Education: 9"></span><span class="bar-seg cat-research" style="flex:13" title="Research &amp; Technical: 13"></span><span class="bar-seg cat-governance" style="flex:1" title="Governance &amp; Operations: 1"></span><span class="bar-seg cat-donation" style="flex:1" title="Donation: 1"></span><span class="bar-seg cat-other" style="flex:1" title="Other: 1"></span></div>
+  <div class="chips"><button type="button" class="chip cat cat-participation filter-chip" data-category="Participation" aria-pressed="false"><span class="dot"></span>Participation <span class="chip-count">32</span></button><button type="button" class="chip cat cat-outreach filter-chip" data-category="Outreach &amp; Promotion" aria-pressed="false"><span class="dot"></span>Outreach &amp; Promotion <span class="chip-count">9</span></button><button type="button" class="chip cat cat-content filter-chip" data-category="Content &amp; Media" aria-pressed="false"><span class="dot"></span>Content &amp; Media <span class="chip-count">10</span></button><button type="button" class="chip cat cat-events filter-chip" data-category="Events &amp; Education" aria-pressed="false"><span class="dot"></span>Events &amp; Education <span class="chip-count">9</span></button><button type="button" class="chip cat cat-research filter-chip" data-category="Research &amp; Technical" aria-pressed="false"><span class="dot"></span>Research &amp; Technical <span class="chip-count">13</span></button><button type="button" class="chip cat cat-governance filter-chip" data-category="Governance &amp; Operations" aria-pressed="false"><span class="dot"></span>Governance &amp; Operations <span class="chip-count">1</span></button><button type="button" class="chip cat cat-donation filter-chip" data-category="Donation" aria-pressed="false"><span class="dot"></span>Donation <span class="chip-count">1</span></button><button type="button" class="chip cat cat-other filter-chip" data-category="Other" aria-pressed="false"><span class="dot"></span>Other <span class="chip-count">1</span></button></div>
+  <p class="muted">32 of 76 submissions are participation (town halls, meetings, votes, attending events).</p>
+</section>
+
+<section id="contributors">
+  <h2>Contributors</h2>
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="Search names and summaries" aria-label="Search contributors">
+    <label><input type="checkbox" id="flagged-only"> Only contributors with amber flags</label>
+    <span id="showing" class="muted" aria-live="polite"></span>
+  </div>
+  <div id="people">
+  <article class="person" data-name="anastasia stepanova" data-text="anastasia stepanova senator governance work: reviewed proposed projects (~4 hours each) and gave feedback before voting. also ran for the third executive seat and shared partnership ideas."
+           data-categories="Governance &amp; Operations" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-anastasia-stepanova">Anastasia Stepanova</a>
+      <span class="muted">1 entry · 0 with evidence</span>
+    </div>
+    <p class="summary">Senator governance work: reviewed proposed projects (~4 hours each) and gave feedback before voting. Also ran for the third Executive seat and shared partnership ideas.</p>
+    <div class="chips"><span class="chip cat cat-governance"><span class="dot"></span>Governance &amp; Operations <span class="chip-count">1</span></span><span class="chip flag flag-context" title="The submitter states they are a senator.">Senator</span><span class="chip flag flag-context" title="The description says the work advanced the submitter&#x27;s own candidacy or campaign.">Own campaign</span></div>
+  </article>
+  <article class="person" data-name="andrew &quot;titan&quot; parris" data-text="andrew &quot;titan&quot; parris ran i24 spaceflight training class 5, co-hosted the jul 30 town hall, promoted i24 and moondao at the h2m2 summit, was a project tmro panelist (3 shows), interviewed sian proctor, made a send frank to space ad, and donated $61. also promoted i24 and a member&#x27;s book on social media. the other 12 entries are 10 town hall and meeting attendances, a referendum vote, and an event sign-up."
+           data-categories="Outreach &amp; Promotion|Participation|Other|Content &amp; Media|Donation|Events &amp; Education" data-flagged="1">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-andrew-titan-parris">Andrew &quot;Titan&quot; Parris</a>
+      <span class="muted">22 entries · 9 with evidence</span>
+    </div>
+    <p class="summary">Ran I24 Spaceflight Training Class 5, co-hosted the Jul 30 town hall, promoted I24 and MoonDAO at the H2M2 summit, was a Project TMRO panelist (3 shows), interviewed Sian Proctor, made a Send Frank to Space ad, and donated $61. Also promoted I24 and a member&#x27;s book on social media. The other 12 entries are 10 town hall and meeting attendances, a referendum vote, and an event sign-up.</p>
+    <div class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation <span class="chip-count">12</span></span><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion <span class="chip-count">4</span></span><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media <span class="chip-count">2</span></span><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education <span class="chip-count">2</span></span><span class="chip cat cat-other"><span class="dot"></span>Other <span class="chip-count">1</span></span><span class="chip cat cat-donation"><span class="dot"></span>Donation <span class="chip-count">1</span></span><span class="chip flag flag-eligibility" title="May claim the same activity as another entry; see the note.">May overlap <span class="chip-count">2</span></span><span class="chip flag flag-eligibility" title="Describes planned or in-progress work.">Not complete</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned <span class="chip-count">7</span></span></div>
+  </article>
+  <article class="person" data-name="austin wilson" data-text="austin wilson onboarded 4 nashville members and helped family and friends join and contribute to send frank to space, partly in support of his own bid for a seat. made recap and behind-the-scenes videos (award night, dr. e&#x27;s book signing) and a video for frank white. one entry copies another contributor&#x27;s text."
+           data-categories="Participation|Outreach &amp; Promotion|Content &amp; Media" data-flagged="1">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-austin-wilson">Austin Wilson</a>
+      <span class="muted">5 entries · 0 with evidence</span>
+    </div>
+    <p class="summary">Onboarded 4 Nashville members and helped family and friends join and contribute to Send Frank to Space, partly in support of his own bid for a seat. Made recap and behind-the-scenes videos (Award Night, Dr. E&#x27;s book signing) and a video for Frank White. One entry copies another contributor&#x27;s text.</p>
+    <div class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion <span class="chip-count">3</span></span><span class="chip cat cat-participation"><span class="dot"></span>Participation <span class="chip-count">1</span></span><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media <span class="chip-count">1</span></span><span class="chip flag flag-eligibility" title="Text is copied from another submission.">Copied text</span><span class="chip flag flag-eligibility" title="Describes planned or in-progress work.">Not complete</span><span class="chip flag flag-context" title="The description says the work advanced the submitter&#x27;s own candidacy or campaign.">Own campaign <span class="chip-count">2</span></span></div>
+  </article>
+  <article class="person" data-name="bob barnum / engibob" data-text="bob barnum / engibob led the first in-house inspired 24 spaceflight training course (sep 26-27, 4 participants, 16 hours). also attended the aug 20 town hall."
+           data-categories="Participation|Events &amp; Education" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-bob-barnum-engibob">Bob Barnum / EngiBob</a>
+      <span class="muted">2 entries · 1 with evidence</span>
+    </div>
+    <p class="summary">Led the first in-house Inspired 24 Spaceflight Training course (Sep 26-27, 4 participants, 16 hours). Also attended the Aug 20 town hall.</p>
+    <div class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation <span class="chip-count">1</span></span><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education <span class="chip-count">1</span></span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></div>
+  </article>
+  <article class="person" data-name="david fernando guajardo" data-text="david fernando guajardo presents a weekly spanish-language tv space news segment on info 7 (tv azteca); submitted the starship flight 14 and oct 8 world space week editions. also hosted an iias interview episode with dr. aaron persad."
+           data-categories="Content &amp; Media" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-david-fernando-guajardo">David Fernando Guajardo</a>
+      <span class="muted">3 entries · 3 with evidence</span>
+    </div>
+    <p class="summary">Presents a weekly Spanish-language TV space news segment on Info 7 (TV Azteca); submitted the Starship Flight 14 and Oct 8 World Space Week editions. Also hosted an IIAS interview episode with Dr. Aaron Persad.</p>
+    <div class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media <span class="chip-count">3</span></span></div>
+  </article>
+  <article class="person" data-name="dr. aurobi das (cosmonaut-aurobi)" data-text="dr. aurobi das (cosmonaut-aurobi) two invited talks on space ethics and an accepted mars society concept paper. the talks are dated june, before q3."
+           data-categories="Research &amp; Technical" data-flagged="1">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-dr-aurobi-das-cosmonaut-aurobi">Dr. Aurobi Das (Cosmonaut-Aurobi)</a>
+      <span class="muted">1 entry · 1 with evidence</span>
+    </div>
+    <p class="summary">Two invited talks on space ethics and an accepted Mars Society concept paper. The talks are dated June, before Q3.</p>
+    <div class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical <span class="chip-count">1</span></span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></div>
+  </article>
+  <article class="person" data-name="gabriel matheus / @gabrielphysioastro" data-text="gabriel matheus / @gabrielphysioastro workouts officer (ground control) on two habitat marte analog missions (240 and 244), documented on instagram."
+           data-categories="Research &amp; Technical" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-gabriel-matheus-gabrielphysioastro">Gabriel Matheus / @gabrielphysioastro</a>
+      <span class="muted">1 entry · 1 with evidence</span>
+    </div>
+    <p class="summary">Workouts Officer (ground control) on two Habitat Marte analog missions (240 and 244), documented on Instagram.</p>
+    <div class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical <span class="chip-count">1</span></span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></div>
+  </article>
+  <article class="person" data-name="giovanna ramirez, astronautgio" data-text="giovanna ramirez, astronautgio three monthly activity reports (~350 hours claimed): talks, workshops, panels and judging across latin america and washington dc reaching ~2,300 people by her counts, research presentations at the cec central american space congress, and artrocket ii outreach in russia. moondao-specific items: onboarded 3 new members and donated to send frank to space."
+           data-categories="Events &amp; Education" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-giovanna-ramirez-astronautgio">Giovanna Ramirez, Astronautgio</a>
+      <span class="muted">3 entries · 3 with evidence</span>
+    </div>
+    <p class="summary">Three monthly activity reports (~350 hours claimed): talks, workshops, panels and judging across Latin America and Washington DC reaching ~2,300 people by her counts, research presentations at the CEC Central American Space Congress, and ArtRocket II outreach in Russia. MoonDAO-specific items: onboarded 3 new members and donated to Send Frank to Space.</p>
+    <div class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education <span class="chip-count">3</span></span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></div>
+  </article>
+  <article class="person" data-name="isabel cristina oliveirafernandes" data-text="isabel cristina oliveirafernandes promoted moondao and send frank to space to portuguese-speaking audiences through 5 instagram reels, 2 tiktoks and 3 talks in brazil. all dated work is from march-june, before q3."
+           data-categories="Outreach &amp; Promotion" data-flagged="1">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-isabel-cristina-oliveirafernandes">Isabel Cristina OliveiraFernandes</a>
+      <span class="muted">1 entry · 1 with evidence</span>
+    </div>
+    <p class="summary">Promoted MoonDAO and Send Frank to Space to Portuguese-speaking audiences through 5 Instagram reels, 2 TikToks and 3 talks in Brazil. All dated work is from March-June, before Q3.</p>
+    <div class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion <span class="chip-count">1</span></span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span></div>
+  </article>
+  <article class="person" data-name="jcinsignares" data-text="jcinsignares joined as a citizen and followed moondao on youtube and instagram."
+           data-categories="Participation" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-jcinsignares">Jcinsignares</a>
+      <span class="muted">1 entry · 0 with evidence</span>
+    </div>
+    <p class="summary">Joined as a citizen and followed MoonDAO on YouTube and Instagram.</p>
+    <div class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation <span class="chip-count">1</span></span></div>
+  </article>
+  <article class="person" data-name="jeel moya-salazar" data-text="jeel moya-salazar presented results from the moondao-funded jezero i analog mission at cec 2026, submitted a journal article crediting moondao, and shared it through university and social channels. also submitted a funding proposal to moondao."
+           data-categories="Research &amp; Technical" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-jeel-moya-salazar">Jeel Moya-Salazar</a>
+      <span class="muted">1 entry · 1 with evidence</span>
+    </div>
+    <p class="summary">Presented results from the MoonDAO-funded Jezero I analog mission at CEC 2026, submitted a journal article crediting MoonDAO, and shared it through university and social channels. Also submitted a funding proposal to MoonDAO.</p>
+    <div class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical <span class="chip-count">1</span></span><span class="chip flag flag-context" title="The description says MoonDAO already funded this work.">MoonDAO-funded</span></div>
+  </article>
+  <article class="person" data-name="julio rezende" data-text="julio rezende took part in habitat marte analog mission 240 on a moondao scholarship and organized an astronaut forum with rodrigo santiago."
+           data-categories="Research &amp; Technical|Events &amp; Education" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-julio-rezende">Julio Rezende</a>
+      <span class="muted">2 entries · 2 with evidence</span>
+    </div>
+    <p class="summary">Took part in Habitat Marte analog mission 240 on a MoonDAO scholarship and organized an Astronaut Forum with Rodrigo Santiago.</p>
+    <div class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical <span class="chip-count">1</span></span><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education <span class="chip-count">1</span></span><span class="chip flag flag-context" title="The description says MoonDAO already funded this work.">MoonDAO-funded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></div>
+  </article>
+  <article class="person" data-name="kate burnier" data-text="kate burnier became a citizen, attended the weekly meeting, and contributed to frank&#x27;s campaign and austin wilson&#x27;s."
+           data-categories="Participation" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-kate-burnier">Kate Burnier</a>
+      <span class="muted">1 entry · 0 with evidence</span>
+    </div>
+    <p class="summary">Became a citizen, attended the weekly meeting, and contributed to Frank&#x27;s campaign and Austin Wilson&#x27;s.</p>
+    <div class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation <span class="chip-count">1</span></span></div>
+  </article>
+  <article class="person" data-name="kirby runyon" data-text="kirby runyon co-authored (80%) a book on space-themed travel, now on pre-order; written over two years."
+           data-categories="Content &amp; Media" data-flagged="1">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-kirby-runyon">Kirby Runyon</a>
+      <span class="muted">1 entry · 1 with evidence</span>
+    </div>
+    <p class="summary">Co-authored (80%) a book on space-themed travel, now on pre-order; written over two years.</p>
+    <div class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media <span class="chip-count">1</span></span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></div>
+  </article>
+  <article class="person" data-name="kyle &quot;longarm&quot; arcurio" data-text="kyle &quot;longarm&quot; arcurio working toward analog/aquanaut mission spear (late october): ran the first of three research tests, led two planning meetings, and started a standardized iva suit certification report. also attended 4 town halls."
+           data-categories="Participation|Research &amp; Technical" data-flagged="1">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-kyle-longarm-arcurio">Kyle &quot;Longarm&quot; Arcurio</a>
+      <span class="muted">9 entries · 2 with evidence</span>
+    </div>
+    <p class="summary">Working toward analog/aquanaut Mission SPEAR (late October): ran the first of three research tests, led two planning meetings, and started a standardized IVA suit certification report. Also attended 4 town halls.</p>
+    <div class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical <span class="chip-count">5</span></span><span class="chip cat cat-participation"><span class="dot"></span>Participation <span class="chip-count">4</span></span><span class="chip flag flag-eligibility" title="Describes planned or in-progress work.">Not complete <span class="chip-count">2</span></span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned <span class="chip-count">5</span></span></div>
+  </article>
+  <article class="person" data-name="manuel mazzanti" data-text="manuel mazzanti recorded interviews with astronaut anil menon and nasa administrator jared isaacman (~10 minutes each)."
+           data-categories="Content &amp; Media" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-manuel-mazzanti">Manuel Mazzanti</a>
+      <span class="muted">2 entries · 1 with evidence</span>
+    </div>
+    <p class="summary">Recorded interviews with astronaut Anil Menon and NASA Administrator Jared Isaacman (~10 minutes each).</p>
+    <div class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media <span class="chip-count">2</span></span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned <span class="chip-count">2</span></span></div>
+  </article>
+  <article class="person" data-name="maria alejandra botero botero" data-text="maria alejandra botero botero as acma president: built rocketry-scholarship recruitment pages, emailed 190 schools and universities crediting moondao as funder, ran crew selection for an analog mission, and added moondao to acma&#x27;s allies page. the scholarship program is moondao-funded."
+           data-categories="Events &amp; Education" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-maria-alejandra-botero-botero">Maria Alejandra Botero Botero</a>
+      <span class="muted">1 entry · 1 with evidence</span>
+    </div>
+    <p class="summary">As ACMA president: built rocketry-scholarship recruitment pages, emailed 190 schools and universities crediting MoonDAO as funder, ran crew selection for an analog mission, and added MoonDAO to ACMA&#x27;s allies page. The scholarship program is MoonDAO-funded.</p>
+    <div class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education <span class="chip-count">1</span></span><span class="chip flag flag-context" title="The description says MoonDAO already funded this work.">MoonDAO-funded</span></div>
+  </article>
+  <article class="person" data-name="max medina" data-text="max medina lunar settlement architecture research presented to the moondao community, a white paper on kite-1 (an orbital data-center concept), and a free cities conference talk featuring moondao as a governance example."
+           data-categories="Research &amp; Technical|Outreach &amp; Promotion" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-max-medina">Max Medina</a>
+      <span class="muted">3 entries · 3 with evidence</span>
+    </div>
+    <p class="summary">Lunar settlement architecture research presented to the MoonDAO community, a white paper on KITE-1 (an orbital data-center concept), and a Free Cities Conference talk featuring MoonDAO as a governance example.</p>
+    <div class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical <span class="chip-count">2</span></span><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion <span class="chip-count">1</span></span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></div>
+  </article>
+  <article class="person" data-name="radamés jomuel valentín reyes" data-text="radamés jomuel valentín reyes two open-source dart libraries (a bson object database and an api server framework), developed over several years."
+           data-categories="Research &amp; Technical" data-flagged="1">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-radam-s-jomuel-valent-n-reyes">Radamés Jomuel Valentín Reyes</a>
+      <span class="muted">2 entries · 2 with evidence</span>
+    </div>
+    <p class="summary">Two open-source Dart libraries (a BSON object database and an API server framework), developed over several years.</p>
+    <div class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical <span class="chip-count">2</span></span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle <span class="chip-count">2</span></span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned <span class="chip-count">2</span></span></div>
+  </article>
+  <article class="person" data-name="rosana &quot;zen&quot; sotile" data-text="rosana &quot;zen&quot; sotile made a space camp turkey video with chris sembroski and austin wilson (4,000+ views) and ran the water portion of i24 spaceflight training. the other 12 entries are 8 town halls, a project vote, and attending space camp alumni events and the starship 14 launch."
+           data-categories="Participation|Content &amp; Media|Events &amp; Education" data-flagged="0">
+    <div class="person-head">
+      <a class="person-name" href="#contributor-rosana-zen-sotile">Rosana &quot;Zen&quot; Sotile</a>
+      <span class="muted">14 entries · 5 with evidence</span>
+    </div>
+    <p class="summary">Made a Space Camp Turkey video with Chris Sembroski and Austin Wilson (4,000+ views) and ran the water portion of I24 Spaceflight Training. The other 12 entries are 8 town halls, a project vote, and attending Space Camp alumni events and the Starship 14 launch.</p>
+    <div class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation <span class="chip-count">12</span></span><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media <span class="chip-count">1</span></span><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education <span class="chip-count">1</span></span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned <span class="chip-count">2</span></span></div>
+  </article></div>
+</section>
+
+<section id="submissions">
+  <div class="section-head">
+    <h2>Full submissions</h2>
+    <div class="buttons"><button type="button" id="expand-all">Expand all</button><button type="button" id="collapse-all">Collapse all</button></div>
+  </div>
+  
+  <article class="person-detail" id="contributor-anastasia-stepanova">
+    <div class="detail-head">
+      <h3>Anastasia Stepanova</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Senator governance work: reviewed proposed projects (~4 hours each) and gave feedback before voting. Also ran for the third Executive seat and shared partnership ideas.</p>
+    
+    <details class="entry" id="Q3-036">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-036</span><span class="muted">Sep 5, 2026</span><span class="chips"><span class="chip cat cat-governance"><span class="dot"></span>Governance &amp; Operations</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-context" title="The submitter states they are a senator.">Senator</span><span class="chip flag flag-context" title="The description says the work advanced the submitter&#x27;s own candidacy or campaign.">Own campaign</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">As a senator: reviewed proposed projects (~4 hours each) and gave feedback before voting; ran for the third Executive seat; shared partnership and research ideas.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">As a MoonDAO Senator, I actively contributed to the DAO’s governance and project evaluation processes. I participated in detailed reviews of proposed projects, dedicating approximately 4 hours per review to evaluating project goals, feasibility, potential impact, and alignment with MoonDAO’s mission. I provided constructive feedback and proposed enhancements to strengthen project proposals before voting on them.Running as a candidate for the third Executive role, presenting my vision, proposed improvements, and a concrete program outlining how I could contribute to MoonDAO’s growth.
+Sharing ideas for strengthening MoonDAO’s project portfolio, partnerships, research opportunities, and broader space community engagement.
+Using my professional network and experience in the space sector to identify opportunities where MoonDAO could expand its impact and connect with new contributors, researchers, and partners.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>6 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Governance &amp; Operations (e.g., proposal review, documentation)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-andrew-titan-parris">
+    <div class="detail-head">
+      <h3>Andrew &quot;Titan&quot; Parris</h3>
+      <span class="muted">22 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Ran I24 Spaceflight Training Class 5, co-hosted the Jul 30 town hall, promoted I24 and MoonDAO at the H2M2 summit, was a Project TMRO panelist (3 shows), interviewed Sian Proctor, made a Send Frank to Space ad, and donated $61. Also promoted I24 and a member&#x27;s book on social media. The other 12 entries are 10 town hall and meeting attendances, a referendum vote, and an event sign-up.</p>
+    
+    <details class="entry" id="Q3-001">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-001</span><span class="muted">Jul 16, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Turned MoonDAO&#x27;s &#x27;Frank is Back&#x27; post into a second campaign ad; posted on X, Instagram and LinkedIn (Jul 10).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">On July 10th I reused MoonDAO’s “Frank is Back” SM post to create a 2nd ad for the campaign and posted on X, IG and LinkedIn.
+
+Compete for the Seat!
+
+<a href="https://x.com/aparrisx/status/2075725415386321348?s=20">https://x.com/aparrisx/status/2075725415386321348?s=20</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>8 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1y-TFN0hv5dlM5ga7yPs-VxcH81tHeKzT">https://drive.google.com/open?id=1y-TFN0hv5dlM5ga7yPs-VxcH81tHeKzT</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-005">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-005</span><span class="muted">Jul 16, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span><span class="chip flag flag-eligibility" title="May claim the same activity as another entry; see the note.">May overlap</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Weekly Downhill Meeting on Jul 2, 9 and 16.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Same dates as town halls claimed in Q3-012; may be a different meeting.</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended Weekly Downhill Meeting on July 2nd, 9th, &amp; 16th</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>6 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-006">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-006</span><span class="muted">Jul 16, 2026</span><span class="chips"><span class="chip cat cat-other"><span class="dot"></span>Other</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Added 4 new items to the I24 Teams Marketplace.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Added 4 new Items to the I24 Teams Marketplace</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1jqyT3V0MjBmJrBBH_1Qg1a_6iw35b6Hg">https://drive.google.com/open?id=1jqyT3V0MjBmJrBBH_1Qg1a_6iw35b6Hg</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-010">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-010</span><span class="muted">Jul 24, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the H2M2 2026 Summit at Rice University (Jul 22-23) and promoted I24 and MoonDAO to attendees.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the H2M2 2026 Summit (Humans to Moon &amp; Mars) Summit put on by Explore Mars Inc. at Rice University in Houston, TX on July 22nd and 23rd.
+
+Promoted I24 and MoonDAO to the space community attending the summit.
+
+<a href="https://www.linkedin.com/posts/i24-made-an-appearance-h2m2-2026-humans-ugcPost-7486410018490114049-nzgW/?utm_source=share&amp;utm_medium=member_desktop&amp;rcm=ACoAAA1oF0QBvUNPyrJAlPxzGir36SPSeq1z0hc">https://www.linkedin.com/posts/i24-made-an-appearance-h2m2-2026-humans-ugcPost-7486410018490114049-nzgW/?utm_source=share&amp;utm_medium=member_desktop&amp;rcm=ACoAAA1oF0QBvUNPyrJAlPxzGir36SPSeq1z0hc</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>20 hours (Approx. 10 =hours of prep time)</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1HLDJYHh3_GXSvMSowF-3HPX8FR3fAoZC">https://drive.google.com/open?id=1HLDJYHh3_GXSvMSowF-3HPX8FR3fAoZC</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-011">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-011</span><span class="muted">Jul 24, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Panelist on the Project TMRO YouTube webcast on Jul 5, 12 and 19.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Was a panelist for the live YouTube webcast “Project TMRO” hosted by former SpaceX VADER manager, Jami Higginbotham.
+
+Topics of discussion ranged across the spectrum of space actives.
+
+Panelist for show on shows on July 5th, 12th and 19th.
+
+<a href="https://www.youtube.com/@tmro/featured">https://www.youtube.com/@tmro/featured</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>12 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1LZO_99pJn5nYQUI2HMMz3YnITfFNyicM">https://drive.google.com/open?id=1LZO_99pJn5nYQUI2HMMz3YnITfFNyicM</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-012">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-012</span><span class="muted">Jul 24, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-eligibility" title="May claim the same activity as another entry; see the note.">May overlap</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended town halls on Jul 2, 9, 16 and 23.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Jul 2, 9 and 16 are also claimed as the Weekly Downhill Meeting in Q3-005.</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended MoonDAO weekly Town Hall Meetings on July 2md, 9th, 16th and 23rd.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>5 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-013">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-013</span><span class="muted">Jul 24, 2026</span><span class="chips"><span class="chip cat cat-donation"><span class="dot"></span>Donation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Donated $61 to the Send Frank to Space campaign (Jul 24).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Donated $61.00 to the &quot;Send Frank to Space&quot; campaign on 7/24/26</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>5 minutes</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-014">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-014</span><span class="muted">Jul 30, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Guest co-host of the Jul 30 town hall with Ryan and Pablo.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Guest/co-hosted the July 30th MoonDAO Town Hall Meeting with Ryan and Pablo. (<a href="https://www.youtube.com/watch?v=8d8vPI4NGtg">https://www.youtube.com/watch?v=8d8vPI4NGtg</a>)</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=15VpetPKZCp67leczSNVBtUhOg_PfWQRD">https://drive.google.com/open?id=15VpetPKZCp67leczSNVBtUhOg_PfWQRD</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-019">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-019</span><span class="muted">Aug 5, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Promoted Eiman&#x27;s upcoming book on personal and I24 social media accounts.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Promoted Eiman’s upcoming book release on both my personal and I24 social media accounts.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1EuJRfypI2Cz7J1JpYiJRPi_7mtDFKzFZ">https://drive.google.com/open?id=1EuJRfypI2Cz7J1JpYiJRPi_7mtDFKzFZ</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-020">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-020</span><span class="muted">Aug 5, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Promoted the August 2026 edition of the I24 newsletter, The Hermes.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Promoted the release of the August 2026 edition of the I24 newsletter, The Hermes.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=10o4TyCGmjy9JWyDRf7TYaNnGgqiQ0fnP">https://drive.google.com/open?id=10o4TyCGmjy9JWyDRf7TYaNnGgqiQ0fnP</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-025">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-025</span><span class="muted">Aug 17, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Aug 13 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the August 13, 2026 MoonDAO town Hall meeting</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>i24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-028">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-028</span><span class="muted">Aug 20, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Aug 20 town hall with Alan Stern and Frank White.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended MoonDAO Town Hall with Alan Stern and Frank White on August 20, 2026.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-032">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-032</span><span class="muted">Aug 27, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Aug 27 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Participated in the Aug 27th MoonDAO Town Hall meeting.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-039">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-039</span><span class="muted">Sep 6, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 3 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the Sept. 3rd Town Hall Meeting</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-040">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-040</span><span class="muted">Sep 7, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Voted in the Project System Update (v9.0) referendum.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Cast my vote in the Project System Update (v9.0) referendum.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1/2 an hour</dd></div><div><dt>Area (self-selected)</dt><dd>Governance &amp; Operations (e.g., proposal review, documentation)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-042">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-042</span><span class="muted">Sep 10, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 10 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the Sept. 10th MoonDAO Town Hall Meeting</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1.5 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-044">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-044</span><span class="muted">Sep 10, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Interviewed astronaut and artist Sian Proctor for the Inspiration4 5th anniversary (YouTube).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Interviewed Astronaut &amp; Artist Sian Proctor on the occasion of the 5th Anniversary of the Inspiration 4 orbital mission.  (<a href="https://youtu.be/xcJ6x1H1auU?si=TZOVDw8QOmDC1PKq">https://youtu.be/xcJ6x1H1auU?si=TZOVDw8QOmDC1PKq</a>)</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>3 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1tW80xJexZUGRlZQKPQjozSzebfo1hQ8A">https://drive.google.com/open?id=1tW80xJexZUGRlZQKPQjozSzebfo1hQ8A</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-052">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-052</span><span class="muted">Sep 22, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 17 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended 9/17/26 Town Hall Meeting</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-056">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-056</span><span class="muted">Sep 25, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 24 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended 9/24/26 Town Hall Meeting</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-060">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-060</span><span class="muted">Sep 30, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Ran I24 Spaceflight Training Class 5 in Houston.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Likely the same course as Q3-063 (Rosana Sotile) and Q3-075 (Bob Barnum).</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">Held i24 Spaceflight Training Class 5 in Houston, TX</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>20 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Other (Please describe in the next question)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1mP1xBiu3V5SP6p8BdrUHT5S7DbFlw7mM">https://drive.google.com/open?id=1mP1xBiu3V5SP6p8BdrUHT5S7DbFlw7mM</a></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-068">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-068</span><span class="muted">Oct 1, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Oct 1 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended MoonDAO Town Hall meeting on 10/1/26</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-070">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-070</span><span class="muted">Oct 3, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-eligibility" title="Describes planned or in-progress work.">Not complete</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Signed up for the Dec 4-6 &#x27;Train at Space Camp with Frank White&#x27; event.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Signed up to participate in the &quot;Train at Space Camp with Frank White, Dec 4-6, 2026&quot; event</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>I24-Titan</dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-austin-wilson">
+    <div class="detail-head">
+      <h3>Austin Wilson</h3>
+      <span class="muted">5 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Onboarded 4 Nashville members and helped family and friends join and contribute to Send Frank to Space, partly in support of his own bid for a seat. Made recap and behind-the-scenes videos (Award Night, Dr. E&#x27;s book signing) and a video for Frank White. One entry copies another contributor&#x27;s text.</p>
+    
+    <details class="entry" id="Q3-008">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-008</span><span class="muted">Jul 17, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-eligibility" title="Text is copied from another submission.">Copied text</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Weekly Downhill Meeting and the Jul 10 Space Camp Alumni event; posted content to social media.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Content &amp; Media</div><div class="note"><strong>Note:</strong> Last paragraph is word-for-word the same as Q3-002 (Rosana Sotile).</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended Weekly Downhill Meeting
+Created content posted to SM
+I attended the Space Camp Alumni Reunion and Hall of Fame Induction event on July 10, 2026. I helped support MoonDAO&#x27;s mission of collaborating with others who support future generations of space exploration and lunar settlement.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2 days</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Technical Development (e.g., smart contracts, website, tooling), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>austin3wilson</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-023">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-023</span><span class="muted">Aug 11, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Onboarded 4 new members from Nashville; cleaned up the Google Drive and made a recap video (Award Night, Dr. E); networking for filming opportunities.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Content &amp; Media</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">- Community Growth: I helped onboard several new MoonDAO members from the Nashville area: Zach, K, Leah, and Janet. I am excited to grow my local community while expanding MoonDAO&#x27;s global presence.
+  - Content &amp; Organization: I cleaned up the Google Drive and created another recap edit, primarily covering Award Night and MoonDAO&#x27;s own Dr. E.
+  - Networking: I am continuing to network and identify more opportunities to film within the space community.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2 days</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-033">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-033</span><span class="muted">Sep 2, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-context" title="The description says the work advanced the submitter&#x27;s own candidacy or campaign.">Own campaign</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Helped family and friends join MoonDAO and contribute so they can vote for his Send Frank to Space seat; posted space content; filmed Dr. E&#x27;s book signing at Vanderbilt.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Content &amp; Media</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">- Voting &amp; Outreach Campaign: I spent time helping family and friends navigate MoonDAO and secure contributions so they can vote for me to join the space mission with Frank. I will continue to focus on these efforts in the coming days.
+-Social: Posting Space content and networking for more collaborations
+  - Behind-the-Scenes Coverage: Dr. E hosted a book signing at the Vanderbilt University Bookstore, and I had the opportunity to film the behind-the-scenes footage as well as the main talk.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>3 days</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-053">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-053</span><span class="muted">Sep 23, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-eligibility" title="Describes planned or in-progress work.">Not complete</span><span class="chip flag flag-context" title="The description says the work advanced the submitter&#x27;s own candidacy or campaign.">Own campaign</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">More family members joined MoonDAO and contributed to Frank&#x27;s campaign, to help secure a documentarian seat; plans to attend the weekly meeting.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">I will be participating in the MoonDAO and Overview Effect weekly meeting.
+
+More family members have joined MoonDAO and contributed to Frank&#x27;s journey, which will hopefully help secure a second seat for a documentarian.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>3 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-071">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-071</span><span class="muted">Oct 4, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the town hall and Overview Effect meeting, made a video for Frank White, posted on social media.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Participation</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">-Participated in weekly town hall and overview effect meeting
+-Created a video for Frank White
+- Social media</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>3 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-bob-barnum-engibob">
+    <div class="detail-head">
+      <h3>Bob Barnum / EngiBob</h3>
+      <span class="muted">2 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Led the first in-house Inspired 24 Spaceflight Training course (Sep 26-27, 4 participants, 16 hours). Also attended the Aug 20 town hall.</p>
+    
+    <details class="entry" id="Q3-027">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-027</span><span class="muted">Aug 20, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Aug 20 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">20 August 2026
+Attended MoonDAO Town Hall</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>https://www.moondao.com/citizen/engibob-23</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-075">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-075</span><span class="muted">Oct 7, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-links" title="No upload, but the description contains links.">Links in description</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Led the first in-house Inspired 24 Spaceflight Training course (Sep 26-27, Houston): 4 participants trained in suit operations, egress and water rescue.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Likely the same course as Q3-060 (Andrew Parris) and Q3-063 (Rosana Sotile).</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">26-27 September 2026
+
+I lead the Inspired 24 Spaceflight Training course. Other course instructors included Andrew &quot;Titan&quot; Parris, Rosana &quot;Zen&quot; Sotile, and Trent Tresch (@moonshot). This represents the first edition of the course run in-house at The Inspired 24. The course lead 4 participants through space suit operations, breathing gas systems, emergency procedures, spacecraft egress and water rescues. The course was held in Houston in the Johnson Space Center area. 
+
+Highlights from the course are poster here: <a href="https://www.instagram.com/p/Dd7z5g3gF54/">https://www.instagram.com/p/Dd7z5g3gF54/</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>16 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>@EngiBob</dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-david-fernando-guajardo">
+    <div class="detail-head">
+      <h3>David Fernando Guajardo</h3>
+      <span class="muted">3 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Presents a weekly Spanish-language TV space news segment on Info 7 (TV Azteca); submitted the Starship Flight 14 and Oct 8 World Space Week editions. Also hosted an IIAS interview episode with Dr. Aaron Persad.</p>
+    
+    <details class="entry" id="Q3-069">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-069</span><span class="muted">Oct 2, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-links" title="No upload, but the description contains links.">Links in description</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Wrote and presented a live Spanish-language TV space news segment on Info 7 Noreste (TV Azteca) about Starship Flight 14.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Submitted under the name Mexanauta, David&#x27;s YouTube channel (per Q3-076).</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">I wrote and presented a Spanish-language space news segment for Info 7 Noreste (TV Azteca), covering SpaceX&#x27;s Starship Flight 14, the first time the vehicle reached orbital velocity after 13 previous suborbital test flights. This is a live, weekly segment, broadcast every Thursday, where I cover the week&#x27;s top space news and interact directly with the show&#x27;s news anchors and presenters on-air, answering questions and discussing the implications of each story in real time, rather than a pre-recorded, one-way video.
+
+This particular segment covered the mission&#x27;s key technical details (the 26 Starlink V3 satellites deployed, the early engine shutdown that led to an early splashdown near Hawaii), and tied the achievement to the 10th anniversary of Elon Musk&#x27;s original Interplanetary Transport System announcement in Guadalajara, Mexico, giving Latin American audiences a direct, local connection to the milestone.
+
+This segment airs weekly as part of a live news program reaching audiences across Tamaulipas, Mexico, helping translate major English-language space milestones into accessible, interactive Spanish-language coverage. This directly supports MoonDAO&#x27;s mission of growing a global, decentralized space community by expanding space literacy and engagement in underrepresented, Spanish-speaking markets in Latin America.
+
+Video: <a href="https://www.youtube.com/watch?v=BxOXNBsUeDI">https://www.youtube.com/watch?v=BxOXNBsUeDI</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>60 Minutes</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Mexanauta</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-074">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-074</span><span class="muted">Oct 7, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-links" title="No upload, but the description contains links.">Links in description</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Hosted and produced an IIAS interview episode with Dr. Aaron Persad on bioastronautics and space food (YouTube).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Conversations with IIAS: &quot;From Microgravity Flights to Space Food: A Conversation with Dr. Aaron Persad&quot;
+
+I host Conversations with IIAS, the interview series of the International Institute for Astronautical Sciences (IIAS), a non-profit institute with over 10 years of history, more than 300 members, and participants from 64 countries. For this episode, I planned the conversation, invited Dr. Aaron Persad (Director of Bioastronautics at IIAS), coordinated with him directly, and wrote the interview questions.
+
+What the episode covers:
+
+What students can expect from the IIAS Bioastronautics class and how it prepares the next generation of researchers to study the human body in space.
+A look inside microgravity flights: what it is like to fly them, how experiments are designed, and why this research matters for future missions.
+Dr. Persad&#x27;s personal journey applying to become a Canadian Space Agency astronaut, and his advice for others considering it.
+Space food technology: how astronauts are fed today and what it will take to sustain crews on longer missions to the Moon and Mars.
+
+Impact: The episode brings expert knowledge on bioastronautics and long-duration missions to an open audience and encourages students and early-career professionals to pursue careers in space. This supports the goal of broadening participation in the space community, which I see as aligned with MoonDAO&#x27;s mission. [Add views/likes/comments here if you have them.]
+
+Proof of work:
+
+Episode: <a href="https://www.youtube.com/watch?v=KGn1Wn1yFU8">https://www.youtube.com/watch?v=KGn1Wn1yFU8</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>60 Minutes</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-076">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-076</span><span class="muted">Oct 8, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Presented the World Space Week edition of his weekly Info 7 Tamaulipas TV space segment (Oct 8).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Weekly Space News Segment on Info 7 Tamaulipas (TV Azteca), World Space Week edition, October 8, 2026
+
+I present a weekly space news segment on Info 7 Tamaulipas, a regional TV Azteca news program in Mexico, where I bring the most important space stories of the week to a general Spanish-speaking audience. This episode is a World Space Week special, also published on YouTube under the Mexanauta channel.
+
+Stories covered in this episode:
+
+Crew-12 returned to Earth after 235 days on the International Space Station and nearly 3,800 orbits, with the Dragon capsule splashing down in the Pacific off the coast of California.
+SpaceX launched a space safety page to help organize traffic in orbit and asked all operators to share their trajectories to avoid collisions.
+Starship Ship 40, the first Starship recovered intact after flying to space, returned to Texas on October 7, a few kilometers from the Tamaulipas border.
+Artemis II, six months after its return from the Moon.
+
+Impact: The segment makes current space news accessible in Spanish to a regional television audience that rarely gets this kind of coverage, and it ties global events to the local context (for example, the Starship recovery site near Tamaulipas). It runs every Thursday, so this is part of a sustained, ongoing effort to grow public interest in space exploration in Latin America. This supports the goal of broadening participation in the space community, which I see as aligned with MoonDAO’s mission. [Add views/likes/comments or TV audience data here if you have them.]
+
+Proof of work:
+
+Episode: <a href="https://www.youtube.com/watch?v=6j6xmVafhic">https://www.youtube.com/watch?v=6j6xmVafhic</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>60 Minutes</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1JJBVKywrPHPcFP22oQqyf36t5LGiWN6_">https://drive.google.com/open?id=1JJBVKywrPHPcFP22oQqyf36t5LGiWN6_</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-dr-aurobi-das-cosmonaut-aurobi">
+    <div class="detail-head">
+      <h3>Dr. Aurobi Das (Cosmonaut-Aurobi)</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Two invited talks on space ethics and an accepted Mars Society concept paper. The talks are dated June, before Q3.</p>
+    
+    <details class="entry" id="Q3-041">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-041</span><span class="muted">Sep 8, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-links" title="No upload, but the description contains links.">Links in description</span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Two invited talks on space ethics (Jun 15, Jun 29) and an accepted Mars Society concept paper on &#x27;Relational Architecture&#x27;.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Events &amp; Education</div><div class="note"><strong>Note:</strong> Talks are dated June; work described as May 1 - Jun 29 and continuing.</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">The three phased ethical framework heliocentric diagram and two invited talks as delegate and one concept paper for International Convention of the  Mars Society:
+1. Talk on &quot;Ethics of Space Migration&quot;  on 15th June 2026 at Annual Intl Mission to Mars Design Engineering Competition of Mars Society.
+ (You Tube: <a href="https://youtu.be/QimNGqbmqzw">https://youtu.be/QimNGqbmqzw</a>)
+2.Talk on &quot;Ethics of AI in Space&quot; at UCI Irvine Center for the Scientific Study and Morality,  in the Ethics of AI, class on 29th June 2026.
+3. I wrote a concept paper for 2026 International Convention of Mars Society, which has been accepted. 
+The paper is on the conceptual framework of  &quot;Relational Architecture,&quot; synthesizing a terrestrial Ethics of Care with Frank White&#x27;s Overview Effect and Cosma Hypothesis. This framework is for Moon and Mars habitation and relationship dimension in deep space.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1st May-29th June-and now Continuing for Power Point Presentation for Conference  Paper </dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development), Governance &amp; Operations (e.g., proposal review, documentation), Other (Please describe in the next question)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-gabriel-matheus-gabrielphysioastro">
+    <div class="detail-head">
+      <h3>Gabriel Matheus / @gabrielphysioastro</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Workouts Officer (ground control) on two Habitat Marte analog missions (240 and 244), documented on Instagram.</p>
+    
+    <details class="entry" id="Q3-058">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-058</span><span class="muted">Sep 28, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Workouts Officer (ground control) for Habitat Marte analog missions 240 and 244.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Participation in the Space Analog Mission 244 Cosmomind  of Habitat Marte in the role Workouts Officer Ground Control
+
+ <a href="https://www.instagram.com/p/Ddl0bCOkULc/?utm_source=ig_web_copy_link&amp;stkn=MzRlODBiNWFlZA==">https://www.instagram.com/p/Ddl0bCOkULc/?utm_source=ig_web_copy_link&amp;stkn=MzRlODBiNWFlZA==</a>
+
+Participation in the Space Analog Mission 240 Astraqua  of Habitat Marte in the role Workouts Officer Ground Control
+
+ <a href="https://www.instagram.com/reel/Dba1eQpxWco/?utm_source=ig_web_copy_link&amp;stkn=MzRlODBiNWFlZA==">https://www.instagram.com/reel/Dba1eQpxWco/?utm_source=ig_web_copy_link&amp;stkn=MzRlODBiNWFlZA==</a>
+Instagram post documenting my participation in Space Analog Missions, highlighting my experience and activities in the analog space research community.
+
+<a href="https://www.instagram.com/p/Dd1rj8hFpbI/?utm_source=ig_web_copy_link&amp;stkn=MzRlODBiNWFlZA==">https://www.instagram.com/p/Dd1rj8hFpbI/?utm_source=ig_web_copy_link&amp;stkn=MzRlODBiNWFlZA==</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=15zzsz2oBga_3wNJNlad9BwWHczs0nEYR">https://drive.google.com/open?id=15zzsz2oBga_3wNJNlad9BwWHczs0nEYR</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-giovanna-ramirez-astronautgio">
+    <div class="detail-head">
+      <h3>Giovanna Ramirez, Astronautgio</h3>
+      <span class="muted">3 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Three monthly activity reports (~350 hours claimed): talks, workshops, panels and judging across Latin America and Washington DC reaching ~2,300 people by her counts, research presentations at the CEC Central American Space Congress, and ArtRocket II outreach in Russia. MoonDAO-specific items: onboarded 3 new members and donated to Send Frank to Space.</p>
+    
+    <details class="entry" id="Q3-021">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-021</span><span class="muted">Aug 5, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Jul 4 - Aug 4 report: onboarded 2 new members (India, Colombia), donated to Send Frank to Space, joined ArtRocket II outreach in Russia and at Baikonur, judged a 300-student rover challenge in Bogota, gave a national TV interview.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Outreach &amp; Promotion, Donation</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">July 4: Hosted a virtual Google Meet with Jahnavi (India) to introduce MoonDAO, explain its mission, and share the benefits of becoming a member.
+
+July 5: Donated to the Send Frank to Space campaign.
+
+July 6: Supported Jahnavi&#x27;s successful onboarding as a new MoonDAO member and made an additional donation to the Send Frank to Space campaign.
+
+July 8–18: Participated in and supported the ArtRocket II space activities organized by Unity in Russia alongside fellow MoonDAO members. Activities included visiting space museums in Moscow, supporting outreach events for children undergoing cancer treatment, touring the Baikonur Cosmodrome, meeting with Roscosmos representatives, and providing social media coverage throughout the program.
+link: <a href="https://www.instagram.com/p/Da-bgkRjjNk/?img_index=1">https://www.instagram.com/p/Da-bgkRjjNk/?img_index=1</a>
+
+July 14: Attended the launch of the Soyuz ArtRocket II mission at Baikonur Cosmodrome (Kazakhstan), supporting Unity&#x27;s outreach activities and promoting the mission across social media in collaboration with MoonDAO members.
+link: <a href="https://www.instagram.com/p/Da1HY-FOlgy/">https://www.instagram.com/p/Da1HY-FOlgy/</a>
+
+July 19–21: Supported the organization of the IEEE SPACE conference in India by assisting with speaker and workshop facilitator outreach.
+
+July 23: Participated in Tech Day in Bogotá, Colombia, presenting ongoing space robotics initiatives developed in collaboration with the Robokids Robotics School.
+
+July 29: Met with Jorge (Colombia) to introduce MoonDAO, supported his membership process, and donated to the Send Frank to Space campaign.
+
+July 30: Served as a speaker and judge for the MoonChallenge 2026 at Virrey Solís School in Bogotá, Colombia, evaluating student-built Perseverance rover projects and competitions (300 participants)
+link: <a href="https://www.instagram.com/p/DbdvI_qES4-/?img_index=1">https://www.instagram.com/p/DbdvI_qES4-/?img_index=1</a>
+
+August 2: Featured in a national television interview on RCN discussing aerospace topics and space exploration.
+
+August 4: Visited Fundación Jerónimo Muy Feliz to present the outcomes and final report of the ArtRocket II launch initiative.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>144 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1TOiWZJt5JAJOq5ZoCTEAfG987-oeQ0Pq">https://drive.google.com/open?id=1TOiWZJt5JAJOq5ZoCTEAfG987-oeQ0Pq</a></dd></div><div><dt>Submitted as</dt><dd>Astro.gio</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-034">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-034</span><span class="muted">Sep 3, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Aug 5 - Sep 2: spoke at 5 events in Colombia (ELAS conference, school workshops; ~1,000 attendees by her count), attended the ELLA ES ASTRONAUTA graduation, helped organize space participation at the SHE IS Global Forum.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">August 5: Meeting, support, and organization of the space participation within the SHE IS Global Forum Las Américas 2026.
+
+August 20: Participed Closing ceremony of the ELLA ES ASTRONAUTA program, graduation of 200 girls from Colombia, Ecuador, Peru, and Panama.
+Link: <a href="https://www.instagram.com/p/DcT7r32JzGZ/">https://www.instagram.com/p/DcT7r32JzGZ/</a>
+
+August 20-21:Speaker at the ELAS International, Space Conference, “Who Builds the Future” (approximately 150 participants).
+Link: <a href="https://www.instagram.com/p/DaWG_Iej2CL/?img_index=1">https://www.instagram.com/p/DaWG_Iej2CL/?img_index=1</a>
+
+August 26–28: Speaker at the Space Robotics Workshop, visiting Bicentenario No. 4 School, Cartagena, Colombia (approximately 300 kids). 
+Link: <a href="https://www.instagram.com/p/DcohE4bEVw-/?img_index=2">https://www.instagram.com/p/DcohE4bEVw-/?img_index=2</a>
+
+August 30: Speaker at One-day “A Day in Space” workshop, Puente Aranda, Bogotá, Colombia (approximately 80 participants).
+
+Sept 2: Liceo Cervantes: Speaker at an in-person, double Space Conference at Liceo Cervantes del Norte, Bogotá, Colombia, for grades 7, 8, 9, 10, and 11 (approximately 500 students).</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>71 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1ditNB1e-LtIryHIOTQIIg5DaLZ1h_pwt">https://drive.google.com/open?id=1ditNB1e-LtIryHIOTQIIg5DaLZ1h_pwt</a></dd></div><div><dt>Submitted as</dt><dd>Astro.gio</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-067">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-067</span><span class="muted">Oct 1, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">September report: ~15 talks, panels and lectures (Latin America, Washington DC, virtual; ~1,000 attendees by her count), 4 research presentations at the CEC Central American Space Congress, SHE IS delegation meetings at the UN Foundation, OAS and IDB; onboarded Jeel as a new member.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Research &amp; Technical, Outreach &amp; Promotion</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">September 2026 – Activity Report
+
+Sept. 4–6:
+Attended the IEEE Rising Stars Space Event in Quito, Ecuador. I supported the IEEE AESS Aerospace Chapter booth, engaging with students and professionals and inviting the community to learn more about space initiatives and opportunities for Latin America. Approximately 400 people attended the event.
+Link: <a href="https://www.instagram.com/p/Dc4Rad_gQj0/?img_index=1">https://www.instagram.com/p/Dc4Rad_gQj0/?img_index=1</a>
+
+Sept. 7:
+Led a space themed guided tour and talk at the Smithsonian National Air and Space Museum in Washington, D.C., as part of the SHE IS delegation. 37 women from 9 countries participated.
+
+Sept. 8:
+Participated in a meeting at the United Nations Foundation in Washington, D.C., including a presentation on UNOOSA opportunities, representing the space sector within the SHE IS delegation. 37 women from 9 countries participated.
+Link: <a href="https://www.instagram.com/p/DdRiEUMkUnk/?img_index=1">https://www.instagram.com/p/DdRiEUMkUnk/?img_index=1</a>
+
+Sept. 9–10:
+Participated in meetings at the Organization of American States (OAS) and the Inter-American Development Bank (IDB), presenting and discussing space-related topics and exploring opportunities for Latin America. 37 women from 9 countries participated as part of the SHE IS delegation.
+Link: <a href="https://www.instagram.com/p/DdU8Z5tGgm2/?img_index=1">https://www.instagram.com/p/DdU8Z5tGgm2/?img_index=1</a>
+
+Sept. 11:
+Speaker and panelist at Georgetown University, Washington, D.C., for the “The Future of Talent: Education, STEAM, AI, and Women Leading Women” event, held as part of the SHE IS Global Forum, The Americas. Approximately 200 participants attended.
+Link: <a href="https://www.instagram.com/p/Ddd_6T6DjdW/?img_index=1">https://www.instagram.com/p/Ddd_6T6DjdW/?img_index=1</a>
+
+Sept. 13:
+Speaker at a space conference for the Latin American community, organized by Power Builders Academy. 23 participants attended.
+
+Sept. 14:
+Speaker at a space conference for the “Grandes Mujeres” program in Chile and Latin America. 55 participants attended.
+Link: <a href="https://www.instagram.com/p/DdSOb5OSUKy/">https://www.instagram.com/p/DdSOb5OSUKy/</a>
+
+Sept. 16:
+- Invited and supported the registration of a new MoonDAO member from Peru, Jeel.
+- Presented a research paper at the CEC Central American Space Congress in Guatemala:
+“Space Hypogonadism: Alterations in Testosterone, Estrogen, and Fertility in Multigenerational Space Missions.”Approximately 40 attendees.
+- Presented a second research paper: “Microgravity and Human Endocrinology: Alterations of the Hypothalamic–Pituitary–Adrenal Axis as a Model of Extreme Stress for Future Space Missions.” Approximately 40 attendees.
+- Presented a third research paper: “Dysregulation of the Hypothalamic–Pituitary–Adrenal Axis During Long-Duration Space Missions: Cortisol as a Potential Biomarker of Mission Failure.” Approximately 45 attendees.
+Link: <a href="https://www.instagram.com/p/DdfoerxDrll/?img_index=1">https://www.instagram.com/p/DdfoerxDrll/?img_index=1</a>
+
+Sept. 17:
+Presented a space food research project at the CEC Central American Space Congress, Universidad del Valle, Guatemala:
+“Development of a Functional Snack Based on Dehydrated Plantain as Space Food for Nutritional Support During Long-Duration Missions.” Approximately 80 attendees.
+Link: <a href="https://www.instagram.com/p/DdiOKB5jiqe/?img_index=1">https://www.instagram.com/p/DdiOKB5jiqe/?img_index=1</a>
+
+Sept. 18:
+Attended the CEC Central American Space Congress, including tours of the aerospace engineering laboratories and food engineering laboratories, where we presented and discussed our space-food project.
+
+Sept. 22:
+Participated in a space-focused meeting related to a STEM project.
+
+Sept. 23:
+Panelist at the Uber Mujeres conversation, “A Space Journey”, discussing my professional and personal journey in the space sector. 
+link: <a href="https://www.instagram.com/p/Ddq4vbMEbB6/?img_index=1">https://www.instagram.com/p/Ddq4vbMEbB6/?img_index=1</a>
+
+Sept. 24:
+•	Participated in a meeting with the leadership team of Universidad Católica de Colombia to discuss a potential engineering related educational activity.
+•	Met with the organizing team of the Fibonacci Olympiad to discuss participating as a judge in the Science and Space category.
+•	Delivered a virtual IEEE AESS Distinguished Lecture, “Design and Application of Picosatellites,” for the international AESS community. Approximately 70 participants attended.
+
+Sept. 25:
+•	Speaker at the virtual conference “Cátedra Social Solidaria: From Science Parks to Territories – Science, Technology, and Innovation,” presenting on the role of science, technology, and innovation in regional development and knowledge transfer.
+•	Conducted a space themed bubble show and educational activity for children at HOMI Children&#x27;s Cancer Hospital.
+
+Sept. 28:
+Participated in a space outreach activity with members of the SHE IS astronaut program.
+
+Sept. 30:
+Speaker at the “Women in Tech” conference, participating as a panelist and receiving the “Women in Engineering 2026” award in recognition of the contributions to engineering, technology, and STEM outreach.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>135 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development), Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1IVFZz6xblfwyY8amm8_R1qojV45NoXYP">https://drive.google.com/open?id=1IVFZz6xblfwyY8amm8_R1qojV45NoXYP</a></dd></div><div><dt>Submitted as</dt><dd>Astro.gio</dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-isabel-cristina-oliveirafernandes">
+    <div class="detail-head">
+      <h3>Isabel Cristina OliveiraFernandes</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Promoted MoonDAO and Send Frank to Space to Portuguese-speaking audiences through 5 Instagram reels, 2 TikToks and 3 talks in Brazil. All dated work is from March-June, before Q3.</p>
+    
+    <details class="entry" id="Q3-007">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-007</span><span class="muted">Jul 16, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Promoted MoonDAO and Send Frank to Space to Portuguese-speaking audiences: 5 Instagram reels, 2 TikToks, and MoonDAO segments in 3 talks in Brazil.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Content &amp; Media, Events &amp; Education</div><div class="note"><strong>Note:</strong> All dated items are Mar 15 - Jun 17.</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">MoonDAO Contribution Report
+
+Since becoming a MoonDAO citizen, I have been actively promoting the organization, its mission, and its initiatives to Portuguese-speaking audiences through social media and public outreach activities.
+
+On March 15, 2026, I published an Instagram Reel announcing my MoonDAO citizenship. In this post, I introduced MoonDAO to my audience, explained its mission to democratize access to space, promote collaborative innovation, and encourage global participation in space exploration.
+
+Link:
+<a href="https://www.instagram.com/reel/DV664NPgtXg/">https://www.instagram.com/reel/DV664NPgtXg/</a>
+
+Evidence: Screenshot attached.
+
+To support the &quot;Send Frank To Space&quot; campaign, I created and published several videos on Instagram encouraging community engagement and increasing awareness among Portuguese-speaking audiences.
+
+The first video introduced Frank White&#x27;s campaign and encouraged community participation.
+
+Link:
+<a href="https://www.instagram.com/reel/DWRd0KagquE/">https://www.instagram.com/reel/DWRd0KagquE/</a>
+
+The second publication expanded the campaign&#x27;s reach by presenting additional information in Portuguese, making the initiative more accessible to Brazilian and Portuguese-speaking audiences.
+
+Link:
+<a href="https://www.instagram.com/reel/DWhc_b3AhuD/">https://www.instagram.com/reel/DWhc_b3AhuD/</a>
+
+The third publication continued supporting the campaign while reinforcing MoonDAO&#x27;s values and encouraging public engagement.
+
+Link:
+<a href="https://www.instagram.com/reel/DXfAmFUgv4d/">https://www.instagram.com/reel/DXfAmFUgv4d/</a>
+
+The fourth video encouraged the community to learn more about the campaign and actively participate in MoonDAO&#x27;s governance process.
+
+Link:
+<a href="https://www.instagram.com/reel/DXhww2qgjDR/">https://www.instagram.com/reel/DXhww2qgjDR/</a>
+
+Evidence: Screenshots of each publication are attached.
+
+To further expand MoonDAO&#x27;s visibility, I also shared the campaign and MoonDAO-related content on my TikTok profile, reaching additional audiences beyond Instagram.
+
+Links:
+
+<a href="https://vt.tiktok.com/ZSCWxo5eR/">https://vt.tiktok.com/ZSCWxo5eR/</a>
+
+<a href="https://vt.tiktok.com/ZSCWQJW6c/">https://vt.tiktok.com/ZSCWQJW6c/</a>
+
+Evidence: Screenshots attached.
+
+Talks and Public Outreach
+
+In addition to online outreach, I introduced MoonDAO and its initiatives during scientific presentations and public lectures, presenting the organization to students, researchers, healthcare professionals, and members of the scientific community.
+
+1. 2nd Women in Science Meeting
+
+Held on March 28, 2026, at Faculdade Integrada CETE (FIC), Garanhuns, Pernambuco, Brazil.
+
+During my presentation, I introduced MoonDAO, explained my experience as a MoonDAO citizen, presented the &quot;Send Frank To Space&quot; campaign, and highlighted the importance of community-driven space exploration. I also introduced members of the MoonDAO astronaut community and discussed how decentralized organizations are creating new opportunities for public participation in space missions.
+
+Evidence: Photos from the lecture are attached.
+
+2. Brazilian Society of Oncology Pharmacists Congress 2026
+
+Held from May 14–16, 2026, at the Salvador Convention Center, Salvador, Bahia, Brazil.
+
+During my lecture, I presented MoonDAO as an example of how decentralized communities are expanding access to space exploration. I also discussed my MoonDAO citizenship and introduced the &quot;Send Frank To Space&quot; campaign to an audience of healthcare professionals, researchers, and students.
+
+Although I do not have a photograph taken at the exact moment I discussed MoonDAO, I have included a screenshot of the presentation slide where MoonDAO was presented.
+
+Evidence: Presentation slide attached.
+
+3. Health Sciences Symposium
+
+Held on June 17, 2026, at São Miguel University, Recife, Pernambuco, Brazil.
+
+During this presentation, I introduced MoonDAO, shared my experience as a citizen, explained the organization&#x27;s mission, and discussed how decentralized communities are contributing to the future of space exploration. I also presented the &quot;Send Frank To Space&quot; campaign and highlighted opportunities for students and researchers to become involved in MoonDAO initiatives.
+
+Evidence: Photos and presentation materials attached.
+
+Overall Impact
+
+Through social media outreach and scientific presentations, I introduced MoonDAO to hundreds of Portuguese-speaking students, researchers, healthcare professionals, and science enthusiasts. My goal has been to increase awareness of MoonDAO in Brazil, promote community participation, encourage engagement with governance initiatives such as the &quot;Send Frank To Space&quot; campaign, and inspire more people to participate in the future of decentralized space exploration.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>Approximately 30 hours. This includes researching MoonDAO’s initiatives, creating educational content, recording and editing videos, publishing content on social media (Instagram and TikTok), preparing presentation materials, and giving public talks to introduce MoonDAO, the &quot;Send Frank To Space&quot; campaign, and the organization’s mission to the Brazilian public.</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1tJC9zimlaA5gOBECSYlCgg_ure7fRfsU">https://drive.google.com/open?id=1tJC9zimlaA5gOBECSYlCgg_ure7fRfsU</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-jcinsignares">
+    <div class="detail-head">
+      <h3>Jcinsignares</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Joined as a citizen and followed MoonDAO on YouTube and Instagram.</p>
+    
+    <details class="entry" id="Q3-024">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-024</span><span class="muted">Aug 14, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Joined MoonDAO as a citizen and followed it on YouTube and Instagram.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Joined MoonDao as a citizen, Subscribed to YouTube, followed on IG. Will continue to grow the organization</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>[email hidden]</dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-jeel-moya-salazar">
+    <div class="detail-head">
+      <h3>Jeel Moya-Salazar</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Presented results from the MoonDAO-funded Jezero I analog mission at CEC 2026, submitted a journal article crediting MoonDAO, and shared it through university and social channels. Also submitted a funding proposal to MoonDAO.</p>
+    
+    <details class="entry" id="Q3-059">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-059</span><span class="muted">Sep 28, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description says MoonDAO already funded this work.">MoonDAO-funded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Presented results of the MoonDAO-funded Jezero I analog mission at CEC 2026, submitted a journal article crediting MoonDAO, shared results via university, social media and YouTube; submitted a funding proposal to MoonDAO.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Outreach &amp; Promotion</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">MoonDAO&#x27;s mission benefited from my work as a researcher and my presentation of the Jezero I mission results—conducted at Habitat Marte (funded by MoonDAO) and compared against other habitats in Poland—at the CEC 2026 conference. Furthermore, all of this has been communicated to the community in my country via my university&#x27;s (USS) platforms.
+I also submitted an article to a peer-reviewed journal, acknowledging MoonDAO&#x27;s support for the study. Finally, I have disseminated this information through social media and a presentation video uploaded to YouTube. Additionally, we have submitted a research funding proposal to MoonDAO regarding an oral care kit for space travel. I believe all of this can expand the global mission&#x27;s reach, enabling more participants in Peru and the region to learn about it and get involved.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>350 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development), Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1cj6D2dxM8Bi_3UXge9-SkzLmNmhwT84b">https://drive.google.com/open?id=1cj6D2dxM8Bi_3UXge9-SkzLmNmhwT84b</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-julio-rezende">
+    <div class="detail-head">
+      <h3>Julio Rezende</h3>
+      <span class="muted">2 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Took part in Habitat Marte analog mission 240 on a MoonDAO scholarship and organized an Astronaut Forum with Rodrigo Santiago.</p>
+    
+    <details class="entry" id="Q3-022">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-022</span><span class="muted">Aug 10, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description says MoonDAO already funded this work.">MoonDAO-funded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Took part in Habitat Marte analog mission 240 (Astraqua) on a MoonDAO scholarship.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Space Analog Mission 240 Astraqua by Habitat Marte with Moondao scholarship</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>5 days.</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1Q0wvi50xMJChmf04nt0AKgKhtkmBL4Xe">https://drive.google.com/open?id=1Q0wvi50xMJChmf04nt0AKgKhtkmBL4Xe</a></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-030">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-030</span><span class="muted">Aug 22, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Organized the Astronaut Forum with Rodrigo Santiago.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Organization of the Astronaut Forum with Rodrigo Santiago</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd> 2 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1gAEqaIR_dBFYxK5mzoDqGlTEnV7Zh96q">https://drive.google.com/open?id=1gAEqaIR_dBFYxK5mzoDqGlTEnV7Zh96q</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-kate-burnier">
+    <div class="detail-head">
+      <h3>Kate Burnier</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Became a citizen, attended the weekly meeting, and contributed to Frank&#x27;s campaign and Austin Wilson&#x27;s.</p>
+    
+    <details class="entry" id="Q3-055">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-055</span><span class="muted">Sep 23, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the weekly meeting, became a citizen, contributed to Frank&#x27;s campaign, and supported Austin Wilson&#x27;s campaign.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Donation</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">-participating in MoonDao weekly meeting
+-becoming a MoonDao citizen
+-contributing to Frank
+-supporting @austin3wilson on his journey to space</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>5 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-kirby-runyon">
+    <div class="detail-head">
+      <h3>Kirby Runyon</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Co-authored (80%) a book on space-themed travel, now on pre-order; written over two years.</p>
+    
+    <details class="entry" id="Q3-045">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-045</span><span class="muted">Sep 11, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Co-authored (80%) the book &#x27;How to Vacation in Space Without Leaving Earth&#x27;, now on pre-order.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Written over two years.</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">My book, titled, &quot;How to Vacation in Space Without Leaving Earth&quot; became available for pre-order. My book explains how average people, going on vacations around Earth, can infuse the awe and amazement of outer space into their earthly travels. I am the primary author (80%) and my co-author, Chris Clews, contributed roughly 20%.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>Two years, on-and-off</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1NySIpd4rAQjogPXRRAIzG0jZcgiAlrhh">https://drive.google.com/open?id=1NySIpd4rAQjogPXRRAIzG0jZcgiAlrhh</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-kyle-longarm-arcurio">
+    <div class="detail-head">
+      <h3>Kyle &quot;Longarm&quot; Arcurio</h3>
+      <span class="muted">9 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Working toward analog/aquanaut Mission SPEAR (late October): ran the first of three research tests, led two planning meetings, and started a standardized IVA suit certification report. Also attended 4 town halls.</p>
+    
+    <details class="entry" id="Q3-043">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-043</span><span class="muted">Sep 10, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 10 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended 9/10/26 town hall</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1.4 hr</dd></div><div><dt>Area (self-selected)</dt><dd>Other (Please describe in the next question)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-047">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-047</span><span class="muted">Sep 21, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Whitesides-White town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended and engaged in Whitesides-White Townhall.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>45 min (.7 hr)</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Longarm</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-048">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-048</span><span class="muted">Sep 21, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Ran the first of three tests in an environmental and cognitive research campaign leading to an analog mission at Jules&#x27; Undersea Lab in late October.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Conducted the first of what will be three tests for an environmental and cognitive comparative research campaign, which will culminate in a short-duration analog astronaut mission at Jules&#x27; Undersea Lab the end of October.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>5 hrs</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1_xjn9-14nfCQIcrYDzSmmJU0d85UwwSR">https://drive.google.com/open?id=1_xjn9-14nfCQIcrYDzSmmJU0d85UwwSR</a></dd></div><div><dt>Submitted as</dt><dd>Longarm</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-054">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-054</span><span class="muted">Sep 23, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Led a planning meeting for analog/aquanaut Mission SPEAR and reviewed results from part 1 of the research campaign.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Led a meeting for our upcoming analog / aquanaut mission, Mission SPEAR.  Discussed mission planning as well as results from part 1 of 3 research campaign.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1.3 hr</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development), Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Longarm</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-057">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-057</span><span class="muted">Sep 25, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 24 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended 9/24/26 townhall</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>.7 hr (45 min)</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Kyle Arcurio</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-062">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-062</span><span class="muted">Oct 1, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Held a mission-planning catch-up with a crew member for the upcoming analog mission.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Conducted mission planning meeting for upcoming analog mission with crew member who missed last week&#x27;s due to a conference.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>0.7 hr</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Kyle Arcurio</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-064">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-064</span><span class="muted">Oct 1, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-eligibility" title="Describes planned or in-progress work.">Not complete</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Started a report proposing a standard certification process for intra-vehicular pressure suits.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Began writing a report, developing a standardized process for certification of intra-vehicular pressure suits since the FAA and NASA do not have one defined.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1ZtmhkfJ0TpAezn3qfhRTpIHlROQmgk40">https://drive.google.com/open?id=1ZtmhkfJ0TpAezn3qfhRTpIHlROQmgk40</a></dd></div><div><dt>Submitted as</dt><dd>Kyle Arcurio</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-066">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-066</span><span class="muted">Oct 1, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Oct 1 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended 10/1/26 townhall.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>0.9</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Longarm</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-072">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-072</span><span class="muted">Oct 5, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-eligibility" title="Describes planned or in-progress work.">Not complete</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Continued research on the standardized IVA suit certification report.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Conducted research and continued progress on Standardized IVA Suit Certification report.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2.5</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Longarm</dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-manuel-mazzanti">
+    <div class="detail-head">
+      <h3>Manuel Mazzanti</h3>
+      <span class="muted">2 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Recorded interviews with astronaut Anil Menon and NASA Administrator Jared Isaacman (~10 minutes each).</p>
+    
+    <details class="entry" id="Q3-029">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-029</span><span class="muted">Aug 20, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Recorded a 10-minute interview with astronaut Anil Menon.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Interview with Astronaut Anil Menon, working at the Space Station right now.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>It is a 10m video</dd></div><div><dt>Area (self-selected)</dt><dd>Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-073">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-073</span><span class="muted">Oct 6, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-links" title="No upload, but the description contains links.">Links in description</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Interviewed NASA Administrator Jared Isaacman after the Crew 13 launch (YouTube).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">An interview with NASA Administrator Jared Isaacman after the Launch of the Crew 13 Mission / <a href="https://youtu.be/JStzUbyREkE?si=_e5S9BW3DGLpe42Y">https://youtu.be/JStzUbyREkE?si=_e5S9BW3DGLpe42Y</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>10m</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-maria-alejandra-botero-botero">
+    <div class="detail-head">
+      <h3>Maria Alejandra Botero Botero</h3>
+      <span class="muted">1 entry</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">As ACMA president: built rocketry-scholarship recruitment pages, emailed 190 schools and universities crediting MoonDAO as funder, ran crew selection for an analog mission, and added MoonDAO to ACMA&#x27;s allies page. The scholarship program is MoonDAO-funded.</p>
+    
+    <details class="entry" id="Q3-015">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-015</span><span class="muted">Jul 31, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description says MoonDAO already funded this work.">MoonDAO-funded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">As ACMA president: built rocketry-scholarship recruitment pages, emailed 190 schools and universities crediting MoonDAO as funder (47% open rate), ran analog-mission crew selection, added MoonDAO to ACMA&#x27;s allies page; voted on proposals.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Outreach &amp; Promotion, Participation</div><div class="note"><strong>Note:</strong> States MoonDAO funds the ACMA Ignites rocketry teams.</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">As President of ACMA (Asociación Colombiana de Mujeres en Aeroespacial, 300+ members), in July I led execution across MoonDAO-aligned initiatives:
+
+- ACMA Ignites 2026 Webpage
+Built recruitment site for all-women rocketry teams. Team registration form + mentor portal + program details. <a href="https://acma.space/mentoras-cccd2026">https://acma.space/mentoras-cccd2026</a> <a href="https://acma.space/oportunidades-becas-cccd2026">https://acma.space/oportunidades-becas-cccd2026</a>
+
+- Schools/Universities Campaign — ACMA Ignites
+Email campaign sent July 21, 2026: &quot;Becas ACMA para equipos de cohetería CCCD 2026&quot; (Scholarships for CCCD 2026 rocketry teams) Attached MoonDAO branding in newsletter footer: &quot;PROGRAMA POSIBLE GRACIAS A&quot; (Program possible thanks to MoonDAO) with full explanation in Spanish of how MoonDAO funds the teams.
+Campaign metrics:
+Delivered: 190 emails to schools &amp; universities
+Opens: 89 (46.84% open rate)
+Clicks: 113 (59.47% click-through rate) → direct link to ACMA Ignites / MoonDAO info
+
+- MoonDAO Governance Votes
+Cast votes for retroactive reward projects (Q2 cohort) + new proposals. 
+  
+- Propulsando Sueños — Analog Mission Crew Selection
+Launched crew announcement page: <a href="https://acma.space/en/propulsando-tripulacion">https://acma.space/en/propulsando-tripulacion</a>
+Coordinated allies (Fundación Cydonia, partners). Welcomed crew and completed orientation sessions. Managed logistics and volunteer coordination. Coordinated research projects and outreach for the mission.
+
+- MoonDAO Branding on ACMA Website
+Added MoonDAO to &quot;Allies&quot; section (acma.space/allies). Spanish &amp; English versions. Makes MoonDAO visible as partner.
+
+Links &amp; Evidence
+ACMA <a href="https://acma.space">https://acma.space</a>
+Crew announcement: <a href="https://acma.space/en/propulsando-tripulacion">https://acma.space/en/propulsando-tripulacion</a>
+CCCD 2026 webpage: <a href="https://acma.space/mentoras-cccd2026">https://acma.space/mentoras-cccd2026</a> <a href="https://acma.space/oportunidades-becas-cccd2026">https://acma.space/oportunidades-becas-cccd2026</a>
+
+Impact
+Analog mission-ready women in aerospace pipeline and 60+ engaged applicants across Colombia
+190 schools/universities reached with direct MoonDAO link
+MoonDAO visible as ally on ACMA homepage
+MoonDAO credited in newsletter as program funder</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>15 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development), Community Growth &amp; Engagement (e.g., events, moderation, onboarding), Technical Development (e.g., smart contracts, website, tooling), Content Creation &amp; Marketing (e.g., articles, social media, graphics), Governance &amp; Operations (e.g., proposal review, documentation), Other (Please describe in the next question)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1dus6WVr0wUlGZXVSIQxeQdq9ITQ4OmD1">https://drive.google.com/open?id=1dus6WVr0wUlGZXVSIQxeQdq9ITQ4OmD1</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-max-medina">
+    <div class="detail-head">
+      <h3>Max Medina</h3>
+      <span class="muted">3 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Lunar settlement architecture research presented to the MoonDAO community, a white paper on KITE-1 (an orbital data-center concept), and a Free Cities Conference talk featuring MoonDAO as a governance example.</p>
+    
+    <details class="entry" id="Q3-035">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-035</span><span class="muted">Sep 3, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Lunar settlement architecture research, presented to the MoonDAO community with Dr. Anna (video and PDF).</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Events &amp; Education</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">Dear MoonDao Community, This contribution presents my ongoing research and design work on how permanent human settlements could be planned, constructed, and expanded on the Moon.
+
+Context: I am an architect and urban designer, that has worked for long time in the creation of cities around the world, and have researched and proposal moon habitats...As an architect my goal was to approach the Moon not simply as a destination for short-duration missions, but as a place where humans will eventually need to build, live, work, maintain infrastructure, and progressively establish permanent communities.
+
+The work explores the architectural and settlement-scale challenges involved in that transition, including habitat organization, human living conditions, surface infrastructure, construction strategies, modular growth, resource utilization, mobility, protection from the lunar environment, and the relationship between individual structures and a larger lunar settlement.
+
+A major part of the effort was translating highly technical space requirements into a spatial and architectural framework that can be understood, discussed, criticized, and further developed by a multidisciplinary community. Architecture becomes the layer that connects engineering systems, human needs, infrastructure, logistics, and long-term settlement growth.
+
+I presented this work to the MoonDAO community to contribute directly to MoonDAO&#x27;s broader objective of creating an open, collaborative pathway toward a permanent human presence on the Moon.
+
+The contribution is particularly relevant as MoonDAO moves deeper into lunar settlement design. Rather than treating habitats, landing infrastructure, energy systems, mobility, ISRU, and construction as isolated elements, this work encourages thinking about how these systems eventually become part of one coherent settlement.
+
+The presentation ( Along with Dr Anna) also helps introduce architectural and construction-oriented thinking into the MoonDAO ecosystem, creating a foundation for future research into topics such as lunar construction sequencing, settlement expansion, robotic construction, regolith-based infrastructure, habitat shielding, surface logistics, and the transition from an initial lunar outpost to a permanent settlement.
+
+Supporting materials:
+
+Video presentation:
+<a href="https://www.youtube.com/watch?v=9iQFv1d5dhY">https://www.youtube.com/watch?v=9iQFv1d5dhY</a>
+
+Full project presentation:
+PDF attached to this contribution.
+
+The impact of this contribution is primarily intellectual and technical at this stage. It provides MoonDAO with a concrete lunar settlement concept that can be reviewed, discussed, challenged, and potentially connected with other MoonDAO research and projects. It also establishes a basis for more detailed future contributions focused specifically on the architecture and construction of permanent infrastructure beyond Earth.
+
+My intention is to continue developing this line of work within MoonDAO, moving progressively from conceptual settlement design toward increasingly detailed and technically grounded research on how we could actually build permanent human settlements on the Moon.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>80–100 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development), Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1NU5D7NAl9H8wRyCnNlR1iChb7F6c7Kf0">https://drive.google.com/open?id=1NU5D7NAl9H8wRyCnNlR1iChb7F6c7Kf0</a></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-050">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-050</span><span class="muted">Sep 21, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">White paper for KITE-1, a modular orbital data-center and Bitcoin-mining concept scaling from 50 kW to 1 MW.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">I developed KITE-1: Orbital Computing and Bitcoin Infrastructure Concept, a research and architectural proposal exploring how modular data-center infrastructure could be deployed and progressively scaled in orbit.
+
+The contribution focuses on a real emerging challenge: the rapid growth of AI, high-performance computing, and Bitcoin infrastructure is increasing demand for energy, cooling, land, and grid capacity on Earth. KITE-1 investigates whether part of this future computational infrastructure could be moved into space by designing specifically for the orbital environment rather than adapting a terrestrial data-center model.
+
+The concept integrates five main systems into a single architectural strategy:
+
+* a lightweight photovoltaic membrane oriented toward the Sun,
+* a compact modular compute core,
+* thermal separation between the computing and heat-rejection systems,
+* a radiator field oriented toward deep space,
+* and a phased deployment strategy using high-altitude balloon testing before orbital implementation.
+
+A major part of the work was defining a realistic growth path rather than proposing a single 1 MW spacecraft from the beginning. The system is designed to scale progressively:
+
+50 kW → 100 kW → 250 kW → 500 kW → 1 MW
+
+Each module would launch in a compact configuration, deploy in orbit like a kite, and add new power, computing, and thermal capacity to the existing orbital infrastructure.
+
+I also developed a phased deployment model beginning with near-space balloon testing at approximately 30–40 km altitude, followed by capsule release, an orbital kick stage, a small compute seed in Low Earth Orbit, and finally deployment of the full KITE architecture.
+
+The research addresses several core technical challenges, including:
+
+* orbital heat rejection,
+* radiation exposure,
+* launch mass,
+* photovoltaic area,
+* modular replacement of computing hardware,
+* in-space assembly,
+* and the economics of scaling from a small demonstrator to a megawatt-class system.
+
+The initial application explored is Bitcoin mining and orbital computing, but the architecture is intentionally broader and could support AI inference, Earth-observation processing, scientific computing, autonomous spacecraft, lunar missions, and future space settlements.
+
+The main output is a concept white paper, supported by architectural diagrams, deployment studies, and system illustrations developed specifically for this research.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>50 days </dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1tu3lEMgFvKOgeqSKHCigNMiTxJdPIxNJ">https://drive.google.com/open?id=1tu3lEMgFvKOgeqSKHCigNMiTxJdPIxNJ</a></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-051">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-051</span><span class="muted">Sep 21, 2026</span><span class="chips"><span class="chip cat cat-outreach"><span class="dot"></span>Outreach &amp; Promotion</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Spoke at the Free Cities Conference in Roatan, Honduras, presenting MoonDAO as an example of decentralized governance (video).</div>
+      </summary>
+      <div class="entry-body">
+        <div class="also">Also: Events &amp; Education</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">I presented “What Should a Free City Look Like?” at the Free Cities Conference in Roatán, Honduras. During the talk, I introduced MoonDAO as an example of how decentralized governance could help shape future human communities, including settlements beyond Earth.
+
+The contribution involved researching the relationship between architecture, governance, and emerging communities, developing the presentation, and publicly delivering these ideas to an international audience interested in free cities, entrepreneurship, technology, and new governance models. By including MoonDAO in this discussion, I helped expose the project to people already exploring alternatives to traditional institutions and positioned it as more than a space organization. I presented MoonDAO as a real-world experiment in coordinating people, resources, and collective ambition toward expanding human civilization into space.
+
+This advanced MoonDAO’s mission through public education and outreach. It connected decentralized space exploration with the broader free-cities movement, introduced MoonDAO to a relevant new audience, and helped establish decentralized governance as an important part of the conversation about how future off-world communities could be organized.
+
+Supporting video, presentation begins around 4:12:24:
+[<a href="https://www.youtube.com/watch?v=5lXWZ7J_DxY&amp;t=15144s](https://www.youtube.com/watch?v=5lXWZ7J_DxY&amp;t=15144s">https://www.youtube.com/watch?v=5lXWZ7J_DxY&amp;t=15144s](https://www.youtube.com/watch?v=5lXWZ7J_DxY&amp;t=15144s</a>)</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>5 days</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1JIaihaamg7Xh1p44SPw_S4C1BjbfBS9P">https://drive.google.com/open?id=1JIaihaamg7Xh1p44SPw_S4C1BjbfBS9P</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-radam-s-jomuel-valent-n-reyes">
+    <div class="detail-head">
+      <h3>Radamés Jomuel Valentín Reyes</h3>
+      <span class="muted">2 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Two open-source Dart libraries (a BSON object database and an API server framework), developed over several years.</p>
+    
+    <details class="entry" id="Q3-016">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-016</span><span class="muted">Aug 2, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-links" title="No upload, but the description contains links.">Links in description</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Built objective_db, an open-source object-based BSON database for Dart (pub.dev, GitHub).</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Described as developed over several years.</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">Developed a database alternative to SQL. It is Object based and stores data within the selected folder. Each object is stored in a different file rather than one big bloated file. Data is stored in BSON format which is like JSON but binary. It is available for the dart programming language at: <a href="https://pub.dev/packages/objective_db">https://pub.dev/packages/objective_db</a>
+
+Note: It is free and open source <a href="https://github.com/LiveUser/objective_db">https://github.com/LiveUser/objective_db</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>Developed and perfected throughout the years.</dd></div><div><dt>Area (self-selected)</dt><dd>Technical Development (e.g., smart contracts, website, tooling)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-017">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-017</span><span class="muted">Aug 2, 2026</span><span class="chips"><span class="chip cat cat-research"><span class="dot"></span>Research &amp; Technical</span><span class="chip ev ev-links" title="No upload, but the description contains links.">Links in description</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span><span class="chip flag flag-eligibility" title="Some or all of the work is dated outside this cycle, or described as developed over multiple years.">Outside cycle</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Built graphene_server, an open-source Dart library for multithreaded BSON API servers (pub.dev, GitHub).</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Described as developed over several years.</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">A library for easily creating fast multithreaded API servers that communicate through BSON format.
+
+Library: <a href="https://pub.dev/packages/graphene_server">https://pub.dev/packages/graphene_server</a>
+Source code: <a href="https://github.com/LiveUser/graphene_server">https://github.com/LiveUser/graphene_server</a></div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>Developed and perfected over the years</dd></div><div><dt>Area (self-selected)</dt><dd>Technical Development (e.g., smart contracts, website, tooling)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+  </article>
+  <article class="person-detail" id="contributor-rosana-zen-sotile">
+    <div class="detail-head">
+      <h3>Rosana &quot;Zen&quot; Sotile</h3>
+      <span class="muted">14 entries</span>
+      <a class="back" href="#contributors">Back to summaries</a>
+    </div>
+    <p class="summary">Made a Space Camp Turkey video with Chris Sembroski and Austin Wilson (4,000+ views) and ran the water portion of I24 Spaceflight Training. The other 12 entries are 8 town halls, a project vote, and attending Space Camp alumni events and the Starship 14 launch.</p>
+    
+    <details class="entry" id="Q3-002">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-002</span><span class="muted">Jul 16, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Space Camp Alumni Reunion and Hall of Fame Induction (Jul 10).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">I attended the Space Camp Alumni Reunion and Hall of Fame Induction event on July 10, 2026. I helped support MoonDAO&#x27;s mission of collaborating with others who support future generations of space exploration and lunar settlement.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>4 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1gQ23uNk-tCdjS5MnbNXmDKEGhNa5Q5h-">https://drive.google.com/open?id=1gQ23uNk-tCdjS5MnbNXmDKEGhNa5Q5h-</a></dd></div><div><dt>Submitted as</dt><dd>Rosana Sotile</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-003">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-003</span><span class="muted">Jul 16, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended Chris Sembroski&#x27;s &#x27;Lunch with an Astronaut&#x27; at the Space Camp Alumni event (Jul 11).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">I participated in Chris Sembroski&#x27;s &quot;Lunch with an Astronaut&quot; event at the Space Camp Alumni event on July 11, 2026, supporting his outreach and community engagement.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>4 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1_mU8vf_VDPruRZx2Ly3WsEtro_GYNDxx">https://drive.google.com/open?id=1_mU8vf_VDPruRZx2Ly3WsEtro_GYNDxx</a></dd></div><div><dt>Submitted as</dt><dd>Rosana Sotile</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-004">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-004</span><span class="muted">Jul 16, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Jul 9 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">I joined the MoonDAO townhall meeting for project updates on July 9, 2026 while I was attending the Space Camp Alumni Reunion.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2 hours</dd></div><div><dt>Area (self-selected)</dt><dd>Space Exploration &amp; Research (e.g., payloads, research, development), Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Rosana Sotile</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-009">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-009</span><span class="muted">Jul 23, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Voted on current and retroactive projects and proposals after watching project videos and reading proposals.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Casted votes for current and retroactive projects and proposals, after taking the time to watch the project videos and read the proposals.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Governance &amp; Operations (e.g., proposal review, documentation)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-018">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-018</span><span class="muted">Aug 3, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Jul 30 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the July 30, 2026 townhall meeting</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-026">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-026</span><span class="muted">Aug 17, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Aug 13 town hall (remotely, from Space Camp Turkey).</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the August 13, 2026 town hall while visiting Space Camp Turkey</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-031">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-031</span><span class="muted">Aug 27, 2026</span><span class="chips"><span class="chip cat cat-content"><span class="dot"></span>Content &amp; Media</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Made a video with Chris Sembroski and Austin Wilson at Space Camp Turkey on why it matters to MoonDAO&#x27;s mission; 4,000+ views.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">I created a video with Chris Sembroski and Austin Wilson while attending outreach and promotional activities at Space Camp Turkey to show the MoonDAO community why Space Camp Turkey is important to our overall mission and how they need our support. It was posted on social media and reached a wide audience, with over 4,000 views.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2 hours (for filming and editing)</dd></div><div><dt>Area (self-selected)</dt><dd>Content Creation &amp; Marketing (e.g., articles, social media, graphics)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1Pf5EO4DB8TA13FqsdOVWhqUc_RDttjnw">https://drive.google.com/open?id=1Pf5EO4DB8TA13FqsdOVWhqUc_RDttjnw</a></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-037">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-037</span><span class="muted">Sep 5, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Aug 27 town hall with Frank White and Dr. Eiman Jahangir.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the Aug. 27, 2026 MoonDAO town hall with Frank White and Dr. Eiman Jahangir</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-038">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-038</span><span class="muted">Sep 5, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 3 town hall with Frank White and Sharon Hagle.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the Sept. 3, 2026 MoonDAO townhall with Frank White and Sharon Hagle.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-046">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-046</span><span class="muted">Sep 14, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 10 town hall.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the MoonDAO Town Hall on Sept. 10, 2026</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Governance &amp; Operations (e.g., proposal review, documentation)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div><div><dt>Submitted as</dt><dd>Rosana Sotile</dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-049">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-049</span><span class="muted">Sep 21, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 17 town hall with Loretta Whitesides.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the Sept. 17th Townhall featuring Loretta Whitesides</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Governance &amp; Operations (e.g., proposal review, documentation)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-061">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-061</span><span class="muted">Oct 1, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-none" title="No proof link and no links in the description.">No evidence</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Sep 24 town hall with Jeanette Epps and took part in the live chat.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the Sept. 24th Townhall with Jeanette Epps and participated in the live chat.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 hour</dd></div><div><dt>Area (self-selected)</dt><dd>Governance &amp; Operations (e.g., proposal review, documentation)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><span class="muted">None provided</span></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-063">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-063</span><span class="muted">Oct 1, 2026</span><span class="chips"><span class="chip cat cat-events"><span class="dot"></span>Events &amp; Education</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span><span class="chip flag flag-context" title="The description doesn&#x27;t mention MoonDAO, its campaigns or its mission, e.g. general space-industry work.">MoonDAO not mentioned</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Trainer for the I24 Spaceflight Training program: ran the water portion, including swim tests and underwater safety.</div>
+      </summary>
+      <div class="entry-body">
+        <div class="note"><strong>Note:</strong> Likely the same course as Q3-060 (Andrew Parris) and Q3-075 (Bob Barnum).</div>
+        <div class="original-label">Original submission</div>
+        <div class="original">Participated as a trainer and activity demonstrator for the I24 Spaceflight training program. Fully assisted with the water portion of training, including administering swim tests and ensuring underwater safety for the participants.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>2 days (48 hours)</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1nJKX-k9d-ZISYLC62LTG4QjoFHipOI6E">https://drive.google.com/open?id=1nJKX-k9d-ZISYLC62LTG4QjoFHipOI6E</a></dd></div></dl>
+      </div>
+    </details>
+    <details class="entry" id="Q3-065">
+      <summary>
+        <div class="entry-top"><span class="entry-id">Q3-065</span><span class="muted">Oct 1, 2026</span><span class="chips"><span class="chip cat cat-participation"><span class="dot"></span>Participation</span><span class="chip ev ev-upload" title="The proof-of-work field contains a link.">Proof uploaded</span></span><span class="toggle" aria-hidden="true"></span></div>
+        <div class="entry-headline">Attended the Starship 14 launch at Starbase with MoonDAO citizen Moonshot.</div>
+      </summary>
+      <div class="entry-body">
+        
+        <div class="original-label">Original submission</div>
+        <div class="original">Attended the Starship 14 launch at Starbase, TX, along with MoonDAO citizen, Moonshot.</div>
+        <dl class="meta"><div><dt>Time claimed</dt><dd>1 day</dd></div><div><dt>Area (self-selected)</dt><dd>Community Growth &amp; Engagement (e.g., events, moderation, onboarding)</dd></div><div><dt>Citizen</dt><dd>Yes</dd></div><div><dt>Proof upload</dt><dd><a href="https://drive.google.com/open?id=1hlYCRZkUuUrz83YnLyjUaQ5mb-FYaQmB">https://drive.google.com/open?id=1hlYCRZkUuUrz83YnLyjUaQ5mb-FYaQmB</a></dd></div></dl>
+      </div>
+    </details>
+  </article>
+</section>
+<footer>Contributor emails and wallet addresses are not included in this report.</footer>
+</main>
+<script>
+(() => {
+  const people = [...document.querySelectorAll('.person')];
+  const search = document.getElementById('search');
+  const flaggedOnly = document.getElementById('flagged-only');
+  const showing = document.getElementById('showing');
+  const chips = [...document.querySelectorAll('.filter-chip')];
+  let category = null;
+
+  function apply() {
+    const q = search.value.trim().toLowerCase();
+    let shown = 0;
+    for (const p of people) {
+      const ok = (!q || p.dataset.text.includes(q))
+        && (!flaggedOnly.checked || p.dataset.flagged === '1')
+        && (!category || p.dataset.categories.split('|').includes(category));
+      p.hidden = !ok;
+      if (ok) shown++;
+    }
+    showing.textContent = shown === people.length ? '' : `Showing ${shown} of ${people.length}`;
+  }
+  search.addEventListener('input', apply);
+  flaggedOnly.addEventListener('change', apply);
+  for (const chip of chips) {
+    chip.addEventListener('click', () => {
+      category = category === chip.dataset.category ? null : chip.dataset.category;
+      chips.forEach(c => c.setAttribute('aria-pressed', String(c.dataset.category === category)));
+      apply();
+      document.getElementById('contributors').scrollIntoView();
+    });
+  }
+
+  const entries = () => document.querySelectorAll('details.entry');
+  document.getElementById('expand-all').addEventListener('click', () => entries().forEach(d => d.open = true));
+  document.getElementById('collapse-all').addEventListener('click', () => entries().forEach(d => d.open = false));
+
+  function openTarget() {
+    const el = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (el && el.tagName === 'DETAILS') { el.open = true; el.scrollIntoView(); }
+  }
+  window.addEventListener('hashchange', openTarget);
+  openTarget();
+  window.addEventListener('beforeprint', () => entries().forEach(d => d.open = true));
+})();
+</script>
+</body>
+</html>
