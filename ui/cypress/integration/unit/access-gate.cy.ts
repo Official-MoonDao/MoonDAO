@@ -12,6 +12,7 @@ import {
   GATE_COOKIE,
   GATE_PATH,
   MIN_TOKEN_LENGTH,
+  MOONBASE_DEPRIZE_LAUNCHED,
   constantTimeEquals,
   isGatedPath,
   isPasswordCorrect,
@@ -25,7 +26,14 @@ const TOKEN = 'a'.repeat(64)
 
 describe('access gate', () => {
   describe('which routes are gated', () => {
-    it('gates the moonbase and DePrize, including their subroutes', () => {
+    // Launch checklist. Homepage sections in pages/index.tsx read this same
+    // constant, so flipping it publishes the pages and the homepage together.
+    // When that commit lands, change this assertion to true.
+    it('is not launched yet, so the password still holds', () => {
+      expect(MOONBASE_DEPRIZE_LAUNCHED).to.equal(false)
+    })
+
+    it('gates the moonbase and DePrize, including their subroutes, until launch', () => {
       for (const p of [
         '/moonbase',
         '/moonbase/nasa-artemis-base-camp',
@@ -33,7 +41,7 @@ describe('access gate', () => {
         '/deprize/1',
         '/deprize-play',
       ]) {
-        expect(isGatedPath(p), p).to.equal(true)
+        expect(isGatedPath(p), p).to.equal(!MOONBASE_DEPRIZE_LAUNCHED)
       }
     })
 

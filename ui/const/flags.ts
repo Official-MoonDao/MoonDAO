@@ -14,8 +14,8 @@ const PRODUCTION_HOSTS = new Set(['moondao.com', 'www.moondao.com'])
 
 // Routes that exist in main but aren't public yet. `router.pathname` is the
 // matched route pattern, so a dynamic child appears here in its bracket form.
-// Moonbase and DePrize used to live here; they are password-gated now (see
-// lib/gate/access.ts) and reachable on production, so they are not listed.
+// Moon Base Zero and DePrize are not listed. They stay password-gated, and off
+// the homepage, until MOONBASE_DEPRIZE_LAUNCHED in lib/gate/access.ts.
 const UNRELEASED_PATHS: string[] = []
 
 // Bare hostname, no port, lower-cased. Accepts either a `Host` header value or
@@ -31,10 +31,7 @@ export function isPublicProductionHost(host?: string | null): boolean {
 
 // Should a given route be hidden on a given host? Used by both the server gate
 // (getServerSideProps, off the `Host` header) and the client redirect below.
-export function isUnreleasedOnHost(
-  pathname: string,
-  host?: string | null
-): boolean {
+export function isUnreleasedOnHost(pathname: string, host?: string | null): boolean {
   return isPublicProductionHost(host) && UNRELEASED_PATHS.includes(pathname)
 }
 

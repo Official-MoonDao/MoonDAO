@@ -4,6 +4,25 @@
 ready to be public. A shared password gates them so the code can merge to `main`
 without the pages being reachable.
 
+## Launching
+
+Moon Base Zero and DePrize go public together. `MOONBASE_DEPRIZE_LAUNCHED` in
+`ui/lib/gate/access.ts` is the switch, and it starts as `false`.
+
+While it is `false`:
+
+- `/moonbase`, `/deprize` and `/deprize-play` stay behind this password.
+- The homepage does not render the Moon Base Zero or DePrize sections, so
+  those buttons cannot send a visitor into the password form.
+
+Set it to `true` and deploy. That one change drops the password and renders
+the homepage sections. Do not launch by deleting `MOONBASE_GATE_PASSWORD` or
+`MOONBASE_GATE_TOKEN`. While the flag is `false`, an unset variable locks the
+routes instead of publishing them.
+
+The access-gate unit test asserts the flag is still `false`. Update that
+assertion in the same commit.
+
 ## Setting it up
 
 Two server-side variables:
@@ -34,7 +53,7 @@ Set both in **two** places, and nowhere else:
 Neither value may be committed. They are deliberately **absent** from
 `.env.mainnet` and `.env.testnet`, which are tracked files — even a placeholder
 line there is an invitation for someone to fill in the real value and push it.
-The variable *names* are declared for type-checking in `ui/env.d.ts`, which
+The variable _names_ are declared for type-checking in `ui/env.d.ts`, which
 holds names only.
 
 There is no default and no fallback. **If either variable is unset, the gated

@@ -33,12 +33,26 @@
 // runtime branch or a hand-rolled digest, and a random token compared for
 // equality needs neither.
 
-// Everything under these prefixes is gated. Prefix-matched, so a route added
-// under one of them later is covered without anyone remembering to come back
-// here. Kept in step with the matcher in middleware.ts, which cannot import
-// this list (Next requires the matcher be a static literal) — a unit test
-// fails if GATED_PREFIXES and GATED_MIDDLEWARE_MATCHERS drift apart. When you
-// change either, update middleware.ts `config.matcher` to the same strings.
+// Public launch switch for Moon Base Zero and DePrize.
+//
+// false (today): those routes stay behind the shared password, and the
+// homepage does not render the Moon Base Zero or DePrize sections.
+// true: the password stops applying and the homepage sections render, in the
+// same deploy. Flip this constant to launch. Do not launch by unsetting
+// MOONBASE_GATE_PASSWORD or MOONBASE_GATE_TOKEN — while this is false, a
+// missing variable locks the routes instead of publishing them.
+//
+// The access-gate unit test asserts this is still false. Update that
+// assertion in the same commit that flips it.
+export const MOONBASE_DEPRIZE_LAUNCHED = false
+
+// Everything under these prefixes is gated until MOONBASE_DEPRIZE_LAUNCHED.
+// Prefix-matched, so a route added under one of them later is covered without
+// anyone remembering to come back here. Kept in step with the matcher in
+// middleware.ts, which cannot import this list (Next requires the matcher be
+// a static literal) — a unit test fails if GATED_PREFIXES and
+// GATED_MIDDLEWARE_MATCHERS drift apart. When you change either, update
+// middleware.ts `config.matcher` to the same strings.
 export const GATED_PREFIXES = ['/moonbase', '/deprize', '/deprize-play']
 
 // Exact strings that must appear in middleware.ts `config.matcher`. Kept here
@@ -73,6 +87,7 @@ export const GATE_MAX_AGE_S = 60 * 60 * 24 * 30
 export const MIN_TOKEN_LENGTH = 24
 
 export function isGatedPath(pathname: string): boolean {
+  if (MOONBASE_DEPRIZE_LAUNCHED) return false
   return GATED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
 }
 
