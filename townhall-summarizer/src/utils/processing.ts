@@ -123,7 +123,7 @@ export async function getTranscript(
     if (/confirm you[’']re not a bot/.test(String(error?.message))) {
       throw new Error(
         `Video ${videoId} has no usable caption track, and YouTube blocked the audio download from this machine. ` +
-          `Run it from a residential connection instead: TRANSCRIPT_SOURCE=audio yarn retro ${videoId}`
+          `Run it from a residential connection with an up-to-date yt-dlp instead: TRANSCRIPT_SOURCE=audio yarn retro ${videoId}`
       );
     }
     throw error;
