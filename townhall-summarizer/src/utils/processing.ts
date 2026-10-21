@@ -117,7 +117,17 @@ export async function getTranscript(
   console.warn(
     `Falling back to audio transcription for ${videoId} (no caption track available).`
   );
-  return transcribeAudio(videoId, groq, whisperModel);
+  try {
+    return await transcribeAudio(videoId, groq, whisperModel);
+  } catch (error: any) {
+    if (/confirm you[’']re not a bot/.test(String(error?.message))) {
+      throw new Error(
+        `Video ${videoId} has no usable caption track, and YouTube blocked the audio download from this machine. ` +
+          `Run it from a residential connection with an up-to-date yt-dlp instead: TRANSCRIPT_SOURCE=audio yarn retro ${videoId}`
+      );
+    }
+    throw error;
+  }
 }
 
 export function correctSpellings(text: string): string {
