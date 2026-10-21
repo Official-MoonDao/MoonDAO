@@ -116,7 +116,7 @@ export default function PredictModal(props: {
         <p className="text-sm text-gray-300">
           {isBet
             ? 'Real ETH. Your bet moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'
-            : 'Free. This records your prediction, weighted by your vMOONEY. If you have no vMOONEY, it is saved with no voting power. It does not change the ETH odds.'}
+            : 'Free. This records your prediction, weighted by your vMOONEY. It does not change the ETH odds.'}
         </p>
         {!isBet && props.regionRestricted && (
           <>

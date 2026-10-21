@@ -411,7 +411,6 @@ export default function ForecastPanel(props: {
         isCitizen={isCitizen}
         lookupFailed={prizeCitizen.lookupFailed}
         expired={prizeCitizen.expired}
-        activeAddress={account.address}
         linkedCitizenAddress={prizeCitizen.linkedCitizenAddress}
         chainLabel={chain.name || 'this network'}
         canSwitch={citizenWalletIndex >= 0}
