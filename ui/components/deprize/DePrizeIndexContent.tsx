@@ -19,11 +19,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { CAPABILITY_LADDER } from '@/lib/deprize/capabilityLadder'
 import { getFeaturedLiveDePrizeId, isDePrizeGoalMarketBound } from '@/lib/deprize/competitions'
-import {
-  DEPRIZE_RESTRICTED_PREDICT_COPY,
-  deprizeOgDescription,
-  UNIT,
-} from '@/lib/deprize/constants'
+import { deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
@@ -221,8 +217,9 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
   // Default-deny real betting from the SSR DePrize verdict. Unknown country
   // arrives as restricted=true (getDePrizePageEligibility). Demo markets are
-  // unaffected — RaceMarketCard never gates them on this reason.
-  const bettingBlockedReason = restricted ? DEPRIZE_RESTRICTED_PREDICT_COPY : undefined
+  // unaffected — RaceMarketCard never gates them on this reason. The sentence
+  // itself is only in the prediction modal.
+  const bettingBlockedReason = restricted || undefined
 
   const categoryCounts = useMemo(() => {
     const counts: Partial<Record<ProjectType, number>> = {}
@@ -384,12 +381,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]">
               <div className="flex min-w-0 flex-col gap-8">
-                {restricted && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-sm">
-                    {DEPRIZE_RESTRICTED_PREDICT_COPY}
-                  </div>
-                )}
-
                 {activeTab === 'positions' && !account ? (
                   <div className="p-8 text-center text-gray-400 text-sm flex flex-col items-center gap-3">
                     <p>Connect a wallet to see the teams you&apos;ve backed.</p>

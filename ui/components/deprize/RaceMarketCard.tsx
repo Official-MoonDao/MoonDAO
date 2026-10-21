@@ -165,8 +165,8 @@ export default function RaceMarketCard({
   spendableEth: number
   refreshNonce: number
   activeTab: IndexTab
-  /** Set when region/geo rules block *real* (on-chain) betting. Demo markets ignore it. */
-  bettingBlockedReason: string | undefined
+  /** Set when region/geo rules block *real* (on-chain) betting. Demo markets ignore it. Not shown as copy. */
+  bettingBlockedReason: boolean | undefined
   onConnectWallet: () => void
   onHasPosition: (sharedGoalId: string, has: boolean) => void
   onDone: () => void
@@ -674,11 +674,6 @@ export default function RaceMarketCard({
               <MoonbaseLink goalId={goal.id} />
             </div>
           }
-          notice={
-            bound && marketTradable && bettingBlockedReason ? (
-              <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
-            ) : undefined
-          }
         />
         {marketModals}
       </>
@@ -764,9 +759,6 @@ export default function RaceMarketCard({
             <div className="mt-3">
               <PredictLink href={forecastHref} />
             </div>
-          )}
-          {bound && marketTradable && bettingBlockedReason && (
-            <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
           )}
         </div>
       </div>

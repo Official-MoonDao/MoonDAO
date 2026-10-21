@@ -168,7 +168,7 @@ export default function TradeTicket({
         </p>
       ) : isBet && !bettingAllowed ? (
         <div className="mt-4 rounded-lg bg-white/[0.04] px-3 py-3 text-center text-sm text-gray-400">
-          <p>{betUnavailableReason || 'Betting is closed right now'}.</p>
+          {betUnavailableReason ? <p>{betUnavailableReason}.</p> : null}
           <button
             type="button"
             onClick={() => onModeChange('predict')}

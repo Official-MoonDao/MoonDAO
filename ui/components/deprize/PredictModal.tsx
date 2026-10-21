@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fmt } from '@/lib/deprize/format'
+import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import {
   BetPrimaryActionContext,
   predictionActionLabel,
@@ -20,6 +21,8 @@ export default function PredictModal(props: {
   chanceLoading?: boolean
   /** Betting is open for this prize, even if the wallet is not connected yet. */
   bettingAvailable?: boolean
+  /** Schedule A blocks ETH bets. Shown only while placing a free prediction. */
+  regionRestricted?: boolean
   connected: boolean
   /** True while the Citizen lookup for this network is still running. */
   citizenLoading?: boolean
@@ -114,6 +117,9 @@ export default function PredictModal(props: {
             ? 'Real ETH. Your bet moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'
             : 'Free. Saves your pick on the MOONEY forecast, weighted by your Citizen voting power. It does not change the ETH odds.'}
         </p>
+        {!isBet && props.regionRestricted && (
+          <p className="text-sm text-amber-200">{FORECAST_COPY.restrictedNote}</p>
+        )}
 
         {!props.connected && (
           <button

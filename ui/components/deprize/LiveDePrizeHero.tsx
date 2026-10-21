@@ -28,7 +28,8 @@ type Props = {
   account: any
   userAddress?: string
   spendableEth: number
-  bettingBlockedReason?: string
+  /** Truthy when region rules block on-chain betting. Not shown as copy. */
+  bettingBlockedReason?: boolean
   onDone: () => void
   /** False while this slide is off-screen in the carousel — skips the chart's log scan. */
   active?: boolean
@@ -196,11 +197,6 @@ export default function LiveDePrizeHero({
               Open market →
             </a>
           </div>
-        }
-        notice={
-          showPredict ? (
-            <p className="mt-3 text-xs text-amber-200/90">{bettingBlockedReason}</p>
-          ) : undefined
         }
       />
 

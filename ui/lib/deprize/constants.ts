@@ -83,10 +83,6 @@ export const DEPRIZE_FUND_ENABLED = process.env.NEXT_PUBLIC_DEPRIZE_FUND_ENABLED
 export const DEPRIZE_AVAILABILITY_LEGEND =
   'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.'
 
-/** Index / hero copy when Schedule A blocks betting but predictions stay open. */
-export const DEPRIZE_RESTRICTED_PREDICT_COPY =
-  "Predictions are open to everyone and scored on the leaderboard. Betting isn't available in your region."
-
 export const DEPRIZE_PREDICT_CTA = 'Predict'
 
 export function deprizeOgDescription(specific?: string): string {
