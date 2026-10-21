@@ -1,6 +1,6 @@
 import { CheckCircleIcon, ExclamationTriangleIcon, XCircleIcon } from '@heroicons/react/24/outline'
 import { formatNumberUSStyle } from '@/lib/nance'
-import type { RankedChoiceTally } from '@/lib/proposals/computeRankedChoiceTally'
+import type { RankedChoiceTally } from '@/lib/elections/rankedChoice'
 import Tooltip from '@/components/layout/Tooltip'
 
 const RCV_EXPLAINER =
@@ -8,12 +8,14 @@ const RCV_EXPLAINER =
 
 export default function RankedChoiceResults({
   outcome,
-  votes,
+  voterCount,
 }: {
   outcome: RankedChoiceTally
-  votes?: any[]
+  voterCount: number
 }) {
   const { choices, rounds, winnerKey, winnerLabel, noneWon, tied } = outcome
+  const labelFor = (key: number | string) =>
+    choices.find((c) => c.key === Number(key))?.label ?? `Choice ${key}`
   const finalRound = rounds[rounds.length - 1]
   const finalEntries = finalRound
     ? Object.entries(finalRound.totals)
@@ -30,9 +32,9 @@ export default function RankedChoiceResults({
     : { label: 'ELECTED', cls: 'bg-green-500/20 text-green-400 border-green-500/30' }
 
   return (
-    <div className="p-6">
+    <div>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-white font-heading">Election Results</h3>
+        <h2 className="text-lg sm:text-xl font-heading font-semibold text-white">Final Results</h2>
         <div
           className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${status.cls}`}
         >
@@ -49,11 +51,11 @@ export default function RankedChoiceResults({
 
       <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-white/5 rounded-lg">
         <div className="text-center">
-          <p className="text-2xl font-bold text-white">{votes?.length || 0}</p>
+          <p className="text-2xl font-bold text-white">{voterCount}</p>
           <p className="text-xs text-gray-400 uppercase tracking-wide">Total Voters</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-white truncate">
+          <p className="text-lg sm:text-2xl font-bold text-white break-words">
             {tied ? 'Tie' : winnerLabel ?? '—'}
           </p>
           <div className="flex items-center justify-center gap-1">
@@ -69,7 +71,7 @@ export default function RankedChoiceResults({
 
       {tied && (
         <p className="mb-4 text-sm text-yellow-200/90">
-          The runoff ended in an exact tie it cannot break. The Senate must resolve it.
+          The runoff ended in an exact tie it cannot break, so the Senate will resolve it.
         </p>
       )}
       {noneWon && (
@@ -95,7 +97,7 @@ export default function RankedChoiceResults({
               >
                 <div className="flex items-center justify-between gap-3 mb-2">
                   <p className={`font-medium ${isWinner ? 'text-green-300' : 'text-white'}`}>
-                    {choices[key - 1]}
+                    {labelFor(key)}
                   </p>
                   <p className="text-sm text-white font-semibold whitespace-nowrap">
                     {pct.toFixed(1)}%{' '}
@@ -126,7 +128,7 @@ export default function RankedChoiceResults({
                 <p>
                   {Object.entries(r.totals)
                     .sort((a, b) => b[1] - a[1])
-                    .map(([key, vp]) => `${choices[Number(key) - 1]} ${formatNumberUSStyle(vp, true)}`)
+                    .map(([key, vp]) => `${labelFor(key)} ${formatNumberUSStyle(vp, true)}`)
                     .join(' · ')}
                 </p>
                 {r.exhaustedVP > 0 && (
@@ -137,7 +139,7 @@ export default function RankedChoiceResults({
                 )}
                 {r.eliminated.length > 0 && (
                   <p className="text-red-300/80 mt-1">
-                    Eliminated: {r.eliminated.map((key) => choices[key - 1]).join(', ')}
+                    Eliminated: {r.eliminated.map(labelFor).join(', ')}
                   </p>
                 )}
               </li>

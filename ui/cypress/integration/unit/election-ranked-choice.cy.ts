@@ -2,22 +2,35 @@ import {
   computeRankedChoiceTally,
   parseRankedBallot,
   type RankedChoiceVoteRow,
-} from '../../../lib/proposals/computeRankedChoiceTally'
+} from '../../../lib/elections/rankedChoice'
 
-const CHOICES = ['Alice', 'Bob', 'Carol', 'None of the above']
+const toChoices = (labels: string[]) => labels.map((label, i) => ({ key: i + 1, label }))
+const CHOICES = toChoices(['Alice', 'Bob', 'Carol', 'None of the above'])
 const NONE_KEY = 4
 
 describe('Ranked-choice tally / ballot parsing', () => {
-  it('accepts arrays and JSON strings, drops invalid and duplicate keys', () => {
-    expect(parseRankedBallot([2, 1], 4)).to.deep.equal([2, 1])
-    expect(parseRankedBallot('[3,1]', 4)).to.deep.equal([3, 1])
-    expect(parseRankedBallot([2, 2, 9, 0, 'x', 1], 4)).to.deep.equal([2, 1])
-    expect(parseRankedBallot({ '1': 100 }, 4)).to.deep.equal([])
-    expect(parseRankedBallot('not json', 4)).to.deep.equal([])
+  it('accepts arrays and JSON strings, drops unknown and duplicate keys', () => {
+    expect(parseRankedBallot([2, 1], [1, 2, 3, 4])).to.deep.equal([2, 1])
+    expect(parseRankedBallot('[3,1]', [1, 2, 3, 4])).to.deep.equal([3, 1])
+    expect(parseRankedBallot([2, 2, 9, 0, 'x', 1], [1, 2, 3, 4])).to.deep.equal([2, 1])
+    expect(parseRankedBallot({ '1': 100 }, [1, 2, 3, 4])).to.deep.equal([])
+    expect(parseRankedBallot('not json', [1, 2, 3, 4])).to.deep.equal([])
+    expect(parseRankedBallot([7, 3], [3, 7])).to.deep.equal([7, 3])
   })
 })
 
 describe('Ranked-choice tally / instant runoff', () => {
+  it('uses stable choice keys rather than list positions', () => {
+    const choices = [
+      { key: 10, label: 'Dana' },
+      { key: 3, label: 'Eve' },
+    ]
+    const votes: RankedChoiceVoteRow[] = [{ address: '0xa', vote: [10, 3] }]
+    const tally = computeRankedChoiceTally(votes, { '0xa': 5 }, choices, null)
+    expect(tally.winnerKey).to.equal(10)
+    expect(tally.winnerLabel).to.equal('Dana')
+  })
+
   it('elects a first-round majority without further rounds', () => {
     const votes: RankedChoiceVoteRow[] = [
       { address: '0xa', vote: [1, 2] },
@@ -27,7 +40,7 @@ describe('Ranked-choice tally / instant runoff', () => {
     expect(tally.rounds).to.have.length(1)
     expect(tally.winnerKey).to.equal(1)
     expect(tally.winnerLabel).to.equal('Alice')
-    expect(tally.passed).to.equal(true)
+    expect(tally.noneWon).to.equal(false)
   })
 
   it('transfers eliminated ballots to the next preference', () => {
@@ -73,7 +86,7 @@ describe('Ranked-choice tally / instant runoff', () => {
     expect(tally.winnerKey).to.equal(1)
   })
 
-  it('reports None of the above as a non-passing result', () => {
+  it('reports when None of the above wins', () => {
     const votes: RankedChoiceVoteRow[] = [
       { address: '0xa', vote: [NONE_KEY] },
       { address: '0xb', vote: [1] },
@@ -81,7 +94,6 @@ describe('Ranked-choice tally / instant runoff', () => {
     const tally = computeRankedChoiceTally(votes, { '0xa': 70, '0xb': 30 }, CHOICES, NONE_KEY)
     expect(tally.winnerKey).to.equal(NONE_KEY)
     expect(tally.noneWon).to.equal(true)
-    expect(tally.passed).to.equal(false)
   })
 
   it('runs multiple elimination rounds until a majority emerges', () => {
@@ -119,7 +131,7 @@ describe('Ranked-choice tally / instant runoff', () => {
   })
 
   it('resolves a last-place tie by looking back to an earlier round', () => {
-    const choices = ['X', 'Y', 'Z', 'W']
+    const choices = toChoices(['X', 'Y', 'Z', 'W'])
     const votes: RankedChoiceVoteRow[] = [
       { address: '0x1', vote: [1] },
       { address: '0x2', vote: [2] },
@@ -135,7 +147,7 @@ describe('Ranked-choice tally / instant runoff', () => {
   })
 
   it('flags an unresolvable exact tie instead of picking a winner', () => {
-    const choices = ['X', 'Y']
+    const choices = toChoices(['X', 'Y'])
     const votes: RankedChoiceVoteRow[] = [
       { address: '0x1', vote: [1] },
       { address: '0x2', vote: [2] },
@@ -143,7 +155,6 @@ describe('Ranked-choice tally / instant runoff', () => {
     const tally = computeRankedChoiceTally(votes, { '0x1': 50, '0x2': 50 }, choices, null)
     expect(tally.tied).to.equal(true)
     expect(tally.winnerKey).to.equal(null)
-    expect(tally.passed).to.equal(false)
   })
 
   it('ignores zero-VP voters, empty ballots, and legacy For/Against rows', () => {
@@ -164,6 +175,5 @@ describe('Ranked-choice tally / instant runoff', () => {
     const tally = computeRankedChoiceTally([], {}, CHOICES, NONE_KEY)
     expect(tally.winnerKey).to.equal(null)
     expect(tally.tied).to.equal(false)
-    expect(tally.passed).to.equal(false)
   })
 })

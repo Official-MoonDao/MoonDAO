@@ -68,13 +68,8 @@ export default function CloseAndTallyButton({
       if (!res.ok) {
         throw new Error(data?.error || 'Failed to tally votes')
       }
-      const electionWinner = data?.election?.winnerLabel
       toast.success(
-        electionWinner
-          ? `Election tallied — winner: ${electionWinner}.`
-          : data?.passed
-          ? 'Vote tallied — proposal passed.'
-          : 'Vote tallied — proposal did not pass.',
+        data?.passed ? 'Vote tallied — proposal passed.' : 'Vote tallied — proposal did not pass.',
         { style: toastStyle }
       )
       router.replace(router.asPath)

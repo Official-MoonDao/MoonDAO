@@ -32,8 +32,6 @@ import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import useProjectData, { Project } from '@/lib/project/useProjectData'
 import { computeMemberProposalTally } from '@/lib/proposals/computeMemberProposalTally'
-import { computeRankedChoiceTally } from '@/lib/proposals/computeRankedChoiceTally'
-import { getRankedChoiceElection } from '@/lib/proposals/elections'
 import { isProposalAuthor } from '@/lib/proposals/isProposalAuthor'
 import {
   getMemberProposalVMooneySnapshot,
@@ -864,11 +862,6 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
       snapshotTakenAt?: number
     } | null = null
     if (proposalJSON?.nonProjectProposal) {
-      const election = getRankedChoiceElection(mdp)
-      const computeOutcome = (rows: any[], power: { [address: string]: number }) =>
-        election
-          ? computeRankedChoiceTally(rows, power, election.choices, election.noneKey)
-          : computeMemberProposalTally(rows, power)
       try {
         // Voting window is 5 days after temp-check approval. Must match
         // pages/api/proposals/nonProjectVote.ts and
@@ -913,7 +906,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
           addressToVotingPower = Object.fromEntries(
             voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs[index])])
           )
-          voteOutcome = computeOutcome(votes as any, addressToVotingPower)
+          voteOutcome = computeMemberProposalTally(votes as any, addressToVotingPower)
           voteSnapshotMeta = {
             source: 'snapshot',
             voteCloseTimestamp: constantsSnapshot.voteCloseTimestamp,
@@ -976,7 +969,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params, query: pa
             addressToVotingPower = Object.fromEntries(
               voteAddresses.map((address, index) => [address, Math.sqrt(vMOONEYs![index] ?? 0)])
             )
-            voteOutcome = computeOutcome(votes as any, addressToVotingPower)
+            voteOutcome = computeMemberProposalTally(votes as any, addressToVotingPower)
             if (autoSnapshotPayload?.closeBlocks) {
               voteSnapshotMeta = {
                 source: 'snapshot',

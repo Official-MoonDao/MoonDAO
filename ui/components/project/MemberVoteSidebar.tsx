@@ -17,11 +17,6 @@ import { useMemo } from 'react'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
-import {
-  computeRankedChoiceTally,
-  parseRankedBallot,
-} from '@/lib/proposals/computeRankedChoiceTally'
-import { getRankedChoiceElection } from '@/lib/proposals/elections'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -143,7 +138,6 @@ export default function MemberVoteSidebar({
   footer,
 }: MemberVoteSidebarProps) {
   const chainSlug = getChainSlug(DEFAULT_CHAIN_V5)
-  const election = useMemo(() => getRankedChoiceElection(project?.MDP), [project?.MDP])
 
   // Resolve voter addresses to citizen names so the list reads like the
   // Snapshot/Nance UI rather than a wall of 0x… hashes.
@@ -163,23 +157,12 @@ export default function MemberVoteSidebar({
       .map((v) => {
         const addr = String(v.address || '').toLowerCase()
         const vp = addressToVotingPower?.[v.address] ?? addressToVotingPower?.[addr] ?? 0
-        let choice = dominantChoice(v.vote)
-        if (election) {
-          const first = parseRankedBallot(v.vote, election.choices.length)[0]
-          choice = first ? `1st: ${election.choices[first - 1]}` : 'Unknown'
-        }
+        const choice = dominantChoice(v.vote)
         const citizen = votingCitizens?.find?.((c: any) => String(c.owner).toLowerCase() === addr)
         return { ...v, vp, choice, citizen }
       })
       .sort((a, b) => (b.vp || 0) - (a.vp || 0))
-  }, [votes, addressToVotingPower, votingCitizens, election])
-
-  const rankedTally = useMemo(() => {
-    if (!election) return null
-    const power = Object.fromEntries(enriched.map((v) => [v.address, Number(v.vp) || 0]))
-    return computeRankedChoiceTally(enriched, power, election.choices, election.noneKey)
-  }, [election, enriched])
-  const rankedFinalRound = rankedTally?.rounds[rankedTally.rounds.length - 1]
+  }, [votes, addressToVotingPower, votingCitizens])
 
   const totalVP = useMemo(() => enriched.reduce((acc, v) => acc + (v.vp || 0), 0), [enriched])
 
@@ -311,40 +294,7 @@ export default function MemberVoteSidebar({
           revealing the running split mid-window invites bandwagoning
           (same reason the per-voter Choice pill is gated on
           `revealResults`). */}
-      {revealResults && enriched.length > 0 && rankedTally && (
-        <div className="rounded-lg border border-white/10 bg-white/5 p-3 flex flex-col gap-2">
-          <p className="text-[10px] uppercase tracking-wider text-white/50 text-center">
-            {rankedTally.tied ? 'Unresolved tie' : 'Elected'}
-          </p>
-          <p className="text-sm font-semibold text-green-300 text-center">
-            {rankedTally.tied
-              ? 'Senate to resolve'
-              : rankedTally.noneWon
-              ? 'Seat vacant (None of the above)'
-              : rankedTally.winnerLabel ?? 'No winner'}
-          </p>
-          {rankedFinalRound && rankedFinalRound.continuingVP > 0 && (
-            <ul className="flex flex-col gap-1">
-              {Object.entries(rankedFinalRound.totals)
-                .sort((a, b) => b[1] - a[1])
-                .map(([key, vp]) => (
-                  <li key={key} className="flex justify-between text-[11px] text-white/70">
-                    <span className="truncate">{election!.choices[Number(key) - 1]}</span>
-                    <span className="font-mono">
-                      {((vp / rankedFinalRound.continuingVP) * 100).toFixed(1)}%
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          )}
-          <p className="text-[10px] text-white/50 text-center">
-            Instant runoff · {rankedTally.rounds.length} round
-            {rankedTally.rounds.length === 1 ? '' : 's'}
-          </p>
-        </div>
-      )}
-
-      {revealResults && enriched.length > 0 && !rankedTally && (
+      {revealResults && enriched.length > 0 && (
         <div className="rounded-lg border border-white/10 bg-white/5 p-3 flex flex-col gap-2">
           <div className="grid grid-cols-2 gap-2 text-center">
             <div>

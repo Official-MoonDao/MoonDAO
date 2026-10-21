@@ -21,8 +21,6 @@ import {
   computeMemberProposalTally,
   MEMBER_VOTE_SUPER_MAJORITY,
 } from '@/lib/proposals/computeMemberProposalTally'
-import { computeRankedChoiceTally } from '@/lib/proposals/computeRankedChoiceTally'
-import { getRankedChoiceElection } from '@/lib/proposals/elections'
 import queryTable from '@/lib/tableland/queryTable'
 import { DistributionVote } from '@/lib/tableland/types'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -113,18 +111,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     votes as any,
     addressToQuadraticVotingPower
   )
-  const election = getRankedChoiceElection(mdp)
-  const rankedTally = election
-    ? computeRankedChoiceTally(
-        votes as any,
-        addressToQuadraticVotingPower,
-        election.choices,
-        election.noneKey
-      )
-    : null
-  const participationVP = rankedTally
-    ? rankedTally.totalParticipationVP
-    : tally.totalParticipationVP
 
   // Guard against a silent vMOONEY-fetch failure flipping a passing
   // proposal to FAILED on-chain. `fetchTotalVMOONEYs` does NOT throw on
@@ -156,7 +142,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     }
     return !(parsed && typeof parsed === 'object' && parsed.kind === 'snapshot')
   }).length
-  if (realVoteCount > 0 && participationVP === 0) {
+  if (realVoteCount > 0 && tally.totalParticipationVP === 0) {
     console.error(
       `[member-proposal-vote] aborting tally for MDP-${mdp}: ${realVoteCount} ` +
         `vote row(s) present but total resolved voting power is 0. This ` +
@@ -172,16 +158,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  if (rankedTally?.tied) {
-    return res.status(409).json({
-      error:
-        'Ranked-choice election ended in an exact tie that the runoff cannot break. ' +
-        'The on-chain result was NOT changed; the Senate must resolve the tie.',
-      election: rankedTally,
-    })
-  }
-
-  const passed = rankedTally ? rankedTally.passed : tally.passed
+  const passed = tally.passed
   const active = passed ? PROJECT_ACTIVE : PROJECT_VOTE_FAILED
   const account = await createHSMWallet()
   const transaction = prepareContractCall({
@@ -226,25 +203,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       // `closeBlocks` lookup, but pinning a snapshot of the
       // computed values gives us a small audit log right alongside
       // the votes.
-      tally: rankedTally
-        ? {
-            kind: 'ranked-choice' as const,
-            winnerKey: rankedTally.winnerKey,
-            winnerLabel: rankedTally.winnerLabel,
-            noneWon: rankedTally.noneWon,
-            rounds: rankedTally.rounds.length,
-            totalParticipationVP: rankedTally.totalParticipationVP,
-            passed,
-          }
-        : {
-            forVP: tally.forVP,
-            againstVP: tally.againstVP,
-            abstainVP: tally.abstainVP,
-            decidedVP: tally.decidedVP,
-            forPctOfDecided: tally.forPctOfDecided,
-            threshold: MEMBER_VOTE_SUPER_MAJORITY,
-            passed,
-          },
+      tally: {
+        forVP: tally.forVP,
+        againstVP: tally.againstVP,
+        abstainVP: tally.abstainVP,
+        decidedVP: tally.decidedVP,
+        forPctOfDecided: tally.forPctOfDecided,
+        threshold: MEMBER_VOTE_SUPER_MAJORITY,
+        passed,
+      },
     }
     const nonProjectProposalContract = getContract({
       client: serverClient,
@@ -292,14 +259,10 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     )
   }
   console.log(
-    rankedTally
-      ? `[member-proposal-vote] tallied ranked-choice MDP-${mdp} (passed=${passed}, ` +
-          `winner=${rankedTally.winnerLabel ?? 'none'}, rounds=${rankedTally.rounds.length}, ` +
-          `snapshotRowWritten=${snapshotRowWritten})`
-      : `[member-proposal-vote] tallied MDP-${mdp} (passed=${passed}, ` +
-          `forPctOfDecided=${tally.forPctOfDecided.toFixed(2)}%, ` +
-          `threshold=${MEMBER_VOTE_SUPER_MAJORITY}%, ` +
-          `snapshotRowWritten=${snapshotRowWritten})`
+    `[member-proposal-vote] tallied MDP-${mdp} (passed=${passed}, ` +
+      `forPctOfDecided=${tally.forPctOfDecided.toFixed(2)}%, ` +
+      `threshold=${MEMBER_VOTE_SUPER_MAJORITY}%, ` +
+      `snapshotRowWritten=${snapshotRowWritten})`
   )
 
   res.status(200).json({
@@ -325,7 +288,6 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       voterCount: voteAddresses.length,
       voteCloseTimestamp: votingPeriodClosedTimestamp,
     },
-    election: rankedTally,
     // Auditable snapshot row metadata. `snapshotRowWritten=true` means
     // the tally is now drift-proof on every page render (renders use
     // `balanceOfAt(addr, _block)` against `closeBlocks`); `false` means
