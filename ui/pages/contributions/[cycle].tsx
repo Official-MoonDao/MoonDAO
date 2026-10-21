@@ -21,13 +21,17 @@ export default function ContributionReportPage({ report }: ContributionReportPag
       {/* Reports name contributors and quote their claims: keep them out of
           search. next.config.js also sends X-Robots-Tag for /contributions/*. */}
       <WebsiteHead title={report.title} description={report.lede} robots="noindex, nofollow" />
-      <section className="flex flex-col justify-start items-start animate-fadeIn w-[90vw] md:w-full px-5 mt-5">
+      {/* Shell padding, this section, and ContentLayout each add a gutter.
+          On a phone those stack into a narrow column. Below md, cancel the
+          shell gutter and keep a single 16px margin. */}
+      <section className="-mx-4 mt-5 flex w-[calc(100%+2rem)] animate-fadeIn flex-col items-start justify-start px-4 sm:-mx-6 sm:w-[calc(100%+3rem)] md:mx-0 md:w-full md:px-5">
         <Container>
           <ContentLayout
             header={report.title}
             subHeader={report.eyebrow || undefined}
             description={report.lede || undefined}
             maxWidth="1040px"
+            frameClassName="px-0 md:px-5"
             back={
               <Link
                 href="/contributions"

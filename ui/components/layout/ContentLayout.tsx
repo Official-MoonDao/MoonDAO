@@ -31,6 +31,8 @@ interface ContentProps {
   actions?: ReactNode
   back?: ReactNode
   align?: 'left' | 'center'
+  /** Replaces the default horizontal padding (`px-4 sm:px-5`) on the content column. */
+  frameClassName?: string
 }
 
 const ContentLayout: React.FC<ContentProps> = ({
@@ -45,6 +47,7 @@ const ContentLayout: React.FC<ContentProps> = ({
   toolbar,
   actions,
   back,
+  frameClassName,
 }) => {
   const showTitle = Boolean(
     (header != null && header !== '') || subHeader || description || toolbar || actions || back
@@ -55,7 +58,10 @@ const ContentLayout: React.FC<ContentProps> = ({
   return (
     <div className="w-full min-w-0">
       {showFrame && (
-        <div className="mx-auto w-full min-w-0 px-4 sm:px-5" style={frameStyle}>
+        <div
+          className={`mx-auto w-full min-w-0 ${frameClassName ?? 'px-4 sm:px-5'}`}
+          style={frameStyle}
+        >
           {showTitle && (
             <section id="title-section" className="relative z-0">
               <div id="title-section-container" className="relative w-full min-w-0">
