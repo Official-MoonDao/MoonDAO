@@ -167,7 +167,9 @@ function Funnel({ report }: { report: AnalyticsReport }) {
     { label: 'Started checkout', users: byName.begin_checkout?.users ?? 0 },
     { label: 'Completed purchase', users: byName.purchase?.users ?? 0 },
   ]
-  const top = Math.max(steps[0].users, 1)
+  // A later step can outnumber the one before it (checkout can start
+  // without the tracked Join click), so scale to the largest step.
+  const scale = Math.max(...steps.map((step) => step.users), 1)
   return (
     <div className={PANEL}>
       <h3 className="text-white font-semibold">Join funnel</h3>
@@ -193,10 +195,10 @@ function Funnel({ report }: { report: AnalyticsReport }) {
                   )}
                 </span>
               </div>
-              <div className="mt-1.5 h-3 rounded-full bg-white/5">
+              <div className="mt-1.5 h-3 overflow-hidden rounded-full bg-white/5">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400"
-                  style={{ width: `${Math.max((step.users / top) * 100, step.users ? 2 : 0)}%` }}
+                  style={{ width: `${(step.users / scale) * 100}%` }}
                 />
               </div>
             </div>
