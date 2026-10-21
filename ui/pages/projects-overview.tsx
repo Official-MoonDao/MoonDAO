@@ -78,8 +78,8 @@ const ProjectsOverview: React.FC<{
 
       <Container>
         <div className="bg-[#010208]">
-          {/* Hero — one composition: brand, headline, line, CTAs, full-bleed image */}
-          <section className="relative min-h-[60svh] w-full overflow-hidden bg-[#010208]">
+          {/* Full-bleed image. Copy and film use the same max-w-6xl column as the page. */}
+          <section className="relative min-h-[60svh] w-full overflow-hidden bg-[#010208] px-4 md:px-8">
             <motion.div
               className="absolute inset-0"
               initial={{ scale: reduceMotion ? 1 : 1.06 }}
@@ -99,7 +99,7 @@ const ProjectsOverview: React.FC<{
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(34,211,238,0.18),transparent_50%)]" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#010208] to-transparent" />
             <div
-              className={`relative z-10 flex min-h-[60svh] flex-col justify-end px-4 pb-10 pt-20 md:justify-center md:px-8 md:pb-12 md:pt-16 ${
+              className={`relative z-10 mx-auto flex min-h-[60svh] w-full max-w-6xl flex-col justify-end pb-10 pt-20 md:justify-center md:pb-12 md:pt-16 ${
                 hasFilm
                   ? 'gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-center lg:gap-14'
                   : ''
