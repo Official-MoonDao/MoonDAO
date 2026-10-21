@@ -2,7 +2,6 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import { DEPRIZE_PREDICT_CTA } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
-import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import DePrizeTeamLink from '@/components/deprize/DePrizeTeamLink'
 import EthUsd from '@/components/deprize/EthUsd'
 import { payoutMultiple } from '@/components/deprize/MarketOutcomeRow'
@@ -83,8 +82,8 @@ type DePrizeTeamCardProps = {
    */
   unclaimed?: boolean
   /**
-   * Which market this row belongs to. 'bet' shows ETH staked and payout;
-   * 'predict' shows Citizen voting power. Omit for the combined row.
+   * 'bet' opens the ETH bet. 'predict' saves a free prediction. The row still
+   * shows ETH bet, voting power, and prediction count whenever those are passed.
    */
   mode?: 'bet' | 'predict'
 }
@@ -245,53 +244,34 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {mode === 'bet' && (
-          <div className="hidden md:block shrink-0 text-right" data-staked-eth={stakedEth ?? 0}>
-            <p className="text-sm font-semibold leading-none tabular-nums text-white">
-              <EthUsd eth={stakedEth ?? 0} />
-            </p>
-            <p className="mt-1 text-[11px] leading-tight text-gray-400">bet on this market</p>
-          </div>
-        )}
-
-        {mode === 'predict' && votingPowerText !== undefined && (
-          <div
-            className="hidden md:block shrink-0 text-right"
-            data-citizen-voting-power={citizenVotingPower}
-            data-prediction-count={predictionCount ?? 0}
-          >
-            <p className="text-sm font-semibold leading-none tabular-nums text-white">
-              {votingPowerText} {FORECAST_COPY.votingPower}
-            </p>
-            <p className="mt-1 text-[11px] leading-tight text-gray-400">
-              {predictionCount
-                ? `from ${predictionCount} ${predictionCount === 1 ? 'person' : 'people'}`
-                : 'no predictions yet'}
-            </p>
-          </div>
-        )}
-
-        {mode === undefined && votingPowerText !== undefined && (
-          <div
-            className="hidden md:block shrink-0 text-right"
-            data-citizen-voting-power={citizenVotingPower}
-            data-prediction-count={predictionCount ?? 0}
-            title={
-              predictionCount
-                ? `${votingPowerText} voting power from ${predictionCount} ${predictionNoun}`
-                : `${votingPowerText} voting power`
-            }
-          >
-            <p className="text-sm font-semibold leading-none tabular-nums text-white">
-              <EthUsd eth={stakedEth ?? 0} />
-            </p>
-            <p className="mt-1 text-[11px] leading-tight text-gray-400">
-              {votingPowerText} {FORECAST_COPY.votingPower}
-              {predictionCount
-                ? ` from ${predictionCount} ${predictionCount === 1 ? 'person' : 'people'}`
-                : ''}
-            </p>
-          </div>
+        {stakedEth !== undefined && (
+          <>
+            <div className="hidden w-24 shrink-0 text-right md:block" data-staked-eth={stakedEth}>
+              <p className="text-sm font-semibold leading-none tabular-nums text-white">
+                <EthUsd
+                  eth={stakedEth}
+                  layout="below"
+                  usdClassName="text-[11px] font-normal text-gray-500"
+                />
+              </p>
+            </div>
+            <div
+              className="hidden w-28 shrink-0 text-right md:block"
+              data-citizen-voting-power={citizenVotingPower}
+            >
+              <p className="text-sm font-semibold leading-none tabular-nums text-white">
+                {votingPowerText ?? '…'}
+              </p>
+            </div>
+            <div
+              className="hidden w-[5.5rem] shrink-0 text-right md:block"
+              data-prediction-count={predictionCount}
+            >
+              <p className="text-sm font-semibold leading-none tabular-nums text-white">
+                {predictionCount ?? '…'}
+              </p>
+            </div>
+          </>
         )}
 
         <div className="shrink-0 w-16 sm:w-20 text-right">
@@ -323,7 +303,7 @@ export default function DePrizeTeamCard({
           )}
         </div>
 
-        {!resolved && mode !== 'predict' && (
+        {!resolved && (
           <span
             className="hidden sm:block shrink-0 w-12 text-right text-xs tabular-nums text-gray-400"
             title="ETH paid per 1 ETH predicted if this wins, at the current price"
@@ -351,6 +331,29 @@ export default function DePrizeTeamCard({
           </div>
         ) : null}
       </div>
+
+      {stakedEth !== undefined && (
+        <div className="mt-2 grid grid-cols-3 gap-2 pl-10 md:hidden">
+          <div data-staked-eth={stakedEth}>
+            <p className="text-[10px] uppercase tracking-wide text-gray-500">ETH bet</p>
+            <p className="text-sm font-semibold tabular-nums text-white">
+              <EthUsd eth={stakedEth} />
+            </p>
+          </div>
+          <div data-citizen-voting-power={citizenVotingPower}>
+            <p className="text-[10px] uppercase tracking-wide text-gray-500">Voting power</p>
+            <p className="text-sm font-semibold tabular-nums text-white">
+              {votingPowerText ?? '…'}
+            </p>
+          </div>
+          <div data-prediction-count={predictionCount}>
+            <p className="text-[10px] uppercase tracking-wide text-gray-500"># predictions</p>
+            <p className="text-sm font-semibold tabular-nums text-white">
+              {predictionCount ?? '…'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {showHoldings && (
         <div

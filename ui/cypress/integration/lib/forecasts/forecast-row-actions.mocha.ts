@@ -157,16 +157,18 @@ describe('deprize forecast row action wiring', () => {
     expect(modal).to.not.include('Save prediction')
   })
 
-  it('switches the race page between the ETH market and the MOONEY forecast', () => {
-    const tabs = readUi('components/deprize/detail/MarketModeTabs.tsx')
-    expect(tabs).to.include('role="tablist"')
-    expect(tabs).to.include('ETH market')
-    expect(tabs).to.include('MOONEY forecast')
+  it('shows ETH chance with bet, voting power, and prediction count on one list', () => {
     const page = readUi('pages/deprize/[id].tsx')
-    expect(page).to.include('<MarketModeTabs')
-    expect(page).to.match(/viewQuery === 'predict'/)
-    expect(page).to.match(/restricted \? 'predict' : 'bet'/)
-    expect(page).to.include('mode={marketMode}')
+    expect(page).to.not.include('MarketModeTabs')
+    expect(page).to.not.include('viewQuery')
+    expect(page).to.include('probabilities={market.outcomes.map((o) => o.probability)}')
+    const card = readUi('components/deprize/DePrizeTeamCard.tsx')
+    expect(card).to.include('ETH bet')
+    expect(card).to.include('Voting power')
+    expect(card).to.include('# predictions')
+    const panel = readUi('components/deprize/ForecastPanel.tsx')
+    expect(panel).to.include('chanceLabel="chance"')
+    expect(panel).to.include('marketPercents[modalIndex]')
   })
 })
 

@@ -16,7 +16,7 @@ import Modal from '@/components/layout/Modal'
 export default function PredictModal(props: {
   mode: 'bet' | 'predict'
   teamName: string
-  /** ETH chance in bet mode, voting-power share in predict mode. */
+  /** ETH market chance for this competitor. */
   probability: number
   chanceLoading?: boolean
   /** Betting is open for this prize, even if the wallet is not connected yet. */
@@ -109,8 +109,7 @@ export default function PredictModal(props: {
             {isBet ? 'ETH market' : 'MOONEY forecast · free'}
           </span>
           <span className="text-gray-400">
-            {isBet ? 'Chance' : 'Voting-power share'}{' '}
-            <span className="font-semibold tabular-nums text-white">{pct}</span>
+            Chance <span className="font-semibold tabular-nums text-white">{pct}</span>
           </span>
         </div>
         <p className="text-sm text-gray-300">
