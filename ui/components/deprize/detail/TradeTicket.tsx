@@ -173,7 +173,7 @@ export default function TradeTicket({
           className={`mt-4 w-full rounded-lg px-4 py-3 text-[15px] font-semibold text-white transition-[filter] hover:brightness-110 ${TOUCH}`}
           style={{ background: colors[index] }}
         >
-          Bet on {name}
+          {DEPRIZE_PREDICT_CTA} {name}
         </button>
       )}
     </section>

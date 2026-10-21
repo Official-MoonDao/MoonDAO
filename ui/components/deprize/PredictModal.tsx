@@ -96,7 +96,7 @@ export default function PredictModal(props: {
     <Modal
       id="deprize-predict"
       setEnabled={(open) => !open && props.onClose()}
-      title={isBet ? `Bet on ${props.teamName}` : `Predict ${props.teamName}`}
+      title={`Predict ${props.teamName}`}
       size="xl"
     >
       <div className="flex flex-col gap-4">
@@ -136,7 +136,7 @@ export default function PredictModal(props: {
             onClick={props.onConnect}
             className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 ${TOUCH}`}
           >
-            {isBet ? 'Connect wallet to bet' : 'Connect wallet to predict'}
+            Connect wallet to predict
           </button>
         )}
 

@@ -146,8 +146,8 @@ describe('deprize forecast row action wiring', () => {
     expect(src).to.not.include('attachPrediction')
     const modal = readUi('components/deprize/PredictModal.tsx')
     expect(modal).to.include("mode: 'bet' | 'predict'")
-    expect(modal).to.include('Bet on ${props.teamName}')
     expect(modal).to.include('Predict ${props.teamName}')
+    expect(modal).to.not.include('Bet on ${props.teamName}')
     expect(modal).to.include('{props.bet}')
     // The bet form is the whole bet window, not an optional panel inside the prediction.
     expect(modal).to.not.include('Attach a bet')
