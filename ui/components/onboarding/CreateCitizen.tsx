@@ -470,6 +470,9 @@ export default function CreateCitizen({
   const [isLoadingMint, setIsLoadingMint] = useState<boolean>(false)
   // Celebration shown after a successful mint, before landing on the dashboard.
   const [mintComplete, setMintComplete] = useState<boolean>(false)
+  // Set when the new citizen interacts with the "Copy your invite link" action,
+  // so the 6s auto-redirect doesn't pull them off the welcome screen mid-share.
+  const [autoRedirectCancelled, setAutoRedirectCancelled] = useState<boolean>(false)
   const [stakeToClaim, setStakeToClaim] = useState(false)
   const [isImageGenerating, setIsImageGenerating] = useState(false)
   const [imageGenProgress, setImageGenProgress] = useState<ImageGenProgressSnapshot | null>(null)
@@ -2392,6 +2395,21 @@ export default function CreateCitizen({
     router.push('/dashboard?tour=1')
   }, [router])
 
+  // Copy the new citizen's referral link so they can invite someone right from
+  // the welcome screen. Also cancels the auto-redirect so they aren't pulled to
+  // the dashboard mid-share.
+  const copyInviteLink = useCallback(async () => {
+    setAutoRedirectCancelled(true)
+    try {
+      await navigator.clipboard.writeText(
+        `https://moondao.com/citizen/?referredBy=${address}`
+      )
+      toast.success('Invite link copied')
+    } catch {
+      toast.error('Could not copy. Try again.')
+    }
+  }, [address])
+
   // Memoize the welcome image object URL so the overlay doesn't allocate a new
   // one on every render, and revoke it when the source changes / on unmount.
   const reviewPreviewFile = useMemo(
@@ -2436,9 +2454,11 @@ export default function CreateCitizen({
   useEffect(() => {
     if (!mintComplete) return
     welcomeButtonRef.current?.focus()
+    // Don't auto-redirect once the citizen starts sharing their invite link.
+    if (autoRedirectCancelled) return
     const timer = setTimeout(goToDashboard, 6000)
     return () => clearTimeout(timer)
-  }, [mintComplete, goToDashboard])
+  }, [mintComplete, goToDashboard, autoRedirectCancelled])
 
   // ===== Effect Group: Data Fetching =====
   useEffect(() => {
@@ -3315,7 +3335,22 @@ export default function CreateCitizen({
                 />
               </svg>
             </button>
-            <p className="mt-3 text-xs text-slate-500">Taking you there automatically…</p>
+            {address && (
+              <div className="mt-5">
+                <button
+                  onClick={copyInviteLink}
+                  className="text-sm font-medium text-slate-300 hover:text-white transition-colors underline underline-offset-4"
+                >
+                  Copy your invite link
+                </button>
+                <p className="mt-1 text-sm text-slate-500">
+                  Know someone who belongs here? Send them your link.
+                </p>
+              </div>
+            )}
+            {!autoRedirectCancelled && (
+              <p className="mt-3 text-xs text-slate-500">Taking you there automatically…</p>
+            )}
           </div>
         </div>
       )}
