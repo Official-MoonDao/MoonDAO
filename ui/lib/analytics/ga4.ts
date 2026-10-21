@@ -1,3 +1,5 @@
+import { COOKIE_CONSENT_EXEMPT_REGIONS } from '../geo/countryCode'
+
 /**
  * GA4 helpers for moondao.com (stream G-QPFCD9VH46).
  *
@@ -258,6 +260,66 @@ export function trackSignUp(params: { cta_location: string }) {
   sendEvent('sign_up', { method: 'kit', cta_location: params.cta_location }, false)
 }
 
+export function trackExtendCitizenshipOpen(params: { surface: string }) {
+  if (!params.surface) return
+  sendEvent('extend_citizenship_open', { plan: 'citizen', surface: params.surface }, true)
+}
+
+export function trackExtendCitizenshipSubmit(params: {
+  years: number
+  value_eth?: number
+  value?: number
+}) {
+  const years = finiteNumber(params.years)
+  if (years === undefined || years < 1) return
+  const valueEth = finiteNumber(params.value_eth)
+  const value = finiteNumber(params.value)
+  sendEvent(
+    'extend_citizenship_submit',
+    {
+      plan: 'citizen',
+      years,
+      ...(valueEth !== undefined ? { value_eth: valueEth } : {}),
+      ...(value !== undefined ? { currency: 'USD', value } : {}),
+    },
+    true
+  )
+}
+
+export function trackExtendCitizenshipSuccess(params: {
+  years: number
+  value_eth?: number
+  value?: number
+  transaction_id?: string
+}) {
+  const years = finiteNumber(params.years)
+  if (years === undefined || years < 1) return
+  const valueEth = finiteNumber(params.value_eth)
+  const value = finiteNumber(params.value)
+  const transactionId =
+    params.transaction_id && TX_HASH.test(params.transaction_id) ? params.transaction_id : undefined
+  sendEvent(
+    'extend_citizenship_success',
+    {
+      plan: 'citizen',
+      years,
+      ...(valueEth !== undefined ? { value_eth: valueEth } : {}),
+      ...(value !== undefined ? { currency: 'USD', value } : {}),
+      ...(transactionId ? { transaction_id: transactionId } : {}),
+    },
+    true
+  )
+}
+
+export function trackExtendCitizenshipError(params: { error_type: string; step: string }) {
+  if (!params.error_type || !params.step) return
+  sendEvent(
+    'extend_citizenship_error',
+    { plan: 'citizen', error_type: params.error_type, step: params.step },
+    true
+  )
+}
+
 export function trackMintError(params: {
   plan?: AnalyticsPlan
   mission_id?: string
@@ -308,9 +370,26 @@ export function classifyMintError(error: unknown): string {
   return 'unknown'
 }
 
-export function trackProposalVote(proposalId: string | number | null | undefined) {
+export type ProposalVoteStage = 'senate' | 'member'
+export type ProposalVoteSurface = 'projects_list' | 'proposal_page' | 'modal'
+
+export function trackProposalVote(
+  proposalId: string | number | null | undefined,
+  context?: {
+    vote_stage?: ProposalVoteStage
+    surface?: ProposalVoteSurface
+  }
+) {
   if (proposalId === undefined || proposalId === null || proposalId === '') return
-  sendEvent('proposal_vote', { proposal_id: String(proposalId) }, false)
+  sendEvent(
+    'proposal_vote',
+    {
+      proposal_id: String(proposalId),
+      ...(context?.vote_stage ? { vote_stage: context.vote_stage } : {}),
+      ...(context?.surface ? { surface: context.surface } : {}),
+    },
+    false
+  )
 }
 
 export function setIsCitizen(isCitizen: boolean) {
@@ -413,19 +492,30 @@ export function bindJoinCtaClicks(doc: Document = document): () => void {
 }
 
 /**
- * Inline snippet: one gtag config (default send_page_view, once).
+ * Inline snippet: consent defaults, then one gtag config (default send_page_view, once).
+ * Exempt regions (US and territories) start granted. Everyone else starts denied.
+ * A stored cookie_consent choice, the same 'true' / 'false' strings CookieBanner
+ * writes with JSON.stringify, is applied before config so the landing page_view
+ * is not sent as a cookieless ping for someone who already chose.
  * Does not set page_path, so the hit keeps location.search (the "?" ).
  * Enhanced Measurement then records later history changes.
  * `?internal=1` sets a cookie; the cookie adds traffic_type internal.
  */
 export function buildGtagInitScript(measurementId: string): string {
   const id = safeMeasurementId(measurementId)
+  const regions = JSON.stringify([...COOKIE_CONSENT_EXEMPT_REGIONS])
   return `
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     window.gtag = gtag;
     gtag('js', new Date());
-    gtag('consent', 'default', { 'analytics_storage': 'denied' });
+    gtag('consent', 'default', { 'analytics_storage': 'granted', 'region': ${regions} });
+    gtag('consent', 'default', { 'analytics_storage': 'denied', 'wait_for_update': 500 });
+    try {
+      var cc = localStorage.getItem('cookie_consent');
+      if (cc === 'true') gtag('consent', 'update', { 'analytics_storage': 'granted' });
+      else if (cc === 'false') gtag('consent', 'update', { 'analytics_storage': 'denied' });
+    } catch (e) {}
     try {
       var search = window.location.search || '';
       if (new URLSearchParams(search).get('${INTERNAL_QUERY_PARAM}') === '1') {

@@ -1,0 +1,3 @@
+# Quarterly contribution reports are generated in a separate repo and kept
+# exactly as generated; never normalize their line endings.
+ui/content/contributions/** -text

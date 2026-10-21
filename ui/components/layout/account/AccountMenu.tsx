@@ -1,5 +1,5 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { ChevronDownIcon, UserCircleIcon } from '@heroicons/react/24/outline'
+import { usePrivy } from '@privy-io/react-auth'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
@@ -10,8 +10,7 @@ import { NavLink } from '../NavLink'
 import { UserProjectsList } from './UserProjectsList'
 import { UserTeamsList } from './UserTeamsList'
 
-const SECTION_LABEL =
-  'px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider'
+const SECTION_LABEL = 'px-4 py-2 mx-2 text-xs text-gray-400 font-medium uppercase tracking-wider'
 const ITEM_CLASS =
   'block mx-1.5 rounded-sm px-3 py-2 text-[13px] text-white/70 hover:bg-white/[0.04] hover:text-white'
 
@@ -96,9 +95,7 @@ export default function AccountMenu() {
           <UserCircleIcon className="w-[34px] h-[34px]" />
         )}
         <ChevronDownIcon
-          className={`w-3 h-3 transition-transform duration-200 ${
-            open ? 'rotate-180' : ''
-          }`}
+          className={`w-3 h-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -108,11 +105,7 @@ export default function AccountMenu() {
           className="absolute top-full right-0 z-50 mt-2 max-h-[70vh] w-64 overflow-y-auto rounded-md border border-white/[0.08] bg-[#0b1020] py-2 shadow-[0_16px_40px_rgba(0,0,0,0.45)]"
         >
           {profileHref ? (
-            <NavLink
-              href={profileHref}
-              className={ITEM_CLASS}
-              onClick={() => setOpen(false)}
-            >
+            <NavLink href={profileHref} className={ITEM_CLASS} onClick={() => setOpen(false)}>
               Your Profile
             </NavLink>
           ) : (
@@ -124,7 +117,7 @@ export default function AccountMenu() {
               className={ITEM_CLASS}
               onClick={() => setOpen(false)}
             >
-              {isExpired ? 'Renew Citizenship' : 'Become a Citizen'}
+              {isExpired ? 'Extend Citizenship' : 'Become a Citizen'}
             </NavLink>
           )}
 

@@ -8,11 +8,14 @@ import { NanceProvider } from '@nance/nance-hooks'
 import {
   PROJECT_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
-  NEXT_QUARTER_BUDGET_USD,
-  MAX_BUDGET_USD,
-  ANNOUNCE_PROJECT_BUDGET,
+  DEPLOYED_ORIGIN,
   PROJECT_CYCLE,
 } from 'const/config'
+import {
+  PROPOSALS_FILM_UPLOAD_DATE,
+  PROPOSALS_FILM_VIMEO_ID,
+  proposalsFilm,
+} from 'const/proposalsPageContent'
 import { GetServerSideProps } from 'next'
 import { StringParam, useQueryParams } from 'next-query-params'
 import Image from 'next/image'
@@ -20,6 +23,7 @@ import Link from 'next/link'
 import React from 'react'
 import { NANCE_API_URL } from '../lib/nance/constants'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { serializeJsonLd } from '@/lib/utils/jsonLd'
 import { useLivePhase } from '@/lib/operator/useLivePhase'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
@@ -35,7 +39,11 @@ import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
 import ProposalEditor from '../components/nance/ProposalEditor'
-import RewardAsset from '@/components/project/RewardAsset'
+import {
+  ProposalBudgetTiles,
+  ProposalCycleStatus,
+} from '@/components/project/ProposalCycleStats'
+import ProposalsHero from '@/components/project/ProposalsHero'
 
 export default function ProposalsPage({ project }: { project: Project }) {
   const title = 'Propose Project'
@@ -51,75 +59,64 @@ export default function ProposalsPage({ project }: { project: Project }) {
     isIntake &&
     Date.now() >= submissionDeadline.getTime()
   const isEditingExisting = Boolean(project)
+  // Authors back to edit a proposal land straight on the editor, not the film.
+  const showHero = Boolean(PROPOSALS_FILM_VIMEO_ID) && !isEditingExisting
+
+  const cycleStats = (
+    <>
+      <ProposalCycleStatus
+        phase={phase}
+        isIntake={isIntake}
+        submissionsClosed={submissionsClosed}
+        submissionCloseLabel={submissionCloseLabel}
+        daysLeft={daysLeft}
+      />
+      <ProposalBudgetTiles />
+    </>
+  )
 
   return (
     <>
       <WebsiteHead
         title={title}
         description="Submit a proposal to receive financing or special permissions from the MoonDAO community. Get your project funded and bring your space-related ideas to life."
-      />
+      >
+        {PROPOSALS_FILM_VIMEO_ID && (
+          <script
+            type="application/ld+json"
+            key="proposals-film-jsonld"
+            dangerouslySetInnerHTML={{
+              __html: serializeJsonLd({
+                '@context': 'https://schema.org',
+                '@type': 'VideoObject',
+                name: proposalsFilm.name,
+                description: proposalsFilm.description,
+                thumbnailUrl: `${DEPLOYED_ORIGIN}${proposalsFilm.poster}`,
+                ...(PROPOSALS_FILM_UPLOAD_DATE && { uploadDate: PROPOSALS_FILM_UPLOAD_DATE }),
+                duration: proposalsFilm.duration,
+                embedUrl: `https://player.vimeo.com/video/${PROPOSALS_FILM_VIMEO_ID}`,
+              }),
+            }}
+          />
+        )}
+      </WebsiteHead>
+      {showHero && <ProposalsHero title={title} stats={cycleStats} />}
       <section className="flex flex-col justify-start px-2 md:px-5 mt-3 md:mt-5 items-start animate-fadeIn w-full">
         <Container>
-          <ContentLayout header="Propose Project" mainPadding mode="compact" isProfile={true}>
+          <ContentLayout
+            header={showHero ? undefined : 'Propose Project'}
+            mainPadding
+            mode="compact"
+            isProfile={true}
+          >
             {/* Main Content Area */}
             <div className="flex flex-col gap-5 md:gap-8 max-w-[1200px] md:mb-[5vw] 2xl:mb-[2vw]">
-              <div className="bg-black/20 rounded-xl p-3 md:p-4 border border-white/10">
-                <p className="text-xs uppercase tracking-wider text-white/50 mb-1">
-                  Q{PROJECT_CYCLE.quarter} {PROJECT_CYCLE.year}{' '}
-                  {isIntake
-                    ? 'Intake'
-                    : phase === 'senate'
-                    ? 'Senate Vote'
-                    : phase === 'member'
-                    ? 'Member Vote'
-                    : 'Cycle'}
-                </p>
-                {submissionsClosed ? (
-                  <p className="text-sm text-amber-200">
-                    Submissions closed at {submissionCloseLabel}. You can still edit a proposal you
-                    already submitted until {PROJECT_CYCLE.editingDeadline}. New proposals will open
-                    for the next cycle after Senate Vote begins.
-                  </p>
-                ) : (
-                  <p className="text-sm text-gray-300">
-                    Submit by{' '}
-                    <span className="font-semibold text-white">{submissionCloseLabel}</span>
-                    {daysLeft > 0 ? ` — ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining` : ''}
-                    . Edits close {PROJECT_CYCLE.editingDeadline}. Senate Vote opens{' '}
-                    {PROJECT_CYCLE.votingDate}.
-                  </p>
-                )}
-              </div>
-
-              {ANNOUNCE_PROJECT_BUDGET && (
-                <div className="bg-black/20 rounded-xl p-3 md:p-4 border border-white/10">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                    <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
-                      <h2 className="font-heading font-semibold text-white/80 text-xs md:text-sm mb-1">
-                        Total Quarter Budget
-                      </h2>
-                      <RewardAsset
-                        name="USDC"
-                        value={`$${NEXT_QUARTER_BUDGET_USD.toLocaleString()}`}
-                        usdValue={NEXT_QUARTER_BUDGET_USD}
-                      />
-                    </div>
-                    <div className="bg-black/20 rounded-lg p-2 md:p-3 border border-white/10">
-                      <h2 className="font-heading font-semibold text-white/80 text-xs md:text-sm mb-1">
-                        Max Project Budget
-                      </h2>
-                      <RewardAsset
-                        name="USDC"
-                        value={`$${MAX_BUDGET_USD.toLocaleString()}`}
-                        usdValue={MAX_BUDGET_USD}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+              {!showHero && cycleStats}
 
               {/* Step 1: Get the Template - Most Prominent */}
-              <div className="bg-gradient-to-br from-slate-900/80 via-blue-950/40 to-slate-900/80 backdrop-blur-xl border border-blue-500/25 rounded-2xl p-4 md:p-8 shadow-xl">
+              <div
+                id="get-template"
+                className="scroll-mt-24 bg-gradient-to-br from-slate-900/80 via-blue-950/40 to-slate-900/80 backdrop-blur-xl border border-blue-500/25 rounded-2xl p-4 md:p-8 shadow-xl">
                 <div className="flex items-start gap-3 md:gap-4 mb-4 md:mb-6">
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 flex items-center justify-center text-white font-bold text-lg">
                     1

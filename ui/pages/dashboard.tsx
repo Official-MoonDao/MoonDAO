@@ -1,3 +1,4 @@
+import { useLogin, usePrivy } from '@privy-io/react-auth'
 import {
   CITIZEN_TABLE_ADDRESSES,
   CITIZEN_TABLE_NAMES,
@@ -23,16 +24,21 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { getCitizensLocationData } from '@/lib/map'
-import { getAllNetworkTransfers, getRecentCitizenTransfers, getRecentTeamTransfers } from '@/lib/network/networkSubgraph'
+import {
+  getAllNetworkTransfers,
+  getRecentCitizenTransfers,
+  getRecentTeamTransfers,
+} from '@/lib/network/networkSubgraph'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
-import CitizenExpiredPanel from '@/components/subscription/CitizenExpiredPanel'
 import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import { LoadingSpinner } from '../components/layout/LoadingSpinner'
+import DashboardSignInPrompt from '@/components/dashboard/DashboardSignInPrompt'
+import CitizenExpiredPanel from '@/components/subscription/CitizenExpiredPanel'
 
 // Dynamic import for SignedInDashboard (client-side only)
 const SignedInDashboard = dynamic(() => import('@/components/home/SignedInDashboard'), {
@@ -61,24 +67,38 @@ export default function Dashboard({
   citizensCount,
 }: any) {
   const router = useRouter()
+  const { ready, authenticated } = usePrivy()
+  const { login } = useLogin()
   const { citizen, expiredCitizen, isLoading } = useContext(CitizenContext)
+  const checking = !ready || isLoading
 
-  // Redirect non-citizens to homepage. Citizens with a lapsed subscription stay
-  // put — bouncing them to the landing page would hide the renewal prompt.
+  // Signed-in non-citizens still go home. A logged-out visit stays here so
+  // the reminder email can show a sign-in button instead of bouncing to '/'.
   useEffect(() => {
-    if (!isLoading && !citizen && !expiredCitizen) {
+    if (checking || !authenticated) return
+    if (!citizen && !expiredCitizen) {
       router.push('/')
     }
-  }, [citizen, expiredCitizen, isLoading, router])
+  }, [authenticated, checking, citizen, expiredCitizen, router])
 
-  // Show loading while checking citizen status
-  if (isLoading) {
+  if (checking) {
     return (
       <Container>
         <div className="flex items-center justify-center min-h-screen">
           <LoadingSpinner width="w-12" height="h-12" />
         </div>
       </Container>
+    )
+  }
+
+  if (!authenticated) {
+    return (
+      <>
+        <WebsiteHead title="Dashboard" description="Sign in to open your MoonDAO dashboard." />
+        <Container>
+          <DashboardSignInPrompt onSignIn={() => login()} />
+        </Container>
+      </>
     )
   }
 
@@ -89,7 +109,7 @@ export default function Dashboard({
       <>
         <WebsiteHead
           title="Dashboard"
-          description="Renew your MoonDAO citizenship to regain access to your dashboard."
+          description="Extend your MoonDAO Citizenship to regain access to your dashboard."
         />
         <Container>
           <CitizenExpiredPanel feature="Your citizen dashboard" />
@@ -268,68 +288,92 @@ export async function getStaticProps() {
 
       const citizenTableName = citizenTableNameResolved || CITIZEN_TABLE_NAMES[chainSlug] || ''
       const teamTableName = teamTableNameResolved || TEAM_TABLE_NAMES[chainSlug] || ''
-      const projectTableName =
-        projectTableNameResolved || PROJECT_TABLE_NAMES[chainSlug] || ''
-      const missionTableName =
-        missionTableNameResolved || MISSION_TABLE_NAMES[chainSlug] || ''
+      const projectTableName = projectTableNameResolved || PROJECT_TABLE_NAMES[chainSlug] || ''
+      const missionTableName = missionTableNameResolved || MISSION_TABLE_NAMES[chainSlug] || ''
       // Marketplace and Jobs tables previously had no fallback. When the
       // on-chain `getTableName()` read fails (RPC blip / ISR build hiccup),
       // queries silently returned empty arrays — the dashboard would say
       // "No open positions" and "No new listings" even with live data.
       const marketplaceTableNameWithFallback =
         marketplaceTableName || MARKETPLACE_TABLE_NAMES[chainSlug] || ''
-      const jobTableNameWithFallback =
-        jobTableName || JOBS_TABLE_NAMES[chainSlug] || ''
+      const jobTableNameWithFallback = jobTableName || JOBS_TABLE_NAMES[chainSlug] || ''
 
-      const blockedIdsCondition = BLOCKED_CITIZENS.size > 0
-        ? `id NOT IN (${Array.from(BLOCKED_CITIZENS).join(',')})`
-        : ''
+      const blockedIdsCondition =
+        BLOCKED_CITIZENS.size > 0 ? `id NOT IN (${Array.from(BLOCKED_CITIZENS).join(',')})` : ''
       const deletedCondition = "view != ''"
-      const citizenWhereConditions = [blockedIdsCondition, deletedCondition].filter(Boolean).join(' AND ')
+      const citizenWhereConditions = [blockedIdsCondition, deletedCondition]
+        .filter(Boolean)
+        .join(' AND ')
       const citizenWhereClause = citizenWhereConditions ? ` WHERE ${citizenWhereConditions}` : ''
       const [citizens, citizensCountResult, listings, jobs, teams, projects, missionRows] =
         await Promise.all([
-          citizenTableName ? queryTable(chain, `SELECT * FROM ${citizenTableName}${citizenWhereClause} ORDER BY id DESC LIMIT 8`).catch((error) => {
-            console.error('Error querying citizen table:', error)
-            return []
-          }) : Promise.resolve([]),
-          citizenTableName ? queryTable(chain, `SELECT COUNT(*) as count FROM ${citizenTableName}${citizenWhereClause}`).catch((error) => {
-            console.error('Error querying citizen count:', error)
-            return [{ count: 0 }]
-          }) : Promise.resolve([{ count: 0 }]),
-        marketplaceTableNameWithFallback ? queryTable(
-          chain,
-          `SELECT * FROM ${marketplaceTableNameWithFallback} WHERE (startTime = 0 OR startTime <= ${Math.floor(
-            Date.now() / 1000
-          )}) AND (endTime = 0 OR endTime >= ${Math.floor(
-            Date.now() / 1000
-          )}) ORDER BY id DESC LIMIT 5`
-        ).catch((error) => {
-          console.error('Error querying marketplace table:', error)
-          return []
-        }) : Promise.resolve([]),
-        jobTableNameWithFallback ? queryTable(
-          chain,
-          `SELECT * FROM ${jobTableNameWithFallback} WHERE (endTime = 0 OR endTime >= ${Math.floor(
-            Date.now() / 1000
-          )}) ORDER BY id DESC LIMIT 5`
-        ).catch((error) => {
-          console.error('Error querying job board table:', error)
-          return []
-        }) : Promise.resolve([]),
-        teamTableName ? queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`).catch((error) => {
-          console.error('Error querying team table:', error)
-          return []
-        }) : Promise.resolve([]),
-        projectTableName ? queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`).catch((error) => {
-          console.error('Error querying project table:', error)
-          return []
-        }) : Promise.resolve([]),
-        missionTableName ? queryTable(chain, `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 1`).catch((error) => {
-          console.error('Error querying mission table:', error)
-          return []
-        }) : Promise.resolve([]),
-      ])
+          citizenTableName
+            ? queryTable(
+                chain,
+                `SELECT * FROM ${citizenTableName}${citizenWhereClause} ORDER BY id DESC LIMIT 8`
+              ).catch((error) => {
+                console.error('Error querying citizen table:', error)
+                return []
+              })
+            : Promise.resolve([]),
+          citizenTableName
+            ? queryTable(
+                chain,
+                `SELECT COUNT(*) as count FROM ${citizenTableName}${citizenWhereClause}`
+              ).catch((error) => {
+                console.error('Error querying citizen count:', error)
+                return [{ count: 0 }]
+              })
+            : Promise.resolve([{ count: 0 }]),
+          marketplaceTableNameWithFallback
+            ? queryTable(
+                chain,
+                `SELECT * FROM ${marketplaceTableNameWithFallback} WHERE (startTime = 0 OR startTime <= ${Math.floor(
+                  Date.now() / 1000
+                )}) AND (endTime = 0 OR endTime >= ${Math.floor(
+                  Date.now() / 1000
+                )}) ORDER BY id DESC LIMIT 5`
+              ).catch((error) => {
+                console.error('Error querying marketplace table:', error)
+                return []
+              })
+            : Promise.resolve([]),
+          jobTableNameWithFallback
+            ? queryTable(
+                chain,
+                `SELECT * FROM ${jobTableNameWithFallback} WHERE (endTime = 0 OR endTime >= ${Math.floor(
+                  Date.now() / 1000
+                )}) ORDER BY id DESC LIMIT 5`
+              ).catch((error) => {
+                console.error('Error querying job board table:', error)
+                return []
+              })
+            : Promise.resolve([]),
+          teamTableName
+            ? queryTable(chain, `SELECT * FROM ${teamTableName} ORDER BY id DESC`).catch(
+                (error) => {
+                  console.error('Error querying team table:', error)
+                  return []
+                }
+              )
+            : Promise.resolve([]),
+          projectTableName
+            ? queryTable(chain, `SELECT * FROM ${projectTableName} ORDER BY id DESC`).catch(
+                (error) => {
+                  console.error('Error querying project table:', error)
+                  return []
+                }
+              )
+            : Promise.resolve([]),
+          missionTableName
+            ? queryTable(chain, `SELECT * FROM ${missionTableName} ORDER BY id DESC LIMIT 1`).catch(
+                (error) => {
+                  console.error('Error querying mission table:', error)
+                  return []
+                }
+              )
+            : Promise.resolve([]),
+        ])
 
       const citizensCount = Number(citizensCountResult?.[0]?.count ?? 0)
       return { citizens, citizensCount, listings, jobs, teams, projects, missionRows }
@@ -377,16 +421,23 @@ export async function getStaticProps() {
     }
   }
 
-  const [transferResult, contractResult, aumResult, mooneyPriceResult, locationResult, recentCitizenResult, recentTeamResult] =
-    await Promise.allSettled([
-      allTransferData(),
-      contractOperations(),
-      getAUMData(),
-      getMooneyPriceData(),
-      getLocationData(),
-      getRecentCitizenTransfers(50),
-      getRecentTeamTransfers(20),
-    ])
+  const [
+    transferResult,
+    contractResult,
+    aumResult,
+    mooneyPriceResult,
+    locationResult,
+    recentCitizenResult,
+    recentTeamResult,
+  ] = await Promise.allSettled([
+    allTransferData(),
+    contractOperations(),
+    getAUMData(),
+    getMooneyPriceData(),
+    getLocationData(),
+    getRecentCitizenTransfers(50),
+    getRecentTeamTransfers(20),
+  ])
 
   transferData =
     transferResult.status === 'fulfilled'
@@ -410,8 +461,10 @@ export async function getStaticProps() {
   if (contractResult.status === 'fulfilled') {
     const { citizens, listings, jobs, teams, projects, missionRows } = contractResult.value
     // Build tokenId→blockTimestamp maps from Etherscan transfer data
-    const recentCitizenTransfers = recentCitizenResult.status === 'fulfilled' ? recentCitizenResult.value : []
-    const recentTeamTransfers = recentTeamResult.status === 'fulfilled' ? recentTeamResult.value : []
+    const recentCitizenTransfers =
+      recentCitizenResult.status === 'fulfilled' ? recentCitizenResult.value : []
+    const recentTeamTransfers =
+      recentTeamResult.status === 'fulfilled' ? recentTeamResult.value : []
     const mintTsMap: Record<string, number> = {}
     for (const t of recentCitizenTransfers) {
       if (t.tokenId && t.blockTimestamp && !(t.tokenId in mintTsMap)) {
@@ -429,7 +482,10 @@ export async function getStaticProps() {
       .map((c: any) => ({ ...c, mintTimestamp: mintTsMap[String(c.id)] ?? null }))
     newestListings = listings
     newestJobs = jobs
-    newestTeams = teams.map((t: any) => ({ ...t, mintTimestamp: teamMintTsMap[String(t.id)] ?? null }))
+    newestTeams = teams.map((t: any) => ({
+      ...t,
+      mintTimestamp: teamMintTsMap[String(t.id)] ?? null,
+    }))
     allProjects = projects
     await enrichProjectNames(allProjects)
 
@@ -499,10 +555,7 @@ export async function getStaticProps() {
                 }
               }
             } catch (ipfsError) {
-              console.warn(
-                'Failed to fetch featured mission metadata from IPFS:',
-                ipfsError
-              )
+              console.warn('Failed to fetch featured mission metadata from IPFS:', ipfsError)
             }
           }
         } catch (error) {
@@ -511,7 +564,10 @@ export async function getStaticProps() {
       }
     }
 
-    filteredTeams = (teams || []).map((t: any) => ({ ...t, mintTimestamp: teamMintTsMap[String(t.id)] ?? null }))
+    filteredTeams = (teams || []).map((t: any) => ({
+      ...t,
+      mintTimestamp: teamMintTsMap[String(t.id)] ?? null,
+    }))
   }
 
   if (mooneyPriceResult.status === 'fulfilled') {

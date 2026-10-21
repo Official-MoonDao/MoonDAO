@@ -21,7 +21,13 @@ import {
   isCompetitiveRace,
   isDePrizeGoalMarketBound,
 } from '@/lib/deprize/competitions'
-import { DEPRIZE_PREDICT_CTA, MarketStage, OUTCOME_COLORS, UNIT } from '@/lib/deprize/constants'
+import {
+  DEPRIZE_PREDICT_CTA,
+  DEPRIZE_RESTRICTED_PREDICT_COPY,
+  MarketStage,
+  OUTCOME_COLORS,
+  UNIT,
+} from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import { exitMockPosition, useMockMarket } from '@/lib/deprize/mockMarket'
 import { raceCardHeading } from '@/lib/deprize/raceCardHeading'
@@ -267,6 +273,10 @@ export default function RaceMarketCard({
   // Buy and live odds only exist on a bound on-chain market. Unbound races
   // are a planning list: company names, no mock prices, no demo pool.
   const bettingOpenReal = marketTradable && !bettingBlockedReason
+  // The index no longer banners the region block. Betting stays closed; the
+  // sentence itself is not repeated on the card.
+  const shownBlockedReason =
+    bettingBlockedReason === DEPRIZE_RESTRICTED_PREDICT_COPY ? undefined : bettingBlockedReason
   const showLiveMarket = bound && hasRace
   const bettingEnabled = showLiveMarket && bettingOpenReal
   const forecastHref =
@@ -675,8 +685,8 @@ export default function RaceMarketCard({
             </div>
           }
           notice={
-            bound && marketTradable && bettingBlockedReason ? (
-              <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
+            bound && marketTradable && shownBlockedReason ? (
+              <p className="mt-2 text-amber-300/80 text-[11px]">{shownBlockedReason}</p>
             ) : undefined
           }
         />
@@ -765,8 +775,8 @@ export default function RaceMarketCard({
               <PredictLink href={forecastHref} />
             </div>
           )}
-          {bound && marketTradable && bettingBlockedReason && (
-            <p className="mt-2 text-amber-300/80 text-[11px]">{bettingBlockedReason}</p>
+          {bound && marketTradable && shownBlockedReason && (
+            <p className="mt-2 text-amber-300/80 text-[11px]">{shownBlockedReason}</p>
           )}
         </div>
       </div>

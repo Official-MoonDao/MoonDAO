@@ -27,12 +27,21 @@ export interface SafeBalanceUsdResponse {
   fiatCode: string
 }
 
+const SAFE_CHAIN_IDS: Record<string, number> = {
+  mainnet: 1,
+  optimism: 10,
+  polygon: 137,
+  base: 8453,
+  arbitrum: 42161,
+  'base-sepolia': 84532,
+  sepolia: 11155111,
+}
+
 function basicFetcher(): Fetcher<any, string> {
   return async (url) => {
     const res = await fetch(url)
-    const json = await res.json()
-
-    return json
+    if (!res.ok) throw new Error(`Safe balances request failed: ${res.status}`)
+    return res.json()
   }
 }
 
@@ -42,10 +51,10 @@ export function useSafeBalances(
   chainSlug: string = 'mainnet',
   refreshInterval?: number // in milliseconds
 ) {
-  const api = `https://safe-transaction-${chainSlug}.safe.global`
+  const chainId = SAFE_CHAIN_IDS[chainSlug]
 
   return useSWR<SafeBalanceUsdResponse[], Error>(
-    shouldFetch ? `${api}/api/v1/safes/${address}/balances` : null,
+    shouldFetch && chainId ? `/api/safe/${chainId}/v1/safes/${address}/balances` : null,
     basicFetcher(),
     { shouldRetryOnError: false, refreshInterval, revalidateOnFocus: false }
   )

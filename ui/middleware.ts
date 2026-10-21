@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { removedDocRedirectForPathname } from '@/lib/docs/slug'
+import {
+  LEGACY_DOCS_HOST,
+  legacyDocsHostDestination,
+  removedDocRedirectForPathname,
+} from '@/lib/docs/slug'
 import {
   GATE_COOKIE,
   GATE_NEXT_PARAM,
@@ -20,6 +24,14 @@ import {
 // REMOVED_DOC_REDIRECTS; the docs pipeline test reads them back out of this
 // file.
 //
+// The catch-all is what makes `docs.moondao.com/<quartz slug>` redirect.
+// That host used to be the documentation repo; it now serves this app, so
+// `/Reference/Nested-Docs/About-Pablo-Moncada` 404s unless we prefix `/docs`.
+// A next.config.js redirect was the wrong place for that map: a source under
+// `/docs/*` is what breaks the Vercel deploy, and the two renamed slugs
+// contain parentheses and a non-ASCII apostrophe. The catch-all excludes API
+// routes and Next internals. Every other host falls through.
+//
 // Static literal — Next reads this at build time, so it cannot import from
 // lib/gate/access.ts. Keep the gate strings identical to
 // GATED_MIDDLEWARE_MATCHERS in that file; the access-gate unit test pins the
@@ -39,10 +51,29 @@ export const config = {
     '/documentation/Press/:path*',
     '/documentation/tags/press',
     '/documentation/tags/media',
+    // Root is separate: with next-translate's i18n config Next rewrites `/` to
+    // `/en` before matching, and a catch-all does not cover that.
+    '/',
+    // Skip API routes, Next internals, and static files. `@name.get` stays
+    // matched — its extension is not in this list. Next prepends the default
+    // locale before testing this pattern, so the exclusion is on the public path.
+    '/((?!api(?:/|$)|_next(?:/|$)|favicon\\.ico)(?!.*\\.(?:png|jpe?g|gif|svg|webp|avif|ico|css|js|map|txt|xml|woff2?|ttf|json|webmanifest)$).*)',
   ],
 }
 
+function requestHost(req: NextRequest): string {
+  // Host, not x-forwarded-host: the latter can be set by the caller and would
+  // redirect ordinary moondao.com traffic if it were trusted first.
+  const raw = req.headers.get('host') || req.nextUrl.hostname || ''
+  return raw.split(',')[0].trim().split(':')[0].toLowerCase()
+}
+
 export function middleware(req: NextRequest) {
+  if (requestHost(req) === LEGACY_DOCS_HOST) {
+    const destination = legacyDocsHostDestination(req.nextUrl.pathname, req.nextUrl.search)
+    return NextResponse.redirect(destination, 308)
+  }
+
   const { pathname } = req.nextUrl
   const removed = removedDocRedirectForPathname(pathname)
   if (removed) {

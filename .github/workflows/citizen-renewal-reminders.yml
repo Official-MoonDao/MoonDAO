@@ -1,0 +1,62 @@
+name: Citizen renewal reminders
+
+# Daily report only. The scheduled call omits live=1.
+# A manual run writes tags only when the live input is exactly 1.
+# The server still requires RENEWAL_REMINDERS_LIVE=true before it writes.
+on:
+  schedule:
+    - cron: "15 13 * * *"
+  workflow_dispatch:
+    inputs:
+      live:
+        description: "Type 1 to pass live=1. Leave empty to report only."
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call citizen renewal reminders
+        env:
+          SITE_URL: ${{ secrets.MOONDAO_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          LIVE_INPUT: ${{ github.event.inputs.live }}
+        run: |
+          BASE="${SITE_URL:-https://www.moondao.com}"
+          BASE="${BASE%/}"
+          case "$BASE" in
+            http://moondao.com|https://moondao.com)
+              BASE="https://www.moondao.com"
+              ;;
+          esac
+          QUERY="dryRun=1"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ "${LIVE_INPUT}" = "1" ]; then
+            QUERY="${QUERY}&live=1"
+          fi
+          response=$(curl -fsS -X POST "$BASE/api/cron/citizen-renewal-reminders?${QUERY}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Accept: application/json")
+          {
+            echo '## Citizen renewal reminders'
+            echo ''
+            echo '```json'
+            echo "$response"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          case "$response" in
+            *'"ok":true'*|*'"ok": true'*) ;;
+            *)
+              echo "Renewal reminder run did not succeed" >&2
+              exit 1
+              ;;
+          esac
+          if [ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" ] || [ "${LIVE_INPUT}" != "1" ]; then
+            case "$response" in
+              *'"live":true'*)
+                echo "This run must report only" >&2
+                exit 1
+                ;;
+            esac
+          fi

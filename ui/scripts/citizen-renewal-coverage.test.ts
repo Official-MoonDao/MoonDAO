@@ -8,11 +8,14 @@ import {
   countWindowPositions,
   expectedSequencePosition,
   futureKitAddPlan,
+  isPreExpiryEmail,
   KitResubscribeBlocked,
   kitSubscriberLookupPath,
+  parseUpstreamJson,
   renewalCountsComplete,
   renewalDedupeKey,
   renewalDryRunSources,
+  UpstreamNonJsonError,
   windowPosition,
 } from '../lib/citizen/renewalCoverage'
 
@@ -51,12 +54,22 @@ describe('renewal window position', () => {
     const twentyDaysLeft = expectedSequencePosition(20)
     expect(twentyDaysLeft.sequenceDay).to.equal(10)
     expect(twentyDaysLeft.missedEmails).to.deep.equal(['minus30'])
-    expect(twentyDaysLeft.nextEmail).to.equal('minus14')
+    expect(twentyDaysLeft.nextEmail).to.equal('minus7')
+    expect(isPreExpiryEmail(twentyDaysLeft.nextEmail)).to.equal(true)
+
+    const sevenDaysLeft = expectedSequencePosition(7)
+    expect(sevenDaysLeft.sequenceDay).to.equal(23)
+    expect(sevenDaysLeft.nextEmail).to.equal('minus7')
+
+    const sixDaysLeft = expectedSequencePosition(6)
+    expect(sixDaysLeft.nextEmail).to.equal('expiry')
+    expect(sixDaysLeft.missedEmails).to.deep.equal(['minus30', 'minus7'])
+    expect(isPreExpiryEmail(sixDaysLeft.nextEmail)).to.equal(false)
 
     const expiryDay = expectedSequencePosition(0)
     expect(expiryDay.sequenceDay).to.equal(30)
     expect(expiryDay.nextEmail).to.equal('expiry')
-    expect(expiryDay.missedEmails).to.deep.equal(['minus30', 'minus14'])
+    expect(expiryDay.missedEmails).to.deep.equal(['minus30', 'minus7'])
 
     const winBack = expectedSequencePosition(-14)
     expect(winBack.sequenceDay).to.equal(44)
@@ -115,7 +128,6 @@ describe('renewal coverage report', () => {
       kitState: 'active',
       suppressed: false,
       firstRunRedis: true,
-      firstRunKitTag: false,
     },
     {
       tokenId: '2',
@@ -124,7 +136,6 @@ describe('renewal coverage report', () => {
       kitState: null,
       suppressed: false,
       firstRunRedis: false,
-      firstRunKitTag: true,
     },
     {
       tokenId: '3',
@@ -133,7 +144,6 @@ describe('renewal coverage report', () => {
       kitState: 'cancelled',
       suppressed: false,
       firstRunRedis: true,
-      firstRunKitTag: false,
     },
     {
       tokenId: '4',
@@ -142,7 +152,6 @@ describe('renewal coverage report', () => {
       kitState: null,
       suppressed: false,
       firstRunRedis: false,
-      firstRunKitTag: false,
     },
     {
       tokenId: '5',
@@ -151,7 +160,14 @@ describe('renewal coverage report', () => {
       kitState: 'active',
       suppressed: false,
       firstRunRedis: false,
-      firstRunKitTag: false,
+    },
+    {
+      tokenId: '6',
+      expiresAt: expiresIn(0),
+      email: 'due@example.com',
+      kitState: 'active',
+      suppressed: false,
+      firstRunRedis: true,
     },
   ]
 
@@ -165,23 +181,47 @@ describe('renewal coverage report', () => {
 
     expect(report.counts.activeKit).to.equal(1)
     expect(report.counts.typeformOnly).to.equal(1)
-    expect(report.counts.excluded).to.equal(1)
+    expect(report.counts.excluded).to.equal(2)
     expect(report.counts.noEmail).to.equal(1)
+    expect(report.counts.oct2HeldPreExpiry).to.equal(1)
+    expect(report.counts.eligibleAfterFirstRunExclusion).to.equal(2)
     expect(report.counts.positions.outOfWindow).to.equal(1)
     expect(report.buckets.noEmail[0].tokenId).to.equal('4')
     expect(report.buckets.noEmail[0].exclusionReason).to.equal('no-email')
-    expect(report.buckets.excluded[0].exclusionReason).to.equal('kit-cancelled')
-    expect(report.firstRunOverlap.map((row) => row.tokenId)).to.deep.equal(['1', '2'])
-    expect(report.buckets.activeKit[0].emailMasked).to.equal('a***@example.com')
-    expect(report.buckets.activeKit[0].dedupeKey).to.equal(`renewal:1:${expiresIn(30)}`)
-    expect(report.buckets.activeKit[0].position).to.equal('enterToday')
-    expect(report.buckets.activeKit[0].catchUp).to.equal(null)
+    expect(report.buckets.excluded.map((row) => row.exclusionReason)).to.deep.equal([
+      'oct2-pre-expiry',
+      'kit-cancelled',
+    ])
+    expect(report.buckets.activeKit[0].tokenId).to.equal('6')
+    expect(report.buckets.activeKit[0].emailMasked).to.equal('d***@example.com')
+    expect(report.buckets.activeKit[0].onOct2List).to.equal(true)
+    expect(report.buckets.activeKit[0].firstRunExclusion).to.equal(null)
+    expect(report.firstRunOverlap.map((row) => row.tokenId)).to.deep.equal(['6'])
+    expect(report.buckets.excluded[0].dedupeKey).to.equal(`renewal:1:${expiresIn(30)}`)
+    expect(report.buckets.excluded[0].position).to.equal('enterToday')
     expect(report.buckets.typeformOnly[0].position).to.equal('inside')
     expect(report.buckets.typeformOnly[0].daysToExpiry).to.equal(12)
     expect(report.buckets.typeformOnly[0].lateEntrant).to.equal(true)
     expect(report.buckets.typeformOnly[0].catchUp).to.be.a('string')
     expect(JSON.stringify(report)).to.not.include('active@example.com')
     expect(JSON.stringify(report)).to.not.include('gone@example.com')
+    expect(JSON.stringify(report)).to.not.include('due@example.com')
+  })
+})
+
+describe('upstream non-JSON responses', () => {
+  it('names the source when a gateway returns HTML', () => {
+    expect(() =>
+      parseUpstreamJson('Tableland', 200, 'text/html', '<!DOCTYPE html><html></html>')
+    ).to.throw(UpstreamNonJsonError, 'Tableland returned a non-JSON response')
+    try {
+      parseUpstreamJson('Kit', 200, 'text/html', '<html><body>nope</body></html>')
+    } catch (error) {
+      expect(error).to.be.instanceOf(UpstreamNonJsonError)
+      expect((error as UpstreamNonJsonError).source).to.equal('Kit')
+    }
+    const parsed = parseUpstreamJson('Typeform', 200, 'application/json', '[{"id":1}]')
+    expect(parsed).to.deep.equal([{ id: 1 }])
   })
 })
 
@@ -202,6 +242,17 @@ describe('renewal dry run stays read-only', () => {
     expect(source).to.not.include("method: 'POST'")
     expect(source).to.not.include('method: "POST"')
     expect(reads).to.include("method: 'GET'")
+  })
+
+  it('queries the MoonDAO Tableland gateway and names a non-JSON body', () => {
+    expect(reads).to.not.include('tableland.network')
+    expect(reads).to.include('tablelandQueryEndpoint')
+    expect(reads).to.include("redirect: 'manual'")
+    expect(reads).to.include('parseUpstreamJson')
+    expect(route).to.include('failedSource')
+    expect(route).to.include('UpstreamNonJsonError')
+    expect(reads).to.not.include('Citizens - renewal window Oct 2026')
+    expect(reads).to.not.include('RENEWAL_EXCLUSION_KIT_TAG_ID')
   })
 
   it('reads the Arbitrum citizen NFT from the plan', () => {
@@ -284,6 +335,44 @@ describe('renewal dry-run sources', () => {
       expect(encoded).to.not.include(secret)
     }
     expect(renewalCountsComplete(sources)).to.equal(false)
+  })
+})
+
+describe('extend citizenship copy', () => {
+  const files = [
+    'components/dashboard/DashboardSignInPrompt.tsx',
+    'components/subscription/CitizenExpiredModal.tsx',
+    'components/subscription/CitizenExpiredPanel.tsx',
+    'components/subscription/CitizenRenewalStatus.tsx',
+    'components/subscription/SubscriptionModal.tsx',
+    'components/layout/account/AccountMenu.tsx',
+    'components/layout/account/MobileAccountSection.tsx',
+    'pages/dashboard.tsx',
+    'pages/citizen/[tokenIdOrName].tsx',
+  ]
+
+  it('uses Extend Citizenship and does not say renews or renewal in N days', () => {
+    const root = path.join(__dirname, '..')
+    for (const file of files) {
+      const source = fs.readFileSync(path.join(root, file), 'utf8')
+      expect(source).to.not.include('Renew Citizenship')
+      expect(source).to.not.match(/renewal in \d+/i)
+      expect(source).to.not.match(/\brenews\b/)
+    }
+    const button = fs.readFileSync(
+      path.join(root, 'components/subscription/CitizenRenewalStatus.tsx'),
+      'utf8'
+    )
+    expect(button).to.include('Extend Citizenship')
+    const prompt = fs.readFileSync(
+      path.join(root, 'components/dashboard/DashboardSignInPrompt.tsx'),
+      'utf8'
+    )
+    expect(prompt).to.include('Sign in')
+    expect(prompt).to.include('dashboard-sign-in-button')
+    const dashboard = fs.readFileSync(path.join(root, 'pages/dashboard.tsx'), 'utf8')
+    expect(dashboard).to.include('DashboardSignInPrompt')
+    expect(dashboard).to.include('if (!authenticated)')
   })
 })
 

@@ -1,7 +1,14 @@
-import { CheckCircleIcon, XCircleIcon, MinusCircleIcon } from '@heroicons/react/24/outline'
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { MEMBER_VOTE_SUPER_MAJORITY } from '@/lib/proposals/computeMemberProposalTally'
+import Tooltip from '@/components/layout/Tooltip'
 import ColorBar from './ColorBar'
+
+// Plain-language definition of "VP", kept identical to the sidebar's
+// explainer (components/project/MemberVoteSidebar.tsx) so the term is
+// defined the same way wherever vote results are shown.
+const VP_EXPLAINER =
+  'VP = voting power. Each voter’s VP is the square root of their vMOONEY (MOONEY locked × time left on the lock, up to a 4-year max) at the moment voting closed. For and Against are shares of decided VP (For + Against); abstaining VP is excluded from the pass threshold.'
 
 interface VotingResultsProps {
   // The Abstain-aware tally object produced by
@@ -69,7 +76,14 @@ export default function VotingResults({ voteOutcome, votes }: VotingResultsProps
             <p className={`text-2xl font-bold ${passed ? 'text-green-400' : 'text-red-400'}`}>
               {forPercentage}%
             </p>
-            <p className="text-xs text-gray-400 uppercase tracking-wide">Support</p>
+            <div className="flex items-center justify-center gap-1">
+              <p className="text-xs text-gray-400 uppercase tracking-wide">Support</p>
+              <Tooltip text={VP_EXPLAINER} wrap>
+                <span className="text-[10px] leading-none align-super text-gray-400 cursor-help">
+                  ⓘ
+                </span>
+              </Tooltip>
+            </div>
           </div>
         </div>
       </div>
@@ -121,35 +135,6 @@ export default function VotingResults({ voteOutcome, votes }: VotingResultsProps
           </div>
         </div>
 
-        {/* Abstain Votes — displayed separately from the For/Against
-            decision. % is a share of total turnout (For + Against +
-            Abstain), since "abstained" only makes sense as a fraction
-            of voters who actually showed up. */}
-        {((isStructuredTally && Number(voteOutcome.abstainVP) > 0) ||
-          (!isStructuredTally && Number(voteOutcome?.[3] ?? 0) > 0)) && (
-          <div className="flex items-center justify-between p-4 bg-gray-500/10 rounded-lg border border-gray-500/20">
-            <div className="flex items-center gap-3">
-              <MinusCircleIcon className="w-5 h-5 text-gray-400" />
-              <div>
-                <p className="font-medium text-gray-400">Abstain</p>
-                <p className="text-sm text-gray-300">
-                  {isStructuredTally
-                    ? `${abstainPercentage}% of turnout VP · excluded from threshold`
-                    : `${abstainPercentage}% of votes`}
-                </p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-white">{abstainPercentage}%</p>
-              {isStructuredTally && voteOutcome.abstainVP != null && (
-                <p className="text-xs text-gray-400">
-                  {formatNumberUSStyle(Number(voteOutcome.abstainVP), true)} VP
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Visual Results Bar — For vs Against share of decided VP.
             Abstain is intentionally absent here since the bar
             visualizes the supermajority decision, not turnout
@@ -173,6 +158,20 @@ export default function VotingResults({ voteOutcome, votes }: VotingResultsProps
             />
           </div>
         </div>
+
+        {/* Abstaining VP reported on its own muted line rather than as a
+            third decision card — it sits out the pass threshold, so the
+            For/Against cards and the Decision bar stay about the decided
+            VP only. VP amount shown only for the structured tally (the
+            legacy Record shape carries no abstainVP). */}
+        {((isStructuredTally && Number(voteOutcome.abstainVP) > 0) ||
+          (!isStructuredTally && Number(voteOutcome?.[3] ?? 0) > 0)) && (
+          <p className="text-xs text-gray-400 mt-2">
+            {isStructuredTally
+              ? `${formatNumberUSStyle(Number(voteOutcome.abstainVP), true)} VP abstained (${abstainPercentage}% of total VP cast · excluded from the pass threshold)`
+              : `${abstainPercentage}% of votes abstained · excluded from the pass threshold`}
+          </p>
+        )}
       </div>
     </div>
   )

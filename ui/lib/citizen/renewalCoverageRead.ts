@@ -15,15 +15,32 @@ import {
   kitSubscriberLookupPath,
   kitTagSubscribersPath,
   normalizeEmail,
-  RENEWAL_BROADCAST_TAG_NAME,
+  parseUpstreamJson,
   RENEWAL_SUPPRESSION_SET,
+  UpstreamNonJsonError,
   type CoverageInput,
 } from '@/lib/citizen/renewalCoverage'
 import { extractEmailFromTypeformAnswers } from '@/lib/marketplace/vendorEmail'
+import { tablelandQueryEndpoint } from '@/lib/tableland/endpoint'
 
 const MULTICALL3 = '0xcA11bde05977b3631167028862bE2a173976CA11'
 const PUBLIC_ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc'
-const TABLELAND_QUERY = 'https://tableland.network/api/v1/query?statement='
+const ARBITRUM_CHAIN_ID = 42161
+
+async function readUpstreamJson(
+  source: 'Tableland' | 'Kit' | 'Typeform',
+  res: Response
+): Promise<unknown> {
+  if (res.status >= 300 && res.status < 400) {
+    throw new UpstreamNonJsonError(
+      source,
+      res.status,
+      'The server redirected instead of returning JSON.'
+    )
+  }
+  const body = await res.text()
+  return parseUpstreamJson(source, res.status, res.headers.get('content-type'), body)
+}
 
 export type CitizenProfile = {
   tokenId: string
@@ -33,11 +50,8 @@ export type CitizenProfile = {
 export type LoadedExclusions = {
   suppressed: Set<string>
   firstRunRedis: Set<string>
-  firstRunKitTag: Set<string>
   suppressionChecked: boolean
   firstRunRedisChecked: boolean
-  kitTagChecked: boolean
-  kitTagId: string | null
   warnings: string[]
 }
 
@@ -65,14 +79,30 @@ export function citizenTypeformFormIds(): string[] {
   )
 }
 
+export function citizenProfileQueryUrl(statement: string): string {
+  return `${tablelandQueryEndpoint(ARBITRUM_CHAIN_ID)}?statement=${encodeURIComponent(statement)}`
+}
+
 export async function loadCitizenProfiles(): Promise<CitizenProfile[]> {
   const table = CITIZEN_TABLE_NAMES.arbitrum
   const statement = `SELECT id, formId FROM ${table}`
-  const res = await fetch(`${TABLELAND_QUERY}${encodeURIComponent(statement)}`)
+  const res = await fetch(citizenProfileQueryUrl(statement), {
+    method: 'GET',
+    redirect: 'manual',
+    headers: { Accept: 'application/json' },
+  })
+  if (res.status >= 300 && res.status < 400) {
+    await readUpstreamJson('Tableland', res)
+  }
   if (!res.ok) {
+    const text = await res.text()
+    if (text.trim().startsWith('<')) {
+      throw new UpstreamNonJsonError('Tableland', res.status, 'Expected JSON and received HTML.')
+    }
     throw new Error(`Tableland query failed: HTTP ${res.status}`)
   }
-  const rows = (await res.json()) as Array<Record<string, unknown>>
+  const parsed = await readUpstreamJson('Tableland', res)
+  const rows = parsed as Array<Record<string, unknown>>
   if (!Array.isArray(rows)) {
     throw new Error('Tableland query did not return a row list')
   }
@@ -151,13 +181,18 @@ async function kitGet(pathAndQuery: string): Promise<unknown> {
   if (!res.ok) {
     throw new Error(`Kit read failed: HTTP ${res.status}`)
   }
-  return res.json()
+  return readUpstreamJson('Kit', res)
 }
 
 type KitPage = {
-  subscribers?: Array<{ email_address?: string; state?: string }>
+  subscribers?: Array<{ id?: number | string; email_address?: string; state?: string }>
   tags?: Array<{ id?: number | string; name?: string }>
   pagination?: { has_next_page?: boolean; end_cursor?: string | null }
+}
+
+export type KitSubscriberRecord = {
+  state: string | null
+  id: string | null
 }
 
 async function eachKitPage(
@@ -175,10 +210,12 @@ async function eachKitPage(
   return pages
 }
 
-export async function loadKitStates(emails: string[]): Promise<Map<string, string | null>> {
+export async function loadKitSubscriberRecords(
+  emails: string[]
+): Promise<Map<string, KitSubscriberRecord>> {
   const unique = [...new Set(emails.map(normalizeEmail))]
-  const states = new Map<string, string | null>()
-  unique.forEach((email) => states.set(email, null))
+  const records = new Map<string, KitSubscriberRecord>()
+  unique.forEach((email) => records.set(email, { state: null, id: null }))
   const batchSize = 25
   for (let i = 0; i < unique.length; i += batchSize) {
     const batch = unique.slice(i, i + batchSize)
@@ -189,28 +226,35 @@ export async function loadKitStates(emails: string[]): Promise<Map<string, strin
     for (const page of pages) {
       for (const subscriber of page.subscribers || []) {
         if (!subscriber.email_address || !subscriber.state) continue
-        states.set(normalizeEmail(subscriber.email_address), subscriber.state.toLowerCase())
+        const id = subscriber.id == null ? null : String(subscriber.id)
+        records.set(normalizeEmail(subscriber.email_address), {
+          state: subscriber.state.toLowerCase(),
+          id: id && /^\d+$/.test(id) ? id : null,
+        })
       }
     }
   }
+  return records
+}
+
+export async function loadKitStates(emails: string[]): Promise<Map<string, string | null>> {
+  const records = await loadKitSubscriberRecords(emails)
+  const states = new Map<string, string | null>()
+  records.forEach((record, email) => states.set(email, record.state))
   return states
 }
 
-export async function resolveExclusionKitTagId(): Promise<string | null> {
-  const fromEnv = process.env.RENEWAL_EXCLUSION_KIT_TAG_ID?.trim()
-  if (fromEnv) {
-    if (!/^\d+$/.test(fromEnv)) throw new Error('RENEWAL_EXCLUSION_KIT_TAG_ID must be digits')
-    return fromEnv
-  }
+export async function listKitTags(): Promise<Array<{ id: string; name: string }>> {
   const pages = await eachKitPage(kitListTagsPath(), (cursor) => kitListTagsPath(cursor))
+  const tags: Array<{ id: string; name: string }> = []
   for (const page of pages) {
     for (const tag of page.tags || []) {
-      if (tag.name === RENEWAL_BROADCAST_TAG_NAME && tag.id != null) {
-        return String(tag.id)
-      }
+      if (!tag.name || tag.id == null) continue
+      const id = String(tag.id)
+      if (/^\d+$/.test(id)) tags.push({ id, name: tag.name })
     }
   }
-  return null
+  return tags
 }
 
 export async function loadKitTagEmails(tagId: string): Promise<Set<string>> {
@@ -255,7 +299,7 @@ async function loadRedisEmailSet(
   }
 }
 
-export async function loadExclusions(kitConfigured: boolean): Promise<LoadedExclusions> {
+export async function loadExclusions(): Promise<LoadedExclusions> {
   const warnings: string[] = []
   const [suppression, firstRun] = await Promise.all([
     loadRedisEmailSet(RENEWAL_SUPPRESSION_SET),
@@ -269,38 +313,16 @@ export async function loadExclusions(kitConfigured: boolean): Promise<LoadedExcl
   if (suppression.warning) warnings.push(suppression.warning)
   if (!firstRun.checked) {
     warnings.push(
-      `${FIRST_RUN_EXCLUSION_SET} was not read. The Oct 2 triage batch is not in the overlap until ops loads it into Redis.`
+      `${FIRST_RUN_EXCLUSION_SET} was not read. The Oct 2 triage list is not applied until ops loads it into Redis.`
     )
   }
   if (firstRun.warning) warnings.push(firstRun.warning)
 
-  let kitTagId: string | null = null
-  let kitTagEmails = new Set<string>()
-  let kitTagChecked = false
-  if (kitConfigured) {
-    try {
-      kitTagId = await resolveExclusionKitTagId()
-      if (kitTagId) {
-        kitTagEmails = await loadKitTagEmails(kitTagId)
-        kitTagChecked = true
-      } else {
-        warnings.push(
-          `Kit tag "${RENEWAL_BROADCAST_TAG_NAME}" was not found. Set RENEWAL_EXCLUSION_KIT_TAG_ID or create that tag.`
-        )
-      }
-    } catch (error) {
-      warnings.push(error instanceof Error ? error.message : 'Kit tag read failed')
-    }
-  }
-
   return {
     suppressed: suppression.emails,
     firstRunRedis: firstRun.emails,
-    firstRunKitTag: kitTagEmails,
     suppressionChecked: suppression.checked,
     firstRunRedisChecked: firstRun.checked,
-    kitTagChecked,
-    kitTagId,
     warnings,
   }
 }
@@ -320,7 +342,13 @@ async function typeformEmailOnForm(
   if (res.status === 401 || res.status === 403) return 'unauthorized'
   if (res.status === 404) return null
   if (!res.ok) return 'failed'
-  const data = (await res.json()) as { items?: Array<{ answers?: unknown }> }
+  let data: { items?: Array<{ answers?: unknown }> }
+  try {
+    data = (await readUpstreamJson('Typeform', res)) as { items?: Array<{ answers?: unknown }> }
+  } catch (error) {
+    if (error instanceof UpstreamNonJsonError) throw error
+    return 'failed'
+  }
   const answers = data.items?.[0]?.answers
   return extractEmailFromTypeformAnswers(answers)
 }
@@ -419,6 +447,7 @@ export async function assembleCoverageInputs(args: {
       return { profile, email }
     })
   } catch (error) {
+    if (error instanceof UpstreamNonJsonError) throw error
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Typeform read failed',
@@ -427,12 +456,13 @@ export async function assembleCoverageInputs(args: {
     }
   }
 
-  let kitStates = new Map<string, string | null>()
+  let kitRecords = new Map<string, KitSubscriberRecord>()
   try {
-    kitStates = await loadKitStates(
+    kitRecords = await loadKitSubscriberRecords(
       lookedUp.map((row) => row.email).filter((email): email is string => Boolean(email))
     )
   } catch (error) {
+    if (error instanceof UpstreamNonJsonError) throw error
     return {
       ok: false,
       error: error instanceof Error ? error.message : 'Kit read failed',
@@ -444,14 +474,15 @@ export async function assembleCoverageInputs(args: {
   const rows: CoverageInput[] = lookedUp.map(({ profile, email }) => {
     const expires = args.expiresAt.get(profile.tokenId) as number
     const normalized = email ? normalizeEmail(email) : null
+    const record = normalized ? kitRecords.get(normalized) : undefined
     return {
       tokenId: profile.tokenId,
       expiresAt: expires,
       email: normalized,
-      kitState: normalized ? kitStates.get(normalized) ?? null : null,
+      kitState: record?.state ?? null,
+      kitSubscriberId: record?.id ?? null,
       suppressed: normalized ? args.exclusions.suppressed.has(normalized) : false,
       firstRunRedis: normalized ? args.exclusions.firstRunRedis.has(normalized) : false,
-      firstRunKitTag: normalized ? args.exclusions.firstRunKitTag.has(normalized) : false,
     }
   })
 

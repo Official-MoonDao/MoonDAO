@@ -22,11 +22,7 @@ const ITEM_CLASS =
  * on-chain role-hat scan when it mounts, and opening the drawer should not be
  * enough to start one — the same reason they are not in the public nav.
  */
-export default function MobileAccountSection({
-  onNavigate,
-}: {
-  onNavigate?: () => void
-}) {
+export default function MobileAccountSection({ onNavigate }: { onNavigate?: () => void }) {
   const { citizen, isExpired } = useContext(CitizenContext)
   const account = useActiveAccount()
   const { authenticated } = usePrivy()
@@ -50,11 +46,7 @@ export default function MobileAccountSection({
         onClick={onNavigate}
         className={ITEM_CLASS}
       >
-        {profileHref
-          ? 'Your Profile'
-          : isExpired
-          ? 'Renew Citizenship'
-          : 'Become a Citizen'}
+        {profileHref ? 'Your Profile' : isExpired ? 'Extend Citizenship' : 'Become a Citizen'}
       </NavLink>
 
       <AccountDisclosure label="Your Teams">
@@ -66,12 +58,7 @@ export default function MobileAccountSection({
       </AccountDisclosure>
 
       {ACCOUNT_ACTIONS.map((action) => (
-        <NavLink
-          key={action.href}
-          href={action.href}
-          onClick={onNavigate}
-          className={ITEM_CLASS}
-        >
+        <NavLink key={action.href} href={action.href} onClick={onNavigate} className={ITEM_CLASS}>
           {action.name}
         </NavLink>
       ))}
@@ -79,20 +66,12 @@ export default function MobileAccountSection({
   )
 }
 
-function AccountDisclosure({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
+function AccountDisclosure({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <Disclosure as="div" defaultOpen={false}>
       {({ open }) => (
         <>
-          <Disclosure.Button
-            className={`${ITEM_CLASS} flex items-center justify-between`}
-          >
+          <Disclosure.Button className={`${ITEM_CLASS} flex items-center justify-between`}>
             {label}
             <ChevronRightIcon
               className={`${

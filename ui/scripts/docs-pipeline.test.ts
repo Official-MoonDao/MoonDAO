@@ -17,11 +17,14 @@ import {
 import { isTableRow, rewriteDocBody } from '../lib/docs/rewrite'
 import { buildSearchIndex } from '../lib/docs/searchIndex'
 import {
+  DOCS_CANONICAL_ORIGIN,
   INTENTIONAL_SLUG_CHANGES,
   LEGACY_DOC_ALIASES,
+  LEGACY_DOCS_HOST,
   REMOVED_DOC_REDIRECTS,
   docsHref,
   isRouteSafeSlug,
+  legacyDocsHostDestination,
   removedDocRedirectForPathname,
   slugifyFilePath,
   slugifySegment,
@@ -46,7 +49,10 @@ describe('docs slugifier (Quartz parity)', () => {
       'Legal/Ticket to Zero-G NFT/Ticket to Zero-G NFT  Sweepstakes Rules.md',
       'Legal/Ticket-to-Zero-G-NFT/Ticket-to-Zero-G-NFT--Sweepstakes-Rules',
     ],
-    ['Reference/Nested Docs/MoonDAOs Quarterly Rewards.md', 'Reference/Nested-Docs/MoonDAOs-Quarterly-Rewards'],
+    [
+      'Reference/Nested Docs/MoonDAOs Quarterly Rewards.md',
+      'Reference/Nested-Docs/MoonDAOs-Quarterly-Rewards',
+    ],
     ['index.md', 'index'],
   ]
 
@@ -381,6 +387,151 @@ describe('docs generated artifacts', () => {
   })
 })
 
+describe('docs.moondao.com legacy host', () => {
+  it('sends the old Quartz root and a nested page to /docs on the main site', () => {
+    expectEqual(legacyDocsHostDestination('/'), `${DOCS_CANONICAL_ORIGIN}/docs`, 'root')
+    expectEqual(
+      legacyDocsHostDestination('/Reference/Nested-Docs/About-Pablo-Moncada'),
+      `${DOCS_CANONICAL_ORIGIN}/docs/Reference/Nested-Docs/About-Pablo-Moncada`,
+      'pablo'
+    )
+    expectEqual(
+      legacyDocsHostDestination('/Reference/Nested-Docs/About-Pablo-Moncada/'),
+      `${DOCS_CANONICAL_ORIGIN}/docs/Reference/Nested-Docs/About-Pablo-Moncada`,
+      'trailing slash'
+    )
+    expectEqual(
+      legacyDocsHostDestination('/Governance/Constitution', '?ref=old'),
+      `${DOCS_CANONICAL_ORIGIN}/docs/Governance/Constitution?ref=old`,
+      'query'
+    )
+  })
+
+  it('does not prefix a path that is already under /docs', () => {
+    expectEqual(legacyDocsHostDestination('/docs'), `${DOCS_CANONICAL_ORIGIN}/docs`, 'docs root')
+    expectEqual(
+      legacyDocsHostDestination('/docs/About/FAQ'),
+      `${DOCS_CANONICAL_ORIGIN}/docs/About/FAQ`,
+      'already prefixed'
+    )
+    expectEqual(
+      legacyDocsHostDestination('/documentation/About/FAQ'),
+      `${DOCS_CANONICAL_ORIGIN}/docs/About/FAQ`,
+      'internal prefix'
+    )
+  })
+
+  it('rewrites the two slugs Quartz published that this app renamed', () => {
+    for (const [from, to] of Object.entries(INTENTIONAL_SLUG_CHANGES)) {
+      expectEqual(
+        legacyDocsHostDestination(`/${from}`),
+        `${DOCS_CANONICAL_ORIGIN}/docs/${to}`,
+        from
+      )
+      expectEqual(
+        legacyDocsHostDestination(`/docs/${from}`),
+        `${DOCS_CANONICAL_ORIGIN}/docs/${to}`,
+        `prefixed ${from}`
+      )
+    }
+    // NextRequest.pathname keeps this sequence encoded, so the lookup has to
+    // decode before it can see the curly apostrophe.
+    expectEqual(
+      legacyDocsHostDestination('/Reference/Nested-Docs/MoonDAO%E2%80%99s-Quarterly-Rewards'),
+      `${DOCS_CANONICAL_ORIGIN}/docs/Reference/Nested-Docs/MoonDAOs-Quarterly-Rewards`,
+      'encoded apostrophe'
+    )
+  })
+
+  it('sends removed Press URLs to /press in one hop', () => {
+    expectEqual(
+      legacyDocsHostDestination('/Press/Press-Kit'),
+      `${DOCS_CANONICAL_ORIGIN}/press`,
+      'press kit'
+    )
+    expectEqual(
+      legacyDocsHostDestination('/Press'),
+      `${DOCS_CANONICAL_ORIGIN}/press`,
+      'press folder'
+    )
+    expectEqual(
+      legacyDocsHostDestination('/tags/press'),
+      `${DOCS_CANONICAL_ORIGIN}/press`,
+      'press tag'
+    )
+    expectEqual(
+      legacyDocsHostDestination('/docs/tags/media'),
+      `${DOCS_CANONICAL_ORIGIN}/press`,
+      'prefixed media tag'
+    )
+  })
+
+  it('maps every Quartz contentIndex slug onto a page this app still serves', () => {
+    if (!fs.existsSync(FIXTURE)) return
+    resetDocsCache()
+    const produced = new Set(allProducedSlugs())
+    const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, unknown>
+    const removedTargets = new Set(Object.values(REMOVED_DOC_REDIRECTS))
+    const misses: string[] = []
+    for (const slug of Object.keys(fixture)) {
+      const destination = legacyDocsHostDestination(`/${slug}`)
+      const path = new URL(destination).pathname
+      if (removedTargets.has(path)) continue
+      const out =
+        path === '/docs' ? 'index' : path.startsWith('/docs/') ? path.slice('/docs/'.length) : ''
+      if (!out || (!produced.has(out) && !produced.has(`${out}/index`))) {
+        misses.push(`${slug} -> ${destination}`)
+      }
+    }
+    if (misses.length > 0) {
+      throw new Error(`Legacy docs host URLs do not land on a live page:\n${misses.join('\n')}`)
+    }
+  })
+
+  it('middleware matches docs.moondao.com paths and redirects that host', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'middleware.ts'), 'utf8')
+    if (!src.includes(LEGACY_DOCS_HOST)) throw new Error('middleware does not name the docs host')
+    if (!src.includes('legacyDocsHostDestination')) {
+      throw new Error('middleware does not redirect the docs host')
+    }
+    const { config } = require('../middleware') as { config: { matcher: string[] } }
+    const sources = config.matcher
+    if (!sources.includes('/')) throw new Error('middleware does not match /')
+    // next-translate injects i18n, and Next prefixes the default locale before
+    // testing matchers. Compile the same way production does.
+    const { getMiddlewareMatchers } = require('next/dist/build/analysis/get-page-static-info')
+    const {
+      getMiddlewareRouteMatcher,
+    } = require('next/dist/shared/lib/router/utils/middleware-route-matcher')
+    const compiled = getMiddlewareMatchers(sources, {
+      i18n: { locales: ['en'], defaultLocale: 'en' },
+    })
+    const matches = getMiddlewareRouteMatcher(compiled)
+    const req = { headers: {} }
+    const shouldMatch = [
+      '/en',
+      '/en/Reference/Nested-Docs/About-Pablo-Moncada',
+      '/en/Governance/Constitution',
+      '/en/docs/About/FAQ',
+      '/en/Reference/Bios/@name.get',
+      '/en/Reference/Glossary-(dynamic)',
+    ]
+    for (const sample of shouldMatch) {
+      if (!matches(sample, req, {})) throw new Error(`matcher does not cover ${sample}`)
+    }
+    const shouldSkip = [
+      '/en/api/health',
+      '/en/_next/static/chunk.js',
+      '/en/favicon.ico',
+      '/en/metadata-image.png',
+      '/en/sitemap.xml',
+    ]
+    for (const sample of shouldSkip) {
+      if (matches(sample, req, {})) throw new Error(`matcher should skip ${sample}`)
+    }
+  })
+})
+
 describe('docs corpus vs Quartz contentIndex', () => {
   it('produces every slug Quartz published, bar two documented exceptions', function () {
     if (!fs.existsSync(FIXTURE)) {
@@ -391,10 +542,7 @@ describe('docs corpus vs Quartz contentIndex', () => {
     const produced = new Set(allProducedSlugs())
     const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<string, unknown>
     const missing = Object.keys(fixture).filter(
-      (k) =>
-        !produced.has(k) &&
-        !(k in INTENTIONAL_SLUG_CHANGES) &&
-        !(k in REMOVED_DOC_REDIRECTS)
+      (k) => !produced.has(k) && !(k in INTENTIONAL_SLUG_CHANGES) && !(k in REMOVED_DOC_REDIRECTS)
     )
     if (missing.length > 0) {
       throw new Error(`Missing Quartz slugs:\n${missing.join('\n')}`)
@@ -471,9 +619,7 @@ describe('docs corpus vs Quartz contentIndex', () => {
   it('emits no route-unsafe content filenames either', () => {
     resetDocsCache()
     const corpus = loadCorpus()
-    const unsafe = corpus.files
-      .map((f) => f.filePath)
-      .filter((p) => /[^A-Za-z0-9._@\- /]/.test(p))
+    const unsafe = corpus.files.map((f) => f.filePath).filter((p) => /[^A-Za-z0-9._@\- /]/.test(p))
     if (unsafe.length > 0) {
       throw new Error(`Rename these files (see sanitizeVaultPath):\n${unsafe.join('\n')}`)
     }

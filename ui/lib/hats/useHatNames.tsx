@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { readContract } from 'thirdweb'
+import { fetchFromIPFSWithFallback } from '@/lib/ipfs/gateway'
 
 export default function useHatNames(hatsContract: any, hatIds: string[]) {
   const [hatNames, setHatNames] = useState<any>()
@@ -21,10 +22,7 @@ export default function useHatNames(hatsContract: any, hatIds: string[]) {
             const details = hat.details ?? hat[0]
             const detailsIpfsHash = details?.split('ipfs://')[1]
             if (!detailsIpfsHash) return { name: null, hatId }
-            const hatDetailsRes = await fetch(
-              `https://ipfs.io/ipfs/${detailsIpfsHash}`
-            )
-            const { data: hatDetails } = await hatDetailsRes.json()
+            const { data: hatDetails } = await fetchFromIPFSWithFallback(detailsIpfsHash)
             return { name: hatDetails?.name ?? null, hatId }
           } catch (err) {
             console.error(`Failed to fetch hat name for ${hatId}:`, err)

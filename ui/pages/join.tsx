@@ -35,7 +35,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { useState, useEffect, useCallback, useContext } from 'react'
+import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react'
 import { getContract, NFT, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
@@ -45,7 +45,7 @@ import {
   usePublicYearEth,
   useTeamMintOpen,
 } from '@/lib/subscription/citizenCheckout'
-import { ownerFallbackName } from '@/lib/project/projectOwnerId'
+import { ownerDisplayName } from '@/lib/project/projectOwnerId'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
@@ -136,6 +136,18 @@ export default function Join({
   const teamMintOpen = useTeamMintOpen()
   const { data: citizenUsdPrice } = useETHPrice(citizenPriceEth ?? 0, 'ETH_TO_USD')
   const { data: teamUsdPrice } = useETHPrice(teamPriceEth ?? 0, 'ETH_TO_USD')
+
+  const teamNamesById = useMemo(() => {
+    const m = new Map<number, string>()
+    for (const team of filteredTeams) {
+      const id = Number(team?.id)
+      const name = team?.metadata?.name
+      if (Number.isFinite(id) && typeof name === 'string' && name.trim()) {
+        m.set(id, name.trim())
+      }
+    }
+    return m
+  }, [filteredTeams])
 
   const [input, setInput] = useState('')
   function filterBySearch(nfts: any[]) {
@@ -684,7 +696,7 @@ export default function Join({
                       <p className="text-slate-300 text-sm mb-4 line-clamp-3">{job.description}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-400">
-                          {ownerFallbackName(job.teamId)}
+                          {ownerDisplayName(job.teamId, teamNamesById)}
                         </span>
                         <StandardButton
                           backgroundColor="bg-blue-600 hover:bg-blue-700"

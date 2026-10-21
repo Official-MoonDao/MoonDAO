@@ -62,7 +62,7 @@ export function CitizenRenewalStatusView({
             : 'border border-white/10 bg-white/10 text-white hover:bg-white/15'
         }`}
       >
-        Renew
+        Extend Citizenship
       </button>
     </div>
   )

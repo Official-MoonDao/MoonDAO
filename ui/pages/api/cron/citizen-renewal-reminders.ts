@@ -6,6 +6,7 @@ import {
   nonDryRunRejection,
   renewalCountsComplete,
   renewalDryRunSources,
+  UpstreamNonJsonError,
   type RenewalDryRunReadFlags,
 } from '@/lib/citizen/renewalCoverage'
 import {
@@ -15,6 +16,7 @@ import {
   loadExclusions,
   loadExpiresAt,
 } from '@/lib/citizen/renewalCoverageRead'
+import { redisFromEnv, runRenewalWritePass } from '@/lib/citizen/renewalCoverageWrite'
 
 export const config = {
   maxDuration: 300,
@@ -36,9 +38,16 @@ function dryRunSources(read: RenewalDryRunReadFlags) {
   return renewalDryRunSources(process.env, read)
 }
 
+function safeError(error: unknown): string {
+  const message = error instanceof Error ? error.message : 'Unknown error'
+  if (message.includes('@')) return 'Renewal reminder run failed'
+  return message
+}
+
 /**
- * Dry-run coverage for citizen renewal reminders.
- * Always read-only. A request that asks for a live run is rejected.
+ * Citizen renewal reminder coverage.
+ * Writes Kit tags only when RENEWAL_REMINDERS_LIVE is exactly "true" and
+ * the query includes live=1. Otherwise this is the read-only dry run.
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST' && req.method !== 'GET') {
@@ -80,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const kitConfigured =
       envVarPresent(process.env, 'CONVERT_KIT_V4_API_KEY') ||
       envVarPresent(process.env, 'CONVERT_KIT_API_KEY')
-    const exclusions = await loadExclusions(kitConfigured)
+    const exclusions = await loadExclusions()
     read.firstRunExclusion = exclusions.firstRunRedisChecked
     warnings.push(...exclusions.warnings)
 
@@ -101,6 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ok: false,
         dryRun: true,
         readOnly: true,
+        live: false,
         countsComplete: renewalCountsComplete(read),
         sources: dryRunSources(read),
         warnings,
@@ -133,6 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ok: false,
         dryRun: true,
         readOnly: true,
+        live: false,
         countsComplete: renewalCountsComplete(read),
         sources: dryRunSources(read),
         warnings,
@@ -149,43 +160,73 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       outOfWindow: positions.outOfWindow,
     })
 
+    const exclusionsReady = exclusions.suppressionChecked && exclusions.firstRunRedisChecked
+    const writes = await runRenewalWritePass({
+      env: process.env,
+      liveParam: first(req.query.live),
+      rows: assembled.rows,
+      profiles,
+      expiresAt,
+      nowMs,
+      formIds,
+      typeformToken,
+      exclusionsReady,
+      exclusionSets: {
+        suppressed: exclusions.suppressed,
+        firstRunRedis: exclusions.firstRunRedis,
+      },
+      redis: exclusionsReady ? redisFromEnv(process.env) : null,
+      allowKitReads: true,
+    })
+    warnings.push(...writes.warnings)
+
     console.log(
-      '[citizen-renewal-dry-run]',
+      '[citizen-renewal-reminders]',
       JSON.stringify({
+        live: writes.live,
         counts: report.counts,
         countsComplete: true,
         expiryUnknown: positions.unknown,
+        buckets: writes.buckets,
+        skipped: writes.skipped,
+        failures: writes.failures,
+        sequenceRemoval: writes.sequenceRemoval,
         warnings,
       })
     )
 
     return res.status(200).json({
       ...report,
+      dryRun: !writes.live,
+      readOnly: !writes.live,
+      live: writes.live,
       expiryUnknown: assembled.expiryUnknown,
       countsComplete: renewalCountsComplete(read),
       sources: dryRunSources(read),
       warnings,
+      writes,
       exclusions: {
         suppressionChecked: exclusions.suppressionChecked,
         firstRunRedisChecked: exclusions.firstRunRedisChecked,
         firstRunRedisKey: 'renewal:exclude:first-run',
         suppressionKey: 'renewal:suppress',
-        kitTagChecked: exclusions.kitTagChecked,
-        kitTagId: exclusions.kitTagId,
         warnings: exclusions.warnings,
       },
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
+    const message = safeError(error)
+    const failedSource = error instanceof UpstreamNonJsonError ? error.source : null
     warnings.push(message)
     warnings.push(INCOMPLETE_COUNTS)
-    console.error('[citizen-renewal-dry-run]', error)
-    return res.status(500).json({
+    console.error('[citizen-renewal-reminders]', message)
+    return res.status(failedSource ? 503 : 500).json({
       ok: false,
       dryRun: true,
+      live: false,
       countsComplete: false,
       sources: dryRunSources(read),
       warnings,
+      failedSource,
       error: message,
     })
   }

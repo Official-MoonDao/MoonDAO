@@ -13,7 +13,7 @@ describe('CitizenRenewalStatus', () => {
 
     cy.get('[data-testid="citizen-renewal-status"]').should('have.attr', 'data-urgent', 'false')
     cy.get('[data-testid="citizen-renewal-date"]').should('contain', 'Expires')
-    cy.get('[data-testid="citizen-renew-button"]').should('contain', 'Renew').click()
+    cy.get('[data-testid="citizen-renew-button"]').should('contain', 'Extend Citizenship').click()
     cy.get('@onRenew').should('have.been.calledOnce')
   })
 

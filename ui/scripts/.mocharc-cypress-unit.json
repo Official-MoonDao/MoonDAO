@@ -27,6 +27,7 @@
     "scripts/og-rasterize.test.ts",
     "cypress/integration/unit/voting.cy.tsx",
     "cypress/integration/unit/vmooney-snapshots.cy.tsx",
+    "cypress/integration/unit/vmooney-at-timestamp.cy.ts",
     "cypress/integration/unit/cycle-phase.cy.tsx",
     "cypress/integration/unit/blocked-projects.cy.ts",
     "cypress/integration/unit/cycle-quarters.cy.tsx",
