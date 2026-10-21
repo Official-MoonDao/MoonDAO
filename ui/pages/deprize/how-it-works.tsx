@@ -6,7 +6,7 @@ import DePrizeHowItWorks from '@/components/deprize/howItWorks/DePrizeHowItWorks
 export default function DePrizeHowItWorksPage({ restricted }: DePrizePageProps) {
   return (
     <DePrizeRestrictedProvider restricted={restricted}>
-      <DePrizeHowItWorks restricted={restricted} />
+      <DePrizeHowItWorks />
     </DePrizeRestrictedProvider>
   )
 }

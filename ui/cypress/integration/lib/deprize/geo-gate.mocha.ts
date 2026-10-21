@@ -214,12 +214,34 @@ describe('PR-0 DePrize geo gate', () => {
     expect(exitMount).to.not.include('bettingAllowed')
   })
 
-  it('keeps a region notice next to predictions and deletes the full-page notice', () => {
-    const panel = readUi('components/deprize/ForecastPanel.tsx')
-    const detail = readUi('pages/deprize/[id].tsx')
-    expect(panel).to.include("Betting isn&apos;t available in your region")
-    expect(panel).to.match(/you can still make a prediction/i)
-    expect(detail).to.not.include("Betting isn&apos;t available in your region")
+  it('keeps the region notice only inside the prediction modal', () => {
+    const modal = readUi('components/deprize/PredictModal.tsx')
+    const copy = readUi('lib/forecasts/forecastCopy.ts')
+    const surfaces = [
+      'components/deprize/ForecastPanel.tsx',
+      'pages/deprize/[id].tsx',
+      'components/deprize/DePrizeIndexContent.tsx',
+      'components/deprize/LiveDePrizeHero.tsx',
+      'components/deprize/RaceMarketCard.tsx',
+      'components/deprize/howItWorks/DePrizeHowItWorks.tsx',
+      'components/deprize/detail/MarketModeTabs.tsx',
+      'components/deprize/detail/TradeTicket.tsx',
+      'lib/deprize/constants.ts',
+    ]
+    expect(modal).to.include('FORECAST_COPY.restrictedNote')
+    expect(modal).to.include('regionRestricted')
+    expect(modal).to.include('!isBet && props.regionRestricted')
+    expect(copy).to.include("Betting isn't available in your region")
+    expect(copy).to.match(/you can still make a prediction/i)
+    for (const file of surfaces) {
+      const src = readUi(file)
+      expect(src, file).to.not.include('available in your region')
+      expect(src, file).to.not.include('available where you are')
+      expect(src, file).to.not.include('DEPRIZE_RESTRICTED_PREDICT_COPY')
+    }
+    expect(readUi('components/deprize/ForecastPanel.tsx')).to.include(
+      'regionRestricted={restricted}'
+    )
     expect(
       fs.existsSync(path.join(UI_ROOT, 'components/deprize/DePrizeRestrictedNotice.tsx'))
     ).to.equal(false)

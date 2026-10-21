@@ -81,7 +81,6 @@ export default function ForecastPanel(props: {
    * the bet form; 'predict' ranks by voting-power share and saves a prediction.
    */
   mode: 'bet' | 'predict'
-  onModeChange?: (mode: 'bet' | 'predict') => void
 }) {
   const {
     chainSlug,
@@ -110,7 +109,6 @@ export default function ForecastPanel(props: {
     renderBet,
     stakedEthByOutcome,
     mode,
-    onModeChange,
   } = props
   const isBetMode = mode === 'bet'
   const restricted = useDePrizeRestricted()
@@ -434,26 +432,6 @@ export default function ForecastPanel(props: {
           ? 'Pick a team to bet ETH on. Each share pays 1 ETH if that team wins, and every bet moves the odds.'
           : FORECAST_COPY.panelIntro}
       </p>
-      {isBetMode && restricted && (
-        <p className="mt-2 text-sm text-amber-200">
-          Betting isn&apos;t available in your region — you can still make a prediction
-          {onModeChange ? (
-            <>
-              {' '}
-              <button
-                type="button"
-                onClick={() => onModeChange('predict')}
-                className="font-semibold text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
-              >
-                in the MOONEY forecast
-              </button>
-              .
-            </>
-          ) : (
-            '.'
-          )}
-        </p>
-      )}
 
       {!isLive && (
         <p className="mt-3 text-sm text-amber-200">
@@ -562,6 +540,7 @@ export default function ForecastPanel(props: {
           }
           chanceLoading={marketLoading}
           bettingAvailable={showBet}
+          regionRestricted={restricted}
           connected={!!account}
           citizenLoading={prizeCitizen.isLoading}
           isCitizen={isCitizen}
