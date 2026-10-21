@@ -10,7 +10,7 @@ const STEPS = [
   {
     n: '02',
     title: 'Propose',
-    body: 'Use the template: novelty, lunar bridge, SMART key results, work-only budget under the max.',
+    body: 'Write it up from the template: the problem, your plan, what you will deliver and what it costs.',
   },
   {
     n: '03',
@@ -31,11 +31,11 @@ const BEAT_MS = 1400
 const SPRING = { type: 'spring', stiffness: 140, damping: 20 } as const
 
 const REPLIES = [
-  { who: 'Senate member', text: 'Prior art: JSC-1A exists. What is new here?' },
-  { who: 'Citizen', text: 'Scope it to what ships this quarter.' },
-  { who: 'Engineer', text: 'Happy to co-lead the vacuum tests.' },
+  { who: 'Senate member', text: 'Love this. Have you seen the JSC-1A simulant work?' },
+  { who: 'Citizen', text: 'What could you ship in the first three months?' },
+  { who: 'Engineer', text: 'Happy to help run the vacuum tests.' },
 ]
-const TEMPLATE = ['Novelty & prior art', 'Lunar bridge', 'SMART key results', 'Work-only budget under the max']
+const TEMPLATE = ['The problem', 'Your plan', 'What you will deliver', 'Budget & team']
 const WEEKS = 6
 
 function Check({ on }: { on: boolean }) {
@@ -266,7 +266,7 @@ export default function ProposalJourney() {
 
       <div
         role="img"
-        aria-label="An example proposal moves from a Discord idea, through the template checklist, a Town Hall pitch, Senate review and member vote, to weekly updates, a final report and a retro reward"
+        aria-label="An example proposal moves from a Discord idea, through a written proposal, a Town Hall pitch, Senate review and member vote, to weekly updates, a final report and a retro reward"
         className="order-1 flex h-[360px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-5 sm:p-6 lg:order-2"
       >
         <div className="flex items-center justify-between gap-2">
