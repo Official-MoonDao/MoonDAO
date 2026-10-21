@@ -13,6 +13,7 @@ import {
   RENEWAL_REMINDER_TAG,
   RENEWED_TAG,
   renewalStageDedupeKey,
+  renewalTermMarkerKey,
   RENEWAL_SUPPRESSION_SET,
   windowPosition,
   type CoverageInput,
@@ -137,6 +138,29 @@ const STAGE_TAG: Record<Exclude<RenewalStage, 'renewed'>, RenewalTagKey> = {
   plus14: 'catchupPlus14',
 }
 
+/**
+ * Reminder and catch-up stages that occupy the one slot for a term.
+ * `renewed` is not a slot. A stored `minus14` key is read as `minus7`.
+ */
+export const TERM_SLOT_STAGES = ['minus30', 'minus7', 'expiry', 'plus14'] as const
+
+export type TermSlotStage = (typeof TERM_SLOT_STAGES)[number]
+
+/**
+ * Future win-back stages. A win-back email is allowed after the one staged
+ * reminder or catch-up for a term. Add the stage id here when that email is
+ * built, and teach `stageForReminder` to select it. Leave this empty until then.
+ */
+export const WIN_BACK_STAGES: readonly RenewalStage[] = []
+
+export function isWinBackStage(stage: RenewalStage): boolean {
+  return (WIN_BACK_STAGES as readonly string[]).includes(stage)
+}
+
+function isTermSlotStage(stage: string): stage is TermSlotStage {
+  return (TERM_SLOT_STAGES as readonly string[]).includes(stage)
+}
+
 const OPT_OUT = new Set(['cancelled', 'unsubscribed', 'bounced', 'complained'])
 
 export type RenewalTagNames = Record<RenewalTagKey, string>
@@ -170,6 +194,7 @@ export type PlannedRenewalWrite = {
 
 export type RenewalSkipCounts = {
   deduped: number
+  alreadyStagedThisTerm: number
   suppressed: number
   firstRun: number
   kitOptOut: number
@@ -179,9 +204,19 @@ export type RenewalSkipCounts = {
   typeformOnly: number
 }
 
+/** A term that already has its one reminder or catch-up stage. */
+export type AlreadyStagedThisTermRow = {
+  tokenId: string
+  /** Kit tag name of the stage already written, such as Renewal-Reminder. */
+  name: string
+  stageWritten: TermSlotStage
+  stageWouldApply: TermSlotStage
+}
+
 export type RenewalPlan = {
   writes: PlannedRenewalWrite[]
   skipped: RenewalSkipCounts
+  alreadyStagedThisTerm: AlreadyStagedThisTermRow[]
 }
 
 export type RenewalWriteBuckets = {
@@ -221,6 +256,7 @@ export type PublicRenewalWrites = {
   missingTags: string[]
   buckets: RenewalWriteBuckets
   skipped: RenewalSkipCounts
+  alreadyStagedThisTerm: AlreadyStagedThisTermRow[]
   failures: number
   failed: Array<{ tokenId: string; stage: RenewalStage }>
   sequenceRemoval: {
@@ -420,6 +456,9 @@ export function selectForwardRenewals(
 /**
  * Day -30 gets Renewal-Reminder. Anyone already past -30 gets the catch-up
  * tag for the next email only, never Renewal-Reminder.
+ * That choice is the one stage for the term. Later days do not advance it.
+ * A future win-back stage would be selected here and listed in WIN_BACK_STAGES
+ * so the term marker does not block it. Win-back is not selected today.
  */
 export function stageForReminder(expiresAtSec: number, nowMs: number): RenewalStage | null {
   const expiresAt = Math.trunc(expiresAtSec)
@@ -436,6 +475,7 @@ export function stageForReminder(expiresAtSec: number, nowMs: number): RenewalSt
 function emptySkips(): RenewalSkipCounts {
   return {
     deduped: 0,
+    alreadyStagedThisTerm: 0,
     suppressed: 0,
     firstRun: 0,
     kitOptOut: 0,
@@ -444,6 +484,55 @@ function emptySkips(): RenewalSkipCounts {
     noSubscriberId: 0,
     typeformOnly: 0,
   }
+}
+
+function stageFromMarker(value: string | undefined): TermSlotStage | null {
+  if (!value) return null
+  const trimmed = value.trim()
+  if (trimmed === 'minus14') return 'minus7'
+  return isTermSlotStage(trimmed) ? trimmed : null
+}
+
+/** Earliest reminder or catch-up stage recorded in `renewal:written`, per term. */
+export function indexWrittenTermSlots(writtenKeys: Iterable<string>): Map<string, TermSlotStage> {
+  const found = new Map<string, Set<TermSlotStage>>()
+  for (const key of writtenKeys) {
+    const parsed = parseRenewalStageKey(key)
+    if (!parsed || !isTermSlotStage(parsed.stage)) continue
+    const termKey = renewalTermMarkerKey(parsed.tokenId, parsed.expiresAt)
+    const stages = found.get(termKey) || new Set<TermSlotStage>()
+    stages.add(parsed.stage)
+    found.set(termKey, stages)
+  }
+  const indexed = new Map<string, TermSlotStage>()
+  for (const [termKey, stages] of found) {
+    const earliest = TERM_SLOT_STAGES.find((stage) => stages.has(stage))
+    if (earliest) indexed.set(termKey, earliest)
+  }
+  return indexed
+}
+
+/**
+ * Stage already written for this term, if any.
+ * The term marker wins when it names a slot stage. Otherwise the earliest
+ * reminder or catch-up member of `renewal:written` is used. `renewed` does
+ * not occupy the slot, so a new term can still be staged after an extension.
+ * A non-empty marker that does not name a stage still blocks the term.
+ */
+export function stageWrittenForTerm(
+  tokenId: string,
+  expiresAt: number,
+  writtenSlots: ReadonlyMap<string, TermSlotStage>,
+  termMarkers?: ReadonlyMap<string, string>
+): { blocked: boolean; stageWritten: TermSlotStage | null } {
+  const termKey = renewalTermMarkerKey(tokenId, expiresAt)
+  const fromWritten = writtenSlots.get(termKey) || null
+  const marked = termMarkers?.get(termKey)
+  if (marked && marked.trim()) {
+    return { blocked: true, stageWritten: stageFromMarker(marked) || fromWritten }
+  }
+  if (fromWritten) return { blocked: true, stageWritten: fromWritten }
+  return { blocked: false, stageWritten: null }
 }
 
 type SkipReason = keyof RenewalSkipCounts
@@ -497,10 +586,14 @@ export function planRenewalWrites(args: {
   renewals: Array<CoverageInput & { openMembers: string[] }>
   nowMs: number
   writtenKeys: ReadonlySet<string>
+  /** Values of `renewal:term:{tokenId}:{expiresAt}` read from Redis. */
+  termMarkers?: ReadonlyMap<string, string>
   renewedPresentTokenIds?: ReadonlySet<string>
 }): RenewalPlan {
   const skipped = emptySkips()
   const writes: PlannedRenewalWrite[] = []
+  const alreadyStagedThisTerm: AlreadyStagedThisTermRow[] = []
+  const writtenSlots = indexWrittenTermSlots(args.writtenKeys)
 
   for (const row of args.rows) {
     const stage = stageForReminder(row.expiresAt, args.nowMs)
@@ -515,6 +608,27 @@ export function planRenewalWrites(args: {
     if (args.writtenKeys.has(dedupeKey)) {
       skipped.deduped += 1
       continue
+    }
+    // Win-back is the only later stage allowed after the term slot is filled.
+    if (!isWinBackStage(stage)) {
+      const staged = stageWrittenForTerm(
+        String(row.tokenId),
+        expiresAt,
+        writtenSlots,
+        args.termMarkers
+      )
+      if (staged.blocked) {
+        skipped.alreadyStagedThisTerm += 1
+        if (staged.stageWritten) {
+          alreadyStagedThisTerm.push({
+            tokenId: String(row.tokenId),
+            name: DEFAULT_RENEWAL_TAG_NAMES[STAGE_TAG[staged.stageWritten]],
+            stageWritten: staged.stageWritten,
+            stageWouldApply: stage,
+          })
+        }
+        continue
+      }
     }
     const bucket = STAGE_BUCKET[stage]
     if (!bucket) continue
@@ -558,7 +672,7 @@ export function planRenewalWrites(args: {
     })
   }
 
-  return { writes, skipped }
+  return { writes, skipped, alreadyStagedThisTerm }
 }
 
 export function kitAddTagRequest(
@@ -673,6 +787,10 @@ export function toPublicRenewalWrites(args: {
     missingTags: args.missingTags,
     buckets,
     skipped: args.plan.skipped,
+    alreadyStagedThisTerm: args.plan.alreadyStagedThisTerm.map((row) => ({
+      ...row,
+      name: args.tagNames[STAGE_TAG[row.stageWritten]],
+    })),
     failures: args.failed.length,
     failed: args.failed,
     sequenceRemoval: {

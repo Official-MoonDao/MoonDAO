@@ -99,7 +99,7 @@ export function renewalDedupeKey(tokenId: string, expiresAtSec: number): string 
 
 /**
  * Written to Upstash after a successful tag change.
- * A later run that sees the key does not tag again.
+ * A later run that sees the key does not tag that stage again.
  */
 export function renewalStageDedupeKey(
   tokenId: string,
@@ -110,6 +110,16 @@ export function renewalStageDedupeKey(
     throw new Error('unknown renewal stage')
   }
   return `${renewalDedupeKey(tokenId, expiresAtSec)}:${stage}`
+}
+
+/**
+ * One reminder or catch-up stage occupies a term.
+ * Set after that tag succeeds. Value is the stage id (`minus30`, `minus7`,
+ * `expiry`, or `plus14`). A new expiresAt is a different key.
+ */
+export function renewalTermMarkerKey(tokenId: string, expiresAtSec: number): string {
+  const base = renewalDedupeKey(tokenId, expiresAtSec)
+  return `renewal:term:${base.slice('renewal:'.length)}`
 }
 
 export type SequencePosition = {

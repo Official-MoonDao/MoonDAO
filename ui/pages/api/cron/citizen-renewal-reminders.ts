@@ -188,6 +188,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         countsComplete: true,
         expiryUnknown: positions.unknown,
         buckets: writes.buckets,
+        skipped: writes.skipped,
         failures: writes.failures,
         sequenceRemoval: writes.sequenceRemoval,
         warnings,

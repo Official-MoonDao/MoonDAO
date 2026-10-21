@@ -5,16 +5,19 @@
  * never calls form subscribe, and never calls sequence subscribe.
  * Renewed also asks to leave each configured sequence. That step is a no-op
  * which returns unsupported, because Kit has no per-sequence removal API.
- * The dedupe key is stored after the tag calls and the sequence attempts.
+ * The dedupe key and the per-term marker are stored after the tag calls
+ * and the sequence attempts. A failed tag writes neither, so the next run can retry.
  */
 import { Redis } from '@upstash/redis'
 import {
   normalizeEmail,
+  renewalTermMarkerKey,
   UpstreamNonJsonError,
   type CoverageInput,
 } from '@/lib/citizen/renewalCoverage'
 import {
   assertActiveTagTarget,
+  isWinBackStage,
   kitAddTagRequest,
   kitRemoveTagRequest,
   kitSequenceRemoval,
@@ -134,6 +137,11 @@ export function createKitMutator(fetchImpl: FetchLike, apiKey: string): KitMutat
 async function rememberBook(redis: RenewalRedis, item: PlannedRenewalWrite): Promise<void> {
   await redis.set(item.dedupeKey, '1')
   await redis.sadd(RENEWAL_WRITTEN_SET, [item.dedupeKey])
+  // Record the one staged reminder or catch-up. Renewed does not occupy the
+  // term, and a future win-back write must not replace the staged stage.
+  if (item.stage !== 'renewed' && !isWinBackStage(item.stage)) {
+    await redis.set(renewalTermMarkerKey(item.tokenId, item.expiresAt), item.stage)
+  }
   if (item.stage === 'renewed') {
     await redis.sadd(RENEWED_PRESENT_SET, [item.tokenId])
     if (item.openMembers.length > 0) await redis.srem(RENEWAL_OPEN_SET, item.openMembers)
@@ -199,6 +207,37 @@ export async function executeRenewalWrites(args: {
     }
   }
   return { executedKeys, failed, sequenceAttempted, sequenceFailures }
+}
+
+/**
+ * Read-only. Dry runs call this so alreadyStagedThisTerm matches Redis
+ * without writing a marker or a dedupe key.
+ */
+async function readTermMarkers(
+  redis: RenewalRedis,
+  rows: Array<{ tokenId: string; expiresAt: number }>
+): Promise<Map<string, string>> {
+  const keys: string[] = []
+  const seen = new Set<string>()
+  for (const row of rows) {
+    const expiresAt = Math.trunc(row.expiresAt)
+    const id = String(row.tokenId).trim()
+    if (!/^\d+$/.test(id) || !Number.isInteger(expiresAt) || expiresAt < 0) continue
+    const key = renewalTermMarkerKey(id, expiresAt)
+    if (seen.has(key)) continue
+    seen.add(key)
+    keys.push(key)
+  }
+  const markers = new Map<string, string>()
+  const chunkSize = 25
+  for (let i = 0; i < keys.length; i += chunkSize) {
+    const chunk = keys.slice(i, i + chunkSize)
+    const values = await Promise.all(chunk.map((key) => redis.get(key)))
+    values.forEach((value, index) => {
+      if (value) markers.set(chunk[index], value)
+    })
+  }
+  return markers
 }
 
 async function readBook(redis: RenewalRedis): Promise<{
@@ -286,6 +325,7 @@ export async function runRenewalWritePass(args: {
     .filter((email): email is string => Boolean(email))
   let openRecords: OpenRecord[] = []
   let writtenKeys = new Set<string>()
+  let termMarkers = new Map<string, string>()
   let renewedPresentTokenIds = new Set<string>()
   let dedupeReady = false
   if (args.exclusionsReady && args.redis) {
@@ -294,6 +334,7 @@ export async function runRenewalWritePass(args: {
       openRecords = book.openRecords
       writtenKeys = book.writtenKeys
       renewedPresentTokenIds = book.renewedPresentTokenIds
+      termMarkers = await readTermMarkers(args.redis, args.rows)
       dedupeReady = true
     } catch {
       dedupeReady = false
@@ -371,6 +412,7 @@ export async function runRenewalWritePass(args: {
     renewals,
     nowMs: args.nowMs,
     writtenKeys,
+    termMarkers,
     renewedPresentTokenIds,
   })
 
