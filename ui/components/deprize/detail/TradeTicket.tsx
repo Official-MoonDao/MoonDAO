@@ -168,7 +168,17 @@ export default function TradeTicket({
         </p>
       ) : isBet && !bettingAllowed ? (
         <div className="mt-4 rounded-lg bg-white/[0.04] px-3 py-3 text-center text-sm text-gray-400">
-          {betUnavailableReason ? <p>{betUnavailableReason}.</p> : null}
+          {betUnavailableReason ? (
+            <p>{betUnavailableReason}.</p>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="w-full cursor-not-allowed rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-[15px] font-semibold text-gray-500"
+            >
+              Add ETH
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onModeChange('predict')}

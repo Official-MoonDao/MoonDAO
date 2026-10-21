@@ -187,7 +187,7 @@ export default function ForecastPanel(props: {
     connected: !!account,
   })
   const predictAction = actions.find((action) => action.kind === 'predict')
-  const showBet = actions.some((action) => action.kind === 'bet')
+  const showBet = actions.some((action) => action.kind === 'bet' && action.enabled)
 
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
@@ -556,7 +556,7 @@ export default function ForecastPanel(props: {
           onClose={onModalClose}
           outcomeIndex={modalIndex}
           bet={
-            isBetMode && showBet && renderBet ? (
+            showBet && renderBet ? (
               <div key={modalIndex}>{renderBet({ index: modalIndex, onClose: onModalClose })}</div>
             ) : undefined
           }

@@ -48,6 +48,7 @@ export default function PredictModal(props: {
   outcomeIndex: number
 }) {
   const isBet = props.mode === 'bet'
+  const ethOffered = !!props.bet && !props.regionRestricted
   const [betAction, setBetAction] = useState<BetPrimaryAction | null>(null)
   const betRunRef = useRef<() => void>(() => {})
   const reportBetAction = useCallback((action: BetPrimaryAction | null) => {
@@ -74,7 +75,7 @@ export default function PredictModal(props: {
     }),
     [reportBetAction]
   )
-  const activeBet = isBet && props.bet ? betAction : null
+  const activeBet = ethOffered ? betAction : null
   const predictLabel = predictionActionLabel({
     writing: props.writing,
     saved: props.saved,
@@ -115,10 +116,19 @@ export default function PredictModal(props: {
         <p className="text-sm text-gray-300">
           {isBet
             ? 'Real ETH. Your bet moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'
-            : 'Free. Saves your pick on the MOONEY forecast, weighted by your Citizen voting power. It does not change the ETH odds.'}
+            : 'Free. This records your prediction, weighted by your vMOONEY. If you have no vMOONEY, it is saved with no voting power. It does not change the ETH odds.'}
         </p>
         {!isBet && props.regionRestricted && (
-          <p className="text-sm text-amber-200">{FORECAST_COPY.restrictedNote}</p>
+          <>
+            <p className="text-sm text-amber-200">{FORECAST_COPY.restrictedNote}</p>
+            <button
+              type="button"
+              disabled
+              className="w-full cursor-not-allowed rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-500"
+            >
+              Add ETH
+            </button>
+          </>
         )}
 
         {!props.connected && (
@@ -131,13 +141,22 @@ export default function PredictModal(props: {
           </button>
         )}
 
-        {isBet && props.connected && !props.bet && (
-          <p className="text-sm text-amber-200">
-            {props.bettingAvailable
-              ? 'The bet form is loading.'
-              : 'Betting is not available for you right now.'}
-          </p>
-        )}
+        {isBet && props.connected && !props.bet &&
+          (props.regionRestricted ? (
+            <button
+              type="button"
+              disabled
+              className="w-full cursor-not-allowed rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-500"
+            >
+              Add ETH
+            </button>
+          ) : (
+            <p className="text-sm text-amber-200">
+              {props.bettingAvailable
+                ? 'The bet form is loading.'
+                : 'Betting is not available for you right now.'}
+            </p>
+          ))}
 
         {!isBet && props.connected && props.citizenNotice}
 
@@ -145,20 +164,20 @@ export default function PredictModal(props: {
           <p className="text-xs text-amber-200">{props.error}</p>
         )}
 
-        {isBet && props.bet ? (
+        {ethOffered ? (
           <BetPrimaryActionContext.Provider value={betActionApi}>
             <div data-testid="deprize-bet-form">{props.bet}</div>
           </BetPrimaryActionContext.Provider>
         ) : null}
 
-        {isBet && props.connected && props.bet && (
+        {ethOffered && props.connected && (
           <button
             type="button"
             onClick={() => betRunRef.current()}
             disabled={!activeBet || activeBet.disabled}
             className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
           >
-            {activeBet?.label ?? 'Enter an amount'}
+            {activeBet?.label ?? 'Add ETH'}
           </button>
         )}
 
@@ -169,7 +188,11 @@ export default function PredictModal(props: {
               onClick={props.onPredict}
               disabled={!props.predictEnabled || props.writing || props.saved}
               aria-pressed={props.saved}
-              className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
+              className={`w-full rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-40 ${TOUCH} ${
+                ethOffered
+                  ? 'border border-white/15 text-gray-200 hover:bg-white/10'
+                  : 'bg-white text-slate-900'
+              }`}
             >
               {predictLabel}
             </button>
