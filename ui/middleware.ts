@@ -11,7 +11,8 @@ import {
 // Guards the routes that ship in the repo but are not ready to be public. See
 // lib/gate/access.ts for why the check has to happen here on the server rather
 // than in the page: a gate the browser evaluates is a gate whose password is in
-// the bundle.
+// the bundle. `isGatedPath` returns false once MOONBASE_DEPRIZE_LAUNCHED is
+// set, which is also what reveals the homepage sections.
 //
 // Also 308s removed docs (Press kit/coverage, tags/press, tags/media) to
 // /press. Those paths are not prerendered — returning `redirect` from

@@ -1,3 +1,4 @@
+import ProjectTableABI from 'const/abis/ProjectTable.json'
 import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
@@ -5,15 +6,20 @@ import {
   MISSION_TABLE_ADDRESSES,
   FEATURED_MISSION,
 } from 'const/config'
-import { HOME_FILM_UPLOAD_DATE, HOME_FILM_VIMEO_ID, homeFilm, homePlate } from 'const/homePageContent'
+import {
+  HOME_FILM_UPLOAD_DATE,
+  HOME_FILM_VIMEO_ID,
+  homeFilm,
+  homePlate,
+} from 'const/homePageContent'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import dynamic from 'next/dynamic'
-import ProjectTableABI from 'const/abis/ProjectTable.json'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useContext, useEffect } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
+import { MOONBASE_DEPRIZE_LAUNCHED } from '@/lib/gate/access'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -122,8 +128,12 @@ export default function Home({ missions, featuredMissionData }: any) {
         <MissionStory />
         <PillarsSection />
         <GovernanceSection />
-        <MoonBaseShowcase />
-        <DePrizeShowcase />
+        {MOONBASE_DEPRIZE_LAUNCHED && (
+          <>
+            <MoonBaseShowcase />
+            <DePrizeShowcase />
+          </>
+        )}
         <LaunchpadShowcase />
         <JourneyTimeline />
         <VoicesSection />
