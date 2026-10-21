@@ -3,7 +3,8 @@
  * Acceptance: Back and Predict are one row, and there is no footer Save.
  *
  * When betting is open, Back is primary and Predict is secondary. When the
- * page is geo-restricted, Predict is the only action and it is primary.
+ * page is geo-restricted, Add ETH stays visible and disabled, and Predict
+ * is the primary action.
  * Predict is disabled with a reason when the prize is locked or the
  * connected wallet is not a Citizen. Order is always bet then predict.
  */
@@ -67,10 +68,15 @@ describe('deprize forecast row actions', () => {
     expect(byKind(actions, 'predict').reason).to.equal(undefined)
   })
 
-  it('makes Predict the only primary action when the page is restricted', () => {
+  it('keeps Add ETH visible but disabled when the page is restricted', () => {
     const actions = mod.rowActions({ ...OPEN, restricted: true })
-    expect(kinds(actions)).to.deep.equal(['predict'])
-    expect(actions[0]).to.include({ kind: 'predict', role: 'primary', enabled: true })
+    expect(kinds(actions)).to.deep.equal(['bet', 'predict'])
+    expect(byKind(actions, 'bet')).to.include({
+      role: 'secondary',
+      enabled: false,
+      reason: 'restricted',
+    })
+    expect(byKind(actions, 'predict')).to.include({ role: 'primary', enabled: true })
   })
 
   it('omits Back when betting is closed, even if the region is unrestricted', () => {
@@ -100,6 +106,7 @@ describe('deprize forecast row actions', () => {
   it('keeps a stable bet-then-predict order whenever both actions exist', () => {
     const cases = [
       OPEN,
+      { ...OPEN, restricted: true },
       { ...OPEN, locked: true },
       { ...OPEN, isCitizen: false },
       { ...OPEN, connected: false, isCitizen: false },

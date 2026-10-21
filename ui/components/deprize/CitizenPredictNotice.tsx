@@ -25,7 +25,6 @@ export default function CitizenPredictNotice(props: {
   isCitizen: boolean
   lookupFailed: boolean
   expired: boolean
-  activeAddress?: string
   linkedCitizenAddress?: string
   chainLabel: string
   canSwitch: boolean
@@ -44,13 +43,11 @@ export default function CitizenPredictNotice(props: {
       <p className="text-sm text-amber-200">
         {props.linkedCitizenAddress ? (
           <>
-            The Citizen on <WalletLabel address={props.linkedCitizenAddress} /> has lapsed. A
-            prediction from that wallet is saved with 0 voting power until it is renewed.
+            The Citizen on <WalletLabel address={props.linkedCitizenAddress} /> has lapsed.
           </>
         ) : (
           <>
-            Your Citizen on {props.chainLabel} has lapsed. You can still predict, and it is
-            saved with 0 voting power until the Citizen is renewed.
+            Your Citizen on {props.chainLabel} has lapsed.
           </>
         )}
       </p>
@@ -63,10 +60,6 @@ export default function CitizenPredictNotice(props: {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-amber-100">
             Your Citizen is on <WalletLabel address={props.linkedCitizenAddress} />
-          </p>
-          <p className="mt-0.5 text-xs text-gray-400">
-            Predictions from <WalletLabel address={props.activeAddress} /> have 0 voting power
-            and won&apos;t move the MOONEY outcome.
           </p>
         </div>
         <button
@@ -97,10 +90,5 @@ export default function CitizenPredictNotice(props: {
     )
   }
 
-  return (
-    <p className="text-sm text-amber-200">
-      You can still predict. It is saved with 0 voting power, so it does not move the MOONEY
-      outcome.
-    </p>
-  )
+  return null
 }

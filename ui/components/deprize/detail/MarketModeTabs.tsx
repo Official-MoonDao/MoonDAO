@@ -18,14 +18,11 @@ const TABS: { mode: MarketMode; title: string; detail: string }[] = [
 export default function MarketModeTabs(props: {
   mode: MarketMode
   onChange: (mode: MarketMode) => void
-  /** Shown under the ETH tab when this visitor can't bet. */
-  betUnavailable?: string
 }) {
   return (
     <div role="tablist" aria-label="Market" className="grid grid-cols-2 gap-2">
       {TABS.map((tab) => {
         const active = props.mode === tab.mode
-        const detail = tab.mode === 'bet' && props.betUnavailable ? props.betUnavailable : tab.detail
         return (
           <button
             key={tab.mode}
@@ -51,7 +48,7 @@ export default function MarketModeTabs(props: {
                 {tab.title}
               </span>
             </span>
-            <span className="mt-1 block text-xs leading-snug text-gray-400">{detail}</span>
+            <span className="mt-1 block text-xs leading-snug text-gray-400">{tab.detail}</span>
           </button>
         )
       })}
