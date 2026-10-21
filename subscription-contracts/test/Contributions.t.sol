@@ -67,19 +67,19 @@ contract ContributionsTest is Test {
 
         citizen = new MockCitizenNFT();
         sql = new SqlStringHarness();
-        table = new Contributions("CONTRIBUTIONS", address(citizen), 5);
+        table = new Contributions("CONTRIBUTIONS", address(citizen), 5, 1);
         _enroll(alice, uint64(NOW + 365 days));
         _enroll(bob, uint64(NOW + 365 days));
     }
 
     function test_constructorLocksTheController() public {
         vm.expectCall(tableland, abi.encodeWithSignature("lockController(address,uint256)"));
-        new Contributions("CONTRIBUTIONS", address(citizen), 5);
+        new Contributions("CONTRIBUTIONS", address(citizen), 5, 1);
     }
 
     function test_constructorRejectsZeroCitizen() public {
         vm.expectRevert(Contributions.ZeroAddress.selector);
-        new Contributions("CONTRIBUTIONS", address(0), 5);
+        new Contributions("CONTRIBUTIONS", address(0), 5, 1);
     }
 
     function test_tableName() public view {
@@ -94,7 +94,7 @@ contract ContributionsTest is Test {
         string memory expected = string.concat(
             "INSERT INTO ",
             table.getTableName(),
-            "(id,cycleId,author,title,description,area,links,metadata,hidden,createdAt,updatedAt,shareBps,reward)VALUES(",
+            "(id,cycleId,author,title,description,area,links,metadata,origin,hidden,createdAt,updatedAt,shareBps,reward)VALUES(",
             "1,1,",
             sql.quote(Strings.toHexString(alice)),
             ",",
@@ -107,7 +107,7 @@ contract ContributionsTest is Test {
             sql.quote(""),
             ",",
             sql.quote(""),
-            ",0,",
+            ",0,0,",
             vm.toString(NOW),
             ",",
             vm.toString(NOW),
@@ -251,7 +251,7 @@ contract ContributionsTest is Test {
 
     function test_closedCycleLocksEditsAndRemovals() public {
         _submit(alice);
-        table.closeCycle();
+        table.closeCycle(2);
         assertEq(table.currentCycleId(), 2);
 
         vm.prank(alice);
@@ -273,7 +273,7 @@ contract ContributionsTest is Test {
     function test_onlyOwnerCanCloseCycle() public {
         vm.prank(operator);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", operator));
-        table.closeCycle();
+        table.closeCycle(2);
         assertEq(table.currentCycleId(), 1);
     }
 
@@ -311,7 +311,7 @@ contract ContributionsTest is Test {
         _submit(alice);
         vm.prank(bob);
         table.submit("t", "d", "area", "", "");
-        table.closeCycle();
+        table.closeCycle(2);
 
         uint256[] memory ids = new uint256[](2);
         uint256[] memory shares = new uint256[](2);
@@ -344,7 +344,7 @@ contract ContributionsTest is Test {
 
     function test_recordResultsOnlyOwner() public {
         _submit(alice);
-        table.closeCycle();
+        table.closeCycle(2);
         vm.prank(operator);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", operator));
         table.recordResults(1, _ids(1), _shares(100), _rewards("{}"));
@@ -352,7 +352,7 @@ contract ContributionsTest is Test {
 
     function test_recordResultsRevertsForWrongCycleUnknownIdAndSecondWrite() public {
         _submit(alice);
-        table.closeCycle();
+        table.closeCycle(2);
         vm.prank(alice);
         table.submit("t", "d", "area", "", "");
 
@@ -369,7 +369,7 @@ contract ContributionsTest is Test {
 
     function test_recordResultsRejectsBadInputAndRollsBack() public {
         _submit(alice);
-        table.closeCycle();
+        table.closeCycle(2);
 
         vm.expectRevert(Contributions.EmptyBatch.selector);
         table.recordResults(1, new uint256[](0), new uint256[](0), new string[](0));
@@ -387,7 +387,7 @@ contract ContributionsTest is Test {
 
     function test_rewardApostropheIsEscaped() public {
         _submit(alice);
-        table.closeCycle();
+        table.closeCycle(2);
         string memory reward = "it's paid";
         ITablelandTables.Statement[] memory statements = new ITablelandTables.Statement[](1);
         statements[0] = ITablelandTables.Statement(TABLE_ID, _resultSql(1, 100, reward));
@@ -418,6 +418,191 @@ contract ContributionsTest is Test {
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", alice));
         table.setMaxPerCycle(1);
+    }
+
+    function test_constructorSetsInitialCycleAndRejectsZero() public {
+        Contributions quarterly = new Contributions("CONTRIBUTIONS", address(citizen), 5, 20264);
+        assertEq(quarterly.currentCycleId(), 20264);
+
+        vm.expectRevert(Contributions.CycleNotIncreasing.selector);
+        new Contributions("CONTRIBUTIONS", address(citizen), 5, 0);
+    }
+
+    function test_closeCycleJumpsToQuarterCodeAndRejectsNonIncreasing() public {
+        table.closeCycle(20264);
+        assertEq(table.currentCycleId(), 20264);
+
+        vm.expectRevert(Contributions.CycleNotIncreasing.selector);
+        table.closeCycle(20264);
+        vm.expectRevert(Contributions.CycleNotIncreasing.selector);
+        table.closeCycle(20263);
+
+        table.closeCycle(20271);
+        assertEq(table.currentCycleId(), 20271);
+    }
+
+    function test_importWritesRowsForOtherAuthors() public {
+        table.closeCycle(20264);
+        address carol = address(0xCA201);
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](2);
+        rows[0] = _row(carol, 20243, '{"USDC":"158"}');
+        rows[0].shareBps = 660;
+        rows[0].title = "carol's rover";
+        rows[1] = _row(alice, 20252, "");
+
+        string memory expected = string.concat(
+            "INSERT INTO ",
+            table.getTableName(),
+            "(id,cycleId,author,title,description,area,links,metadata,origin,hidden,createdAt,updatedAt,shareBps,reward)VALUES(",
+            _importSql(1, rows[0]),
+            "),(",
+            _importSql(2, rows[1]),
+            ")"
+        );
+        vm.expectCall(
+            tableland, abi.encodeWithSignature("mutate(address,uint256,string)", address(table), TABLE_ID, expected)
+        );
+        vm.expectEmit(address(table));
+        emit Contributions.ContributionImported(1, 20243, carol);
+        vm.expectEmit(address(table));
+        emit Contributions.ContributionImported(2, 20252, alice);
+        uint256 firstId = table.importBatch(rows);
+
+        assertEq(firstId, 1);
+        assertEq(table.nextId(), 3);
+        (address author, uint256 cycleId, bool hasResult) = table.entries(1);
+        assertEq(author, carol);
+        assertEq(cycleId, 20243);
+        assertTrue(hasResult);
+        (author, cycleId, hasResult) = table.entries(2);
+        assertEq(author, alice);
+        assertEq(cycleId, 20252);
+        assertFalse(hasResult);
+        assertEq(table.countInCycle(20243, carol), 1);
+
+        vm.prank(alice);
+        assertEq(table.submit("t", "d", "area", "", ""), 3);
+    }
+
+    function test_importedRowsWithoutResultsCanBeRecordedLater() public {
+        table.closeCycle(20264);
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](2);
+        rows[0] = _row(alice, 20252, "");
+        rows[1] = _row(bob, 20252, "{}");
+        table.importBatch(rows);
+
+        table.recordResults(20252, _ids(1), _shares(5000), _rewards("{}"));
+        vm.expectRevert(Contributions.ResultsExist.selector);
+        table.recordResults(20252, _ids(2), _shares(5000), _rewards("{}"));
+    }
+
+    function test_importIntoOpenCycleIsEditableByAuthorOnly() public {
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](1);
+        rows[0] = _row(alice, 1, "");
+        table.importBatch(rows);
+
+        vm.expectRevert(Contributions.NotAuthor.selector);
+        table.update(1, "new", "d2", "research", "", "");
+
+        vm.prank(alice);
+        table.update(1, "new", "d2", "research", "", "");
+        vm.prank(alice);
+        table.remove(1);
+        assertEq(table.countInCycle(1, alice), 0);
+    }
+
+    function test_importDoesNotRequireAuthorToBeCitizen() public {
+        citizen.clear(bob);
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](1);
+        rows[0] = _row(bob, 1, "");
+        table.importBatch(rows);
+        (address author,,) = table.entries(1);
+        assertEq(author, bob);
+    }
+
+    function test_importOnlyOwner() public {
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](1);
+        rows[0] = _row(alice, 1, "");
+        _expectNoMutate();
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", alice));
+        table.importBatch(rows);
+    }
+
+    function test_importRejectsBadRowsWithoutWriting() public {
+        table.closeCycle(20264);
+        _expectNoMutate();
+
+        vm.expectRevert(Contributions.EmptyBatch.selector);
+        table.importBatch(new Contributions.ImportRow[](0));
+
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](1);
+
+        rows[0] = _row(address(0), 20252, "");
+        vm.expectRevert(Contributions.ZeroAddress.selector);
+        table.importBatch(rows);
+
+        rows[0] = _row(alice, 0, "");
+        vm.expectRevert(Contributions.WrongCycle.selector);
+        table.importBatch(rows);
+
+        rows[0] = _row(alice, 20271, "");
+        vm.expectRevert(Contributions.FutureCycle.selector);
+        table.importBatch(rows);
+
+        rows[0] = _row(alice, 20252, "");
+        rows[0].createdAt = 0;
+        vm.expectRevert(Contributions.BadTimestamp.selector);
+        table.importBatch(rows);
+
+        rows[0].createdAt = uint64(NOW + 1);
+        vm.expectRevert(Contributions.BadTimestamp.selector);
+        table.importBatch(rows);
+
+        rows[0] = _row(alice, 20252, "");
+        rows[0].shareBps = 10_001;
+        vm.expectRevert(Contributions.ShareTooLarge.selector);
+        table.importBatch(rows);
+
+        rows[0] = _row(alice, 20264, '{"USDC":"1"}');
+        vm.expectRevert(Contributions.CycleStillOpen.selector);
+        table.importBatch(rows);
+
+        rows[0] = _row(alice, 20252, "");
+        rows[0].title = "";
+        vm.expectRevert(Contributions.EmptyField.selector);
+        table.importBatch(rows);
+
+        assertEq(table.nextId(), 1);
+    }
+
+    function test_importRejectsOversizedBatch() public {
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](18);
+        for (uint256 i; i < rows.length; ++i) {
+            rows[i] = _row(alice, 1, "");
+            rows[i].description = _repeat("a", 2000);
+        }
+        _expectNoMutate();
+        vm.expectRevert(Contributions.StatementTooLong.selector);
+        table.importBatch(rows);
+    }
+
+    function test_sealImportsIsOneWay() public {
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", alice));
+        table.sealImports();
+
+        vm.expectEmit(address(table));
+        emit Contributions.ImportsSealed();
+        table.sealImports();
+        assertTrue(table.importsSealed());
+
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](1);
+        rows[0] = _row(alice, 1, "");
+        vm.expectRevert(Contributions.ImportsClosed.selector);
+        table.importBatch(rows);
+        vm.expectRevert(Contributions.ImportsClosed.selector);
+        table.sealImports();
     }
 
     function testFuzz_quoteRoundTrip(string memory raw) public view {
@@ -463,6 +648,34 @@ contract ContributionsTest is Test {
             " WHERE id=",
             vm.toString(id)
         );
+    }
+
+    function _row(address author, uint256 cycleId, string memory reward)
+        internal
+        pure
+        returns (Contributions.ImportRow memory)
+    {
+        return Contributions.ImportRow({
+            author: author,
+            cycleId: cycleId,
+            createdAt: uint64(NOW - 1 days),
+            title: "t",
+            description: "d",
+            area: "area",
+            links: "https://example.com",
+            metadata: '{"source":"sheet"}',
+            shareBps: 0,
+            reward: reward
+        });
+    }
+
+    function _importSql(uint256 id, Contributions.ImportRow memory row) internal pure returns (string memory s) {
+        s = string.concat(vm.toString(id), ",", vm.toString(row.cycleId), ",");
+        s = string.concat(s, SqlString.quote(Strings.toHexString(row.author)), ",", SqlString.quote(row.title), ",");
+        s = string.concat(s, SqlString.quote(row.description), ",", SqlString.quote(row.area), ",");
+        s = string.concat(s, SqlString.quote(row.links), ",", SqlString.quote(row.metadata), ",1,0,");
+        s = string.concat(s, vm.toString(uint256(row.createdAt)), ",", vm.toString(NOW), ",");
+        s = string.concat(s, vm.toString(row.shareBps), ",", SqlString.quote(row.reward));
     }
 
     function _ids(uint256 id) internal pure returns (uint256[] memory ids) {

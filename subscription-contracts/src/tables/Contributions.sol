@@ -17,24 +17,48 @@ interface ICitizenNFT {
 }
 
 /// @title Contributions
-/// @notice One Tableland table of citizen contributions, grouped by a cycle counter.
+/// @notice One Tableland table of citizen contributions, grouped by cycle.
 ///
-/// A cycle is just a number. Submissions always land in `currentCycleId`. The
-/// contract does not know dates, quarters, or how a cycle is scored.
+/// A cycle is just an increasing number. Deploy scripts use quarter codes
+/// (`20264` = Q4 2026) so past quarters can be imported below the open one.
+/// Submissions always land in `currentCycleId`. The contract does not know
+/// dates or how a cycle is scored.
 ///
 /// Closing a cycle and writing its payout are owner calls. The owner is the
 /// Safe that also sends the payments: a cron job proposes the transaction, and
 /// signers execute `closeCycle` and `recordResults` in that same batch. Nothing
 /// here is final until they sign. Operators can only hide a row.
 ///
-/// The author of a row is always `msg.sender`. Content can be edited or removed
-/// only by that author, and only while the row's cycle is still the open one.
+/// A submitted row's author is `msg.sender` (`origin = 0`). The owner can also
+/// import rows on someone else's behalf with an explicit author, cycle and
+/// timestamp (`origin = 1`) to backfill history, until `sealImports` is called.
+/// Content can be edited or removed only by the row's author, and only while
+/// the row's cycle is still the open one.
 contract Contributions is ERC721Holder, Ownable {
     struct Entry {
         address author;
         uint256 cycleId;
         bool hasResult;
     }
+
+    /// @notice One historical row for `importBatch`. `reward` is JSON text or
+    /// empty. A row with a nonzero `shareBps` or a reward counts as already
+    /// recorded, so `recordResults` cannot overwrite it.
+    struct ImportRow {
+        address author;
+        uint256 cycleId;
+        uint64 createdAt;
+        string title;
+        string description;
+        string area;
+        string links;
+        string metadata;
+        uint256 shareBps;
+        string reward;
+    }
+
+    uint8 public constant ORIGIN_SUBMITTED = 0;
+    uint8 public constant ORIGIN_IMPORTED = 1;
 
     uint256 public constant TITLE_MAX = 120;
     uint256 public constant DESCRIPTION_MAX = 2000;
@@ -47,13 +71,15 @@ contract Contributions is ERC721Holder, Ownable {
     uint256 public constant SHARE_BPS_MAX = 10_000;
 
     string private constant _COLUMNS =
-        "id,cycleId,author,title,description,area,links,metadata,hidden,createdAt,updatedAt,shareBps,reward";
+        "id,cycleId,author,title,description,area,links,metadata,origin,hidden,createdAt,updatedAt,shareBps,reward";
 
     uint256 private _tableId;
     string private _tablePrefix;
 
-    uint256 public currentCycleId = 1;
+    uint256 public currentCycleId;
     uint256 public nextId = 1;
+    /// @notice Once true, `importBatch` is disabled forever.
+    bool public importsSealed;
     /// @notice Submissions per author per cycle. Zero disables the cap.
     uint256 public maxPerCycle;
     ICitizenNFT public citizenNFT;
@@ -69,6 +95,8 @@ contract Contributions is ERC721Holder, Ownable {
     event CycleClosed(uint256 indexed cycleId, uint256 nextCycleId);
     event ResultRecorded(uint256 indexed cycleId, uint256 indexed id, uint256 shareBps);
     event OperatorSet(address indexed operator, bool enabled);
+    event ContributionImported(uint256 indexed id, uint256 indexed cycleId, address indexed author);
+    event ImportsSealed();
 
     error NotCitizen();
     error TextTooLong();
@@ -86,20 +114,28 @@ contract Contributions is ERC721Holder, Ownable {
     error EmptyBatch();
     error ZeroAddress();
     error StatementTooLong();
+    error ImportsClosed();
+    error FutureCycle();
+    error BadTimestamp();
+    error CycleNotIncreasing();
 
-    constructor(string memory tablePrefix, address citizenNFT_, uint256 maxPerCycle_) Ownable(msg.sender) {
+    constructor(string memory tablePrefix, address citizenNFT_, uint256 maxPerCycle_, uint256 initialCycleId)
+        Ownable(msg.sender)
+    {
         if (citizenNFT_ == address(0)) revert ZeroAddress();
+        if (initialCycleId == 0) revert CycleNotIncreasing();
         _tablePrefix = tablePrefix;
         citizenNFT = ICitizenNFT(citizenNFT_);
         maxPerCycle = maxPerCycle_;
+        currentCycleId = initialCycleId;
         _tableId = TablelandDeployments.get()
             .create(
                 address(this),
                 SQLHelpers.toCreateFromSchema(
                     "id integer primary key," "cycleId integer not null," "author text not null," "title text not null,"
                     "description text not null," "area text not null," "links text not null," "metadata text not null,"
-                    "hidden integer not null," "createdAt integer not null," "updatedAt integer not null,"
-                    "shareBps integer not null," "reward text not null",
+                    "origin integer not null," "hidden integer not null," "createdAt integer not null,"
+                    "updatedAt integer not null," "shareBps integer not null," "reward text not null",
                     tablePrefix
                 )
             );
@@ -171,12 +207,53 @@ contract Contributions is ERC721Holder, Ownable {
         emit HiddenSet(id, hidden);
     }
 
-    /// @notice End the open cycle. New submissions use the next id.
+    /// @notice End the open cycle and open `nextCycleId`, which must be larger.
     /// Called by the payout Safe, in the same signed batch as the payments.
-    function closeCycle() external onlyOwner {
+    function closeCycle(uint256 nextCycleId) external onlyOwner {
         uint256 closed = currentCycleId;
-        currentCycleId = closed + 1;
-        emit CycleClosed(closed, currentCycleId);
+        if (nextCycleId <= closed) revert CycleNotIncreasing();
+        currentCycleId = nextCycleId;
+        emit CycleClosed(closed, nextCycleId);
+    }
+
+    /// @notice Backfill contributions made by other people, with an explicit
+    /// author, cycle and creation time. Authors need not be current citizens.
+    /// Rows go in as one multi-row insert, so callers must keep each batch
+    /// under `STATEMENT_MAX` bytes. Rows imported into the open cycle behave
+    /// like submissions: their author can edit or remove them until it closes.
+    function importBatch(ImportRow[] calldata rows) external onlyOwner returns (uint256 firstId) {
+        if (importsSealed) revert ImportsClosed();
+        uint256 n = rows.length;
+        if (n == 0) revert EmptyBatch();
+        uint256 openCycle = currentCycleId;
+        firstId = nextId;
+
+        string[] memory values = new string[](n);
+        for (uint256 i; i < n; ++i) {
+            ImportRow calldata row = rows[i];
+            if (row.author == address(0)) revert ZeroAddress();
+            if (row.cycleId == 0) revert WrongCycle();
+            if (row.cycleId > openCycle) revert FutureCycle();
+            if (row.createdAt == 0 || row.createdAt > block.timestamp) revert BadTimestamp();
+            if (row.shareBps > SHARE_BPS_MAX) revert ShareTooLarge();
+            bool hasResult = row.shareBps != 0 || bytes(row.reward).length != 0;
+            if (hasResult && row.cycleId == openCycle) revert CycleStillOpen();
+
+            uint256 id = firstId + i;
+            countInCycle[row.cycleId][row.author] += 1;
+            entries[id] = Entry({author: row.author, cycleId: row.cycleId, hasResult: hasResult});
+            values[i] = _importValues(id, row);
+            emit ContributionImported(id, row.cycleId, row.author);
+        }
+        nextId = firstId + n;
+        _mutate(SQLHelpers.toBatchInsert(_tablePrefix, _tableId, _COLUMNS, values));
+    }
+
+    /// @notice Permanently disable `importBatch` once the backfill is reviewed.
+    function sealImports() external onlyOwner {
+        if (importsSealed) revert ImportsClosed();
+        importsSealed = true;
+        emit ImportsSealed();
     }
 
     /// @notice Write each contribution's share of the pool and what it was paid.
@@ -270,7 +347,21 @@ contract Contributions is ERC721Holder, Ownable {
         values = string.concat(values, ",", _text(links, LINKS_MAX, false));
         values = string.concat(values, ",", _text(metadata, METADATA_MAX, false));
         string memory ts = Strings.toString(block.timestamp);
-        values = string.concat(values, ",0,", ts, ",", ts, ",0,", SqlString.quote(""));
+        values = string.concat(values, ",0,0,", ts, ",", ts, ",0,", SqlString.quote(""));
+    }
+
+    function _importValues(uint256 id, ImportRow calldata row) internal view returns (string memory values) {
+        values = string.concat(Strings.toString(id), ",", Strings.toString(row.cycleId));
+        values = string.concat(values, ",", SqlString.quote(Strings.toHexString(row.author)));
+        values = string.concat(values, ",", _text(row.title, TITLE_MAX, true));
+        values = string.concat(values, ",", _text(row.description, DESCRIPTION_MAX, true));
+        values = string.concat(values, ",", _text(row.area, AREA_MAX, true));
+        values = string.concat(values, ",", _text(row.links, LINKS_MAX, false));
+        values = string.concat(values, ",", _text(row.metadata, METADATA_MAX, false));
+        values = string.concat(values, ",1,0,", Strings.toString(row.createdAt));
+        values = string.concat(values, ",", Strings.toString(block.timestamp));
+        values = string.concat(values, ",", Strings.toString(row.shareBps));
+        values = string.concat(values, ",", _text(row.reward, REWARD_MAX, false));
     }
 
     function _updateSetters(

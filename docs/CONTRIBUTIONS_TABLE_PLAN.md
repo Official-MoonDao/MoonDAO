@@ -17,11 +17,13 @@ running `script/Contributions.s.sol` fills in `CONTRIBUTIONS_ADDRESSES` and
 
 ## 1. Simplifying assumptions
 
-1. **One author per contribution.** The author is the citizen who sends the transaction
-   (`msg.sender`). There are no collaborators or shares.
+1. **One author per contribution.** For a submission, the author is the citizen who sends the
+   transaction (`msg.sender`). Imported history (assumption 6) names its author explicitly.
+   There are no collaborators or shares.
 2. **A cycle is just a number.** The contract stores `currentCycleId`, and every new contribution
-   goes into it. When the payout script runs for that cycle, it calls `closeCycle()`, which
-   increments the counter. No dates are stored. A cycle is simply the time between two payouts,
+   goes into it. When the payout script runs for that cycle, it calls `closeCycle(nextCycleId)`,
+   which must be larger than the current ID. Deploys use quarter codes (`20264` = Q4 2026) so
+   past quarters sit below the open one. No dates are stored. A cycle is simply the time between two payouts,
    so moving from quarterly to monthly or weekly payouts needs no change.
 3. **The contract doesn't score anything.** An ELO-style wrap-up script, run on a schedule,
    decides each contribution's share. It does not send the transaction itself: it queues
@@ -31,7 +33,9 @@ running `script/Contributions.s.sol` fills in `CONTRIBUTIONS_ADDRESSES` and
    joins.
 5. **Citizens pay their own gas.** That's a few cents on Arbitrum, the same as votes and profile
    edits today. Relayed (gasless) writes come later.
-6. **No import of history.** The Google Sheet stays the record for past cycles.
+6. **History is imported once, by the Safe.** `importBatch` writes rows with an explicit
+   `author`, `cycleId` (at or below the open cycle) and `createdAt`, marked `origin = 1`. After
+   the backfill is reviewed, `sealImports()` turns imports off for good.
 
 ---
 
@@ -70,6 +74,7 @@ description text not null,
 area text not null,
 links text not null,
 metadata text not null,
+origin integer not null,
 hidden integer not null,
 createdAt integer not null,
 updatedAt integer not null,
@@ -80,15 +85,16 @@ reward text not null
 | Column | Written by | Notes |
 | --- | --- | --- |
 | `id` | Contract counter, starting at 1 | Stable ID for the feed, profiles, briefings and payouts |
-| `cycleId` | Contract (`currentCycleId` at submit time) | Never changes |
-| `author` | Contract (`msg.sender`, lowercase hex) | Never changes. Profiles join on `CITIZENTABLE.owner` |
+| `cycleId` | Contract (`currentCycleId` at submit time), or the Safe for imports | Never changes |
+| `author` | Contract (`msg.sender`, lowercase hex), or the Safe for imports | Never changes. Profiles join on `CITIZENTABLE.owner` |
 | `title` | Author | ≤ 120 bytes |
 | `description` | Author | ≤ 2,000 bytes |
 | `area` | Author | ≤ 32 bytes. The UI offers today's categories (outreach, community, content, technical, research, other); the contract doesn't enforce them |
 | `links` | Author | ≤ 1,000 bytes, free text. The UI only turns `https://` URLs into links |
 | `metadata` | Author | ≤ 1,000 bytes. JSON for optional fields we don't want columns for yet, such as time commitment, a related project ID or an IPFS CID. The same idea as `JobBoardTable.metadata`. Stored as plain text, so readers parse it defensively |
+| `origin` | Contract | `0` for a submission, `1` for an imported row. The UI labels imported rows |
 | `hidden` | Operators | `0` or `1`. Hidden rows stay in the table, but the UI doesn't show them |
-| `createdAt`, `updatedAt` | Contract (`block.timestamp`) | These also give a cycle's rough dates if we ever need them |
+| `createdAt`, `updatedAt` | Contract (`block.timestamp`). Imports set `createdAt` explicitly | These also give a cycle's rough dates if we ever need them |
 | `shareBps` | Payout script | `0` until results are recorded. The contribution's share of the cycle's pool, in basis points |
 | `reward` | Payout script | `''` until results are recorded, then JSON of what was paid, e.g. `{"USDC":"120.50","vMOONEY":"5000"}`. `{}` means scored but unpaid |
 
@@ -104,8 +110,8 @@ ORDER BY cycleId DESC, createdAt DESC
 SELECT * FROM CONTRIBUTIONS_42161_x WHERE cycleId = :current AND hidden = 0
 ```
 
-The UI can show "Cycle 3". If we want "Q4 2026" instead, add an optional ID-to-label map in
-`ui/const/config.ts`; that's display only.
+Cycle IDs are quarter codes, so the UI can turn `20264` into "Q4 2026" with a small display
+helper.
 
 ---
 
@@ -120,11 +126,12 @@ This follows the `Ownable` plus `operators` pattern from `JobBoardTable`.
 | **Citizen** (holds an unexpired Citizen NFT) | `submit` into the current cycle | `balanceOf(sender) > 0` and `expiresAt(getOwnedToken(sender)) > now`. Below `maxPerCycle` for this cycle. Field size limits |
 | **Author** | `update` or `remove` their own contribution | Caller is the stored author, is still a citizen, and the contribution's cycle is still the current one |
 | **Operator** | `setHidden(id, bool)` | The contribution exists. Hiding does not need a Safe transaction |
-| **Owner** (the payout Safe) | `closeCycle()`, `recordResults(...)`, everything an operator can do, plus `setOperator`, `setCitizenNFT` and `setMaxPerCycle` | `onlyOwner`. A cron wallet cannot call these; it only proposes the Safe transaction |
+| **Owner** (the payout Safe) | `closeCycle(next)`, `recordResults(...)`, `importBatch(...)` until `sealImports()`, everything an operator can do, plus `setOperator`, `setCitizenNFT` and `setMaxPerCycle` | `onlyOwner`. A cron wallet cannot call these; it only proposes the Safe transaction |
 
 ### 4.2 What nobody can do
 
-- Write a contribution on someone else's behalf, or change `author`, `cycleId` or `createdAt`.
+- Write a contribution on someone else's behalf, except the Safe through `importBatch` before
+  imports are sealed. Nobody can change `author`, `cycleId` or `createdAt` after a row is written.
 - Edit or remove a contribution once its cycle is closed. Closing a cycle locks its contributions.
 - Change results once they've been recorded. Results are written once per contribution.
 - Edit anyone's content, the owner included. There's no generic `updateTableCol(id, col, val)`
@@ -167,7 +174,7 @@ every field as plain text, never as HTML.
 2. On a schedule, a cron job reads the open cycle and computes an ELO-style wrap-up: each
    contribution's share of the pool and what it should be paid. That scoring script is separate
    from this contract.
-3. The cron wallet queues one transaction to the payout Safe. The batch contains `closeCycle()`,
+3. The cron wallet queues one transaction to the payout Safe. The batch contains `closeCycle(next)`,
    `recordResults(...)` for the cycle it just closed, and the payment calls. Signers have to
    approve it. Nothing is recorded and nothing is paid until they do.
 4. Once the Safe executes, `currentCycleId` has moved on, the closed cycle's contributions are
@@ -184,15 +191,17 @@ every field as plain text, never as HTML.
 contract Contributions is ERC721Holder, Ownable {
     struct Entry { address author; uint64 cycleId; bool hasResult; }
 
-    uint256 public currentCycleId = 1;
+    uint256 public currentCycleId;                                  // set in the constructor
     uint256 public nextId = 1;
+    bool public importsSealed;
     uint256 public maxPerCycle;
     IMoonDAOCitizen public citizenNFT;
     mapping(address => bool) public operators;
     mapping(uint256 => Entry) public entries;
     mapping(uint256 => mapping(address => uint256)) public countInCycle;
 
-    constructor(string memory prefix, address citizenNFT_, uint256 maxPerCycle_); // creates table, locks controller
+    constructor(string memory prefix, address citizenNFT_, uint256 maxPerCycle_,
+        uint256 initialCycleId);                                    // creates table, locks controller
 
     function submit(string calldata title, string calldata description, string calldata area,
         string calldata links, string calldata metadata) external returns (uint256 id);
@@ -201,7 +210,9 @@ contract Contributions is ERC721Holder, Ownable {
     function remove(uint256 id) external;
 
     function setHidden(uint256 id, bool hidden) external;          // owner or operator
-    function closeCycle() external;                                 // onlyOwner (the Safe)
+    function closeCycle(uint256 nextCycleId) external;              // onlyOwner (the Safe)
+    function importBatch(ImportRow[] calldata rows) external returns (uint256 firstId); // onlyOwner, until sealed
+    function sealImports() external;                                // onlyOwner, one-way
     function recordResults(uint256 cycleId, uint256[] calldata ids, uint256[] calldata shareBps,
         string[] calldata rewards) external;                        // onlyOwner (the Safe)
 
@@ -215,8 +226,8 @@ contract Contributions is ERC721Holder, Ownable {
 ```
 
 Events: `ContributionSubmitted`, `ContributionUpdated`, `ContributionRemoved`, `HiddenSet`,
-`CycleClosed` and `ResultRecorded`, each indexed by `id` or `cycleId`. Deployed with
-`maxPerCycle = 5`. The owner can set it to `0` later to remove the cap.
+`CycleClosed`, `ResultRecorded`, `ContributionImported` and `ImportsSealed`, each indexed by `id` or `cycleId`. Deployed with
+`maxPerCycle = 5` and `initialCycleId = 20264`. The owner can set it to `0` later to remove the cap.
 
 ---
 
@@ -274,7 +285,6 @@ Each of these is left out on purpose and can be added when there's a reason to.
 | Cycle dates or labels | A config map in the UI, or a small cycles table if other systems need it |
 | Public reasons for hiding | A column or event field on `setHidden` |
 | Senate quorum on results, or a separate results table | When payouts are decided by matchups rather than the Senate |
-| Importing the sheet history | A one-time import function, with imported rows marked as unverified |
 
 v2 contracts follow the existing migration path (`script/migrate/migrate*.js` and
 `verifyMigration.js`), keeping IDs.
