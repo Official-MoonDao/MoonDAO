@@ -7,7 +7,6 @@ import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
-import { DEPRIZE_PREDICT_CTA } from '@/lib/deprize/constants'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
@@ -76,6 +75,11 @@ export default function ForecastPanel(props: {
   renderBet?: (input: { index: number; onClose: () => void }) => ReactNode
   /** ETH staked on each outcome, same order as `labels`. */
   stakedEthByOutcome?: number[]
+  /**
+   * Window opened for the selected competitor. The list itself always predicts.
+   * The side ticket passes 'bet' when it is placing an ETH bet.
+   */
+  mode: 'bet' | 'predict'
 }) {
   const {
     chainSlug,
@@ -103,6 +107,7 @@ export default function ForecastPanel(props: {
     onModalClose,
     renderBet,
     stakedEthByOutcome,
+    mode,
   } = props
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
@@ -161,7 +166,6 @@ export default function ForecastPanel(props: {
   })
   const predictAction = actions.find((action) => action.kind === 'predict')
   const showBet = actions.some((action) => action.kind === 'bet' && action.enabled)
-  const mode = showBet ? 'bet' : 'predict'
 
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
@@ -400,11 +404,7 @@ export default function ForecastPanel(props: {
   return (
     <section id="deprize-forecast" className="scroll-mt-24">
       <h2 className="text-white text-lg font-heading font-semibold">Competitors</h2>
-      <p className="mt-1 text-sm text-gray-400">
-        {showBet
-          ? 'Pick a team to bet ETH on. Each share pays 1 ETH if that team wins, and every bet moves the odds.'
-          : FORECAST_COPY.panelIntro}
-      </p>
+      <p className="mt-1 text-sm text-gray-400">{FORECAST_COPY.panelIntro}</p>
 
       {!isLive && (
         <p className="mt-3 text-sm text-amber-200">
@@ -439,9 +439,6 @@ export default function ForecastPanel(props: {
         <span className="hidden w-[5.5rem] text-right md:block"># predictions</span>
         <span className="w-16 text-right sm:w-20">Chance</span>
         <span className="hidden w-12 text-right sm:block">Pays</span>
-        <span className="invisible shrink-0 px-3 text-sm font-semibold normal-case tracking-normal sm:px-5">
-          {showBet ? 'Bet' : DEPRIZE_PREDICT_CTA}
-        </span>
       </div>
       <div className="mt-1 flex flex-col gap-1" aria-live="polite">
         {rankedOutcomes.map((o) => {
@@ -466,13 +463,10 @@ export default function ForecastPanel(props: {
                 resolved={showResolved}
                 isRefundVector={isRefundVector}
                 isWinningSlot={showResolved && o.index === winningIndex}
-                mode={mode}
+                mode="predict"
+                showCta={false}
                 bettingOpen={false}
-                selectable={
-                  showBet
-                    ? !showResolved && bettingOpen && !tradingHalted && !marketLoading
-                    : !showResolved && !inputsLocked
-                }
+                selectable={!showResolved && !inputsLocked}
                 highlighted={isSaved}
                 badge={isSaved ? FORECAST_COPY.predicted : undefined}
                 chanceLabel="chance"

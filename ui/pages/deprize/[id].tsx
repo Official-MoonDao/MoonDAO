@@ -396,9 +396,15 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
   const onrampQueryActive = parseOnrampReturn(router.query).active
 
-  // Clicking a competitor opens the prediction window. Connecting and betting
-  // happen inside that window.
-  const handleBet = useCallback((index: number) => {
+  // The competitor list predicts. The side ticket places an ETH bet when betting
+  // is open, and predicts when it is not.
+  const [windowMode, setWindowMode] = useState<'bet' | 'predict'>('predict')
+  const openPredict = useCallback((index: number) => {
+    setWindowMode('predict')
+    setBetIndex(index)
+  }, [])
+  const openBet = useCallback((index: number) => {
+    setWindowMode('bet')
     setBetIndex(index)
   }, [])
   const [ticketAmountEth, setTicketAmountEth] = useState('')
@@ -408,6 +414,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const [deepLinkHandled, setDeepLinkHandled] = useState(false)
   useEffect(() => {
     if (onrampReturn.betIndex == null) return
+    setWindowMode('bet')
     setBetIndex(onrampReturn.betIndex)
   }, [onrampReturn.betIndex])
 
@@ -422,6 +429,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     setDeepLinkHandled(true)
     const el = document.getElementById(`deprize-outcome-${idx}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setWindowMode('bet')
     setBetIndex(idx)
   }, [
     deepLinkHandled,
@@ -813,8 +821,9 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           tradingHalted={tradingHalted}
           userAddress={userAddress}
           withdrawnByTeamId={withdrawnByTeamId}
-          onBet={handleBet}
+          onBet={openPredict}
           stakedEthByOutcome={stakedEthByOutcome}
+          mode={windowMode}
           modalIndex={betIndex}
           onModalClose={() => setBetIndex(null)}
           renderBet={
@@ -865,7 +874,9 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           betUnavailableReason={betUnavailableReason}
           amountEth={ticketAmountEth}
           onAmountChange={setTicketAmountEth}
-          onPredict={handleBet}
+          onPredict={(index) =>
+            bettingAllowed && !tradingHalted ? openBet(index) : openPredict(index)
+          }
         />
         <PrizePoolSlot
           poolUsd={poolUsd}

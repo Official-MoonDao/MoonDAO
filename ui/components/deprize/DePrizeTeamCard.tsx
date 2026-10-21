@@ -41,6 +41,8 @@ type DePrizeTeamCardProps = {
   highlighted?: boolean
   /** Short status under the name, such as "Your Prediction". */
   badge?: string
+  /** Colored Bet/Predict pill. The race list omits it; the row itself is the control. */
+  showCta?: boolean
   /** Caption under the percent. ETH odds say "chance"; MOONEY ranking says "share". */
   chanceLabel?: string
   /** ETH bet into this outcome on the market. Shown above the voting-power line. */
@@ -131,6 +133,7 @@ export default function DePrizeTeamCard({
   selectable = false,
   highlighted = false,
   badge,
+  showCta = true,
   chanceLabel = 'chance',
   stakedEth,
   citizenVotingPower,
@@ -312,7 +315,7 @@ export default function DePrizeTeamCard({
           </span>
         )}
 
-        {canPredict && !actions && (
+        {showCta && canPredict && !actions && (
           <span
             aria-hidden
             className="shrink-0 rounded-lg px-3 sm:px-5 py-2 text-sm font-semibold text-white shadow-sm transition-[filter] group-hover:brightness-110"
