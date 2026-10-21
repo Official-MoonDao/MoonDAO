@@ -91,7 +91,7 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    name: '$MOONEY',
+    name: 'Governance',
     href: '/mooney',
     icon: CircleStackIcon,
     // Governance lives under Learn: reading how the DAO decides things is a
