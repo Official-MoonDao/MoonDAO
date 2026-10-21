@@ -401,9 +401,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     },
     [router]
   )
-  const betUnavailableReason = restricted
-    ? "Betting isn't available where you are"
-    : tradingHalted
+  const betUnavailableReason = tradingHalted
     ? 'Trading is paused on this market'
     : !acceptsBets
     ? 'This market is not taking bets right now'
@@ -788,11 +786,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           chainSlug={chainSlug}
         />
         {numOutcomes > 0 && (
-          <MarketModeTabs
-            mode={marketMode}
-            onChange={setMarketMode}
-            betUnavailable={restricted ? 'Not available in your region.' : undefined}
-          />
+          <MarketModeTabs mode={marketMode} onChange={setMarketMode} />
         )}
         <OddsSection
           mode={marketMode}
@@ -859,7 +853,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           onBet={handleBet}
           stakedEthByOutcome={stakedEthByOutcome}
           mode={marketMode}
-          onModeChange={setMarketMode}
           modalIndex={betIndex}
           onModalClose={() => setBetIndex(null)}
           renderBet={

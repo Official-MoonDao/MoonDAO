@@ -2,7 +2,7 @@ export type RowAction = {
   kind: 'bet' | 'predict'
   role: 'primary' | 'secondary'
   enabled: boolean
-  reason?: 'locked' | 'need-citizen'
+  reason?: 'locked' | 'need-citizen' | 'restricted'
 }
 
 export function rowActions(input: {
@@ -22,9 +22,17 @@ export function rowActions(input: {
     predict.reason = 'locked'
   }
 
-  if (input.bettingOpen && !input.restricted) {
-    predict.role = 'secondary'
-    return [{ kind: 'bet', role: 'primary', enabled: true }, predict]
+  if (!input.bettingOpen) return [predict]
+
+  // Restricted visitors still see Add ETH. It stays disabled, and the
+  // prediction itself is the action they can take.
+  if (input.restricted) {
+    return [
+      { kind: 'bet', role: 'secondary', enabled: false, reason: 'restricted' },
+      predict,
+    ]
   }
-  return [predict]
+
+  predict.role = 'secondary'
+  return [{ kind: 'bet', role: 'primary', enabled: true }, predict]
 }

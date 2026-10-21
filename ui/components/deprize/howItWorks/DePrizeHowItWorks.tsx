@@ -73,7 +73,7 @@ const FAQS: { q: string; a: ReactNode }[] = [
   },
 ]
 
-export default function DePrizeHowItWorks({ restricted }: { restricted: boolean }) {
+export default function DePrizeHowItWorks() {
   return (
     <div className="animate-fadeIn flex flex-col items-center">
       <Head
@@ -136,11 +136,6 @@ export default function DePrizeHowItWorks({ restricted }: { restricted: boolean 
                 About 5% of every bet goes straight into the prize. Your bet also nudges the odds
                 toward your pick.
               </p>
-              {restricted && (
-                <p className="text-sm text-amber-200">
-                  Betting isn&apos;t available in your region. You can still predict.
-                </p>
-              )}
             </Step>
 
             <Step number={3} title="The prize grows" scene={<PrizeScene />}>
