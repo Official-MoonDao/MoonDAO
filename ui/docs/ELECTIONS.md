@@ -215,6 +215,18 @@ then on the page always shows the frozen result.
 6. **Announce** the result. The page shows the full round-by-round breakdown to
    link to.
 
+## Trying it out
+
+Two demo elections exist for previews. Like every unpublished election, they
+appear on local and Vercel preview builds and never on moondao.com:
+
+- `/elections/demo` is open, with three made-up candidates, so you can rank
+  and submit a ballot. A fourth candidate has no Senate confirmation, which
+  shows that unconfirmed candidates are hidden.
+- `/elections/demo-results` is a finished election. It shows the results view
+  using the real test ballots from Sepolia, with voting power assigned for the
+  demo. It is the Alice / Bob / Carol example above.
+
 ## Where the code lives
 
 | What | File |

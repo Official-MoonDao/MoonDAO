@@ -74,14 +74,75 @@ export const ELECTIONS: Election[] = [
     candidates: [],
     links: [{ label: 'MoonDAO Constitution', url: 'https://docs.moondao.com/Governance/Constitution' }],
   },
+  // Demo elections for preview deploys. Never published.
+  {
+    slug: 'demo',
+    voteId: 9002,
+    title: 'Demo Election (preview only)',
+    seat: 'Demo Seat',
+    summary:
+      'A practice election with made-up candidates so the team can try the ballot. Ballots cast here are real transactions on the preview’s chain but count for nothing.',
+    opensAt: '2026-10-01T00:00:00Z',
+    closesAt: '2099-01-01T00:00:00Z',
+    closed: false,
+    published: false,
+    includeNone: true,
+    candidates: [
+      {
+        id: 1,
+        name: 'Alice (demo)',
+        handle: '@alice',
+        bio: 'Placeholder candidate. Wants a crewed mission to the lunar south pole.',
+        senateConfirmation: { confirmedOn: '2026-10-21', recordUrl: 'https://docs.moondao.com/Governance/Constitution' },
+      },
+      {
+        id: 2,
+        name: 'Bob (demo)',
+        handle: '@bob',
+        bio: 'Placeholder candidate. Focused on growing the Citizen network.',
+        senateConfirmation: { confirmedOn: '2026-10-21', recordUrl: 'https://docs.moondao.com/Governance/Constitution' },
+      },
+      {
+        id: 3,
+        name: 'Carol (demo)',
+        handle: '@carol',
+        bio: 'Placeholder candidate. Treasury and operations.',
+        senateConfirmation: { confirmedOn: '2026-10-21', recordUrl: 'https://docs.moondao.com/Governance/Constitution' },
+      },
+      { id: 4, name: 'Dave (demo, not Senate-confirmed, so hidden)' },
+    ],
+  },
+  {
+    slug: 'demo-results',
+    voteId: 9001,
+    title: 'Demo Election Results (preview only)',
+    seat: 'Demo Seat',
+    summary:
+      'A finished practice election showing what results look like. The ballots are real test ballots from Sepolia; the voting power was assigned for the demo.',
+    opensAt: '2026-10-21T19:00:00Z',
+    closesAt: '2026-10-21T20:00:00Z',
+    closed: true,
+    published: false,
+    includeNone: true,
+    candidates: [1, 2, 3].map((id) => ({
+      id,
+      name: ['Alice (demo)', 'Bob (demo)', 'Carol (demo)'][id - 1],
+      senateConfirmation: { confirmedOn: '2026-10-21', recordUrl: 'https://docs.moondao.com/Governance/Constitution' },
+    })),
+  },
 ]
 
 export function getElection(slug: string): Election | null {
   return ELECTIONS.find((e) => e.slug === slug) ?? null
 }
 
+// Vercel builds previews with NODE_ENV=production, so check VERCEL_ENV too.
+function isPreviewOrLocal() {
+  return process.env.NODE_ENV !== 'production' || process.env.VERCEL_ENV === 'preview'
+}
+
 export function listBuildableElections(): Election[] {
-  return ELECTIONS.filter((e) => e.published || process.env.NODE_ENV !== 'production')
+  return ELECTIONS.filter((e) => e.published || isPreviewOrLocal())
 }
 
 export function confirmedCandidates(election: Election): ElectionCandidate[] {
