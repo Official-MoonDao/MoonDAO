@@ -112,11 +112,13 @@ export async function fetchTimeData(
 export async function fetchMissionContracts(
   projectId: number,
   tokenId: string | number,
-  chain: Chain = DEFAULT_CHAIN_V5
+  chain: Chain = DEFAULT_CHAIN_V5,
+  /** Creator that minted `tokenId`. DePrize pools are not on the public creator. */
+  creatorAddress?: string
 ): Promise<MissionContractData> {
   const chainSlug = getChainSlug(chain)
 
-  const missionCreatorAddress = MISSION_CREATOR_ADDRESSES[chainSlug]
+  const missionCreatorAddress = creatorAddress || MISSION_CREATOR_ADDRESSES[chainSlug]
   if (
     !missionCreatorAddress ||
     missionCreatorAddress === '0x0000000000000000000000000000000000000000'

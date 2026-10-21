@@ -90,7 +90,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'No launchpad mission for this prize pool' })
     }
 
-    const contractData = await fetchMissionContracts(missionRow.projectId, missionRow.id, chain)
+    const contractData = await fetchMissionContracts(
+      missionRow.projectId,
+      missionRow.id,
+      chain,
+      scanned && missionRow === scanned ? scanned.creator : undefined
+    )
     const ipfsHash = String(contractData.metadataURI || '').replace(/^ipfs:\/\//, '')
     const [metadata, token] = await Promise.all([
       ipfsHash
