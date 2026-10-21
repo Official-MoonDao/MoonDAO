@@ -1,6 +1,7 @@
 /**
- * Prize 2 on Sepolia is Juicebox project 270, mission 16 on the DePrize-only
- * MissionCreator. That row is not in the app-wide mission table.
+ * DePrize prize pools are not in the public mission table.
+ * Sepolia prize 2 is Juicebox project 270, mission 16.
+ * Arbitrum Touchdown (DePrize 2) is Juicebox project 83, mission 1.
  */
 import fs from 'fs'
 import path from 'path'
@@ -21,5 +22,7 @@ describe('launchpad contribute props', () => {
     expect(route).to.include('findMissionByJuiceboxProject')
     expect(route).to.include('Promise.all')
     expect(extra).to.include('0xa692eEd67c4D2C1C73DC0515240d27cf7d6fF9D1')
+    expect(extra).to.include('0x87307f5D73c93B5b0a2e250194d62CD2D4BfEe3B')
+    expect(route).to.include('scanned.creator')
   })
 })

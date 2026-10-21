@@ -11,9 +11,11 @@ import {Contributions} from "../src/tables/Contributions.sol";
 /// Signers execute the batch; nothing is recorded or paid before that.
 /// OPERATOR, when set, may hide a row without a Safe transaction.
 ///
-/// The cap is 5 submissions per citizen per cycle.
+/// The cap is 5 submissions per citizen per cycle. Cycles are quarter codes,
+/// starting at INITIAL_CYCLE (default 20264 = Q4 2026), so the Safe can
+/// `importBatch` past quarters before calling `sealImports`.
 ///
-///   CITIZEN_NFT=0x... ADMIN_SAFE=0x... [OPERATOR=0x...] \
+///   CITIZEN_NFT=0x... ADMIN_SAFE=0x... [OPERATOR=0x...] [INITIAL_CYCLE=20264] \
 ///   forge script script/Contributions.s.sol --rpc-url $RPC_URL --broadcast --verify
 ///
 /// Citizen NFT: Arbitrum 0x6E464F19e0fEF3DB0f3eF9FD3DA91A297DbFE002,
@@ -22,16 +24,18 @@ import {Contributions} from "../src/tables/Contributions.sol";
 /// in ui/const/config.ts. The table name is logged below.
 contract DeployContributions is Script {
     uint256 internal constant MAX_PER_CYCLE = 5;
+    uint256 internal constant DEFAULT_INITIAL_CYCLE = 20264;
 
     function run() external {
         uint256 pk = vm.envUint("PRIVATE_KEY");
         address citizen = vm.envAddress("CITIZEN_NFT");
         address safe = vm.envAddress("ADMIN_SAFE");
         address operator = vm.envOr("OPERATOR", address(0));
+        uint256 initialCycle = vm.envOr("INITIAL_CYCLE", DEFAULT_INITIAL_CYCLE);
 
         vm.startBroadcast(pk);
 
-        Contributions contributions = new Contributions("CONTRIBUTIONS", citizen, MAX_PER_CYCLE);
+        Contributions contributions = new Contributions("CONTRIBUTIONS", citizen, MAX_PER_CYCLE, initialCycle);
         if (operator != address(0)) {
             contributions.setOperator(operator, true);
         }

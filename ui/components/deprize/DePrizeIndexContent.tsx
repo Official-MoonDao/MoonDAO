@@ -19,11 +19,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { CAPABILITY_LADDER } from '@/lib/deprize/capabilityLadder'
 import { getFeaturedLiveDePrizeId, isDePrizeGoalMarketBound } from '@/lib/deprize/competitions'
-import {
-  DEPRIZE_RESTRICTED_PREDICT_COPY,
-  deprizeOgDescription,
-  UNIT,
-} from '@/lib/deprize/constants'
+import { deprizeOgDescription, UNIT } from '@/lib/deprize/constants'
 import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import type { DePrizePageProps } from '@/lib/deprize/pageEligibility'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
@@ -219,8 +215,9 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
 
   // Default-deny real betting from the SSR DePrize verdict. Unknown country
   // arrives as restricted=true (getDePrizePageEligibility). Demo markets are
-  // unaffected — RaceMarketCard never gates them on this reason.
-  const bettingBlockedReason = restricted ? DEPRIZE_RESTRICTED_PREDICT_COPY : undefined
+  // unaffected — RaceMarketCard never gates them on this reason. The sentence
+  // itself is only in the prediction modal.
+  const bettingBlockedReason = restricted || undefined
 
   const categoryCounts = useMemo(() => {
     const counts: Partial<Record<ProjectType, number>> = {}

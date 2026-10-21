@@ -1,0 +1,37 @@
+---
+description: Merge pull requests only into main. Never merge into another branch.
+alwaysApply: true
+---
+
+# Merge only into main
+
+Merging a pull request updates its base branch. If that base is not `main`,
+the commits never reach `main`. #1750 was merged into
+`cursor/landing-roadmap-proof-links` after that branch's own PR (#1745) had
+already merged, so the work missed `main`.
+
+## Before every `gh pr merge`
+
+```bash
+gh pr view <number> --json baseRefName,state,url
+```
+
+Merge only when `baseRefName` is `main` and `state` is `OPEN`.
+
+If `baseRefName` is anything else:
+
+1. Stop. Do not merge.
+2. Retarget with `gh pr edit <number> --base main`, or branch from
+   `origin/main` and open a new pull request.
+3. Read the diff against `origin/main` first. Retarget only when that diff
+   is the change you mean to land.
+
+## Never
+
+- Choose the base from the current checkout, the head branch, or a parent
+  feature branch.
+- Merge into `cursor/*`, `feat/*`, `fix/*`, or any branch other than `main`.
+- Treat an open parent pull request as permission to merge into that parent.
+
+"Merge the PR" means merge into `main`. Use another base only when the user
+names that branch in the same request.

@@ -70,8 +70,7 @@ export default function OddsSection(props: {
             loading={props.mooneyLoading}
           />
           <p className="mt-2 text-[11px] leading-snug text-gray-500">
-            Current voting-power share. A prediction with 0 voting power is saved and does not move
-            this.
+            Current voting-power share.
           </p>
         </>
       ) : (
@@ -81,7 +80,7 @@ export default function OddsSection(props: {
         >
           {props.mooneyLoading
             ? 'Loading MOONEY predictions…'
-            : 'No MOONEY predictions yet. A prediction without a Citizen is saved at 0 voting power and does not move this chart.'}
+            : 'No MOONEY predictions yet.'}
         </div>
       )}
     </div>
