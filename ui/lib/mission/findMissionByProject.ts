@@ -15,6 +15,8 @@ export type MissionProjectRow = {
   teamId: number
   projectId: number
   fundingGoal: number
+  /** MissionCreator that owns this id. Not the public creator for DePrize pools. */
+  creator: string
 }
 
 function creatorAddresses(chainSlug: string): string[] {
@@ -95,7 +97,7 @@ export async function findMissionByJuiceboxProject(
             params: [BigInt(missionId)],
           })
         )
-        return { id: missionId, teamId, projectId, fundingGoal: 0 }
+        return { id: missionId, teamId, projectId, fundingGoal: 0, creator: address }
       } catch {
         return null
       }
