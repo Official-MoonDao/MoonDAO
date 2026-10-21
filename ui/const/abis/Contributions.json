@@ -16,6 +16,11 @@
         "name": "maxPerCycle_",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "initialCycleId",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -68,6 +73,32 @@
         "name": "",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ORIGIN_IMPORTED",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ORIGIN_SUBMITTED",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
       }
     ],
     "stateMutability": "view"
@@ -140,7 +171,13 @@
   {
     "type": "function",
     "name": "closeCycle",
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "nextCycleId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
@@ -232,6 +269,90 @@
         "name": "",
         "type": "string",
         "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "importBatch",
+    "inputs": [
+      {
+        "name": "rows",
+        "type": "tuple[]",
+        "internalType": "struct Contributions.ImportRow[]",
+        "components": [
+          {
+            "name": "author",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "cycleId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "createdAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "title",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "area",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "links",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "metadata",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "shareBps",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "reward",
+            "type": "string",
+            "internalType": "string"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "firstId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "importsSealed",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -372,6 +493,13 @@
   {
     "type": "function",
     "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "sealImports",
     "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
@@ -530,6 +658,31 @@
   },
   {
     "type": "event",
+    "name": "ContributionImported",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "cycleId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "author",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "ContributionRemoved",
     "inputs": [
       {
@@ -625,6 +778,12 @@
   },
   {
     "type": "event",
+    "name": "ImportsSealed",
+    "inputs": [],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "OperatorSet",
     "inputs": [
       {
@@ -688,6 +847,11 @@
   },
   {
     "type": "error",
+    "name": "BadTimestamp",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "CapReached",
     "inputs": []
   },
@@ -709,6 +873,11 @@
   },
   {
     "type": "error",
+    "name": "CycleNotIncreasing",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "CycleStillOpen",
     "inputs": []
   },
@@ -720,6 +889,16 @@
   {
     "type": "error",
     "name": "EmptyField",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FutureCycle",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ImportsClosed",
     "inputs": []
   },
   {
