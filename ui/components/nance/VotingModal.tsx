@@ -1,6 +1,8 @@
 import { Dialog, Transition } from '@headlessui/react'
 import {
   CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   MinusCircleIcon,
   XCircleIcon,
   XMarkIcon,
@@ -19,6 +21,8 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { formatNumberUSStyle } from '@/lib/nance'
 import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
 import { Project } from '@/lib/project/useProjectData'
+import { parseRankedBallot } from '@/lib/proposals/computeRankedChoiceTally'
+import { getRankedChoiceElection } from '@/lib/proposals/elections'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { classNames } from '@/lib/utils/tailwind'
@@ -44,7 +48,7 @@ export default function VotingModal({
   totalVMOONEY,
 }: VotingProps) {
   // state
-  const [choice, setChoice] = useState()
+  const [choice, setChoice] = useState<any>()
   const [reason, setReason] = useState('')
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
@@ -57,19 +61,22 @@ export default function VotingModal({
   })
   const [edit, setEdit] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const election = useMemo(() => getRankedChoiceElection(project?.MDP), [project?.MDP])
   useEffect(() => {
     if (votes && userAddress) {
       for (const v of votes) {
         if (v.address.toLowerCase() === userAddress.toLowerCase()) {
-          setChoice(v.vote)
+          setChoice(
+            election ? (parseRankedBallot(v.vote, election.choices.length) as any) : v.vote
+          )
           setEdit(true)
           break
         }
       }
     }
-  }, [userAddress, votes])
+  }, [userAddress, votes, election])
 
-  const choices = ['Yes', 'No', 'Abstain'] // could make this dynamic in the future
+  const choices = election ? election.choices : ['Yes', 'No', 'Abstain']
   // external
   const vp = Math.sqrt(totalVMOONEY) || 0
 
@@ -104,15 +111,22 @@ export default function VotingModal({
     if (!choice) {
       return
     }
-    const totalPercentage = Object.values(choice as Record<string, number>).reduce(
-      (sum, value) => sum + (value as number),
-      0
-    )
-    if (totalPercentage !== 100) {
-      toast.error('Total distribution must equal 100%.', {
-        style: toastStyle,
-      })
-      return
+    if (election) {
+      if (!Array.isArray(choice) || (choice as number[]).length === 0) {
+        toast.error('Rank at least one choice.', { style: toastStyle })
+        return
+      }
+    } else {
+      const totalPercentage = Object.values(choice as Record<string, number>).reduce(
+        (sum, value) => sum + (value as number),
+        0
+      )
+      if (totalPercentage !== 100) {
+        toast.error('Total distribution must equal 100%.', {
+          style: toastStyle,
+        })
+        return
+      }
     }
 
     // Preflight checks. These previously failed *during* the
@@ -301,10 +315,7 @@ export default function VotingModal({
     }
   }
 
-  let proposalType
-  if (true) {
-    proposalType = 'quadratic'
-  }
+  const proposalType = election ? 'ranked-choice' : 'quadratic'
 
   const renderVoteButton = () => {
     // PrivyWeb3Button owns the wallet/network state machine: it flips
@@ -339,8 +350,8 @@ export default function VotingModal({
 
     if (!SUPPORTED_VOTING_TYPES.includes(proposalType)) {
       actionLabel = 'Not supported'
-    } else if (choice === undefined) {
-      actionLabel = 'Select a choice'
+    } else if (choice === undefined || (Array.isArray(choice) && choice.length === 0)) {
+      actionLabel = election ? 'Rank at least one choice' : 'Select a choice'
     } else if (vp <= 0) {
       actionLabel = 'No voting power'
     } else if (!v5AccountReady) {
@@ -415,7 +426,7 @@ export default function VotingModal({
                           </div>
                         </div>
                         <h2 className="text-lg font-bold text-white">
-                          Vote on Proposal
+                          {election ? 'Rank the Candidates' : 'Vote on Proposal'}
                         </h2>
                       </div>
 
@@ -474,7 +485,7 @@ export default function VotingModal({
                               the user just clicks once. */}
                           <div>
                             <h4 className="text-gray-300 font-medium text-xs uppercase tracking-wide mb-3">
-                              Select Your Choice
+                              {election ? 'Rank in order of preference' : 'Select Your Choice'}
                             </h4>
                             {proposalType == 'ranked-choice' ? (
                               <RankedChoiceSelector
@@ -698,69 +709,97 @@ function RankedChoiceSelector({
 }: Omit<SelectorProps, 'value'> & {
   value: number[]
 }) {
-  function getOrderNumber(val: number) {
-    const index = value.findIndex((v) => v === val)
-    return index !== -1 ? `#${index + 1}` : ''
+  const unranked = choices
+    .map((label, index) => ({ label, key: index + 1 }))
+    .filter(({ key }) => !value.includes(key))
+
+  const move = (from: number, to: number) => {
+    if (to < 0 || to >= value.length) return
+    const next = [...value]
+    const [item] = next.splice(from, 1)
+    next.splice(to, 0, item)
+    setValue(next)
   }
 
+  const iconButton =
+    'p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-colors'
+
   return (
-    <div className="space-y-3">
-      {choices.map((choice, index) => {
-        const choiceVal = index + 1
-        const isSelected = value.includes(choiceVal)
-        const orderNumber = getOrderNumber(choiceVal)
-
-        return (
-          <div
-            key={choice}
-            onClick={() => {
-              if (isSelected) {
-                const newValue = value.filter((val) => val !== choiceVal)
-                setValue(newValue)
-              } else {
-                const newValue = [...value, choiceVal]
-                setValue(newValue)
-              }
-            }}
-            className={classNames(
-              'cursor-pointer rounded-lg p-4 border transition-all duration-200 group',
-              isSelected
-                ? 'bg-blue-500/20 border-blue-500/50 shadow-lg'
-                : 'bg-black/20 border-white/10 hover:bg-black/30 hover:border-white/20'
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                {isSelected && (
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">{orderNumber}</span>
-                  </div>
-                )}
-                <p className="font-medium text-white group-hover:text-blue-300 transition-colors">
-                  {choice}
-                </p>
+    <div className="space-y-4">
+      {value.length > 0 ? (
+        <ol className="space-y-2" aria-label="Your ranking">
+          {value.map((key, rank) => (
+            <li
+              key={key}
+              className="flex items-center justify-between gap-2 rounded-lg p-3 border bg-blue-500/20 border-blue-500/50"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="w-8 h-8 shrink-0 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  {rank + 1}
+                </span>
+                <p className="font-medium text-white truncate">{choices[key - 1]}</p>
               </div>
-
-              {isSelected && (
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
-                  className="p-1 hover:bg-red-500/20 rounded-full transition-colors duration-200 group"
+                  className={iconButton}
+                  onClick={() => move(rank, rank - 1)}
+                  disabled={rank === 0}
+                  aria-label={`Move ${choices[key - 1]} up`}
                 >
-                  <XMarkIcon className="h-5 w-5 text-red-400" aria-hidden="true" />
+                  <ChevronUpIcon className="h-4 w-4" />
                 </button>
-              )}
-            </div>
-          </div>
-        )
-      })}
+                <button
+                  type="button"
+                  className={iconButton}
+                  onClick={() => move(rank, rank + 1)}
+                  disabled={rank === value.length - 1}
+                  aria-label={`Move ${choices[key - 1]} down`}
+                >
+                  <ChevronDownIcon className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  className="p-1.5 rounded-md hover:bg-red-500/20 transition-colors"
+                  onClick={() => setValue(value.filter((k) => k !== key))}
+                  aria-label={`Remove ${choices[key - 1]} from ranking`}
+                >
+                  <XMarkIcon className="h-4 w-4 text-red-400" />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="text-gray-400 text-sm">
+          Tap choices below in order of preference, starting with your favorite.
+        </p>
+      )}
 
-      {value.length > 0 && (
-        <div className="bg-black/10 rounded-lg p-3 border border-white/5">
-          <p className="text-gray-400 text-sm text-center">
-            Click choices in order of preference. Click again to remove.
-          </p>
+      {unranked.length > 0 && (
+        <div className="space-y-2">
+          {value.length > 0 && (
+            <p className="text-gray-400 text-xs uppercase tracking-wide">
+              Add more (optional)
+            </p>
+          )}
+          {unranked.map(({ label, key }) => (
+            <button
+              type="button"
+              key={key}
+              onClick={() => setValue([...value, key])}
+              className="w-full text-left rounded-lg p-3 border bg-black/20 border-white/10 hover:bg-black/30 hover:border-white/20 font-medium text-white transition-colors"
+            >
+              {label}
+            </button>
+          ))}
         </div>
       )}
+
+      <p className="text-gray-500 text-xs">
+        If your top choice is eliminated, your vote moves to your next ranked choice. You
+        don&apos;t have to rank everyone.
+      </p>
     </div>
   )
 }

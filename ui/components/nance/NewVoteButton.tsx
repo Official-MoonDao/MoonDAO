@@ -2,6 +2,8 @@ import { usePrivy } from '@privy-io/react-auth'
 import { useState, useMemo } from 'react'
 import { ProposalStatus, STATUS_DISPLAY_LABELS } from '@/lib/nance/useProposalStatus'
 import { Project } from '@/lib/project/useProjectData'
+import { parseRankedBallot } from '@/lib/proposals/computeRankedChoiceTally'
+import { getRankedChoiceElection } from '@/lib/proposals/elections'
 import useAccountAddress from '../../lib/nance/useAccountAddress'
 import { classNames } from '../../lib/utils/tailwind'
 import { useTotalLockedMooney } from '@/lib/tokens/hooks/useTotalLockedMooney'
@@ -93,7 +95,13 @@ export default function NewVoteButton({
     return null
   }, [votes, address])
 
-  const myChoice = useMemo(() => dominantVoteLabel(myVote?.vote), [myVote])
+  const election = useMemo(() => getRankedChoiceElection(project?.MDP), [project?.MDP])
+  const myChoice = useMemo(() => {
+    if (!election) return dominantVoteLabel(myVote?.vote)
+    if (!myVote) return null
+    const first = parseRankedBallot(myVote.vote, election.choices.length)[0]
+    return first ? `1st: ${election.choices[first - 1]}` : null
+  }, [myVote, election])
 
   const edit = Boolean(myVote)
 

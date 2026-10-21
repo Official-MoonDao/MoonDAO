@@ -3,6 +3,7 @@ import { formatNumberUSStyle } from '@/lib/nance'
 import { MEMBER_VOTE_SUPER_MAJORITY } from '@/lib/proposals/computeMemberProposalTally'
 import Tooltip from '@/components/layout/Tooltip'
 import ColorBar from './ColorBar'
+import RankedChoiceResults from './RankedChoiceResults'
 
 // Plain-language definition of "VP", kept identical to the sidebar's
 // explainer (components/project/MemberVoteSidebar.tsx) so the term is
@@ -21,6 +22,10 @@ interface VotingResultsProps {
 }
 
 export default function VotingResults({ voteOutcome, votes }: VotingResultsProps) {
+  if (voteOutcome?.kind === 'ranked-choice') {
+    return <RankedChoiceResults outcome={voteOutcome} votes={votes} />
+  }
+
   // New shape: an explicit MemberVoteTally with For/Against percentages
   // computed against decided VP (Abstain excluded), plus a separate
   // abstain-share-of-turnout metric for informational display.
