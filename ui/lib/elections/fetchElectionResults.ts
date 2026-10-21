@@ -43,7 +43,14 @@ function noneKey(election: Election) {
   return election.includeNone ? NONE_OF_THE_ABOVE_KEY : null
 }
 
-export async function fetchElectionResults(election: Election): Promise<ElectionResults> {
+// Override for reading vMOONEY (one value per address). Lets tests supply
+// voting power without wallets that actually hold vMOONEY.
+type VMooneyReader = (addresses: string[], closeTimestamp: number) => Promise<number[]>
+
+export async function fetchElectionResults(
+  election: Election,
+  options: { readVMOONEYs?: VMooneyReader } = {}
+): Promise<ElectionResults> {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const votesTableName = VOTES_TABLE_NAMES[chainSlug]
@@ -71,7 +78,9 @@ export async function fetchElectionResults(election: Election): Promise<Election
   const isPastClose = Date.now() / 1000 >= closeTimestamp
   let closeBlocks: CloseBlocksByChain | null = null
   let vMOONEYs: number[]
-  if (isPastClose) {
+  if (options.readVMOONEYs) {
+    vMOONEYs = await options.readVMOONEYs(addresses, closeTimestamp)
+  } else if (isPastClose) {
     closeBlocks = await resolveCloseBlocks(closeTimestamp)
     vMOONEYs = await fetchTotalVMOONEYsAtBlocks(addresses, closeBlocks)
   } else {
