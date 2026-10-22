@@ -366,17 +366,18 @@ export default function BetModal({
   }, [wallet, eligibilityRetry, mockSepoliaEligibility, chain.id])
 
   const allAttested = areAttestationsAccepted(attestations)
+  const acceptanceFlight = useRef<Promise<boolean> | null>(null)
+  const acceptanceErrorRef = useRef<string | undefined>(undefined)
+  const acceptanceGen = useRef(0)
 
-  useEffect(() => {
-    if (!wallet || !termsAccepted || !allAttested) {
-      setAcceptanceState('idle')
+  const recordAcceptance = useCallback(async (): Promise<boolean> => {
+    if (!wallet || !termsAccepted || !areAttestationsAccepted(attestations)) return false
+    if (acceptanceFlight.current) return acceptanceFlight.current
+    const gen = acceptanceGen.current
+    const flight = (async () => {
+      setAcceptanceState('saving')
       setAcceptanceError(undefined)
-      return
-    }
-    let cancelled = false
-    setAcceptanceState('saving')
-    setAcceptanceError(undefined)
-    ;(async () => {
+      acceptanceErrorRef.current = undefined
       const accessToken = await getAccessToken().catch(() => null)
       const res = await fetch('/api/deprize/accept-terms', {
         method: 'POST',
@@ -392,24 +393,47 @@ export default function BetModal({
           attestations,
         }),
       })
-      if (cancelled) return
+      if (acceptanceGen.current !== gen) return false
       if (!res.ok) {
         const data = await res.json().catch(() => null)
-        if (cancelled) return
-        // The server refuses for eligibility (location, screening) as well as
-        // for a failed write, so show its reason rather than a generic one.
-        setAcceptanceError(typeof data?.message === 'string' ? data.message : undefined)
-        throw new Error(`accept-terms ${res.status}${data?.reason ? ` ${data.reason}` : ''}`)
+        const message =
+          typeof data?.message === 'string'
+            ? data.message
+            : 'Could not record your acceptance. Try again.'
+        acceptanceErrorRef.current = message
+        setAcceptanceError(message)
+        setAcceptanceState('error')
+        return false
       }
       setAcceptanceState('saved')
+      return true
     })().catch((err) => {
       console.warn('[deprize] accept-terms failed', err)
-      if (!cancelled) setAcceptanceState('error')
+      if (acceptanceGen.current !== gen) return false
+      const message = 'Could not record your acceptance. Try again.'
+      acceptanceErrorRef.current = message
+      setAcceptanceError(message)
+      setAcceptanceState('error')
+      return false
     })
-    return () => {
-      cancelled = true
+    acceptanceFlight.current = flight
+    void flight.then((ok) => {
+      if (!ok && acceptanceFlight.current === flight) acceptanceFlight.current = null
+    })
+    return flight
+  }, [attestations, chain.id, termsAccepted, wallet])
+
+  useEffect(() => {
+    if (!wallet || !termsAccepted || !allAttested) {
+      acceptanceGen.current += 1
+      acceptanceFlight.current = null
+      setAcceptanceState('idle')
+      setAcceptanceError(undefined)
+      acceptanceErrorRef.current = undefined
+      return
     }
-  }, [wallet, termsAccepted, allAttested, attestations, chain.id])
+    void recordAcceptance()
+  }, [wallet, termsAccepted, allAttested, recordAcceptance])
 
   const placeBet = async (): Promise<boolean> => {
     if (!account || !mint) return false
@@ -421,19 +445,44 @@ export default function BetModal({
       toast.error(eligibilityMessage('over-cap'), { style: toastStyle })
       return false
     }
+    if (!termsAccepted || !areAttestationsAccepted(attestations)) {
+      toast.error('Please accept the DePrize Terms and attestations to continue.', {
+        style: toastStyle,
+      })
+      return false
+    }
+    // The boxes can be checked before the acceptance write finishes. Wait for
+    // that write instead of telling the person to check boxes they already did.
+    const acceptanceOk = acceptanceState === 'saved' || (await recordAcceptance())
+    if (!acceptanceOk) {
+      toast.error(
+        acceptanceErrorRef.current ||
+          acceptanceError ||
+          'Could not record your acceptance. Try again.',
+        { style: toastStyle }
+      )
+      return false
+    }
+    if (eligibility.status !== 'ready' || !eligibility.allowed) {
+      toast.error(
+        eligibility.message ||
+          (eligibility.status === 'loading'
+            ? 'Still checking whether you can add ETH. Try again in a moment.'
+            : eligibilityMessage('screening-unavailable')),
+        { style: toastStyle }
+      )
+      return false
+    }
     if (!canSubmitDePrizeBet({
       termsAccepted,
       attestations,
       eligibilityAllowed: eligibility.allowed,
       eligibilityReady: eligibility.status === 'ready',
-      acceptanceState,
+      acceptanceState: 'saved',
     })) {
-      toast.error(
-        acceptanceState === 'error'
-          ? acceptanceError || 'Could not record your acceptance. Recheck the boxes and try again.'
-          : 'Please accept the DePrize Terms and attestations to continue.',
-        { style: toastStyle }
-      )
+      toast.error('Please accept the DePrize Terms and attestations to continue.', {
+        style: toastStyle,
+      })
       return false
     }
     if (!eligibility.allowed) {
