@@ -1,8 +1,11 @@
+/// <reference types="node" />
+/// <reference types="mocha" />
 import assert from 'assert'
 import vm from 'vm'
 import { COOKIE_CONSENT_EXEMPT_REGIONS, cookieBannerDecision } from '../geo/countryCode'
 import {
   buildGtagInitScript,
+  buildPiiStripScript,
   buildPagePath,
   classifyMintError,
   ctaLocationFromContext,
@@ -20,6 +23,11 @@ import {
   trackExtendCitizenshipOpen,
   trackExtendCitizenshipSubmit,
   trackExtendCitizenshipSuccess,
+  cleanHistoryTarget,
+  installGa4HistoryGuards,
+  isPiiQueryKey,
+  stripPiiFromUrl,
+  stripPiiSearch,
   trackJoinCtaClick,
   trackMintError,
   trackMintSuccess,
@@ -359,7 +367,12 @@ describe('ga4 events', () => {
       error_type: 'rejected',
       step: 'mint',
     })
-    assert.deepStrictEqual(click, { cta_location: 'nav', plan: 'citizen' })
+    assert.deepStrictEqual(click, {
+      cta_location: 'nav',
+      plan: 'citizen',
+      utm_source: 'instagram',
+    })
+    assert.strictEqual((click as { email?: string }).email, undefined)
   })
 
   it('survives an attribution getter that throws', () => {
@@ -510,5 +523,117 @@ describe('extend citizenship events', () => {
     trackExtendCitizenshipSuccess({ years: 1, transaction_id: WALLET })
     assert.strictEqual(calls.length, 1)
     assert.strictEqual((calls[0][2] as { transaction_id?: string }).transaction_id, undefined)
+  })
+})
+
+describe('pii query stripping', () => {
+  it('removes email, name, and phone params and keeps the campaign', () => {
+    assert.strictEqual(isPiiQueryKey('email'), true)
+    assert.strictEqual(isPiiQueryKey('E-Mail'), true)
+    assert.strictEqual(isPiiQueryKey('phone_number'), true)
+    assert.strictEqual(isPiiQueryKey('utm_source'), false)
+    assert.strictEqual(isPiiQueryKey('utm_campaign'), false)
+    assert.strictEqual(isPiiQueryKey('fbclid'), false)
+    assert.strictEqual(
+      stripPiiFromUrl('/marketplace/39?email=person@example.com', 'https://moondao.com'),
+      '/marketplace/39'
+    )
+    assert.strictEqual(
+      stripPiiFromUrl(
+        '/marketplace/39?email=&utm_source=ig&name=Ada&phone=555',
+        'https://moondao.com'
+      ),
+      '/marketplace/39?utm_source=ig'
+    )
+    assert.strictEqual(stripPiiSearch('?tab=about&e-mail=a@b.com'), '?tab=about')
+    assert.strictEqual(
+      cleanHistoryTarget('/join?utm_campaign=spring&first_name=Pat', 'https://moondao.com'),
+      '/join?utm_campaign=spring'
+    )
+  })
+
+  it('strips email before the single config call', () => {
+    const calls = runInitScript(null)
+    assert.strictEqual(calls.filter((call) => call[0] === 'config').length, 1)
+    assert.equal(
+      calls.some((call) => call[0] === 'event' && call[1] === 'page_view'),
+      false
+    )
+
+    const script = buildGtagInitScript(GA_MEASUREMENT_ID)
+    assert.equal(script.includes('replaceState'), false)
+    const seen: string[] = []
+    const sandbox: Record<string, any> = {
+      URLSearchParams,
+      document: { cookie: '' },
+      localStorage: { getItem: () => null },
+      location: {
+        pathname: '/marketplace/39',
+        search: '?email=person@example.com&utm_source=ig',
+        hash: '',
+      },
+      history: {
+        state: null,
+        replaceState(_state: unknown, _title: string, url: string) {
+          seen.push(url)
+          const parsed = new URL(url, 'https://moondao.com')
+          sandbox.location.pathname = parsed.pathname
+          sandbox.location.search = parsed.search
+          sandbox.location.hash = parsed.hash
+        },
+      },
+    }
+    sandbox.window = sandbox
+    vm.createContext(sandbox)
+    vm.runInContext(buildPiiStripScript(), sandbox)
+    vm.runInContext(script, sandbox)
+    assert.deepStrictEqual(seen, ['/marketplace/39?utm_source=ig'])
+    assert.strictEqual(sandbox.location.search, '?utm_source=ig')
+    const queued = Array.from(sandbox.dataLayer as ArrayLike<ArrayLike<unknown>>, (entry) =>
+      Array.from(entry, (value) => (typeof value === 'string' ? `${value}` : value))
+    )
+    assert.strictEqual(queued.filter((call) => call[0] === 'config').length, 1)
+    assert.equal(JSON.stringify(queued).includes('person@example.com'), false)
+    assert.equal(script.includes('page_path'), false)
+    assert.equal(script.includes('send_page_view'), false)
+  })
+})
+
+describe('history guards', () => {
+  const previous = (global as { window?: unknown }).window
+
+  afterEach(() => {
+    if (previous === undefined) delete (global as { window?: unknown }).window
+    else (global as { window?: unknown }).window = previous
+  })
+
+  it('strips pii, skips shallow updates, and forwards a real navigation', () => {
+    const calls: string[] = []
+    const nativePush = (_state: unknown, _title: string, url?: string | URL | null) => {
+      calls.push(`native:${url}`)
+    }
+    const wrappedPush = (_state: unknown, _title: string, url?: string | URL | null) => {
+      calls.push(`wrapped:${url}`)
+    }
+    const windowMock = {
+      location: { origin: 'https://moondao.com' },
+      history: {
+        pushState: wrappedPush,
+        replaceState: wrappedPush,
+      },
+      __mdNativeHistory: {
+        pushState: nativePush,
+        replaceState: nativePush,
+      },
+    }
+    ;(global as { window?: unknown }).window = windowMock
+    installGa4HistoryGuards()
+    windowMock.history.pushState(
+      { options: { shallow: true } },
+      '',
+      '/network?email=person@example.com&tab=list'
+    )
+    windowMock.history.pushState({}, '', '/faq?email=person@example.com&utm_source=ig')
+    assert.deepStrictEqual(calls, ['native:/network?tab=list', 'wrapped:/faq?utm_source=ig'])
   })
 })

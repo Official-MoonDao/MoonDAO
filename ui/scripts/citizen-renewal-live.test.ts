@@ -34,6 +34,7 @@ import {
   type FetchLike,
   type RenewalRedis,
 } from '../lib/citizen/renewalCoverageWrite'
+import { authorizeRenewalCron } from '../lib/citizen/renewalCronAuth'
 import { parseExclusionEmails, saddExclusionEmails } from './load-renewal-exclusions'
 
 const NOW = Date.UTC(2026, 9, 7)
@@ -1140,6 +1141,43 @@ describe('renewal exclusion loader', () => {
   })
 })
 
+describe('renewal cron auth', () => {
+  it('rejects an unset secret and accepts only an exact match', () => {
+    expect(authorizeRenewalCron(undefined, undefined)).to.deep.equal({
+      ok: false,
+      status: 503,
+      body: { ok: false, message: 'CRON_SECRET is not configured' },
+    })
+    expect(authorizeRenewalCron('', 'secret')).to.deep.equal({
+      ok: false,
+      status: 503,
+      body: { ok: false, message: 'CRON_SECRET is not configured' },
+    })
+    expect(authorizeRenewalCron('   ', undefined)).to.deep.equal({
+      ok: false,
+      status: 503,
+      body: { ok: false, message: 'CRON_SECRET is not configured' },
+    })
+    expect(authorizeRenewalCron('secret', undefined)).to.deep.equal({
+      ok: false,
+      status: 401,
+      body: { message: 'Unauthorized' },
+    })
+    expect(authorizeRenewalCron('secret', 'other')).to.deep.equal({
+      ok: false,
+      status: 401,
+      body: { message: 'Unauthorized' },
+    })
+    expect(authorizeRenewalCron('secret', 'secret')).to.deep.equal({ ok: true })
+    const route = fs.readFileSync(
+      path.join(__dirname, '../pages/api/cron/citizen-renewal-reminders.ts'),
+      'utf8'
+    )
+    expect(route).to.include('authorizeRenewalCron(process.env.CRON_SECRET, providedSecret(req))')
+    expect(route).to.not.include('if (expectedSecret &&')
+  })
+})
+
 describe('renewal live workflow and write guards', () => {
   const root = path.join(__dirname, '..')
   const workflow = fs.readFileSync(
@@ -1156,14 +1194,113 @@ describe('renewal live workflow and write guards', () => {
     'utf8'
   )
 
-  it('schedules a report and keeps the live query behind the manual input', () => {
+  it('schedules a live run and keeps a manual dry run', () => {
     expect(workflow).to.include('schedule:')
+    expect(workflow).to.include('15 13 * * *')
     expect(workflow).to.include('workflow_dispatch')
     expect(workflow).to.include('CRON_SECRET')
+    expect(workflow).to.include('MOONDAO_SITE_URL')
+    expect(workflow).to.include('https://www.moondao.com')
+    expect(workflow).to.include('http://moondao.com|https://moondao.com')
     expect(workflow).to.include('QUERY="dryRun=1"')
+    expect(workflow).to.include('dryRun=1&live=1')
     expect(workflow).to.include('LIVE_INPUT')
-    expect(workflow).to.not.include('citizen-renewal-reminders?live=1')
+    expect(workflow).to.include('[ "${LIVE_INPUT}" = "0" ]')
+    expect(workflow).to.include('default: "1"')
+    expect(workflow).to.include('curl -sS -o "$body_file" -w "%{http_code}" -X POST')
+    expect(workflow).to.not.match(/^\s*http_code=.*\s-[fL]\b/m)
+    expect(workflow).to.not.include('This run must report only')
+    expect(workflow).to.not.include('echo "$response"')
+    expect(workflow).to.not.include('cat "$body_file"')
+    expect(workflow).to.include('.writes.failures')
+    expect(workflow).to.include('.writes.writing')
+    expect(workflow).to.include('.dryRun')
+    expect(workflow).to.include('*@*')
     expect(workflow).to.not.include('\u2014')
+    expect(workflow).to.not.include('\u2013')
+    expect(workflow).to.not.include('vercel.json')
+  })
+
+  it('prints a PII-free summary of stage counts and write failures', () => {
+    const match = workflow.match(/summary="\$\(jq -c '\n([\s\S]*?)\n[ ]*' "\$body_file"\)"/)
+    expect(match, 'workflow summary filter').to.not.equal(null)
+    const filter = match?.[1] || ''
+    expect(filter).to.include('renewalReminder')
+    expect(filter).to.include('catchupMinus7')
+    expect(filter).to.include('catchupExpiry')
+    expect(filter).to.include('catchupPlus14')
+    expect(filter).to.include('renewed')
+    expect(filter).to.include('typeformOnly')
+    const body = {
+      ok: true,
+      live: true,
+      dryRun: false,
+      buckets: {
+        activeKit: [{ emailMasked: 'person@example.com', tokenId: '1' }],
+      },
+      writes: {
+        writing: true,
+        failures: 0,
+        actions: [{ emailMasked: 'hidden@example.com' }],
+        buckets: {
+          renewalReminder: { planned: 2, executed: 2 },
+          catchupMinus7: { planned: 1, executed: 0 },
+          catchupExpiry: { planned: 0, executed: 0 },
+          catchupPlus14: { planned: 0, executed: 0 },
+          renewed: { planned: 1, executed: 1 },
+          typeformOnly: { planned: 0, executed: 0, reported: 4 },
+        },
+      },
+      warnings: ['do-not-print secret person@example.com'],
+    }
+    const result = spawnSync('jq', ['-c', filter], {
+      input: JSON.stringify(body),
+      encoding: 'utf8',
+    })
+    expect(result.status).to.equal(0)
+    expect(result.stdout).to.not.include('@')
+    expect(result.stdout).to.not.include('person@example.com')
+    expect(result.stdout).to.not.include('hidden@example.com')
+    expect(result.stdout).to.not.include('secret')
+    expect(JSON.parse(result.stdout)).to.deep.equal({
+      live: true,
+      dryRun: false,
+      writing: true,
+      stages: {
+        renewalReminder: { planned: 2, executed: 2 },
+        catchupMinus7: { planned: 1, executed: 0 },
+        catchupExpiry: { planned: 0, executed: 0 },
+        catchupPlus14: { planned: 0, executed: 0 },
+        renewed: { planned: 1, executed: 1 },
+        typeformOnly: { planned: 0, executed: 0, reported: 4 },
+      },
+      executed: 3,
+      failures: 0,
+    })
+
+    const leaked = {
+      ok: true,
+      live: false,
+      dryRun: true,
+      writes: {
+        writing: false,
+        failures: 'person@example.com',
+        buckets: {
+          renewalReminder: { planned: 'person@example.com', executed: 'person@example.com' },
+        },
+      },
+    }
+    const leakedResult = spawnSync('jq', ['-c', filter], {
+      input: JSON.stringify(leaked),
+      encoding: 'utf8',
+    })
+    expect(leakedResult.status).to.equal(0)
+    expect(leakedResult.stdout).to.not.include('@')
+    const parsed = JSON.parse(leakedResult.stdout)
+    expect(parsed.failures).to.equal(null)
+    expect(parsed.stages.renewalReminder).to.deep.equal({ planned: 0, executed: 0 })
+    expect(parsed.executed).to.equal(0)
+    expect(parsed.stages.catchupMinus7).to.deep.equal({ planned: 0, executed: 0 })
   })
 
   it('does not create subscribers or call form or sequence subscribe', () => {

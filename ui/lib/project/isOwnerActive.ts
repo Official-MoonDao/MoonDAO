@@ -1,7 +1,5 @@
 import { readContract } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
-import { PROJECT_ACTIVE } from '@/lib/nance/types'
-import { getAttribute } from '@/lib/utils/nft'
+import { loadProjectActiveStatus } from '@/lib/tableland/tableNft'
 import { parseOwnerId } from './projectOwnerId'
 
 /**
@@ -25,13 +23,14 @@ export async function isOwnerActive({
   const owner = parseOwnerId(teamId)
   if (owner.kind === 'project') {
     if (kind === 'listing') return true
-    // `useContract` is unset on the first render, and `getNFT` throws when the
-    // RPC is rate-limited. Fail open like `filterJobsByActiveTeam` so a project
-    // job is not dropped before we know it is inactive.
-    if (!projectContract) return true
+    // A failed table read must not hide a project job. The server filter does
+    // the same when project status cannot be loaded.
+    const chain = projectContract?.chain || teamContract?.chain
+    if (!chain) return true
     try {
-      const nft = await getNFT({ contract: projectContract, tokenId: BigInt(owner.id) })
-      return Number(getAttribute(nft?.metadata?.attributes as any, 'active')?.value) === PROJECT_ACTIVE
+      const status = await loadProjectActiveStatus(chain, owner.id)
+      if (status === 'unknown') return true
+      return status === 'active'
     } catch (error) {
       console.error('Failed to read project status for job:', error)
       return true

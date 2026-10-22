@@ -3,8 +3,8 @@ import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES, CITIZEN_TABLE_NAMES } from 'const/config'
 import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
+import { loadCitizenNft } from '@/lib/tableland/tableNft'
 import { getChainSlug } from '../thirdweb/chain'
 import client from '../thirdweb/client'
 import { fetchCitizenExpiresAt, isSubscriptionExpired } from './citizenSubscription'
@@ -94,31 +94,25 @@ export function useCitizenQuery(
         // shared across chains, so a default-chain read can mark a paid-up
         // testnet citizen as lapsed.
         if (!citizenAddress) {
-          const expiresAt = await fetchCitizenExpiresAt(
-            ownedTokenId.toString(),
-            selectedChain
-          )
+          const expiresAt = await fetchCitizenExpiresAt(ownedTokenId.toString(), selectedChain)
           if (isSubscriptionExpired(expiresAt)) {
             resolved = undefined
             return
           }
         }
 
+        const ownerAddress = (citizenAddress || address || '').toLowerCase()
         resolved = {
           id: ownedTokenId,
-          owner: (citizenAddress || address || '').toLowerCase(),
+          owner: ownerAddress,
           metadata: { id: ownedTokenId.toString(), name: '' },
         }
 
-        try {
-          resolved = await getNFT({
-            contract: contract,
-            tokenId: BigInt(ownedTokenId),
-          })
-        } catch (err) {
-          // Ownership is already proven. A metadata/gateway failure must not
-          // send a citizen back to the mint prompt.
-          console.warn('Citizen metadata unavailable:', err)
+        // Ownership is already proven. A missing table row must not send a
+        // citizen back to the mint prompt.
+        const profile = await loadCitizenNft(selectedChain, ownedTokenId.toString())
+        if (profile) {
+          resolved = { ...profile, id: ownedTokenId, owner: ownerAddress }
         }
       } catch (err: any) {
         resolved = undefined
@@ -208,10 +202,7 @@ export function useCitizens(selectedChain: any, citizenAddresses: string[]) {
           return
         }
       } catch (err) {
-        console.warn(
-          'useCitizens: Tableland batch failed, falling back to on-chain:',
-          err
-        )
+        console.warn('useCitizens: Tableland batch failed, falling back to on-chain:', err)
       }
 
       // Fallback: chunked sequential RPC so we don't reintroduce the N-wide burst.

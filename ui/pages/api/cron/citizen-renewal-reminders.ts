@@ -17,6 +17,7 @@ import {
   loadExpiresAt,
 } from '@/lib/citizen/renewalCoverageRead'
 import { redisFromEnv, runRenewalWritePass } from '@/lib/citizen/renewalCoverageWrite'
+import { authorizeRenewalCron } from '@/lib/citizen/renewalCronAuth'
 
 export const config = {
   maxDuration: 300,
@@ -54,9 +55,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method not allowed' })
   }
 
-  const expectedSecret = process.env.CRON_SECRET
-  if (expectedSecret && providedSecret(req) !== expectedSecret) {
-    return res.status(401).json({ message: 'Unauthorized' })
+  const auth = authorizeRenewalCron(process.env.CRON_SECRET, providedSecret(req))
+  if (!auth.ok) {
+    return res.status(auth.status).json(auth.body)
   }
 
   const rejection =

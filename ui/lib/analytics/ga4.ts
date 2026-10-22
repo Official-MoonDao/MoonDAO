@@ -155,7 +155,16 @@ function sendEvent(name: string, params: Record<string, unknown>, includeAttribu
 
 export function trackJoinCtaClick(params: { cta_location: string; plan: AnalyticsPlan }) {
   if (!params.cta_location) return
-  sendEvent('join_cta_click', { cta_location: params.cta_location, plan: params.plan }, false)
+  const utmSource = getAttribution().utm_source
+  sendEvent(
+    'join_cta_click',
+    {
+      cta_location: params.cta_location,
+      plan: params.plan,
+      ...(typeof utmSource === 'string' && utmSource ? { utm_source: utmSource } : {}),
+    },
+    false
+  )
 }
 
 export function trackBeginCheckout(params: {
@@ -492,13 +501,173 @@ export function bindJoinCtaClicks(doc: Document = document): () => void {
 }
 
 /**
+ * Query tokens that must not reach GA4. Match a whole token, so utm_source
+ * and utm_campaign stay. `e-mail` splits into `e` and `mail`.
+ */
+export const PII_QUERY_TOKENS = [
+  'email',
+  'mail',
+  'name',
+  'firstname',
+  'lastname',
+  'fullname',
+  'username',
+  'phone',
+  'phonenumber',
+  'tel',
+  'mobile',
+  'telephone',
+  'address',
+] as const
+
+const PII_QUERY_TOKEN_SET = new Set<string>(PII_QUERY_TOKENS)
+
+export function isPiiQueryKey(key: string): boolean {
+  const parts = key
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+  return parts.some((part) => PII_QUERY_TOKEN_SET.has(part))
+}
+
+/** Drop email, name, phone, and similar query params. Keep campaign params. */
+export function stripPiiSearch(search: string): string {
+  const raw = search.startsWith('?') ? search.slice(1) : search
+  const params = new URLSearchParams(raw)
+  const drop: string[] = []
+  params.forEach((_, key) => {
+    if (isPiiQueryKey(key)) drop.push(key)
+  })
+  for (const key of drop) params.delete(key)
+  const qs = params.toString()
+  return qs ? `?${qs}` : ''
+}
+
+export function stripPiiFromUrl(url: string, base: string): string {
+  try {
+    const parsed = new URL(url, base)
+    const search = stripPiiSearch(parsed.search)
+    const next = `${parsed.pathname}${search}${parsed.hash}`
+    if (/^[a-z][a-z0-9+.-]*:/i.test(url)) return `${parsed.origin}${next}`
+    return next
+  } catch {
+    return url
+  }
+}
+
+/**
+ * Runs in the document head, before Next.js reads the URL.
+ * A later replaceState (after Next has captured the query) leaves the pages
+ * router uninitialized, so this snippet is the one that removes email and
+ * similar params from the landing URL.
+ */
+export function buildPiiStripScript(): string {
+  const piiTokens = JSON.stringify([...PII_QUERY_TOKENS])
+  return `(function(){try{
+    var loc = window.location || {};
+    var search = loc.search || '';
+    var params = new URLSearchParams(search.charAt(0) === '?' ? search.slice(1) : search);
+    var piiTokens = ${piiTokens};
+    var isPiiKey = function (key) {
+      var parts = String(key).toLowerCase().split(/[^a-z0-9]+/);
+      for (var i = 0; i < parts.length; i++) {
+        if (piiTokens.indexOf(parts[i]) !== -1) return true;
+      }
+      return false;
+    };
+    var keys = [];
+    params.forEach(function (_value, key) { keys.push(key); });
+    var changed = false;
+    for (var k = 0; k < keys.length; k++) {
+      if (isPiiKey(keys[k])) { params.delete(keys[k]); changed = true; }
+    }
+    if (!changed) return;
+    var qs = params.toString();
+    var next = (loc.pathname || '/') + (qs ? '?' + qs : '') + (loc.hash || '');
+    var nativeReplace = window.__mdNativeHistory && window.__mdNativeHistory.replaceState;
+    var replace = nativeReplace || (window.history && window.history.replaceState);
+    if (replace) replace.call(window.history, window.history ? window.history.state : null, '', next);
+  }catch(e){}})();`
+}
+
+export function cleanHistoryTarget(url: unknown, base?: string): unknown {
+  if (typeof url !== 'string' || !url) return url
+  const origin =
+    base || (typeof window !== 'undefined' ? window.location.origin : 'https://moondao.com')
+  return stripPiiFromUrl(url, origin)
+}
+
+type NativeHistory = {
+  pushState: History['pushState']
+  replaceState: History['replaceState']
+}
+
+type GuardedHistory = History['pushState'] & { __mdGuarded?: boolean }
+
+function historyOrigin(): string {
+  try {
+    return window.location.origin || 'https://moondao.com'
+  } catch {
+    return 'https://moondao.com'
+  }
+}
+
+/**
+ * Wrap history so PII query params are removed before Enhanced Measurement
+ * sees the URL. Shallow Next.js updates call the original method, so they
+ * do not add a page view. This does not send its own page view.
+ */
+export function installGa4HistoryGuards(): void {
+  if (typeof window === 'undefined' || !window.history) return
+  const host = window as Window & { __mdNativeHistory?: NativeHistory }
+  if (!host.__mdNativeHistory) {
+    host.__mdNativeHistory = {
+      pushState: window.history.pushState.bind(window.history),
+      replaceState: window.history.replaceState.bind(window.history),
+    }
+  }
+  const native = host.__mdNativeHistory
+  const currentPush = window.history.pushState as GuardedHistory
+  const currentReplace = window.history.replaceState as GuardedHistory
+  if (currentPush.__mdGuarded && currentReplace.__mdGuarded) return
+
+  const origin = historyOrigin()
+  window.history.pushState = guardHistory(currentPush, native.pushState, origin)
+  window.history.replaceState = guardHistory(currentReplace, native.replaceState, origin)
+}
+
+function guardHistory(
+  wrapped: History['pushState'],
+  nativeFn: History['pushState'],
+  origin: string
+): History['pushState'] {
+  function guarded(this: History, state: unknown, title: string, url?: string | URL | null) {
+    const raw = typeof url === 'string' ? url : url ? String(url) : url
+    const clean = cleanHistoryTarget(raw, origin)
+    const options =
+      state && typeof state === 'object'
+        ? (state as { options?: { shallow?: boolean } }).options
+        : undefined
+    if (options && options.shallow === true) {
+      return nativeFn.call(window.history, state, title, clean as string | URL | null | undefined)
+    }
+    return wrapped.call(window.history, state, title, clean as string | URL | null | undefined)
+  }
+  ;(guarded as GuardedHistory).__mdGuarded = true
+  return guarded as History['pushState']
+}
+
+/**
  * Inline snippet: consent defaults, then one gtag config (default send_page_view, once).
  * Exempt regions (US and territories) start granted. Everyone else starts denied.
  * A stored cookie_consent choice, the same 'true' / 'false' strings CookieBanner
  * writes with JSON.stringify, is applied before config so the landing page_view
  * is not sent as a cookieless ping for someone who already chose.
  * Does not set page_path, so the hit keeps location.search (the "?" ).
- * Enhanced Measurement then records later history changes.
+ * Email and similar params are removed by buildPiiStripScript in the document
+ * head, before this config runs and before Next.js reads the URL.
+ * Enhanced Measurement then records later history changes. Shallow updates are
+ * left to installGa4HistoryGuards, which calls the original history method.
  * `?internal=1` sets a cookie; the cookie adds traffic_type internal.
  */
 export function buildGtagInitScript(measurementId: string): string {
@@ -517,7 +686,7 @@ export function buildGtagInitScript(measurementId: string): string {
       else if (cc === 'false') gtag('consent', 'update', { 'analytics_storage': 'denied' });
     } catch (e) {}
     try {
-      var search = window.location.search || '';
+      var search = (window.location && window.location.search) || '';
       if (new URLSearchParams(search).get('${INTERNAL_QUERY_PARAM}') === '1') {
         document.cookie = '${INTERNAL_COOKIE_NAME}=1; Path=/; Max-Age=31536000; SameSite=Lax';
       }

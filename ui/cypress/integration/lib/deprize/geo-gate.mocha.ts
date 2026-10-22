@@ -224,7 +224,6 @@ describe('PR-0 DePrize geo gate', () => {
       'components/deprize/LiveDePrizeHero.tsx',
       'components/deprize/RaceMarketCard.tsx',
       'components/deprize/howItWorks/DePrizeHowItWorks.tsx',
-      'components/deprize/detail/MarketModeTabs.tsx',
       'components/deprize/detail/TradeTicket.tsx',
       'lib/deprize/constants.ts',
     ]

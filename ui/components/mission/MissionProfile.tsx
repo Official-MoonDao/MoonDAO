@@ -29,7 +29,6 @@ import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } 
 import { flushSync } from 'react-dom'
 import { useWindowSize } from 'react-use'
 import { getContract } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import useJBProjectTimeline from '@/lib/juicebox/useJBProjectTimeline'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
@@ -47,6 +46,7 @@ import useMissionFundingStage from '@/lib/mission/useMissionFundingStage'
 import { useOnrampFlow } from '@/lib/mission/useOnrampFlow'
 import type { LeaderboardEntry } from '@/lib/overview-delegate/leaderboard'
 import { type Chain, arbitrum, ethereum, optimismSepolia, sepolia } from '@/lib/rpc/chains'
+import { loadOwnerNft } from '@/lib/tableland/tableNft'
 import { useTeamData } from '@/lib/team/useTeamData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -383,23 +383,15 @@ export default function MissionProfile({
   }, [teamNFT?.metadata?.attributes])
 
   useEffect(() => {
-    async function getTeamNFT() {
-      if (mission?.teamId === undefined || !teamContract) return
-      const teamNFT = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(mission.teamId),
-      })
-      setTeamNFT({
-        ...teamNFT,
-        metadata: { ...teamNFT.metadata, id: teamNFT.id.toString() },
-      })
+    if (_teamNFT || mission?.teamId === undefined || mission?.teamId === null) return
+    let cancelled = false
+    loadOwnerNft(selectedChain, mission.teamId).then((nft) => {
+      if (!cancelled && nft) setTeamNFT(nft)
+    })
+    return () => {
+      cancelled = true
     }
-
-    // Only fetch teamNFT if not provided via props
-    if (!_teamNFT) {
-      getTeamNFT()
-    }
-  }, [teamContract, mission?.teamId, _teamNFT])
+  }, [selectedChain, mission?.teamId, _teamNFT])
 
   return (
     <>

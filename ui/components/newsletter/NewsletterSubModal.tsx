@@ -1,12 +1,18 @@
 import { CK_NEWSLETTER_FORM_ID } from 'const/config'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { trackSignUp } from '@/lib/analytics/ga4'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
+import { SignupHoneypot } from '@/components/newsletter/SignupHoneypot'
+
+const ERROR_MESSAGE = 'Could not subscribe. Please try again.'
 
 export function NewsletterSubModal({ setEnabled }: any) {
   const subscribeToNewsletter = useSubscribe(CK_NEWSLETTER_FORM_ID)
   const [email, setEmail] = useState<string>()
+  const [company, setCompany] = useState('')
+  const [error, setError] = useState('')
+  const startedAt = useRef(Date.now())
 
   return (
     <div
@@ -16,17 +22,26 @@ export function NewsletterSubModal({ setEnabled }: any) {
       id="newsletter-sub-modal-backdrop"
       className="fixed top-0 left-0 w-screen h-screen bg-black/50 backdrop-blur-sm flex justify-center items-center z-[1000]"
     >
-      <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg p-8 w-[300px] md:w-[500px] max-w-lg mx-4">
+      <div className="relative bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-lg p-8 w-[300px] md:w-[500px] max-w-lg mx-4">
+        <SignupHoneypot company={company} setCompany={setCompany} />
         <h1 className="text-2xl font-heading font-semibold text-white mb-4">SUBSCRIBE</h1>
         <p className="text-white/70 mb-6">
           Enter your email and subscribe to the MoonDAO Newsletter.
         </p>
         <label className="block text-white font-medium mb-2">Email:</label>
         <input
-          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 mb-6"
+          className="w-full p-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 mb-2"
           placeholder="your@email.com"
+          aria-invalid={error ? true : undefined}
           onChange={(e) => setEmail(e.target.value)}
         />
+        {error ? (
+          <p role="alert" className="mb-4 text-sm text-red-300">
+            {error}
+          </p>
+        ) : (
+          <div className="mb-4" />
+        )}
         <div className="flex gap-4 justify-end">
           <button
             className="px-6 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-medium transition-all duration-200"
@@ -39,15 +54,29 @@ export function NewsletterSubModal({ setEnabled }: any) {
             className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg font-medium transition-all duration-200"
             onClick={async () => {
               if (!email || email.trim() === '' || !email.includes('@')) {
-                return toast.error('Please enter a valid email to subscribe.')
+                const message = 'Please enter a valid email to subscribe.'
+                setError(message)
+                return toast.error(message)
               }
-              const subRes = await subscribeToNewsletter(email)
-              if (subRes.ok) {
-                trackSignUp({ cta_location: 'modal' })
-                toast.success(
-                  'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
-                )
-                setEnabled(false)
+              try {
+                const subRes = await subscribeToNewsletter(email, {
+                  company,
+                  formStartedAt: startedAt.current,
+                })
+                if (subRes.ok) {
+                  setError('')
+                  trackSignUp({ cta_location: 'modal' })
+                  toast.success(
+                    'Successfully subscribed to the newsletter! Open your email and confirm your subscription.'
+                  )
+                  setEnabled(false)
+                  return
+                }
+                setError(ERROR_MESSAGE)
+                toast.error(ERROR_MESSAGE)
+              } catch {
+                setError(ERROR_MESSAGE)
+                toast.error(ERROR_MESSAGE)
               }
             }}
           >

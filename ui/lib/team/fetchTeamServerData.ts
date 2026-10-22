@@ -1,9 +1,10 @@
 import TeamABI from 'const/abis/Team.json'
-import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES } from 'const/config'
+import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES, TEAM_TABLE_NAMES } from 'const/config'
 import { getContract, readContract } from 'thirdweb'
 import type { Chain } from 'thirdweb/chains'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import hatsSubgraphClient from '@/lib/hats/hatsSubgraphClient'
+import { teamRowToNFT } from '@/lib/tableland/convertRow'
+import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '../thirdweb/chain'
 import { serverClient } from '../thirdweb/serverClient'
 
@@ -30,33 +31,36 @@ export async function fetchTeamNFTAndHats(
     return { teamNFT: null, teamHats: [] }
   }
 
+  const chainSlug = getChainSlug(chain)
+  let formattedTeamNFT: TeamNFTData | null = null
+
   try {
-    const chainSlug = getChainSlug(chain)
-    
-    // Create team contract
+    const tableName = TEAM_TABLE_NAMES[chainSlug]
+    if (tableName && Number.isSafeInteger(teamId) && teamId >= 0) {
+      const rows = await queryTable(
+        chain as any,
+        `SELECT * FROM ${tableName} WHERE id = ${teamId} LIMIT 1`
+      )
+      if (rows?.[0]) {
+        const nft = teamRowToNFT(rows[0])
+        formattedTeamNFT = {
+          ...nft,
+          id: String(rows[0].id),
+          metadata: { ...nft.metadata, id: String(rows[0].id) },
+        }
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to fetch team profile:', error)
+  }
+
+  try {
     const teamContract = getContract({
       client: serverClient,
       address: TEAM_ADDRESSES[chainSlug],
       abi: TeamABI as any,
       chain: chain,
     })
-
-    // Fetch team NFT data
-    const teamNFT = await getNFT({
-      contract: teamContract,
-      tokenId: BigInt(teamId),
-    })
-
-    if (!teamNFT) {
-      return { teamNFT: null, teamHats: [] }
-    }
-
-    // Format team NFT
-    const formattedTeamNFT = {
-      ...teamNFT,
-      id: teamNFT.id.toString(),
-      metadata: { ...teamNFT.metadata, id: teamNFT.id.toString() },
-    }
 
     // Fetch admin hat ID from team contract
     const adminHatId = await readContract({
@@ -107,8 +111,7 @@ export async function fetchTeamNFTAndHats(
       teamHats,
     }
   } catch (error) {
-    console.warn('Failed to fetch team data or hats:', error)
-    return { teamNFT: null, teamHats: [] }
+    console.warn('Failed to fetch team hats:', error)
+    return { teamNFT: formattedTeamNFT, teamHats: [] }
   }
 }
-

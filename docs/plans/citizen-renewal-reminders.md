@@ -127,9 +127,11 @@ Optional: set the matching `*_TAG_ID` env vars so the job does not depend on the
 
 GitHub Actions workflow `Citizen renewal coverage dry run` is manual and always calls `dryRun=1`.
 
-Workflow `Citizen renewal reminders` runs daily at 13:15 UTC and calls the route without `live=1`, so it reports only. `workflow_dispatch` input `live` must be exactly `1` to append `live=1`. The schedule cannot set that input. The server still ignores `live=1` until `RENEWAL_REMINDERS_LIVE=true`.
+Workflow `Citizen renewal reminders` is the only scheduler. It runs daily at 13:15 UTC and passes `live=1`. A manual run also passes `live=1` unless the `live` input is `0`, which stays a dry run. The server still ignores `live=1` until `RENEWAL_REMINDERS_LIVE` is exactly `true`. GitHub may start the 13:15 UTC schedule later than that minute.
 
-Both workflows use `CRON_SECRET` and `MOONDAO_SITE_URL`.
+The workflow calls `https://www.moondao.com` and does not follow redirects. The apex host returns 307, and curl does not treat that status as a failure. The job prints a short summary only: `live`, `dryRun`, `writing`, per-stage counts, writes executed, and failures. It does not print the raw response.
+
+Both workflows use `CRON_SECRET` and `MOONDAO_SITE_URL`. The reminder route returns 503 when `CRON_SECRET` is unset.
 
 Required on the host: `CRON_SECRET`, `TYPEFORM_PERSONAL_ACCESS_TOKEN`, the three `NEXT_PUBLIC_TYPEFORM_CITIZEN_*` form ids, and `CONVERT_KIT_V4_API_KEY` or `CONVERT_KIT_API_KEY`. Redis (`UPSTASH_REDIS_URL`, `UPSTASH_REDIS_TOKEN`) is required before any live write.
 

@@ -6,22 +6,21 @@ import { betPresetEthAmounts, formatBetPresetEth } from '@/lib/deprize/betPreset
 const UI_ROOT = path.resolve(__dirname, '../../../../')
 
 describe('bet preset amounts', () => {
-  it('lands within a dollar of $10, $100, and $1000 at $2688 per ETH', () => {
+  it('shows $10, $100, and $1000 chips to two significant figures at $2688 per ETH', () => {
     const price = 2688
     const amounts = betPresetEthAmounts(price)
     expect(amounts).to.have.length(3)
-    const targets = [10, 100, 1000]
-    amounts.forEach((eth, i) => {
-      expect(Math.abs(eth * price - targets[i]) < 1).to.equal(true)
+    expect(formatBetPresetEth(amounts[0])).to.equal('0.0037')
+    expect(formatBetPresetEth(amounts[1])).to.equal('0.037')
+    expect(formatBetPresetEth(amounts[2])).to.equal('0.37')
+    amounts.forEach((eth) => {
+      expect(eth).to.equal(Number(formatBetPresetEth(eth)))
     })
-    expect(formatBetPresetEth(amounts[0])).to.equal('0.00372')
-    expect(formatBetPresetEth(amounts[1])).to.equal('0.037202')
-    expect(formatBetPresetEth(amounts[2])).to.equal('0.372024')
   })
 
   it('caps the $1000 chip at 1 ETH and drops the duplicate when ETH is $100', () => {
     const amounts = betPresetEthAmounts(100)
-    const keys = amounts.map((eth) => eth.toFixed(6))
+    const keys = amounts.map((eth) => formatBetPresetEth(eth))
     expect(new Set(keys).size).to.equal(amounts.length)
     expect(amounts.length < 3).to.equal(true)
     for (const eth of amounts) {

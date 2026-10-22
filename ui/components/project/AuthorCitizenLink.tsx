@@ -1,9 +1,8 @@
-import { getNFT } from 'thirdweb/extensions/erc721'
-import { readContract } from 'thirdweb'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import { loadCitizenByOwner } from '@/lib/tableland/tableNft'
 import { useENS } from '@/lib/utils/hooks/useENS'
 
 type AuthorCitizenLinkProps = {
@@ -11,7 +10,7 @@ type AuthorCitizenLinkProps = {
   citizenContract: any
   authorName?: string | null
   compact?: boolean
-  /** When false, skip getOwnedToken/getNFT (show address/ENS only). */
+  /** When false, skip the citizen lookup (show address/ENS only). */
   enabled?: boolean
 }
 
@@ -27,29 +26,21 @@ export default function AuthorCitizenLink({
   const shortAddress = `${authorAddress.slice(0, 6)}...${authorAddress.slice(-4)}`
 
   useEffect(() => {
-    async function resolve() {
-      if (!enabled || !authorAddress || !citizenContract?.address) return
-      try {
-        const tokenId = await readContract({
-          contract: citizenContract,
-          method: 'getOwnedToken' as string,
-          params: [authorAddress],
-        })
-        const nft = await getNFT({
-          contract: citizenContract,
-          tokenId: BigInt(tokenId.toString()),
-        })
-        if (
-          nft?.metadata?.name &&
-          nft.metadata.name !== 'Failed to load NFT metadata'
-        ) {
-          setCitizenMeta({ ...nft.metadata, id: nft.id.toString() })
-        }
-      } catch {
-        // Not a citizen or contract call failed
-      }
+    const chain = citizenContract?.chain
+    if (!enabled || !authorAddress || !chain) return
+    let cancelled = false
+    loadCitizenByOwner(chain, authorAddress)
+      .then((nft) => {
+        const name = nft?.metadata?.name
+        if (cancelled || !name || name === 'Failed to load NFT metadata') return
+        setCitizenMeta({ ...nft.metadata, id: String(nft.metadata.id || nft.id) })
+      })
+      .catch(() => {
+        // Not a citizen, or the table is unavailable.
+      })
+    return () => {
+      cancelled = true
     }
-    resolve()
   }, [authorAddress, citizenContract, enabled])
 
   const displayName = citizenMeta?.name || authorName || null
@@ -62,13 +53,10 @@ export default function AuthorCitizenLink({
     : undefined
 
   const explorerBaseUrl =
-    citizenContract?.chain?.blockExplorers?.[0]?.url?.replace(/\/$/, '') ||
-    'https://arbiscan.io'
+    citizenContract?.chain?.blockExplorers?.[0]?.url?.replace(/\/$/, '') || 'https://arbiscan.io'
   const explorerAddressUrl = `${explorerBaseUrl}/address/${authorAddress}`
   const linkHref = href || explorerAddressUrl
-  const linkProps = href
-    ? {}
-    : { target: '_blank' as const, rel: 'noopener noreferrer' }
+  const linkProps = href ? {} : { target: '_blank' as const, rel: 'noopener noreferrer' }
 
   const containerClasses = compact
     ? 'flex items-center gap-1.5 h-7 bg-white/5 border border-white/10 rounded-lg px-2 hover:bg-white/10 transition-colors group min-w-0'

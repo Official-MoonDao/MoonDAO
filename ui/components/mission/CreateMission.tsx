@@ -20,13 +20,13 @@ import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useLocalStorage } from 'react-use'
 import { getContract, prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import JuiceProviders from '@/lib/juicebox/JuiceProviders'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { loadOwnerNft } from '@/lib/tableland/tableNft'
 import { waitForRowById } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
@@ -472,22 +472,23 @@ export default function CreateMission({
   }, [selectedTeamNFT])
 
   useEffect(() => {
-    async function getTeamNFT() {
-      if (selectedTeamId === undefined) return
-      try {
-        const nft = await getNFT({
-          contract: teamContract,
-          tokenId: BigInt(selectedTeamId),
-        })
-        setSelectedTeamNFT(nft)
-      } catch (err) {
-        console.error(err)
-        setSelectedTeamNFT(undefined)
-      }
+    if (selectedTeamId === undefined) {
+      setSelectedTeamNFT(undefined)
+      return
     }
-    if (selectedTeamId !== undefined && teamContract) getTeamNFT()
-    else setSelectedTeamNFT(undefined)
-  }, [selectedTeamId, teamContract])
+    let cancelled = false
+    loadOwnerNft(selectedChain, selectedTeamId)
+      .then((nft) => {
+        if (!cancelled) setSelectedTeamNFT(nft || undefined)
+      })
+      .catch((err) => {
+        console.error(err)
+        if (!cancelled) setSelectedTeamNFT(undefined)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedTeamId, selectedChain])
 
   useEffect(() => {
     if (userTeamsAsManager?.[0]) {

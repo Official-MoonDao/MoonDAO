@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { useEffect, useState, type MouseEvent } from 'react'
-import { getNFT } from 'thirdweb/extensions/erc721'
-import { useReadContract } from 'thirdweb/react'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import { loadOwnerNft, loadTeamNames } from '@/lib/tableland/tableNft'
 
 type DePrizeTeamLinkProps = {
   teamId: bigint
@@ -137,13 +136,7 @@ function TeamIdentity({
   const body = (
     <>
       {!nameOnly && (
-        <TeamAvatar
-          name={name}
-          image={image}
-          color={color}
-          size={size}
-          teamId={teamId}
-        />
+        <TeamAvatar name={name} image={image} color={color} size={size} teamId={teamId} />
       )}
       <span
         className={`text-sm font-medium truncate text-white/90 ${
@@ -179,9 +172,8 @@ function TeamIdentity({
  * let Moon Base Zero feed atlas org name/logo and link to `/moonbase/{projectId}`
  * for competitors that will never hold a Team NFT.
  *
- * thirdweb's `useReadContract` reads `contract.chain` even when the query is
- * disabled, so the NFT hook lives in a child that only mounts when a contract
- * is actually present. Atlas / demo rows (no Team NFT) skip it entirely.
+ * The profile read lives in a child that only mounts when a team contract is
+ * present, so Atlas / demo rows (no Team NFT) skip it entirely.
  */
 export default function DePrizeTeamLink({
   teamId,
@@ -260,16 +252,24 @@ function DePrizeTeamLinkFromChain({
   unclaimed: boolean
   plain: boolean
 }) {
-  const { data: teamNFT } = useReadContract(getNFT, {
-    contract: teamContract,
-    tokenId: BigInt(teamId),
-  })
+  const [teamNFT, setTeamNFT] = useState<any>()
+
+  useEffect(() => {
+    const chain = teamContract?.chain
+    if (!chain) return
+    let cancelled = false
+    loadOwnerNft(chain, teamId).then((nft) => {
+      if (!cancelled) setTeamNFT(nft)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [teamContract, teamId])
 
   // `||` (not `??`): an empty metadata name must still fall back to the id,
   // and an empty override must not blank the row.
-  const name =
-    nameOverride || (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
-  const image = unclaimed ? '' : imageOverride || (teamNFT as any)?.metadata?.image || ''
+  const name = nameOverride || teamNFT?.metadata?.name || `Team #${teamId.toString()}`
+  const image = unclaimed ? '' : imageOverride || teamNFT?.metadata?.image || ''
 
   return (
     <TeamIdentity
@@ -288,13 +288,22 @@ function DePrizeTeamLinkFromChain({
 
 /** Resolve display name for a team id (for banners / claim copy). */
 export function useDePrizeTeamName(teamId: bigint | undefined, teamContract: any): string {
-  const { data: teamNFT } = useReadContract(getNFT, {
-    contract: teamContract,
-    tokenId: BigInt(teamId ?? 0n),
-    queryOptions: { enabled: !!teamContract && !!teamId && teamId > 0n },
-  })
+  const [name, setName] = useState('')
+
+  useEffect(() => {
+    const chain = teamContract?.chain
+    if (!chain || !teamId || teamId <= 0n) return
+    let cancelled = false
+    loadTeamNames(chain, [teamId]).then((names) => {
+      if (!cancelled) setName(names.get(teamId.toString()) || '')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [teamContract, teamId])
+
   if (!teamId || teamId <= 0n) return ''
-  return (teamNFT as any)?.metadata?.name || `Team #${teamId.toString()}`
+  return name || `Team #${teamId.toString()}`
 }
 
 /** Resolve all roster names in one pass (chart legend / tooltips). */
@@ -308,25 +317,22 @@ export function useDePrizeTeamNames(
   )
 
   useEffect(() => {
-    if (!teamContract || !teamIds?.length) return
+    const chain = teamContract?.chain
+    if (!chain || !teamIds?.length) return
     let cancelled = false
     ;(async () => {
-      const resolved = await Promise.all(
-        teamIds.map(async (id, i) => {
-          if (!id || id <= 0n) return `Team #${i + 1}`
-          try {
-            const nft = await getNFT({ contract: teamContract, tokenId: id })
-            return (nft as any)?.metadata?.name || `Team #${id.toString()}`
-          } catch {
-            return `Team #${id.toString()}`
-          }
-        })
-      )
+      const namesById = await loadTeamNames(chain, teamIds)
+      const resolved = teamIds.map((id, i) => {
+        if (!id || id <= 0n) return `Team #${i + 1}`
+        return namesById.get(id.toString()) || `Team #${id.toString()}`
+      })
       if (!cancelled) setNames(resolved)
     })()
     return () => {
       cancelled = true
     }
+    // `key` is the joined id list, so a new array with the same ids does not refetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamContract, key])
 
   return names

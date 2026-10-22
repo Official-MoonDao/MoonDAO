@@ -39,6 +39,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { sendOnchainNotification } from '@/lib/notifications/sendOnchainNotification'
 import { Project } from '@/lib/project/useProjectData'
 import { getProposalCycle, getRetroCohort, shiftQuarter } from '@/lib/projectCycle/cycleQuarters'
+import { visibleCycleProposals } from '@/lib/proposals/visibleCycleProposals'
 import { ethereum } from '@/lib/rpc/chains'
 import { useTablelandQuery } from '@/lib/swr/useTablelandQuery'
 import useWindowSize from '@/lib/team/use-window-size'
@@ -380,18 +381,14 @@ export function ProjectRewards({
   // - validProposalIds → ids of proposals visible in the member-vote tab.
   // - validEligibleIds → ids of eligible projects in the retroactive tab.
   // ---------------------------------------------------------------------------
+  const visibleProposals = useMemo(
+    () => visibleCycleProposals(proposals, { isSenateVote, isMemberVote }),
+    [proposals, isSenateVote, isMemberVote]
+  )
+
   const validProposalIds = useMemo(() => {
-    if (!proposals?.length) return new Set<string>()
-    let visible = proposals
-    if (isSenateVote) {
-      visible = proposals.filter((p: any) => !p.tempCheckApproved && !p.tempCheckFailed)
-    } else if (isMemberVote) {
-      visible = proposals.filter((p: any) => p.tempCheckApproved && !p.tempCheckFailed)
-    } else {
-      visible = proposals.filter((p: any) => !p.tempCheckFailed)
-    }
-    return new Set(visible.map((p: any) => String(p.id)))
-  }, [proposals, isSenateVote, isMemberVote])
+    return new Set(visibleProposals.map((p: any) => String(p.id)))
+  }, [visibleProposals])
 
   const validEligibleIds = useMemo(() => {
     if (!currentProjects?.length) return new Set<string>()
@@ -1464,7 +1461,7 @@ export function ProjectRewards({
                   id: 'proposals',
                   label: 'Project Proposals',
                   mobileLabel: 'Proposals',
-                  count: proposals?.length ?? 0,
+                  count: visibleProposals.length,
                 },
                 {
                   id: 'active',
@@ -1617,7 +1614,7 @@ export function ProjectRewards({
                     <>
                       Pending Proposals
                       <span className="ml-2 text-sm font-normal text-blue-400">
-                        ({proposals?.length ?? 0})
+                        ({visibleProposals.length})
                       </span>
                     </>
                   )}
@@ -1653,47 +1650,35 @@ export function ProjectRewards({
                   <MemberVoteResults quarter={proposalQuarter} year={proposalYear} />
                 )}
                 <div className="flex flex-col gap-1.5 sm:gap-6">
-                  {proposals && proposals.length > 0 ? (
-                    proposals
-                      .filter((project: any) => {
-                        if (isSenateVote) {
-                          return !project.tempCheckApproved && !project.tempCheckFailed
-                        }
-
-                        if (isMemberVote) {
-                          return project.tempCheckApproved && !project.tempCheckFailed
-                        }
-
-                        return !project.tempCheckFailed
-                      })
-                      .map((project: any, i) => (
-                        <div
+                  {visibleProposals.length > 0 ? (
+                    visibleProposals.map((project: any, i) => (
+                      <div
+                        key={`project-card-${i}`}
+                        className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 overflow-hidden mx-0"
+                      >
+                        <ProjectCard
                           key={`project-card-${i}`}
-                          className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 overflow-hidden mx-0"
-                        >
-                          <ProjectCard
-                            key={`project-card-${i}`}
-                            project={project}
-                            projectContract={projectContract}
-                            hatsContract={hatsContract}
-                            distribute={isSenateVote || memberVoteSubmissionsOpen}
-                            distribution={
-                              userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen)
-                                ? proposalDistribution
-                                : undefined
-                            }
-                            handleDistributionChange={
-                              userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen)
-                                ? handleProposalDistributionChange
-                                : undefined
-                            }
-                            userHasVotingPower={userHasVotingPower}
-                            isVotingPeriod={isSenateVote || memberVoteSubmissionsOpen}
-                            active={false}
-                            isSenateVote={isSenateVote}
-                          />
-                        </div>
-                      ))
+                          project={project}
+                          projectContract={projectContract}
+                          hatsContract={hatsContract}
+                          distribute={isSenateVote || memberVoteSubmissionsOpen}
+                          distribution={
+                            userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen)
+                              ? proposalDistribution
+                              : undefined
+                          }
+                          handleDistributionChange={
+                            userHasVotingPower && (isSenateVote || memberVoteSubmissionsOpen)
+                              ? handleProposalDistributionChange
+                              : undefined
+                          }
+                          userHasVotingPower={userHasVotingPower}
+                          isVotingPeriod={isSenateVote || memberVoteSubmissionsOpen}
+                          active={false}
+                          isSenateVote={isSenateVote}
+                        />
+                      </div>
+                    ))
                   ) : (
                     <div className="text-center py-8 text-gray-400">
                       <p>No project proposals yet for this cycle.</p>
@@ -1703,8 +1688,7 @@ export function ProjectRewards({
                     </div>
                   )}
                   {memberVoteSubmissionsOpen &&
-                    proposals &&
-                    proposals.length > 0 &&
+                    visibleProposals.length > 0 &&
                     (() => {
                       const proposalAllocatedPct = lodashSum(
                         Object.entries(proposalDistribution)

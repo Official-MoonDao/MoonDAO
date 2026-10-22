@@ -2,7 +2,9 @@ import {
   acceptSpotQuote,
   betBudget,
   betSlice,
+  betSpendCeiling,
   buildAmounts,
+  fitQtyToBudget,
   lmsrSpotBuyQty,
   qtyUnderMeasuredCost,
   quoteQtyByProbing,
@@ -36,6 +38,36 @@ describe('deprize quote math', () => {
       // 19 wei / 20 = 0 slice, so the whole amount is budget.
       expect(betSlice(19n)).to.equal(0n)
       expect(betBudget(19n)).to.equal(19n)
+    })
+
+    it('keeps the quoted spend under 97% of the budget', () => {
+      expect(betSpendCeiling(0n)).to.equal(0n)
+      expect(betSpendCeiling(ETH)).to.equal((ETH * 97n) / 100n)
+    })
+  })
+
+  describe('fitQtyToBudget', () => {
+    it('keeps a quantity that is already under the spend ceiling', async () => {
+      const qty = await fitQtyToBudget(async (q) => q, 900n, 1000n)
+      expect(qty).to.equal(900n)
+    })
+
+    it('shrinks a quantity whose cost would exceed the budget', async () => {
+      const qty = await fitQtyToBudget(async (q) => q, 1000n, 1000n)
+      expect(qty).to.equal(970n)
+      expect(qty <= betSpendCeiling(1000n)).to.equal(true)
+    })
+
+    it('shrinks when the real fee is higher than the quote assumed', async () => {
+      const qty = await fitQtyToBudget(async (q) => q * 2n, 1000n, 1000n)
+      expect(qty).to.equal(485n)
+      expect(qty * 2n <= betSpendCeiling(1000n)).to.equal(true)
+    })
+
+    it('returns zero when no quantity fits the budget', async () => {
+      expect(await fitQtyToBudget(async () => 5000n, 1000n, 1000n)).to.equal(0n)
+      expect(await fitQtyToBudget(async (q) => q, 0n, 1000n)).to.equal(0n)
+      expect(await fitQtyToBudget(async (q) => q, 1000n, 0n)).to.equal(0n)
     })
   })
 
@@ -128,7 +160,7 @@ describe('deprize quote math', () => {
     // Sepolia prize 2: 0.06 ETH funding, 6 outcomes, uniform price 1/6.
     const funding = 6n * 10n ** 16n
     const n = 6
-    const priceX64 = (2n ** 64n) / 6n
+    const priceX64 = 2n ** 64n / 6n
 
     function feeCost(qty: bigint): bigint {
       const b = Number(funding) / Math.log(n)

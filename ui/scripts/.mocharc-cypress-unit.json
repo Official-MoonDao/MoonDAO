@@ -1,13 +1,11 @@
 {
-  "require": [
-    "tsconfig-paths/register",
-    "ts-node/register",
-    "scripts/mocha-cypress-setup.cjs"
-  ],
+  "require": ["tsconfig-paths/register", "ts-node/register", "scripts/mocha-cypress-setup.cjs"],
   "extensions": ["ts", "tsx"],
   "spec": [
     "scripts/citizen-onboarding-image.test.ts",
     "scripts/attribution.test.ts",
+    "lib/analytics/ga4.test.ts",
+    "scripts/newsletter-subscribe.test.ts",
     "scripts/typeform-parse-body.test.ts",
     "scripts/gift-purchase-validation.test.ts",
     "scripts/marketplace-vendor-email.test.ts",
@@ -16,6 +14,8 @@
     "scripts/project-author-avatar.test.ts",
     "scripts/new-team-discord-notification-source.test.ts",
     "scripts/contribution-discord-notification.test.ts",
+    "scripts/owner-display-name.test.ts",
+    "scripts/table-nft.test.ts",
     "cypress/integration/unit/job-metadata.cy.ts",
     "cypress/integration/unit/google-docs-title.cy.ts",
     "cypress/integration/unit/google-docs-html.cy.ts",
@@ -30,6 +30,8 @@
     "cypress/integration/unit/vmooney-at-timestamp.cy.ts",
     "cypress/integration/unit/cycle-phase.cy.tsx",
     "cypress/integration/unit/blocked-projects.cy.ts",
+    "cypress/integration/unit/visible-cycle-proposals.cy.ts",
+    "cypress/integration/unit/budget-overrides.cy.tsx",
     "cypress/integration/unit/cycle-quarters.cy.tsx",
     "cypress/integration/unit/project-budget.cy.ts",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
