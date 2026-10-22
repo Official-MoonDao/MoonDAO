@@ -1,18 +1,18 @@
 'use client'
 
 import { usePrivy } from '@privy-io/react-auth'
-import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
-import { getNFT } from 'thirdweb/extensions/erc721'
-import { useActiveAccount } from 'thirdweb/react'
 import TeamABI from 'const/abis/Team.json'
 import { DEFAULT_CHAIN_V5, TEAM_ADDRESSES } from 'const/config'
+import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
+import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
 import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
+import { loadTeamNames } from '@/lib/tableland/tableNft'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 
-// Simple in-memory cache to avoid repeated getNFT calls per team
+// Names that have already been read from the team table this session.
 const teamNameCache = new Map<string, string>()
 
 type UserTeamsListProps = {
@@ -46,15 +46,10 @@ export function UserTeamsList({ variant, onNavigate }: UserTeamsListProps) {
     chain: membershipChain,
     abi: TeamABI as any,
   })
-  const { userTeams, isLoading } = useTeamWearer(
-    teamContract,
-    membershipChain,
-    wearerAddresses
-  )
+  const { userTeams, isLoading } = useTeamWearer(teamContract, membershipChain, wearerAddresses)
 
   const shouldShowLoading =
-    wearerAddresses.length > 0 &&
-    (!teamContract || isLoading || userTeams === undefined)
+    wearerAddresses.length > 0 && (!teamContract || isLoading || userTeams === undefined)
 
   const isDesktop = variant === 'desktop'
 
@@ -97,12 +92,7 @@ export function UserTeamsList({ variant, onNavigate }: UserTeamsListProps) {
     <>
       {userTeams.map((team: any) =>
         wrap(
-          <TeamNavItem
-            teamContract={teamContract}
-            teamId={team.teamId}
-            baseClass={baseLinkClass}
-            onNavigate={onNavigate}
-          />,
+          <TeamNavItem teamId={team.teamId} baseClass={baseLinkClass} onNavigate={onNavigate} />,
           String(team.teamId)
         )
       )}
@@ -111,12 +101,10 @@ export function UserTeamsList({ variant, onNavigate }: UserTeamsListProps) {
 }
 
 function TeamNavItem({
-  teamContract,
   teamId,
   baseClass,
   onNavigate,
 }: {
-  teamContract: any
   teamId: string
   baseClass: string
   onNavigate?: () => void
@@ -125,46 +113,34 @@ function TeamNavItem({
 
   useEffect(() => {
     // teamId "0" is valid (Executive Branch); avoid `!teamId` which drops numeric 0.
-    if (
-      !teamContract ||
-      teamId == null ||
-      teamId === '' ||
-      (typeof teamId === 'number' && !Number.isFinite(teamId))
-    )
+    if (teamId == null || teamId === '' || (typeof teamId === 'number' && !Number.isFinite(teamId)))
       return
 
     const teamIdKey = String(teamId)
-
-    // Use cached name if available to avoid repeated on-chain calls
     const cachedName = teamNameCache.get(teamIdKey)
     if (cachedName) {
       setName(cachedName)
       return
     }
 
-    getNFT({
-      contract: teamContract,
-      tokenId: BigInt(teamIdKey),
-    })
-      .then((nft) => {
-        const resolvedName =
-          (nft?.metadata?.name as string | undefined) || `Team #${teamIdKey}`
-        teamNameCache.set(teamIdKey, resolvedName)
-        setName(resolvedName)
+    let cancelled = false
+    loadTeamNames(DEFAULT_CHAIN_V5, [teamIdKey])
+      .then((names) => {
+        if (cancelled) return
+        const resolvedName = names.get(teamIdKey)
+        if (resolvedName) teamNameCache.set(teamIdKey, resolvedName)
+        setName(resolvedName || `Team #${teamIdKey}`)
       })
       .catch(() => {
-        const fallback = `Team #${teamIdKey}`
-        teamNameCache.set(teamIdKey, fallback)
-        setName(fallback)
+        if (!cancelled) setName(`Team #${teamIdKey}`)
       })
-  }, [teamContract, teamId])
+    return () => {
+      cancelled = true
+    }
+  }, [teamId])
 
   return (
-    <Link
-      href={`/team/${String(teamId)}`}
-      className={baseClass}
-      onClick={onNavigate}
-    >
+    <Link href={`/team/${String(teamId)}`} className={baseClass} onClick={onNavigate}>
       {name || `Team #${teamId}`}
     </Link>
   )

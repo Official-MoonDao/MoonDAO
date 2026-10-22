@@ -2,10 +2,10 @@ import { getMissionMinimumUsdGoal, MISSION_MINIMUM_GOAL_TOOLTIP } from 'const/mi
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
+import { loadOwnerNft } from '@/lib/tableland/tableNft'
 import { formatTimeUntilDeadline } from '@/lib/utils/dates'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import Card from '../layout/Card'
@@ -74,20 +74,20 @@ export default function MissionWideCard({
   }, [deadline])
 
   useEffect(() => {
-    async function getTeamNFT() {
-      try {
-        const teamNFT = await getNFT({
-          contract: teamContract,
-          tokenId: BigInt(mission?.teamId),
-        })
-        setTeamNFT(teamNFT)
-      } catch (error) {
-        console.error('Error fetching team NFT:', error)
-        setTeamNFT(null)
-      }
+    const chain = teamContract?.chain
+    if (!chain || mission?.teamId === undefined || mission?.teamId === null) return
+    let cancelled = false
+    loadOwnerNft(chain, mission.teamId)
+      .then((nft) => {
+        if (!cancelled) setTeamNFT(nft)
+      })
+      .catch((error) => {
+        console.error('Error fetching team profile:', error)
+        if (!cancelled) setTeamNFT(null)
+      })
+    return () => {
+      cancelled = true
     }
-
-    if (teamContract && mission?.teamId !== undefined && mission?.teamId !== null) getTeamNFT()
   }, [teamContract, mission?.teamId])
 
   return (

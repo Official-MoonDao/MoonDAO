@@ -1,8 +1,8 @@
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useHatData } from '@/lib/hats/useHatData'
+import { loadOwnerNft } from '@/lib/tableland/tableNft'
 import client from '@/lib/thirdweb/client'
 import IPFSRenderer from '../layout/IPFSRenderer'
 
@@ -50,29 +50,32 @@ export function Hat({
   const [teamNFTError, setTeamNFTError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     async function getTeamNFT() {
-      if (!teamContract || hat?.teamId == null || hat?.teamId === '') return
+      if (!selectedChain || hat?.teamId == null || hat?.teamId === '') return
 
       setIsTeamNFTLoading(true)
       setTeamNFTError(null)
 
       try {
-        const nft = await getNFT({
-          contract: teamContract,
-          tokenId: BigInt(String(hat.teamId)),
-        })
-        setTeamNFT(nft)
+        const nft = await loadOwnerNft(selectedChain, hat.teamId)
+        if (!cancelled) setTeamNFT(nft || undefined)
       } catch (error) {
-        console.error('Error fetching team NFT:', error)
-        setTeamNFTError('Failed to load team image')
-        setTeamNFT(undefined)
+        console.error('Error fetching team profile:', error)
+        if (!cancelled) {
+          setTeamNFTError('Failed to load team image')
+          setTeamNFT(undefined)
+        }
       } finally {
-        setIsTeamNFTLoading(false)
+        if (!cancelled) setIsTeamNFTLoading(false)
       }
     }
 
     getTeamNFT()
-  }, [teamContract, hat?.teamId])
+    return () => {
+      cancelled = true
+    }
+  }, [selectedChain, hat?.teamId])
 
   const imageSize = compact ? 75 : 150
 

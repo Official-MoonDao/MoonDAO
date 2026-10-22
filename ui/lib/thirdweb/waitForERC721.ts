@@ -1,37 +1,40 @@
-import { getNFT } from 'thirdweb/extensions/erc721'
+import { TEAM_TABLE_NAMES } from 'const/config'
+import { teamRowToNFT } from '@/lib/tableland/convertRow'
+import { waitForRow } from '@/lib/tableland/waitForRow'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 
-//Wait for nft metadata to populate
-export default async function waitForERC721(
-  contract: any,
-  tokenId: string | number
-) {
+const SAFE_TABLE = /^[A-Za-z0-9_]+$/
+
+/**
+ * Wait until the team row is indexed. Token metadata is a query against
+ * tableland.network, which no longer answers, so the name is read from our table.
+ */
+export default async function waitForERC721(contract: any, tokenId: string | number) {
   if (!contract) {
     throw new Error('Invalid contract')
   }
 
-  let attemps = 0
-  const maxAttempts = 20
-  const timeout = 3000
-
-  while (attemps < maxAttempts) {
-    try {
-      const nft = await getNFT({
-        contract,
-        tokenId: BigInt(tokenId),
-      })
-      console.log(nft)
-      if (nft?.metadata?.name) {
-        return nft
-      }
-      await new Promise((resolve) => setTimeout(resolve, timeout))
-      attemps++
-    } catch (error) {
-      console.error('Error fetching NFT:', error)
-      throw new Error('Failed to fetch NFT')
-    }
+  const id = Number(tokenId)
+  const tableName = contract.chain ? TEAM_TABLE_NAMES[getChainSlug(contract.chain)] : undefined
+  if (!Number.isSafeInteger(id) || id < 0 || !tableName || !SAFE_TABLE.test(tableName)) {
+    throw new Error('Failed to fetch NFT')
   }
 
-  throw new Error(
-    `Failed to fetch NFT after ${(maxAttempts * timeout) / 1000} seconds`
-  )
+  const result = await waitForRow({
+    statement: `SELECT * FROM ${tableName} WHERE id = ${id} LIMIT 1`,
+    checkCondition: (rows) => {
+      const name = rows?.[0]?.name
+      return typeof name === 'string' && name.trim().length > 0
+    },
+    pollInterval: 3000,
+    timeout: 60000,
+    maxRetries: 20,
+    cacheBusting: true,
+  })
+
+  if (!result.success || !result.data?.[0]) {
+    throw new Error('Failed to fetch NFT after 60 seconds')
+  }
+
+  return teamRowToNFT(result.data[0])
 }

@@ -1,9 +1,5 @@
 {
-  "require": [
-    "tsconfig-paths/register",
-    "ts-node/register",
-    "scripts/mocha-cypress-setup.cjs"
-  ],
+  "require": ["tsconfig-paths/register", "ts-node/register", "scripts/mocha-cypress-setup.cjs"],
   "extensions": ["ts", "tsx"],
   "spec": [
     "scripts/citizen-onboarding-image.test.ts",
@@ -17,6 +13,7 @@
     "scripts/new-team-discord-notification-source.test.ts",
     "scripts/contribution-discord-notification.test.ts",
     "scripts/owner-display-name.test.ts",
+    "scripts/table-nft.test.ts",
     "cypress/integration/unit/job-metadata.cy.ts",
     "cypress/integration/unit/google-docs-title.cy.ts",
     "cypress/integration/unit/google-docs-html.cy.ts",
