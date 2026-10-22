@@ -1,0 +1,37 @@
+name: Arm auto-merge on approval
+
+# Arms GitHub auto-merge after an approving review, and again after later
+# pushes, so a fix commit does not need a second approval. GitHub completes
+# the merge only when required checks are green. PR_GREEN_REQUIRED must be
+# the repository variable "true" before this will arm; set that in the same
+# step that marks the pr-green check required.
+on:
+  pull_request_review:
+    types: [submitted]
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  arm-auto-merge:
+    if: github.event.pull_request.base.ref == 'main' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check arming rules
+        run: python3 .github/scripts/arm-auto-merge.py self-test
+
+      - name: Enable auto-merge when approved
+        env:
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_GREEN_REQUIRED: ${{ vars.PR_GREEN_REQUIRED }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/arm-auto-merge.py run
