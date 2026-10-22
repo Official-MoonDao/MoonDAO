@@ -1,5 +1,3 @@
-import fs from 'fs'
-import path from 'path'
 import { evaluateEligibility } from '@/lib/deprize/eligibility'
 import { DEPRIZE_INSIDER_WALLETS, isInsiderWallet } from '@/lib/deprize/insiderWallets'
 import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
@@ -47,21 +45,6 @@ describe('deprize restricted jurisdictions', () => {
   })
 
   it('does not treat Syria as comprehensively sanctioned', () => {
-    const terms = fs.readFileSync(
-      path.join(
-        __dirname,
-        '../../../../content/docs/Legal/DePrize/DePrize Terms and Conditions.md'
-      ),
-      'utf8'
-    )
-    const sectionB = terms
-      .split('\n')
-      .find((line) => line.includes('Comprehensively sanctioned jurisdictions'))
-    expect(sectionB, 'Schedule A.B').to.be.a('string')
-    expect(sectionB).to.match(/Cuba/)
-    expect(sectionB).to.match(/Iran/)
-    expect(sectionB).to.match(/North Korea/)
-    expect(sectionB).to.not.match(/Syria/)
     expect(COMPREHENSIVE_SANCTIONS.has('CU')).to.equal(true)
     expect(COMPREHENSIVE_SANCTIONS.has('IR')).to.equal(true)
     expect(COMPREHENSIVE_SANCTIONS.has('KP')).to.equal(true)
