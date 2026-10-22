@@ -726,9 +726,12 @@ export default function BetModal({
           </div>
         )}
 
-        {/* Point-of-bet disclosure. Mirrors the non-custodial prediction-market
-            approach (read the rules; total-loss risk; equal-payout on
-            void/cancel; final resolution). Full detail in the DePrize Terms. */}
+        {/* Point-of-bet disclosure. Shown only once an amount is entered, since
+            a prediction with no stake does not need these acknowledgements.
+            Mirrors the non-custodial prediction-market approach (read the rules;
+            total-loss risk; equal-payout on void/cancel; final resolution). */}
+        {betAmountNum > 0 && (
+        <>
         <div className="text-amber-300/90 text-xs sm:text-[11px] leading-snug space-y-1.5">
           <p>
             You are buying outcome tokens for this competitor. If this competitor wins, they redeem
@@ -861,6 +864,8 @@ export default function BetModal({
             </p>
           )}
         </div>
+        </>
+        )}
 
         {eligibility.status === 'loading' ? (
           <p className="text-gray-300 text-sm">Checking eligibility…</p>
