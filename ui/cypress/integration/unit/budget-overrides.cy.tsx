@@ -16,14 +16,8 @@
  *   - The precedence order (override > totalBudgetUSDC > budget[] >
  *     body parsing) stays explicit.
  */
-import {
-  BUDGET_OVERRIDES_USD,
-  getBudgetOverrideUSD,
-} from '../../../lib/proposals/budgetOverrides'
-import {
-  extractUsdBudget,
-  parseUsdBudgetFromBody,
-} from '../../../lib/proposals/extractUsdBudget'
+import { BUDGET_OVERRIDES_USD, getBudgetOverrideUSD } from '../../../lib/proposals/budgetOverrides'
+import { extractUsdBudget, parseUsdBudgetFromBody } from '../../../lib/proposals/extractUsdBudget'
 
 describe('budget overrides', () => {
   describe('getBudgetOverrideUSD', () => {
@@ -64,9 +58,7 @@ describe('budget overrides', () => {
         budget: [{ token: 'USDC', amount: 88888 }],
         body: '## Budget\n| Total | $77,777 |',
       }
-      expect(
-        extractUsdBudget(proposal, { MDP: mdpKey })
-      ).to.equal(overrideAmount)
+      expect(extractUsdBudget(proposal, { MDP: mdpKey })).to.equal(overrideAmount)
     })
 
     it('override beats budget[] sum', () => {
@@ -76,9 +68,7 @@ describe('budget overrides', () => {
       const proposal = {
         budget: [{ token: 'USDC', amount: 50000 }],
       }
-      expect(
-        extractUsdBudget(proposal, { MDP: mdpKey })
-      ).to.equal(overrideAmount)
+      expect(extractUsdBudget(proposal, { MDP: mdpKey })).to.equal(overrideAmount)
     })
 
     it('override beats body parsing', () => {
@@ -88,9 +78,7 @@ describe('budget overrides', () => {
       const proposal = {
         body: '## Budget\n| Total | $99,999 |',
       }
-      expect(
-        extractUsdBudget(proposal, { MDP: mdpKey })
-      ).to.equal(overrideAmount)
+      expect(extractUsdBudget(proposal, { MDP: mdpKey })).to.equal(overrideAmount)
     })
 
     it('falls through to the IPFS-derived value when no override exists', () => {
@@ -270,17 +258,71 @@ describe('budget overrides', () => {
     // trigger phrase, even when other (smaller) amounts appear earlier on the
     // line. "Total Budget: $5,000 (includes $500 contingency)" → 5000.
     it('takes the max $ amount that appears after the trigger phrase', () => {
-      expect(
-        parseUsdBudgetFromBody('Total Budget: $5,000 (includes $500 contingency)')
-      ).to.equal(5000)
+      expect(parseUsdBudgetFromBody('Total Budget: $5,000 (includes $500 contingency)')).to.equal(
+        5000
+      )
     })
 
     // Guard: "Total costs: (820 + 88 + 3200) $= $4108" — the arithmetic in
     // parentheses precedes no $, and the real amount follows the trigger.
     it('parses inline "Total costs" prose with a trailing $ total (MDP-250 shape)', () => {
-      expect(
-        parseUsdBudgetFromBody('Total costs: (820 + 88 + 3200) $= $4108')
-      ).to.equal(4108)
+      expect(parseUsdBudgetFromBody('Total costs: (820 + 88 + 3200) $= $4108')).to.equal(4108)
+    })
+
+    // MDP-275 (Sentinel Bio+): "# Budget (Table C)" is immediately followed
+    // by a category heading, so the budget slice used to be empty and the
+    // card showed $0. The requested amount is the NET MOONDAO ASK row, not
+    // the sum of the category subtotals above it. Content after Transactions
+    // (and a later revenue table) must not change the ask.
+    it('reads NET MOONDAO ASK when category headings split the budget section (MDP-275 shape)', () => {
+      const body = [
+        '# Solution',
+        'Some description.',
+        '',
+        '# Budget (Table C)',
+        '',
+        '# Arduino Portenta Core Hardware',
+        '',
+        '| Description | Unit Cost | Qty | Line Total | Notes |',
+        '| --- | --- | --- | --- | --- |',
+        '| Portenta X8 | $200.00 | 2 | $400.00 | core |',
+        '|  |  | Subtotal: | $492.30 |  |',
+        '',
+        '| Hardware | $492.30 |',
+        '| --- | --- |',
+        '| Communications Hardware | $401.58 |',
+        '| Subtotal: | $1,703.76 |',
+        '| Spare set | $246.20 |',
+        '| Shipping cost | $150 |',
+        '| NET MOONDAO ASK  | $2099.96 |',
+        '',
+        '# Transactions (Table D)',
+        '',
+        '| Transaction Type | Amount ($) | Token Type | Receiving Address |',
+        '| --- | --- | --- | --- |',
+        '| Send | 2099.96 | ETH | 0x5333F3DD392D7Befa1121C49dF2dB7add9F7f7Ba |',
+        '',
+        '# Revenue Potential',
+        '',
+        '| Channel | Revenue |',
+        '| --- | --- |',
+        '| Online courses | $60,000 |',
+        '| Total | $122,500 |',
+      ].join('\n')
+      expect(parseUsdBudgetFromBody(body)).to.equal(2099.96)
+      expect(extractUsdBudget({ body, totalBudgetUSDC: 0 }, { MDP: 275 })).to.equal(2099.96)
+    })
+
+    it('does not treat a line item that mentions ask as the funding request', () => {
+      const body = [
+        '# Budget',
+        '',
+        '| Description | Amount |',
+        '| --- | --- |',
+        '| Contingency ask | $400 |',
+        '| Total | $4,000 |',
+      ].join('\n')
+      expect(parseUsdBudgetFromBody(body)).to.equal(4000)
     })
   })
 })

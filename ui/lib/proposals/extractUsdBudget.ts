@@ -149,7 +149,60 @@ function sumFreeformBudgetLines(text: string): number {
   return matched ? total : 0
 }
 
+const ASK_LABEL_WORDS = new Set([
+  'net',
+  'moondao',
+  'moon',
+  'dao',
+  'ask',
+  'total',
+  'requested',
+  'amount',
+  'budget',
+  'funding',
+  'from',
+  'the',
+])
+
+/**
+ * A summary row whose label is the funding ask ("NET MOONDAO ASK",
+ * "Total Requested"), not a line item that happens to contain those words.
+ * Returns the last match so a closing summary wins over an earlier row.
+ */
+function findExplicitAsk(text: string): number {
+  let amount = 0
+  let found = false
+  for (const { desc, value } of extractTableRowPairs(text)) {
+    if (!isExplicitAskLabel(desc) || !isUsdValue(value)) continue
+    const parsed = parseAmount(value)
+    if (parsed <= 0) continue
+    amount = parsed
+    found = true
+  }
+  return found ? amount : 0
+}
+
+function isExplicitAskLabel(desc: string): boolean {
+  const cleaned = desc
+    .replace(/[*_`]/g, '')
+    .replace(/[:.]+$/g, '')
+    .trim()
+  if (!/\b(?:ask|requested)\b/i.test(cleaned)) return false
+  const words = cleaned
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word) => word.replace(/[^a-z]/g, ''))
+    .filter(Boolean)
+  return words.length > 0 && words.every((word) => ASK_LABEL_WORDS.has(word))
+}
+
 function parseBudgetFromSection(text: string): number {
+  // The amount MoonDAO is asked to send. Category subtotals earlier in the
+  // same section must not be added on top of it (MDP-275 lists five
+  // subtotals and then "NET MOONDAO ASK | $2,099.96").
+  const ask = findExplicitAsk(text)
+  if (ask > 0) return ask
+
   const grand = findGrandTotal(text)
   if (grand > 0) return grand
 
@@ -196,15 +249,27 @@ function parseInlineUsdBudget(body: string): number {
       .filter((v) => v > 0)
     if (dollars.length > 0) return Math.max(...dollars)
     // No $ sign — try bare "N USD/USDC/DAI" after the trigger phrase.
-    const bare = afterTrigger.match(
-      /\b([\d,]+(?:\.\d+)?)\s*(?:USD|USDC|USDT|DAI)\b/i
-    )
+    const bare = afterTrigger.match(/\b([\d,]+(?:\.\d+)?)\s*(?:USD|USDC|USDT|DAI)\b/i)
     if (bare) {
       const v = parseFloat(bare[1].replace(/,/g, '')) || 0
       if (v > 0) return v
     }
   }
   return 0
+}
+
+// Headings that end Table C. A hardware-category heading inside the budget
+// ("# Arduino Portenta Core Hardware") is not one of these, so it stays in
+// the section. Revenue and the template sections that follow Budget are,
+// so a later projection table cannot be summed into the ask (MDP-255).
+const BUDGET_SECTION_TERMINATOR =
+  /^#{1,3}\s+(?:abstract|problem|solution|benefits|risks|objectives|non-goals|team|intellectual property|timeline|transactions|pre-submit(?:\s+checklist)?|checklist|revenue|appendix)\b/im
+
+const NEXT_HEADING = /^#{1,2}\s+(?!#)/m
+
+function headingOffset(text: string, from: number, pattern: RegExp): number {
+  const relative = text.slice(from).search(pattern)
+  return relative === -1 ? -1 : from + relative
 }
 
 export function parseUsdBudgetFromBody(body: string | undefined | null): number {
@@ -219,22 +284,30 @@ export function parseUsdBudgetFromBody(body: string | undefined | null): number 
 
   // Budget heading — handle optional Table label and trailing # markers that
   // some editors emit (e.g. "# Budget (Table C)#").
-  const budgetHeading = sanitized.match(
-    /^#{1,3}\s+Budget(?:\s+[^\n#]*?)?\s*#*\s*$/im
-  )
+  const budgetHeading = sanitized.match(/^#{1,3}\s+Budget(?:\s+[^\n#]*?)?\s*#*\s*$/im)
   if (budgetHeading && budgetHeading.index !== undefined) {
     const sectionStart = budgetHeading.index + budgetHeading[0].length
-    const nextHeading = sanitized.slice(sectionStart).search(/^#{1,2}\s+(?!#)/m)
+    const nextHeading = headingOffset(sanitized, sectionStart, NEXT_HEADING)
     const section =
       nextHeading !== -1
-        ? sanitized.slice(sectionStart, sectionStart + nextHeading)
+        ? sanitized.slice(sectionStart, nextHeading)
         : sanitized.slice(sectionStart)
     const result = parseBudgetFromSection(section)
     if (result > 0) return result
-    // The budget heading was found but its section contains no parseable
-    // total. Stop here rather than falling through to the whole-body scan —
-    // that risks summing Revenue / Projection tables elsewhere in the body
-    // and producing a wildly inflated number (e.g. MDP-255 read $219,500).
+
+    // The next heading can be a category inside Table C rather than the
+    // next template section. MDP-275 puts "# Arduino Portenta Core Hardware"
+    // on the line after "# Budget (Table C)", which used to truncate the
+    // section to a blank line and return $0. Keep reading until a real
+    // template section. Still do not scan anything above the budget heading:
+    // that is where MDP-255's revenue table lives.
+    const terminator = headingOffset(sanitized, sectionStart, BUDGET_SECTION_TERMINATOR)
+    const extendedEnd = terminator !== -1 ? terminator : sanitized.length
+    if (nextHeading !== -1 && extendedEnd > nextHeading) {
+      const extended = sanitized.slice(sectionStart, extendedEnd)
+      const extendedResult = parseBudgetFromSection(extended)
+      if (extendedResult > 0) return extendedResult
+    }
     return 0
   }
 
@@ -311,10 +384,7 @@ export function extractUsdBudget(
     if (Number.isFinite(total) && total > 0) return total
   }
 
-  const fromArray = sumBudgetArray(
-    proposal.budget,
-    options?.stablecoinAddresses
-  )
+  const fromArray = sumBudgetArray(proposal.budget, options?.stablecoinAddresses)
   if (fromArray > 0) return fromArray
 
   return parseUsdBudgetFromBody(proposal.body)

@@ -30,6 +30,8 @@
     "cypress/integration/unit/vmooney-at-timestamp.cy.ts",
     "cypress/integration/unit/cycle-phase.cy.tsx",
     "cypress/integration/unit/blocked-projects.cy.ts",
+    "cypress/integration/unit/visible-cycle-proposals.cy.ts",
+    "cypress/integration/unit/budget-overrides.cy.tsx",
     "cypress/integration/unit/cycle-quarters.cy.tsx",
     "cypress/integration/unit/project-budget.cy.ts",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
