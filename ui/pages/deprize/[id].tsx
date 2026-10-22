@@ -396,8 +396,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   })
   const onrampQueryActive = parseOnrampReturn(router.query).active
 
-  // The competitor list predicts. The side ticket places an ETH bet when betting
-  // is open, and predicts when it is not.
+  // Predict opens the explanation. Add ETH inside that window switches to the
+  // ETH form. Deep links that already chose a stake open the form directly.
   const [windowMode, setWindowMode] = useState<'bet' | 'predict'>('predict')
   const openPredict = useCallback((index: number) => {
     setWindowMode('predict')
@@ -824,6 +824,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           onBet={openPredict}
           stakedEthByOutcome={stakedEthByOutcome}
           mode={windowMode}
+          onModeChange={setWindowMode}
           modalIndex={betIndex}
           onModalClose={() => setBetIndex(null)}
           renderBet={
@@ -874,9 +875,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           betUnavailableReason={betUnavailableReason}
           amountEth={ticketAmountEth}
           onAmountChange={setTicketAmountEth}
-          onPredict={(index) =>
-            bettingAllowed && !tradingHalted ? openBet(index) : openPredict(index)
-          }
+          onPredict={openPredict}
         />
         <PrizePoolSlot
           poolUsd={poolUsd}

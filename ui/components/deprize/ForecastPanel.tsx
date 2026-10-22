@@ -76,10 +76,11 @@ export default function ForecastPanel(props: {
   /** ETH staked on each outcome, same order as `labels`. */
   stakedEthByOutcome?: number[]
   /**
-   * Window opened for the selected competitor. The list itself always predicts.
-   * The side ticket passes 'bet' when it is placing an ETH bet.
+   * 'predict' explains the pick. 'bet' is the ETH form, opened from "Add ETH"
+   * or from a deep link that already chose to stake.
    */
   mode: 'bet' | 'predict'
+  onModeChange: (mode: 'bet' | 'predict') => void
 }) {
   const {
     chainSlug,
@@ -108,6 +109,7 @@ export default function ForecastPanel(props: {
     renderBet,
     stakedEthByOutcome,
     mode,
+    onModeChange,
   } = props
   const restricted = useDePrizeRestricted()
   void forecastPanelShouldMount(restricted)
@@ -521,6 +523,7 @@ export default function ForecastPanel(props: {
           onUndo={onUndo}
           onConnect={login}
           onClose={onModalClose}
+          onAddEth={() => onModeChange('bet')}
           outcomeIndex={modalIndex}
           bet={
             showBet && renderBet ? (
