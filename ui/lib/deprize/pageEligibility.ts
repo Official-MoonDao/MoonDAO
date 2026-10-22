@@ -49,6 +49,14 @@ export function setDePrizePageNoStoreHeaders(res: {
  * Unknown country and listed jurisdictions are restricted. Does not call VPN
  * or sanctions providers — those still run before acceptance and permits.
  */
+/** Local preview of the restricted modal. `?restricted=1` on a dev server only. */
+function devRestrictedPreview(url: string | undefined): boolean {
+  if (process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_ENV === 'prod') return false
+  const query = url?.split('?')[1]
+  if (!query) return false
+  return /(?:^|&)restricted=1(?:&|$)/.test(query)
+}
+
 export function getDePrizePageEligibility(req: HeaderRequest): DePrizePageEligibility {
   const headerCountry = normalizeCountry(getCountryFromHeaders(req))
   const mockHeader = Array.isArray(req.headers['x-deprize-mock-country'])
@@ -56,6 +64,10 @@ export function getDePrizePageEligibility(req: HeaderRequest): DePrizePageEligib
     : req.headers['x-deprize-mock-country']
   const country = countryForDePrize({ headerCountry, mockHeader })
   const region = getRegionFromHeaders(req)
+
+  if (devRestrictedPreview(req.url)) {
+    return { restricted: true, country: country || 'US' }
+  }
 
   if (isNonProdBypassEnabled() || isSepoliaPreviewPath(req.url)) {
     return { restricted: false, country }

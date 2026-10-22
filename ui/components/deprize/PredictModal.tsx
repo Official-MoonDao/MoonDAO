@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { fmt } from '@/lib/deprize/format'
+import toast from 'react-hot-toast'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import {
   BetPrimaryActionContext,
   predictionActionLabel,
@@ -10,13 +11,13 @@ import { TOUCH } from '@/components/deprize/detail/primitives'
 import Modal from '@/components/layout/Modal'
 
 /**
- * One window per market. 'bet' is the ETH bet form only; 'predict' is the
- * free MOONEY prediction only. Neither one triggers the other.
+ * Predict explains the free pick first. "Add ETH to your prediction" opens the
+ * ETH form when this visitor can stake, or toasts when their region cannot.
  */
 export default function PredictModal(props: {
   mode: 'bet' | 'predict'
   teamName: string
-  /** ETH chance in bet mode, voting-power share in predict mode. */
+  /** ETH market chance for this competitor. */
   probability: number
   chanceLoading?: boolean
   /** Betting is open for this prize, even if the wallet is not connected yet. */
@@ -39,6 +40,13 @@ export default function PredictModal(props: {
   onUndo: () => void
   onConnect: () => void
   onClose: () => void
+  /** Switch this window to the ETH form. Called only when staking is allowed. */
+  onAddEth: () => void
+  /**
+   * Eligible visitors see the ETH form already open. Predict stakes that ETH
+   * and records the pick in one click.
+   */
+  combineEth?: boolean
   /** Bet form, bet mode only. Omitted when this visitor cannot bet yet. */
   bet?: ReactNode
   /**
@@ -48,7 +56,9 @@ export default function PredictModal(props: {
   outcomeIndex: number
 }) {
   const isBet = props.mode === 'bet'
-  const ethOffered = !!props.bet && !props.regionRestricted
+  const wantCombined = !!props.combineEth && !props.regionRestricted
+  const ethOffered = !!props.bet && !props.regionRestricted && (isBet || wantCombined)
+  const combineEth = wantCombined && ethOffered && props.connected
   const [betAction, setBetAction] = useState<BetPrimaryAction | null>(null)
   const betRunRef = useRef<() => void>(() => {})
   const reportBetAction = useCallback((action: BetPrimaryAction | null) => {
@@ -86,49 +96,46 @@ export default function PredictModal(props: {
     setBetAction(null)
   }, [props.outcomeIndex, props.mode])
 
-  const pct = Number.isFinite(props.probability)
-    ? `${fmt(props.probability, 0)}%`
-    : props.chanceLoading
-    ? '…'
-    : '—'
+  function addEth() {
+    if (props.regionRestricted) {
+      toast.error(FORECAST_COPY.restrictedNote, { style: toastStyle })
+      return
+    }
+    if (!props.bettingAvailable) {
+      toast.error('Adding ETH is unavailable right now.', { style: toastStyle })
+      return
+    }
+    props.onAddEth()
+  }
 
   return (
     <Modal
       id="deprize-predict"
       setEnabled={(open) => !open && props.onClose()}
-      title={isBet ? `Bet on ${props.teamName}` : `Predict ${props.teamName}`}
+      title={isBet ? `Add ETH to ${props.teamName}` : `Predict ${props.teamName}`}
       size="xl"
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              isBet ? 'bg-emerald-400/15 text-emerald-300' : 'bg-indigo-400/15 text-indigo-200'
-            }`}
-          >
-            {isBet ? 'ETH market' : 'MOONEY forecast · free'}
-          </span>
-          <span className="text-gray-400">
-            {isBet ? 'Chance' : 'Voting-power share'}{' '}
-            <span className="font-semibold tabular-nums text-white">{pct}</span>
-          </span>
-        </div>
+        {!wantCombined && (
+          <div className="flex items-center gap-3 text-sm">
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                isBet ? 'bg-emerald-400/15 text-emerald-300' : 'bg-indigo-400/15 text-indigo-200'
+              }`}
+            >
+              {isBet ? 'ETH market' : 'MOONEY forecast · free'}
+            </span>
+          </div>
+        )}
         <p className="text-sm text-gray-300">
-          {isBet
-            ? 'Real ETH. Your bet moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'
-            : 'Free. This records your prediction, weighted by your vMOONEY. It does not change the ETH odds.'}
+          {combineEth
+            ? 'This records your prediction, weighted by your voting power. ETH below is optional; adding some also stakes on this competitor and moves the odds.'
+            : isBet
+            ? 'Real ETH. Your stake moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'
+            : 'This saves your pick for this competitor. It is free, weighted by your voting power, and it does not change the ETH odds.'}
         </p>
         {!isBet && props.regionRestricted && (
-          <>
-            <p className="text-sm text-amber-200">{FORECAST_COPY.restrictedNote}</p>
-            <button
-              type="button"
-              disabled
-              className="w-full cursor-not-allowed rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-500"
-            >
-              Add ETH
-            </button>
-          </>
+          <p className="text-sm text-amber-200">{FORECAST_COPY.restrictedNote}</p>
         )}
 
         {!props.connected && (
@@ -137,7 +144,7 @@ export default function PredictModal(props: {
             onClick={props.onConnect}
             className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 ${TOUCH}`}
           >
-            {isBet ? 'Connect wallet to bet' : 'Connect wallet to predict'}
+            {isBet ? 'Connect wallet to add ETH' : 'Connect wallet to predict'}
           </button>
         )}
 
@@ -170,7 +177,7 @@ export default function PredictModal(props: {
           </BetPrimaryActionContext.Provider>
         ) : null}
 
-        {ethOffered && props.connected && (
+        {ethOffered && props.connected && !combineEth && (
           <button
             type="button"
             onClick={() => betRunRef.current()}
@@ -181,7 +188,7 @@ export default function PredictModal(props: {
           </button>
         )}
 
-        {!isBet && props.connected && !props.citizenLoading && (
+        {!isBet && !combineEth && props.connected && !props.citizenLoading && (
           <div className="flex flex-col gap-2">
             <button
               type="button"
@@ -206,6 +213,44 @@ export default function PredictModal(props: {
               </button>
             )}
           </div>
+        )}
+
+        {!isBet && props.regionRestricted && (
+          <button
+            type="button"
+            onClick={addEth}
+            className={`w-full rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/10 ${TOUCH}`}
+          >
+            Add ETH to your prediction
+          </button>
+        )}
+
+        {combineEth && props.connected && (
+          <button
+            type="button"
+            onClick={() => {
+              // No ETH amount: save the prediction only. An amount stakes and records the pick.
+              if (!activeBet) {
+                props.onPredict()
+                return
+              }
+              void betRunRef.current()
+            }}
+            disabled={
+              props.writing ||
+              activeBet?.label.startsWith('Placing') ||
+              (!activeBet && (!props.predictEnabled || props.saved))
+            }
+            className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
+          >
+            {activeBet?.kind === 'fund'
+              ? activeBet.label
+              : !activeBet
+              ? predictLabel
+              : props.writing || activeBet.label.startsWith('Placing')
+              ? 'Predicting…'
+              : 'Predict'}
+          </button>
         )}
       </div>
     </Modal>

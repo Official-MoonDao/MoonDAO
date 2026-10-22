@@ -1,3 +1,4 @@
+/// <reference types="node" />
 /**
  * Mocha-only: Next's Cypress webpack cannot load a spec that imports the
  * getServerSideProps helper (`ChunkLoadError: Loading chunk spec-N`).
@@ -179,6 +180,9 @@ describe('deprize page eligibility', () => {
       env.NEXT_PUBLIC_ENV = 'dev'
       env.NODE_ENV = 'development'
       expect(getDePrizePageEligibility(req()).restricted).to.equal(false)
+      expect(
+        getDePrizePageEligibility({ headers: {}, url: '/deprize/arb/2?restricted=1' }).restricted
+      ).to.equal(true)
       env.NODE_ENV = 'production'
       expect(getDePrizePageEligibility(req()).restricted).to.equal(true)
       env.NODE_ENV = 'development'
