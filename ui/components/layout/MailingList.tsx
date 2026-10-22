@@ -1,8 +1,9 @@
 import { CK_NEWSLETTER_FORM_ID } from 'const/config'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { trackSignUp } from '@/lib/analytics/ga4'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
+import { SignupHoneypot } from '@/components/newsletter/SignupHoneypot'
 
 type MailingListProps = {
   submitLabel?: string
@@ -12,6 +13,8 @@ type MailingListProps = {
   ctaLocation?: string
 }
 
+const ERROR_MESSAGE = 'Could not subscribe. Please try again.'
+
 export default function MailingList({
   submitLabel = 'Learn More',
   quietSubmit = false,
@@ -19,38 +22,52 @@ export default function MailingList({
   ctaLocation = 'mailing_list',
 }: MailingListProps = {}) {
   const [userEmail, setUserEmail] = useState<any>('')
+  const [company, setCompany] = useState('')
+  const [error, setError] = useState('')
+  const startedAt = useRef(Date.now())
   const subscribe = useSubscribe(CK_NEWSLETTER_FORM_ID)
 
   return (
     <form
       id="mailinglist-form"
+      className="relative"
       onSubmit={async (e: any) => {
         e.preventDefault()
         if (!userEmail || userEmail.trim() === '' || !userEmail.includes('@')) {
-          toast.error('Please enter a valid email address.')
+          const message = 'Please enter a valid email address.'
+          setError(message)
+          toast.error(message)
           return
         }
         try {
-          const res = await subscribe(userEmail)
+          const res = await subscribe(userEmail, {
+            company,
+            formStartedAt: startedAt.current,
+          })
           if (!res.ok) {
-            toast.error('Could not subscribe. Please try again.')
+            setError(ERROR_MESSAGE)
+            toast.error(ERROR_MESSAGE)
             return
           }
+          setError('')
           trackSignUp({ cta_location: ctaLocation })
           toast.success('Subscribed! Check your email to confirm.', {
             duration: 3000,
           })
           setUserEmail('')
         } catch {
-          toast.error('Could not subscribe. Please try again.')
+          setError(ERROR_MESSAGE)
+          toast.error(ERROR_MESSAGE)
         }
       }}
     >
+      <SignupHoneypot company={company} setCompany={setCompany} />
       <div className={compact ? '' : 'mb-[60px] lg:mb-0'}>
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-0 max-w-md">
           <input
             type="email"
             placeholder="Enter your email"
+            aria-invalid={error ? true : undefined}
             className="flex-1 px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg sm:rounded-r-none text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 transition-all duration-200"
             onChange={({ target }) => setUserEmail(target.value)}
             value={userEmail}
@@ -66,6 +83,11 @@ export default function MailingList({
             {submitLabel}
           </button>
         </div>
+        {error ? (
+          <p role="alert" className="mt-2 max-w-md text-sm text-red-300">
+            {error}
+          </p>
+        ) : null}
       </div>
     </form>
   )

@@ -10,8 +10,10 @@ import {
   captureClientAttribution,
   decorateRouterUrl,
   extractAttributionParams,
+  buildKitSignupFields,
   getAttribution,
   kitFieldsFromAttribution,
+  kitSignupFields,
   mergeAttributionQuery,
   parseRecord,
   reduceCapture,
@@ -461,6 +463,32 @@ describe('browser persistence', () => {
     expect(getAttribution().landing_page).to.equal('/')
   })
 
+  it('passes the in-memory first touch into Kit fields before a consent choice', () => {
+    resetAttributionForTests()
+    const browser = installBrowser()
+    browser.state.consent = null
+    browser.state.search = '?utm_source=ig&utm_campaign=spring&fbclid=fb1'
+    browser.state.pathname = '/join-us'
+    browser.state.referrer = 'https://instagram.com/p/1'
+    captureClientAttribution(1_700_000_000_000)
+    expect(buildKitSignupFields()).to.include({
+      first_utm_source: 'ig',
+      first_utm_campaign: 'spring',
+      first_fbclid: 'fb1',
+      first_landing_page: '/join-us',
+      first_referrer: 'https://instagram.com/p/1',
+    })
+  })
+
+  it('sends no Kit fields after analytics consent is declined', () => {
+    resetAttributionForTests()
+    const browser = installBrowser()
+    browser.state.consent = 'false'
+    browser.state.search = '?utm_source=ig&fbclid=fb1'
+    captureClientAttribution(1_700_000_000_000)
+    expect(buildKitSignupFields()).to.equal(undefined)
+  })
+
   it('clears both stores when consent is denied', () => {
     const browser = installBrowser()
     browser.state.consent = 'true'
@@ -514,6 +542,27 @@ describe('downstream fields', () => {
     )
     expect(kitFieldsFromAttribution(flat)?.utm_source).to.equal('ads')
     expect(kitFieldsFromAttribution(flat)?.first_gclid).to.equal('abc')
+    expect(
+      kitSignupFields({
+        first_utm_source: 'ig',
+        first_utm_campaign: 'spring',
+        first_referrer: 'https://instagram.com/',
+        first_landing_page: '/join-us',
+        first_fbclid: 'fb',
+        utm_source: 'last',
+        email: 'person@example.com',
+        first_utm_source_extra: 'nope',
+      })
+    ).to.deep.equal({
+      first_utm_source: 'ig',
+      first_utm_campaign: 'spring',
+      first_referrer: 'https://instagram.com/',
+      first_landing_page: '/join-us',
+      first_fbclid: 'fb',
+    })
+    expect(kitSignupFields({ first_utm_source: 'a@b.com', first_fbclid: 'ok' })).to.deep.equal({
+      first_fbclid: 'ok',
+    })
     expect(
       sanitizeKitFields({
         utm_source: 'ads',
