@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Enable auto-merge on an approved pull request once pr-green is required.
 
-GitHub then merges only after that check is green. Until pr-green is a
-required check, arming auto-merge would merge on approval alone, so this
-script leaves the pull request untouched.
+GitHub then merges only after that check is green. The Actions token cannot
+read branch protection, so the repository variable PR_GREEN_REQUIRED must be
+set to true in the same step that pr-green is marked required. Until then,
+arming auto-merge would merge on approval alone, and this script does nothing.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ import subprocess
 import sys
 
 
-def decide(pull_request: dict, required_contexts: set[str] | None) -> str:
+def decide(pull_request: dict, pr_green_required: bool) -> str:
     if pull_request.get("state") != "OPEN":
         return "skip: pull request is not open"
     if pull_request.get("isDraft"):
@@ -23,8 +24,8 @@ def decide(pull_request: dict, required_contexts: set[str] | None) -> str:
         return "skip: base branch is not main"
     if pull_request.get("reviewDecision") != "APPROVED":
         return "skip: pull request is not approved"
-    if required_contexts is None or "pr-green" not in required_contexts:
-        return "skip: pr-green is not a required check on main yet"
+    if not pr_green_required:
+        return "skip: PR_GREEN_REQUIRED is not true, so pr-green is not enforced yet"
     if pull_request.get("autoMergeRequest"):
         return "skip: auto-merge is already enabled"
     return "merge"
@@ -38,27 +39,6 @@ def gh_json(args: list[str]) -> tuple[int, str, str]:
         check=False,
     )
     return proc.returncode, proc.stdout, proc.stderr
-
-
-def required_contexts(repo: str) -> set[str] | None:
-    code, stdout, stderr = gh_json(
-        [
-            "api",
-            f"repos/{repo}/branches/main/protection/required_status_checks",
-        ]
-    )
-    if code != 0:
-        blob = f"{stdout}\n{stderr}".lower()
-        if "not enabled" in blob or "404" in blob or "not found" in blob:
-            return None
-        raise RuntimeError(stderr.strip() or stdout.strip() or "failed to read required checks")
-    data = json.loads(stdout)
-    contexts = {item for item in (data.get("contexts") or []) if item}
-    for check in data.get("checks") or []:
-        context = check.get("context")
-        if context:
-            contexts.add(context)
-    return contexts
 
 
 def pull_request(repo: str, number: str) -> dict:
@@ -104,18 +84,13 @@ def self_test() -> None:
         "reviewDecision": "APPROVED",
         "autoMergeRequest": None,
     }
-    assert decide(approved, {"pr-green"}) == "merge"
-    assert decide(approved, None).startswith("skip:")
-    assert decide(approved, {"build"}).startswith("skip:")
-    assert decide({**approved, "isDraft": True}, {"pr-green"}).startswith("skip:")
-    assert decide({**approved, "baseRefName": "develop"}, {"pr-green"}).startswith("skip:")
-    assert decide({**approved, "reviewDecision": "REVIEW_REQUIRED"}, {"pr-green"}).startswith(
-        "skip:"
-    )
-    assert decide({**approved, "state": "MERGED"}, {"pr-green"}).startswith("skip:")
-    assert decide({**approved, "autoMergeRequest": {"enabledAt": "t"}}, {"pr-green"}).startswith(
-        "skip:"
-    )
+    assert decide(approved, True) == "merge"
+    assert decide(approved, False).startswith("skip:")
+    assert decide({**approved, "isDraft": True}, True).startswith("skip:")
+    assert decide({**approved, "baseRefName": "develop"}, True).startswith("skip:")
+    assert decide({**approved, "reviewDecision": "REVIEW_REQUIRED"}, True).startswith("skip:")
+    assert decide({**approved, "state": "MERGED"}, True).startswith("skip:")
+    assert decide({**approved, "autoMergeRequest": {"enabledAt": "t"}}, True).startswith("skip:")
     print("arm-auto-merge self-test passed")
 
 
@@ -129,7 +104,7 @@ def main(argv: list[str]) -> int:
         return 2
     repo = os.environ["REPO"]
     number = os.environ["PR_NUMBER"]
-    action = decide(pull_request(repo, number), required_contexts(repo))
+    action = decide(pull_request(repo, number), os.environ.get("PR_GREEN_REQUIRED") == "true")
     print(action)
     if action != "merge":
         return 0
