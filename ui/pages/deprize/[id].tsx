@@ -380,6 +380,8 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   // when the country header is missing (getDePrizePageEligibility).
   // Onramp return bypasses only the restricted term; market terms stay.
   const bettingAllowed = acceptsBets && !restricted
+  // ETH form only when this visitor can stake. Otherwise the window stays a prediction.
+  const canPlaceBet = bettingAllowed && !tradingHalted
 
   const betUnavailableReason = tradingHalted
     ? 'Trading is paused on this market'
@@ -414,6 +416,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const [deepLinkHandled, setDeepLinkHandled] = useState(false)
   useEffect(() => {
     if (onrampReturn.betIndex == null) return
+    // Ask for a bet. The modal falls back to a prediction when this visitor cannot bet.
     setWindowMode('bet')
     setBetIndex(onrampReturn.betIndex)
   }, [onrampReturn.betIndex])
@@ -429,6 +432,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     setDeepLinkHandled(true)
     const el = document.getElementById(`deprize-outcome-${idx}`)
     el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Ask for a bet. The modal falls back to a prediction when this visitor cannot bet.
     setWindowMode('bet')
     setBetIndex(idx)
   }, [
@@ -823,7 +827,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           withdrawnByTeamId={withdrawnByTeamId}
           onBet={openPredict}
           stakedEthByOutcome={stakedEthByOutcome}
-          mode={windowMode}
+          mode={windowMode === 'bet' && canPlaceBet ? 'bet' : 'predict'}
           onModeChange={setWindowMode}
           modalIndex={betIndex}
           onModalClose={() => setBetIndex(null)}
@@ -872,7 +876,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           probabilities={market.outcomes.map((o) => o.probability)}
           order={rankedOutcomes.map((o) => o.index)}
           resolved={showResolved}
-          bettingAllowed={bettingAllowed && !tradingHalted}
+          bettingAllowed={canPlaceBet}
           betUnavailableReason={betUnavailableReason}
           amountEth={ticketAmountEth}
           onAmountChange={setTicketAmountEth}
