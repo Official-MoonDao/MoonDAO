@@ -533,7 +533,7 @@ export default function BetModal({
       const qty = readyQty ?? (await loadQuote(target))
       if (qty <= 0n) throw new Error('Bet too small for this market.')
       toast.dismiss('quote')
-      toast.loading(mockSepoliaEligibility ? 'Preparing bet…' : 'Checking eligibility…', {
+      toast.loading('Preparing your stake…', {
         id: 'permit',
         style: toastStyle,
       })
@@ -712,6 +712,7 @@ export default function BetModal({
   }, [embedded, betActionApi, betActionKey])
 
   const betMult = quote && betAmountNum > 0 ? quote.qty / betAmountNum : undefined
+  const stakeUnlocked = eligibility.status === 'ready' && eligibility.allowed
 
   const body = (
       <div className="flex flex-col gap-4 w-full">
@@ -729,6 +730,28 @@ export default function BetModal({
           </p>
         )}
 
+        {eligibility.status === 'loading' && (
+          <p className="text-gray-300 text-sm">Checking eligibility…</p>
+        )}
+        {(eligibility.status === 'error' ||
+          (eligibility.status === 'ready' && !eligibility.allowed)) && (
+          <div className="space-y-2">
+            <p className="text-amber-300 text-sm">
+              {eligibility.message || 'Adding ETH is unavailable.'}
+            </p>
+            {eligibility.status === 'error' && (
+              <button
+                type="button"
+                className={`inline-flex items-center text-sm text-indigo-300 underline ${TOUCH}`}
+                onClick={() => setEligibilityRetry((n) => n + 1)}
+              >
+                Retry eligibility check
+              </button>
+            )}
+          </div>
+        )}
+        {stakeUnlocked && (
+        <>
         <div>
           <label className="text-xs text-gray-400">How much do you want to bet? (ETH)</label>
           <input
@@ -838,14 +861,6 @@ export default function BetModal({
             .
           </p>
         </div>
-
-        {eligibility.status === 'loading' ? (
-          <p className="text-gray-400 text-sm">Checking eligibility…</p>
-        ) : !eligibility.allowed ? (
-          <p className="text-amber-300 text-sm">
-            {eligibility.message || eligibilityMessage('screening-unavailable')}
-          </p>
-        ) : null}
 
         <div className="flex flex-col gap-2">
           <label className="flex items-start gap-2.5 text-xs sm:text-[11px] leading-snug text-gray-300 cursor-pointer">
@@ -1098,6 +1113,8 @@ export default function BetModal({
               ? 'Acceptance failed — retry'
               : `Bet ${fmtEthWithUsd(betAmountNum, ethPrice)}`}
           </StandardButton>
+        )}
+        </>
         )}
       </div>
   )
