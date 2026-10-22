@@ -51,7 +51,7 @@ import {
   payloadCopy,
   payloadCopyMode,
 } from '@/lib/deprize/payloadPurse'
-import { betBudget, betSlice, quoteQtyForBudget } from '@/lib/deprize/quote'
+import { betBudget, betSlice, isQuoteCancelled, quoteQtyForBudget } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
@@ -138,6 +138,7 @@ export default function BetModal({
   const fundingStrategy = getFundingStrategy(chain.id)
   const [quote, setQuote] = useState<{ qty: number } | null>(null)
   const [quoting, setQuoting] = useState(false)
+  const [quoteFailed, setQuoteFailed] = useState(false)
   const [busy, setBusy] = useState(false)
   // Click-wrap: the Terms are only enforceable with an affirmative act, so the
   // box starts unchecked on every open and gates the Bet button.
@@ -211,7 +212,7 @@ export default function BetModal({
     qty?: bigint
   } | null>(null)
   const loadQuote = useCallback(
-    (target: bigint) => {
+    (target: bigint, cancelled?: () => boolean) => {
       const key = `${chain.id}:${marketAddress}:${outcomeIndex}:${target}`
       const cached = quoteCacheRef.current
       if (cached && cached.key === key && Date.now() - cached.at < QUOTE_REUSE_MS) {
@@ -222,7 +223,9 @@ export default function BetModal({
         at: Date.now(),
         promise: undefined as unknown as Promise<bigint>,
       }
-      const promise = quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes).then(
+      const promise = quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes, {
+        cancelled,
+      }).then(
         (qty) => {
           if (quoteCacheRef.current === entry) entry.qty = qty
           return qty
@@ -241,28 +244,46 @@ export default function BetModal({
 
   // Live payout quote: the real, price-impact-aware token amount the 95% budget
   // buys (each winning token redeems 1:1 for ETH, so qty == potential payout).
+  // A replaced amount stops the previous quote from issuing more RPC calls, and
+  // a single failure is retried before the line gives up.
   useEffect(() => {
     if (betAmountWei <= 0n) {
       setQuote(null)
       setQuoting(false)
+      setQuoteFailed(false)
       return
     }
     let cancelled = false
     setQuote(null)
     setQuoting(true)
+    setQuoteFailed(false)
+    const quoteOnce = async () => {
+      const budget = betBudget(betAmountWei)
+      const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
+      const qty = await loadQuote(target, () => cancelled)
+      return Number(qty) / Number(UNIT)
+    }
     const t = setTimeout(async () => {
       try {
-        const budget = betBudget(betAmountWei)
-        const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
-        const qty = await loadQuote(target)
-        if (!cancelled) setQuote({ qty: Number(qty) / Number(UNIT) })
+        const qty = await quoteOnce()
+        if (!cancelled) setQuote({ qty })
       } catch (err) {
-        console.warn('[deprize] payout quote failed', err)
-        if (!cancelled) setQuote(null)
+        if (cancelled || isQuoteCancelled(err)) return
+        try {
+          const qty = await quoteOnce()
+          if (!cancelled) setQuote({ qty })
+        } catch (err2) {
+          if (cancelled || isQuoteCancelled(err2)) return
+          console.warn('[deprize] payout quote failed', err2)
+          if (!cancelled) {
+            setQuote(null)
+            setQuoteFailed(true)
+          }
+        }
       } finally {
         if (!cancelled) setQuoting(false)
       }
-    }, 350)
+    }, 250)
     return () => {
       cancelled = true
       clearTimeout(t)
@@ -763,7 +784,11 @@ export default function BetModal({
               </>
             ) : (
               <p className="text-gray-400 text-sm">
-                {quoting ? 'Calculating payout…' : 'Enter an amount'}
+                {quoting
+                  ? 'Calculating payout…'
+                  : quoteFailed
+                  ? 'Couldn’t calculate the payout. Edit the amount to try again.'
+                  : 'Enter an amount'}
               </p>
             )}
             <div className="flex items-center justify-between mt-1">
