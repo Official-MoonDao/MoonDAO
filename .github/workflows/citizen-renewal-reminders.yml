@@ -1,17 +1,17 @@
 name: Citizen renewal reminders
 
-# Daily report only. The scheduled call omits live=1.
-# A manual run writes tags only when the live input is exactly 1.
-# The server still requires RENEWAL_REMINDERS_LIVE=true before it writes.
+# Daily live run at 13:15 UTC. GitHub Actions is the only scheduler.
+# The schedule passes live=1. A manual run does too, unless live is 0.
+# The server still writes only when RENEWAL_REMINDERS_LIVE is exactly true.
 on:
   schedule:
     - cron: "15 13 * * *"
   workflow_dispatch:
     inputs:
       live:
-        description: "Type 1 to pass live=1. Leave empty to report only."
+        description: "Pass 1 to write. Pass 0 for a dry run."
         required: false
-        default: ""
+        default: "1"
         type: string
 
 jobs:
@@ -24,6 +24,11 @@ jobs:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           LIVE_INPUT: ${{ github.event.inputs.live }}
         run: |
+          # Apex moondao.com returns 307 to www.moondao.com with a short HTML body.
+          # curl does not follow redirects unless -L is set, and -f does not treat
+          # 307 as a failure, so a call to the apex can exit 0 without hitting the
+          # route. A cross-host -L redirect would also drop Authorization.
+          # Call www directly and do not follow redirects.
           BASE="${SITE_URL:-https://www.moondao.com}"
           BASE="${BASE%/}"
           case "$BASE" in
@@ -31,32 +36,97 @@ jobs:
               BASE="https://www.moondao.com"
               ;;
           esac
-          QUERY="dryRun=1"
-          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ "${LIVE_INPUT}" = "1" ]; then
-            QUERY="${QUERY}&live=1"
+          # Schedule leaves the input empty. Empty and 1 both pass live=1.
+          # Manual dispatch can set 0 for a dry run.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ "${LIVE_INPUT}" = "0" ]; then
+            QUERY="dryRun=1"
+          elif [ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" ] || [ -z "${LIVE_INPUT}" ] || [ "${LIVE_INPUT}" = "1" ]; then
+            QUERY="dryRun=1&live=1"
+          else
+            echo "live must be 1 or 0" >&2
+            exit 1
           fi
-          response=$(curl -fsS -X POST "$BASE/api/cron/citizen-renewal-reminders?${QUERY}" \
+          body_file="$(mktemp)"
+          trap 'rm -f "$body_file"' EXIT
+          http_code="$(curl -sS -o "$body_file" -w "%{http_code}" -X POST \
+            "$BASE/api/cron/citizen-renewal-reminders?${QUERY}" \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Accept: application/json")
+            -H "Accept: application/json" || true)"
+          case "$http_code" in
+            200) ;;
+            *)
+              echo "Citizen renewal reminders HTTP ${http_code}" >&2
+              exit 1
+              ;;
+          esac
+          if ! jq -e 'type == "object"' "$body_file" >/dev/null; then
+            echo "Citizen renewal reminders response was not JSON" >&2
+            exit 1
+          fi
+          summary="$(jq -c '
+            def n: if type == "number" then . else 0 end;
+            def stage:
+              {planned: (.planned | n), executed: (.executed | n)}
+              + (if (.reported | type) == "number" then {reported: .reported} else {} end);
+            def flag:
+              if . == true then true elif . == false then false else null end;
+            {
+              live: (.live | flag),
+              dryRun: (.dryRun | flag),
+              writing: (.writes.writing | flag),
+              stages: (
+                (.writes.buckets // {}) as $buckets
+                | {
+                    renewalReminder: ($buckets.renewalReminder | stage),
+                    catchupMinus7: ($buckets.catchupMinus7 | stage),
+                    catchupExpiry: ($buckets.catchupExpiry | stage),
+                    catchupPlus14: ($buckets.catchupPlus14 | stage),
+                    renewed: ($buckets.renewed | stage),
+                    typeformOnly: ($buckets.typeformOnly | stage)
+                  }
+              ),
+              executed: (
+                [
+                  (.writes.buckets.renewalReminder.executed | n),
+                  (.writes.buckets.catchupMinus7.executed | n),
+                  (.writes.buckets.catchupExpiry.executed | n),
+                  (.writes.buckets.catchupPlus14.executed | n),
+                  (.writes.buckets.renewed.executed | n),
+                  (.writes.buckets.typeformOnly.executed | n)
+                ] | add
+              ),
+              failures: (if (.writes.failures | type) == "number" then .writes.failures else null end)
+            }
+          ' "$body_file")"
+          case "$summary" in
+            *@*)
+              echo "Renewal summary was not printed because it contained an email" >&2
+              exit 1
+              ;;
+          esac
+          echo "$summary"
           {
             echo '## Citizen renewal reminders'
             echo ''
             echo '```json'
-            echo "$response"
+            echo "$summary"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-          case "$response" in
-            *'"ok":true'*|*'"ok": true'*) ;;
-            *)
-              echo "Renewal reminder run did not succeed" >&2
-              exit 1
-              ;;
-          esac
-          if [ "${GITHUB_EVENT_NAME}" != "workflow_dispatch" ] || [ "${LIVE_INPUT}" != "1" ]; then
-            case "$response" in
+          if [ "$QUERY" = "dryRun=1" ]; then
+            case "$summary" in
               *'"live":true'*)
-                echo "This run must report only" >&2
+                echo "Dry run returned live" >&2
                 exit 1
                 ;;
             esac
+          fi
+          ok="$(jq -r 'if .ok == true then "true" else "fail" end' "$body_file")"
+          failures="$(jq -r 'if .writes.failures == 0 then "0" else "fail" end' "$body_file")"
+          if [ "$ok" != "true" ]; then
+            echo "Renewal reminder run did not succeed" >&2
+            exit 1
+          fi
+          if [ "$failures" != "0" ]; then
+            echo "Renewal reminder run had write failures" >&2
+            exit 1
           fi
