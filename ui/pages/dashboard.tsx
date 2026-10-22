@@ -24,12 +24,14 @@ import CitizenContext from '@/lib/citizen/citizen-context'
 import { getAUMHistory, getMooneyPrice } from '@/lib/coinstats'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { getCitizensLocationData } from '@/lib/map'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import {
   getAllNetworkTransfers,
   getRecentCitizenTransfers,
   getRecentTeamTransfers,
 } from '@/lib/network/networkSubgraph'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
+import { excludeNonProjectProposals } from '@/lib/project/excludeNonProjectProposals'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -61,6 +63,7 @@ export default function Dashboard({
   mooneyPrice,
   filteredTeams,
   allProjects,
+  nonProjectProjectIds,
   missions,
   featuredMissionData,
   citizensLocationData,
@@ -133,6 +136,7 @@ export default function Dashboard({
         mooneyPrice={mooneyPrice}
         filteredTeams={filteredTeams}
         projects={allProjects}
+        nonProjectProjectIds={nonProjectProjectIds}
         missions={missions}
         featuredMissionData={featuredMissionData}
         citizensLocationData={citizensLocationData}
@@ -172,6 +176,7 @@ export async function getStaticProps() {
   let newestTeams: any = []
   let filteredTeams: any = []
   let allProjects: Project[] = []
+  let nonProjectProjectIds: number[] = []
   let missions: any = []
   let featuredMissionData: any = null
   let citizensLocationData: any[] = []
@@ -488,6 +493,19 @@ export async function getStaticProps() {
     }))
     allProjects = projects
     await enrichProjectNames(allProjects)
+    const fundedActiveIds = new Set(
+      (
+        await excludeNonProjectProposals(
+          allProjects.filter((project) => Number(project.active) === PROJECT_ACTIVE)
+        )
+      ).map((project) => Number(project.id))
+    )
+    nonProjectProjectIds = allProjects
+      .filter(
+        (project) =>
+          Number(project.active) === PROJECT_ACTIVE && !fundedActiveIds.has(Number(project.id))
+      )
+      .map((project) => Number(project.id))
 
     // Process missions data - simplified to just pass basic data to client.
     // Always populate `missions` + `featuredMissionData` from the table row so
@@ -588,6 +606,7 @@ export async function getStaticProps() {
       mooneyPrice,
       filteredTeams,
       allProjects,
+      nonProjectProjectIds,
       missions,
       featuredMissionData,
       citizensLocationData,
