@@ -124,14 +124,16 @@ export default function PredictModal(props: {
     >
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3 text-sm">
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              isBet ? 'bg-emerald-400/15 text-emerald-300' : 'bg-indigo-400/15 text-indigo-200'
-            }`}
-          >
-            {isBet ? 'ETH market' : 'MOONEY forecast · free'}
-          </span>
-          <span className="text-gray-400">
+          {!wantCombined && (
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                isBet ? 'bg-emerald-400/15 text-emerald-300' : 'bg-indigo-400/15 text-indigo-200'
+              }`}
+            >
+              {isBet ? 'ETH market' : 'MOONEY forecast · free'}
+            </span>
+          )}
+          <span className={`text-gray-400 ${wantCombined ? 'ml-auto' : ''}`}>
             Chance <span className="font-semibold tabular-nums text-white">{pct}</span>
           </span>
         </div>
