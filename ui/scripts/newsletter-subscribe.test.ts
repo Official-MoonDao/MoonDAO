@@ -344,6 +344,86 @@ describe('subscriber count', () => {
     )
     assert.strictEqual(fromExisting, FALLBACK_SUBSCRIBER_LABEL)
   })
+
+  it('uses the Kit v3 active total when v4 is absent, and falls back when v3 fails', async () => {
+    const secret = 'v3-secret'
+    const calls: string[] = []
+    const logs: string[] = []
+    const methods = ['log', 'info', 'warn', 'error', 'debug'] as const
+    const originals = methods.map((name) => console[name].bind(console))
+    for (const name of methods) {
+      console[name] = (...args: unknown[]) => {
+        logs.push(args.map((arg) => String(arg)).join(' '))
+      }
+    }
+    try {
+      const label = await fetchActiveSubscriberLabel(
+        {
+          CONVERT_KIT_V4_API_KEY: 'legacy-key',
+          CONVERT_KIT_API_SECRET: secret,
+          CONVERT_KIT_API_KEY: 'public-key',
+        },
+        (async (url: string) => {
+          calls.push(url)
+          if (url.includes('api.kit.com')) return new Response('nope', { status: 503 })
+          return new Response(
+            JSON.stringify({
+              total_subscribers: 8234,
+              subscribers: [{ email_address: SECRET, state: 'active' }],
+            }),
+            { status: 200 }
+          )
+        }) as typeof fetch
+      )
+      assert.strictEqual(label, '8,000+')
+      assert.strictEqual(calls.length, 2)
+      assert.equal(calls[0].includes('api_secret'), false)
+      const parsed = new URL(calls[1])
+      assert.strictEqual(
+        `${parsed.origin}${parsed.pathname}`,
+        'https://api.convertkit.com/v3/subscribers'
+      )
+      assert.strictEqual(parsed.searchParams.get('api_secret'), secret)
+      assert.strictEqual(parsed.searchParams.get('subscriber_state'), 'active')
+      assert.equal(parsed.searchParams.get('api_secret') === 'public-key', false)
+      const logged = logs.join('\n')
+      assert.equal(logged.includes(secret), false)
+      assert.equal(logged.includes('api_secret'), false)
+      assert.equal(logged.includes(SECRET), false)
+
+      const failed = await fetchActiveSubscriberLabel(
+        { CONVERT_KIT_API_KEY: 'public-key' },
+        (async () => new Response('nope', { status: 500 })) as typeof fetch
+      )
+      assert.strictEqual(failed, FALLBACK_SUBSCRIBER_LABEL)
+
+      const thrown = await fetchActiveSubscriberLabel(
+        { CONVERT_KIT_API_SECRET: secret },
+        (async () => {
+          throw new Error(`down ${secret}`)
+        }) as typeof fetch
+      )
+      assert.strictEqual(thrown, FALLBACK_SUBSCRIBER_LABEL)
+      assert.equal(logs.join('\n').includes(secret), false)
+
+      const mixed = await fetchActiveSubscriberLabel(
+        { CONVERT_KIT_API_SECRET: secret },
+        (async () =>
+          new Response(
+            JSON.stringify({
+              total_subscribers: 15000,
+              subscribers: [{ state: 'cancelled', email_address: SECRET }],
+            }),
+            { status: 200 }
+          )) as typeof fetch
+      )
+      assert.strictEqual(mixed, FALLBACK_SUBSCRIBER_LABEL)
+    } finally {
+      methods.forEach((name, index) => {
+        console[name] = originals[index]
+      })
+    }
+  })
 })
 
 describe('signup pages', () => {
