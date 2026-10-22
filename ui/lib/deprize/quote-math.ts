@@ -16,6 +16,42 @@ export function betBudget(valueWei: bigint): bigint {
   return valueWei - betSlice(valueWei)
 }
 
+// The mint reverts CostTooHigh when the share cost exceeds this budget.
+// Quoting under it leaves room for the price to move while the wallet confirms.
+// ETH that the market does not spend is refunded.
+export const BET_COST_HEADROOM_NUM = 97n
+export const BET_COST_HEADROOM_DEN = 100n
+
+export function betSpendCeiling(budgetWei: bigint): bigint {
+  if (budgetWei <= 0n) return 0n
+  return (budgetWei * BET_COST_HEADROOM_NUM) / BET_COST_HEADROOM_DEN
+}
+
+// Largest `qty` at or below the requested amount whose cost still fits under
+// the spend ceiling. One proportional step is enough for a convex LMSR cost;
+// the loop covers a fee that comes back higher than the payout quote assumed.
+export async function fitQtyToBudget(
+  costFn: (qty: bigint) => Promise<bigint>,
+  qty: bigint,
+  budgetWei: bigint
+): Promise<bigint> {
+  if (qty <= 0n || budgetWei <= 0n) return 0n
+  const ceiling = betSpendCeiling(budgetWei)
+  if (ceiling <= 0n) return 0n
+  let current = qty
+  for (let i = 0; i < 4; i++) {
+    const cost = await costFn(current)
+    if (cost > 0n && cost <= ceiling) return current
+    if (cost <= 0n) return 0n
+    const next = (current * ceiling) / cost
+    if (next <= 0n || next >= current) break
+    current = next
+  }
+  const cost = await costFn(current)
+  if (cost > 0n && cost <= budgetWei) return current
+  return 0n
+}
+
 // Build the LMSR trade `amounts` vector for buying/selling `qty` of one outcome.
 export function buildAmounts(
   index: number,
@@ -55,8 +91,8 @@ export async function searchMaxQtyWithinCost(
   return lo
 }
 
-// Stop once the measured cost is within 2% of the budget. The bet already
-// leaves another 1% of headroom under the on-chain max, so a closer wei is
+// Stop once the measured cost is within 2% of the target. The bet already
+// quotes under the on-chain max (see betSpendCeiling), so a closer wei is
 // not worth another RPC round trip.
 export function costIsClose(cost: bigint, targetWei: bigint): boolean {
   return cost > 0n && cost * 50n >= targetWei * 49n

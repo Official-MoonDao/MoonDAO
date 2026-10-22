@@ -119,5 +119,45 @@
       { "name": "complianceSigner", "type": "address", "indexed": true }
     ],
     "anonymous": false
-  }
+  },
+  { "type": "error", "name": "ZeroAddress", "inputs": [] },
+  {
+    "type": "error",
+    "name": "BettingClosed",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }]
+  },
+  {
+    "type": "error",
+    "name": "MarketNotSet",
+    "inputs": [{ "name": "deprizeId", "type": "uint256" }]
+  },
+  {
+    "type": "error",
+    "name": "BadOutcomeIndex",
+    "inputs": [
+      { "name": "deprizeId", "type": "uint256" },
+      { "name": "outcomeIndex", "type": "uint256" }
+    ]
+  },
+  { "type": "error", "name": "NonPositiveCost", "inputs": [] },
+  {
+    "type": "error",
+    "name": "CostTooHigh",
+    "inputs": [
+      { "name": "cost", "type": "uint256" },
+      { "name": "budget", "type": "uint256" },
+      { "name": "maxCost", "type": "uint256" }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "PermitExpired",
+    "inputs": [{ "name": "deadline", "type": "uint256" }]
+  },
+  {
+    "type": "error",
+    "name": "InvalidPermit",
+    "inputs": [{ "name": "recovered", "type": "address" }]
+  },
+  { "type": "error", "name": "ComplianceSignerUnset", "inputs": [] }
 ]

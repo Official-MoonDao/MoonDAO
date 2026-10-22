@@ -37,7 +37,12 @@ import {
   writeOnrampSnapshot,
 } from '@/lib/deprize/onrampReturn'
 import { trackOnrampEvent } from '@/lib/deprize/onrampTelemetryClient'
-import { arbitrumMintUsesLegacyBet, LEGACY_MINT_BET_ABI } from '@/lib/deprize/mintBet'
+import {
+  arbitrumMintUsesLegacyBet,
+  betFailureMessage,
+  COST_TOO_HIGH_MESSAGE,
+  LEGACY_MINT_BET_ABI,
+} from '@/lib/deprize/mintBet'
 import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
 import {
   fmt,
@@ -51,7 +56,15 @@ import {
   payloadCopy,
   payloadCopyMode,
 } from '@/lib/deprize/payloadPurse'
-import { betBudget, betSlice, isQuoteCancelled, quoteQtyForBudget } from '@/lib/deprize/quote'
+import {
+  betBudget,
+  betSlice,
+  betSpendCeiling,
+  fitQtyToBudget,
+  isQuoteCancelled,
+  measureTradeCost,
+  quoteQtyForBudget,
+} from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
@@ -94,12 +107,9 @@ type BetModalProps = {
   onPlaced?: () => Promise<boolean>
 }
 
-// Quote against 99% of the budget so a little price drift doesn't revert the
-// bet; the router still caps the actual spend at the full 95% budget.
-const QUOTE_HEADROOM_NUM = 99n
-const QUOTE_HEADROOM_DEN = 100n
 // The payout line and the bet button share one quote. Reuse it briefly so
-// confirming doesn't start a second LMSR waterfall.
+// confirming doesn't start a second LMSR waterfall. The submit path still
+// remeasures the cost and shrinks the quantity to betSpendCeiling.
 const QUOTE_REUSE_MS = 15_000
 
 async function readApiJson(res: Response): Promise<any> {
@@ -259,7 +269,7 @@ export default function BetModal({
     setQuoteFailed(false)
     const quoteOnce = async () => {
       const budget = betBudget(betAmountWei)
-      const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
+      const target = betSpendCeiling(budget)
       const qty = await loadQuote(target, () => cancelled)
       return Number(qty) / Number(UNIT)
     }
@@ -517,7 +527,7 @@ export default function BetModal({
     if (blockedByNetwork()) return false
     setBusy(true)
     const budget = betBudget(betAmountWei)
-    const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
+    const target = betSpendCeiling(budget)
     const quoteKey = `${chain.id}:${marketAddress}:${outcomeIndex}:${target}`
     const cached = quoteCacheRef.current
     const readyQty =
@@ -560,17 +570,25 @@ export default function BetModal({
       toast.dismiss('permit')
       toast.loading('Placing bet…', { id: 'bet', style: toastStyle })
       // The router splits msg.value (5% slice -> this DePrize's Juicebox project
-      // / project token, 95% -> market) and caps the trade cost at the 95%
-      // budget (maxCost), refunding any unspent ETH. Sepolia's mint also checks
-      // the server-issued CompliancePermit. Arbitrum One's deployed mint does
-      // not take that signature; the permit request above is still the
+      // / project token, 95% -> market) and reverts CostTooHigh when the shares
+      // cost more than that budget. Remeasure with the contract's own fee and
+      // shrink before signing. Unspent ETH is refunded. Sepolia's mint also
+      // checks the server-issued CompliancePermit. Arbitrum One's deployed mint
+      // does not take that signature; the permit request above is still the
       // eligibility gate before this transaction is sent.
+      const shares = await fitQtyToBudget(
+        (amount) => measureTradeCost(lmsr, outcomeIndex, amount, numOutcomes),
+        qty,
+        budget
+      )
+      if (shares <= 0n) throw new Error(COST_TOO_HIGH_MESSAGE)
+      setQuote({ qty: Number(shares) / Number(UNIT) })
       const params = legacyBet
-        ? [BigInt(deprizeId), BigInt(outcomeIndex), qty, budget]
+        ? [BigInt(deprizeId), BigInt(outcomeIndex), shares, budget]
         : [
             BigInt(deprizeId),
             BigInt(outcomeIndex),
-            qty,
+            shares,
             budget,
             BigInt(permit.deadline),
             permit.signature,
@@ -585,7 +603,7 @@ export default function BetModal({
         })
       )
       toast.dismiss('bet')
-      const qtyNum = Number(qty) / Number(UNIT)
+      const qtyNum = Number(shares) / Number(UNIT)
       const onrampToken = getStoredJWT()
       const withinOnrampSession = Boolean(fundsArrived || initialAmountEth || onrampToken)
       clearJWT()
@@ -608,7 +626,7 @@ export default function BetModal({
       toast.dismiss('permit')
       toast.dismiss('bet')
       console.error('[deprize] bet failed', err)
-      toast.error(err?.shortMessage || err?.message || 'Bet failed.', {
+      toast.error(betFailureMessage(err) || err?.shortMessage || err?.message || 'Bet failed.', {
         style: toastStyle,
         duration: 8000,
       })

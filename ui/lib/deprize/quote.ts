@@ -8,6 +8,8 @@ export {
   SLICE_DENOMINATOR,
   betSlice,
   betBudget,
+  betSpendCeiling,
+  fitQtyToBudget,
   buildAmounts,
   acceptSpotQuote,
   costIsClose,
@@ -92,6 +94,22 @@ export async function lmsrMarketFee(
     console.error('[deprize] calcMarketFee failed', err)
     throw err
   }
+}
+
+// Fee-inclusive cost the mint charges for `qty`: calcNetCost + calcMarketFee(net).
+// The payout quote scales a cached fee on 1 ETH. This reads the fee on the
+// actual net cost so a submit cannot send a quantity the contract will reject.
+export async function measureTradeCost(
+  lmsr: any,
+  index: number,
+  qty: bigint,
+  numOutcomes: number
+): Promise<bigint> {
+  if (qty <= 0n) return 0n
+  const net = await lmsrNetCost(lmsr, index, qty, numOutcomes)
+  if (net <= 0n) return 0n
+  const fee = await lmsrMarketFee(lmsr, net)
+  return net + fee
 }
 
 // One hung eth_call is 15s, and the old probe repeated that about ten times
