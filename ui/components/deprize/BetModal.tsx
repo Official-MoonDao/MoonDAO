@@ -215,26 +215,43 @@ export default function BetModal({
     [canBet, chain, legacyBet, mintAddress]
   )
 
+  // `cancelled` is the latest caller. The in-flight read polls it, so a reused
+  // quote must not keep the first effect's flag after that amount is replaced.
   const quoteCacheRef = useRef<{
     key: string
     at: number
     promise: Promise<bigint>
     qty?: bigint
+    cancelled?: () => boolean
   } | null>(null)
   const loadQuote = useCallback(
     (target: bigint, cancelled?: () => boolean) => {
       const key = `${chain.id}:${marketAddress}:${outcomeIndex}:${target}`
       const cached = quoteCacheRef.current
       if (cached && cached.key === key && Date.now() - cached.at < QUOTE_REUSE_MS) {
-        return cached.promise
+        cached.cancelled = cancelled
+        return cached.promise.catch((err) => {
+          // Already aborted for the previous caller. This one is still current,
+          // so drop that rejection and quote again.
+          if (!isQuoteCancelled(err) || cancelled?.()) throw err
+          if (quoteCacheRef.current === cached) quoteCacheRef.current = null
+          return loadQuote(target, cancelled)
+        })
       }
-      const entry: { key: string; at: number; promise: Promise<bigint>; qty?: bigint } = {
+      const entry: {
+        key: string
+        at: number
+        promise: Promise<bigint>
+        qty?: bigint
+        cancelled?: () => boolean
+      } = {
         key,
         at: Date.now(),
         promise: undefined as unknown as Promise<bigint>,
+        cancelled,
       }
       const promise = quoteQtyForBudget(lmsr, outcomeIndex, target, numOutcomes, {
-        cancelled,
+        cancelled: () => entry.cancelled?.() ?? false,
       }).then(
         (qty) => {
           if (quoteCacheRef.current === entry) entry.qty = qty
@@ -278,12 +295,14 @@ export default function BetModal({
         const qty = await quoteOnce()
         if (!cancelled) setQuote({ qty })
       } catch (err) {
-        if (cancelled || isQuoteCancelled(err)) return
+        // QuoteCancelled from a reused read belongs to the previous amount.
+        // Only this effect's own flag means the line was replaced.
+        if (cancelled) return
         try {
           const qty = await quoteOnce()
           if (!cancelled) setQuote({ qty })
         } catch (err2) {
-          if (cancelled || isQuoteCancelled(err2)) return
+          if (cancelled) return
           console.warn('[deprize] payout quote failed', err2)
           if (!cancelled) {
             setQuote(null)
