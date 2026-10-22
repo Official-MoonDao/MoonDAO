@@ -13,12 +13,16 @@ export const US_AND_TERRITORIES: ReadonlySet<string> = new Set([
   'UM', // U.S. Minor Outlying Islands
 ])
 
-/** Comprehensively sanctioned jurisdictions (Schedule A.B), country-level. */
+/**
+ * Comprehensively sanctioned jurisdictions (Schedule A.B), country-level.
+ * Syria is omitted. The U.S. Syria sanctions program ended on July 1, 2025
+ * (E.O. 14312), and OFAC removed 31 CFR part 542 in August 2025. Designated
+ * persons remain blocked by wallet screening, not by a country rule.
+ */
 export const COMPREHENSIVE_SANCTIONS: ReadonlySet<string> = new Set([
   'CU', // Cuba
   'IR', // Iran
   'KP', // North Korea
-  'SY', // Syria
 ])
 
 /**

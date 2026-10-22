@@ -1,8 +1,12 @@
+import fs from 'fs'
+import path from 'path'
 import { evaluateEligibility } from '@/lib/deprize/eligibility'
 import { DEPRIZE_INSIDER_WALLETS, isInsiderWallet } from '@/lib/deprize/insiderWallets'
 import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
-import { shouldCreatePermanentDenial } from '@/lib/deprize/walletObservations'
-import { isRestrictedJurisdiction } from '@/lib/deprize/restrictedJurisdictions'
+import {
+  COMPREHENSIVE_SANCTIONS,
+  isRestrictedJurisdiction,
+} from '@/lib/deprize/restrictedJurisdictions'
 import { parseOfacEthList } from '@/lib/deprize/sanctions'
 import { selectSessionWallet } from '@/lib/deprize/selectSessionWallet'
 import {
@@ -13,6 +17,7 @@ import {
   isPrivateOrLocalIp,
   vpnResultFromIpapiBody,
 } from '@/lib/deprize/vpnCheck'
+import { shouldCreatePermanentDenial } from '@/lib/deprize/walletObservations'
 
 describe('deprize restricted jurisdictions', () => {
   it('blocks the United States and territories', () => {
@@ -39,6 +44,29 @@ describe('deprize restricted jurisdictions', () => {
     expect(isRestrictedJurisdiction('CH')).to.equal(false)
     expect(isRestrictedJurisdiction('AR')).to.equal(false)
     expect(isRestrictedJurisdiction(null)).to.equal(false)
+  })
+
+  it('does not treat Syria as comprehensively sanctioned', () => {
+    const terms = fs.readFileSync(
+      path.join(
+        __dirname,
+        '../../../../content/docs/Legal/DePrize/DePrize Terms and Conditions.md'
+      ),
+      'utf8'
+    )
+    const sectionB = terms
+      .split('\n')
+      .find((line) => line.includes('Comprehensively sanctioned jurisdictions'))
+    expect(sectionB, 'Schedule A.B').to.be.a('string')
+    expect(sectionB).to.match(/Cuba/)
+    expect(sectionB).to.match(/Iran/)
+    expect(sectionB).to.match(/North Korea/)
+    expect(sectionB).to.not.match(/Syria/)
+    expect(COMPREHENSIVE_SANCTIONS.has('CU')).to.equal(true)
+    expect(COMPREHENSIVE_SANCTIONS.has('IR')).to.equal(true)
+    expect(COMPREHENSIVE_SANCTIONS.has('KP')).to.equal(true)
+    expect(COMPREHENSIVE_SANCTIONS.has('SY')).to.equal(false)
+    expect(isRestrictedJurisdiction('SY')).to.equal(false)
   })
 })
 
@@ -92,9 +120,7 @@ describe('deprize eligibility decision', () => {
     expect(
       evaluateEligibility({ ...base, isDeniedWallet: true, screeningFailed: true }).reason
     ).to.equal('wallet-denied')
-    expect(evaluateEligibility({ ...base, isDeniedWallet: true }).reason).to.equal(
-      'wallet-denied'
-    )
+    expect(evaluateEligibility({ ...base, isDeniedWallet: true }).reason).to.equal('wallet-denied')
   })
 
   it('rejects an insider wallet before other screens', () => {

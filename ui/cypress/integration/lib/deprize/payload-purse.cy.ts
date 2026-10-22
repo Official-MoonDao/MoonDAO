@@ -15,7 +15,7 @@ const UI_ROOT = path.resolve(__dirname, '../../../../')
 
 describe('payloadCopyMode', () => {
   it('is in-force for the live Terms constant', () => {
-    expect(DEPRIZE_TERMS_VERSION).to.equal('1.2')
+    expect(DEPRIZE_TERMS_VERSION).to.equal('1.3')
     expect(payloadCopyMode(DEPRIZE_TERMS_VERSION)).to.equal('in-force')
   })
 
