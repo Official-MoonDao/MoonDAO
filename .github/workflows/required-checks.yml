@@ -38,5 +38,6 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           EVENT_ACTION: ${{ github.event.action }}
+          EVENT_AT: ${{ github.event.pull_request.updated_at }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 .github/scripts/required-checks.py wait

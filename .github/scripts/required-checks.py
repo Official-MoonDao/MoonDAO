@@ -5,6 +5,9 @@ Path filters skip a workflow entirely, so GitHub never reports its check.
 Branch protection can only require a check that exists on every pull request.
 This job is that check: it passes when every matching workflow passed, and
 fails when one failed or never started.
+
+Closing and reopening a pull request reuses the head SHA. A run created for
+an earlier delivery of that SHA does not count.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -27,6 +31,10 @@ EXCLUDED = {
 }
 DEFAULT_TYPES = ("opened", "synchronize", "reopened")
 APPEAR_TIMEOUT_SECONDS = 20 * 60
+# One pull_request delivery creates its workflow runs within seconds of the
+# event. Anything older than this before pull_request.updated_at is a previous
+# delivery of the same SHA (reopened, or an earlier pull request).
+SAME_DELIVERY_SKEW_SECONDS = 60
 POLL_SECONDS = 30
 OK_CONCLUSIONS = {"success"}
 FAIL_CONCLUSIONS = {
@@ -60,6 +68,7 @@ class Run:
     status: str
     conclusion: str | None
     html_url: str
+    created_at: float
 
 
 class WorkflowParseError(Exception):
@@ -332,15 +341,36 @@ def latest_by_path(runs: list[Run]) -> dict[str, Run]:
     return latest
 
 
+def parse_timestamp(value: str) -> float:
+    text = value.strip()
+    if text.endswith("Z"):
+        text = f"{text[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError as exc:
+        raise RuntimeError(f"invalid timestamp {value!r}") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.timestamp()
+
+
+def runs_for_event(runs: list[Run], event_at: float) -> list[Run]:
+    cutoff = event_at - SAME_DELIVERY_SKEW_SECONDS
+    return [run for run in runs if run.created_at >= cutoff]
+
+
 def evaluate(
     expected: list[Trigger],
     runs: list[Run],
     *,
     elapsed: float,
     appear_timeout: float = APPEAR_TIMEOUT_SECONDS,
+    event_at: float | None = None,
 ) -> tuple[str, str]:
     if not expected:
         return "ok", "No pull request workflows match the changed files."
+    if event_at is not None:
+        runs = runs_for_event(runs, event_at)
     latest = latest_by_path(runs)
     missing: list[Trigger] = []
     pending: list[Run] = []
@@ -430,7 +460,7 @@ def workflow_runs(repo: str, sha: str) -> list[Run]:
             "--paginate",
             f"/repos/{repo}/actions/runs?head_sha={sha}&event=pull_request&per_page=100",
             "--jq",
-            ".workflow_runs[] | {id, path, name, status, conclusion, html_url}",
+            ".workflow_runs[] | {id, path, name, status, conclusion, html_url, created_at}",
         ]
     )
     return [
@@ -441,6 +471,7 @@ def workflow_runs(repo: str, sha: str) -> list[Run]:
             status=row["status"],
             conclusion=row.get("conclusion"),
             html_url=row.get("html_url") or "",
+            created_at=parse_timestamp(row["created_at"]),
         )
         for row in rows
     ]
@@ -452,6 +483,7 @@ def wait() -> int:
     sha = require_env("HEAD_SHA")
     base_ref = require_env("BASE_REF")
     action = require_env("EVENT_ACTION")
+    event_at = parse_timestamp(require_env("EVENT_AT"))
     triggers = load_triggers()
     files = changed_files(repo, number)
     expected = expected_workflows(triggers, files, base_ref, action)
@@ -471,7 +503,12 @@ def wait() -> int:
     started = time.monotonic()
     while True:
         elapsed = time.monotonic() - started
-        status, message = evaluate(expected, workflow_runs(repo, sha), elapsed=elapsed)
+        status, message = evaluate(
+            expected,
+            workflow_runs(repo, sha),
+            elapsed=elapsed,
+            event_at=event_at,
+        )
         print(message)
         if status == "ok":
             return 0
@@ -569,8 +606,22 @@ def self_test() -> None:
         types=None,
     )
 
-    def run(run_id: int, path: str, status: str, conclusion: str | None) -> Run:
-        return Run(run_id, path, path, status, conclusion, f"https://example.test/{run_id}")
+    def run(
+        run_id: int,
+        path: str,
+        status: str,
+        conclusion: str | None,
+        created_at: float = 0,
+    ) -> Run:
+        return Run(
+            run_id,
+            path,
+            path,
+            status,
+            conclusion,
+            f"https://example.test/{run_id}",
+            created_at,
+        )
 
     status, _ = evaluate([cypress], [], elapsed=0)
     assert status == "wait"
@@ -615,6 +666,98 @@ def self_test() -> None:
     status, message = evaluate([], [], elapsed=0)
     assert status == "ok"
     assert "No pull request workflows" in message
+
+    assert parse_timestamp("2026-10-22T18:48:00Z") == parse_timestamp(
+        "2026-10-22T18:48:00+00:00"
+    )
+    previous = 1_700_000_000
+    event_at = previous + 3600
+    status, message = evaluate(
+        [cypress],
+        [run(1, cypress.path, "completed", "success", previous)],
+        elapsed=0,
+        event_at=event_at,
+    )
+    assert status == "wait", (status, message)
+    assert "not started" in message
+    status, message = evaluate(
+        [cypress],
+        [run(1, cypress.path, "completed", "failure", previous)],
+        elapsed=0,
+        event_at=event_at,
+    )
+    assert status == "wait", (status, message)
+    status, message = evaluate(
+        [cypress],
+        [run(1, cypress.path, "completed", "success", previous)],
+        elapsed=APPEAR_TIMEOUT_SECONDS,
+        event_at=event_at,
+    )
+    assert status == "fail", (status, message)
+    assert "never started" in message
+    status, _ = evaluate(
+        [cypress],
+        [
+            run(1, cypress.path, "completed", "success", previous),
+            run(2, cypress.path, "in_progress", None, event_at + 5),
+        ],
+        elapsed=APPEAR_TIMEOUT_SECONDS,
+        event_at=event_at,
+    )
+    assert status == "wait"
+    status, _ = evaluate(
+        [cypress],
+        [
+            run(1, cypress.path, "completed", "failure", previous),
+            run(2, cypress.path, "completed", "success", event_at + 5),
+        ],
+        elapsed=0,
+        event_at=event_at,
+    )
+    assert status == "ok"
+    status, _ = evaluate(
+        [cypress],
+        [
+            run(1, cypress.path, "completed", "success", previous),
+            run(2, cypress.path, "completed", "failure", event_at + 5),
+        ],
+        elapsed=0,
+        event_at=event_at,
+    )
+    assert status == "fail"
+    status, _ = evaluate(
+        [cypress, deprize],
+        [
+            run(1, cypress.path, "completed", "success", previous),
+            run(2, deprize.path, "completed", "success", previous),
+            run(3, deprize.path, "completed", "success", event_at + 5),
+        ],
+        elapsed=0,
+        event_at=event_at,
+    )
+    assert status == "wait"
+    status, _ = evaluate(
+        [cypress],
+        [run(4, cypress.path, "completed", "success", event_at - SAME_DELIVERY_SKEW_SECONDS)],
+        elapsed=0,
+        event_at=event_at,
+    )
+    assert status == "ok"
+    status, _ = evaluate(
+        [cypress],
+        [
+            run(
+                4,
+                cypress.path,
+                "completed",
+                "success",
+                event_at - SAME_DELIVERY_SKEW_SECONDS - 1,
+            )
+        ],
+        elapsed=0,
+        event_at=event_at,
+    )
+    assert status == "wait"
     print("required-checks self-test passed")
 
 
