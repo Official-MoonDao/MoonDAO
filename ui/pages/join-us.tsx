@@ -10,19 +10,14 @@ import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import MailingList from '../components/layout/MailingList'
 
-/**
- * MARKETING COPY: placeholder for the marketing team to replace.
- * Keep the structure. No em dashes. Plain words. No jargon.
- */
-
 type JoinUsProps = {
   subscriberLabel: string
 }
 
 const BULLETS = [
-  'Mission news when something important happens',
-  'Invites to events and town halls',
-  'A first look at ways to take part',
+  "Mission news, like who we're sending to space next",
+  'Invites to town halls, livestreams, and events',
+  'First look at grants, projects, and ways to get involved',
 ]
 
 const JoinUs: React.FC<JoinUsProps> = ({ subscriberLabel }) => {
@@ -31,10 +26,10 @@ const JoinUs: React.FC<JoinUsProps> = ({ subscriberLabel }) => {
   return (
     <>
       <WebsiteHead
-        title="Get the MoonDAO newsletter"
-        description="Short notes on the mission, events, and how to take part."
+        title="MoonDAO Newsletter | The Internet's Space Program"
+        description="Space news, event invites, and ways to help build a decentralized space program."
       />
-      <section className="w-full" data-copy="placeholder">
+      <section className="w-full">
         <Container>
           <div className="mx-auto w-full max-w-3xl px-1 pb-16 pt-6 sm:pt-10">
             <div className="w-40 text-white sm:w-48">
@@ -43,13 +38,13 @@ const JoinUs: React.FC<JoinUsProps> = ({ subscriberLabel }) => {
 
             <header className="mt-8 max-w-xl" data-hero>
               <p className="font-RobotoMono text-[11px] uppercase tracking-[0.22em] text-moon-gold">
-                MoonDAO newsletter
+                Free newsletter
               </p>
               <h1 className="mt-3 font-heading text-4xl font-semibold leading-tight text-white sm:text-5xl">
-                Get the MoonDAO newsletter
+                Follow the Internet's Space Program
               </h1>
               <p className="mt-4 text-base leading-relaxed text-white/70 sm:text-lg">
-                Short notes on the mission, events, and how to take part.
+                Short updates on our missions, events, and how you can help.
               </p>
               <div className="mt-6">
                 <MailingList submitLabel="Subscribe" compact ctaLocation="join_us" />
@@ -71,16 +66,17 @@ const JoinUs: React.FC<JoinUsProps> = ({ subscriberLabel }) => {
             <ul className="mt-10 grid gap-3 sm:grid-cols-3">
               <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                 <p className="font-heading text-2xl font-semibold text-white">{label}</p>
-                <p className="mt-1 text-sm text-white/60">subscribers</p>
+                <p className="mt-1 text-sm text-white/60">newsletter readers</p>
               </li>
               <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                 <Link
                   href="/citizen"
                   className="font-heading text-2xl font-semibold text-white hover:text-moon-gold"
                 >
-                  Citizens
+                  {/* Refresh from the on-chain Citizen totalSupply when the count passes 270. */}
+                  260+
                 </Link>
-                <p className="mt-1 text-sm text-white/60">People in the network</p>
+                <p className="mt-1 text-sm text-white/60">Citizens in the network</p>
               </li>
               <li className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
                 <a
@@ -89,17 +85,18 @@ const JoinUs: React.FC<JoinUsProps> = ({ subscriberLabel }) => {
                 >
                   Discord
                 </a>
-                <p className="mt-1 text-sm text-white/60">Talk with the community</p>
+                <p className="mt-1 text-sm text-white/60">Meet the community</p>
               </li>
             </ul>
 
             <aside className="mt-12 max-w-xl border-t border-white/10 pt-8">
               <p className="font-RobotoMono text-[11px] uppercase tracking-[0.18em] text-white/40">
-                One milestone
+                Proof it works
               </p>
               <p className="mt-3 text-sm leading-relaxed text-white/70">
-                In 2022 MoonDAO sent Coby Cotton of Dude Perfect to space. A community vote picked
-                him for the flight. That was one milestone. The mission continues.
+                In 2022 MoonDAO sent Coby Cotton of Dude Perfect to space, the first person a DAO
+                ever sent there. That was the start. Next, we're working to fly more of the
+                community.
               </p>
             </aside>
           </div>
