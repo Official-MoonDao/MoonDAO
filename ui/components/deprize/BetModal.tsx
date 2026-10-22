@@ -90,6 +90,8 @@ type BetModalProps = {
   embedded?: boolean
   onClose: () => void
   onDone: (index: number, costEth: number, qtyEth: number) => void
+  /** After the stake lands, record the same pick as a prediction. */
+  onPlaced?: () => Promise<boolean>
 }
 
 // Quote against 99% of the budget so a little price drift doesn't revert the
@@ -125,6 +127,7 @@ export default function BetModal({
   embedded = false,
   onClose,
   onDone,
+  onPlaced,
 }: BetModalProps) {
   const betActionApi = useContext(BetPrimaryActionContext)
   const [betAmount, setBetAmount] = useState(initialAmountEth ?? '')
@@ -408,15 +411,15 @@ export default function BetModal({
     }
   }, [wallet, termsAccepted, allAttested, attestations, chain.id])
 
-  const placeBet = async () => {
-    if (!account || !mint) return
+  const placeBet = async (): Promise<boolean> => {
+    if (!account || !mint) return false
     if (betAmountWei <= 0n) {
-      toast.error('Enter an amount to bet.', { style: toastStyle })
-      return
+      toast.error('Enter an ETH amount.', { style: toastStyle })
+      return false
     }
     if (overCap) {
       toast.error(eligibilityMessage('over-cap'), { style: toastStyle })
-      return
+      return false
     }
     if (!canSubmitDePrizeBet({
       termsAccepted,
@@ -431,17 +434,17 @@ export default function BetModal({
           : 'Please accept the DePrize Terms and attestations to continue.',
         { style: toastStyle }
       )
-      return
+      return false
     }
     if (!eligibility.allowed) {
       toast.error(eligibility.message || eligibilityMessage('screening-unavailable'), {
         style: toastStyle,
       })
-      return
+      return false
     }
     // Re-checked here as well as in the button: the wallet can be switched
     // while this modal is open.
-    if (blockedByNetwork()) return
+    if (blockedByNetwork()) return false
     setBusy(true)
     const budget = betBudget(betAmountWei)
     const target = (budget * QUOTE_HEADROOM_NUM) / QUOTE_HEADROOM_DEN
@@ -517,16 +520,19 @@ export default function BetModal({
       const withinOnrampSession = Boolean(fundsArrived || initialAmountEth || onrampToken)
       clearJWT()
       if (withinOnrampSession) trackOnrampEvent('bet_placed_within_session')
+      const predicted = onPlaced ? await onPlaced() : false
       fireDePrizeConfetti()
+      const backed = `backed it with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ${fmtEthWithUsd(
+        qtyNum,
+        ethPrice
+      )} if it wins.`
       toast.success(
-        `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ${fmtEthWithUsd(
-          qtyNum,
-          ethPrice
-        )} if it wins.`,
+        predicted ? `Predicted ${teamName} and ${backed}` : `Backed ${teamName} with ${fmtEthWithUsd(betAmountNum, ethPrice)}. To win ${fmtEthWithUsd(qtyNum, ethPrice)} if it wins.`,
         { style: toastStyle, duration: 8000 }
       )
       onDone(outcomeIndex, betAmountNum, qtyNum)
       onClose()
+      return true
     } catch (err: any) {
       toast.dismiss('quote')
       toast.dismiss('permit')
@@ -536,6 +542,7 @@ export default function BetModal({
         style: toastStyle,
         duration: 8000,
       })
+      return false
     } finally {
       setBusy(false)
     }
@@ -568,6 +575,9 @@ export default function BetModal({
 
   useEffect(() => {
     if (!embedded || !betActionApi) return
+    betActionApi.setRun(() => {
+      void placeBetRef.current()
+    })
     if (!(betAmountNum > 0)) {
       betActionApi.report(null)
       return

@@ -43,6 +43,11 @@ export default function PredictModal(props: {
   onClose: () => void
   /** Switch this window to the ETH form. Called only when staking is allowed. */
   onAddEth: () => void
+  /**
+   * Eligible visitors see the ETH form already open. Predict stakes that ETH
+   * and records the pick in one click.
+   */
+  combineEth?: boolean
   /** Bet form, bet mode only. Omitted when this visitor cannot bet yet. */
   bet?: ReactNode
   /**
@@ -52,7 +57,9 @@ export default function PredictModal(props: {
   outcomeIndex: number
 }) {
   const isBet = props.mode === 'bet'
-  const ethOffered = !!props.bet && !props.regionRestricted
+  const wantCombined = !!props.combineEth && !props.regionRestricted
+  const ethOffered = !!props.bet && !props.regionRestricted && (isBet || wantCombined)
+  const combineEth = wantCombined && ethOffered && props.connected
   const [betAction, setBetAction] = useState<BetPrimaryAction | null>(null)
   const betRunRef = useRef<() => void>(() => {})
   const reportBetAction = useCallback((action: BetPrimaryAction | null) => {
@@ -129,7 +136,9 @@ export default function PredictModal(props: {
           </span>
         </div>
         <p className="text-sm text-gray-300">
-          {isBet
+          {combineEth
+            ? 'This records your prediction, weighted by your voting power, and stakes the ETH below. The stake moves the odds.'
+            : isBet
             ? 'Real ETH. Your stake moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'
             : 'This saves your pick for this competitor. It is free, weighted by your voting power, and it does not change the ETH odds.'}
         </p>
@@ -176,7 +185,7 @@ export default function PredictModal(props: {
           </BetPrimaryActionContext.Provider>
         ) : null}
 
-        {ethOffered && props.connected && (
+        {ethOffered && props.connected && !combineEth && (
           <button
             type="button"
             onClick={() => betRunRef.current()}
@@ -187,7 +196,7 @@ export default function PredictModal(props: {
           </button>
         )}
 
-        {!isBet && props.connected && !props.citizenLoading && (
+        {!isBet && !combineEth && props.connected && !props.citizenLoading && (
           <div className="flex flex-col gap-2">
             <button
               type="button"
@@ -214,13 +223,28 @@ export default function PredictModal(props: {
           </div>
         )}
 
-        {!isBet && (
+        {!isBet && props.regionRestricted && (
           <button
             type="button"
             onClick={addEth}
             className={`w-full rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-white/10 ${TOUCH}`}
           >
             Add ETH to your prediction
+          </button>
+        )}
+
+        {combineEth && props.connected && (
+          <button
+            type="button"
+            onClick={() => void betRunRef.current()}
+            disabled={props.writing || activeBet?.label.startsWith('Placing')}
+            className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
+          >
+            {activeBet?.kind === 'fund'
+              ? activeBet.label
+              : props.writing || activeBet?.label.startsWith('Placing')
+              ? 'Predicting…'
+              : 'Predict'}
           </button>
         )}
       </div>

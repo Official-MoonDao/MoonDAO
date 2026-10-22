@@ -72,7 +72,12 @@ export default function ForecastPanel(props: {
    * ETH bet form for the open competitor. The page omits this when betting
    * is not allowed or no wallet is connected.
    */
-  renderBet?: (input: { index: number; onClose: () => void }) => ReactNode
+  renderBet?: (input: {
+    index: number
+    onClose: () => void
+    /** Records the pick after the ETH stake succeeds. */
+    onPlaced?: () => Promise<boolean>
+  }) => ReactNode
   /** ETH staked on each outcome, same order as `labels`. */
   stakedEthByOutcome?: number[]
   /**
@@ -247,7 +252,7 @@ export default function ForecastPanel(props: {
     })
   }
 
-  async function commitPick(index: number): Promise<boolean> {
+  async function commitPick(index: number, options?: { silent?: boolean }): Promise<boolean> {
     if (!account) return false
     if (!forecastsContract || !forecastsTableName) {
       setError('Predictions are not available on this network yet.')
@@ -294,8 +299,10 @@ export default function ForecastPanel(props: {
       setPreviousPick(savedPick)
       setSavedPick(index)
       rememberRow(allocation)
-      toast.success('Prediction saved', { style: toastStyle })
-      fireDePrizeConfetti()
+      if (!options?.silent) {
+        toast.success('Prediction saved', { style: toastStyle })
+        fireDePrizeConfetti()
+      }
       notifyRoster({
         chain: chainSlug,
         deprizeId,
@@ -525,9 +532,16 @@ export default function ForecastPanel(props: {
           onClose={onModalClose}
           onAddEth={() => onModeChange('bet')}
           outcomeIndex={modalIndex}
+          combineEth={!restricted && showBet}
           bet={
             showBet && renderBet ? (
-              <div key={modalIndex}>{renderBet({ index: modalIndex, onClose: onModalClose })}</div>
+              <div key={modalIndex}>
+                {renderBet({
+                  index: modalIndex,
+                  onClose: onModalClose,
+                  onPlaced: () => commitPick(modalIndex, { silent: true }),
+                })}
+              </div>
             ) : undefined
           }
         />

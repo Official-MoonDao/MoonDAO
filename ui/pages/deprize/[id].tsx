@@ -829,7 +829,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           onModalClose={() => setBetIndex(null)}
           renderBet={
             account && market.marketAddress
-              ? ({ index, onClose }) => (
+              ? ({ index, onClose, onPlaced }) => (
                   <BetModal
                     embedded
                     deprizeId={deprizeId}
@@ -849,6 +849,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
                     fundsArrived={onrampReturn.fundsArrived}
                     onClose={onClose}
                     onDone={refreshAll}
+                    onPlaced={onPlaced}
                   />
                 )
               : undefined
