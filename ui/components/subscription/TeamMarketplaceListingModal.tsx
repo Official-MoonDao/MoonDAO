@@ -1,10 +1,8 @@
-import ProjectABI from 'const/abis/Project.json'
 import {
   CITIZENSHIP_GIFT_TAG,
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
   EB_TEAM_ID,
-  PROJECT_ADDRESSES,
   TEAM_ADDRESSES,
   DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
@@ -12,11 +10,11 @@ import Image from 'next/image'
 import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import { listingDiscordEmbed, listingOgFieldsFrom } from '@/lib/og/preview'
+import { loadOwnerDisplayName } from '@/lib/project/loadOwnerDisplayName'
 import { isProjectOwnerId, parseOwnerId } from '@/lib/project/projectOwnerId'
 import { writeProjectTable } from '@/lib/project/projectTableWrite'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
@@ -112,11 +110,6 @@ export default function TeamMarketplaceListingModal({
     chain: selectedChain,
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI,
-  })
-  const projectContract = useContract({
-    chain: selectedChain,
-    address: PROJECT_ADDRESSES[chainSlug],
-    abi: ProjectABI,
   })
 
   useEffect(() => {
@@ -282,12 +275,7 @@ export default function TeamMarketplaceListingModal({
             // still unset, or the RPC errors) must not look like the save failed,
             // or another submit inserts a second listing.
             try {
-              const owner = parseOwnerId(listingTeamId!)
-              const team = await getNFT({
-                contract: owner.kind === 'project' ? projectContract : teamContract,
-                tokenId: BigInt(owner.id),
-              })
-              const teamName = team?.metadata.name as string
+              const teamName = await loadOwnerDisplayName(selectedChain, listingTeamId!)
               const link = listingId
                 ? `${DEPLOYED_ORIGIN}/marketplace/${listingId}`
                 : `${DEPLOYED_ORIGIN}/marketplace`
