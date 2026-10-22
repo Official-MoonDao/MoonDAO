@@ -38,6 +38,7 @@ import client from '@/lib/thirdweb/client'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import RankedBallot, { BallotChoice, ordinal } from '@/components/elections/RankedBallot'
+import RankedChoiceExplainer from '@/components/elections/RankedChoiceExplainer'
 import RankedChoiceResults from '@/components/elections/RankedChoiceResults'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -481,6 +482,9 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
                     </li>
                   ))}
                 </ol>
+                <div className="mt-5">
+                  <RankedChoiceExplainer />
+                </div>
                 <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
                   <div className="bg-black/20 border border-white/10 rounded-lg p-3">
                     <dt className="text-gray-400">Voting opens</dt>
