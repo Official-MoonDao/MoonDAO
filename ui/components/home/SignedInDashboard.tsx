@@ -346,6 +346,7 @@ export default function SignedInDashboard({
   aumData,
   filteredTeams,
   projects,
+  nonProjectProjectIds = [],
   missions,
   featuredMissionData,
   citizensLocationData = [],
@@ -353,6 +354,9 @@ export default function SignedInDashboard({
 }: any) {
   const proposals = []
   const currentProjects = []
+  const governanceProjectIds = new Set(
+    (nonProjectProjectIds as Array<number | string>).map((id) => Number(id))
+  )
   // Every non-blocked proposal, regardless of lifecycle status. The "Latest
   // Proposals" widget reads from this so it always reflects the newest MDP —
   // otherwise newly-passed/failed proposals (active != PENDING) drop out and
@@ -364,7 +368,10 @@ export default function SignedInDashboard({
       const activeStatus = projects[i].active
       if (activeStatus == PROJECT_PENDING) {
         proposals.push(projects[i])
-      } else if (activeStatus == PROJECT_ACTIVE) {
+      } else if (
+        activeStatus == PROJECT_ACTIVE &&
+        !governanceProjectIds.has(Number(projects[i].id))
+      ) {
         currentProjects.push(projects[i])
       }
     }
