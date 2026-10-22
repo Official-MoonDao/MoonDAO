@@ -8,7 +8,9 @@ import { vMooneyWeiAtTimestamp } from '../vMooneyAtTimestamp'
 import { votingEscrowContracts } from '../votingEscrowContracts'
 import { LockedBreakdown } from './useTotalLockedMooney'
 
-async function fetchTotalVMOONEYForAddress(address: string): Promise<number> {
+// `timestamp` must not be in the past: balanceOf(addr, _t) reverts when the
+// voter's latest checkpoint is newer than `_t`.
+async function fetchTotalVMOONEYForAddress(address: string, timestamp?: number): Promise<number> {
   const chains = Object.keys(votingEscrowContracts) as string[]
   if (chains.length === 0) return 0
 
@@ -17,11 +19,17 @@ async function fetchTotalVMOONEYForAddress(address: string): Promise<number> {
       const contract = votingEscrowContracts[chain]
       if (!contract) return 0
 
-      const balance = await readContract({
-        contract,
-        method: 'balanceOf' as any,
-        params: [address],
-      })
+      const balance = timestamp
+        ? await readContract({
+            contract,
+            method: 'function balanceOf(address addr, uint256 _t) view returns (uint256)',
+            params: [address, BigInt(timestamp)],
+          })
+        : await readContract({
+            contract,
+            method: 'balanceOf' as any,
+            params: [address],
+          })
 
       return Number(balance?.toString() || 0) / 10 ** 18
     })
@@ -48,14 +56,18 @@ const SWR_CONFIG = {
 
 export function useTotalVMOONEY(
   address: string | undefined,
-  _breakdown?: LockedBreakdown[] // No longer used - fetches from all chains like project voting
+  _breakdown?: LockedBreakdown[], // No longer used - fetches from all chains like project voting
+  // Future unix time to project the balance to (e.g. a vote's close).
+  atTimestamp?: number
 ): {
   totalVMOONEY: number
   isLoading: boolean
 } {
   const { data: totalVMOONEY = 0, isLoading } = useSWR(
-    address ? `vmooney-total-${address.toLowerCase()}` : null,
-    () => fetchTotalVMOONEYForAddress(address!),
+    address
+      ? `vmooney-total-${address.toLowerCase()}${atTimestamp ? `-at-${atTimestamp}` : ''}`
+      : null,
+    () => fetchTotalVMOONEYForAddress(address!, atTimestamp),
     SWR_CONFIG
   )
 

@@ -75,7 +75,8 @@ export const ELECTIONS: Election[] = [
     summary:
       'A practice election with made-up candidates so the team can try the ballot. Ballots cast here are real transactions on the preview’s chain but count for nothing.',
     opensAt: '2026-10-01T00:00:00Z',
-    closesAt: '2099-01-01T00:00:00Z',
+    // Voting power is measured at close, so keep this within normal lock lengths.
+    closesAt: '2026-12-31T23:00:00Z',
     closed: false,
     published: false,
     includeNone: true,

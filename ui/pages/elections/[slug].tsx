@@ -120,8 +120,19 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
     [choices, candidates]
   )
 
-  const { totalVMOONEY, isLoading: vpLoading } = useTotalVMOONEY(userAddress)
+  // Ballots are weighted by vMOONEY at close, so show that rather than today's.
+  const closeTimestamp =
+    phase === 'open' && election.closesAt
+      ? Math.floor(Date.parse(election.closesAt) / 1000)
+      : undefined
+  const { totalVMOONEY, isLoading: vpLoading } = useTotalVMOONEY(
+    userAddress,
+    undefined,
+    closeTimestamp
+  )
+  const { totalVMOONEY: currentVMOONEY } = useTotalVMOONEY(userAddress)
   const votingPower = Math.sqrt(totalVMOONEY) || 0
+  const lockEndsBeforeClose = !vpLoading && votingPower <= 0 && currentVMOONEY > 0
 
   const votesContract = useContract({
     address: VOTES_TABLE_ADDRESSES[chainSlug],
@@ -210,7 +221,10 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
         shapes: ['circle', 'star'],
         colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
       })
-      toast.success(exists ? 'Ballot updated.' : 'Ballot submitted.', { style: toastStyle })
+      toast.success(
+        `${exists ? 'Ballot updated' : 'Ballot submitted'}. The voter list can take a minute to catch up.`,
+        { style: toastStyle, duration: 6000 }
+      )
       setTimeout(() => router.replace(router.asPath), 8000)
     } catch (error: any) {
       console.error('[election] submit failed:', error)
@@ -337,7 +351,7 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
                 {phase === 'open' && candidates.length > 0 && (
                   <div className="mt-6 pt-5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center gap-4">
                     <div className="sm:flex-1 min-w-0">
-                      <p className="text-xs text-gray-400">Your voting power</p>
+                      <p className="text-xs text-gray-400">Your voting power at close</p>
                       <p className="text-white text-lg font-semibold">
                         {userAddress
                           ? vpLoading
@@ -345,7 +359,14 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
                             : `${formatNumberUSStyle(votingPower, true)} VP`
                           : 'Sign in to see'}
                       </p>
-                      {userAddress && !vpLoading && votingPower <= 0 ? (
+                      {userAddress && lockEndsBeforeClose ? (
+                        <p className="mt-1 text-xs text-amber-300">
+                          Your lock ends before voting closes, so your ballot would not count.{' '}
+                          <Link href="/lock" className="text-indigo-300 hover:underline">
+                            Extend your lock
+                          </Link>
+                        </p>
+                      ) : userAddress && !vpLoading && votingPower <= 0 ? (
                         <p className="mt-1 text-xs text-gray-400">
                           You need vMOONEY to vote.{' '}
                           <Link href="/lock" className="text-indigo-300 hover:underline">
