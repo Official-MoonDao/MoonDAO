@@ -1,5 +1,5 @@
-import { getNFT } from 'thirdweb/extensions/erc721'
-import { useReadContract } from 'thirdweb/react'
+import { useEffect, useState } from 'react'
+import { loadOwnerNft } from '@/lib/tableland/tableNft'
 import IPFSRenderer from '../layout/IPFSRenderer'
 
 type CompetitorPreviewProps = {
@@ -7,18 +7,24 @@ type CompetitorPreviewProps = {
   teamContract?: any
 }
 
-export function CompetitorPreview({
-  teamId,
-  teamContract,
-}: CompetitorPreviewProps) {
-  const { data: teamNFT } = useReadContract(getNFT, {
-    contract: teamContract,
-    tokenId: BigInt(teamId),
-  })
+export function CompetitorPreview({ teamId, teamContract }: CompetitorPreviewProps) {
+  const [teamNFT, setTeamNFT] = useState<any>()
+
+  useEffect(() => {
+    const chain = teamContract?.chain
+    if (!chain || teamId === undefined || teamId === null) return
+    let cancelled = false
+    loadOwnerNft(chain, teamId).then((nft) => {
+      if (!cancelled) setTeamNFT(nft)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [teamContract, teamId])
 
   return (
     <div className="flex items-center gap-5">
-      {teamNFT && teamNFT?.metadata && (
+      {teamNFT?.metadata?.name && (
         <div className="flex items-center">
           <IPFSRenderer
             className="rounded-[50%]"

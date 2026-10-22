@@ -75,20 +75,26 @@ const LEGACY_LOCATION_COORDS = {
 
 async function geocode(text) {
   const res = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(text)}&key=${apiKey}`
+    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
+      text
+    )}&key=${apiKey}`
   )
   const data = await res.json()
   const r = data?.results?.[0]
   if (r?.geometry?.location) {
-    return { lat: r.geometry.location.lat, lng: r.geometry.location.lng, name: r.formatted_address || text }
+    return {
+      lat: r.geometry.location.lat,
+      lng: r.geometry.location.lng,
+      name: r.formatted_address || text,
+    }
   }
   return { error: data?.status || 'no results' }
 }
 
 async function main() {
   const res = await fetch(
-    "https://tableland.network/api/v1/query?statement=" +
-      encodeURIComponent("SELECT id,name,location,view,image FROM CITIZENTABLE_42161_126")
+    'https://tableland.moondao.com/api/v1/query?statement=' +
+      encodeURIComponent('SELECT id,name,location,view,image FROM CITIZENTABLE_42161_126')
   )
   const rows = await res.json()
 

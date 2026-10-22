@@ -1,11 +1,11 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { useEffect } from 'react'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import useJBProjectData from '@/lib/juicebox/useJBProjectData'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { generatePrettyLink } from '@/lib/subscription/pretty-links'
+import { loadOwnerNft } from '@/lib/tableland/tableNft'
 import Card from '@/components/layout/Card'
 import MissionStat from './MissionStat'
 
@@ -58,14 +58,15 @@ export default function MissionCard({
   const [teamNFT, setTeamNFT] = useState<any>(null)
 
   useEffect(() => {
-    async function getTeamNFT() {
-      const nft = await getNFT({
-        contract: teamContract,
-        tokenId: BigInt(mission?.teamId),
-      })
-      setTeamNFT(nft)
+    const chain = teamContract?.chain
+    if (!chain || mission?.teamId === undefined || mission?.teamId === null) return
+    let cancelled = false
+    loadOwnerNft(chain, mission.teamId).then((nft) => {
+      if (!cancelled) setTeamNFT(nft)
+    })
+    return () => {
+      cancelled = true
     }
-    if (teamContract) getTeamNFT()
   }, [mission?.teamId, teamContract])
 
   function MissionFooter() {
@@ -85,11 +86,13 @@ export default function MissionCard({
       link={`/mission/${mission?.id}`}
       title={metadata?.name}
       subheader={
-        <Link href={`/team/${generatePrettyLink(teamNFT?.metadata?.name || '')}`} passHref>
-          <p id="team-name" className="text-light-warm hover:underline">
-            {teamNFT?.metadata?.name}
-          </p>
-        </Link>
+        teamNFT?.metadata?.name ? (
+          <Link href={`/team/${generatePrettyLink(teamNFT.metadata.name)}`} passHref>
+            <p id="team-name" className="text-light-warm hover:underline">
+              {teamNFT.metadata.name}
+            </p>
+          </Link>
+        ) : null
       }
       paragraph={metadata?.tagline}
       image={getIPFSGateway(metadata?.logoUri)}

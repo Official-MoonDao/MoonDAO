@@ -1,9 +1,7 @@
 import { getAccessToken } from '@privy-io/react-auth'
-import CitizenABI from 'const/abis/Citizen.json'
 import ERC20ABI from 'const/abis/ERC20.json'
 import TeamABI from 'const/abis/Team.json'
 import {
-  CITIZEN_ADDRESSES,
   CITIZENSHIP_GIFT_TAG,
   DAI_ADDRESSES,
   TEAM_ADDRESSES,
@@ -14,8 +12,7 @@ import {
 } from 'const/config'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { prepareContractCall, readContract, sendAndConfirmTransaction, toUnits } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
+import { prepareContractCall, sendAndConfirmTransaction, toUnits } from 'thirdweb'
 import { useActiveAccount, useWalletBalance } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useCitizenEmail from '@/lib/citizen/useCitizenEmail'
@@ -62,19 +59,11 @@ export default function BuyTeamListingModal({
   // issues a one-time free-citizen invite link to the buyer on purchase.
   const isGift = listing.tag === CITIZENSHIP_GIFT_TAG
 
-  const citizenContract = useContract({
-    address: CITIZEN_ADDRESSES[chainSlug],
-    abi: CitizenABI as any,
-    chain: selectedChain,
-  })
-
   const teamContract = useContract({
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI as any,
     chain: selectedChain,
   })
-
-  const [citizenNFT, setCitizenNFT] = useState<any>()
 
   const [email, setEmail] = useState<string>()
   const [shippingInfo, setShippingInfo] = useState({
@@ -171,23 +160,6 @@ export default function BuyTeamListingModal({
     owner: listingOwner,
     projectMDP: nftProjectMDP,
   } = useOwnerNFT(listing.teamId, { includeOwner: true, teamContract })
-
-  useEffect(() => {
-    async function getCitizenNFT() {
-      const owns: any = await readContract({
-        contract: citizenContract,
-        method: 'getOwnedToken' as string,
-        params: [account?.address],
-      })
-
-      const nft = await getNFT({
-        contract: citizenContract,
-        tokenId: BigInt(owns),
-      })
-      setCitizenNFT(nft)
-    }
-    if (account && citizenContract) getCitizenNFT()
-  }, [account, citizenContract])
 
   useEffect(() => {
     setEmail(citizenEmail)

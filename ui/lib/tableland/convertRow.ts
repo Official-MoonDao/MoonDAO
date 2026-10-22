@@ -7,6 +7,7 @@ export type TeamRow = {
   image: string
   website: string
   communications: string
+  twitter?: string
   view: string
   formId: string
 }
@@ -28,16 +29,7 @@ export type CitizenRow = {
 }
 
 export function teamRowToNFT(row: TeamRow | Record<string, unknown>) {
-  const {
-    id,
-    name,
-    description,
-    image,
-    website,
-    communications,
-    view,
-    formId,
-  } = row
+  const { id, name, description, image, website, communications, twitter, view, formId } = row
 
   const nft = {
     id,
@@ -52,6 +44,7 @@ export function teamRowToNFT(row: TeamRow | Record<string, unknown>) {
       attributes: [
         { trait_type: 'website', value: website || '' },
         { trait_type: 'communications', value: communications || '' },
+        { trait_type: 'twitter', value: twitter || '' },
         { trait_type: 'view', value: view || '' },
         { trait_type: 'formId', value: formId || '' },
       ] as unknown as Record<string, unknown>,

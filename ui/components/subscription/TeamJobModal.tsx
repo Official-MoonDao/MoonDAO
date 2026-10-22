@@ -1,17 +1,14 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
-import ProjectABI from 'const/abis/Project.json'
 import TeamABI from 'const/abis/Team.json'
 import {
   DEFAULT_CHAIN_V5,
   DEPLOYED_ORIGIN,
-  PROJECT_ADDRESSES,
   TEAM_ADDRESSES,
   DISCORD_CITIZEN_ROLE_ID,
 } from 'const/config'
 import { ReactNode, useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendAndConfirmTransaction } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import {
@@ -32,6 +29,7 @@ import {
 } from '@/lib/jobs/jobMetadata'
 import { fetchJobPostingDoc, pinJobPostingDoc } from '@/lib/jobs/jobPostingDoc'
 import { jobDiscordEmbed, jobOgFieldsFrom } from '@/lib/og/preview'
+import { loadOwnerDisplayName } from '@/lib/project/loadOwnerDisplayName'
 import { isProjectOwnerId, parseOwnerId } from '@/lib/project/projectOwnerId'
 import { writeProjectTable } from '@/lib/project/projectTableWrite'
 import cleanData from '@/lib/tableland/cleanData'
@@ -349,11 +347,6 @@ export default function TeamJobModal({
     address: TEAM_ADDRESSES[chainSlug],
     abi: TeamABI,
   })
-  const projectContract = useContract({
-    chain: selectedChain,
-    address: PROJECT_ADDRESSES[chainSlug],
-    abi: ProjectABI,
-  })
 
   const update = (patch: Partial<JobFormState>) => setForm((prev) => ({ ...prev, ...patch }))
 
@@ -498,12 +491,7 @@ export default function TeamJobModal({
 
   async function announce(jobId: string | undefined, jobTeamId: string) {
     try {
-      const owner = parseOwnerId(jobTeamId)
-      const team = await getNFT({
-        contract: owner.kind === 'project' ? projectContract : teamContract,
-        tokenId: BigInt(owner.id),
-      })
-      const teamName = team?.metadata.name as string
+      const teamName = await loadOwnerDisplayName(selectedChain, jobTeamId)
       const link = jobId ? `${DEPLOYED_ORIGIN}/jobs/${jobId}` : `${DEPLOYED_ORIGIN}/jobs`
       const doc = buildPostingDoc(0)
       const fields = jobOgFieldsFrom({

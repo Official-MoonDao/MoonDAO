@@ -1,21 +1,17 @@
 import { LinkIcon, PencilIcon, ShoppingBagIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
-import { useContext, useEffect, useState, useRef } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import ProjectABI from 'const/abis/Project.json'
-import { PROJECT_ADDRESSES } from 'const/config'
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
-import { getNFT } from 'thirdweb/extensions/erc721'
 import { useActiveAccount } from 'thirdweb/react'
 import { getListingHref } from '@/lib/marketplace/listing'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
-import { ownerFallbackName, parseOwnerId } from '@/lib/project/projectOwnerId'
+import { ownerFallbackName } from '@/lib/project/projectOwnerId'
 import { writeProjectTable } from '@/lib/project/projectTableWrite'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import useContract from '@/lib/thirdweb/hooks/useContract'
+import useOwnerNFT from '@/lib/project/useOwnerNFT'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useCurrUnixTime from '@/lib/utils/hooks/useCurrUnixTime'
 import { truncateTokenValue } from '@/lib/utils/numbers'
 import { daysUntilTimestamp } from '@/lib/utils/timestamp'
@@ -88,45 +84,10 @@ export default function TeamListing({
 
   const daysUntilExpiry = daysUntilTimestamp(listing?.endTime || 0)
 
-  const [teamNFT, setTeamNFT] = useState<any>()
-
-  const projectContract = useContract({
-    chain: selectedChain,
-    address: PROJECT_ADDRESSES[getChainSlug(selectedChain)],
-    abi: ProjectABI as any,
+  const { nft: teamNFT, owner } = useOwnerNFT(listing ? listing.teamId : null, {
+    includeOwner: true,
+    teamContract,
   })
-  const owner = listing ? parseOwnerId(listing.teamId) : undefined
-  const ownerContract = owner?.kind === 'project' ? projectContract : teamContract
-
-  const retriesRef = useRef(0)
-
-  useEffect(() => {
-    async function getTeamNFT() {
-      if (!listing || !owner) return
-      try {
-        const nft = await getNFT({
-          contract: ownerContract,
-          tokenId: BigInt(owner.id),
-          includeOwner: true,
-        })
-        if (listing.title?.startsWith('Cultura')) console.log(nft)
-        // Set teamNFT even if metadata.name doesn't exist, we'll handle the fallback in the display
-        if (nft) setTeamNFT(nft)
-      } catch (err) {
-        retriesRef.current += 1
-        if (retriesRef.current < 3) {
-          setTimeout(() => {
-            getTeamNFT()
-          }, 2000)
-        }
-      }
-    }
-    if (ownerContract && listing?.teamId !== undefined) {
-      retriesRef.current = 0
-      getTeamNFT()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listing?.teamId, ownerContract, listing])
 
   useEffect(() => {
     if (!listing) return
@@ -174,8 +135,12 @@ export default function TeamListing({
     <>
       <div
         id="link-frame"
-        onClick={() => { if (isPurchasable) setEnabledBuyListingModal(true) }}
-        className={`flex-shrink-0 w-56 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-200 flex flex-col ${isPurchasable ? 'cursor-pointer' : ''}`}
+        onClick={() => {
+          if (isPurchasable) setEnabledBuyListingModal(true)
+        }}
+        className={`flex-shrink-0 w-56 bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/20 rounded-2xl overflow-hidden transition-all duration-200 flex flex-col ${
+          isPurchasable ? 'cursor-pointer' : ''
+        }`}
       >
         {/* Image */}
         <div className="relative w-full h-36 bg-white/5 flex-shrink-0 overflow-hidden">
@@ -204,7 +169,10 @@ export default function TeamListing({
 
         {/* Content */}
         <div className="p-3 flex flex-col gap-2 flex-1">
-          <h4 id="main-header" className="text-white font-semibold text-sm leading-tight line-clamp-2">
+          <h4
+            id="main-header"
+            className="text-white font-semibold text-sm leading-tight line-clamp-2"
+          >
             {listing?.title}
           </h4>
           <ExpandableText
@@ -220,19 +188,32 @@ export default function TeamListing({
             {listing?.price && listing?.currency ? (
               <div>
                 <span id="listing-price" className="text-white font-bold text-sm">
-                  {`${isCitizen
-                    ? truncateTokenValue(listing.price, listing.currency)
-                    : truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)
+                  {`${
+                    isCitizen
+                      ? truncateTokenValue(listing.price, listing.currency)
+                      : truncateTokenValue(
+                          parseFloat(listing.price.replace(/,/g, '')) * 1.1,
+                          listing.currency
+                        )
                   } ${listing.currency}`}
                 </span>
                 {isCitizen && (
-                  <span id="listing-original-price" className="text-white/30 text-xs line-through ml-1.5">
-                    {`${truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 1.1, listing.currency)} ${listing.currency}`}
+                  <span
+                    id="listing-original-price"
+                    className="text-white/30 text-xs line-through ml-1.5"
+                  >
+                    {`${truncateTokenValue(
+                      parseFloat(listing.price.replace(/,/g, '')) * 1.1,
+                      listing.currency
+                    )} ${listing.currency}`}
                   </span>
                 )}
                 {!isCitizen && listing.price && (
                   <p id="listing-savings" className="text-white/40 text-xs mt-0.5">
-                    {`Save ${truncateTokenValue(parseFloat(listing.price.replace(/,/g, '')) * 0.1, listing.currency)} ${listing.currency} with citizenship`}
+                    {`Save ${truncateTokenValue(
+                      parseFloat(listing.price.replace(/,/g, '')) * 0.1,
+                      listing.currency
+                    )} ${listing.currency} with citizenship`}
                   </p>
                 )}
               </div>
@@ -245,7 +226,10 @@ export default function TeamListing({
                 id="share-listing-button"
                 onClick={async (e) => {
                   e.stopPropagation()
-                  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.moondao.com'
+                  const origin =
+                    typeof window !== 'undefined'
+                      ? window.location.origin
+                      : 'https://www.moondao.com'
                   const shareLink = `${origin}${getListingHref(listing)}`
                   try {
                     if (!navigator.clipboard?.writeText) {
@@ -263,100 +247,107 @@ export default function TeamListing({
                 <LinkIcon className="w-4 h-4" />
               </button>
 
-            {editable && (
-              <>
-                <button
-                  id="edit-listing-button"
-                  onClick={(e) => { e.stopPropagation(); setEnabledMarketplaceListingModal(true) }}
-                  className="text-white/40 hover:text-white/80 transition-colors"
-                >
-                  <PencilIcon className="w-4 h-4" />
-                </button>
-                {isDeleting ? (
-                  <LoadingSpinner className="scale-75" />
-                ) : (
+              {editable && (
+                <>
                   <button
-                    id="delete-listing-button"
-                    onClick={async (e) => {
-                      if (!account) return
+                    id="edit-listing-button"
+                    onClick={(e) => {
                       e.stopPropagation()
-                      setIsDeleting(true)
-
-                      // Ensure the wallet is on the correct chain before
-                      // sending the transaction, mirroring what PrivyWeb3Button
-                      // does with requiredChain. Without this, sendAndConfirm
-                      // fails when the wallet is on a different network.
-                      try {
-                        const walletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
-                        if (walletChainId !== selectedChain?.id) {
-                          if (selectedChain) setSelectedChain(selectedChain)
-                          const success = await addNetworkToWallet(selectedChain)
-                          if (success) {
-                            await wallets[selectedWallet]?.switchChain(selectedChain?.id)
-                          }
-                        }
-                      } catch {
-                        toast.error('Could not switch to the required network. Please switch manually and try again.')
-                        setIsDeleting(false)
-                        return
-                      }
-
-                      if (!marketplaceTableContract && owner?.kind !== 'project') {
-                        toast.error('Marketplace contract not ready. Please try again.')
-                        setIsDeleting(false)
-                        return
-                      }
-
-                      try {
-                        if (owner?.kind === 'project') {
-                          await writeProjectTable({
-                            table: 'marketplace',
-                            action: 'delete',
-                            projectId: owner.id,
-                            rowId: listing.id,
-                          })
-                        } else {
-                          const transaction = prepareContractCall({
-                            contract: marketplaceTableContract,
-                            method: 'deleteFromTable' as string,
-                            params: [listing?.id, listing?.teamId],
-                          })
-                          await sendAndConfirmTransaction({ transaction, account })
-                        }
-                        toast.success('Listing deleted.')
-                        setIsDeleting(false)
-                        setIsDeletedLocally(true)
-                        // Tableland takes ~20-30s to index; sync after the delay
-                        setTimeout(() => refreshListings(), 25000)
-                      } catch (err: any) {
-                        console.error('Delete listing error:', err)
-                        const reason =
-                          err?.message?.match(/reason: (.+)/)?.[1] ||
-                          err?.data?.message ||
-                          err?.shortMessage ||
-                          err?.message ||
-                          null
-                        toast.error(
-                          reason
-                            ? `Failed to delete listing: ${reason}`
-                            : 'Failed to delete listing. Please try again.'
-                        )
-                        setIsDeleting(false)
-                      }
+                      setEnabledMarketplaceListingModal(true)
                     }}
-                    className="text-white/40 hover:text-red-400 transition-colors"
+                    className="text-white/40 hover:text-white/80 transition-colors"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <PencilIcon className="w-4 h-4" />
                   </button>
-                )}
-              </>
-            )}
+                  {isDeleting ? (
+                    <LoadingSpinner className="scale-75" />
+                  ) : (
+                    <button
+                      id="delete-listing-button"
+                      onClick={async (e) => {
+                        if (!account) return
+                        e.stopPropagation()
+                        setIsDeleting(true)
+
+                        // Ensure the wallet is on the correct chain before
+                        // sending the transaction, mirroring what PrivyWeb3Button
+                        // does with requiredChain. Without this, sendAndConfirm
+                        // fails when the wallet is on a different network.
+                        try {
+                          const walletChainId = +wallets[selectedWallet]?.chainId?.split(':')[1]
+                          if (walletChainId !== selectedChain?.id) {
+                            if (selectedChain) setSelectedChain(selectedChain)
+                            const success = await addNetworkToWallet(selectedChain)
+                            if (success) {
+                              await wallets[selectedWallet]?.switchChain(selectedChain?.id)
+                            }
+                          }
+                        } catch {
+                          toast.error(
+                            'Could not switch to the required network. Please switch manually and try again.'
+                          )
+                          setIsDeleting(false)
+                          return
+                        }
+
+                        if (!marketplaceTableContract && owner?.kind !== 'project') {
+                          toast.error('Marketplace contract not ready. Please try again.')
+                          setIsDeleting(false)
+                          return
+                        }
+
+                        try {
+                          if (owner && owner.kind === 'project') {
+                            await writeProjectTable({
+                              table: 'marketplace',
+                              action: 'delete',
+                              projectId: owner.id,
+                              rowId: listing.id,
+                            })
+                          } else {
+                            const transaction = prepareContractCall({
+                              contract: marketplaceTableContract,
+                              method: 'deleteFromTable' as string,
+                              params: [listing?.id, listing?.teamId],
+                            })
+                            await sendAndConfirmTransaction({ transaction, account })
+                          }
+                          toast.success('Listing deleted.')
+                          setIsDeleting(false)
+                          setIsDeletedLocally(true)
+                          // Tableland takes ~20-30s to index; sync after the delay
+                          setTimeout(() => refreshListings(), 25000)
+                        } catch (err: any) {
+                          console.error('Delete listing error:', err)
+                          const reason =
+                            err?.message?.match(/reason: (.+)/)?.[1] ||
+                            err?.data?.message ||
+                            err?.shortMessage ||
+                            err?.message ||
+                            null
+                          toast.error(
+                            reason
+                              ? `Failed to delete listing: ${reason}`
+                              : 'Failed to delete listing. Please try again.'
+                          )
+                          setIsDeleting(false)
+                        }
+                      }}
+                      className="text-white/40 hover:text-red-400 transition-colors"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
           {isUpcoming && editable && (
             <p id="listing-status" className="text-yellow-400/70 text-xs">
-              {`*This listing is not available for purchase until ${new Date(listing.startTime * 1000).toLocaleDateString()} ${new Date(listing.startTime * 1000).toLocaleTimeString()}`}
+              {`*This listing is not available for purchase until ${new Date(
+                listing.startTime * 1000
+              ).toLocaleDateString()} ${new Date(listing.startTime * 1000).toLocaleTimeString()}`}
             </p>
           )}
 

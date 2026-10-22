@@ -19,7 +19,12 @@
  * unreproducible whenever someone re-opened the link to check on it. A brand-new
  * citizen's CID is never in that cache.
  */
-import { CITIZEN_TABLE_NAMES, DISCORD_CITIZEN_ROLE_ID, DEPLOYED_ORIGIN } from 'const/config'
+import {
+  CITIZEN_TABLE_NAMES,
+  DISCORD_CITIZEN_ROLE_ID,
+  DEPLOYED_ORIGIN,
+  TABLELAND_ENDPOINT,
+} from 'const/config'
 import {
   buildNewCitizenBody,
   buildNewCitizenContent,
@@ -46,9 +51,7 @@ function legacyOgImageUrl(image: string) {
 
 async function fetchSampleCitizens(): Promise<CitizenRow[]> {
   const statement = `SELECT id,name,image,description FROM ${CITIZEN_TABLE_NAMES.arbitrum} WHERE image != '' AND name != ''`
-  const res = await fetch(
-    `https://tableland.network/api/v1/query?statement=${encodeURIComponent(statement)}`
-  )
+  const res = await fetch(`${TABLELAND_ENDPOINT}?statement=${encodeURIComponent(statement)}`)
   if (!res.ok) {
     throw new Error(`Tableland query failed: HTTP ${res.status}`)
   }
