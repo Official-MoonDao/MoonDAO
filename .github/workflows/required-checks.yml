@@ -1,0 +1,42 @@
+name: Required checks
+
+# One check that exists on every pull request to main. Branch protection
+# requires this name (pr-green). Path-filtered workflows never report a check
+# when they are skipped, so this job reads the diff and waits for the ones
+# that actually apply.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: pr-green-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: pr-green
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check workflow matching
+        run: python3 .github/scripts/required-checks.py self-test
+
+      - name: Wait for matching workflows
+        env:
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          EVENT_ACTION: ${{ github.event.action }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/required-checks.py wait
