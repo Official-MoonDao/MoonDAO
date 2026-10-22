@@ -41,7 +41,7 @@ const HUB_LINKS: HubLink[] = [
   },
   {
     name: 'Newsletter',
-    description: 'Weekly updates',
+    description: 'Mission news and event invites',
     url: 'https://moondao.com/join-us?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-newsletter',
     icon: '/assets/linktree/icon-newsletter-96.png',
   },
