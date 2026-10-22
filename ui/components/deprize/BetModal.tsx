@@ -400,10 +400,21 @@ export default function BetModal({
   const acceptanceFlight = useRef<Promise<boolean> | null>(null)
   const acceptanceErrorRef = useRef<string | undefined>(undefined)
   const acceptanceGen = useRef(0)
+  // Accept-terms is stored per wallet and chain. This modal stays open across
+  // account switches, so a resolved write for the previous account must not count.
+  const acceptanceFlightFor = useRef('')
+  const acceptanceSavedFor = useRef('')
 
   const recordAcceptance = useCallback(async (): Promise<boolean> => {
     if (!wallet || !termsAccepted || !areAttestationsAccepted(attestations)) return false
-    if (acceptanceFlight.current) return acceptanceFlight.current
+    const identity = `${chain.id}:${wallet}`
+    if (acceptanceFlight.current && acceptanceFlightFor.current === identity) {
+      return acceptanceFlight.current
+    }
+    acceptanceGen.current += 1
+    acceptanceFlight.current = null
+    acceptanceSavedFor.current = ''
+    acceptanceFlightFor.current = identity
     const gen = acceptanceGen.current
     const flight = (async () => {
       setAcceptanceState('saving')
@@ -427,6 +438,7 @@ export default function BetModal({
       if (acceptanceGen.current !== gen) return false
       if (!res.ok) {
         const data = await res.json().catch(() => null)
+        if (acceptanceGen.current !== gen) return false
         const message =
           typeof data?.message === 'string'
             ? data.message
@@ -436,6 +448,7 @@ export default function BetModal({
         setAcceptanceState('error')
         return false
       }
+      acceptanceSavedFor.current = identity
       setAcceptanceState('saved')
       return true
     })().catch((err) => {
@@ -458,13 +471,15 @@ export default function BetModal({
     if (!wallet || !termsAccepted || !allAttested) {
       acceptanceGen.current += 1
       acceptanceFlight.current = null
+      acceptanceFlightFor.current = ''
+      acceptanceSavedFor.current = ''
       setAcceptanceState('idle')
       setAcceptanceError(undefined)
       acceptanceErrorRef.current = undefined
       return
     }
     void recordAcceptance()
-  }, [wallet, termsAccepted, allAttested, recordAcceptance])
+  }, [wallet, chain.id, termsAccepted, allAttested, recordAcceptance])
 
   const placeBet = async (): Promise<boolean> => {
     if (!account || !mint) return false
@@ -484,7 +499,10 @@ export default function BetModal({
     }
     // The boxes can be checked before the acceptance write finishes. Wait for
     // that write instead of telling the person to check boxes they already did.
-    const acceptanceOk = acceptanceState === 'saved' || (await recordAcceptance())
+    // A save for another wallet or chain does not satisfy this account.
+    const acceptanceOk =
+      (acceptanceState === 'saved' && acceptanceSavedFor.current === `${chain.id}:${wallet}`) ||
+      (await recordAcceptance())
     if (!acceptanceOk) {
       toast.error(
         acceptanceErrorRef.current ||
