@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
-import { fmt } from '@/lib/deprize/format'
 import { FORECAST_COPY } from '@/lib/forecasts/forecastCopy'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import {
@@ -109,12 +108,6 @@ export default function PredictModal(props: {
     props.onAddEth()
   }
 
-  const pct = Number.isFinite(props.probability)
-    ? `${fmt(props.probability, 0)}%`
-    : props.chanceLoading
-    ? '…'
-    : '—'
-
   return (
     <Modal
       id="deprize-predict"
@@ -123,8 +116,8 @@ export default function PredictModal(props: {
       size="xl"
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3 text-sm">
-          {!wantCombined && (
+        {!wantCombined && (
+          <div className="flex items-center gap-3 text-sm">
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                 isBet ? 'bg-emerald-400/15 text-emerald-300' : 'bg-indigo-400/15 text-indigo-200'
@@ -132,11 +125,8 @@ export default function PredictModal(props: {
             >
               {isBet ? 'ETH market' : 'MOONEY forecast · free'}
             </span>
-          )}
-          <span className={`text-gray-400 ${wantCombined ? 'ml-auto' : ''}`}>
-            Chance <span className="font-semibold tabular-nums text-white">{pct}</span>
-          </span>
-        </div>
+          </div>
+        )}
         <p className="text-sm text-gray-300">
           {combineEth
             ? 'This records your prediction, weighted by your voting power, and stakes the ETH below. The stake moves the odds.'
