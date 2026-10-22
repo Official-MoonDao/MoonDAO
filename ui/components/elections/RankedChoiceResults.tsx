@@ -22,6 +22,10 @@ export default function RankedChoiceResults({
         .map(([key, vp]) => ({ key: Number(key), vp }))
         .sort((a, b) => b.vp - a.vp)
     : []
+  const winnerPct =
+    finalRound && winnerKey !== null && finalRound.continuingVP > 0
+      ? ((finalRound.totals[winnerKey] ?? 0) / finalRound.continuingVP) * 100
+      : 0
 
   const status = tied
     ? { label: 'TIED', cls: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' }
@@ -33,8 +37,8 @@ export default function RankedChoiceResults({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg sm:text-xl font-heading font-semibold text-white">Final Results</h2>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h2 className="text-lg sm:text-xl font-heading font-semibold text-white">Results</h2>
         <div
           className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${status.cls}`}
         >
@@ -49,24 +53,24 @@ export default function RankedChoiceResults({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-white/5 rounded-lg">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-white">{voterCount}</p>
-          <p className="text-xs text-gray-400 uppercase tracking-wide">Total Voters</p>
-        </div>
-        <div className="text-center">
-          <p className="text-lg sm:text-2xl font-bold text-white break-words">
-            {tied ? 'Tie' : winnerLabel ?? '—'}
+      <div className="mb-6 rounded-xl bg-white/5 border border-white/10 p-4 sm:p-5">
+        <div className="flex items-center gap-1">
+          <p className="text-xs text-gray-400 uppercase tracking-wide">
+            {tied ? 'Outcome' : noneWon ? 'Outcome' : 'Winner'}
           </p>
-          <div className="flex items-center justify-center gap-1">
-            <p className="text-xs text-gray-400 uppercase tracking-wide">Winner</p>
-            <Tooltip text={RCV_EXPLAINER} wrap>
-              <span className="text-[10px] leading-none align-super text-gray-400 cursor-help">
-                ⓘ
-              </span>
-            </Tooltip>
-          </div>
+          <Tooltip text={RCV_EXPLAINER} wrap>
+            <span className="text-[10px] leading-none align-super text-gray-400 cursor-help">ⓘ</span>
+          </Tooltip>
         </div>
+        <p className="mt-1 text-xl sm:text-3xl font-bold text-white break-words">
+          {tied ? 'Tie' : noneWon ? 'Seat vacant' : winnerLabel ?? 'No winner'}
+        </p>
+        {finalRound && winnerKey !== null && !tied && (
+          <p className="mt-1 text-xs sm:text-sm text-gray-400">
+            {winnerPct.toFixed(1)}% in round {finalRound.round} of {rounds.length} ·{' '}
+            {voterCount} voter{voterCount === 1 ? '' : 's'}
+          </p>
+        )}
       </div>
 
       {tied && (

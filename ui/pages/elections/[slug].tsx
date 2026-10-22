@@ -35,7 +35,7 @@ import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
-import RankedBallot from '@/components/elections/RankedBallot'
+import RankedBallot, { BallotChoice, ordinal } from '@/components/elections/RankedBallot'
 import RankedChoiceResults from '@/components/elections/RankedChoiceResults'
 import Container from '@/components/layout/Container'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -57,16 +57,37 @@ type ElectionPageProps = {
 const CARD =
   'p-4 sm:p-6 md:p-8 bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl'
 
+const SECTION_TITLE = 'text-lg sm:text-xl font-heading font-semibold text-white'
+
 function formatDate(iso: string | null) {
   if (!iso) return null
   return new Date(iso).toLocaleString(undefined, {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
     timeZoneName: 'short',
   })
+}
+
+function timeUntil(iso: string | null, now: number) {
+  if (!iso) return null
+  const minutes = Math.round((Date.parse(iso) - now) / 60_000)
+  if (minutes <= 0) return null
+  if (minutes < 60) return `${minutes} min`
+  const hours = Math.round(minutes / 60)
+  if (hours < 48) return `${hours} hour${hours === 1 ? '' : 's'}`
+  const days = Math.round(hours / 24)
+  return days <= 60 ? `${days} days` : null
+}
+
+const PHASE_BADGE: Record<string, { label: string; cls: string; dot: string }> = {
+  unscheduled: { label: 'Dates to be announced', cls: 'text-gray-300', dot: 'bg-gray-400' },
+  upcoming: { label: 'Opening soon', cls: 'text-blue-200', dot: 'bg-blue-400' },
+  open: { label: 'Voting open', cls: 'text-emerald-300', dot: 'bg-emerald-400 animate-pulse' },
+  counting: { label: 'Voting closed', cls: 'text-amber-200', dot: 'bg-amber-400' },
+  closed: { label: 'Final results', cls: 'text-gray-200', dot: 'bg-gray-300' },
 }
 
 export default function ElectionPage({ slug, results, isFinal, revealed }: ElectionPageProps) {
@@ -88,6 +109,16 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
   const candidates = election.candidates
   const choices = useMemo(() => ballotChoices(election), [election])
   const choiceKeys = useMemo(() => choices.map((c) => c.key), [choices])
+  const ballotItems: BallotChoice[] = useMemo(
+    () =>
+      choices.map((c) => {
+        const candidate = candidates.find((x) => x.id === c.key)
+        return candidate
+          ? { ...c, handle: candidate.handle, bio: candidate.bio, platformUrl: candidate.platformUrl }
+          : c
+      }),
+    [choices, candidates]
+  )
 
   const { totalVMOONEY, isLoading: vpLoading } = useTotalVMOONEY(userAddress)
   const votingPower = Math.sqrt(totalVMOONEY) || 0
@@ -207,6 +238,7 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
 
   const opensLabel = formatDate(election.opensAt)
   const closesLabel = formatDate(election.closesAt)
+  const countdown = timeUntil(phase === 'upcoming' ? election.opensAt : election.closesAt, now)
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
@@ -222,24 +254,156 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
           description={`Ranked-choice vote for ${election.seat}, weighted by √vMOONEY.`}
           preFooter={<NoticeFooter />}
         >
-          <div className="flex w-full flex-col gap-6 md:gap-8">
-            {resultsRevealed && (
+          <div className="flex w-full flex-col gap-5 md:gap-6">
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 sm:px-6 sm:py-4">
+              <span
+                className={`inline-flex items-center gap-2 text-sm font-semibold ${PHASE_BADGE[phase].cls}`}
+              >
+                <span className={`h-2 w-2 rounded-full ${PHASE_BADGE[phase].dot}`} />
+                {PHASE_BADGE[phase].label}
+              </span>
+              {phase === 'open' && closesLabel && (
+                <div className="text-xs sm:text-sm">
+                  <span className="text-gray-400">Closes </span>
+                  <span className="text-white">{closesLabel}</span>
+                  {countdown && <span className="text-gray-400"> · in {countdown}</span>}
+                </div>
+              )}
+              {phase === 'upcoming' && opensLabel && (
+                <div className="text-xs sm:text-sm">
+                  <span className="text-gray-400">Opens </span>
+                  <span className="text-white">{opensLabel}</span>
+                  {countdown && <span className="text-gray-400"> · in {countdown}</span>}
+                </div>
+              )}
+              {(phase === 'counting' || phase === 'closed') && closesLabel && (
+                <div className="text-xs sm:text-sm">
+                  <span className="text-gray-400">Closed </span>
+                  <span className="text-white">{closesLabel}</span>
+                </div>
+              )}
+              <div className="text-xs sm:text-sm sm:ml-auto">
+                <span className="text-white font-semibold">{results.totalVoters}</span>
+                <span className="text-gray-400">
+                  {' '}
+                  voter{results.totalVoters === 1 ? '' : 's'}
+                </span>
+              </div>
+            </div>
+
+            {resultsRevealed ? (
               <div className={CARD}>
                 {!isFinal && (
                   <p className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
-                    Preliminary · awaiting final snapshot
+                    Preliminary · awaiting final count
                   </p>
                 )}
                 <RankedChoiceResults outcome={results.tally} voterCount={results.totalVoters} />
+                {savedBallot && savedBallot.length > 0 && (
+                  <p className="mt-6 pt-4 border-t border-white/10 text-xs sm:text-sm text-gray-400">
+                    Your ballot:{' '}
+                    <span className="text-white">{savedBallot.map(labelFor).join(' → ')}</span>
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className={`relative z-10 ${CARD}`}>
+                <h2 className={SECTION_TITLE}>
+                  {phase === 'open' ? 'Cast your ballot' : 'Candidates'}
+                </h2>
+                <p className="mt-1 mb-5 text-gray-400 text-xs sm:text-sm leading-relaxed">
+                  {phase === 'open'
+                    ? 'Rank as many choices as you like, starting with your favorite. If your top choice is knocked out, your vote moves to your next one.'
+                    : phase === 'upcoming'
+                    ? `You can rank these candidates once voting opens${
+                        opensLabel ? ` on ${opensLabel}` : ''
+                      }.`
+                    : 'Voting dates will be announced soon.'}
+                </p>
+
+                {candidates.length === 0 ? (
+                  <p className="rounded-xl border border-dashed border-white/15 p-6 text-center text-gray-400 text-xs sm:text-sm">
+                    Candidates will be announced soon.
+                  </p>
+                ) : (
+                  <RankedBallot
+                    choices={ballotItems}
+                    value={ranking}
+                    onChange={setRanking}
+                    disabled={phase !== 'open'}
+                  />
+                )}
+
+                {phase === 'open' && candidates.length > 0 && (
+                  <div className="mt-6 pt-5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="sm:flex-1 min-w-0">
+                      <p className="text-xs text-gray-400">Your voting power</p>
+                      <p className="text-white text-lg font-semibold">
+                        {userAddress
+                          ? vpLoading
+                            ? '…'
+                            : `${formatNumberUSStyle(votingPower, true)} VP`
+                          : 'Sign in to see'}
+                      </p>
+                      {userAddress && !vpLoading && votingPower <= 0 ? (
+                        <p className="mt-1 text-xs text-gray-400">
+                          You need vMOONEY to vote.{' '}
+                          <Link href="/lock" className="text-indigo-300 hover:underline">
+                            Lock MOONEY
+                          </Link>
+                        </p>
+                      ) : savedBallot ? (
+                        <p className="mt-1 text-xs text-emerald-300">
+                          ✓ Ballot recorded. You can change it until voting closes.
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="sm:w-64 shrink-0">
+                      <PrivyWeb3Button
+                        label={
+                          isSubmitting
+                            ? 'Submitting…'
+                            : savedBallot
+                            ? ballotChanged
+                              ? 'Update ballot'
+                              : 'Ballot submitted'
+                            : ranking.length === 0
+                            ? 'Rank a choice to vote'
+                            : 'Submit ballot'
+                        }
+                        signInLabel="Sign in to vote"
+                        action={handleSubmit}
+                        requiredChain={chain}
+                        actionDisabled={
+                          isSubmitting || ranking.length === 0 || votingPower <= 0 || !ballotChanged
+                        }
+                        className="w-full px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             <div className={CARD}>
-              <h2 className="text-lg sm:text-xl font-heading font-semibold text-white mb-2 sm:mb-3">
-                About this election
-              </h2>
+              <h2 className={`${SECTION_TITLE} mb-3`}>How this election works</h2>
               <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">{election.summary}</p>
-              <dl className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+              <ol className="mt-4 space-y-2.5 text-xs sm:text-sm text-gray-300">
+                {[
+                  'Rank the candidates in order of preference. You don’t have to rank everyone.',
+                  'Each vote is weighted by the square root of the voter’s vMOONEY at the moment voting closes.',
+                  'If no one has more than half the votes, the last-place choice is knocked out and those ballots move to each voter’s next choice. This repeats until someone wins.',
+                  'Ballots stay hidden until voting closes, and voters can change theirs until then.',
+                ].map((step, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/10 text-[11px] font-semibold text-white flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                    <span className="leading-relaxed">{step}</span>
+                  </li>
+                ))}
+              </ol>
+              <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
                 <div className="bg-black/20 border border-white/10 rounded-lg p-3">
                   <dt className="text-gray-400">Voting opens</dt>
                   <dd className="text-white">{opensLabel ?? 'To be announced'}</dd>
@@ -268,175 +432,59 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
             </div>
 
             <div className={CARD}>
-              <h2 className="text-lg sm:text-xl font-heading font-semibold text-white mb-2 sm:mb-3">
-                Candidates
-              </h2>
-              {candidates.length === 0 ? (
-                <p className="text-gray-400 text-xs sm:text-sm">
-                  Candidates will be announced soon.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {candidates.map((c) => (
-                    <li key={c.id} className="bg-black/20 border border-white/10 rounded-xl p-3 sm:p-4">
-                      <p className="text-white text-sm sm:text-base font-semibold">
-                        {c.name}
-                        {c.handle && (
-                          <span className="ml-2 text-gray-400 font-normal">{c.handle}</span>
-                        )}
-                      </p>
-                      {c.bio && (
-                        <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mt-1.5">
-                          {c.bio}
-                        </p>
-                      )}
-                      {c.platformUrl && (
-                        <a
-                          href={c.platformUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-1.5 inline-block text-xs sm:text-sm text-indigo-300 hover:underline"
-                        >
-                          Read platform
-                        </a>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div className={CARD}>
-              <h2 className="text-lg sm:text-xl font-heading font-semibold text-white mb-2">
-                Voters
-              </h2>
-              <p className="text-gray-400 text-xs sm:text-sm mb-4 leading-relaxed">
-                {!resultsRevealed && (
-                  <span className="inline-flex items-center gap-1.5 mr-1 text-indigo-300">
-                    <span aria-hidden>🔒</span> Ballots and the tally stay hidden until voting
-                    closes.
-                  </span>
-                )}
-                {results.totalVoters > 0
-                  ? `${results.totalVoters} voter${results.totalVoters !== 1 ? 's' : ''}, ${formatNumberUSStyle(
-                      results.totalVP,
-                      true
-                    )} VP.`
-                  : 'No ballots yet.'}
-              </p>
-              <Votes
-                emptyStateMessage="No ballots yet."
-                voteItems={results.voters.map((voter) => (
-                  <VoteItem key={voter.address}>
-                    <VoteItemHeader
-                      leftContent={
-                        voter.citizenName && voter.citizenId != null ? (
-                          <Link
-                            href={`/citizen/${generatePrettyLinkWithId(
-                              voter.citizenName,
-                              String(voter.citizenId)
-                            )}`}
-                            className="text-white hover:underline break-all"
-                          >
-                            {voter.citizenName}
-                          </Link>
-                        ) : (
-                          <span className="text-gray-300">
-                            <ShortAddressLink address={voter.address} />
-                          </span>
-                        )
-                      }
-                      rightContent={
-                        <span className="flex items-center gap-2">
-                          {resultsRevealed && voter.ballot.length > 0 && (
-                            <span className="rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold bg-blue-500/20 text-blue-200">
-                              1st: {labelFor(voter.ballot[0])}
-                            </span>
-                          )}
-                          <span className="text-gray-400">
-                            {formatNumberUSStyle(voter.votingPower, true)} VP
-                          </span>
-                        </span>
-                      }
-                    />
-                  </VoteItem>
-                ))}
-              />
-            </div>
-
-            <div className={`relative z-10 ${CARD}`}>
-              <h2 className="text-lg sm:text-xl font-heading font-semibold text-white mb-2 sm:mb-3">
-                Your ballot
-              </h2>
-              <p className="text-gray-400 text-xs sm:text-sm mb-4 leading-relaxed">
-                Rank as many choices as you like. If your top choice is eliminated, your ballot
-                moves to your next choice. Your voting power is the square root of your vMOONEY
-                at the moment voting closes. You can change your ballot until then.
-              </p>
-
-              {phase !== 'open' && (
-                <div className="mb-4 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 sm:p-4">
-                  <p className="text-amber-300 text-xs sm:text-sm font-medium">
-                    {phase === 'unscheduled' && 'Voting dates have not been announced yet.'}
-                    {phase === 'upcoming' && `Voting opens ${opensLabel}.`}
-                    {(phase === 'counting' || phase === 'closed') && `Voting closed ${closesLabel}.`}
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                <h2 className={SECTION_TITLE}>Voters</h2>
+                {results.totalVoters > 0 && (
+                  <p className="text-xs sm:text-sm text-gray-400">
+                    {formatNumberUSStyle(results.totalVP, true)} VP total
                   </p>
-                </div>
-              )}
-
-              <div className="mb-4 bg-black/20 border border-white/10 rounded-lg p-3 sm:p-4">
-                <p className="text-gray-400 text-xs sm:text-sm">Your voting power</p>
-                <p className="text-white text-xl sm:text-2xl font-semibold">
-                  {userAddress
-                    ? vpLoading
-                      ? '...'
-                      : `${formatNumberUSStyle(votingPower, true)} VP`
-                    : 'Connect wallet'}
-                </p>
+                )}
               </div>
-
-              {savedBallot && savedBallot.length > 0 && (
-                <p className="mb-4 text-indigo-300 text-xs sm:text-sm">
-                  Your ballot is recorded: {savedBallot.map(labelFor).join(' → ')}
+              {!resultsRevealed && (
+                <p className="text-gray-400 text-xs sm:text-sm mb-4">
+                  Choices stay hidden until voting closes.
                 </p>
               )}
-
-              {choices.length > 0 && (
-                <RankedBallot
-                  choices={choices}
-                  value={ranking}
-                  onChange={setRanking}
-                  disabled={phase !== 'open'}
+              <div className={resultsRevealed ? 'mt-3' : ''}>
+                <Votes
+                  emptyStateMessage="No ballots yet."
+                  voteItems={results.voters.map((voter) => (
+                    <VoteItem key={voter.address}>
+                      <VoteItemHeader
+                        leftContent={
+                          voter.citizenName && voter.citizenId != null ? (
+                            <Link
+                              href={`/citizen/${generatePrettyLinkWithId(
+                                voter.citizenName,
+                                String(voter.citizenId)
+                              )}`}
+                              className="text-white hover:underline break-all"
+                            >
+                              {voter.citizenName}
+                            </Link>
+                          ) : (
+                            <span className="text-gray-300">
+                              <ShortAddressLink address={voter.address} />
+                            </span>
+                          )
+                        }
+                        rightContent={
+                          <span className="flex items-center gap-2">
+                            {resultsRevealed && voter.ballot.length > 0 && (
+                              <span className="rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold bg-blue-500/20 text-blue-200">
+                                {ordinal(1)}: {labelFor(voter.ballot[0])}
+                              </span>
+                            )}
+                            <span className="text-gray-400">
+                              {formatNumberUSStyle(voter.votingPower, true)} VP
+                            </span>
+                          </span>
+                        }
+                      />
+                    </VoteItem>
+                  ))}
                 />
-              )}
-
-              {phase === 'open' && (
-                <div className="mt-6">
-                  <PrivyWeb3Button
-                    label={
-                      isSubmitting
-                        ? 'Submitting...'
-                        : savedBallot
-                        ? 'Update your ballot'
-                        : 'Submit your ballot'
-                    }
-                    action={handleSubmit}
-                    requiredChain={chain}
-                    isDisabled={
-                      isSubmitting || ranking.length === 0 || votingPower <= 0 || !ballotChanged
-                    }
-                    className="w-full px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm sm:text-base font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border-0 disabled:opacity-50"
-                  />
-                  {userAddress && !vpLoading && votingPower <= 0 && (
-                    <p className="mt-2 text-xs text-gray-400">
-                      You need vMOONEY to vote.{' '}
-                      <Link href="/lock" className="text-indigo-300 hover:underline">
-                        Lock MOONEY
-                      </Link>
-                    </p>
-                  )}
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </ContentLayout>
