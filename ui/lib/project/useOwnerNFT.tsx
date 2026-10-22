@@ -43,23 +43,31 @@ export default function useOwnerNFT(
     let cancelled = false
     async function load() {
       if (teamId === null || teamId === undefined || !owner) return
+      // The chain owner is the purchase recipient. Read it even when the
+      // table profile is missing or the query fails.
+      let profile: any
       try {
-        const result = await loadOwnerNft(selectedChain, teamId)
-        if (includeOwner && contract && result && owner) {
-          try {
-            result.owner = await readContract({
-              contract,
-              method: 'ownerOf' as string,
-              params: [BigInt(owner.id)],
-            })
-          } catch (error) {
-            console.error('Failed to read owner of', owner.kind, owner.id, error)
-          }
-        }
-        if (!cancelled) setNFT(result || undefined)
+        profile = (await loadOwnerNft(selectedChain, teamId)) || undefined
       } catch (error) {
         console.error('Failed to load owner profile:', error)
       }
+      if (includeOwner && contract && owner) {
+        try {
+          const ownerAddress = await readContract({
+            contract,
+            method: 'ownerOf' as string,
+            params: [BigInt(owner.id)],
+          })
+          if (profile) {
+            profile.owner = ownerAddress
+          } else if (ownerAddress) {
+            profile = { owner: ownerAddress }
+          }
+        } catch (error) {
+          console.error('Failed to read owner of', owner.kind, owner.id, error)
+        }
+      }
+      if (!cancelled) setNFT(profile)
     }
     setNFT(undefined)
     load()

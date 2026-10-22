@@ -84,7 +84,7 @@ export default function TeamListing({
 
   const daysUntilExpiry = daysUntilTimestamp(listing?.endTime || 0)
 
-  const { nft: teamNFT } = useOwnerNFT(listing ? listing.teamId : null, {
+  const { nft: teamNFT, owner } = useOwnerNFT(listing ? listing.teamId : null, {
     includeOwner: true,
     teamContract,
   })
@@ -297,7 +297,7 @@ export default function TeamListing({
                         }
 
                         try {
-                          if (owner?.kind === 'project') {
+                          if (owner && owner.kind === 'project') {
                             await writeProjectTable({
                               table: 'marketplace',
                               action: 'delete',
