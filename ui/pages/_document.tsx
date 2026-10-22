@@ -1,5 +1,6 @@
 import Document, { Html, Head, Main, NextScript } from 'next/document'
 import React from 'react'
+import { buildPiiStripScript } from '@/lib/analytics/ga4'
 
 class WebsiteDocument extends Document {
   render() {
@@ -24,6 +25,11 @@ class WebsiteDocument extends Document {
           <script
             dangerouslySetInnerHTML={{
               __html: `globalThis.Browser = { T: () => {} };`,
+            }}
+          />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){try{if(!window.__mdNativeHistory){window.__mdNativeHistory={pushState:history.pushState,replaceState:history.replaceState};}}catch(e){}})();${buildPiiStripScript()}`,
             }}
           />
           {/*

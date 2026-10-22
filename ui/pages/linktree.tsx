@@ -39,17 +39,17 @@ const HUB_LINKS: HubLink[] = [
     url: 'https://moondao.com/discord?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-discord',
     icon: '/assets/linktree/icon-discord-96.png',
   },
+  {
+    name: 'Newsletter',
+    description: 'Weekly updates',
+    url: 'https://moondao.com/join-us?utm_source=instagram&utm_medium=bio&utm_campaign=ig-bio-newsletter',
+    icon: '/assets/linktree/icon-newsletter-96.png',
+  },
   // HOLD: not primary buttons on the Instagram hub.
   {
     name: 'Website',
     description: 'MoonDAO home',
     url: 'https://moondao.com',
-    hidden: true,
-  },
-  {
-    name: 'Newsletter',
-    description: 'Weekly updates',
-    url: 'https://moondao.ck.page/profile',
     hidden: true,
   },
   {

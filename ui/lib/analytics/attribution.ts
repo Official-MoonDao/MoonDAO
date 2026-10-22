@@ -455,6 +455,72 @@ export function kitFieldsFromAttribution(
   return sanitizeKitFields(flat)
 }
 
+/**
+ * Existing Kit custom field keys for a newsletter signup.
+ * Values are first touch. Last-touch keys are not sent.
+ * Kit rejects the subscribe when a key does not exist, so this list stays
+ * limited to the fields the account already has.
+ */
+export function kitSignupFields(input: unknown): Record<string, string> | undefined {
+  if (!input || typeof input !== 'object') return undefined
+  const source = input as Record<string, unknown>
+  const fields: Record<string, string> = {}
+  const pairs: [string, unknown][] = [
+    ['first_utm_source', source.first_utm_source],
+    ['first_utm_campaign', source.first_utm_campaign],
+    ['first_referrer', source.first_referrer],
+    ['first_landing_page', source.first_landing_page],
+    ['first_fbclid', source.first_fbclid],
+  ]
+  for (const [key, raw] of pairs) {
+    const value = sanitizeParam(raw)
+    if (value) fields[key] = value
+  }
+  return Object.keys(fields).length ? fields : undefined
+}
+
+/**
+ * First-touch fields for the signup request.
+ * An explicit analytics decline sends nothing. Before a choice, the in-memory
+ * first touch is used, then the current URL. Landing page and referrer fall
+ * back to this visit when no earlier touch was stored.
+ */
+export function buildKitSignupFields(): Record<string, string> | undefined {
+  if (typeof window === 'undefined') return undefined
+  const consent = readAnalyticsConsent()
+  if (consent === false) return undefined
+  const stored = consent === true ? getAttribution() : toFlatAttribution(memoryRecord)
+  let urlParams: Partial<Record<AttributionParamKey, string>> = {}
+  try {
+    urlParams = extractAttributionParams(window.location?.search || '')
+  } catch {
+    urlParams = {}
+  }
+  let landing = stored.first_landing_page
+  let referrer = stored.first_referrer
+  if (!landing) {
+    try {
+      landing = sanitizeLandingPath(window.location?.pathname || '/')
+    } catch {
+      landing = '/'
+    }
+  }
+  if (!referrer) {
+    try {
+      referrer = sanitizeReferrer(document.referrer || '', window.location?.origin || '')
+    } catch {
+      referrer = ''
+    }
+  }
+  return kitSignupFields({
+    first_utm_source: stored.first_utm_source || urlParams.utm_source,
+    first_utm_campaign: stored.first_utm_campaign || urlParams.utm_campaign,
+    first_fbclid: stored.first_fbclid || urlParams.fbclid,
+    first_landing_page: landing,
+    first_referrer: referrer,
+  })
+}
+
 export function sanitizeKitFields(input: unknown): Record<string, string> | undefined {
   if (!input || typeof input !== 'object') return undefined
   const source = input as Record<string, unknown>

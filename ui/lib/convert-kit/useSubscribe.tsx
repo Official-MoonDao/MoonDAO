@@ -1,10 +1,15 @@
-import { getAttribution, kitFieldsFromAttribution } from '@/lib/analytics/attribution'
+import { buildKitSignupFields } from '@/lib/analytics/attribution'
 
-// Subscribe an email to a Kit form. Campaign fields are included when present.
-// The API drops unknown Kit fields and retries the email signup without them.
+export type SubscribeGuard = {
+  company?: string
+  formStartedAt?: number
+}
+
+// Subscribe an email to a Kit form. First-touch fields are included when present.
+// The API returns Kit's real result. A filtered signup still looks successful.
 export default function useSubscribe(formId: string) {
-  async function subscribe(userEmail: string) {
-    const fields = kitFieldsFromAttribution(getAttribution())
+  async function subscribe(userEmail: string, guard?: SubscribeGuard) {
+    const fields = buildKitSignupFields()
     const res = await fetch('/api/convertkit/subscribe', {
       method: 'POST',
       headers: {
@@ -13,6 +18,8 @@ export default function useSubscribe(formId: string) {
       body: JSON.stringify({
         email: userEmail,
         formId,
+        company: guard?.company || '',
+        formStartedAt: guard?.formStartedAt,
         ...(fields ? { fields } : {}),
       }),
     })

@@ -26,6 +26,10 @@ const AlmostThere: React.FC = () => {
                     Check your email to confirm your subscription. We've sent you a confirmation
                     link to complete the process.
                   </p>
+                  <p className="text-gray-300 text-sm leading-relaxed">
+                    Check your spam folder and the Promotions tab. The confirmation email sometimes
+                    lands there.
+                  </p>
                 </div>
               </div>
 
@@ -41,7 +45,7 @@ const AlmostThere: React.FC = () => {
                   href="/join-us"
                   className="w-full bg-transparent border border-white/20 hover:bg-white/10 text-white py-3 px-6 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2"
                 >
-                  <span>Try Again</span>
+                  <span>Sign up again</span>
                 </Link>
               </div>
             </div>
