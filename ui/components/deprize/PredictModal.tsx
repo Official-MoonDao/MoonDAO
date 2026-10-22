@@ -129,7 +129,7 @@ export default function PredictModal(props: {
         )}
         <p className="text-sm text-gray-300">
           {combineEth
-            ? 'This records your prediction, weighted by your voting power, and stakes the ETH below. The stake moves the odds.'
+            ? 'This records your prediction, weighted by your voting power. ETH below is optional; adding some also stakes on this competitor and moves the odds.'
             : isBet
             ? 'Real ETH. Your stake moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'
             : 'This saves your pick for this competitor. It is free, weighted by your voting power, and it does not change the ETH odds.'}
@@ -228,13 +228,26 @@ export default function PredictModal(props: {
         {combineEth && props.connected && (
           <button
             type="button"
-            onClick={() => void betRunRef.current()}
-            disabled={props.writing || activeBet?.label.startsWith('Placing')}
+            onClick={() => {
+              // No ETH amount: save the prediction only. An amount stakes and records the pick.
+              if (!activeBet) {
+                props.onPredict()
+                return
+              }
+              void betRunRef.current()
+            }}
+            disabled={
+              props.writing ||
+              activeBet?.label.startsWith('Placing') ||
+              (!activeBet && (!props.predictEnabled || props.saved))
+            }
             className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
           >
             {activeBet?.kind === 'fund'
               ? activeBet.label
-              : props.writing || activeBet?.label.startsWith('Placing')
+              : !activeBet
+              ? predictLabel
+              : props.writing || activeBet.label.startsWith('Placing')
               ? 'Predicting…'
               : 'Predict'}
           </button>
