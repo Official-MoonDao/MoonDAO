@@ -52,7 +52,8 @@ export default function PredictModal(props: {
   outcomeIndex: number
 }) {
   const isBet = props.mode === 'bet'
-  const ethOffered = !!props.bet && !props.regionRestricted
+  // A predict window is the free forecast only. The bet form belongs to bet mode.
+  const ethOffered = isBet && !!props.bet && !props.regionRestricted
   const [betAction, setBetAction] = useState<BetPrimaryAction | null>(null)
   const betRunRef = useRef<() => void>(() => {})
   const reportBetAction = useCallback((action: BetPrimaryAction | null) => {

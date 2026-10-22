@@ -526,7 +526,7 @@ export default function ForecastPanel(props: {
           onAddEth={() => onModeChange('bet')}
           outcomeIndex={modalIndex}
           bet={
-            showBet && renderBet ? (
+            mode === 'bet' && showBet && renderBet ? (
               <div key={modalIndex}>{renderBet({ index: modalIndex, onClose: onModalClose })}</div>
             ) : undefined
           }
