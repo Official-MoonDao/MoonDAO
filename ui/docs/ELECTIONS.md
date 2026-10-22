@@ -3,7 +3,7 @@
 MoonDAO members elect people to seats, such as Executive Lead, by ranked-choice
 vote on moondao.com. Each election is a standalone vote with its own page at
 `/elections/<slug>`. It does not go through the proposal process, and the Senate
-does not vote on it. The Senate's part is confirming the candidates beforehand.
+does not vote on it.
 
 ## Why it exists
 
@@ -50,26 +50,14 @@ taken. The first election uses 4.
 
 ## How a vote works, start to finish
 
-### 1. Candidates and Senate confirmation
+### 1. Candidates
 
 Elections are set up in `ui/lib/elections/elections.ts`. Each election lists
-its candidates. Each candidate gets:
+its candidates, and every listed candidate appears on the ballot. Each
+candidate gets:
 
 - a permanent ID number (1, 2, 3, ...), used on ballots
 - a name, and optionally a handle, a short bio and a link to their platform
-- a Senate confirmation record: the date and a link
-
-The Senate confirms each candidate off-chain, for example by a vote in Discord
-or in a meeting. Someone then pastes the date and a link to that record into
-the config.
-
-**A candidate without a Senate confirmation link does not appear on the
-ballot.** On the page, each confirmed candidate shows a "Senate-confirmed"
-badge that links to the record, so any voter can check it.
-
-The Senate's confirmation process itself (where it happens, what the threshold
-is, what counts as the record) is not decided yet and is up to the Senate and
-the Executive Branch. The site only needs the link.
 
 ### 2. Who can vote and how much a vote counts
 
@@ -203,8 +191,8 @@ then on the page always shows the frozen result.
    for the Executive Branch election already exists (`executive-branch-2027`,
    vote number 4). It stays `published: false` until it is ready, so it only
    appears on local and preview builds.
-2. **Add candidates** as the Senate confirms them. Give each one a new ID number
-   and the confirmation link. Never reuse or change an ID once voting opens.
+2. **Add the candidates.** Give each one a new ID number. Never reuse or
+   change an ID once voting opens.
 3. **Set the dates.** Fill in `opensAt` and `closesAt` (ISO format, e.g.
    `2027-02-01T16:00:00Z`). MDP-149 ran for 10 days.
 4. **Publish.** Set `published: true` and deploy. Share
@@ -221,8 +209,7 @@ Two demo elections exist for previews. Like every unpublished election, they
 appear on local and Vercel preview builds and never on moondao.com:
 
 - `/elections/demo` is open, with three made-up candidates, so you can rank
-  and submit a ballot. A fourth candidate has no Senate confirmation, which
-  shows that unconfirmed candidates are hidden.
+  and submit a ballot.
 - `/elections/demo-results` is a finished election. It shows the results view
   using the real test ballots from Sepolia, with voting power assigned for the
   demo. It is the Alice / Bob / Carol example above.
@@ -256,7 +243,7 @@ text as a vote.
 - **Voting power on mainnet:** for 11 real vMOONEY holders, the voting power the
   page shows during the vote matched the exact value the freeze script uses.
 - **The page:** checked on desktop and phone with placeholder candidates.
-  Ranking worked, unconfirmed candidates were hidden, results stayed hidden
+  Ranking worked, results stayed hidden
   while voting was open, and the results view displayed correctly.
 
 **Not tested yet:** submitting a ballot through the page's button with a real
@@ -266,8 +253,6 @@ deploy.
 
 ## Open questions and known limits
 
-- **Senate confirmation process.** The site only needs a link per candidate.
-  How the Senate confirms (where, what threshold) still needs to be agreed.
 - **Edits after the deadline.** The `Votes` table has no timestamps, and the
   contract cannot enforce a deadline. The page stops accepting ballots at
   `closesAt`, but someone calling the contract directly could still change

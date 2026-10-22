@@ -17,7 +17,6 @@ import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import {
   ballotChoices,
-  confirmedCandidates,
   Election,
   electionPhase,
   getElection,
@@ -86,7 +85,7 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
   const phase = electionPhase(election, now)
   const resultsRevealed = revealed && (phase === 'counting' || phase === 'closed')
 
-  const candidates = useMemo(() => confirmedCandidates(election), [election])
+  const candidates = election.candidates
   const choices = useMemo(() => ballotChoices(election), [election])
   const choiceKeys = useMemo(() => choices.map((c) => c.key), [choices])
 
@@ -274,28 +273,18 @@ export default function ElectionPage({ slug, results, isFinal, revealed }: Elect
               </h2>
               {candidates.length === 0 ? (
                 <p className="text-gray-400 text-xs sm:text-sm">
-                  Candidates will appear here once the Senate confirms them.
+                  Candidates will be announced soon.
                 </p>
               ) : (
                 <ul className="space-y-3">
                   {candidates.map((c) => (
                     <li key={c.id} className="bg-black/20 border border-white/10 rounded-xl p-3 sm:p-4">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <p className="text-white text-sm sm:text-base font-semibold">
-                          {c.name}
-                          {c.handle && (
-                            <span className="ml-2 text-gray-400 font-normal">{c.handle}</span>
-                          )}
-                        </p>
-                        <a
-                          href={c.senateConfirmation!.recordUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300 hover:underline"
-                        >
-                          Senate-confirmed {c.senateConfirmation!.confirmedOn}
-                        </a>
-                      </div>
+                      <p className="text-white text-sm sm:text-base font-semibold">
+                        {c.name}
+                        {c.handle && (
+                          <span className="ml-2 text-gray-400 font-normal">{c.handle}</span>
+                        )}
+                      </p>
                       {c.bio && (
                         <p className="text-gray-400 text-xs sm:text-sm leading-relaxed mt-1.5">
                           {c.bio}

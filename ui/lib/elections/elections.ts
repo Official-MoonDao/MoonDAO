@@ -7,17 +7,13 @@
  * Snapshot election (MDP-149): ranked ballots, weighted by √vMOONEY, sealed
  * until voting closes.
  *
- * Senate confirmation happens off-chain before voting opens. Only candidates
- * with a `senateConfirmation` record appear on the ballot. Paste the link to
- * the Senate's confirmation (Discord vote, meeting notes, etc.) so voters can
- * check it.
+ * Every candidate listed here appears on the ballot.
  *
  * Ballots store candidate `id`s, not list positions, so never reuse or change
  * an id once voting opens. Adding display copy is always safe.
  *
  * Lifecycle:
- *   1. Add the election with `published: false`, fill in candidates as the
- *      Senate confirms them, then set `opensAt` / `closesAt` and publish.
+ *   1. Add the election with `published: false`, fill in the candidates, then set `opensAt` / `closesAt` and publish.
  *   2. After `closesAt`, run `yarn snapshot:election <slug>` and commit the
  *      JSON it writes, then set `closed: true`. The page then serves the frozen
  *      result instead of re-tallying.
@@ -30,10 +26,6 @@ export type ElectionCandidate = {
   handle?: string
   bio?: string
   platformUrl?: string
-  senateConfirmation?: {
-    confirmedOn: string
-    recordUrl: string
-  }
 }
 
 export type Election = {
@@ -65,7 +57,7 @@ export const ELECTIONS: Election[] = [
     title: 'Executive Branch Election',
     seat: 'Executive Lead',
     summary:
-      'The Member House elects the next Executive Lead by ranked-choice vote. Rank the Senate-confirmed candidates in order of preference. If no candidate has a majority, the last-place candidate is eliminated and those ballots move to each voter’s next choice until someone does. If “None of the above” wins, the seat stays vacant.',
+      'The Member House elects the next Executive Lead by ranked-choice vote. Rank the candidates in order of preference. If no candidate has a majority, the last-place candidate is eliminated and those ballots move to each voter’s next choice until someone does. If “None of the above” wins, the seat stays vacant.',
     opensAt: null,
     closesAt: null,
     closed: false,
@@ -93,23 +85,19 @@ export const ELECTIONS: Election[] = [
         name: 'Alice (demo)',
         handle: '@alice',
         bio: 'Placeholder candidate. Wants a crewed mission to the lunar south pole.',
-        senateConfirmation: { confirmedOn: '2026-10-21', recordUrl: 'https://docs.moondao.com/Governance/Constitution' },
       },
       {
         id: 2,
         name: 'Bob (demo)',
         handle: '@bob',
         bio: 'Placeholder candidate. Focused on growing the Citizen network.',
-        senateConfirmation: { confirmedOn: '2026-10-21', recordUrl: 'https://docs.moondao.com/Governance/Constitution' },
       },
       {
         id: 3,
         name: 'Carol (demo)',
         handle: '@carol',
         bio: 'Placeholder candidate. Treasury and operations.',
-        senateConfirmation: { confirmedOn: '2026-10-21', recordUrl: 'https://docs.moondao.com/Governance/Constitution' },
       },
-      { id: 4, name: 'Dave (demo, not Senate-confirmed, so hidden)' },
     ],
   },
   {
@@ -124,11 +112,11 @@ export const ELECTIONS: Election[] = [
     closed: true,
     published: false,
     includeNone: true,
-    candidates: [1, 2, 3].map((id) => ({
-      id,
-      name: ['Alice (demo)', 'Bob (demo)', 'Carol (demo)'][id - 1],
-      senateConfirmation: { confirmedOn: '2026-10-21', recordUrl: 'https://docs.moondao.com/Governance/Constitution' },
-    })),
+    candidates: [
+      { id: 1, name: 'Alice (demo)' },
+      { id: 2, name: 'Bob (demo)' },
+      { id: 3, name: 'Carol (demo)' },
+    ],
   },
 ]
 
@@ -145,12 +133,8 @@ export function listBuildableElections(): Election[] {
   return ELECTIONS.filter((e) => e.published || isPreviewOrLocal())
 }
 
-export function confirmedCandidates(election: Election): ElectionCandidate[] {
-  return election.candidates.filter((c) => Boolean(c.senateConfirmation?.recordUrl))
-}
-
 export function ballotChoices(election: Election): { key: number; label: string }[] {
-  const choices = confirmedCandidates(election).map((c) => ({ key: c.id, label: c.name }))
+  const choices = election.candidates.map((c) => ({ key: c.id, label: c.name }))
   if (election.includeNone) {
     choices.push({ key: NONE_OF_THE_ABOVE_KEY, label: NONE_OF_THE_ABOVE_LABEL })
   }
