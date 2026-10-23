@@ -27,7 +27,7 @@ import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
-import { getNextTownHallEvent } from '@/lib/townhall/luma'
+import { getNextTownHallEvent, getUpcomingLumaEvents } from '@/lib/townhall/luma'
 import { getSummaries } from '@/lib/townhall/summaries'
 import { pickForDay } from './spotlight'
 
@@ -40,8 +40,10 @@ const SOURCE_TIMEOUT_MS = 8000
 
 export type ProposalStage = 'member-vote' | 'senate-review'
 
-type CitizenItem = { id: number; name: string; location?: string; bio?: string }
-type TeamItem = { id: number; name: string; bio?: string }
+// `image` is an ipfs:// or https:// URI for the card's avatars. It is never
+// sent to the model.
+type CitizenItem = { id: number; name: string; location?: string; bio?: string; image?: string }
+type TeamItem = { id: number; name: string; bio?: string; image?: string }
 type JobItem = { id: number; title: string; teamId?: number; description?: string }
 type ListingItem = {
   id: number
@@ -50,8 +52,17 @@ type ListingItem = {
   currency?: string
   teamId?: number
   description?: string
+  image?: string
 }
-type ProjectItem = { mdp: number; name: string; description?: string }
+type ProjectItem = { mdp: number; name: string; description?: string; image?: string }
+type EventItem = {
+  id: string
+  name: string
+  startAt: string
+  url: string
+  image?: string
+  guestCount?: number
+}
 
 export type ActivitySnapshot = {
   periodStart: string
@@ -64,7 +75,8 @@ export type ActivitySnapshot = {
   // 'member-vote': passed the Senate, citizens can vote now.
   // 'senate-review': waiting on the Senate's temperature check.
   proposals: { mdp: number; name: string; status: ProposalStage }[]
-  nextTownHall: { name: string; startAt: string; url: string } | null
+  // Up to 3 upcoming Luma events, soonest first.
+  upcomingEvents: EventItem[]
   latestTownHall: { title: string; publishedAt: string; excerpt: string } | null
   mooney: { price: number; priceChange24h: number } | null
   // Featured items for categories with nothing new this week, picked by
@@ -213,17 +225,29 @@ function mintTimestamps(transfers: { tokenId: string; blockTimestamp: string }[]
   return map
 }
 
+export function safeImage(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  return trimmed.startsWith('ipfs://') || trimmed.startsWith('https://') ? trimmed : undefined
+}
+
 function toCitizen(c: any): CitizenItem {
   return {
     id: Number(c.id),
     name: clip(c.name, 80) || `Citizen #${c.id}`,
     location: placeName(c.location),
     bio: clip(c.description),
+    image: safeImage(c.image),
   }
 }
 
 function toTeam(t: any): TeamItem {
-  return { id: Number(t.id), name: clip(t.name, 80) || `Team #${t.id}`, bio: clip(t.description) }
+  return {
+    id: Number(t.id),
+    name: clip(t.name, 80) || `Team #${t.id}`,
+    bio: clip(t.description),
+    image: safeImage(t.image),
+  }
 }
 
 function toJob(j: any): JobItem {
@@ -243,6 +267,37 @@ function toListing(l: any): ListingItem {
     currency: clip(l.currency, 12),
     teamId: l.teamId != null ? Number(l.teamId) : undefined,
     description: clip(l.description),
+    image: safeImage(l.image),
+  }
+}
+
+// Scrapes the public Luma calendar (no API key); falls back to the Luma API
+// when the page can't be read and LUMA_API_KEY is set.
+async function fetchUpcomingEvents(): Promise<EventItem[]> {
+  try {
+    const events = await getUpcomingLumaEvents(3)
+    return events.map((e) => ({
+      id: e.id,
+      name: clip(e.name, 120)!,
+      startAt: e.startAt,
+      url: e.url,
+      image: e.coverUrl,
+      guestCount: e.guestCount,
+    }))
+  } catch (error) {
+    console.warn('[activity-summary] Luma calendar page failed, trying the API:', error)
+    const next = await getNextTownHallEvent()
+    return next
+      ? [
+          {
+            id: next.id,
+            name: clip(next.name, 120)!,
+            startAt: next.start_at,
+            url: next.url,
+            image: safeImage(next.cover_url),
+          },
+        ]
+      : []
   }
 }
 
@@ -274,13 +329,13 @@ async function collectSpotlights(params: {
     need.citizen
       ? query(
           'citizen',
-          `SELECT id, name, description, location FROM ${tables.citizenTable} WHERE view != '' AND description != '' ORDER BY id DESC LIMIT 100`
+          `SELECT id, name, description, location, image FROM ${tables.citizenTable} WHERE view != '' AND description != '' ORDER BY id DESC LIMIT 100`
         )
       : none,
     need.team
       ? query(
           'team',
-          `SELECT id, name, description FROM ${tables.teamTable} WHERE description != '' ORDER BY id DESC LIMIT 100`
+          `SELECT id, name, description, image FROM ${tables.teamTable} WHERE description != '' ORDER BY id DESC LIMIT 100`
         )
       : none,
     need.job
@@ -292,13 +347,13 @@ async function collectSpotlights(params: {
     need.listing
       ? query(
           'listing',
-          `SELECT id, title, description, price, currency, teamId FROM ${tables.marketplaceTable} WHERE (startTime = 0 OR startTime <= ${nowTs}) AND (endTime = 0 OR endTime >= ${nowTs}) ORDER BY id DESC LIMIT 50`
+          `SELECT id, title, description, price, currency, teamId, image FROM ${tables.marketplaceTable} WHERE (startTime = 0 OR startTime <= ${nowTs}) AND (endTime = 0 OR endTime >= ${nowTs}) ORDER BY id DESC LIMIT 50`
         )
       : none,
     need.project
       ? query(
           'project',
-          `SELECT id, MDP, name, description FROM ${tables.projectTable} WHERE active = ${PROJECT_ACTIVE}`
+          `SELECT id, MDP, name, description, image FROM ${tables.projectTable} WHERE active = ${PROJECT_ACTIVE}`
         )
       : none,
   ])
@@ -315,7 +370,7 @@ async function collectSpotlights(params: {
   )
   const job = pickForDay<JobItem>(jobPool.filter((j: any) => clip(j.title)).map(toJob), now, 2)
   const listing = pickForDay<ListingItem>(listingPool.filter((l: any) => clip(l.title)).map(toListing), now, 3)
-  const projectRow = pickForDay<{ id: number; MDP: number; name: string; description?: string }>(
+  const projectRow = pickForDay<{ id: number; MDP: number; name: string; description?: string; image?: string }>(
     projectPool
       .filter((p: any) => !isBlockedProject(p) && !isUntitledLike(p.name))
       .map((p: any) => ({ ...p, id: Number(p.id) })),
@@ -333,6 +388,7 @@ async function collectSpotlights(params: {
         mdp: Number(projectRow.MDP),
         name: clip(projectRow.name, 120)!,
         description: clip(projectRow.description),
+        image: safeImage(projectRow.image),
       },
     }),
   }
@@ -360,7 +416,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     jobRows,
     listingRows,
     proposals,
-    nextTownHall,
+    upcomingEvents,
     townHalls,
     mooney,
   ] = await Promise.all([
@@ -369,7 +425,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
       () =>
         queryTable(
           chain,
-          `SELECT id, name, description, location FROM ${citizenTable} ${citizenWhere} ORDER BY id DESC LIMIT 25`
+          `SELECT id, name, description, location, image FROM ${citizenTable} ${citizenWhere} ORDER BY id DESC LIMIT 25`
         ),
       [] as any[]
     ),
@@ -382,7 +438,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     settle(
       'teams',
       () =>
-        queryTable(chain, `SELECT id, name, description FROM ${teamTable} ORDER BY id DESC LIMIT 15`),
+        queryTable(chain, `SELECT id, name, description, image FROM ${teamTable} ORDER BY id DESC LIMIT 15`),
       [] as any[]
     ),
     settle('team mints', () => getRecentTeamTransfers(20), []),
@@ -400,12 +456,12 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
       () =>
         queryTable(
           chain,
-          `SELECT id, title, description, price, currency, teamId FROM ${marketplaceTable} WHERE timestamp >= ${sinceTs} AND (startTime = 0 OR startTime <= ${nowTs}) AND (endTime = 0 OR endTime >= ${nowTs}) ORDER BY id DESC LIMIT 20`
+          `SELECT id, title, description, price, currency, teamId, image FROM ${marketplaceTable} WHERE timestamp >= ${sinceTs} AND (startTime = 0 OR startTime <= ${nowTs}) AND (endTime = 0 OR endTime >= ${nowTs}) ORDER BY id DESC LIMIT 20`
         ),
       [] as any[]
     ),
     settle('proposals', () => fetchOpenProposals(projectTable), [] as ActivitySnapshot['proposals']),
-    settle('next town hall', () => getNextTownHallEvent(), null),
+    settle('upcoming events', fetchUpcomingEvents, [] as EventItem[]),
     settle('town hall summaries', () => getSummaries({ limit: 1 }), null),
     settle('mooney price', () => getMooneyPrice(), null),
   ])
@@ -453,9 +509,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     jobs,
     listings,
     proposals,
-    nextTownHall: nextTownHall
-      ? { name: clip(nextTownHall.name, 120)!, startAt: nextTownHall.start_at, url: nextTownHall.url }
-      : null,
+    upcomingEvents,
     latestTownHall:
       latest && new Date(latest.publishedAt).getTime() >= sinceTs * 1000
         ? {

@@ -26,7 +26,16 @@ const SECTION_ORDER: SectionKind[] = [
   'marketplace',
 ]
 
-export type SummaryLink = { label: string; href: string }
+export type SummaryLink = {
+  label: string
+  href: string
+  // ipfs:// or https:// avatar/cover image
+  image?: string
+  // Event start time, formatted on the client in the viewer's timezone
+  startAt?: string
+  // Short secondary line: location, price, guest count
+  detail?: string
+}
 
 export type ActivitySummarySection = {
   kind: SectionKind
@@ -93,27 +102,35 @@ REFS
 // always links to the vote page instead.
 export function buildSummaryUserPrompt(snapshot: ActivitySnapshot): string {
   const { spotlight } = snapshot
+  // Images are for the card only; they'd just be noise to the model.
+  const withRef = <T extends { image?: string }>(ref: string, item: T) => {
+    const { image: _image, ...rest } = item
+    return { ref, ...rest }
+  }
   const input = {
     period: { start: snapshot.periodStart, end: snapshot.periodEnd },
     totalCitizens: snapshot.totalCitizens ?? undefined,
     mooneyPriceUsd: snapshot.mooney?.price ?? undefined,
     proposals: snapshot.proposals,
-    nextTownHall: snapshot.nextTownHall
-      ? { ref: 'event:townhall', name: snapshot.nextTownHall.name, startAt: snapshot.nextTownHall.startAt }
-      : undefined,
+    upcomingEvents: snapshot.upcomingEvents.map((e) => ({
+      ref: `event:${e.id}`,
+      name: e.name,
+      startAt: e.startAt,
+      guestCount: e.guestCount,
+    })),
     latestTownHallRecap: snapshot.latestTownHall
       ? { ref: 'townhall:latest', ...snapshot.latestTownHall }
       : undefined,
-    newCitizens: snapshot.citizens.map((c) => ({ ref: `citizen:${c.id}`, ...c })),
-    newTeams: snapshot.teams.map((t) => ({ ref: `team:${t.id}`, ...t })),
+    newCitizens: snapshot.citizens.map((c) => withRef(`citizen:${c.id}`, c)),
+    newTeams: snapshot.teams.map((t) => withRef(`team:${t.id}`, t)),
     newJobs: snapshot.jobs.map((j) => ({ ref: `job:${j.id}`, ...j })),
-    newMarketplaceListings: snapshot.listings.map((l) => ({ ref: `listing:${l.id}`, ...l })),
+    newMarketplaceListings: snapshot.listings.map((l) => withRef(`listing:${l.id}`, l)),
     spotlight: {
-      citizen: spotlight.citizen && { ref: `citizen:${spotlight.citizen.id}`, ...spotlight.citizen },
-      team: spotlight.team && { ref: `team:${spotlight.team.id}`, ...spotlight.team },
+      citizen: spotlight.citizen && withRef(`citizen:${spotlight.citizen.id}`, spotlight.citizen),
+      team: spotlight.team && withRef(`team:${spotlight.team.id}`, spotlight.team),
       job: spotlight.job && { ref: `job:${spotlight.job.id}`, ...spotlight.job },
-      listing: spotlight.listing && { ref: `listing:${spotlight.listing.id}`, ...spotlight.listing },
-      project: spotlight.project && { ref: `project:${spotlight.project.mdp}`, ...spotlight.project },
+      listing: spotlight.listing && withRef(`listing:${spotlight.listing.id}`, spotlight.listing),
+      project: spotlight.project && withRef(`project:${spotlight.project.mdp}`, spotlight.project),
     },
   }
   return `MoonDAO activity for the last 7 days:\n${JSON.stringify(input, null, 2)}`
@@ -131,33 +148,54 @@ function safeExternalUrl(url: string): string | null {
 // Every ref the model may cite, mapped to a link built on our side.
 export function buildRefIndex(snapshot: ActivitySnapshot): Map<string, SummaryLink> {
   const index = new Map<string, SummaryLink>()
+  // Leave unset fields out entirely so cached JSON stays small.
+  const add = (ref: string, link: SummaryLink) =>
+    index.set(
+      ref,
+      Object.fromEntries(Object.entries(link).filter(([, v]) => v !== undefined)) as SummaryLink
+    )
   const { spotlight } = snapshot
-  if (snapshot.nextTownHall) {
-    const href = safeExternalUrl(snapshot.nextTownHall.url)
-    if (href) index.set('event:townhall', { label: snapshot.nextTownHall.name, href })
+  for (const e of snapshot.upcomingEvents) {
+    const href = safeExternalUrl(e.url)
+    if (!href) continue
+    add(`event:${e.id}`, {
+      label: e.name,
+      href,
+      image: e.image,
+      startAt: e.startAt,
+      detail: e.guestCount ? `${e.guestCount} going` : undefined,
+    })
   }
   if (snapshot.latestTownHall) {
-    index.set('townhall:latest', { label: snapshot.latestTownHall.title, href: '/townhall' })
+    add('townhall:latest', { label: snapshot.latestTownHall.title, href: '/townhall' })
   }
   for (const c of [...snapshot.citizens, ...(spotlight.citizen ? [spotlight.citizen] : [])]) {
-    index.set(`citizen:${c.id}`, {
+    add(`citizen:${c.id}`, {
       label: c.name,
       href: `/citizen/${generatePrettyLinkWithId(c.name, c.id)}`,
+      image: c.image,
+      detail: c.location,
     })
   }
   for (const t of [...snapshot.teams, ...(spotlight.team ? [spotlight.team] : [])]) {
-    index.set(`team:${t.id}`, { label: t.name, href: `/team/${t.id}` })
+    add(`team:${t.id}`, { label: t.name, href: `/team/${t.id}`, image: t.image })
   }
   for (const j of [...snapshot.jobs, ...(spotlight.job ? [spotlight.job] : [])]) {
-    index.set(`job:${j.id}`, { label: j.title, href: `/jobs/${j.id}` })
+    add(`job:${j.id}`, { label: j.title, href: `/jobs/${j.id}` })
   }
   for (const l of [...snapshot.listings, ...(spotlight.listing ? [spotlight.listing] : [])]) {
-    index.set(`listing:${l.id}`, { label: l.title, href: `/marketplace/${l.id}` })
+    add(`listing:${l.id}`, {
+      label: l.title,
+      href: `/marketplace/${l.id}`,
+      image: l.image,
+      detail: l.price ? `${l.price} ${l.currency ?? ''}`.trim() : undefined,
+    })
   }
   if (spotlight.project) {
-    index.set(`project:${spotlight.project.mdp}`, {
+    add(`project:${spotlight.project.mdp}`, {
       label: spotlight.project.name,
       href: `/project/${spotlight.project.mdp}`,
+      image: spotlight.project.image,
     })
   }
   return index
@@ -182,7 +220,7 @@ export function hasActivity(snapshot: ActivitySnapshot): boolean {
     snapshot.teams.length > 0 ||
     snapshot.jobs.length > 0 ||
     snapshot.listings.length > 0 ||
-    snapshot.nextTownHall !== null ||
+    snapshot.upcomingEvents.length > 0 ||
     snapshot.latestTownHall !== null ||
     spotlightKinds(snapshot).size > 0
   )

@@ -10,6 +10,7 @@ import {
 import type { ActivitySummary } from '../lib/activity-summary/prompt'
 import { pickForDay } from '../lib/activity-summary/spotlight'
 import { getOrCreateSummary, SummaryStore, summaryKeys } from '../lib/activity-summary/store'
+import { parseLumaCalendarPage } from '../lib/townhall/luma'
 
 const NOW = new Date('2026-10-23T12:00:00Z')
 
@@ -17,7 +18,15 @@ function snapshot(overrides: Partial<ActivitySnapshot> = {}): ActivitySnapshot {
   return {
     periodStart: '2026-10-16T12:00:00.000Z',
     periodEnd: NOW.toISOString(),
-    citizens: [{ id: 412, name: 'Ada Lovelace', location: 'London, UK', bio: 'Engineer' }],
+    citizens: [
+      {
+        id: 412,
+        name: 'Ada Lovelace',
+        location: 'London, UK',
+        bio: 'Engineer',
+        image: 'ipfs://QmAda',
+      },
+    ],
     totalCitizens: 640,
     teams: [],
     jobs: [{ id: 7, title: 'Lunar Habitat Designer', teamId: 3 }],
@@ -26,11 +35,16 @@ function snapshot(overrides: Partial<ActivitySnapshot> = {}): ActivitySnapshot {
       { mdp: 180, name: 'Moon Rover Grant', status: 'member-vote' },
       { mdp: 181, name: 'Regolith Kiln', status: 'senate-review' },
     ],
-    nextTownHall: {
-      name: 'Weekly Town Hall',
-      startAt: '2026-10-24T17:00:00.000Z',
-      url: 'https://lu.ma/moondao-townhall',
-    },
+    upcomingEvents: [
+      {
+        id: 'evt-1',
+        name: 'Weekly Town Hall',
+        startAt: '2026-10-24T17:00:00.000Z',
+        url: 'https://lu.ma/moondao-townhall',
+        image: 'https://images.lumacdn.com/cover.png',
+        guestCount: 42,
+      },
+    ],
     latestTownHall: null,
     mooney: { price: 0.0004, priceChange24h: 1.2 },
     spotlight: {},
@@ -39,7 +53,7 @@ function snapshot(overrides: Partial<ActivitySnapshot> = {}): ActivitySnapshot {
 }
 
 function emptySnapshot(): ActivitySnapshot {
-  return snapshot({ citizens: [], jobs: [], proposals: [], nextTownHall: null })
+  return snapshot({ citizens: [], jobs: [], proposals: [], upcomingEvents: [] })
 }
 
 const MODEL_OUTPUT = {
@@ -53,7 +67,7 @@ const MODEL_OUTPUT = {
     },
     { kind: 'governance', summary: 'Duplicate section.', refs: [] },
     { kind: 'weather', summary: 'Not a real kind.', refs: [] },
-    { kind: 'events', summary: 'Town hall on Saturday.', refs: ['event:townhall'] },
+    { kind: 'events', summary: 'Town hall on Saturday.', refs: ['event:evt-1'] },
   ],
 }
 
@@ -66,8 +80,11 @@ describe('activity summary prompt', () => {
     expect(prompt).to.include('"status": "member-vote"')
     expect(prompt).to.include('"status": "senate-review"')
     expect(prompt).to.include('"ref": "job:7"')
-    expect(prompt).to.include('"ref": "event:townhall"')
+    expect(prompt).to.include('"ref": "event:evt-1"')
+    expect(prompt).to.include('"guestCount": 42')
     expect(prompt).to.not.include('lu.ma')
+    expect(prompt).to.not.include('lumacdn')
+    expect(prompt).to.not.include('ipfs://')
   })
 
   it('treats a week with nothing in it as no activity', () => {
@@ -104,9 +121,22 @@ describe('normalizeSummary', () => {
 
   it('links only refs that exist in the snapshot', () => {
     expect(summary.sections[2].links).to.deep.equal([
-      { label: 'Ada Lovelace', href: '/citizen/ada-lovelace-412' },
+      {
+        label: 'Ada Lovelace',
+        href: '/citizen/ada-lovelace-412',
+        image: 'ipfs://QmAda',
+        detail: 'London, UK',
+      },
     ])
-    expect(summary.sections[1].links[0].href).to.equal('https://lu.ma/moondao-townhall')
+    expect(summary.sections[1].links).to.deep.equal([
+      {
+        label: 'Weekly Town Hall',
+        href: 'https://lu.ma/moondao-townhall',
+        image: 'https://images.lumacdn.com/cover.png',
+        startAt: '2026-10-24T17:00:00.000Z',
+        detail: '42 going',
+      },
+    ])
   })
 
   it('records the period, model and generation time', () => {
@@ -123,7 +153,9 @@ describe('normalizeSummary', () => {
 
   it('does not link a town hall URL that is not https', () => {
     const s = snapshot({
-      nextTownHall: { name: 'Town Hall', startAt: '2026-10-24T17:00:00Z', url: 'javascript:alert(1)' },
+      upcomingEvents: [
+        { id: 'evt-1', name: 'Town Hall', startAt: '2026-10-24T17:00:00Z', url: 'javascript:alert(1)' },
+      ],
     })
     const result = normalizeSummary({ raw: MODEL_OUTPUT, snapshot: s, model: 'm' })!
     const events = result.sections.find((sec) => sec.kind === 'events')!
@@ -136,7 +168,7 @@ describe('spotlights', () => {
     citizens: [],
     jobs: [],
     proposals: [],
-    nextTownHall: null,
+    upcomingEvents: [],
     spotlight: {
       citizen: { id: 88, name: 'Grace Hopper', bio: 'Compiler pioneer' },
       job: { id: 3, title: 'Regolith Engineer' },
@@ -197,6 +229,69 @@ describe('pickForDay', () => {
 
   it('returns undefined for an empty pool', () => {
     expect(pickForDay([], NOW)).to.equal(undefined)
+  })
+})
+
+describe('parseLumaCalendarPage', () => {
+  function page(data: unknown) {
+    const json = JSON.stringify({ props: { pageProps: { initialData: { data } } } })
+    return `<html><script id="__NEXT_DATA__" type="application/json">${json}</script></html>`
+  }
+  const event = (id: string, name: string, startAt: string, extra: Record<string, unknown> = {}) => ({
+    event: { api_id: id, name, start_at: startAt, url: `slug-${id}`, ...extra },
+  })
+
+  it('returns upcoming events soonest first, deduplicated across lists', () => {
+    const html = page({
+      featured_items: [
+        { ...event('b', 'Project Demo Day! | MoonDAO Town Hall', '2026-11-05T20:00:00Z'), guest_count: 12 },
+        event('past', 'Old Town Hall', '2026-10-01T20:00:00Z'),
+      ],
+      upcoming: {
+        entries: [
+          event('a', 'Astronaut Ron Garan | MoonDAO Town Hall', '2026-10-29T19:00:00Z', {
+            cover_url: 'https://images.lumacdn.com/a.png',
+          }),
+          event('b', 'Project Demo Day! | MoonDAO Town Hall', '2026-11-05T20:00:00Z'),
+        ],
+      },
+    })
+    expect(parseLumaCalendarPage(html, NOW)).to.deep.equal([
+      {
+        id: 'a',
+        name: 'Astronaut Ron Garan | MoonDAO Town Hall',
+        startAt: '2026-10-29T19:00:00Z',
+        url: 'https://lu.ma/slug-a',
+        coverUrl: 'https://images.lumacdn.com/a.png',
+        guestCount: undefined,
+      },
+      {
+        id: 'b',
+        name: 'Project Demo Day! | MoonDAO Town Hall',
+        startAt: '2026-11-05T20:00:00Z',
+        url: 'https://lu.ma/slug-b',
+        coverUrl: undefined,
+        guestCount: 12,
+      },
+    ])
+  })
+
+  it('keeps a plain weekly town hall only when it is the soonest event', () => {
+    const html = page({
+      featured_items: [
+        event('1', 'MoonDAO Town Hall', '2026-10-29T19:00:00Z'),
+        event('2', 'MoonDAO Town Hall', '2026-11-05T20:00:00Z'),
+        event('3', 'Special Guest | MoonDAO Town Hall', '2026-11-12T20:00:00Z'),
+      ],
+    })
+    expect(parseLumaCalendarPage(html, NOW).map((e) => e.id)).to.deep.equal(['1', '3'])
+  })
+
+  it('returns nothing for a page without the embedded data', () => {
+    expect(parseLumaCalendarPage('<html></html>', NOW)).to.deep.equal([])
+    expect(
+      parseLumaCalendarPage('<script id="__NEXT_DATA__" type="application/json">{oops</script>', NOW)
+    ).to.deep.equal([])
   })
 })
 
@@ -342,8 +437,8 @@ describe('getOrCreateSummary', () => {
   })
 
   it('namespaces keys by environment', () => {
-    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v2:production:2026-10-23')
-    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v2:preview:latest')
+    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v3:production:2026-10-23')
+    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v3:preview:latest')
     expect(summaryKeys(NOW, 'preview').lock).to.not.equal(summaryKeys(NOW, 'production').lock)
   })
 

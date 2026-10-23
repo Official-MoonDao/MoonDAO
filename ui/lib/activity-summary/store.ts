@@ -4,7 +4,7 @@ import type { ActivitySummary } from './prompt'
 // Bump the version whenever the summary's shape or how it is generated
 // changes, so a new deploy regenerates instead of serving a summary stored
 // by older code for the rest of the day.
-const KEY_VERSION = 'v2'
+const KEY_VERSION = 'v3'
 const KEY_PREFIX = `activity-summary:${KEY_VERSION}`
 const DAY_TTL_SECONDS = 30 * 24 * 60 * 60
 // Longer than one generation (collect + Groq) so a slow run keeps the lock.
