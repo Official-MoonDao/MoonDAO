@@ -8,6 +8,7 @@ import {
   normalizeSummary,
 } from '../lib/activity-summary/prompt'
 import type { ActivitySummary } from '../lib/activity-summary/prompt'
+import { fetchMintTimestamps } from '../lib/activity-summary/mintTimes'
 import { pickForDay } from '../lib/activity-summary/spotlight'
 import { getOrCreateSummary, SummaryStore, summaryKeys } from '../lib/activity-summary/store'
 import { parseLumaCalendarPage } from '../lib/townhall/luma'
@@ -304,6 +305,52 @@ describe('parseLumaCalendarPage', () => {
   })
 })
 
+describe('fetchMintTimestamps', () => {
+  const ZERO = '0x0000000000000000000000000000000000000000'
+  const ok = {
+    status: '1',
+    result: [
+      { from: ZERO, tokenID: '265', timeStamp: '1792430000' },
+      { from: '0xabc', tokenID: '100', timeStamp: '1792440000' },
+      { from: ZERO, tokenID: '264', timeStamp: '1791000000' },
+    ],
+  }
+  const rateLimited = { status: '0', message: 'NOTOK', result: 'Max calls per sec rate limit reached (3/sec)' }
+
+  function replies(...bodies: any[]) {
+    let calls = 0
+    const fetchImpl = async () => ({ ok: true, json: async () => bodies[Math.min(calls++, bodies.length - 1)] })
+    return { fetchImpl, calls: () => calls }
+  }
+  const base = { contractAddress: '0xcitizen', chainId: 42161, apiKey: 'k', sleep: async () => {} }
+
+  it('returns mint times only, ignoring later transfers', async () => {
+    const { fetchImpl } = replies(ok)
+    expect(await fetchMintTimestamps({ ...base, fetchImpl })).to.deep.equal({
+      '265': 1792430000,
+      '264': 1791000000,
+    })
+  })
+
+  it('retries after a rate-limit reply', async () => {
+    const r = replies(rateLimited, ok)
+    expect(await fetchMintTimestamps({ ...base, fetchImpl: r.fetchImpl })).to.have.property('265')
+    expect(r.calls()).to.equal(2)
+  })
+
+  it('returns null, not an empty map, when it stays rate limited', async () => {
+    const r = replies(rateLimited)
+    expect(await fetchMintTimestamps({ ...base, fetchImpl: r.fetchImpl })).to.equal(null)
+    expect(r.calls()).to.equal(3)
+  })
+
+  it('returns null without an API key and {} when there are no transfers', async () => {
+    expect(await fetchMintTimestamps({ ...base, apiKey: undefined })).to.equal(null)
+    const { fetchImpl } = replies({ status: '0', message: 'No transactions found', result: [] })
+    expect(await fetchMintTimestamps({ ...base, fetchImpl })).to.deep.equal({})
+  })
+})
+
 describe('generateActivitySummary', () => {
   function fakeFetch(body: any, ok = true) {
     const calls: any[] = []
@@ -460,8 +507,8 @@ describe('getOrCreateSummary', () => {
   })
 
   it('namespaces keys by environment', () => {
-    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v5:production:2026-10-23')
-    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v5:preview:latest')
+    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v6:production:2026-10-23')
+    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v6:preview:latest')
     expect(summaryKeys(NOW, 'preview').lock).to.not.equal(summaryKeys(NOW, 'production').lock)
   })
 

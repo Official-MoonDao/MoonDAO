@@ -2,12 +2,14 @@
 // snapshot that the activity summary prompt is built from.
 import ProposalsABI from 'const/abis/Proposals.json'
 import {
+  CITIZEN_ADDRESSES,
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_NAMES,
   MARKETPLACE_TABLE_NAMES,
   PROJECT_TABLE_NAMES,
   PROPOSALS_ADDRESSES,
+  TEAM_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_CITIZENS, BLOCKED_TEAMS } from 'const/whitelist'
@@ -15,7 +17,6 @@ import { getContract, readContract } from 'thirdweb'
 import { parseLocationData } from '@/lib/citizen/citizenDataService'
 import { getMooneyPrice } from '@/lib/coinstats'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
-import { getRecentCitizenTransfers, getRecentTeamTransfers } from '@/lib/network/networkSubgraph'
 import { getLivePhaseOverride, resolveLivePhase } from '@/lib/operator/cyclePhase'
 import {
   getProjectDisplayName,
@@ -30,6 +31,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
 import { getNextTownHallEvent, getUpcomingLumaEvents } from '@/lib/townhall/luma'
 import { getSummaries } from '@/lib/townhall/summaries'
+import { fetchMintTimestamps } from './mintTimes'
 import { pickForDay } from './spotlight'
 
 export const LOOKBACK_DAYS = 7
@@ -38,6 +40,7 @@ export const LOOKBACK_DAYS = 7
 // model to keep the prompt small and limit what any one row can inject.
 const TEXT_LIMIT = 280
 const SOURCE_TIMEOUT_MS = 8000
+const MINT_TIMES_TIMEOUT_MS = 15000
 
 export type ProposalStage = 'member-vote' | 'senate-review'
 
@@ -113,13 +116,18 @@ export function stripHtml(html: string): string {
 
 // Resolves to `fallback` when a source is slow or throws, so one bad source
 // drops out of the snapshot instead of failing the whole summary.
-async function settle<T>(label: string, work: () => Promise<T>, fallback: T): Promise<T> {
+async function settle<T>(
+  label: string,
+  work: () => Promise<T>,
+  fallback: T,
+  timeoutMs = SOURCE_TIMEOUT_MS
+): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<T>((resolve) => {
     timer = setTimeout(() => {
       console.warn(`[activity-summary] ${label} timed out`)
       resolve(fallback)
-    }, SOURCE_TIMEOUT_MS)
+    }, timeoutMs)
   })
   try {
     return await Promise.race([
@@ -216,15 +224,8 @@ async function fetchOpenProposals(projectTable: string): Promise<ActivitySnapsho
     .sort((a, b) => a.mdp - b.mdp)
 }
 
-function mintTimestamps(transfers: { tokenId: string; blockTimestamp: string }[]) {
-  const map: Record<string, number> = {}
-  for (const t of transfers) {
-    if (t.tokenId && t.blockTimestamp && !(t.tokenId in map)) {
-      map[t.tokenId] = Number(t.blockTimestamp)
-    }
-  }
-  return map
-}
+// null = couldn't be read (see fetchMintTimestamps)
+type MintTimes = { citizen: Record<string, number> | null; team: Record<string, number> | null }
 
 export function safeImage(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined
@@ -420,9 +421,8 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
   const [
     citizenRows,
     citizenCount,
-    citizenTransfers,
+    mintTimes,
     teamRows,
-    teamTransfers,
     jobRows,
     listingRows,
     proposals,
@@ -444,14 +444,36 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
       () => queryTable(chain, `SELECT COUNT(*) as count FROM ${citizenTable} ${citizenWhere}`),
       [] as any[]
     ),
-    settle('citizen mints', () => getRecentCitizenTransfers(50), []),
+    // Citizen then team, one after the other: the shared Etherscan key
+    // allows 3 calls/sec, and fetchMintTimestamps may retry. Gets a longer
+    // limit than other sources to leave room for those retries.
+    settle(
+      'mint times',
+      async () => {
+        const apiKey = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY
+        const citizen = await fetchMintTimestamps({
+          contractAddress: CITIZEN_ADDRESSES[chainSlug],
+          chainId: chain.id,
+          apiKey,
+          limit: 50,
+        })
+        const team = await fetchMintTimestamps({
+          contractAddress: TEAM_ADDRESSES[chainSlug],
+          chainId: chain.id,
+          apiKey,
+          limit: 20,
+        })
+        return { citizen, team }
+      },
+      { citizen: null, team: null } as MintTimes,
+      MINT_TIMES_TIMEOUT_MS
+    ),
     settle(
       'teams',
       () =>
         queryTable(chain, `SELECT id, name, description, image FROM ${teamTable} ORDER BY id DESC LIMIT 15`),
       [] as any[]
     ),
-    settle('team mints', () => getRecentTeamTransfers(20), []),
     settle(
       'jobs',
       () =>
@@ -477,19 +499,21 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
   ])
 
   // Tableland rows have no created-at column, so "new this week" comes from
-  // the NFT mint timestamps. Without them we can't tell new from old, so the
-  // category is left empty rather than guessed.
-  const citizenMints = mintTimestamps(citizenTransfers)
+  // the NFT mint timestamps. When those can't be read (null), we can't tell
+  // new from old: the category gets neither new items nor a spotlight, since
+  // a spotlight would imply nobody joined.
+  const isNew = (mints: Record<string, number> | null, id: unknown) =>
+    mints !== null && (mints[String(id)] ?? 0) >= sinceTs
   const citizens = citizenRows
     .filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
-    .filter((c: any) => (citizenMints[String(c.id)] ?? 0) >= sinceTs)
+    .filter((c: any) => isNew(mintTimes.citizen, c.id))
     .map(toCitizen)
-
-  const teamMints = mintTimestamps(teamTransfers)
   const teams = teamRows
     .filter((t: any) => !BLOCKED_TEAMS.has(t.id))
-    .filter((t: any) => (teamMints[String(t.id)] ?? 0) >= sinceTs)
+    .filter((t: any) => isNew(mintTimes.team, t.id))
     .map(toTeam)
+  if (mintTimes.citizen === null) console.warn('[activity-summary] citizen mint times unavailable')
+  if (mintTimes.team === null) console.warn('[activity-summary] team mint times unavailable')
 
   const jobs = jobRows.filter((j: any) => clip(j.title)).map(toJob)
   const listings = listingRows.filter((l: any) => clip(l.title)).map(toListing)
@@ -499,8 +523,8 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     nowTs,
     tables: { citizenTable, teamTable, jobTable, marketplaceTable, projectTable },
     need: {
-      citizen: citizens.length === 0,
-      team: teams.length === 0,
+      citizen: mintTimes.citizen !== null && citizens.length === 0,
+      team: mintTimes.team !== null && teams.length === 0,
       job: jobs.length === 0,
       listing: listings.length === 0,
       project: proposals.length === 0,

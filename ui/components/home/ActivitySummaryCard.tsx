@@ -1,7 +1,6 @@
 import {
   BriefcaseIcon,
   CalendarDaysIcon,
-  ChevronDownIcon,
   CheckBadgeIcon,
   PlayCircleIcon,
   SparklesIcon,
@@ -12,7 +11,6 @@ import {
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
 import type { ReactNode } from 'react'
 import useSWR from 'swr'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
@@ -23,10 +21,6 @@ import type {
   SectionKind,
   SummaryLink,
 } from '@/lib/activity-summary/prompt'
-
-// Sections shown before "Show more". Governance and events sort first, so
-// the collapsed view keeps whatever citizens can act on.
-const COLLAPSED_SECTIONS = 3
 
 const SECTION_STYLES: Record<
   SectionKind,
@@ -230,7 +224,6 @@ function SectionRow({ section }: { section: ActivitySummarySection }) {
  * loaded, so the activity feed below simply moves up.
  */
 export default function ActivitySummaryCard() {
-  const [expanded, setExpanded] = useState(false)
   const { data, error, isLoading } = useSWR(
     `/api/activity-summary?v=${ACTIVITY_SUMMARY_VERSION}`,
     fetchSummary,
@@ -239,10 +232,8 @@ export default function ActivitySummaryCard() {
 
   if (error || (!isLoading && !data)) return null
 
-  const sections = data?.sections ?? []
-  const visible = expanded ? sections : sections.slice(0, COLLAPSED_SECTIONS)
-  const hidden = sections.length - visible.length
-
+  // Every section is shown: the panel scrolls, so the summary reads as the
+  // top news and the activity feed continues below it.
   return (
     <div className="mb-3 rounded-xl border border-purple-400/15 bg-gradient-to-br from-indigo-500/[0.10] via-purple-500/[0.04] to-transparent px-3.5 py-3">
       {!data ? (
@@ -250,29 +241,15 @@ export default function ActivitySummaryCard() {
       ) : (
         <>
           <ul className="space-y-3">
-            {visible.map((section) => (
+            {data.sections.map((section) => (
               <SectionRow key={section.kind} section={section} />
             ))}
           </ul>
-          <div className="flex items-center justify-between gap-2 mt-2.5">
-            <span className="flex items-center gap-1 text-[10px] text-white/30">
-              <SparklesIcon className="w-3 h-3" />
-              AI summary, {formatDay(data.periodStart)} – {formatDay(data.periodEnd)} · may contain
-              mistakes
-            </span>
-            {(hidden > 0 || expanded) && sections.length > COLLAPSED_SECTIONS && (
-              <button
-                type="button"
-                onClick={() => setExpanded((v) => !v)}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-200/80 hover:text-purple-100 transition-colors"
-              >
-                {expanded ? 'Show less' : `Show ${hidden} more`}
-                <ChevronDownIcon
-                  className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-                />
-              </button>
-            )}
-          </div>
+          <p className="flex items-center gap-1 mt-2.5 text-[10px] text-white/30">
+            <SparklesIcon className="w-3 h-3" />
+            AI summary, {formatDay(data.periodStart)} – {formatDay(data.periodEnd)} · may contain
+            mistakes
+          </p>
         </>
       )}
     </div>
