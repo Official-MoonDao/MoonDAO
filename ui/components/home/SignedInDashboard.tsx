@@ -347,6 +347,7 @@ export default function SignedInDashboard({
   filteredTeams,
   projects,
   nonProjectProjectIds = [],
+  featuredProposals = [],
   missions,
   featuredMissionData,
   citizensLocationData = [],
@@ -357,14 +358,8 @@ export default function SignedInDashboard({
   const governanceProjectIds = new Set(
     (nonProjectProjectIds as Array<number | string>).map((id) => Number(id))
   )
-  // Every non-blocked proposal, regardless of lifecycle status. The "Latest
-  // Proposals" widget reads from this so it always reflects the newest MDP —
-  // otherwise newly-passed/failed proposals (active != PENDING) drop out and
-  // the widget silently lags behind the real latest proposal number.
-  const allProposals = []
   for (let i = 0; i < projects.length; i++) {
     if (!isBlockedProject(projects[i])) {
-      allProposals.push(projects[i])
       const activeStatus = projects[i].active
       if (activeStatus == PROJECT_PENDING) {
         proposals.push(projects[i])
@@ -376,10 +371,6 @@ export default function SignedInDashboard({
       }
     }
   }
-  // Newest proposals first by MDP (fall back to row id when MDP is missing).
-  const latestProposals = [...allProposals].sort(
-    (a, b) => (b.MDP ?? b.id ?? 0) - (a.MDP ?? a.id ?? 0)
-  )
   currentProjects.sort((a, b) => {
     if (a.eligible === b.eligible) {
       return 0
@@ -1012,7 +1003,7 @@ export default function SignedInDashboard({
                 noPagination
                 compact
                 feedCardStyle
-                projects={latestProposals.slice(0, 3)}
+                projects={featuredProposals}
               />
             </div>
           </div>
