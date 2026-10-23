@@ -14,6 +14,7 @@ import {
   resolveLivePhase,
   resolveMemberVoteSubmissionsOpen,
 } from '@/lib/operator/cyclePhase'
+import { excludeNonProjectProposals } from '@/lib/project/excludeNonProjectProposals'
 import {
   getProjectDisplayName,
   isUntitledLike,
@@ -107,7 +108,7 @@ export async function getStaticProps() {
     // *next* quarter and would make in-flight Q{n} proposals vanish.
     const activeProposalQuarter = getProposalCycle()
     const proposals: Project[] = []
-    const currentProjects: Project[] = []
+    let currentProjects: Project[] = []
     const pastProjects: Project[] = []
 
     const isCurrentPending = (project: Project) =>
@@ -211,6 +212,9 @@ export async function getStaticProps() {
         }
       })
     )
+    // Governance proposals that pass are written active, same as funded
+    // projects. Pending rows already skip `nonProjectProposal` above.
+    currentProjects = await excludeNonProjectProposals(currentProjects)
     // For active/past projects whose stored name is empty or "Untitled",
     // fetch the IPFS proposal JSON server-side so the pre-rendered HTML
     // already carries the real title instead of "Untitled Project".

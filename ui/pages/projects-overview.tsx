@@ -8,6 +8,7 @@ import Link from 'next/link'
 import React from 'react'
 import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
+import { excludeNonProjectProposals } from '@/lib/project/excludeNonProjectProposals'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import Container from '../components/layout/Container'
@@ -403,16 +404,17 @@ export const getServerSideProps: GetServerSideProps = async () => {
       }
     }
 
-    await enrichProjectNames(currentProjects)
+    const fundedProjects = await excludeNonProjectProposals(currentProjects)
+    await enrichProjectNames(fundedProjects)
 
-    currentProjects.sort((a, b) => {
+    fundedProjects.sort((a, b) => {
       if (a.eligible === b.eligible) return 0
       return a.eligible ? 1 : -1
     })
 
     return {
       props: {
-        currentProjects: currentProjects.reverse(),
+        currentProjects: fundedProjects.reverse(),
       },
     }
   } catch (error) {
