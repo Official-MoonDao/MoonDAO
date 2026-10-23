@@ -9,11 +9,10 @@ import {
   UserPlusIcon,
   UserGroupIcon,
   ArrowTopRightOnSquareIcon,
-  ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import { useNewsletters } from '@/lib/home/useHomeData'
 
@@ -123,10 +122,11 @@ interface RecentActivityProps {
   newestTeams?: any[]
   missions?: any[]
   proposals?: any[]
+  // Cap on the merged feed. Omit to keep every item.
   maxItems?: number
-  // When set, show this many rows with a "See more" toggle for the rest
-  // (up to maxItems).
-  initialItems?: number
+  // When set, render this many rows and reveal the next page each time the
+  // end of the list scrolls into view, ending with a link to /news.
+  pageSize?: number
 }
 
 export default function RecentActivity({
@@ -136,10 +136,11 @@ export default function RecentActivity({
   newestTeams = [],
   missions = [],
   proposals = [],
-  maxItems = 8,
-  initialItems,
+  maxItems,
+  pageSize,
 }: RecentActivityProps) {
-  const [expanded, setExpanded] = useState(false)
+  const [shownCount, setShownCount] = useState(pageSize ?? 0)
+  const sentinelRef = useRef<HTMLDivElement>(null)
   const { newsletters, isLoading: newslettersLoading } = useNewsletters()
   const [contributions, setContributions] = useState<any[]>([])
   const [contribLoading, setContribLoading] = useState(true)
@@ -247,8 +248,9 @@ export default function RecentActivity({
       if (citizenName && img) nameToCitizenImage[citizenName] = getIPFSGateway(img)
     }
 
-    // Contributions
-    for (const c of contributions.slice(0, MAX_PER_SOURCE)) {
+    // Contributions: all of them. The sheet is the feed's deepest history
+    // (months of entries), which load-on-scroll reveals page by page.
+    for (const c of contributions) {
       const ts = c.timestamp ? new Date(c.timestamp).getTime() : undefined
       const walletKey = c.walletAddress?.trim().toLowerCase()
       const citizenImage =
@@ -339,13 +341,34 @@ export default function RecentActivity({
     const withTs = list.filter((x) => x.timestamp != null).sort((a, b) => b.timestamp! - a.timestamp!)
     const withoutTs = list.filter((x) => x.timestamp == null)
 
-    return [...withTs, ...withoutTs].slice(0, maxItems)
+    const sorted = [...withTs, ...withoutTs]
+    return maxItems != null ? sorted.slice(0, maxItems) : sorted
   }, [newsletters, contributions, contribCitizenImages, donations, missionImages, missions, proposals, newestCitizens, newestTeams, newestJobs, newestListings, maxItems])
 
 
   const isLoading = newslettersLoading || contribLoading
-  const collapsible = initialItems != null && items.length > initialItems
-  const visible = collapsible && !expanded ? items.slice(0, initialItems) : items
+  const paged = pageSize != null
+  const visible = paged ? items.slice(0, shownCount) : items
+  const hasMore = paged && visible.length < items.length
+
+  // Reveal the next page when the end of the list nears the viewport. The
+  // observer uses the viewport as its root, which also respects a scrolling
+  // ancestor (the dashboard's fixed-height panel on desktop). Re-observing
+  // after every page means a short page that leaves the sentinel visible
+  // loads the next one too.
+  useEffect(() => {
+    if (!hasMore || !sentinelRef.current) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setShownCount((count) => count + pageSize!)
+        }
+      },
+      { rootMargin: '200px 0px' }
+    )
+    observer.observe(sentinelRef.current)
+    return () => observer.disconnect()
+  }, [hasMore, shownCount, pageSize])
 
   return (
     <div className="space-y-2">
@@ -356,17 +379,14 @@ export default function RecentActivity({
       ) : (
         visible.map((item) => <ActivityRow key={item.id} item={item} />)
       )}
-      {collapsible && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="w-full inline-flex items-center justify-center gap-1 py-2 text-xs font-semibold text-white/50 hover:text-white/80 rounded-xl hover:bg-white/5 transition-colors"
-        >
-          {expanded ? 'See less' : `See ${items.length - visible.length} more`}
-          <ChevronDownIcon
-            className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-          />
-        </button>
+      {hasMore && <div ref={sentinelRef} aria-hidden="true" className="h-px" />}
+      {paged && !hasMore && !isLoading && items.length > 0 && (
+        <p className="pt-2 pb-1 text-center text-xs text-white/40">
+          That&apos;s everything here.{' '}
+          <Link href="/news" className="font-semibold text-blue-300/80 hover:text-blue-200">
+            Older updates on News →
+          </Link>
+        </p>
       )}
     </div>
   )
