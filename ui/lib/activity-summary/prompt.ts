@@ -7,6 +7,12 @@ import type { ActivitySnapshot } from './collectActivity'
 
 export const ACTIVITY_SUMMARY_MODEL = 'openai/gpt-oss-120b'
 
+// Bump whenever the summary's shape or how it is generated changes. It is
+// part of the Redis key and of the URL the card requests, so a new deploy
+// regenerates instead of serving a summary stored or CDN-cached from older
+// code.
+export const ACTIVITY_SUMMARY_VERSION = 3
+
 export type SectionKind =
   | 'citizens'
   | 'teams'

@@ -9,6 +9,7 @@ import {
   UserPlusIcon,
   UserGroupIcon,
   ArrowTopRightOnSquareIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -123,6 +124,9 @@ interface RecentActivityProps {
   missions?: any[]
   proposals?: any[]
   maxItems?: number
+  // When set, show this many rows with a "See more" toggle for the rest
+  // (up to maxItems).
+  initialItems?: number
 }
 
 export default function RecentActivity({
@@ -133,7 +137,9 @@ export default function RecentActivity({
   missions = [],
   proposals = [],
   maxItems = 8,
+  initialItems,
 }: RecentActivityProps) {
+  const [expanded, setExpanded] = useState(false)
   const { newsletters, isLoading: newslettersLoading } = useNewsletters()
   const [contributions, setContributions] = useState<any[]>([])
   const [contribLoading, setContribLoading] = useState(true)
@@ -338,6 +344,8 @@ export default function RecentActivity({
 
 
   const isLoading = newslettersLoading || contribLoading
+  const collapsible = initialItems != null && items.length > initialItems
+  const visible = collapsible && !expanded ? items.slice(0, initialItems) : items
 
   return (
     <div className="space-y-2">
@@ -346,7 +354,19 @@ export default function RecentActivity({
       ) : items.length === 0 ? (
         <div className="text-center py-10 text-white/50 text-sm">No recent activity yet.</div>
       ) : (
-        items.map((item) => <ActivityRow key={item.id} item={item} />)
+        visible.map((item) => <ActivityRow key={item.id} item={item} />)
+      )}
+      {collapsible && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full inline-flex items-center justify-center gap-1 py-2 text-xs font-semibold text-white/50 hover:text-white/80 rounded-xl hover:bg-white/5 transition-colors"
+        >
+          {expanded ? 'See less' : `See ${items.length - visible.length} more`}
+          <ChevronDownIcon
+            className={`w-3.5 h-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          />
+        </button>
       )}
     </div>
   )

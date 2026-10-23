@@ -848,6 +848,7 @@ export default function SignedInDashboard({
                 proposals={proposals}
                 missions={missions}
                 maxItems={13}
+                initialItems={5}
               />
             </div>
           </div>

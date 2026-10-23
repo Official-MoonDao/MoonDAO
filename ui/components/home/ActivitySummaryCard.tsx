@@ -16,6 +16,7 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import useSWR from 'swr'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import { ACTIVITY_SUMMARY_VERSION } from '@/lib/activity-summary/prompt'
 import type {
   ActivitySummary,
   ActivitySummarySection,
@@ -224,15 +225,17 @@ function SectionRow({ section }: { section: ActivitySummarySection }) {
 
 /**
  * Compact AI summary of the past week, shown at the top of the dashboard's
- * Recent Activity panel. Renders nothing when the summary can't be loaded, so
- * the activity feed below simply moves up.
+ * Recent Activity panel: just the sections, since the panel's own header
+ * already says what this is. Renders nothing when the summary can't be
+ * loaded, so the activity feed below simply moves up.
  */
 export default function ActivitySummaryCard() {
   const [expanded, setExpanded] = useState(false)
-  const { data, error, isLoading } = useSWR('/api/activity-summary', fetchSummary, {
-    revalidateOnFocus: false,
-    shouldRetryOnError: false,
-  })
+  const { data, error, isLoading } = useSWR(
+    `/api/activity-summary?v=${ACTIVITY_SUMMARY_VERSION}`,
+    fetchSummary,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  )
 
   if (error || (!isLoading && !data)) return null
 
@@ -241,31 +244,22 @@ export default function ActivitySummaryCard() {
   const hidden = sections.length - visible.length
 
   return (
-    <div className="relative mb-4 rounded-xl border border-purple-400/20 bg-gradient-to-br from-indigo-500/[0.12] via-purple-500/[0.06] to-transparent p-4 overflow-hidden">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-purple-200/80">
-          <SparklesIcon className="w-3.5 h-3.5" />
-          This week in MoonDAO
-        </p>
-        {data && (
-          <span className="text-[10px] text-white/35">
-            {formatDay(data.periodStart)} – {formatDay(data.periodEnd)}
-          </span>
-        )}
-      </div>
-
+    <div className="mb-3 rounded-xl border border-purple-400/15 bg-gradient-to-br from-indigo-500/[0.10] via-purple-500/[0.04] to-transparent px-3.5 py-3">
       {!data ? (
         <SummarySkeleton />
       ) : (
         <>
-          <p className="text-white text-sm sm:text-base font-semibold leading-snug">{data.headline}</p>
-          <ul className="mt-3 space-y-3">
+          <ul className="space-y-3">
             {visible.map((section) => (
               <SectionRow key={section.kind} section={section} />
             ))}
           </ul>
-          <div className="flex items-center justify-between gap-2 mt-3">
-            <span className="text-[10px] text-white/30">AI-generated · may contain mistakes</span>
+          <div className="flex items-center justify-between gap-2 mt-2.5">
+            <span className="flex items-center gap-1 text-[10px] text-white/30">
+              <SparklesIcon className="w-3 h-3" />
+              AI summary, {formatDay(data.periodStart)} – {formatDay(data.periodEnd)} · may contain
+              mistakes
+            </span>
             {(hidden > 0 || expanded) && sections.length > COLLAPSED_SECTIONS && (
               <button
                 type="button"
