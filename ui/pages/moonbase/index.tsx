@@ -1,32 +1,16 @@
 import { CameraIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
-import { useLogin } from '@privy-io/react-auth'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
-import { eth_getBalance, getRpcClient } from 'thirdweb/rpc'
 import { isLadderGoal } from '@/lib/deprize/capabilityLadder'
-import {
-  findDePrizeIdForGoal,
-  isCompetitiveRace,
-} from '@/lib/deprize/competitions'
-import { MarketStage, UNIT } from '@/lib/deprize/constants'
+import { findDePrizeIdForGoal, isCompetitiveRace } from '@/lib/deprize/competitions'
+import { UNIT } from '@/lib/deprize/constants'
 import { fmtPrizeEth } from '@/lib/deprize/format'
-import { spendableFromBalanceEth } from '@/lib/deprize/gas-reserve'
 import { mergeLiveMarketInto } from '@/lib/deprize/goal-market'
-import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
-import useRegionRestriction from '@/lib/geo/useRegionRestriction'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
-import { getChainSlug } from '@/lib/thirdweb/chain'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
-import {
-  centroidDirection,
-  MOON_RADIUS_M,
-  vector3ToLatLon,
-} from '@/lib/lunar-atlas/geo'
-import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import { useSitedColony } from '@/lib/lunar-atlas/colonyLayout'
 import {
   PROJECT_TYPE_LABEL,
@@ -34,8 +18,8 @@ import {
   earthSideVenue,
   orgColor,
 } from '@/lib/lunar-atlas/display'
-import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
-import { buriedVault, vaultAxisBearingDeg } from '@/lib/lunar-atlas/subplan'
+import { centroidDirection, MOON_RADIUS_M, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
+import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import {
   atlasNowYear,
   buildTechTrees,
@@ -50,27 +34,29 @@ import {
   standIdsForRace,
   marketShowsOdds,
 } from '@/lib/lunar-atlas/selectors'
-import type { Project, SharedGoal } from '@/lib/lunar-atlas/types'
-import type { GlobeFocus } from '@/components/lunar-atlas/MoonGlobe'
-import SunScrubber from '@/components/lunar-atlas/SunScrubber'
+import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
+import { buriedVault, vaultAxisBearingDeg } from '@/lib/lunar-atlas/subplan'
 import type { SunPhase } from '@/lib/lunar-atlas/sunpath'
+import type { Project, SharedGoal } from '@/lib/lunar-atlas/types'
+import { getChainSlug } from '@/lib/thirdweb/chain'
+import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import Head from '@/components/layout/Head'
+import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
 import type { MarkerStyle } from '@/components/lunar-atlas/MarkerLayer'
+import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
+import type { GlobeFocus } from '@/components/lunar-atlas/MoonGlobe'
+import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
 import {
   CARRIED_BY,
   SAME_VEHICLE,
   hasOwnModel,
   displaySizeM,
 } from '@/components/lunar-atlas/ProjectModel'
-import { rankedMembers } from '@/components/lunar-atlas/MarkerLayer'
-import Legend, { type RaceEntry } from '@/components/lunar-atlas/Legend'
-import MoonGlobeLazy from '@/components/lunar-atlas/MoonGlobeLazy'
 import ProjectPanel from '@/components/lunar-atlas/ProjectPanel'
 import SharedGoalPanel from '@/components/lunar-atlas/SharedGoalPanel'
+import SunScrubber from '@/components/lunar-atlas/SunScrubber'
 import TechTreePanel from '@/components/lunar-atlas/TechTreePanel'
-import TimelineScrubber, {
-  type YearArrival,
-} from '@/components/lunar-atlas/TimelineScrubber'
-import Head from '@/components/layout/Head'
+import TimelineScrubber, { type YearArrival } from '@/components/lunar-atlas/TimelineScrubber'
 
 export default function MoonBaseZeroIndex() {
   const router = useRouter()
@@ -79,8 +65,6 @@ export default function MoonBaseZeroIndex() {
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
   const userAddress = account?.address
-  const { login } = useLogin()
-  const region = useRegionRestriction()
 
   const [focus, setFocus] = useState<GlobeFocus>(null)
   // Selection is layered: a race site opens the race/market view; picking a
@@ -92,9 +76,7 @@ export default function MoonBaseZeroIndex() {
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
   // The race/tree a selected competitor was opened from, so the project panel
   // can offer a one-click return to that competitor list.
-  const [raceReturn, setRaceReturn] = useState<
-    { kind: 'goal' | 'tree'; id: string } | null
-  >(null)
+  const [raceReturn, setRaceReturn] = useState<{ kind: 'goal' | 'tree'; id: string } | null>(null)
   const [hoveredRaceId, setHoveredRaceId] = useState<string | null>(null)
   // Organizations are the one remaining filter. Project TYPE used to be another,
   // but a race is a type — "the fission power race" and "projects of type power"
@@ -124,9 +106,7 @@ export default function MoonBaseZeroIndex() {
     const placed = new Set(
       buildTechTrees(dataset.projects, dataset.sharedGoals)
         .flatMap((t) =>
-          t.goal
-            ? t.projects.filter((p) => t.goal!.projectIds.includes(p.id))
-            : t.projects
+          t.goal ? t.projects.filter((p) => t.goal!.projectIds.includes(p.id)) : t.projects
         )
         .map((p) => p.id)
     )
@@ -301,7 +281,7 @@ export default function MoonBaseZeroIndex() {
 
   // Mount one DePrize market — the open race, or the race a competitor
   // panel was opened from. Clearing selectedGoalId to show ProjectPanel
-  // must not drop the market, or Buy would vanish and force a trip back.
+  // must not drop the market, or Predict would vanish and force a trip back.
   // raceReturn is only that origin race when this project is on it:
   // `/moonbase/[projectId]` reuses this page, so a leftover race must not win.
   const oddsGoalId = useMemo(() => {
@@ -335,44 +315,9 @@ export default function MoonBaseZeroIndex() {
       ? `${fmtPrizeEth(Number(totalFunding) / Number(UNIT))} ETH`
       : undefined
 
-  // Spendable native ETH for the inline BetModal — same pattern as the
-  // DePrize detail page, bumped after a bet/cash-out/claim via refreshNonce.
+  // Bumped after a cash-out or claim so positions and the prize pool refresh.
   const [refreshNonce, setRefreshNonce] = useState(0)
-  const [nativeBalance, setNativeBalance] = useState<number | undefined>()
-  const readChain = useMemo(() => deprizeReadChain(chain.id), [chain.id])
-  useEffect(() => {
-    if (!userAddress) {
-      setNativeBalance(undefined)
-      return
-    }
-    let cancelled = false
-    ;(async () => {
-      try {
-        const b = await eth_getBalance(
-          getRpcClient({ client: deprizeReadClient, chain: readChain }),
-          { address: userAddress }
-        )
-        if (!cancelled) setNativeBalance(Number(b) / Number(UNIT))
-      } catch {
-        if (!cancelled) setNativeBalance(undefined)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [userAddress, readChain, refreshNonce])
-  const spendableEth = spendableFromBalanceEth(nativeBalance, readChain.id)
-
-  // Default-deny when country is unknown, exactly like the detail page.
-  const bettingAllowed =
-    liveOdds.bettingOpen &&
-    liveOdds.mintBound &&
-    !!liveOdds.mintAddress &&
-    !!region.country &&
-    !region.isRestricted &&
-    !region.isLoading &&
-    !region.isError &&
-    liveOdds.stage === MarketStage.Running
+  const payoutPending = liveOdds.market.marketConfigured && !liveOdds.market.payoutSettled
 
   const handleRaceMarketDone = () => {
     liveOdds.refresh()
@@ -384,12 +329,7 @@ export default function MoonBaseZeroIndex() {
   // same reference when nothing merged, which keeps buildTechTrees and the
   // colony layout memos from recomputing for unbound races.
   const sharedGoals = useMemo(
-    () =>
-      mergeLiveMarketInto(
-        dataset.sharedGoals,
-        oddsGoalId,
-        liveOdds
-      ),
+    () => mergeLiveMarketInto(dataset.sharedGoals, oddsGoalId, liveOdds),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional field deps
     [
       dataset.sharedGoals,
@@ -406,10 +346,7 @@ export default function MoonBaseZeroIndex() {
   // open race flow in via sharedGoals so rankedMembers / Legend inherit them.
   // Shared plot and district positions so markers, models, roads and camera
   // focus all agree on where each competitor stands.
-  const { trees, surfaceTrees, layout, sitedTrees } = useSitedColony(
-    filteredProjects,
-    sharedGoals
-  )
+  const { trees, surfaceTrees, layout, sitedTrees } = useSitedColony(filteredProjects, sharedGoals)
 
   // Which competitors stay lit while a race is open.
   //
@@ -469,17 +406,14 @@ export default function MoonBaseZeroIndex() {
             // reads the same binding map the panel does, so the dot and the
             // odds it promises cannot disagree.
             onLadder: isLadderGoal(tree.goal?.id),
-            tradable:
-              findDePrizeIdForGoal(chainSlug, tree.goal?.id) !== undefined,
+            tradable: findDePrizeIdForGoal(chainSlug, tree.goal?.id) !== undefined,
             // Night Shift only. Every other row here either has a district or
             // is waiting on one; this row is neither, and the legend has to
             // say which.
             venueChip: earthSideVenue(tree.goal?.id)?.chip,
           }
         })
-        .sort(
-          (a, b) => Number(b.onLadder) - Number(a.onLadder) || b.count - a.count
-        ),
+        .sort((a, b) => Number(b.onLadder) - Number(a.onLadder) || b.count - a.count),
     [surfaceTrees, dataset, chainSlug]
   )
 
@@ -505,29 +439,18 @@ export default function MoonBaseZeroIndex() {
   const getProjectStyle = useMemo(
     () =>
       (project: Project): MarkerStyle => {
-        const st = projectStateAtYear(
-          project,
-          year,
-          atlasNowYear(),
-          raceYears.get(project.id)
-        )
+        const st = projectStateAtYear(project, year, atlasNowYear(), raceYears.get(project.id))
         return { opacity: TIME_STATUS_OPACITY[st.status], visible: true }
       },
     [year, raceYears]
   )
 
-  const selectedProject = selectedProjectId
-    ? projectById(dataset, selectedProjectId)
-    : undefined
-  const selectedOrg = selectedProject
-    ? orgById(dataset, selectedProject.orgId)
-    : undefined
+  const selectedProject = selectedProjectId ? projectById(dataset, selectedProjectId) : undefined
+  const selectedOrg = selectedProject ? orgById(dataset, selectedProject.orgId) : undefined
   const selectedSharedGoals = useMemo(
     () =>
       selectedProject
-        ? sharedGoals.filter((g) =>
-            selectedProject.sharedGoalIds.includes(g.id)
-          )
+        ? sharedGoals.filter((g) => selectedProject.sharedGoalIds.includes(g.id))
         : [],
     [sharedGoals, selectedProject]
   )
@@ -660,18 +583,13 @@ export default function MoonBaseZeroIndex() {
     const raceId = tree?.raceId ?? `type:${project.type}`
 
     if (selectedGoalId) setRaceReturn({ kind: 'goal', id: selectedGoalId })
-    else if (selectedRaceId)
-      setRaceReturn({ kind: 'tree', id: selectedRaceId })
+    else if (selectedRaceId) setRaceReturn({ kind: 'tree', id: selectedRaceId })
     else setRaceReturn(null)
 
     // Globe clicks on a dimmed asset open that district. Deep links must
     // still open the requested project — `/moonbase/[projectId]` reuses this
     // handler without remounting, so a prior race would otherwise win.
-    if (
-      !opts?.fromDeepLink &&
-      selectedRaceId &&
-      selectedRaceId !== raceId
-    ) {
+    if (!opts?.fromDeepLink && selectedRaceId && selectedRaceId !== raceId) {
       // Same as the hovering district pin: fill this cluster, dim the rest,
       // show the race, and frame the site.
       setSelectedRaceId(raceId)
@@ -697,10 +615,7 @@ export default function MoonBaseZeroIndex() {
   // for anyone who arrived from a competitor deep link. Keeping the dynamic
   // segment (and its `projectId` query key, which Next interpolates back into
   // the path) makes every update a same-page shallow replace.
-  const replaceMoonbaseQuery = (patch: {
-    race?: string | null
-    year?: number | null
-  }) => {
+  const replaceMoonbaseQuery = (patch: { race?: string | null; year?: number | null }) => {
     if (!router.isReady) return
     const next: Record<string, string | string[] | undefined> = {
       ...router.query,
@@ -729,21 +644,14 @@ export default function MoonBaseZeroIndex() {
   // Honor ?race= / ?year= on the index route.
   useEffect(() => {
     if (!router.isReady) return
-    const race =
-      typeof router.query.race === 'string' ? router.query.race : undefined
+    const race = typeof router.query.race === 'string' ? router.query.race : undefined
     if (race && sharedGoalById(dataset, race) && race !== selectedGoalId) {
       handleSelectSharedGoal(race, { skipUrl: true })
     }
-    const yearRaw =
-      typeof router.query.year === 'string' ? router.query.year : undefined
+    const yearRaw = typeof router.query.year === 'string' ? router.query.year : undefined
     if (yearRaw) {
       const y = Number.parseInt(yearRaw, 10)
-      if (
-        Number.isFinite(y) &&
-        y >= yearRange.min &&
-        y <= yearRange.max &&
-        y !== year
-      ) {
+      if (Number.isFinite(y) && y >= yearRange.min && y <= yearRange.max && y !== year) {
         setYear(y)
         setPlaying(false)
       }
@@ -778,9 +686,7 @@ export default function MoonBaseZeroIndex() {
     const dirs = standDirs(raceId)
     const dir =
       siteDir(raceId) ??
-      (dirs.length
-        ? centroidDirection(dirs.map((d) => vector3ToLatLon(d)))
-        : undefined)
+      (dirs.length ? centroidDirection(dirs.map((d) => vector3ToLatLon(d))) : undefined)
     if (!dir) return
     const ll = vector3ToLatLon(dir)
     setFocus({ lat: ll.lat, lon: ll.lon, view: 'surface' })
@@ -804,10 +710,7 @@ export default function MoonBaseZeroIndex() {
 
   // Opening a goal directly (from a ProjectPanel link, race zone, or ?race=)
   // also highlights its category's site when it has one.
-  const handleSelectSharedGoal = (
-    goalId: string,
-    opts?: { skipUrl?: boolean }
-  ) => {
+  const handleSelectSharedGoal = (goalId: string, opts?: { skipUrl?: boolean }) => {
     if (goalId === selectedGoalId && !selectedProjectId) return
     const g = dataset.sharedGoals.find((x) => x.id === goalId)
     setSelectedProjectId(null)
@@ -847,8 +750,7 @@ export default function MoonBaseZeroIndex() {
   // is open. Without a selection it does nothing — it must not yank the
   // camera away from a hotspot the user chose.
   const handleBackgroundClick = () => {
-    if (selectedProjectId || selectedGoalId || selectedRaceId)
-      clearSelection()
+    if (selectedProjectId || selectedGoalId || selectedRaceId) clearSelection()
   }
 
   // Pressing the open race again closes it, which is what a list of eight rows
@@ -860,9 +762,7 @@ export default function MoonBaseZeroIndex() {
   }
 
   const toggleOrg = (id: string) =>
-    setSelectedOrgIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
+    setSelectedOrgIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   const clearFilters = () => setSelectedOrgIds([])
 
   return (
@@ -912,9 +812,7 @@ export default function MoonBaseZeroIndex() {
             else setCinematic(true)
           }}
           title={
-            cinematic
-              ? 'Show the map furniture again (Esc)'
-              : 'Hide all panels, pins and labels'
+            cinematic ? 'Show the map furniture again (Esc)' : 'Hide all panels, pins and labels'
           }
           aria-pressed={cinematic}
           className={`absolute bottom-4 right-4 z-30 flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-medium backdrop-blur-md transition-colors ${
@@ -946,14 +844,12 @@ export default function MoonBaseZeroIndex() {
               <div className="pointer-events-auto w-full shrink-0 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur-md">
                 <div className="flex items-center gap-2">
                   <GlobeAltIcon className="h-5 w-5 text-cyan-300" />
-                  <h1 className="text-lg font-semibold text-white">
-                    Moon Base Zero
-                  </h1>
+                  <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
                 </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                  A true-to-scale moonbase on the Shackleton connecting ridge —
-                  every serious program is racing here. Click a site to explore
-                  its capability race, competitors, and sources.
+                  A true-to-scale moonbase on the Shackleton connecting ridge — every serious
+                  program is racing here. Click a site to explore its capability race, competitors,
+                  and sources.
                 </p>
                 <Link
                   href="/moonbase/tour"
@@ -967,89 +863,75 @@ export default function MoonBaseZeroIndex() {
                   column down to the timeline. On mobile it is taken out of the
                   column and docked as a bottom sheet. One panel at a time —
                   race view wins. */}
-              {(selectedGoal || selectedTree || selectedProject) &&
-                !cinematic && (
-                  <div className="pointer-events-none absolute inset-x-4 bottom-40 z-20 h-[55vh] sm:static sm:inset-auto sm:z-auto sm:h-auto sm:min-h-0 sm:flex-1 sm:overflow-hidden">
-                    <div className="h-full min-h-0">
-                      {selectedGoal ? (
-                        <SharedGoalPanel
-                          goal={selectedGoal}
-                          competitors={goalCompetitors}
-                          onClose={clearSelection}
-                          onSelectProject={handleSelectProject}
-                          deprizeId={liveOdds.deprizeId}
-                          chainSlug={chainSlug}
-                          prizePoolLabel={prizePoolLabel}
-                          prizePoolLoading={
-                            liveOdds.jbProjectId !== undefined &&
-                            isLoadingPrizePool
-                          }
-                          chain={chain}
-                          account={account}
-                          userAddress={userAddress}
-                          onConnectWallet={() => login()}
-                          spendableEth={spendableEth}
-                          mintAddress={liveOdds.mintAddress}
-                          marketAddress={liveOdds.marketAddress}
-                          numOutcomes={liveOdds.numOutcomes}
-                          outcomes={liveOdds.outcomes}
-                          bettingAllowed={bettingAllowed}
-                          tradingHalted={liveOdds.tradingHalted}
-                          resolved={liveOdds.resolved}
-                          winningIndex={liveOdds.winningIndex}
-                          isRefundVector={liveOdds.isRefundVector}
-                          payoutDen={liveOdds.payoutDen}
-                          payoutNums={liveOdds.payoutNums}
-                          jbProjectId={liveOdds.jbProjectId}
-                          refreshNonce={refreshNonce}
-                          onDone={handleRaceMarketDone}
-                        />
-                      ) : selectedTree ? (
-                        <TechTreePanel
-                          tree={selectedTree}
-                          organizations={dataset.organizations}
-                          onClose={clearSelection}
-                          onSelectProject={handleSelectProject}
-                        />
-                      ) : selectedProject ? (
-                        <ProjectPanel
-                          project={selectedProject}
-                          organization={selectedOrg}
-                          sharedGoals={selectedSharedGoals}
-                          onClose={clearSelection}
-                          onFocusRegion={flyToProject}
-                          onSelectSharedGoal={handleSelectSharedGoal}
-                          onBack={raceReturn ? handleBackToRace : undefined}
-                          betGoal={
-                            oddsGoalId
-                              ? sharedGoals.find((g) => g.id === oddsGoalId)
-                              : undefined
-                          }
-                          chainSlug={chainSlug}
-                          chain={chain}
-                          account={account}
-                          userAddress={userAddress}
-                          onConnectWallet={() => login()}
-                          spendableEth={spendableEth}
-                          deprizeId={liveOdds.deprizeId}
-                          mintAddress={liveOdds.mintAddress}
-                          marketAddress={liveOdds.marketAddress}
-                          numOutcomes={liveOdds.numOutcomes}
-                          outcomes={liveOdds.outcomes}
-                          bettingAllowed={bettingAllowed}
-                          tradingHalted={liveOdds.tradingHalted}
-                          resolved={liveOdds.resolved}
-                          winningIndex={liveOdds.winningIndex}
-                          isRefundVector={liveOdds.isRefundVector}
-                          payoutDen={liveOdds.payoutDen}
-                          payoutNums={liveOdds.payoutNums}
-                          jbProjectId={liveOdds.jbProjectId}
-                          onDone={handleRaceMarketDone}
-                        />
-                      ) : null}
-                    </div>
+              {(selectedGoal || selectedTree || selectedProject) && !cinematic && (
+                <div className="pointer-events-none absolute inset-x-4 bottom-40 z-20 h-[55vh] sm:static sm:inset-auto sm:z-auto sm:h-auto sm:min-h-0 sm:flex-1 sm:overflow-hidden">
+                  <div className="h-full min-h-0">
+                    {selectedGoal ? (
+                      <SharedGoalPanel
+                        goal={selectedGoal}
+                        competitors={goalCompetitors}
+                        onClose={clearSelection}
+                        onSelectProject={handleSelectProject}
+                        deprizeId={liveOdds.deprizeId}
+                        chainSlug={chainSlug}
+                        prizePoolLabel={prizePoolLabel}
+                        prizePoolLoading={liveOdds.jbProjectId !== undefined && isLoadingPrizePool}
+                        chain={chain}
+                        account={account}
+                        marketAddress={liveOdds.marketAddress}
+                        numOutcomes={liveOdds.numOutcomes}
+                        outcomes={liveOdds.outcomes}
+                        payoutPending={payoutPending}
+                        oddsLoading={liveOdds.loading}
+                        tradingHalted={liveOdds.tradingHalted}
+                        resolved={liveOdds.resolved}
+                        winningIndex={liveOdds.winningIndex}
+                        isRefundVector={liveOdds.isRefundVector}
+                        payoutDen={liveOdds.payoutDen}
+                        payoutNums={liveOdds.payoutNums}
+                        jbProjectId={liveOdds.jbProjectId}
+                        refreshNonce={refreshNonce}
+                        onDone={handleRaceMarketDone}
+                      />
+                    ) : selectedTree ? (
+                      <TechTreePanel
+                        tree={selectedTree}
+                        organizations={dataset.organizations}
+                        onClose={clearSelection}
+                        onSelectProject={handleSelectProject}
+                      />
+                    ) : selectedProject ? (
+                      <ProjectPanel
+                        project={selectedProject}
+                        organization={selectedOrg}
+                        sharedGoals={selectedSharedGoals}
+                        onClose={clearSelection}
+                        onFocusRegion={flyToProject}
+                        onSelectSharedGoal={handleSelectSharedGoal}
+                        onBack={raceReturn ? handleBackToRace : undefined}
+                        betGoal={
+                          oddsGoalId ? sharedGoals.find((g) => g.id === oddsGoalId) : undefined
+                        }
+                        chainSlug={chainSlug}
+                        chain={chain}
+                        account={account}
+                        deprizeId={liveOdds.deprizeId}
+                        marketAddress={liveOdds.marketAddress}
+                        numOutcomes={liveOdds.numOutcomes}
+                        outcomes={liveOdds.outcomes}
+                        payoutPending={payoutPending}
+                        tradingHalted={liveOdds.tradingHalted}
+                        resolved={liveOdds.resolved}
+                        winningIndex={liveOdds.winningIndex}
+                        isRefundVector={liveOdds.isRefundVector}
+                        payoutDen={liveOdds.payoutDen}
+                        payoutNums={liveOdds.payoutNums}
+                        onDone={handleRaceMarketDone}
+                      />
+                    ) : null}
                   </div>
-                )}
+                </div>
+              )}
             </div>
 
             <div className="w-full shrink-0 sm:w-64 sm:self-start">
