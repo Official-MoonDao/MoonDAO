@@ -199,7 +199,7 @@ function isSentinelCoord(lat: number, lng: number): boolean {
  *  - JSON-encoded plain string: "Austin, Texas" (legacy, name only)
  *  - raw plain text: Austin, Texas (legacy, name only)
  */
-function parseLocationData(citizenLocation: string | undefined): ParsedLocation {
+export function parseLocationData(citizenLocation: string | undefined): ParsedLocation {
   if (!citizenLocation || citizenLocation.trim() === '') {
     return { name: '', lat: null, lng: null }
   }

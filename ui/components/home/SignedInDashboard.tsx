@@ -98,6 +98,7 @@ import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardActiveProjects from '../project/DashboardActiveProjects'
+import ActivitySummaryCard from './ActivitySummaryCard'
 import DashboardQuests from './DashboardQuests'
 import DiscordAnnouncements from './DiscordAnnouncements'
 import RecentActivity from './RecentActivity'
@@ -1060,6 +1061,17 @@ export default function SignedInDashboard({
             </div>
           </div>
         </div>
+
+        {/* This week in MoonDAO — daily AI summary of the past 7 days of activity */}
+        <ActivitySummaryCard
+          header={
+            <SectionHeader
+              title="This Week in MoonDAO"
+              subtitle="A summary of the last 7 days of activity"
+              icon={<SparklesIcon className="w-6 h-6 text-purple-400" />}
+            />
+          }
+        />
 
         {/* Live from Discord — surfaces the community's active conversation */}
         <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 mt-6">
