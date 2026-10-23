@@ -22,6 +22,7 @@ import {
   isUntitledLike,
   UNTITLED_FALLBACK,
 } from '@/lib/project/getProjectDisplayName'
+import { excludeNonProjectProposals } from '@/lib/project/excludeNonProjectProposals'
 import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import queryTable from '@/lib/tableland/queryTable'
@@ -350,10 +351,19 @@ async function collectSpotlights(params: {
           `SELECT id, title, description, price, currency, teamId, image FROM ${tables.marketplaceTable} WHERE (startTime = 0 OR startTime <= ${nowTs}) AND (endTime = 0 OR endTime >= ${nowTs}) ORDER BY id DESC LIMIT 50`
         )
       : none,
+    // Passed governance proposals share the active flag with funded projects;
+    // drop them the same way the dashboard and /projects do.
     need.project
-      ? query(
-          'project',
-          `SELECT id, MDP, name, description, image FROM ${tables.projectTable} WHERE active = ${PROJECT_ACTIVE}`
+      ? settle(
+          'project spotlight',
+          async () =>
+            excludeNonProjectProposals(
+              await queryTable(
+                chain,
+                `SELECT id, MDP, name, description, image, proposalIPFS FROM ${tables.projectTable} WHERE active = ${PROJECT_ACTIVE}`
+              )
+            ),
+          [] as any[]
         )
       : none,
   ])

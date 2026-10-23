@@ -437,8 +437,8 @@ describe('getOrCreateSummary', () => {
   })
 
   it('namespaces keys by environment', () => {
-    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v3:production:2026-10-23')
-    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v3:preview:latest')
+    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v4:production:2026-10-23')
+    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v4:preview:latest')
     expect(summaryKeys(NOW, 'preview').lock).to.not.equal(summaryKeys(NOW, 'production').lock)
   })
 

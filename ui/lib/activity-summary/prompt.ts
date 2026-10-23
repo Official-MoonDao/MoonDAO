@@ -11,7 +11,7 @@ export const ACTIVITY_SUMMARY_MODEL = 'openai/gpt-oss-120b'
 // part of the Redis key and of the URL the card requests, so a new deploy
 // regenerates instead of serving a summary stored or CDN-cached from older
 // code.
-export const ACTIVITY_SUMMARY_VERSION = 3
+export const ACTIVITY_SUMMARY_VERSION = 4
 
 export type SectionKind =
   | 'citizens'
