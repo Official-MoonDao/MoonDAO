@@ -10,15 +10,20 @@ import {
   PROPOSALS_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
-import { BLOCKED_CITIZENS, BLOCKED_MDPS, BLOCKED_PROJECTS, BLOCKED_TEAMS } from 'const/whitelist'
+import { BLOCKED_CITIZENS, BLOCKED_TEAMS } from 'const/whitelist'
 import { getContract, readContract } from 'thirdweb'
 import { parseLocationData } from '@/lib/citizen/citizenDataService'
 import { getMooneyPrice } from '@/lib/coinstats'
 import { PROJECT_PENDING } from '@/lib/nance/types'
-import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import { getRecentCitizenTransfers, getRecentTeamTransfers } from '@/lib/network/networkSubgraph'
-import { isUntitledLike } from '@/lib/project/getProjectDisplayName'
-import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
+import { getLivePhaseOverride, resolveLivePhase } from '@/lib/operator/cyclePhase'
+import {
+  getProjectDisplayName,
+  isUntitledLike,
+  UNTITLED_FALLBACK,
+} from '@/lib/project/getProjectDisplayName'
+import { isBlockedProject } from '@/lib/project/isBlockedProject'
+import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
@@ -106,35 +111,78 @@ function placeName(location: unknown): string | undefined {
   return undefined
 }
 
-// A pending project row (`active = PROJECT_PENDING`) may still be in Senate
-// review, in the Member Vote, or already rejected by the Senate. The project
-// page tells them apart with the Proposals contract's temp-check flags, so
-// the same read is done here. Rejected proposals and ones whose flags can't
-// be read get no stage and are left out.
-async function withProposalStages(rows: any[]): Promise<any[]> {
+const IPFS_TIMEOUT_MS = 4000
+
+/**
+ * The proposals citizens can act on right now. Mirrors the proposal list on
+ * /projects (pages/projects/index.tsx): pending rows in the current proposal
+ * cycle, minus blocked, author-deleted, non-project and Senate-rejected ones.
+ * On top of that, the live cycle phase decides what counts as open:
+ *  - Member Vote: only Senate-approved proposals ('member-vote')
+ *  - Senate Vote: proposals awaiting the temp check ('senate-review')
+ *  - intake / idle: none
+ */
+async function fetchOpenProposals(projectTable: string): Promise<ActivitySnapshot['proposals']> {
+  const phase = resolveLivePhase(await getLivePhaseOverride())
+  if (phase !== 'member' && phase !== 'senate') return []
+
+  const { quarter, year } = getProposalCycle()
+  const rows: any[] =
+    (await queryTable(
+      DEFAULT_CHAIN_V5,
+      `SELECT id, MDP, name, proposalIPFS FROM ${projectTable} WHERE active = ${PROJECT_PENDING} AND quarter = ${quarter} AND year = ${year}`
+    )) || []
+  const pending = rows.filter((row) => !isBlockedProject(row))
+
   const contract = getContract({
     client: serverClient,
     address: PROPOSALS_ADDRESSES[getChainSlug(DEFAULT_CHAIN_V5)],
     abi: ProposalsABI.abi as any,
     chain: DEFAULT_CHAIN_V5,
   })
-  return Promise.all(
-    rows.map(async (row) => {
+
+  const results = await Promise.all(
+    pending.map(async (row) => {
+      // Flags decide whether the proposal is in this phase's vote at all, so
+      // a failed read leaves the proposal out instead of guessing.
+      let approved: unknown
+      let failed: unknown
       try {
-        const [approved, failed] = await Promise.all([
+        ;[approved, failed] = await Promise.all([
           readContract({ contract, method: 'tempCheckApproved' as string, params: [row.MDP] }),
           readContract({ contract, method: 'tempCheckFailed' as string, params: [row.MDP] }),
         ])
-        const status = getProposalStatus(row.active, approved as any, failed as any)
-        const stage: ProposalStage | null =
-          status === 'Voting' ? 'member-vote' : status === 'Temperature Check' ? 'senate-review' : null
-        return { ...row, stage }
       } catch (error) {
         console.error(`[activity-summary] proposal flags for MDP ${row.MDP} failed:`, error)
-        return { ...row, stage: null }
+        return null
       }
+      if (failed) return null
+      const stage: ProposalStage = approved ? 'member-vote' : 'senate-review'
+      if ((phase === 'member') !== (stage === 'member-vote')) return null
+
+      // Like /projects, an unreachable IPFS gateway doesn't drop a proposal.
+      let name = row.name
+      try {
+        const res = await fetch(row.proposalIPFS, {
+          signal: AbortSignal.timeout(IPFS_TIMEOUT_MS),
+        })
+        const json = await res.json()
+        if (json?.nonProjectProposal || json?.deleted) return null
+        if (isUntitledLike(name)) {
+          const resolved = getProjectDisplayName(row, json)
+          if (resolved !== UNTITLED_FALLBACK) name = resolved
+        }
+      } catch {
+        // keep the stored name
+      }
+
+      return { mdp: Number(row.MDP), name: clip(name, 120) || `MDP-${row.MDP}`, status: stage }
     })
   )
+
+  return results
+    .filter((p): p is NonNullable<typeof p> => p !== null)
+    .sort((a, b) => a.mdp - b.mdp)
 }
 
 function mintTimestamps(transfers: { tokenId: string; blockTimestamp: string }[]) {
@@ -168,7 +216,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     teamTransfers,
     jobRows,
     listingRows,
-    proposalRows,
+    proposals,
     nextTownHall,
     townHalls,
     mooney,
@@ -213,18 +261,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
         ),
       [] as any[]
     ),
-    settle(
-      'proposals',
-      async () => {
-        const rows = await queryTable(
-          chain,
-          `SELECT id, MDP, name, active, proposalIPFS FROM ${projectTable} WHERE active = ${PROJECT_PENDING} ORDER BY id DESC LIMIT 10`
-        )
-        await enrichProjectNames(rows)
-        return withProposalStages(rows)
-      },
-      [] as any[]
-    ),
+    settle('proposals', () => fetchOpenProposals(projectTable), [] as ActivitySnapshot['proposals']),
     settle('next town hall', () => getNextTownHallEvent(), null),
     settle('town hall summaries', () => getSummaries({ limit: 1 }), null),
     settle('mooney price', () => getMooneyPrice(), null),
@@ -273,12 +310,6 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
       teamId: l.teamId != null ? Number(l.teamId) : undefined,
       description: clip(l.description),
     }))
-
-  const proposals = proposalRows
-    .filter((p: any) => p.stage)
-    .filter((p: any) => !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP)))
-    .filter((p: any) => !isUntitledLike(p.name))
-    .map((p: any) => ({ mdp: Number(p.MDP), name: clip(p.name, 120)!, status: p.stage }))
 
   const latest = townHalls?.summaries?.[0]
   const totalCitizens = Number(citizenCount?.[0]?.count)
