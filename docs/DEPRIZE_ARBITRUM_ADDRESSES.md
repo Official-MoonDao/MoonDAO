@@ -3,6 +3,7 @@
 Live values for Arbitrum One (chain id 42161). These are the source of truth for
 `ui/const/config.ts` and `fee-hook/script/base/Config.sol`. **Do not invent addresses.**
 Sepolia v2 (the dress rehearsal) is in [`DEPRIZE_SEPOLIA_ADDRESSES.md`](./DEPRIZE_SEPOLIA_ADDRESSES.md).
+The next Touchdown, not yet deployed, is planned in [`plans/touchdown-arbitrum-public.md`](./plans/touchdown-arbitrum-public.md).
 
 ## Shared infrastructure (Phase 2 — deploy once, reused by every DePrize)
 
