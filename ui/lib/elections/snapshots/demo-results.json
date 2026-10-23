@@ -1,0 +1,109 @@
+{
+  "voters": [
+    {
+      "address": "0x224eb3b9a15a5fab6704ec464fb6e24b280807b8",
+      "votingPower": 40,
+      "ballot": [
+        1
+      ]
+    },
+    {
+      "address": "0x892b58acc17f57f225278ed8ad4c943611105758",
+      "votingPower": 35,
+      "ballot": [
+        2,
+        3
+      ],
+      "citizenName": "Test",
+      "citizenId": 13
+    },
+    {
+      "address": "0x31cdb419e4a7998367627faa24cee15941795827",
+      "votingPower": 30,
+      "ballot": [
+        3,
+        1
+      ],
+      "citizenName": "miguel",
+      "citizenId": 30
+    },
+    {
+      "address": "0x9cc8925d7248c4a2b2e56518e32d79ca375e5522",
+      "votingPower": 10,
+      "ballot": [
+        0,
+        2
+      ]
+    }
+  ],
+  "totalVoters": 4,
+  "totalVP": 115,
+  "tally": {
+    "choices": [
+      {
+        "key": 1,
+        "label": "Alice (demo)"
+      },
+      {
+        "key": 2,
+        "label": "Bob (demo)"
+      },
+      {
+        "key": 3,
+        "label": "Carol (demo)"
+      },
+      {
+        "key": 0,
+        "label": "None of the above"
+      }
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "totals": {
+          "0": 10,
+          "1": 40,
+          "2": 35,
+          "3": 30
+        },
+        "continuingVP": 115,
+        "exhaustedVP": 0,
+        "eliminated": [
+          0
+        ]
+      },
+      {
+        "round": 2,
+        "totals": {
+          "1": 40,
+          "2": 45,
+          "3": 30
+        },
+        "continuingVP": 115,
+        "exhaustedVP": 0,
+        "eliminated": [
+          3
+        ]
+      },
+      {
+        "round": 3,
+        "totals": {
+          "1": 70,
+          "2": 45
+        },
+        "continuingVP": 115,
+        "exhaustedVP": 0,
+        "eliminated": []
+      }
+    ],
+    "winnerKey": 1,
+    "winnerLabel": "Alice (demo)",
+    "noneWon": false,
+    "tied": false,
+    "totalParticipationVP": 115,
+    "ballotCount": 4
+  },
+  "powerSource": "historical",
+  "closeBlocks": null,
+  "generatedAt": "2026-10-21T23:34:01.931Z"
+}

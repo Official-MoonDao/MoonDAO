@@ -36,6 +36,7 @@
     "cypress/integration/unit/project-budget.cy.ts",
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
     "cypress/integration/unit/member-vote-tally.cy.tsx",
+    "cypress/integration/unit/election-ranked-choice.cy.ts",
     "cypress/integration/unit/executive-finance.cy.ts",
     "cypress/integration/unit/lunar-atlas-baseplan.cy.ts",
     "cypress/integration/unit/lunar-atlas-deprize.cy.ts",
