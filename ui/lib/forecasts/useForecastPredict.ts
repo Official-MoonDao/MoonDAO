@@ -157,8 +157,8 @@ export function useForecastPredict(args: {
       })
     )
     if (!res.ok) return
-    applyConsensus((await res.json()) as ForecastConsensus)
-  }, [applyConsensus, chainSlug, deprizeId, n])
+    return (await res.json()) as ForecastConsensus
+  }, [chainSlug, deprizeId, n])
 
   const refetchFresh = useCallback(async () => {
     if (n < 2) return
@@ -183,7 +183,10 @@ export function useForecastPredict(args: {
     setChanceLoading(true)
     void (async () => {
       try {
-        await loadConsensus()
+        const body = await loadConsensus()
+        // A wallet switch cancels this read. Applying it would restore the previous pick.
+        if (cancelled || !body) return
+        applyConsensus(body)
       } catch {
         // A failed roster read leaves the share blank. The window still opens.
       } finally {
@@ -193,7 +196,7 @@ export function useForecastPredict(args: {
     return () => {
       cancelled = true
     }
-  }, [loadConsensus, n])
+  }, [applyConsensus, loadConsensus, n])
 
   function rememberRow(allocation: number[]) {
     if (!account) return
