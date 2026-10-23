@@ -35,6 +35,7 @@
     "smoke:moonbase-deprize": "node scripts/smoke-moonbase-deprize.mjs",
     "snapshot:vmooney": "node scripts/snapshot-vmooney.mjs",
     "snapshot:path-vote": "ts-node -r tsconfig-paths/register scripts/snapshot-path-vote.ts",
+    "snapshot:election": "ts-node -r tsconfig-paths/register scripts/snapshot-election.ts",
     "test:cypress-unit": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json",
     "test:onboarding-image": "node node_modules/mocha/bin/mocha.js --require ts-node/register --require tsconfig-paths/register scripts/citizen-onboarding-image.test.ts",
     "test:submission-window": "TS_NODE_COMPILER_OPTIONS='{\"types\":[\"node\",\"mocha\"]}' node node_modules/mocha/bin/mocha.js --require ts-node/register --require tsconfig-paths/register --spec scripts/submission-window.test.ts",
