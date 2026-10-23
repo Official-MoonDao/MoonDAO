@@ -1,3 +1,4 @@
+import { usePrivy } from '@privy-io/react-auth'
 import HatsABI from 'const/abis/Hats.json'
 import JBV5Controller from 'const/abis/JBV5Controller.json'
 import MissionCreator from 'const/abis/MissionCreator.json'
@@ -11,21 +12,23 @@ import {
   TEAM_ADDRESSES,
 } from 'const/config'
 import { GetStaticProps, GetStaticPropsResult } from 'next'
-import { usePrivy } from '@privy-io/react-auth'
 import { useContext, useMemo } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useTeamWearer } from '@/lib/hats/useTeamWearer'
-import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
+import type { DeprizeLaunchCard } from '@/lib/launchpad/deprizeLaunchCards'
+import { fetchDeprizeLaunchCards } from '@/lib/launchpad/fetchDeprizeLaunchCards'
 import { fetchFeaturedMissionData } from '@/lib/launchpad/fetchFeaturedMission'
 import { fetchMissions } from '@/lib/launchpad/fetchMissions'
 import { FeaturedMissionData, Mission } from '@/lib/launchpad/types'
 import { useLaunchStatus } from '@/lib/launchpad/useLaunchStatus'
 import { useLaunchpadAccess } from '@/lib/launchpad/useLaunchpadAccess'
 import { useTeamManagerCheck } from '@/lib/launchpad/useTeamManagerCheck'
+import { getLinkedEvmAddresses } from '@/lib/privy/linkedEvmAddresses'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import FeaturedMissionSection from '@/components/home/FeaturedMissionSection'
+import DeprizePrizePools from '@/components/launchpad/DeprizePrizePools'
 import LaunchHero from '@/components/launchpad/LaunchHero'
 import LaunchpadFAQ from '@/components/launchpad/LaunchpadFAQ'
 import LaunchpadHowItWorks from '@/components/launchpad/howItWorks/LaunchpadHowItWorks'
@@ -36,9 +39,10 @@ import CreateMission from '@/components/mission/CreateMission'
 type LaunchProps = {
   missions: Mission[]
   featuredMissionData: FeaturedMissionData | null
+  prizePools: DeprizeLaunchCard[]
 }
 
-export default function Launch({ missions, featuredMissionData }: LaunchProps) {
+export default function Launch({ missions, featuredMissionData, prizePools }: LaunchProps) {
   const account = useActiveAccount()
   const address = account?.address
   const { user } = usePrivy()
@@ -108,6 +112,7 @@ export default function Launch({ missions, featuredMissionData }: LaunchProps) {
         description="Crowdfund a space mission on-chain. Set a goal and a deadline, take contributions in ETH or by card, and refund backers if the goal is missed."
       />
       <LaunchHero citizenHasAccess={citizenHasAccess} onLaunchClick={handleCreateMission} />
+      <DeprizePrizePools cards={prizePools} />
       <LaunchpadHowItWorks
         citizenHasAccess={citizenHasAccess}
         onLaunchClick={handleCreateMission}
@@ -133,12 +138,13 @@ export const getStaticProps: GetStaticProps = async (): Promise<
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
 
-    const missions = await fetchMissions(
-      chain,
-      chainSlug,
-      MISSION_TABLE_ADDRESSES[chainSlug],
-      JBV5_CONTROLLER_ADDRESS
-    )
+    const [missions, prizePools] = await Promise.all([
+      fetchMissions(chain, chainSlug, MISSION_TABLE_ADDRESSES[chainSlug], JBV5_CONTROLLER_ADDRESS),
+      fetchDeprizeLaunchCards(chain).catch((error) => {
+        console.error('Error fetching DePrize prize pools:', error)
+        return []
+      }),
+    ])
 
     const featuredMissionData = await fetchFeaturedMissionData(
       missions,
@@ -152,6 +158,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
       props: {
         missions,
         featuredMissionData,
+        prizePools,
       },
       revalidate: 60,
     }
@@ -173,6 +180,7 @@ export const getStaticProps: GetStaticProps = async (): Promise<
           },
         ],
         featuredMissionData: null,
+        prizePools: [],
       },
       revalidate: 60,
     }

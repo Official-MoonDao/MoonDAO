@@ -52,6 +52,13 @@ prepared condition, which reads as "condition missing" rather than as an error.
 Recover the real value from the `ConditionPreparation` event's first indexed
 topic if there is ever any doubt.
 
+## Public Touchdown
+
+Not broadcast. Plan: [`plans/touchdown-arbitrum-public.md`](./plans/touchdown-arbitrum-public.md).
+Provision with `ui/scripts/provision-touchdown-arbitrum-public.cjs` once the
+deployer holds the 0.056 ETH seed. Record the new registry, mint, redeem,
+market, and Juicebox project here after that broadcast. Do not invent them.
+
 ## Capability races (2026-09-25)
 
 The four races that are open on Sepolia, registered on the Arbitrum 0.8 stack.
