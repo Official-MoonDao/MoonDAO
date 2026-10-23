@@ -11,7 +11,7 @@ export const ACTIVITY_SUMMARY_MODEL = 'openai/gpt-oss-120b'
 // part of the Redis key and of the URL the card requests, so a new deploy
 // regenerates instead of serving a summary stored or CDN-cached from older
 // code.
-export const ACTIVITY_SUMMARY_VERSION = 4
+export const ACTIVITY_SUMMARY_VERSION = 5
 
 export type SectionKind =
   | 'citizens'
@@ -53,7 +53,6 @@ export type ActivitySummarySection = {
 }
 
 export type ActivitySummary = {
-  headline: string
   sections: ActivitySummarySection[]
   periodStart: string
   periodEnd: string
@@ -87,7 +86,6 @@ SPOTLIGHTS
 OUTPUT
 Return ONLY valid JSON (no markdown fences) matching this schema:
 {
-  "headline": "one sentence, at most 25 words, capturing the week",
   "sections": [
     {
       "kind": "governance" | "events" | "townhall" | "citizens" | "teams" | "jobs" | "marketplace",
@@ -99,8 +97,7 @@ Return ONLY valid JSON (no markdown fences) matching this schema:
 
 REFS
 - Most input items have a "ref" field such as "citizen:12" or "job:4". List the refs of the items a section mentions so the dashboard can link them.
-- Only use refs that appear in the input. Use each section kind at most once.
-- The headline should be about this week's activity. Mention a spotlight in the headline only when nothing else happened.`
+- Only use refs that appear in the input. Use each section kind at most once.`
 }
 
 // Adds a `ref` to every linkable item so the model can point at items
@@ -288,11 +285,9 @@ export function normalizeSummary(params: {
   }
 
   const sections = SECTION_ORDER.flatMap((kind) => byKind.get(kind) ?? [])
-  const headline = cleanText(raw.headline, 200)
-  if (!headline || sections.length === 0) return null
+  if (sections.length === 0) return null
 
   return {
-    headline,
     sections,
     periodStart: snapshot.periodStart,
     periodEnd: snapshot.periodEnd,

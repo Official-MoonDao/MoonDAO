@@ -57,7 +57,6 @@ function emptySnapshot(): ActivitySnapshot {
 }
 
 const MODEL_OUTPUT = {
-  headline: 'A new grant proposal is open and a town hall is coming up.',
   sections: [
     { kind: 'citizens', summary: 'Ada Lovelace joined from London.', refs: ['citizen:412'] },
     {
@@ -145,10 +144,21 @@ describe('normalizeSummary', () => {
     expect(summary.generatedAt).to.equal(NOW.toISOString())
   })
 
-  it('returns null when there is no headline or no usable section', () => {
-    expect(normalizeSummary({ raw: { sections: MODEL_OUTPUT.sections }, snapshot: snapshot(), model: 'm' })).to.equal(null)
-    expect(normalizeSummary({ raw: { headline: 'Hi', sections: [] }, snapshot: snapshot(), model: 'm' })).to.equal(null)
+  it('returns null when no section is usable', () => {
+    expect(normalizeSummary({ raw: { sections: [] }, snapshot: snapshot(), model: 'm' })).to.equal(null)
+    expect(
+      normalizeSummary({
+        raw: { sections: [{ kind: 'weather', summary: 'x' }, { kind: 'jobs', summary: '' }] },
+        snapshot: snapshot(),
+        model: 'm',
+      })
+    ).to.equal(null)
     expect(normalizeSummary({ raw: 'nonsense', snapshot: snapshot(), model: 'm' })).to.equal(null)
+  })
+
+  it('does not need a headline', () => {
+    expect(summary).to.not.have.property('headline')
+    expect(summary.sections).to.have.length(3)
   })
 
   it('does not link a town hall URL that is not https', () => {
@@ -176,7 +186,6 @@ describe('spotlights', () => {
     },
   })
   const raw = {
-    headline: 'A quiet week, with a few spotlights.',
     sections: [
       { kind: 'citizens', summary: 'Citizen spotlight: Grace Hopper.', refs: ['citizen:88'] },
       { kind: 'jobs', summary: 'Featured role: Regolith Engineer.', refs: ['job:3'] },
@@ -347,8 +356,10 @@ describe('generateActivitySummary', () => {
 })
 
 describe('getOrCreateSummary', () => {
-  const SUMMARY = { headline: 'Today' } as ActivitySummary
-  const YESTERDAY = { headline: 'Yesterday' } as ActivitySummary
+  const daysAgo = (n: number) => new Date(NOW.getTime() - n * 24 * 60 * 60 * 1000).toISOString()
+  const SUMMARY = { generatedAt: NOW.toISOString() } as ActivitySummary
+  const YESTERDAY = { generatedAt: daysAgo(1) } as ActivitySummary
+  const LAST_WEEK = { generatedAt: daysAgo(3) } as ActivitySummary
 
   function fakeStore(initial: Record<string, unknown> = {}) {
     const data = new Map<string, unknown>(Object.entries(initial))
@@ -418,6 +429,18 @@ describe('getOrCreateSummary', () => {
     expect(data.has(keys.lock)).to.equal(false)
   })
 
+  it('does not fall back to a summary older than two days', async () => {
+    const failed = fakeStore({ [keys.latest]: LAST_WEEK })
+    expect(
+      await getOrCreateSummary({ store: failed.store, now: NOW, generate: async () => null })
+    ).to.deep.equal({ summary: null, source: 'none' })
+
+    const locked = fakeStore({ [keys.lock]: '1', [keys.latest]: LAST_WEEK })
+    expect(
+      await getOrCreateSummary({ store: locked.store, now: NOW, generate: async () => SUMMARY })
+    ).to.deep.equal({ summary: null, source: 'none' })
+  })
+
   it('releases the lock when generation throws', async () => {
     const { store, data } = fakeStore()
     let threw = false
@@ -437,8 +460,8 @@ describe('getOrCreateSummary', () => {
   })
 
   it('namespaces keys by environment', () => {
-    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v4:production:2026-10-23')
-    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v4:preview:latest')
+    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v5:production:2026-10-23')
+    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v5:preview:latest')
     expect(summaryKeys(NOW, 'preview').lock).to.not.equal(summaryKeys(NOW, 'production').lock)
   })
 

@@ -6,6 +6,9 @@ const KEY_PREFIX = `activity-summary:v${ACTIVITY_SUMMARY_VERSION}`
 const DAY_TTL_SECONDS = 30 * 24 * 60 * 60
 // Longer than one generation (collect + Groq) so a slow run keeps the lock.
 const LOCK_TTL_SECONDS = 90
+// How old a previous summary may be and still stand in for today's. Past
+// this, the card hides instead of quietly showing a stale week.
+export const MAX_FALLBACK_AGE_MS = 2 * 24 * 60 * 60 * 1000
 
 // The subset of the Upstash client this module uses, so tests can pass a fake.
 export type SummaryStore = {
@@ -46,7 +49,8 @@ export type SummaryResult = {
  * Returns today's summary, generating it at most once per UTC day. Concurrent
  * requests that miss the cache while another request holds the lock get the
  * most recent earlier summary instead of starting a second generation. A
- * failed generation also falls back to the most recent summary.
+ * failed generation also falls back to the most recent summary, as long as
+ * it is no older than MAX_FALLBACK_AGE_MS.
  */
 export async function getOrCreateSummary(params: {
   store: SummaryStore | null
@@ -61,14 +65,17 @@ export async function getOrCreateSummary(params: {
     return { summary, source: summary ? 'fresh' : 'none' }
   }
 
-  const keys = summaryKeys(params.now ?? new Date())
+  const now = params.now ?? new Date()
+  const keys = summaryKeys(now)
 
   const cached = await store.get<ActivitySummary>(keys.day)
   if (cached) return { summary: cached, source: 'cache' }
 
   const fallback = async (): Promise<SummaryResult> => {
     const latest = await store.get<ActivitySummary>(keys.latest)
-    return { summary: latest, source: latest ? 'fallback' : 'none' }
+    const age = latest ? now.getTime() - new Date(latest.generatedAt).getTime() : NaN
+    if (!latest || !(age <= MAX_FALLBACK_AGE_MS)) return { summary: null, source: 'none' }
+    return { summary: latest, source: 'fallback' }
   }
 
   const acquired = await store.set(keys.lock, '1', { nx: true, ex: LOCK_TTL_SECONDS })
