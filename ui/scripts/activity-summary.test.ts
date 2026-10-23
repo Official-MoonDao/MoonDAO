@@ -21,7 +21,10 @@ function snapshot(overrides: Partial<ActivitySnapshot> = {}): ActivitySnapshot {
     teams: [],
     jobs: [{ id: 7, title: 'Lunar Habitat Designer', teamId: 3 }],
     listings: [],
-    proposals: [{ mdp: 180, name: 'Moon Rover Grant' }],
+    proposals: [
+      { mdp: 180, name: 'Moon Rover Grant', status: 'member-vote' },
+      { mdp: 181, name: 'Regolith Kiln', status: 'senate-review' },
+    ],
     nextTownHall: {
       name: 'Weekly Town Hall',
       startAt: '2026-10-24T17:00:00.000Z',
@@ -57,6 +60,8 @@ describe('activity summary prompt', () => {
     const prompt = buildSummaryUserPrompt(snapshot())
     expect(prompt).to.include('"ref": "citizen:412"')
     expect(prompt).to.include('"ref": "proposal:180"')
+    expect(prompt).to.include('"status": "member-vote"')
+    expect(prompt).to.include('"status": "senate-review"')
     expect(prompt).to.include('"ref": "job:7"')
     expect(prompt).to.include('"ref": "event:townhall"')
     expect(prompt).to.not.include('lu.ma')

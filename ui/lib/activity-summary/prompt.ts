@@ -54,7 +54,8 @@ RULES
 - Plain, friendly, specific. No hype, no emoji, no hashtags.
 - Do not comment on the MOONEY price direction, predict prices or give financial advice. You may state the price as a fact.
 - Leave out any category with no data. Do not write sections saying nothing happened.
-- Put anything citizens can act on first: open proposals, upcoming events.
+- Put anything citizens can act on first: proposals in the Member Vote, upcoming events.
+- Each proposal has a "status". Only "member-vote" proposals are open for citizens to vote on. "senate-review" proposals are waiting on the Senate, so never call them open for voting.
 
 OUTPUT
 Return ONLY valid JSON (no markdown fences) matching this schema:
@@ -81,7 +82,7 @@ export function buildSummaryUserPrompt(snapshot: ActivitySnapshot): string {
     period: { start: snapshot.periodStart, end: snapshot.periodEnd },
     totalCitizens: snapshot.totalCitizens ?? undefined,
     mooneyPriceUsd: snapshot.mooney?.price ?? undefined,
-    openProposals: snapshot.proposals.map((p) => ({ ref: `proposal:${p.mdp}`, ...p })),
+    proposals: snapshot.proposals.map((p) => ({ ref: `proposal:${p.mdp}`, ...p })),
     nextTownHall: snapshot.nextTownHall
       ? { ref: 'event:townhall', name: snapshot.nextTownHall.name, startAt: snapshot.nextTownHall.startAt }
       : undefined,

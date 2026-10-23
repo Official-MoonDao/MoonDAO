@@ -1,22 +1,27 @@
 // Server-side only: gathers the past week of MoonDAO activity into a compact
 // snapshot that the activity summary prompt is built from.
+import ProposalsABI from 'const/abis/Proposals.json'
 import {
   CITIZEN_TABLE_NAMES,
   DEFAULT_CHAIN_V5,
   JOBS_TABLE_NAMES,
   MARKETPLACE_TABLE_NAMES,
   PROJECT_TABLE_NAMES,
+  PROPOSALS_ADDRESSES,
   TEAM_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_CITIZENS, BLOCKED_MDPS, BLOCKED_PROJECTS, BLOCKED_TEAMS } from 'const/whitelist'
+import { getContract, readContract } from 'thirdweb'
 import { parseLocationData } from '@/lib/citizen/citizenDataService'
 import { getMooneyPrice } from '@/lib/coinstats'
 import { PROJECT_PENDING } from '@/lib/nance/types'
+import { getProposalStatus } from '@/lib/nance/useProposalStatus'
 import { getRecentCitizenTransfers, getRecentTeamTransfers } from '@/lib/network/networkSubgraph'
 import { isUntitledLike } from '@/lib/project/getProjectDisplayName'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
+import { serverClient } from '@/lib/thirdweb/serverClient'
 import { getNextTownHallEvent } from '@/lib/townhall/luma'
 import { getSummaries } from '@/lib/townhall/summaries'
 
@@ -26,6 +31,8 @@ export const LOOKBACK_DAYS = 7
 // model to keep the prompt small and limit what any one row can inject.
 const TEXT_LIMIT = 280
 const SOURCE_TIMEOUT_MS = 8000
+
+export type ProposalStage = 'member-vote' | 'senate-review'
 
 export type ActivitySnapshot = {
   periodStart: string
@@ -42,7 +49,9 @@ export type ActivitySnapshot = {
     teamId?: number
     description?: string
   }[]
-  proposals: { mdp: number; name: string }[]
+  // 'member-vote': passed the Senate, citizens can vote now.
+  // 'senate-review': waiting on the Senate's temperature check.
+  proposals: { mdp: number; name: string; status: ProposalStage }[]
   nextTownHall: { name: string; startAt: string; url: string } | null
   latestTownHall: { title: string; publishedAt: string; excerpt: string } | null
   mooney: { price: number; priceChange24h: number } | null
@@ -95,6 +104,37 @@ function placeName(location: unknown): string | undefined {
   if (typeof location === 'string') return clip(parseLocationData(location).name, 80)
   if (location && typeof location === 'object') return clip((location as any).name, 80)
   return undefined
+}
+
+// A pending project row (`active = PROJECT_PENDING`) may still be in Senate
+// review, in the Member Vote, or already rejected by the Senate. The project
+// page tells them apart with the Proposals contract's temp-check flags, so
+// the same read is done here. Rejected proposals and ones whose flags can't
+// be read get no stage and are left out.
+async function withProposalStages(rows: any[]): Promise<any[]> {
+  const contract = getContract({
+    client: serverClient,
+    address: PROPOSALS_ADDRESSES[getChainSlug(DEFAULT_CHAIN_V5)],
+    abi: ProposalsABI.abi as any,
+    chain: DEFAULT_CHAIN_V5,
+  })
+  return Promise.all(
+    rows.map(async (row) => {
+      try {
+        const [approved, failed] = await Promise.all([
+          readContract({ contract, method: 'tempCheckApproved' as string, params: [row.MDP] }),
+          readContract({ contract, method: 'tempCheckFailed' as string, params: [row.MDP] }),
+        ])
+        const status = getProposalStatus(row.active, approved as any, failed as any)
+        const stage: ProposalStage | null =
+          status === 'Voting' ? 'member-vote' : status === 'Temperature Check' ? 'senate-review' : null
+        return { ...row, stage }
+      } catch (error) {
+        console.error(`[activity-summary] proposal flags for MDP ${row.MDP} failed:`, error)
+        return { ...row, stage: null }
+      }
+    })
+  )
 }
 
 function mintTimestamps(transfers: { tokenId: string; blockTimestamp: string }[]) {
@@ -178,10 +218,10 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
       async () => {
         const rows = await queryTable(
           chain,
-          `SELECT id, MDP, name, proposalIPFS FROM ${projectTable} WHERE active = ${PROJECT_PENDING} ORDER BY id DESC LIMIT 10`
+          `SELECT id, MDP, name, active, proposalIPFS FROM ${projectTable} WHERE active = ${PROJECT_PENDING} ORDER BY id DESC LIMIT 10`
         )
         await enrichProjectNames(rows)
-        return rows
+        return withProposalStages(rows)
       },
       [] as any[]
     ),
@@ -235,9 +275,10 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     }))
 
   const proposals = proposalRows
+    .filter((p: any) => p.stage)
     .filter((p: any) => !BLOCKED_PROJECTS.has(Number(p.id)) && !BLOCKED_MDPS.has(Number(p.MDP)))
     .filter((p: any) => !isUntitledLike(p.name))
-    .map((p: any) => ({ mdp: Number(p.MDP), name: clip(p.name, 120)! }))
+    .map((p: any) => ({ mdp: Number(p.MDP), name: clip(p.name, 120)!, status: p.stage }))
 
   const latest = townHalls?.summaries?.[0]
   const totalCitizens = Number(citizenCount?.[0]?.count)
