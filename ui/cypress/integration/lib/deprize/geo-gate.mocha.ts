@@ -12,7 +12,10 @@ import {
   useDePrizeRestricted,
 } from '@/lib/deprize/deprizeRestrictedContext'
 import { getDePrizePageEligibility } from '@/lib/deprize/pageEligibility'
-import { isRestrictedJurisdiction } from '@/lib/deprize/restrictedJurisdictions'
+import {
+  COMPREHENSIVE_SANCTIONS,
+  isRestrictedJurisdiction,
+} from '@/lib/deprize/restrictedJurisdictions'
 
 const UI_ROOT = path.resolve(__dirname, '../../../../')
 
@@ -247,5 +250,19 @@ describe('PR-0 DePrize geo gate', () => {
     expect(
       fs.existsSync(path.join(UI_ROOT, 'components/deprize/detail/RegionBanner.tsx'))
     ).to.equal(false)
+  })
+
+  it('omits Syria from Schedule A.B in the published Terms', () => {
+    const terms = readUi('content/docs/Legal/DePrize/DePrize Terms and Conditions.md')
+    const sectionB = terms
+      .split('\n')
+      .find((line) => line.includes('Comprehensively sanctioned jurisdictions'))
+    expect(sectionB, 'Schedule A.B').to.be.a('string')
+    expect(sectionB).to.match(/Cuba/)
+    expect(sectionB).to.match(/Iran/)
+    expect(sectionB).to.match(/North Korea/)
+    expect(sectionB).to.not.match(/Syria/)
+    expect(COMPREHENSIVE_SANCTIONS.has('SY')).to.equal(false)
+    expect(isRestrictedJurisdiction('SY')).to.equal(false)
   })
 })

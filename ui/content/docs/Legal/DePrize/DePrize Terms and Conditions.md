@@ -19,11 +19,11 @@ aliases: [Legal/DePrize-Terms-and-Conditions]
 Organized by MoonDAO  
 moondao.com/deprize
 
-Version 1.2  
+Version 1.3  
 Effective Date: September 10, 2026  
-Last Updated: September 17, 2026
+Last Updated: October 22, 2026
 
-> **Review status.** Version 1.2 records the payload-purse destination (Section 7.4 and the Prize Rules). MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies to you.
+> **Review status.** Version 1.3 removes Syria from the comprehensively sanctioned jurisdictions in Schedule A. MoonDAO may update this document before or at launch. The version number and dates shown above identify the text that applies to you.
 
 > **Read this first.** DePrize is a real-money prediction market. Outcome tokens can become worthless. MoonDAO is the market maker, the fee recipient, the oracle that reports results, and the sponsor of the prize. **DePrize is not available to U.S. persons or to anyone located in a Restricted Jurisdiction (Schedule A).** Resolution is final and cannot be reversed. If a DePrize is cancelled or ends with no winner, every outcome token redeems for an equal share (1/N) of the market's collateral — **not** for what you paid. The 5% prize contribution taken from every bet is not refundable through the market.
 
@@ -345,7 +345,7 @@ As of the Effective Date, the Service is not available to persons located in, re
 
 **A. United States of America**, including all states, the District of Columbia, and all territories and possessions (see Section 3.2 for the U.S. Person exclusion, which applies regardless of location).
 
-**B. Comprehensively sanctioned jurisdictions and regions:** Cuba; Iran; North Korea (DPRK); Syria; the Crimea, Donetsk, Luhansk, Kherson, and Zaporizhzhia regions of Ukraine.
+**B. Comprehensively sanctioned jurisdictions and regions:** Cuba; Iran; North Korea (DPRK); the Crimea, Donetsk, Luhansk, Kherson, and Zaporizhzhia regions of Ukraine.
 
 **C. Jurisdictions subject to extensive sanctions or elevated risk:** Russia; Belarus; Afghanistan; Myanmar (Burma); Venezuela; Yemen; Libya; Somalia; South Sudan; Sudan; the Democratic Republic of the Congo; Central African Republic; Mali; Iraq; Lebanon; Nicaragua; Zimbabwe.
 
@@ -366,3 +366,4 @@ Where a jurisdiction appears in more than one category, every listed basis appli
 | 1.0 | September 10, 2026 | Initial published version. Supersedes the unpublished internal draft. Adds U.S. Person and Restricted Jurisdiction exclusions, MoonDAO role and conflict disclosures, insider and market-integrity rules, the market/prize separation, the challenge window, and click-through acceptance. |
 | 1.1 | September 11, 2026 | Splits the Section 3.7 representations into separate residency, entity, and insider attestations. Clarifies that Section 3.5 prohibits location misrepresentation, not every privacy relay. |
 | 1.2 | September 17, 2026 | Records the prize as a community payload purchase. If the winner does not claim, they may designate a nonprofit; if there is no response, the pool rolls into a future prize. |
+| 1.3 | October 22, 2026 | Removes Syria from Schedule A.B. Comprehensive Syria sanctions ended in 2025; Syria is not moved to another category. Targeted sanctions on designated persons are unchanged. |
