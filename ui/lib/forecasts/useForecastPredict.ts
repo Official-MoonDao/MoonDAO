@@ -1,11 +1,10 @@
-import { getAccessToken, useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { getAccessToken, useLogin } from '@privy-io/react-auth'
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import type { Chain } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
-import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { resolveLiveDePrizeId } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
@@ -30,22 +29,13 @@ import {
 } from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 
 export type ForecastPredictController = {
   connected: boolean
-  isCitizen: boolean
-  citizenLoading: boolean
-  lookupFailed: boolean
-  expired: boolean
-  linkedCitizenAddress?: string
-  chainLabel: string
-  canSwitch: boolean
-  onSwitch: () => void
-  onConnectLinked: () => void
-  onRetry: () => void
+  /** vMOONEY balance is still loading. A non-Citizen can hold voting power. */
+  votingPowerLoading: boolean
   regionRestricted: boolean
   savedPick: number | null
   writing: boolean
@@ -62,9 +52,9 @@ export type ForecastPredictController = {
 }
 
 /**
- * Session behind the DePrize "Predict {team}" window: citizen check, roster
- * share, and the free MOONEY write. Moon Base Zero mounts this so its prize
- * rows open that same window.
+ * Session behind the DePrize "Predict {team}" window: voting-power weight,
+ * roster share, and the free MOONEY write. Moon Base Zero mounts this so its
+ * prize rows open that same window.
  */
 export function useForecastPredict(args: {
   chain: Chain
@@ -78,18 +68,9 @@ export function useForecastPredict(args: {
   const { chain, chainSlug, deprizeId, numOutcomes, labels, reported, marketLoading } = args
   const regionRestricted = useClientDePrizeRestricted()
   const { login } = useLogin()
-  const { connectWallet } = usePrivy()
-  const { wallets } = useWallets()
-  const { setSelectedWallet } = useContext(PrivyWalletContext)
   const account = useActiveAccount()
-  const prizeCitizen = usePrizeChainCitizen(chain)
-  const isCitizen = prizeCitizen.isCitizen
-  const citizenWalletIndex = prizeCitizen.linkedCitizenAddress
-    ? wallets.findIndex(
-        (wallet) => wallet.address?.toLowerCase() === prizeCitizen.linkedCitizenAddress
-      )
-    : -1
-  const { totalVMOONEY } = useTotalVMOONEY(account?.address)
+  const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(account?.address)
+  const votingWeight = totalVMOONEY || 0
 
   const n = numOutcomes
   const [savedPick, setSavedPick] = useState<number | null>(null)
@@ -123,7 +104,7 @@ export function useForecastPredict(args: {
     restricted: regionRestricted,
     bettingOpen: false,
     locked: inputsLocked,
-    isCitizen,
+    isCitizen: false,
     connected: !!account,
   }).find((action) => action.kind === 'predict')?.enabled
 
@@ -220,13 +201,13 @@ export function useForecastPredict(args: {
       if (!prev) return prev
       const row = {
         voterAddress: account.address.toLowerCase(),
-        citizenId: prizeCitizen.tokenId ?? '',
+        citizenId: '',
         citizenName: account.address,
         citizenImage: undefined,
         allocation,
-        weight: isCitizen ? totalVMOONEY || 0 : 0,
-        storedVmooney: isCitizen ? totalVMOONEY || 0 : 0,
-        liveVmooney: isCitizen ? totalVMOONEY || 0 : 0,
+        weight: votingWeight,
+        storedVmooney: votingWeight,
+        liveVmooney: votingWeight,
         updatedAt: Math.floor(Date.now() / 1000),
         brier: null,
         skill: null,
@@ -270,7 +251,7 @@ export function useForecastPredict(args: {
         )
         return false
       }
-      const vote = encodeForecastVote(allocation, isCitizen ? totalVMOONEY || 0 : 0)
+      const vote = encodeForecastVote(allocation, votingWeight)
       await writeForecastVote({
         forecastsContract,
         account,
@@ -338,7 +319,7 @@ export function useForecastPredict(args: {
       savedPick,
       writing,
       connected: !!account,
-      isCitizen,
+      isCitizen: false,
       locked: inputsLocked,
     })
     if (plan.action === 'connect') {
@@ -360,25 +341,9 @@ export function useForecastPredict(args: {
     if (plan.action === 'clear') void clearPick()
   }
 
-  function onSwitch() {
-    if (citizenWalletIndex >= 0) setSelectedWallet(citizenWalletIndex)
-    else connectWallet()
-  }
-
   return {
     connected: !!account,
-    isCitizen,
-    citizenLoading: prizeCitizen.isLoading,
-    lookupFailed: prizeCitizen.lookupFailed,
-    expired: prizeCitizen.expired,
-    linkedCitizenAddress: prizeCitizen.linkedCitizenAddress,
-    chainLabel: chain.name || 'this network',
-    canSwitch: citizenWalletIndex >= 0,
-    onSwitch,
-    onConnectLinked: () => {
-      connectWallet()
-    },
-    onRetry: prizeCitizen.retry,
+    votingPowerLoading: !!account && votingPowerLoading,
     regionRestricted,
     savedPick,
     writing,

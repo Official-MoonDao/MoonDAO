@@ -1,6 +1,5 @@
 import type { Chain } from 'thirdweb'
 import { useForecastPredict } from '@/lib/forecasts/useForecastPredict'
-import CitizenPredictNotice from '@/components/deprize/CitizenPredictNotice'
 import PredictModal from '@/components/deprize/PredictModal'
 
 /**
@@ -44,21 +43,12 @@ export default function ForecastPredictModal(props: {
       chanceLoading={session.chanceLoading}
       regionRestricted={session.regionRestricted}
       connected={session.connected}
-      citizenLoading={session.citizenLoading}
-      isCitizen={session.isCitizen}
+      citizenLoading={session.votingPowerLoading}
+      isCitizen
       citizenNotice={
-        <CitizenPredictNotice
-          loading={session.citizenLoading}
-          isCitizen={session.isCitizen}
-          lookupFailed={session.lookupFailed}
-          expired={session.expired}
-          linkedCitizenAddress={session.linkedCitizenAddress}
-          chainLabel={session.chainLabel}
-          canSwitch={session.canSwitch}
-          onSwitch={session.onSwitch}
-          onConnectLinked={session.onConnectLinked}
-          onRetry={session.onRetry}
-        />
+        session.votingPowerLoading ? (
+          <p className="text-sm text-gray-300">Checking your voting power…</p>
+        ) : null
       }
       saved={session.savedPick === index}
       writing={session.writing}
