@@ -7,6 +7,7 @@ import {
   StarIcon,
   TagIcon,
   UserGroupIcon,
+  UserCircleIcon,
   UserPlusIcon,
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
@@ -47,10 +48,16 @@ const SECTION_STYLES: Record<
   },
   citizens: {
     label: 'New Citizens',
-    spotlightLabel: 'Citizen Spotlight',
     icon: UserPlusIcon,
     gradient: 'from-green-500 to-teal-600',
     text: 'text-teal-300',
+  },
+  citizenSpotlight: {
+    label: 'Citizen Spotlight',
+    spotlightLabel: 'Citizen Spotlight',
+    icon: UserCircleIcon,
+    gradient: 'from-sky-500 to-indigo-600',
+    text: 'text-sky-300',
   },
   teams: {
     label: 'New Teams',
@@ -133,6 +140,16 @@ function LinkTarget({
 }
 
 function LinkChip({ link, gradient }: { link: SummaryLink; gradient: string }) {
+  if (link.more) {
+    return (
+      <LinkTarget
+        link={link}
+        className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs text-white/60 hover:text-white bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-white/20 transition-colors"
+      >
+        {link.label}
+      </LinkTarget>
+    )
+  }
   const isEvent = Boolean(link.startAt)
   const detail = isEvent
     ? [formatEventTime(link.startAt!), link.detail].filter(Boolean).join(' · ')

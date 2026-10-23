@@ -188,7 +188,7 @@ describe('spotlights', () => {
   })
   const raw = {
     sections: [
-      { kind: 'citizens', summary: 'Citizen spotlight: Grace Hopper.', refs: ['citizen:88'] },
+      { kind: 'citizenSpotlight', summary: 'Meet Grace Hopper.', refs: ['citizen:88'] },
       { kind: 'jobs', summary: 'Featured role: Regolith Engineer.', refs: ['job:3'] },
       { kind: 'governance', summary: 'Featured project: Lunar Garden.', refs: ['project:150'] },
     ],
@@ -205,7 +205,7 @@ describe('spotlights', () => {
 
     const result = normalizeSummary({ raw, snapshot: quietWeek, model: 'm' })!
     const byKind = Object.fromEntries(result.sections.map((s) => [s.kind, s]))
-    expect(byKind.citizens.links).to.deep.equal([
+    expect(byKind.citizenSpotlight.links).to.deep.equal([
       { label: 'Grace Hopper', href: '/citizen/grace-hopper-88' },
     ])
     expect(byKind.jobs.links).to.deep.equal([{ label: 'Regolith Engineer', href: '/jobs/3' }])
@@ -218,6 +218,47 @@ describe('spotlights', () => {
 
     const busyWeek = normalizeSummary({ raw: MODEL_OUTPUT, snapshot: snapshot(), model: 'm' })!
     expect(busyWeek.sections.some((s) => s.spotlight)).to.equal(false)
+  })
+
+  it('drops a "citizens" section in a week nobody joined', () => {
+    const misfiled = {
+      sections: [{ kind: 'citizens', summary: 'Grace Hopper joined.', refs: ['citizen:88'] }],
+    }
+    expect(normalizeSummary({ raw: misfiled, snapshot: quietWeek, model: 'm' })).to.equal(null)
+  })
+})
+
+describe('new citizens and the citizen spotlight', () => {
+  const newcomers = Array.from({ length: 10 }, (_, i) => ({ id: 300 - i, name: `Citizen ${300 - i}` }))
+  const week = snapshot({
+    citizens: newcomers,
+    spotlight: { citizen: { id: 88, name: 'Grace Hopper', bio: 'Compiler pioneer' } },
+  })
+  const raw = {
+    sections: [
+      { kind: 'citizens', summary: 'Ten citizens joined, including Citizen 300.', refs: ['citizen:300'] },
+      { kind: 'citizenSpotlight', summary: 'Meet Grace Hopper.', refs: [] },
+    ],
+  }
+  const result = normalizeSummary({ raw, snapshot: week, model: 'm' })!
+  const byKind = Object.fromEntries(result.sections.map((s) => [s.kind, s]))
+
+  it('lists new citizens from the data, newest first, with a +N more link', () => {
+    const links = byKind.citizens.links
+    expect(links).to.have.length(9)
+    expect(links.slice(0, 8).map((l) => l.label)).to.deep.equal(
+      newcomers.slice(0, 8).map((c) => c.name)
+    )
+    expect(links[8]).to.deep.equal({ label: '+2 more', href: '/citizens', more: true })
+  })
+
+  it('shows the spotlight as its own section next to New Citizens', () => {
+    expect(result.sections.map((s) => s.kind)).to.deep.equal(['citizens', 'citizenSpotlight'])
+    expect(byKind.citizens.spotlight).to.equal(false)
+    expect(byKind.citizenSpotlight.spotlight).to.equal(true)
+    expect(byKind.citizenSpotlight.links).to.deep.equal([
+      { label: 'Grace Hopper', href: '/citizen/grace-hopper-88' },
+    ])
   })
 })
 
@@ -507,8 +548,8 @@ describe('getOrCreateSummary', () => {
   })
 
   it('namespaces keys by environment', () => {
-    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v6:production:2026-10-23')
-    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v6:preview:latest')
+    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v7:production:2026-10-23')
+    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v7:preview:latest')
     expect(summaryKeys(NOW, 'preview').lock).to.not.equal(summaryKeys(NOW, 'production').lock)
   })
 

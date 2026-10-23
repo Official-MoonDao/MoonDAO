@@ -11,10 +11,11 @@ export const ACTIVITY_SUMMARY_MODEL = 'openai/gpt-oss-120b'
 // part of the Redis key and of the URL the card requests, so a new deploy
 // regenerates instead of serving a summary stored or CDN-cached from older
 // code.
-export const ACTIVITY_SUMMARY_VERSION = 6
+export const ACTIVITY_SUMMARY_VERSION = 7
 
 export type SectionKind =
   | 'citizens'
+  | 'citizenSpotlight'
   | 'teams'
   | 'governance'
   | 'jobs'
@@ -27,6 +28,7 @@ const SECTION_ORDER: SectionKind[] = [
   'events',
   'townhall',
   'citizens',
+  'citizenSpotlight',
   'teams',
   'jobs',
   'marketplace',
@@ -41,6 +43,8 @@ export type SummaryLink = {
   startAt?: string
   // Short secondary line: location, price, guest count
   detail?: string
+  // A "+N more" overflow link rather than an item
+  more?: boolean
 }
 
 export type ActivitySummarySection = {
@@ -61,6 +65,9 @@ export type ActivitySummary = {
 }
 
 const MAX_LINKS_PER_SECTION = 6
+// New citizens are listed from the data, not the model's refs, so nobody
+// is dropped by chance; past this many, a "+N more" link goes to /citizens.
+const MAX_NEW_CITIZEN_LINKS = 8
 
 // Proposals link to the vote page as a whole rather than one link each.
 const VOTE_LINK: SummaryLink = { label: 'Go to the vote', href: '/projects' }
@@ -78,17 +85,21 @@ RULES
 - Put anything citizens can act on first: proposals in the Member Vote, upcoming events.
 - Each proposal has a "status". Only "member-vote" proposals are open for citizens to vote on. "senate-review" proposals are waiting on the Senate, so never call them open for voting.
 
+NEW CITIZENS
+- "newCitizens" are people who joined this week. Welcome them by name in the "citizens" section. With more than 3, give the count and name a few.
+
 SPOTLIGHTS
-- "spotlight" holds featured items for categories with nothing new this week. They are NOT new: never say they joined, were posted or were created this week.
-- Write each one as a short feature, e.g. "Citizen spotlight: ..." or "Featured project: ...", using its bio or description.
-- Use the matching section kind: citizen → "citizens", team → "teams", job → "jobs", listing → "marketplace", project → "governance".
+- "spotlight" holds featured items. They are NOT new: never say they joined, were posted or were created this week.
+- Write each one as a short feature, e.g. "Meet ...", "Featured team: ..." or "Featured project: ...", using its bio or description.
+- Use the matching section kind: citizen → "citizenSpotlight", team → "teams", job → "jobs", listing → "marketplace", project → "governance".
+- The citizen spotlight is its own section, separate from "citizens". Never mention the spotlight citizen in the "citizens" section.
 
 OUTPUT
 Return ONLY valid JSON (no markdown fences) matching this schema:
 {
   "sections": [
     {
-      "kind": "governance" | "events" | "townhall" | "citizens" | "teams" | "jobs" | "marketplace",
+      "kind": "governance" | "events" | "townhall" | "citizens" | "citizenSpotlight" | "teams" | "jobs" | "marketplace",
       "summary": "1-2 sentences, at most 50 words",
       "refs": ["ref strings copied exactly from the input"]
     }
@@ -204,12 +215,13 @@ export function buildRefIndex(snapshot: ActivitySnapshot): Map<string, SummaryLi
   return index
 }
 
-// Which sections are showing a spotlight instead of this week's activity.
+// Which sections feature a spotlight item rather than this week's activity.
+// The citizen spotlight is always its own section, next to New Citizens.
 export function spotlightKinds(snapshot: ActivitySnapshot): Set<SectionKind> {
   const { spotlight } = snapshot
   const kinds = new Set<SectionKind>()
   if (snapshot.proposals.length === 0 && spotlight.project) kinds.add('governance')
-  if (snapshot.citizens.length === 0 && spotlight.citizen) kinds.add('citizens')
+  if (spotlight.citizen) kinds.add('citizenSpotlight')
   if (snapshot.teams.length === 0 && spotlight.team) kinds.add('teams')
   if (snapshot.jobs.length === 0 && spotlight.job) kinds.add('jobs')
   if (snapshot.listings.length === 0 && spotlight.listing) kinds.add('marketplace')
@@ -262,6 +274,10 @@ export function normalizeSummary(params: {
     const s = item as Record<string, unknown>
     const kind = s.kind as SectionKind
     if (!SECTION_ORDER.includes(kind) || byKind.has(kind)) continue
+    // A section the data doesn't back (e.g. the spotlight written up as
+    // "citizens" in a week nobody joined) would mislabel it; drop it.
+    if (kind === 'citizens' && snapshot.citizens.length === 0) continue
+    if (kind === 'citizenSpotlight' && !snapshot.spotlight.citizen) continue
     const summary = cleanText(s.summary, 400)
     if (!summary) continue
 
@@ -279,6 +295,19 @@ export function normalizeSummary(params: {
     if (kind === 'governance' && snapshot.proposals.length > 0) {
       const anyOpen = snapshot.proposals.some((p) => p.status === 'member-vote')
       links = [anyOpen ? VOTE_LINK : PROPOSALS_LINK]
+    }
+
+    // Every new citizen gets a chip, newest first, whatever the model cited.
+    if (kind === 'citizens') {
+      const all = snapshot.citizens.flatMap((c) => refIndex.get(`citizen:${c.id}`) ?? [])
+      links = all.slice(0, MAX_NEW_CITIZEN_LINKS)
+      const extra = all.length - links.length
+      if (extra > 0) links.push({ label: `+${extra} more`, href: '/citizens', more: true })
+    }
+
+    if (kind === 'citizenSpotlight') {
+      const link = refIndex.get(`citizen:${snapshot.spotlight.citizen!.id}`)
+      links = link ? [link] : []
     }
 
     byKind.set(kind, { kind, summary, links, spotlight: spotlit.has(kind) })

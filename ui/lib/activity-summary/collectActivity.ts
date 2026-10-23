@@ -83,10 +83,10 @@ export type ActivitySnapshot = {
   upcomingEvents: EventItem[]
   latestTownHall: { title: string; publishedAt: string; excerpt: string } | null
   mooney: { price: number; priceChange24h: number } | null
-  // Featured items for categories with nothing new this week, picked by
-  // pickForDay. A key is only set when its category above is empty: a
-  // citizen spotlight when no one joined, a funded project when no vote is
-  // open, and so on.
+  // Featured items, picked by pickForDay. `citizen` is set every day (never
+  // one of this week's new citizens). The others are only set when their
+  // category above is empty: a funded project when no vote is open, a team
+  // when no team joined, and so on.
   spotlight: {
     citizen?: CitizenItem
     team?: TeamItem
@@ -304,10 +304,12 @@ async function fetchUpcomingEvents(): Promise<EventItem[]> {
 }
 
 /**
- * Picks a featured item for each category that has nothing new this week,
- * like the Python Discord brief's citizen spotlight and featured job/listing.
- * Pools favour items worth featuring: citizens and teams with a bio, jobs and
- * listings that are still open, and funded (active) projects.
+ * Picks the day's featured items, like the Python Discord brief's citizen
+ * spotlight and featured job/listing. Teams, jobs, listings and projects are
+ * only featured when their category has nothing new this week. A citizen is
+ * featured every day, drawn from every citizen with a bio (preferring ones
+ * with a profile image) except this week's new citizens, who already have
+ * their own section.
  */
 async function collectSpotlights(params: {
   now: Date
@@ -320,8 +322,9 @@ async function collectSpotlights(params: {
     projectTable: string
   }
   need: Record<keyof ActivitySnapshot['spotlight'], boolean>
+  excludeCitizenIds: Set<number>
 }): Promise<ActivitySnapshot['spotlight']> {
-  const { now, nowTs, tables, need } = params
+  const { now, nowTs, tables, need, excludeCitizenIds } = params
   const chain = DEFAULT_CHAIN_V5
   const query = (label: string, sql: string) =>
     settle(`${label} spotlight`, () => queryTable(chain, sql), [] as any[])
@@ -331,7 +334,7 @@ async function collectSpotlights(params: {
     need.citizen
       ? query(
           'citizen',
-          `SELECT id, name, description, location, image FROM ${tables.citizenTable} WHERE view != '' AND description != '' ORDER BY id DESC LIMIT 100`
+          `SELECT id, name, description, location, image FROM ${tables.citizenTable} WHERE view != '' AND description != ''`
         )
       : none,
     need.team
@@ -369,8 +372,13 @@ async function collectSpotlights(params: {
       : none,
   ])
 
+  const citizenCandidates = citizenPool
+    .filter((c: any) => !BLOCKED_CITIZENS.has(c.id) && !excludeCitizenIds.has(Number(c.id)))
+    .map(toCitizen)
+    .filter((c: CitizenItem) => c.bio)
+  const withImage = citizenCandidates.filter((c: CitizenItem) => c.image)
   const citizen = pickForDay<CitizenItem>(
-    citizenPool.filter((c: any) => !BLOCKED_CITIZENS.has(c.id)).map(toCitizen),
+    withImage.length > 0 ? withImage : citizenCandidates,
     now,
     0
   )
@@ -523,12 +531,14 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     nowTs,
     tables: { citizenTable, teamTable, jobTable, marketplaceTable, projectTable },
     need: {
-      citizen: mintTimes.citizen !== null && citizens.length === 0,
+      // Always: the citizen spotlight is its own daily section.
+      citizen: true,
       team: mintTimes.team !== null && teams.length === 0,
       job: jobs.length === 0,
       listing: listings.length === 0,
       project: proposals.length === 0,
     },
+    excludeCitizenIds: new Set(citizens.map((c: CitizenItem) => c.id)),
   })
 
   const latest = townHalls?.summaries?.[0]
