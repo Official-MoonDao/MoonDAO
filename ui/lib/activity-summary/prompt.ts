@@ -32,6 +32,9 @@ export type ActivitySummarySection = {
   kind: SectionKind
   summary: string
   links: SummaryLink[]
+  // True when the section features a spotlight item because nothing new
+  // happened in its category this week. Set from the snapshot, not the model.
+  spotlight: boolean
 }
 
 export type ActivitySummary = {
@@ -45,6 +48,10 @@ export type ActivitySummary = {
 
 const MAX_LINKS_PER_SECTION = 6
 
+// Proposals link to the vote page as a whole rather than one link each.
+const VOTE_LINK: SummaryLink = { label: 'Go to the vote', href: '/projects' }
+const PROPOSALS_LINK: SummaryLink = { label: 'View proposals', href: '/projects' }
+
 export function buildSummarySystemPrompt(): string {
   return `You write the weekly activity summary shown on the MoonDAO citizen dashboard. MoonDAO is a DAO working toward a permanent settlement on the Moon. Readers are MoonDAO citizens who want to know what happened in the last 7 days and what needs their attention.
 
@@ -56,6 +63,11 @@ RULES
 - Leave out any category with no data. Do not write sections saying nothing happened.
 - Put anything citizens can act on first: proposals in the Member Vote, upcoming events.
 - Each proposal has a "status". Only "member-vote" proposals are open for citizens to vote on. "senate-review" proposals are waiting on the Senate, so never call them open for voting.
+
+SPOTLIGHTS
+- "spotlight" holds featured items for categories with nothing new this week. They are NOT new: never say they joined, were posted or were created this week.
+- Write each one as a short feature, e.g. "Citizen spotlight: ..." or "Featured project: ...", using its bio or description.
+- Use the matching section kind: citizen → "citizens", team → "teams", job → "jobs", listing → "marketplace", project → "governance".
 
 OUTPUT
 Return ONLY valid JSON (no markdown fences) matching this schema:
@@ -71,18 +83,21 @@ Return ONLY valid JSON (no markdown fences) matching this schema:
 }
 
 REFS
-- Each input item has a "ref" field such as "citizen:12" or "job:4". List the refs of the items a section mentions so the dashboard can link them.
-- Only use refs that appear in the input. Use each section kind at most once.`
+- Most input items have a "ref" field such as "citizen:12" or "job:4". List the refs of the items a section mentions so the dashboard can link them.
+- Only use refs that appear in the input. Use each section kind at most once.
+- The headline should be about this week's activity. Mention a spotlight in the headline only when nothing else happened.`
 }
 
 // Adds a `ref` to every linkable item so the model can point at items
-// without ever writing a URL.
+// without ever writing a URL. Proposals get no ref: the governance section
+// always links to the vote page instead.
 export function buildSummaryUserPrompt(snapshot: ActivitySnapshot): string {
+  const { spotlight } = snapshot
   const input = {
     period: { start: snapshot.periodStart, end: snapshot.periodEnd },
     totalCitizens: snapshot.totalCitizens ?? undefined,
     mooneyPriceUsd: snapshot.mooney?.price ?? undefined,
-    proposals: snapshot.proposals.map((p) => ({ ref: `proposal:${p.mdp}`, ...p })),
+    proposals: snapshot.proposals,
     nextTownHall: snapshot.nextTownHall
       ? { ref: 'event:townhall', name: snapshot.nextTownHall.name, startAt: snapshot.nextTownHall.startAt }
       : undefined,
@@ -93,6 +108,13 @@ export function buildSummaryUserPrompt(snapshot: ActivitySnapshot): string {
     newTeams: snapshot.teams.map((t) => ({ ref: `team:${t.id}`, ...t })),
     newJobs: snapshot.jobs.map((j) => ({ ref: `job:${j.id}`, ...j })),
     newMarketplaceListings: snapshot.listings.map((l) => ({ ref: `listing:${l.id}`, ...l })),
+    spotlight: {
+      citizen: spotlight.citizen && { ref: `citizen:${spotlight.citizen.id}`, ...spotlight.citizen },
+      team: spotlight.team && { ref: `team:${spotlight.team.id}`, ...spotlight.team },
+      job: spotlight.job && { ref: `job:${spotlight.job.id}`, ...spotlight.job },
+      listing: spotlight.listing && { ref: `listing:${spotlight.listing.id}`, ...spotlight.listing },
+      project: spotlight.project && { ref: `project:${spotlight.project.mdp}`, ...spotlight.project },
+    },
   }
   return `MoonDAO activity for the last 7 days:\n${JSON.stringify(input, null, 2)}`
 }
@@ -109,9 +131,7 @@ function safeExternalUrl(url: string): string | null {
 // Every ref the model may cite, mapped to a link built on our side.
 export function buildRefIndex(snapshot: ActivitySnapshot): Map<string, SummaryLink> {
   const index = new Map<string, SummaryLink>()
-  for (const p of snapshot.proposals) {
-    index.set(`proposal:${p.mdp}`, { label: `MDP-${p.mdp}: ${p.name}`, href: `/project/${p.mdp}` })
-  }
+  const { spotlight } = snapshot
   if (snapshot.nextTownHall) {
     const href = safeExternalUrl(snapshot.nextTownHall.url)
     if (href) index.set('event:townhall', { label: snapshot.nextTownHall.name, href })
@@ -119,22 +139,40 @@ export function buildRefIndex(snapshot: ActivitySnapshot): Map<string, SummaryLi
   if (snapshot.latestTownHall) {
     index.set('townhall:latest', { label: snapshot.latestTownHall.title, href: '/townhall' })
   }
-  for (const c of snapshot.citizens) {
+  for (const c of [...snapshot.citizens, ...(spotlight.citizen ? [spotlight.citizen] : [])]) {
     index.set(`citizen:${c.id}`, {
       label: c.name,
       href: `/citizen/${generatePrettyLinkWithId(c.name, c.id)}`,
     })
   }
-  for (const t of snapshot.teams) {
+  for (const t of [...snapshot.teams, ...(spotlight.team ? [spotlight.team] : [])]) {
     index.set(`team:${t.id}`, { label: t.name, href: `/team/${t.id}` })
   }
-  for (const j of snapshot.jobs) {
+  for (const j of [...snapshot.jobs, ...(spotlight.job ? [spotlight.job] : [])]) {
     index.set(`job:${j.id}`, { label: j.title, href: `/jobs/${j.id}` })
   }
-  for (const l of snapshot.listings) {
+  for (const l of [...snapshot.listings, ...(spotlight.listing ? [spotlight.listing] : [])]) {
     index.set(`listing:${l.id}`, { label: l.title, href: `/marketplace/${l.id}` })
   }
+  if (spotlight.project) {
+    index.set(`project:${spotlight.project.mdp}`, {
+      label: spotlight.project.name,
+      href: `/project/${spotlight.project.mdp}`,
+    })
+  }
   return index
+}
+
+// Which sections are showing a spotlight instead of this week's activity.
+export function spotlightKinds(snapshot: ActivitySnapshot): Set<SectionKind> {
+  const { spotlight } = snapshot
+  const kinds = new Set<SectionKind>()
+  if (snapshot.proposals.length === 0 && spotlight.project) kinds.add('governance')
+  if (snapshot.citizens.length === 0 && spotlight.citizen) kinds.add('citizens')
+  if (snapshot.teams.length === 0 && spotlight.team) kinds.add('teams')
+  if (snapshot.jobs.length === 0 && spotlight.job) kinds.add('jobs')
+  if (snapshot.listings.length === 0 && spotlight.listing) kinds.add('marketplace')
+  return kinds
 }
 
 export function hasActivity(snapshot: ActivitySnapshot): boolean {
@@ -145,7 +183,8 @@ export function hasActivity(snapshot: ActivitySnapshot): boolean {
     snapshot.jobs.length > 0 ||
     snapshot.listings.length > 0 ||
     snapshot.nextTownHall !== null ||
-    snapshot.latestTownHall !== null
+    snapshot.latestTownHall !== null ||
+    spotlightKinds(snapshot).size > 0
   )
 }
 
@@ -171,7 +210,9 @@ export function normalizeSummary(params: {
     string,
     unknown
   >
-  const refIndex = buildRefIndex(params.snapshot)
+  const { snapshot } = params
+  const refIndex = buildRefIndex(snapshot)
+  const spotlit = spotlightKinds(snapshot)
 
   const byKind = new Map<SectionKind, ActivitySummarySection>()
   const rawSections = Array.isArray(raw.sections) ? raw.sections : []
@@ -184,16 +225,22 @@ export function normalizeSummary(params: {
     if (!summary) continue
 
     const seen = new Set<string>()
-    const links: SummaryLink[] = []
+    let links: SummaryLink[] = []
     for (const ref of Array.isArray(s.refs) ? s.refs : []) {
-      if (typeof ref !== 'string' || seen.has(ref)) continue
+      if (typeof ref !== 'string') continue
       const link = refIndex.get(ref.trim())
-      if (!link) continue
-      seen.add(ref)
+      if (!link || seen.has(link.href)) continue
+      seen.add(link.href)
       links.push(link)
       if (links.length >= MAX_LINKS_PER_SECTION) break
     }
-    byKind.set(kind, { kind, summary, links })
+
+    if (kind === 'governance' && snapshot.proposals.length > 0) {
+      const anyOpen = snapshot.proposals.some((p) => p.status === 'member-vote')
+      links = [anyOpen ? VOTE_LINK : PROPOSALS_LINK]
+    }
+
+    byKind.set(kind, { kind, summary, links, spotlight: spotlit.has(kind) })
   }
 
   const sections = SECTION_ORDER.flatMap((kind) => byKind.get(kind) ?? [])
@@ -203,8 +250,8 @@ export function normalizeSummary(params: {
   return {
     headline,
     sections,
-    periodStart: params.snapshot.periodStart,
-    periodEnd: params.snapshot.periodEnd,
+    periodStart: snapshot.periodStart,
+    periodEnd: snapshot.periodEnd,
     generatedAt: (params.now ?? new Date()).toISOString(),
     model: params.model,
   }

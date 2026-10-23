@@ -8,6 +8,7 @@ import {
   normalizeSummary,
 } from '../lib/activity-summary/prompt'
 import type { ActivitySummary } from '../lib/activity-summary/prompt'
+import { pickForDay } from '../lib/activity-summary/spotlight'
 import { getOrCreateSummary, SummaryStore, summaryKeys } from '../lib/activity-summary/store'
 
 const NOW = new Date('2026-10-23T12:00:00Z')
@@ -32,6 +33,7 @@ function snapshot(overrides: Partial<ActivitySnapshot> = {}): ActivitySnapshot {
     },
     latestTownHall: null,
     mooney: { price: 0.0004, priceChange24h: 1.2 },
+    spotlight: {},
     ...overrides,
   }
 }
@@ -59,7 +61,8 @@ describe('activity summary prompt', () => {
   it('gives every linkable item a ref and leaves out URLs', () => {
     const prompt = buildSummaryUserPrompt(snapshot())
     expect(prompt).to.include('"ref": "citizen:412"')
-    expect(prompt).to.include('"ref": "proposal:180"')
+    expect(prompt).to.include('"mdp": 180')
+    expect(prompt).to.not.include('"ref": "proposal:')
     expect(prompt).to.include('"status": "member-vote"')
     expect(prompt).to.include('"status": "senate-review"')
     expect(prompt).to.include('"ref": "job:7"')
@@ -86,10 +89,20 @@ describe('normalizeSummary', () => {
     expect(summary.sections[0].summary).to.equal('MDP-180 is awaiting a decision.')
   })
 
-  it('links only refs that exist in the snapshot', () => {
-    expect(summary.sections[0].links).to.deep.equal([
-      { label: 'MDP-180: Moon Rover Grant', href: '/project/180' },
+  it('links governance to the vote page instead of each proposal', () => {
+    expect(summary.sections[0].links).to.deep.equal([{ label: 'Go to the vote', href: '/projects' }])
+
+    const senateOnly = normalizeSummary({
+      raw: MODEL_OUTPUT,
+      snapshot: snapshot({ proposals: [{ mdp: 181, name: 'Regolith Kiln', status: 'senate-review' }] }),
+      model: 'm',
+    })!
+    expect(senateOnly.sections[0].links).to.deep.equal([
+      { label: 'View proposals', href: '/projects' },
     ])
+  })
+
+  it('links only refs that exist in the snapshot', () => {
     expect(summary.sections[2].links).to.deep.equal([
       { label: 'Ada Lovelace', href: '/citizen/ada-lovelace-412' },
     ])
@@ -115,6 +128,75 @@ describe('normalizeSummary', () => {
     const result = normalizeSummary({ raw: MODEL_OUTPUT, snapshot: s, model: 'm' })!
     const events = result.sections.find((sec) => sec.kind === 'events')!
     expect(events.links).to.deep.equal([])
+  })
+})
+
+describe('spotlights', () => {
+  const quietWeek = snapshot({
+    citizens: [],
+    jobs: [],
+    proposals: [],
+    nextTownHall: null,
+    spotlight: {
+      citizen: { id: 88, name: 'Grace Hopper', bio: 'Compiler pioneer' },
+      job: { id: 3, title: 'Regolith Engineer' },
+      project: { mdp: 150, name: 'Lunar Garden', description: 'Growing plants in regolith' },
+    },
+  })
+  const raw = {
+    headline: 'A quiet week, with a few spotlights.',
+    sections: [
+      { kind: 'citizens', summary: 'Citizen spotlight: Grace Hopper.', refs: ['citizen:88'] },
+      { kind: 'jobs', summary: 'Featured role: Regolith Engineer.', refs: ['job:3'] },
+      { kind: 'governance', summary: 'Featured project: Lunar Garden.', refs: ['project:150'] },
+    ],
+  }
+
+  it('counts a week with only spotlights as having something to show', () => {
+    expect(hasActivity(quietWeek)).to.equal(true)
+  })
+
+  it('passes spotlight items with refs and links them', () => {
+    const prompt = buildSummaryUserPrompt(quietWeek)
+    expect(prompt).to.include('"ref": "citizen:88"')
+    expect(prompt).to.include('"ref": "project:150"')
+
+    const result = normalizeSummary({ raw, snapshot: quietWeek, model: 'm' })!
+    const byKind = Object.fromEntries(result.sections.map((s) => [s.kind, s]))
+    expect(byKind.citizens.links).to.deep.equal([
+      { label: 'Grace Hopper', href: '/citizen/grace-hopper-88' },
+    ])
+    expect(byKind.jobs.links).to.deep.equal([{ label: 'Regolith Engineer', href: '/jobs/3' }])
+    expect(byKind.governance.links).to.deep.equal([{ label: 'Lunar Garden', href: '/project/150' }])
+  })
+
+  it('flags spotlight sections from the snapshot, not the model', () => {
+    const result = normalizeSummary({ raw, snapshot: quietWeek, model: 'm' })!
+    expect(result.sections.every((s) => s.spotlight)).to.equal(true)
+
+    const busyWeek = normalizeSummary({ raw: MODEL_OUTPUT, snapshot: snapshot(), model: 'm' })!
+    expect(busyWeek.sections.some((s) => s.spotlight)).to.equal(false)
+  })
+})
+
+describe('pickForDay', () => {
+  const pool = [{ id: 30 }, { id: 10 }, { id: 20 }]
+
+  it('is stable within a UTC day and moves to the next item the next day', () => {
+    const morning = pickForDay(pool, new Date('2026-10-23T01:00:00Z'))
+    const evening = pickForDay(pool, new Date('2026-10-23T23:00:00Z'))
+    const tomorrow = pickForDay(pool, new Date('2026-10-24T01:00:00Z'))
+    expect(morning).to.equal(evening)
+    expect(tomorrow).to.not.equal(morning)
+  })
+
+  it('does not depend on the order rows came back in', () => {
+    const day = new Date('2026-10-23T12:00:00Z')
+    expect(pickForDay(pool, day)!.id).to.equal(pickForDay([...pool].reverse(), day)!.id)
+  })
+
+  it('returns undefined for an empty pool', () => {
+    expect(pickForDay([], NOW)).to.equal(undefined)
   })
 })
 
@@ -260,8 +342,8 @@ describe('getOrCreateSummary', () => {
   })
 
   it('namespaces keys by environment', () => {
-    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:production:2026-10-23')
-    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:preview:latest')
+    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v2:production:2026-10-23')
+    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v2:preview:latest')
     expect(summaryKeys(NOW, 'preview').lock).to.not.equal(summaryKeys(NOW, 'production').lock)
   })
 

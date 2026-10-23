@@ -14,7 +14,7 @@ import { BLOCKED_CITIZENS, BLOCKED_TEAMS } from 'const/whitelist'
 import { getContract, readContract } from 'thirdweb'
 import { parseLocationData } from '@/lib/citizen/citizenDataService'
 import { getMooneyPrice } from '@/lib/coinstats'
-import { PROJECT_PENDING } from '@/lib/nance/types'
+import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import { getRecentCitizenTransfers, getRecentTeamTransfers } from '@/lib/network/networkSubgraph'
 import { getLivePhaseOverride, resolveLivePhase } from '@/lib/operator/cyclePhase'
 import {
@@ -29,6 +29,7 @@ import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
 import { getNextTownHallEvent } from '@/lib/townhall/luma'
 import { getSummaries } from '@/lib/townhall/summaries'
+import { pickForDay } from './spotlight'
 
 export const LOOKBACK_DAYS = 7
 
@@ -39,27 +40,44 @@ const SOURCE_TIMEOUT_MS = 8000
 
 export type ProposalStage = 'member-vote' | 'senate-review'
 
+type CitizenItem = { id: number; name: string; location?: string; bio?: string }
+type TeamItem = { id: number; name: string; bio?: string }
+type JobItem = { id: number; title: string; teamId?: number; description?: string }
+type ListingItem = {
+  id: number
+  title: string
+  price?: string
+  currency?: string
+  teamId?: number
+  description?: string
+}
+type ProjectItem = { mdp: number; name: string; description?: string }
+
 export type ActivitySnapshot = {
   periodStart: string
   periodEnd: string
-  citizens: { id: number; name: string; location?: string; bio?: string }[]
+  citizens: CitizenItem[]
   totalCitizens: number | null
-  teams: { id: number; name: string; bio?: string }[]
-  jobs: { id: number; title: string; teamId?: number; description?: string }[]
-  listings: {
-    id: number
-    title: string
-    price?: string
-    currency?: string
-    teamId?: number
-    description?: string
-  }[]
+  teams: TeamItem[]
+  jobs: JobItem[]
+  listings: ListingItem[]
   // 'member-vote': passed the Senate, citizens can vote now.
   // 'senate-review': waiting on the Senate's temperature check.
   proposals: { mdp: number; name: string; status: ProposalStage }[]
   nextTownHall: { name: string; startAt: string; url: string } | null
   latestTownHall: { title: string; publishedAt: string; excerpt: string } | null
   mooney: { price: number; priceChange24h: number } | null
+  // Featured items for categories with nothing new this week, picked by
+  // pickForDay. A key is only set when its category above is empty: a
+  // citizen spotlight when no one joined, a funded project when no vote is
+  // open, and so on.
+  spotlight: {
+    citizen?: CitizenItem
+    team?: TeamItem
+    job?: JobItem
+    listing?: ListingItem
+    project?: ProjectItem
+  }
 }
 
 export function clip(text: unknown, limit = TEXT_LIMIT): string | undefined {
@@ -195,6 +213,131 @@ function mintTimestamps(transfers: { tokenId: string; blockTimestamp: string }[]
   return map
 }
 
+function toCitizen(c: any): CitizenItem {
+  return {
+    id: Number(c.id),
+    name: clip(c.name, 80) || `Citizen #${c.id}`,
+    location: placeName(c.location),
+    bio: clip(c.description),
+  }
+}
+
+function toTeam(t: any): TeamItem {
+  return { id: Number(t.id), name: clip(t.name, 80) || `Team #${t.id}`, bio: clip(t.description) }
+}
+
+function toJob(j: any): JobItem {
+  return {
+    id: Number(j.id),
+    title: clip(j.title, 120)!,
+    teamId: j.teamId != null ? Number(j.teamId) : undefined,
+    description: clip(j.description),
+  }
+}
+
+function toListing(l: any): ListingItem {
+  return {
+    id: Number(l.id),
+    title: clip(l.title, 120)!,
+    price: l.price != null && l.price !== '' ? String(l.price) : undefined,
+    currency: clip(l.currency, 12),
+    teamId: l.teamId != null ? Number(l.teamId) : undefined,
+    description: clip(l.description),
+  }
+}
+
+/**
+ * Picks a featured item for each category that has nothing new this week,
+ * like the Python Discord brief's citizen spotlight and featured job/listing.
+ * Pools favour items worth featuring: citizens and teams with a bio, jobs and
+ * listings that are still open, and funded (active) projects.
+ */
+async function collectSpotlights(params: {
+  now: Date
+  nowTs: number
+  tables: {
+    citizenTable: string
+    teamTable: string
+    jobTable: string
+    marketplaceTable: string
+    projectTable: string
+  }
+  need: Record<keyof ActivitySnapshot['spotlight'], boolean>
+}): Promise<ActivitySnapshot['spotlight']> {
+  const { now, nowTs, tables, need } = params
+  const chain = DEFAULT_CHAIN_V5
+  const query = (label: string, sql: string) =>
+    settle(`${label} spotlight`, () => queryTable(chain, sql), [] as any[])
+  const none = Promise.resolve([] as any[])
+
+  const [citizenPool, teamPool, jobPool, listingPool, projectPool] = await Promise.all([
+    need.citizen
+      ? query(
+          'citizen',
+          `SELECT id, name, description, location FROM ${tables.citizenTable} WHERE view != '' AND description != '' ORDER BY id DESC LIMIT 100`
+        )
+      : none,
+    need.team
+      ? query(
+          'team',
+          `SELECT id, name, description FROM ${tables.teamTable} WHERE description != '' ORDER BY id DESC LIMIT 100`
+        )
+      : none,
+    need.job
+      ? query(
+          'job',
+          `SELECT id, title, description, teamId FROM ${tables.jobTable} WHERE (endTime = 0 OR endTime >= ${nowTs}) ORDER BY id DESC LIMIT 50`
+        )
+      : none,
+    need.listing
+      ? query(
+          'listing',
+          `SELECT id, title, description, price, currency, teamId FROM ${tables.marketplaceTable} WHERE (startTime = 0 OR startTime <= ${nowTs}) AND (endTime = 0 OR endTime >= ${nowTs}) ORDER BY id DESC LIMIT 50`
+        )
+      : none,
+    need.project
+      ? query(
+          'project',
+          `SELECT id, MDP, name, description FROM ${tables.projectTable} WHERE active = ${PROJECT_ACTIVE}`
+        )
+      : none,
+  ])
+
+  const citizen = pickForDay<CitizenItem>(
+    citizenPool.filter((c: any) => !BLOCKED_CITIZENS.has(c.id)).map(toCitizen),
+    now,
+    0
+  )
+  const team = pickForDay<TeamItem>(
+    teamPool.filter((t: any) => !BLOCKED_TEAMS.has(t.id)).map(toTeam),
+    now,
+    1
+  )
+  const job = pickForDay<JobItem>(jobPool.filter((j: any) => clip(j.title)).map(toJob), now, 2)
+  const listing = pickForDay<ListingItem>(listingPool.filter((l: any) => clip(l.title)).map(toListing), now, 3)
+  const projectRow = pickForDay<{ id: number; MDP: number; name: string; description?: string }>(
+    projectPool
+      .filter((p: any) => !isBlockedProject(p) && !isUntitledLike(p.name))
+      .map((p: any) => ({ ...p, id: Number(p.id) })),
+    now,
+    4
+  )
+
+  return {
+    ...(citizen && { citizen }),
+    ...(team && { team }),
+    ...(job && { job }),
+    ...(listing && { listing }),
+    ...(projectRow && {
+      project: {
+        mdp: Number(projectRow.MDP),
+        name: clip(projectRow.name, 120)!,
+        description: clip(projectRow.description),
+      },
+    }),
+  }
+}
+
 export async function collectActivity(now: Date = new Date()): Promise<ActivitySnapshot> {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
@@ -274,42 +417,29 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
   const citizens = citizenRows
     .filter((c: any) => !BLOCKED_CITIZENS.has(c.id))
     .filter((c: any) => (citizenMints[String(c.id)] ?? 0) >= sinceTs)
-    .map((c: any) => ({
-      id: Number(c.id),
-      name: clip(c.name, 80) || `Citizen #${c.id}`,
-      location: placeName(c.location),
-      bio: clip(c.description),
-    }))
+    .map(toCitizen)
 
   const teamMints = mintTimestamps(teamTransfers)
   const teams = teamRows
     .filter((t: any) => !BLOCKED_TEAMS.has(t.id))
     .filter((t: any) => (teamMints[String(t.id)] ?? 0) >= sinceTs)
-    .map((t: any) => ({
-      id: Number(t.id),
-      name: clip(t.name, 80) || `Team #${t.id}`,
-      bio: clip(t.description),
-    }))
+    .map(toTeam)
 
-  const jobs = jobRows
-    .filter((j: any) => clip(j.title))
-    .map((j: any) => ({
-      id: Number(j.id),
-      title: clip(j.title, 120)!,
-      teamId: j.teamId != null ? Number(j.teamId) : undefined,
-      description: clip(j.description),
-    }))
+  const jobs = jobRows.filter((j: any) => clip(j.title)).map(toJob)
+  const listings = listingRows.filter((l: any) => clip(l.title)).map(toListing)
 
-  const listings = listingRows
-    .filter((l: any) => clip(l.title))
-    .map((l: any) => ({
-      id: Number(l.id),
-      title: clip(l.title, 120)!,
-      price: l.price != null && l.price !== '' ? String(l.price) : undefined,
-      currency: clip(l.currency, 12),
-      teamId: l.teamId != null ? Number(l.teamId) : undefined,
-      description: clip(l.description),
-    }))
+  const spotlight = await collectSpotlights({
+    now,
+    nowTs,
+    tables: { citizenTable, teamTable, jobTable, marketplaceTable, projectTable },
+    need: {
+      citizen: citizens.length === 0,
+      team: teams.length === 0,
+      job: jobs.length === 0,
+      listing: listings.length === 0,
+      project: proposals.length === 0,
+    },
+  })
 
   const latest = townHalls?.summaries?.[0]
   const totalCitizens = Number(citizenCount?.[0]?.count)
@@ -335,5 +465,6 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
           }
         : null,
     mooney: mooney ? { price: mooney.price, priceChange24h: mooney.priceChange24h } : null,
+    spotlight,
   }
 }

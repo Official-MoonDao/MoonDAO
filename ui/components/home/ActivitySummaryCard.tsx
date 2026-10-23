@@ -13,6 +13,16 @@ const SECTION_LABELS: Record<SectionKind, string> = {
   marketplace: 'Marketplace',
 }
 
+// Used when a section features a spotlight because nothing new happened in
+// its category this week.
+const SPOTLIGHT_LABELS: Partial<Record<SectionKind, string>> = {
+  governance: 'Project Spotlight',
+  citizens: 'Citizen Spotlight',
+  teams: 'Team Spotlight',
+  jobs: 'Job Spotlight',
+  marketplace: 'Marketplace Spotlight',
+}
+
 async function fetchSummary(url: string): Promise<ActivitySummary> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Activity summary request failed: ${res.status}`)
@@ -62,7 +72,7 @@ function SummaryBody({ data }: { data: ActivitySummary }) {
         {data.sections.map((section) => (
           <li key={section.kind}>
             <p className="text-[11px] uppercase tracking-wide text-white/45 font-semibold">
-              {SECTION_LABELS[section.kind]}
+              {(section.spotlight && SPOTLIGHT_LABELS[section.kind]) || SECTION_LABELS[section.kind]}
             </p>
             <p className="text-sm text-white/80 leading-relaxed mt-1">{section.summary}</p>
             {section.links.length > 0 && (
