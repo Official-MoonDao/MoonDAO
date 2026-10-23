@@ -1,5 +1,5 @@
 import { ArrowLeftIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
 import { isLadderGoal } from '@/lib/deprize/capabilityLadder'
 import {
@@ -8,13 +8,9 @@ import {
   isCompetitiveRace,
   isDePrizeGoalMarketBound,
 } from '@/lib/deprize/competitions'
-import { positionRedeemValue, UNIT } from '@/lib/deprize/constants'
+import { DEPRIZE_PREDICT_CTA, positionRedeemValue, UNIT } from '@/lib/deprize/constants'
 import { fmt } from '@/lib/deprize/format'
 import type { Outcome } from '@/lib/deprize/useDePrizeMarket'
-import {
-  parseAtlasYear,
-  raceStandingForProject,
-} from '@/lib/lunar-atlas/selectors'
 import {
   LOCATION_PRECISION_LABEL,
   MILESTONE_STATUS_CLASSES,
@@ -26,18 +22,12 @@ import {
   participationKind,
   orgColor,
 } from '@/lib/lunar-atlas/display'
-import {
-  PARTICIPATION_BAR_CLASSES,
-  PARTICIPATION_ROW_CLASSES,
-} from './participation-styles'
-import type {
-  Organization,
-  Project,
-  SharedGoal,
-} from '@/lib/lunar-atlas/types'
-import BetModal from '@/components/deprize/BetModal'
+import { parseAtlasYear, raceStandingForProject } from '@/lib/lunar-atlas/selectors'
+import type { Organization, Project, SharedGoal } from '@/lib/lunar-atlas/types'
 import ExitPositionModal from '@/components/deprize/ExitPositionModal'
+import ForecastPredictModal from '@/components/deprize/ForecastPredictModal'
 import SourceBadge from './SourceBadge'
+import { PARTICIPATION_BAR_CLASSES, PARTICIPATION_ROW_CLASSES } from './participation-styles'
 
 type ProjectPanelProps = {
   project: Project
@@ -55,22 +45,18 @@ type ProjectPanelProps = {
   chainSlug?: string
   chain?: Chain
   account?: any
-  userAddress?: string
-  onConnectWallet?: () => void
-  spendableEth?: number
   deprizeId?: number
-  mintAddress?: string
   marketAddress?: string
   numOutcomes?: number
   outcomes?: Outcome[]
-  bettingAllowed?: boolean
+  /** Configured market whose payout read has not finished. Predict stays closed. */
+  payoutPending?: boolean
   tradingHalted?: boolean
   resolved?: boolean
   winningIndex?: number
   isRefundVector?: boolean
   payoutDen?: bigint
   payoutNums?: bigint[]
-  jbProjectId?: number | bigint
   onDone?: () => void
 }
 
@@ -87,22 +73,17 @@ export default function ProjectPanel({
   chainSlug,
   chain,
   account,
-  userAddress,
-  onConnectWallet,
-  spendableEth = 0,
   deprizeId,
-  mintAddress,
   marketAddress,
   numOutcomes = 0,
   outcomes,
-  bettingAllowed = false,
+  payoutPending = false,
   tradingHalted = false,
   resolved = false,
   winningIndex = -1,
   isRefundVector = false,
   payoutDen,
   payoutNums,
-  jbProjectId,
   onDone,
 }: ProjectPanelProps) {
   const color = orgColor(organization)
@@ -115,18 +96,14 @@ export default function ProjectPanel({
         .filter((s): s is NonNullable<typeof s> => s !== undefined),
     [sharedGoals, project.id]
   )
-  const standingGoalIds = useMemo(
-    () => new Set(standings.map((s) => s.goalId)),
-    [standings]
-  )
+  const standingGoalIds = useMemo(() => new Set(standings.map((s) => s.goalId)), [standings])
   const otherGoals = sharedGoals.filter((g) => !standingGoalIds.has(g.id))
 
   const hasRace =
     !!betGoal &&
     isCompetitiveRace(betGoal.projectIds.length) &&
     betGoal.projectIds.includes(project.id)
-  const bound =
-    !!betGoal && !!chainSlug && isDePrizeGoalMarketBound(chainSlug, betGoal.id)
+  const bound = !!betGoal && !!chainSlug && isDePrizeGoalMarketBound(chainSlug, betGoal.id)
   const marketDeprizeId = bound
     ? deprizeId ?? findDePrizeIdForGoal(chainSlug!, betGoal!.id)
     : undefined
@@ -137,51 +114,46 @@ export default function ProjectPanel({
   const outcomeIndex = binding
     ? binding.outcomes.findIndex((o) => !o.field && o.projectId === project.id)
     : -1
-  const outcome =
-    bound && outcomeIndex >= 0 ? outcomes?.[outcomeIndex] : undefined
-  const canBack =
-    hasRace && bound && marketDeprizeId !== undefined && outcomeIndex >= 0
-  const holding =
-    bound && !!outcome && Number.isFinite(outcome.balance) && outcome.balance > 0
+  const outcome = bound && outcomeIndex >= 0 ? outcomes?.[outcomeIndex] : undefined
+  const canBack = hasRace && bound && marketDeprizeId !== undefined && outcomeIndex >= 0
+  const holding = bound && !!outcome && Number.isFinite(outcome.balance) && outcome.balance > 0
   const heldValueEth = outcome?.balance
   const redeemValueEth =
     bound && resolved && outcome?.balanceWei !== undefined && payoutDen
       ? Number(
-          positionRedeemValue(
-            outcome.balanceWei,
-            payoutNums?.[outcomeIndex] ?? 0n,
-            payoutDen,
-          ),
+          positionRedeemValue(outcome.balanceWei, payoutNums?.[outcomeIndex] ?? 0n, payoutDen)
         ) / Number(UNIT)
       : undefined
-  const isWinningSlot =
-    bound && resolved && outcomeIndex >= 0 && outcomeIndex === winningIndex
-  const backDisabled =
-    !!userAddress && bound && (!bettingAllowed || tradingHalted)
+  const isWinningSlot = bound && resolved && outcomeIndex >= 0 && outcomeIndex === winningIndex
 
-  const [betOpen, setBetOpen] = useState(false)
+  const [predictArmed, setPredictArmed] = useState(false)
+  const [predictOpen, setPredictOpen] = useState(false)
   const [exitOpen, setExitOpen] = useState(false)
-  useEffect(() => {
-    setBetOpen(false)
+  const raceKey = `${project.id}:${betGoal?.id ?? ''}`
+  const [trackedRaceKey, setTrackedRaceKey] = useState(raceKey)
+  if (trackedRaceKey !== raceKey || (resolved && (predictOpen || exitOpen))) {
+    setTrackedRaceKey(raceKey)
+    setPredictArmed(false)
+    setPredictOpen(false)
     setExitOpen(false)
-  }, [project.id, betGoal?.id])
+  }
 
-  const handleBetClick = () => {
-    if (!userAddress) {
-      onConnectWallet?.()
-      return
-    }
-    if (
-      !bound ||
-      !bettingAllowed ||
-      outcomeIndex < 0 ||
-      !marketAddress ||
-      !mintAddress ||
-      outcomeIndex >= numOutcomes
-    ) {
-      return
-    }
-    setBetOpen(true)
+  const outcomeLabels = useMemo(
+    () =>
+      Array.from({ length: numOutcomes }, (_, index) => {
+        const slot = binding?.outcomes[index]
+        if (!slot) return `Team #${index + 1}`
+        if (slot.field) return 'Open Field'
+        if (slot.projectId === project.id) return project.name
+        return `Team #${index + 1}`
+      }),
+    [numOutcomes, binding, project.id, project.name]
+  )
+
+  const openPredict = () => {
+    if (payoutPending || outcomeIndex < 0 || numOutcomes <= outcomeIndex) return
+    setPredictArmed(true)
+    setPredictOpen(true)
   }
 
   const milestones = useMemo(
@@ -219,17 +191,15 @@ export default function ProjectPanel({
                   }`}
             </span>
           </div>
-          <h2 className="mt-1 truncate text-lg font-semibold text-white">
-            {project.name}
-          </h2>
+          <h2 className="mt-1 truncate text-lg font-semibold text-white">{project.name}</h2>
           <div className="mt-1 flex items-center gap-1.5 text-sm text-white/60">
             <span>{PROJECT_TYPE_GLYPH[project.type]}</span>
             <span>{PROJECT_TYPE_LABEL[project.type]}</span>
           </div>
           {standings[0] && (
             <p className="mt-1 text-sm font-medium tabular-nums text-cyan-200/90">
-              {formatPlace(standings[0].place)} place ·{' '}
-              {Math.round(standings[0].probability * 100)}%
+              {formatPlace(standings[0].place)} place · {Math.round(standings[0].probability * 100)}
+              %
             </p>
           )}
         </div>
@@ -237,13 +207,14 @@ export default function ProjectPanel({
           {canBack && !resolved && (
             <button
               type="button"
-              onClick={handleBetClick}
-              disabled={backDisabled}
+              onClick={openPredict}
+              disabled={payoutPending || numOutcomes <= outcomeIndex}
+              aria-label={`${DEPRIZE_PREDICT_CTA} ${project.name}`}
               className="rounded-md px-3 py-1.5 text-xs font-semibold text-white transition-all
                 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500
                 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {userAddress ? 'Buy' : 'Connect'}
+              {DEPRIZE_PREDICT_CTA}
             </button>
           )}
           {resolved && redeemValueEth !== undefined && (
@@ -300,9 +271,7 @@ export default function ProjectPanel({
                       {Math.round(s.probability * 100)}%
                     </span>
                   </span>
-                  <span className="mt-0.5 block truncate text-sm text-white/80">
-                    {s.title}
-                  </span>
+                  <span className="mt-0.5 block truncate text-sm text-white/80">{s.title}</span>
                   <span className="mt-1.5 flex items-center gap-2">
                     <MarketPill status={s.marketStatus ?? 'none'} />
                     <span className="text-[11px] text-white/40">
@@ -334,9 +303,7 @@ export default function ProjectPanel({
 
         {holding && !resolved && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2">
-            <span className="text-[11px] text-white/50">
-              {fmt(heldValueEth ?? 0)} ETH if wins
-            </span>
+            <span className="text-[11px] text-white/50">{fmt(heldValueEth ?? 0)} ETH if wins</span>
             {!tradingHalted && (
               <button
                 type="button"
@@ -356,10 +323,7 @@ export default function ProjectPanel({
           <div
             className={`flex overflow-hidden rounded-lg border ${PARTICIPATION_ROW_CLASSES[rosterKind]}`}
           >
-            <span
-              aria-hidden
-              className={`w-1 shrink-0 ${PARTICIPATION_BAR_CLASSES[rosterKind]}`}
-            />
+            <span aria-hidden className={`w-1 shrink-0 ${PARTICIPATION_BAR_CLASSES[rosterKind]}`} />
             <p className="px-3 py-2 text-xs leading-relaxed text-white/80">
               {ROSTER_STATUS_LABEL[project.rosterStatus]}
             </p>
@@ -382,7 +346,9 @@ export default function ProjectPanel({
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium text-white">{m.title}</span>
                     <span
-                      className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${MILESTONE_STATUS_CLASSES[m.status]}`}
+                      className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${
+                        MILESTONE_STATUS_CLASSES[m.status]
+                      }`}
                     >
                       {MILESTONE_STATUS_LABEL[m.status]}
                     </span>
@@ -451,35 +417,28 @@ export default function ProjectPanel({
         )}
 
         <p className="border-t border-white/10 pt-3 text-[11px] leading-relaxed text-white/35">
-          Publicly-stated goals compiled by MoonDAO from the sources above. Not an
-          endorsement, guarantee, or prediction of outcomes.
+          Publicly-stated goals compiled by MoonDAO from the sources above. Not an endorsement,
+          guarantee, or prediction of outcomes.
         </p>
       </div>
 
-      {betOpen &&
+      {predictArmed &&
+        canBack &&
+        !resolved &&
         chain &&
-        account &&
-        marketAddress &&
-        mintAddress &&
-        marketDeprizeId !== undefined &&
-        outcomeIndex >= 0 && (
-          <BetModal
-            deprizeId={marketDeprizeId}
-            outcomeIndex={outcomeIndex}
-            teamName={project.name}
-            probability={outcome?.probability ?? NaN}
-            numOutcomes={numOutcomes}
-            mintAddress={mintAddress}
-            marketAddress={marketAddress}
-            jbProjectId={jbProjectId}
+        chainSlug &&
+        marketDeprizeId !== undefined && (
+          <ForecastPredictModal
             chain={chain}
-            account={account}
-            spendableEth={spendableEth}
-            onClose={() => setBetOpen(false)}
-            onDone={() => {
-              setBetOpen(false)
-              onDone?.()
-            }}
+            chainSlug={chainSlug}
+            deprizeId={marketDeprizeId}
+            numOutcomes={numOutcomes}
+            labels={outcomeLabels}
+            reported={resolved}
+            marketLoading={payoutPending}
+            outcomeIndex={predictOpen ? outcomeIndex : null}
+            teamName={project.name}
+            onClose={() => setPredictOpen(false)}
           />
         )}
 
