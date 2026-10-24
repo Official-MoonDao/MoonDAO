@@ -1,7 +1,7 @@
 import { getAccessToken, useLogin } from '@privy-io/react-auth'
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import type { Chain } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -20,6 +20,7 @@ import {
   tapPlan,
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
+import { sameForecastSession } from '@/lib/forecasts/forecastSession'
 import {
   mergeCallerRoster,
   notifyRoster,
@@ -69,6 +70,16 @@ export function useForecastPredict(args: {
   const regionRestricted = useClientDePrizeRestricted()
   const { login } = useLogin()
   const account = useActiveAccount()
+  const sessionRef = useRef({
+    address: account?.address?.toLowerCase(),
+    chainSlug,
+    deprizeId,
+  })
+  sessionRef.current = {
+    address: account?.address?.toLowerCase(),
+    chainSlug,
+    deprizeId,
+  }
   const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(account?.address)
   const votingWeight = totalVMOONEY || 0
 
@@ -162,6 +173,11 @@ export function useForecastPredict(args: {
 
   const refetchFresh = useCallback(async () => {
     if (n < 2) return
+    const started = {
+      address: account?.address?.toLowerCase(),
+      chainSlug,
+      deprizeId,
+    }
     const res = await fetch(
       consensusQuery({
         chain: chainSlug,
@@ -171,8 +187,11 @@ export function useForecastPredict(args: {
       })
     )
     if (!res.ok) return
-    applyConsensus((await res.json()) as ForecastConsensus)
-  }, [applyConsensus, chainSlug, deprizeId, n])
+    const body = (await res.json()) as ForecastConsensus
+    // The write that triggered this refetch may have outlived a wallet switch.
+    if (!sameForecastSession(sessionRef.current, started)) return
+    applyConsensus(body)
+  }, [account?.address, applyConsensus, chainSlug, deprizeId, n])
 
   useEffect(() => {
     if (n < 2) {
@@ -226,6 +245,12 @@ export function useForecastPredict(args: {
       setError('Predictions are not available on this network yet.')
       return false
     }
+    const writer = account
+    const started = {
+      address: writer.address.toLowerCase(),
+      chainSlug,
+      deprizeId,
+    }
     setError(null)
     setWriting(true)
     const allocation = allocationForPick(index, n)
@@ -239,7 +264,7 @@ export function useForecastPredict(args: {
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({
-          wallet: account.address,
+          wallet: writer.address,
           chainId: chain.id,
           deprizeId,
         }),
@@ -247,40 +272,47 @@ export function useForecastPredict(args: {
       const sponsor = await sponsorRes.json().catch(() => ({}))
       toast.dismiss('forecast-gas')
       if (!sponsorRes.ok) {
-        setError(
-          typeof sponsor?.message === 'string'
-            ? sponsor.message
-            : 'Could not cover gas for this prediction.'
-        )
+        if (sameForecastSession(sessionRef.current, started)) {
+          setError(
+            typeof sponsor?.message === 'string'
+              ? sponsor.message
+              : 'Could not cover gas for this prediction.'
+          )
+        }
         return false
       }
       const vote = encodeForecastVote(allocation, votingWeight)
       await writeForecastVote({
         forecastsContract,
-        account,
+        account: writer,
         forecastsTableName,
         chainId: chain.id,
         voteId: deprizeForecastVoteId(deprizeId),
-        address: account.address,
+        address: writer.address,
         vote,
       })
+      notifyRoster({
+        chain: chainSlug,
+        deprizeId,
+        address: writer.address,
+        pick: labels[index],
+        removed: false,
+      })
+      // The signature can outlive a wallet switch. The new wallet's Undo
+      // would otherwise delete or replace that wallet's forecast.
+      if (!sameForecastSession(sessionRef.current, started)) return false
       setPreviousPick(savedPick)
       setSavedPick(index)
       rememberRow(allocation)
       toast.success('Prediction saved', { style: toastStyle })
       fireDePrizeConfetti()
-      notifyRoster({
-        chain: chainSlug,
-        deprizeId,
-        address: account.address,
-        pick: labels[index],
-        removed: false,
-      })
       await refetchFresh()
       return true
     } catch (err: any) {
       toast.dismiss('forecast-gas')
-      setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
+      if (sameForecastSession(sessionRef.current, started)) {
+        setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
+      }
       return false
     } finally {
       setWriting(false)
@@ -289,28 +321,37 @@ export function useForecastPredict(args: {
 
   async function clearPick() {
     if (!account || !forecastsContract) return
+    const writer = account
+    const started = {
+      address: writer.address.toLowerCase(),
+      chainSlug,
+      deprizeId,
+    }
     setError(null)
     setWriting(true)
     try {
       await clearForecastVote({
         forecastsContract,
-        account,
+        account: writer,
         voteId: deprizeForecastVoteId(deprizeId),
       })
       const clearedPick = savedPick != null ? labels[savedPick] : undefined
-      setSavedPick(null)
-      setPreviousPick(null)
-      toast.success('Prediction removed', { style: toastStyle })
       notifyRoster({
         chain: chainSlug,
         deprizeId,
-        address: account.address,
+        address: writer.address,
         pick: clearedPick,
         removed: true,
       })
+      if (!sameForecastSession(sessionRef.current, started)) return
+      setSavedPick(null)
+      setPreviousPick(null)
+      toast.success('Prediction removed', { style: toastStyle })
       await refetchFresh()
     } catch (err: any) {
-      setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
+      if (sameForecastSession(sessionRef.current, started)) {
+        setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
+      }
     } finally {
       setWriting(false)
     }

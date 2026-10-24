@@ -2,7 +2,7 @@ import { getAccessToken, useLogin, usePrivy, useWallets } from '@privy-io/react-
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
 import Link from 'next/link'
-import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
@@ -22,6 +22,7 @@ import {
   tapPlan,
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
+import { sameForecastSession } from '@/lib/forecasts/forecastSession'
 import {
   mergeCallerRoster,
   notifyRoster,
@@ -123,6 +124,16 @@ export default function ForecastPanel(props: {
   const { wallets } = useWallets()
   const { setSelectedWallet } = useContext(PrivyWalletContext)
   const account = useActiveAccount()
+  const sessionRef = useRef({
+    address: account?.address?.toLowerCase(),
+    chainSlug,
+    deprizeId,
+  })
+  sessionRef.current = {
+    address: account?.address?.toLowerCase(),
+    chainSlug,
+    deprizeId,
+  }
   const chain = v4SlugToV5Chain(chainSlug) ?? sepolia
   const prizeCitizen = usePrizeChainCitizen(chain)
   const isCitizen = prizeCitizen.isCitizen
@@ -209,11 +220,16 @@ export default function ForecastPanel(props: {
       })
     )
     if (!res.ok) return
-    applyConsensus((await res.json()) as ForecastConsensus)
-  }, [applyConsensus, chainSlug, deprizeId, n])
+    return (await res.json()) as ForecastConsensus
+  }, [chainSlug, deprizeId, n])
 
   const refetchFresh = useCallback(async () => {
     if (n < 2) return
+    const started = {
+      address: account?.address?.toLowerCase(),
+      chainSlug,
+      deprizeId,
+    }
     const res = await fetch(
       consensusQuery({
         chain: chainSlug,
@@ -223,12 +239,33 @@ export default function ForecastPanel(props: {
       })
     )
     if (!res.ok) return
-    applyConsensus((await res.json()) as ForecastConsensus)
-  }, [applyConsensus, chainSlug, deprizeId, n])
+    const body = (await res.json()) as ForecastConsensus
+    if (!sameForecastSession(sessionRef.current, started)) return
+    applyConsensus(body)
+  }, [account?.address, applyConsensus, chainSlug, deprizeId, n])
 
   useEffect(() => {
-    void loadConsensus()
-  }, [loadConsensus])
+    setSavedPick(null)
+    setPreviousPick(null)
+    setError(null)
+  }, [account?.address, chainSlug, deprizeId])
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const body = await loadConsensus()
+        // A wallet switch cancels this read. Applying it would restore the previous pick.
+        if (cancelled || !body) return
+        applyConsensus(body)
+      } catch {
+        // A failed roster read leaves the share blank. The window still opens.
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [applyConsensus, loadConsensus])
 
   function rememberRow(allocation: number[]) {
     if (!account) return
@@ -258,6 +295,12 @@ export default function ForecastPanel(props: {
       setError('Predictions are not available on this network yet.')
       return false
     }
+    const writer = account
+    const started = {
+      address: writer.address.toLowerCase(),
+      chainSlug,
+      deprizeId,
+    }
     setError(null)
     setWriting(true)
     const allocation = allocationForPick(index, n)
@@ -271,7 +314,7 @@ export default function ForecastPanel(props: {
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({
-          wallet: account.address,
+          wallet: writer.address,
           chainId: chain.id,
           deprizeId,
         }),
@@ -279,23 +322,35 @@ export default function ForecastPanel(props: {
       const sponsor = await sponsorRes.json().catch(() => ({}))
       toast.dismiss('forecast-gas')
       if (!sponsorRes.ok) {
-        setError(
-          typeof sponsor?.message === 'string'
-            ? sponsor.message
-            : 'Could not cover gas for this prediction.'
-        )
+        if (sameForecastSession(sessionRef.current, started)) {
+          setError(
+            typeof sponsor?.message === 'string'
+              ? sponsor.message
+              : 'Could not cover gas for this prediction.'
+          )
+        }
         return false
       }
       const vote = encodeForecastVote(allocation, isCitizen ? totalVMOONEY || 0 : 0)
       await writeForecastVote({
         forecastsContract,
-        account,
+        account: writer,
         forecastsTableName,
         chainId: chain.id,
         voteId: deprizeForecastVoteId(deprizeId),
-        address: account.address,
+        address: writer.address,
         vote,
       })
+      notifyRoster({
+        chain: chainSlug,
+        deprizeId,
+        address: writer.address,
+        pick: labels[index],
+        removed: false,
+      })
+      // The signature can outlive a wallet switch. The new wallet's Undo
+      // would otherwise delete or replace that wallet's forecast.
+      if (!sameForecastSession(sessionRef.current, started)) return false
       setPreviousPick(savedPick)
       setSavedPick(index)
       rememberRow(allocation)
@@ -303,18 +358,13 @@ export default function ForecastPanel(props: {
         toast.success('Prediction saved', { style: toastStyle })
         fireDePrizeConfetti()
       }
-      notifyRoster({
-        chain: chainSlug,
-        deprizeId,
-        address: account.address,
-        pick: labels[index],
-        removed: false,
-      })
       await refetchFresh()
       return true
     } catch (err: any) {
       toast.dismiss('forecast-gas')
-      setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
+      if (sameForecastSession(sessionRef.current, started)) {
+        setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
+      }
       return false
     } finally {
       setWriting(false)
@@ -323,28 +373,37 @@ export default function ForecastPanel(props: {
 
   async function clearPick() {
     if (!account || !forecastsContract) return
+    const writer = account
+    const started = {
+      address: writer.address.toLowerCase(),
+      chainSlug,
+      deprizeId,
+    }
     setError(null)
     setWriting(true)
     try {
       await clearForecastVote({
         forecastsContract,
-        account,
+        account: writer,
         voteId: deprizeForecastVoteId(deprizeId),
       })
       const clearedPick = savedPick != null ? labels[savedPick] : undefined
-      setSavedPick(null)
-      setPreviousPick(null)
-      toast.success('Prediction removed', { style: toastStyle })
       notifyRoster({
         chain: chainSlug,
         deprizeId,
-        address: account.address,
+        address: writer.address,
         pick: clearedPick,
         removed: true,
       })
+      if (!sameForecastSession(sessionRef.current, started)) return
+      setSavedPick(null)
+      setPreviousPick(null)
+      toast.success('Prediction removed', { style: toastStyle })
       await refetchFresh()
     } catch (err: any) {
-      setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
+      if (sameForecastSession(sessionRef.current, started)) {
+        setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
+      }
     } finally {
       setWriting(false)
     }
