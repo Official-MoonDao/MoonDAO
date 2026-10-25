@@ -1,4 +1,5 @@
 import { useLogin } from '@privy-io/react-auth'
+import { useDemoMarketsEnabled } from 'const/flags'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
@@ -63,6 +64,7 @@ export default function GoalDePrizeDetail({
 
   const projectIds = useMemo(() => competitors.map((c) => c.project.id), [competitors])
   const hasRace = isCompetitiveRace(competitors.length)
+  const demoMarket = useDemoMarketsEnabled() && hasRace
   const market = useMockMarket(goal.id, projectIds, goal.market?.impliedOdds, userAddress)
 
   const category = goalIndexCategory(goal) ?? 'other'
@@ -78,13 +80,13 @@ export default function GoalDePrizeDetail({
           name: c.organization?.name || c.project.name,
           outcome: {
             index: i,
-            probability: hasRace ? market.odds[c.project.id] ?? 0 : Number.NaN,
+            probability: demoMarket ? market.odds[c.project.id] ?? 0 : Number.NaN,
             balance: pos && pos.qty > 0 ? pos.qty : 0,
             positionId: 0n,
           },
         }
       }),
-    [competitors, hasRace, market.odds, market.positions]
+    [competitors, demoMarket, market.odds, market.positions]
   )
 
   const betRow = betProjectId ? outcomes.find((o) => o.projectId === betProjectId) : undefined
@@ -144,7 +146,7 @@ export default function GoalDePrizeDetail({
                             : 'text-gray-400 border-white/15 bg-white/5'
                         }`}
                       >
-                        {hasRace ? 'Demo' : 'No developer yet'}
+                        {demoMarket ? 'Demo' : hasRace ? 'Market opens soon' : 'No developer yet'}
                       </span>
                     </div>
                   </div>
@@ -160,8 +162,8 @@ export default function GoalDePrizeDetail({
                 <div>
                   <p className="text-xs text-gray-400">Prize pool</p>
                   <p className="text-sm font-semibold text-white">
-                    {hasRace ? `${fmtPrizeEth(market.pool)} ETH` : '—'}
-                    {hasRace && (
+                    {demoMarket ? `${fmtPrizeEth(market.pool)} ETH` : '—'}
+                    {demoMarket && (
                       <span className="ml-1.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
                         demo
                       </span>
@@ -190,8 +192,10 @@ export default function GoalDePrizeDetail({
                 <p className="text-gray-500 text-xs leading-relaxed mt-3">{ROSTER_DISCLAIMER}</p>
               )}
               <p className="text-gray-500 text-xs mt-3">
-                {hasRace
+                {demoMarket
                   ? 'Switch to Sepolia to view the live on-chain market for this race. '
+                  : hasRace
+                  ? 'The market for this race opens soon. '
                   : 'No funded developer has entered this capability yet, so there is no market. '}
                 <Link
                   href={`/moonbase?race=${goal.id}`}
@@ -222,7 +226,7 @@ export default function GoalDePrizeDetail({
               </div>
             )}
 
-            {hasRace && (
+            {demoMarket && (
               <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-indigo-950/40 backdrop-blur-xl border border-white/[0.08] shadow-lg">
                 <p className="text-white font-semibold mb-3">Predictions</p>
                 <div className="flex w-full h-2 rounded-full overflow-hidden bg-white/5 mb-3">
@@ -262,7 +266,7 @@ export default function GoalDePrizeDetail({
                 <h3 className="title-text-colors text-lg font-heading font-semibold">
                   Competitors
                 </h3>
-                {hasRace && (
+                {demoMarket && (
                   <p className="text-sm text-gray-400 mt-1">
                     Click a competitor to predict them as the winner.
                   </p>
@@ -295,7 +299,7 @@ export default function GoalDePrizeDetail({
                     isWinningSlot={false}
                     investedEth={pos?.costEth ?? 0}
                     sellQuoteEth={sellQuoteEth}
-                    bettingOpen={hasRace}
+                    bettingOpen={demoMarket}
                     tradingHalted={false}
                     busy={false}
                     userConnected={!!userAddress}
@@ -309,7 +313,7 @@ export default function GoalDePrizeDetail({
               })}
             </div>
 
-            {!userAddress && hasRace && (
+            {!userAddress && demoMarket && (
               <div className="p-4 sm:p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-indigo-100 text-sm font-medium">
                   Connect a wallet to back a team or cash out.
@@ -347,7 +351,7 @@ export default function GoalDePrizeDetail({
         <NoticeFooter />
       </Container>
 
-      {betRow && (
+      {betRow && demoMarket && (
         <DemoBetModal
           sharedGoalId={goal.id}
           projectIds={projectIds}

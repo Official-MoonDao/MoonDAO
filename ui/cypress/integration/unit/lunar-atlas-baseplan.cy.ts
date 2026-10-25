@@ -44,6 +44,7 @@ import {
   ROAD_RUNS,
   SETBACK_M,
   SOLAR_ARRAYS,
+  solarArrayKey,
   SOLAR_ARRAY_R_M,
   SOLAR_FARM_ZONES,
   SOLAR_PANEL_HALF_W_M,
@@ -916,6 +917,11 @@ describe('moon base zero street plan', () => {
     // recomputed here from the height alone would be wrong by about 4 m — in
     // the permissive direction, which is the worst way for a test to be wrong.
     const shadowM = SOLAR_SHADOW_PITCH_M
+
+    it('gives every array a unique render key across fields', () => {
+      const keys = SOLAR_ARRAYS.map(solarArrayKey)
+      expect(new Set(keys).size).to.equal(keys.length)
+    })
 
     it('stands every array on ground nothing else has a claim on', () => {
       // The farm is laid out by lattice and the fouled stations dropped, so

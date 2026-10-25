@@ -17,12 +17,7 @@ remodeling) to keep web payloads small.
 |---|---|---|
 | `starship-hls.glb` (edited) | Third-party "SpaceX Starship Ship 24 / Booster 7" community model (Sketchfab; verify license before production use) | Starship HLS — see note |
 | `bluemoon-mk1.glb` (optimized) | Purchased "Blue Moon MK1 lunar lander" (Sketchfab Standard License, FAB conversion). Textures resized to 2048² WebP and Draco-compressed, 40 MB → 1.7 MB; no remodeling. | Blue Moon MK1 cargo lander |
-| `viking-lander.glb` | Viking Lander (NASA) | Not currently rendered — Blue Moon MK1 now uses `bluemoon-mk1.glb`. Kept because the file ships in `public/`. |
-| `insight-lander.glb` (optimized) | InSight Cruise Lander (NASA) | Not currently rendered — Blue Moon MK2 is now a purpose-built procedural model (`BlueMoonMk2` in `ProjectModel.tsx`). Kept because the file ships in `public/`. |
 | `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | NASA LTV (rover stand-in) |
-| `rassor.glb` | RASSOR (Regolith Advanced Surface Systems Operations Robot) (NASA) | Not currently rendered — the ISRU site uses a procedural solar-thermal plant. Kept because the file ships in `public/`. |
-| `habitat-demo-unit.glb` | Habitat Demonstration Unit (NASA) | Not currently rendered — Artemis Base Camp is a procedural camp (domes, habitat, PV farm). Kept because the file ships in `public/`. |
-| `astronaut.glb` | Astronaut (NASA) | Not currently rendered — crew figures are a procedural, jointed rig (`AstronautRig` / `PatrollingAstronaut` in `ProjectModel.tsx`) so they can walk. Kept because the file ships in `public/`. |
 
 `starship-hls.glb` was produced from the full ship-24 + booster-7 stack by
 removing every mesh below the interstage (Y < 12.3 in model space), keeping only

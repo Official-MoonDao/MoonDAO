@@ -25,7 +25,7 @@ type Health = {
   lastPostAt?: number
 }
 
-async function maybeAlert(health: Health, prizeId: number, error: string) {
+async function maybeAlert(health: Health, chainSlug: string, prizeId: number, error: string) {
   if (health.streak < ODDS_WIRE_ALERT_STREAK) return
   if (health.streak !== ODDS_WIRE_ALERT_STREAK) return
   const url = process.env.DEPRIZE_OPS_ALERT_WEBHOOK_URL
@@ -34,7 +34,7 @@ async function maybeAlert(health: Health, prizeId: number, error: string) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      content: `Odds wire alert: sepolia #${prizeId} failed ${health.streak} runs. ${error}`,
+      content: `Odds wire alert: ${chainSlug} #${prizeId} failed ${health.streak} runs. ${error}`,
     }),
   }).catch(() => {})
 }
@@ -53,7 +53,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   const configured = /^\d{17,20}$/.test(channelId || '')
   const redis = getOddsWireRedis()
   const chainSlug = DEFAULT_DEPRIZE_CHAIN
-  const chainId = forecastChainId(chainSlug) ?? 11155111
+  const chainId = forecastChainId(chainSlug) ?? 42161
   const site = String(DEPLOYED_ORIGIN || 'https://moondao.com').replace(/\/$/, '')
 
   const skipped = {
@@ -152,6 +152,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
             buildOddsWireEmbed({
               title: competition.title || `DePrize #${deprizeId}`,
               deprizeId,
+              chainSlug,
               site,
               labels,
               current,
@@ -203,7 +204,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
           lastPostAt: prevHealth.lastPostAt,
         }
         await redis.set(keys.health, health)
-        await maybeAlert(health, deprizeId, health.lastError || '')
+        await maybeAlert(health, chainSlug, deprizeId, health.lastError || '')
       } catch {
         // health write is best-effort
       }

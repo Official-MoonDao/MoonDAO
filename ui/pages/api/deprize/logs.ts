@@ -3,6 +3,7 @@ import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import {
+  DEPRIZE_LOG_TOPICS,
   ETHERSCAN_SUPPORTED_CHAINS,
   etherscanApiKey,
   fetchEtherscanV2Logs,
@@ -46,7 +47,9 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!Number.isFinite(fromBlock) || fromBlock < 0) {
     return res.status(400).json({ error: 'Bad fromBlock' })
   }
-  if (!isHex(topic0) || topic0.length !== 66) return res.status(400).json({ error: 'Bad topic0' })
+  if (!isHex(topic0) || !DEPRIZE_LOG_TOPICS.has(topic0.toLowerCase())) {
+    return res.status(400).json({ error: 'Bad topic0' })
+  }
   if (topic1 !== undefined && (!isHex(topic1) || topic1.length !== 66)) {
     return res.status(400).json({ error: 'Bad topic1' })
   }
