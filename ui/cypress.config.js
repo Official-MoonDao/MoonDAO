@@ -9,6 +9,8 @@ const cypressSplit = require('cypress-split')
 // Node unit specs. `yarn test:deprize` runs these under mocha, where fs, crypto,
 // and child_process exist. The component runner bundles the same files for
 // Chrome, and those APIs are stubs there, so the specs fail before any assertion.
+// verify-interaction needs WebCrypto Ed25519 (Chrome 137+). CI Chrome is 126;
+// Node 20 verifies it in test:deprize.
 const NODE_UNIT_SPECS = [
   'cypress/integration/lib/deprize/compliance-scan-boundary.cy.ts',
   'cypress/integration/lib/deprize/docsHygiene.cy.ts',
@@ -20,6 +22,7 @@ const NODE_UNIT_SPECS = [
   'cypress/integration/lib/discord/discord-hygiene.cy.ts',
   'cypress/integration/lib/discord/interactions-route.cy.ts',
   'cypress/integration/lib/discord/post-channel-message.cy.ts',
+  'cypress/integration/lib/discord/verify-interaction.cy.ts',
 ]
 
 function isNodeUnitSpec(spec) {
