@@ -414,8 +414,6 @@ export function displayFootprintRadiusM(project: Project): number {
 // each GLB's authored bounding box, so they are properties of the asset
 // files, not of the curated dataset.
 const MODEL_FRONT_AZ: Record<string, number> = {
-  // X 16.7 > Z 12.6.
-  '/moonbase/models/viking-lander.glb': 0,
   // Z 3.1 > X 2.7: chassis length across the frame.
   '/moonbase/models/perseverance-rover.glb': Math.PI / 2,
   // Z 3.6 > X 1.9 puts broadside at PI/2, which also lands within 1.5° of

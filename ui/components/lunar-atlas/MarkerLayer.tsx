@@ -27,6 +27,7 @@ import {
   ROAD_HALF_M,
   ROAD_RUNS,
   SOLAR_ARRAYS,
+  solarArrayKey,
   SPINE_BEARING_DEG,
   SPINE_END_M,
   SPINE_START_M,
@@ -819,7 +820,7 @@ function SolarFarmSite({
       // so it follows the terrain instead of needing a skirt to hide a gap.
       const ground = radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
       return {
-        key: `${a.row}:${a.bay}`,
+        key: solarArrayKey(a),
         dir: [d.x, d.y, d.z] as Vec3,
         seat: ground + SEAT_LIFT,
         seed: a.row * 131 + a.bay * 17,

@@ -738,14 +738,18 @@ export default function MoonBaseZeroIndex() {
   return (
     <>
       <Head
-        title="Moon Base Zero"
-        description="A true-to-scale moonbase on the Shackleton connecting ridge — real NASA LOLA terrain at 5 m/px. Explore capability races, competitors, and who's leading each tech tree."
+        title={selectedProject ? `${selectedProject.name} · Moon Base Zero` : 'Moon Base Zero'}
+        description={
+          selectedProject?.summary.slice(0, 160) ??
+          "A true-to-scale moonbase on the Shackleton connecting ridge — real NASA LOLA terrain at 5 m/px. Explore capability races, competitors, and who's leading each tech tree."
+        }
       />
       {/* Only the 4rem top nav is subtracted: ProjectBanner lists /moonbase as
           a fullscreen route and never renders here, so reserving its 4rem too
           would leave a dead band under the year slider. */}
       <div className="relative h-[calc(100vh-4rem)] w-full overflow-hidden bg-[#03040a]">
         <MoonGlobeLazy
+          posterOnLowPower
           focus={focus}
           trees={sitedTrees}
           organizations={dataset.organizations}

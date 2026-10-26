@@ -2,6 +2,12 @@
  * Etherscan V2 log fetch used by `/api/deprize/logs` and the DePrize
  * reconciliation job. One key covers every supported chain.
  */
+import { parseAbiItem, toEventSelector, type AbiEvent } from 'viem'
+import {
+  BET_EVENT_SIGNATURE,
+  FUNDING_EVENT_SIGNATURE,
+  TRADE_EVENT_SIGNATURE,
+} from './eventSignatures'
 
 export type EtherscanLog = {
   address: string
@@ -16,6 +22,14 @@ export type EtherscanLog = {
 export const ETHERSCAN_LOGS_PAGE = 1000
 export const ETHERSCAN_LOGS_MAX_PAGES = 10
 export const ETHERSCAN_SUPPORTED_CHAINS = new Set([1, 11155111, 42161, 421614])
+
+// topic0 of the events the DePrize pages read. The public logs route serves
+// only these, so the server key cannot be spent on arbitrary contracts' logs.
+export const DEPRIZE_LOG_TOPICS = new Set(
+  [BET_EVENT_SIGNATURE, TRADE_EVENT_SIGNATURE, FUNDING_EVENT_SIGNATURE].map((sig) =>
+    toEventSelector(parseAbiItem(sig) as AbiEvent).toLowerCase()
+  )
+)
 
 export function etherscanApiKey(): string | undefined {
   return (

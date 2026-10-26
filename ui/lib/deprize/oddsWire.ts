@@ -1,6 +1,7 @@
 import { DEPRIZE_AVAILABILITY_LEGEND } from '@/lib/deprize/constants'
 import { maxProbDelta } from '@/lib/deprize/lmsr-history'
 import { getLadderForCompetition } from '@/lib/deprize/capabilityLadder'
+import { deprizePrefixedHref, findDePrizeIdForGoal } from '@/lib/deprize/competitions'
 import { escapeDiscordUserText } from '@/lib/discord/escapeUserText'
 import type { DiscordPostResult } from '@/lib/discord/postChannelMessage'
 import type { DiscordEmbed } from '@/lib/og/preview'
@@ -149,7 +150,9 @@ export function nextOddsWireSnapshot(opts: {
 }
 
 export function oddsWireWatchIds(chainSlug: string): number[] {
-  const ids = new Set<number>([22])
+  const ids = new Set<number>()
+  const touchdown = findDePrizeIdForGoal(chainSlug, 'shared-next-landing')
+  if (touchdown != null) ids.add(touchdown)
   const ladder = getLadderForCompetition(chainSlug, undefined)
   for (const rung of ladder.rungs) {
     if (rung.status === 'live' && rung.deprizeId != null) ids.add(rung.deprizeId)
@@ -160,6 +163,7 @@ export function oddsWireWatchIds(chainSlug: string): number[] {
 export function buildOddsWireEmbed(opts: {
   title: string
   deprizeId: number
+  chainSlug: string
   site: string
   labels: string[]
   current: number[]
@@ -175,7 +179,7 @@ export function buildOddsWireEmbed(opts: {
   return {
     title: escapeDiscordUserText(opts.title),
     description: lines.join('\n'),
-    url: `${opts.site.replace(/\/$/, '')}/deprize/${opts.deprizeId}`,
+    url: `${opts.site.replace(/\/$/, '')}${deprizePrefixedHref(opts.chainSlug, opts.deprizeId)}`,
     footer: { text: DEPRIZE_AVAILABILITY_LEGEND },
   }
 }

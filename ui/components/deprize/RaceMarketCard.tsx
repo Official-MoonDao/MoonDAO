@@ -10,6 +10,7 @@
 // odds, a pool figure, and a working Buy flow — backed by the local demo
 // ledger in `lib/deprize/mockMarket.ts` so the whole product can be tested
 // before every race has a contract.
+import { useDemoMarketsEnabled } from 'const/flags'
 import { useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import type { Chain } from 'thirdweb'
@@ -197,6 +198,7 @@ export default function RaceMarketCard({
   const projectIds = useMemo(() => competitors.map((c) => c.project.id), [competitors])
   const impliedOdds = goal.market?.impliedOdds
   const demo = useMockMarket(goal.id, projectIds, impliedOdds, userAddress)
+  const demoEnabled = useDemoMarketsEnabled()
 
   const outcomes: OutcomeRowVM[] = useMemo(
     () =>
@@ -229,13 +231,22 @@ export default function RaceMarketCard({
           name: c.project.name,
           color,
           probability: demo.odds[c.project.id] ?? 0,
-          heldQty: pos && pos.qty > 0 ? pos.qty : undefined,
+          heldQty: demoEnabled && pos && pos.qty > 0 ? pos.qty : undefined,
           outcomeIndex: undefined,
           positionId: undefined,
           balanceWei: undefined,
         }
       }),
-    [competitors, bound, binding, live.outcomes, live.oddsByProjectId, demo.odds, demo.positions]
+    [
+      competitors,
+      bound,
+      binding,
+      live.outcomes,
+      live.oddsByProjectId,
+      demo.odds,
+      demo.positions,
+      demoEnabled,
+    ]
   )
 
   // The chart plots market outcomes in on-chain order, including the open field.

@@ -1,7 +1,9 @@
+import { findDePrizeIdForGoal } from '@/lib/deprize/competitions'
 import { DEPRIZE_AVAILABILITY_LEGEND } from '@/lib/deprize/constants'
 import {
   buildOddsWireEmbed,
   nextOddsWireSnapshot,
+  oddsWireWatchIds,
   parseOddsWireSnapshot,
   planOddsWirePost,
 } from '@/lib/deprize/oddsWire'
@@ -209,6 +211,7 @@ describe('odds wire embed', () => {
     const embed = buildOddsWireEmbed({
       title: 'Touchdown',
       deprizeId: 22,
+      chainSlug: 'sepolia',
       site: 'https://moondao.com',
       labels: ['Firefly', '@everyone'],
       current: [20, 80],
@@ -217,5 +220,28 @@ describe('odds wire embed', () => {
     expect(embed.footer?.text).to.equal(DEPRIZE_AVAILABILITY_LEGEND)
     expect(embed.description).to.include(escapeDiscordUserText('@everyone'))
     expect(embed.description).to.not.match(/(^|[^\\])@everyone/)
+  })
+
+  it('links to the chain the odds were read from', () => {
+    const embed = buildOddsWireEmbed({
+      title: 'Touchdown',
+      deprizeId: 2,
+      chainSlug: 'arbitrum',
+      site: 'https://moondao.com/',
+      labels: ['A'],
+      current: [50],
+      previous: [50],
+    })
+    expect(embed.url).to.equal('https://moondao.com/deprize/arb/2')
+  })
+})
+
+describe('odds wire watch list', () => {
+  it('watches Touchdown on the requested chain', () => {
+    const arb = findDePrizeIdForGoal('arbitrum', 'shared-next-landing')!
+    expect(oddsWireWatchIds('arbitrum')).to.include(arb)
+    // Sepolia's Touchdown id must not leak into the Arbitrum list.
+    const sep = findDePrizeIdForGoal('sepolia', 'shared-next-landing')!
+    if (sep !== arb) expect(oddsWireWatchIds('arbitrum')).to.not.include(sep)
   })
 })

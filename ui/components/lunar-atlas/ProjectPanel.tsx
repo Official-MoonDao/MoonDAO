@@ -15,6 +15,7 @@ import {
   LOCATION_PRECISION_LABEL,
   MILESTONE_STATUS_CLASSES,
   MILESTONE_STATUS_LABEL,
+  MODEL_NOTE,
   PROJECT_TYPE_GLYPH,
   PROJECT_TYPE_LABEL,
   ROSTER_STATUS_LABEL,
@@ -318,6 +319,9 @@ export default function ProjectPanel({
 
         {/* Summary */}
         <p className="text-sm leading-relaxed text-white/80">{project.summary}</p>
+        {MODEL_NOTE[project.id] && (
+          <p className="text-xs leading-relaxed text-white/50">{MODEL_NOTE[project.id]}</p>
+        )}
 
         {rosterKind && project.rosterStatus && (
           <div

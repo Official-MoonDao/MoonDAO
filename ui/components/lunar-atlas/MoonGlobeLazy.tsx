@@ -4,7 +4,10 @@
 // (avoids tearing down the GL context), mirroring the app's LazyMoon pattern.
 
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import { startTransition, useEffect, useRef, useState } from 'react'
+import { TOUR_POSTER } from '@/lib/moonbase-tour/stops'
+import useTourRenderMode from '@/components/moonbase/tour/useTourRenderMode'
 import type { MoonGlobeProps } from './MoonGlobe'
 
 const MoonGlobe = dynamic(() => import('./MoonGlobe'), {
@@ -23,12 +26,44 @@ function GlobeFallback() {
   )
 }
 
-export default function MoonGlobeLazy(props: MoonGlobeProps) {
+function GlobePoster({ onOpen }: { onOpen: () => void }) {
+  return (
+    <div className="relative h-full w-full">
+      <Image src={TOUR_POSTER} alt="" fill priority sizes="100vw" className="object-cover" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#03040a] via-[#03040a]/40 to-transparent" />
+      <div className="absolute inset-x-0 bottom-24 flex flex-col items-center gap-3 px-6 text-center">
+        <p className="max-w-sm text-sm text-white/70">
+          The 3D base is heavy on phones and battery. The races and competitors are all in the
+          panels.
+        </p>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:border-white/40 hover:bg-white/20"
+        >
+          Open 3D view
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default function MoonGlobeLazy({
+  posterOnLowPower = false,
+  ...props
+}: MoonGlobeProps & {
+  /** Phones, low-core machines and reduced motion get a still until asked. */
+  posterOnLowPower?: boolean
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [hasMounted, setHasMounted] = useState(false)
   // Headless CI / Playwright has no usable WebGL; ?noglobe=1 keeps the
   // fallback so the race panel and odds bridge can still be smoke-tested.
   const [skipGlobe, setSkipGlobe] = useState(false)
+  const renderMode = useTourRenderMode()
+  const [openedByUser, setOpenedByUser] = useState(false)
+  const showPoster = posterOnLowPower && renderMode === 'still' && !openedByUser
+  const awaitingMode = posterOnLowPower && renderMode === null
 
   useEffect(() => {
     try {
@@ -39,7 +74,7 @@ export default function MoonGlobeLazy(props: MoonGlobeProps) {
   }, [])
 
   useEffect(() => {
-    if (hasMounted || skipGlobe) return
+    if (hasMounted || skipGlobe || showPoster || awaitingMode) return
     const el = containerRef.current
     if (!el) return
 
@@ -68,11 +103,22 @@ export default function MoonGlobeLazy(props: MoonGlobeProps) {
       observer.disconnect()
       if (mountTimer) clearTimeout(mountTimer)
     }
-  }, [hasMounted, skipGlobe])
+  }, [hasMounted, skipGlobe, showPoster, awaitingMode])
 
   return (
-    <div ref={containerRef} className="h-full w-full bg-[#03040a]">
-      {hasMounted && !skipGlobe ? <MoonGlobe {...props} /> : <GlobeFallback />}
+    <div
+      ref={containerRef}
+      role="region"
+      aria-label="Moon Base Zero, interactive 3D map of the lunar south pole base"
+      className="h-full w-full bg-[#03040a]"
+    >
+      {hasMounted && !skipGlobe ? (
+        <MoonGlobe {...props} />
+      ) : showPoster && !skipGlobe ? (
+        <GlobePoster onOpen={() => setOpenedByUser(true)} />
+      ) : (
+        <GlobeFallback />
+      )}
     </div>
   )
 }
