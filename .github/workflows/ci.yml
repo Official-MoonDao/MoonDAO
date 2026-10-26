@@ -406,9 +406,12 @@ jobs:
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
 
-  # Component tests - split into 4 parallel jobs using cypress-split
+  # Component tests - split into 4 parallel jobs using cypress-split.
+  # timeout-minutes is the backstop: a wedged Cypress process does not exit,
+  # and the default job limit is 6 hours.
   component-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     needs: build
     strategy:
       fail-fast: false
@@ -469,6 +472,16 @@ jobs:
             echo "Cypress binary already cached, skipping install"
           fi
 
+      # Last Chrome release whose old headless mode Cypress 12.17.3 can drive.
+      # Chrome 128 removed that mode. The runner image's Chrome is 155, and
+      # Cypress 12 deadlocks against it.
+      - name: Install Chrome 126
+        id: component-chrome
+        uses: browser-actions/setup-chrome@v2
+        with:
+          chrome-version: "126.0.6478.182"
+          install-dependencies: true
+
       - name: Run Component Tests (Container ${{ matrix.containers }}/4)
         working-directory: ui
         run: |
@@ -481,14 +494,22 @@ jobs:
           export CYPRESS_WEBPACK_DEV_SERVER_PORT=$PORT
           export CYPRESS_BASE_URL="http://localhost:$PORT"
 
-          # Cypress will automatically start the dev server via devServer config
-          npx cypress run --component --browser chrome || TEST_EXIT_CODE=$?
+          echo "Component browser: $("$CYPRESS_COMPONENT_BROWSER" --version)"
+          # Cypress will automatically start the dev server via devServer config.
+          # 25 minutes is several times a healthy shard. Exit 124 is the timeout.
+          timeout --kill-after=30s 1500 npx cypress run --component --browser "$CYPRESS_COMPONENT_BROWSER" || TEST_EXIT_CODE=$?
+
+          if [ "${TEST_EXIT_CODE:-0}" -eq 124 ]; then
+            echo "Component tests exceeded 25 minutes and were stopped."
+          fi
 
           exit ${TEST_EXIT_CODE:-0}
         env:
           # cypress-split reads these from GitHub Actions strategy context
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
+          CYPRESS_CHROME_OLD_HEADLESS: "1"
+          CYPRESS_COMPONENT_BROWSER: ${{ steps.component-chrome.outputs.chrome-path }}
 
       - name: Upload Cypress Screenshots
         uses: actions/upload-artifact@v4
