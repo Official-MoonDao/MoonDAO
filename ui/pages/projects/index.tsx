@@ -1,20 +1,22 @@
-import ProposalsABI from 'const/abis/Proposals.json'
 import {
   DEFAULT_CHAIN_V5,
   PROJECT_TABLE_NAMES,
   DISTRIBUTION_TABLE_NAMES,
   PROPOSALS_TABLE_NAMES,
-  PROPOSALS_ADDRESSES,
 } from 'const/config'
 import type { ProjectCyclePhase } from 'const/config'
 import { useRouter } from 'next/router'
-import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
+import { PROJECT_ACTIVE } from '@/lib/nance/types'
 import {
   getLivePhaseOverride,
   resolveLivePhase,
   resolveMemberVoteSubmissionsOpen,
 } from '@/lib/operator/cyclePhase'
 import { excludeNonProjectProposals } from '@/lib/project/excludeNonProjectProposals'
+import {
+  getCurrentCycleProposals,
+  isCurrentCyclePending,
+} from '@/lib/project/getCurrentCycleProposals'
 import {
   getProjectDisplayName,
   isUntitledLike,
@@ -99,121 +101,24 @@ export async function getStaticProps() {
       return { props: emptyProps, revalidate: 60 }
     }
 
-    // Proposal cohort = PROJECT_CYCLE.quarter/year — the same source
-    // advance-phase uses when batch-tallying Senate votes. Do NOT use
-    // getRelativeQuarter(0) here: at a calendar boundary or with a stale
-    // config roll those diverge and operators would close a different set
-    // of MDPs than the proposals shown on the page. Also avoid
-    // getSubmissionQuarter(): past its ~3-week cutoff it advances to the
-    // *next* quarter and would make in-flight Q{n} proposals vanish.
     const activeProposalQuarter = getProposalCycle()
-    const proposals: Project[] = []
+    const proposals = await getCurrentCycleProposals(projects, chain)
     let currentProjects: Project[] = []
     const pastProjects: Project[] = []
 
-    const isCurrentPending = (project: Project) =>
-      project.active == PROJECT_PENDING &&
-      project.quarter === activeProposalQuarter.quarter &&
-      project.year === activeProposalQuarter.year &&
-      !isBlockedProject(project)
-
-    // Temp-check (Senate) approval/failure flags are best-effort metadata that
-    // only pending, current-cycle proposals actually consume. Scope the batch
-    // read to just those MDPs instead of every project in the table: reading
-    // all ~N projects in a single multicall is both wasteful and the exact
-    // pattern that tips the Engine call over its size/time limit as the
-    // project count grows — which would otherwise take down the whole page.
-    // If the read fails we simply proceed without Senate flags.
-    const pendingMdps = Array.from(
-      new Set(projects.filter(isCurrentPending).map((p) => p.MDP))
-    )
-    const tempCheckByMdp = new Map<
-      any,
-      { approved?: string; failed?: string }
-    >()
-    if (pendingMdps.length > 0) {
-      try {
-        const { engineBatchRead } = await import('@/lib/thirdweb/engine')
-        const mdpArgs = pendingMdps.map((mdp) => [mdp])
-        const [approveds, faileds] = await Promise.all([
-          engineBatchRead<string>(
-            PROPOSALS_ADDRESSES[chainSlug],
-            'tempCheckApproved',
-            mdpArgs,
-            ProposalsABI.abi,
-            chain.id
-          ),
-          engineBatchRead<string>(
-            PROPOSALS_ADDRESSES[chainSlug],
-            'tempCheckFailed',
-            mdpArgs,
-            ProposalsABI.abi,
-            chain.id
-          ),
-        ])
-        pendingMdps.forEach((mdp, i) => {
-          tempCheckByMdp.set(mdp, {
-            approved: approveds[i],
-            failed: faileds[i],
-          })
-        })
-      } catch (error) {
-        console.error(
-          '[projects] Temp-check batch read failed; continuing without Senate flags:',
-          error
-        )
+    for (const project of projects) {
+      // Current-cycle pending rows are handled by getCurrentCycleProposals;
+      // the ones it drops (Senate-failed, governance, deleted) stay hidden.
+      if (isBlockedProject(project) || isCurrentCyclePending(project)) continue
+      if (project.active == PROJECT_ACTIVE) {
+        currentProjects.push(project)
+      } else {
+        pastProjects.push(project)
       }
     }
-
-    await Promise.all(
-      projects.map(async (project: Project) => {
-        if (isBlockedProject(project)) {
-          return
-        }
-        const activeStatus = project.active
-        if (isCurrentPending(project)) {
-          if (!project.proposalIPFS) return
-          const { approved, failed } = tempCheckByMdp.get(project.MDP) ?? {}
-          try {
-            const proposalResponse = await fetch(project.proposalIPFS)
-            const proposalJSON = await proposalResponse.json()
-            if (proposalJSON?.nonProjectProposal) return
-            // Author-deleted proposals disappear from the frontend.
-            if (proposalJSON?.deleted) return
-            // Enrich name from IPFS while we have the JSON in hand
-            if (isUntitledLike(project.name)) {
-              const resolved = getProjectDisplayName(project, proposalJSON)
-              if (resolved !== UNTITLED_FALLBACK) project.name = resolved
-            }
-            project.tempCheckApproved = approved
-            project.tempCheckFailed = failed
-            if (!failed) {
-              proposals.push(project)
-            }
-          } catch (error) {
-            // A flaky IPFS gateway must not silently drop a live proposal (or,
-            // worse, blank the page). Include it as long as the temp-check
-            // didn't mark it failed; the client-side ProjectCard re-fetches the
-            // JSON for full display.
-            console.warn(
-              `[projects] proposal IPFS fetch failed for MDP ${project.MDP}; including with cached metadata:`,
-              error
-            )
-            project.tempCheckApproved = approved
-            project.tempCheckFailed = failed
-            if (!failed) {
-              proposals.push(project)
-            }
-          }
-        } else if (activeStatus == PROJECT_ACTIVE) {
-          currentProjects.push(project)
-        } else {
-          pastProjects.push(project)
-        }
-      })
-    )
     // Governance proposals that pass are written active, same as funded
-    // projects. Pending rows already skip `nonProjectProposal` above.
+    // projects. Pending rows already skip `nonProjectProposal` in
+    // getCurrentCycleProposals.
     currentProjects = await excludeNonProjectProposals(currentProjects)
     // For active/past projects whose stored name is empty or "Untitled",
     // fetch the IPFS proposal JSON server-side so the pre-rendered HTML
