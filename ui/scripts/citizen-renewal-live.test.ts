@@ -618,7 +618,7 @@ describe('one stage per term', () => {
     return calls.filter((call) => call.method === 'POST' || call.method === 'DELETE')
   }
 
-  it('writes Renewal-Reminder at day 30 and nothing at 29, 6, or -1', async () => {
+  it('writes Renewal-Reminder at day 30 and nothing on a later grace day, at 6, or at -1', async () => {
     const expiresAt = expiresIn(30)
     const row = rowAt('1', expiresAt, 'term-person@example.com')
     const store = memoryRedis()
@@ -631,8 +631,17 @@ describe('one stage per term', () => {
       store.sets.get(RENEWAL_WRITTEN_SET)?.has(renewalStageDedupeKey('1', expiresAt, 'minus30'))
     ).to.equal(true)
 
+    for (const daysLeft of [29, 28]) {
+      const run = await runDay({ store, row, daysLeft, live: true })
+      expect(run.result.buckets.renewalReminder.planned).to.equal(0)
+      expect(run.result.buckets.catchupMinus7.planned).to.equal(0)
+      expect(run.result.skipped.deduped).to.equal(1)
+      expect(run.result.skipped.alreadyStagedThisTerm).to.equal(0)
+      expect(posts(run.calls)).to.deep.equal([])
+      expect(JSON.stringify(run.result)).to.not.include('term-person@example.com')
+    }
+
     const later: Array<{ daysLeft: number; stageWouldApply: string }> = [
-      { daysLeft: 29, stageWouldApply: 'minus7' },
       { daysLeft: 6, stageWouldApply: 'expiry' },
       { daysLeft: -1, stageWouldApply: 'plus14' },
     ]
@@ -789,7 +798,7 @@ describe('one stage per term', () => {
         tokenId: '4',
         name: 'Custom-Reminder',
         stageWritten: 'minus30',
-        stageWouldApply: 'minus7',
+        stageWouldApply: 'minus30',
       },
     ])
     expect(posts(run.calls)).to.deep.equal([])
@@ -798,6 +807,111 @@ describe('one stage per term', () => {
     for (const stage of ['minus30', 'minus7', 'expiry', 'plus14', 'renewed'] as const) {
       expect(isWinBackStage(stage)).to.equal(false)
     }
+  })
+
+  it('enters minus30 at 30, 29, and 28 days when the term has no stage', async () => {
+    for (const daysLeft of [30, 29, 28]) {
+      const expiresAt = expiresIn(daysLeft)
+      const email = `entry-${daysLeft}@example.com`
+      const store = memoryRedis()
+      const run = await runDay({
+        store,
+        row: rowAt(String(daysLeft), expiresAt, email),
+        daysLeft,
+        live: true,
+      })
+      expect(run.result.actions.map((action) => action.stage)).to.deep.equal(['minus30'])
+      expect(run.result.buckets.renewalReminder.executed).to.equal(1)
+      expect(run.result.buckets.catchupMinus7.planned).to.equal(0)
+      expect(run.result.actions[0].ops).to.deep.equal([{ op: 'add', tag: 'Renewal-Reminder' }])
+      expect(store.keys[renewalTermMarkerKey(String(daysLeft), expiresAt)]).to.equal('minus30')
+      expect(posts(run.calls)).to.have.length(1)
+      expect(JSON.stringify(run.result)).to.not.include(email)
+    }
+  })
+
+  it('writes nothing at 29 days when the term marker is already set', async () => {
+    const expiresAt = expiresIn(29)
+    const marker = renewalTermMarkerKey('29', expiresAt)
+    const store = memoryRedis({ keys: { [marker]: 'minus30' } })
+    const run = await runDay({
+      store,
+      row: rowAt('29', expiresAt, 'staged-grace@example.com'),
+      daysLeft: 29,
+      live: true,
+    })
+    expect(run.result.writing).to.equal(true)
+    expect(run.result.actions).to.deep.equal([])
+    expect(run.result.buckets.renewalReminder.planned).to.equal(0)
+    expect(run.result.buckets.catchupMinus7.planned).to.equal(0)
+    expect(run.result.skipped.deduped).to.equal(0)
+    expect(run.result.skipped.alreadyStagedThisTerm).to.equal(1)
+    expect(run.result.alreadyStagedThisTerm).to.deep.equal([
+      {
+        tokenId: '29',
+        name: 'Renewal-Reminder',
+        stageWritten: 'minus30',
+        stageWouldApply: 'minus30',
+      },
+    ])
+    expect(posts(run.calls)).to.deep.equal([])
+    expect(store.mutations).to.deep.equal([])
+    expect(JSON.stringify(run.result)).to.not.include('staged-grace@example.com')
+  })
+
+  it('gives a first look at 27 days only the minus7 catch-up', async () => {
+    const expiresAt = expiresIn(27)
+    const store = memoryRedis()
+    const run = await runDay({
+      store,
+      row: rowAt('27', expiresAt, 'below-grace@example.com'),
+      daysLeft: 27,
+      live: true,
+    })
+    expect(run.result.actions.map((action) => action.stage)).to.deep.equal(['minus7'])
+    expect(run.result.buckets.renewalReminder.planned).to.equal(0)
+    expect(run.result.buckets.catchupMinus7.executed).to.equal(1)
+    expect(run.result.actions[0].ops).to.deep.equal([{ op: 'add', tag: 'Renewal-Catchup-minus7' }])
+    expect(store.keys[renewalTermMarkerKey('27', expiresAt)]).to.equal('minus7')
+    expect(posts(run.calls)).to.have.length(1)
+    expect(JSON.stringify(run.result)).to.not.include('below-grace@example.com')
+  })
+
+  it('still holds the Oct 2 list on grace-day entry', () => {
+    const plan = planRenewalWrites({
+      rows: [
+        activeRow('29', 29, { firstRunRedis: true, email: 'oct2-grace@example.com' }),
+        activeRow('28', 28, { firstRunRedis: true, email: 'oct2-grace-28@example.com' }),
+        activeRow('27', 27, { firstRunRedis: true, email: 'oct2-below@example.com' }),
+      ],
+      renewals: [],
+      nowMs: NOW,
+      writtenKeys: new Set(),
+    })
+    expect(plan.writes).to.deep.equal([])
+    expect(plan.skipped.firstRun).to.equal(3)
+    expect(JSON.stringify(plan)).to.not.include('oct2-grace@example.com')
+  })
+
+  it('plans minus30 for a dry run at 29 days and does not write', async () => {
+    const expiresAt = expiresIn(29)
+    const store = memoryRedis()
+    const run = await runDay({
+      store,
+      row: rowAt('29', expiresAt, 'dry-grace@example.com'),
+      daysLeft: 29,
+      live: false,
+    })
+    expect(run.result.writing).to.equal(false)
+    expect(run.result.live).to.equal(false)
+    expect(run.result.buckets.renewalReminder.planned).to.equal(1)
+    expect(run.result.buckets.renewalReminder.executed).to.equal(0)
+    expect(run.result.buckets.catchupMinus7.planned).to.equal(0)
+    expect(run.result.actions.map((action) => action.stage)).to.deep.equal(['minus30'])
+    expect(run.result.actions[0].executed).to.equal(false)
+    expect(store.mutations).to.deep.equal([])
+    expect(posts(run.calls)).to.deep.equal([])
+    expect(JSON.stringify(run.result)).to.not.include('dry-grace@example.com')
   })
 })
 

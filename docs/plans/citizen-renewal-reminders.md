@@ -17,7 +17,7 @@ Reminders are on by default. A citizen with a findable email is in the reminder 
 
 Tag name: `Renewal-Reminder`. Override with `RENEWAL_REMINDER_TAG_NAME`. Id from `RENEWAL_REMINDER_TAG_ID`, or a lookup of that name.
 
-On day -30 (exactly 30 days before `expiresAt`), live mode adds that tag to an existing active Kit subscriber. A Kit automation subscribes tagged people to one sequence. The sequence sends on day 0, day 23, day 30, and day 44 after entry. Those dates are 30 days before expiry, 7 days before expiry, expiry day, and 14 days after expiry.
+On the nominal entry day (30 days before `expiresAt`), live mode adds that tag to an existing active Kit subscriber. Days left of 29 and 28 still get that tag when this term has no stage yet. The daily job can start late, and a scheduled run can be skipped, so the next run can see 29 or 28 instead of 30. A term that already has a stage is not tagged again. Entering one or two days late shifts the later emails in the sequence by the same amount. That is accepted so the first email of sequence 2929996 is not skipped. A Kit automation subscribes tagged people to one sequence. The sequence sends on day 0, day 23, day 30, and day 44 after entry. Those dates line up with 30 days before expiry, 7 days before expiry, expiry day, and 14 days after expiry when the tag is applied on the nominal day.
 
 Kit delay change for sequence 2929996: the wait after the first email changes from 16 days to 23 days, and the wait after the second email changes from 14 days to 7 days. The wait after the expiry-day email stays 14 days. Send hour and time zone are unchanged by this code.
 
@@ -25,7 +25,7 @@ Kit times a sequence from the day someone enters it. Tagging a person who is alr
 
 ## Catch-up tags
 
-Anyone already past day -30 when first seen for that `expiresAt` does not get `Renewal-Reminder`. They get one catch-up tag for the next email that is still due. Earlier emails stay unsent. That catch-up tag is the only stage for the term. Later runs do not add another one.
+Anyone first seen with 27 or fewer days left for that `expiresAt` does not get `Renewal-Reminder`. They get one catch-up tag for the next email that is still due. Earlier emails stay unsent. That catch-up tag is the only stage for the term. Later runs do not add another one.
 
 | Next email           | Default tag              | Name env                          | Id env                          |
 | -------------------- | ------------------------ | --------------------------------- | ------------------------------- |
@@ -41,7 +41,7 @@ Create one Kit automation per catch-up tag that sends only that email. Do not at
 
 A term is one token id and one `expiresAt`. The job writes at most one reminder or catch-up stage for that term: `Renewal-Reminder`, `Renewal-Catchup-minus7`, `Renewal-Catchup-expiry`, or `Renewal-Catchup-plus14`.
 
-The first time someone is seen inside the window with no stage written for that term, they get the tag for the stage due that day. Day -30 gets `Renewal-Reminder`. A later first sighting gets the catch-up tag for the next email, same as above. Runs after that write nothing else for the term. A person tagged at day -30 does not later receive the -7, expiry, or +14 catch-up tags. A person first seen at 20 days gets only the -7 catch-up, and does not get the expiry or +14 tags on later days.
+The first time someone is seen inside the window with no stage written for that term, they get one tag. Days left 30, 29, and 28 get `Renewal-Reminder`. A later first sighting gets the catch-up tag for the next email, same as above. Runs after that write nothing else for the term. A person tagged on entry, including a grace day, does not later receive the -7, expiry, or +14 catch-up tags. A person first seen at 20 days gets only the -7 catch-up, and does not get the expiry or +14 tags on later days. The grace does not read the term marker itself. `renewal:term:{tokenId}:{expiresAt}` and the written-set members still block every later stage for that term, including a second `Renewal-Reminder` on day 29 or 28.
 
 After that tag succeeds, the job sets Redis key `renewal:term:{tokenId}:{expiresAt}` to the stage id (`minus30`, `minus7`, `expiry`, or `plus14`). Planning reads that marker. The same fact can be derived from `renewal:written` members shaped `renewal:{tokenId}:{expiresAt}:{stage}` for those four stages. A stored `minus14` member counts as `minus7`. `renewed` does not occupy the slot. Dry runs read the term markers and the written set. They do not write them.
 
@@ -93,8 +93,8 @@ Window positions, one per citizen:
 
 | Position        | Meaning                                                                              |
 | --------------- | ------------------------------------------------------------------------------------ |
-| enterToday      | Exactly 30 days left. Live mode adds `Renewal-Reminder` if the term has no stage.   |
-| inside          | 1 to 29 days left. Late. Catch-up tag for the next email, if the term has no stage. |
+| enterToday      | 28, 29, or 30 days left. Live mode adds `Renewal-Reminder` if the term has no stage. 29 and 28 are the grace for a late or skipped daily run. The coverage row is not a late entrant: `sequence.nextEmail` is `minus30`, `missedEmails` is empty, and `catchUp` is null. |
+| inside          | 1 to 27 days left. Late. Catch-up tag for the next email, if the term has no stage. `sequence.nextEmail` is that catch-up stage. |
 | expiredWithin14 | Expiry day through 14 days after. Late. Catch-up tag, if the term has no stage.     |
 | outOfWindow     | More than 30 days left, or more than 14 days past expiry.                            |
 
@@ -127,7 +127,7 @@ Optional: set the matching `*_TAG_ID` env vars so the job does not depend on the
 
 GitHub Actions workflow `Citizen renewal coverage dry run` is manual and always calls `dryRun=1`.
 
-Workflow `Citizen renewal reminders` is the only scheduler. It runs daily at 13:15 UTC and passes `live=1`. A manual run also passes `live=1` unless the `live` input is `0`, which stays a dry run. The server still ignores `live=1` until `RENEWAL_REMINDERS_LIVE` is exactly `true`. GitHub may start the 13:15 UTC schedule later than that minute.
+Workflow `Citizen renewal reminders` is the only scheduler. It runs daily at 13:15 UTC and passes `live=1`. A manual run also passes `live=1` unless the `live` input is `0`, which stays a dry run. The server still ignores `live=1` until `RENEWAL_REMINDERS_LIVE` is exactly `true`. GitHub may start the 13:15 UTC schedule later than that minute, and it may skip a scheduled run. The entry grace (days left 29 and 28) is what keeps those citizens on `Renewal-Reminder`. The workflow schedule is unchanged.
 
 The workflow calls `https://www.moondao.com` and does not follow redirects. The apex host returns 307, and curl does not treat that status as a failure. The job prints a short summary only: `live`, `dryRun`, `writing`, per-stage counts, writes executed, and failures. It does not print the raw response.
 

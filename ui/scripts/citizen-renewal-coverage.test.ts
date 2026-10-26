@@ -11,10 +11,13 @@ import {
   isPreExpiryEmail,
   KitResubscribeBlocked,
   kitSubscriberLookupPath,
+  LATE_ENTRANT_CATCH_UP,
   parseUpstreamJson,
   renewalCountsComplete,
   renewalDedupeKey,
   renewalDryRunSources,
+  renewalEntryMinDay,
+  reportedSequencePosition,
   UpstreamNonJsonError,
   windowPosition,
 } from '../lib/citizen/renewalCoverage'
@@ -30,7 +33,10 @@ function expiresIn(days: number): number {
 describe('renewal window position', () => {
   it('splits citizens into enter today, inside, expired within 14, and out of window', () => {
     expect(windowPosition(expiresIn(30), NOW)).to.equal('enterToday')
-    expect(windowPosition(expiresIn(29), NOW)).to.equal('inside')
+    expect(windowPosition(expiresIn(29), NOW)).to.equal('enterToday')
+    expect(windowPosition(expiresIn(28), NOW)).to.equal('enterToday')
+    expect(renewalEntryMinDay()).to.equal(28)
+    expect(windowPosition(expiresIn(27), NOW)).to.equal('inside')
     expect(windowPosition(expiresIn(1), NOW)).to.equal('inside')
     expect(windowPosition(expiresIn(0), NOW)).to.equal('expiredWithin14')
     expect(windowPosition(expiresIn(-14), NOW)).to.equal('expiredWithin14')
@@ -74,6 +80,70 @@ describe('renewal window position', () => {
     const winBack = expectedSequencePosition(-14)
     expect(winBack.sequenceDay).to.equal(44)
     expect(winBack.nextEmail).to.equal('plus14')
+  })
+
+  it('labels grace days as Renewal-Reminder entry and the next day as minus7 catch-up', () => {
+    const report = buildRenewalCoverageReport(
+      [
+        {
+          tokenId: '30',
+          expiresAt: expiresIn(30),
+          email: 'day30@example.com',
+          kitState: 'active',
+          suppressed: false,
+          firstRunRedis: false,
+        },
+        {
+          tokenId: '29',
+          expiresAt: expiresIn(29),
+          email: 'day29@example.com',
+          kitState: 'active',
+          suppressed: false,
+          firstRunRedis: false,
+        },
+        {
+          tokenId: '28',
+          expiresAt: expiresIn(28),
+          email: 'day28@example.com',
+          kitState: 'active',
+          suppressed: false,
+          firstRunRedis: false,
+        },
+        {
+          tokenId: '27',
+          expiresAt: expiresIn(27),
+          email: 'day27@example.com',
+          kitState: 'active',
+          suppressed: false,
+          firstRunRedis: false,
+        },
+      ],
+      NOW
+    )
+    const byId = new Map(report.buckets.activeKit.map((row) => [row.tokenId, row]))
+
+    for (const tokenId of ['30', '29', '28']) {
+      const row = byId.get(tokenId)
+      expect(row?.position).to.equal('enterToday')
+      expect(row?.lateEntrant).to.equal(false)
+      expect(row?.catchUp).to.equal(null)
+      expect(row?.sequence).to.deep.equal(reportedSequencePosition(Number(tokenId)))
+      expect(row?.sequence.nextEmail).to.equal('minus30')
+      expect(row?.sequence.missedEmails).to.deep.equal([])
+      expect(row?.sequence.sequenceDay).to.equal(0)
+    }
+
+    const belowGrace = byId.get('27')
+    expect(belowGrace?.position).to.equal('inside')
+    expect(belowGrace?.daysToExpiry).to.equal(27)
+    expect(belowGrace?.lateEntrant).to.equal(true)
+    expect(belowGrace?.sequence.nextEmail).to.equal('minus7')
+    expect(belowGrace?.sequence.missedEmails).to.deep.equal(['minus30'])
+    expect(belowGrace?.catchUp).to.equal(LATE_ENTRANT_CATCH_UP)
+    expect(LATE_ENTRANT_CATCH_UP).to.include('28 through 30')
+    expect(report.counts.positions.enterToday).to.equal(3)
+    expect(report.counts.positions.inside).to.equal(1)
+    expect(JSON.stringify(report)).to.not.include('day29@example.com')
   })
 })
 
