@@ -9,6 +9,8 @@ const cypressSplit = require('cypress-split')
 // Node unit specs. `yarn test:deprize` runs these under mocha, where fs, crypto,
 // and child_process exist. The component runner bundles the same files for
 // Chrome, and those APIs are stubs there, so the specs fail before any assertion.
+// verify-interaction needs WebCrypto Ed25519 (Chrome 137+). CI Chrome is 126;
+// Node 20 verifies it in test:deprize.
 const NODE_UNIT_SPECS = [
   'cypress/integration/lib/deprize/compliance-scan-boundary.cy.ts',
   'cypress/integration/lib/deprize/docsHygiene.cy.ts',
@@ -20,6 +22,7 @@ const NODE_UNIT_SPECS = [
   'cypress/integration/lib/discord/discord-hygiene.cy.ts',
   'cypress/integration/lib/discord/interactions-route.cy.ts',
   'cypress/integration/lib/discord/post-channel-message.cy.ts',
+  'cypress/integration/lib/discord/verify-interaction.cy.ts',
 ]
 
 function isNodeUnitSpec(spec) {
@@ -293,6 +296,24 @@ module.exports = defineConfig({
         ...process.env,
       }
 
+      // CI sets this and pins Chrome 126. Cypress 12 launches current Chrome with
+      // --headless=new, the DevTools connection never returns, and the run sits
+      // until the job is killed. Chrome 126 still has the old headless mode.
+      // "Chrome for Testing" also misses Cypress 12's version regex, so the
+      // loopback proxy bypass (required since Chrome 72) is not added on its own.
+      on('before:browser:launch', (_browser, launchOptions) => {
+        if (process.env.CYPRESS_CHROME_OLD_HEADLESS !== '1') return launchOptions
+
+        launchOptions.args = launchOptions.args.filter(
+          (arg) => !String(arg).startsWith('--headless')
+        )
+        launchOptions.args.push('--headless=old')
+        if (!launchOptions.args.some((arg) => String(arg).startsWith('--proxy-bypass-list'))) {
+          launchOptions.args.push('--proxy-bypass-list=<-loopback>')
+        }
+        return launchOptions
+      })
+
       on('task', {
         log(message) {
           console.log(message)
@@ -375,9 +396,9 @@ module.exports = defineConfig({
       ...NODE_UNIT_SPECS,
     ],
     video: false,
-    // A hung Chrome renderer on shared GitHub runners fails a test before its
-    // first assertion (e.g. `cy.screenshot()` timing out). One retry absorbs that
-    // without hiding failures that reproduce.
+    // A renderer crash that fails the test is retried once on GitHub Actions.
+    // A wedged browser never fails the test; CI pins Chrome 126 and stops the
+    // run if it is still going after 25 minutes.
     retries: { runMode: process.env.GITHUB_ACTIONS === 'true' ? 1 : 0, openMode: 0 },
   },
 })
