@@ -454,8 +454,12 @@ export function selectForwardRenewals(
 }
 
 /**
- * Day -30 gets Renewal-Reminder. Anyone already past -30 gets the catch-up
- * tag for the next email only, never Renewal-Reminder.
+ * 28 to 30 days left gets Renewal-Reminder. 30 is the nominal entry day.
+ * 29 and 28 are grace for a late or skipped daily run, so the next run can
+ * still start sequence 2929996. The term marker blocks a second stage, so
+ * this does not depend on reading the marker here.
+ * Anyone with 27 or fewer days left gets the catch-up tag for the next
+ * email only, never Renewal-Reminder.
  * That choice is the one stage for the term. Later days do not advance it.
  * A future win-back stage would be selected here and listed in WIN_BACK_STAGES
  * so the term marker does not block it. Win-back is not selected today.
