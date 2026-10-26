@@ -46,7 +46,7 @@ Frank to Space: Path Forward" votes all work the same way:
   it cannot change later
 
 Elections use the same table and the same pattern. Vote numbers 0 to 3 are
-taken. The first election uses 4.
+taken. The 2026 Executive Lead votes use 4 and 5.
 
 ## How a vote works, start to finish
 
@@ -165,7 +165,7 @@ Freezing works like the Path Forward vote. Right after close, an operator runs:
 
 ```bash
 cd ui
-yarn snapshot:election executive-branch-2027
+yarn snapshot:election executive-lead-third-seat-2026
 ```
 
 The name "snapshot" is only the script name used for the Path Forward vote. It
@@ -187,19 +187,24 @@ then on the page always shows the frozen result.
 
 ## Running an election: checklist
 
-1. **Set up the election** in `ui/lib/elections/elections.ts`. A placeholder
-   for the Executive Branch election already exists (`executive-branch-2027`,
-   vote number 4). It stays `published: false` until it is ready, so it only
-   appears on local and preview builds.
+1. **Set up the election** in `ui/lib/elections/elections.ts` with a new
+   vote number. Vote numbers 4 and 5 are used by the 2026 Executive Lead
+   votes. Keep it `published: false` until it is ready, so it only appears on
+   local and preview builds.
 2. **Add the candidates.** Give each one a new ID number. Never reuse or
    change an ID once voting opens.
 3. **Set the dates.** Fill in `opensAt` and `closesAt` (ISO format, e.g.
    `2027-02-01T16:00:00Z`). MDP-149 ran for 10 days.
 4. **Publish.** Set `published: true` and deploy. Share
-   `moondao.com/elections/executive-branch-2027`.
+   `moondao.com/elections/<slug>`.
 5. **Close.** As soon as `closesAt` passes, run
-   `yarn snapshot:election executive-branch-2027`, commit the JSON file, set
+   `yarn snapshot:election <slug>`, commit the JSON file, set
    `closed: true`, and deploy.
+
+The 2026 Executive Lead votes run as two elections over the same window: a
+competitive race for the third seat (`executive-lead-third-seat-2026`, vote 4)
+and a "Pablo or None" confirmation of Pablo's second term
+(`executive-lead-confirmation-2026`, vote 5). Freeze both at close.
 6. **Announce** the result. The page shows the full round-by-round breakdown to
    link to.
 

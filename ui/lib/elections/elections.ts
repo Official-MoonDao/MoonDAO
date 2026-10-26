@@ -52,19 +52,64 @@ export const NONE_OF_THE_ABOVE_LABEL = 'None of the above'
 
 export const ELECTIONS: Election[] = [
   {
-    slug: 'executive-branch-2027',
+    slug: 'executive-lead-third-seat-2026',
     voteId: 4,
-    title: 'Executive Branch Election',
-    seat: 'Executive Lead',
+    title: 'Executive Lead Election: Third Seat',
+    seat: 'the third Executive Lead seat',
     summary:
-      'The Member House elects the next Executive Lead by ranked-choice vote. Rank the candidates in order of preference. If no candidate has a majority, the last-place candidate is eliminated and those ballots move to each voter’s next choice until someone does. If “None of the above” wins, the seat stays vacant.',
-    opensAt: null,
-    closesAt: null,
+      'The Member House elects a third Executive Lead to a two-year term, completing last year’s unfilled cycle. Rank the candidates in order of preference. If no candidate has a majority, the last-place candidate is eliminated and those ballots move to each voter’s next choice until someone does. If “None of the above” wins, the seat stays vacant. Pablo Moncada-Larrotiz’s second-term confirmation is voted on separately, at the same time.',
+    opensAt: '2026-10-27T16:00:00Z',
+    closesAt: '2026-11-06T16:00:00Z',
     closed: false,
-    published: false,
+    published: true,
     includeNone: true,
-    candidates: [],
-    links: [{ label: 'MoonDAO Constitution', url: 'https://docs.moondao.com/Governance/Constitution' }],
+    candidates: [
+      {
+        id: 1,
+        name: 'Trent “Moonshot” Tresch',
+        handle: '@Moonshot',
+        bio: 'Over ten years in the aerospace industry, from spacesuits to stratospheric balloons. Founding director of the University of Arizona’s Center for Human Space Exploration. Platform: make MoonDAO cash positive through a DAO-owned for-profit arm, technology development, and media and brand deals, while cutting spending.',
+        platformUrl: 'https://en.wikipedia.org/wiki/Trent_Tresch',
+      },
+      {
+        id: 2,
+        name: 'AnastasiaAdAstra',
+        handle: '@AnastasiaAdAstra',
+        bio: 'Member since MoonDAO’s early days, with an organizing and space background. Part-time. Platform: win grants and outside funding for hardware projects, set up joint research with universities, and grow Citizenship through career benefits and partner networks.',
+      },
+    ],
+    links: [
+      { label: 'MoonDAO Constitution', url: 'https://docs.moondao.com/Governance/Constitution' },
+      {
+        label: 'About the third seat',
+        url: 'https://docs.google.com/document/d/1Y1fXj0swsoSaHCKx_s2kGZXd9m8F50JCe92MWxfjkYA/edit?tab=t.0',
+      },
+      { label: 'Pablo’s confirmation vote', url: '/elections/executive-lead-confirmation-2026' },
+    ],
+  },
+  {
+    slug: 'executive-lead-confirmation-2026',
+    voteId: 5,
+    title: 'Executive Lead Confirmation: Pablo Moncada-Larrotiz',
+    seat: 'Pablo Moncada-Larrotiz’s second term as Executive Lead',
+    summary:
+      'The Member House votes on whether to confirm Pablo Moncada-Larrotiz for a second and final term as Executive Lead. The ballot is Pablo or “None of the above”. If “None of the above” wins, the seat stays vacant. The race for the open third seat is voted on separately, at the same time.',
+    opensAt: '2026-10-27T16:00:00Z',
+    closesAt: '2026-11-06T16:00:00Z',
+    closed: false,
+    published: true,
+    includeNone: true,
+    candidates: [
+      {
+        id: 1,
+        name: 'Pablo Moncada-Larrotiz',
+        bio: 'MoonDAO founder and current Executive Lead, finishing his first term. The Constitution allows two terms.',
+      },
+    ],
+    links: [
+      { label: 'MoonDAO Constitution', url: 'https://docs.moondao.com/Governance/Constitution' },
+      { label: 'Third seat election', url: '/elections/executive-lead-third-seat-2026' },
+    ],
   },
   // Demo elections for preview deploys. Never published.
   {
