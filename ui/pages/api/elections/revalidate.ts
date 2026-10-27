@@ -1,5 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { electionPhase, getElection, listBuildableElections } from '@/lib/elections/elections'
+import {
+  electionPhase,
+  getElection,
+  listBuildableElections,
+  pagesShowingElection,
+} from '@/lib/elections/elections'
 
 // Public, so voters see their ballot in the list right away instead of
 // waiting out the 60s ISR window. Limited to open elections and throttled
@@ -28,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   lastRun.set(slug, now)
 
   try {
-    await res.revalidate(`/elections/${slug}`)
+    await Promise.all(pagesShowingElection(slug).map((s) => res.revalidate(`/elections/${s}`)))
     return res.json({ revalidated: true })
   } catch {
     return res.status(500).json({ message: 'Error revalidating' })
