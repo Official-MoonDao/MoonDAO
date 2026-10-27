@@ -72,7 +72,7 @@ export async function lmsrNetCost(
   )
 }
 
-// The 1% market-maker fee the LMSR charges on top of net cost.
+// The market-maker fee (1% or 2%, read from the market) the LMSR charges on top of net cost.
 export async function lmsrMarketFee(
   lmsr: any,
   netWei: bigint,

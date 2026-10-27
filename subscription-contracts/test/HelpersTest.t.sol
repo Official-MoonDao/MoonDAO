@@ -146,7 +146,8 @@ contract HelpersTest is Test {
         LaunchPadPayHook payHook = new LaunchPadPayHook(
             goal, deadline, refundPeriod,
             address(0xBEEF), address(0xCAFE),
-            ownerAddr
+            ownerAddr,
+            address(0)
         );
         LaunchPadApprovalHook approvalHook = new LaunchPadApprovalHook(
             goal, deadline, refundPeriod,

@@ -424,8 +424,8 @@ export async function getUncollectedRevenue(
         `${treasuryPct}% cash ${usdPlain(treasuryUSD)} + ` +
         `${liquidityPct}% liquidity ${usdPlain(liquidityUSD)}` +
         (mission.kind === 'receivable'
-          ? '. Earned — splits on the payout call.'
-          : '. Collected if the mission closes; refunded otherwise.'),
+          ? '. Earned — live missions still split this on the payout call.'
+          : '. Live missions collect this if they close. Missions on the contribution-fee creator have already sent the cash fee, and a refund does not return it.'),
       available: true,
     })
   }
@@ -476,7 +476,8 @@ export async function getUncollectedRevenue(
       kind: 'receivable',
       eth: 0,
       usd: 0,
-      detail: '1% LMSR fees sitting on the market contract until someone calls sweepFees.',
+      detail:
+        'LMSR trade fees sitting on the market as WETH until the owner calls withdrawFees and sends them to the treasury. New markets charge 2%; earlier markets stay at 1%.',
       available: true,
     })
   }
@@ -503,7 +504,7 @@ export async function getUncollectedRevenue(
     liquidityUSD: projectedLiquidityUSD,
     lines,
     missionsConsidered,
-    note: `${totalPct}% of every launchpad-funded raise goes to MoonDAO: ${treasuryPct}% as cash on the payout call, ${liquidityPct}% as MoonDAO-owned Uniswap liquidity that must be withdrawn before it can be spent. Projected, not booked — it is excluded from revenue and from runway.`,
+    note: `${totalPct}% of every launchpad-funded raise goes to MoonDAO: ${treasuryPct}% as cash and ${liquidityPct}% as MoonDAO-owned Uniswap liquidity that must be withdrawn before it can be spent. Missions already live send the cash share on the payout call. Missions created by the contribution-fee creator send it when the contribution arrives, and a refund does not return it. Projected, not booked — it is excluded from revenue and from runway.`,
     warnings,
   }
 }

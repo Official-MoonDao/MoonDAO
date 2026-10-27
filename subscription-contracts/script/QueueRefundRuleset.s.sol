@@ -84,7 +84,8 @@ contract QueueRefundRulesetScript is Script, Config {
             newRefundPeriod,
             JB_V5_TERMINAL_STORE,
             JB_V5_RULESETS,
-            deployer // owner = deployer (team multisig)
+            deployer, // owner = deployer (team multisig)
+            address(0) // replacement hook for an existing mission: do not start the new fee
         );
         console.log("New PayHook deployed:", address(newPayHook));
 

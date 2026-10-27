@@ -85,6 +85,7 @@ contract MyScript is Script, Config {
         vm.stopBroadcast();
 
         console.log("New MissionCreator deployed:", address(missionCreator));
+        console.log("TreasuryPayHook:", address(missionCreator.treasuryPayHook()));
         if (nextOwner != address(0) && vm.envOr("DEPRIZE_TRANSFER_OWNERSHIP", false)) {
             console.log("  ownership transferred to:", nextOwner);
         } else {

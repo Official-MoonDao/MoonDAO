@@ -59,7 +59,9 @@ contract StockLmsrForkTest is Test, Config {
     address bob = address(0xB0B);
 
     uint256 constant SLOTS = 3;
-    uint64 constant FEE = 1e16;
+    // 2% — the rate for markets created on this schedule. ETH conservation
+    // below does not assume the rate; it has to hold to the wei at 2% too.
+    uint64 constant FEE = 2e16;
     uint256 internal constant COMPLIANCE_PK = uint256(keccak256("deprize-compliance-signer"));
     bool enabled;
 
@@ -275,7 +277,7 @@ contract StockLmsrForkTest is Test, Config {
         assertEq(terminal.totalReceived(), spent - cost, "5% slice reached Juicebox");
         assertEq(spent, terminal.lastValue() + cost, "bettor paid slice + fee-inclusive cost, nothing more");
 
-        // Only the 1% fee stays standalone in the market; principal is escrowed in the CTF.
+        // Only the market fee stays standalone in the market; principal is escrowed in the CTF.
         uint256 feePortion = weth.balanceOf(market) - marketWethBefore;
         assertEq(feePortion, ILMSRMarketMaker(market).calcMarketFee(cost - feePortion), "standalone WETH == fee");
 
@@ -312,7 +314,7 @@ contract StockLmsrForkTest is Test, Config {
         _betVia(market, deprizeId, bob, 0, 0.25 ether);
 
         DePrizeSweepFees.Plan memory p =
-            sweepPlanner.plan(registry, ILMSRMarketMaker(market), weth, deprizeId, owner);
+            sweepPlanner.plan(registry, ILMSRMarketMaker(market), weth, deprizeId, owner, address(0));
         assertTrue(p.toPrizePool, "live DePrize routes fees to the pool");
         assertGt(p.amount, 0, "fees accrued");
 
@@ -356,7 +358,7 @@ contract StockLmsrForkTest is Test, Config {
 
         ILMSRMarketMaker(market).close();
         uint256 fees = ILMSRMarketMaker(market).withdrawFees();
-        assertGt(fees, 0, "1% fees accrued");
+        assertGt(fees, 0, "trade fees accrued");
         assertEq(weth.balanceOf(market), 0, "market drained");
 
         uint256[] memory indexSets = new uint256[](SLOTS);

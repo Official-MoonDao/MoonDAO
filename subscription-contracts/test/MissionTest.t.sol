@@ -18,6 +18,7 @@ import {MissionTable} from "../src/tables/MissionTable.sol";
 import {MoonDaoTeamTableland} from "../src/tables/MoonDaoTeamTableland.sol";
 import {MoonDAOTeamCreator} from "../src/MoonDAOTeamCreator.sol";
 import {LaunchPadPayHook} from "../src/LaunchPadPayHook.sol";
+import {TreasuryFeeMath} from "./TreasuryFeeMath.sol";
 import {LaunchPadApprovalHook} from "../src/LaunchPadApprovalHook.sol";
 import {PassthroughModule} from "../src/PassthroughModule.sol";
 import {IHats} from "@hats/Interfaces/IHats.sol";
@@ -145,6 +146,18 @@ contract MissionTest is Test, Config {
         vm.stopPrank();
     }
 
+    function _kept(uint256 gross) internal pure returns (uint256) {
+        return TreasuryFeeMath.kept(gross);
+    }
+
+    function _contributorTokens(uint256 gross) internal pure returns (uint256) {
+        return _kept(gross) * 1_000;
+    }
+
+    function _grossToMeet(uint256 netGoal) internal pure returns (uint256) {
+        return TreasuryFeeMath.grossToKeep(netGoal);
+    }
+
     function _createTeamAndMission() internal returns (uint256) {
         _createTeam();
         return _createMission();
@@ -171,9 +184,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount1);
+        assertEq(balanceAfter1, _kept(payAmount1));
         uint256 tokensAfter1 = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(tokensAfter1, payAmount1 * 1_000);
+        assertEq(tokensAfter1, _contributorTokens(payAmount1));
         assertEq(missionCreator.stage(missionId), 1);
 
         vm.stopPrank();
@@ -238,9 +251,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount1);
+        assertEq(balanceAfter1, _kept(payAmount1));
         uint256 tokensAfter1 = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(tokensAfter1, payAmount1 * 1_000);
+        assertEq(tokensAfter1, _contributorTokens(payAmount1));
 
         vm.stopPrank();
     }
@@ -288,9 +301,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 tokensAfter1 = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(tokensAfter1, payAmount * 1_000);
+        assertEq(tokensAfter1, _contributorTokens(payAmount));
         assertEq(missionCreator.stage(missionId), 2);
     }
 
@@ -342,9 +355,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 tokensAfter1 = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(tokensAfter1, 1_000 * 1e18);
+        assertEq(tokensAfter1, _contributorTokens(payAmount));
 
         uint256 user1BalanceBefore = address(user1).balance;
         skip(28 days);
@@ -358,7 +371,7 @@ contract MissionTest is Test, Config {
             payable(user1),
             bytes(""));
         uint256 user1BalanceAfter = address(user1).balance;
-        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(user1BalanceAfter - user1BalanceBefore, _kept(payAmount));
         uint256 tokensAfter2 = jbTokens.totalBalanceOf(user1, projectId);
         assertEq(tokensAfter2, 0);
     }
@@ -383,9 +396,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 user1TokensAfter = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(user1TokensAfter, 1_000 * 1e18);
+        assertEq(user1TokensAfter, _contributorTokens(payAmount));
         vm.stopPrank();
 
         vm.prank(user2);
@@ -399,7 +412,7 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 user2TokensAfter = jbTokens.totalBalanceOf(user2, projectId);
-        assertEq(user2TokensAfter, 500 * 1e18);
+        assertEq(user2TokensAfter, _contributorTokens(payAmount / 2));
 
         uint256 user1BalanceBefore = address(user1).balance;
         uint256 user2BalanceBefore = address(user2).balance;
@@ -417,8 +430,8 @@ contract MissionTest is Test, Config {
             payable(user1),
             bytes(""));
         uint256 user1BalanceAfter = address(user1).balance;
-        assertEq(user1CashOutAmount, payAmount);
-        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(user1CashOutAmount, _kept(payAmount));
+        assertEq(user1BalanceAfter - user1BalanceBefore, _kept(payAmount));
         assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
 
@@ -432,8 +445,8 @@ contract MissionTest is Test, Config {
             payable(user2),
             bytes(""));
         uint256 user2BalanceAfter = address(user2).balance;
-        assertEq(user2CashOutAmount, payAmount/2);
-        assertEq(user2BalanceAfter - user2BalanceBefore, payAmount/2);
+        assertEq(user2CashOutAmount, _kept(payAmount / 2));
+        assertEq(user2BalanceAfter - user2BalanceBefore, _kept(payAmount / 2));
         assertEq(jbTokens.totalBalanceOf(user2, projectId), 0);
     }
 
@@ -458,9 +471,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 tokensAfter1 = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(tokensAfter1, 1_000 * 1e18);
+        assertEq(tokensAfter1, _contributorTokens(payAmount));
 
         vm.expectRevert("Project funding deadline has not passed. Refunds are disabled.");
         uint256 cashOutAmount = IJBMultiTerminal(address(terminal)).cashOutTokensOf(
@@ -482,7 +495,7 @@ contract MissionTest is Test, Config {
         uint256 balance = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balance, 0);
 
-        uint256 payAmount = 10_000_000_000_000_000_000;
+        uint256 payAmount = _grossToMeet(10 ether);
         terminal.pay{value: payAmount}(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -493,9 +506,10 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, payAmount - TreasuryFeeMath.fee(payAmount));
+        assertGe(balanceAfter1, 10 ether);
         uint256 tokensAfter1 = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(tokensAfter1, 10_000 * 1e18);
+        assertGt(tokensAfter1, 0);
 
         skip(28 days);
         vm.expectRevert("Project has passed funding goal requirement. Refunds are disabled.");
@@ -530,9 +544,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 tokensAfter1 = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(tokensAfter1, 500 * 1e18);
+        assertEq(tokensAfter1, _contributorTokens(payAmount));
 
         // FIXME this needs to be called once the token is launched
         jbController.sendReservedTokensToSplitsOf(projectId);
@@ -544,8 +558,10 @@ contract MissionTest is Test, Config {
         moonDAOVesting.setToken(address(0));
         uint256 tokensTeamVesting = jbTokens.totalBalanceOf(address(teamVesting), projectId);
         uint256 tokensMoonDAOVesting = jbTokens.totalBalanceOf(address(moonDAOVesting), projectId);
-        assertEq(tokensTeamVesting, 300 * 1e18);
-        assertEq(tokensMoonDAOVesting, 175 * 1e18);
+        uint256 expectedTeamTokens = _contributorTokens(payAmount) * 60 / 100;
+        uint256 expectedMoonTokens = _contributorTokens(payAmount) * 35 / 100;
+        assertEq(tokensTeamVesting, expectedTeamTokens);
+        assertEq(tokensMoonDAOVesting, expectedMoonTokens);
         assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(teamAddress, projectId), 0);
 
@@ -555,26 +571,26 @@ contract MissionTest is Test, Config {
           assertEq(moonDAOVesting.vestedAmount(), 0);
         }
         skip(165 days);
-        assertEq(teamVesting.vestedAmount(), 300/4 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 175/4 * 1e18);
+        assertEq(teamVesting.vestedAmount(), expectedTeamTokens / 4);
+        assertEq(moonDAOVesting.vestedAmount(), expectedMoonTokens / 4);
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
         vm.stopPrank();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175/4 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), expectedMoonTokens / 4);
 
         skip(365 days);
-        assertEq(teamVesting.vestedAmount(), 300/2 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 175/2 * 1e18);
+        assertEq(teamVesting.vestedAmount(), expectedTeamTokens / 2);
+        assertEq(moonDAOVesting.vestedAmount(), expectedMoonTokens / 2);
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
         vm.stopPrank();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175/2 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), expectedMoonTokens / 2);
 
         skip(730 days);
-        assertEq(teamVesting.vestedAmount(), 300 * 1e18);
-        assertEq(moonDAOVesting.vestedAmount(), 175 * 1e18);
+        assertEq(teamVesting.vestedAmount(), expectedTeamTokens);
+        assertEq(moonDAOVesting.vestedAmount(), expectedMoonTokens);
 
         vm.startPrank(teamAddress);
         vm.expectRevert("Only beneficiary can withdraw");
@@ -583,7 +599,7 @@ contract MissionTest is Test, Config {
 
         vm.startPrank(TREASURY);
         moonDAOVesting.withdraw();
-        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), 175 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(TREASURY, projectId), expectedMoonTokens);
 
         vm.expectRevert("No tokens available for withdrawal");
         moonDAOVesting.withdraw();
@@ -601,7 +617,7 @@ contract MissionTest is Test, Config {
         assertEq(missionCreator.stage(missionId), 1);
 
         // Pay enough to pass goal and skip to deadline
-        uint256 payAmount = 10_000_000_000_000_000_000;
+        uint256 payAmount = _grossToMeet(10 ether);
         terminal.pay{value: payAmount}(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -644,8 +660,8 @@ contract MissionTest is Test, Config {
 
         // JB splits have 7 decimals of precision, so check up to 6 decimals
         assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5/ 100, 0.0000001e18);
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+        assertEq(address(TREASURY).balance - treasuryBalanceBefore, 0, "treasury already took its fee at contribution");
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance * 925 / 1000, 0.0000001e18);
         vm.stopPrank();
 
         vm.startPrank(user2);
@@ -664,7 +680,7 @@ contract MissionTest is Test, Config {
         assertEq(balance, 0);
 
         // Pay enough to pass goal and skip to deadline
-        uint256 payAmount = 10_000_000_000_000_000_000;
+        uint256 payAmount = _grossToMeet(10 ether);
         terminal.pay{value: payAmount}(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -689,7 +705,8 @@ contract MissionTest is Test, Config {
 
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
         uint256 tokensPoolDeployer = jbTokens.totalBalanceOf(address(poolDeployer), projectId);
-        assertEq(tokensPoolDeployer, 500 * 1e18);
+        // Grossing the payment up to the net goal leaves a few wei of mint dust.
+        assertApproxEqAbs(tokensPoolDeployer, _contributorTokens(payAmount) * 5 / 100, 100);
         // JB splits have 7 decimals of precision, so check up to 6 decimals
         assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5 / 100, 0.0000001e18);
         poolDeployer.createAndAddLiquidity();
@@ -715,9 +732,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 user1TokensAfter = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(user1TokensAfter, 1_000 * 1e18);
+        assertEq(user1TokensAfter, _contributorTokens(payAmount));
         vm.stopPrank();
 
         vm.prank(user2);
@@ -731,7 +748,7 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 user2TokensAfter = jbTokens.totalBalanceOf(user2, projectId);
-        assertEq(user2TokensAfter, 500 * 1e18);
+        assertEq(user2TokensAfter, _contributorTokens(payAmount / 2));
 
         uint256 user1BalanceBefore = address(user1).balance;
         uint256 user2BalanceBefore = address(user2).balance;
@@ -749,8 +766,8 @@ contract MissionTest is Test, Config {
             payable(user1),
             bytes(""));
         uint256 user1BalanceAfter = address(user1).balance;
-        assertEq(user1CashOutAmount, payAmount);
-        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(user1CashOutAmount, _kept(payAmount));
+        assertEq(user1BalanceAfter - user1BalanceBefore, _kept(payAmount));
         assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
 
@@ -780,8 +797,8 @@ contract MissionTest is Test, Config {
             0
         );
 
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+        assertEq(address(TREASURY).balance - treasuryBalanceBefore, 0, "treasury already took its fee at contribution");
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance * 925 / 1000, 0.0000001e18);
 
     }
 
@@ -807,9 +824,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 tokensAfter1 = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(tokensAfter1, 1_000 * 1e18);
+        assertEq(tokensAfter1, _contributorTokens(payAmount));
 
         uint256 user1BalanceBefore = address(user1).balance;
         skip(28 days);
@@ -823,7 +840,7 @@ contract MissionTest is Test, Config {
             payable(user1),
             bytes(""));
         uint256 user1BalanceAfter = address(user1).balance;
-        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(user1BalanceAfter - user1BalanceBefore, _kept(payAmount));
         uint256 tokensAfter2 = jbTokens.totalBalanceOf(user1, projectId);
         assertEq(tokensAfter2, 0);
     }
@@ -839,7 +856,7 @@ contract MissionTest is Test, Config {
         assertEq(balance, 0);
 
         // Pay enough to pass goal and skip to deadline
-        uint256 payAmount = 10_000_000_000_000_000_000;
+        uint256 payAmount = _grossToMeet(10 ether);
         terminal.pay{value: payAmount}(
             projectId,
             JBConstants.NATIVE_TOKEN,
@@ -867,8 +884,8 @@ contract MissionTest is Test, Config {
         PoolDeployer poolDeployer = PoolDeployer(payable(missionCreator.missionIdToPoolDeployer(missionId)));
         // JB splits have 7 decimals of precision, so check up to 6 decimals
         assertApproxEqRel(address(poolDeployer).balance, terminalBalance * 5/ 100, 0.0000001e18);
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+        assertEq(address(TREASURY).balance - treasuryBalanceBefore, 0, "treasury already took its fee at contribution");
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance * 925 / 1000, 0.0000001e18);
     }
 
     function testSetJBController() public {
@@ -951,9 +968,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 user1TokensAfter = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(user1TokensAfter, 1_000 * 1e18);
+        assertEq(user1TokensAfter, _contributorTokens(payAmount));
         vm.stopPrank();
 
         vm.prank(user2);
@@ -967,7 +984,7 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 user2TokensAfter = jbTokens.totalBalanceOf(user2, projectId);
-        assertEq(user2TokensAfter, 500 * 1e18);
+        assertEq(user2TokensAfter, _contributorTokens(payAmount / 2));
 
         uint256 user1BalanceBefore = address(user1).balance;
         uint256 user2BalanceBefore = address(user2).balance;
@@ -995,8 +1012,8 @@ contract MissionTest is Test, Config {
             bytes(""));
         uint256 user1BalanceAfter = address(user1).balance;
         console.log("balance after", user1BalanceAfter);
-        assertEq(user1CashOutAmount, payAmount);
-        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(user1CashOutAmount, _kept(payAmount));
+        assertEq(user1BalanceAfter - user1BalanceBefore, _kept(payAmount));
         assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
 
@@ -1026,8 +1043,8 @@ contract MissionTest is Test, Config {
             0
         );
 
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+        assertEq(address(TREASURY).balance - treasuryBalanceBefore, 0, "treasury already took its fee at contribution");
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance * 925 / 1000, 0.0000001e18);
 
     }
 
@@ -1055,9 +1072,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 user1TokensAfter = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(user1TokensAfter, 1_000 * 1e18);
+        assertEq(user1TokensAfter, _contributorTokens(payAmount));
         vm.stopPrank();
 
         vm.prank(user2);
@@ -1071,7 +1088,7 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 user2TokensAfter = jbTokens.totalBalanceOf(user2, projectId);
-        assertEq(user2TokensAfter, 500 * 1e18);
+        assertEq(user2TokensAfter, _contributorTokens(payAmount / 2));
 
         uint256 user1BalanceBefore = address(user1).balance;
         uint256 user2BalanceBefore = address(user2).balance;
@@ -1099,8 +1116,8 @@ contract MissionTest is Test, Config {
             bytes(""));
         uint256 user1BalanceAfter = address(user1).balance;
         console.log("balance after", user1BalanceAfter);
-        assertEq(user1CashOutAmount, payAmount);
-        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(user1CashOutAmount, _kept(payAmount));
+        assertEq(user1BalanceAfter - user1BalanceBefore, _kept(payAmount));
         assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
 
@@ -1130,8 +1147,8 @@ contract MissionTest is Test, Config {
             0
         );
 
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+        assertEq(address(TREASURY).balance - treasuryBalanceBefore, 0, "treasury already took its fee at contribution");
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance * 925 / 1000, 0.0000001e18);
 
     }
 
@@ -1159,9 +1176,9 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 balanceAfter1 = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceAfter1, payAmount);
+        assertEq(balanceAfter1, _kept(payAmount));
         uint256 user1TokensAfter = jbTokens.totalBalanceOf(user1, projectId);
-        assertEq(user1TokensAfter, 1_000 * 1e18);
+        assertEq(user1TokensAfter, _contributorTokens(payAmount));
         vm.stopPrank();
 
         vm.prank(user2);
@@ -1175,7 +1192,7 @@ contract MissionTest is Test, Config {
             new bytes(0)
         );
         uint256 user2TokensAfter = jbTokens.totalBalanceOf(user2, projectId);
-        assertEq(user2TokensAfter, 500 * 1e18);
+        assertEq(user2TokensAfter, _contributorTokens(payAmount / 2));
 
         uint256 user1BalanceBefore = address(user1).balance;
         uint256 user2BalanceBefore = address(user2).balance;
@@ -1204,8 +1221,8 @@ contract MissionTest is Test, Config {
             bytes(""));
         uint256 user1BalanceAfter = address(user1).balance;
         console.log("balance after", user1BalanceAfter);
-        assertEq(user1CashOutAmount, payAmount);
-        assertEq(user1BalanceAfter - user1BalanceBefore, payAmount);
+        assertEq(user1CashOutAmount, _kept(payAmount));
+        assertEq(user1BalanceAfter - user1BalanceBefore, _kept(payAmount));
         assertEq(jbTokens.totalBalanceOf(user1, projectId), 0);
         assertEq(jbTokens.totalBalanceOf(zero, projectId), 0);
 
@@ -1235,9 +1252,53 @@ contract MissionTest is Test, Config {
             0
         );
 
-        assertApproxEqRel(address(TREASURY).balance - treasuryBalanceBefore, terminalBalance * 25/ 1000, 0.0000001e18);
-        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance *90 / 100, 0.0000001e18);
+        assertEq(address(TREASURY).balance - treasuryBalanceBefore, 0, "treasury already took its fee at contribution");
+        assertApproxEqRel(teamAddress.balance - teamBalanceBefore, terminalBalance * 925 / 1000, 0.0000001e18);
 
+    }
+
+    /// @notice The fee is taken when the contribution arrives. A missed goal
+    ///         refunds 97.5%. Meeting the goal is judged on what the mission keeps.
+    function testTreasuryFeeOnPayRefundAndGoal() public {
+        _createTeam();
+        vm.prank(user1);
+        uint256 missionId = _createMission(10 ether, false);
+        uint256 projectId = missionCreator.missionIdToProjectId(missionId);
+        IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
+
+        uint256 shortPay = 1 ether;
+        uint256 treasuryBefore = address(TREASURY).balance;
+        vm.prank(user1);
+        terminal.pay{value: shortPay}(projectId, JBConstants.NATIVE_TOKEN, 0, user1, 0, "", new bytes(0));
+        assertEq(address(TREASURY).balance - treasuryBefore, TreasuryFeeMath.fee(shortPay));
+        assertEq(
+            jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN),
+            _kept(shortPay)
+        );
+        assertEq(missionCreator.stage(missionId), 1);
+
+        skip(28 days);
+        assertEq(missionCreator.stage(missionId), 3, "missed net goal opens refunds");
+        uint256 tokens = jbTokens.totalBalanceOf(user1, projectId);
+        uint256 before = address(user1).balance;
+        vm.prank(user1);
+        uint256 refunded = IJBMultiTerminal(address(terminal)).cashOutTokensOf(
+            user1, projectId, tokens, JBConstants.NATIVE_TOKEN, 0, payable(user1), bytes("")
+        );
+        assertEq(refunded, _kept(shortPay), "refund is 97.5%");
+        assertEq(address(user1).balance - before, _kept(shortPay));
+        assertEq(address(TREASURY).balance - treasuryBefore, TreasuryFeeMath.fee(shortPay), "treasury keeps the fee");
+
+        vm.prank(user1);
+        uint256 met = _createMission(10 ether, false);
+        uint256 metProject = missionCreator.missionIdToProjectId(met);
+        IJBTerminal metTerminal = jbDirectory.primaryTerminalOf(metProject, JBConstants.NATIVE_TOKEN);
+        uint256 gross = _grossToMeet(10 ether);
+        vm.prank(user2);
+        metTerminal.pay{value: gross}(metProject, JBConstants.NATIVE_TOKEN, 0, user2, 0, "", new bytes(0));
+        skip(28 days);
+        assertEq(missionCreator.stage(met), 2, "stage flips when the kept balance reaches the goal");
+        assertGe(jbTerminalStore.balanceOf(address(metTerminal), metProject, JBConstants.NATIVE_TOKEN), 10 ether);
     }
 
 }

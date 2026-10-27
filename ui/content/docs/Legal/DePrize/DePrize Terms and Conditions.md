@@ -73,7 +73,7 @@ Last Updated: October 22, 2026
 
 **"Outcome Token"** means an ERC-1155 conditional token on the CTF representing a claim on Collateral if a specified outcome is reported.
 
-**"Prize"**, **"Prize Pool"**, and **"Prize-Eligible Winner"** have the meanings given in the Prize Rules. In summary, the Prize Pool is the Juicebox/Launchpad project balance funded by campaign contributions, the 5% prize contribution described in Section 10, and Market fees while a DePrize is live; the Prize is the amount disbursed from the Prize Pool to a Prize-Eligible Winner.
+**"Prize"**, **"Prize Pool"**, and **"Prize-Eligible Winner"** have the meanings given in the Prize Rules. In summary, the Prize Pool is the Juicebox/Launchpad project balance funded by campaign contributions and the 5% prize contribution described in Section 10. Market fees are not added to the Prize Pool; they are paid to the MoonDAO treasury. The Prize is the amount disbursed from the Prize Pool to a Prize-Eligible Winner.
 
 **"Project Token"** means the governance token, if any, issued by the Launchpad project bound to a DePrize. Each DePrize is bound to one Launchpad mission, identified on-chain by that DePrize's Juicebox project id, and the Project Token is that mission's own token — so **which token you receive depends on the DePrize you bet in**, and it is not a DePrize-wide or MoonDAO-wide token. For DePrize #1, whose bound mission is the Overview Effect Flight, the Project Token is $OVERVIEW. The bet flow displays the applicable token before you confirm.
 
@@ -141,7 +141,7 @@ MoonDAO performs several roles in every DePrize. You acknowledge each of them an
 
 **5.2 Market maker and counterparty.** MoonDAO's treasury funds the liquidity of each Market. The market maker is the counterparty to every purchase and sale. **When participants in aggregate profit, MoonDAO's treasury bears the corresponding loss (up to a bounded maximum), and when participants in aggregate lose, MoonDAO's treasury gains.** MoonDAO therefore has a financial interest in the outcome of every Market.
 
-**5.3 Fee recipient.** The Market charges a fee (Section 11.1). While a DePrize is live, the fee is routed to the Prize Pool; once a DePrize reaches a terminal state, accrued fees are routed to the MoonDAO treasury.
+**5.3 Fee recipient.** The Market charges a fee (Section 11.1). Accrued fees are withdrawn by the market owner and sent to the MoonDAO treasury. They are not added to the Prize Pool, whether or not the DePrize is still live.
 
 **5.4 Oracle and judge.** The result of each Market is reported on-chain by the Oracle, a MoonDAO-controlled multi-signature account, following the governance process in Section 7.2 (ERC review, Senate vote, challenge window). The Senate is composed of MoonDAO governance-token holders, some of whom may have financial or other interests in a DePrize, in a Competitor, or in the Launchpad campaign that funds the Prize Pool. MoonDAO's conflict-of-interest and recusal policy is published in the Prize Rules.
 
@@ -225,7 +225,7 @@ MoonDAO performs several roles in every DePrize. You acknowledge each of them an
 
 ## 11. Fees, Slippage, Gas, Limits, and Responsible Participation
 
-**11.1 Market fee.** The Market charges a fee (currently approximately 1%) on the traded portion of each purchase and sale. It is embedded in the price and is not refundable.
+**11.1 Market fee.** The Market charges a fee on the traded portion of each purchase and sale. Markets created on or after 27 October 2026 charge 2%. Markets created before that date charge approximately 1%. The fee is fixed when the Market is created, is embedded in the price, and is not refundable. It is paid to the MoonDAO treasury and is not added to the Prize Pool.
 
 **11.2 Slippage.** Because prices are set by an automated market maker, larger orders move the price; the average price you pay or receive can differ from the displayed price. Displayed odds, payouts, and multiples are **estimates** and may change between quote and execution.
 

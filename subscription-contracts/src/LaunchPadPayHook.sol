@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {JBPayHookSpecification} from "@nana-core-v5/structs/JBPayHookSpecification.sol";
+import {IJBPayHook} from "@nana-core-v5/interfaces/IJBPayHook.sol";
 import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
 import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
 
@@ -23,6 +24,7 @@ import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
 //   • An Ownable toggle (setFundingTurnedOff) for the fundingTurnedOff flag.
 //   • The beforePayRecordedWith function manipulates the weight to change number
 //     of tokens received per ETH based on the funding status.
+//   • If `treasuryPayHook` is set, non-DePrize contributions forward 2.5% to it.
 //
 //   DePrize awareness (optional, backwards-compatible):
 //   • If `deprizeRegistry` is unset (address(0)) or the project has no DePrize
@@ -52,6 +54,9 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     ///         exactly as the original (non-DePrize) LaunchPadPayHook.
     IDePrizeRegistry public deprizeRegistry;
 
+    /// @notice Receives the 2.5% treasury fee. Zero disables the fee.
+    address public immutable treasuryPayHook;
+
     event DePrizeRegistrySet(address indexed registry);
 
     /// @notice Thrown when attempting to change `deprizeRegistry` after it has
@@ -64,13 +69,15 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
         address _jbRulesetAddress,
-        address owner
+        address owner,
+        address _treasuryPayHook
     ) Ownable(owner) {
         fundingGoal = _fundingGoal;
         deadline = _deadline;
         refundPeriod = _refundPeriod;
         jbTerminalStore = IJBTerminalStore(_jbTerminalStoreAddress);
         jbRulesets = IJBRulesets(_jbRulesetAddress);
+        treasuryPayHook = _treasuryPayHook;
     }
 
     function setFundingTurnedOff(bool _fundingTurnedOff) external onlyOwner {
@@ -141,6 +148,16 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
             revert("Project funding deadline has passed and funding goal requirement has not been met.");
         }
         weight = context.weight;
+        if (treasuryPayHook != address(0)) {
+            // Mint on the 97.5% that stays: cash-out sizes supply as balance * ruleset weight.
+            weight = (weight * 975) / 1000;
+            hookSpecifications = new JBPayHookSpecification[](1);
+            hookSpecifications[0] = JBPayHookSpecification({
+                hook: IJBPayHook(treasuryPayHook),
+                amount: (context.amount.value * 25) / 1000,
+                metadata: ""
+            });
+        }
     }
 
     function beforeCashOutRecordedWith(JBBeforeCashOutRecordedContext calldata context) external view override

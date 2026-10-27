@@ -73,7 +73,8 @@ contract QueueRefundViaExec is Script, Config {
             newRefundPeriod,
             JB_V5_TERMINAL_STORE,
             JB_V5_RULESETS,
-            deployer
+            deployer,
+            address(0)
         );
         console.log("New PayHook:", address(newPayHook));
 

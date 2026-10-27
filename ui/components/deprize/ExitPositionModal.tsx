@@ -177,13 +177,21 @@ export default function ExitPositionModal({
         {
         style: toastStyle,
       })
-      // Best-effort: sweep the sell's 1% market fee into the Juicebox prize
-      // pool (bets sweep on-chain via DePrizeMint; sells hit the LMSR directly,
+      // Best-effort: sweep the sell's market fee via the v1 fee router
+      // (bets sweep on-chain via DePrizeMint; sells hit the LMSR directly,
       // so the sweep is triggered here). sweepFees is permissionless — a
-      // rejected/failed sweep never affects the completed cash-out.
+      // rejected/failed sweep never affects the completed cash-out. v2
+      // markets are owned by the Safe, and the router reverts for them.
       const feeRouterAddress = DEPRIZE_FEE_ROUTER_ADDRESSES[getChainSlug(chain)] ?? ''
       if (feeRouterAddress) {
         try {
+          const marketOwner = await rpcRead<string>({
+            contract: lmsrRead,
+            method: 'owner' as string,
+            params: [],
+          })
+          if (marketOwner.toLowerCase() !== feeRouterAddress.toLowerCase())
+            throw new Error('market is not owned by the v1 fee router')
           const feeRouter = getContract({
             client,
             chain,

@@ -241,7 +241,7 @@ export async function getProgramRevenue(
       note: launchpadConfigured
         ? `${(LAUNCHPAD_TREASURY_FEE_RATE * 100).toFixed(
             1
-          )}% of each successful mission payout, split to the treasury when the mission owner sends payouts.`
+          )}% of each contribution on missions created by the contribution-fee creator, kept by the treasury if the mission refunds. Missions already live still send that share when the owner calls payout.`
         : 'No Juicebox terminal configured for this chain.',
     },
     deprize: {
@@ -249,7 +249,7 @@ export async function getProgramRevenue(
       totalUSD: classified.buckets.deprize.totalETH * ethPriceUSD,
       available: deprizeConfigured,
       note: deprizeConfigured
-        ? '1% LMSR trade fee, swept to the treasury once a competition is terminal.'
+        ? 'LMSR trade fee withdrawn to the market owner and sent to the treasury. Markets created on or after 27 October 2026 charge 2%. Earlier markets stay at 1%. The fee is not added to the prize pool.'
         : 'DePrize is testnet-only — no mainnet fee router deployed, so there is nothing to earn yet.',
     },
     unclassified: {
