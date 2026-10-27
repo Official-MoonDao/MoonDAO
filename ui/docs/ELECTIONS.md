@@ -205,6 +205,12 @@ The 2026 Executive Lead votes run as two elections over the same window: a
 competitive race for the third seat (`executive-lead-third-seat-2026`, vote 4)
 and a "Pablo or None" confirmation of Pablo's second term
 (`executive-lead-confirmation-2026`, vote 5). Freeze both at close.
+
+The third-seat election sets `companionSlug` to the confirmation election, so
+Pablo's ballot also appears below the third-seat race on the same page. The two
+stay separate votes with their own vote numbers, tallies and snapshots. The
+confirmation still has its own page too; both pages read and write the same
+ballots.
 6. **Announce** the result. The page shows the full round-by-round breakdown to
    link to.
 

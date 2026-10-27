@@ -44,6 +44,9 @@ export type Election = {
   includeNone: boolean
   candidates: ElectionCandidate[]
   links?: { label: string; url: string }[]
+  // Another election held alongside this one. Its ballot is shown below this
+  // one on the same page; it keeps its own voteId, tally and snapshot.
+  companionSlug?: string
 }
 
 // Ballot key for "None of the above". Candidate ids must be positive.
@@ -57,7 +60,7 @@ export const ELECTIONS: Election[] = [
     title: 'Executive Lead Election: Third Seat',
     seat: 'the third Executive Lead seat',
     summary:
-      'The Member House elects a third Executive Lead to a two-year term, completing last year’s unfilled cycle. Rank the candidates in order of preference. If no candidate has a majority, the last-place candidate is eliminated and those ballots move to each voter’s next choice until someone does. If “None of the above” wins, the seat stays vacant. Pablo Moncada-Larrotiz’s second-term confirmation is voted on separately, at the same time.',
+      'The Member House elects a third Executive Lead to a two-year term, completing last year’s unfilled cycle. Rank the candidates in order of preference. If no candidate has a majority, the last-place candidate is eliminated and those ballots move to each voter’s next choice until someone does. If “None of the above” wins, the seat stays vacant. Pablo Moncada-Larrotiz’s second-term confirmation is a separate ballot below.',
     opensAt: '2026-10-27T16:00:00Z',
     closesAt: '2026-11-06T16:00:00Z',
     closed: false,
@@ -84,8 +87,8 @@ export const ELECTIONS: Election[] = [
         label: 'About the third seat',
         url: 'https://docs.google.com/document/d/1Y1fXj0swsoSaHCKx_s2kGZXd9m8F50JCe92MWxfjkYA/edit?tab=t.0',
       },
-      { label: 'Pablo’s confirmation vote', url: '/elections/executive-lead-confirmation-2026' },
     ],
+    companionSlug: 'executive-lead-confirmation-2026',
   },
   {
     slug: 'executive-lead-confirmation-2026',
@@ -93,7 +96,7 @@ export const ELECTIONS: Election[] = [
     title: 'Executive Lead Confirmation: Pablo Moncada-Larrotiz',
     seat: 'Pablo Moncada-Larrotiz’s second term as Executive Lead',
     summary:
-      'The Member House votes on whether to confirm Pablo Moncada-Larrotiz for a second and final term as Executive Lead. The ballot is Pablo or “None of the above”. If “None of the above” wins, the seat stays vacant. The race for the open third seat is voted on separately, at the same time.',
+      'The Member House votes on whether to confirm Pablo Moncada-Larrotiz for a second and final term as Executive Lead. The ballot is Pablo or “None of the above”. If “None of the above” wins, the seat stays vacant.',
     opensAt: '2026-10-27T16:00:00Z',
     closesAt: '2026-11-06T16:00:00Z',
     closed: false,
@@ -168,6 +171,17 @@ export const ELECTIONS: Election[] = [
 
 export function getElection(slug: string): Election | null {
   return ELECTIONS.find((e) => e.slug === slug) ?? null
+}
+
+// Pages that show this election's ballot: its own, plus any election that
+// lists it as a companion.
+export function pagesShowingElection(slug: string): string[] {
+  return [
+    slug,
+    ...listBuildableElections()
+      .filter((e) => e.companionSlug === slug)
+      .map((e) => e.slug),
+  ]
 }
 
 // Vercel builds previews with NODE_ENV=production, so check VERCEL_ENV too.
