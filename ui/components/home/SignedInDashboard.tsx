@@ -98,6 +98,7 @@ import IPFSRenderer from '../layout/IPFSRenderer'
 import ProposalList from '../nance/ProposalList'
 import NewMarketplaceListings from '../subscription/NewMarketplaceListings'
 import DashboardActiveProjects from '../project/DashboardActiveProjects'
+import ActivitySummaryCard from './ActivitySummaryCard'
 import DashboardQuests from './DashboardQuests'
 import DiscordAnnouncements from './DiscordAnnouncements'
 import RecentActivity from './RecentActivity'
@@ -805,8 +806,13 @@ export default function SignedInDashboard({
 
         {/* ──────────────── ROW 1: Activity + Citizens/Teams + Wallet/Rewards ──────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 items-stretch">
-          {/* MIDDLE — Recent Activity (6 cols) */}
-          <div className="lg:col-span-6 order-2 lg:order-2 flex flex-col gap-4">
+          {/* MIDDLE — Recent Activity (6 cols). On desktop the column's content
+              is taken out of flow (absolute) so the side columns alone set the
+              row height; the activity panel fills that height and scrolls
+              inside. Otherwise expanding the feed or summary would stretch
+              the side columns' flex-1 boxes into empty space. */}
+          <div className="lg:col-span-6 order-2 lg:order-2 relative lg:min-h-[640px]">
+          <div className="flex flex-col gap-4 lg:absolute lg:inset-0">
             {/* Contribution CTA */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-3.5">
               <div>
@@ -823,7 +829,7 @@ export default function SignedInDashboard({
                 Submit Contribution
               </a>
             </div>
-            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1">
+            <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1 flex flex-col lg:min-h-0">
               <SectionHeader
                 title="Recent Activity"
                 subtitle="Latest happenings across the network"
@@ -836,16 +842,23 @@ export default function SignedInDashboard({
                   </div>
                 }
               />
-              <RecentActivity
-                newestCitizens={newestCitizens}
-                newestJobs={newestJobs}
-                newestListings={newestListings}
-                newestTeams={filteredTeams}
-                proposals={proposals}
-                missions={missions}
-                maxItems={13}
-              />
+              {/* Scrolls inside the panel at every width: on phones the
+                  columns stack, so a feed that kept growing with the page
+                  would push the rest of the dashboard out of reach. */}
+              <div className="max-h-[70vh] overflow-y-auto -mr-3 pr-3 lg:max-h-none lg:flex-1 lg:min-h-0">
+                <ActivitySummaryCard />
+                <RecentActivity
+                  newestCitizens={newestCitizens}
+                  newestJobs={newestJobs}
+                  newestListings={newestListings}
+                  newestTeams={filteredTeams}
+                  proposals={proposals}
+                  missions={missions}
+                  pageSize={15}
+                />
+              </div>
             </div>
+          </div>
           </div>
 
           {/* LEFT — New Citizens + Featured Teams (3 cols) */}
