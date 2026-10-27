@@ -6,9 +6,9 @@
  * sunset, and funding goal, and pass the same registry and mint.
  *
  * The deployer prepares the condition, creates and seeds the market, transfers
- * the market to the owner Safe, and creates the mission. register, setCondition,
- * setMarket, setDePrizeRegistry, and open are printed for that Safe. This
- * script does not open the prize.
+ * the market to the owner Safe, and creates the mission. Safe calls are printed
+ * and this script does not send them. register assigns the DePrize id, so
+ * setCondition, setMarket, and open are printed only after that id is bound.
  *
  *   node scripts/provision-touchdown-arbitrum-public.cjs scripts/races/touchdown-public.json
  *   CONFIRM=arbitrum node scripts/provision-touchdown-arbitrum-public.cjs scripts/races/<race>.json
@@ -101,9 +101,12 @@ function parseEvent(receipt, iface, name) {
   return undefined
 }
 
-// register assigns _nextId (starts at 1). count() is _nextId - 1, so the id it
-// will return is count + 1 until this project is bound. Id 0 is not a DePrize.
+// register does `deprizeId = _nextId++` when the Safe executes it. count() + 1 is
+// only the next id at the moment it is read, so a later register or supersede
+// makes setCondition, setMarket, and open hit a different DePrize. Encode those
+// calls only for the id already bound to this Juicebox project. Id 0 is not a DePrize.
 async function resolveDeprizeId(spec, row, savedPath) {
+  row.deprizeId = undefined
   if (!ethers.utils.isAddress(spec.registry || '') || !row.jbProjectId) return
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl())
   const network = await provider.getNetwork()
@@ -111,27 +114,29 @@ async function resolveDeprizeId(spec, row, savedPath) {
     throw new Error(`expected chain ${spec.chainId}, got ${network.chainId}`)
   const registry = new ethers.Contract(
     spec.registry,
-    [
-      'function count() view returns (uint256)',
-      'function deprizeIdByJBProject(uint256 jbProjectId) view returns (uint256)',
-    ],
+    ['function deprizeIdByJBProject(uint256 jbProjectId) view returns (uint256)'],
     provider
   )
   const bound = await registry.deprizeIdByJBProject(row.jbProjectId)
-  row.deprizeId = (bound.isZero() ? (await registry.count()).add(1) : bound).toString()
-  console.log(
-    'deprizeId',
-    row.deprizeId,
-    bound.isZero() ? '(register will assign this id)' : '(already registered)'
-  )
+  if (bound.isZero()) {
+    console.log(
+      'deprizeId',
+      'unassigned',
+      '(register assigns it; setCondition, setMarket, and open wait until then)'
+    )
+  } else {
+    row.deprizeId = bound.toString()
+    console.log('deprizeId', row.deprizeId, '(already registered)')
+  }
   if (!savedPath || !fs.existsSync(savedPath)) return
   const disk = JSON.parse(fs.readFileSync(savedPath, 'utf8'))
   if (disk.deprizeId === row.deprizeId) return
-  disk.deprizeId = row.deprizeId
+  if (row.deprizeId) disk.deprizeId = row.deprizeId
+  else delete disk.deprizeId
   fs.writeFileSync(savedPath, JSON.stringify(disk, null, 2))
 }
 
-function printSafeBatch(spec, row) {
+async function printSafeBatch(spec, row) {
   if (!ethers.utils.isAddress(spec.registry || '') || !row.conditionId) {
     console.log(
       '--- Safe batch. Open is last. Calldata is printed once registry, condition, and market exist. ---'
@@ -143,9 +148,6 @@ function printSafeBatch(spec, row) {
     console.log('5 registry.open(deprizeId)')
     return
   }
-  if (!row.deprizeId || row.deprizeId === '0') {
-    throw new Error('deprize id is unknown; refusing to encode id 0')
-  }
   const registry = new ethers.utils.Interface([
     'function register(uint256 jbProjectId, uint256[] teamIds, uint256 sunset) returns (uint256)',
     'function setCondition(uint256 deprizeId, bytes32 ctfConditionId)',
@@ -155,17 +157,29 @@ function printSafeBatch(spec, row) {
   const hook = new ethers.utils.Interface(['function setDePrizeRegistry(address registry)'])
   console.log('--- Safe batch. Open is last. Do not send it from this script. ---')
   console.log('owner', spec.owner)
-  console.log('deprizeId', row.deprizeId)
-  if (row.payHook) {
-    console.log('1', row.payHook, hook.encodeFunctionData('setDePrizeRegistry', [spec.registry]))
-  } else {
-    console.log('1 payHook.setDePrizeRegistry after createMission returns the hook')
+  // setDePrizeRegistry is write-once, and register reverts once this project is
+  // bound. Those two calls are the unbound batch. The bound batch is only the
+  // calls that must use the id register already assigned.
+  if (!row.deprizeId || row.deprizeId === '0') {
+    if (!row.jbProjectId) throw new Error('deprize id is unknown; refusing to encode id 0')
+    console.log(
+      'deprizeId',
+      'unassigned',
+      '(this batch is register only; re-run after it mines to encode setCondition, setMarket, and open)'
+    )
+    if (row.payHook) {
+      console.log('1', row.payHook, hook.encodeFunctionData('setDePrizeRegistry', [spec.registry]))
+    } else {
+      console.log('1 payHook.setDePrizeRegistry after createMission returns the hook')
+    }
+    console.log(
+      '2',
+      spec.registry,
+      registry.encodeFunctionData('register', [row.jbProjectId, spec.teamIds, row.sunset])
+    )
+    return
   }
-  console.log(
-    '2',
-    spec.registry,
-    registry.encodeFunctionData('register', [row.jbProjectId || '0', spec.teamIds, row.sunset])
-  )
+  console.log('deprizeId', row.deprizeId)
   console.log(
     '3',
     spec.registry,
@@ -219,7 +233,7 @@ async function main() {
   const confirm = process.env.CONFIRM
   if (confirm !== spec.confirm) {
     await resolveDeprizeId(spec, row, savedPath)
-    printSafeBatch(spec, row)
+    await printSafeBatch(spec, row)
     console.log(`dry run. Set CONFIRM=${spec.confirm} to broadcast the deployer steps.`)
     return
   }
@@ -349,7 +363,7 @@ async function main() {
   await resolveDeprizeId(spec, row, savedPath)
   fs.writeFileSync(savedPath, JSON.stringify(row, null, 2))
   console.log('saved', savedPath)
-  printSafeBatch(spec, row)
+  await printSafeBatch(spec, row)
   console.log('fee check passed:', fee.toString())
 }
 
