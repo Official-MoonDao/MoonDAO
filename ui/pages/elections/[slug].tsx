@@ -546,6 +546,57 @@ export default function ElectionPage({
   const opensLabel = formatDate(election.opensAt)
   const closesLabel = formatDate(election.closesAt)
 
+  const howItWorks = (
+    <div className={CARD}>
+      <h2 className={`${SECTION_TITLE} mb-3`}>How this election works</h2>
+      <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">{election.summary}</p>
+      <ol className="mt-4 space-y-2.5 text-xs sm:text-sm text-gray-300">
+        {[
+          'Rank the candidates in order of preference. You don’t have to rank everyone.',
+          'Each vote is weighted by the square root of the voter’s vMOONEY at the moment voting closes.',
+          'If no one has more than half the votes, the last-place choice is knocked out and those ballots move to each voter’s next choice. This repeats until someone wins.',
+          'Nothing is counted until voting closes. Ballots stay hidden until then, and voters can change theirs. Once everyone has voted, the runoff runs once on all ballots.',
+        ].map((step, i) => (
+          <li key={i} className="flex gap-3">
+            <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/10 text-[11px] font-semibold text-white flex items-center justify-center">
+              {i + 1}
+            </span>
+            <span className="leading-relaxed">{step}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-5">
+        <RankedChoiceExplainer />
+      </div>
+      <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+        <div className="bg-black/20 border border-white/10 rounded-lg p-3">
+          <dt className="text-gray-400">Voting opens</dt>
+          <dd className="text-white">{opensLabel ?? 'To be announced'}</dd>
+        </div>
+        <div className="bg-black/20 border border-white/10 rounded-lg p-3">
+          <dt className="text-gray-400">Voting closes</dt>
+          <dd className="text-white">{closesLabel ?? 'To be announced'}</dd>
+        </div>
+      </dl>
+      {election.links && election.links.length > 0 && (
+        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm">
+          {election.links.map((link) => (
+            <li key={link.url}>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-indigo-300 hover:underline"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+
   return (
     <div className="animate-fadeIn flex flex-col items-center">
       <Head title={election.title} description={election.summary} />
@@ -572,56 +623,7 @@ export default function ElectionPage({
                 {status}
                 <div className={MAIN_COLUMN}>
                   {ballot}
-                  <div className={CARD}>
-                    <h2 className={`${SECTION_TITLE} mb-3`}>How this election works</h2>
-                    <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">
-                      {election.summary}
-                    </p>
-                    <ol className="mt-4 space-y-2.5 text-xs sm:text-sm text-gray-300">
-                      {[
-                        'Rank the candidates in order of preference. You don’t have to rank everyone.',
-                        'Each vote is weighted by the square root of the voter’s vMOONEY at the moment voting closes.',
-                        'If no one has more than half the votes, the last-place choice is knocked out and those ballots move to each voter’s next choice. This repeats until someone wins.',
-                        'Nothing is counted until voting closes. Ballots stay hidden until then, and voters can change theirs. Once everyone has voted, the runoff runs once on all ballots.',
-                      ].map((step, i) => (
-                        <li key={i} className="flex gap-3">
-                          <span className="mt-0.5 h-5 w-5 shrink-0 rounded-full bg-white/10 text-[11px] font-semibold text-white flex items-center justify-center">
-                            {i + 1}
-                          </span>
-                          <span className="leading-relaxed">{step}</span>
-                        </li>
-                      ))}
-                    </ol>
-                    <div className="mt-5">
-                      <RankedChoiceExplainer />
-                    </div>
-                    <dl className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                      <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                        <dt className="text-gray-400">Voting opens</dt>
-                        <dd className="text-white">{opensLabel ?? 'To be announced'}</dd>
-                      </div>
-                      <div className="bg-black/20 border border-white/10 rounded-lg p-3">
-                        <dt className="text-gray-400">Voting closes</dt>
-                        <dd className="text-white">{closesLabel ?? 'To be announced'}</dd>
-                      </div>
-                    </dl>
-                    {election.links && election.links.length > 0 && (
-                      <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-sm">
-                        {election.links.map((link) => (
-                          <li key={link.url}>
-                            <a
-                              href={link.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-indigo-300 hover:underline"
-                            >
-                              {link.label}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                  {!companionElection && howItWorks}
                 </div>
                 {voters}
               </div>
@@ -656,6 +658,12 @@ export default function ElectionPage({
                 </section>
               )}
             </ElectionVote>
+          )}
+
+          {companionElection && (
+            <div className={`${GRID} mt-10 md:mt-14`}>
+              <div className={MAIN_COLUMN}>{howItWorks}</div>
+            </div>
           )}
         </ContentLayout>
       </Container>
