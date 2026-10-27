@@ -41,7 +41,8 @@ import { fetchTreasuryInternalTxs } from './canonicalRevenue'
 export const LAUNCHPAD_TREASURY_FEE_RATE = 0.025
 export const LAUNCHPAD_LIQUIDITY_RATE = 0.05
 /** Everything a funded mission routes to MoonDAO: 2.5% cash + 5% liquidity. */
-export const LAUNCHPAD_MOONDAO_RATE = LAUNCHPAD_TREASURY_FEE_RATE + LAUNCHPAD_LIQUIDITY_RATE
+export const LAUNCHPAD_MOONDAO_RATE =
+  LAUNCHPAD_TREASURY_FEE_RATE + LAUNCHPAD_LIQUIDITY_RATE
 
 export type StreamKey = 'citizen' | 'team' | 'launchpad' | 'deprize'
 

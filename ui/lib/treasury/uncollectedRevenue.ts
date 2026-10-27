@@ -41,7 +41,10 @@ import {
 import { getMissionOffChainCommittedUsd } from 'const/missionMilestones'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { getContract, readContract } from 'thirdweb'
-import { extractActiveDataHook, ZERO_ADDRESS } from '@/lib/mission/extractActiveDataHook'
+import {
+  extractActiveDataHook,
+  ZERO_ADDRESS,
+} from '@/lib/mission/extractActiveDataHook'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
@@ -196,9 +199,7 @@ async function readMissionUncollected(): Promise<{
       rows = (await queryTable(chain, `SELECT id, projectId FROM ${tableName}`)) || []
     } catch (err: any) {
       warnings.push(
-        `Mission registry read failed (${
-          err?.message || 'unknown'
-        }) — only tracked raises are priced.`
+        `Mission registry read failed (${err?.message || 'unknown'}) — only tracked raises are priced.`
       )
     }
   }
@@ -309,7 +310,11 @@ async function readMissionUncollected(): Promise<{
         // Re-opened missions (Frank) keep ETH in the terminal but the live
         // stage lives on the ruleset dataHook, not MissionCreator.
         if (undistributedETH > 0 || missionId === FRANK_MISSION_ID) {
-          const liveStage = await readLivePayHookStage(jbController, jbDirectory, projectId)
+          const liveStage = await readLivePayHookStage(
+            jbController,
+            jbDirectory,
+            projectId
+          )
           if (liveStage != null) stage = liveStage
         }
 

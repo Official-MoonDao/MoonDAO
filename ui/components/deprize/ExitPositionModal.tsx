@@ -7,7 +7,6 @@ import toast from 'react-hot-toast'
 import { getContract, prepareContractCall, type Chain } from 'thirdweb'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { UNIT } from '@/lib/deprize/constants'
-import { shouldSweepSellFee } from '@/lib/deprize/feeSweep'
 import { fmtEthWithUsd } from '@/lib/deprize/format'
 import { buildAmounts } from '@/lib/deprize/quote'
 import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read'
@@ -15,9 +14,9 @@ import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import EthUsd from '@/components/deprize/EthUsd'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
-import EthUsd from '@/components/deprize/EthUsd'
 import Modal from '@/components/layout/Modal'
 import StandardButton from '@/components/layout/StandardButton'
 
@@ -66,7 +65,7 @@ export default function ExitPositionModal({
         address: marketAddress,
         abi: LMSRWithTWAP.abi as any,
       }),
-    [chain, marketAddress]
+    [chain, marketAddress],
   )
   const lmsrRead = useMemo(
     () =>
@@ -76,7 +75,7 @@ export default function ExitPositionModal({
         address: marketAddress,
         abi: LMSRWithTWAP.abi as any,
       }),
-    [chain.id, marketAddress]
+    [chain.id, marketAddress],
   )
   const ctf = useMemo(
     () =>
@@ -86,7 +85,7 @@ export default function ExitPositionModal({
         address: ctfAddress,
         abi: ConditionalTokensABI as any,
       }),
-    [chain, ctfAddress]
+    [chain, ctfAddress],
   )
   const ctfRead = useMemo(
     () =>
@@ -96,7 +95,7 @@ export default function ExitPositionModal({
         address: ctfAddress,
         abi: ConditionalTokensABI as any,
       }),
-    [chain.id, ctfAddress]
+    [chain.id, ctfAddress],
   )
 
   // Live quote of what selling the full position returns right now: calcNetCost
@@ -151,7 +150,7 @@ export default function ExitPositionModal({
             contract: ctf,
             method: 'setApprovalForAll' as string,
             params: [marketAddress, true],
-          })
+          }),
         )
         toast.dismiss('approve')
       }
@@ -169,20 +168,20 @@ export default function ExitPositionModal({
           contract: lmsr,
           method: 'trade' as string,
           params: [amounts, limit],
-        })
+        }),
       )
       toast.dismiss('sell')
       fireDePrizeConfetti()
       toast.success(
         `Cashed out ${teamName} for ${fmtEthWithUsd(Number(-net) / Number(UNIT), ethPrice)}.`,
         {
-          style: toastStyle,
-        }
-      )
-      // v1 only. The router owns those markets and sweepFees is permissionless.
-      // v2 markets are owned by the Safe; calling the v1 router with that id
-      // prompts the seller and then reverts. A failed owner read skips the sweep.
-      // The cash-out above has already settled.
+        style: toastStyle,
+      })
+      // Best-effort: sweep the sell's market fee via the v1 fee router
+      // (bets sweep on-chain via DePrizeMint; sells hit the LMSR directly,
+      // so the sweep is triggered here). sweepFees is permissionless — a
+      // rejected/failed sweep never affects the completed cash-out. v2
+      // markets are owned by the Safe, and the router reverts for them.
       const feeRouterAddress = DEPRIZE_FEE_ROUTER_ADDRESSES[getChainSlug(chain)] ?? ''
       if (feeRouterAddress) {
         try {
@@ -191,22 +190,22 @@ export default function ExitPositionModal({
             method: 'owner' as string,
             params: [],
           })
-          if (shouldSweepSellFee(marketOwner, feeRouterAddress)) {
-            const feeRouter = getContract({
-              client,
-              chain,
-              address: feeRouterAddress,
-              abi: DePrizeFeeRouterABI as any,
-            })
-            await sendDePrizeTx(
-              account,
-              prepareContractCall({
-                contract: feeRouter,
-                method: 'sweepFees' as string,
-                params: [BigInt(deprizeId)],
-              })
-            )
-          }
+          if (marketOwner.toLowerCase() !== feeRouterAddress.toLowerCase())
+            throw new Error('market is not owned by the v1 fee router')
+          const feeRouter = getContract({
+            client,
+            chain,
+            address: feeRouterAddress,
+            abi: DePrizeFeeRouterABI as any,
+          })
+          await sendDePrizeTx(
+            account,
+            prepareContractCall({
+              contract: feeRouter,
+              method: 'sweepFees' as string,
+              params: [BigInt(deprizeId)],
+            }),
+          )
         } catch (err) {
           console.warn('[deprize] post-sell fee sweep skipped', err)
         }
