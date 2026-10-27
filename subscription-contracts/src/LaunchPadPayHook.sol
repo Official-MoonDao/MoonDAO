@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {JBPayHookSpecification} from "@nana-core-v5/structs/JBPayHookSpecification.sol";
+import {IJBPayHook} from "@nana-core-v5/interfaces/IJBPayHook.sol";
 import {IJBRulesets} from "@nana-core-v5/interfaces/IJBRulesets.sol";
 import {JBRuleset} from "@nana-core-v5/structs/JBRuleset.sol";
 
@@ -14,6 +15,7 @@ import {IJBRulesetDataHook} from "@nana-core-v5/interfaces/IJBRulesetDataHook.so
 import { JBConstants } from "@nana-core-v5/libraries/JBConstants.sol";
 
 import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
+import {TreasuryFeeMath} from "./TreasuryFeeMath.sol";
 
 
 // LaunchPadPayHook
@@ -23,6 +25,14 @@ import {IDePrizeRegistry} from "./deprize/IDePrizeRegistry.sol";
 //   • An Ownable toggle (setFundingTurnedOff) for the fundingTurnedOff flag.
 //   • The beforePayRecordedWith function manipulates the weight to change number
 //     of tokens received per ETH based on the funding status.
+//   • When `treasuryPayHook` is set, a non-DePrize contribution forwards 2.5%
+//     to that hook and scales the mint weight by 97.5%. The terminal balance
+//     is then the money the mission keeps, which is what `fundingGoal` and
+//     `_totalFunding` compare. Cash-out still reads the unscaled ruleset
+//     weight, so the scaled mint weight is what keeps refunds sized to that
+//     balance. A zero treasury hook (DePrize latches, refund replacements)
+//     leaves the original path unchanged. DePrize-attached projects never
+//     pay this fee.
 //
 //   DePrize awareness (optional, backwards-compatible):
 //   • If `deprizeRegistry` is unset (address(0)) or the project has no DePrize
@@ -52,6 +62,9 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
     ///         exactly as the original (non-DePrize) LaunchPadPayHook.
     IDePrizeRegistry public deprizeRegistry;
 
+    /// @notice Pay hook that receives the 2.5% treasury fee. Zero disables the fee.
+    address public immutable treasuryPayHook;
+
     event DePrizeRegistrySet(address indexed registry);
 
     /// @notice Thrown when attempting to change `deprizeRegistry` after it has
@@ -64,13 +77,15 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         uint256 _refundPeriod,
         address _jbTerminalStoreAddress,
         address _jbRulesetAddress,
-        address owner
+        address owner,
+        address _treasuryPayHook
     ) Ownable(owner) {
         fundingGoal = _fundingGoal;
         deadline = _deadline;
         refundPeriod = _refundPeriod;
         jbTerminalStore = IJBTerminalStore(_jbTerminalStoreAddress);
         jbRulesets = IJBRulesets(_jbRulesetAddress);
+        treasuryPayHook = _treasuryPayHook;
     }
 
     function setFundingTurnedOff(bool _fundingTurnedOff) external onlyOwner {
@@ -140,7 +155,23 @@ contract LaunchPadPayHook is IJBRulesetDataHook, Ownable {
         if (currentFunding < fundingGoal && block.timestamp >= deadline) {
             revert("Project funding deadline has passed and funding goal requirement has not been met.");
         }
+
         weight = context.weight;
+        if (treasuryPayHook == address(0)) return (weight, hookSpecifications);
+
+        // Tokens track the ETH that stays in the project. Cash-out estimates
+        // supply as funding * ruleset weight, and funding no longer includes
+        // this fee, so an unscaled mint weight would mis-size refunds.
+        uint256 fee = TreasuryFeeMath.fee(context.amount.value);
+        weight = (context.weight * TreasuryFeeMath.KEPT_NUMERATOR) / TreasuryFeeMath.FEE_DENOMINATOR;
+        if (fee == 0) return (weight, hookSpecifications);
+
+        hookSpecifications = new JBPayHookSpecification[](1);
+        hookSpecifications[0] = JBPayHookSpecification({
+            hook: IJBPayHook(treasuryPayHook),
+            amount: fee,
+            metadata: ""
+        });
     }
 
     function beforeCashOutRecordedWith(JBBeforeCashOutRecordedContext calldata context) external view override

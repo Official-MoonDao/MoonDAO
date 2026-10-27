@@ -159,7 +159,9 @@ contract DePrizeGenerationsTest is Test {
         GenTerminalStore store = new GenTerminalStore();
         GenRulesets rulesets = new GenRulesets();
         LaunchPadPayHook hook =
-            new LaunchPadPayHook(10 ether, block.timestamp + 28 days, 14 days, address(store), address(rulesets), owner);
+            new LaunchPadPayHook(
+                10 ether, block.timestamp + 28 days, 14 days, address(store), address(rulesets), owner, address(0)
+            );
 
         uint256 oldId = _registerOpen(_teamsWithField());
         vm.prank(owner);

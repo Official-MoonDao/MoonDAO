@@ -118,7 +118,7 @@ A Winner is a Prize-Eligible Winner only if, at the time of each Prize payment, 
 
 ## 6. The Prize Pool
 
-**6.1 Sources.** The Prize Pool is the balance of the Juicebox/Launchpad project bound to the DePrize, funded by (a) contributions made directly to that Launchpad campaign under its own terms; (b) a prize contribution of approximately 5% of every bet placed in the Market; and (c) Market fees routed to the Prize Pool while the DePrize is live. MoonDAO may, but is not obliged to, add treasury funds.
+**6.1 Sources.** The Prize Pool is the balance of the Juicebox/Launchpad project bound to the DePrize, funded by (a) contributions made directly to that Launchpad campaign under its own terms and (b) a prize contribution of approximately 5% of every bet placed in the Market. Market fees are paid to the MoonDAO treasury and are not part of the Prize Pool. MoonDAO may, but is not obliged to, add treasury funds.
 
 **6.2 Variable amount; ETH denomination.** The Prize Pool is held in ETH and **fluctuates continuously** with contributions, betting activity, and the market price of ETH. Any fiat-currency figure shown on the Site is an approximate conversion at the time displayed and is not a commitment. **MoonDAO does not guarantee any minimum Prize amount.**
 

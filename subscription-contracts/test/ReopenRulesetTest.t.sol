@@ -14,6 +14,7 @@ import {MissionTable} from "../src/tables/MissionTable.sol";
 import {MoonDaoTeamTableland} from "../src/tables/MoonDaoTeamTableland.sol";
 import {MoonDAOTeamCreator} from "../src/MoonDAOTeamCreator.sol";
 import {LaunchPadPayHook} from "../src/LaunchPadPayHook.sol";
+import {TreasuryFeeMath} from "../src/TreasuryFeeMath.sol";
 import {ReopenPayHook} from "../src/ReopenPayHook.sol";
 import {PassthroughModule} from "../src/PassthroughModule.sol";
 import {IHats} from "@hats/Interfaces/IHats.sol";
@@ -400,9 +401,10 @@ contract ReopenRulesetTest is Test, Config {
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
 
-        // Original campaign: contributor1 pays 1 ETH at 1,000 tokens/ETH
+        // Original campaign: contributor1 pays 1 ETH. 2.5% leaves for the treasury,
+        // so the project keeps 0.975 ETH and mints 975 tokens per that ETH.
         _pay(contributor1, 1 ether, terminal, projectId);
-        assertEq(jbTokens.totalBalanceOf(contributor1, projectId), 1_000 * 1e18);
+        assertEq(jbTokens.totalBalanceOf(contributor1, projectId), TreasuryFeeMath.kept(1 ether) * 1_000);
 
         // Campaign closes below goal; refund window expires
         skip(28 days + 28 days + 1);
@@ -425,15 +427,17 @@ contract ReopenRulesetTest is Test, Config {
         assertEq(jbTokens.totalBalanceOf(contributor2, projectId), REOPEN_TOKENS_PER_ETH * 1e18, "New contributor should mint at 500/ETH");
 
         // Original contributor's balance is untouched
-        assertEq(jbTokens.totalBalanceOf(contributor1, projectId), 1_000 * 1e18, "Original balance must not change");
+        uint256 originalTokens = TreasuryFeeMath.kept(1 ether) * 1_000;
+        assertEq(jbTokens.totalBalanceOf(contributor1, projectId), originalTokens, "Original balance must not change");
 
         // Reserved tokens flow to the original vesting/pool splits
         jbController.sendReservedTokensToSplitsOf(projectId);
         address teamVesting = missionCreator.missionIdToTeamVesting(missionId);
         address moonDAOVesting = missionCreator.missionIdToMoonDAOVesting(missionId);
-        // Reserved from both payments: 1,000 (original) + 500 (re-open) = 1,500 tokens
-        assertEq(jbTokens.totalBalanceOf(teamVesting, projectId), 1_500 * 1e18 * 60 / 100, "Team vesting gets 60% of reserved");
-        assertEq(jbTokens.totalBalanceOf(moonDAOVesting, projectId), 1_500 * 1e18 * 35 / 100, "MoonDAO vesting gets 35% of reserved");
+        // Reserved from both payments: scaled original cohort + 500 (re-open).
+        uint256 reserved = originalTokens + 500 * 1e18;
+        assertEq(jbTokens.totalBalanceOf(teamVesting, projectId), reserved * 60 / 100, "Team vesting gets 60% of reserved");
+        assertEq(jbTokens.totalBalanceOf(moonDAOVesting, projectId), reserved * 35 / 100, "MoonDAO vesting gets 35% of reserved");
     }
 
     /// @notice The rate can be stepped down later by queuing another ruleset — no
@@ -548,7 +552,8 @@ contract ReopenRulesetTest is Test, Config {
             REFUND_PERIOD,
             JB_V5_TERMINAL_STORE,
             JB_V5_RULESETS,
-            randomCaller
+            randomCaller,
+            address(0)
         );
         JBRulesetConfig[] memory config = _buildReopenRulesetConfig(
             missionId, address(attackerHook), address(terminal), REOPEN_WEIGHT
@@ -675,17 +680,19 @@ contract ReopenRulesetTest is Test, Config {
         uint256 projectId = missionCreator.missionIdToProjectId(missionId);
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
 
-        // Original raise: two backers at 1,000/ETH (tracked by the ORIGINAL hook)
+        // Original raise. The project keeps 97.5%; the treasury already has the fee.
         _pay(contributor1, 1 ether, terminal, projectId);
         _pay(contributor2, 1 ether, terminal, projectId);
-        assertEq(jbTokens.totalBalanceOf(contributor1, projectId), 1_000 * 1e18);
+        uint256 originalTokens = TreasuryFeeMath.kept(1 ether) * 1_000;
+        uint256 originalKept = TreasuryFeeMath.kept(1 ether);
+        assertEq(jbTokens.totalBalanceOf(contributor1, projectId), originalTokens);
         skip(28 days + 28 days + 1);
 
-        // Re-open at 500/ETH; seed the original cohort (balance / 1000 = ETH in), then
-        // a third backer contributes 2 ETH at the new rate (tracked live by the hook).
+        // Re-open at 500/ETH. Seed the original cohort with the ETH that stayed
+        // (kept wei * 1000 tokens). A third backer contributes 2 ETH at the new rate.
         ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
-        _seed(hook, contributor1, 1 ether); // 1,000 tokens / 1000
-        _seed(hook, contributor2, 1 ether);
+        _seed(hook, contributor1, originalKept);
+        _seed(hook, contributor2, originalKept);
         _pay(contributor3, 2 ether, terminal, projectId);
         assertEq(jbTokens.totalBalanceOf(contributor3, projectId), 1_000 * 1e18, "2 ETH at 500/ETH = 1,000 tokens");
         assertEq(hook.ethContributed(contributor3), 2 ether, "Live contribution tracked automatically");
@@ -697,20 +704,20 @@ contract ReopenRulesetTest is Test, Config {
         // Re-opened campaign misses the goal; refund window opens.
         skip(CAMPAIGN_DURATION + 1);
 
-        // Pot is 4 ETH. Each backer reclaims EXACTLY what they put in.
+        // Original backers reclaim the ETH that stayed. The re-open backer reclaims the full 2 ETH.
         uint256 balBefore1 = contributor1.balance;
         vm.prank(contributor1);
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
-            contributor1, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+            contributor1, projectId, originalTokens, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
         );
-        assertEq(contributor1.balance - balBefore1, 1 ether, "Original 1,000/ETH backer gets exactly 1 ETH");
+        assertEq(contributor1.balance - balBefore1, originalKept, "Original backer gets the 97.5% that stayed");
 
         uint256 balBefore2 = contributor2.balance;
         vm.prank(contributor2);
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
-            contributor2, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor2), bytes("")
+            contributor2, projectId, originalTokens, JBConstants.NATIVE_TOKEN, 0, payable(contributor2), bytes("")
         );
-        assertEq(contributor2.balance - balBefore2, 1 ether, "Second original backer gets exactly 1 ETH");
+        assertEq(contributor2.balance - balBefore2, originalKept, "Second original backer gets the 97.5% that stayed");
 
         // The 500/ETH re-open backer holds the SAME 1,000 tokens as an original 1-ETH
         // backer, but paid 2 ETH — and gets exactly 2 ETH back, not 1.
@@ -734,10 +741,12 @@ contract ReopenRulesetTest is Test, Config {
 
         _pay(contributor1, 1 ether, terminal, projectId);
         _pay(contributor2, 1 ether, terminal, projectId);
+        uint256 originalTokens = TreasuryFeeMath.kept(1 ether) * 1_000;
+        uint256 originalKept = TreasuryFeeMath.kept(1 ether);
         skip(28 days + 28 days + 1);
         ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
-        _seed(hook, contributor1, 1 ether);
-        _seed(hook, contributor2, 1 ether);
+        _seed(hook, contributor1, originalKept);
+        _seed(hook, contributor2, originalKept);
         _pay(contributor3, 2 ether, terminal, projectId);
         skip(CAMPAIGN_DURATION + 1);
 
@@ -752,16 +761,16 @@ contract ReopenRulesetTest is Test, Config {
         uint256 b2 = contributor2.balance;
         vm.prank(contributor2);
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
-            contributor2, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor2), bytes("")
+            contributor2, projectId, originalTokens, JBConstants.NATIVE_TOKEN, 0, payable(contributor2), bytes("")
         );
-        assertEq(contributor2.balance - b2, 1 ether, "c2 exact regardless of order");
+        assertEq(contributor2.balance - b2, originalKept, "c2 exact regardless of order");
 
         uint256 b1 = contributor1.balance;
         vm.prank(contributor1);
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
-            contributor1, projectId, 1_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+            contributor1, projectId, originalTokens, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
         );
-        assertEq(contributor1.balance - b1, 1 ether, "c1 exact regardless of order");
+        assertEq(contributor1.balance - b1, originalKept, "c1 exact regardless of order");
     }
 
     /// @notice A partial cash-out returns a proportional slice of the contribution,
@@ -885,10 +894,12 @@ contract ReopenRulesetTest is Test, Config {
         IJBTerminal terminal = jbDirectory.primaryTerminalOf(projectId, JBConstants.NATIVE_TOKEN);
 
         // Honest backers fill the pot so there is something to steal.
+        // The original pay keeps 97.5%; seed the reopen ledger with that amount.
         _pay(contributor1, 5 ether, terminal, projectId);
+        uint256 honestKept = TreasuryFeeMath.kept(5 ether);
         skip(28 days + 28 days + 1);
         ReopenPayHook hook = _reopen(missionId, projectId, terminal, REOPEN_WEIGHT);
-        _seed(hook, contributor1, 5 ether); // 5,000 tokens
+        _seed(hook, contributor1, honestKept);
 
         // Attacker contributes 2 ETH at the re-open rate -> 1,000 tokens.
         ReentrantCasher attacker = new ReentrantCasher(IJBMultiTerminal(address(terminal)), projectId);
@@ -909,16 +920,16 @@ contract ReopenRulesetTest is Test, Config {
         // Despite re-entering, the attacker recovers at most their 2 ETH — never the
         // honest backer's funds.
         assertLe(address(attacker).balance, 2 ether + 5, "Attacker cannot profit from reentrancy");
-        // The honest backer's 5 ETH is still fully claimable.
+        // The honest backer's kept ETH is still fully claimable.
         uint256 potAfter = jbTerminalStore.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
         assertGe(potAfter, potBefore - 2 ether - 5, "Pot only debited by the attacker's own contribution");
 
         uint256 b1 = contributor1.balance;
         vm.prank(contributor1);
         IJBMultiTerminal(address(terminal)).cashOutTokensOf(
-            contributor1, projectId, 5_000 * 1e18, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
+            contributor1, projectId, honestKept * 1_000, JBConstants.NATIVE_TOKEN, 0, payable(contributor1), bytes("")
         );
-        assertApproxEqAbs(contributor1.balance - b1, 5 ether, 10, "Honest backer still gets their full 5 ETH");
+        assertApproxEqAbs(contributor1.balance - b1, honestKept, 10, "Honest backer still gets the ETH that stayed");
     }
 
     /// @notice Defensive guard: beforeCashOutRecordedWith rejects a cash-out that

@@ -834,7 +834,7 @@ export default function CreateMission({
                       }}
                       disabled={false}
                       variant="dark"
-                      tooltip="How much would you like to raise? Set something ambitious but achievable while accounting for the 20% set aside of the total raise. We will automatically convert the US Dollar amount into Ethereum, the native currency of the Launchpad."
+                      tooltip="How much would you like to raise? This form still creates missions on the current creator, so the goal is the gross amount contributors send and MoonDAO's 2.5% is taken from a successful payout. After the treasury-fee creator is the one this form deploys, the goal is the amount the mission keeps: that 2.5% is taken when someone contributes and is not returned on a refund. Set something ambitious but achievable while accounting for the 20% set aside of the total raise. We will automatically convert the US Dollar amount into Ethereum, the native currency of the Launchpad."
                       maxLength={15}
                       extra={
                         <div className="w-full">

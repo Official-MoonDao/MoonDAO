@@ -42,7 +42,7 @@ This document is incorporated into the [DePrize Terms and Conditions](/docs/Lega
 
 **6. 5% of every bet goes to the prize, not to your position.** About 5% of the ETH you send is a **non-refundable contribution** to the prize pool. It is not held in the market and is not returned if the DePrize is cancelled. You may receive a governance token for that contribution — **the token of the launchpad mission this particular DePrize funds**, not a DePrize-wide token, so it differs between DePrizes — at a rate that may be much lower than earlier contributors to that campaign received. That token is governed by the bound campaign's own terms, carries no expectation of profit, and is not a reason to bet. (Section 10)
 
-**7. Fees, slippage, and gas reduce what you get.** The market charges roughly a 1% fee on trades. Large orders move the price, so your average price can be worse than the displayed odds. Every on-chain action costs gas. Displayed odds, payouts, and multiples are estimates. (Section 11)
+**7. Fees, slippage, and gas reduce what you get.** Markets created on or after 27 October 2026 charge a 2% fee on trades. Markets created before that date charge roughly 1%. The fee is fixed when the market is created and is paid to the MoonDAO treasury, not added to the prize. Large orders move the price, so your average price can be worse than the displayed odds. Every on-chain action costs gas. Displayed odds, payouts, and multiples are estimates. (Section 11)
 
 **8. Superseded generations are exit-only.** If a DePrize moves to a new generation, betting on the old one closes; you can sell back to the old market at its price, but positions are not refunded or repriced, and the old market's price may not reflect the live odds. (Section 6.4)
 

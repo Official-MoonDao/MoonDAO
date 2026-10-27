@@ -41,10 +41,7 @@ import {
 import { getMissionOffChainCommittedUsd } from 'const/missionMilestones'
 import { BLOCKED_MISSIONS } from 'const/whitelist'
 import { getContract, readContract } from 'thirdweb'
-import {
-  extractActiveDataHook,
-  ZERO_ADDRESS,
-} from '@/lib/mission/extractActiveDataHook'
+import { extractActiveDataHook, ZERO_ADDRESS } from '@/lib/mission/extractActiveDataHook'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { serverClient } from '@/lib/thirdweb/serverClient'
@@ -199,7 +196,9 @@ async function readMissionUncollected(): Promise<{
       rows = (await queryTable(chain, `SELECT id, projectId FROM ${tableName}`)) || []
     } catch (err: any) {
       warnings.push(
-        `Mission registry read failed (${err?.message || 'unknown'}) — only tracked raises are priced.`
+        `Mission registry read failed (${
+          err?.message || 'unknown'
+        }) — only tracked raises are priced.`
       )
     }
   }
@@ -310,11 +309,7 @@ async function readMissionUncollected(): Promise<{
         // Re-opened missions (Frank) keep ETH in the terminal but the live
         // stage lives on the ruleset dataHook, not MissionCreator.
         if (undistributedETH > 0 || missionId === FRANK_MISSION_ID) {
-          const liveStage = await readLivePayHookStage(
-            jbController,
-            jbDirectory,
-            projectId
-          )
+          const liveStage = await readLivePayHookStage(jbController, jbDirectory, projectId)
           if (liveStage != null) stage = liveStage
         }
 
@@ -424,8 +419,8 @@ export async function getUncollectedRevenue(
         `${treasuryPct}% cash ${usdPlain(treasuryUSD)} + ` +
         `${liquidityPct}% liquidity ${usdPlain(liquidityUSD)}` +
         (mission.kind === 'receivable'
-          ? '. Earned — splits on the payout call.'
-          : '. Collected if the mission closes; refunded otherwise.'),
+          ? '. Earned — live missions still split this on the payout call.'
+          : '. Live missions collect this if they close. Missions on the contribution-fee creator have already sent the cash fee, and a refund does not return it.'),
       available: true,
     })
   }
@@ -476,7 +471,8 @@ export async function getUncollectedRevenue(
       kind: 'receivable',
       eth: 0,
       usd: 0,
-      detail: '1% LMSR fees sitting on the market contract until someone calls sweepFees.',
+      detail:
+        'LMSR trade fees sitting on the market as WETH until the owner calls withdrawFees and sends them to the treasury. New markets charge 2%; earlier markets stay at 1%.',
       available: true,
     })
   }
@@ -503,7 +499,7 @@ export async function getUncollectedRevenue(
     liquidityUSD: projectedLiquidityUSD,
     lines,
     missionsConsidered,
-    note: `${totalPct}% of every launchpad-funded raise goes to MoonDAO: ${treasuryPct}% as cash on the payout call, ${liquidityPct}% as MoonDAO-owned Uniswap liquidity that must be withdrawn before it can be spent. Projected, not booked — it is excluded from revenue and from runway.`,
+    note: `${totalPct}% of every launchpad-funded raise goes to MoonDAO: ${treasuryPct}% as cash and ${liquidityPct}% as MoonDAO-owned Uniswap liquidity that must be withdrawn before it can be spent. Missions already live send the cash share on the payout call. Missions created by the contribution-fee creator send it when the contribution arrives, and a refund does not return it. Projected, not booked — it is excluded from revenue and from runway.`,
     warnings,
   }
 }

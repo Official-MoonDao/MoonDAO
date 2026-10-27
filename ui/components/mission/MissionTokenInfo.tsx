@@ -45,8 +45,10 @@ export default function MissionTokenInfo({ mission, token }: { mission: any; tok
           ))}
         </div>
         <p className="text-gray-500 text-sm mt-4 leading-relaxed">
-          If the project does not launch (funding goal not met), contributors can get their full
-          contribution back.
+          If the project does not launch (funding goal not met), contributors on a mission created
+          with the current creator can get their full contribution back. Missions created after the
+          treasury-fee creator is deployed refund 97.5%, because MoonDAO&apos;s 2.5% was taken when
+          they contributed and the funding goal is the amount the mission keeps.
         </p>
       </div>
 

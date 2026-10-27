@@ -391,6 +391,10 @@ export const MISSION_TABLE_NAMES: Index = {
     : {}),
 }
 
+// Still the creator that is live today. A new creator takes 2.5% at contribution
+// and drops the payout treasury split. Point this at it only after that creator
+// is deployed and MissionTable.setMissionCreator has been called. On Arbitrum
+// the table is MissionTable_42161_151, and it has a single creator slot.
 export const MISSION_CREATOR_ADDRESSES: Index = {
   arbitrum: arbitrumConfig.MissionCreator,
   sepolia: sepoliaConfig.MissionCreator,

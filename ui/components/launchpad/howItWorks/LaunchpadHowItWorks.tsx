@@ -27,7 +27,9 @@ function Step(props: {
         <span className="text-xs font-semibold uppercase tracking-wider text-violet-300">
           Step {props.number}
         </span>
-        <h3 className="mt-1 font-heading text-2xl font-bold text-white sm:text-3xl">{props.title}</h3>
+        <h3 className="mt-1 font-heading text-2xl font-bold text-white sm:text-3xl">
+          {props.title}
+        </h3>
         <div className="mt-3 flex flex-col gap-3 text-[15px] leading-relaxed text-gray-300">
           {props.children}
         </div>
@@ -99,8 +101,8 @@ export default function LaunchpadHowItWorks({
             </p>
             <p>
               Half the tokens go to contributors. The rest is reserved: 30% for the team, 17.5% for
-              MoonDAO and 2.5% for a trading pool. Tokens give you a stake in the mission and a voice
-              in how it is run.
+              MoonDAO and 2.5% for a trading pool. Tokens give you a stake in the mission and a
+              voice in how it is run.
             </p>
           </Step>
         </div>
@@ -111,9 +113,11 @@ export default function LaunchpadHowItWorks({
             multisig to build the mission.
           </p>
           <p>
-            5% and 2.5% of the tokens seed a Uniswap pool so the token can be traded. MoonDAO and
-            Juicebox, the audited protocol that holds the funds, each receive 2.5%. Every payout is
-            on-chain, so anyone can trace how the money is spent.
+            5% and 2.5% of the tokens seed a Uniswap pool so the token can be traded. On missions
+            created today, MoonDAO and Juicebox each receive 2.5% when the mission pays out. After
+            the treasury-fee creator is deployed, MoonDAO&apos;s 2.5% is taken when a contribution
+            arrives and is kept if the mission refunds, and the funding goal is the amount the
+            mission keeps. Every payout is on-chain, so anyone can trace how the money is spent.
           </p>
         </Step>
 
@@ -123,9 +127,10 @@ export default function LaunchpadHowItWorks({
             the team receives nothing.
           </p>
           <p>
-            Contributors can return their tokens for a refund during a 28-day window. Teams choose
-            whether to offer refunds when they launch, so check the mission page before you
-            contribute.
+            Contributors can return their tokens for a refund during a 28-day window. Missions
+            created today refund the full contribution. Missions created after the treasury-fee
+            creator is deployed refund 97.5%. Teams choose whether to offer refunds when they
+            launch, so check the mission page before you contribute.
           </p>
         </Step>
 

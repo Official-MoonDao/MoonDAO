@@ -18,6 +18,7 @@ import {MissionTable} from "../src/tables/MissionTable.sol";
 import {MoonDaoTeamTableland} from "../src/tables/MoonDaoTeamTableland.sol";
 import {MoonDAOTeamCreator} from "../src/MoonDAOTeamCreator.sol";
 import {LaunchPadPayHook} from "../src/LaunchPadPayHook.sol";
+import {TreasuryFeeMath} from "../src/TreasuryFeeMath.sol";
 import {LaunchPadApprovalHook} from "../src/LaunchPadApprovalHook.sol";
 import {PassthroughModule} from "../src/PassthroughModule.sol";
 import {IHats} from "@hats/Interfaces/IHats.sol";
@@ -253,7 +254,7 @@ contract ManualRefundTest is Test, Config {
             new bytes(0)
         );
         uint256 contributor1Tokens = jbTokens.totalBalanceOf(contributor1, projectId);
-        assertEq(contributor1Tokens, 1_000 * 1e18);
+        assertEq(contributor1Tokens, TreasuryFeeMath.kept(payAmount1) * 1_000);
 
         vm.prank(contributor2);
         terminal.pay{value: payAmount2}(
@@ -266,7 +267,7 @@ contract ManualRefundTest is Test, Config {
             new bytes(0)
         );
         uint256 contributor2Tokens = jbTokens.totalBalanceOf(contributor2, projectId);
-        assertEq(contributor2Tokens, 500 * 1e18);
+        assertEq(contributor2Tokens, TreasuryFeeMath.kept(payAmount2) * 1_000);
 
         // Verify mission is in stage 1 (active funding)
         assertEq(missionCreator.stage(missionId), 1);
@@ -309,7 +310,8 @@ contract ManualRefundTest is Test, Config {
             newRefundPeriod,
             JB_V5_TERMINAL_STORE,
             JB_V5_RULESETS,
-            teamAddress // owner = team multisig
+            teamAddress, // owner = team multisig
+            address(0)
         );
 
         LaunchPadApprovalHook newApprovalHook = new LaunchPadApprovalHook(
@@ -365,8 +367,8 @@ contract ManualRefundTest is Test, Config {
         );
 
         uint256 contributor1BalanceAfter = address(contributor1).balance;
-        assertEq(cashOut1, payAmount1, "Contributor 1 should get full refund");
-        assertEq(contributor1BalanceAfter - contributor1BalanceBefore, payAmount1, "Contributor 1 ETH balance should increase by pay amount");
+        assertEq(cashOut1, TreasuryFeeMath.kept(payAmount1), "Contributor 1 is refunded the 97.5% that stayed");
+        assertEq(contributor1BalanceAfter - contributor1BalanceBefore, TreasuryFeeMath.kept(payAmount1), "Contributor 1 ETH balance should increase by the kept amount");
         assertEq(jbTokens.totalBalanceOf(contributor1, projectId), 0, "Contributor 1 should have 0 tokens after refund");
 
         // Contributor 2 cashes out
@@ -382,8 +384,8 @@ contract ManualRefundTest is Test, Config {
         );
 
         uint256 contributor2BalanceAfter = address(contributor2).balance;
-        assertEq(cashOut2, payAmount2, "Contributor 2 should get full refund");
-        assertEq(contributor2BalanceAfter - contributor2BalanceBefore, payAmount2, "Contributor 2 ETH balance should increase by pay amount");
+        assertEq(cashOut2, TreasuryFeeMath.kept(payAmount2), "Contributor 2 is refunded the 97.5% that stayed");
+        assertEq(contributor2BalanceAfter - contributor2BalanceBefore, TreasuryFeeMath.kept(payAmount2), "Contributor 2 ETH balance should increase by the kept amount");
         assertEq(jbTokens.totalBalanceOf(contributor2, projectId), 0, "Contributor 2 should have 0 tokens after refund");
 
         // Terminal should be empty now
@@ -417,7 +419,7 @@ contract ManualRefundTest is Test, Config {
             new bytes(0)
         );
         uint256 contributorTokens = jbTokens.totalBalanceOf(contributor1, projectId);
-        assertEq(contributorTokens, 2_000 * 1e18);
+        assertEq(contributorTokens, TreasuryFeeMath.kept(payAmount) * 1_000);
 
         // Goal is met, mission is in stage 2
         assertEq(missionCreator.stage(missionId), 2);
@@ -439,7 +441,8 @@ contract ManualRefundTest is Test, Config {
             newRefundPeriod,
             JB_V5_TERMINAL_STORE,
             JB_V5_RULESETS,
-            teamAddress
+            teamAddress,
+            address(0)
         );
 
         LaunchPadApprovalHook newApprovalHook = new LaunchPadApprovalHook(
@@ -483,8 +486,8 @@ contract ManualRefundTest is Test, Config {
             bytes("")
         );
 
-        assertEq(cashOutAmount, payAmount, "Should get full refund even though goal was met");
-        assertEq(address(contributor1).balance - balanceBefore, payAmount, "ETH balance should increase by pay amount");
+        assertEq(cashOutAmount, TreasuryFeeMath.kept(payAmount), "Refund is the 97.5% that stayed, even though the goal was met");
+        assertEq(address(contributor1).balance - balanceBefore, TreasuryFeeMath.kept(payAmount), "ETH balance should increase by the kept amount");
         assertEq(jbTokens.totalBalanceOf(contributor1, projectId), 0, "Should have 0 tokens");
     }
 
@@ -526,7 +529,7 @@ contract ManualRefundTest is Test, Config {
 
         LaunchPadPayHook newPayHook = new LaunchPadPayHook(
             fundingGoal, newDeadline, newRefundPeriod,
-            JB_V5_TERMINAL_STORE, JB_V5_RULESETS, teamAddress
+            JB_V5_TERMINAL_STORE, JB_V5_RULESETS, teamAddress, address(0)
         );
         LaunchPadApprovalHook newApprovalHook = new LaunchPadApprovalHook(
             fundingGoal, newDeadline, newRefundPeriod,

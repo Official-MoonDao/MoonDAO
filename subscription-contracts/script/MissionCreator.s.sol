@@ -85,6 +85,9 @@ contract MyScript is Script, Config {
         vm.stopBroadcast();
 
         console.log("New MissionCreator deployed:", address(missionCreator));
+        console.log("TreasuryPayHook:", address(missionCreator.treasuryPayHook()));
+        console.log("  Non-DePrize contributions forward 2.5% to the treasury at pay time.");
+        console.log("  fundingGoal is the amount the mission keeps. Payouts have no treasury split.");
         if (nextOwner != address(0) && vm.envOr("DEPRIZE_TRANSFER_OWNERSHIP", false)) {
             console.log("  ownership transferred to:", nextOwner);
         } else {
@@ -98,7 +101,9 @@ contract MyScript is Script, Config {
         console.log("MissionTable address:", tableAddr);
         if (useProductionTable) {
             console.log("  production table - MissionTable.owner MUST call");
-            console.log("  setMissionCreator(this) BEFORE CreateDePrizeMission.");
+            console.log("  setMissionCreator(this) before any new mission.");
+            console.log("  On Arbitrum that table is MissionTable_42161_151.");
+            console.log("  The table has one creator slot. The previous creator stops inserting.");
             console.log("  Wiring this into MissionTable.setMissionCreator makes ALL future");
             console.log("  missions registry-aware.");
             console.logBytes(abi.encodeCall(MissionTable.setMissionCreator, (address(missionCreator))));

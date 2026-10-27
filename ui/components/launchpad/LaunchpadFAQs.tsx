@@ -10,12 +10,11 @@ const FAQS = [
         <Link href="/join" className="text-blue-500 underline">
           Space Acceleration Network
         </Link>{' '}
-        can create Missions directly and permissionlessly, but anyone with a
-        space-related project can apply to create their mission with the
-        Launchpad—whether it's a research initiative, satellite deployment,
-        lunar lander payload, or even a human spaceflight mission—in order to
-        start raising funds. Apply now to tell us more about your objectives,
-        fundraising goals, existing network, and how we can help.
+        can create Missions directly and permissionlessly, but anyone with a space-related project
+        can apply to create their mission with the Launchpad—whether it's a research initiative,
+        satellite deployment, lunar lander payload, or even a human spaceflight mission—in order to
+        start raising funds. Apply now to tell us more about your objectives, fundraising goals,
+        existing network, and how we can help.
       </>
     ),
   },
@@ -32,7 +31,7 @@ const FAQS = [
   {
     question: 'How much does it cost to launch a campaign?',
     answer:
-      'There is no upfront cost to create a Mission, but standard Ethereum network (gas) fees apply when deploying smart contracts. Of the funds raised by a successful Mission, 90% goes to the team, 5% seeds a liquidity pool for the Mission token, and MoonDAO and Juicebox each receive 2.5% to sustain the platform and support other space-related projects within the community-governed treasury. Likewise, 17.5% of the tokens created for a Mission are reserved for the MoonDAO treasury to align long-term interests, with a 1-year cliff and vesting through year four, meaning that tokens cannot be immediately sold. Furthermore, any outlays from the MoonDAO treasury require a vote.',
+      'There is no upfront cost to create a Mission, but standard Ethereum network (gas) fees apply when deploying smart contracts. Of the funds raised by a successful Mission created with the current creator, 90% goes to the team, 5% seeds a liquidity pool for the Mission token, and MoonDAO and Juicebox each receive 2.5% when that mission pays out. A missed goal on those missions refunds the full contribution. Missions created after the treasury-fee creator is deployed work differently: MoonDAO takes 2.5% when the contribution arrives and keeps it if the mission refunds, so a refund returns 97.5%, and the funding goal is the amount the mission keeps. Likewise, 17.5% of the tokens created for a Mission are reserved for the MoonDAO treasury to align long-term interests, with a 1-year cliff and vesting through year four, meaning that tokens cannot be immediately sold. Furthermore, any outlays from the MoonDAO treasury require a vote.',
   },
   {
     question: 'How does the cliff and streaming work?',
@@ -55,14 +54,12 @@ const FAQS = [
       'Fundraising will be limited to the Ethereum Virtual Machine (EVM), but contributors can participate across Ethereum mainnet and Layer 2 networks, including Arbitrum, Base, and Polygon. This ensures broad accessibility while keeping transactions efficient and cost-effective while also tying into the existing Space Acceleration Network and MoonDAO infrastructure, and the wider EVM ecosystem.',
   },
   {
-    question:
-      'Can contributors withdraw their funds if they change their minds?',
+    question: 'Can contributors withdraw their funds if they change their minds?',
     answer:
-      "By default, if the team doesn't reach its funding goal by the deadline, contributors are refunded. If the fundraiser is successful, the team will be responsible for determining what to do with the treasury, including their policy on refunds if the mission cannot move forward.",
+      "By default, if the team doesn't reach its funding goal by the deadline, contributors are refunded. Missions created with the current creator refund the full contribution. Missions created after the treasury-fee creator is deployed refund 97.5%, because MoonDAO's 2.5% was taken when the contribution arrived and is not returned, and their funding goal is the amount the mission keeps. If the fundraiser is successful, the team will be responsible for determining what to do with the treasury, including their policy on refunds if the mission cannot move forward.",
   },
   {
-    question:
-      'What are the tax and regulatory implications of fundraising with crypto?',
+    question: 'What are the tax and regulatory implications of fundraising with crypto?',
     answer:
       'Tax and regulatory requirements vary by jurisdiction, and funds raised through the Launchpad may be considered taxable income. Depending on local laws, you may need to report contributions, pay capital gains tax on held crypto, or comply with securities regulations if your token is classified as an investment. Some regions also require KYC/AML compliance for fundraising. Since regulations are constantly evolving, we strongly recommend consulting a crypto-savvy legal or tax professional to ensure compliance. MoonDAO does not provide legal or tax advice, and responsibility for compliance rests with campaign creators.',
   },

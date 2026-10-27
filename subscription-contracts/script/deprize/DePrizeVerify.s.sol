@@ -15,6 +15,7 @@ import "base/Config.sol";
 ///         Reverts on the first mismatch so a successful run is a green launch gate.
 ///
 /// Env: DEPRIZE_REGISTRY DEPRIZE_MINT DEPRIZE_ID DEPRIZE_MARKET DEPRIZE_OWNER (the Safe)
+///      DEPRIZE_FEE (1e16 for an existing market, 2e16 for a market on the 2% schedule)
 ///      DEPRIZE_PAYHOOK (required — cashOut latch)
 ///      DEPRIZE_JB_PROJECT (optional; falls back to registry jbProjectId)
 contract DePrizeVerify is Script, Config {
@@ -48,7 +49,10 @@ contract DePrizeVerify is Script, Config {
         _ok("mint.complianceSigner set", mint.complianceSigner() != address(0));
         _ok("mint.registry == registry", address(mint.registry()) == address(registry));
         _ok("lmsr.stage == Running (0)", ILMSRMarketMaker(market).stage() == 0);
-        _ok("lmsr.fee == 1e16", ILMSRMarketMaker(market).fee() == 1e16);
+        // Existing markets are 1e16. Markets created for the 2% schedule are 2e16.
+        // The broadcast sets DEPRIZE_FEE to the rate that market was created with.
+        uint64 expectedFee = uint64(vm.envUint("DEPRIZE_FEE"));
+        _ok("lmsr.fee == DEPRIZE_FEE", ILMSRMarketMaker(market).fee() == expectedFee);
 
         bytes32 cond = ILMSRMarketMaker(market).conditionIds(0);
         _ok("market condition == registry", cond == d.ctfConditionId);

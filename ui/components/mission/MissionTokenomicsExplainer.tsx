@@ -5,7 +5,7 @@ export default function MissionTokenomicsExplainer() {
   return (
     <div>
       <Point
-        point="Goal & Timeline: Missions have until their deadline to raise their Funding Goal; otherwise, the Mission will not proceed and all contributions will be able to be refunded within 28 days of the deadline if refunds are enabled.
+        point="Goal & Timeline: Missions have until their deadline to raise their Funding Goal; otherwise, the Mission will not proceed and contributions can be refunded within 28 days of the deadline if refunds are enabled. This form still uses the current creator, so a missed goal refunds the full contribution and MoonDAO's 2.5% is taken from a successful payout. After the treasury-fee creator is deployed, the goal is the amount the mission keeps, the 2.5% is taken when someone contributes, and a refund is 97.5%.
 "
       />
       <Point

@@ -10,6 +10,7 @@ import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 import {ILMSRMarketMaker} from "../../src/deprize/interfaces/ILMSRMarketMaker.sol";
 import {IWETH} from "../../src/deprize/interfaces/IWETH.sol";
 import {DePrizeSweepFees} from "../../script/deprize/DePrizeSweepFees.s.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockWETH, MockResolvingCTF, MockLMSR} from "./DePrizeMocks.sol";
 
 /// @notice The fee-sweep planner replaces DePrizeFeeRouter's on-chain routing rule
@@ -98,6 +99,29 @@ contract DePrizeSweepFeesTest is Test {
         market.setCondition(keccak256("other"));
         vm.expectRevert("market/registry condition mismatch");
         _plan();
+    }
+
+    function testTreasuryRouteTransfersWethAndSkipsUnwrap() public {
+        address treasury = address(0x7EA5);
+        DePrizeSweepFees.Plan memory p = planner.plan(
+            registry, ILMSRMarketMaker(address(market)), IWETH(address(weth)), deprizeId, safe, treasury
+        );
+        assertFalse(p.toPrizePool);
+        assertTrue(p.toTreasury);
+        assertEq(p.treasury, treasury);
+        assertEq(p.unwrapCall.length, 0);
+        assertEq(p.payCall.length, 0);
+        assertEq(p.transferCall, abi.encodeCall(IERC20.transfer, (treasury, 3 ether)));
+
+        vm.startPrank(safe);
+        (bool ok1,) = address(market).call(p.withdrawFeesCall);
+        assertTrue(ok1);
+        (bool ok2,) = address(weth).call(p.transferCall);
+        assertTrue(ok2);
+        vm.stopPrank();
+        assertEq(weth.balanceOf(treasury), 3 ether);
+        assertEq(weth.balanceOf(safe), 0);
+        assertEq(safe.balance, 0, "WETH is not unwrapped");
     }
 
     function testPlannedCallsExecuteEndToEnd() public {

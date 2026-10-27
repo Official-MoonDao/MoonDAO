@@ -78,7 +78,7 @@ contract LaunchPadPayHookDePrizeTest is Test {
         registry = new DePrizeRegistry(owner);
 
         hook = new LaunchPadPayHook(
-            FUNDING_GOAL, deadline, REFUND_PERIOD, address(store), address(rulesets), owner
+            FUNDING_GOAL, deadline, REFUND_PERIOD, address(store), address(rulesets), owner, address(0)
         );
     }
 

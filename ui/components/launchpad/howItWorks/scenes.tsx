@@ -11,13 +11,22 @@ import {
 
 // One mission, followed through every scene. Numbers carry over: the 1 ETH you
 // contribute is the 1 ETH you get back in the refund scene, and the 60 ETH the
-// campaign ends on is the 60 ETH that gets split. Splits match MissionCreator.sol.
+// campaign ends on is the 60 ETH that gets split. That is the current creator.
+// The treasury-fee creator takes MoonDAO's 2.5% when a contribution arrives.
 // Illustrative, not live data.
 const MISSION = { name: 'Lunar Seed Vault', token: '$SEED', goal: 50 }
 
-const CAMPAIGN: SceneTag = { label: 'Mission campaign', text: 'text-violet-200', bg: 'bg-violet-400/15' }
+const CAMPAIGN: SceneTag = {
+  label: 'Mission campaign',
+  text: 'text-violet-200',
+  bg: 'bg-violet-400/15',
+}
 const TOKENS: SceneTag = { label: 'Mission tokens', text: 'text-sky-200', bg: 'bg-sky-400/15' }
-const PAYOUT: SceneTag = { label: 'Goal reached', text: 'text-emerald-300', bg: 'bg-emerald-400/15' }
+const PAYOUT: SceneTag = {
+  label: 'Goal reached',
+  text: 'text-emerald-300',
+  bg: 'bg-emerald-400/15',
+}
 const REFUND: SceneTag = { label: 'Goal missed', text: 'text-amber-200', bg: 'bg-amber-400/15' }
 const VESTING: SceneTag = { label: 'Vesting', text: 'text-indigo-200', bg: 'bg-indigo-400/15' }
 
@@ -25,7 +34,14 @@ const BRAND = 'linear-gradient(90deg, #6C407D, #5F4BA2 40%, #4660E7)'
 
 function Lock({ open = false }: { open?: boolean }) {
   return (
-    <svg viewBox="0 0 16 16" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden>
+    <svg
+      viewBox="0 0 16 16"
+      className="h-3 w-3 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      aria-hidden
+    >
       <rect x="3" y="7" width="10" height="7" rx="1.5" />
       <path d={open ? 'M5.5 7V5a2.5 2.5 0 0 1 4.9-.7' : 'M5.5 7V5a2.5 2.5 0 0 1 5 0v2'} />
     </svg>
@@ -33,7 +49,15 @@ function Lock({ open = false }: { open?: boolean }) {
 }
 
 /** Funding bar with a goal marker. The track runs to 120% of the goal so overshoot shows. */
-function FundingBar({ raised, goal, color = BRAND }: { raised: number; goal: number; color?: string }) {
+function FundingBar({
+  raised,
+  goal,
+  color = BRAND,
+}: {
+  raised: number
+  goal: number
+  color?: string
+}) {
   const max = goal * 1.2
   return (
     <div className="relative h-3 w-full rounded-full bg-white/[0.06]">
@@ -104,7 +128,9 @@ export function CampaignScene({ variant, active }: SceneProps) {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-white">{MISSION.name}</p>
-              <p className="text-[11px] text-gray-400">Seed library for the first lunar greenhouse</p>
+              <p className="text-[11px] text-gray-400">
+                Seed library for the first lunar greenhouse
+              </p>
             </div>
           </div>
 
@@ -149,7 +175,11 @@ export function CampaignScene({ variant, active }: SceneProps) {
                 exit={{ opacity: 0 }}
                 className="flex items-center gap-1.5 text-[11px]"
               >
-                <span className={`truncate ${c.who === 'You' ? 'font-semibold text-white' : 'text-gray-300'}`}>
+                <span
+                  className={`truncate ${
+                    c.who === 'You' ? 'font-semibold text-white' : 'text-gray-300'
+                  }`}
+                >
                   {c.who}
                 </span>
                 <span className="ml-auto tabular-nums text-violet-200">{c.eth}</span>
@@ -206,7 +236,12 @@ export function ContributeScene({ variant, active }: SceneProps) {
           >
             1 ETH
           </motion.span>
-          <motion.span initial={false} animate={{ opacity: minted ? 1 : 0.2 }} className="text-gray-500" aria-hidden>
+          <motion.span
+            initial={false}
+            animate={{ opacity: minted ? 1 : 0.2 }}
+            className="text-gray-500"
+            aria-hidden
+          >
             ↓
           </motion.span>
           <motion.div
@@ -241,7 +276,10 @@ export function ContributeScene({ variant, active }: SceneProps) {
               >
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="flex min-w-0 items-center gap-1.5 text-white">
-                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: row.color }} />
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ background: row.color }}
+                    />
                     <span className="truncate">{row.who}</span>
                     {row.locked && (
                       <span className={highlightLock ? 'text-indigo-200' : 'text-gray-500'}>
@@ -277,15 +315,25 @@ export function ContributeScene({ variant, active }: SceneProps) {
 const RAISED_TOTAL = RAISED[RAISED.length - 1]
 const PAYOUTS = [
   { to: 'Mission team', pct: 90, color: '#8b5cf6', note: 'Team multisig, to build the mission' },
-  { to: 'Trading pool', pct: 5, color: '#34d399', note: `With 2.5% of tokens, so ${MISSION.token} can trade` },
-  { to: 'MoonDAO treasury', pct: 2.5, color: '#818cf8', note: 'Funds more space projects' },
+  {
+    to: 'Trading pool',
+    pct: 5,
+    color: '#34d399',
+    note: `With 2.5% of tokens, so ${MISSION.token} can trade`,
+  },
+  {
+    to: 'MoonDAO treasury',
+    pct: 2.5,
+    color: '#818cf8',
+    note: 'Taken when you contribute once the treasury-fee creator is live. Kept if the mission refunds',
+  },
   { to: 'Juicebox', pct: 2.5, color: '#94a3b8', note: 'The audited protocol under the hood' },
 ]
 const PAYOUT_CAPTIONS = [
   `The mission closed at ${RAISED_TOTAL} ETH, past its ${MISSION.goal} ETH goal.`,
   `90%, ${(RAISED_TOTAL * 0.9).toFixed(0)} ETH, goes to the team to build the mission.`,
   `5% seeds a Uniswap pool with 2.5% of the tokens, so ${MISSION.token} can be traded.`,
-  '2.5% goes to the MoonDAO treasury, which funds more space projects.',
+  'After the treasury-fee creator is live, 2.5% goes to the MoonDAO treasury when you contribute, and stays there if the mission refunds.',
   '2.5% goes to Juicebox, the audited protocol that holds the funds.',
   'Every payout happens on-chain, so anyone can trace where the money went.',
 ]
@@ -331,14 +379,24 @@ export function PayoutScene({ variant, active }: SceneProps) {
                 initial={false}
                 animate={{ opacity: shown ? 1 : 0.25 }}
                 className={`flex items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-xs transition-colors duration-300 ${
-                  current ? 'border-white/20 bg-white/[0.05]' : 'border-white/[0.05] bg-white/[0.015]'
+                  current
+                    ? 'border-white/20 bg-white/[0.05]'
+                    : 'border-white/[0.05] bg-white/[0.015]'
                 }`}
               >
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: p.color }} />
-                <span className="w-28 shrink-0 truncate font-medium text-white sm:w-32">{p.to}</span>
-                <span className="hidden min-w-0 flex-1 truncate text-[11px] text-gray-400 sm:block">{p.note}</span>
+                <span className="w-28 shrink-0 truncate font-medium text-white sm:w-32">
+                  {p.to}
+                </span>
+                <span className="hidden min-w-0 flex-1 truncate text-[11px] text-gray-400 sm:block">
+                  {p.note}
+                </span>
                 <span className="ml-auto shrink-0 tabular-nums text-gray-200">
-                  {p.pct}% · {((RAISED_TOTAL * p.pct) / 100).toLocaleString('en-US', { maximumFractionDigits: 1 })} ETH
+                  {p.pct}% ·{' '}
+                  {((RAISED_TOTAL * p.pct) / 100).toLocaleString('en-US', {
+                    maximumFractionDigits: 1,
+                  })}{' '}
+                  ETH
                 </span>
               </motion.div>
             )
@@ -388,7 +446,8 @@ export function RefundScene({ variant, active }: SceneProps) {
         <div>
           <div className="mb-1.5 flex items-baseline justify-between">
             <span className="text-xl font-bold tabular-nums text-white">
-              {now.raised} <span className="text-sm font-medium text-gray-400">/ {MISSION.goal} ETH</span>
+              {now.raised}{' '}
+              <span className="text-sm font-medium text-gray-400">/ {MISSION.goal} ETH</span>
             </span>
             <AnimatePresence mode="wait" initial={false}>
               <motion.span
@@ -410,7 +469,9 @@ export function RefundScene({ variant, active }: SceneProps) {
 
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">Your {MISSION.token}</p>
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">
+              Your {MISSION.token}
+            </p>
             <motion.p
               key={refunded ? 'r' : 'h'}
               initial={{ opacity: 0.4 }}
@@ -422,7 +483,9 @@ export function RefundScene({ variant, active }: SceneProps) {
           </div>
           <div
             className={`rounded-lg border px-3 py-2 transition-colors duration-300 ${
-              refunded ? 'border-emerald-400/40 bg-emerald-400/[0.07]' : 'border-white/[0.06] bg-white/[0.02]'
+              refunded
+                ? 'border-emerald-400/40 bg-emerald-400/[0.07]'
+                : 'border-white/[0.06] bg-white/[0.02]'
             }`}
           >
             <p className="text-[10px] uppercase tracking-wider text-gray-500">Refunded to you</p>
@@ -430,7 +493,9 @@ export function RefundScene({ variant, active }: SceneProps) {
               key={refunded ? 'r' : 'h'}
               initial={{ opacity: 0.4 }}
               animate={{ opacity: 1 }}
-              className={`text-lg font-bold tabular-nums ${refunded ? 'text-emerald-300' : 'text-gray-500'}`}
+              className={`text-lg font-bold tabular-nums ${
+                refunded ? 'text-emerald-300' : 'text-gray-500'
+              }`}
             >
               {refunded ? '+1 ETH' : '0 ETH'}
             </motion.p>
@@ -486,7 +551,10 @@ export function VestingScene({ variant, active }: SceneProps) {
             {year === 0 ? 'Launch' : `Year ${Number.isInteger(year) ? year : year.toFixed(1)}`}
           </motion.span>
           <div className="relative h-1 w-full rounded-full bg-white/10">
-            <span className="absolute inset-y-0 left-0 w-1/4 rounded-l-full bg-amber-400/30" aria-hidden />
+            <span
+              className="absolute inset-y-0 left-0 w-1/4 rounded-l-full bg-amber-400/30"
+              aria-hidden
+            />
             <motion.span
               className="absolute inset-y-0 left-0 rounded-full bg-white/60"
               initial={false}
@@ -505,7 +573,10 @@ export function VestingScene({ variant, active }: SceneProps) {
 
         <div className="flex flex-col gap-2">
           {VEST_HOLDERS.map((h) => (
-            <div key={h.who} className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+            <div
+              key={h.who}
+              className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2"
+            >
               <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
                 <span className="flex min-w-0 items-center gap-1.5 text-white">
                   <span className={unlocked >= 100 ? 'text-emerald-300' : 'text-gray-400'}>

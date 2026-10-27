@@ -1,4 +1,5 @@
 import { acceptSpotQuote, costIsClose, lmsrSpotBuyQty, quoteQtyByProbing } from './quote-math'
+import { buildAmounts } from './quote-math'
 import { rpcRead } from './read'
 
 // Re-export the pure math so existing imports from '@/lib/deprize/quote' keep
@@ -18,8 +19,6 @@ export {
   qtyUnderMeasuredCost,
   searchMaxQtyWithinCost,
 } from './quote-math'
-
-import { buildAmounts } from './quote-math'
 
 type QuoteReadOpts = {
   /** Drop the quote when the amount changed. Checked before each RPC. */
@@ -44,10 +43,7 @@ function ensureCurrent(opts?: QuoteReadOpts) {
 // The payout quote is the read the person is waiting on. Priority keeps it
 // ahead of the page's background market reads, which otherwise fill the
 // three-at-a-time RPC cap and make this line time out.
-async function quoteRead<T>(
-  args: Parameters<typeof rpcRead>[0],
-  opts?: QuoteReadOpts
-): Promise<T> {
+async function quoteRead<T>(args: Parameters<typeof rpcRead>[0], opts?: QuoteReadOpts): Promise<T> {
   ensureCurrent(opts)
   return rpcRead<T>(args, { priority: true })
 }
@@ -59,7 +55,7 @@ export async function lmsrNetCost(
   index: number,
   qty: bigint,
   numOutcomes: number,
-  opts?: QuoteReadOpts,
+  opts?: QuoteReadOpts
 ): Promise<bigint> {
   const amounts = buildAmounts(index, qty, numOutcomes)
   return await quoteRead<bigint>(
@@ -72,7 +68,8 @@ export async function lmsrNetCost(
   )
 }
 
-// The 1% market-maker fee the LMSR charges on top of net cost.
+// The market-maker fee the LMSR charges on top of net cost. Read from the
+// market (`calcMarketFee`), so a 1% market and a 2% market both quote exactly.
 export async function lmsrMarketFee(
   lmsr: any,
   netWei: bigint,
@@ -188,11 +185,7 @@ function spotKey(lmsr: any, index: number): string {
   return `${String(lmsr?.address ?? '').toLowerCase()}:${index}`
 }
 
-async function loadSpotParams(
-  lmsr: any,
-  index: number,
-  opts?: QuoteReadOpts
-): Promise<SpotParams> {
+async function loadSpotParams(lmsr: any, index: number, opts?: QuoteReadOpts): Promise<SpotParams> {
   ensureCurrent(opts)
   const key = spotKey(lmsr, index)
   const hit = spotCache.get(key)
@@ -226,7 +219,7 @@ export async function quoteQtyForBudget(
   index: number,
   targetWei: bigint,
   numOutcomes: number,
-  opts?: QuoteReadOpts,
+  opts?: QuoteReadOpts
 ): Promise<bigint> {
   if (!lmsr || targetWei <= 0n) return 0n
   ensureCurrent(opts)
@@ -235,20 +228,12 @@ export async function quoteQtyForBudget(
   let bestCost = 0n
   try {
     return await withDeadline(
-      quoteQtyForBudgetInner(
-        lmsr,
-        index,
-        targetWei,
-        numOutcomes,
-        deadline,
-        opts,
-        (qty, cost) => {
-          if (cost > 0n && cost <= targetWei && qty >= bestQty) {
-            bestQty = qty
-            bestCost = cost
-          }
+      quoteQtyForBudgetInner(lmsr, index, targetWei, numOutcomes, deadline, opts, (qty, cost) => {
+        if (cost > 0n && cost <= targetWei && qty >= bestQty) {
+          bestQty = qty
+          bestCost = cost
         }
-      ),
+      }),
       QUOTE_DEADLINE_MS
     )
   } catch (err) {

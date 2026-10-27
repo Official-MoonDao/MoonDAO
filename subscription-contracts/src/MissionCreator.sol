@@ -12,6 +12,7 @@ import {IJBController} from "@nana-core-v5/interfaces/IJBController.sol";
 import {IJBProjects} from "@nana-core-v5/interfaces/IJBProjects.sol";
 import {JBRulesetConfig} from "@nana-core-v5/structs/JBRulesetConfig.sol";
 import {LaunchPadPayHook} from "./LaunchPadPayHook.sol";
+import {TreasuryPayHook} from "./TreasuryPayHook.sol";
 import {LaunchPadApprovalHook} from "./LaunchPadApprovalHook.sol";
 import {JBRulesetMetadata} from "@nana-core-v5/structs/JBRulesetMetadata.sol";
 import {JBSplitGroup} from "@nana-core-v5/structs/JBSplitGroup.sol";
@@ -34,6 +35,9 @@ contract MissionCreator is Ownable, IERC721Receiver {
     MoonDAOTeam public moonDAOTeam;
     MissionTable public missionTable;
     address public moonDAOTreasury;
+    /// @notice Shared pay hook. New non-DePrize missions forward 2.5% of each
+    ///         contribution here. One hook for every mission this creator deploys.
+    TreasuryPayHook public immutable treasuryPayHook;
     address public feeHookAddress;
     address positionManagerAddress;
     uint256[] public missionIds;
@@ -57,6 +61,7 @@ contract MissionCreator is Ownable, IERC721Receiver {
         moonDAOTeam = MoonDAOTeam(_moonDAOTeam);
         missionTable = MissionTable(_missionTable);
         moonDAOTreasury = payable(_moonDAOTreasury);
+        treasuryPayHook = new TreasuryPayHook(_moonDAOTreasury);
         feeHookAddress = _feeHookAddress;
         positionManagerAddress = _positionManagerAddress;
     }
@@ -114,7 +119,9 @@ contract MissionCreator is Ownable, IERC721Receiver {
         PoolDeployer poolDeployer = new PoolDeployer(feeHookAddress, positionManagerAddress, owner());
 
 
-        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to);
+        LaunchPadPayHook launchPadPayHook = new LaunchPadPayHook(
+            fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, jbRulesetsAddress, to, address(treasuryPayHook)
+        );
         LaunchPadApprovalHook launchPadApprovalHook = new LaunchPadApprovalHook(fundingGoal, deadline, refundPeriod, jbTerminalStoreAddress, address(terminal), address(launchPadPayHook), to);
         // Ruleset 0 is funding/refunds
         // Ruleset 0 has a cashout hook that will only allow refunds if the deadline has passed and the funding goal has not been met.
@@ -207,29 +214,26 @@ contract MissionCreator is Ownable, IERC721Receiver {
             surplusAllowances: new JBCurrencyAmount[](0)
         });
         //TODO: Configure split groups
+        // The 2.5% treasury fee is taken in LaunchPadPayHook when the contribution
+        // arrives, so it is not a payout split. These percents are grossed up for
+        // Juicebox's 2.5% fee (percent / 1e9 * 0.975 = the share of the terminal
+        // balance). The team percent is the old 90% plus the 2.5% that used to
+        // go to the treasury at payout: 923_076_923 + 25_641_025.
         splitGroups[0] = JBSplitGroup({
             groupId: 0xEEEe, // This is the group ID of splits for ETH payouts. Ensure this is a uint256
             // Any leftover split percent amount after all with the group are taken into account will go to the project owner.
-            splits: new JBSplit[](3) // Initialize as dynamic array
+            splits: new JBSplit[](2)
         });
         splitGroups[0].splits[0] = JBSplit({
-            percent: 25_641_025, // works out to 2.5% after 2.5% jb fee.
+            percent: 51_282_051, // 5% of the terminal balance after the 2.5% Juicebox fee.
             projectId: 0, // Not used.
             preferAddToBalance: false, // Not used, since projectId is 0.
-            beneficiary: moonDAOTreasuryPayable, // MoonDAO treasury
+            beneficiary: payable(address(poolDeployer)),
             lockedUntil: type(uint48).max, // Use max value for lock, ~8,000 years. Project owner won't be able to change the split until the 11th millennium.
             hook: IJBSplitHook(address(0)) // Not used.
         });
         splitGroups[0].splits[1] = JBSplit({
-            percent: 51_282_051, // works out to 5% after 2.5% jb fee.
-            projectId: 0, // Not used.
-            preferAddToBalance: false, // Not used, since projectId is 0.
-            beneficiary: payable(address(poolDeployer)), // MoonDAO treasury
-            lockedUntil: type(uint48).max, // Use max value for lock, ~8,000 years. Project owner won't be able to change the split until the 11th millennium.
-            hook: IJBSplitHook(address(0)) // Not used.
-        });
-        splitGroups[0].splits[2] = JBSplit({
-            percent: 923_076_923, // works out to 90% after 2.5% jb fee.
+            percent: 948_717_948, // 92.5% of the terminal balance after the 2.5% Juicebox fee.
             projectId: 0, // Not used.
             preferAddToBalance: false, // Not used, since projectId is 0.
             beneficiary: toPayable, // Team multisig

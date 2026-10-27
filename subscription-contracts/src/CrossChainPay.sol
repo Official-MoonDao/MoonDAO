@@ -194,6 +194,8 @@ contract CrossChainPay is ILayerZeroComposer, Ownable {
         // not amountLD from the message, so slippage and leftover contract balance
         // can never be inadvertently drained.
         require(msg.value > 0, "No ETH delivered");
+        // The destination project's data hook runs here, including the 2.5%
+        // treasury fee on a non-DePrize mission created by the new creator.
         uint256 tokenCount = jbMultiTerminal.pay{value: msg.value}(
             projectId,
             JBConstants.NATIVE_TOKEN,
