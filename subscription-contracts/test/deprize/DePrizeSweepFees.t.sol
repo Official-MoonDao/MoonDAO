@@ -55,7 +55,7 @@ contract DePrizeSweepFeesTest is Test {
     }
 
     function _plan() internal view returns (DePrizeSweepFees.Plan memory) {
-        return planner.plan(registry, ILMSRMarketMaker(address(market)), IWETH(address(weth)), deprizeId, safe);
+        return planner.plan(registry, ILMSRMarketMaker(address(market)), IWETH(address(weth)), deprizeId, safe, address(0));
     }
 
     function testLiveRoutesToPrizePool() public view {
@@ -107,8 +107,6 @@ contract DePrizeSweepFeesTest is Test {
             registry, ILMSRMarketMaker(address(market)), IWETH(address(weth)), deprizeId, safe, treasury
         );
         assertFalse(p.toPrizePool);
-        assertTrue(p.toTreasury);
-        assertEq(p.treasury, treasury);
         assertEq(p.unwrapCall.length, 0);
         assertEq(p.payCall.length, 0);
         assertEq(p.transferCall, abi.encodeCall(IERC20.transfer, (treasury, 3 ether)));

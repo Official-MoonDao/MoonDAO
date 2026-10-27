@@ -14,15 +14,11 @@ import "base/Config.sol";
 /// @notice Read-only Safe batch builder for the LMSR's accrued trade fees.
 ///         In v2 the Safe owns the market, so there is no on-chain router.
 ///
-///         Set DEPRIZE_FEE_TREASURY (the public-prize path, and the Roles keeper)
-///         and the batch is two calls:
+///         With DEPRIZE_FEE_TREASURY set, the batch is
 ///           1. market.withdrawFees()
 ///           2. WETH.transfer(treasury, amount)
-///         The treasury receives WETH. There is no unwrap, so a role can scope
-///         the transfer's recipient and nothing else.
 ///
-///         Leave DEPRIZE_FEE_TREASURY unset for a legacy prize whose terms still
-///         send a live fee into the Juicebox pool:
+///         Unset, a legacy prize whose terms send a live fee into the Juicebox pool gets
 ///           1. market.withdrawFees()
 ///           2. weth.withdraw(amount)
 ///           3. jbTerminal.pay(project, ...)   — omitted once terminal or a
@@ -36,25 +32,14 @@ contract DePrizeSweepFees is Script, Config {
     struct Plan {
         uint256 amount;
         bool toPrizePool;
-        bool toTreasury;
-        address treasury;
         bytes withdrawFeesCall;
         bytes unwrapCall;
         bytes payCall;
         bytes transferCall;
     }
 
-    /// @notice Legacy routing: prize pool while the prize is live.
-    function plan(IDePrizeRegistry registry, ILMSRMarketMaker market, IWETH weth, uint256 deprizeId, address safe)
-        public
-        view
-        returns (Plan memory p)
-    {
-        return plan(registry, market, weth, deprizeId, safe, address(0));
-    }
-
-    /// @notice When `treasury` is set, fees move as WETH to that address whether
-    ///         or not the prize is still live. `address(0)` keeps the legacy route.
+    /// @notice Pure planner so tests can assert the routing rule without an RPC.
+    ///         A nonzero `treasury` sends the fees there as WETH; zero keeps the legacy route.
     function plan(
         IDePrizeRegistry registry,
         ILMSRMarketMaker market,
@@ -72,8 +57,6 @@ contract DePrizeSweepFees is Script, Config {
         p.amount = weth.balanceOf(address(market));
         p.withdrawFeesCall = abi.encodeCall(ILMSRMarketMaker.withdrawFees, ());
         if (treasury != address(0)) {
-            p.toTreasury = true;
-            p.treasury = treasury;
             p.transferCall = abi.encodeCall(IERC20.transfer, (treasury, p.amount));
             return p;
         }
@@ -101,19 +84,15 @@ contract DePrizeSweepFees is Script, Config {
         console.log("DePrize id:     ", deprizeId);
         console.log("market:         ", address(market));
         console.log("sweepable WETH: ", p.amount);
-        if (p.toTreasury) {
-            console.log("route:           treasury WETH", p.treasury);
-        } else {
-            console.log("route:          ", p.toPrizePool ? "prize pool (Juicebox)" : "keep in Safe (legacy terminal)");
-            console.log("DEPRIZE_FEE_TREASURY unset. Set it to send WETH to the treasury.");
-        }
+        if (treasury != address(0)) console.log("route:           treasury WETH", treasury);
+        else console.log("route:          ", p.toPrizePool ? "prize pool (Juicebox)" : "treasury (keep in Safe)");
         if (p.amount == 0) {
             console.log("Nothing to sweep.");
             return;
         }
         console.log("tx 1  to:", address(market));
         console.logBytes(p.withdrawFeesCall);
-        if (p.toTreasury) {
+        if (treasury != address(0)) {
             console.log("tx 2  to:", wethAddr);
             console.logBytes(p.transferCall);
             return;

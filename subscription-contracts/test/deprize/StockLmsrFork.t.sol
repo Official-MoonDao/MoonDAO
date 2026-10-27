@@ -314,7 +314,7 @@ contract StockLmsrForkTest is Test, Config {
         _betVia(market, deprizeId, bob, 0, 0.25 ether);
 
         DePrizeSweepFees.Plan memory p =
-            sweepPlanner.plan(registry, ILMSRMarketMaker(market), weth, deprizeId, owner);
+            sweepPlanner.plan(registry, ILMSRMarketMaker(market), weth, deprizeId, owner, address(0));
         assertTrue(p.toPrizePool, "live DePrize routes fees to the pool");
         assertGt(p.amount, 0, "fees accrued");
 
