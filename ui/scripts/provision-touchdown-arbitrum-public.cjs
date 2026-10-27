@@ -101,6 +101,36 @@ function parseEvent(receipt, iface, name) {
   return undefined
 }
 
+// register assigns _nextId (starts at 1). count() is _nextId - 1, so the id it
+// will return is count + 1 until this project is bound. Id 0 is not a DePrize.
+async function resolveDeprizeId(spec, row, savedPath) {
+  if (!ethers.utils.isAddress(spec.registry || '') || !row.jbProjectId) return
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl())
+  const network = await provider.getNetwork()
+  if (network.chainId !== spec.chainId)
+    throw new Error(`expected chain ${spec.chainId}, got ${network.chainId}`)
+  const registry = new ethers.Contract(
+    spec.registry,
+    [
+      'function count() view returns (uint256)',
+      'function deprizeIdByJBProject(uint256 jbProjectId) view returns (uint256)',
+    ],
+    provider
+  )
+  const bound = await registry.deprizeIdByJBProject(row.jbProjectId)
+  row.deprizeId = (bound.isZero() ? (await registry.count()).add(1) : bound).toString()
+  console.log(
+    'deprizeId',
+    row.deprizeId,
+    bound.isZero() ? '(register will assign this id)' : '(already registered)'
+  )
+  if (!savedPath || !fs.existsSync(savedPath)) return
+  const disk = JSON.parse(fs.readFileSync(savedPath, 'utf8'))
+  if (disk.deprizeId === row.deprizeId) return
+  disk.deprizeId = row.deprizeId
+  fs.writeFileSync(savedPath, JSON.stringify(disk, null, 2))
+}
+
 function printSafeBatch(spec, row) {
   if (!ethers.utils.isAddress(spec.registry || '') || !row.conditionId) {
     console.log(
@@ -113,6 +143,9 @@ function printSafeBatch(spec, row) {
     console.log('5 registry.open(deprizeId)')
     return
   }
+  if (!row.deprizeId || row.deprizeId === '0') {
+    throw new Error('deprize id is unknown; refusing to encode id 0')
+  }
   const registry = new ethers.utils.Interface([
     'function register(uint256 jbProjectId, uint256[] teamIds, uint256 sunset) returns (uint256)',
     'function setCondition(uint256 deprizeId, bytes32 ctfConditionId)',
@@ -122,6 +155,7 @@ function printSafeBatch(spec, row) {
   const hook = new ethers.utils.Interface(['function setDePrizeRegistry(address registry)'])
   console.log('--- Safe batch. Open is last. Do not send it from this script. ---')
   console.log('owner', spec.owner)
+  console.log('deprizeId', row.deprizeId)
   if (row.payHook) {
     console.log('1', row.payHook, hook.encodeFunctionData('setDePrizeRegistry', [spec.registry]))
   } else {
@@ -135,14 +169,14 @@ function printSafeBatch(spec, row) {
   console.log(
     '3',
     spec.registry,
-    registry.encodeFunctionData('setCondition', [row.deprizeId || '0', row.conditionId])
+    registry.encodeFunctionData('setCondition', [row.deprizeId, row.conditionId])
   )
   console.log(
     '4',
     spec.mint,
-    mint.encodeFunctionData('setMarket', [row.deprizeId || '0', row.market || ZERO])
+    mint.encodeFunctionData('setMarket', [row.deprizeId, row.market || ZERO])
   )
-  console.log('5', spec.registry, registry.encodeFunctionData('open', [row.deprizeId || '0']))
+  console.log('5', spec.registry, registry.encodeFunctionData('open', [row.deprizeId]))
 }
 
 async function main() {
@@ -184,6 +218,7 @@ async function main() {
 
   const confirm = process.env.CONFIRM
   if (confirm !== spec.confirm) {
+    await resolveDeprizeId(spec, row, savedPath)
     printSafeBatch(spec, row)
     console.log(`dry run. Set CONFIRM=${spec.confirm} to broadcast the deployer steps.`)
     return
@@ -311,6 +346,7 @@ async function main() {
   const fee = await market.fee()
   if (!fee.eq(FEE)) throw new Error(`market fee ${fee.toString()} != ${FEE.toString()}`)
 
+  await resolveDeprizeId(spec, row, savedPath)
   fs.writeFileSync(savedPath, JSON.stringify(row, null, 2))
   console.log('saved', savedPath)
   printSafeBatch(spec, row)
