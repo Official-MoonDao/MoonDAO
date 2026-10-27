@@ -18,7 +18,7 @@ import {MissionTable} from "../src/tables/MissionTable.sol";
 import {MoonDaoTeamTableland} from "../src/tables/MoonDaoTeamTableland.sol";
 import {MoonDAOTeamCreator} from "../src/MoonDAOTeamCreator.sol";
 import {LaunchPadPayHook} from "../src/LaunchPadPayHook.sol";
-import {TreasuryFeeMath} from "../src/TreasuryFeeMath.sol";
+import {TreasuryFeeMath} from "./TreasuryFeeMath.sol";
 import {LaunchPadApprovalHook} from "../src/LaunchPadApprovalHook.sol";
 import {PassthroughModule} from "../src/PassthroughModule.sol";
 import {IHats} from "@hats/Interfaces/IHats.sol";

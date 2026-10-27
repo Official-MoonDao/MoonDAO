@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-/// @notice 2.5% launchpad treasury fee, taken from a contribution before it
-///         is recorded in the project. 250 / 10_000.
+/// @notice Test-side model of LaunchPadPayHook's 2.5% contribution fee. Kept
+///         independent of the hook's literals so tests check them.
 library TreasuryFeeMath {
     uint256 internal constant FEE_NUMERATOR = 250;
     uint256 internal constant FEE_DENOMINATOR = 10_000;

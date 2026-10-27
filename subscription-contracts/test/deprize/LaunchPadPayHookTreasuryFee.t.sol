@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import {LaunchPadPayHook} from "../../src/LaunchPadPayHook.sol";
 import {TreasuryPayHook} from "../../src/TreasuryPayHook.sol";
-import {TreasuryFeeMath} from "../../src/TreasuryFeeMath.sol";
+import {TreasuryFeeMath} from "../TreasuryFeeMath.sol";
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 
@@ -92,6 +92,15 @@ contract LaunchPadPayHookTreasuryFeeTest is Test {
         assertEq(address(specs[0].hook), address(treasuryHook));
         assertEq(specs[0].amount, TreasuryFeeMath.fee(PAY));
         assertEq(specs[0].amount, PAY * 250 / 10_000);
+    }
+
+    /// Cash-out sizes supply as kept balance * ruleset weight, so minted tokens
+    /// must never exceed it or later refunders are short.
+    function testFuzzMintNeverExceedsKeptBalance(uint256 amount) public view {
+        amount = bound(amount, 0, 1e30);
+        (uint256 weight, JBPayHookSpecification[] memory specs) = hook.beforePayRecordedWith(_payCtx(PROJECT, amount));
+        assertLe(specs[0].amount * 40, amount);
+        assertLe(amount * weight, (amount - specs[0].amount) * WEIGHT);
     }
 
     function testDePrizeBranchDoesNotCharge() public {
