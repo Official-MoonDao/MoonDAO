@@ -86,9 +86,19 @@ export const GATE_MAX_AGE_S = 60 * 60 * 24 * 30
 // treated as unconfigured rather than quietly protected by nothing.
 export const MIN_TOKEN_LENGTH = 24
 
+// Internal surfaces that stay behind the password after launch: the Sepolia
+// test registry and the play harness. Each must sit under a GATED_PREFIXES
+// entry, or middleware never sees it.
+export const ALWAYS_GATED_PREFIXES = ['/deprize/sep', '/deprize-play']
+
+function underPrefix(pathname: string, prefixes: string[]): boolean {
+  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+}
+
 export function isGatedPath(pathname: string): boolean {
+  if (underPrefix(pathname, ALWAYS_GATED_PREFIXES)) return true
   if (MOONBASE_DEPRIZE_LAUNCHED) return false
-  return GATED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  return underPrefix(pathname, GATED_PREFIXES)
 }
 
 // Compares two strings without revealing where, or whether, they first differ.

@@ -7,6 +7,7 @@
  */
 import { expect } from 'chai'
 import {
+  ALWAYS_GATED_PREFIXES,
   GATED_PREFIXES,
   GATED_MIDDLEWARE_MATCHERS,
   GATE_COOKIE,
@@ -42,6 +43,25 @@ describe('access gate', () => {
         '/deprize-play',
       ]) {
         expect(isGatedPath(p), p).to.equal(!MOONBASE_DEPRIZE_LAUNCHED)
+      }
+    })
+
+    it('keeps the Sepolia registry and the play harness gated after launch', () => {
+      for (const p of ['/deprize/sep', '/deprize/sep/22', '/deprize-play']) {
+        expect(isGatedPath(p), p).to.equal(true)
+      }
+      // Arbitrum and plain prize routes follow the launch switch instead.
+      for (const p of ['/deprize/arb/2', '/deprize/separate-race']) {
+        expect(isGatedPath(p), p).to.equal(!MOONBASE_DEPRIZE_LAUNCHED)
+      }
+    })
+
+    it('only always-gates routes the middleware actually matches', () => {
+      for (const p of ALWAYS_GATED_PREFIXES) {
+        const covered = GATED_PREFIXES.some(
+          (prefix) => p === prefix || p.startsWith(`${prefix}/`)
+        )
+        expect(covered, p).to.equal(true)
       }
     })
 

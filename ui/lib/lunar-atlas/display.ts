@@ -176,6 +176,11 @@ export function drawnSizeM(trueSizeM: number): number {
 // numbers are still real — the panels quote true dimensions throughout.
 export const SCALE_NOTE = `Models are true scale above ${DISPLAY_FLOOR_M} m. Smaller hardware is drawn larger than life so it is visible from the street; relative sizes are kept, and all quoted dimensions are real.`
 
+// Projects whose model shows a future build-out rather than today's hardware.
+export const MODEL_NOTE: Record<string, string> = {
+  ilrs: 'Shown in its planned 2040s configuration. Most of these modules exist only as concept designs.',
+}
+
 // Races that are not settled on the Moon at all.
 //
 // Almost every capability here is won by hardware standing on the surface, so

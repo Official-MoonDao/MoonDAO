@@ -1,10 +1,10 @@
+import { Redis } from '@upstash/redis'
+import { FORECASTS_TABLE_ADDRESSES } from 'const/config'
+import { providers } from 'ethers'
 import { authMiddleware } from 'middleware/authMiddleware'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
-import { Redis } from '@upstash/redis'
-import { providers } from 'ethers'
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { FORECASTS_TABLE_ADDRESSES } from 'const/config'
 import {
   FORECAST_GAS_SPONSOR_TTL_SECONDS,
   FORECAST_GAS_SPONSORSHIPS_PER_DAY,
@@ -20,6 +20,31 @@ const redis = new Redis({
   url: process.env.UPSTASH_REDIS_URL!,
   token: process.env.UPSTASH_REDIS_TOKEN!,
 })
+
+/** Daily cap. A dead counter must not block the stipend. */
+async function reserveForecastGasSlot(
+  chainId: number,
+  wallet: string
+): Promise<'ok' | 'capped' | 'unchecked'> {
+  const key = forecastGasSponsorKey(chainId, wallet)
+  try {
+    const used = await redis.incr(key)
+    if (used === 1) await redis.expire(key, FORECAST_GAS_SPONSOR_TTL_SECONDS)
+    if (used > FORECAST_GAS_SPONSORSHIPS_PER_DAY) return 'capped'
+    return 'ok'
+  } catch (err) {
+    console.error('[deprize] forecast gas rate limit unavailable', err)
+    return 'unchecked'
+  }
+}
+
+async function releaseForecastGasSlot(chainId: number, wallet: string) {
+  try {
+    await redis.decr(forecastGasSponsorKey(chainId, wallet))
+  } catch {
+    // The counter was already unreachable, or this release lost the race.
+  }
+}
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -66,7 +91,16 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const balance = await new providers.JsonRpcProvider(rpc).getBalance(wallet)
+  let balance
+  try {
+    balance = await new providers.JsonRpcProvider(rpc).getBalance(wallet)
+  } catch (err) {
+    console.error('[deprize] forecast gas balance read failed', err)
+    return res.status(503).json({
+      sponsored: false,
+      message: 'Could not check your gas balance. Try again.',
+    })
+  }
   const topUp = forecastGasTopUpWei(BigInt(balance.toString()), forecastGasBudgetWei(chainId))
   if (topUp <= 0n) {
     return res.status(200).json({ sponsored: false, funded: true })
@@ -82,13 +116,12 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  const key = forecastGasSponsorKey(chainId, wallet)
-  const used = await redis.incr(key)
-  if (used === 1) await redis.expire(key, FORECAST_GAS_SPONSOR_TTL_SECONDS)
-  if (used > FORECAST_GAS_SPONSORSHIPS_PER_DAY) {
+  const slot = await reserveForecastGasSlot(chainId, wallet)
+  if (slot === 'capped') {
     return res.status(429).json({
       sponsored: false,
-      message: 'Gas sponsorship for predictions is used up for today. Add a little ETH for gas and try again.',
+      message:
+        'Gas sponsorship for predictions is used up for today. Add a little ETH for gas and try again.',
     })
   }
 
@@ -96,7 +129,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     const txHash = await sendEthFromHSM(wallet, topUp, chainId)
     return res.status(200).json({ sponsored: true, txHash })
   } catch (err) {
-    await redis.decr(key).catch(() => undefined)
+    if (slot === 'ok') await releaseForecastGasSlot(chainId, wallet)
     console.error('[deprize] forecast gas sponsorship failed', err)
     return res.status(503).json({
       sponsored: false,

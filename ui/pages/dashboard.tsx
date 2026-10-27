@@ -32,6 +32,8 @@ import {
 } from '@/lib/network/networkSubgraph'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { excludeNonProjectProposals } from '@/lib/project/excludeNonProjectProposals'
+import { getCurrentCycleProposals } from '@/lib/project/getCurrentCycleProposals'
+import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import { Project } from '@/lib/project/useProjectData'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -64,6 +66,7 @@ export default function Dashboard({
   filteredTeams,
   allProjects,
   nonProjectProjectIds,
+  featuredProposals,
   missions,
   featuredMissionData,
   citizensLocationData,
@@ -137,6 +140,7 @@ export default function Dashboard({
         filteredTeams={filteredTeams}
         projects={allProjects}
         nonProjectProjectIds={nonProjectProjectIds}
+        featuredProposals={featuredProposals}
         missions={missions}
         featuredMissionData={featuredMissionData}
         citizensLocationData={citizensLocationData}
@@ -177,6 +181,7 @@ export async function getStaticProps() {
   let filteredTeams: any = []
   let allProjects: Project[] = []
   let nonProjectProjectIds: number[] = []
+  let featuredProposals: Project[] = []
   let missions: any = []
   let featuredMissionData: any = null
   let citizensLocationData: any[] = []
@@ -507,6 +512,27 @@ export async function getStaticProps() {
       )
       .map((project) => Number(project.id))
 
+    // Latest Proposals widget: proposals open for the Member Vote first, then
+    // ones still in the Senate vote, then recently passed projects. Senate
+    // failures stay at active = PENDING in the table, so this relies on the
+    // on-chain flags read by getCurrentCycleProposals to keep them out.
+    try {
+      const byMdpDesc = (a: Project, b: Project) =>
+        (b.MDP ?? b.id ?? 0) - (a.MDP ?? a.id ?? 0)
+      const liveProposals = (
+        await getCurrentCycleProposals(allProjects, DEFAULT_CHAIN_V5)
+      ).sort(byMdpDesc)
+      const memberVote = liveProposals.filter((p) => p.tempCheckApproved)
+      const senateVote = liveProposals.filter((p) => !p.tempCheckApproved)
+      const recentlyPassed = allProjects
+        .filter((p) => fundedActiveIds.has(Number(p.id)) && !isBlockedProject(p))
+        .sort(byMdpDesc)
+      // The widget's slot is sized for exactly three cards.
+      featuredProposals = [...memberVote, ...senateVote, ...recentlyPassed].slice(0, 3)
+    } catch (error) {
+      console.error('Featured proposals failed:', error)
+    }
+
     // Process missions data - simplified to just pass basic data to client.
     // Always populate `missions` + `featuredMissionData` from the table row so
     // the dashboard can render *something* even when JB controller / IPFS
@@ -607,6 +633,7 @@ export async function getStaticProps() {
       filteredTeams,
       allProjects,
       nonProjectProjectIds,
+      featuredProposals,
       missions,
       featuredMissionData,
       citizensLocationData,

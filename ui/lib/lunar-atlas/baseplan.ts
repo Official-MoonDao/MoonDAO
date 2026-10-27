@@ -1364,6 +1364,11 @@ export type SolarArray = {
   bay: number
 }
 
+// Row and bay restart in every field, so the field is part of the identity.
+export function solarArrayKey(a: SolarArray): string {
+  return `${a.field}:${a.row}:${a.bay}`
+}
+
 // The fields, as strict lattices with the fouled stations dropped.
 //
 // STRICT, because a farm is surveyed and a scattered one reads as litter rather

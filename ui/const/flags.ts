@@ -66,3 +66,14 @@ export function useHiddenOnProduction(): boolean {
   }, [])
   return hidden
 }
+
+// The local demo-bet ledger (lib/deprize/mockMarket.ts) for races with no
+// on-chain market. Off on the public site, where fake pools and odds would read
+// as real. Starts off so production never flashes it before mount.
+export function useDemoMarketsEnabled(): boolean {
+  const [enabled, setEnabled] = useState(false)
+  useEffect(() => {
+    setEnabled(!isPublicProductionHost(window.location.host))
+  }, [])
+  return enabled
+}

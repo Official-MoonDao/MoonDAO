@@ -1,7 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import { DEPRIZE_AVAILABILITY_LEGEND, UNIT } from '@/lib/deprize/constants'
-import { getDePrizeCompetition, resolveLiveDePrizeId } from '@/lib/deprize/competitions'
+import {
+  deprizePrefixedHref,
+  getDePrizeCompetition,
+  resolveLiveDePrizeId,
+} from '@/lib/deprize/competitions'
 import { readServerMarket } from '@/lib/deprize/serverMarket'
 import { DePrizeState } from '@/lib/deprize/constants'
 import { ODDS_ACK_BUDGET_MS } from '@/lib/deprize/oddsWire'
@@ -132,18 +136,17 @@ export async function handleDiscordInteraction(
 
   const command = String(body?.data?.name || '')
   const prizeRaw = optionValue(body, 'prize')
-  const parsed = parsePrizeArg(command === 'bet' ? prizeRaw ?? '22' : prizeRaw)
+  const chainSlug = DEFAULT_DEPRIZE_CHAIN
+  const parsed = parsePrizeArg(prizeRaw, chainSlug)
   if (!parsed.ok) {
-    return res.status(200).json(ephemeral('Try /odds 22 or /odds touchdown'))
+    return res.status(200).json(ephemeral('Try /odds touchdown or /odds <prize number>'))
   }
   const deprizeId = parsed.id
-  const chainSlug = DEFAULT_DEPRIZE_CHAIN
   const site = siteOrigin()
+  const prizeUrl = `${site}${deprizePrefixedHref(chainSlug, deprizeId)}`
 
   if (command === 'bet') {
-    return res.status(200).json(
-      message(`${site}/deprize/${deprizeId}\n${DEPRIZE_AVAILABILITY_LEGEND}`)
-    )
+    return res.status(200).json(message(`${prizeUrl}\n${DEPRIZE_AVAILABILITY_LEGEND}`))
   }
 
   if (command !== 'odds' && command !== 'pool') {
@@ -151,7 +154,7 @@ export async function handleDiscordInteraction(
   }
 
   const labels = deprizeOutcomeLabels(chainSlug, deprizeId)
-  const chainId = forecastChainId(chainSlug) ?? 11155111
+  const chainId = forecastChainId(chainSlug) ?? 42161
   const readMarket = deps.readMarket ?? readServerMarket
   const work = readMarket({
     chainSlug,
@@ -171,12 +174,12 @@ export async function handleDiscordInteraction(
 
   if (raced === 'timeout') {
     return res.status(200).json(
-      ephemeral(`Odds are taking longer than usual to read — they're live at ${site}/deprize/${deprizeId}`)
+      ephemeral(`Odds are taking longer than usual to read — they're live at ${prizeUrl}`)
     )
   }
   if (!raced) {
     return res.status(200).json(
-      ephemeral(`Couldn't read the market — try ${site}/deprize/${deprizeId}`)
+      ephemeral(`Couldn't read the market — try ${prizeUrl}`)
     )
   }
 
@@ -190,7 +193,7 @@ export async function handleDiscordInteraction(
         {
           title: `${title} prize pool`,
           description: `${eth.toFixed(4)} ETH`,
-          url: `${site}/deprize/${deprizeId}`,
+          url: prizeUrl,
         },
       ])
     )
@@ -206,7 +209,7 @@ export async function handleDiscordInteraction(
       message('', [
         {
           title: `${title} — resolved`,
-          description: `${lines.join('\n')}\n${site}/deprize/${deprizeId}`,
+          description: `${lines.join('\n')}\n${prizeUrl}`,
         },
       ])
     )
@@ -229,7 +232,7 @@ export async function handleDiscordInteraction(
     message('', [
       {
         title,
-        description: `${lines.join('\n')}\n${site}/deprize/${deprizeId}`,
+        description: `${lines.join('\n')}\n${prizeUrl}`,
       },
     ])
   )

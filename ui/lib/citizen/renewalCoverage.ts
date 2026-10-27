@@ -22,7 +22,11 @@ export const FIRST_RUN_EXCLUSION_SET = 'renewal:exclude:first-run'
 /** Permanent opt-out, separate from the one-time first-run list. */
 export const RENEWAL_SUPPRESSION_SET = 'renewal:suppress'
 
-/** Working name. Live mode adds this tag on day -30. */
+/**
+ * Working name. Live mode adds this tag on the nominal entry day (30 days
+ * left) and on the grace days in RENEWAL_ENTRY_GRACE_DAYS when this term
+ * has no stage yet.
+ */
 export const RENEWAL_REMINDER_TAG = 'Renewal-Reminder'
 
 /** Live mode adds this when expiresAt leaves the window, and removes Renewal-Reminder. */
@@ -57,6 +61,33 @@ export type CoverageBucket = (typeof COVERAGE_BUCKETS)[number]
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
+/**
+ * Nominal days-left bucket for Renewal-Reminder.
+ * daysLeft is ceil((expiresAt - now) / 24h), so each bucket is 24 hours.
+ */
+export const RENEWAL_ENTRY_DAY = 30
+
+/**
+ * Extra daysLeft buckets after the nominal entry day that still get
+ * Renewal-Reminder when this term has no stage yet.
+ * 2 includes 29 and 28. A daily run that starts late lands on 29 when the
+ * 30 bucket closed between runs. A skipped run whose next start is also
+ * late lands on 28. 27 is the first bucket that stays on catch-up.
+ * The term marker still allows only one stage, so grace does not tag
+ * someone who was already staged at 30.
+ */
+export const RENEWAL_ENTRY_GRACE_DAYS = 2
+
+/** Lowest daysLeft that still enters on Renewal-Reminder. */
+export function renewalEntryMinDay(): number {
+  return RENEWAL_ENTRY_DAY - RENEWAL_ENTRY_GRACE_DAYS
+}
+
+/** True for the nominal entry day and the late-run grace below it. */
+export function isRenewalEntryDay(daysToExpiry: number): boolean {
+  return daysToExpiry <= RENEWAL_ENTRY_DAY && daysToExpiry >= renewalEntryMinDay()
+}
+
 /** Same rounding as `daysUntilCitizenshipExpiry` in citizenSubscription.ts. */
 export function daysUntilRenewal(expiresAtSec: number, nowMs: number): number | null {
   if (!Number.isFinite(expiresAtSec)) return null
@@ -64,15 +95,16 @@ export function daysUntilRenewal(expiresAtSec: number, nowMs: number): number | 
 }
 
 /**
- * enterToday: 30 days left, the only day live mode would add Renewal-Reminder.
- * inside: 1 to 29 days left. expiredWithin14: expiry day through 14 days after.
+ * enterToday: 28 to 30 days left. Live mode adds Renewal-Reminder when this
+ * term has no stage yet. 29 and 28 are grace for a late or skipped daily run.
+ * inside: 1 to 27 days left. expiredWithin14: expiry day through 14 days after.
  * Everyone else is out of the window.
  */
 export function windowPosition(expiresAtSec: number, nowMs: number): WindowPosition | null {
   const days = daysUntilRenewal(expiresAtSec, nowMs)
   if (days === null) return null
-  if (days === 30) return 'enterToday'
-  if (days >= 1 && days <= 29) return 'inside'
+  if (isRenewalEntryDay(days)) return 'enterToday'
+  if (days >= 1 && days < renewalEntryMinDay()) return 'inside'
   if (days <= 0 && days >= -14) return 'expiredWithin14'
   return 'outOfWindow'
 }
@@ -130,7 +162,7 @@ export type SequencePosition = {
 
 /** Where this citizen would be if the sequence had started on day -30. */
 export function expectedSequencePosition(daysToExpiry: number): SequencePosition {
-  const sequenceDay = 30 - daysToExpiry
+  const sequenceDay = RENEWAL_ENTRY_DAY - daysToExpiry
   const missedEmails = RENEWAL_SEQUENCE_EMAILS.filter(
     (email) => email.sequenceDay < sequenceDay
   ).map((email) => email.id)
@@ -138,8 +170,20 @@ export function expectedSequencePosition(daysToExpiry: number): SequencePosition
   return { sequenceDay, nextEmail: next?.id ?? null, missedEmails }
 }
 
-export const LATE_ENTRANT_CATCH_UP =
-  'Do not add Renewal-Reminder. The sequence times from entry, so a late tag sends the -30 email on the wrong date. Live mode adds one catch-up tag for the next remaining email and leaves the earlier emails unsent.'
+/**
+ * Label for the dry-run coverage row. Entry days, including grace, start
+ * the sequence on this run: the next email is minus30 and nothing is missed.
+ * `expectedSequencePosition` stays the calendar hypothetical. Using it here
+ * would call a grace entry a missed minus30 while live mode tags Renewal-Reminder.
+ */
+export function reportedSequencePosition(daysToExpiry: number): SequencePosition {
+  if (isRenewalEntryDay(daysToExpiry)) {
+    return { sequenceDay: 0, nextEmail: 'minus30', missedEmails: [] }
+  }
+  return expectedSequencePosition(daysToExpiry)
+}
+
+export const LATE_ENTRANT_CATCH_UP = `From ${renewalEntryMinDay()} through ${RENEWAL_ENTRY_DAY} days left, a term with no stage yet still gets Renewal-Reminder. That covers a daily run that starts late or does not run. Fewer days left do not get Renewal-Reminder. The sequence times from entry, so a later tag sends the -30 email on the wrong date. Live mode adds one catch-up tag for the next remaining email and leaves the earlier emails unsent.`
 
 export const RENEWAL_EXIT_PLAN =
   'When expiresAt moves forward past 30 days, live mode adds the Renewed tag and removes Renewal-Reminder and the catch-up tags. The Renewed tag stays until the next cycle starts. That is the first day the new expiresAt is back inside the reminder window. Removing it in the same run would race the Kit exit rule that needs the tag present. At the start of the next cycle, live mode removes Renewed with DELETE /v4/tags/{tag_id}/subscribers/{subscriber_id} before the new reminder or catch-up tag is added. It never calls a global unsubscribe and never re-adds an unsubscribed subscriber. Kit still has no public API to remove one subscriber from one sequence. Writes run only when RENEWAL_REMINDERS_LIVE is true and the request includes live=1.'
@@ -368,7 +412,7 @@ export function classifyRenewalRow(row: CoverageInput, nowMs: number): CoverageR
   if (daysToExpiry === null) return null
   const expiresAt = Math.trunc(row.expiresAt)
   const lateEntrant = position !== 'enterToday'
-  const sequence = expectedSequencePosition(daysToExpiry)
+  const sequence = reportedSequencePosition(daysToExpiry)
   const onOct2List = row.firstRunRedis
   const base = {
     tokenId: String(row.tokenId),
