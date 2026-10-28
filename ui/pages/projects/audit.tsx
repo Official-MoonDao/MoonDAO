@@ -10,6 +10,10 @@
  * Defaults to the live proposal cycle (`PROJECT_CYCLE`). `?quarter=`
  * and `?year=` let auditors pin a past cycle (e.g.
  * `/projects/audit?quarter=2&year=2026`).
+ *
+ * The live cycle stays sealed while Member Vote submissions are open.
+ * The API returns `sealed: true` and this page shows a notice instead of
+ * who voted for what.
  */
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -28,6 +32,7 @@ type AuditResponse = {
   outcome: (MemberVoteOutcome & { audit?: MemberVoteAudit }) | null
   quarter: number
   year: number
+  sealed?: boolean
 }
 
 const QUARTERS = [1, 2, 3, 4] as const
@@ -71,6 +76,7 @@ export default function ProjectsAuditPage() {
 
   const outcome = data?.outcome
   const audit = outcome?.audit
+  const sealed = data?.sealed === true
 
   // Build a lookup for voter power so per-row weighted contributions can be
   // computed without re-shipping power on every row. Memoized because every
@@ -143,7 +149,8 @@ export default function ProjectsAuditPage() {
             {error && !isLoading && (
               <ErrorState message="Could not load the audit data. Try again in a moment." />
             )}
-            {!isLoading && !error && outcome && audit && (
+            {!isLoading && !error && sealed && <SealedState quarter={quarter} year={year} />}
+            {!isLoading && !error && !sealed && outcome && audit && (
               <AuditBody
                 outcome={outcome}
                 audit={audit}
@@ -151,7 +158,7 @@ export default function ProjectsAuditPage() {
                 totalPower={totalPower}
               />
             )}
-            {!isLoading && !error && (!outcome || !audit) && (
+            {!isLoading && !error && !sealed && (!outcome || !audit) && (
               <ErrorState
                 message={`No tally data is available yet for Q${quarter} ${year}. Either the vote hasn't been tallied or no eligible votes were cast.`}
               />
@@ -226,6 +233,18 @@ function LoadingState() {
           <div className="mt-2 h-2 w-2/3 bg-white/5 rounded-full" />
         </div>
       ))}
+    </div>
+  )
+}
+
+function SealedState({ quarter, year }: { quarter: number; year: number }) {
+  return (
+    <div
+      id="member-vote-audit-sealed"
+      className="bg-slate-800/40 border border-white/10 text-gray-200 rounded-lg p-4 sm:p-5 text-sm leading-relaxed"
+    >
+      The Q{quarter} {year} Member Vote is still open. Who voted for which project, and the running
+      tally, stay hidden until submissions close.
     </div>
   )
 }
