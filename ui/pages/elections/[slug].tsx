@@ -19,6 +19,7 @@ import {
   ballotChoices,
   Election,
   electionPhase,
+  ElectionPhase,
   getElection,
   listBuildableElections,
 } from '@/lib/elections/elections'
@@ -81,6 +82,10 @@ function formatDate(iso: string | null) {
     minute: '2-digit',
     timeZoneName: 'short',
   })
+}
+
+function closeTimeVisible(election: Election, phase: ElectionPhase) {
+  return !election.hideCloseTime || phase === 'counting' || phase === 'closed'
 }
 
 function timeUntil(iso: string | null, now: number) {
@@ -310,8 +315,13 @@ function ElectionVote({
   const voterTotalVP = voters.reduce((sum, v) => sum + v.votingPower, 0)
 
   const opensLabel = formatDate(election.opensAt)
-  const closesLabel = formatDate(election.closesAt)
-  const countdown = timeUntil(phase === 'upcoming' ? election.opensAt : election.closesAt, now)
+  const closesLabel = closeTimeVisible(election, phase) ? formatDate(election.closesAt) : null
+  const countdown =
+    phase === 'upcoming'
+      ? timeUntil(election.opensAt, now)
+      : closesLabel
+      ? timeUntil(election.closesAt, now)
+      : null
 
   return (
     <>
@@ -330,6 +340,9 @@ function ElectionVote({
                 <span className="text-white">{closesLabel}</span>
                 {countdown && <span className="text-gray-400"> · in {countdown}</span>}
               </div>
+            )}
+            {phase === 'open' && !closesLabel && (
+              <div className="text-xs sm:text-sm text-gray-400">Closing date to be announced</div>
             )}
             {phase === 'upcoming' && opensLabel && (
               <div className="text-xs sm:text-sm">
@@ -544,7 +557,9 @@ export default function ElectionPage({
   }, [])
 
   const opensLabel = formatDate(election.opensAt)
-  const closesLabel = formatDate(election.closesAt)
+  const closesLabel = closeTimeVisible(election, electionPhase(election, now))
+    ? formatDate(election.closesAt)
+    : null
 
   const howItWorks = (
     <div className={CARD}>
