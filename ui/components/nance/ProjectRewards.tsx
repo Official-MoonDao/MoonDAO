@@ -613,6 +613,18 @@ export function ProjectRewards({
     }
   }, [proposals])
 
+  // Member-vote proposals the connected wallet authored. These are the
+  // voters blocked from allocating to their own project, so they get a note
+  // explaining that the tally fills that cell with the other voters' average
+  // (see computeMemberVoteOutcome) rather than counting it as 0%.
+  const userAuthoredProposals = useMemo(() => {
+    const userAddr = userAddress?.toLowerCase()
+    if (!userAddr) return []
+    return visibleProposals.filter(
+      (p: any) => projectIdToAuthorAddress[String(p.id)]?.toLowerCase() === userAddr
+    )
+  }, [visibleProposals, projectIdToAuthorAddress, userAddress])
+
   const tallyVotes = async () => {
     const res = await fetch(`/api/proposals/vote`, {
       method: 'POST',
@@ -1626,6 +1638,42 @@ export function ProjectRewards({
                     impact, and click Submit Distribution.
                   </p>
                 )}
+                {isMemberVote &&
+                  !isSenateVote &&
+                  memberVoteSubmissionsOpen &&
+                  userAuthoredProposals.length > 0 &&
+                  (() => {
+                    const labels = userAuthoredProposals.map((p: any) =>
+                      p.MDP ? `MDP-${p.MDP}` : p.name
+                    )
+                    const ownList =
+                      labels.length === 1
+                        ? labels[0]
+                        : `${labels.slice(0, -1).join(', ')} and ${labels[labels.length - 1]}`
+                    const plural = labels.length > 1
+                    return (
+                      <div
+                        data-testid="author-vote-note"
+                        className="mb-4 rounded-lg border border-blue-400/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-100"
+                      >
+                        <p className="font-semibold text-white">
+                          Voting as the author of {ownList}
+                        </p>
+                        <p className="mt-1">
+                          You can&apos;t allocate to your own {plural ? 'projects' : 'project'}, but
+                          voting won&apos;t count against {plural ? 'them' : 'it'}. When votes are
+                          tallied, your share for {plural ? 'each of your projects' : ownList} is set
+                          to the average that every other voter gave it, and the
+                          percentages you give other projects are scaled down to make room.
+                        </p>
+                        <p className="mt-1 text-blue-200/80">
+                          Distribute 100% across the other projects as you normally would. Once
+                          voting closes, you can check exactly how your vote was counted on the
+                          audit page linked from the results.
+                        </p>
+                      </div>
+                    )
+                  })()}
                 {isMemberVote && !isSenateVote && !memberVoteSubmissionsOpen && (
                   <p className="mb-4 text-gray-400 text-sm">
                     Member Vote submissions are closed for this cycle. Final results are tallied
