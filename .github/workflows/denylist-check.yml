@@ -1,0 +1,40 @@
+# Fails a pull request that adds any term listed in the OPS_DENYLIST secret.
+# The output names only where a match was found, never the term.
+#
+# pull_request_target runs the workflow from the base branch with access to
+# secrets, including for pull requests from forks. It is safe here only
+# because the job never checks out, builds, or runs code from the pull
+# request: it checks out the base branch for the script and reads the PR
+# through the API.
+name: denylist-check
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: denylist-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  denylist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts/check_denylist.py
+          sparse-checkout-cone-mode: false
+      - name: Check added lines, title, body, and commit messages
+        env:
+          OPS_DENYLIST: ${{ secrets.OPS_DENYLIST }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 .github/scripts/check_denylist.py
