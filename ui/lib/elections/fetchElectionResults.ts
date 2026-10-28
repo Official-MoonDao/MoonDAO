@@ -84,7 +84,10 @@ export async function fetchElectionResults(
     closeBlocks = await resolveCloseBlocks(closeTimestamp)
     vMOONEYs = await fetchTotalVMOONEYsAtBlocks(addresses, closeBlocks)
   } else {
-    vMOONEYs = await fetchTotalVMOONEYs(addresses, closeTimestamp)
+    // A hidden close time may be a far-off placeholder; projecting to it would
+    // zero out voters whose locks end before then.
+    const projectTo = election.hideCloseTime ? Math.floor(Date.now() / 1000) : closeTimestamp
+    vMOONEYs = await fetchTotalVMOONEYs(addresses, projectTo)
   }
   const power: Record<string, number> = {}
   addresses.forEach((address, i) => {
@@ -139,14 +142,15 @@ export async function fetchElectionResults(
 
 // Strips everything that would reveal how people voted. Used while the
 // election is still open so the page props don't leak the running tally.
-export function sealElectionResults(
-  election: Election,
-  results: ElectionResults
-): ElectionResults {
+export function sealElectionResults(election: Election, results: ElectionResults): ElectionResults {
   const empty = emptyElectionResults(election)
   return {
     ...results,
     voters: results.voters.map((v) => ({ ...v, ballot: [] })),
-    tally: { ...empty.tally, totalParticipationVP: results.totalVP, ballotCount: results.totalVoters },
+    tally: {
+      ...empty.tally,
+      totalParticipationVP: results.totalVP,
+      ballotCount: results.totalVoters,
+    },
   }
 }

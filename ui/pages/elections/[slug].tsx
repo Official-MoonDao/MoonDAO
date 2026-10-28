@@ -148,8 +148,9 @@ function ElectionVote({
   )
 
   // Ballots are weighted by vMOONEY at close, so show that rather than today's.
+  // A hidden close time may be a placeholder, so show today's until it's set.
   const closeTimestamp =
-    phase === 'open' && election.closesAt
+    phase === 'open' && election.closesAt && !election.hideCloseTime
       ? Math.floor(Date.parse(election.closesAt) / 1000)
       : undefined
   const { totalVMOONEY, isLoading: vpLoading } = useTotalVMOONEY(
@@ -409,7 +410,11 @@ function ElectionVote({
             {phase === 'open' && candidates.length > 0 && (
               <div className="mt-6 pt-5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="sm:flex-1 min-w-0">
-                  <p className="text-xs text-gray-400">Your voting power at close</p>
+                  <p className="text-xs text-gray-400">
+                    {election.hideCloseTime
+                      ? 'Your voting power now'
+                      : 'Your voting power at close'}
+                  </p>
                   <p className="text-white text-lg font-semibold">
                     {userAddress
                       ? vpLoading
