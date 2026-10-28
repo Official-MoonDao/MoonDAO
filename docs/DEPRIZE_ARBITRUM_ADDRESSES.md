@@ -1,5 +1,9 @@
 # DePrize Arbitrum — address ledger
 
+The 2026-10-27 public Touchdown stack (new immutable registry, not yet the
+app pointer) is in
+[`DEPRIZE_TOUCHDOWN_PUBLIC_ADDRESSES.md`](./DEPRIZE_TOUCHDOWN_PUBLIC_ADDRESSES.md).
+
 Live values for Arbitrum One (chain id 42161). These are the source of truth for
 `ui/const/config.ts` and `fee-hook/script/base/Config.sol`. **Do not invent addresses.**
 Sepolia v2 (the dress rehearsal) is in [`DEPRIZE_SEPOLIA_ADDRESSES.md`](./DEPRIZE_SEPOLIA_ADDRESSES.md).

@@ -1,0 +1,33 @@
+{
+  "name": "Touchdown",
+  "question": "deprize:sepolia:touchdown-public:v1",
+  "chainId": 11155111,
+  "confirm": "sepolia",
+  "oracle": "0xE5148e4399e3D849F629E0FECEcf6fC986e96127",
+  "owner": "0xE5148e4399e3D849F629E0FECEcf6fC986e96127",
+  "registry": "0x342fC1Ab7CAcc71d13274D3979EAE17Cf8e93555",
+  "mint": "0xbed33e958Bc04651cd879Fe2c5AC2175Dd938571",
+  "factory": "0x30b449b6c85B64f4FCBB81fBe48A9d35f41d5674",
+  "ctf": "0xC3B0a34fb9a1c5F9464D7249BF564117e1fe6dE8",
+  "weth": "0x8cfF28F922AeEe80d3a0663e735681469F7374c6",
+  "missionCreator": "0xe103fBE8a0A04d6664755aDa6D2da3D66d3c394a",
+  "teamId": 0,
+  "seedPerNameEth": "0.008",
+  "fundingGoalEth": "100",
+  "sunset": "2y",
+  "refundPeriodDays": 30,
+  "token": true,
+  "tokenName": "DePrize Touchdown",
+  "tokenSymbol": "DTCH2",
+  "projectUri": "https://moondao.com/deprize/touchdown",
+  "memo": "DePrize Touchdown",
+  "roster": [
+    { "name": "Astrobotic, Griffin Mission One", "teamId": 601 },
+    { "name": "Intuitive Machines, Nova-C IM-3", "teamId": 602 },
+    { "name": "Firefly, Blue Ghost M2", "teamId": 603 },
+    { "name": "Blue Origin, Blue Moon MK1", "teamId": 604 },
+    { "name": "CNSA, Chang'e-7", "teamId": 605 },
+    { "name": "ispace", "teamId": 606 },
+    { "name": "Open Field", "teamId": 24 }
+  ]
+}

@@ -46,39 +46,24 @@ describe('capability ladder', () => {
     }
   })
 
-  it('getLadderForCompetition("sepolia", 7): Touchdown v2 is live, current, href /deprize/7', () => {
-    const result = getLadderForCompetition('sepolia', 7)
+  it('getLadderForCompetition("sepolia", 1): public Touchdown is live, current, href /deprize/1', () => {
+    const result = getLadderForCompetition('sepolia', 1)
     const touchdown = result.rungs.find((r) => r.key === 'touchdown')
     expect(touchdown?.status).to.equal('live')
     expect(touchdown?.current).to.equal(true)
-    expect(touchdown?.href).to.equal('/deprize/7')
-    expect(touchdown?.deprizeId).to.equal(7)
+    expect(touchdown?.href).to.equal('/deprize/1')
+    expect(touchdown?.deprizeId).to.equal(1)
     expect(result.currentKey).to.equal('touchdown')
   })
 
-  it('getLadderForCompetition("sepolia", 1): touchdown still current via lineage; href points at 7, not 1', () => {
+  it('keeps First Tracks, Water Ice, and Night Shift planned on the new Sepolia registry', () => {
     const result = getLadderForCompetition('sepolia', 1)
-    const touchdown = result.rungs.find((r) => r.key === 'touchdown')
-    expect(touchdown?.current).to.equal(true)
-    expect(touchdown?.href).to.equal('/deprize/7')
-    expect(touchdown?.href).to.not.include('/1')
-    expect(result.currentKey).to.equal('touchdown')
-  })
-
-  it('every registered rung is live', () => {
-    const result = getLadderForCompetition('sepolia', 2)
-    const night = result.rungs.find((r) => r.key === 'night-shift')
-    expect(night?.status).to.equal('live')
-    expect(night?.deprizeId).to.equal(3)
-    expect(night?.href).to.equal('/deprize/3')
-    const tracks = result.rungs.find((r) => r.key === 'first-tracks')
-    expect(tracks?.status).to.equal('live')
-    expect(tracks?.deprizeId).to.equal(5)
-    expect(tracks?.href).to.equal('/deprize/5')
-    const ice = result.rungs.find((r) => r.key === 'ice')
-    expect(ice?.status).to.equal('live')
-    expect(ice?.deprizeId).to.equal(6)
-    expect(ice?.href).to.equal('/deprize/6')
+    for (const key of ['first-tracks', 'ice', 'night-shift'] as const) {
+      const rung = result.rungs.find((r) => r.key === key)
+      expect(rung?.status, key).to.equal('planned')
+      expect(rung?.deprizeId, key).to.equal(undefined)
+      expect(rung?.href, key).to.equal(undefined)
+    }
   })
 
   it('no ladder entry references the chamber spec', () => {
@@ -143,11 +128,12 @@ describe('LADDER_GOAL_IDS — which races the Moonbase calls real', () => {
 
   // The Moonbase legend must not split its race list on "has a DePrize on
   // the connected chain". These ids are the races we run, on every chain.
+  // A market binding is per registry: Sepolia's new registry only has Touchdown.
   it('lists the same races on Sepolia and on Arbitrum', () => {
     const bound = (chain: string) =>
       LADDER_GOAL_IDS.filter((id) => findDePrizeIdForGoal(chain, id) !== undefined)
-    expect(bound('sepolia').length).to.equal(LADDER_GOAL_IDS.length)
-    expect(bound('arbitrum').length).to.equal(LADDER_GOAL_IDS.length)
+    expect(bound('sepolia')).to.deep.equal(['shared-next-landing'])
+    expect(bound('arbitrum')).to.deep.equal([...LADDER_GOAL_IDS])
     for (const id of LADDER_GOAL_IDS) {
       expect(isLadderGoal(id), id).to.equal(true)
     }

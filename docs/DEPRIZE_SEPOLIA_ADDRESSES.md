@@ -1,5 +1,9 @@
 # DePrize Sepolia — v2 address ledger
 
+The 2026-10-27 public Touchdown cutover is in
+[`DEPRIZE_TOUCHDOWN_PUBLIC_ADDRESSES.md`](./DEPRIZE_TOUCHDOWN_PUBLIC_ADDRESSES.md).
+The UI now points at that registry. This file is the 2026-09-18 ledger.
+
 Live values for Ethereum Sepolia (chain id 11155111), deployed 2026-09-18 from
 `cursor/deprize-contracts-v2`. These are the source of truth for the UI
 follow-up PR. **Do not invent addresses.** v1 proxies, FeeRouter and

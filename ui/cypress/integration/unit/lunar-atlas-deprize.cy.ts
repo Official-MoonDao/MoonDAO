@@ -20,24 +20,19 @@ import { SEED_ATLAS } from '../../../lib/lunar-atlas/seed'
 import { buildTechTrees, sharedGoalById } from '../../../lib/lunar-atlas/selectors'
 
 describe('lunar-atlas × DePrize binding', () => {
-  const binding = getDePrizeRaceBinding('sepolia', 2)
+  const binding = getDePrizeRaceBinding('sepolia', 1)
   const goal = sharedGoalById(SEED_ATLAS, 'shared-next-landing')
   const nightShift = sharedGoalById(SEED_ATLAS, 'shared-night-shift')
 
-  it('binds Sepolia DePrize 2 to the Touchdown shared goal with matching projectIds', () => {
+  it('binds Sepolia DePrize 1 to the Touchdown shared goal with matching projectIds', () => {
     expect(binding?.sharedGoalId).to.equal('shared-next-landing')
     expect(goal).to.exist
     const competitorIds = (binding?.outcomes ?? [])
       .filter((o) => !o.field)
       .map((o) => o.projectId)
     expect(competitorIds).to.have.length.greaterThan(0)
+    expect(competitorIds).to.include('ispace-apex')
     for (const id of competitorIds) {
-      expect(goal!.projectIds, `atlas goal missing ${id}`).to.include(id)
-    }
-    const v2 = getDePrizeRaceBinding('sepolia', 7)
-    const v2Ids = (v2?.outcomes ?? []).filter((o) => !o.field).map((o) => o.projectId)
-    expect(v2Ids).to.include('ispace-apex')
-    for (const id of v2Ids) {
       expect(goal!.projectIds, `atlas goal missing ${id}`).to.include(id)
     }
   })
@@ -115,7 +110,7 @@ describe('lunar-atlas × DePrize binding', () => {
     expect(meters?.threshold).to.match(/0\.5% expanded uncertainty/)
     expect(meters?.threshold).to.match(/traceably calibrated/)
     expect(nightShift!.market?.status).to.equal('planned')
-    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(3)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
     for (const id of nightShift!.projectIds) {
       const project = SEED_ATLAS.projects.find((p) => p.id === id)
       expect(project, id).to.exist

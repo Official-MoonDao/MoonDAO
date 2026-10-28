@@ -39,7 +39,17 @@ function loadPk() {
   return pk
 }
 
-function rpcUrl() {
+function rpcUrl(spec) {
+  if (spec && spec.chainId === 11155111) {
+    return (
+      process.env.SEPOLIA_RPC_URL ||
+      process.env.SEPOLIA_RPC ||
+      'https://ethereum-sepolia-rpc.publicnode.com'
+    )
+  }
+  if (spec && spec.chainId && spec.chainId !== 42161) {
+    throw new Error(`unsupported chain ${spec.chainId}`)
+  }
   return process.env.ARBITRUM_RPC_URL || 'https://arb1.arbitrum.io/rpc'
 }
 
@@ -108,7 +118,7 @@ function parseEvent(receipt, iface, name) {
 async function resolveDeprizeId(spec, row, savedPath) {
   row.deprizeId = undefined
   if (!ethers.utils.isAddress(spec.registry || '') || !row.jbProjectId) return
-  const provider = new ethers.providers.JsonRpcProvider(rpcUrl())
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl(spec))
   const network = await provider.getNetwork()
   if (network.chainId !== spec.chainId)
     throw new Error(`expected chain ${spec.chainId}, got ${network.chainId}`)
@@ -145,7 +155,8 @@ async function printSafeBatch(spec, row) {
     console.log('2 registry.register(jbProjectId, teamIds, sunset)')
     console.log('3 registry.setCondition(deprizeId, conditionId)')
     console.log('4 mint.setMarket(deprizeId, market)')
-    console.log('5 registry.open(deprizeId)')
+    console.log('5 mint.setComplianceSigner(signer)')
+    console.log('6 registry.open(deprizeId)')
     return
   }
   const registry = new ethers.utils.Interface([
@@ -153,7 +164,10 @@ async function printSafeBatch(spec, row) {
     'function setCondition(uint256 deprizeId, bytes32 ctfConditionId)',
     'function open(uint256 deprizeId)',
   ])
-  const mint = new ethers.utils.Interface(['function setMarket(uint256 deprizeId, address market)'])
+  const mint = new ethers.utils.Interface([
+    'function setMarket(uint256 deprizeId, address market)',
+    'function setComplianceSigner(address complianceSigner)',
+  ])
   const hook = new ethers.utils.Interface(['function setDePrizeRegistry(address registry)'])
   console.log('--- Safe batch. Open is last. Do not send it from this script. ---')
   console.log('owner', spec.owner)
@@ -190,7 +204,17 @@ async function printSafeBatch(spec, row) {
     spec.mint,
     mint.encodeFunctionData('setMarket', [row.deprizeId, row.market || ZERO])
   )
-  console.log('5', spec.registry, registry.encodeFunctionData('open', [row.deprizeId]))
+  // A fresh mint has no signer, so every bet reverts until this is set. It must
+  // be the address of the server's DEPRIZE_COMPLIANCE_SIGNER_KEY.
+  const signer = process.env.COMPLIANCE_SIGNER || spec.complianceSigner
+  if (ethers.utils.isAddress(signer || '')) {
+    console.log('5', spec.mint, mint.encodeFunctionData('setComplianceSigner', [signer]))
+  } else {
+    console.log(
+      '5 mint.setComplianceSigner(signer). Set COMPLIANCE_SIGNER to the production permit key address to encode it.'
+    )
+  }
+  console.log('6', spec.registry, registry.encodeFunctionData('open', [row.deprizeId]))
 }
 
 async function main() {
@@ -242,7 +266,7 @@ async function main() {
     throw new Error('registry and mint must already be deployed. This script reuses them.')
   }
 
-  const provider = new ethers.providers.JsonRpcProvider(rpcUrl())
+  const provider = new ethers.providers.JsonRpcProvider(rpcUrl(spec))
   const network = await provider.getNetwork()
   if (network.chainId !== spec.chainId)
     throw new Error(`expected chain ${spec.chainId}, got ${network.chainId}`)
@@ -262,7 +286,9 @@ async function main() {
     spec.factory,
     [
       'function createLMSRMarketMaker(address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, address whitelist, uint256 funding) returns (address)',
+      'function createLMSRWithTWAP(address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, address whitelist, uint256 funding) returns (address)',
       'event LMSRMarketMakerCreation(address indexed creator, address lmsrMarketMaker, address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, uint256 funding)',
+      'event LMSRWithTWAPCreation(address indexed creator, address lmsrWithTWAP, address pmSystem, address collateralToken, bytes32[] conditionIds, uint64 fee, uint256 funding)',
     ],
     wallet
   )
@@ -336,7 +362,11 @@ async function main() {
       await send(weth, 'deposit', [], { valueOverride: funding.sub(wethBal) })
     }
     await send(weth, 'approve', [spec.factory, funding])
-    const receipt = await send(factory, 'createLMSRMarketMaker', [
+    const useTwap =
+      spec.factoryMethod === 'createLMSRWithTWAP' ||
+      spec.factory.toLowerCase() === '0x299f163705abbfa1a8de7670f33171730f828f3d'
+    const method = useTwap ? 'createLMSRWithTWAP' : 'createLMSRMarketMaker'
+    const receipt = await send(factory, method, [
       spec.ctf,
       spec.weth,
       [row.conditionId],
@@ -344,9 +374,13 @@ async function main() {
       ZERO,
       funding,
     ])
-    const created = parseEvent(receipt, factory.interface, 'LMSRMarketMakerCreation')
-    if (!created) throw new Error('LMSRMarketMakerCreation missing')
-    row.market = created.args.lmsrMarketMaker
+    const created = parseEvent(
+      receipt,
+      factory.interface,
+      useTwap ? 'LMSRWithTWAPCreation' : 'LMSRMarketMakerCreation'
+    )
+    if (!created) throw new Error(`${method} event missing`)
+    row.market = useTwap ? created.args.lmsrWithTWAP : created.args.lmsrMarketMaker
     fs.writeFileSync(savedPath, JSON.stringify(row, null, 2))
   }
 

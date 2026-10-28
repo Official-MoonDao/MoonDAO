@@ -93,13 +93,13 @@ describe('deprize index layout', () => {
     })
   })
 
-  it('files Water Ice under Prospecting and keeps it live on Sepolia', () => {
+  it('files Water Ice under Prospecting and keeps it planned on Sepolia', () => {
     const ice = sharedGoalById(SEED_ATLAS, 'shared-ice')
     expect(ice).to.exist
     expect(goalIndexCategory(ice!)).to.equal('prospecting')
     expect(PROJECT_TYPE_LABEL.prospecting).to.equal('Prospecting')
     expect(ice!.category).to.equal(undefined)
-    expect(isDePrizeGoalMarketBound('sepolia', 'shared-ice')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-ice')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-mass-driver')).to.equal(false)
   })
 })
