@@ -78,6 +78,14 @@ describe('deprize competitions registry', () => {
     expect(getDePrizeRaceBinding('sepolia', 7)).to.equal(undefined)
   })
 
+  it('keeps previous-registry Sepolia races unlisted after the cutover', () => {
+    for (const id of [3, 5, 6]) {
+      expect(isKnownDePrizeCompetition('sepolia', id), String(id)).to.equal(true)
+      expect(getDePrizeCompetition('sepolia', id).unlisted, String(id)).to.equal(true)
+      expect(getDePrizeRaceBinding('sepolia', id), String(id)).to.equal(undefined)
+    }
+  })
+
   it('binds the four Arbitrum capability races to the deployed rosters', () => {
     expect(getDePrizeQuestionId('arbitrum', 2)).to.equal(
       '0xd4daf3cb8f7f228cdf16c58c2e4345742bf4d1e58d7ebc271c0a533621262efc'
@@ -120,10 +128,10 @@ describe('deprize competitions registry', () => {
   it('reverse-looks up the DePrize id for a bound goal (hit and miss)', () => {
     expect(findDePrizeIdForGoal('sepolia', 'shared-next-landing')).to.equal(1)
     expect(findDePrizeIdForGoal('sepolia', 'shared-fission-power')).to.equal(undefined)
-    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(3)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', 'shared-lunar-rover')).to.equal(undefined)
-    expect(findDePrizeIdForGoal('sepolia', 'shared-first-tracks')).to.equal(5)
-    expect(findDePrizeIdForGoal('sepolia', 'shared-ice')).to.equal(6)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-first-tracks')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-ice')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', 'shared-mass-driver')).to.equal(undefined)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-next-landing')).to.equal(2)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-night-shift')).to.equal(3)
@@ -136,10 +144,10 @@ describe('deprize competitions registry', () => {
   it('reports a bound race regardless of consent, and unbound goals as unbound', () => {
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-next-landing')).to.equal(true)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-fission-power')).to.equal(false)
-    expect(isDePrizeGoalMarketBound('sepolia', 'shared-night-shift')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-night-shift')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-lunar-rover')).to.equal(false)
-    expect(isDePrizeGoalMarketBound('sepolia', 'shared-first-tracks')).to.equal(true)
-    expect(isDePrizeGoalMarketBound('sepolia', 'shared-ice')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-first-tracks')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('sepolia', 'shared-ice')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-mass-driver')).to.equal(false)
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-next-landing')).to.equal(true)
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-first-tracks')).to.equal(true)

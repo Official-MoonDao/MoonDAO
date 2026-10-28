@@ -289,8 +289,10 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       questionId: '0x3b84fc396a95b42df70a164715d33f0f0d64a0ee765958d97b04a709464e0129',
       unlisted: true,
     },
-    // v2 registry id 3 — Night Shift. Rungs 1 and 2 (First Tracks, Ice) still
-    // have no roster, so this is the next capability race that can open.
+    // Historical copy from the previous Sepolia registry (0x7208…). The
+    // 2026-10-27 registry only registered Touchdown as id 1. Register assigns
+    // ids in order, so 3, 5, and 6 cannot exist there. Unlisted and unbound so
+    // the index and ladder do not treat them as live markets.
     3: {
       title: 'Night Shift',
       tagline:
@@ -298,23 +300,8 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       metaDescription:
         'Sepolia DePrize for lunar night power. Zeno Harmonia, Astrobotic NITE, Venturi, Perpetual Atomics ENDURE, CNNC, Rosatom, ISRO BARC, and the Open Field.',
       questionId: '0x6058f2c9f314734e1f1ecf8c34c8d8835fff5d8fb5e075d8044823e1717f00d4',
-      sharedGoalId: 'shared-night-shift',
-      raceLabel: 'Lunar night power',
-      outcomes: [
-        { projectId: 'zeno-harmonia', teamId: 611, vehicleLabel: 'Harmonia' },
-        { projectId: 'astrobotic-nite', teamId: 612, vehicleLabel: 'NITE' },
-        { projectId: 'venturi-lunar-battery', teamId: 613, vehicleLabel: 'Lunar-cycle battery' },
-        { projectId: 'perpetual-atomics-endure', teamId: 614, vehicleLabel: 'ENDURE Am-241 RHU' },
-        { projectId: 'cnnc-lunar-rtg', teamId: 615, vehicleLabel: "Chang'e lunar RTG" },
-        { projectId: 'rosatom-lunar-rtg', teamId: 616, vehicleLabel: 'Rosatom lunar RTG' },
-        { projectId: 'isro-barc-rhu', teamId: 617, vehicleLabel: 'BARC / LUPEX night survival' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
+      unlisted: true,
     },
-    // v2 id 4 was the crewed lunar rover, registered by mistake. It is not in
-    // this map, and the index does not list shared-lunar-rover. Cancellation
-    // was announced on the registry; the id stays on-chain until that notice ends.
-    // v2 registry id 5 — unmanned commercial egress. Not the crewed rover.
     5: {
       title: 'First Tracks',
       tagline:
@@ -322,18 +309,8 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       metaDescription:
         'Sepolia DePrize for the first commercial rover egress. Astrolab FLIP, Voyager CubeRover, Lunar Outpost MAPP, ispace Tenacious, Carnegie Mellon Iris, and the Open Field.',
       questionId: '0x5fe6f1664f0de1fc497411f5c6fc53cb2adbe80e6ba50078387f97bb66581dc8',
-      sharedGoalId: 'shared-first-tracks',
-      raceLabel: 'First Tracks',
-      outcomes: [
-        { projectId: 'astrolab-flip', teamId: 631, vehicleLabel: 'FLIP' },
-        { projectId: 'voyager-cuberover', teamId: 632, vehicleLabel: 'CubeRover' },
-        { projectId: 'lunar-outpost-mapp', teamId: 633, vehicleLabel: 'MAPP' },
-        { projectId: 'ispace-tenacious', teamId: 634, vehicleLabel: 'Tenacious' },
-        { projectId: 'cmu-iris', teamId: 635, vehicleLabel: 'Iris-class' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
+      unlisted: true,
     },
-    // v2 registry id 6 — 2027 in-situ surface water ice.
     6: {
       title: 'Water Ice',
       tagline:
@@ -341,14 +318,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       metaDescription:
         'Sepolia DePrize for the first published in-situ lunar water-ice dataset. Chang’e-7, VIPER on Blue Moon MK1, IM-4, and the Open Field.',
       questionId: '0x849f4a11bbe459437a4962debe34fe5d3a1ad64326d37bd60886cf26c1f74d2d',
-      sharedGoalId: 'shared-ice',
-      raceLabel: 'Surface water ice',
-      outcomes: [
-        { projectId: 'cnsa-change-7', teamId: 641, vehicleLabel: "Chang'e-7 hopper" },
-        { projectId: 'blue-origin-viper', teamId: 642, vehicleLabel: 'VIPER on MK1' },
-        { projectId: 'im-4-volatiles', teamId: 643, vehicleLabel: 'IM-4 volatiles' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
+      unlisted: true,
     },
   },
 }

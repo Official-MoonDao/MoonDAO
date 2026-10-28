@@ -110,7 +110,7 @@ describe('lunar-atlas × DePrize binding', () => {
     expect(meters?.threshold).to.match(/0\.5% expanded uncertainty/)
     expect(meters?.threshold).to.match(/traceably calibrated/)
     expect(nightShift!.market?.status).to.equal('planned')
-    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(3)
+    expect(findDePrizeIdForGoal('sepolia', 'shared-night-shift')).to.equal(undefined)
     for (const id of nightShift!.projectIds) {
       const project = SEED_ATLAS.projects.find((p) => p.id === id)
       expect(project, id).to.exist
