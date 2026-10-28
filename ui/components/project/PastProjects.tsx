@@ -1,6 +1,7 @@
 import HatsABI from 'const/abis/Hats.json'
 import ProjectABI from 'const/abis/Project.json'
 import { HATS_ADDRESS, PROJECT_ADDRESSES } from 'const/config'
+import Link from 'next/link'
 import { useState, useEffect, useContext, useMemo } from 'react'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -22,6 +23,22 @@ type YearGroup = {
 
 export function hasFinalReport(p: Project): boolean {
   return Boolean(p.finalReportIPFS || p.finalReportLink)
+}
+
+// Member Vote tallies only live in the Proposals table from Q2 2026 on;
+// earlier quarters have no member vote audit to link to.
+const FIRST_MEMBER_VOTE_AUDIT = { year: 2026, quarter: 2 }
+const PAGE_SIZE = 10
+
+function hasMemberVoteAudit(year: number, quarter: number): boolean {
+  return (
+    year > FIRST_MEMBER_VOTE_AUDIT.year ||
+    (year === FIRST_MEMBER_VOTE_AUDIT.year && quarter >= FIRST_MEMBER_VOTE_AUDIT.quarter)
+  )
+}
+
+function quarterLabel(p: Project): string {
+  return `Q${Number(p.quarter) || '?'} ${Number(p.year) || ''}`.trim()
 }
 
 function buildYearIndex(projects: Project[]): YearGroup[] {
@@ -60,25 +77,28 @@ export default function PastProjects({ projects }: PastProjectProps) {
 
   const yearGroups = useMemo(() => buildYearIndex(projects), [projects])
 
-  const [selectedYear, setSelectedYear] = useState<number | null>(null)
+  // 'all' lists every past project newest-first; a year narrows to one quarter.
+  const [selectedYear, setSelectedYear] = useState<number | 'all' | null>('all')
   const [selectedQuarter, setSelectedQuarter] = useState<number | null>(null)
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
 
   // Initialize / heal selection when data changes
   useEffect(() => {
     if (!yearGroups.length) {
-      setSelectedYear(null)
+      setSelectedYear('all')
       setSelectedQuarter(null)
       return
     }
     setSelectedYear((prevYear) => {
+      if (prevYear === 'all') return prevYear
       const stillValid = prevYear != null && yearGroups.some((yg) => yg.year === prevYear)
-      return stillValid ? prevYear : yearGroups[0].year
+      return stillValid ? prevYear : 'all'
     })
   }, [yearGroups])
 
   // When year changes, pick the most recent quarter with projects in that year
   useEffect(() => {
-    if (selectedYear == null) {
+    if (selectedYear == null || selectedYear === 'all') {
       setSelectedQuarter(null)
       return
     }
@@ -104,16 +124,47 @@ export default function PastProjects({ projects }: PastProjectProps) {
     }))
   }, [activeYearGroup])
 
-  const visibleProjects = useMemo(() => {
-    if (!activeYearGroup || selectedQuarter == null) return []
-    const list = activeYearGroup.quarters.get(selectedQuarter) ?? []
-    const term = input.trim().toLowerCase()
-    if (!term) return list
-    return list.filter((p) => p.name?.toString().toLowerCase().includes(term))
-  }, [activeYearGroup, selectedQuarter, input])
+  const term = input.trim().toLowerCase()
+  // Searching always spans every quarter: people usually search precisely
+  // because they don't remember which quarter a project ran in.
+  const isListMode = selectedYear === 'all' || term !== ''
+
+  const allProjectsNewestFirst = useMemo(
+    () =>
+      yearGroups.flatMap((yg) =>
+        Array.from(yg.quarters.keys())
+          .sort((a, b) => b - a)
+          .flatMap((q) => yg.quarters.get(q) ?? [])
+      ),
+    [yearGroups]
+  )
+
+  const matchingProjects = useMemo(() => {
+    if (!isListMode) {
+      if (!activeYearGroup || selectedQuarter == null) return []
+      return activeYearGroup.quarters.get(selectedQuarter) ?? []
+    }
+    if (!term) return allProjectsNewestFirst
+    const mdpTerm = term.replace(/^mdp-?/, '')
+    return allProjectsNewestFirst.filter(
+      (p) =>
+        p.name?.toString().toLowerCase().includes(term) ||
+        (mdpTerm !== '' && String(p.MDP ?? '') === mdpTerm)
+    )
+  }, [isListMode, activeYearGroup, selectedQuarter, term, allProjectsNewestFirst])
+
+  // Start each new list or search back at the first page.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE)
+  }, [selectedYear, selectedQuarter, term])
+
+  const visibleProjects = isListMode ? matchingProjects.slice(0, visibleCount) : matchingProjects
+  const remainingCount = isListMode ? matchingProjects.length - visibleProjects.length : 0
 
   const activeLabel =
-    selectedYear != null && selectedQuarter != null ? `Q${selectedQuarter} ${selectedYear}` : null
+    typeof selectedYear === 'number' && selectedQuarter != null
+      ? `Q${selectedQuarter} ${selectedYear}`
+      : null
 
   useChainDefault()
 
@@ -150,7 +201,7 @@ export default function PastProjects({ projects }: PastProjectProps) {
             value={input}
             type="text"
             name="search"
-            placeholder={activeLabel ? `Search ${activeLabel}...` : 'Search past projects...'}
+            placeholder="Search all past projects..."
           />
         </div>
       </div>
@@ -166,28 +217,35 @@ export default function PastProjects({ projects }: PastProjectProps) {
             <span className="hidden sm:inline-flex shrink-0 text-[10px] font-RobotoMono uppercase tracking-wider text-gray-500 px-1">
               Year
             </span>
-            {yearGroups.map((yg) => {
-              const isActive = selectedYear === yg.year
+            {[
+              { key: 'all' as const, label: 'All', total: projects.length },
+              ...yearGroups.map((yg) => ({
+                key: yg.year,
+                label: String(yg.year),
+                total: yg.total,
+              })),
+            ].map((tab) => {
+              const isActive = selectedYear === tab.key
               return (
                 <button
-                  key={yg.year}
+                  key={tab.key}
                   type="button"
                   role="tab"
                   aria-selected={isActive}
-                  onClick={() => setSelectedYear(yg.year)}
+                  onClick={() => setSelectedYear(tab.key)}
                   className={`group inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs sm:text-sm font-RobotoMono tracking-wide transition-colors border ${
                     isActive
                       ? 'bg-blue-500/15 border-blue-400/40 text-white'
                       : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  <span className="font-semibold">{yg.year}</span>
+                  <span className="font-semibold">{tab.label}</span>
                   <span
                     className={`text-[10px] ${
                       isActive ? 'text-blue-200' : 'text-gray-500 group-hover:text-gray-300'
                     }`}
                   >
-                    {yg.total}
+                    {tab.total}
                   </span>
                 </button>
               )
@@ -196,53 +254,79 @@ export default function PastProjects({ projects }: PastProjectProps) {
 
           {/* Quarter buttons (always 4, disabled when empty) */}
           {activeYearGroup && (
-            <div
-              role="tablist"
-              aria-label={`Select quarter in ${selectedYear}`}
-              className="flex items-center gap-1.5"
-            >
-              <span className="hidden sm:inline-flex shrink-0 text-[10px] font-RobotoMono uppercase tracking-wider text-gray-500 px-1">
-                Quarter
-              </span>
-              <div className="grid grid-cols-4 gap-1.5 flex-1 sm:flex-none sm:inline-grid">
-                {quarterCounts.map(({ quarter, count }) => {
-                  const isActive = selectedQuarter === quarter
-                  const isDisabled = count === 0
-                  return (
-                    <button
-                      key={quarter}
-                      type="button"
-                      role="tab"
-                      aria-selected={isActive}
-                      disabled={isDisabled}
-                      onClick={() => setSelectedQuarter(quarter)}
-                      className={`relative px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-RobotoMono tracking-wide transition-colors border min-w-[60px] sm:min-w-[72px] ${
-                        isDisabled
-                          ? 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
-                          : isActive
-                          ? 'bg-gradient-to-r from-blue-500/20 to-purple-600/20 border-blue-400/40 text-white shadow-sm'
-                          : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      <span className="flex items-center justify-center gap-1.5">
-                        <span className="font-semibold">Q{quarter}</span>
-                        <span
-                          className={`text-[10px] ${
-                            isDisabled
-                              ? 'text-gray-700'
-                              : isActive
-                              ? 'text-blue-200'
-                              : 'text-gray-500'
-                          }`}
-                        >
-                          {count}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div
+                role="tablist"
+                aria-label={`Select quarter in ${selectedYear}`}
+                className="flex items-center gap-1.5"
+              >
+                <span className="hidden sm:inline-flex shrink-0 text-[10px] font-RobotoMono uppercase tracking-wider text-gray-500 px-1">
+                  Quarter
+                </span>
+                <div className="grid grid-cols-4 gap-1.5 flex-1 sm:flex-none sm:inline-grid">
+                  {quarterCounts.map(({ quarter, count }) => {
+                    const isActive = selectedQuarter === quarter
+                    const isDisabled = count === 0
+                    return (
+                      <button
+                        key={quarter}
+                        type="button"
+                        role="tab"
+                        aria-selected={isActive}
+                        disabled={isDisabled}
+                        onClick={() => setSelectedQuarter(quarter)}
+                        className={`relative px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-RobotoMono tracking-wide transition-colors border min-w-[60px] sm:min-w-[72px] ${
+                          isDisabled
+                            ? 'bg-white/[0.02] border-white/5 text-gray-600 cursor-not-allowed'
+                            : isActive
+                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-600/20 border-blue-400/40 text-white shadow-sm'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <span className="flex items-center justify-center gap-1.5">
+                          <span className="font-semibold">Q{quarter}</span>
+                          <span
+                            className={`text-[10px] ${
+                              isDisabled
+                                ? 'text-gray-700'
+                                : isActive
+                                ? 'text-blue-200'
+                                : 'text-gray-500'
+                            }`}
+                          >
+                            {count}
+                          </span>
                         </span>
-                      </span>
-                    </button>
-                  )
-                })}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
+              {!term && activeLabel && (
+                <div className="flex flex-wrap gap-1.5 text-[11px] font-RobotoMono">
+                  {hasMemberVoteAudit(selectedYear as number, selectedQuarter as number) && (
+                    <Link
+                      href={`/projects/audit?quarter=${selectedQuarter}&year=${selectedYear}`}
+                      className="bg-white/5 border border-white/15 text-gray-200 px-2 py-1 rounded hover:bg-white/10 hover:text-white transition-colors"
+                    >
+                      View {activeLabel} vote audit →
+                    </Link>
+                  )}
+                  <Link
+                    href={`/projects/retro-audit?quarter=${selectedQuarter}&year=${selectedYear}`}
+                    className="bg-white/5 border border-white/15 text-gray-200 px-2 py-1 rounded hover:bg-white/10 hover:text-white transition-colors"
+                  >
+                    View {activeLabel} retro audit →
+                  </Link>
+                </div>
+              )}
             </div>
+          )}
+          {term && (
+            <p className="text-[11px] font-RobotoMono text-gray-500 px-1">
+              Searching all quarters: {matchingProjects.length} match
+              {matchingProjects.length === 1 ? '' : 'es'}
+            </p>
           )}
         </div>
       )}
@@ -253,21 +337,45 @@ export default function PastProjects({ projects }: PastProjectProps) {
         </div>
       ) : visibleProjects.length === 0 ? (
         <div className="bg-black/20 rounded-lg sm:rounded-xl border border-white/10 py-10 text-center text-gray-400">
-          {input
-            ? `No projects in ${activeLabel} match your search.`
-            : `No projects in ${activeLabel}.`}
+          {term
+            ? 'No past projects match your search.'
+            : activeLabel
+            ? `No projects in ${activeLabel}.`
+            : 'No past projects yet.'}
         </div>
       ) : (
         <div className="flex flex-col gap-1.5 sm:gap-6">
-          {visibleProjects.map((project, i) => (
-            <ProjectCard
-              key={`past-project-${selectedYear}-${selectedQuarter}-${project.id}-${i}`}
-              project={project}
-              projectContract={projectContract}
-              hatsContract={hatsContract}
-              isVotingPeriod={false}
-            />
-          ))}
+          {visibleProjects.map((project, i) => {
+            // In the All / search list, label each run of projects with its
+            // quarter so results from different cycles stay distinguishable.
+            const label = quarterLabel(project)
+            const showLabel =
+              isListMode && (i === 0 || quarterLabel(visibleProjects[i - 1]) !== label)
+            return (
+              <div key={`past-project-${project.id}-${i}`} className="flex flex-col gap-1.5">
+                {showLabel && (
+                  <h2 className="px-1 pt-2 text-[11px] sm:text-xs font-RobotoMono uppercase tracking-wider text-gray-500">
+                    {label}
+                  </h2>
+                )}
+                <ProjectCard
+                  project={project}
+                  projectContract={projectContract}
+                  hatsContract={hatsContract}
+                  isVotingPeriod={false}
+                />
+              </div>
+            )
+          })}
+          {remainingCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+              className="self-center px-4 py-2 rounded-lg text-sm font-RobotoMono bg-white/5 border border-white/15 text-gray-200 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              Show more ({remainingCount} remaining)
+            </button>
+          )}
         </div>
       )}
     </div>
