@@ -19,6 +19,7 @@ import {
   ballotChoices,
   Election,
   electionPhase,
+  ElectionPhase,
   getElection,
   listBuildableElections,
 } from '@/lib/elections/elections'
@@ -83,6 +84,10 @@ function formatDate(iso: string | null) {
   })
 }
 
+function closeTimeVisible(election: Election, phase: ElectionPhase) {
+  return !election.hideCloseTime || phase === 'counting' || phase === 'closed'
+}
+
 function timeUntil(iso: string | null, now: number) {
   if (!iso) return null
   const minutes = Math.round((Date.parse(iso) - now) / 60_000)
@@ -143,8 +148,9 @@ function ElectionVote({
   )
 
   // Ballots are weighted by vMOONEY at close, so show that rather than today's.
+  // A hidden close time may be a placeholder, so show today's until it's set.
   const closeTimestamp =
-    phase === 'open' && election.closesAt
+    phase === 'open' && election.closesAt && !election.hideCloseTime
       ? Math.floor(Date.parse(election.closesAt) / 1000)
       : undefined
   const { totalVMOONEY, isLoading: vpLoading } = useTotalVMOONEY(
@@ -310,8 +316,13 @@ function ElectionVote({
   const voterTotalVP = voters.reduce((sum, v) => sum + v.votingPower, 0)
 
   const opensLabel = formatDate(election.opensAt)
-  const closesLabel = formatDate(election.closesAt)
-  const countdown = timeUntil(phase === 'upcoming' ? election.opensAt : election.closesAt, now)
+  const closesLabel = closeTimeVisible(election, phase) ? formatDate(election.closesAt) : null
+  const countdown =
+    phase === 'upcoming'
+      ? timeUntil(election.opensAt, now)
+      : closesLabel
+      ? timeUntil(election.closesAt, now)
+      : null
 
   return (
     <>
@@ -330,6 +341,9 @@ function ElectionVote({
                 <span className="text-white">{closesLabel}</span>
                 {countdown && <span className="text-gray-400"> · in {countdown}</span>}
               </div>
+            )}
+            {phase === 'open' && !closesLabel && (
+              <div className="text-xs sm:text-sm text-gray-400">Closing date to be announced</div>
             )}
             {phase === 'upcoming' && opensLabel && (
               <div className="text-xs sm:text-sm">
@@ -396,7 +410,11 @@ function ElectionVote({
             {phase === 'open' && candidates.length > 0 && (
               <div className="mt-6 pt-5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="sm:flex-1 min-w-0">
-                  <p className="text-xs text-gray-400">Your voting power at close</p>
+                  <p className="text-xs text-gray-400">
+                    {election.hideCloseTime
+                      ? 'Your voting power now'
+                      : 'Your voting power at close'}
+                  </p>
                   <p className="text-white text-lg font-semibold">
                     {userAddress
                       ? vpLoading
@@ -544,7 +562,9 @@ export default function ElectionPage({
   }, [])
 
   const opensLabel = formatDate(election.opensAt)
-  const closesLabel = formatDate(election.closesAt)
+  const closesLabel = closeTimeVisible(election, electionPhase(election, now))
+    ? formatDate(election.closesAt)
+    : null
 
   const howItWorks = (
     <div className={CARD}>
