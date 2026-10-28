@@ -155,7 +155,8 @@ async function printSafeBatch(spec, row) {
     console.log('2 registry.register(jbProjectId, teamIds, sunset)')
     console.log('3 registry.setCondition(deprizeId, conditionId)')
     console.log('4 mint.setMarket(deprizeId, market)')
-    console.log('5 registry.open(deprizeId)')
+    console.log('5 mint.setComplianceSigner(signer)')
+    console.log('6 registry.open(deprizeId)')
     return
   }
   const registry = new ethers.utils.Interface([
@@ -163,7 +164,10 @@ async function printSafeBatch(spec, row) {
     'function setCondition(uint256 deprizeId, bytes32 ctfConditionId)',
     'function open(uint256 deprizeId)',
   ])
-  const mint = new ethers.utils.Interface(['function setMarket(uint256 deprizeId, address market)'])
+  const mint = new ethers.utils.Interface([
+    'function setMarket(uint256 deprizeId, address market)',
+    'function setComplianceSigner(address complianceSigner)',
+  ])
   const hook = new ethers.utils.Interface(['function setDePrizeRegistry(address registry)'])
   console.log('--- Safe batch. Open is last. Do not send it from this script. ---')
   console.log('owner', spec.owner)
@@ -200,7 +204,17 @@ async function printSafeBatch(spec, row) {
     spec.mint,
     mint.encodeFunctionData('setMarket', [row.deprizeId, row.market || ZERO])
   )
-  console.log('5', spec.registry, registry.encodeFunctionData('open', [row.deprizeId]))
+  // A fresh mint has no signer, so every bet reverts until this is set. It must
+  // be the address of the server's DEPRIZE_COMPLIANCE_SIGNER_KEY.
+  const signer = process.env.COMPLIANCE_SIGNER || spec.complianceSigner
+  if (ethers.utils.isAddress(signer || '')) {
+    console.log('5', spec.mint, mint.encodeFunctionData('setComplianceSigner', [signer]))
+  } else {
+    console.log(
+      '5 mint.setComplianceSigner(signer). Set COMPLIANCE_SIGNER to the production permit key address to encode it.'
+    )
+  }
+  console.log('6', spec.registry, registry.encodeFunctionData('open', [row.deprizeId]))
 }
 
 async function main() {

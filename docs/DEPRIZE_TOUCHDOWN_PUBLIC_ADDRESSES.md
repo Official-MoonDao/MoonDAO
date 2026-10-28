@@ -31,11 +31,17 @@ A stale MissionCreator from an outdated artifact sits at
 `0x782C5077fA195316DbD0728582AebD917B613E52` and is unused.
 
 Safe still has to call `payHook.setDePrizeRegistry(registry)` (write-once).
-Betting through DePrizeMint works without that latch; Juicebox pays do not
-become DePrize-aware until it lands.
+Until it lands, the hook treats every Juicebox pay, including each bet's 5%
+slice, as a plain launchpad contribution: 2.5% goes to the TreasuryPayHook
+and tokens mint at 97.5% weight. Latch before the first bet.
 
 Previous registry `0x7208B0Ba9B1013000b8D30b60A462079300984E2` still holds
-the earlier Touchdown generations. The app no longer points at it.
+the earlier Touchdown generations and Night Shift (3), First Tracks (5) and
+Water Ice (6). The app reads one registry per chain, so after this cutover
+those three Sepolia races are not on the new registry.
+
+Forecasts on Sepolia are keyed by prize id. One zero-power row from the old
+id 1 (`{"5":100}`, Open Field on the 6-slot roster) now reads as ispace.
 
 ## Arbitrum One (chain 42161) — contracts only
 
@@ -60,5 +66,8 @@ Re-run after the deployer holds ≥ 0.106 ETH:
 CONFIRM=arbitrum node ui/scripts/provision-touchdown-arbitrum-public.cjs ui/scripts/races/touchdown-public.json
 ```
 
-Register / setCondition / setMarket / open / `setDePrizeRegistry` are Safe
-calls. The deployer cannot send them on this registry.
+Register / setCondition / setMarket / setComplianceSigner / open /
+`setDePrizeRegistry` are Safe calls. The deployer cannot send them on this
+registry. The mint's `complianceSigner` is unset, so every bet reverts until
+the Safe sets it to the address of production `DEPRIZE_COMPLIANCE_SIGNER_KEY`.
+Pass that address as `COMPLIANCE_SIGNER` to have the script encode it.
