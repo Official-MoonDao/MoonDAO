@@ -520,12 +520,12 @@ export const COLLATERAL_DECIMALS = 18
 // chain once `script/deprize/DePrizeRedeem.s.sol` / the registry deploy run;
 // the deprize-play harness also accepts manual overrides for testing.
 export const DEPRIZE_REDEEM_ADDRESSES: Index = {
-  sepolia: '0x7a6B6AaC8Efbe894EDEe224a6bC3b09874c10849',
+  sepolia: '0x1d6122041549a86E84CC3fc0F3b50E7c4420c4Ee',
   'arbitrum-sepolia': '',
   arbitrum: '0xb0E06ed72cf6E0CcF21b4D00B002fdfDc198C3fA',
 }
 export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
-  sepolia: '0x7208B0Ba9B1013000b8D30b60A462079300984E2',
+  sepolia: '0x342fC1Ab7CAcc71d13274D3979EAE17Cf8e93555',
   'arbitrum-sepolia': '',
   arbitrum: '0xf8B2244634c6eCeF32de10BFe0D7436413A59924',
 }
@@ -533,7 +533,7 @@ export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
 // DePrizeRegistry was deployed (Etherscan `getcontractcreation`). Every DePrize
 // mint router, market and trade was created after this block.
 export const DEPRIZE_EVENTS_FROM_BLOCK: Record<string, number> = {
-  sepolia: 11727650,
+  sepolia: 12008593,
   arbitrum: 495964196,
 }
 // DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
@@ -541,7 +541,7 @@ export const DEPRIZE_EVENTS_FROM_BLOCK: Record<string, number> = {
 // `setMarket(deprizeId, lmsr)` has bound the market. Empty until then — the
 // production UI degrades gracefully (betting disabled with a notice) when unset.
 export const DEPRIZE_MINT_ADDRESSES: Index = {
-  sepolia: '0x22E22C4135be93595f341e072321D18e7D4Ee0D0',
+  sepolia: '0xbed33e958Bc04651cd879Fe2c5AC2175Dd938571',
   'arbitrum-sepolia': '',
   arbitrum: '0xfa36cAb21415B4e23a1eecCFe7B07693A690d838',
 }

@@ -247,61 +247,18 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
     },
   },
   sepolia: {
-    // v2 registry (0x7208B0Ba9B1013000b8D30b60A462079300984E2).
-    // Generation 1 is in the Senate vote with a reported winner, so it is
-    // not bettable. Generation 2 is the open market.
+    // Public Touchdown on the 2026-10-27 registry
+    // (0x342fC1Ab7CAcc71d13274D3979EAE17Cf8e93555). Prior generations lived
+    // on 0x7208B0Ba9B1013000b8D30b60A462079300984E2 (ids 1, 2, 7).
     1: {
       title: 'Touchdown',
       tagline:
         'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
       metaDescription:
-        'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
-      questionId: '0x2c633f9b1a6bd1a6252c49ed56f89d554a85e421ff84a146b1ae9e21f6311f7b',
+        'Sepolia public Touchdown. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and the Open Field.',
+      questionId: '0x630a9aa92836f37341432d49dc77b38fcf42e7537d7b5f4aee2f015c816aeb41',
       sharedGoalId: 'shared-next-landing',
       raceLabel: 'Next lunar landing',
-      supersededBy: 2,
-      outcomes: [
-        { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
-        { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
-        { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
-        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
-        { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
-    },
-    // v2 registry id 2 — the open Touchdown market. Id 1 is in the Senate vote.
-    2: {
-      title: 'Touchdown',
-      tagline:
-        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
-      metaDescription:
-        'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
-      questionId: '0x6498f99ba51f63aa7576860e9aff4a7afbc1e805e6c2aef9d4601840249c5898',
-      sharedGoalId: 'shared-next-landing',
-      raceLabel: 'Next lunar landing',
-      supersedes: 1,
-      supersededBy: 7,
-      outcomes: [
-        { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
-        { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
-        { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
-        { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
-        { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
-    },
-    // Touchdown v2. Own Juicebox project, owned by the executive Safe, with
-    // ispace on the roster. Id 2 stays OPEN on-chain; this is the live tip.
-    7: {
-      title: 'Touchdown v2',
-      tagline:
-        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
-      metaDescription:
-        'Sepolia Touchdown v2. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and the Open Field. Operated by the executive Safe.',
-      questionId: '0x3b84fc396a95b42df70a164715d33f0f0d64a0ee765958d97b04a709464e0129',
-      sharedGoalId: 'shared-next-landing',
-      raceLabel: 'Next lunar landing',
-      supersedes: 2,
       outcomes: [
         { projectId: 'astrobotic-griffin', teamId: 601, vehicleLabel: 'Griffin Mission One' },
         { projectId: 'im-nova-c', teamId: 602, vehicleLabel: 'Nova-C IM-3' },
@@ -311,6 +268,26 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: 'ispace-apex', teamId: 606, vehicleLabel: 'ispace' },
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
+    },
+    // Historical copy from the previous Sepolia registry. Unlisted so they
+    // cannot steal the shared-next-landing tip after the pointer cutover.
+    2: {
+      title: 'Touchdown',
+      tagline:
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
+      questionId: '0x6498f99ba51f63aa7576860e9aff4a7afbc1e805e6c2aef9d4601840249c5898',
+      unlisted: true,
+    },
+    7: {
+      title: 'Touchdown v2',
+      tagline:
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Sepolia Touchdown v2 on the previous registry. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and the Open Field.',
+      questionId: '0x3b84fc396a95b42df70a164715d33f0f0d64a0ee765958d97b04a709464e0129',
+      unlisted: true,
     },
     // v2 registry id 3 — Night Shift. Rungs 1 and 2 (First Tracks, Ice) still
     // have no roster, so this is the next capability race that can open.
