@@ -96,15 +96,21 @@ def scan_pr(patterns, token: str, repo: str, number: int) -> list[str]:
             findings.append(f"commit {commit['sha'][:7]} message")
     for f in paged(f"{API}/repos/{repo}/pulls/{number}/files", token):
         name = f["filename"]
-        if hits(patterns, name):
-            findings.append(f"{name} (file name)")
+        # A deletion removes the path. Skip before the name check so a cleanup
+        # pull request can delete a denylisted filename.
         if f.get("status") == "removed":
             continue
+        if hits(patterns, name):
+            findings.append(f"{name} (file name)")
         patch = f.get("patch")
         if patch is not None:
             for path, line, text in patch_lines(name, patch):
                 if hits(patterns, text):
                     findings.append(f"{path}:{line}")
+            continue
+        # Pure renames and mode-only changes also omit `patch`, and they add
+        # no lines. Do not scan the existing blob.
+        if f.get("additions", 0) == 0 and f.get("status") in ("renamed", "changed"):
             continue
         # GitHub omits the patch for large or binary files. Scan the whole new
         # version instead, read as a blob through the API, not checked out.
