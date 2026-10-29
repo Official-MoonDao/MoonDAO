@@ -657,6 +657,21 @@ export function ProjectRewards({
     [visibleProposals, isBarredFromProject]
   )
 
+  // A saved ballot can still hold a share on the user's own project (cast
+  // before the team rule, or before the team list loaded). That cell is
+  // locked behind the "Author"/"Team" label, so clear it from the form, or
+  // its hidden share keeps the visible total off 100%. The original row is
+  // left alone, so the cleaned ballot counts as a change worth saving.
+  useEffect(() => {
+    setProposalDistribution((prev) => {
+      const barredIds = Object.keys(prev).filter((projectId) => isBarredFromProject(projectId))
+      if (barredIds.length === 0) return prev
+      const next = { ...prev }
+      for (const projectId of barredIds) delete next[projectId]
+      return next
+    })
+  }, [proposalDistribution, isBarredFromProject])
+
   const tallyVotes = async () => {
     const res = await fetch(`/api/proposals/vote`, {
       method: 'POST',
@@ -1012,7 +1027,14 @@ export function ProjectRewards({
     // Scope to the proposals currently visible in this voting tab, then
     // compare against the (also-scoped) original to keep the edit-detection
     // honest if the loaded row contained orphan keys from a previous cycle.
-    const scopedProposalDistribution = filterToKeys(proposalDistribution, validProposalIds)
+    // Projects the user authored or is on the team of are locked out. They're
+    // left out of every check below, so a saved ballot with a share on the
+    // user's own project can be re-split 100% across the others.
+    const scopedProposalDistribution = Object.fromEntries(
+      Object.entries(filterToKeys(proposalDistribution, validProposalIds)).filter(
+        ([projectId]) => !isBarredFromProject(projectId)
+      )
+    )
     const scopedOriginalProposalDistribution = filterToKeys(
       originalProposalDistribution,
       validProposalIds
@@ -1047,13 +1069,9 @@ export function ProjectRewards({
         return
       }
     }
-    // Exclude projects the user authored or is on the team of (they cannot vote on their own project)
-    const distributionToSubmit: Record<string, number> = {}
-    for (const [projectId, value] of Object.entries(scopedProposalDistribution)) {
-      if (isBarredFromProject(projectId)) continue
-      distributionToSubmit[projectId] = value
-    }
-    // Normalize to 100% if we removed any of the user's own projects
+    // Locked projects are already gone, so the saved row drops any old share
+    // on the user's own project.
+    const distributionToSubmit: Record<string, number> = scopedProposalDistribution
     const sum = lodashSum(Object.values(distributionToSubmit))
     if (sum <= 0) {
       toast.error('Allocate to at least one project you are not on the team of.', {
