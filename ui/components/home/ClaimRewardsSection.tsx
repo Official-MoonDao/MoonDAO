@@ -1,7 +1,12 @@
 import { MOONEY_DECIMALS, DEFAULT_CHAIN_V5 } from 'const/config'
 import Image from 'next/image'
+import Link from 'next/link'
 import useRetroactiveRewards from '@/lib/tokens/hooks/useRetroactiveRewards'
+import Tooltip from '../layout/Tooltip'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
+
+const REWARDS_TOOLTIP =
+  'MoonDAO rewards the builders. Submit your independent space work each quarter to earn financial rewards and voting power, or propose a project to get funding upfront.'
 
 export default function ClaimRewardsSection() {
   const { withdrawable, withdraw } = useRetroactiveRewards()
@@ -27,10 +32,19 @@ export default function ClaimRewardsSection() {
           />
         </div>
         <div>
-          <p className="text-white text-sm font-medium">Retroactive Rewards</p>
-          <p className={`text-xs ${hasRewards ? 'text-green-400' : 'text-white/40'}`}>
-            {hasRewards ? 'Ready to claim' : 'No rewards yet'}
-          </p>
+          <div className="flex items-center gap-1">
+            <p className="text-white text-sm font-medium">Quarterly Rewards</p>
+            <Tooltip buttonClassName="scale-75" text={REWARDS_TOOLTIP} compact>
+              ?
+            </Tooltip>
+          </div>
+          {hasRewards ? (
+            <p className="text-xs text-green-400">Ready to claim</p>
+          ) : (
+            <Link href="/submit" className="text-xs text-white/40 hover:text-white/70 hover:underline">
+              No rewards yet: submit a contribution →
+            </Link>
+          )}
         </div>
       </div>
 
