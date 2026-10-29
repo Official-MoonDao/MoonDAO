@@ -48,6 +48,7 @@ import { NoticeFooter } from '@/components/layout/NoticeFooter'
 import Votes, { VoteItem, VoteItemHeader } from '@/components/layout/Votes'
 import { ShortAddressLink } from '@/components/nance/AddressLink'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import YouTubeEmbed from '@/components/townhall/YouTubeEmbed'
 
 type ElectionData = {
   slug: string
@@ -640,7 +641,17 @@ export default function ElectionPage({
           >
             {({ status, ballot, voters }) => (
               <div className={GRID}>
-                {status}
+                {election.videoId ? (
+                  <div className="flex flex-col gap-5 md:gap-6 lg:col-start-2 lg:row-start-1">
+                    {status}
+                    <div className={SIDE_CARD}>
+                      <h2 className="mb-3 text-sm font-semibold text-white">How to vote</h2>
+                      <YouTubeEmbed videoId={election.videoId} />
+                    </div>
+                  </div>
+                ) : (
+                  status
+                )}
                 <div className={MAIN_COLUMN}>
                   {ballot}
                   {!companionElection && howItWorks}

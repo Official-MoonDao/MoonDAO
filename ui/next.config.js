@@ -221,6 +221,11 @@ module.exports = withBundleAnalyzer(
             permanent: true,
           },
           {
+            source: '/election',
+            destination: '/elections/executive-lead-third-seat-2026',
+            statusCode: 301,
+          },
+          {
             source: '/twitter',
             destination: 'https://twitter.com/OfficialMoonDAO',
             permanent: true,
