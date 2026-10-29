@@ -23,6 +23,8 @@ import json
 import os
 import re
 import sys
+import urllib.error
+import urllib.parse
 import urllib.request
 
 API = "https://api.github.com"
@@ -82,6 +84,19 @@ def paged(url: str, token: str):
         page += 1
 
 
+def blob_unchanged(token: str, repo: str, ref: str, path: str, sha: str) -> bool:
+    """True only when `path` at `ref` is a blob with this sha."""
+    quoted = urllib.parse.quote(path, safe="/")
+    try:
+        meta = gh(f"{API}/repos/{repo}/contents/{quoted}?ref={ref}", token)
+    except urllib.error.HTTPError as err:
+        err.close()
+        return False
+    except urllib.error.URLError:
+        return False
+    return isinstance(meta, dict) and meta.get("sha") == sha
+
+
 def scan_pr(patterns, token: str, repo: str, number: int) -> list[str]:
     findings = []
     pr = gh(f"{API}/repos/{repo}/pulls/{number}", token)
@@ -94,6 +109,7 @@ def scan_pr(patterns, token: str, repo: str, number: int) -> list[str]:
     for commit in paged(f"{API}/repos/{repo}/pulls/{number}/commits", token):
         if hits(patterns, commit["commit"]["message"]):
             findings.append(f"commit {commit['sha'][:7]} message")
+    base_sha = (pr.get("base") or {}).get("sha") or ""
     for f in paged(f"{API}/repos/{repo}/pulls/{number}/files", token):
         name = f["filename"]
         # A deletion removes the path. Skip before the name check so a cleanup
@@ -108,10 +124,20 @@ def scan_pr(patterns, token: str, repo: str, number: int) -> list[str]:
                 if hits(patterns, text):
                     findings.append(f"{path}:{line}")
             continue
-        # Pure renames and mode-only changes also omit `patch`, and they add
-        # no lines. Do not scan the existing blob.
-        if f.get("additions", 0) == 0 and f.get("status") in ("renamed", "changed"):
-            continue
+        # Zero additions and a missing patch are not "no new bytes". GitHub
+        # reports that shape for a content-identical rename, and also for a
+        # typechange (`changed`) or a renamed binary whose contents changed.
+        # Skip only when the previous blob sha matches.
+        if f.get("additions", 0) == 0 and f.get("sha") and base_sha:
+            status = f.get("status")
+            if status == "renamed":
+                old_path = f.get("previous_filename")
+            elif status == "changed":
+                old_path = f.get("previous_filename") or name
+            else:
+                old_path = None
+            if old_path and blob_unchanged(token, repo, base_sha, old_path, f["sha"]):
+                continue
         # GitHub omits the patch for large or binary files. Scan the whole new
         # version instead, read as a blob through the API, not checked out.
         contents_url = f.get("contents_url")
