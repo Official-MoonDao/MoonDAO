@@ -28,7 +28,7 @@ import lodashSum from 'lodash/sum'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { prepareContractCall, readContract, sendTransaction, waitForReceipt } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
@@ -613,17 +613,49 @@ export function ProjectRewards({
     }
   }, [proposals])
 
-  // Member-vote proposals the connected wallet authored. These are the
-  // voters blocked from allocating to their own project, so they get a note
-  // explaining that the tally fills that cell with the other voters' average
-  // (see computeMemberVoteOutcome) rather than counting it as 0%.
-  const userAuthoredProposals = useMemo(() => {
-    const userAddr = userAddress?.toLowerCase()
-    if (!userAddr) return []
-    return visibleProposals.filter(
-      (p: any) => projectIdToAuthorAddress[String(p.id)]?.toLowerCase() === userAddr
-    )
-  }, [visibleProposals, projectIdToAuthorAddress, userAddress])
+  // Project id -> manager/member hat wearers. Team members can't vote on their
+  // own project (see lib/proposals/selfVoteExclusions.ts).
+  const [projectIdToTeamWallets, setProjectIdToTeamWallets] = useState<
+    Record<string, string[]>
+  >({})
+  useEffect(() => {
+    if (!proposals?.length) {
+      setProjectIdToTeamWallets({})
+      return
+    }
+    const controller = new AbortController()
+    const projectIds = proposals.map((project) => project.id).join(',')
+    fetch(`/api/proposals/project-team-wallets?projectIds=${projectIds}`, {
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.wallets) setProjectIdToTeamWallets(json.wallets)
+      })
+      .catch(() => {
+        // ignore fetch errors (including aborts); the tally still strips team votes
+      })
+    return () => controller.abort()
+  }, [proposals])
+
+  const isBarredFromProject = useCallback(
+    (projectId: string) => {
+      const userAddr = userAddress?.toLowerCase()
+      if (!userAddr) return false
+      if (projectIdToAuthorAddress[projectId]?.toLowerCase() === userAddr) return true
+      return (projectIdToTeamWallets[projectId] || []).includes(userAddr)
+    },
+    [userAddress, projectIdToAuthorAddress, projectIdToTeamWallets]
+  )
+
+  // Member-vote proposals the connected wallet authored or is on the team of.
+  // These are the voters blocked from allocating to their own project, so they
+  // get a note explaining that the tally fills that cell with the other voters'
+  // average (see computeMemberVoteOutcome) rather than counting it as 0%.
+  const userOwnProposals = useMemo(
+    () => visibleProposals.filter((p: any) => isBarredFromProject(String(p.id))),
+    [visibleProposals, isBarredFromProject]
+  )
 
   const tallyVotes = async () => {
     const res = await fetch(`/api/proposals/vote`, {
@@ -1015,18 +1047,16 @@ export function ProjectRewards({
         return
       }
     }
-    // Exclude projects where the user is the author (they cannot vote on their own proposal)
-    const userAddr = userAddress?.toLowerCase()
+    // Exclude projects the user authored or is on the team of (they cannot vote on their own project)
     const distributionToSubmit: Record<string, number> = {}
     for (const [projectId, value] of Object.entries(scopedProposalDistribution)) {
-      const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
-      if (author && author === userAddr) continue
+      if (isBarredFromProject(projectId)) continue
       distributionToSubmit[projectId] = value
     }
-    // Normalize to 100% if we removed any author projects
+    // Normalize to 100% if we removed any of the user's own projects
     const sum = lodashSum(Object.values(distributionToSubmit))
     if (sum <= 0) {
-      toast.error('Allocate to at least one project you did not author.', {
+      toast.error('Allocate to at least one project you are not on the team of.', {
         style: toastStyle,
       })
       return
@@ -1235,7 +1265,7 @@ export function ProjectRewards({
                       subtitle: 'Vote',
                       active: isMemberVote,
                       tooltip:
-                        'Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top three by voting power are funded at min(ask, ¼ of the pot). If fewer than three Senate-passed proposals are considered, all of them are funded. Contributors cannot vote on their own project.',
+                        'Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top three by voting power are funded at min(ask, ¼ of the pot). If fewer than three Senate-passed proposals are considered, all of them are funded. Project authors, managers and members cannot vote on their own project.',
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
@@ -1641,9 +1671,9 @@ export function ProjectRewards({
                 {isMemberVote &&
                   !isSenateVote &&
                   memberVoteSubmissionsOpen &&
-                  userAuthoredProposals.length > 0 &&
+                  userOwnProposals.length > 0 &&
                   (() => {
-                    const labels = userAuthoredProposals.map((p: any) =>
+                    const labels = userOwnProposals.map((p: any) =>
                       p.MDP ? `MDP-${p.MDP}` : p.name
                     )
                     const ownList =
@@ -1657,7 +1687,7 @@ export function ProjectRewards({
                         className="mb-4 rounded-lg border border-blue-400/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-100"
                       >
                         <p className="font-semibold text-white">
-                          Voting as the author of {ownList}
+                          Voting as the author or a team member of {ownList}
                         </p>
                         <p className="mt-1">
                           You can&apos;t allocate to your own {plural ? 'projects' : 'project'}, but
@@ -1724,6 +1754,12 @@ export function ProjectRewards({
                           isVotingPeriod={isSenateVote || memberVoteSubmissionsOpen}
                           active={false}
                           isSenateVote={isSenateVote}
+                          isProjectTeamMember={
+                            !isSenateVote &&
+                            (projectIdToTeamWallets[String(project.id)] || []).includes(
+                              userAddress?.toLowerCase() || ''
+                            )
+                          }
                         />
                       </div>
                     ))

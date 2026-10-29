@@ -143,6 +143,9 @@ type ProjectCardProps = {
   hatsContract: any
   distribute?: boolean
   userContributed?: boolean
+  // Connected wallet wears this project's manager or member hat, so it
+  // can't allocate to the project in the Member Vote.
+  isProjectTeamMember?: boolean
   distribution?: Record<string, number>
   handleDistributionChange?: (projectId: string, value: number) => void
   userHasVotingPower?: any
@@ -169,6 +172,7 @@ const ProjectCardContent = memo(
     handleDistributionChange,
     distribute,
     userContributed,
+    isProjectTeamMember,
     userHasVotingPower,
     isVotingPeriod,
     active,
@@ -374,6 +378,10 @@ const ProjectCardContent = memo(
               <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                 <p className="text-gray-400 text-sm">Author</p>
               </div>
+            ) : isProjectTeamMember ? (
+              <div className="flex flex-col items-start sm:items-end flex-shrink-0">
+                <p className="text-gray-400 text-sm">Team</p>
+              </div>
             ) : userContributed ? (
               <div className="flex flex-col items-start sm:items-end flex-shrink-0">
                 <p className="text-gray-400">Contributed</p>
@@ -451,6 +459,7 @@ export default function ProjectCard({
   distribute,
   distribution,
   handleDistributionChange,
+  isProjectTeamMember,
   userHasVotingPower,
   isVotingPeriod,
   active,
@@ -542,6 +551,7 @@ export default function ProjectCard({
           project={project}
           distribute={distribute}
           userContributed={userContributed}
+          isProjectTeamMember={isProjectTeamMember}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
           userHasVotingPower={userHasVotingPower}
@@ -564,6 +574,7 @@ export default function ProjectCard({
           project={project}
           distribute={distribute}
           userContributed={userContributed}
+          isProjectTeamMember={isProjectTeamMember}
           distribution={distribution}
           handleDistributionChange={handleDistributionChange}
           userHasVotingPower={userHasVotingPower}
