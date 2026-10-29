@@ -188,10 +188,10 @@ const searchMappings = [
   {
     keywords: [
       'contribute', 'contribution', 'retroactive rewards', 'community rewards', 'quarterly rewards',
-      'submit work', 'submit contribution', 'earn eth', 'earn vmooney', 'impact reward',
+      'submit work', 'submit contribution', 'earn usdc', 'earn rewards', 'earn vmooney', 'impact reward',
     ],
     title: 'Submit Contribution',
-    description: 'Submit mission-aligned work for quarterly retroactive community rewards in ETH & vMOONEY',
+    description: 'Submit mission-aligned work for quarterly retroactive community rewards: financial rewards and voting power',
     link: '/contributions',
     category: 'Contribute',
   },

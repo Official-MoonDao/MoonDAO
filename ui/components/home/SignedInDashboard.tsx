@@ -817,7 +817,7 @@ export default function SignedInDashboard({
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 bg-white/[0.04] border border-white/10 rounded-2xl px-5 py-3.5">
               <div>
                 <p className="text-white text-sm font-semibold">What did you get done this week?</p>
-                <p className="text-white/40 text-xs mt-0.5">Earn ETH & vMOONEY rewards each quarter.</p>
+                <p className="text-white/40 text-xs mt-0.5">Earn financial rewards and voting power each quarter.</p>
               </div>
               <a
                 href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"

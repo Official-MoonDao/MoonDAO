@@ -1281,7 +1281,7 @@ export function ProjectRewards({
                       subtitle: 'Rewards',
                       active: isMemberVote && rewardVotingActive,
                       tooltip:
-                        'At the end of the quarter, each completed project submits a Final Report with its contributor split. Citizens and Voting Members then allocate their voting power across the projects to determine retroactive ETH and vMOONEY rewards based on impact.',
+                        'At the end of the quarter, each completed project submits a Final Report with its contributor split. Citizens and Voting Members then allocate their voting power across the projects to determine retroactive financial rewards and voting power based on impact.',
                       icon: (
                         <svg
                           className="w-4 h-4 sm:w-5 sm:h-5"
