@@ -39,6 +39,12 @@ import {
   projectPotForCycle,
 } from '@/lib/projectCycle/projectBudget'
 import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
+import {
+  buildSelfVoteExclusions,
+  isSelfVoteExcluded,
+  teamSelfVoteRuleApplies,
+} from '@/lib/proposals/selfVoteExclusions'
+import { fetchProjectTeamWallets } from '@/lib/project/projectTeamWallets'
 import { extractUsdBudget } from '@/lib/proposals/extractUsdBudget'
 import {
   getMemberVoteVMooneySnapshot,
@@ -112,6 +118,8 @@ export type MemberVoteAudit = {
     Array<{
       voterAddress: string
       isAuthor: boolean
+      /** Wears the project's manager or member hat (barred, like the author). */
+      isTeamMember: boolean
       /** Raw allocation before stripping; null if voter didn't allocate. */
       rawPct: number | null
       /** Post-strip + iterative normalization value (sums to 100 per row). */
@@ -373,6 +381,27 @@ export async function computeMemberVoteOutcome({
     })
   )
 
+  // Project teams barred from their own project (TEAM_SELF_VOTE_START
+  // onward). Closed cycles read the team frozen in the snapshot; the
+  // active cycle reads live hat wearers. A failed live read leaves that
+  // project author-only here; the on-chain tally refuses to close instead.
+  let projectIdToTeamWallets: Record<string, string[]> = {}
+  if (teamSelfVoteRuleApplies(quarter, year)) {
+    if (snapshot?.teamWallets) {
+      projectIdToTeamWallets = snapshot.teamWallets
+    } else {
+      const team = await fetchProjectTeamWallets(
+        chain,
+        passedProjects.map((p: any) => p.id)
+      )
+      projectIdToTeamWallets = team.wallets
+    }
+  }
+  const selfVoteExclusions = buildSelfVoteExclusions({
+    projectIdToAuthor: projectIdToAuthorAddress,
+    projectIdToTeamWallets,
+  })
+
   type VoteRow = DistributionVote & {
     distribution?: string | Record<string, number>
     quarter?: number
@@ -406,11 +435,12 @@ export async function computeMemberVoteOutcome({
     }
     // Build the post-strip distribution that gets fed into the iterative
     // normalizer. Two distinct cases for "missing" cells:
-    //   - Voter is the AUTHOR of the project: omit the key entirely so
-    //     `runIterativeNormalization` sees NaN and fills it with the column
-    //     average of the OTHER voters. Authors can't self-vote, so this
-    //     gives them the crowd's view of their own project as a stand-in.
-    //   - Voter is NOT the author and just didn't allocate: write an
+    //   - Voter is the AUTHOR (or, from TEAM_SELF_VOTE_START, on the team)
+    //     of the project: omit the key entirely so `runIterativeNormalization`
+    //     sees NaN and fills it with the column average of the OTHER voters.
+    //     They can't self-vote, so this gives them the crowd's view of their
+    //     own project as a stand-in.
+    //   - Voter is NOT barred and just didn't allocate: write an
     //     explicit 0. Silence is NOT consent — we shouldn't synthesize
     //     support for a project the voter didn't endorse, which is what
     //     blanket column-average imputation would do.
@@ -420,8 +450,7 @@ export async function computeMemberVoteOutcome({
     const distribution: Record<string, number> = {}
     for (const project of passedProjects) {
       const projectId = String(project.id)
-      const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
-      if (author && voterAddr && author === voterAddr) continue
+      if (isSelfVoteExcluded(selfVoteExclusions, projectId, voterAddr)) continue
       const rawVal = parsedDistribution[projectId]
       const numericValue = Number(rawVal)
       if (rawVal != null && Number.isFinite(numericValue) && numericValue >= 0) {
@@ -552,6 +581,7 @@ export async function computeMemberVoteOutcome({
         rows.push({
           voterAddress: voter.address,
           isAuthor: authorLower !== '' && authorLower === voter.address,
+          isTeamMember: (projectIdToTeamWallets[projectId] || []).includes(voter.address),
           rawPct: typeof rawVal === 'number' ? rawVal : null,
           normalizedPct: Number.isFinite(normalizedVal) ? normalizedVal : 0,
         })
