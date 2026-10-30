@@ -58,6 +58,7 @@ import SectionCard from '@/components/layout/SectionCard'
 import StandardButtonRight from '@/components/layout/StandardButtonRight'
 import Tooltip from '@/components/layout/Tooltip'
 import MemberVoteResults from '@/components/nance/MemberVoteResults'
+import ProjectSystemFlow from '@/components/nance/ProjectSystemFlow'
 import RetroactiveResults from '@/components/nance/RetroactiveResults'
 import OperatorPanel from '@/components/operator/OperatorPanel'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
@@ -615,9 +616,7 @@ export function ProjectRewards({
 
   // Project id -> manager/member hat wearers. Team members can't vote on their
   // own project (see lib/proposals/selfVoteExclusions.ts).
-  const [projectIdToTeamWallets, setProjectIdToTeamWallets] = useState<
-    Record<string, string[]>
-  >({})
+  const [projectIdToTeamWallets, setProjectIdToTeamWallets] = useState<Record<string, string[]>>({})
   useEffect(() => {
     if (!proposals?.length) {
       setProjectIdToTeamWallets({})
@@ -1187,284 +1186,11 @@ export function ProjectRewards({
                   based on community voting.
                 </p>
 
-                {/* Phase Timeline */}
-                {(() => {
-                  const phases = [
-                    {
-                      id: 'submit',
-                      label: 'Submit',
-                      subtitle: 'Proposal',
-                      active: !isSenateVote && !isMemberVote,
-                      tooltip:
-                        'Anyone can submit a project proposal through the proposal portal. Each proposal lays out the problem, the solution, the team, and a requested budget. A winner receives min(their ask, ¼ of the quarterly pot). Proposals can be edited at any time leading up to the Townhall.',
-                      icon: (
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M15.232 5.232l3.536 3.536M9 13h3l8-8a2.828 2.828 0 00-4-4l-8 8v3zM5 19h14"
-                          />
-                        </svg>
-                      ),
-                    },
-                    {
-                      id: 'present',
-                      label: 'Present',
-                      subtitle: 'Townhall',
-                      active: false,
-                      tooltip:
-                        "At the quarterly Townhall, every proposal gets a chance to pitch to the community. Each project has 10 minutes to walk through the problem they're solving, their proposed solution, the team, and the budget, followed by Q&A from the community.",
-                      icon: (
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-                          />
-                        </svg>
-                      ),
-                    },
-                    {
-                      id: 'senate',
-                      label: 'Senate',
-                      subtitle: 'Review',
-                      active: isSenateVote,
-                      tooltip:
-                        'After the Townhall, the Senate votes to approve or reject each proposal under the rules in the Constitution. Each Senator has one vote. Approval requires a super-majority (more than 66.6%) of Senate votes in favor, with a quorum of at least 70% of all Senators participating. Only proposals that pass the Senate advance to the Member Vote.',
-                      icon: (
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 3l8 4v5c0 4.418-3.582 8-8 9-4.418-1-8-4.582-8-9V7l8-4z"
-                          />
-                        </svg>
-                      ),
-                    },
-                    {
-                      id: 'member',
-                      label: 'Member',
-                      subtitle: 'Vote',
-                      active: isMemberVote,
-                      tooltip:
-                        'Once the Senate has approved proposals, voting members distribute their voting power across the approved proposals as percentages. The top three by voting power are funded at min(ask, ¼ of the pot). If fewer than three Senate-passed proposals are considered, all of them are funded. Project authors, managers and members cannot vote on their own project.',
-                      icon: (
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      ),
-                    },
-                    {
-                      id: 'build',
-                      label: 'Build',
-                      subtitle: 'Execute',
-                      active: false,
-                      tooltip:
-                        "Funded teams execute the project over the quarter, with budgets paid through the project's multisig. Leads give monthly written updates to the Senate and attend weekly Townhalls; Contributors post weekly progress in the #wdygdtw Discord channel. Missed updates and townhalls reduce retroactive rewards.",
-                      icon: (
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                          />
-                        </svg>
-                      ),
-                    },
-                    {
-                      id: 'retro',
-                      label: 'Retroactive',
-                      subtitle: 'Rewards',
-                      active: isMemberVote && rewardVotingActive,
-                      tooltip:
-                        'At the end of the quarter, each completed project submits a Final Report with its contributor split. Citizens and Voting Members then allocate their voting power across the projects to determine retroactive ETH and vMOONEY rewards based on impact.',
-                      icon: (
-                        <svg
-                          className="w-4 h-4 sm:w-5 sm:h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      ),
-                    },
-                  ]
-
-                  const activePhase = phases.find((p) => p.active) ?? phases[0]
-                  return (
-                    <div className="w-full pt-3 pb-1">
-                      {/* Mobile: icon-only stepper with active-phase callout
-                          below. Trying to cram 7 labelled columns onto a
-                          ~360px screen makes every label illegible. */}
-                      <div className="sm:hidden">
-                        <div className="flex items-center justify-between">
-                          {phases.map((phase, idx) => (
-                            <div
-                              key={phase.id}
-                              className="flex items-center flex-1 min-w-0 last:flex-none"
-                            >
-                              <div
-                                className={`relative w-9 h-9 shrink-0 rounded-full flex items-center justify-center border-2 transition-all ${
-                                  phase.active
-                                    ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-white/40 text-white shadow-[0_0_14px_rgba(99,102,241,0.55)]'
-                                    : 'bg-white/5 border-white/15 text-gray-500'
-                                }`}
-                                aria-label={`${phase.label} ${phase.subtitle}${
-                                  phase.active ? ' (current phase)' : ''
-                                }`}
-                              >
-                                {phase.icon}
-                                {phase.active && (
-                                  <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-                                  </span>
-                                )}
-                              </div>
-                              {idx < phases.length - 1 && (
-                                <div
-                                  className={`h-0.5 flex-1 mx-1 rounded-full ${
-                                    phase.active || phases[idx + 1].active
-                                      ? 'bg-gradient-to-r from-blue-500/60 to-purple-600/60'
-                                      : 'bg-white/10'
-                                  }`}
-                                />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="mt-3 rounded-lg bg-black/30 border border-emerald-400/20 p-3">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] font-RobotoMono font-bold uppercase tracking-wider text-emerald-300 bg-emerald-400/15 border border-emerald-400/30 px-1.5 py-0.5 rounded">
-                              Now
-                            </span>
-                            <span className="text-sm font-heading font-semibold text-white">
-                              {activePhase.label}
-                              {activePhase.subtitle ? (
-                                <span className="text-blue-300 font-normal">
-                                  {' '}
-                                  · {activePhase.subtitle}
-                                </span>
-                              ) : null}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-300 leading-relaxed mt-2">
-                            {activePhase.tooltip}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Desktop: horizontal stepper with labels under each
-                          circle. Plenty of room here for the full layout. */}
-                      <div className="hidden sm:block">
-                        <div className="flex items-start justify-between gap-2">
-                          {phases.map((phase, idx) => (
-                            <div key={phase.id} className="flex items-start flex-1 min-w-0">
-                              <div className="flex flex-col items-center flex-1 min-w-0">
-                                <div className="relative">
-                                  <div
-                                    className={`w-11 h-11 rounded-full flex items-center justify-center border-2 transition-all ${
-                                      phase.active
-                                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-white/40 text-white shadow-[0_0_20px_rgba(99,102,241,0.5)]'
-                                        : 'bg-white/5 border-white/15 text-gray-500'
-                                    }`}
-                                  >
-                                    {phase.icon}
-                                  </div>
-                                  {phase.active && (
-                                    <span className="pointer-events-none absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400" />
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="mt-2 flex flex-col items-center w-full px-0.5">
-                                  <div className="flex items-center justify-center gap-1 max-w-full">
-                                    <span
-                                      className={`text-xs font-RobotoMono font-semibold uppercase tracking-wider leading-tight text-center truncate ${
-                                        phase.active ? 'text-white' : 'text-gray-500'
-                                      }`}
-                                    >
-                                      {phase.label}
-                                    </span>
-                                    <Tooltip
-                                      compact
-                                      text={phase.tooltip}
-                                      buttonClassName="!h-3.5 !w-3.5 !text-[8px] !pl-0 shrink-0"
-                                    >
-                                      ?
-                                    </Tooltip>
-                                  </div>
-                                  <span
-                                    className={`text-xs leading-tight text-center truncate max-w-full ${
-                                      phase.active ? 'text-blue-300' : 'text-gray-600'
-                                    }`}
-                                  >
-                                    {phase.subtitle}
-                                  </span>
-                                  {phase.active && (
-                                    <span className="mt-1 px-1.5 py-0.5 rounded-sm text-[9px] font-RobotoMono font-bold uppercase tracking-wider bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
-                                      Now
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {idx < phases.length - 1 && (
-                                <div
-                                  className={`h-0.5 flex-shrink-0 flex-1 mt-[22px] mx-1 rounded-full ${
-                                    phase.active || phases[idx + 1].active
-                                      ? 'bg-gradient-to-r from-blue-500/60 to-purple-600/60'
-                                      : 'bg-white/10'
-                                  }`}
-                                />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })()}
+                <ProjectSystemFlow
+                  isSenateVote={isSenateVote}
+                  isMemberVote={isMemberVote}
+                  rewardVotingActive={rewardVotingActive}
+                />
 
                 <Link
                   href="/project-system-docs"
@@ -1692,9 +1418,9 @@ export function ProjectRewards({
                         <p className="mt-1">
                           You can&apos;t allocate to your own {plural ? 'projects' : 'project'}, but
                           voting won&apos;t count against {plural ? 'them' : 'it'}. When votes are
-                          tallied, your share for {plural ? 'each of your projects' : ownList} is set
-                          to the average that every other voter gave it, and the
-                          percentages you give other projects are scaled down to make room.
+                          tallied, your share for {plural ? 'each of your projects' : ownList} is
+                          set to the average that every other voter gave it, and the percentages you
+                          give other projects are scaled down to make room.
                         </p>
                         <p className="mt-1 text-blue-200/80">
                           Distribute 100% across the other projects as you normally would. Once
