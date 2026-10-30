@@ -224,7 +224,13 @@ export default function OperatorPanel({
         body: JSON.stringify({ quarter, year }),
       })
       const json = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(json?.error || 'Tally failed')
+      if (!res.ok)
+        throw new Error(
+          json?.error ||
+            (res.status === 504
+              ? 'Tally timed out (504). Some projects may already be updated; check the server logs before re-running.'
+              : `Tally failed (HTTP ${res.status})`)
+        )
       toast.success('Member Vote tallied on-chain.', {
         style: toastStyle,
         duration: 5000,
