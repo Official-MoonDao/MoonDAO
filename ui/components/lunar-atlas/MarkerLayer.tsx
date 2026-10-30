@@ -77,7 +77,8 @@ import type {
   ProjectType,
 } from '@/lib/lunar-atlas/types'
 import ProjectModel, {
-  BoulderCluster,
+  Boulder,
+  boulderClusterLayout,
   BrickPallet,
   CableReel,
   CargoCrate,
@@ -587,6 +588,20 @@ const BOULDER_ACROSS_M = 200
 const BOULDER_ALONG_STEPS = 34
 const BOULDER_ACROSS_STEPS = 20
 const BOULDER_KEEP_FRACTION = 0.34
+// Half-width of a boulder's footprint as a multiple of its size: `Boulder`
+// stretches its unit icosahedron up to 1.25x sideways.
+const BOULDER_FOOTPRINT = 1.25
+const BOULDER_FOOTPRINT_SAMPLES: [number, number][] = [
+  [0, 0],
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [0.7, 0.7],
+  [-0.7, 0.7],
+  [0.7, -0.7],
+  [-0.7, -0.7],
+]
 
 // A post every ~26 m of pavement, just outside the windrow — close enough
 // together to actually read as street lighting, far enough apart that 730 m of
@@ -882,12 +897,27 @@ function InterDistrictFiller({
         if (onRoad(east, north) || withinDistrictGround(east, north, 20)) {
           continue
         }
-        const ll = capOffsetLatLon(east, north)
-        const dir = latLonToVector3(ll.lat, ll.lon, 1)
-        const seat = radiusAt
-          ? radiusAt(ll.lat, ll.lon) + SEAT_LIFT
-          : GLOBE_RADIUS + SEAT_LIFT
-        out.push({ dir, seat, size: 0.3 + hash1(k + 3) * 1.4, seed: k })
+        const size = 0.3 + hash1(k + 3) * 1.4
+        for (const rock of boulderClusterLayout(k, size)) {
+          const e = east + rock.x
+          const n = north + rock.z
+          const ll = capOffsetLatLon(e, n)
+          const dir = latLonToVector3(ll.lat, ll.lon, 1)
+          // No SEAT_LIFT: a rock is meant to cut into the ground, and that lift
+          // is taller than most of these rocks are. Seated on the lowest ground
+          // under its footprint instead of the ground under its centre, so the
+          // downhill side of a rock on a slope is buried rather than overhanging.
+          const reach = rock.s * BOULDER_FOOTPRINT
+          let ground = Infinity
+          for (const [dx, dz] of BOULDER_FOOTPRINT_SAMPLES) {
+            const p = capOffsetLatLon(e + dx * reach, n + dz * reach)
+            ground = Math.min(
+              ground,
+              radiusAt ? radiusAt(p.lat, p.lon) : GLOBE_RADIUS
+            )
+          }
+          out.push({ dir, seat: ground, size: rock.s, seed: rock.k })
+        }
       }
     }
     return out
@@ -1099,7 +1129,7 @@ function InterDistrictFiller({
           castShadows={false}
           interactive={false}
         >
-          <BoulderCluster seed={b.seed} size={b.size} />
+          <Boulder seed={b.seed} size={b.size} />
         </SurfaceAnchor>
       ))}
       {lights.map((l, i) => (

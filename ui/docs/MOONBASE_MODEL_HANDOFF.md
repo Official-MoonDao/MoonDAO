@@ -710,7 +710,7 @@ avoid up front and annoying to find later.
   than per-district — it's the fix for the fact that most of the plan by
   *area* is neither a district nor a road, and that open regolith is most
   of what the camera sees on approach. It places four things:
-  - a scattered boulder field (`Boulder`/`BoulderCluster` in
+  - a scattered boulder field (`Boulder`/`boulderClusterLayout` in
     `ProjectModel.tsx`, right after `SurveyTripod`, before
     `RoverDepotYard`) — native rock, not manifested cargo, so it belongs on
     unclaimed ground in a way none of the logistics props do — spread

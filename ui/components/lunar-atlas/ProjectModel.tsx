@@ -3225,7 +3225,7 @@ function SurveyTripod({ seed = 0 }: { seed?: number }) {
 // site. The open regolith BETWEEN districts is neither — it's unclaimed
 // native ground, and on an airless, ungraded body that ground is not
 // perfectly bare. It's strewn with impact ejecta at every scale. `Boulder`/
-// `BoulderCluster` are the one family in this file drawn from that instead
+// `boulderClusterLayout` are the one family in this file drawn from that instead
 // of from the colony's own manifest, placed by `InterDistrictFiller` in
 // MarkerLayer.tsx well clear of every district's ground (see
 // `withinDistrictGround` in baseplan.ts) so native rock never reads as
@@ -3239,7 +3239,13 @@ const BOULDER_COLOR_B = '#8f8b82'
 // reads as an irregular fractured rock rather than a squashed sphere, sunk a
 // little into the ground so it sits embedded rather than resting on top of
 // the regolith.
-function Boulder({ size = 1, seed = 0 }: { size?: number; seed?: number }) {
+export function Boulder({
+  size = 1,
+  seed = 0,
+}: {
+  size?: number
+  seed?: number
+}) {
   const sx = size * (0.75 + hash1(seed * 41 + 1) * 0.5)
   const sy = size * (0.55 + hash1(seed * 41 + 2) * 0.45)
   const sz = size * (0.75 + hash1(seed * 41 + 3) * 0.5)
@@ -3263,39 +3269,26 @@ function Boulder({ size = 1, seed = 0 }: { size?: number; seed?: number }) {
 // dominant rock with a couple of smaller fragments nearby — rather than
 // evenly sized rocks spaced on a grid, so a field of these reads as scatter
 // rather than as one rock model repeated at a fixed size.
-export function BoulderCluster({
-  seed = 0,
-  size = 1,
-}: {
-  seed?: number
-  size?: number
-}) {
-  const items = useMemo(() => {
-    const extras = Math.floor(hash1(seed * 53 + 1) * 3)
-    const arr = [{ x: 0, z: 0, s: size, k: seed * 53 + 2 }]
-    for (let i = 0; i < extras; i++) {
-      const k = seed * 53 + 10 + i * 4
-      const a = hash1(k + 1) * Math.PI * 2
-      const r = size * (0.85 + hash1(k + 2) * 0.7)
-      arr.push({
-        x: Math.cos(a) * r,
-        z: Math.sin(a) * r,
-        s: size * (0.25 + hash1(k + 3) * 0.35),
-        k: k + 4,
-      })
-    }
-    return arr
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seed, size])
-  return (
-    <group>
-      {items.map((it, i) => (
-        <group key={i} position={[it.x, 0, it.z]}>
-          <Boulder size={it.s} seed={it.k} />
-        </group>
-      ))}
-    </group>
-  )
+//
+// Returned as a layout rather than drawn as one group, so the caller can seat
+// every fragment on its own patch of ground. A cluster spans a few meters, and
+// fragments sharing the dominant rock's single ground sample hang in the air
+// wherever the terrain falls away from it.
+export function boulderClusterLayout(seed = 0, size = 1) {
+  const extras = Math.floor(hash1(seed * 53 + 1) * 3)
+  const arr = [{ x: 0, z: 0, s: size, k: seed * 53 + 2 }]
+  for (let i = 0; i < extras; i++) {
+    const k = seed * 53 + 10 + i * 4
+    const a = hash1(k + 1) * Math.PI * 2
+    const r = size * (0.85 + hash1(k + 2) * 0.7)
+    arr.push({
+      x: Math.cos(a) * r,
+      z: Math.sin(a) * r,
+      s: size * (0.25 + hash1(k + 3) * 0.35),
+      k: k + 4,
+    })
+  }
+  return arr
 }
 
 // ---------------------------------------------------------------------------

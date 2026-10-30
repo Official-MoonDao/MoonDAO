@@ -639,11 +639,15 @@ function buildStreet(
         lane.crest && j
           ? lane.rise * (SWEPT_CREST + (j.height - SWEPT_CREST) * bermLevel)
           : lane.rise
-      const p = centre[i]
-        .clone()
-        .addScaledVector(side, off * M_TO_UNITS)
-        .addScaledVector(up[i], (LIFT_M + rise) * M_TO_UNITS)
-        .sub(origin)
+      // Seated on the terrain under this vertex, not under the centreline. A
+      // section 12 m across laid flat off one centre sample is buried by any
+      // cross-slope or swell steeper than LIFT_M over half the road, and the
+      // ground shows through the bed in streaks.
+      const p = seat(
+        centre[i].clone().addScaledVector(side, off * M_TO_UNITS).normalize(),
+        radiusAt,
+        LIFT_M + rise
+      ).sub(origin)
       positions.push(p.x, p.y, p.z)
       // Spoil that has been graded out of a crossing is swept ground, not a
       // dark stripe of rubble laid across the junction — so its tone comes back
@@ -671,6 +675,31 @@ function buildStreet(
     }
   }
 
+  // Height of the drawn windrow above grade at `absOff` meters off the
+  // centreline, interpolated across the same lanes the geometry is built from.
+  // Null past the outer toe, where there is no windrow, only terrain.
+  const profileRise = (
+    absOff: number,
+    j: { height: number; spread: number },
+    level: number
+  ) => {
+    let prevOff = 0
+    let prevRise = HALF_SECTION[0].rise
+    for (const lane of HALF_SECTION) {
+      const off = (lane.wander ? lane.off * j.spread : lane.off) * width
+      const rise = lane.crest
+        ? lane.rise * (SWEPT_CREST + (j.height - SWEPT_CREST) * level)
+        : lane.rise
+      if (absOff <= off) {
+        const t = off > prevOff ? (absOff - prevOff) / (off - prevOff) : 1
+        return prevRise + (rise - prevRise) * t
+      }
+      prevOff = off
+      prevRise = rise
+    }
+    return null
+  }
+
   // Loose rock along the windrows, on both flanks of every road. Placed
   // between stations rather than on them, so the boulders don't line up with
   // the crest's own jitter.
@@ -682,8 +711,11 @@ function buildStreet(
     if (bermAt(i) < 0.995) continue
     const a = centre[i]
     const b = centre[wrap(i + 1)]
+    const levelA = bermAt(i)
+    const levelB = bermAt(i + 1)
     for (const sign of [-1, 1]) {
       const j = crest(i, sign)
+      const jNext = crest(i + 1, sign)
       for (let k = 0; k < ROCKS_PER_SPAN; k++) {
         const n = streetIdx * 7919 + i * 31 + k * 7 + (sign > 0 ? 3 : 0)
         const t = (k + 0.5) / ROCKS_PER_SPAN
@@ -692,12 +724,34 @@ function buildStreet(
         // Scattered down the flanks of the heap, not balanced on its ridge.
         const off =
           sign * (CREST_OFF_M * j.spread * width + (hash(n + 1) - 0.5) * 1.9)
-        // Sunk to roughly a third of their height, the way rock sits in spoil.
-        const rise = LIFT_M + CREST_RISE_M * j.height * 0.55 + sizeM * 0.17
+        const base = a.clone().lerp(b, t)
+        const baseR = base.length()
+        // The terrain at that offset, plus the windrow drawn over it — or bare
+        // terrain beyond the windrow's toe. The span between stations blends
+        // two crests, so the lower of the two is taken.
+        const surfaceAt = (o: number) => {
+          const ra = profileRise(Math.abs(o), j, levelA)
+          const rb = profileRise(Math.abs(o), jNext, levelB)
+          const berm = ra === null || rb === null ? 0 : LIFT_M + Math.min(ra, rb)
+          const p = base.clone().addScaledVector(sides[i], o * M_TO_UNITS)
+          const ll = vector3ToLatLon([p.x, p.y, p.z])
+          const terrain = (radiusAt(ll.lat, ll.lon) - baseR) / M_TO_UNITS
+          return terrain + berm
+        }
+        // Seated on the lowest surface across its footprint, so a rock on the
+        // windrow's steep flank is buried on the uphill side rather than
+        // overhanging the downhill one, then sunk a little further: tumbled
+        // to a random orientation, its lowest point can sit as little as
+        // ~0.18 of its size below its centre.
+        const reach = sizeM * 0.5
+        const ground = Math.min(
+          surfaceAt(off - reach),
+          surfaceAt(off),
+          surfaceAt(off + reach)
+        )
+        const rise = ground + sizeM * 0.08
         rocks.push({
-          pos: a
-            .clone()
-            .lerp(b, t)
+          pos: base
             .addScaledVector(sides[i], off * M_TO_UNITS)
             .addScaledVector(up[i], rise * M_TO_UNITS),
           sizeM,
