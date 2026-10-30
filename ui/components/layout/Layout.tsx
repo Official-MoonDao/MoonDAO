@@ -25,6 +25,9 @@ const MissionBanner = dynamic(() => import('./MissionBanner'), {
 const ProjectBanner = dynamic(() => import('./ProjectBanner'), {
   ssr: false,
 })
+const ElectionBanner = dynamic(() => import('./ElectionBanner'), {
+  ssr: false,
+})
 const CookieBanner = dynamic(() => import('./CookieBanner'), {
   ssr: false,
 })
@@ -155,6 +158,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
           <GlobalSearch />
           <MissionBanner />
           <ProjectBanner />
+          <ElectionBanner />
           <CookieBanner />
           <CitizenExpiredModal />
         </ClientOnly>
