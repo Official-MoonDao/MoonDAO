@@ -25,6 +25,12 @@ import { readContract, prepareContractCall, sendAndConfirmTransaction, getContra
 import { getRpcUrlForChain } from 'thirdweb/chains'
 import { PROJECT_ACTIVE, PROJECT_VOTE_FAILED } from '@/lib/nance/types'
 import { excludeMemberVotesByAddress } from '@/lib/proposals/excludeMemberVotes'
+import {
+  buildSelfVoteExclusions,
+  isSelfVoteExcluded,
+  teamSelfVoteRuleApplies,
+} from '@/lib/proposals/selfVoteExclusions'
+import { fetchProjectTeamWallets } from '@/lib/project/projectTeamWallets'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
 import {
   projectFundingRulesForCycle,
@@ -489,6 +495,26 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     })
   )
 
+  // Project teams (manager + member hat wearers) can't allocate to their own
+  // project from TEAM_SELF_VOTE_START onward. Fail closed: a team we can't
+  // read would let its members' self-votes count, so stop and let the
+  // operator retry instead of closing the vote with them in.
+  let projectIdToTeamWallets: Record<string, string[]> = {}
+  if (teamSelfVoteRuleApplies(quarter, year)) {
+    const team = await fetchProjectTeamWallets(
+      chain,
+      passedProjects.map((p: any) => p.id)
+    )
+    if (team.failedProjectIds.length > 0) {
+      return res.status(503).json({
+        error:
+          'Could not load project team hats, so team self-votes cannot be stripped. Retry the tally.',
+        failedProjectIds: team.failedProjectIds,
+      })
+    }
+    projectIdToTeamWallets = team.wallets
+  }
+
   // Emit a paste-ready vMOONEY snapshot for this cycle. The audit page
   // currently re-queries `balanceOf(addr, voteCloseTimestamp)` on every
   // load, but that contract method extrapolates from the LATEST user
@@ -547,6 +573,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       ])
     ),
     distributions: snapshotDistributions,
+    teamWallets: projectIdToTeamWallets,
   }
   console.log(
     `[vote tally] ===== SNAPSHOT (paste into vMooneySnapshots.ts under MEMBER_VOTE_VMOONEY_SNAPSHOTS['${year}-Q${quarter}']) =====`
@@ -613,18 +640,23 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
       { missingAuthorProjectIds }
     )
   }
-  // Strip each voter's allocation to their own proposal (author cannot vote on own).
+  // Strip each voter's allocation to their own project: the author always,
+  // plus the project's hat wearers from TEAM_SELF_VOTE_START onward.
   //
   // Two cases for "missing" cells, and they get distinct treatment so the
-  // iterative normalizer only imputes for authors (not for plain silence):
-  //   - Voter IS the author of project X → omit X from their dict so
+  // iterative normalizer only imputes for barred voters (not for plain silence):
+  //   - Voter is barred from project X → omit X from their dict so
   //     `runIterativeNormalization` reads NaN and fills it with the column
   //     average of the other voters.
-  //   - Voter ISN'T the author of project Y AND didn't allocate to Y →
+  //   - Voter ISN'T barred from project Y AND didn't allocate to Y →
   //     write an explicit 0. Silence shouldn't synthesize support; previously
   //     this got column-average imputation too, which inflated outcomes for
   //     projects the voter never endorsed.
   type VoteRow = DistributionVote & { distribution?: string | Record<string, number>; quarter?: number; year?: number }
+  const selfVoteExclusions = buildSelfVoteExclusions({
+    projectIdToAuthor: projectIdToAuthorAddress,
+    projectIdToTeamWallets,
+  })
   const votesWithAuthorOwnExcluded: VoteRow[] = votes.map((v) => {
     const row = v as VoteRow
     const voterAddr = row.address?.toLowerCase()
@@ -642,8 +674,7 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     const distribution: Record<string, number> = {}
     for (const project of passedProjects) {
       const projectId = String(project.id)
-      const author = projectIdToAuthorAddress[projectId]?.toLowerCase()
-      if (author && voterAddr && author === voterAddr) continue
+      if (isSelfVoteExcluded(selfVoteExclusions, projectId, voterAddr)) continue
       const rawVal = parsedDistribution[projectId]
       const numericValue = Number(rawVal)
       if (rawVal != null && Number.isFinite(numericValue) && numericValue >= 0) {

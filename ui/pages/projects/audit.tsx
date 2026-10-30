@@ -135,7 +135,9 @@ export default function ProjectsAuditPage() {
               <summary className="cursor-pointer text-white/80">How this is calculated</summary>
               <p className="mt-2 max-w-3xl leading-relaxed">
                 Voting power is √vMOONEY at vote close. An author&apos;s own project is filled with
-                the column average of the other voters. Non-author silence counts as 0.
+                the column average of the other voters. From Q4 2026, the same applies to every
+                wallet wearing the project&apos;s manager or member hat. Silence from anyone else
+                counts as 0.
               </p>
             </details>
             <QuarterPicker
@@ -316,7 +318,8 @@ function SummaryCard({
           </h2>
           <p className="text-xs sm:text-sm text-gray-400 mt-1">
             Snapshot at vote close ({closeDate.toLocaleString()}). Voting power = √vMOONEY across
-            all chains; author self-votes are stripped before normalization.
+            all chains; author (and, from Q4 2026, team) self-votes are stripped before
+            normalization.
           </p>
         </div>
       </div>
@@ -674,6 +677,11 @@ function ProjectRow({
                             {c.isAuthor && (
                               <span className="ml-2 inline-block text-[10px] uppercase tracking-wider bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded">
                                 Author
+                              </span>
+                            )}
+                            {c.isTeamMember && !c.isAuthor && (
+                              <span className="ml-2 inline-block text-[10px] uppercase tracking-wider bg-amber-500/15 border border-amber-400/30 text-amber-200 px-1.5 py-0.5 rounded">
+                                Team
                               </span>
                             )}
                           </td>

@@ -172,6 +172,13 @@ export type VMooneySnapshot = {
    * distributions to be fully drift-proof).
    */
   distributions?: Record<string, Record<string, number>>
+  /**
+   * Frozen project team at vote close: projectId → lowercased manager-
+   * and member-hat wearers barred from allocating to that project (see
+   * `lib/proposals/selfVoteExclusions.ts`). Without it the audit reads
+   * live hat wearers, which drift as teams change after the vote.
+   */
+  teamWallets?: Record<string, string[]>
 }
 
 const cycleKey = (quarter: number, year: number) => `${year}-Q${quarter}`

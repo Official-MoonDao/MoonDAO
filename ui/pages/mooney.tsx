@@ -1,21 +1,17 @@
 import { ScaleIcon, ShieldCheckIcon, GlobeAltIcon } from '@heroicons/react/24/outline'
 import Head from 'next/head'
 import Link from 'next/link'
-import React, { useContext } from 'react'
-import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
+import React from 'react'
 import WebsiteHead from '../components/layout/Head'
 import Container from '@/components/layout/Container'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import BuyMooneySection from '@/components/mooney/BuyMooneySection'
 import CallToActionSection from '@/components/mooney/CallToActionSection'
 import KeyFeaturesSection from '@/components/mooney/KeyFeaturesSection'
 import TokenHeroSection from '@/components/mooney/TokenHeroSection'
 import TokenInfoSection from '@/components/mooney/TokenInfoSection'
-import NativeToMooney from '@/components/uniswap/NativeToMooney'
+import MooneyHowItWorks from '@/components/mooney/howItWorks/MooneyHowItWorks'
 
 export default function Mooney() {
-  const { selectedChain } = useContext(ChainContextV5)
-
   const features = [
     {
       icon: (
@@ -47,29 +43,6 @@ export default function Mooney() {
     },
   ]
 
-  const governanceSteps = [
-    {
-      number: 1,
-      label: 'Get MOONEY',
-      color: '#3B82F6',
-    },
-    {
-      number: 2,
-      label: 'Lock for vMOONEY',
-      color: '#8B5CF6',
-    },
-    {
-      number: 3,
-      label: 'Vote on Proposals',
-      color: '#10B981',
-    },
-    {
-      number: 4,
-      label: 'Shape Mission',
-      color: '#F59E0B',
-    },
-  ]
-
   return (
     <>
       <WebsiteHead
@@ -89,12 +62,12 @@ export default function Mooney() {
             imageAlt="MOONEY Token"
             ctaButtons={
               <>
-                <a
-                  href="#buy"
+                <Link
+                  href="/get-mooney"
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
                   Buy MOONEY
-                </a>
+                </Link>
                 <Link
                   href="/lock"
                   className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white py-4 px-8 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"
@@ -105,19 +78,11 @@ export default function Mooney() {
             }
           />
 
-          <KeyFeaturesSection
-            features={features}
-            governanceSteps={governanceSteps}
-            formula="Voting Power = √(vMOONEY)"
-            formulaDescription="Quadratic voting prevents whale dominance"
-          />
+          <KeyFeaturesSection features={features} />
+
+          <MooneyHowItWorks />
 
           <TokenInfoSection />
-
-          <BuyMooneySection
-            selectedChain={selectedChain}
-            swapComponent={<NativeToMooney selectedChain={selectedChain} />}
-          />
 
           <CallToActionSection />
 

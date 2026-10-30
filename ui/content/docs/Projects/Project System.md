@@ -41,7 +41,7 @@ This is meant to help YOU get feedback from people on the idea, offer alternativ
 
 **Step 4: Townhall Presentation.** Project contributors MUST be present during the townhall to pitch their project proposal to the community. Each project will have the opportunity to present their project. After the townhall is over, the Senate will approve or reject the proposals in accordance to the quorum and approval threshold in the Constitution. Proposals that pass will move on to the next step.
 
-**Step 5: Member House Vote.** Each voter allocates their voting power between Senate-approved proposals on a percentage basis. The three proposals with the highest voting-power share are funded. Each receives min(its requested amount, ¼ of the quarterly project pot). If fewer than three proposals are considered, all of them are funded and any unissued ¼-slices are added to the retroactive pool. A tie for third is broken by the Senate. Project contributors must abstain from voting on their own project.
+**Step 5: Member House Vote.** Each voter allocates their voting power between Senate-approved proposals on a percentage basis. The three proposals with the highest voting-power share are funded. Each receives min(its requested amount, ¼ of the quarterly project pot). If fewer than three proposals are considered, all of them are funded and any unissued ¼-slices are added to the retroactive pool. A tie for third is broken by the Senate. Project contributors must abstain from voting on their own project: the proposal author and every wallet wearing the project's manager or member hat have their allocation to that project removed and replaced with the average of the other voters.
 
 
 ## Start

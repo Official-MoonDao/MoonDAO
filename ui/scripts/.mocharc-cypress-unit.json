@@ -37,6 +37,7 @@
     "cypress/integration/unit/audit-bug-regression.cy.tsx",
     "cypress/integration/unit/member-vote-audit-seal.cy.ts",
     "cypress/integration/unit/member-vote-tally.cy.tsx",
+    "cypress/integration/unit/self-vote-exclusions.cy.ts",
     "cypress/integration/unit/election-ranked-choice.cy.ts",
     "cypress/integration/unit/executive-finance.cy.ts",
     "cypress/integration/unit/lunar-atlas-baseplan.cy.ts",
