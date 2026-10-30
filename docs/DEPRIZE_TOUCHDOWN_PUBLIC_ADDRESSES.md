@@ -1,8 +1,8 @@
 # Public Touchdown — 2026-10-27 deploy
 
 Broadcast from deployer `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011`.
-Do not invent addresses. Arbitrum market seed was not sent: the deployer
-had 0.0019 ETH, and `0.008 × 7 = 0.056` ETH plus gas is required.
+Do not invent addresses. The Arbitrum market was seeded on 30 Oct 2026.
+The executive Safe still has to register and open it.
 
 ## Sepolia (chain 11155111) — live
 
@@ -43,31 +43,62 @@ those three Sepolia races are not on the new registry.
 Forecasts on Sepolia are keyed by prize id. One zero-power row from the old
 id 1 (`{"5":100}`, Open Field on the 6-slot roster) now reads as ispace.
 
-## Arbitrum One (chain 42161) — contracts only
+## Arbitrum One (chain 42161) — market seeded, not open
 
-UI pointer stays on the live UUPS registry
-`0xf8B2244634c6eCeF32de10BFe0D7436413A59924` until the market is seeded.
+Broadcast 30 Oct 2026 from deployer `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011`.
+The app still reads the live UUPS registry
+`0xf8B2244634c6eCeF32de10BFe0D7436413A59924`. Switch that pointer only after
+the Safe batch below has opened id 1. This registry's `count()` is still 0.
 
 | Slot | Value | Notes |
 |---|---|---|
-| DePrizeRegistry | `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` | Constructor owner = executive Safe `0xdFc31084ad3887076913e5d0759a27C65A3C5291`. Tx `0x3f0b5468…3eeed6`, block **518890846** |
-| DePrizeMint | `0x1D58652aC8dF5dDc762F0D2b531BA3f178f67765` | Same owner. Tx `0xd7af60bc…2176d9a`, block **518890870** |
+| DePrizeRegistry | `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` | Owner = executive Safe `0xdFc31084ad3887076913e5d0759a27C65A3C5291`. Tx `0x3f0b5468…3eeed6`, block **518890846** |
+| DePrizeMint | `0x1D58652aC8dF5dDc762F0D2b531BA3f178f67765` | Same owner. `complianceSigner` is unset. Tx `0xd7af60bc…2176d9a`, block **518890870** |
 | DePrizeRedeem | `0x0aeB11c3527DBa0f1081c17C597582DF86E47F06` | Tx `0x052b00ef…14d4187`, block **518890892** |
-| MissionCreator | `0x6dB622369C46F9480915AE8394e6202C000D7CFb` | Deployer-owned so it can `createMission`. Tx `0xe08b2c1a…d4e2cd6`, block **518890970** |
+| MissionCreator | `0x6dB622369C46F9480915AE8394e6202C000D7CFb` | Deployer-owned. Tx `0xe08b2c1a…d4e2cd6`, block **518890970** |
 | TreasuryPayHook | `0x75e5441984Ac6850733425cb502d6ec77C79BACa` | Treasury `0xAF26a002d716508b7e375f1f620338442F5470c0` |
-| MissionTable | `0xA4cdEEACE0837292C20B3e904255c9846Ec8856B` | Fresh `DEPRIZEMISSION`. Owner transferred to executive Safe |
-| factory | `0x299F163705AbBFa1A8DE7670F33171730F828F3D` | H-01 `createLMSRWithTWAP` |
+| MissionTable | `0xA4cdEEACE0837292C20B3e904255c9846Ec8856B` | Fresh `DEPRIZEMISSION`. Owner = executive Safe |
 | question | `deprize:arbitrum:touchdown-public:v1` | |
+| questionId | `0xd81ff517bc437933758e3679c1107fca6983ca98f2798926af562ab5bdf4b32e` | |
+| conditionId | `0x74903435e83c31673d67ceb23e243c99f4a95d0fe451ad2a62d5f4221ae532fa` | Oracle = treasury. 7 slots, unresolved. Tx `0x2ff2b7d3…a9f9602` |
+| market | `0x8dD77065A0934F3Cea5c7b8d58e9F5A966B1Da2d` | H-01 `createLMSRWithTWAP`, fee `2e16`, funding 0.056 ETH, stage running. Owner = executive Safe. Tx `0x75ef5fcf…7b10256`, ownership `0xa1ceadb2…726b286` |
+| jbProjectId | `87` | missionId `0`. Tx `0xe9eb0709…0e3a5098` |
+| payHook | `0xC3051321c106aeEc0926b18084eEfDE073041614` | Owner = executive Safe. `deprizeRegistry` is still unset |
+| sunset | `1856458310` | 29 Oct 2028, 11:51 AM PDT |
+| roster | `[601, 602, 603, 604, 605, 606, 24]` | |
 
-Spec with these addresses: `ui/scripts/races/touchdown-public.json`.
-Re-run after the deployer holds ≥ 0.106 ETH:
+The executive Safe is 3 of 5 on chain. The deployer is not an owner.
+Registry `count()` is 0, so `register` returns id 1. The six calls below are
+one transaction, in this order. `open` is last.
+
+An executive Safe owner runs this on their own machine, from `ui/` on
+`cursor/arbitrum-touchdown-market-8042`. No GCP credentials and no Safe Pro
+plan. Their key adds the HSM `0xb206325E6562517532686dFeeEaD4C104D9F5d32` as a
+proposer and queues the batch. That signature counts as one of three.
 
 ```
-CONFIRM=arbitrum node ui/scripts/provision-touchdown-arbitrum-public.cjs ui/scripts/races/touchdown-public.json
+cd ui && yarn
+SAFE_OWNER_PK=0x<executive-safe-owner> \
+  yarn tsx --tsconfig tsconfig.json scripts/propose-touchdown-arbitrum-safe.ts
 ```
 
-Register / setCondition / setMarket / setComplianceSigner / open /
-`setDePrizeRegistry` are Safe calls. The deployer cannot send them on this
-registry. The mint's `complianceSigner` is unset, so every bet reverts until
-the Safe sets it to the address of production `DEPRIZE_COMPLIANCE_SIGNER_KEY`.
-Pass that address as `COMPLIANCE_SIGNER` to have the script encode it.
+The script refuses to run if the registry count is no longer 0.
+`setComplianceSigner` uses the address of the local
+`DEPRIZE_COMPLIANCE_SIGNER_KEY`, which is the deployer. Confirm production
+signs with that key before executing.
+
+1. `0xC3051321c106aeEc0926b18084eEfDE073041614` `setDePrizeRegistry`
+   `0x14c413ea0000000000000000000000005620749d0579ff08d0dd2389cf9040523dd7b8ea`
+2. `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` `register(87, [601–606, 24], 1856458310)`
+   `0x1970b05a00000000000000000000000000000000000000000000000000000000000000570000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000006ea74e4600000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000000000000259000000000000000000000000000000000000000000000000000000000000025a000000000000000000000000000000000000000000000000000000000000025b000000000000000000000000000000000000000000000000000000000000025c000000000000000000000000000000000000000000000000000000000000025d000000000000000000000000000000000000000000000000000000000000025e0000000000000000000000000000000000000000000000000000000000000018`
+3. `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` `setCondition(1, conditionId)`
+   `0x87c357a3000000000000000000000000000000000000000000000000000000000000000174903435e83c31673d67ceb23e243c99f4a95d0fe451ad2a62d5f4221ae532fa`
+4. `0x1D58652aC8dF5dDc762F0D2b531BA3f178f67765` `setMarket(1, market)`
+   `0xf4b2ad1400000000000000000000000000000000000000000000000000000000000000010000000000000000000000008dd77065a0934f3cea5c7b8d58e9f5a966b1da2d`
+5. `0x1D58652aC8dF5dDc762F0D2b531BA3f178f67765` `setComplianceSigner(deployer)`
+   `0x73fe79440000000000000000000000003c5e2fe76478e99d94d3ca8bfa5154907a52e011`
+6. `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` `open(1)`
+   `0x690e7c090000000000000000000000000000000000000000000000000000000000000001`
+
+Do not broadcast the provision script again. The spec records the mission and
+market, and a re-run skips both. A second market would take another 0.056 ETH.

@@ -85,6 +85,25 @@ function outPath(spec) {
   return path.resolve('/tmp', `deprize-race-${slug}.json`)
 }
 
+// A re-run on a machine without the /tmp progress file must not create a second
+// mission or market. The race spec keeps the ids from the broadcast that landed.
+function carriedFromSpec(spec) {
+  const row = {}
+  for (const key of ['missionId', 'jbProjectId', 'payHook', 'market']) {
+    if (spec[key]) row[key] = String(spec[key])
+  }
+  return row
+}
+
+async function feeOverrides(provider) {
+  const network = await provider.getNetwork()
+  if (network.chainId !== 42161) return {}
+  const gasPrice = await provider.getGasPrice()
+  const capped = gasPrice.mul(4)
+  const floor = ethers.utils.parseUnits('0.05', 'gwei')
+  return { gasPrice: capped.gt(floor) ? capped : floor }
+}
+
 async function send(contract, method, args, opts = {}) {
   const estimateOverrides = {}
   if (opts.valueOverride) estimateOverrides.value = opts.valueOverride
@@ -92,6 +111,7 @@ async function send(contract, method, args, opts = {}) {
   const tx = await contract[method](...args, {
     ...estimateOverrides,
     gasLimit: gas.mul(12).div(10),
+    ...(await feeOverrides(contract.provider)),
   })
   console.log(' tx', method, tx.hash)
   const receipt = await tx.wait()
@@ -227,7 +247,8 @@ async function main() {
   const funding = seedEach.mul(n)
   const goal = ethers.utils.parseEther(String(spec.fundingGoalEth))
   const savedPath = outPath(spec)
-  const saved = fs.existsSync(savedPath) ? JSON.parse(fs.readFileSync(savedPath, 'utf8')) : {}
+  const disk = fs.existsSync(savedPath) ? JSON.parse(fs.readFileSync(savedPath, 'utf8')) : {}
+  const saved = { ...carriedFromSpec(spec), ...disk }
   const sunset = sunsetOf(spec, saved.sunset)
 
   console.log('race', spec.name || spec.question)
