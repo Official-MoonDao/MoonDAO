@@ -1,4 +1,4 @@
-import { electionPhase, ELECTIONS, getElection } from '@/lib/elections/elections'
+import { electionPhase, ELECTIONS } from '@/lib/elections/elections'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useState } from 'react'
@@ -61,7 +61,6 @@ export default function ElectionBanner() {
 
   // Local binding so TS keeps the null check inside the map callback below.
   const closesAt = election.closesAt
-  const companion = election.companionSlug ? getElection(election.companionSlug) : null
   const href = `/elections/${election.slug}`
 
   return (
@@ -113,14 +112,6 @@ export default function ElectionBanner() {
                       </span>
                     </>
                   )}
-                  {companion && (
-                    <>
-                      <span className="mx-3 text-white/15">·</span>
-                      <span className="text-white/55">Also on the ballot: {companion.title}</span>
-                    </>
-                  )}
-                  <span className="mx-3 text-white/15">·</span>
-                  <span className="text-white/55">Every vMOONEY holder can vote</span>
                 </span>
               ))}
             </div>
