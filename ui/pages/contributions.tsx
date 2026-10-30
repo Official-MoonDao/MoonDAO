@@ -273,7 +273,7 @@ export default function ContributionsPage() {
     <>
       <WebsiteHead
         title="Community Circle"
-        description="Submit your mission-aligned work and accomplishments to earn ETH financial rewards and vMOONEY voting power. Senators evaluate all submissions each quarter to distribute rewards."
+        description="Submit your mission-aligned work and accomplishments to earn financial rewards and voting power. Senators evaluate all submissions each quarter to distribute rewards."
       />
       <section className="flex flex-col justify-start items-start animate-fadeIn w-[90vw] md:w-full px-5 mt-5">
         <Container>
@@ -326,7 +326,7 @@ export default function ContributionsPage() {
                   {
                     step: '03',
                     title: 'Get Paid',
-                    body: 'Rewards in ETH and vMOONEY are sent to your wallet at the end of each quarter.',
+                    body: 'Financial rewards and voting power are sent to your wallet at the end of each quarter.',
                   },
                 ].map(({ step, title, body }) => (
                   <div key={step} className="bg-white/5 border border-white/10 rounded-xl p-5">
