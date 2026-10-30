@@ -1,19 +1,17 @@
 /**
- * Propose the Arbitrum public Touchdown open batch from the GCP HSM wallet.
+ * Queue the Arbitrum public Touchdown open batch on the executive Safe.
  *
- * The executive Safe owns the registry and the mint. The HSM is not an owner.
- * Safe's transaction service only accepts a proposal from an owner or a
- * proposer (delegate). One owner adds the HSM once; the HSM then proposes
- * the six calls as a single transaction the other owners sign.
+ * An owner runs this on their own machine. Their key signs one off-chain
+ * message that adds the GCP HSM as a proposer, then proposes the six-call
+ * batch. That proposal signature counts as one of the three required
+ * confirmations. No GCP credentials and no Safe Pro plan are required.
  *
+ *   cd ui && yarn
  *   SAFE_OWNER_PK=0x<executive-safe-owner> \
  *     yarn tsx --tsconfig tsconfig.json scripts/propose-touchdown-arbitrum-safe.ts
  *
- * After the proposer exists, the owner key is no longer required:
- *
- *   yarn tsx --tsconfig tsconfig.json scripts/propose-touchdown-arbitrum-safe.ts
- *
- * Reads GCP_SIGNER_SERVICE_ACCOUNT and GCP_PROJECT_ID from ui/.env.local.
+ * After the HSM is a proposer, this machine can propose again without an
+ * owner key. That path reads GCP_SIGNER_SERVICE_ACCOUNT from ui/.env.local.
  * Never prints keys.
  */
 import fs from 'fs'
@@ -149,18 +147,7 @@ async function addProposer(hsm: string) {
   return true
 }
 
-async function main() {
-  loadEnvLocal()
-  const { getHSMSigner, isHSMAvailable } = await import('../lib/google/hsm-signer')
-  if (!isHSMAvailable()) {
-    throw new Error('GCP_SIGNER_SERVICE_ACCOUNT is missing from ui/.env.local')
-  }
-  const hsm = getHSMSigner()
-  const hsmAddress = ethers.utils.getAddress(await hsm.getAddress())
-  if (hsmAddress.toLowerCase() !== EXPECTED_HSM.toLowerCase()) {
-    throw new Error(`HSM address ${hsmAddress} is not ${EXPECTED_HSM}`)
-  }
-
+async function assertRegistryEmpty() {
   const provider = new ethers.providers.JsonRpcProvider(RPC)
   const registry = new ethers.Contract(
     REGISTRY,
@@ -171,20 +158,48 @@ async function main() {
   if (!count.isZero()) {
     throw new Error(`registry count is ${count.toString()}, so id 1 is no longer the next register`)
   }
+}
 
-  const transactions = batch()
-  console.log('Safe', SAFE_ADDRESS)
-  console.log('proposer', hsmAddress)
-  transactions.forEach((tx, i) => console.log(`${i + 1}`, tx.to, tx.data.slice(0, 10)))
-
-  await addProposer(hsmAddress)
+async function propose(senderPk: string, senderAddress: string, transactions: ReturnType<typeof batch>) {
+  const protocolKit = await Safe.init({
+    provider: RPC,
+    signer: senderPk,
+    safeAddress: SAFE_ADDRESS,
+  })
+  const safeTransaction = await protocolKit.createTransaction({ transactions })
+  const safeTxHash = await protocolKit.getTransactionHash(safeTransaction)
+  const signature = await protocolKit.signHash(safeTxHash)
   const apiKit = new SafeApiKit({ chainId: CHAIN_ID })
-  if (!(await hsmIsProposer(apiKit, hsmAddress))) {
+  await apiKit.proposeTransaction({
+    safeAddress: SAFE_ADDRESS,
+    safeTransactionData: safeTransaction.data,
+    safeTxHash,
+    senderAddress,
+    senderSignature: signature.data,
+    origin: 'arbitrum-touchdown-public',
+  })
+  console.log('proposed', safeTxHash)
+  console.log(
+    `https://app.safe.global/transactions/tx?safe=arb1:${SAFE_ADDRESS}&id=multisig_${SAFE_ADDRESS}_${safeTxHash}`
+  )
+}
+
+async function proposeFromHsm(transactions: ReturnType<typeof batch>) {
+  const { getHSMSigner, isHSMAvailable } = await import('../lib/google/hsm-signer')
+  if (!isHSMAvailable()) {
     throw new Error(
-      'HSM is not a proposer yet. An executive Safe owner runs this same command with SAFE_OWNER_PK set to their owner key.'
+      'Set SAFE_OWNER_PK to an executive Safe owner key. This machine has no HSM credentials to propose with.'
     )
   }
-
+  const hsm = getHSMSigner()
+  const hsmAddress = ethers.utils.getAddress(await hsm.getAddress())
+  if (hsmAddress.toLowerCase() !== EXPECTED_HSM.toLowerCase()) {
+    throw new Error(`HSM address ${hsmAddress} is not ${EXPECTED_HSM}`)
+  }
+  const apiKit = new SafeApiKit({ chainId: CHAIN_ID })
+  if (!(await hsmIsProposer(apiKit, hsmAddress))) {
+    throw new Error('HSM is not a proposer yet. An executive Safe owner runs this with SAFE_OWNER_PK set.')
+  }
   const protocolKit = await Safe.init({
     provider: RPC,
     signer: hsmAddress,
@@ -203,7 +218,31 @@ async function main() {
     origin: 'arbitrum-touchdown-public',
   })
   console.log('proposed', safeTxHash)
-  console.log(`https://app.safe.global/transactions/tx?safe=arb1:${SAFE_ADDRESS}&id=multisig_${SAFE_ADDRESS}_${safeTxHash}`)
+  console.log(
+    `https://app.safe.global/transactions/tx?safe=arb1:${SAFE_ADDRESS}&id=multisig_${SAFE_ADDRESS}_${safeTxHash}`
+  )
+}
+
+async function main() {
+  loadEnvLocal()
+  await assertRegistryEmpty()
+  const hsmAddress = ethers.utils.getAddress(EXPECTED_HSM)
+  const transactions = batch()
+  console.log('Safe', SAFE_ADDRESS)
+  console.log('HSM proposer', hsmAddress)
+  transactions.forEach((tx, i) => console.log(`${i + 1}`, tx.to, tx.data.slice(0, 10)))
+
+  const raw = process.env.SAFE_OWNER_PK
+  if (raw) {
+    const pk = normalizePk(raw)
+    const owner = new ethers.Wallet(pk).address
+    await addProposer(hsmAddress)
+    console.log('owner', owner, 'proposing the batch')
+    await propose(pk, owner, transactions)
+    return
+  }
+
+  await proposeFromHsm(transactions)
 }
 
 main().catch((err) => {

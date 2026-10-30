@@ -71,17 +71,18 @@ The executive Safe is 3 of 5 on chain. The deployer is not an owner.
 Registry `count()` is 0, so `register` returns id 1. The six calls below are
 one transaction, in this order. `open` is last.
 
-The GCP HSM `0xb206325E6562517532686dFeeEaD4C104D9F5d32` can propose that
-batch once an owner adds it as a Safe proposer. One command does both, from
-`ui/`, with the owner key only in the environment:
+An executive Safe owner runs this on their own machine, from `ui/` on
+`cursor/arbitrum-touchdown-market-8042`. No GCP credentials and no Safe Pro
+plan. Their key adds the HSM `0xb206325E6562517532686dFeeEaD4C104D9F5d32` as a
+proposer and queues the batch. That signature counts as one of three.
 
 ```
+cd ui && yarn
 SAFE_OWNER_PK=0x<executive-safe-owner> \
   yarn tsx --tsconfig tsconfig.json scripts/propose-touchdown-arbitrum-safe.ts
 ```
 
-After that, the same command without `SAFE_OWNER_PK` proposes again. The
-script refuses to run if the registry count is no longer 0.
+The script refuses to run if the registry count is no longer 0.
 `setComplianceSigner` uses the address of the local
 `DEPRIZE_COMPLIANCE_SIGNER_KEY`, which is the deployer. Confirm production
 signs with that key before executing.
