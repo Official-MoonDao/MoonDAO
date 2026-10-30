@@ -8244,20 +8244,57 @@ function PrinterGantry({ accent }: { accent: string }) {
   )
 }
 
+// The graded apron every construction lot stands on. Like the landing pad, it
+// flares down well below the seat point so the uphill side never cuts through
+// it and the downhill side never hovers — the flat disc it replaces did both,
+// which is what made the site look half-swallowed by the ground. Shared by all
+// five construction bids so their lots are one size and seat identically (see
+// GRADED_DECK_FRACTION.construction); everything that differs stands on top.
+const APRON_TOP_R = 5.6
+
+function SiteApron() {
+  return (
+    <mesh position={[0, DECK_Y - 1.6, 0]}>
+      <cylinderGeometry args={[APRON_TOP_R, 6.9, 3.2, 56]} />
+      <meshStandardMaterial color={PAD_SURFACE} roughness={0.98} />
+    </mesh>
+  )
+}
+
+// Perimeter beacons on the apron's rim, at bearings (radians) each site picks
+// to stay clear of its own hardware.
+function SiteBeacons({ accent, at }: { accent: string; at: number[] }) {
+  return (
+    <>
+      {at.map((a) => (
+        <group key={a} position={[Math.cos(a) * 5.2, 0, Math.sin(a) * 5.2]}>
+          <mesh position={[0, 0.62, 0]}>
+            <cylinderGeometry args={[0.06, 0.09, 1.24, 6]} />
+            <meshStandardMaterial color={METAL} metalness={0.4} />
+          </mesh>
+          <mesh position={[0, 1.36, 0]}>
+            <sphereGeometry args={[0.16, 10, 10]} />
+            <meshStandardMaterial
+              color={accent}
+              emissive={accent}
+              emissiveIntensity={1.8}
+              toneMapped={false}
+            />
+          </mesh>
+        </group>
+      ))}
+    </>
+  )
+}
+
 // A landing pad being printed: a graded apron, a part-finished deck of
 // sintered pavers, the printer at work on the near edge, staged feedstock,
-// perimeter beacons, and a suited figure for scale.
+// perimeter beacons, and a suited figure for scale. ICON's Olympus concept,
+// and the one construction bid still drawn by the type-level fallback.
 function ConstructionSite({ accent }: { accent: string }) {
   return (
     <group scale={SITE_M}>
-      {/* Graded apron. Like the landing pad, it flares down well below the
-          seat point so the uphill side never cuts through it and the downhill
-          side never hovers — the flat disc it replaces did both, which is what
-          made the site look half-swallowed by the ground. */}
-      <mesh position={[0, DECK_Y - 1.6, 0]}>
-        <cylinderGeometry args={[5.6, 6.9, 3.2, 56]} />
-        <meshStandardMaterial color={PAD_SURFACE} roughness={0.98} />
-      </mesh>
+      <SiteApron />
 
       <PrintedDeck />
       <PrinterGantry accent={accent} />
@@ -8278,27 +8315,7 @@ function ConstructionSite({ accent }: { accent: string }) {
       ))}
 
       {/* Perimeter beacons, clear of the printer's approach */}
-      {[-2.5, -1.7, 2.6].map((a) => {
-        const x = Math.cos(a) * 5.2
-        const z = Math.sin(a) * 5.2
-        return (
-          <group key={a} position={[x, 0, z]}>
-            <mesh position={[0, 0.62, 0]}>
-              <cylinderGeometry args={[0.06, 0.09, 1.24, 6]} />
-              <meshStandardMaterial color={METAL} metalness={0.4} />
-            </mesh>
-            <mesh position={[0, 1.36, 0]}>
-              <sphereGeometry args={[0.16, 10, 10]} />
-              <meshStandardMaterial
-                color={accent}
-                emissive={accent}
-                emissiveIntensity={1.8}
-                toneMapped={false}
-              />
-            </mesh>
-          </group>
-        )
-      })}
+      <SiteBeacons accent={accent} at={[-2.5, -1.7, 2.6]} />
 
       {/* Suited figure, patrolling the near apron — the only unambiguous
           scale cue on an airless plain, and now one that reads as staff
@@ -8331,6 +8348,1107 @@ function ConstructionSite({ accent }: { accent: string }) {
           <BrickPallet seed={1} />
         </group>
       </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// The other four construction bids
+// ---------------------------------------------------------------------------
+//
+// All five construction competitors stand on the same apron (SiteApron), so
+// the district reads as one race of five lots. What stands ON the apron is
+// each company's own answer to "how do you turn regolith into infrastructure",
+// and the answers are physically different processes — which is the only
+// reason the district is worth looking at:
+//
+//   ICON / Olympus         print it, bead by bead, off a gantry  (ConstructionSite)
+//   Redwire / Mason        grade it, compact it, microwave-sinter it in place
+//   Astroport / Lunatron   melt it into interlocking bricks and lay them
+//   AI SpaceFactory / LINA print a regolith-polymer shell
+//   Astrobotic             bind it cold with a self-curing chemistry
+//
+// So each lot is drawn around the thing its process leaves behind — a sintered
+// road and a compacted berm, a brick blast wall, a layered dome, a pad laid in
+// cure stages — with the machine that is making it at work on it. Every site
+// is authored in meters inside SITE_M, exactly like ConstructionSite.
+
+// Molten or freshly sintered regolith: the one hot thing a site can show.
+const MELT_GLOW = '#ff7a2a'
+
+// A rover wheel with grousers, axle along local Z. The grousers are what make
+// a slow roll readable at all; a smooth tire turning in place looks parked.
+function SiteWheel({ r, w }: { r: number; w: number }) {
+  return (
+    <group>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[r, r, w, 18]} />
+        <meshStandardMaterial color={DARK} roughness={0.9} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[r * 0.42, r * 0.42, w + 0.04, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+      </mesh>
+      {Array.from({ length: 8 }, (_, i) => {
+        const a = (i / 8) * Math.PI * 2
+        return (
+          <mesh
+            key={i}
+            position={[Math.cos(a) * r, Math.sin(a) * r, 0]}
+            rotation={[0, 0, a]}
+          >
+            <boxGeometry args={[0.05, 0.08, w]} />
+            <meshStandardMaterial color={METAL} roughness={0.7} />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+// --- Redwire Mason ---------------------------------------------------------
+//
+// Mason is not a machine but a tool suite for whatever rover is on hand: the
+// BASE grader, the PACT compactor and the M3LT microwave sintering emitter.
+// So the lot is a road being built in the order those tools work — graded,
+// rolled, then sintered into a dark glassy crust — by one carrier towing all
+// three, beside the compacted berm the same tools threw up, with a rack of
+// spare tool heads to say the platform is the interchangeable part.
+
+const MASON_BASE_X = 1.0
+const MASON_STRIP_Z = 0.6
+// The carrier works a short stretch back and forth rather than driving off
+// the lot. Slow on purpose, for the same reason as the printer's SLEW_PERIOD_S.
+const MASON_SWING_M = 0.5
+const MASON_PERIOD_S = 30
+const MASON_WHEEL_R = 0.42
+const MASON_DRUM_R = 0.42
+// Where the sintered crust stops and graded-but-raw ground begins: just
+// behind the emitter's mean position, which is the edge it is advancing.
+const MASON_SINTER_END_X = -2.9
+const BERM_COLOR = '#99948a'
+
+function MasonCarrier({ accent }: { accent: string }) {
+  const rig = useRef<THREE.Group>(null)
+  const wheels = useRef<(THREE.Group | null)[]>([])
+  const drum = useRef<THREE.Group>(null)
+  const glow = useRef<THREE.MeshStandardMaterial>(null)
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    const dx = Math.sin((t / MASON_PERIOD_S) * Math.PI * 2) * MASON_SWING_M
+    if (rig.current) rig.current.position.x = MASON_BASE_X + dx
+    // Rolling without slipping, so the wheels and the drum turn by exactly
+    // the distance the train has moved.
+    for (const w of wheels.current) if (w) w.rotation.z = -dx / MASON_WHEEL_R
+    if (drum.current) drum.current.rotation.z = -dx / MASON_DRUM_R
+    if (glow.current) {
+      glow.current.emissiveIntensity = 1.6 + Math.sin(t * 3.1) * 0.35
+    }
+  })
+
+  const wheelAt: [number, number][] = [-1.1, 0, 1.1].flatMap((x) => [
+    [x, 1.12] as [number, number],
+    [x, -1.12] as [number, number],
+  ])
+  return (
+    <group ref={rig} position={[MASON_BASE_X, 0, MASON_STRIP_Z]}>
+      {wheelAt.map(([x, z], i) => (
+        <group
+          key={`${x}:${z}`}
+          position={[x, MASON_WHEEL_R, z]}
+          ref={(g) => {
+            wheels.current[i] = g
+          }}
+        >
+          <SiteWheel r={MASON_WHEEL_R} w={0.3} />
+        </group>
+      ))}
+
+      {/* Carrier: chassis, belly pan, avionics, a tilted array, a camera mast */}
+      <mesh position={[0, 0.98, 0]}>
+        <boxGeometry args={[3.2, 0.55, 1.9]} />
+        <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.2} />
+      </mesh>
+      <mesh position={[0, 1.12, 0]}>
+        <boxGeometry args={[3.22, 0.1, 1.92]} />
+        <meshStandardMaterial color={accent} roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 0.66, 0]}>
+        <boxGeometry args={[3.0, 0.12, 1.7]} />
+        <meshStandardMaterial color={DARK} roughness={0.8} />
+      </mesh>
+      <mesh position={[-0.5, 1.5, 0]}>
+        <boxGeometry args={[1.2, 0.5, 1.0]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+      </mesh>
+      <group position={[0.65, 1.4, 0]} rotation={[0, 0, 0.18]}>
+        <mesh>
+          <boxGeometry args={[1.4, 0.05, 1.7]} />
+          <meshStandardMaterial color={PANEL} roughness={0.35} metalness={0.4} />
+        </mesh>
+      </group>
+      <Strut from={[1.3, 1.25, 0.65]} to={[1.3, 2.05, 0.65]} r={0.04} />
+      <mesh position={[1.34, 2.12, 0.65]}>
+        <boxGeometry args={[0.22, 0.16, 0.3]} />
+        <meshStandardMaterial color={DARK} roughness={0.5} />
+      </mesh>
+
+      {/* BASE: the grader blade, out front on push arms, raked back */}
+      {[-0.7, 0.7].map((z) => (
+        <Strut key={z} from={[1.5, 0.78, z]} to={[2.1, 0.5, z]} r={0.07} />
+      ))}
+      <group position={[2.18, 0, 0]} rotation={[0, 0, -0.18]}>
+        <mesh position={[0, 0.44, 0]}>
+          <boxGeometry args={[0.1, 0.72, 2.5]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.55} metalness={0.3} />
+        </mesh>
+        <mesh position={[0.02, 0.08, 0]}>
+          <boxGeometry args={[0.13, 0.08, 2.55]} />
+          <meshStandardMaterial color={DARK} metalness={0.5} roughness={0.5} />
+        </mesh>
+        {[-1.25, 1.25].map((z) => (
+          <mesh key={z} position={[-0.2, 0.38, z]}>
+            <boxGeometry args={[0.5, 0.6, 0.06]} />
+            <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* PACT: a padded compaction drum on a yoke behind the carrier */}
+      <Strut from={[-1.6, 0.72, 0]} to={[-2.2, 0.62, 0]} r={0.08} />
+      {[-1.08, 1.08].map((z) => (
+        <mesh key={z} position={[-2.5, 0.52, z]}>
+          <boxGeometry args={[0.9, 0.7, 0.06]} />
+          <meshStandardMaterial color={METAL} metalness={0.4} roughness={0.6} />
+        </mesh>
+      ))}
+      <Strut from={[-2.5, 0.9, -1.08]} to={[-2.5, 0.9, 1.08]} r={0.06} />
+      <Strut from={[-2.2, 0.62, 0]} to={[-2.5, 0.9, 0]} r={0.07} />
+      <group ref={drum} position={[-2.5, MASON_DRUM_R, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[MASON_DRUM_R - 0.04, MASON_DRUM_R - 0.04, 2.0, 20]} />
+          <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.45} />
+        </mesh>
+        {Array.from({ length: 10 }, (_, i) => {
+          const a = (i / 10) * Math.PI * 2
+          return (
+            <mesh
+              key={i}
+              position={[
+                Math.cos(a) * (MASON_DRUM_R - 0.03),
+                Math.sin(a) * (MASON_DRUM_R - 0.03),
+                0,
+              ]}
+              rotation={[0, 0, a]}
+            >
+              <boxGeometry args={[0.07, 0.1, 1.96]} />
+              <meshStandardMaterial color={HULL_DARK} roughness={0.7} />
+            </mesh>
+          )
+        })}
+      </group>
+
+      {/* M3LT: the microwave sintering sled, last in the train, glowing on
+          the crust it has just fused */}
+      <Strut from={[-2.95, 0.62, 0]} to={[-3.3, 0.5, 0]} r={0.07} />
+      <mesh position={[-3.75, 0.42, 0]}>
+        <boxGeometry args={[0.9, 0.42, 2.0]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.55} metalness={0.25} />
+      </mesh>
+      <mesh position={[-3.75, 0.12, 0]}>
+        <boxGeometry args={[0.96, 0.12, 2.06]} />
+        <meshStandardMaterial color={DARK} roughness={0.8} />
+      </mesh>
+      <mesh position={[-3.75, 0.82, 0]}>
+        <boxGeometry args={[0.5, 0.36, 0.8]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={[-3.75, 1.02, 0]}>
+        <boxGeometry args={[0.52, 0.06, 0.82]} />
+        <meshStandardMaterial color={accent} roughness={0.5} />
+      </mesh>
+      <mesh position={[-3.75, 0.065, 0]}>
+        <boxGeometry args={[0.84, 0.01, 1.9]} />
+        <meshStandardMaterial
+          ref={glow}
+          color={MELT_GLOW}
+          emissive={MELT_GLOW}
+          emissiveIntensity={1.6}
+          toneMapped={false}
+        />
+      </mesh>
+      {/* The crust it has just left, still cooling */}
+      <mesh position={[-4.45, 0.06, 0]}>
+        <boxGeometry args={[0.5, 0.04, 2.2]} />
+        <meshStandardMaterial
+          color={PAVER_FRESH}
+          emissive={MELT_GLOW}
+          emissiveIntensity={0.3}
+          roughness={0.4}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function RedwireMasonSite({ accent }: { accent: string }) {
+  const sinterLen = MASON_SINTER_END_X + 4.8
+  const gradedLen = 3.8 - MASON_SINTER_END_X
+  return (
+    <group scale={SITE_M}>
+      <SiteApron />
+      <group position={[0, DECK_Y, 0]}>
+        {/* The road: sintered crust behind the train, graded ground ahead */}
+        <mesh position={[MASON_SINTER_END_X - sinterLen / 2, 0.025, MASON_STRIP_Z]}>
+          <boxGeometry args={[sinterLen, 0.05, 2.8]} />
+          <meshStandardMaterial color={PAVER} roughness={0.45} metalness={0.1} />
+        </mesh>
+        <mesh position={[MASON_SINTER_END_X + gradedLen / 2, 0.025, MASON_STRIP_Z]}>
+          <boxGeometry args={[gradedLen, 0.05, 2.8]} />
+          <meshStandardMaterial color={PAD_SLAB} roughness={0.95} />
+        </mesh>
+
+        <MasonCarrier accent={accent} />
+
+        {/* A compacted berm alongside: a ridge with its lower half bedded in
+            the apron, so it rises out of the ground rather than resting on it */}
+        <group position={[0, 0, -2.7]} scale={[1, 0.8, 1.4]}>
+          <mesh rotation={[Math.PI / 4, 0, 0]}>
+            <boxGeometry args={[6.4, 1.6, 1.6]} />
+            <meshStandardMaterial color={BERM_COLOR} roughness={1} flatShading />
+          </mesh>
+        </group>
+
+        {/* Tool rack: a spare blade and a spare emitter head, because the
+            tools are the product and the carrier is whatever is available */}
+        <group position={[-2.6, 0, 3.6]} rotation={[0, 0.3, 0]}>
+          <mesh position={[0, 0.06, 0]}>
+            <boxGeometry args={[2.0, 0.12, 0.9]} />
+            <meshStandardMaterial color={METAL} metalness={0.4} roughness={0.7} />
+          </mesh>
+          {[-0.95, 0.95].map((x) => (
+            <Strut key={x} from={[x, 0.12, 0]} to={[x, 1.15, 0]} r={0.05} />
+          ))}
+          <Strut from={[-0.95, 1.15, 0]} to={[0.95, 1.15, 0]} r={0.05} />
+          <mesh position={[-0.35, 0.55, 0]}>
+            <boxGeometry args={[1.1, 0.7, 0.1]} />
+            <meshStandardMaterial color={HULL_DARK} roughness={0.55} metalness={0.3} />
+          </mesh>
+          <mesh position={[-0.35, 0.22, 0]}>
+            <boxGeometry args={[1.12, 0.07, 0.13]} />
+            <meshStandardMaterial color={DARK} metalness={0.5} />
+          </mesh>
+          <mesh position={[0.55, 0.36, 0]}>
+            <boxGeometry args={[0.6, 0.45, 0.6]} />
+            <meshStandardMaterial color={HULL_DARK} roughness={0.55} />
+          </mesh>
+          <mesh position={[0.55, 0.6, 0]}>
+            <boxGeometry args={[0.62, 0.05, 0.62]} />
+            <meshStandardMaterial color={accent} roughness={0.5} />
+          </mesh>
+        </group>
+
+        <group position={[4.0, 0, -1.5]}>
+          <SurveyTripod seed={2} />
+        </group>
+        <PatrollingAstronaut center={[1.6, 3.4]} radius={1.0} seed={2} accent={accent} />
+      </group>
+      <SiteBeacons accent={accent} at={[-2.4, -0.6, 1.6]} />
+    </group>
+  )
+}
+
+// --- Astroport Lunatron / Brickbot -----------------------------------------
+//
+// Not a printer at all: an induction furnace-nozzle melts regolith into
+// interlocking, mortar-free bricks, and a robot lays them. So the lot is a
+// brick plant — furnace, conveyor, arm — and its product is the tallest thing
+// on it: a curved blast-shield wall, still a course short of finished, on the
+// far side of the lot where a landing pad's plume would hit it. The bricks
+// come off the nozzle glowing and cool along the belt, which is the one bit
+// of the process you can actually see.
+
+const BRICK_WALL_R = 4.6
+const BRICK_WALL_A0 = (200 * Math.PI) / 180
+const BRICK_WALL_A1 = (340 * Math.PI) / 180
+const BRICK_COURSES = 5
+const BRICK_H = 0.26
+const BRICK_L = 0.62
+const BRICK_D = 0.42
+// The top course is part laid, and it ends where Brickbot places: the
+// unfinished end of the wall is what the arm is working on.
+const BRICK_TOP_LAID = 0.36
+const BRICK_ALT = '#8f857a'
+const COPPER = '#b87333'
+
+// Plan positions the plant is laid out around (meters, x/z).
+const FURNACE_AT: [number, number] = [3.3, 1.5]
+const BELT_FROM: [number, number] = [2.3, 0.4]
+const BELT_TO: [number, number] = [0.6, -0.9]
+const BELT_Y = 0.86
+const BELT_BRICKS = 4
+const BELT_SPEED = 0.16 // m/s
+const BRICKBOT_AT: [number, number] = [-0.8, -2.2]
+const BRICKBOT_PERIOD_S = 16
+// Yaw (about +Y) that points the arm's reach (local +X) at a plan offset.
+const yawToward = (dx: number, dz: number) => Math.atan2(-dz, dx)
+
+function BrickWall() {
+  const bricks = useMemo(() => {
+    const out: { key: string; a: number; y: number; alt: boolean }[] = []
+    const pitch = (BRICK_L + 0.03) / BRICK_WALL_R
+    const count = Math.floor((BRICK_WALL_A1 - BRICK_WALL_A0) / pitch)
+    for (let c = 0; c < BRICK_COURSES; c++) {
+      // Running bond: every other course shifted half a brick, which is what
+      // makes a dry-laid wall hold without mortar.
+      const shift = c % 2 ? pitch / 2 : 0
+      const laid = c === BRICK_COURSES - 1 ? Math.floor(count * BRICK_TOP_LAID) : count
+      for (let i = 0; i < laid; i++) {
+        const a = BRICK_WALL_A0 + shift + (i + 0.5) * pitch
+        if (a > BRICK_WALL_A1) continue
+        out.push({
+          key: `${c}:${i}`,
+          a,
+          y: c * BRICK_H + BRICK_H / 2,
+          alt: tileNoise(c * 53 + i) > 0.6,
+        })
+      }
+    }
+    return out
+  }, [])
+  return (
+    <group>
+      {bricks.map((b) => (
+        <mesh
+          key={b.key}
+          position={[Math.cos(b.a) * BRICK_WALL_R, b.y, Math.sin(b.a) * BRICK_WALL_R]}
+          rotation={[0, -b.a, 0]}
+        >
+          <boxGeometry args={[BRICK_D, BRICK_H - 0.02, BRICK_L]} />
+          <meshStandardMaterial color={b.alt ? BRICK_ALT : BRICK_COLOR} roughness={0.92} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function BrickConveyor() {
+  const dx = BELT_TO[0] - BELT_FROM[0]
+  const dz = BELT_TO[1] - BELT_FROM[1]
+  const len = Math.hypot(dx, dz)
+  const bricks = useRef<(THREE.Group | null)[]>([])
+  const heat = useRef<(THREE.MeshStandardMaterial | null)[]>([])
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    for (let k = 0; k < BELT_BRICKS; k++) {
+      const s = (t * BELT_SPEED + (k * len) / BELT_BRICKS) % len
+      const g = bricks.current[k]
+      if (g) g.position.x = -len / 2 + s
+      // Cooling as it travels: white-hot off the nozzle, dull by the arm.
+      const m = heat.current[k]
+      if (m) m.emissiveIntensity = 1.8 * (1 - s / len) ** 2
+    }
+  })
+  return (
+    <group
+      position={[(BELT_FROM[0] + BELT_TO[0]) / 2, 0, (BELT_FROM[1] + BELT_TO[1]) / 2]}
+      rotation={[0, yawToward(dx, dz), 0]}
+    >
+      <mesh position={[0, BELT_Y - 0.04, 0]}>
+        <boxGeometry args={[len + 0.3, 0.08, 0.62]} />
+        <meshStandardMaterial color={DARK} roughness={0.85} />
+      </mesh>
+      {[-0.33, 0.33].map((z) => (
+        <mesh key={z} position={[0, BELT_Y + 0.02, z]}>
+          <boxGeometry args={[len + 0.3, 0.12, 0.05]} />
+          <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.5} />
+        </mesh>
+      ))}
+      {[-len / 2, len / 2].map((x) =>
+        [-0.28, 0.28].map((z) => (
+          <Strut key={`${x}:${z}`} from={[x, 0, z]} to={[x, BELT_Y - 0.08, z]} r={0.04} />
+        ))
+      )}
+      {Array.from({ length: BELT_BRICKS }, (_, k) => (
+        <group
+          key={k}
+          ref={(g) => {
+            bricks.current[k] = g
+          }}
+        >
+          <mesh position={[0, BELT_Y + 0.1, 0]}>
+            <boxGeometry args={[0.42, 0.2, 0.3]} />
+            <meshStandardMaterial
+              ref={(m) => {
+                heat.current[k] = m
+              }}
+              color={BRICK_COLOR}
+              emissive={MELT_GLOW}
+              emissiveIntensity={0}
+              roughness={0.9}
+            />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+function InductionFurnace() {
+  const [fx, fz] = FURNACE_AT
+  const [nx, nz] = BELT_FROM
+  return (
+    <group>
+      <mesh position={[fx, 0.45, fz]}>
+        <boxGeometry args={[1.6, 0.9, 1.6]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+      </mesh>
+      <mesh position={[fx, 1.85, fz]}>
+        <cylinderGeometry args={[0.55, 0.55, 1.9, 20]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.2} />
+      </mesh>
+      {/* The induction coil, wound round the crucible */}
+      {[1.2, 1.5, 1.8, 2.1, 2.4].map((y) => (
+        <mesh key={y} position={[fx, y, fz]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.62, 0.055, 8, 28]} />
+          <meshStandardMaterial color={COPPER} metalness={0.8} roughness={0.35} />
+        </mesh>
+      ))}
+      <mesh position={[fx, 3.2, fz]}>
+        <cylinderGeometry args={[0.75, 0.3, 0.8, 16]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.7} />
+      </mesh>
+      {/* Screw feed up from the stockpile into the hopper */}
+      <Strut from={[3.8, 0.3, -1.5]} to={[fx, 3.55, fz - 0.35]} r={0.14} color={HULL_DARK} />
+      <mesh position={[3.8, 0.3, -1.5]}>
+        <boxGeometry args={[0.55, 0.6, 0.55]} />
+        <meshStandardMaterial color={HULL} roughness={0.6} />
+      </mesh>
+      {/* The nozzle, cantilevered out over the head of the belt, and the melt
+          running from it into the mould */}
+      <Strut from={[fx, 1.5, fz]} to={[nx, 1.45, nz]} r={0.09} />
+      <mesh position={[nx, 1.38, nz]}>
+        <cylinderGeometry args={[0.2, 0.09, 0.3, 10]} />
+        <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+      </mesh>
+      <mesh position={[nx, (1.23 + BELT_Y + 0.2) / 2, nz]}>
+        <cylinderGeometry args={[0.035, 0.05, 1.23 - BELT_Y - 0.2, 8]} />
+        <meshStandardMaterial
+          color={MELT_GLOW}
+          emissive={MELT_GLOW}
+          emissiveIntensity={2.4}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The brick-laying arm. It swings between the end of the belt and the wall
+// and back, dipping at each end to pick and to place; it carries a brick only
+// on the way out.
+function Brickbot({ accent }: { accent: string }) {
+  const [bx, bz] = BRICKBOT_AT
+  const pick = yawToward(BELT_TO[0] - bx, BELT_TO[1] - bz)
+  const wallA = Math.atan2(bz, bx)
+  const place = yawToward(
+    Math.cos(wallA) * (BRICK_WALL_R - BRICK_D) - bx,
+    Math.sin(wallA) * (BRICK_WALL_R - BRICK_D) - bz
+  )
+  const turret = useRef<THREE.Group>(null)
+  const wrist = useRef<THREE.Group>(null)
+  const carried = useRef<THREE.Mesh>(null)
+  useFrame(({ clock }) => {
+    const u = (clock.getElapsedTime() / BRICKBOT_PERIOD_S) % 1
+    const there = u < 0.5 ? u * 2 : 2 - u * 2
+    const s = THREE.MathUtils.smoothstep(there, 0.15, 0.85)
+    if (turret.current) turret.current.rotation.y = pick + (place - pick) * s
+    // Down to the belt at the pick end, level with the top course at the wall.
+    if (wrist.current) wrist.current.position.y = -0.42 * (1 - s)
+    if (carried.current) carried.current.visible = u < 0.5
+  })
+  return (
+    <group position={[bx, 0, bz]}>
+      <mesh position={[0, 0.25, 0]}>
+        <cylinderGeometry args={[0.45, 0.55, 0.5, 16]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+      </mesh>
+      <group ref={turret}>
+        <mesh position={[0, 0.62, 0]}>
+          <cylinderGeometry args={[0.32, 0.36, 0.25, 14]} />
+          <meshStandardMaterial color={accent} roughness={0.5} />
+        </mesh>
+        <mesh position={[0, 0.8, 0]}>
+          <sphereGeometry args={[0.2, 12, 12]} />
+          <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+        </mesh>
+        <Strut from={[0, 0.8, 0]} to={[1.0, 1.95, 0]} r={0.12} color={HULL} />
+        <mesh position={[1.0, 1.95, 0]}>
+          <sphereGeometry args={[0.15, 12, 12]} />
+          <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+        </mesh>
+        <Strut from={[1.0, 1.95, 0]} to={[2.0, 1.8, 0]} r={0.09} color={HULL} />
+        <group ref={wrist} position={[0, 0, 0]}>
+          <Strut from={[2.0, 1.8, 0]} to={[2.0, 1.6, 0]} r={0.07} />
+          {[-0.17, 0.17].map((z) => (
+            <mesh key={z} position={[2.0, 1.47, z]}>
+              <boxGeometry args={[0.1, 0.24, 0.04]} />
+              <meshStandardMaterial color={DARK} metalness={0.5} />
+            </mesh>
+          ))}
+          <mesh ref={carried} position={[2.0, 1.43, 0]}>
+            <boxGeometry args={[0.42, 0.2, 0.3]} />
+            <meshStandardMaterial color={BRICK_COLOR} roughness={0.9} />
+          </mesh>
+        </group>
+      </group>
+    </group>
+  )
+}
+
+function AstroportBrickworks({ accent }: { accent: string }) {
+  return (
+    <group scale={SITE_M}>
+      <SiteApron />
+      <group position={[0, DECK_Y, 0]}>
+        <BrickWall />
+        <InductionFurnace />
+        <BrickConveyor />
+        <Brickbot accent={accent} />
+
+        <group position={[4.0, 0, -2.3]}>
+          <TailingsPile size={1.8} seed={4} />
+        </group>
+        <group position={[4.4, 0, 0.2]} rotation={[0, 0.6, 0]}>
+          <CableReel />
+        </group>
+        <group position={[-3.0, 0, 1.0]}>
+          <BrickPallet seed={4} />
+        </group>
+        <group position={[-2.2, 0, 2.1]}>
+          <BrickPallet seed={7} />
+        </group>
+        <PatrollingAstronaut center={[-0.6, 2.8]} radius={1.2} seed={4} accent={accent} />
+      </group>
+      <SiteBeacons accent={accent} at={[0.9, 2.3]} />
+    </group>
+  )
+}
+
+// --- AI SpaceFactory REACT / LINA ------------------------------------------
+//
+// Regolith-polymer printing, aimed at LINA, a printed outpost near Shackleton.
+// Where ICON's lot is a flat pad, this one is a SHELL: a dome rising in
+// visible beads, part-way up, printed by a polar arm turning on a mast at its
+// centre — the shape a continuous-wall print naturally makes — and fed from
+// polymer silos beside it. The bead is a thermoplastic, so the nozzle runs
+// warm, nothing like the molten-rock glow on the brick and sinter lots.
+
+const LINA_C: [number, number] = [0, -0.6]
+const LINA_R = 3.0
+const LINA_H = 3.6 // the finished dome's crown
+const LINA_LAYER = 0.2
+const LINA_BEAD = 0.15 // bead radius: overlapping courses read as one wall
+const LINA_DONE = 14 // courses printed so far
+const LINA_MAST_TOP = 4.8
+const LINA_HUB_Y = 4.3
+const LINA_PERIOD_S = 48
+const LINA_SHELL = '#a39d92'
+const LINA_SHELL_ALT = '#9a9489'
+const LINA_FRESH = '#6e675d'
+const POLYMER_WARM = '#ffb066'
+
+const linaLayerY = (i: number) => LINA_BEAD + i * LINA_LAYER
+const linaLayerR = (i: number) =>
+  LINA_R * Math.sqrt(Math.max(0, 1 - (linaLayerY(i) / LINA_H) ** 2))
+
+function LinaShell() {
+  return (
+    <group position={[LINA_C[0], 0, LINA_C[1]]}>
+      {Array.from({ length: LINA_DONE + 1 }, (_, i) => (
+        <mesh key={i} position={[0, linaLayerY(i), 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[linaLayerR(i), LINA_BEAD, 8, 72]} />
+          <meshStandardMaterial
+            color={i === LINA_DONE ? LINA_FRESH : i % 2 ? LINA_SHELL_ALT : LINA_SHELL}
+            roughness={0.9}
+          />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.02, 0]}>
+        <cylinderGeometry args={[LINA_R - 0.1, LINA_R - 0.1, 0.04, 48]} />
+        <meshStandardMaterial color="#5c5852" roughness={1} />
+      </mesh>
+    </group>
+  )
+}
+
+function LinaPrinter({ accent }: { accent: string }) {
+  const hub = useRef<THREE.Group>(null)
+  const nozzle = useRef<THREE.MeshStandardMaterial>(null)
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (hub.current) hub.current.rotation.y = (t / LINA_PERIOD_S) * Math.PI * 2
+    if (nozzle.current) nozzle.current.emissiveIntensity = 1.2 + Math.sin(t * 7) * 0.25
+  })
+  const reach = linaLayerR(LINA_DONE)
+  const tipY = linaLayerY(LINA_DONE) + LINA_BEAD + 0.08 - LINA_HUB_Y
+  return (
+    <group position={[LINA_C[0], 0, LINA_C[1]]}>
+      {/* Mast on a tripod footing inside the shell */}
+      {[0, 1, 2].map((k) => {
+        const a = (k / 3) * Math.PI * 2
+        return (
+          <Strut
+            key={k}
+            from={[Math.cos(a) * 0.9, 0, Math.sin(a) * 0.9]}
+            to={[0, 1.4, 0]}
+            r={0.07}
+          />
+        )
+      })}
+      <Strut from={[0, 0, 0]} to={[0, LINA_MAST_TOP, 0]} r={0.14} />
+      <group ref={hub} position={[0, LINA_HUB_Y, 0]}>
+        <mesh>
+          <cylinderGeometry args={[0.3, 0.3, 0.4, 14]} />
+          <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.2} />
+        </mesh>
+        <mesh position={[reach / 2, 0, 0]}>
+          <boxGeometry args={[reach, 0.18, 0.22]} />
+          <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.25} />
+        </mesh>
+        <mesh position={[reach / 2, 0.11, 0]}>
+          <boxGeometry args={[reach, 0.04, 0.23]} />
+          <meshStandardMaterial color={accent} roughness={0.5} />
+        </mesh>
+        <mesh position={[-0.5, 0, 0]}>
+          <boxGeometry args={[1.0, 0.18, 0.22]} />
+          <meshStandardMaterial color={HULL} roughness={0.5} />
+        </mesh>
+        <mesh position={[-1.0, 0, 0]}>
+          <boxGeometry args={[0.45, 0.45, 0.45]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+        </mesh>
+        <mesh position={[reach, -0.2, 0]}>
+          <boxGeometry args={[0.4, 0.3, 0.35]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.5} />
+        </mesh>
+        <Strut from={[reach, -0.35, 0]} to={[reach, tipY + 0.12, 0]} r={0.06} color={DARK} />
+        <mesh position={[reach, tipY + 0.05, 0]}>
+          <cylinderGeometry args={[0.1, 0.04, 0.14, 10]} />
+          <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+        </mesh>
+        <mesh position={[reach, tipY - 0.04, 0]}>
+          <sphereGeometry args={[0.07, 10, 10]} />
+          <meshStandardMaterial
+            ref={nozzle}
+            color={POLYMER_WARM}
+            emissive={POLYMER_WARM}
+            emissiveIntensity={1.2}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+// Polymer feedstock silo on four legs, discharging from a cone at the foot.
+function PolymerSilo({ accent }: { accent: string }) {
+  return (
+    <group>
+      {[0, 1, 2, 3].map((k) => {
+        const a = (k / 4) * Math.PI * 2 + Math.PI / 4
+        return (
+          <Strut
+            key={k}
+            from={[Math.cos(a) * 0.5, 0, Math.sin(a) * 0.5]}
+            to={[Math.cos(a) * 0.42, 1.0, Math.sin(a) * 0.42]}
+            r={0.04}
+          />
+        )
+      })}
+      <mesh position={[0, 0.65, 0]}>
+        <cylinderGeometry args={[0.48, 0.1, 0.6, 16]} />
+        <meshStandardMaterial color={CRATE_WHITE} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 1.95, 0]}>
+        <cylinderGeometry args={[0.48, 0.48, 2.0, 16]} />
+        <meshStandardMaterial color={CRATE_WHITE} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 2.6, 0]}>
+        <cylinderGeometry args={[0.49, 0.49, 0.12, 16]} />
+        <meshStandardMaterial color={accent} roughness={0.5} />
+      </mesh>
+      <mesh position={[0, 3.03, 0]}>
+        <cylinderGeometry args={[0.12, 0.48, 0.2, 16]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+      </mesh>
+    </group>
+  )
+}
+
+function AiSpaceFactoryLina({ accent }: { accent: string }) {
+  const ext: [number, number, number] = [3.6, 0, 0.6]
+  return (
+    <group scale={SITE_M}>
+      <SiteApron />
+      <group position={[0, DECK_Y, 0]}>
+        <LinaShell />
+        <LinaPrinter accent={accent} />
+
+        {/* Airlock vestibule on the near side, set into the shell's foot */}
+        <group position={[0, 0, LINA_C[1] + LINA_R + 0.1]}>
+          <mesh position={[0, 0.75, 0]}>
+            <boxGeometry args={[1.5, 1.5, 1.4]} />
+            <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.15} />
+          </mesh>
+          <mesh position={[0, 1.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.75, 0.75, 1.4, 20]} />
+            <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.15} />
+          </mesh>
+          <mesh position={[0, 0.7, 0.71]}>
+            <boxGeometry args={[0.8, 1.3, 0.04]} />
+            <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.3} />
+          </mesh>
+          <mesh position={[0, 1.55, 0.72]}>
+            <boxGeometry args={[0.3, 0.08, 0.04]} />
+            <meshStandardMaterial
+              color={accent}
+              emissive={accent}
+              emissiveIntensity={1.5}
+              toneMapped={false}
+            />
+          </mesh>
+        </group>
+
+        {/* Feed: two silos into an extruder skid, up a hose mast, and over
+            the shell to a swivel at the top of the printer's mast */}
+        <group position={[3.8, 0, -2.2]}>
+          <PolymerSilo accent={accent} />
+        </group>
+        <group position={[4.4, 0, -0.8]}>
+          <PolymerSilo accent={accent} />
+        </group>
+        <mesh position={[ext[0], 0.4, ext[2]]}>
+          <boxGeometry args={[1.0, 0.8, 0.8]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+        </mesh>
+        <Strut from={[3.8, 0.36, -2.2]} to={[ext[0], 0.3, ext[2] - 0.4]} r={0.06} color={DARK} />
+        <Strut from={[4.4, 0.36, -0.8]} to={[ext[0] + 0.5, 0.3, ext[2]]} r={0.06} color={DARK} />
+        <Strut from={[ext[0], 0.8, ext[2]]} to={[ext[0], 4.5, ext[2]]} r={0.07} />
+        <Strut
+          from={[ext[0], 4.45, ext[2]]}
+          to={[LINA_C[0], LINA_MAST_TOP - 0.15, LINA_C[1]]}
+          r={0.07}
+          color={DARK}
+        />
+
+        <group position={[-3.6, 0, 2.4]}>
+          <TailingsPile size={1.6} seed={5} />
+        </group>
+        <group position={[-3.9, 0, 1.0]} rotation={[0, 1.2, 0]}>
+          <UtilityCart />
+        </group>
+        <group position={[-2.4, 0, -4.0]}>
+          <SurveyTripod seed={5} />
+        </group>
+        <PatrollingAstronaut center={[1.9, 3.2]} radius={0.9} seed={5} accent={accent} />
+      </group>
+      <SiteBeacons accent={accent} at={[-2.0, 0.4, 2.2]} />
+    </group>
+  )
+}
+
+// --- Astrobotic low-energy additive construction ---------------------------
+//
+// A self-curing binder that stabilises regolith with no heat at all. The lot is
+// therefore the one construction site on the base with nothing glowing on it:
+// a pad laid as a grid of panels at every stage of the job — raked raw ground,
+// freshly wetted panels in their forms, panels still curing, and finished
+// stabilised surface — with a spray gantry rolling over the wet row, a drum
+// mixer rover blending binder into regolith beside it, and the binder itself
+// staged in totes.
+
+const BIND_C: [number, number] = [-0.4, -0.6]
+const BIND_PITCH = 2.0
+const BIND_PANEL = 1.9
+type BindStage = 'cured' | 'curing' | 'wet' | 'raw'
+const BIND_STAGES: BindStage[][] = [
+  ['cured', 'cured', 'cured'],
+  ['curing', 'curing', 'curing'],
+  ['wet', 'wet', 'raw'],
+]
+const BIND_COLOR: Record<BindStage, string> = {
+  cured: '#b9b4a8',
+  curing: '#9f9a8e',
+  wet: '#5f5a52',
+  raw: TAILINGS_COLOR,
+}
+const GANTRY_Z = BIND_C[1] + BIND_PITCH // over the wet row
+const GANTRY_SWEEP = 0.75
+const GANTRY_PERIOD_S = 20
+const GANTRY_LEG_X = [-3.75, 2.95]
+const MIXER_PERIOD_S = 7
+const MIST = '#d8e2e6'
+const BINDER_TOTE = '#e6e1cb'
+
+function BinderPanels() {
+  return (
+    <group>
+      {BIND_STAGES.flatMap((row, r) =>
+        row.map((stage, c) => {
+          const x = BIND_C[0] + (c - 1) * BIND_PITCH
+          const z = BIND_C[1] + (r - 1) * BIND_PITCH
+          return (
+            <group key={`${r}:${c}`} position={[x, 0, z]}>
+              <mesh position={[0, 0.035, 0]}>
+                <boxGeometry args={[BIND_PANEL, 0.07, BIND_PANEL]} />
+                <meshStandardMaterial
+                  color={BIND_COLOR[stage]}
+                  roughness={stage === 'wet' ? 0.32 : 0.95}
+                />
+              </mesh>
+              {/* Wet panels are still in their forms */}
+              {stage === 'wet' &&
+                [0, 1, 2, 3].map((k) => (
+                  <mesh
+                    key={k}
+                    position={[
+                      k < 2 ? 0 : (k === 2 ? -1 : 1) * (BIND_PANEL / 2),
+                      0.08,
+                      k < 2 ? (k === 0 ? -1 : 1) * (BIND_PANEL / 2) : 0,
+                    ]}
+                    rotation={[0, k < 2 ? 0 : Math.PI / 2, 0]}
+                  >
+                    <boxGeometry args={[BIND_PANEL + 0.05, 0.12, 0.05]} />
+                    <meshStandardMaterial color={DARK} roughness={0.8} />
+                  </mesh>
+                ))}
+              {/* Raw ground is raked ahead of the binder */}
+              {stage === 'raw' &&
+                [-0.75, -0.45, -0.15, 0.15, 0.45, 0.75].map((dz) => (
+                  <mesh key={dz} position={[0, 0.09, dz]}>
+                    <boxGeometry args={[BIND_PANEL - 0.1, 0.04, 0.07]} />
+                    <meshStandardMaterial color={TAILINGS_COLOR} roughness={1} />
+                  </mesh>
+                ))}
+            </group>
+          )
+        })
+      )}
+    </group>
+  )
+}
+
+function SprayGantry({ accent }: { accent: string }) {
+  const rig = useRef<THREE.Group>(null)
+  useFrame(({ clock }) => {
+    const s = Math.sin((clock.getElapsedTime() / GANTRY_PERIOD_S) * Math.PI * 2)
+    if (rig.current) rig.current.position.z = GANTRY_Z + s * GANTRY_SWEEP
+  })
+  const span = GANTRY_LEG_X[1] - GANTRY_LEG_X[0]
+  const mid = (GANTRY_LEG_X[0] + GANTRY_LEG_X[1]) / 2
+  const nozzles = Array.from({ length: 7 }, (_, i) => BIND_C[0] + (i - 3) * 0.95)
+  return (
+    <group ref={rig} position={[0, 0, GANTRY_Z]}>
+      {GANTRY_LEG_X.map((x) => (
+        <group key={x} position={[x, 0, 0]}>
+          <mesh position={[0, 0.27, 0]}>
+            <boxGeometry args={[0.3, 0.2, 1.1]} />
+            <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+          </mesh>
+          {[-0.4, 0.4].map((z) => (
+            <group key={z} position={[0, 0.16, z]} rotation={[0, Math.PI / 2, 0]}>
+              <SiteWheel r={0.16} w={0.12} />
+            </group>
+          ))}
+          {[-0.45, 0.45].map((z) => (
+            <Strut key={z} from={[0, 0.36, z]} to={[0, 1.9, 0]} r={0.06} />
+          ))}
+        </group>
+      ))}
+      <mesh position={[mid, 1.95, 0]}>
+        <boxGeometry args={[span + 0.3, 0.22, 0.3]} />
+        <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={[mid, 2.07, 0]}>
+        <boxGeometry args={[span + 0.32, 0.04, 0.31]} />
+        <meshStandardMaterial color={accent} roughness={0.5} />
+      </mesh>
+      <mesh position={[GANTRY_LEG_X[1] - 0.7, 2.3, 0]}>
+        <boxGeometry args={[0.8, 0.45, 0.5]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+      </mesh>
+      {/* Spray bar on drop rods, a nozzle every ~1 m, each with its fan of
+          binder mist. Mist is not a solid: it neither writes depth nor casts. */}
+      {[nozzles[0], nozzles[nozzles.length - 1]].map((x) => (
+        <Strut key={x} from={[x, 1.84, 0]} to={[x, 1.55, 0]} r={0.03} />
+      ))}
+      <Strut
+        from={[nozzles[0], 1.55, 0]}
+        to={[nozzles[nozzles.length - 1], 1.55, 0]}
+        r={0.04}
+        color={DARK}
+      />
+      {nozzles.map((x) => (
+        <group key={x} position={[x, 0, 0]}>
+          <mesh position={[0, 1.47, 0]}>
+            <cylinderGeometry args={[0.04, 0.025, 0.1, 8]} />
+            <meshStandardMaterial color={METAL} metalness={0.6} />
+          </mesh>
+          <mesh position={[0, 0.8, 0]}>
+            <cylinderGeometry args={[0.02, 0.36, 1.25, 12, 1, true]} />
+            <meshStandardMaterial
+              color={MIST}
+              transparent
+              opacity={0.12}
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+// A drum mixer on a six-wheeled carrier, authored along local X with its
+// discharge chute on local -Z.
+function BinderMixer({ accent }: { accent: string }) {
+  const drum = useRef<THREE.Group>(null)
+  useFrame(({ clock }) => {
+    if (drum.current) {
+      drum.current.rotation.x = (clock.getElapsedTime() / MIXER_PERIOD_S) * Math.PI * 2
+    }
+  })
+  const wheelAt: [number, number][] = [-1.0, 0, 1.0].flatMap((x) => [
+    [x, 1.05] as [number, number],
+    [x, -1.05] as [number, number],
+  ])
+  return (
+    <group>
+      {wheelAt.map(([x, z]) => (
+        <group key={`${x}:${z}`} position={[x, 0.38, z]}>
+          <SiteWheel r={0.38} w={0.26} />
+        </group>
+      ))}
+      <mesh position={[0, 0.85, 0]}>
+        <boxGeometry args={[3.0, 0.4, 1.8]} />
+        <meshStandardMaterial color={HULL} roughness={0.55} metalness={0.2} />
+      </mesh>
+      <mesh position={[0, 0.6, 0]}>
+        <boxGeometry args={[2.8, 0.1, 1.6]} />
+        <meshStandardMaterial color={DARK} roughness={0.8} />
+      </mesh>
+      <mesh position={[1.15, 1.35, 0]}>
+        <boxGeometry args={[0.7, 0.6, 1.5]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.6} />
+      </mesh>
+      <mesh position={[1.15, 1.67, 0]}>
+        <boxGeometry args={[0.75, 0.04, 1.55]} />
+        <meshStandardMaterial color={PANEL} roughness={0.35} metalness={0.4} />
+      </mesh>
+      {/* Cradle, then the drum on it, raised at the back */}
+      {[-1.0, 0.5].map((x) => (
+        <Strut key={x} from={[x, 1.05, 0]} to={[x, 1.55 + (0.5 - x) * 0.12, 0]} r={0.08} />
+      ))}
+      <group position={[-0.3, 1.75, 0]} rotation={[0, 0, -0.2]}>
+        <group ref={drum}>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.68, 0.68, 1.3, 20]} />
+            <meshStandardMaterial color={BINDER_TOTE} roughness={0.55} metalness={0.2} />
+          </mesh>
+          {[-1, 1].map((sx) => (
+            <mesh key={sx} position={[sx * 0.88, 0, 0]} rotation={[0, 0, -sx * Math.PI / 2]}>
+              <cylinderGeometry args={[0.3, 0.68, 0.46, 20]} />
+              <meshStandardMaterial color={BINDER_TOTE} roughness={0.55} metalness={0.2} />
+            </mesh>
+          ))}
+          {/* Skewed fin rings: on a turning drum they wobble, which is what
+              says "turning" from across the district */}
+          {[-0.4, 0, 0.4].map((x) => (
+            <mesh key={x} position={[x, 0, 0]} rotation={[0, Math.PI / 2 + 0.28, 0]}>
+              <torusGeometry args={[0.7, 0.04, 6, 28]} />
+              <meshStandardMaterial color={x === 0 ? accent : HULL_DARK} roughness={0.5} />
+            </mesh>
+          ))}
+        </group>
+      </group>
+      {/* Discharge chute from the drum's low end, out over the pad */}
+      <Strut from={[-1.2, 1.45, 0]} to={[-1.2, 0.75, -1.5]} r={0.12} color={HULL_DARK} />
+    </group>
+  )
+}
+
+// An intermediate bulk container: a binder tank in a welded cage on a pallet.
+function BinderTote() {
+  const h = 1.0
+  const w = 1.0
+  const posts: [number, number][] = [
+    [-w / 2, -w / 2],
+    [w / 2, -w / 2],
+    [w / 2, w / 2],
+    [-w / 2, w / 2],
+  ]
+  return (
+    <group>
+      <mesh position={[0, 0.07, 0]}>
+        <boxGeometry args={[w + 0.1, 0.14, w + 0.1]} />
+        <meshStandardMaterial color={METAL} metalness={0.4} roughness={0.7} />
+      </mesh>
+      <mesh position={[0, 0.14 + (h - 0.16) / 2, 0]}>
+        <boxGeometry args={[w - 0.04, h - 0.16, w - 0.04]} />
+        <meshStandardMaterial color={BINDER_TOTE} roughness={0.6} />
+      </mesh>
+      {posts.map(([x, z]) => (
+        <Strut key={`${x}:${z}`} from={[x, 0.14, z]} to={[x, h, z]} r={0.02} />
+      ))}
+      {[0.55, h].flatMap((y) =>
+        posts.map(([x, z], k) => {
+          const [x2, z2] = posts[(k + 1) % 4]
+          return <Strut key={`${y}:${k}`} from={[x, y, z]} to={[x2, y, z2]} r={0.02} />
+        })
+      )}
+      <mesh position={[0, h + 0.04, 0]}>
+        <cylinderGeometry args={[0.14, 0.14, 0.08, 12]} />
+        <meshStandardMaterial color={DARK} roughness={0.6} />
+      </mesh>
+      <mesh position={[0, 0.24, w / 2 + 0.04]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 0.1, 8]} />
+        <meshStandardMaterial color={DARK} metalness={0.5} />
+      </mesh>
+    </group>
+  )
+}
+
+function AstroboticBinderPad({ accent }: { accent: string }) {
+  return (
+    <group scale={SITE_M}>
+      <SiteApron />
+      <group position={[0, DECK_Y, 0]}>
+        <BinderPanels />
+        <SprayGantry accent={accent} />
+        <group position={[3.6, 0, -1.4]} rotation={[0, Math.PI / 2, 0]}>
+          <BinderMixer accent={accent} />
+        </group>
+        <group position={[2.7, 0, 3.7]} rotation={[0, 0.25, 0]}>
+          <BinderTote />
+        </group>
+        <group position={[1.5, 0, 4.3]} rotation={[0, -0.15, 0]}>
+          <BinderTote />
+        </group>
+        <group position={[3.7, 0, 2.6]} rotation={[0, 0.9, 0]}>
+          <CableReel />
+        </group>
+        <group position={[1.8, 0, -4.4]}>
+          <TailingsPile size={1.4} seed={6} />
+        </group>
+        <group position={[-4.2, 0, -1.2]}>
+          <SurveyTripod seed={6} />
+        </group>
+        <PatrollingAstronaut center={[-2.2, 3.6]} radius={0.8} seed={6} accent={accent} />
+      </group>
+      <SiteBeacons accent={accent} at={[-2.6, -0.9, 1.75]} />
     </group>
   )
 }
@@ -17539,6 +18657,14 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // `lander` drum has nothing like. Draws ULTRA, not the cancelled APEX 1.0
   // the id is named for and not either crashed HAKUTO-R. See Ultra.
   'ispace-apex': Ultra,
+  // Construction: five bids, five processes, one apron size. ICON keeps the
+  // generic printing gantry, which is its own Olympus concept; the other four
+  // are drawn around what their process leaves behind. See the header above
+  // RedwireMasonSite.
+  'redwire-mason': RedwireMasonSite,
+  'astroport-lunatron': AstroportBrickworks,
+  'ai-spacefactory-react': AiSpaceFactoryLina,
+  'astrobotic-additive-construction': AstroboticBinderPad,
 }
 
 // Whether anything was ever authored for this project specifically — a

@@ -37,7 +37,7 @@ representative of the current standard.
 ## 2. The queue — what is still generic
 
 Priority is set by **duplication inside a district**, because that is what a user
-notices. Construction still renders one model four times over. Comms and ISRU
+notices. Construction now has a model per competitor (ICON on the generic one). Comms and ISRU
 are each down to a single project (Nokia; Blue Origin) on the generic model,
 which is no longer duplication, just one competitor left where the generic
 model already happens to be that competitor's own concept:
@@ -92,20 +92,39 @@ operational fleet, a single precursor, and a network that starts at two and
 scales). Only Nokia's LTE network of small cells remains on the fully generic
 `CommsPnt` terminal — the last item in this district.
 
-### Priority 2 — surface construction (4 competitors, 4× the same model)
+### Priority 2 — surface construction (done; ICON keeps the generic model on purpose)
 
-| Odds | Org | Project | id |
+| Org | Project | id | Status |
 |---|---|---|---|
-| 34% | ICON | Project Olympus | `icon-project-olympus` |
-| 27% | Redwire | Mason | `redwire-mason` |
-| 21% | Astroport Space Technologies | Lunatron / Brickbot | `astroport-lunatron` |
-| 14% | AI SpaceFactory | REACT / LINA | `ai-spacefactory-react` |
+| ICON | Project Olympus | `icon-project-olympus` | generic `ConstructionSite` (IS Olympus's own concept) |
+| Redwire | Mason | `redwire-mason` | **done** — `RedwireMasonSite` |
+| Astroport Space Technologies | Lunatron / Brickbot | `astroport-lunatron` | **done** — `AstroportBrickworks` |
+| AI SpaceFactory | REACT / LINA | `ai-spacefactory-react` | **done** — `AiSpaceFactoryLina` |
+| Astrobotic | Low-Energy Additive Construction | `astrobotic-additive-construction` | **done** — `AstroboticBinderPad` |
 
-All four render `ConstructionSite` — the printed apron with the **animated**
-gantry (the boom slews; see `PrintBoom`, `SLEW_RAD`, `SLEW_PERIOD_S`). That model
-is essentially ICON's concept, so the cheapest correct move is to let ICON keep
-the generic slot and build the other three. Astroport's is a *brick* plant, not a
-printer, which is a strong visual contrast to lead with.
+All five stand on the same `SiteApron` (so every lot is one size and seats via
+`GRADED_DECK_FRACTION.construction`) and differ in what is on it, because the
+five bids are five different processes:
+
+- **ICON** (`ConstructionSite`): the printing gantry over a part-laid paver deck
+  — the boom slews (`PrintBoom`, `SLEW_RAD`, `SLEW_PERIOD_S`).
+- **Redwire** (`RedwireMasonSite`): one carrier towing the three Mason tools in
+  working order — BASE grader blade, PACT padded drum, M3LT microwave sled
+  glowing on the crust it has just fused — working a road strip back and forth
+  (sintered behind, graded ahead), beside a compacted berm and a rack of spare
+  tool heads (the tools are the product; the carrier is interchangeable).
+- **Astroport** (`AstroportBrickworks`): a brick plant. An induction furnace
+  (copper coil, screw-fed hopper) pours into moulds on a conveyor; bricks cool
+  from orange to dull along the belt; `Brickbot` swings them onto a curved
+  dry-laid blast wall whose top course ends where the arm places.
+- **AI SpaceFactory** (`AiSpaceFactoryLina`): a regolith-polymer dome shell in
+  visible bead courses, part-printed, with a polar arm turning on a central
+  mast, polymer silos and an extruder feeding it over the shell, and an airlock
+  vestibule at its foot. The nozzle runs warm, not molten.
+- **Astrobotic** (`AstroboticBinderPad`): cold-cure binder, so the only lot
+  with nothing glowing. A pad laid as a 3×3 grid at every stage (cured, curing,
+  wet in forms, raked raw), a spray gantry rolling over the wet row, a drum
+  mixer rover, and binder in caged totes.
 
 ### Priority 3 — ISRU (done except Blue Origin, which keeps the generic model on purpose)
 
