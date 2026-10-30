@@ -263,6 +263,10 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // grid, so there is less standalone hardware to spread out. Confirmed
   // against the authored geometry with scripts/tmp-mre-check.ts.
   'lunar-resources-mre': 6.8,
+  // Far edge of the dig face's spoil to the outside of the product bins — see
+  // CIS_M. An excavator and a sorter, not a plant, so most of the span is
+  // the rover's haul between the cut and the hopper.
+  'cislune-lunar-isru': 7.9,
 }
 
 // Real-world largest dimension (meters) of the model a project renders —
@@ -360,6 +364,9 @@ const FOOTPRINT_FRACTION: Record<string, number> = {
   // radial reach from that origin (5.53 m, scripts/tmp-mre-check.ts), not
   // half of it.
   'lunar-resources-mre': 0.82,
+  // The dig face's corner mound reaches about 4.4 m from the sorter-side
+  // origin, a little past half the 7.9 m span.
+  'cislune-lunar-isru': 0.56,
   // The 21.9 m size figure is the span between two outlying pieces (a comms
   // guy anchor and the PV field's far corner), not a span through the mast
   // axis every asset stands on — so the true radial reach from that axis
@@ -6039,6 +6046,422 @@ function LunarResourcesMre({ accent }: { accent: string }) {
         color={LOOP_HOT}
         glow={0.3}
       />
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// CisLune PERDEX excavator + CISORT regolith sorter
+// ---------------------------------------------------------------------------
+
+// CisLune doesn't make oxygen, it makes FEEDSTOCK: PERDEX cuts and hauls
+// volatile-rich regolith without churning or heating it, and CISORT shakes and
+// magnetically splits it into the ice-, metal- and oxygen-bearing fractions the
+// plants downstream want. So this lot is the one ISRU bid with no reactor, no
+// glow and no power field — a dig face, a small rover shuttling between it and
+// a sorter, and three bins of sorted product. The rover runs the same
+// excavation-transit-delivery cycle PERDEX logged 77 times in the Mojave.
+const CIS_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['cislune-lunar-isru'] ?? 7.7)
+
+const CIS_BODY = '#c9ccd1'
+const CIS_TRIM = '#4a4e57'
+// Freshly cut regolith. Lit, unlike the baked terrain, so it has to run a good
+// deal darker than the ground's own tone to sit in it rather than glare.
+const CIS_SPOIL = '#5f5c56'
+// The three CISORT fractions, tinted so the sort itself is legible from range.
+const CIS_FRACTIONS = ['#dfe8f0', '#5d6167', '#b9ad95'] // ice, metal, silicate
+
+const CIS_DIG_X = -2.4 // rover centre while the drum is in the cut
+const CIS_DUMP_X = -0.2 // rover centre with its tail over the sorter's hopper
+const CIS_CYCLE_S = 18
+const CIS_WHEEL_R = 0.3
+const CIS_BED_Y = 0.95 // bed pivot, level with the hopper rim
+const CIS_HOPPER_X = 1.1
+const CIS_DRUM_X = 2.7
+const CIS_BIN_X = 3.35
+
+const smooth = (s: number) => s * s * (3 - 2 * s)
+
+// Where the rover is in its cycle: digging, reversing to the sorter, tipping,
+// driving back out. Digging straddles the cycle's wrap so the drum turns for
+// one unbroken stretch.
+function perdexPose(t: number) {
+  const p = t % CIS_CYCLE_S
+  if (p < 4) return { x: CIS_DIG_X, tilt: 0, digging: true }
+  if (p < 8.5) {
+    const s = smooth((p - 4) / 4.5)
+    return { x: CIS_DIG_X + (CIS_DUMP_X - CIS_DIG_X) * s, tilt: 0, digging: false }
+  }
+  if (p < 11) {
+    return { x: CIS_DUMP_X, tilt: Math.sin(((p - 8.5) / 2.5) * Math.PI) * 0.6, digging: false }
+  }
+  if (p < 15.5) {
+    const s = smooth((p - 11) / 4.5)
+    return { x: CIS_DUMP_X + (CIS_DIG_X - CIS_DUMP_X) * s, tilt: 0, digging: false }
+  }
+  return { x: CIS_DIG_X, tilt: 0, digging: true }
+}
+
+// The rover. Drum forward (−X), bed tipping over the tail (+X), so it digs
+// nose-in and reverses up to the hopper rather than turning round on a lot
+// this tight. The bed is lidded and white because PERDEX's whole design goal
+// is getting icy soil to the sorter without warming it.
+function Perdex({ accent }: { accent: string }) {
+  const body = useRef<THREE.Group>(null)
+  const bed = useRef<THREE.Group>(null)
+  const drum = useRef<THREE.Group>(null)
+  const wheels = useRef<(THREE.Group | null)[]>([])
+  const lastX = useRef(CIS_DIG_X)
+  useFrame((state, dt) => {
+    const pose = perdexPose(state.clock.elapsedTime)
+    if (body.current) body.current.position.x = pose.x
+    if (bed.current) bed.current.rotation.z = -pose.tilt
+    if (drum.current && pose.digging) drum.current.rotation.z += dt * 2.2
+    const roll = -(pose.x - lastX.current) / CIS_WHEEL_R
+    lastX.current = pose.x
+    for (const w of wheels.current) if (w) w.rotation.z += roll
+  })
+  return (
+    <group ref={body} position={[CIS_DIG_X, 0, 0]}>
+      {/* Wheels, bottoms a touch below grade so the rover never hovers */}
+      {[-0.55, 0.55].map((x, i) =>
+        [-1, 1].map((sz, j) => (
+          <group
+            key={`${x}:${sz}`}
+            ref={(g) => {
+              wheels.current[i * 2 + j] = g
+            }}
+            position={[x, CIS_WHEEL_R - 0.04, sz * 0.58]}
+          >
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[CIS_WHEEL_R, CIS_WHEEL_R, 0.22, 16]} />
+              <meshStandardMaterial color={DARK} roughness={0.9} metalness={0.1} />
+            </mesh>
+            {/* Grouser bars, so the roll actually shows */}
+            {[0, 1, 2].map((k) => (
+              <mesh key={k} rotation={[0, 0, (k * Math.PI) / 3]}>
+                <boxGeometry args={[CIS_WHEEL_R * 2 + 0.02, 0.05, 0.24]} />
+                <meshStandardMaterial color={CIS_TRIM} roughness={0.8} metalness={0.2} />
+              </mesh>
+            ))}
+          </group>
+        ))
+      )}
+
+      {/* Chassis */}
+      <mesh position={[0, 0.52, 0]}>
+        <boxGeometry args={[1.6, 0.34, 0.92]} />
+        <meshStandardMaterial color={CIS_BODY} roughness={0.55} metalness={0.35} />
+      </mesh>
+      <mesh position={[0, 0.36, 0]}>
+        <boxGeometry args={[1.5, 0.06, 1.0]} />
+        <meshStandardMaterial color={CIS_TRIM} roughness={0.6} metalness={0.4} />
+      </mesh>
+      {/* Bed frame up to the pivot height */}
+      {[-0.35, 0.35].map((z) => (
+        <Strut key={z} from={[0.7, 0.69, z]} to={[0.7, CIS_BED_Y, z]} r={0.04} color={CIS_TRIM} />
+      ))}
+
+      {/* Lidded bed, hinged at the tail */}
+      <group ref={bed} position={[0.7, CIS_BED_Y, 0]}>
+        <mesh position={[-0.62, 0.16, 0]}>
+          <boxGeometry args={[1.24, 0.32, 0.82]} />
+          <meshStandardMaterial color={HULL} roughness={0.5} metalness={0.25} />
+        </mesh>
+        <mesh position={[-0.62, 0.34, 0]}>
+          <boxGeometry args={[1.3, 0.04, 0.88]} />
+          <meshStandardMaterial color={CIS_BODY} roughness={0.45} metalness={0.3} />
+        </mesh>
+        <mesh position={[-0.62, 0.16, 0.42]}>
+          <boxGeometry args={[1.0, 0.06, 0.02]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={0.6}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+      {/* Bed rest, so the lowered bed sits on something */}
+      <mesh position={[-0.1, 0.72, 0]}>
+        <boxGeometry args={[0.1, 0.06, 0.7]} />
+        <meshStandardMaterial color={CIS_TRIM} roughness={0.6} metalness={0.4} />
+      </mesh>
+
+      {/* Drum arms and the bucket drum */}
+      {[-1, 1].map((sz) => (
+        <Strut
+          key={sz}
+          from={[-0.6, 0.52, sz * 0.4]}
+          to={[-1.1, 0.4, sz * 0.4]}
+          r={0.05}
+          color={CIS_TRIM}
+        />
+      ))}
+      <group ref={drum} position={[-1.12, 0.4, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.3, 0.3, 0.72, 18]} />
+          <meshStandardMaterial color={CIS_BODY} roughness={0.6} metalness={0.4} />
+        </mesh>
+        {Array.from({ length: 6 }, (_, k) => {
+          const a = (k / 6) * Math.PI * 2
+          return (
+            <mesh
+              key={k}
+              position={[Math.cos(a) * 0.32, Math.sin(a) * 0.32, 0]}
+              rotation={[0, 0, a]}
+            >
+              <boxGeometry args={[0.1, 0.14, 0.74]} />
+              <meshStandardMaterial color={CIS_TRIM} roughness={0.7} metalness={0.35} />
+            </mesh>
+          )
+        })}
+      </group>
+
+      {/* Nav mast and camera head, with the house beacon */}
+      <Strut from={[-0.5, 0.69, -0.3]} to={[-0.5, 1.35, -0.3]} r={0.025} color={CIS_TRIM} />
+      <mesh position={[-0.5, 1.4, -0.3]}>
+        <boxGeometry args={[0.16, 0.1, 0.22]} />
+        <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+      </mesh>
+      <mesh position={[-0.5, 1.5, -0.3]}>
+        <sphereGeometry args={[0.05, 10, 10]} />
+        <meshStandardMaterial
+          color={accent}
+          emissive={accent}
+          emissiveIntensity={1.7}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The cut bank PERDEX works: a low arc of spoil mounds, bedded below grade so
+// none of them sits on the ground as a hemisphere would.
+function CisDigFace() {
+  const mounds: [number, number, number][] = [
+    [-3.75, -1.0, 0.5],
+    [-3.6, -0.35, 0.62],
+    [-3.55, 0.3, 0.58],
+    [-3.7, 0.95, 0.48],
+    [-3.3, 1.35, 0.32],
+    [-3.3, -1.4, 0.3],
+  ]
+  return (
+    <>
+      {mounds.map(([x, z, r]) => (
+        <mesh key={`${x}:${z}`} position={[x, -0.1, z]} scale={[1, 0.5, 1]}>
+          <sphereGeometry args={[r, 9, 6]} />
+          <meshStandardMaterial color={CIS_SPOIL} roughness={0.95} metalness={0} flatShading />
+        </mesh>
+      ))}
+      {[
+        [-3.0, -0.6, 0.1],
+        [-2.95, 0.5, 0.08],
+        [-3.15, 0.05, 0.12],
+      ].map(([x, z, r]) => (
+        <mesh key={`${x}:${z}`} position={[x, r * 0.3, z]}>
+          <dodecahedronGeometry args={[r, 0]} />
+          <meshStandardMaterial color={CIS_SPOIL} roughness={0.95} metalness={0} />
+        </mesh>
+      ))}
+    </>
+  )
+}
+
+// CISORT: feed hopper, a sieve deck riding on coil springs (shaken — this is
+// VIBRATIONAL sorting, so the deck visibly buzzes), a magnetic drum pulling
+// the metal-bearing fraction off the end, and three bins of product.
+function Cisort({ accent }: { accent: string }) {
+  const deck = useRef<THREE.Group>(null)
+  const drum = useRef<THREE.Group>(null)
+  useFrame((state, dt) => {
+    const t = state.clock.elapsedTime
+    if (deck.current) {
+      deck.current.position.y = 0.5 + Math.sin(t * 38) * 0.018
+      deck.current.position.x = 1.8 + Math.sin(t * 38 + 1.2) * 0.014
+    }
+    if (drum.current) drum.current.rotation.z -= dt * 1.4
+  })
+  const deckLen = 1.5
+  return (
+    <group>
+      {/* Base frame on footings sunk below grade */}
+      <mesh position={[2.0, 0.12, 0]}>
+        <boxGeometry args={[2.3, 0.1, 1.0]} />
+        <meshStandardMaterial color={CIS_TRIM} roughness={0.6} metalness={0.4} />
+      </mesh>
+      {[0.95, 3.05].map((x) =>
+        [-0.42, 0.42].map((z) => (
+          <mesh key={`${x}:${z}`} position={[x, -0.1, z]}>
+            <cylinderGeometry args={[0.07, 0.09, 0.4, 8]} />
+            <meshStandardMaterial color={CIS_TRIM} roughness={0.65} metalness={0.35} />
+          </mesh>
+        ))
+      )}
+
+      {/* Feed hopper the rover tips into, on its own legs */}
+      <mesh position={[CIS_HOPPER_X, 0.78, 0]}>
+        <cylinderGeometry args={[0.55, 0.18, 0.4, 20, 1, true]} />
+        <meshStandardMaterial
+          color={CIS_BODY}
+          roughness={0.55}
+          metalness={0.35}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      <mesh position={[CIS_HOPPER_X, 0.98, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.55, 0.03, 8, 24]} />
+        <meshStandardMaterial color={CIS_TRIM} roughness={0.5} metalness={0.4} />
+      </mesh>
+      {[-1, 1].map((sz) => (
+        <Strut
+          key={sz}
+          from={[CIS_HOPPER_X, 0.17, sz * 0.38]}
+          to={[CIS_HOPPER_X, 0.86, sz * 0.38]}
+          r={0.035}
+          color={CIS_TRIM}
+        />
+      ))}
+
+      {/* Coil springs under the deck */}
+      {[1.25, 2.35].map((x) =>
+        [-0.3, 0.3].map((z) => (
+          <mesh key={`${x}:${z}`} position={[x, 0.28, z]}>
+            <cylinderGeometry args={[0.07, 0.07, 0.22, 10]} />
+            <meshStandardMaterial color={LOOP_COLD} roughness={0.45} metalness={0.55} />
+          </mesh>
+        ))
+      )}
+
+      {/* The shaken sieve deck, dipping toward the drum */}
+      <group ref={deck} position={[1.8, 0.5, 0]} rotation={[0, 0, -0.08]}>
+        <mesh>
+          <boxGeometry args={[deckLen, 0.1, 0.78]} />
+          <meshStandardMaterial color={CIS_BODY} roughness={0.55} metalness={0.35} />
+        </mesh>
+        {[-1, 1].map((sz) => (
+          <mesh key={sz} position={[0, 0.12, sz * 0.38]}>
+            <boxGeometry args={[deckLen, 0.16, 0.04]} />
+            <meshStandardMaterial color={CIS_TRIM} roughness={0.55} metalness={0.4} />
+          </mesh>
+        ))}
+        {/* Screen bars */}
+        {Array.from({ length: 7 }, (_, k) => (
+          <mesh key={k} position={[-deckLen / 2 + 0.15 + k * 0.2, 0.065, 0]}>
+            <boxGeometry args={[0.03, 0.03, 0.72]} />
+            <meshStandardMaterial color={DARK} roughness={0.6} metalness={0.4} />
+          </mesh>
+        ))}
+        {/* Regolith riding the screen */}
+        <mesh position={[-0.2, 0.1, 0]} scale={[1, 0.25, 1]}>
+          <sphereGeometry args={[0.3, 12, 8]} />
+          <meshStandardMaterial color={CIS_SPOIL} roughness={0.95} metalness={0} />
+        </mesh>
+      </group>
+
+      {/* Magnetic drum between two end plates */}
+      {[-1, 1].map((sz) => (
+        <mesh key={sz} position={[CIS_DRUM_X, 0.34, sz * 0.44]}>
+          <boxGeometry args={[0.6, 0.44, 0.05]} />
+          <meshStandardMaterial color={CIS_TRIM} roughness={0.6} metalness={0.4} />
+        </mesh>
+      ))}
+      <group ref={drum} position={[CIS_DRUM_X, 0.4, 0]}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.22, 0.22, 0.82, 20]} />
+          <meshStandardMaterial color={DARK} roughness={0.4} metalness={0.6} />
+        </mesh>
+        {[-0.2, 0.2].map((z) => (
+          <mesh key={z} position={[0, 0, z]}>
+            <torusGeometry args={[0.225, 0.02, 6, 24]} />
+            <meshStandardMaterial
+              color={accent}
+              emissive={accent}
+              emissiveIntensity={0.9}
+              toneMapped={false}
+            />
+          </mesh>
+        ))}
+        {/* A lifter bar, so the turn reads */}
+        <mesh position={[0.22, 0, 0]}>
+          <boxGeometry args={[0.04, 0.06, 0.8]} />
+          <meshStandardMaterial color={CIS_TRIM} roughness={0.6} metalness={0.4} />
+        </mesh>
+      </group>
+
+      {/* Product bins, one per fraction, each with its pile */}
+      {CIS_FRACTIONS.map((c, i) => {
+        const z = (i - 1) * 0.68
+        return (
+          <group key={c} position={[CIS_BIN_X, 0, z]}>
+            <mesh position={[0, 0.16, 0]}>
+              <boxGeometry args={[0.56, 0.4, 0.6]} />
+              <meshStandardMaterial color={CIS_TRIM} roughness={0.6} metalness={0.35} />
+            </mesh>
+            <mesh position={[0, 0.36, 0]} scale={[1, 0.4, 1]}>
+              <sphereGeometry args={[0.24, 12, 8]} />
+              <meshStandardMaterial color={c} roughness={0.9} metalness={c === CIS_FRACTIONS[1] ? 0.5 : 0} />
+            </mesh>
+          </group>
+        )
+      })}
+      {/* Chutes from the drum into the outer bins */}
+      {[-1, 1].map((sz) => (
+        <Strut
+          key={sz}
+          from={[CIS_DRUM_X + 0.15, 0.3, sz * 0.25]}
+          to={[CIS_BIN_X - 0.1, 0.42, sz * 0.62]}
+          r={0.05}
+          color={CIS_BODY}
+        />
+      ))}
+
+      {/* Control box and its own panel — a sorter draws little enough to
+          carry its power on the lot, unlike the reactors next door */}
+      <group position={[1.7, 0, -1.5]}>
+        <mesh position={[0, 0.3, 0]}>
+          <boxGeometry args={[0.5, 0.6, 0.4]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.55} metalness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.02, 0]}>
+          <boxGeometry args={[0.56, 0.3, 0.46]} />
+          <meshStandardMaterial color={CIS_TRIM} roughness={0.65} metalness={0.3} />
+        </mesh>
+        <mesh position={[0.12, 0.45, 0.21]}>
+          <sphereGeometry args={[0.035, 8, 8]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.6}
+            toneMapped={false}
+          />
+        </mesh>
+        <Strut from={[0.6, -0.4, 0]} to={[0.6, 1.0, 0]} r={0.035} color={CIS_TRIM} />
+        <group position={[0.6, 1.05, 0]} rotation={[-0.6, 0, 0]}>
+          <mesh>
+            <boxGeometry args={[1.1, 0.04, 0.75]} />
+            <meshStandardMaterial color={PANEL_EDGE} roughness={0.5} metalness={0.4} />
+          </mesh>
+          <mesh position={[0, 0.025, 0]}>
+            <boxGeometry args={[1.02, 0.01, 0.67]} />
+            <meshStandardMaterial color={PANEL} roughness={0.3} metalness={0.5} />
+          </mesh>
+        </group>
+      </group>
+      <Strut from={[1.7, 0.1, -1.3]} to={[1.8, 0.18, -0.5]} r={0.03} color={CIS_TRIM} />
+    </group>
+  )
+}
+
+function CisluneExcavationSite({ accent }: { accent: string }) {
+  return (
+    <group scale={CIS_M}>
+      <CisDigFace />
+      <Perdex accent={accent} />
+      <Cisort accent={accent} />
+      <PatrollingAstronaut accent={accent} center={[2.3, 1.75]} radius={0.55} seed={4} />
     </group>
   )
 }
@@ -18849,6 +19272,10 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // ISRU district's third bid: one riveted crucible instead of a stack or a
   // field. See LunarResourcesMre.
   'lunar-resources-mre': LunarResourcesMre,
+  // ISRU district's feedstock bid: an excavator rover and a sorter rather
+  // than a reactor, so it no longer shares IsruPlant with Blue Alchemist.
+  // See CisluneExcavationSite.
+  'cislune-lunar-isru': CisluneExcavationSite,
   // The crewed-lander race's second competitor, replacing the InSight-lander
   // stand-in. See BlueMoonMk2. `spacex-starship-hls` keeps its GLB.
   'blue-origin-blue-moon-mk2': BlueMoonMk2,

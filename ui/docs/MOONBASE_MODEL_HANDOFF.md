@@ -145,11 +145,23 @@ five bids are five different processes:
 
 | Odds | Org | Project | id | Status |
 |---|---|---|---|---|
-| 41% | Blue Origin | Blue Alchemist ISRU | `blue-origin-blue-alchemist` | generic `IsruPlant` (IS Blue Alchemist's own concept — see PvField) |
-| 32% | Sierra Space | Carbothermal Oxygen Reactor | `sierra-space-carbothermal` | **done** — `SierraCarbothermal` |
-| 27% | Lunar Resources | Molten Regolith Electrolysis | `lunar-resources-mre` | **done** — `LunarResourcesMre` |
+| 38% | Blue Origin | Blue Alchemist ISRU | `blue-origin-blue-alchemist` | generic `IsruPlant` (IS Blue Alchemist's own concept — see PvField) |
+| 29% | Sierra Space | Carbothermal Oxygen Reactor | `sierra-space-carbothermal` | **done** — `SierraCarbothermal` |
+| 25% | Lunar Resources | Molten Regolith Electrolysis | `lunar-resources-mre` | **done** — `LunarResourcesMre` |
+| 8% | CisLune | PERDEX / CISORT ISRU Hardware | `cislune-lunar-isru` | **done** — `CisluneExcavationSite` |
 
-Three different chemistries — Blue's own solar-thermal/electrolysis process,
+`cislune-lunar-isru` joined the district after this table was first written
+and fell through to `IsruPlant`, which put a second copy of Blue Alchemist's
+plant on the map. CisLune doesn't process regolith into oxygen; it digs and
+sorts feedstock for the plants that do. So `CisluneExcavationSite` (7.9 m) has
+no reactor and no power field. It has a cut bank of spoil, the PERDEX rover
+running its excavation-transit-delivery cycle (bucket drum turning in the
+cut, reversing up to the sorter, tipping its lidded bed into the hopper,
+driving back out), and CISORT: a sieve deck buzzing on coil springs, a
+turning magnetic drum, and three bins tinted for the ice, metal and silicate
+fractions. A small panel and control box carry the sorter's own power.
+
+Three different chemistries, plus CisLune's feedstock line, which isn't one — Blue's own solar-thermal/electrolysis process,
 Sierra's carbothermal reduction, and Lunar Resources' molten regolith
 electrolysis — so there is real hardware difference to draw. `IsruPlant`'s
 photovoltaic field and solar-thermal receiver already read as Blue Alchemist's
