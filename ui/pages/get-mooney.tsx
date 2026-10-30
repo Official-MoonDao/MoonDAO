@@ -5,7 +5,6 @@ import Container from '../components/layout/Container'
 import WebsiteHead from '../components/layout/Head'
 import ContentLayout from '@/components/layout/ContentLayout'
 import { NoticeFooter } from '@/components/layout/NoticeFooter'
-import HowToBuyMooney from '@/components/uniswap/HowToBuyMooney'
 import NativeToMooney from '@/components/uniswap/NativeToMooney'
 
 export default function GetMooney() {
@@ -60,10 +59,6 @@ export default function GetMooney() {
               <p className="text-center text-xs text-gray-400 mt-2">
                 Locking MOONEY gives you vMOONEY for quadratic voting
               </p>
-            </div>
-
-            <div className="mt-6 sm:mt-8">
-              <HowToBuyMooney />
             </div>
           </div>
         </ContentLayout>

@@ -9,11 +9,13 @@ import {
   type SceneProps,
 } from '@/components/explainer/scene'
 
-// One holder followed through every scene: 10,000 MOONEY, locked, decaying, and
-// then voted with. Illustrative numbers, not live data.
+// One holder followed through every scene: bought, 10,000 MOONEY locked,
+// decaying, and then voted with. Illustrative numbers, not live data; the buy
+// scene shows no amounts so it can't imply a price.
 const LOCKED = 10_000
 const MAX_YEARS = 4
 
+const BUY_TAG = { label: 'Buy', text: 'text-blue-200', bg: 'bg-blue-400/15' }
 const LOCK_TAG = { label: 'Lock', text: 'text-indigo-200', bg: 'bg-indigo-400/15' }
 const DECAY_TAG = { label: 'Over time', text: 'text-amber-200', bg: 'bg-amber-400/15' }
 const POWER_TAG = { label: 'Voting power', text: 'text-purple-200', bg: 'bg-purple-400/15' }
@@ -30,6 +32,119 @@ function CountUp({ value }: { value: number }) {
     return () => controls.stop()
   }, [mv, value])
   return <>{fmt(shown)}</>
+}
+
+// ── 0. Swap ETH for MOONEY ───────────────────────────────────────────────
+
+const NETWORKS = ['Ethereum', 'Arbitrum', 'Base']
+const BUY_CAPTIONS = [
+  'Sign in with a wallet, email or social account. No wallet? One is made for you.',
+  'Pick a network: Ethereum, Arbitrum or Base.',
+  'Swap ETH into the MOONEY pool on Uniswap v4…',
+  '…and MOONEY comes straight back to your wallet.',
+  'If the price moves more than 5% before it confirms, the swap is cancelled instead.',
+]
+
+function Coin({ symbol, className }: { symbol: string; className: string }) {
+  return (
+    <span
+      className={`flex h-7 items-center rounded-full px-2.5 text-[11px] font-bold shadow-lg ${className}`}
+    >
+      {symbol}
+    </span>
+  )
+}
+
+export function BuyScene({ variant, active }: SceneProps) {
+  const ref = useRef<HTMLDivElement>(null)
+  const { key, replay } = useReplay()
+  const { step, done } = useSceneStep(ref, BUY_CAPTIONS.length, active, key)
+  const network = step >= 1 ? 0 : -1
+  const ethSent = step >= 2
+  const mooneyBack = step >= 3
+
+  return (
+    <SceneFrame
+      sceneRef={ref}
+      variant={variant}
+      tag={BUY_TAG}
+      title="Swap"
+      label="Sign in, pick a network, and swap ETH for MOONEY through the Uniswap v4 pool, with a 5% slippage limit"
+      caption={<StepCaption step={step} lines={BUY_CAPTIONS} />}
+      onReplay={done ? replay : undefined}
+    >
+      <div className="flex h-full flex-col justify-between gap-3">
+        <div className="flex gap-1.5">
+          {NETWORKS.map((name, i) => (
+            <span
+              key={name}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors duration-300 ${
+                i === network
+                  ? 'border-blue-400/50 bg-blue-400/15 text-blue-100'
+                  : 'border-white/[0.08] text-gray-500'
+              }`}
+            >
+              {name}
+            </span>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-[5.5rem_minmax(0,1fr)_5.5rem] sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] items-center gap-2">
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Your wallet</p>
+            <p className="mt-1 text-xs font-semibold text-emerald-300">Signed in ✓</p>
+          </div>
+
+          <div className="relative flex h-20 flex-col justify-center gap-5">
+            <div className="h-px bg-white/[0.08]" />
+            <div className="h-px bg-white/[0.08]" />
+            <motion.div
+              className="absolute top-[18%] -translate-y-1/2"
+              initial={false}
+              animate={{
+                left: ethSent ? 'calc(100% - 3rem)' : '0%',
+                opacity: ethSent && !mooneyBack ? 1 : 0,
+              }}
+              transition={{ duration: 0.9, ease: 'easeInOut' }}
+            >
+              <Coin symbol="ETH" className="bg-gray-200 text-gray-900" />
+            </motion.div>
+            <motion.div
+              className="absolute top-[82%] -translate-y-1/2"
+              initial={false}
+              animate={{
+                left: mooneyBack ? '0%' : 'calc(100% - 4.5rem)',
+                opacity: mooneyBack ? 1 : 0,
+              }}
+              transition={{ duration: 0.9, ease: 'easeInOut' }}
+            >
+              <Coin
+                symbol="MOONEY"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+              />
+            </motion.div>
+          </div>
+
+          <div className="rounded-xl border border-pink-400/25 bg-pink-400/[0.06] p-2.5 text-center">
+            <p className="text-[10px] uppercase tracking-wider text-pink-200/70">Uniswap v4</p>
+            <p className="mt-1 text-xs font-semibold text-white">MOONEY pool</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2">
+          <span className="text-[11px] uppercase tracking-wider text-gray-500">Wallet</span>
+          <motion.span
+            key={mooneyBack ? 'mooney' : 'empty'}
+            initial={{ opacity: 0.4, y: 3 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`text-sm font-semibold ${mooneyBack ? 'text-emerald-300' : 'text-gray-500'}`}
+          >
+            {mooneyBack ? '+ MOONEY received' : 'No MOONEY yet'}
+          </motion.span>
+        </div>
+      </div>
+    </SceneFrame>
+  )
 }
 
 // ── 1. Lock length sets vMOONEY ──────────────────────────────────────────

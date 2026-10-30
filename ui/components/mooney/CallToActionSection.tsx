@@ -21,7 +21,7 @@ export interface CallToActionSectionProps {
 const DEFAULT_BUTTONS: ActionButton[] = [
   {
     label: 'Get MOONEY',
-    href: '#buy',
+    href: '/get-mooney',
     gradientFrom: 'from-blue-600',
     gradientTo: 'to-purple-600',
     hoverFrom: 'hover:from-blue-700',
