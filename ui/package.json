@@ -17,7 +17,7 @@
     "updates:generate": "TS_NODE_COMPILER_OPTIONS='{\"types\":[\"node\"]}' ts-node -r tsconfig-paths/register scripts/updates-generate.ts",
     "test:updates": "TS_NODE_COMPILER_OPTIONS='{\"types\":[\"node\",\"mocha\"]}' node node_modules/mocha/bin/mocha.js --require ts-node/register --require tsconfig-paths/register --spec scripts/updates-pipeline.test.ts",
     "prebuild": "yarn updates:generate",
-    "build": "NODE_OPTIONS='--max-old-space-size=8192' next build",
+    "build": "if [ -n \"$VERCEL\" ]; then HEAP=7168; else HEAP=8192; fi; NODE_OPTIONS=\"--max-old-space-size=$HEAP\" next build",
     "analyze": "ANALYZE=true NODE_OPTIONS='--max-old-space-size=8192' next build",
     "postbuild": "next-sitemap",
     "start": "next start",
