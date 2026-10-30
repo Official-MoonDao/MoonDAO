@@ -784,4 +784,26 @@ async function POST(req: NextApiRequest, res: NextApiResponse) {
     approvedMultisigFollowUps,
   })
 }
-export default withMiddleware(POST, rateLimit, isOperator)
+// The tally reads every cohort project on-chain, fetches each proposal from
+// IPFS twice, then sends one confirmed tx per project — far past the default
+// function timeout. Pages Router reads the timeout from `config.maxDuration`.
+export const config = {
+  maxDuration: 300,
+}
+
+// Uncaught throws (RPC, Tableland, HSM signer) otherwise come back as a bare
+// text 500 and the operator panel can only say "Tally failed".
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  try {
+    await POST(req, res)
+  } catch (error: any) {
+    console.error('[vote tally] Unhandled error:', error)
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: `Tally error: ${error?.message || String(error)}`,
+      })
+    }
+  }
+}
+
+export default withMiddleware(handler, rateLimit, isOperator)
