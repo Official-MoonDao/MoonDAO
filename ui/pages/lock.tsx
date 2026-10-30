@@ -24,6 +24,7 @@ import useRead from '@/lib/thirdweb/hooks/useRead'
 import Container from '../components/layout/Container'
 import Head from '../components/layout/Head'
 import { LockData } from '../components/lock/LockData'
+import LockHowItWorks from '../components/lock/howItWorks/LockHowItWorks'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -851,8 +852,12 @@ export default function Lock() {
               </div>
             </div>
 
+            <div className="mt-10 sm:mt-14">
+              <LockHowItWorks />
+            </div>
+
             {/* Next Steps */}
-            <div className="mt-6">
+            <div className="mt-10 sm:mt-14">
               <div className="text-center mb-6">
                 <h3 className="text-xl font-bold text-white mb-2">After Locking</h3>
                 <p className="text-gray-300 text-sm">
