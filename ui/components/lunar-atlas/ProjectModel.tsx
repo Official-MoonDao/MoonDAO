@@ -244,6 +244,11 @@ const PROJECT_SIZE_M: Record<string, number> = {
   // CommsPnt lot Nokia still stands on. Confirmed against the authored
   // geometry with scripts/tmp-relayterm-check.ts.
   'im-near-space-network': 2.7,
+  // Repeater stake to repeater stake, across the access point's mast — see
+  // WIFI_M. Solstar sell a surface WiFi access point, not a ground station,
+  // so the lot is sized to an AP and the two mesh nodes that extend it rather
+  // than to the 15 m dish-and-shelter site of the generic CommsPnt.
+  'solstar-lunar-wifi': 5,
   // Solar tracker's outboard corner to the far end of the product tanks —
   // see SCR_M. A packaged skid plant rather than IsruPlant's sprawling
   // field-plus-tower installation (19 m): Sierra already ran a full-scale
@@ -15514,6 +15519,226 @@ function CommsPnt({ accent }: { accent: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Solstar Lunar WiFi access point
+// ---------------------------------------------------------------------------
+
+// Repeater stake to repeater stake — see PROJECT_SIZE_M['solstar-lunar-wifi'].
+// Solstar's bid is not a ground station at all. It is a space-rated WiFi access
+// point adapted from their Space Communicator flight hardware, for the last
+// hundred meters between a suit, a rover and a lander — so where every other
+// comms lot here looks UP at a relay or at Earth, this one looks ACROSS the
+// ground at the people working on it. One access point on a light mast, two
+// mesh repeaters staked out on their own panels, and a crew member inside the
+// coverage they make. No dish anywhere on the lot, which is the argument.
+const WIFI_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['solstar-lunar-wifi'] ?? 5)
+
+const WIFI_AP_Y = 2.25 // enclosure centre height
+const WIFI_MAST_TOP = 2.6
+const WIFI_NODE_R = 2.1 // repeater stakes, from the mast
+const WIFI_NODE_AT = [3.55, 5.75] // bearings (radians) of the two repeaters
+const WIFI_BLINK_S = 1.6
+
+// A status LED that blinks on its own phase, because a link light that is
+// steadily on reads as a lamp, and one that blinks reads as traffic.
+function LinkLed({
+  accent,
+  phase = 0,
+  r = 0.035,
+}: {
+  accent: string
+  phase?: number
+  r?: number
+}) {
+  const mat = useRef<THREE.MeshStandardMaterial>(null)
+  useFrame(({ clock }) => {
+    const u = ((clock.getElapsedTime() + phase) / WIFI_BLINK_S) % 1
+    if (mat.current) mat.current.emissiveIntensity = u < 0.18 ? 2.4 : 0.5
+  })
+  return (
+    <mesh>
+      <sphereGeometry args={[r, 8, 8]} />
+      <meshStandardMaterial
+        ref={mat}
+        color={accent}
+        emissive={accent}
+        emissiveIntensity={0.5}
+        toneMapped={false}
+      />
+    </mesh>
+  )
+}
+
+// A small upright panel, standing across the sun's bearing like every array at
+// this latitude, for hardware too small to be on the base grid.
+function NodePanel({ w, h }: { w: number; h: number }) {
+  return (
+    <group rotation={[0, 0, -0.16]}>
+      <mesh>
+        <boxGeometry args={[w, h, 0.03]} />
+        <meshStandardMaterial color={PANEL} roughness={0.44} metalness={0.12} />
+      </mesh>
+      <mesh position={[0, 0, 0.02]}>
+        <boxGeometry args={[w + 0.02, 0.025, 0.01]} />
+        <meshStandardMaterial color={PANEL_EDGE} roughness={0.5} metalness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+// One mesh repeater: a stake, a small sealed node with a single omni, and the
+// panel that keeps it alive without a cable back to anything.
+function WifiRepeater({ accent, phase }: { accent: string; phase: number }) {
+  return (
+    <group>
+      {/* Driven well below grade: the lot is seated at the mast, and two
+          meters out on a slope the ground can sit a good way under that */}
+      <mesh position={[0, -0.28, 0]}>
+        <cylinderGeometry args={[0.06, 0.08, 0.6, 8]} />
+        <meshStandardMaterial color={HULL_DARK} roughness={0.85} metalness={0.15} />
+      </mesh>
+      <Strut from={[0, -0.6, 0]} to={[0, 1.15, 0]} r={0.025} color={TERM_TRIM} />
+      <mesh position={[0, 1.05, 0.06]}>
+        <boxGeometry args={[0.2, 0.16, 0.1]} />
+        <meshStandardMaterial color={TERM_SHELTER} roughness={0.55} metalness={0.2} />
+      </mesh>
+      <mesh position={[0, 1.14, 0.06]}>
+        <boxGeometry args={[0.21, 0.025, 0.11]} />
+        <meshStandardMaterial color={accent} roughness={0.5} />
+      </mesh>
+      <group position={[0.07, 1.04, 0.115]}>
+        <LinkLed accent={accent} phase={phase} r={0.018} />
+      </group>
+      <Strut from={[0, 1.15, 0.06]} to={[0, 1.55, 0.06]} r={0.01} color={HULL_DARK} />
+      <mesh position={[0, 1.57, 0.06]}>
+        <sphereGeometry args={[0.018, 8, 8]} />
+        <meshStandardMaterial color={TERM_TRIM} roughness={0.5} />
+      </mesh>
+      <group position={[0, 0.62, -0.06]}>
+        <NodePanel w={0.34} h={0.44} />
+      </group>
+    </group>
+  )
+}
+
+function SolstarWifiPoint({ accent }: { accent: string }) {
+  // Four whips splayed off the enclosure's crown: a multi-mode AP runs more
+  // than one band at once, and each band wants its own element.
+  const whips = [0, 1, 2, 3].map((k) => {
+    const a = (k / 4) * Math.PI * 2 + Math.PI / 4
+    return {
+      from: [Math.cos(a) * 0.12, WIFI_AP_Y + 0.17, Math.sin(a) * 0.08] as [
+        number,
+        number,
+        number,
+      ],
+      to: [Math.cos(a) * 0.24, WIFI_AP_Y + 0.62, Math.sin(a) * 0.18] as [
+        number,
+        number,
+        number,
+      ],
+    }
+  })
+  return (
+    <group scale={WIFI_M}>
+      {/* Tripod mast, feet staked below grade */}
+      {[0, 1, 2].map((k) => {
+        const a = (k / 3) * Math.PI * 2 + 0.5
+        const x = Math.cos(a) * 0.62
+        const z = Math.sin(a) * 0.62
+        return (
+          <group key={k}>
+            <Strut from={[x, -0.08, z]} to={[0, 1.05, 0]} r={0.03} color={TERM_TRIM} />
+            <mesh position={[x, -0.18, z]}>
+              <cylinderGeometry args={[0.07, 0.09, 0.4, 8]} />
+              <meshStandardMaterial color={HULL_DARK} roughness={0.85} metalness={0.15} />
+            </mesh>
+          </group>
+        )
+      })}
+      <Strut from={[0, -0.05, 0]} to={[0, WIFI_MAST_TOP, 0]} r={0.045} color={TERM_TRIM} />
+
+      {/* The access point: a sealed flight enclosure with a finned back,
+          because there is no air to cool it and the fins are the radiator */}
+      <group position={[0, WIFI_AP_Y, 0.09]}>
+        <mesh>
+          <boxGeometry args={[0.46, 0.34, 0.2]} />
+          <meshStandardMaterial color={TERM_SHELTER} roughness={0.5} metalness={0.25} />
+        </mesh>
+        <mesh position={[0, 0.15, 0]}>
+          <boxGeometry args={[0.47, 0.04, 0.21]} />
+          <meshStandardMaterial color={accent} roughness={0.5} />
+        </mesh>
+        {Array.from({ length: 6 }, (_, i) => (
+          <mesh key={i} position={[-0.19 + i * 0.076, 0, -0.13]}>
+            <boxGeometry args={[0.02, 0.3, 0.07]} />
+            <meshStandardMaterial color={MPH_RAD} roughness={0.42} metalness={0.28} />
+          </mesh>
+        ))}
+        {[-0.12, -0.04, 0.04].map((x, i) => (
+          <group key={x} position={[x, -0.09, 0.105]}>
+            <LinkLed accent={accent} phase={i * 0.45} r={0.016} />
+          </group>
+        ))}
+        {/* Connector face: the umbilical down to the power box */}
+        <mesh position={[0.15, -0.11, 0.105]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.03, 10]} />
+          <meshStandardMaterial color={DARK} metalness={0.5} />
+        </mesh>
+      </group>
+      {whips.map((w, k) => (
+        <group key={k}>
+          <Strut from={w.from} to={w.to} r={0.011} color={HULL_DARK} />
+          <mesh position={w.to}>
+            <sphereGeometry args={[0.02, 8, 8]} />
+            <meshStandardMaterial color={TERM_TRIM} roughness={0.5} />
+          </mesh>
+        </group>
+      ))}
+      {/* Dual-band puck on the mast head */}
+      <mesh position={[0, WIFI_MAST_TOP + 0.04, 0]}>
+        <cylinderGeometry args={[0.09, 0.11, 0.08, 14]} />
+        <meshStandardMaterial color={TERM_SHELTER} roughness={0.4} metalness={0.15} />
+      </mesh>
+
+      {/* Its own panel and battery: the AP is a drop-in, not a grid customer */}
+      <group position={[0, 1.45, -0.1]}>
+        <NodePanel w={0.7} h={0.9} />
+      </group>
+      <group position={[0.55, 0, 0.45]} rotation={[0, -0.4, 0]}>
+        <mesh position={[0, 0.2, 0]}>
+          <boxGeometry args={[0.5, 0.36, 0.38]} />
+          <meshStandardMaterial color={HULL_DARK} roughness={0.6} metalness={0.2} />
+        </mesh>
+        <mesh position={[0, 0.39, 0]}>
+          <boxGeometry args={[0.52, 0.03, 0.4]} />
+          <meshStandardMaterial color={TERM_TRIM} roughness={0.6} metalness={0.3} />
+        </mesh>
+        <mesh position={[0, -0.1, 0]}>
+          <boxGeometry args={[0.56, 0.27, 0.44]} />
+          <meshStandardMaterial color={TERM_TRIM} roughness={0.7} metalness={0.3} />
+        </mesh>
+      </group>
+      <Strut from={[0.42, 0.34, 0.36]} to={[0.15, WIFI_AP_Y - 0.11, 0.2]} r={0.014} color={DARK} />
+
+      {/* Two mesh repeaters staked out to extend the coverage */}
+      {WIFI_NODE_AT.map((a, i) => (
+        <group
+          key={a}
+          position={[Math.cos(a) * WIFI_NODE_R, 0, Math.sin(a) * WIFI_NODE_R]}
+          rotation={[0, -a + Math.PI / 2, 0]}
+        >
+          <WifiRepeater accent={accent} phase={0.7 + i * 0.55} />
+        </group>
+      ))}
+
+      {/* A crew member working inside the coverage — the customer, and the
+          scale bar */}
+      <PatrollingAstronaut center={[-0.3, 1.5]} radius={0.7} seed={9} accent={accent} />
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // IM Near Space Network ground terminal
 // ---------------------------------------------------------------------------
 
@@ -17486,6 +17711,11 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // gimballed onto the lid, not the generic CommsPnt mast-shelter-array site
   // Nokia still stands on. RelaySat flies via SKY_STATIONS/SkyLayer.
   'im-near-space-network': RelayGroundTerminal,
+  // Solstar's surface WiFi: an access point and two mesh repeaters looking
+  // across the ground at the crew, not up at a relay. See SolstarWifiPoint.
+  // `nokia-lunar-lte` keeps the generic CommsPnt, whose lattice mast of
+  // surface radios over an avionics shelter is an LTE cell site already.
+  'solstar-lunar-wifi': SolstarWifiPoint,
   // The habitat race's two flagship sustained-presence programs. Both need
   // an explicit entry now that `crewed_base` and `habitat` are one type —
   // the generic `Habitat` model (a single pressurized module) is the wrong

@@ -42,16 +42,30 @@ are each down to a single project (Nokia; Blue Origin) on the generic model,
 which is no longer duplication, just one competitor left where the generic
 model already happens to be that competitor's own concept:
 
-### Priority 1 — comms / PNT (1 of 4 still on the generic model)
+### Priority 1 — comms / PNT (1 of 5 on the generic model, on purpose)
 
 | Odds | Org | Project | id | Status |
 |---|---|---|---|---|
-| 30% | Nokia Bell Labs | Lunar Surface Communication System | `nokia-lunar-lte` | generic `CommsPnt` |
-| 28% | Intuitive Machines | Lunar Relay Satellites | `im-near-space-network` | **done** — `RelaySat` (orbit, ×3) + `RelayGroundTerminal` (ground) |
-| 24% | ESA | Lunar Pathfinder & Moonlight | `esa-lunar-pathfinder` | **done** — `Pathfinder` (orbit) + `PathfinderTerminal` (ground) |
-| 18% | Crescent Space Services | Parsec | `crescent-parsec` | **done** — `Parsec` (orbit, ×2) + `ParsecTerminal` (ground) |
+| 28% | Nokia Bell Labs | Lunar Surface Communication System | `nokia-lunar-lte` | generic `CommsPnt` (kept — it is already an LTE cell site) |
+| 26% | Intuitive Machines | Lunar Relay Satellites | `im-near-space-network` | **done** — `RelaySat` (orbit, ×3) + `RelayGroundTerminal` (ground) |
+| 23% | ESA | Lunar Pathfinder & Moonlight | `esa-lunar-pathfinder` | **done** — `Pathfinder` (orbit) + `PathfinderTerminal` (ground) |
+| 17% | Crescent Space Services | Parsec | `crescent-parsec` | **done** — `Parsec` (orbit, ×2) + `ParsecTerminal` (ground) |
+| 6% | Solstar Space | Lunar WiFi Access Point | `solstar-lunar-wifi` | **done** — `SolstarWifiPoint` (ground only) |
 
-All four comms bids are now orbiter-plus-ground builds except Nokia, which has
+Solstar used to fall through to `CommsPnt` too, which put two identical
+mast-shelter-dish lots side by side. Its bid has no orbital or Earth-link
+piece: it is a WiFi access point derived from Solstar's Space Communicator
+flight hardware, for the last hundred meters between suits, rovers and
+landers. So `SolstarWifiPoint` (5 m, repeater stake to repeater stake) is a
+tripod mast carrying a finned AP enclosure with whip antennas and blinking
+link LEDs, its own panel and battery box, two mesh repeaters staked out on
+their own panels, and a patrolling astronaut inside the coverage. There is
+no dish anywhere on the lot, because every other comms lot looks up at a relay
+or at Earth and this one looks across the ground. The stakes and tripod feet
+are driven well below grade because the lot is seated at the mast and the
+repeaters sit 2 m out.
+
+The other four comms bids are orbiter-plus-ground builds except Nokia, which has
 no orbital component to begin with, and each one answers "what's in orbit and
 what's on the ground" differently on purpose:
 
@@ -90,7 +104,8 @@ entry in `SKY_STATIONS` (`skyplan.ts`): 3 stations for IM, 1 for Pathfinder, 2
 for Parsec, which is not a portrayal but each program's actual state (an
 operational fleet, a single precursor, and a network that starts at two and
 scales). Only Nokia's LTE network of small cells remains on the fully generic
-`CommsPnt` terminal — the last item in this district.
+`CommsPnt` terminal, which is no longer a duplicate now that Solstar has its
+own lot.
 
 ### Priority 2 — surface construction (4 competitors, 4× the same model)
 
