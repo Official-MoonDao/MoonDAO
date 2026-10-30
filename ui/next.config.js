@@ -53,6 +53,10 @@ module.exports = withBundleAnalyzer(
       },
       experimental: {
         esmExternals: 'loose',
+        // Standard builders have 8 GB. Next otherwise runs 4 static-page
+        // workers, and on a cache miss that fills the machine and the build
+        // is killed. Two workers still finish; they just take less memory.
+        cpus: process.env.VERCEL ? 2 : 4,
         serverComponentsExternalPackages: ['thirdweb'],
         // vercel.json includeFiles is ignored for Next.js — only NFT / this
         // map can put Lato and the fallback OG cards into the serverless bundles.
