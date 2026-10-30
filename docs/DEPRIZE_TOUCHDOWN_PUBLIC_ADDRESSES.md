@@ -67,9 +67,21 @@ the Safe batch below has opened id 1. This registry's `count()` is still 0.
 | sunset | `1856458310` | 29 Oct 2028, 11:51 AM PDT |
 | roster | `[601, 602, 603, 604, 605, 606, 24]` | |
 
-The executive Safe is 3 of 5 on chain. The deployer is not an owner, so it
-cannot propose this batch. Registry `count()` is 0, so `register` returns id
-1. Send these six calls in one transaction, in this order. `open` is last.
+The executive Safe is 3 of 5 on chain. The deployer is not an owner.
+Registry `count()` is 0, so `register` returns id 1. The six calls below are
+one transaction, in this order. `open` is last.
+
+The GCP HSM `0xb206325E6562517532686dFeeEaD4C104D9F5d32` can propose that
+batch once an owner adds it as a Safe proposer. One command does both, from
+`ui/`, with the owner key only in the environment:
+
+```
+SAFE_OWNER_PK=0x<executive-safe-owner> \
+  yarn tsx --tsconfig tsconfig.json scripts/propose-touchdown-arbitrum-safe.ts
+```
+
+After that, the same command without `SAFE_OWNER_PK` proposes again. The
+script refuses to run if the registry count is no longer 0.
 `setComplianceSigner` uses the address of the local
 `DEPRIZE_COMPLIANCE_SIGNER_KEY`, which is the deployer. Confirm production
 signs with that key before executing.
