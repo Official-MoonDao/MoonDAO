@@ -9,6 +9,7 @@
     "scripts/typeform-parse-body.test.ts",
     "scripts/gift-purchase-validation.test.ts",
     "scripts/marketplace-vendor-email.test.ts",
+    "scripts/usdc-bridge.test.ts",
     "scripts/tableland-clean-data.test.ts",
     "scripts/new-citizen-discord-notification-source.test.ts",
     "scripts/project-author-avatar.test.ts",
