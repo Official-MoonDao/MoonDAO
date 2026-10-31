@@ -9,12 +9,12 @@ export default function Bridge() {
   return (
     <div className="animate-fadeIn flex flex-col items-center">
       <WebsiteHead
-        title="Bridge $MOONEY - MoonDAO"
-        description="Bridge MOONEY tokens across different blockchain networks securely and efficiently."
+        title="Bridge to Arbitrum - MoonDAO"
+        description="Bridge ETH, MOONEY, and USDC from Ethereum to Arbitrum. USDC arrives as native USDC for marketplace purchases."
       />
       <Container>
         <ContentLayout
-          header="Bridge $MOONEY"
+          header="Bridge to Arbitrum"
           headerSize="max(20px, 3vw)"
           mainPadding
           mode="compact"
