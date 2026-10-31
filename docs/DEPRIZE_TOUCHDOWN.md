@@ -12,13 +12,28 @@
 ### A DePrize for the next successful landing on the Moon
 
 > *Historical note (2026-09-16): this file was drafted pre-registration under an internal banner.
-> Touchdown generation 2 is live on Sepolia #22 and this file is the public rules of record.
+> The Sepolia generation-2 rehearsal (prize 22) is historical and is not this prize.
 > Parts I–V below are unchanged from v0.1 (`ce77f1bfc`); see Part VI for the v0.2 addendum.*
 >
 > **Version** 0.1-draft · **Date** 4 September 2026 · **Owner** MoonDAO
 > Competitor listings are editorial and based solely on public sources. No listed
 > organization has been contacted, has consented, or is affiliated with this prize.
 > Dates are as of 4 September 2026 and will move. Every date below is attributed.
+
+## Chain of record
+
+This file is the public rules of record for the Touchdown prize on Arbitrum (chain id 42161).
+
+| | |
+|---|---|
+| Chain | 42161 |
+| Registry | `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` |
+| Prize id | 1 (OPEN) |
+| Market | `0x8dD77065A0934F3Cea5c7b8d58e9F5A966B1Da2d` |
+| conditionId | `0x74903435e83c31673d67ceb23e243c99f4a95d0fe451ad2a62d5f4221ae532fa` |
+| Oracle | `0xAF26a002d716508b7e375f1f620338442F5470c0` |
+| Roster | team ids 601, 602, 603, 604, 605, 606, and 24 |
+| Sunset | 1856458310 |
 
 ---
 
