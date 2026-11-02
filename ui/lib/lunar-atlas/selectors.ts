@@ -333,6 +333,48 @@ export function standIdsForRace(
   return out
 }
 
+// Every race that can be opened from one district: its owner first, then each
+// district-less race whose hardware stands there, in the order given.
+//
+// Opening the lander zone opened Touchdown and nothing else, so Water Ice —
+// won on Chang'e-7, VIPER on MK1 and the Nova-C, all parked in that zone — was
+// unreachable from the place its hardware is. This is what lets the panel
+// offer both.
+//
+// A guest belongs to whichever district holds most of its stands. Returns an
+// empty list when only one race lives there, so there is nothing to switch.
+export function racesSharingDistrict(
+  raceId: string,
+  races: readonly { raceId: string; memberIds: readonly string[] }[],
+  hasDistrict: (raceId: string) => boolean,
+  hasPlot: (id: string) => boolean,
+  carriedBy: Readonly<Record<string, string>> = {},
+  sameVehicle: Readonly<Record<string, string>> = {}
+): string[] {
+  const owners = races.filter((r) => hasDistrict(r.raceId))
+  const hostOf = (race: { raceId: string; memberIds: readonly string[] }) => {
+    if (hasDistrict(race.raceId)) return race.raceId
+    const stands = standIdsForRace(race.memberIds, hasPlot, carriedBy, sameVehicle)
+    let best: string | undefined
+    let bestCount = 0
+    for (const owner of owners) {
+      const count = stands.filter((id) => owner.memberIds.includes(id)).length
+      if (count > bestCount) {
+        best = owner.raceId
+        bestCount = count
+      }
+    }
+    return best
+  }
+  const self = races.find((r) => r.raceId === raceId)
+  const host = self && hostOf(self)
+  if (!host) return []
+  const guests = races
+    .filter((r) => !hasDistrict(r.raceId) && hostOf(r) === host)
+    .map((r) => r.raceId)
+  return guests.length ? [host, ...guests] : []
+}
+
 // A tech tree: one capability category (landers, surface construction, …),
 // its competing projects, and — when one is declared — the shared-goal race
 // whose prediction market prices the category. The globe renders ONE generic
