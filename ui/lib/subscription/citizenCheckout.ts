@@ -14,6 +14,7 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { rememberCheckoutLiveness } from '@/lib/subscription/checkoutLivenessCache'
+import { publicYearWei, withMooneyQuarter } from '@/lib/subscription/publicYearPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 
@@ -55,8 +56,7 @@ export function citizenCheckoutAddress(chainSlug: string): string | undefined {
 
 /** Wallet total is 4/3 of the treasury share, so one quarter of the payment buys MOONEY. */
 export function citizenCheckoutTotalWei(treasuryWei: bigint): bigint {
-  if (treasuryWei <= BigInt(0)) return BigInt(0)
-  return (treasuryWei * BigInt(4)) / BigInt(3)
+  return withMooneyQuarter(treasuryWei)
 }
 
 export async function walletPaymentForTreasury(
@@ -100,15 +100,20 @@ export function usePublicYearEth(kind: 'citizen' | 'team'): number | null {
     })
     readContract({ contract, method: 'pricePerSecond' as string, params: [] })
       .then(async (pps) => {
-        let year = BigInt(pps as any) * BigInt(SECONDS_PER_YEAR)
-        if (kind === 'team') {
-          const discount = BigInt(
-            (await readContract({ contract, method: 'discount' as string, params: [] })) as any
-          )
-          year = (year * (BigInt(1000) - discount)) / BigInt(1000)
-        } else if (await citizenCheckoutIsLive(chain)) {
-          year = citizenCheckoutTotalWei(year)
-        }
+        const pricePerSecond = BigInt(pps as any)
+        const teamDiscount =
+          kind === 'team'
+            ? BigInt(
+                (await readContract({ contract, method: 'discount' as string, params: [] })) as any
+              )
+            : BigInt(0)
+        const citizenCheckoutLive = kind === 'citizen' ? await citizenCheckoutIsLive(chain) : false
+        const year = publicYearWei({
+          kind,
+          pricePerSecond,
+          teamDiscount,
+          citizenCheckoutLive,
+        })
         if (!cancelled) setEth(Number(year) / 1e18)
       })
       .catch((err) => {

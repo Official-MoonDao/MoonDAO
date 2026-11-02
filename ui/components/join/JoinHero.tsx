@@ -3,6 +3,7 @@ import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { JOIN_FILM_VIMEO_ID, joinFilm } from 'const/joinPageContent'
 import useTranslation from 'next-translate/useTranslation'
 import Image from 'next/image'
+import { resolveCitizenCount } from '@/lib/stats/publicFigures'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import useRead from '@/lib/thirdweb/hooks/useRead'
@@ -38,14 +39,17 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
     abi: CitizenABI,
   })
   // Only hit the chain in the browser when getStaticProps could not read
-  // totalSupply. A missing read must not fall back to the filtered directory count.
-  // A null param keeps useRead from firing while a server count is already in hand.
+  // totalSupply. A missing read must not fall back to the filtered directory
+  // count. Until that read lands, show the last-known ballpark so the first
+  // HTML is never a literal zero. A null param keeps useRead from firing
+  // while a server count is already in hand.
   const { data: supply } = useRead({
     contract: citizenContract,
     method: 'totalSupply',
     params: hasServerSupply ? [null] : [],
   })
-  const mintedSupply = hasServerSupply ? citizenCount : supplyToNumber(supply)
+  const liveSupply = hasServerSupply ? citizenCount : supplyToNumber(supply)
+  const mintedSupply = resolveCitizenCount(liveSupply)
 
   const stats: {
     value: number | null
@@ -54,7 +58,7 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
     label: string
   }[] = [
     { value: mintedSupply, suffix: '+', label: 'Citizens' },
-    { value: teamCount, suffix: '+', label: 'Teams' },
+    { value: teamCount > 0 ? teamCount : null, suffix: '+', label: 'Teams' },
     { value: 8, prefix: '$', suffix: 'M+', label: 'Raised onchain' },
     { value: 2, suffix: '', label: 'Astronauts sent to space' },
   ]
@@ -159,7 +163,7 @@ export default function JoinHero({ citizenCount, teamCount }: JoinHeroProps) {
             >
               {stat.value == null ? (
                 <span className="font-heading font-semibold text-2xl text-white md:text-4xl">
-                  —
+                  ...
                 </span>
               ) : (
                 <CountUp
