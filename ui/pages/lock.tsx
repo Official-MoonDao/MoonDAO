@@ -1,10 +1,5 @@
-import {
-  InformationCircleIcon,
-  LockClosedIcon,
-  ScaleIcon,
-  UsersIcon,
-  ShieldCheckIcon,
-} from '@heroicons/react/24/outline'
+import { InformationCircleIcon, UsersIcon } from '@heroicons/react/24/outline'
+import { LOCK_FILM_UPLOAD_DATE, LOCK_FILM_VIMEO_ID, lockFilm } from 'const/lockPageContent'
 import { BigNumber, ethers } from 'ethers'
 import useTranslation from 'next-translate/useTranslation'
 import Link from 'next/link'
@@ -17,6 +12,7 @@ import { approveToken } from '../lib/tokens/approve'
 import { calculateVMOONEY, createLock, increaseLock, withdrawLock } from '../lib/tokens/ve-token'
 import { bigNumberToDate, dateOut, dateToReadable } from '../lib/utils/dates'
 import { NumberType, transformNumber } from '../lib/utils/numbers'
+import { serializeJsonLd } from '@/lib/utils/jsonLd'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -24,6 +20,7 @@ import useRead from '@/lib/thirdweb/hooks/useRead'
 import Container from '../components/layout/Container'
 import Head from '../components/layout/Head'
 import { LockData } from '../components/lock/LockData'
+import LockHero from '../components/lock/LockHero'
 import { PrivyWeb3Button } from '../components/privy/PrivyWeb3Button'
 import { AllowanceWarning } from '../components/thirdweb/AllowanceWarning'
 import ContentLayout from '@/components/layout/ContentLayout'
@@ -33,7 +30,7 @@ import NetworkSelector from '@/components/thirdweb/NetworkSelector'
 import RetroactiveRewards from '@/components/tokens/RetroactiveRewards'
 import ERC20ABI from '../const/abis/ERC20.json'
 import VotingEscrowABI from '../const/abis/VotingEscrow.json'
-import { MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
+import { DEPLOYED_ORIGIN, MOONEY_ADDRESSES, VMOONEY_ADDRESSES } from '../const/config'
 
 // Safely parse a user-typed amount to wei. Returns null for intermediate
 // states like '', '.' or '1.' so callers don't crash on parseEther.
@@ -277,19 +274,42 @@ export default function Lock() {
       : canIncrease.time)
 
   const { t } = useTranslation('common')
+  const showHero = Boolean(LOCK_FILM_VIMEO_ID)
 
   return (
     <div className="animate-fadeIn flex flex-col items-center">
-      <Head title="Lock $MOONEY" />
+      <Head title="Lock $MOONEY">
+        {showHero && (
+          <script
+            type="application/ld+json"
+            key="lock-film-jsonld"
+            dangerouslySetInnerHTML={{
+              __html: serializeJsonLd({
+                '@context': 'https://schema.org',
+                '@type': 'VideoObject',
+                name: lockFilm.name,
+                description: lockFilm.description,
+                thumbnailUrl: `${DEPLOYED_ORIGIN}${lockFilm.poster}`,
+                ...(LOCK_FILM_UPLOAD_DATE && { uploadDate: LOCK_FILM_UPLOAD_DATE }),
+                duration: lockFilm.duration,
+                embedUrl: `https://player.vimeo.com/video/${LOCK_FILM_VIMEO_ID}`,
+              }),
+            }}
+          />
+        )}
+      </Head>
+      {showHero && <LockHero />}
       <Container>
         <ContentLayout
-          header="Lock $MOONEY"
+          header={showHero ? undefined : 'Lock $MOONEY'}
           headerSize="max(20px, 3vw)"
           mainPadding
           mode="compact"
           popOverEffect={false}
           isProfile
-          description="Lock MOONEY to receive vMOONEY and gain voting power."
+          description={
+            showHero ? undefined : 'Lock MOONEY to receive vMOONEY and gain voting power.'
+          }
           maxWidth="42rem"
           preFooter={
             <NoticeFooter
@@ -319,7 +339,7 @@ export default function Lock() {
 
             {/* Main Lock Interface - Preserve existing complex logic */}
             <div className="mb-4 sm:mb-6">
-              <div className="w-full mt-6">
+              <div id="lock-card" className="w-full mt-6 scroll-mt-24">
                 <div className="bg-gradient-to-br from-gray-900 via-blue-900/30 to-purple-900/20 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
                   {!hasExpired ? (
                     <div>

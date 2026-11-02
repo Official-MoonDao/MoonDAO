@@ -74,6 +74,11 @@
   "proposalsFilmPlay": "Watch the film",
   "proposalsFilmEndTitle": "What will you build?",
   "proposalsFilmEndCta": "Get the template",
+  "lockFilmTitle": "How locking works",
+  "lockFilmSub": "1:07 on amount, time and voting power",
+  "lockFilmPlay": "Watch the film",
+  "lockFilmEndTitle": "Ready to lock?",
+  "lockFilmEndCta": "Lock MOONEY",
   "projectsOverviewFilmEndCta": "Propose a project",
   "filmReplay": "Watch again"
 }
