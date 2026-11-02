@@ -86,37 +86,39 @@ describe('deprize competitions registry', () => {
     }
   })
 
-  it('binds the four Arbitrum capability races to the deployed rosters', () => {
-    expect(getDePrizeQuestionId('arbitrum', 2)).to.equal(
-      '0xd4daf3cb8f7f228cdf16c58c2e4345742bf4d1e58d7ebc271c0a533621262efc'
+  it('binds Arbitrum DePrize 1 as the public Touchdown, including ispace', () => {
+    expect(isKnownDePrizeCompetition('arbitrum', 1)).to.equal(true)
+    const c = getDePrizeCompetition('arbitrum', 1)
+    expect(c.title).to.equal('Touchdown')
+    expect(c.unlisted).to.equal(undefined)
+    expect(c.sharedGoalId).to.equal('shared-next-landing')
+    expect(c.questionId).to.equal(
+      '0xd81ff517bc437933758e3679c1107fca6983ca98f2798926af562ab5bdf4b32e'
     )
-    expect(getDePrizeQuestionId('arbitrum', 3)).to.equal(
-      '0x75be567e6161e270124d3eed4627ecee60fb1fc138e005517fed91cdaeca8602'
-    )
-    expect(getDePrizeQuestionId('arbitrum', 4)).to.equal(
-      '0x18e1c3d9d40fbccaaa147e0736917bff8f1eb3bd0a1f5ebc6f16c70fe4e9b396'
-    )
-    expect(getDePrizeQuestionId('arbitrum', 5)).to.equal(
-      '0xc97585bf11fff6b53bdddcd58e4518c02253f616c86eafc2962f3a3801333e15'
-    )
-    expect(getDePrizeRaceBinding('arbitrum', 2)!.outcomes.map((o) => o.teamId)).to.deep.equal([
-      601, 602, 603, 604, 605, 24,
-    ])
-    expect(getDePrizeRaceBinding('arbitrum', 5)!.outcomes.map((o) => o.projectId)).to.deep.equal([
+    expect(getDePrizeQuestionId('arbitrum', 1)).to.equal(c.questionId)
+    expect(resolveLiveDePrizeId('arbitrum', 1)).to.equal(1)
+    const binding = getDePrizeRaceBinding('arbitrum', 1)
+    expect(binding!.outcomes.map((o) => o.projectId)).to.deep.equal([
+      'astrobotic-griffin',
+      'im-nova-c',
+      'firefly-blue-ghost',
+      'blue-origin-blue-moon-mk1',
       'cnsa-change-7',
-      'blue-origin-viper',
-      'im-4-volatiles',
+      'ispace-apex',
       '__open-field__',
     ])
+    expect(binding!.outcomes.map((o) => o.teamId)).to.deep.equal([601, 602, 603, 604, 605, 606, 24])
+    expect(binding!.outcomes[6].field).to.equal(true)
     expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(undefined)
+    expect(getFeaturedLiveDePrizeId('sepolia')).to.equal(undefined)
   })
 
-  it('keeps Harsh Mistress registered but off the /deprize headliner', () => {
-    expect(getDePrizeCompetition('arbitrum', 1).title).to.equal('The Moon Is A Harsh Mistress')
-    expect(getDePrizeCompetition('arbitrum', 1).unlisted).to.equal(true)
-    expect(isKnownDePrizeCompetition('arbitrum', 1)).to.equal(true)
-    expect(getFeaturedLiveDePrizeId('sepolia')).to.equal(undefined)
-    expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(undefined)
+  it('keeps previous-registry Arbitrum races unlisted after the cutover', () => {
+    for (const id of [2, 3, 4, 5]) {
+      expect(isKnownDePrizeCompetition('arbitrum', id), String(id)).to.equal(true)
+      expect(getDePrizeCompetition('arbitrum', id).unlisted, String(id)).to.equal(true)
+      expect(getDePrizeRaceBinding('arbitrum', id), String(id)).to.equal(undefined)
+    }
   })
 
   it('returns a stable binding identity so consumers can memoize on it', () => {
@@ -133,10 +135,10 @@ describe('deprize competitions registry', () => {
     expect(findDePrizeIdForGoal('sepolia', 'shared-first-tracks')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', 'shared-ice')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', 'shared-mass-driver')).to.equal(undefined)
-    expect(findDePrizeIdForGoal('arbitrum', 'shared-next-landing')).to.equal(2)
-    expect(findDePrizeIdForGoal('arbitrum', 'shared-night-shift')).to.equal(3)
-    expect(findDePrizeIdForGoal('arbitrum', 'shared-first-tracks')).to.equal(4)
-    expect(findDePrizeIdForGoal('arbitrum', 'shared-ice')).to.equal(5)
+    expect(findDePrizeIdForGoal('arbitrum', 'shared-next-landing')).to.equal(1)
+    expect(findDePrizeIdForGoal('arbitrum', 'shared-night-shift')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('arbitrum', 'shared-first-tracks')).to.equal(undefined)
+    expect(findDePrizeIdForGoal('arbitrum', 'shared-ice')).to.equal(undefined)
     expect(findDePrizeIdForGoal('arbitrum', 'shared-fission-power')).to.equal(undefined)
     expect(findDePrizeIdForGoal('sepolia', undefined)).to.equal(undefined)
   })
@@ -150,9 +152,9 @@ describe('deprize competitions registry', () => {
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-ice')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', 'shared-mass-driver')).to.equal(false)
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-next-landing')).to.equal(true)
-    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-first-tracks')).to.equal(true)
-    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-ice')).to.equal(true)
-    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-night-shift')).to.equal(true)
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-first-tracks')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-ice')).to.equal(false)
+    expect(isDePrizeGoalMarketBound('arbitrum', 'shared-night-shift')).to.equal(false)
     expect(isDePrizeGoalMarketBound('arbitrum', 'shared-fission-power')).to.equal(false)
     expect(isDePrizeGoalMarketBound('sepolia', undefined)).to.equal(false)
   })
@@ -197,13 +199,9 @@ describe('deprize competitions registry', () => {
       { raceLabel: null, deprizeIds: [1, 2, 3], showHeading: false },
     ])
 
-    const arbitrum = partitionDePrizeIndexByRace('arbitrum', 5)
+    const arbitrum = partitionDePrizeIndexByRace('arbitrum', 1)
     expect(arbitrum).to.deep.equal([
-      { raceLabel: 'Next lunar landing', deprizeIds: [2], showHeading: true },
-      { raceLabel: 'Lunar night power', deprizeIds: [3], showHeading: true },
-      { raceLabel: 'First Tracks', deprizeIds: [4], showHeading: true },
-      { raceLabel: 'Surface water ice', deprizeIds: [5], showHeading: true },
-      { raceLabel: null, deprizeIds: [1], showHeading: true },
+      { raceLabel: 'Next lunar landing', deprizeIds: [1], showHeading: true },
     ])
   })
 

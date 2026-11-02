@@ -642,7 +642,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
       </Shell>
     )
   }
-  // Unprefixed `/deprize/1` is Arbitrum's Harsh Mistress and Sepolia's Touchdown.
+  // Unprefixed `/deprize/1` is Touchdown on both Arbitrum and Sepolia.
   // A prefixed path already picked a registry; otherwise ask, so a refresh on
   // the default chain does not open the other prize.
   if (!forcedSlug && numericId !== undefined) {
