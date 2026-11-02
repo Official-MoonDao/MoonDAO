@@ -28,6 +28,7 @@ import GTag from '../components/layout/GTag'
 import Layout from '../components/layout/Layout'
 import AttributionCapture from '@/components/analytics/AttributionCapture'
 import { Ga4Identity } from '@/components/analytics/Ga4Identity'
+import { MoonbaseEngagement } from '@/components/analytics/MoonbaseEngagement'
 import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
 import '../styles/globals.css'
 
@@ -101,6 +102,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
     <SessionProvider session={session}>
       <GTag GTAG={process.env.NEXT_PUBLIC_GTAG as string} />
       <AttributionCapture />
+      <MoonbaseEngagement />
       <ChainContextV5.Provider value={chainContextValue}>
         <PrivyWalletContext.Provider value={walletContextValue}>
           <PrivyProvider

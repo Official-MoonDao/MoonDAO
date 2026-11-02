@@ -1,6 +1,8 @@
 /// <reference types="node" />
 /// <reference types="mocha" />
 import assert from 'assert'
+import fs from 'fs'
+import path from 'path'
 import vm from 'vm'
 import { COOKIE_CONSENT_EXEMPT_REGIONS, cookieBannerDecision } from '../geo/countryCode'
 import {
@@ -28,12 +30,18 @@ import {
   isPiiQueryKey,
   stripPiiFromUrl,
   stripPiiSearch,
+  trackForecastSubmitted,
   trackJoinCtaClick,
   trackMintError,
   trackMintSuccess,
   trackMissionContribution,
+  trackMoonbaseEngaged,
   trackProposalVote,
   trackSignUp,
+  gaDebugEnabled,
+  isMoonbasePath,
+  normalizePathname,
+  rememberEntryPath,
   transactionIdFromReceipt,
 } from './ga4'
 
@@ -635,5 +643,126 @@ describe('history guards', () => {
     )
     windowMock.history.pushState({}, '', '/faq?email=person@example.com&utm_source=ig')
     assert.deepStrictEqual(calls, ['native:/network?tab=list', 'wrapped:/faq?utm_source=ig'])
+  })
+})
+
+function memoryStorage(initial?: Record<string, string>): Storage {
+  const data = new Map<string, string>(Object.entries(initial || {}))
+  return {
+    getItem: (key) => (data.has(key) ? (data.get(key) as string) : null),
+    setItem: (key, value) => {
+      data.set(key, String(value))
+    },
+    removeItem: (key) => {
+      data.delete(key)
+    },
+    clear: () => {
+      data.clear()
+    },
+    key: (index) => Array.from(data.keys())[index] ?? null,
+    get length() {
+      return data.size
+    },
+  }
+}
+
+describe('moonbase and forecast events', () => {
+  afterEach(() => {
+    resetAnalyticsState()
+    delete (global as { window?: unknown }).window
+  })
+
+  it('normalizes a pathname and treats only /moonbase as the globe', () => {
+    assert.strictEqual(normalizePathname('/moonbase/?race=1'), '/moonbase')
+    assert.strictEqual(normalizePathname('https://moondao.com/moonbase/tour#top'), '/moonbase/tour')
+    assert.strictEqual(normalizePathname('/moonbase?email=a@b.com'), '/moonbase')
+    assert.strictEqual(normalizePathname('mailto:hello@moondao.com'), null)
+    assert.strictEqual(isMoonbasePath('/moonbase'), true)
+    assert.strictEqual(isMoonbasePath('/moonbase/nasa-artemis-base-camp'), true)
+    assert.strictEqual(isMoonbasePath('/moonbases'), false)
+    assert.strictEqual(isMoonbasePath('/deprize'), false)
+  })
+
+  it('keeps the first pathname of the tab', () => {
+    const storage = memoryStorage()
+    assert.strictEqual(rememberEntryPath('/moonbase?race=1', storage), '/moonbase')
+    assert.strictEqual(rememberEntryPath('/deprize/2', storage), '/moonbase')
+  })
+
+  it('fires moonbase_engaged once per tab', () => {
+    const calls = installGtag()
+    const storage = memoryStorage()
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = storage
+    win.location = { hostname: 'moondao.com', search: '', pathname: '/moonbase' }
+    trackMoonbaseEngaged()
+    trackMoonbaseEngaged()
+    resetAnalyticsState()
+    trackMoonbaseEngaged()
+    assert.deepStrictEqual(calls, [['event', 'moonbase_engaged', {}]])
+    assert.strictEqual(storage.getItem('md_moonbase_engaged'), '1')
+  })
+
+  it('adds debug_mode on a preview and keeps it off production', () => {
+    assert.strictEqual(gaDebugEnabled({ hostname: 'moondao.com', search: '' }), false)
+    assert.strictEqual(gaDebugEnabled({ hostname: 'moondao.com', search: '?ga_debug=1' }), true)
+    assert.strictEqual(
+      gaDebugEnabled({ hostname: 'moon-git-preview.vercel.app', search: '' }),
+      true
+    )
+    const calls = installGtag()
+    ;(global as { window: { location: unknown } }).window.location = {
+      hostname: 'moon-git-preview.vercel.app',
+      search: '',
+      pathname: '/moonbase',
+    }
+    trackMoonbaseEngaged()
+    assert.deepStrictEqual(calls[0][2], { debug_mode: true })
+  })
+
+  it('sends forecast_submitted with the stored entry path, not the current page', () => {
+    const calls = installGtag()
+    const storage = memoryStorage({ md_entry_path: '/moonbase' })
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = storage
+    win.location = { hostname: 'moondao.com', search: '', pathname: '/deprize/2' }
+    trackForecastSubmitted()
+    trackForecastSubmitted()
+    assert.deepStrictEqual(calls, [
+      ['event', 'forecast_submitted', { entry_path: '/moonbase' }],
+      ['event', 'forecast_submitted', { entry_path: '/moonbase' }],
+    ])
+  })
+
+  it('uses the current pathname when the tab has no stored entry', () => {
+    const calls = installGtag()
+    const storage = memoryStorage()
+    const win = (global as unknown as { window: Record<string, unknown> }).window
+    win.sessionStorage = storage
+    win.location = { hostname: 'moondao.com', search: '?utm_source=ig', pathname: '/deprize/2' }
+    trackForecastSubmitted()
+    assert.deepStrictEqual(calls[0][2], { entry_path: '/deprize/2' })
+    assert.strictEqual(storage.getItem('md_entry_path'), '/deprize/2')
+  })
+
+  it('records a submission only after the prediction write confirms', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../deprize/writeForecastVote.ts'), 'utf8')
+    const writeStart = src.indexOf('export async function writeForecastVote')
+    const clearStart = src.indexOf('export async function clearForecastVote')
+    assert.ok(writeStart >= 0 && clearStart > writeStart)
+    const writeBody = src.slice(writeStart, clearStart)
+    const confirmAt = writeBody.indexOf('sendAndConfirmTransaction')
+    const trackAt = writeBody.indexOf('trackForecastSubmitted(')
+    assert.ok(confirmAt >= 0 && trackAt > confirmAt)
+    assert.equal(src.slice(clearStart).includes('trackForecastSubmitted'), false)
+    assert.strictEqual(src.split('trackForecastSubmitted(').length - 1, 1)
+    const app = fs.readFileSync(path.join(__dirname, '../../pages/_app.tsx'), 'utf8')
+    assert.equal(app.includes('<MoonbaseEngagement />'), true)
+  })
+
+  it('does not throw on the server', () => {
+    delete (global as { window?: unknown }).window
+    assert.doesNotThrow(() => trackMoonbaseEngaged())
+    assert.doesNotThrow(() => trackForecastSubmitted())
   })
 })

@@ -1,4 +1,5 @@
 import { prepareContractCall, sendAndConfirmTransaction } from 'thirdweb'
+import { trackForecastSubmitted } from '@/lib/analytics/ga4'
 import { tablelandQueryEndpoint } from '@/lib/tableland/endpoint'
 
 export async function forecastVoteRowExists(args: {
@@ -45,6 +46,11 @@ export async function writeForecastVote(args: {
     params: [BigInt(args.voteId), args.vote],
   })
   await sendAndConfirmTransaction({ transaction, account: args.account })
+  try {
+    trackForecastSubmitted()
+  } catch {
+    // A measurement failure must not fail a prediction that already confirmed.
+  }
 }
 
 /** Erases the sender's Forecasts row. A missing row is a no-op on chain. */
