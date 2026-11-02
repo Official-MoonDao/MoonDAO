@@ -53,10 +53,16 @@ const pending: unknown[][] = []
 const MAX_PENDING = 30
 
 let attributionGetter: () => AttributionParams | null | undefined = () => ({})
+let moonbaseEngagedSent = false
+
+export const ENTRY_PATH_STORAGE_KEY = 'md_entry_path'
+export const MOONBASE_ENGAGED_STORAGE_KEY = 'md_moonbase_engaged'
+const ENTRY_PATH_MAX = 100
 
 export function resetAnalyticsState() {
   pending.length = 0
   attributionGetter = () => ({})
+  moonbaseEngagedSent = false
 }
 
 /** Other branches register UTM / click-id params here. Must not throw into callers. */
@@ -381,6 +387,146 @@ export function classifyMintError(error: unknown): string {
 
 export type ProposalVoteStage = 'senate' | 'member'
 export type ProposalVoteSurface = 'projects_list' | 'proposal_page' | 'modal'
+
+/**
+ * Pathname only: no query, no hash, no trailing slash. Event parameter values
+ * are capped at 100 characters. Null when the input is not a site path.
+ */
+export function normalizePathname(input: string | null | undefined): string | null {
+  if (input == null) return null
+  let raw = String(input).trim()
+  if (
+    !raw ||
+    raw.startsWith('#') ||
+    raw.toLowerCase().startsWith('javascript:') ||
+    raw.toLowerCase().startsWith('mailto:')
+  ) {
+    return null
+  }
+  try {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith('//')) {
+      const url = new URL(raw.startsWith('//') ? `https:${raw}` : raw)
+      raw = `${url.pathname}${url.search}`
+    }
+  } catch {
+    return null
+  }
+  const pathOnly = raw.split('#')[0].split('?')[0]
+  if (!pathOnly.startsWith('/') || pathOnly.includes('@') || pathOnly.includes('\\')) return null
+  let path = pathOnly
+  if (path.length > 1 && path.endsWith('/')) path = path.replace(/\/+$/, '') || '/'
+  if (path.length > ENTRY_PATH_MAX) path = path.slice(0, ENTRY_PATH_MAX)
+  return path
+}
+
+/** /moonbase and anything nested under it. /moonbases is a different route. */
+export function isMoonbasePath(pathname: string | null | undefined): boolean {
+  const path = normalizePathname(pathname)
+  return path === '/moonbase' || Boolean(path && path.startsWith('/moonbase/'))
+}
+
+function browserSession(): Storage | null {
+  try {
+    if (typeof window === 'undefined' || !window.sessionStorage) return null
+    if (typeof window.sessionStorage.getItem !== 'function') return null
+    return window.sessionStorage
+  } catch {
+    return null
+  }
+}
+
+function readKey(storage: Storage | null, key: string): string | null {
+  if (!storage) return null
+  try {
+    return storage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeKey(storage: Storage | null, key: string, value: string) {
+  if (!storage) return
+  try {
+    storage.setItem(key, value)
+  } catch {
+    // Private mode can reject the write. Callers still have an in-memory guard.
+  }
+}
+
+/**
+ * First pathname of this tab. Later calls keep the original value, so a
+ * prediction made after leaving /moonbase still reports that entry.
+ */
+export function rememberEntryPath(pathname: string, storage?: Storage | null): string {
+  const store = storage === undefined ? browserSession() : storage
+  const existing = normalizePathname(readKey(store, ENTRY_PATH_STORAGE_KEY))
+  if (existing) return existing
+  const next = normalizePathname(pathname) || '/'
+  writeKey(store, ENTRY_PATH_STORAGE_KEY, next)
+  return next
+}
+
+export function storedEntryPath(storage?: Storage | null): string | null {
+  const store = storage === undefined ? browserSession() : storage
+  return normalizePathname(readKey(store, ENTRY_PATH_STORAGE_KEY))
+}
+
+function safeLocation(): { hostname: string; search: string; pathname: string } {
+  try {
+    if (typeof window === 'undefined' || !window.location) {
+      return { hostname: '', search: '', pathname: '/' }
+    }
+    return {
+      hostname: window.location.hostname || '',
+      search: window.location.search || '',
+      pathname: window.location.pathname || '/',
+    }
+  } catch {
+    return { hostname: '', search: '', pathname: '/' }
+  }
+}
+
+/** DebugView on localhost, a Vercel preview, or an explicit ?ga_debug=1. */
+export function gaDebugEnabled(loc?: { hostname?: string; search?: string } | null): boolean {
+  const hostname = (loc?.hostname ?? safeLocation().hostname).toLowerCase()
+  const search = loc?.search ?? safeLocation().search
+  try {
+    if (new URLSearchParams(search).get('ga_debug') === '1') return true
+  } catch {
+    return false
+  }
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.vercel.app')
+}
+
+function gaDebugParam(): Record<string, unknown> {
+  return gaDebugEnabled() ? { debug_mode: true } : {}
+}
+
+/**
+ * Once per tab, after 10 seconds visible on /moonbase or the first 3D
+ * interaction. MoonbaseEngagement decides when. This only sends.
+ */
+export function trackMoonbaseEngaged() {
+  if (typeof window === 'undefined' || moonbaseEngagedSent) return
+  const store = browserSession()
+  if (readKey(store, MOONBASE_ENGAGED_STORAGE_KEY) === '1') {
+    moonbaseEngagedSent = true
+    return
+  }
+  moonbaseEngagedSent = true
+  writeKey(store, MOONBASE_ENGAGED_STORAGE_KEY, '1')
+  sendEvent('moonbase_engaged', gaDebugParam(), false)
+}
+
+/**
+ * After a prediction write confirms. entry_path is the tab's first pathname.
+ * Repeating a prediction sends again; reports that count people dedupe them.
+ */
+export function trackForecastSubmitted() {
+  if (typeof window === 'undefined') return
+  const entry = storedEntryPath() || rememberEntryPath(safeLocation().pathname)
+  sendEvent('forecast_submitted', { entry_path: entry, ...gaDebugParam() }, false)
+}
 
 export function trackProposalVote(
   proposalId: string | number | null | undefined,

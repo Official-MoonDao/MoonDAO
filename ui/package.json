@@ -49,6 +49,7 @@
     "verify:new-citizen-discord-image": "TS_NODE_COMPILER_OPTIONS='{\"module\":\"commonjs\"}' node -r ts-node/register/transpile-only -r tsconfig-paths/register scripts/verify-new-citizen-discord-image.ts",
     "export:deprize-compliance": "tsx --tsconfig tsconfig.json scripts/export-deprize-compliance-log.ts",
     "discord:register": "tsx --tsconfig tsconfig.json scripts/register-discord-commands.ts",
+    "analytics:entry-path": "tsx --tsconfig tsconfig.json scripts/register-ga4-entry-path.ts",
     "deprize:deny": "tsx --tsconfig tsconfig.json scripts/deprize-wallet-deny.ts",
     "deprize:redeploy-h01": "tsx --tsconfig tsconfig.json scripts/redeploy-h01-markets.ts"
   },

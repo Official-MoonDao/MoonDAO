@@ -37,6 +37,16 @@ export const TRACKED_EVENTS: { name: string; label: string; description: string 
   { name: 'wallet_connect', label: 'Wallets connected', description: 'Wallet connections' },
   { name: 'proposal_vote', label: 'Proposal votes', description: 'Votes cast on proposals' },
   { name: 'mint_error', label: 'Checkout errors', description: 'Failed or rejected mint attempts' },
+  {
+    name: 'moonbase_engaged',
+    label: 'Moon Base visits',
+    description: 'Ten seconds visible on Moon Base, or the first interaction with the globe',
+  },
+  {
+    name: 'forecast_submitted',
+    label: 'Predictions submitted',
+    description: 'A confirmed prediction, with the path the visit started on',
+  },
 ]
 
 type Credentials = { client_email: string; private_key: string }
@@ -80,25 +90,33 @@ function readCredentials(): Credentials {
 
 const base64url = (input: string | Buffer) => Buffer.from(input).toString('base64url')
 
-let cachedToken: { token: string; expiresAt: number } | null = null
-let pendingToken: Promise<string> | null = null
+const cachedTokens = new Map<string, { token: string; expiresAt: number }>()
+const pendingTokens = new Map<string, Promise<string>>()
 
 async function getAccessToken(): Promise<string> {
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.token
-  if (!pendingToken) {
-    pendingToken = fetchAccessToken().finally(() => {
-      pendingToken = null
-    })
-  }
-  return pendingToken
+  return fetchGa4AccessToken(SCOPE)
 }
 
-async function fetchAccessToken(): Promise<string> {
+/** Service-account token for one OAuth scope. Credentials stay in the environment. */
+export async function fetchGa4AccessToken(scope: string): Promise<string> {
+  const cached = cachedTokens.get(scope)
+  if (cached && cached.expiresAt > Date.now() + 60_000) return cached.token
+  let pending = pendingTokens.get(scope)
+  if (!pending) {
+    pending = requestAccessToken(scope).finally(() => {
+      pendingTokens.delete(scope)
+    })
+    pendingTokens.set(scope, pending)
+  }
+  return pending
+}
+
+async function requestAccessToken(scope: string): Promise<string> {
   const { client_email, private_key } = readCredentials()
   const now = Math.floor(Date.now() / 1000)
   const header = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
   const claims = base64url(
-    JSON.stringify({ iss: client_email, scope: SCOPE, aud: TOKEN_URL, iat: now, exp: now + 3600 })
+    JSON.stringify({ iss: client_email, scope, aud: TOKEN_URL, iat: now, exp: now + 3600 })
   )
   const signer = createSign('RSA-SHA256')
   signer.update(`${header}.${claims}`)
@@ -116,8 +134,12 @@ async function fetchAccessToken(): Promise<string> {
   if (!res.ok) {
     throw new Error(`Google auth failed: ${json?.error_description || json?.error || res.status}`)
   }
-  cachedToken = { token: json.access_token, expiresAt: Date.now() + json.expires_in * 1000 }
-  return cachedToken.token
+  const token = {
+    token: json.access_token as string,
+    expiresAt: Date.now() + json.expires_in * 1000,
+  }
+  cachedTokens.set(scope, token)
+  return token.token
 }
 
 async function callApi<T>(method: string, body: unknown): Promise<T> {
@@ -296,4 +318,70 @@ export async function getAnalyticsReport(range: RangeKey, fresh = false) {
   const data = await buildReport(range)
   cache.set(range, { at: Date.now(), data })
   return data
+}
+
+/** Engaged people whose hit was on /moonbase. One date range, so GA4 dedupes them. */
+export function moonbaseEngagedUsersReport(startDate: string, endDate: string) {
+  return {
+    dateRanges: [{ startDate, endDate }],
+    metrics: [{ name: 'activeUsers' }],
+    dimensionFilter: {
+      andGroup: {
+        expressions: [
+          {
+            filter: {
+              fieldName: 'eventName',
+              stringFilter: { value: 'moonbase_engaged' },
+            },
+          },
+          {
+            filter: {
+              fieldName: 'pagePath',
+              stringFilter: { matchType: 'BEGINS_WITH', value: '/moonbase' },
+            },
+          },
+        ],
+      },
+    },
+  }
+}
+
+/** People who submitted a prediction and whose session started on entryPathPrefix. */
+export function forecastSubmittedByEntryReport(
+  startDate: string,
+  endDate: string,
+  entryPathPrefix = '/moonbase'
+) {
+  return {
+    dateRanges: [{ startDate, endDate }],
+    metrics: [{ name: 'activeUsers' }],
+    dimensionFilter: {
+      andGroup: {
+        expressions: [
+          {
+            filter: {
+              fieldName: 'eventName',
+              stringFilter: { value: 'forecast_submitted' },
+            },
+          },
+          {
+            filter: {
+              fieldName: 'customEvent:entry_path',
+              stringFilter: { matchType: 'BEGINS_WITH', value: entryPathPrefix },
+            },
+          },
+        ],
+      },
+    },
+  }
+}
+
+export function activeUsersFromReport(report: ReportResponse | undefined): number {
+  return parseReport(report).reduce((sum, row) => sum + (row.metrics.activeUsers || 0), 0)
+}
+
+export async function runGa4Report(body: ReportRequest): Promise<ReportResponse> {
+  const missing = getMissingConfig()
+  if (missing.length) throw new Error(`Missing ${missing.join(' and ')}`)
+  return callApi<ReportResponse>('runReport', body)
 }
