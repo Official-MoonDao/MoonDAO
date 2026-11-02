@@ -40,13 +40,19 @@ import { getContract, NFT, readContract } from 'thirdweb'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { networkCard } from '@/lib/layout/styles'
+import { ownerDisplayName } from '@/lib/project/projectOwnerId'
 import {
   useCitizenCheckoutLive,
   usePublicYearEth,
   useTeamMintOpen,
 } from '@/lib/subscription/citizenCheckout'
-import { ownerDisplayName } from '@/lib/project/projectOwnerId'
 import { generatePrettyLink, generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
+import {
+  displayedYearUsd,
+  FALLBACK_CITIZEN_YEAR_USD,
+  FALLBACK_TEAM_YEAR_USD,
+  formatYearlyUsd,
+} from '@/lib/subscription/publicYearPrice'
 import { citizenRowToNFT, teamRowToNFT } from '@/lib/tableland/convertRow'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -111,6 +117,9 @@ type JoinProps = {
   // can fetch it in the browser instead of showing the filtered directory count.
   citizenCount?: number | null
   teamCount?: number
+  // Public yearly dues in USD, resolved at build time. Always positive.
+  citizenYearUsd?: number
+  teamYearUsd?: number
 }
 
 export default function Join({
@@ -123,6 +132,8 @@ export default function Join({
   testimonials = [],
   citizenCount = null,
   teamCount = 0,
+  citizenYearUsd = FALLBACK_CITIZEN_YEAR_USD,
+  teamYearUsd = FALLBACK_TEAM_YEAR_USD,
 }: JoinProps) {
   const { t } = useTranslation('common')
   const { selectedChain } = useContext(ChainContextV5)
@@ -134,8 +145,16 @@ export default function Join({
   const teamPriceEth = usePublicYearEth('team')
   const citizenStakeIncluded = useCitizenCheckoutLive()
   const teamMintOpen = useTeamMintOpen()
-  const { data: citizenUsdPrice } = useETHPrice(citizenPriceEth ?? 0, 'ETH_TO_USD')
-  const { data: teamUsdPrice } = useETHPrice(teamPriceEth ?? 0, 'ETH_TO_USD')
+  const { data: citizenUsdLive } = useETHPrice(
+    citizenPriceEth != null && citizenPriceEth > 0 ? citizenPriceEth : 0,
+    'ETH_TO_USD'
+  )
+  const { data: teamUsdLive } = useETHPrice(
+    teamPriceEth != null && teamPriceEth > 0 ? teamPriceEth : 0,
+    'ETH_TO_USD'
+  )
+  const citizenUsd = displayedYearUsd(citizenUsdLive, citizenYearUsd, FALLBACK_CITIZEN_YEAR_USD)
+  const teamUsd = displayedYearUsd(teamUsdLive, teamYearUsd, FALLBACK_TEAM_YEAR_USD)
 
   const teamNamesById = useMemo(() => {
     const m = new Map<number, string>()
@@ -407,11 +426,7 @@ export default function Join({
                     </ul>
                     <div className="flex flex-col items-center mb-6">
                       <div className="text-2xl font-semibold text-white">
-                        ~${Math.round(citizenUsdPrice || 0)} / Year
-                      </div>
-                      <div className="text-sm text-slate-400">
-                        ({citizenPriceEth == null ? '…' : Number(citizenPriceEth.toFixed(4))}{' '}
-                        Arbitrum ETH)
+                        {formatYearlyUsd(citizenUsd, FALLBACK_CITIZEN_YEAR_USD)}
                       </div>
                       <div className="text-green-400 text-sm font-medium mt-2">
                         ✓ 12-Month Passport
@@ -458,18 +473,14 @@ export default function Join({
                     </ul>
                     <div className="flex flex-col items-center mb-6">
                       <div className="text-2xl font-semibold text-white">
-                        ~${Math.round(teamUsdPrice || 0)} / Year
-                      </div>
-                      <div className="text-sm text-slate-400">
-                        ({teamPriceEth == null ? '…' : Number(teamPriceEth.toFixed(4))} Arbitrum
-                        ETH)
+                        {formatYearlyUsd(teamUsd, FALLBACK_TEAM_YEAR_USD)}
                       </div>
                       <div className="text-green-400 text-sm font-medium mt-2">
                         ✓ 12-Month Passport
                       </div>
                       {teamMintOpen && (
                         <p className="text-slate-400 text-xs mt-2 max-w-[16rem]">
-                          Open to any team. 0.36 ETH for one year.
+                          Open to any team for one year.
                         </p>
                       )}
                     </div>
@@ -965,7 +976,10 @@ async function readCitizenTotalSupply(chain: any, chainSlug: string): Promise<nu
 export async function getStaticProps() {
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
-  const citizenCount = await readCitizenTotalSupply(chain, chainSlug)
+  const { readPublicYearlyUsd } = await import('@/lib/subscription/readPublicYearUsd')
+  // Overlap the price and supply reads with the directory queries below.
+  const yearlyUsdPromise = readPublicYearlyUsd()
+  const citizenCountPromise = readCitizenTotalSupply(chain, chainSlug)
 
   try {
     const now = Math.floor(Date.now() / 1000)
@@ -1103,6 +1117,8 @@ export async function getStaticProps() {
       .filter(Boolean)
       .map(toFeaturedTeam)
 
+    const [citizenCount, yearlyUsd] = await Promise.all([citizenCountPromise, yearlyUsdPromise])
+
     return {
       props: {
         filteredTeams: sortedValidTeams.map((nft: any) => toDirectoryItem(nft, 'team')),
@@ -1116,11 +1132,14 @@ export async function getStaticProps() {
         testimonials: testimonialsWithPhotos,
         citizenCount,
         teamCount: sortedValidTeams.length,
+        citizenYearUsd: yearlyUsd.citizenYearUsd,
+        teamYearUsd: yearlyUsd.teamYearUsd,
       },
       revalidate: 60,
     }
   } catch (error) {
     console.error(error)
+    const [citizenCount, yearlyUsd] = await Promise.all([citizenCountPromise, yearlyUsdPromise])
     return {
       props: {
         filteredTeams: [],
@@ -1132,6 +1151,8 @@ export async function getStaticProps() {
         testimonials: testimonialsContent,
         citizenCount,
         teamCount: 0,
+        citizenYearUsd: yearlyUsd.citizenYearUsd,
+        teamYearUsd: yearlyUsd.teamYearUsd,
       },
       revalidate: 60,
     }
