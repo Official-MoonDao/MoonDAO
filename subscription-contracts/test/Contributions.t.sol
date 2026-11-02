@@ -158,6 +158,20 @@ contract ContributionsTest is Test {
         table.submit(_repeat("a", 121), "d", "area", "", "");
     }
 
+    function test_submitAcceptsDescriptionAtMax() public {
+        vm.prank(alice);
+        uint256 id = table.submit("t", _repeat("a", table.DESCRIPTION_MAX()), "area", "", "");
+        assertEq(id, 1);
+    }
+
+    function test_submitRevertsOnLongDescriptionWithoutWriting() public {
+        uint256 max = table.DESCRIPTION_MAX();
+        _expectNoMutate();
+        vm.prank(alice);
+        vm.expectRevert(Contributions.TextTooLong.selector);
+        table.submit("t", _repeat("a", max + 1), "area", "", "");
+    }
+
     function test_submitRevertsOnNulWithoutWriting() public {
         _expectNoMutate();
         vm.prank(alice);
@@ -577,10 +591,10 @@ contract ContributionsTest is Test {
     }
 
     function test_importRejectsOversizedBatch() public {
-        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](18);
+        Contributions.ImportRow[] memory rows = new Contributions.ImportRow[](5);
         for (uint256 i; i < rows.length; ++i) {
             rows[i] = _row(alice, 1, "");
-            rows[i].description = _repeat("a", 2000);
+            rows[i].description = _repeat("a", table.DESCRIPTION_MAX());
         }
         _expectNoMutate();
         vm.expectRevert(Contributions.StatementTooLong.selector);

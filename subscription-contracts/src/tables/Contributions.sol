@@ -61,7 +61,8 @@ contract Contributions is ERC721Holder, Ownable {
     uint8 public constant ORIGIN_IMPORTED = 1;
 
     uint256 public constant TITLE_MAX = 120;
-    uint256 public constant DESCRIPTION_MAX = 2000;
+    // Sized from real submissions: the longest 2026 form answer is ~4.8 KB.
+    uint256 public constant DESCRIPTION_MAX = 8000;
     uint256 public constant AREA_MAX = 32;
     uint256 public constant LINKS_MAX = 1000;
     uint256 public constant METADATA_MAX = 1000;

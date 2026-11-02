@@ -225,7 +225,7 @@ first and migrating to v2 later would cost a migration script and a second table
 | Quarter | implied by timestamp | **removed**: the contract assigns the open cycle |
 | Title | n/a | **new**, required, up to 120 characters |
 | Area | dropdown | dropdown (same categories as the Q3 report) |
-| Description | long text | long text, up to 2,000 characters |
+| Description | long text | long text, up to 8,000 bytes (a live counter shows bytes left; non-Latin scripts use more bytes per character) |
 | Links | text | one or more URLs; at least one is recommended |
 | Time commitment | dropdown | optional, stored in `metadata` |
 | Related project | n/a | optional picker of the citizen's own projects (from their Hats), stored in `metadata.projectId` |
