@@ -88,7 +88,7 @@ reward text not null
 | `cycleId` | Contract (`currentCycleId` at submit time), or the Safe for imports | Never changes |
 | `author` | Contract (`msg.sender`, lowercase hex), or the Safe for imports | Never changes. Profiles join on `CITIZENTABLE.owner` |
 | `title` | Author | ≤ 120 bytes |
-| `description` | Author | ≤ 2,000 bytes |
+| `description` | Author | ≤ 8,000 bytes |
 | `area` | Author | ≤ 32 bytes. The UI offers today's categories (outreach, community, content, technical, research, other); the contract doesn't enforce them |
 | `links` | Author | ≤ 1,000 bytes, free text. The UI only turns `https://` URLs into links |
 | `metadata` | Author | ≤ 1,000 bytes. JSON for optional fields we don't want columns for yet, such as time commitment, a related project ID or an IPFS CID. The same idea as `JobBoardTable.metadata`. Stored as plain text, so readers parse it defensively |

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-
 import {DePrizeRegistry} from "../../src/deprize/DePrizeRegistry.sol";
 import {IDePrizeRegistry} from "../../src/deprize/IDePrizeRegistry.sol";
 import {DePrizeMint} from "../../src/deprize/DePrizeMint.sol";
@@ -11,12 +9,13 @@ import {IConditionalTokens} from "../../src/deprize/interfaces/IConditionalToken
 import {DePrizeResolve} from "../../script/deprize/DePrizeResolve.s.sol";
 import {MockResolvingCTF, MockWETH, MockJBTerminal, MockLMSR} from "./DePrizeMocks.sol";
 import {MintPermitHelper} from "./MintPermitHelper.sol";
+import {ForkDeal} from "../ForkDeal.sol";
 
 /// @notice End-to-end generational supersede: real registry, real mint router,
 ///         real redeem helper, faithful CTF. Money goes in as bets on generation 1,
 ///         the roster forks, and every holder either sells out or redeems against a
 ///         lineage-resolved payout vector. Nothing is stranded.
-contract DePrizeGenerationsE2ETest is Test, MintPermitHelper {
+contract DePrizeGenerationsE2ETest is ForkDeal, MintPermitHelper {
     DePrizeRegistry registry;
     DePrizeMint mint;
     DePrizeRedeem redeemer;
@@ -55,13 +54,13 @@ contract DePrizeGenerationsE2ETest is Test, MintPermitHelper {
 
         // Collateral backing for redemptions (the real CTF holds it from splitPosition).
         // The remainder seeds each generation's market so it can buy positions back.
-        vm.deal(address(this), 5000 ether);
+        dealRetry(address(this), 5000 ether);
         weth.deposit{value: 2000 ether}();
         weth.transfer(address(ctf), 1000 ether);
 
-        vm.deal(alice, 100 ether);
-        vm.deal(bob, 100 ether);
-        vm.deal(carol, 100 ether);
+        dealRetry(alice, 100 ether);
+        dealRetry(bob, 100 ether);
+        dealRetry(carol, 100 ether);
     }
 
     // ---------------------------------------------------------------------
