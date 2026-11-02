@@ -159,9 +159,13 @@ contract ContributionsTest is Test {
     }
 
     function test_submitAcceptsDescriptionAtMax() public {
+        // Build the description first. vm.prank applies only to the next
+        // external call, so DESCRIPTION_MAX() would use it up before submit.
+        string memory description = _repeat("a", table.DESCRIPTION_MAX());
         vm.prank(alice);
-        uint256 id = table.submit("t", _repeat("a", table.DESCRIPTION_MAX()), "area", "", "");
+        uint256 id = table.submit("t", description, "area", "", "");
         assertEq(id, 1);
+        assertEq(table.countInCycle(1, alice), 1);
     }
 
     function test_submitRevertsOnLongDescriptionWithoutWriting() public {
