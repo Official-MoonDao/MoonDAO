@@ -766,7 +766,7 @@ export default function Join({
               textColor="text-white"
               borderRadius="rounded-xl"
               hoverEffect={false}
-              link="https://discord.com/channels/914720248140279868/1212113005836247050"
+              link="https://moondao.com/discord"
             >
               Get Support on Discord
             </StandardButton>

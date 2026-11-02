@@ -14,7 +14,7 @@ The quarter’s reward pool of MOONEY is transferred to a trusted operator of th
 
 ## I lost my delegation wallet address- What do I do?
 
-We advise that you store your delegation wallet address securely alongside your wallet’s secret seed phrase, but if you do happen to lose it, don’t panic! Reach out to a member of the executive branch or post in the [support channel](https://discord.com/channels/914720248140279868/1178835616713154601) and we’ll help you recover the address.
+We advise that you store your delegation wallet address securely alongside your wallet’s secret seed phrase, but if you do happen to lose it, don’t panic! Reach out to a member of the executive branch or post in the [support channel](https://moondao.com/discord) and we’ll help you recover the address.
 
 ## How do I increase my stake?
 

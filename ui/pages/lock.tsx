@@ -316,7 +316,7 @@ export default function Lock() {
               defaultTitle="Need Help?"
               defaultDescription="Submit a ticket in the support channel on MoonDAO's Discord!"
               defaultButtonText="Submit a Ticket"
-              defaultButtonLink="https://discord.com/channels/914720248140279868/1212113005836247050"
+              defaultButtonLink="https://moondao.com/discord"
             />
           }
         >

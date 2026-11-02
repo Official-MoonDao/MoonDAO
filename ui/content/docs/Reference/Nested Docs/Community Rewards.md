@@ -40,7 +40,7 @@ Whether it's something outside the scope of projects, or an extension of them, y
 - **Demonstrate Impact:** Clearly present the results and impact of your work with specific and measurable metrics. Work without clear results will not be considered for rewards.
 - **Be proactive:** Once you have a strong understanding of how you can contribute, simply start contributing! The most successful members at MoonDAO are active self-starters.
 
-_Need Help? Reach out on Discord in our [support channel](https://discord.com/channels/914720248140279868/1178835616713154601) for any questions about this process._
+_Need Help? Reach out on Discord in our [support channel](https://moondao.com/discord) for any questions about this process._
 
 ### Legacy Discord / Coordinape flow
 
