@@ -28,6 +28,7 @@ import {
   raceStandingForProject,
   settlementPresence,
   sharedGoalById,
+  racesSharingDistrict,
   standIdsForRace,
 } from '../../../lib/lunar-atlas/selectors'
 import type {
@@ -744,5 +745,52 @@ describe('standIdsForRace — hardware a district-less race can be flown to', ()
         sameVehicle
       )
     ).to.deep.equal(['im-nova-c'])
+  })
+})
+
+describe('racesSharingDistrict — races that can be opened from one district', () => {
+  const touchdownIds = [
+    'astrobotic-griffin',
+    'im-nova-c',
+    'firefly-blue-ghost',
+    'blue-origin-blue-moon-mk1',
+    'cnsa-change-7',
+    'ispace-apex',
+  ]
+  const plotted = new Set([...touchdownIds, 'rover-a', 'rover-b'])
+  const carriedBy = { 'blue-origin-viper': 'blue-origin-blue-moon-mk1' }
+  const sameVehicle = { 'im-4-volatiles': 'im-nova-c' }
+  const ice = sharedGoalById(SEED_ATLAS, 'shared-ice')!
+  const races = [
+    { raceId: 'shared-next-landing', memberIds: touchdownIds },
+    { raceId: 'shared-ice', memberIds: ice.projectIds },
+    { raceId: 'shared-rovers', memberIds: ['rover-a', 'rover-b'] },
+    { raceId: 'shared-earthside', memberIds: ['not-on-the-base'] },
+  ]
+  const districts = new Set(['shared-next-landing', 'shared-rovers'])
+  const sharing = (raceId: string) =>
+    racesSharingDistrict(
+      raceId,
+      races,
+      (id) => districts.has(id),
+      (id) => plotted.has(id),
+      carriedBy,
+      sameVehicle
+    )
+
+  it('offers Water Ice from the lander district, owner first', () => {
+    expect(sharing('shared-next-landing')).to.deep.equal(['shared-next-landing', 'shared-ice'])
+  })
+
+  it('offers the same pair with Water Ice open', () => {
+    expect(sharing('shared-ice')).to.deep.equal(['shared-next-landing', 'shared-ice'])
+  })
+
+  it('offers nothing in a district only one race lives in', () => {
+    expect(sharing('shared-rovers')).to.deep.equal([])
+  })
+
+  it('offers nothing for a race with no hardware on the base', () => {
+    expect(sharing('shared-earthside')).to.deep.equal([])
   })
 })

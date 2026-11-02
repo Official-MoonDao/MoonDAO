@@ -31,6 +31,7 @@ import {
   projectStateAtYear,
   raceArrivalYear,
   sharedGoalById,
+  racesSharingDistrict,
   standIdsForRace,
   marketShowsOdds,
 } from '@/lib/lunar-atlas/selectors'
@@ -386,6 +387,26 @@ export default function MoonBaseZeroIndex() {
         .sort((a, b) => Number(b.onLadder) - Number(a.onLadder) || b.count - a.count),
     [surfaceTrees, dataset, chainSlug]
   )
+
+  // The races the open district can switch between. Touchdown owns the lander
+  // zone, but Water Ice is won on hardware parked there too, so opening either
+  // offers both. Empty for a district only one race lives in.
+  const districtRaces = useMemo(() => {
+    if (!selectedRaceId || selectedProjectId) return []
+    const ids = racesSharingDistrict(
+      selectedRaceId,
+      surfaceTrees.map((t) => ({ raceId: t.raceId, memberIds: t.projects.map((p) => p.id) })),
+      (id) => layout.districts.has(id),
+      (id) => layout.plots.has(id),
+      CARRIED_BY,
+      SAME_VEHICLE
+    )
+    return ids.flatMap((id) => {
+      const race = races.find((r) => r.raceId === id)
+      // The short name: "Touchdown", not the whole question after the dash.
+      return race ? [{ raceId: id, label: race.label.split(' — ')[0] }] : []
+    })
+  }, [selectedRaceId, selectedProjectId, surfaceTrees, layout, races])
 
   // What the GLOBE is told is open, which is not always what the panel has
   // open. Opening a race dims every district except its own, and that reads as
@@ -827,70 +848,101 @@ export default function MoonBaseZeroIndex() {
                   race view wins. */}
               {(selectedGoal || selectedTree || selectedProject) && !cinematic && (
                 <div className="pointer-events-none absolute inset-x-4 bottom-40 z-20 h-[55vh] sm:static sm:inset-auto sm:z-auto sm:h-auto sm:min-h-0 sm:flex-1 sm:overflow-hidden">
-                  <div className="h-full min-h-0">
-                    {selectedGoal ? (
-                      <SharedGoalPanel
-                        goal={selectedGoal}
-                        competitors={goalCompetitors}
-                        onClose={clearSelection}
-                        onSelectProject={handleSelectProject}
-                        deprizeId={liveOdds.deprizeId}
-                        chainSlug={chainSlug}
-                        prizePoolLabel={prizePoolLabel}
-                        prizePoolLoading={liveOdds.jbProjectId !== undefined && isLoadingPrizePool}
-                        chain={chain}
-                        account={account}
-                        marketAddress={liveOdds.marketAddress}
-                        numOutcomes={liveOdds.numOutcomes}
-                        outcomes={liveOdds.outcomes}
-                        payoutPending={payoutPending}
-                        oddsLoading={liveOdds.loading}
-                        tradingHalted={liveOdds.tradingHalted}
-                        resolved={liveOdds.resolved}
-                        winningIndex={liveOdds.winningIndex}
-                        isRefundVector={liveOdds.isRefundVector}
-                        payoutDen={liveOdds.payoutDen}
-                        payoutNums={liveOdds.payoutNums}
-                        jbProjectId={liveOdds.jbProjectId}
-                        refreshNonce={refreshNonce}
-                        onDone={handleRaceMarketDone}
-                      />
-                    ) : selectedTree ? (
-                      <TechTreePanel
-                        tree={selectedTree}
-                        organizations={dataset.organizations}
-                        onClose={clearSelection}
-                        onSelectProject={handleSelectProject}
-                      />
-                    ) : selectedProject ? (
-                      <ProjectPanel
-                        project={selectedProject}
-                        organization={selectedOrg}
-                        sharedGoals={selectedSharedGoals}
-                        onClose={clearSelection}
-                        onFocusRegion={flyToProject}
-                        onSelectSharedGoal={handleSelectSharedGoal}
-                        onBack={raceReturn ? handleBackToRace : undefined}
-                        betGoal={
-                          oddsGoalId ? sharedGoals.find((g) => g.id === oddsGoalId) : undefined
-                        }
-                        chainSlug={chainSlug}
-                        chain={chain}
-                        account={account}
-                        deprizeId={liveOdds.deprizeId}
-                        marketAddress={liveOdds.marketAddress}
-                        numOutcomes={liveOdds.numOutcomes}
-                        outcomes={liveOdds.outcomes}
-                        payoutPending={payoutPending}
-                        tradingHalted={liveOdds.tradingHalted}
-                        resolved={liveOdds.resolved}
-                        winningIndex={liveOdds.winningIndex}
-                        isRefundVector={liveOdds.isRefundVector}
-                        payoutDen={liveOdds.payoutDen}
-                        payoutNums={liveOdds.payoutNums}
-                        onDone={handleRaceMarketDone}
-                      />
-                    ) : null}
+                  <div className="flex h-full min-h-0 flex-col gap-2">
+                    {districtRaces.length > 1 && (
+                      <div
+                        role="tablist"
+                        aria-label="Races in this district"
+                        className="pointer-events-auto flex shrink-0 gap-1 rounded-xl border border-white/10 bg-black/50 p-1 backdrop-blur-md"
+                      >
+                        {districtRaces.map((r) => {
+                          const active = r.raceId === selectedRaceId
+                          return (
+                            <button
+                              key={r.raceId}
+                              type="button"
+                              role="tab"
+                              aria-selected={active}
+                              onClick={() => handleSelectTree(r.raceId)}
+                              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                                active
+                                  ? 'bg-white/15 text-white'
+                                  : 'text-white/55 hover:bg-white/5 hover:text-white'
+                              }`}
+                            >
+                              {r.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                    <div className="min-h-0 flex-1">
+                      {selectedGoal ? (
+                        <SharedGoalPanel
+                          goal={selectedGoal}
+                          competitors={goalCompetitors}
+                          onClose={clearSelection}
+                          onSelectProject={handleSelectProject}
+                          deprizeId={liveOdds.deprizeId}
+                          chainSlug={chainSlug}
+                          prizePoolLabel={prizePoolLabel}
+                          prizePoolLoading={
+                            liveOdds.jbProjectId !== undefined && isLoadingPrizePool
+                          }
+                          chain={chain}
+                          account={account}
+                          marketAddress={liveOdds.marketAddress}
+                          numOutcomes={liveOdds.numOutcomes}
+                          outcomes={liveOdds.outcomes}
+                          payoutPending={payoutPending}
+                          oddsLoading={liveOdds.loading}
+                          tradingHalted={liveOdds.tradingHalted}
+                          resolved={liveOdds.resolved}
+                          winningIndex={liveOdds.winningIndex}
+                          isRefundVector={liveOdds.isRefundVector}
+                          payoutDen={liveOdds.payoutDen}
+                          payoutNums={liveOdds.payoutNums}
+                          jbProjectId={liveOdds.jbProjectId}
+                          refreshNonce={refreshNonce}
+                          onDone={handleRaceMarketDone}
+                        />
+                      ) : selectedTree ? (
+                        <TechTreePanel
+                          tree={selectedTree}
+                          organizations={dataset.organizations}
+                          onClose={clearSelection}
+                          onSelectProject={handleSelectProject}
+                        />
+                      ) : selectedProject ? (
+                        <ProjectPanel
+                          project={selectedProject}
+                          organization={selectedOrg}
+                          sharedGoals={selectedSharedGoals}
+                          onClose={clearSelection}
+                          onFocusRegion={flyToProject}
+                          onSelectSharedGoal={handleSelectSharedGoal}
+                          onBack={raceReturn ? handleBackToRace : undefined}
+                          betGoal={
+                            oddsGoalId ? sharedGoals.find((g) => g.id === oddsGoalId) : undefined
+                          }
+                          chainSlug={chainSlug}
+                          chain={chain}
+                          account={account}
+                          deprizeId={liveOdds.deprizeId}
+                          marketAddress={liveOdds.marketAddress}
+                          numOutcomes={liveOdds.numOutcomes}
+                          outcomes={liveOdds.outcomes}
+                          payoutPending={payoutPending}
+                          tradingHalted={liveOdds.tradingHalted}
+                          resolved={liveOdds.resolved}
+                          winningIndex={liveOdds.winningIndex}
+                          isRefundVector={liveOdds.isRefundVector}
+                          payoutDen={liveOdds.payoutDen}
+                          payoutNums={liveOdds.payoutNums}
+                          onDone={handleRaceMarketDone}
+                        />
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               )}
