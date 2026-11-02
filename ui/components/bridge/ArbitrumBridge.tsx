@@ -1,4 +1,5 @@
 import { getL2Network, EthBridger, Erc20Bridger } from '@arbitrum/sdk'
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react'
 import { ChevronUpDownIcon } from '@heroicons/react/24/outline'
 import { useWallets } from '@privy-io/react-auth'
 import ERC20ABI from 'const/abis/ERC20.json'
@@ -11,12 +12,24 @@ import { useActiveAccount, useActiveWallet } from 'thirdweb/react'
 import { EIP1193 } from 'thirdweb/wallets'
 import { getWalletEthersProvider } from '../../lib/privy/getWalletEthersProvider'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import {
+  BRIDGE_TOKENS,
+  BridgeTokenId,
+  bridgeTokenById,
+  buildUsdcBurnCall,
+  CctpFeeTier,
+  fetchUsdcBridgeFee,
+  formatUsdcUnits,
+  parseUsdcUnits,
+  quoteUsdcForwardBurn,
+  USDC_BURN_WITH_HOOK_ABI,
+} from '@/lib/bridge/usdcCctp'
 import { arbitrum, ethereum } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import { MOONEY_ADDRESSES } from '../../const/config'
+import { CCTP_V2, MOONEY_ADDRESSES, USDC_ADDRESSES, USDC_DECIMALS } from '../../const/config'
 import Input from '../layout/Input'
 import { PrivyWeb3Button } from '../privy/PrivyWeb3Button'
 
@@ -29,10 +42,13 @@ export default function ArbitrumBridge() {
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets } = useWallets()
   const [amount, setAmount] = useState<any>(0)
-  const [inputToken, setInputToken] = useState('mooney')
+  const [inputToken, setInputToken] = useState<BridgeTokenId>('mooney')
   const bridgeType = 'deposit'
   const [nativeBalance, setNativeBalance] = useState<any>(0)
   const [ethMooneyBalance, setEthMooneyBalance] = useState<any>()
+  const [ethUsdcBalance, setEthUsdcBalance] = useState<string>('0')
+  const [usdcFeeTier, setUsdcFeeTier] = useState<CctpFeeTier | null>(null)
+  const [usdcFeeError, setUsdcFeeError] = useState(false)
   const [isEOA, setIsEOA] = useState(false)
   const [arbMooneyBalance, setArbMooneyBalance] = useState<any>()
   const [balance, setBalance] = useState(0)
@@ -154,6 +170,47 @@ export default function ArbitrumBridge() {
     return withdrawReceipt
   }
 
+  async function depositUsdc() {
+    const payAmount = parseUsdcUnits(String(amount))
+    if (payAmount === null || payAmount <= 0n) {
+      toast.error('Enter a USDC amount.')
+      return
+    }
+    const tier = await fetchUsdcBridgeFee()
+    setUsdcFeeTier(tier)
+    setUsdcFeeError(false)
+    const quote = quoteUsdcForwardBurn(payAmount, tier)
+    if (!quote) {
+      toast.error('Amount is below the USDC bridge fee.')
+      return
+    }
+
+    const provider = await getWalletEthersProvider(wallets[selectedWallet])
+    const signer = provider.getSigner()
+    const recipient = await signer.getAddress()
+    const usdc = new ethers.Contract(USDC_ADDRESSES.ethereum, ERC20ABI, signer)
+    const allowance = await usdc.allowance(recipient, CCTP_V2.tokenMessenger)
+    if (allowance.lt(quote.payAmount.toString())) {
+      const approveTx = await usdc.approve(CCTP_V2.tokenMessenger, quote.payAmount.toString())
+      await approveTx.wait()
+      toast.success('Approved USDC.')
+    }
+
+    const call = buildUsdcBurnCall({
+      payAmount: quote.payAmount,
+      maxFee: quote.maxFee,
+      recipient,
+    })
+    const messenger = new ethers.Contract(call.tokenMessenger, USDC_BURN_WITH_HOOK_ABI, signer)
+    const burnTx = await messenger.depositForBurnWithHook(...call.args)
+    await burnTx.wait()
+    toast.success(
+      'Your USDC is bridging to Arbitrum. Native USDC should arrive in a few minutes.',
+      { duration: 10000 }
+    )
+    return burnTx
+  }
+
   async function temporarilySkipNetworkCheck() {
     setSkipNetworkCheck(true)
     setTimeout(() => {
@@ -161,28 +218,15 @@ export default function ArbitrumBridge() {
     }, 100)
   }
 
-  function TokenSymbol({ className }: { className?: string }) {
-    return (
-      <>
-        {inputToken === 'eth' ? (
-          <Image
-            src={`/icons/networks/ethereum.svg`}
-            width={20}
-            height={20}
-            alt=""
-            className={className}
-          />
-        ) : (
-          <Image
-            src={`/Original.png`}
-            width={20}
-            height={20}
-            alt=""
-            className={className}
-          />
-        )}
-      </>
-    )
+  function TokenSymbol({
+    token = inputToken,
+    className,
+  }: {
+    token?: BridgeTokenId
+    className?: string
+  }) {
+    const meta = bridgeTokenById(token)
+    return <Image src={meta.icon} width={20} height={20} alt="" className={className} />
   }
 
   useEffect(() => {
@@ -222,10 +266,29 @@ export default function ArbitrumBridge() {
         console.error(err)
       }
     }
+    async function getEthUsdcBalance() {
+      const usdcContract = getContract({
+        client,
+        address: USDC_ADDRESSES.ethereum,
+        abi: ERC20ABI as any,
+        chain: ethereum,
+      })
+      try {
+        const balance = await readContract({
+          contract: usdcContract,
+          method: 'balanceOf',
+          params: [address],
+        })
+        setEthUsdcBalance(ethers.utils.formatUnits(balance.toString(), USDC_DECIMALS))
+      } catch (err) {
+        console.error(err)
+      }
+    }
 
     if (address) {
       getEthMooneyBalance()
       getArbMooneyBalance()
+      getEthUsdcBalance()
     }
   }, [address, selectedChain])
 
@@ -259,33 +322,84 @@ export default function ArbitrumBridge() {
       setBalance(nativeBalance)
     } else if (inputToken === 'mooney') {
       setBalance(ethMooneyBalance)
+    } else if (inputToken === 'usdc') {
+      setBalance(ethUsdcBalance)
     }
-  }, [ethMooneyBalance, nativeBalance, inputToken])
+  }, [ethMooneyBalance, ethUsdcBalance, nativeBalance, inputToken])
 
   useEffect(() => {
     temporarilySkipNetworkCheck()
     setSelectedChain(ethereum)
   }, [setSelectedChain])
 
+  useEffect(() => {
+    if (inputToken !== 'usdc') return
+    let cancelled = false
+    fetchUsdcBridgeFee()
+      .then((tier) => {
+        if (cancelled) return
+        setUsdcFeeTier(tier)
+        setUsdcFeeError(false)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setUsdcFeeError(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [inputToken])
+
   const numAmount = parseFloat(String(amount)) || 0
   // For ETH, reserve L1 gas so a (near-)full-balance entry doesn't revert the
-  // deposit on fees. MOONEY gas is paid separately in ETH, so it needs no reserve.
+  // deposit on fees. MOONEY and USDC gas is paid separately in ETH, so they need no reserve.
   //
   // EIP-1559 wallets lock up maxFeePerGas * gasLimit upfront (not effectiveGasPrice),
   // so we must use maxFeePerGas here. The Arbitrum deposit also runs ~300k gas, not
   // 200k, so we use that larger estimate to avoid "insufficient funds" on MAX.
-  const gasPriceForReserve = maxFeePerGas && maxFeePerGas > BigInt(0) ? maxFeePerGas : effectiveGasPrice
+  const gasPriceForReserve =
+    maxFeePerGas && maxFeePerGas > BigInt(0) ? maxFeePerGas : effectiveGasPrice
   const gasReserveEth =
-    gasPriceForReserve > BigInt(0)
-      ? Number(gasPriceForReserve * BigInt(300000)) / 1e18
-      : 0.004
+    gasPriceForReserve > BigInt(0) ? Number(gasPriceForReserve * BigInt(300000)) / 1e18 : 0.004
   const spendableBalance =
-    inputToken === 'eth'
-      ? Math.max(0, Number(balance) - gasReserveEth)
-      : Number(balance)
-  const isOverBalance =
-    balance !== undefined && numAmount > 0 && numAmount > spendableBalance
-  const tokenLabel = inputToken === 'eth' ? 'ETH' : 'MOONEY'
+    inputToken === 'eth' ? Math.max(0, Number(balance) - gasReserveEth) : Number(balance)
+  const isOverBalance = balance !== undefined && numAmount > 0 && numAmount > spendableBalance
+  const selectedToken = bridgeTokenById(inputToken)
+  const tokenLabel = selectedToken.label
+  const usdcPayUnits = inputToken === 'usdc' ? parseUsdcUnits(String(amount)) : null
+  const usdcQuote =
+    inputToken === 'usdc' && usdcFeeTier && usdcPayUnits !== null
+      ? quoteUsdcForwardBurn(usdcPayUnits, usdcFeeTier)
+      : null
+  const usdcBlocked =
+    inputToken === 'usdc' && numAmount > 0 && (usdcFeeError || !usdcFeeTier || !usdcQuote)
+  const bridgeLabel =
+    numAmount === 0
+      ? 'Enter Amount'
+      : isOverBalance
+      ? `Not Enough ${tokenLabel}`
+      : inputToken === 'usdc' && usdcFeeError
+      ? 'Bridge fee unavailable'
+      : inputToken === 'usdc' && !usdcFeeTier
+      ? 'Loading bridge fee'
+      : inputToken === 'usdc' && !usdcQuote
+      ? 'Amount below bridge fee'
+      : 'Bridge to Arbitrum'
+  const receiveText =
+    inputToken === 'usdc'
+      ? usdcQuote
+        ? formatUsdcUnits(usdcQuote.receiveAmount)
+        : numAmount > 0
+        ? '…'
+        : '0.0'
+      : !amount
+      ? '0.0'
+      : String(amount).endsWith('.')
+      ? (parseFloat(amount) || 0).toLocaleString('en-US', { maximumFractionDigits: 18 }) + '.'
+      : (parseFloat(amount) || 0).toLocaleString('en-US', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 18,
+        })
 
   return (
     <div className="w-full mt-3 sm:mt-4">
@@ -304,21 +418,34 @@ export default function ArbitrumBridge() {
                     <p className="text-gray-400 text-xs font-medium uppercase tracking-wide">
                       You Pay
                     </p>
-                    <p className="font-medium text-white text-base truncate">
-                      {inputToken === 'eth' ? 'ETH' : 'MOONEY'}
-                    </p>
+                    <p className="font-medium text-white text-base truncate">{tokenLabel}</p>
                   </div>
                 </div>
-                <button
-                  className="flex items-center gap-2 bg-black/50 hover:bg-black/70 transition-colors px-3 py-2 rounded-lg sm:rounded-xl border border-white/10 flex-shrink-0"
-                  onClick={() => {
-                    setInputToken(inputToken === 'eth' ? 'mooney' : 'eth')
-                  }}
-                >
-                  <TokenSymbol className="object-contain w-4 h-4" />
-                  <span className="text-white font-medium text-sm">{inputToken.toUpperCase()}</span>
-                  <ChevronUpDownIcon width={14} height={14} className="text-gray-400" />
-                </button>
+                <Listbox value={inputToken} onChange={setInputToken}>
+                  <div className="relative flex-shrink-0">
+                    <ListboxButton
+                      data-testid="bridge-token-select"
+                      className="flex items-center gap-2 bg-black/50 hover:bg-black/70 transition-colors px-3 py-2 rounded-lg sm:rounded-xl border border-white/10"
+                    >
+                      <TokenSymbol className="object-contain w-4 h-4" />
+                      <span className="text-white font-medium text-sm">{tokenLabel}</span>
+                      <ChevronUpDownIcon width={14} height={14} className="text-gray-400" />
+                    </ListboxButton>
+                    <ListboxOptions className="absolute right-0 z-30 mt-1 w-36 overflow-auto rounded-xl bg-gray-900 border border-white/10 py-1 shadow-xl focus:outline-none">
+                      {BRIDGE_TOKENS.map((token) => (
+                        <ListboxOption
+                          key={token.id}
+                          value={token.id}
+                          data-testid={`bridge-token-option-${token.id}`}
+                          className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-white data-[focus]:bg-white/10"
+                        >
+                          <TokenSymbol token={token.id} className="object-contain w-4 h-4" />
+                          <span>{token.label}</span>
+                        </ListboxOption>
+                      ))}
+                    </ListboxOptions>
+                  </div>
+                </Listbox>
               </div>
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:gap-x-4 mt-2 sm:mt-3 min-h-[32px]">
                 <div className="min-w-0 flex items-center overflow-hidden">
@@ -335,6 +462,10 @@ export default function ArbitrumBridge() {
                       if (parts.length > 2) {
                         value = parts[0] + '.' + parts.slice(1).join('')
                       }
+                      if (inputToken === 'usdc' && value.includes('.')) {
+                        const [whole, frac = ''] = value.split('.')
+                        value = `${whole}.${frac.slice(0, 6)}`
+                      }
                       if (parseFloat(value) < 0) value = '0'
                       if (value.startsWith('0') && value.length > 1 && value[1] !== '.') {
                         value = value.substring(1)
@@ -349,16 +480,14 @@ export default function ArbitrumBridge() {
                   {address && (
                     <>
                       <p className="text-gray-400 text-xs whitespace-nowrap">
-                        Balance: {Number(balance).toFixed(5)}
+                        Balance: {Number(balance).toFixed(inputToken === 'usdc' ? 6 : 5)}
                       </p>
                       <button
                         className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors px-3 py-1.5 bg-blue-400/10 hover:bg-blue-400/20 rounded-lg border border-blue-400/20 flex-shrink-0"
                         onClick={() => {
                           if (inputToken === 'eth') {
                             const maxEth = Math.max(0, Number(balance) - gasReserveEth)
-                            setAmount(
-                              maxEth > 0 ? String(parseFloat(maxEth.toFixed(7))) : '0'
-                            )
+                            setAmount(maxEth > 0 ? String(parseFloat(maxEth.toFixed(7))) : '0')
                           } else {
                             setAmount(balance)
                           }
@@ -390,7 +519,7 @@ export default function ArbitrumBridge() {
                       You Receive
                     </p>
                     <p className="font-medium text-white text-base truncate">
-                      {inputToken === 'eth' ? 'ETH' : 'MOONEY'} on Arbitrum
+                      {tokenLabel} on Arbitrum
                     </p>
                   </div>
                 </div>
@@ -398,12 +527,11 @@ export default function ArbitrumBridge() {
               </div>
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 sm:gap-x-4 mt-2 sm:mt-3 min-h-[32px]">
                 <div className="min-w-0 flex items-center">
-                  <p className="text-white text-xl sm:text-2xl font-RobotoMono tabular-nums">
-                    {amount
-                      ? amount.endsWith('.')
-                        ? (parseFloat(amount) || 0).toLocaleString('en-US', { maximumFractionDigits: 18 }) + '.'
-                        : (parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 18 })
-                      : '0.0'}
+                  <p
+                    className="text-white text-xl sm:text-2xl font-RobotoMono tabular-nums"
+                    data-testid="bridge-receive-amount"
+                  >
+                    {receiveText}
                   </p>
                 </div>
                 <div className="w-[160px] sm:w-[200px] shrink-0" aria-hidden="true" />
@@ -417,6 +545,15 @@ export default function ArbitrumBridge() {
           <p className="text-amber-200 text-xs">
             Bridging can take up to 15 minutes after the transaction has been confirmed.
           </p>
+          {inputToken === 'usdc' && (
+            <p className="text-amber-200/80 text-xs mt-1" data-testid="bridge-usdc-fee-note">
+              {usdcQuote
+                ? `Up to ${formatUsdcUnits(
+                    usdcQuote.maxFee
+                  )} USDC covers the Circle fee. You receive native USDC on Arbitrum, which marketplace listings use.`
+                : 'USDC bridges to native USDC on Arbitrum, the token marketplace listings use. A small Circle fee is deducted from the amount.'}
+            </p>
+          )}
         </div>
 
         {/* Action Button */}
@@ -428,28 +565,27 @@ export default function ArbitrumBridge() {
               skipNetworkCheck={skipNetworkCheck}
               requiredChain={ethereum}
               className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 sm:py-4 px-4 rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:from-gray-500 disabled:to-gray-600"
-              label={
-                numAmount === 0
-                  ? 'Enter Amount'
-                  : isOverBalance
-                  ? `Not Enough ${tokenLabel}`
-                  : 'Bridge to Arbitrum'
-              }
-              isDisabled={!isEOA || numAmount === 0 || isOverBalance}
+              label={bridgeLabel}
+              isDisabled={!isEOA || numAmount === 0 || isOverBalance || usdcBlocked}
               action={async () => {
                 try {
                   if (inputToken === 'eth') {
                     await depositEth()
-                  } else {
+                  } else if (inputToken === 'mooney') {
                     await depositMooney()
+                  } else {
+                    await depositUsdc()
                   }
                 } catch (err: any) {
                   console.log(err.message)
                   if (
                     err.message.includes('insufficient funds') ||
                     err.message.includes('No retryable data found in error')
-                  )
+                  ) {
                     toast.error('Insufficient balance.')
+                  } else if (inputToken === 'usdc') {
+                    toast.error('Could not bridge USDC.')
+                  }
                 }
               }}
             />

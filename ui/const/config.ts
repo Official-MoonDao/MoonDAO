@@ -93,6 +93,21 @@ export const USDT_ADDRESSES: Index = {
 
 export const MOONEY_DECIMALS = 18
 
+export const USDC_DECIMALS = 6
+
+// Circle CCTP V2 burns Ethereum USDC and mints native USDC on Arbitrum
+// (`USDC_ADDRESSES.arbitrum`). The marketplace spends that native token.
+// The Arbitrum canonical ERC-20 gateway would deliver USDC.e instead.
+export const CCTP_V2 = {
+  ethereumDomain: 0,
+  arbitrumDomain: 3,
+  tokenMessenger: '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d',
+  fastFinalityThreshold: 1000,
+  // Magic "cctp-forward", hook version 0, empty extra hook data.
+  forwardHookData: '0x636374702d666f72776172640000000000000000000000000000000000000000',
+  irisApi: 'https://iris-api.circle.com',
+} as const
+
 export const VMOONEY_ADDRESSES: Index = {
   ethereum: ethConfig.vMOONEYToken,
   polygon: polygonConfig.vMOONEYToken,
