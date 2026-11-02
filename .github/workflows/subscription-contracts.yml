@@ -88,7 +88,8 @@ jobs:
             echo "anvil failed to start on port ${port} after 3 attempts"
             return 1
           }
-          start_anvil 8545 anvil --fork-url https://11155111.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }}
+          # Back off on thirdweb 429s. Coverage's vm.deal reads each account upstream.
+          start_anvil 8545 anvil --fork-url https://11155111.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --retries 8 --fork-retry-backoff 1000 --timeout 60000
         id: local-sepolia
 
       - name: Run Local Arbitrum Chain with Anvil
@@ -112,7 +113,7 @@ jobs:
             echo "anvil failed to start on port ${port} after 3 attempts"
             return 1
           }
-          start_anvil 8546 anvil --fork-url https://42161.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --port 8546
+          start_anvil 8546 anvil --fork-url https://42161.rpc.thirdweb.com/${{ secrets.THIRDWEB_CLIENT_ID }} --port 8546 --retries 8 --fork-retry-backoff 1000 --timeout 60000
         id: local-arbitrum
 
       - name: Install npm dependencies
@@ -140,8 +141,10 @@ jobs:
           # fuzz dictionary and public RPCs flake with -32603 on PUSH20
           # immediates (0x…3472), aborting setUp after ~400s with runs: 0.
           forge test --via-ir --optimize --optimizer-runs 10000 --match-path test/deprize/DePrizeMintInvariant.t.sol -vvv
-          forge coverage --via-ir --fork-url 127.0.0.1:8545 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file sepolia-coverge.info
-          forge coverage --via-ir --fork-url 127.0.0.1:8546 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --report lcov --report-file arbitrum-coverge.info
+          # One coverage thread. Every vm.deal on these forks reads the account
+          # from thirdweb, and parallel suites trip HTTP 429 inside setUp.
+          forge coverage --via-ir --fork-url 127.0.0.1:8545 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --threads 1 --report lcov --report-file sepolia-coverge.info
+          forge coverage --via-ir --fork-url 127.0.0.1:8546 -vvvv --optimize --optimizer-runs 10000 --ir-minimum --show-progress --threads 1 --report lcov --report-file arbitrum-coverge.info
           lcov -a sepolia-coverge.info -a arbitrum-coverge.info -o coverage.info
         id: test
 
