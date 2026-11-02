@@ -11,7 +11,7 @@
 // The world is still a sphere mathematically — positions are directions
 // scaled by a radius — so all the geo.ts framing math carries over; only the
 // rendered patch is the ridge.
-import { Stars, TrackballControls } from '@react-three/drei'
+import { OrbitControls, Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
@@ -22,7 +22,6 @@ import {
   heroFraming,
   heroMinDistanceM,
   MOON_RADIUS_M,
-  orbitUpVector,
   skyViewFraming,
   subViewFraming,
   surfaceNormal,
@@ -204,13 +203,16 @@ const SKY_VIEW_OPTS = {
 // multiplier on it.
 const MOVE_SPEED = 0.2
 const MOVE_BOOST = 3
+// How far from straight down the camera may tilt: 88°, just shy of the
+// horizon. The hero framings sit near 75°, well inside it.
+const MAX_TILT_RAD = THREE.MathUtils.degToRad(88)
 const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'])
 
 // Animates the camera toward a lat/lon focus (or back to the home framing)
 // ONLY while a transition is active. It arcs the view direction and eases the
 // distance/target rather than sliding in a straight line. Once it arrives (or
 // the moment the user grabs the controls) it fully releases the camera back
-// to the TrackballControls, so the user can always freely rotate.
+// to the OrbitControls, so the user can always freely rotate.
 function CameraRig({
   focus,
   controlsRef,
@@ -235,7 +237,7 @@ function CameraRig({
   const desiredPos = useRef(DEFAULT_CAM.clone())
   const desiredTarget = useRef(HOME_TARGET.clone())
   const desiredUp = useRef(HOME_UP.clone())
-  // The look-at point when there is no TrackballControls to hold one.
+  // The look-at point when there are no OrbitControls to hold one.
   const ownTarget = useRef(HOME_TARGET.clone())
   const animating = useRef(false)
   // Per-transition easing base (larger = slower, more cinematic glide).
@@ -300,14 +302,13 @@ function CameraRig({
       desiredTarget.current.set(target[0], target[1], target[2])
       // Surface, sky and cutaway views roll the camera so "up" is the local
       // outward normal — otherwise the view is upside down at the pole. Orbit
-      // views use a pole-safe up (raw world-Y is parallel to the view axis when
-      // looking straight down at the pole).
+      // views keep the base's own up: OrbitControls fixes its up at creation,
+      // and a camera rolled away from it turns every later drag sideways.
       if (focus.view === 'surface' || focus.view === 'sky' || focus.view === 'sub') {
         const n = surfaceNormal(focus.lat, focus.lon)
         desiredUp.current.set(n[0], n[1], n[2])
       } else {
-        const up = orbitUpVector(focus.lat, focus.lon)
-        desiredUp.current.set(up[0], up[1], up[2])
+        desiredUp.current.copy(HOME_UP)
       }
     } else {
       easeBase.current = 0.0022
@@ -350,8 +351,8 @@ function CameraRig({
     if (controls) {
       const pivotDist = camera.position.distanceTo(curTarget)
       const feel = Math.sqrt(THREE.MathUtils.clamp(pivotDist / (2000 * M_TO_UNITS), 0, 1))
-      controls.rotateSpeed = THREE.MathUtils.lerp(0.3, 2.2, feel)
-      controls.zoomSpeed = THREE.MathUtils.lerp(0.5, 1.2, feel)
+      controls.rotateSpeed = THREE.MathUtils.lerp(0.35, 0.9, feel)
+      controls.zoomSpeed = THREE.MathUtils.lerp(0.7, 1.8, feel)
     }
 
     // Once the camera pulls well away from a drill-in pivot, glide the pivot
@@ -409,7 +410,6 @@ function CameraRig({
           .add(fwd.multiplyScalar(f).addScaledVector(right, r).normalize().multiplyScalar(speed))
           .setLength(groundAt(curTarget) + pivotLift)
         camera.position.copy(curTarget).add(eyeOffset)
-        camera.up.copy(curTarget).normalize()
         controls.update()
       }
     }
@@ -458,7 +458,7 @@ function CameraRig({
       }
       return
     }
-    // Idle: the camera holds still. TrackballControls owns free rotation.
+    // Idle: the camera holds still. OrbitControls owns free rotation.
   })
 
   return null
@@ -1104,10 +1104,23 @@ export default function MoonGlobe({
         glide={glide}
       />
 
-      {/* Trackball gives full free tumble around the current pivot. The pivot
-          starts at the ridge center; drill-ins move it to the focused site.
-          Distances are real: from 12 m off a rover out to 40 km above the
-          patch — past that there is nothing more to see.
+      {/* Map-style controls: left-drag orbits with the horizon held level,
+          right-drag (two-finger drag on touch) slides across the GROUND rather
+          than the screen plane, and the wheel zooms toward the cursor. This
+          replaced a TrackballControls that tumbled freely, rolled the horizon
+          and panned in screen space, so a vertical pan on a tilted view
+          climbed straight up and read as a sudden zoom-out.
+
+          The camera is created with the base's local up (see the Canvas
+          camera), which OrbitControls takes as its fixed up. Over a 16 km
+          patch the true radial up drifts by half a degree, so one up serves
+          the whole ridge. The tilt stops just short of the horizon so the
+          camera can't swing under it; the sky and cutaway views are exempt,
+          because both look upward on purpose.
+
+          The pivot starts at the ridge center; drill-ins move it to the
+          focused site. Distances are real: from 12 m off a rover out to 40 km
+          above the patch — past that there is nothing more to see.
 
           The vault cutaway has to be let closer than that, and the floor is not
           a preference there but a wall. Its eye stands two meters inside the end
@@ -1117,15 +1130,16 @@ export default function MoonGlobe({
           filled the screen with the inside of the end wall. Underground the only
           real limit is the near plane. */}
       {interactive && (
-        <TrackballControls
+        <OrbitControls
           ref={controlsRef}
           makeDefault
-          // Right-drag (two-finger drag on touch) slides the view, so the
-          // camera can leave the point it was aimed at.
-          panSpeed={0.5}
-          rotateSpeed={2.2}
-          zoomSpeed={1.2}
-          dynamicDampingFactor={0.12}
+          enableDamping
+          dampingFactor={0.12}
+          screenSpacePanning={false}
+          zoomToCursor
+          maxPolarAngle={
+            focus?.view === 'sky' || focus?.view === 'sub' ? Math.PI : MAX_TILT_RAD
+          }
           minDistance={
             (focus?.view === 'sub'
               ? 1.5
