@@ -77,3 +77,17 @@ export function useDemoMarketsEnabled(): boolean {
   }, [])
   return enabled
 }
+
+// The in-app contribution form, which writes to the onchain Contributions
+// table. Flip to true to retire the Google Form on the public site. Elsewhere
+// it is on as soon as the table is deployed on that chain. Starts off so
+// production never flashes the form before mount.
+export const ONCHAIN_CONTRIBUTIONS_LAUNCHED = false
+
+export function useOnchainContributionsEnabled(): boolean {
+  const [enabled, setEnabled] = useState(false)
+  useEffect(() => {
+    setEnabled(ONCHAIN_CONTRIBUTIONS_LAUNCHED || !isPublicProductionHost(window.location.host))
+  }, [])
+  return enabled
+}

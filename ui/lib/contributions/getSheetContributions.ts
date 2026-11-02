@@ -14,6 +14,11 @@ export type Contribution = {
   description: string
   links: string
   area: string
+  // Set only on rows read from the onchain Contributions table.
+  id?: number
+  title?: string
+  linkList?: string[]
+  cycleId?: number
 }
 
 export const CONTRIBUTIONS_SHEET_CSV_URL =

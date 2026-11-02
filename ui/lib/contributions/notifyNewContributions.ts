@@ -77,7 +77,7 @@ export type NotifyResult = {
 
 let redisClient: Redis | null = null
 
-function getRedis(): Redis | null {
+export function getRedis(): Redis | null {
   if (redisClient) return redisClient
   const url = process.env.UPSTASH_REDIS_URL
   const token = process.env.UPSTASH_REDIS_TOKEN
@@ -148,7 +148,7 @@ function truncate(text: string, max: number): string {
   return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t
 }
 
-function buildContent(c: Contribution): string {
+export function buildContent(c: Contribution): string {
   const who =
     c.name && c.name !== 'Anonymous'
       ? `**${c.name}**`
@@ -157,6 +157,7 @@ function buildContent(c: Contribution): string {
       : '**Someone**'
 
   const lines = [`## 🚀 New Contribution from ${who}`]
+  if (c.title) lines.push(`**${truncate(c.title, 200)}**`)
   if (c.area) lines.push(`**Area:** ${c.area}`)
   if (c.description) lines.push(truncate(c.description, 1500))
   if (c.links) {
@@ -173,7 +174,7 @@ function buildContent(c: Contribution): string {
     : content
 }
 
-async function postToDiscord(content: string): Promise<boolean> {
+export async function postToDiscord(content: string): Promise<boolean> {
   const token = process.env.DISCORD_BOT_TOKEN
   if (!token) {
     console.error('[contribution-notify] DISCORD_BOT_TOKEN not set')
