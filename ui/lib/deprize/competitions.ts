@@ -158,28 +158,17 @@ export function deprizeForecastHref(deprizeId: number | string): string {
 /** chainSlug → deprizeId → competition */
 const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> = {
   arbitrum: {
-    // First Arbitrum mainnet DePrize — internal end-to-end competition.
-    // Oracle at prepareCondition = deployer 0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011.
-    // Roster is placeholder MoonDAOTeam ids [2, 6, 7, 8]. Unlisted so Touchdown
-    // is the /deprize headliner; /deprize/arb/1 still opens it.
+    // Public Touchdown on 0x5620749d0579ff08D0DD2389CF9040523DD7B8ea.
+    // Prize id 1 is open. Forecasts on this page use vote id 1.
+    // The previous registry (0xf8B2244634c6eCeF32de10BFe0D7436413A59924) held
+    // the internal competition at id 1 and the dress-rehearsal races at 2–5.
     1: {
-      title: 'The Moon Is A Harsh Mistress',
-      tagline: 'Which team posts “The Moon is a harsh mistress” first?',
-      metaDescription:
-        'Arbitrum DePrize: back the MoonDAO team you think will post “The Moon is a harsh mistress” first. Live LMSR odds, and every bet funds the prize pool.',
-      questionId: '0xc3efda478f2465a1d402bfe9bc43fd04660daa72d0a71031594b341f2718adb9',
-      unlisted: true,
-    },
-    // Arbitrum One registry (0xf8B2244634c6eCeF32de10BFe0D7436413A59924).
-    // Same rosters as the Sepolia dress rehearsal. Ids 2–5. H-01 LMSRWithTWAP,
-    // owned by the FeeRouter. Oracle is the deployer.
-    2: {
       title: 'Touchdown',
       tagline:
         'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
       metaDescription:
-        'Arbitrum DePrize for the next successful lunar landing. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
-      questionId: '0xd4daf3cb8f7f228cdf16c58c2e4345742bf4d1e58d7ebc271c0a533621262efc',
+        'Arbitrum public Touchdown. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and the Open Field.',
+      questionId: '0xd81ff517bc437933758e3679c1107fca6983ca98f2798926af562ab5bdf4b32e',
       sharedGoalId: 'shared-next-landing',
       raceLabel: 'Next lunar landing',
       outcomes: [
@@ -188,8 +177,20 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: 'firefly-blue-ghost', teamId: 603, vehicleLabel: 'Blue Ghost M2' },
         { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
         { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
+        { projectId: 'ispace-apex', teamId: 606, vehicleLabel: 'ispace' },
         { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
       ],
+    },
+    // Historical copy from the previous Arbitrum registry. Unlisted and unbound
+    // so they cannot steal the live race tip. That registry is no longer read.
+    2: {
+      title: 'Touchdown',
+      tagline:
+        'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
+      metaDescription:
+        'Earlier Arbitrum Touchdown on the previous registry. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, and the Open Field.',
+      questionId: '0xd4daf3cb8f7f228cdf16c58c2e4345742bf4d1e58d7ebc271c0a533621262efc',
+      unlisted: true,
     },
     3: {
       title: 'Night Shift',
@@ -198,18 +199,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       metaDescription:
         'Arbitrum DePrize for lunar night power. Zeno Harmonia, Astrobotic NITE, Venturi, Perpetual Atomics ENDURE, CNNC, Rosatom, ISRO BARC, and the Open Field.',
       questionId: '0x75be567e6161e270124d3eed4627ecee60fb1fc138e005517fed91cdaeca8602',
-      sharedGoalId: 'shared-night-shift',
-      raceLabel: 'Lunar night power',
-      outcomes: [
-        { projectId: 'zeno-harmonia', teamId: 611, vehicleLabel: 'Harmonia' },
-        { projectId: 'astrobotic-nite', teamId: 612, vehicleLabel: 'NITE' },
-        { projectId: 'venturi-lunar-battery', teamId: 613, vehicleLabel: 'Lunar-cycle battery' },
-        { projectId: 'perpetual-atomics-endure', teamId: 614, vehicleLabel: 'ENDURE Am-241 RHU' },
-        { projectId: 'cnnc-lunar-rtg', teamId: 615, vehicleLabel: "Chang'e lunar RTG" },
-        { projectId: 'rosatom-lunar-rtg', teamId: 616, vehicleLabel: 'Rosatom lunar RTG' },
-        { projectId: 'isro-barc-rhu', teamId: 617, vehicleLabel: 'BARC / LUPEX night survival' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
+      unlisted: true,
     },
     4: {
       title: 'First Tracks',
@@ -218,16 +208,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       metaDescription:
         'Arbitrum DePrize for the first commercial rover egress. Astrolab FLIP, Voyager CubeRover, Lunar Outpost MAPP, ispace Tenacious, Carnegie Mellon Iris, and the Open Field.',
       questionId: '0x18e1c3d9d40fbccaaa147e0736917bff8f1eb3bd0a1f5ebc6f16c70fe4e9b396',
-      sharedGoalId: 'shared-first-tracks',
-      raceLabel: 'First Tracks',
-      outcomes: [
-        { projectId: 'astrolab-flip', teamId: 631, vehicleLabel: 'FLIP' },
-        { projectId: 'voyager-cuberover', teamId: 632, vehicleLabel: 'CubeRover' },
-        { projectId: 'lunar-outpost-mapp', teamId: 633, vehicleLabel: 'MAPP' },
-        { projectId: 'ispace-tenacious', teamId: 634, vehicleLabel: 'Tenacious' },
-        { projectId: 'cmu-iris', teamId: 635, vehicleLabel: 'Iris-class' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
+      unlisted: true,
     },
     5: {
       title: 'Water Ice',
@@ -236,14 +217,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       metaDescription:
         'Arbitrum DePrize for the first published in-situ lunar water-ice dataset. Chang’e-7, VIPER on Blue Moon MK1, IM-4, and the Open Field.',
       questionId: '0xc97585bf11fff6b53bdddcd58e4518c02253f616c86eafc2962f3a3801333e15',
-      sharedGoalId: 'shared-ice',
-      raceLabel: 'Surface water ice',
-      outcomes: [
-        { projectId: 'cnsa-change-7', teamId: 641, vehicleLabel: "Chang'e-7 hopper" },
-        { projectId: 'blue-origin-viper', teamId: 642, vehicleLabel: 'VIPER on MK1' },
-        { projectId: 'im-4-volatiles', teamId: 643, vehicleLabel: 'IM-4 volatiles' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
-      ],
+      unlisted: true,
     },
   },
   sepolia: {
@@ -335,8 +309,8 @@ export function isKnownDePrizeCompetition(
 /**
  * Extra live market to show behind the Touchdown headliner: the first
  * registered competition on this chain that is not bound to a Moon Base Zero
- * race and is not unlisted. The Moon Is A Harsh Mistress is unlisted, and
- * Sepolia's prizes are race-bound, so neither chain has one today.
+ * race and is not unlisted. Both chains' live prizes are race-bound, so
+ * neither chain has one today.
  */
 export function getFeaturedLiveDePrizeId(chainSlug: string): number | undefined {
   const entries = DEPRIZE_COMPETITIONS[chainSlug]

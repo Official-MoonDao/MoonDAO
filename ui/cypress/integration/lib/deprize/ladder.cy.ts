@@ -74,18 +74,16 @@ describe('capability ladder', () => {
     expect(CAPABILITY_LADDER[3].specHref).to.equal('')
   })
 
-  it('getLadderForCompetition("arbitrum", 1): Harsh Mistress is not a rung, and the four races are live', () => {
+  it('getLadderForCompetition("arbitrum", 1): public Touchdown is live and the other rungs stay planned', () => {
     const viewed = getLadderForCompetition('arbitrum', 1)
-    expect(viewed.currentKey).to.equal(undefined)
+    expect(viewed.currentKey).to.equal('touchdown')
     expect(viewed.rungs.map((r) => [r.key, r.status, r.deprizeId, r.current])).to.deep.equal([
-      ['touchdown', 'live', 2, false],
-      ['first-tracks', 'live', 4, false],
-      ['ice', 'live', 5, false],
-      ['night-shift', 'live', 3, false],
+      ['touchdown', 'live', 1, true],
+      ['first-tracks', 'planned', undefined, false],
+      ['ice', 'planned', undefined, false],
+      ['night-shift', 'planned', undefined, false],
     ])
-    const touchdown = getLadderForCompetition('arbitrum', 2)
-    expect(touchdown.currentKey).to.equal('touchdown')
-    expect(touchdown.rungs[0].current).to.equal(true)
+    expect(viewed.rungs[0].href).to.equal('/deprize/1')
   })
 
   it('getLadderForCompetition("sepolia", undefined) returns four rungs, none current', () => {
@@ -128,12 +126,13 @@ describe('LADDER_GOAL_IDS — which races the Moonbase calls real', () => {
 
   // The Moonbase legend must not split its race list on "has a DePrize on
   // the connected chain". These ids are the races we run, on every chain.
-  // A market binding is per registry: Sepolia's new registry only has Touchdown.
+  // A market binding is per registry. Both public registries currently bind
+  // only Touchdown.
   it('lists the same races on Sepolia and on Arbitrum', () => {
     const bound = (chain: string) =>
       LADDER_GOAL_IDS.filter((id) => findDePrizeIdForGoal(chain, id) !== undefined)
     expect(bound('sepolia')).to.deep.equal(['shared-next-landing'])
-    expect(bound('arbitrum')).to.deep.equal([...LADDER_GOAL_IDS])
+    expect(bound('arbitrum')).to.deep.equal(['shared-next-landing'])
     for (const id of LADDER_GOAL_IDS) {
       expect(isLadderGoal(id), id).to.equal(true)
     }

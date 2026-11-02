@@ -43,17 +43,16 @@ those three Sepolia races are not on the new registry.
 Forecasts on Sepolia are keyed by prize id. One zero-power row from the old
 id 1 (`{"5":100}`, Open Field on the 6-slot roster) now reads as ispace.
 
-## Arbitrum One (chain 42161) — market seeded, not open
+## Arbitrum One (chain 42161) — prize 1 open
 
 Broadcast 30 Oct 2026 from deployer `0x3c5e2fe76478E99d94D3ca8BfA5154907a52E011`.
-The app still reads the live UUPS registry
-`0xf8B2244634c6eCeF32de10BFe0D7436413A59924`. Switch that pointer only after
-the Safe batch below has opened id 1. This registry's `count()` is still 0.
+The app reads this registry. Prize id 1 is open, and a forecast on that page
+uses vote id 1. `complianceSigner` is the deployer. Registry `count()` is 1.
 
 | Slot | Value | Notes |
 |---|---|---|
 | DePrizeRegistry | `0x5620749d0579ff08D0DD2389CF9040523DD7B8ea` | Owner = executive Safe `0xdFc31084ad3887076913e5d0759a27C65A3C5291`. Tx `0x3f0b5468…3eeed6`, block **518890846** |
-| DePrizeMint | `0x1D58652aC8dF5dDc762F0D2b531BA3f178f67765` | Same owner. `complianceSigner` is unset. Tx `0xd7af60bc…2176d9a`, block **518890870** |
+| DePrizeMint | `0x1D58652aC8dF5dDc762F0D2b531BA3f178f67765` | Same owner. `complianceSigner` is the deployer. Tx `0xd7af60bc…2176d9a`, block **518890870** |
 | DePrizeRedeem | `0x0aeB11c3527DBa0f1081c17C597582DF86E47F06` | Tx `0x052b00ef…14d4187`, block **518890892** |
 | MissionCreator | `0x6dB622369C46F9480915AE8394e6202C000D7CFb` | Deployer-owned. Tx `0xe08b2c1a…d4e2cd6`, block **518890970** |
 | TreasuryPayHook | `0x75e5441984Ac6850733425cb502d6ec77C79BACa` | Treasury `0xAF26a002d716508b7e375f1f620338442F5470c0` |
@@ -68,13 +67,13 @@ the Safe batch below has opened id 1. This registry's `count()` is still 0.
 | roster | `[601, 602, 603, 604, 605, 606, 24]` | |
 
 The executive Safe is 3 of 5 on chain. The deployer is not an owner.
-Registry `count()` is 0, so `register` returns id 1. The six calls below are
-one transaction, in this order. `open` is last.
+The six calls below were one transaction, in this order. `open` was last.
+They have executed: `count()` is 1 and `state(1)` is OPEN.
 
-An executive Safe owner runs this on their own machine, from `ui/` on
-`cursor/arbitrum-touchdown-market-8042`. No GCP credentials and no Safe Pro
-plan. Their key adds the HSM `0xb206325E6562517532686dFeeEaD4C104D9F5d32` as a
-proposer and queues the batch. That signature counts as one of three.
+An executive Safe owner ran this from `ui/` on
+`cursor/arbitrum-touchdown-market-8042`. Their key added the HSM
+`0xb206325E6562517532686dFeeEaD4C104D9F5d32` as a proposer and queued the
+batch. That signature counted as one of three.
 
 ```
 cd ui && yarn

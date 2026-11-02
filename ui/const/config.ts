@@ -537,19 +537,23 @@ export const COLLATERAL_DECIMALS = 18
 export const DEPRIZE_REDEEM_ADDRESSES: Index = {
   sepolia: '0x1d6122041549a86E84CC3fc0F3b50E7c4420c4Ee',
   'arbitrum-sepolia': '',
-  arbitrum: '0xb0E06ed72cf6E0CcF21b4D00B002fdfDc198C3fA',
+  // Public Touchdown redeem helper. The previous stack is 0xb0E06ed7….
+  arbitrum: '0x0aeB11c3527DBa0f1081c17C597582DF86E47F06',
 }
 export const DEPRIZE_REGISTRY_ADDRESSES: Index = {
   sepolia: '0x342fC1Ab7CAcc71d13274D3979EAE17Cf8e93555',
   'arbitrum-sepolia': '',
-  arbitrum: '0xf8B2244634c6eCeF32de10BFe0D7436413A59924',
+  // Public Touchdown registry. Prize id 1 is open; a forecast on that page
+  // uses vote id 1 on Forecasts_42161_167.
+  arbitrum: '0x5620749d0579ff08D0DD2389CF9040523DD7B8ea',
 }
 // First block worth scanning for DePrize events per chain: the block in which
 // DePrizeRegistry was deployed (Etherscan `getcontractcreation`). Every DePrize
 // mint router, market and trade was created after this block.
 export const DEPRIZE_EVENTS_FROM_BLOCK: Record<string, number> = {
   sepolia: 12008593,
-  arbitrum: 495964196,
+  // Public Touchdown registry creation block.
+  arbitrum: 518890846,
 }
 // DePrizeMint bet router (5% JB prize slice + 95% CTF/LMSR collateral). Populate
 // per chain once `script/deprize/DePrizeMint.s.sol` has deployed the router and
@@ -558,7 +562,8 @@ export const DEPRIZE_EVENTS_FROM_BLOCK: Record<string, number> = {
 export const DEPRIZE_MINT_ADDRESSES: Index = {
   sepolia: '0xbed33e958Bc04651cd879Fe2c5AC2175Dd938571',
   'arbitrum-sepolia': '',
-  arbitrum: '0xfa36cAb21415B4e23a1eecCFe7B07693A690d838',
+  // Public Touchdown mint. marketOf(1) is the seeded market.
+  arbitrum: '0x1D58652aC8dF5dDc762F0D2b531BA3f178f67765',
 }
 // DePrizeFeeRouter: owns the LMSR market and routes its accrued 1% trade fees
 // into the DePrize's Juicebox prize pool (sweepFees is permissionless). Populate
