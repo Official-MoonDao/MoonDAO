@@ -40,7 +40,7 @@ Sign in with the wallet that owns your Citizen NFT and open your [citizen profil
 Anyone can participate in our community, even if they are not Citizens. They can [join Discord](https://moondao.com/discord), acquire our governance token, and vote on proposals without being a Citizen. Although it’s not required, it’s highly encouraged to become a Citizen to access the full opportunities MoonDAO can offer.
 
 **How do I fund my wallet?**
-You do not need this step to join. To add ETH yourself, use the wallet button in the **top right** and choose **Fund** (Coinbase or MoonPay). For help, open a Discord ticket [here](https://discord.com/channels/914720248140279868/1212113005836247050) or email info@moondao.com.
+You do not need this step to join. To add ETH yourself, use the wallet button in the **top right** and choose **Fund** (Coinbase or MoonPay). For help, open a Discord ticket [here](https://moondao.com/discord) or email info@moondao.com.
 
 **How is data handled on the website?**
 We are an open source community, and data is stored onchain. This means it is written to the blockchain, please be aware that all data is public, except for email. You can request for your data to be removed from our front-end website, and then your profile will no longer show up on https://moondao.com. To delete your profile, navigate to your profile page and click the “edit” button and then "delete data."

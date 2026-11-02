@@ -55,4 +55,4 @@ You can also add ETH later from the same top-right wallet menu: **Fund**. You do
 
 ![](https://lh7-rt.googleusercontent.com/docsz/AD_4nXd74u0d7eJkomd0BqsULgdZai-5PKZ7KBHSR5qOWSN2NleVLjXOhz1SviU1Jy3Rq9G_1gOb7YyQOi7oH02ti3pbEEcSbyVNxCDgu6DmCZAKhJ6yDhgWs4OBUKUpU3s5CfZ8cIl8Og?key=SvZCq2k1UFaTYNW83ubioQ)
 
-If you get stuck, [submit a ticket](https://discord.com/channels/914720248140279868/1212113005836247050) in MoonDAO’s Discord.
+If you get stuck, [submit a ticket](https://moondao.com/discord) in MoonDAO’s Discord.
