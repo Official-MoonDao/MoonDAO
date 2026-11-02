@@ -200,6 +200,12 @@ const SKY_VIEW_OPTS = {
   standoff: 150 / MOON_RADIUS_M,
 }
 
+// Keyboard travel speed, in eye-to-pivot distances per second, and the Shift
+// multiplier on it.
+const MOVE_SPEED = 0.2
+const MOVE_BOOST = 3
+const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'])
+
 // Animates the camera toward a lat/lon focus (or back to the home framing)
 // ONLY while a transition is active. It arcs the view direction and eases the
 // distance/target rather than sliding in a straight line. Once it arrives (or
@@ -209,6 +215,7 @@ function CameraRig({
   focus,
   controlsRef,
   userInteracting,
+  moveKeys,
   onAnimatingChange,
   radiusAt,
   glide,
@@ -216,6 +223,8 @@ function CameraRig({
   focus: GlobeFocus
   controlsRef: React.MutableRefObject<any>
   userInteracting: boolean
+  // Movement keys currently held (lower-cased `KeyboardEvent.key`).
+  moveKeys: React.MutableRefObject<Set<string>>
   onAnimatingChange: (animating: boolean) => void
   glide: number
   // Rendered terrain radius lookup — framings and the camera floor work
@@ -349,12 +358,59 @@ function CameraRig({
     // back to the ridge center. Without this, zooming out from a site leaves
     // the patch hanging half off-screen, orbiting a surface point the user
     // can no longer even see.
-    if (!animating.current && curTarget.distanceToSquared(HOME_TARGET) > (1 * M_TO_UNITS) ** 2) {
+    if (
+      !animating.current &&
+      !moveKeys.current.size &&
+      curTarget.distanceToSquared(HOME_TARGET) > (1 * M_TO_UNITS) ** 2
+    ) {
       // Altitude above the base's ground level, in meters.
       const altM = (camera.position.length() - HOME_GROUND.length()) / M_TO_UNITS
       const recenter = THREE.MathUtils.clamp((altM / 2500 - 1) / 0.8, 0, 1)
       if (recenter > 0) {
         curTarget.lerp(HOME_TARGET, 1 - Math.pow(0.02, delta * recenter))
+      }
+    }
+
+    // Keyboard travel: slide the camera AND its pivot across the ground, so the
+    // view walks somewhere new instead of only orbiting the point it started
+    // on. "Forward" is the view direction flattened onto the local horizontal
+    // (radial up at the pivot), so W goes where you're looking, not into the
+    // ground. Speed scales with how far the eye is from the pivot: a crawl at a
+    // rover's wheel, a glide over the whole ridge.
+    const keys = moveKeys.current
+    if (keys.size && controls) {
+      let f = 0
+      let r = 0
+      if (keys.has('w') || keys.has('arrowup')) f += 1
+      if (keys.has('s') || keys.has('arrowdown')) f -= 1
+      if (keys.has('d') || keys.has('arrowright')) r += 1
+      if (keys.has('a') || keys.has('arrowleft')) r -= 1
+      if (f || r) {
+        if (animating.current) setAnimating(false)
+        const up = curTarget.clone().normalize()
+        const fwd = curTarget.clone().sub(camera.position)
+        fwd.addScaledVector(up, -fwd.dot(up))
+        // Looking straight down there is no horizontal view direction; the
+        // top of the screen is forward instead.
+        if (fwd.lengthSq() < 1e-12) fwd.copy(camera.up).addScaledVector(up, -camera.up.dot(up))
+        fwd.normalize()
+        const right = fwd.clone().cross(up).normalize()
+        const groundAt = (v: THREE.Vector3) => {
+          const ll = vector3ToLatLon([v.x, v.y, v.z])
+          return radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
+        }
+        // The pivot keeps its height above the ground it travels over, so it
+        // follows the terrain rather than ploughing into a rise.
+        const pivotLift = curTarget.length() - groundAt(curTarget)
+        const eyeOffset = camera.position.clone().sub(curTarget)
+        const speed =
+          eyeOffset.length() * MOVE_SPEED * (keys.has('shift') ? MOVE_BOOST : 1) * delta
+        curTarget
+          .add(fwd.multiplyScalar(f).addScaledVector(right, r).normalize().multiplyScalar(speed))
+          .setLength(groundAt(curTarget) + pivotLift)
+        camera.position.copy(curTarget).add(eyeOffset)
+        camera.up.copy(curTarget).normalize()
+        controls.update()
       }
     }
 
@@ -782,6 +838,50 @@ export default function MoonGlobe({
     }
   }, [])
 
+  // WASD / arrow keys walk the camera across the base (see CameraRig). Held
+  // keys count as interacting, so a flight in progress yields and the frame
+  // budget runs at full rate for as long as the camera is travelling.
+  const moveKeys = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    if (!interactive) return
+    const keys = moveKeys.current
+    const typing = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null
+      return (
+        !!el &&
+        (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))
+      )
+    }
+    const onDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase()
+      if (key === 'shift') {
+        keys.add(key)
+        return
+      }
+      if (!MOVE_KEYS.has(key) || typing(e) || e.metaKey || e.ctrlKey || e.altKey) return
+      e.preventDefault()
+      keys.add(key)
+      setUserInteracting(true)
+    }
+    const onUp = (e: KeyboardEvent) => {
+      keys.delete(e.key.toLowerCase())
+      if (![...keys].some((k) => MOVE_KEYS.has(k))) setUserInteracting(false)
+    }
+    const onBlur = () => {
+      keys.clear()
+      setUserInteracting(false)
+    }
+    window.addEventListener('keydown', onDown)
+    window.addEventListener('keyup', onUp)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      window.removeEventListener('keydown', onDown)
+      window.removeEventListener('keyup', onUp)
+      window.removeEventListener('blur', onBlur)
+      keys.clear()
+    }
+  }, [interactive])
+
   const handleWheel = () => {
     setUserInteracting(true)
     if (wheelTimer.current) clearTimeout(wheelTimer.current)
@@ -919,7 +1019,8 @@ export default function MoonGlobe({
           ? (e) => {
               const down = pointerDownAt.current
               const moved = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) : 0
-              if (moved <= CLICK_DRAG_TOLERANCE_PX) onBackgroundClick?.()
+              // Left button only: the right button pans now.
+              if (e.button === 0 && moved <= CLICK_DRAG_TOLERANCE_PX) onBackgroundClick?.()
             }
           : undefined
       }
@@ -997,6 +1098,7 @@ export default function MoonGlobe({
         focus={focus}
         controlsRef={controlsRef}
         userInteracting={userInteracting}
+        moveKeys={moveKeys}
         onAnimatingChange={setIsAnimating}
         radiusAt={radiusAt}
         glide={glide}
@@ -1018,7 +1120,9 @@ export default function MoonGlobe({
         <TrackballControls
           ref={controlsRef}
           makeDefault
-          noPan
+          // Right-drag (two-finger drag on touch) slides the view, so the
+          // camera can leave the point it was aimed at.
+          panSpeed={0.5}
           rotateSpeed={2.2}
           zoomSpeed={1.2}
           dynamicDampingFactor={0.12}
