@@ -230,7 +230,10 @@ describe('PR-0 DePrize geo gate', () => {
       'components/deprize/detail/TradeTicket.tsx',
       'lib/deprize/constants.ts',
     ]
-    expect(modal).to.include('FORECAST_COPY.restrictedNote')
+    expect(modal).to.include('toast.error(FORECAST_COPY.restrictedNote')
+    expect(modal).to.include('Add ETH to your prediction')
+    expect(modal).to.not.include('>{FORECAST_COPY.restrictedNote}<')
+    expect(modal).to.not.include('does not change the ETH odds')
     expect(modal).to.include('regionRestricted')
     expect(modal).to.include('!isBet && props.regionRestricted')
     expect(copy).to.include("Betting isn't available in your region")

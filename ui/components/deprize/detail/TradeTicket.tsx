@@ -146,24 +146,18 @@ export default function TradeTicket({
           This market has resolved.
         </p>
       ) : !bettingAllowed ? (
-        <div className="mt-4 rounded-lg bg-white/[0.04] px-3 py-3 text-center text-sm text-gray-400">
+        <div className="mt-4">
           {betUnavailableReason ? (
-            <p>{betUnavailableReason}.</p>
-          ) : (
-            <button
-              type="button"
-              disabled
-              className="w-full cursor-not-allowed rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-[15px] font-semibold text-gray-500"
-            >
-              Add ETH
-            </button>
-          )}
+            <p className="mb-3 rounded-lg bg-white/[0.04] px-3 py-3 text-center text-sm text-gray-400">
+              {betUnavailableReason}.
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={() => onPredict(index)}
-            className={`mt-2 font-semibold text-indigo-300 hover:text-indigo-200 ${TOUCH}`}
+            className={`w-full rounded-lg bg-moon-green px-4 py-3.5 text-base font-semibold text-white transition-[filter] hover:brightness-110 ${TOUCH}`}
           >
-            {DEPRIZE_PREDICT_CTA} for free →
+            {DEPRIZE_PREDICT_CTA}
           </button>
         </div>
       ) : (
