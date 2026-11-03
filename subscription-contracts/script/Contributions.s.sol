@@ -23,7 +23,8 @@ import {Contributions} from "../src/tables/Contributions.sol";
 /// After deploy, fill CONTRIBUTIONS_ADDRESSES and CONTRIBUTIONS_TABLE_NAMES
 /// in ui/const/config.ts. The table name is logged below.
 contract DeployContributions is Script {
-    uint256 internal constant MAX_PER_CYCLE = 5;
+    // About one a week across a 13-week quarter. The Safe can change it with setMaxPerCycle.
+    uint256 internal constant MAX_PER_CYCLE = 13;
     uint256 internal constant DEFAULT_INITIAL_CYCLE = 20264;
 
     function run() external {

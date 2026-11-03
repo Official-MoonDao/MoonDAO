@@ -227,7 +227,7 @@ contract Contributions is ERC721Holder, Ownable {
 
 Events: `ContributionSubmitted`, `ContributionUpdated`, `ContributionRemoved`, `HiddenSet`,
 `CycleClosed`, `ResultRecorded`, `ContributionImported` and `ImportsSealed`, each indexed by `id` or `cycleId`. Deployed with
-`maxPerCycle = 5` and `initialCycleId = 20264`. The owner can set it to `0` later to remove the cap.
+`maxPerCycle = 13` (about one a week) and `initialCycleId = 20264`. The owner can change the cap with `setMaxPerCycle`, or set it to `0` to remove it.
 
 ---
 
