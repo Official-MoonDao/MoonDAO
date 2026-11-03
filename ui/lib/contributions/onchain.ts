@@ -6,10 +6,10 @@ import { CONTRIBUTIONS_ADDRESSES, CONTRIBUTIONS_TABLE_NAMES } from 'const/config
 
 // Byte limits of the deployed contracts (see CONTRIBUTIONS_ADDRESSES). Solidity
 // measures UTF-8 bytes, not characters, so non-Latin text reaches the limit
-// sooner. Contributions.sol in this repo allows 8,000-byte descriptions, but
-// that version is not deployed: these contracts revert above 2,000.
+// sooner. The contracts revert above DESCRIPTION_MAX (8,000 bytes), matching
+// Contributions.sol.
 export const TITLE_MAX_BYTES = 120
-export const DESCRIPTION_MAX_BYTES = 2000
+export const DESCRIPTION_MAX_BYTES = 8000
 export const AREA_MAX_BYTES = 32
 export const LINKS_MAX_BYTES = 1000
 export const MAX_LINKS = 10
@@ -64,7 +64,7 @@ export function cycleLabel(cycleId: number | string): string {
   return `Q${quarter} ${year}`
 }
 
-/** A live submission. Imported rows are origin 1. The deployed tables have no origin column. */
+/** A live submission. Imported rows are origin 1. A missing origin counts as live. */
 export function isSubmittedOrigin(origin: unknown): boolean {
   if (origin == null || origin === '') return true
   return Number(origin) === 0
