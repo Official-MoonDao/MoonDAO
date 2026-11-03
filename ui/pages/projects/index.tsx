@@ -102,13 +102,16 @@ export async function getStaticProps() {
     }
 
     const activeProposalQuarter = getProposalCycle()
-    const proposals = await getCurrentCycleProposals(projects, chain)
+    const proposals = await getCurrentCycleProposals(projects, chain, {
+      isSenateVote: livePhase === 'senate',
+    })
     let currentProjects: Project[] = []
     const pastProjects: Project[] = []
 
     for (const project of projects) {
       // Current-cycle pending rows are handled by getCurrentCycleProposals;
-      // the ones it drops (Senate-failed, governance, deleted) stay hidden.
+      // the ones it drops (Senate-failed, below quorum once that vote has
+      // closed, governance, deleted) stay hidden.
       if (isBlockedProject(project) || isCurrentCyclePending(project)) continue
       if (project.active == PROJECT_ACTIVE) {
         currentProjects.push(project)
