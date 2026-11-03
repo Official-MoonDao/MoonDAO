@@ -80,11 +80,17 @@ export async function rpcRead<T = any>(
         return (await readContract(args)) as T
       } catch (e: any) {
         const msg = `${e?.message ?? ''} ${e?.shortMessage ?? ''}`.toLowerCase()
-        const rateLimited =
+        const retryable =
           msg.includes('429') ||
           msg.includes('too many requests') ||
-          msg.includes('-32005')
-        if (rateLimited && attempt < 5) {
+          msg.includes('-32005') ||
+          msg.includes('timeout') ||
+          msg.includes('aborted') ||
+          msg.includes('failed to fetch') ||
+          msg.includes('502') ||
+          msg.includes('503') ||
+          msg.includes('504')
+        if (retryable && attempt < 5) {
           await new Promise((r) => setTimeout(r, 350 * 2 ** attempt))
           continue
         }

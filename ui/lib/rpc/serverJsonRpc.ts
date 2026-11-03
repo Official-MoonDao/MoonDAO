@@ -48,7 +48,11 @@ const PUBLIC_RPC_URLS: Record<number, string[]> = {
   137: ['https://polygon-rpc.com', 'https://polygon-bor.publicnode.com'],
   42161: ['https://arb1.arbitrum.io/rpc', 'https://arbitrum-one.publicnode.com'],
   8453: ['https://mainnet.base.org', 'https://base.publicnode.com'],
-  11155111: ['https://rpc.sepolia.org', 'https://ethereum-sepolia.publicnode.com'],
+  11155111: [
+    'https://ethereum-sepolia-rpc.publicnode.com',
+    'https://ethereum-sepolia.publicnode.com',
+    'https://1rpc.io/sepolia',
+  ],
   421614: ['https://sepolia-rollup.arbitrum.io/rpc'],
   11155420: ['https://sepolia.optimism.io'],
   84532: ['https://sepolia.base.org', 'https://base-sepolia.publicnode.com'],
@@ -264,7 +268,7 @@ function isCacheableResponse(entry: unknown): boolean {
 async function sendUpstream(
   chainId: number,
   payload: unknown,
-  { timeoutMs = 20_000 }: { timeoutMs?: number } = {}
+  { timeoutMs = 5_000 }: { timeoutMs?: number } = {}
 ): Promise<JsonRpcProxyResult> {
   const urls = serverRpcUrlsForChain(chainId)
   if (urls.length === 0) {
