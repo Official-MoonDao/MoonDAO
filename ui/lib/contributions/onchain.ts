@@ -1,14 +1,15 @@
-// Field rules and row shapes for the onchain Contributions table
-// (subscription-contracts/src/tables/Contributions.sol). Shared by the submit
-// form, the API routes and the feed, so the browser rejects exactly what the
-// contract would revert on. The contract never truncates: an over-long field
-// fails the whole transaction.
+// Field rules and row shapes for the onchain Contributions table. Shared by the
+// submit form, the API routes and the feed, so the browser rejects exactly what
+// the deployed contracts revert on. Those contracts never truncate: an over-long
+// field fails the whole transaction.
 import { CONTRIBUTIONS_ADDRESSES, CONTRIBUTIONS_TABLE_NAMES } from 'const/config'
 
-// Byte limits from Contributions.sol. Solidity measures UTF-8 bytes, not
-// characters, so non-Latin text reaches the limit sooner.
+// Byte limits of the deployed contracts (see CONTRIBUTIONS_ADDRESSES). Solidity
+// measures UTF-8 bytes, not characters, so non-Latin text reaches the limit
+// sooner. Contributions.sol in this repo allows 8,000-byte descriptions, but
+// that version is not deployed: these contracts revert above 2,000.
 export const TITLE_MAX_BYTES = 120
-export const DESCRIPTION_MAX_BYTES = 8000
+export const DESCRIPTION_MAX_BYTES = 2000
 export const AREA_MAX_BYTES = 32
 export const LINKS_MAX_BYTES = 1000
 export const MAX_LINKS = 10
@@ -61,6 +62,12 @@ export function cycleLabel(cycleId: number | string): string {
   const year = Math.floor(n / 10)
   if (!Number.isInteger(n) || quarter < 1 || quarter > 4 || year < 2000) return `Cycle ${cycleId}`
   return `Q${quarter} ${year}`
+}
+
+/** A live submission. Imported rows are origin 1. The deployed tables have no origin column. */
+export function isSubmittedOrigin(origin: unknown): boolean {
+  if (origin == null || origin === '') return true
+  return Number(origin) === 0
 }
 
 /** Address and table name for a chain, or null until the contract is deployed there. */

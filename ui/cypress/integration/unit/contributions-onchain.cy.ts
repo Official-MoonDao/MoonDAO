@@ -3,9 +3,11 @@ import {
   CONTRIBUTION_AREAS,
   DESCRIPTION_MAX_BYTES,
   TITLE_MAX_BYTES,
+  contributionsTable,
   cycleLabel,
   decodeLinks,
   encodeLinks,
+  isSubmittedOrigin,
   normalizeLink,
   splitTextLinks,
   utf8Bytes,
@@ -35,7 +37,7 @@ describe('onchain contribution fields', () => {
     expect(utf8Bytes('é')).to.equal(2)
     const atMax = 'a'.repeat(DESCRIPTION_MAX_BYTES)
     expect(validateContribution({ ...valid, description: atMax }).errors).to.deep.equal({})
-    // 4,001 two-byte characters is 8,002 bytes.
+    // One two-byte character past the cap.
     const over = 'é'.repeat(DESCRIPTION_MAX_BYTES / 2 + 1)
     expect(validateContribution({ ...valid, description: over }).errors.description).to.be.a(
       'string'
@@ -69,6 +71,28 @@ describe('onchain contribution fields', () => {
     expect(decodeLinks(encodeLinks(links))).to.deep.equal(links)
     expect(encodeLinks([])).to.equal('')
     expect(decodeLinks('https://a.org/1\nhttps://b.org/2')).to.deep.equal(links)
+  })
+
+  it('points Arbitrum and Sepolia at the deployed tables', () => {
+    expect(contributionsTable('arbitrum')).to.deep.equal({
+      address: '0xC2828AE1CE877de739fAAbf5616F5dBB47C4fAe9',
+      name: 'CONTRIBUTIONS_42161_166',
+    })
+    expect(contributionsTable('sepolia')).to.deep.equal({
+      address: '0x3c887C22618F09e5bfa4eCf708CA77a2e11dEEb3',
+      name: 'CONTRIBUTIONS_11155111_2091',
+    })
+    expect(contributionsTable('ethereum')).to.equal(null)
+  })
+
+  it('treats a missing origin as a live submission', () => {
+    expect(isSubmittedOrigin(undefined)).to.equal(true)
+    expect(isSubmittedOrigin(null)).to.equal(true)
+    expect(isSubmittedOrigin('')).to.equal(true)
+    expect(isSubmittedOrigin(0)).to.equal(true)
+    expect(isSubmittedOrigin('0')).to.equal(true)
+    expect(isSubmittedOrigin(1)).to.equal(false)
+    expect(isSubmittedOrigin('1')).to.equal(false)
   })
 
   it('labels quarter-code cycles', () => {
