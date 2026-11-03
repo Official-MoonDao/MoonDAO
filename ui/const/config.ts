@@ -267,15 +267,19 @@ export const FORECASTS_TABLE_NAMES: Index = {
   arbitrum: 'Forecasts_42161_167',
   sepolia: 'Forecasts_11155111_2089',
 }
-// Citizen contributions. Filled in from the deploy script's logged address and
-// table name. Empty until Contributions.sol is deployed on that chain.
+// Live Contributions contracts. Checked against the Tableland registry and
+// each contract's getTableName() on Nov 3, 2026. Both tables are empty, and
+// submit(title, description, area, links, metadata) matches the form.
+// These deploys use cycle 1, allow 5 submissions per citizen, and cap
+// descriptions at 2,000 bytes. The source contract's 8,000-byte cap, quarter
+// cycle ids, and row imports are not what these addresses run.
 export const CONTRIBUTIONS_ADDRESSES: Index = {
-  arbitrum: '',
-  sepolia: '',
+  arbitrum: '0xC2828AE1CE877de739fAAbf5616F5dBB47C4fAe9',
+  sepolia: '0x3c887C22618F09e5bfa4eCf708CA77a2e11dEEb3',
 }
 export const CONTRIBUTIONS_TABLE_NAMES: Index = {
-  arbitrum: '',
-  sepolia: '',
+  arbitrum: 'CONTRIBUTIONS_42161_166',
+  sepolia: 'CONTRIBUTIONS_11155111_2091',
 }
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1

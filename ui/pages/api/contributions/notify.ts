@@ -7,6 +7,7 @@ import {
   rowToFeedContribution,
 } from '@/lib/contributions/getOnchainContributions'
 import { buildContent, getRedis, postToDiscord } from '@/lib/contributions/notifyNewContributions'
+import { isSubmittedOrigin } from '@/lib/contributions/onchain'
 
 // Only fresh rows are announced, so this route can't be used to replay history.
 const ANNOUNCE_WINDOW_SECONDS = 24 * 60 * 60
@@ -34,7 +35,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   const ageSeconds = Date.now() / 1000 - Number(row.createdAt)
   if (
-    Number(row.origin) !== 0 ||
+    !isSubmittedOrigin(row.origin) ||
     Number(row.hidden) !== 0 ||
     ageSeconds > ANNOUNCE_WINDOW_SECONDS
   ) {
