@@ -1,11 +1,14 @@
 import { usePrivy } from '@privy-io/react-auth'
-import { DEFAULT_CHAIN_V5 } from 'const/config'
+import { DEFAULT_CHAIN_V5, DEFAULT_CHAIN_V5_SLUG } from 'const/config'
+import { useOnchainContributionsEnabled } from 'const/flags'
 import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
+import { contributionsTable, splitTextLinks } from '@/lib/contributions/onchain'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import ContributionSubmitModal from '../components/contribution/ContributionSubmitModal'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -15,7 +18,7 @@ import type { Contribution } from './api/contributions/feed'
 const CONTRIBUTION_FORM_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform'
 
-function CitizenSubmitButton() {
+function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   const { authenticated, login } = usePrivy()
   const account = useActiveAccount()
   const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
@@ -89,7 +92,20 @@ function CitizenSubmitButton() {
     )
   }
 
-  // Citizen — open the form
+  // Citizen — open the in-app form, or the Google Form until it launches
+  if (onOpenForm) {
+    return (
+      <button
+        type="button"
+        onClick={onOpenForm}
+        className={`${baseClass} bg-blue-500 hover:bg-blue-400 text-white`}
+      >
+        Submit a Contribution
+        {arrowIcon}
+      </button>
+    )
+  }
+
   return (
     <a
       href={CONTRIBUTION_FORM_URL}
@@ -103,8 +119,8 @@ function CitizenSubmitButton() {
   )
 }
 
-function ContributionFeed() {
-  const [contributions, setContributions] = useState<Contribution[]>([])
+function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution[] }) {
+  const [fetched, setFetched] = useState<Contribution[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [citizenImages, setCitizenImages] = useState<Record<string, string>>({})
@@ -117,7 +133,7 @@ function ContributionFeed() {
       })
       .then((data) => {
         const contribs: Contribution[] = data.contributions || []
-        setContributions(contribs)
+        setFetched(contribs)
 
         // Fetch citizen profile images for all unique, valid wallet addresses.
         // Addresses come from an untrusted public sheet, so validate the format
@@ -139,12 +155,20 @@ function ContributionFeed() {
       })
       .catch((err) => {
         console.error('[ContributionFeed]', err)
-        setContributions([])
+        setFetched([])
       })
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) {
+  // The feed is cached for a few minutes. Show the caller's own new entries
+  // until the cached response includes them.
+  const fetchedIds = new Set(fetched.map((c) => c.id).filter((id) => id != null))
+  const contributions = [
+    ...justSubmitted.filter((c) => c.id == null || !fetchedIds.has(c.id)),
+    ...fetched,
+  ]
+
+  if (loading && !justSubmitted.length) {
     return (
       <div className="flex items-center justify-center py-12 text-white/40 text-sm">
         Loading contributions…
@@ -244,18 +268,49 @@ function ContributionFeed() {
               >
                 {items.map((c) => (
                   <div key={`${c.walletAddress || 'anonymous'}:${c.timestamp}:${c.description}`}>
-                    <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
-                      {c.description}
+                    {c.title && <p className="text-white font-semibold text-sm mb-1">{c.title}</p>}
+                    <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line break-words">
+                      {splitTextLinks(c.description).map((seg, i) =>
+                        seg.href ? (
+                          <a
+                            key={i}
+                            href={seg.href}
+                            target="_blank"
+                            rel="noreferrer noopener nofollow"
+                            className="text-blue-400 hover:text-blue-300 underline"
+                          >
+                            {seg.text}
+                          </a>
+                        ) : (
+                          <React.Fragment key={i}>{seg.text}</React.Fragment>
+                        )
+                      )}
                     </p>
-                    {c.links && (
-                      <a
-                        href={c.links.startsWith('http') ? c.links : `https://${c.links}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs underline mt-3"
-                      >
-                        View supporting work ↗
-                      </a>
+                    {c.linkList && c.linkList.length > 1 ? (
+                      <div className="flex flex-wrap gap-x-4 mt-3">
+                        {c.linkList.map((url, i) => (
+                          <a
+                            key={url}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs underline"
+                          >
+                            Supporting work {i + 1} ↗
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      c.links && (
+                        <a
+                          href={c.links.startsWith('http') ? c.links : `https://${c.links}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs underline mt-3"
+                        >
+                          View supporting work ↗
+                        </a>
+                      )
                     )}
                   </div>
                 ))}
@@ -269,6 +324,11 @@ function ContributionFeed() {
 }
 
 export default function ContributionsPage() {
+  const flagOn = useOnchainContributionsEnabled()
+  const inApp = flagOn && !!contributionsTable(DEFAULT_CHAIN_V5_SLUG)
+  const [formOpen, setFormOpen] = useState(false)
+  const [justSubmitted, setJustSubmitted] = useState<Contribution[]>([])
+
   return (
     <>
       <WebsiteHead
@@ -342,11 +402,12 @@ export default function ContributionsPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-semibold text-sm mb-1">Ready to submit?</p>
                   <p className="text-gray-400 text-xs">
-                    The form takes about 5 minutes. Submissions are reviewed at the end of each
-                    quarter.
+                    {inApp
+                      ? 'Add a title, an area, what you did and links to the work. Submissions are reviewed at the end of each quarter.'
+                      : 'The form takes about 5 minutes. Submissions are reviewed at the end of each quarter.'}
                   </p>
                 </div>
-                <CitizenSubmitButton />
+                <CitizenSubmitButton onOpenForm={inApp ? () => setFormOpen(true) : undefined} />
               </div>
 
               {/* Feed */}
@@ -354,12 +415,18 @@ export default function ContributionsPage() {
                 <h2 className="text-white font-heading font-semibold text-xl mb-5">
                   Recent Submissions
                 </h2>
-                <ContributionFeed />
+                <ContributionFeed justSubmitted={justSubmitted} />
               </div>
             </div>
           </ContentLayout>
         </Container>
       </section>
+      {formOpen && (
+        <ContributionSubmitModal
+          setEnabled={setFormOpen}
+          onSubmitted={(c) => setJustSubmitted((prev) => [c, ...prev])}
+        />
+      )}
     </>
   )
 }

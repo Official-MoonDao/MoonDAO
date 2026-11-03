@@ -11,7 +11,7 @@ import {Contributions} from "../src/tables/Contributions.sol";
 /// Signers execute the batch; nothing is recorded or paid before that.
 /// OPERATOR, when set, may hide a row without a Safe transaction.
 ///
-/// The cap is 5 submissions per citizen per cycle. Cycles are quarter codes,
+/// The cap is 13 submissions per citizen per cycle. Cycles are quarter codes,
 /// starting at INITIAL_CYCLE (default 20264 = Q4 2026), so the Safe can
 /// `importBatch` past quarters before calling `sealImports`.
 ///
@@ -23,7 +23,8 @@ import {Contributions} from "../src/tables/Contributions.sol";
 /// After deploy, fill CONTRIBUTIONS_ADDRESSES and CONTRIBUTIONS_TABLE_NAMES
 /// in ui/const/config.ts. The table name is logged below.
 contract DeployContributions is Script {
-    uint256 internal constant MAX_PER_CYCLE = 5;
+    // About one a week across a 13-week quarter. The Safe can change it with setMaxPerCycle.
+    uint256 internal constant MAX_PER_CYCLE = 13;
     uint256 internal constant DEFAULT_INITIAL_CYCLE = 20264;
 
     function run() external {

@@ -171,7 +171,7 @@ What the merged contract does well:
 - `submit` requires an unexpired Citizen NFT (`_requireCitizen`, `:239-243`). That is the
   strictest citizen gate in the repo, and it is enforced onchain.
 - The author is always the sender.
-- There is a cap per citizen per cycle (5).
+- There is a cap per citizen per cycle (13, about one a week).
 - Authors can edit or remove their own rows only while the cycle is open.
 - Operators can only hide rows.
 - The payout Safe is the only address that can close a cycle or record `shareBps` and `reward`.
