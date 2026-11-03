@@ -248,7 +248,7 @@ emits.
 
 1. Contract and tests PR in `subscription-contracts/`.
 2. Deploy script `script/Contributions.s.sol`. It deploys
-   `Contributions("CONTRIBUTIONS", citizenNFT, 5)`, optionally enables one `OPERATOR` (hide
+   `Contributions("CONTRIBUTIONS", citizenNFT, 13, 20264)`, optionally enables one `OPERATOR` (hide
    only), transfers ownership to `ADMIN_SAFE` (the Safe the cron proposes payout batches to),
    and logs the address and `getTableName()`.
 

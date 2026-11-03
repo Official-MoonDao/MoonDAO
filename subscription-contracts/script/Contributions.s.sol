@@ -11,7 +11,7 @@ import {Contributions} from "../src/tables/Contributions.sol";
 /// Signers execute the batch; nothing is recorded or paid before that.
 /// OPERATOR, when set, may hide a row without a Safe transaction.
 ///
-/// The cap is 5 submissions per citizen per cycle. Cycles are quarter codes,
+/// The cap is 13 submissions per citizen per cycle. Cycles are quarter codes,
 /// starting at INITIAL_CYCLE (default 20264 = Q4 2026), so the Safe can
 /// `importBatch` past quarters before calling `sealImports`.
 ///
