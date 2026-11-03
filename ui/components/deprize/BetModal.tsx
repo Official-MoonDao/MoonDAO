@@ -37,12 +37,7 @@ import {
   writeOnrampSnapshot,
 } from '@/lib/deprize/onrampReturn'
 import { trackOnrampEvent } from '@/lib/deprize/onrampTelemetryClient'
-import {
-  arbitrumMintUsesLegacyBet,
-  betFailureMessage,
-  COST_TOO_HIGH_MESSAGE,
-  LEGACY_MINT_BET_ABI,
-} from '@/lib/deprize/mintBet'
+import { betFailureMessage, COST_TOO_HIGH_MESSAGE, mintBetArgs } from '@/lib/deprize/mintBet'
 import { betExceedsCap, DEPRIZE_MAX_BET_WEI } from '@/lib/deprize/positionCap'
 import {
   fmt,
@@ -201,7 +196,6 @@ export default function BetModal({
       }),
     [chain.id, marketAddress]
   )
-  const legacyBet = arbitrumMintUsesLegacyBet(chain.id)
   const mint = useMemo(
     () =>
       canBet
@@ -209,10 +203,10 @@ export default function BetModal({
             client,
             chain,
             address: mintAddress,
-            abi: (legacyBet ? LEGACY_MINT_BET_ABI : DePrizeMintABI) as any,
+            abi: DePrizeMintABI as any,
           })
         : undefined,
-    [canBet, chain, legacyBet, mintAddress]
+    [canBet, chain, mintAddress]
   )
 
   // `cancelled` is the latest caller. The in-flight read polls it, so a reused
@@ -609,10 +603,7 @@ export default function BetModal({
       // The router splits msg.value (5% slice -> this DePrize's Juicebox project
       // / project token, 95% -> market) and reverts CostTooHigh when the shares
       // cost more than that budget. Remeasure with the contract's own fee and
-      // shrink before signing. Unspent ETH is refunded. Sepolia's mint also
-      // checks the server-issued CompliancePermit. Arbitrum One's deployed mint
-      // does not take that signature; the permit request above is still the
-      // eligibility gate before this transaction is sent.
+      // shrink before signing. Unspent ETH is refunded.
       const shares = await fitQtyToBudget(
         (amount) => measureTradeCost(lmsr, outcomeIndex, amount, numOutcomes),
         qty,
@@ -620,16 +611,14 @@ export default function BetModal({
       )
       if (shares <= 0n) throw new Error(COST_TOO_HIGH_MESSAGE)
       setQuote({ qty: Number(shares) / Number(UNIT) })
-      const params = legacyBet
-        ? [BigInt(deprizeId), BigInt(outcomeIndex), shares, budget]
-        : [
-            BigInt(deprizeId),
-            BigInt(outcomeIndex),
-            shares,
-            budget,
-            BigInt(permit.deadline),
-            permit.signature,
-          ]
+      const params = mintBetArgs({
+        deprizeId,
+        outcomeIndex,
+        shares,
+        maxCost: budget,
+        deadline: permit.deadline,
+        signature: permit.signature,
+      })
       await sendDePrizeTx(
         account,
         prepareContractCall({
