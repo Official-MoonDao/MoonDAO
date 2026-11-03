@@ -35,19 +35,24 @@ function isRedisCoolingDown(): boolean {
   return Date.now() < redisUnavailableUntil
 }
 
-async function withTimeout<T>(p: Promise<T>, fallback: T): Promise<T> {
-  return Promise.race([
-    p.catch(() => {
+function withTimeout<T>(p: Promise<T>, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
       redisUnavailableUntil = Date.now() + REDIS_BACKOFF_MS
-      return fallback
-    }),
-    new Promise<T>((resolve) =>
-      setTimeout(() => {
+      resolve(fallback)
+    }, REDIS_TIMEOUT_MS)
+    p.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      () => {
+        clearTimeout(timer)
         redisUnavailableUntil = Date.now() + REDIS_BACKOFF_MS
         resolve(fallback)
-      }, REDIS_TIMEOUT_MS)
-    ),
-  ])
+      }
+    )
+  })
 }
 
 // Per-lambda memory cache. Bounded so a long-lived instance can't grow forever.
