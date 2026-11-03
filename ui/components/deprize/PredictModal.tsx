@@ -11,8 +11,8 @@ import { TOUCH } from '@/components/deprize/detail/primitives'
 import Modal from '@/components/layout/Modal'
 
 /**
- * Predict explains the free pick first. "Add ETH to your prediction" opens the
- * ETH form when this visitor can stake, or toasts when their region cannot.
+ * Predict records the free pick. "Add ETH to your prediction" opens the ETH
+ * form when this visitor can stake, or toasts when their region cannot.
  */
 export default function PredictModal(props: {
   mode: 'bet' | 'predict'
@@ -127,15 +127,12 @@ export default function PredictModal(props: {
             </span>
           </div>
         )}
-        <p className="text-sm text-gray-300">
-          {combineEth
-            ? 'This records your prediction, weighted by your voting power. ETH below is optional; adding some also stakes on this competitor and moves the odds.'
-            : isBet
-            ? 'Real ETH. Your stake moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'
-            : 'This saves your pick for this competitor. It is free, weighted by your voting power, and it does not change the ETH odds.'}
-        </p>
-        {!isBet && props.regionRestricted && (
-          <p className="text-sm text-amber-200">{FORECAST_COPY.restrictedNote}</p>
+        {(combineEth || isBet) && (
+          <p className="text-sm text-gray-300">
+            {combineEth
+              ? 'This records your prediction, weighted by your voting power. ETH below is optional; adding some also stakes on this competitor and moves the odds.'
+              : 'Real ETH. Your stake moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'}
+          </p>
         )}
 
         {!props.connected && (
