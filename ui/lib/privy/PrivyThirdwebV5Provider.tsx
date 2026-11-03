@@ -26,6 +26,12 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
   const wasAuthenticated = useRef(false)
   const clearedStaleSession = useRef(false)
 
+  const resolvedWallet =
+    wallets[selectedWallet] ??
+    wallets.find((candidate) => candidate.walletClientType === 'privy') ??
+    wallets[0]
+  const activeWalletChainId = resolvedWallet?.chainId
+
   useEffect(() => {
     async function setActive() {
       // The selected index can be empty while Privy is still connecting the
@@ -57,15 +63,16 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
             typeof document === 'undefined' ||
             document.visibilityState === 'visible'
 
-          // A /deprize/sep URL pins reads to Sepolia. Switching the wallet to
-          // match reloads the page, and the next load switches again.
+          // A /deprize/sep URL pins reads to Sepolia. Switching an external
+          // wallet to match can reload the page; embedded Privy wallets switch
+          // in-place without reloading.
           const routePinnedChain =
             typeof window !== 'undefined' &&
             chainForDeprizePath(window.location.pathname)
           const shouldSwitchChain =
             isAutoSwitchWallet &&
             isTabVisible &&
-            !routePinnedChain &&
+            (!routePinnedChain || walletClientType === 'privy') &&
             currentWalletChainId !== null &&
             currentWalletChainId !== selectedChain.id
 
@@ -92,16 +99,17 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
           adaptedAccount
         )
         adaptedAccount.sendTransaction = async (tx) => {
+          const txChainId = Number((tx as Record<string, unknown>)?.chainId) || selectedChain.id
           const decorated = await withClientFeeOverrides(
             tx as Record<string, unknown>,
-            selectedChain.id
+            txChainId
           )
           return originalSendTransaction(decorated as typeof tx)
         }
 
         const thirdwebWallet = createWalletAdapter({
           adaptedAccount,
-          chain: defineChain(selectedChain.id),
+          chain: selectedChain?.rpc ? selectedChain : defineChain(selectedChain.id),
           client,
           onDisconnect: () => {
             // When disconnected, we don't need to set an active wallet
@@ -140,7 +148,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     }
 
     setActive()
-  }, [user, wallets, walletsReady, selectedWallet, selectedChain])
+  }, [user, wallets, walletsReady, selectedWallet, selectedChain, activeWalletChainId])
 
   useEffect(() => {
     async function handleAuth() {

@@ -45,7 +45,8 @@ function rpcUrlsForChain(chainId: number): string[] {
       baseHttp,
     ].filter(usableRpcUrl),
     11155111: [
-      'https://rpc.sepolia.org',
+      'https://ethereum-sepolia-rpc.publicnode.com',
+      'https://ethereum-sepolia.publicnode.com',
       typeof sepolia.rpc === 'string' ? sepolia.rpc : '',
     ].filter(usableRpcUrl),
     11155420: [

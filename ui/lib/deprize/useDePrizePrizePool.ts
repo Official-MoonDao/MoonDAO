@@ -14,7 +14,11 @@ import { deprizeReadChain, deprizeReadClient, rpcRead } from '@/lib/deprize/read
  * "0 ETH" before the balance arrived. This read stays unset until the
  * unbatched call returns a bigint.
  */
-export function useDePrizePrizePool(projectId: number | undefined, chainId: number | undefined) {
+export function useDePrizePrizePool(
+  projectId: number | undefined,
+  chainId: number | undefined,
+  refreshNonce = 0
+) {
   const [balanceWei, setBalanceWei] = useState<bigint | null>(null)
   const [loading, setLoading] = useState(projectId != null && chainId != null)
 
@@ -25,8 +29,10 @@ export function useDePrizePrizePool(projectId: number | undefined, chainId: numb
       return
     }
     let cancelled = false
-    setLoading(true)
-    setBalanceWei(null)
+    if (refreshNonce === 0) {
+      setLoading(true)
+      setBalanceWei(null)
+    }
     const store = getContract({
       client: deprizeReadClient,
       chain: deprizeReadChain(chainId),
@@ -45,13 +51,13 @@ export function useDePrizePrizePool(projectId: number | undefined, chainId: numb
       })
       .catch(() => {
         if (cancelled) return
-        setBalanceWei(null)
+        if (refreshNonce === 0) setBalanceWei(null)
         setLoading(false)
       })
     return () => {
       cancelled = true
     }
-  }, [projectId, chainId])
+  }, [projectId, chainId, refreshNonce])
 
   return { balanceWei, loading }
 }

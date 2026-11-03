@@ -14,6 +14,7 @@ import {
 } from '@/lib/deprize/forecastGas'
 import { walletFromSession } from '@/lib/deprize/sessionWallet'
 import { hsmRpcForChain, isHSMAvailable, sendEthFromHSM } from '@/lib/google/hsm-signer'
+import { jsonRpcWithFallback } from '@/lib/rpc/serverJsonRpc'
 import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
 
 const redis = new Redis({
@@ -91,9 +92,15 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
-  let balance
+  let balance: bigint
   try {
-    balance = await new providers.JsonRpcProvider(rpc).getBalance(wallet)
+    const raw = await jsonRpcWithFallback(chainId, 'eth_getBalance', [wallet, 'latest'], {
+      timeoutMs: 5_000,
+    }).catch(async () => {
+      const b = await new providers.StaticJsonRpcProvider(rpc, chainId).getBalance(wallet)
+      return b.toString()
+    })
+    balance = BigInt(raw)
   } catch (err) {
     console.error('[deprize] forecast gas balance read failed', err)
     return res.status(503).json({
@@ -101,7 +108,7 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
       message: 'Could not check your gas balance. Try again.',
     })
   }
-  const topUp = forecastGasTopUpWei(BigInt(balance.toString()), forecastGasBudgetWei(chainId))
+  const topUp = forecastGasTopUpWei(balance, forecastGasBudgetWei(chainId))
   if (topUp <= 0n) {
     return res.status(200).json({ sponsored: false, funded: true })
   }

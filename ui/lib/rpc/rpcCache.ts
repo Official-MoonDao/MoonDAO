@@ -28,12 +28,31 @@ export const RPC_CACHE_DISABLED = process.env.RPC_CACHE_DISABLED === 'true'
 
 // Guard Redis round-trips so a slow/unreachable endpoint never delays a read.
 const REDIS_TIMEOUT_MS = 1500
+const REDIS_BACKOFF_MS = 60_000
+let redisUnavailableUntil = 0
 
-async function withTimeout<T>(p: Promise<T>, fallback: T): Promise<T> {
-  return Promise.race([
-    p.catch(() => fallback),
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), REDIS_TIMEOUT_MS)),
-  ])
+function isRedisCoolingDown(): boolean {
+  return Date.now() < redisUnavailableUntil
+}
+
+function withTimeout<T>(p: Promise<T>, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      redisUnavailableUntil = Date.now() + REDIS_BACKOFF_MS
+      resolve(fallback)
+    }, REDIS_TIMEOUT_MS)
+    p.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      () => {
+        clearTimeout(timer)
+        redisUnavailableUntil = Date.now() + REDIS_BACKOFF_MS
+        resolve(fallback)
+      }
+    )
+  })
 }
 
 // Per-lambda memory cache. Bounded so a long-lived instance can't grow forever.
@@ -88,7 +107,7 @@ export async function cacheGetMany(keys: string[]): Promise<(unknown | undefined
   if (missingIdx.length === 0) return results
 
   const client = getRedis()
-  if (!client) return results
+  if (!client || isRedisCoolingDown()) return results
 
   const missingKeys = missingIdx.map((i) => keys[i])
   const fetched = await withTimeout<(unknown | null)[]>(
@@ -115,7 +134,7 @@ export async function cacheSetMany(
   }
 
   const client = getRedis()
-  if (!client) return
+  if (!client || isRedisCoolingDown()) return
 
   try {
     const pipeline = client.pipeline()
