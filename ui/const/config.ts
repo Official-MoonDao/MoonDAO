@@ -267,19 +267,20 @@ export const FORECASTS_TABLE_NAMES: Index = {
   arbitrum: 'Forecasts_42161_167',
   sepolia: 'Forecasts_11155111_2089',
 }
-// Live Contributions contracts. Checked against the Tableland registry and
-// each contract's getTableName() on Nov 3, 2026. Both tables are empty, and
-// submit(title, description, area, links, metadata) matches the form.
-// These deploys use cycle 1, allow 5 submissions per citizen, and cap
-// descriptions at 2,000 bytes. The source contract's 8,000-byte cap, quarter
-// cycle ids, and row imports are not what these addresses run.
+// Live Contributions contracts, redeployed on Nov 3, 2026 from the current
+// Contributions.sol (8,000-byte descriptions, 13 submissions per citizen per
+// cycle, quarter cycle ids starting at 20264 = Q4 2026, owner-only imports).
+// Checked against each contract's getTableName(), DESCRIPTION_MAX(),
+// maxPerCycle() and currentCycleId(). Both tables are empty. Owners are the
+// admin Safes. They replace the Oct 15 deploys, which capped descriptions at
+// 2,000 bytes and used cycle 1.
 export const CONTRIBUTIONS_ADDRESSES: Index = {
-  arbitrum: '0xC2828AE1CE877de739fAAbf5616F5dBB47C4fAe9',
-  sepolia: '0x3c887C22618F09e5bfa4eCf708CA77a2e11dEEb3',
+  arbitrum: '0xdf72dB1BB0a1aDdc6A97628513726090C6223669',
+  sepolia: '0xDa4f96E0A0a29f4e59D630440286DA41aCE27FBd',
 }
 export const CONTRIBUTIONS_TABLE_NAMES: Index = {
-  arbitrum: 'CONTRIBUTIONS_42161_166',
-  sepolia: 'CONTRIBUTIONS_11155111_2091',
+  arbitrum: 'CONTRIBUTIONS_42161_169',
+  sepolia: 'CONTRIBUTIONS_11155111_2094',
 }
 export const WBA_VOTE_ID = 0
 export const BAIKONUR_VOTE_ID = 1

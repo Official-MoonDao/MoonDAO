@@ -33,6 +33,10 @@ describe('onchain contribution fields', () => {
     expect(Object.keys(errors).sort()).to.deep.equal(['area', 'description', 'title'])
   })
 
+  it('matches the contract description cap of 8,000 bytes', () => {
+    expect(DESCRIPTION_MAX_BYTES).to.equal(8000)
+  })
+
   it('counts bytes, not characters, like the contract', () => {
     expect(utf8Bytes('é')).to.equal(2)
     const atMax = 'a'.repeat(DESCRIPTION_MAX_BYTES)
@@ -75,12 +79,12 @@ describe('onchain contribution fields', () => {
 
   it('points Arbitrum and Sepolia at the deployed tables', () => {
     expect(contributionsTable('arbitrum')).to.deep.equal({
-      address: '0xC2828AE1CE877de739fAAbf5616F5dBB47C4fAe9',
-      name: 'CONTRIBUTIONS_42161_166',
+      address: '0xdf72dB1BB0a1aDdc6A97628513726090C6223669',
+      name: 'CONTRIBUTIONS_42161_169',
     })
     expect(contributionsTable('sepolia')).to.deep.equal({
-      address: '0x3c887C22618F09e5bfa4eCf708CA77a2e11dEEb3',
-      name: 'CONTRIBUTIONS_11155111_2091',
+      address: '0xDa4f96E0A0a29f4e59D630440286DA41aCE27FBd',
+      name: 'CONTRIBUTIONS_11155111_2094',
     })
     expect(contributionsTable('ethereum')).to.equal(null)
   })
