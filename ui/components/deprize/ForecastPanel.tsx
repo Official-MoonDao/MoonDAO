@@ -598,7 +598,10 @@ export default function ForecastPanel(props: {
                 {renderBet({
                   index: modalIndex,
                   onClose: onModalClose,
-                  onPlaced: () => commitPick(modalIndex, { silent: true }),
+                  onPlaced: () =>
+                    savedPick === modalIndex
+                      ? Promise.resolve(true)
+                      : commitPick(modalIndex, { silent: true }),
                 })}
               </div>
             ) : undefined

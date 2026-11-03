@@ -189,7 +189,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   // Read Juicebox on the same chain as the DePrize registry. A batched
   // useTotalFunding read comes back empty and was shown as 0 ETH.
   const jbProjectId = deprize && deprize.jbProjectId > 0n ? Number(deprize.jbProjectId) : undefined
-  const prizePool = useDePrizePrizePool(jbProjectId, chain.id)
+  const prizePool = useDePrizePrizePool(jbProjectId, chain.id, refreshNonce)
   const poolEth =
     prizePool.balanceWei == null ? null : Number(prizePool.balanceWei) / Number(UNIT)
   const { ethPrice } = useETHPrice(1)
