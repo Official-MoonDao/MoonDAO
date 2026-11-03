@@ -10,6 +10,19 @@ import { isBlockedProject } from '@/lib/project/isBlockedProject'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { getProposalCycle } from '@/lib/projectCycle/cycleQuarters'
+import { isSenateClosedBelowQuorum } from '@/lib/proposals/visibleCycleProposals'
+
+// The checked-in Proposals ABI omits `getQuorum`. Pass the fragment explicitly
+// so the Engine read does not depend on that file listing the view.
+const GET_QUORUM_ABI = [
+  {
+    type: 'function',
+    name: 'getQuorum',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+  },
+]
 
 const PROPOSAL_IPFS_TIMEOUT_MS = 10_000
 
@@ -37,12 +50,17 @@ export function isCurrentCyclePending(project: Project) {
  *
  * Senate failure is only recorded on-chain (`tempCheckFailed`); the project
  * table keeps `active = PENDING`, so the flags must be read here.
+ * `tallyVotes` does not set that flag below quorum. Outside the Senate vote,
+ * those ballots are excluded the same way as an on-chain failure. Pass
+ * `isSenateVote: true` while the Senate window is open so they stay listed.
  * Governance (non-project) and author-deleted proposals are excluded.
- * Each returned row carries `tempCheckApproved` / `tempCheckFailed`.
+ * Each returned row carries `tempCheckApproved` / `tempCheckFailed` and, when
+ * the reads succeed, `tempCheckVoteCount` / `senateQuorum`.
  */
 export async function getCurrentCycleProposals(
   projects: Project[],
-  chain: any
+  chain: any,
+  phase?: { isSenateVote: boolean }
 ): Promise<Project[]> {
   const chainSlug = getChainSlug(chain)
 
@@ -56,12 +74,15 @@ export async function getCurrentCycleProposals(
   // project count grows — which would otherwise take down the whole page.
   // If the read fails we simply proceed without Senate flags.
   const pendingMdps = Array.from(new Set(pending.map((p) => p.MDP)))
-  const tempCheckByMdp = new Map<any, { approved?: string; failed?: string }>()
+  const tempCheckByMdp = new Map<
+    any,
+    { approved?: string; failed?: string; voteCount?: string; quorum?: string }
+  >()
   if (pendingMdps.length > 0) {
     try {
       const { engineBatchRead } = await import('@/lib/thirdweb/engine')
       const mdpArgs = pendingMdps.map((mdp) => [mdp])
-      const [approveds, faileds] = await Promise.all([
+      const [approveds, faileds, voteCounts] = await Promise.all([
         engineBatchRead<string>(
           PROPOSALS_ADDRESSES[chainSlug],
           'tempCheckApproved',
@@ -76,11 +97,36 @@ export async function getCurrentCycleProposals(
           ProposalsABI.abi,
           chain.id
         ),
+        engineBatchRead<string>(
+          PROPOSALS_ADDRESSES[chainSlug],
+          'tempCheckVoteCount',
+          mdpArgs,
+          ProposalsABI.abi,
+          chain.id
+        ),
       ])
+      let quorum: string | undefined
+      try {
+        const [quorumRead] = await engineBatchRead<string>(
+          PROPOSALS_ADDRESSES[chainSlug],
+          'getQuorum',
+          [[]],
+          GET_QUORUM_ABI,
+          chain.id
+        )
+        quorum = quorumRead
+      } catch (error) {
+        console.error(
+          '[proposals] Senate quorum read failed; below-quorum proposals stay listed:',
+          error
+        )
+      }
       pendingMdps.forEach((mdp, i) => {
         tempCheckByMdp.set(mdp, {
           approved: approveds[i],
           failed: faileds[i],
+          voteCount: voteCounts[i],
+          quorum,
         })
       })
     } catch (error) {
@@ -95,7 +141,7 @@ export async function getCurrentCycleProposals(
   await Promise.all(
     pending.map(async (project: Project) => {
       if (!project.proposalIPFS) return
-      const { approved, failed } = tempCheckByMdp.get(project.MDP) ?? {}
+      const { approved, failed, voteCount, quorum } = tempCheckByMdp.get(project.MDP) ?? {}
       try {
         const proposalResponse = await fetch(project.proposalIPFS, {
           signal: AbortSignal.timeout(PROPOSAL_IPFS_TIMEOUT_MS),
@@ -123,7 +169,17 @@ export async function getCurrentCycleProposals(
       // the row still serializes through getStaticProps.
       if (approved !== undefined) project.tempCheckApproved = approved
       if (failed !== undefined) project.tempCheckFailed = failed
-      if (!failed) {
+      if (voteCount !== undefined) project.tempCheckVoteCount = voteCount
+      if (quorum !== undefined) project.senateQuorum = quorum
+      const closedBelowQuorum =
+        phase != null &&
+        !phase.isSenateVote &&
+        isSenateClosedBelowQuorum({
+          tempCheckApproved: approved,
+          tempCheckVoteCount: voteCount,
+          senateQuorum: quorum,
+        })
+      if (!failed && !closedBelowQuorum) {
         proposals.push(project)
       }
     })

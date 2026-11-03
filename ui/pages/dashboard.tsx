@@ -30,6 +30,10 @@ import {
   getRecentCitizenTransfers,
   getRecentTeamTransfers,
 } from '@/lib/network/networkSubgraph'
+import {
+  getLivePhaseOverride,
+  resolveLivePhase,
+} from '@/lib/operator/cyclePhase'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { excludeNonProjectProposals } from '@/lib/project/excludeNonProjectProposals'
 import { getCurrentCycleProposals } from '@/lib/project/getCurrentCycleProposals'
@@ -514,13 +518,17 @@ export async function getStaticProps() {
 
     // Latest Proposals widget: proposals open for the Member Vote first, then
     // ones still in the Senate vote, then recently passed projects. Senate
-    // failures stay at active = PENDING in the table, so this relies on the
-    // on-chain flags read by getCurrentCycleProposals to keep them out.
+    // failures stay at active = PENDING in the table, including ballots that
+    // closed under quorum (`tallyVotes` does not flag those). The live phase
+    // tells getCurrentCycleProposals to drop them once the Senate window ends.
     try {
       const byMdpDesc = (a: Project, b: Project) =>
         (b.MDP ?? b.id ?? 0) - (a.MDP ?? a.id ?? 0)
+      const livePhase = resolveLivePhase(await getLivePhaseOverride())
       const liveProposals = (
-        await getCurrentCycleProposals(allProjects, DEFAULT_CHAIN_V5)
+        await getCurrentCycleProposals(allProjects, DEFAULT_CHAIN_V5, {
+          isSenateVote: livePhase === 'senate',
+        })
       ).sort(byMdpDesc)
       const memberVote = liveProposals.filter((p) => p.tempCheckApproved)
       const senateVote = liveProposals.filter((p) => !p.tempCheckApproved)

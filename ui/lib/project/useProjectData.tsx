@@ -25,6 +25,8 @@ export type Project = {
   year: number
   tempCheckApproved?: string
   tempCheckFailed?: string
+  tempCheckVoteCount?: string | number
+  senateQuorum?: string | number
 }
 
 export default function useProjectData(
