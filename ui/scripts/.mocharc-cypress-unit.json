@@ -69,6 +69,7 @@
     "cypress/integration/unit/cookie-consent.cy.ts",
     "cypress/integration/unit/contribution-amount.cy.ts",
     "cypress/integration/unit/contributions-onchain.cy.ts",
+    "cypress/integration/unit/contributions-archive.cy.ts",
     "cypress/integration/unit/safe-transaction-actions.cy.tsx",
     "cypress/integration/unit/guest-checkout-phone.cy.ts",
     "cypress/integration/unit/checkout-liveness-cache.cy.ts"
