@@ -1,4 +1,5 @@
 import { getAccessToken } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
 import ContributionsABI from 'const/abis/Contributions.json'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { useState } from 'react'
@@ -83,6 +84,18 @@ function useContributionsContract() {
   return { chain, table, contract }
 }
 
+function fireSubmitConfetti() {
+  confetti({
+    particleCount: 150,
+    spread: 100,
+    origin: { y: 0.6 },
+    shapes: ['circle', 'star'],
+    colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+    // Draw above the modal overlay.
+    zIndex: 10001,
+  })
+}
+
 function ByteCounter({ used, max }: { used: number; max: number }) {
   const left = max - used
   const tone = left < 0 ? 'text-red-400' : left < max * 0.1 ? 'text-amber-300' : 'text-white/40'
@@ -139,6 +152,8 @@ export default function ContributionSubmitModal({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const [acknowledged, setAcknowledged] = useState(false)
+  const [ackError, setAckError] = useState(false)
 
   const titleBytes = utf8Bytes(title.trim())
   const descriptionBytes = utf8Bytes(description.trim())
@@ -148,7 +163,9 @@ export default function ContributionSubmitModal({
     if (submitting) return
     const checked = validateContribution({ title, description, area, links })
     setErrors(checked.errors)
-    if (Object.keys(checked.errors).length || !account || !contract || !table) return
+    setAckError(!acknowledged)
+    if (Object.keys(checked.errors).length || !acknowledged) return
+    if (!account || !contract || !table) return
 
     setError(null)
     setSubmitting(true)
@@ -194,6 +211,7 @@ export default function ContributionSubmitModal({
         linkList: checked.links,
         ...(id != null ? { id } : {}),
       })
+      if (!isEdit) fireSubmitConfetti()
       setDone(true)
     } catch (err: any) {
       setError(submitErrorMessage(err))
@@ -264,11 +282,6 @@ export default function ContributionSubmitModal({
           gate
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
-            <p className="text-xs text-white/50">
-              Your name and wallet come from your Citizen profile. Everything below is public and
-              stored onchain.
-            </p>
-
             <label className="flex flex-col gap-1.5">
               <span className="flex items-center justify-between text-sm font-semibold text-white">
                 Title
@@ -361,6 +374,25 @@ export default function ContributionSubmitModal({
               {errors.links && <span className="text-xs text-red-400">{errors.links}</span>}
             </div>
 
+            <label className="flex items-start gap-3 rounded-lg border border-white/15 bg-white/5 p-3 text-xs text-white/70">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={acknowledged}
+                onChange={(e) => {
+                  setAcknowledged(e.target.checked)
+                  if (e.target.checked) setAckError(false)
+                }}
+              />
+              <span>
+                I understand this is public and permanently recorded onchain. Editing or removing it
+                later changes what the site shows, but earlier versions stay in the public record.
+              </span>
+            </label>
+            {ackError && (
+              <span className="-mt-3 text-xs text-red-400">Check the box above to continue.</span>
+            )}
+
             {error && <p className="text-sm text-red-400">{error}</p>}
 
             <button
@@ -423,7 +455,7 @@ export function ContributionRemoveModal({
         <p className="text-sm text-white/70">
           Remove <span className="font-semibold text-white">{contribution.title}</span>? It is
           deleted from the table and frees one of this quarter&apos;s submission slots. This
-          can&apos;t be undone.
+          can&apos;t be undone. The original stays in the chain&apos;s public transaction history.
         </p>
         {!account && <p className="text-sm text-white/60">Sign in to remove it.</p>}
         {error && <p className="text-sm text-red-400">{error}</p>}
