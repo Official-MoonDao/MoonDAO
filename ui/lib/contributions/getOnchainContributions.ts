@@ -52,6 +52,26 @@ export async function getContributionRow(id: number): Promise<ContributionRow | 
   return (rows?.[0] as ContributionRow) ?? null
 }
 
+/**
+ * How many visible rows a wallet authored, across every cycle. Leave out
+ * imported rows while the Google Sheet is still read, since those rows came
+ * from the sheet and would be counted twice.
+ */
+export async function getOnchainContributionCount(
+  author: string,
+  { includeImported }: { includeImported: boolean }
+): Promise<number> {
+  const table = contributionsTable(chainSlug)
+  const wallet = author.trim().toLowerCase()
+  if (!table || !/^0x[a-f0-9]{40}$/.test(wallet)) return 0
+  const origin = includeImported ? '' : ' AND origin = 0'
+  const rows = await queryTable(
+    chain,
+    `SELECT COUNT(*) AS n FROM ${table.name} WHERE lower(author) = '${wallet}' AND hidden = 0${origin}`
+  )
+  return Number((rows?.[0] as { n?: unknown } | undefined)?.n ?? 0)
+}
+
 /** Citizen name and ID per author wallet, lower-cased. */
 export async function getCitizensForAuthors(authors: string[]): Promise<Map<string, CitizenRow>> {
   const statement = buildCitizenOwnerLookupStatement(chainSlug, authors)
