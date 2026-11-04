@@ -125,6 +125,32 @@ function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   )
 }
 
+function entryTime(c: Contribution): number {
+  const t = new Date(c.timestamp).getTime()
+  return Number.isNaN(t) ? 0 : t
+}
+
+/** "3 submissions this quarter", or the all-time count for someone quiet this quarter. */
+function submissionCountLabel(items: Contribution[]): string {
+  const now = new Date()
+  const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1).getTime()
+  const recent = items.filter((c) => entryTime(c) >= quarterStart).length
+  const n = recent || items.length
+  return `${n} ${n === 1 ? 'submission' : 'submissions'}${recent ? ' this quarter' : ''}`
+}
+
+/** Google Form areas read "Label (e.g., examples)", several joined by commas. Keep the labels. */
+function shortArea(area: string): string {
+  return area.replace(/\s*\(e\.g\.[^)]*\)/g, '')
+}
+
+function entryDate(c: Contribution): string {
+  const t = entryTime(c)
+  return t
+    ? new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+}
+
 type ContributionFeedProps = {
   justSubmitted?: Contribution[]
   /** Local edits by id, or null for a removed entry, until the cached feed catches up. */
@@ -267,9 +293,7 @@ function ContributionFeed({
                 })()}
                 <div className="min-w-0">
                   <p className="text-white font-semibold text-sm truncate">{name}</p>
-                  {items[0]?.area && (
-                    <p className="text-blue-400 text-xs truncate">{items[0].area}</p>
-                  )}
+                  <p className="text-white/50 text-xs truncate">{submissionCountLabel(items)}</p>
                 </div>
               </div>
               <svg
@@ -292,11 +316,19 @@ function ContributionFeed({
             {open && (
               <div
                 id={`contributions-panel-${name}`}
-                className="px-5 pb-5 pt-4 border-t border-white/10"
+                className="px-5 border-t border-white/10 divide-y divide-white/10"
               >
                 {items.map((c) => (
-                  <div key={`${c.walletAddress || 'anonymous'}:${c.timestamp}:${c.description}`}>
-                    {c.title && <p className="text-white font-semibold text-sm mb-1">{c.title}</p>}
+                  <div
+                    key={`${c.walletAddress || 'anonymous'}:${c.timestamp}:${c.description}`}
+                    className="py-4"
+                  >
+                    {c.title && <p className="text-white font-semibold text-sm">{c.title}</p>}
+                    <p className="text-xs mt-0.5 mb-2">
+                      {c.area && <span className="text-blue-400">{shortArea(c.area)}</span>}
+                      {c.area && entryDate(c) && <span className="text-white/30"> · </span>}
+                      <span className="text-white/40">{entryDate(c)}</span>
+                    </p>
                     <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line break-words">
                       {splitTextLinks(c.description).map((seg, i) =>
                         seg.href ? (
