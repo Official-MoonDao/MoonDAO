@@ -2,6 +2,7 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import { buildActivityRssXml, feedItemsFromUpdates } from '../lib/activity-feed/rss'
 import formatUpdateDate from '../lib/updates/formatUpdateDate'
 import { parseUpdateFrontmatter, isValidUpdateDate } from '../lib/updates/frontmatter'
 import {
@@ -14,7 +15,6 @@ import {
   slugFromFilename,
 } from '../lib/updates/loadUpdates'
 import { readingMinutes } from '../lib/updates/readingTime'
-import { buildRssXml } from '../lib/updates/rss'
 
 function expectEqual<T>(actual: T, expected: T, label: string) {
   if (actual !== expected) {
@@ -328,27 +328,49 @@ new
 })
 
 describe('updates rss', () => {
-  it('emits a title and a permalink', () => {
-    const xml = buildRssXml(
-      [
-        {
-          slug: 'the-master-plan',
-          filePath: '2023-09-12-the-master-plan.md',
-          title: 'The Master Plan',
-          description: 'An essay',
-          date: '2023-09-12',
-          author: 'Pablo',
-          category: 'Essay',
-          tags: [],
-          featured: true,
-          draft: false,
-          readingMinutes: 20,
-        },
-      ],
-      'https://moondao.com'
-    )
+  const masterPlan = {
+    slug: 'the-master-plan',
+    filePath: '2023-09-12-the-master-plan.md',
+    title: 'The Master Plan',
+    description: 'An essay',
+    date: '2023-09-12',
+    author: 'Pablo',
+    category: 'Essay',
+    tags: [],
+    featured: true,
+    draft: false,
+    readingMinutes: 20,
+  }
+
+  it('lists updates with their permalink as the guid', () => {
+    const xml = buildActivityRssXml(feedItemsFromUpdates([masterPlan]))
     if (!xml.includes('<title>The Master Plan</title>')) throw new Error('missing title')
-    if (!xml.includes('https://moondao.com/updates/the-master-plan'))
-      throw new Error('missing link')
+    if (
+      !xml.includes('<guid isPermaLink="false">https://moondao.com/updates/the-master-plan</guid>')
+    )
+      throw new Error('missing guid')
+  })
+
+  it('puts activity newest first, with escaped HTML, absolute links and images', () => {
+    const xml = buildActivityRssXml([
+      ...feedItemsFromUpdates([masterPlan]),
+      {
+        guid: 'citizen-412',
+        title: 'Ada <Lovelace> became a citizen',
+        link: 'https://moondao.com/citizen/ada-lovelace-412',
+        pubDate: new Date('2026-10-20T00:00:00Z'),
+        category: 'Citizen',
+        summary: 'Engineer & poet',
+        image: 'https://gateway.example/ipfs/QmAda',
+      },
+    ])
+    if (xml.indexOf('citizen-412') > xml.indexOf('the-master-plan</guid>'))
+      throw new Error('not newest first')
+    if (!xml.includes('Ada &lt;Lovelace&gt; became a citizen')) throw new Error('title not escaped')
+    if (!xml.includes('&lt;img src=&quot;https://gateway.example/ipfs/QmAda&quot;'))
+      throw new Error('missing escaped image html')
+    if (!xml.includes('Engineer &amp;amp; poet')) throw new Error('summary not double-escaped')
+    if (!xml.includes('<media:content url="https://gateway.example/ipfs/QmAda" medium="image" />'))
+      throw new Error('missing media:content')
   })
 })

@@ -116,7 +116,7 @@ export function stripHtml(html: string): string {
 
 // Resolves to `fallback` when a source is slow or throws, so one bad source
 // drops out of the snapshot instead of failing the whole summary.
-async function settle<T>(
+export async function settle<T>(
   label: string,
   work: () => Promise<T>,
   fallback: T,
@@ -233,7 +233,7 @@ export function safeImage(value: unknown): string | undefined {
   return trimmed.startsWith('ipfs://') || trimmed.startsWith('https://') ? trimmed : undefined
 }
 
-function toCitizen(c: any): CitizenItem {
+export function toCitizen(c: any): CitizenItem {
   return {
     id: Number(c.id),
     name: clip(c.name, 80) || `Citizen #${c.id}`,
@@ -243,7 +243,7 @@ function toCitizen(c: any): CitizenItem {
   }
 }
 
-function toTeam(t: any): TeamItem {
+export function toTeam(t: any): TeamItem {
   return {
     id: Number(t.id),
     name: clip(t.name, 80) || `Team #${t.id}`,
@@ -252,7 +252,7 @@ function toTeam(t: any): TeamItem {
   }
 }
 
-function toJob(j: any): JobItem {
+export function toJob(j: any): JobItem {
   return {
     id: Number(j.id),
     title: clip(j.title, 120)!,
@@ -261,7 +261,7 @@ function toJob(j: any): JobItem {
   }
 }
 
-function toListing(l: any): ListingItem {
+export function toListing(l: any): ListingItem {
   return {
     id: Number(l.id),
     title: clip(l.title, 120)!,

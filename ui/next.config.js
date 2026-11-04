@@ -66,6 +66,8 @@ module.exports = withBundleAnalyzer(
             './public/metadata-image.png',
             './public/assets/MoonDAO-OG.png',
           ],
+          // The feed lists Updates posts, which are read from disk at request time.
+          '/api/updates/rss': ['./content/updates/**/*.md'],
           '/api/og/listing': [
             './lib/og/fonts/Lato-Regular.ttf',
             './public/metadata-image.png',
@@ -145,6 +147,11 @@ module.exports = withBundleAnalyzer(
           {
             source: '/docs/:path*',
             destination: '/documentation/:path*',
+          },
+          // Built on request so it stays current; see pages/api/updates/rss.ts.
+          {
+            source: '/updates/rss.xml',
+            destination: '/api/updates/rss',
           },
         ]
       },
