@@ -45,6 +45,17 @@ export async function getContributionRows(cycleId: number): Promise<Contribution
   return (rows ?? []) as ContributionRow[]
 }
 
+/** Visible rows from every cycle, newest first. Empty when the table isn't deployed. */
+export async function getAllContributionRows(): Promise<ContributionRow[]> {
+  const table = contributionsTable(chainSlug)
+  if (!table) return []
+  const rows = await queryTable(
+    chain,
+    `SELECT * FROM ${table.name} WHERE hidden = 0 ORDER BY createdAt DESC, id DESC`
+  )
+  return (rows ?? []) as ContributionRow[]
+}
+
 export async function getContributionRow(id: number): Promise<ContributionRow | null> {
   const table = contributionsTable(chainSlug)
   if (!table || !Number.isInteger(id) || id <= 0) return null
@@ -53,21 +64,17 @@ export async function getContributionRow(id: number): Promise<ContributionRow | 
 }
 
 /**
- * How many visible rows a wallet authored, across every cycle. Leave out
- * imported rows while the Google Sheet is still read, since those rows came
- * from the sheet and would be counted twice.
+ * How many visible rows a wallet submitted through the in-app form, across
+ * every cycle. Imported rows (origin 1) are left out: older history is
+ * counted from the archive.
  */
-export async function getOnchainContributionCount(
-  author: string,
-  { includeImported }: { includeImported: boolean }
-): Promise<number> {
+export async function getOnchainContributionCount(author: string): Promise<number> {
   const table = contributionsTable(chainSlug)
   const wallet = author.trim().toLowerCase()
   if (!table || !/^0x[a-f0-9]{40}$/.test(wallet)) return 0
-  const origin = includeImported ? '' : ' AND origin = 0'
   const rows = await queryTable(
     chain,
-    `SELECT COUNT(*) AS n FROM ${table.name} WHERE lower(author) = '${wallet}' AND hidden = 0${origin}`
+    `SELECT COUNT(*) AS n FROM ${table.name} WHERE lower(author) = '${wallet}' AND hidden = 0 AND origin = 0`
   )
   return Number((rows?.[0] as { n?: unknown } | undefined)?.n ?? 0)
 }

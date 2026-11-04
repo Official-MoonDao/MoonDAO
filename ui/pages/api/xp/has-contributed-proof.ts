@@ -3,11 +3,9 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
+import { getArchiveEntries, isArchiveConfigured } from '@/lib/contributions/archive'
 import { getOnchainContributionCount } from '@/lib/contributions/getOnchainContributions'
-import {
-  CONTRIBUTIONS_SHEET_CSV_URL,
-  getContributionCountForAddress,
-} from '@/lib/contributions/getSheetContributions'
+import { getContributionCountForAddress } from '@/lib/contributions/getSheetContributions'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import {
   getUserAndAccessToken,
@@ -17,24 +15,27 @@ import {
 
 const CONTRIBUTIONS_THRESHOLD = BigInt(1) // changing this while using the same verifier will allow users to claim xp again
 
+async function countOlderContributions(user: Address): Promise<number> {
+  // The private archive holds everything from before the in-app form. Until
+  // it is set up, the published Google Sheet stands in for it.
+  if (!isArchiveConfigured()) return getContributionCountForAddress(user)
+  const wallet = user.toLowerCase()
+  return (await getArchiveEntries()).filter((e) => e.wallet === wallet).length
+}
+
 async function fetchUserContributions(user: Address): Promise<bigint> {
-  // Submissions from the in-app form live onchain. Older ones are in the
-  // Google Sheet until the backfill imports them and the sheet is retired;
-  // until then imported rows are skipped so nobody is counted twice.
-  const sheetActive = !!CONTRIBUTIONS_SHEET_CSV_URL
-  const [sheet, onchain] = await Promise.all([
-    sheetActive
-      ? getContributionCountForAddress(user).catch((error) => {
-          console.error('Error fetching sheet contributions:', error)
-          return 0
-        })
-      : 0,
-    getOnchainContributionCount(user, { includeImported: !sheetActive }).catch((error) => {
+  // In-app submissions live onchain; everything older is offchain.
+  const [older, onchain] = await Promise.all([
+    countOlderContributions(user).catch((error) => {
+      console.error('Error fetching older contributions:', error)
+      return 0
+    }),
+    getOnchainContributionCount(user).catch((error) => {
       console.error('Error fetching onchain contributions:', error)
       return 0
     }),
   ])
-  return BigInt(sheet + onchain)
+  return BigInt(older + onchain)
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
