@@ -21,6 +21,8 @@ export type FeedItem = {
   category: FeedCategory
   // Plain text; HTML-escaped when the feed is built
   summary?: string
+  // Plain-text bullet points shown under the summary
+  lines?: string[]
   // Absolute https:// URL
   image?: string
 }
@@ -72,6 +74,9 @@ function itemHtml(item: FeedItem): string {
     )
   }
   if (item.summary) parts.push(`<p>${escapeXml(item.summary)}</p>`)
+  if (item.lines?.length) {
+    parts.push(`<ul>${item.lines.map((line) => `<li>${escapeXml(line)}</li>`).join('')}</ul>`)
+  }
   parts.push(`<p><a href="${escapeXml(item.link)}">View on MoonDAO</a></p>`)
   return parts.join('')
 }

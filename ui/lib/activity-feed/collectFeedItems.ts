@@ -1,6 +1,7 @@
 // Server-side only: lists recent MoonDAO activity (new citizens, teams, jobs,
-// marketplace listings, contributions and Town Halls) as RSS items, straight from the data
-// with no AI step. Reuses the activity summary's queries and helpers.
+// marketplace listings, contributions and Town Halls) as RSS items, straight
+// from the data with no AI step. Reuses the activity summary's queries and
+// helpers.
 import {
   CITIZEN_ADDRESSES,
   CITIZEN_TABLE_NAMES,
@@ -11,7 +12,6 @@ import {
   TEAM_TABLE_NAMES,
 } from 'const/config'
 import { BLOCKED_CITIZENS, BLOCKED_TEAMS } from 'const/whitelist'
-import { createHash } from 'crypto'
 import {
   clip,
   settle,
@@ -35,6 +35,7 @@ import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import queryTable from '@/lib/tableland/queryTable'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import { getSummaries } from '@/lib/townhall/summaries'
+import { ContributionEntry, groupContributions, shortArea, townHallExcerpt } from './format'
 import { absoluteUrl, FeedItem } from './rss'
 
 // Longer than a week so a feed reader that polls late, or a weekly digest
@@ -58,6 +59,9 @@ export async function collectFeedItems(now: Date = new Date()): Promise<FeedItem
   const chainSlug = getChainSlug(chain)
   const nowTs = Math.floor(now.getTime() / 1000)
   const sinceTs = nowTs - FEED_LOOKBACK_DAYS * 24 * 60 * 60
+  // Contributions are grouped by week, so the oldest week in the window needs
+  // the days before sinceTs too.
+  const contributionsSinceTs = sinceTs - 7 * 24 * 60 * 60
 
   const citizenTable = CITIZEN_TABLE_NAMES[chainSlug]
   const teamTable = TEAM_TABLE_NAMES[chainSlug]
@@ -142,7 +146,7 @@ export async function collectFeedItems(now: Date = new Date()): Promise<FeedItem
         contributions
           ? ((await queryTable(
               chain,
-              `SELECT id, author, title, description, area, origin, createdAt FROM ${contributions.name} WHERE hidden = 0 AND createdAt >= ${sinceTs} ORDER BY createdAt DESC, id DESC LIMIT 50`
+              `SELECT id, author, title, description, area, origin, createdAt FROM ${contributions.name} WHERE hidden = 0 AND createdAt >= ${contributionsSinceTs} ORDER BY createdAt DESC, id DESC LIMIT 200`
             )) as ContributionRow[])
           : [],
       [] as ContributionRow[]
@@ -252,6 +256,7 @@ export async function collectFeedItems(now: Date = new Date()): Promise<FeedItem
     })
   }
 
+  const contributionEntries: ContributionEntry[] = []
   // Imported rows (backfilled from the old Google Form) aren't new activity.
   const submitted = contributionRows.filter(
     (row) => isSubmittedOrigin(row.origin) && clip(row.title)
@@ -260,36 +265,26 @@ export async function collectFeedItems(now: Date = new Date()): Promise<FeedItem
     const authors = await getCitizensForAuthors(submitted.map((row) => row.author))
     for (const row of submitted) {
       const citizen = authors.get(row.author.toLowerCase())
-      const name = clip(citizen?.name, 80) || `${row.author.slice(0, 6)}…${row.author.slice(-4)}`
-      items.push({
-        guid: `contribution-${row.id}`,
-        title: `${name} contributed: ${clip(row.title, 120)}`,
-        link: absoluteUrl('/contributions'),
-        pubDate: new Date(Number(row.createdAt) * 1000),
-        category: 'Contribution',
-        summary: [areaLabel(row.area), clip(row.description)].filter(Boolean).join(' · '),
+      contributionEntries.push({
+        person: row.author,
+        name: clip(citizen?.name, 80) || `${row.author.slice(0, 6)}…${row.author.slice(-4)}`,
+        text: row.title,
+        area: areaLabel(row.area),
+        at: new Date(Number(row.createdAt) * 1000),
       })
     }
   }
-
   for (const c of sheetContributions) {
-    const pubDate = new Date(c.timestamp)
-    const text = clip(c.description, 90)
-    if (!(pubDate.getTime() >= sinceTs * 1000) || !text) continue
-    // Sheet rows have no id, so the guid hashes the fields that identify one.
-    const hash = createHash('sha1')
-      .update(`${c.timestamp}|${c.walletAddress}|${c.description}`)
-      .digest('hex')
-      .slice(0, 12)
-    items.push({
-      guid: `contribution-sheet-${hash}`,
-      title: `${clip(c.name, 80) || 'A citizen'} contributed: ${text}`,
-      link: absoluteUrl('/contributions'),
-      pubDate,
-      category: 'Contribution',
-      summary: [c.area, clip(c.description)].filter(Boolean).join(' · '),
+    const name = clip(c.name, 80) || 'A citizen'
+    contributionEntries.push({
+      person: c.walletAddress || name,
+      name,
+      text: c.description,
+      area: shortArea(c.area),
+      at: new Date(c.timestamp),
     })
   }
+  items.push(...groupContributions(contributionEntries, { now, since: new Date(sinceTs * 1000) }))
 
   for (const summary of townHalls?.summaries ?? []) {
     const pubDate = new Date(summary.publishedAt)
@@ -300,7 +295,7 @@ export async function collectFeedItems(now: Date = new Date()): Promise<FeedItem
       link: absoluteUrl('/townhall'),
       pubDate,
       category: 'Town Hall',
-      summary: clip(stripHtml(summary.content), 400),
+      summary: clip(townHallExcerpt(summary.title, stripHtml(summary.content)), 400),
     })
   }
 

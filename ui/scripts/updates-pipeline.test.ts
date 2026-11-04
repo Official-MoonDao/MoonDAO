@@ -2,6 +2,12 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import {
+  groupContributions,
+  shortArea,
+  townHallExcerpt,
+  weekStart,
+} from '../lib/activity-feed/format'
 import { buildActivityRssXml, feedItemsFromUpdates } from '../lib/activity-feed/rss'
 import formatUpdateDate from '../lib/updates/formatUpdateDate'
 import { parseUpdateFrontmatter, isValidUpdateDate } from '../lib/updates/frontmatter'
@@ -372,5 +378,125 @@ describe('updates rss', () => {
     if (!xml.includes('Engineer &amp;amp; poet')) throw new Error('summary not double-escaped')
     if (!xml.includes('<media:content url="https://gateway.example/ipfs/QmAda" medium="image" />'))
       throw new Error('missing media:content')
+  })
+})
+
+describe('activity feed formatting', () => {
+  // Wednesday; the week of Oct 26 (Mon) ended Nov 2 00:00 UTC.
+  const now = new Date('2026-11-04T12:00:00Z')
+  const since = new Date('2026-10-05T12:00:00Z')
+  const entry = (person: string, name: string, text: string, at: string, area?: string) => ({
+    person,
+    name,
+    text,
+    area,
+    at: new Date(at),
+  })
+
+  it('starts weeks on Monday, UTC', () => {
+    expectEqual(
+      weekStart(new Date('2026-11-01T23:59:00Z')).toISOString(),
+      '2026-10-26T00:00:00.000Z',
+      'sunday'
+    )
+    expectEqual(
+      weekStart(new Date('2026-11-02T00:00:00Z')).toISOString(),
+      '2026-11-02T00:00:00.000Z',
+      'monday'
+    )
+  })
+
+  it('groups each person and week into one item listing every contribution', () => {
+    const items = groupContributions(
+      [
+        entry(
+          '0xAbC',
+          'Longarm',
+          'Finalized IVA suit paper',
+          '2026-10-27T10:00:00Z',
+          'Space Exploration & Research'
+        ),
+        entry(
+          '0xabc',
+          'Longarm',
+          'Wrote an article',
+          '2026-10-29T10:00:00Z',
+          'Content Creation & Marketing, Space Exploration & Research'
+        ),
+        entry(
+          '0xdef',
+          'Rosana',
+          'Voted on proposals',
+          '2026-10-29T11:00:00Z',
+          'Governance & Operations'
+        ),
+      ],
+      { now, since }
+    )
+    expectEqual(items.length, 2, 'one item per person')
+    const longarm = items.find((i) => i.title.startsWith('Longarm'))!
+    expectEqual(longarm.title, 'Longarm made 2 contributions', 'grouped title')
+    expectEqual(
+      longarm.lines?.join(' | '),
+      'Finalized IVA suit paper | Wrote an article',
+      'oldest first'
+    )
+    expectEqual(
+      longarm.summary,
+      'Space Exploration & Research, Content Creation & Marketing',
+      'unique areas'
+    )
+    expectEqual(longarm.pubDate.toISOString(), '2026-11-02T00:00:00.000Z', 'dated at week end')
+    if (!/^contributions-[0-9a-f]{10}-2026-10-26$/.test(longarm.guid))
+      throw new Error(`guid ${longarm.guid}`)
+    const rosana = items.find((i) => i.title.startsWith('Rosana'))!
+    expectEqual(rosana.title, 'Rosana contributed: Voted on proposals', 'single title')
+    expectEqual(rosana.lines, undefined, 'no list for one')
+  })
+
+  it('leaves out the unfinished week and weeks before the window', () => {
+    const items = groupContributions(
+      [
+        entry('0xabc', 'Longarm', 'This week', '2026-11-03T10:00:00Z'),
+        entry('0xabc', 'Longarm', 'Long ago', '2026-09-20T10:00:00Z'),
+      ],
+      { now, since }
+    )
+    expectEqual(items.length, 0, 'nothing listed')
+  })
+
+  it('shortens form area labels and trims the Town Hall preamble', () => {
+    expectEqual(
+      shortArea(
+        'Community Growth & Engagement (e.g., events, moderation, onboarding), Governance & Operations (e.g., proposal review, documentation)'
+      ),
+      'Community Growth & Engagement, Governance & Operations',
+      'areas'
+    )
+    expectEqual(
+      townHallExcerpt(
+        'Astronaut Ron Garan | MoonDAO Town Hall',
+        'Town Hall Summary Astronaut Ron Garan | MoonDAO Town Hall Guest Speaker Ron'
+      ),
+      'Guest Speaker Ron',
+      'town hall'
+    )
+  })
+
+  it('renders grouped contributions as a list', () => {
+    const [item] = groupContributions(
+      [
+        entry('0xabc', 'Longarm', 'One', '2026-10-27T10:00:00Z'),
+        entry('0xabc', 'Longarm', 'Two <b>', '2026-10-28T10:00:00Z'),
+      ],
+      { now, since }
+    )
+    const xml = buildActivityRssXml([item])
+    if (
+      !xml.includes(
+        '&lt;ul&gt;&lt;li&gt;One&lt;/li&gt;&lt;li&gt;Two &amp;lt;b&amp;gt;&lt;/li&gt;&lt;/ul&gt;'
+      )
+    )
+      throw new Error('missing escaped list')
   })
 })
