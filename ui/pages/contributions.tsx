@@ -8,7 +8,9 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useCitizen } from '@/lib/citizen/useCitizen'
 import { contributionsTable, splitTextLinks } from '@/lib/contributions/onchain'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import ContributionSubmitModal from '../components/contribution/ContributionSubmitModal'
+import ContributionSubmitModal, {
+  ContributionRemoveModal,
+} from '../components/contribution/ContributionSubmitModal'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -119,7 +121,23 @@ function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   )
 }
 
-function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution[] }) {
+type ContributionFeedProps = {
+  justSubmitted?: Contribution[]
+  /** Local edits by id, or null for a removed entry, until the cached feed catches up. */
+  changed?: Record<number, Contribution | null>
+  /** Wallet that may edit its own onchain entries. Unset hides the controls. */
+  editor?: string
+  onEdit?: (c: Contribution) => void
+  onRemove?: (c: Contribution) => void
+}
+
+function ContributionFeed({
+  justSubmitted = [],
+  changed = {},
+  editor,
+  onEdit,
+  onRemove,
+}: ContributionFeedProps) {
   const [fetched, setFetched] = useState<Contribution[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
@@ -166,7 +184,13 @@ function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution
   const contributions = [
     ...justSubmitted.filter((c) => c.id == null || !fetchedIds.has(c.id)),
     ...fetched,
-  ]
+  ].flatMap((c) => {
+    if (c.id == null || !(c.id in changed)) return [c]
+    const next = changed[c.id]
+    return next ? [next] : []
+  })
+  const isOwn = (c: Contribution) =>
+    !!editor && c.id != null && c.walletAddress?.toLowerCase() === editor.toLowerCase()
 
   if (loading && !justSubmitted.length) {
     return (
@@ -312,6 +336,24 @@ function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution
                         </a>
                       )
                     )}
+                    {isOwn(c) && (
+                      <div className="flex gap-4 mt-3 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => onEdit?.(c)}
+                          className="text-white/50 hover:text-white underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemove?.(c)}
+                          className="text-white/50 hover:text-red-400 underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -328,6 +370,10 @@ export default function ContributionsPage() {
   const inApp = flagOn && !!contributionsTable(DEFAULT_CHAIN_V5_SLUG)
   const [formOpen, setFormOpen] = useState(false)
   const [justSubmitted, setJustSubmitted] = useState<Contribution[]>([])
+  const [changed, setChanged] = useState<Record<number, Contribution | null>>({})
+  const [editing, setEditing] = useState<Contribution | null>(null)
+  const [removing, setRemoving] = useState<Contribution | null>(null)
+  const account = useActiveAccount()
 
   return (
     <>
@@ -415,7 +461,13 @@ export default function ContributionsPage() {
                 <h2 className="text-white font-heading font-semibold text-xl mb-5">
                   Recent Submissions
                 </h2>
-                <ContributionFeed justSubmitted={justSubmitted} />
+                <ContributionFeed
+                  justSubmitted={justSubmitted}
+                  changed={changed}
+                  editor={inApp ? account?.address : undefined}
+                  onEdit={setEditing}
+                  onRemove={setRemoving}
+                />
               </div>
             </div>
           </ContentLayout>
@@ -425,6 +477,20 @@ export default function ContributionsPage() {
         <ContributionSubmitModal
           setEnabled={setFormOpen}
           onSubmitted={(c) => setJustSubmitted((prev) => [c, ...prev])}
+        />
+      )}
+      {editing && (
+        <ContributionSubmitModal
+          setEnabled={(open) => !open && setEditing(null)}
+          editing={editing}
+          onSubmitted={(c) => setChanged((prev) => ({ ...prev, [c.id!]: c }))}
+        />
+      )}
+      {removing && (
+        <ContributionRemoveModal
+          setEnabled={(open) => !open && setRemoving(null)}
+          contribution={removing}
+          onRemoved={(id) => setChanged((prev) => ({ ...prev, [id]: null }))}
         />
       )}
     </>

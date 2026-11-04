@@ -51,6 +51,13 @@ export function areaLabel(area: string): string {
   return CONTRIBUTION_AREAS.find((a) => a.code === area)?.label ?? area
 }
 
+/** The area code for a stored code or a feed label. Empty when it matches neither. */
+export function areaCode(areaOrLabel: string): string {
+  return (
+    CONTRIBUTION_AREAS.find((a) => a.code === areaOrLabel || a.label === areaOrLabel)?.code ?? ''
+  )
+}
+
 export function utf8Bytes(text: string): number {
   return new TextEncoder().encode(text).length
 }
