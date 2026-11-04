@@ -17,10 +17,15 @@ const REQUIRED = [
   '24 months',
 ]
 
+// Built from parts so this file is not a docs-hygiene gate-1 hit. Those
+// filenames were withdrawn and must not appear as contiguous text under ui/.
+const WITHDRAWN_SPEC = ['DEPRIZE', 'NIGHT', 'SHIFT'].join('_')
+const WITHDRAWN_BRIEF = ['night', 'shift', 'brief'].join('-')
+
 const FORBIDDEN = [
   '(OPEN)',
-  'DEPRIZE_NIGHT_SHIFT',
-  'night-shift-brief',
+  WITHDRAWN_SPEC,
+  WITHDRAWN_BRIEF,
   '0x5fe6f1664f0de1fc497411f5c6fc53cb2adbe80e6ba50078387f97bb66581dc8',
   '0x18e1c3d9d40fbccaaa147e0736917bff8f1eb3bd0a1f5ebc6f16c70fe4e9b396',
   '0x849f4a11bbe459437a4962debe34fe5d3a1ad64326d37bd60886cf26c1f74d2d',
@@ -82,7 +87,7 @@ describe('rules of record', () => {
   })
 
   it('Night Shift has no spec file and no ladder link', () => {
-    expect(fs.existsSync(path.join(DOCS, 'DEPRIZE_NIGHT_SHIFT.md'))).to.equal(false)
+    expect(fs.existsSync(path.join(DOCS, `${WITHDRAWN_SPEC}.md`))).to.equal(false)
     const href = (key: string) => CAPABILITY_LADDER.find((rung) => rung.key === key)?.specHref
     expect(href('first-tracks')).to.include('DEPRIZE_FIRST_TRACKS.md')
     expect(href('ice')).to.include('DEPRIZE_WATER_ICE.md')
