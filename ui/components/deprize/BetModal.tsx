@@ -1076,21 +1076,15 @@ export default function BetModal({
                     Add funds to your wallet
                   </button>
                 )}
-                {showFunding && (
-                  <Modal
-                    id="deprize-add-funds"
-                    title="Add funds"
-                    size="md"
-                    showToaster={false}
-                    setEnabled={(open) => !open && setShowFunding(false)}
-                  >
-                  <div className="space-y-3">
-                    <p className="text-gray-400 text-xs leading-relaxed">
-                      {drivenByPredict
-                        ? 'This buys ETH into your wallet for this bet. MoonDAO never holds it. When the ETH arrives, the button places the bet.'
-                        : 'This buys ETH into your own wallet. It is not a bet, MoonDAO never holds it, and MoonDAO cannot reverse it. You may still be unable to bet afterwards.'}
-                    </p>
-                    {fundingStrategy.kind === 'faucet' ? (
+                {showFunding &&
+                  (fundingStrategy.kind === 'faucet' ? (
+                    <Modal
+                      id="deprize-add-funds"
+                      title="Add funds"
+                      size="md"
+                      showToaster={false}
+                      setEnabled={(open) => !open && setShowFunding(false)}
+                    >
                       <p className="text-gray-300 text-sm">
                         Get Sepolia ETH from a faucet (e.g.{' '}
                         <a
@@ -1103,35 +1097,55 @@ export default function BetModal({
                         </a>
                         ), then come back — your balance will refresh.
                       </p>
-                    ) : (
-                      <FundOnramp
-                        address={wallet}
-                        selectedChain={chain}
-                        ethAmount={betAmountNum || ONRAMP_SUGGESTED_PURCHASE_ETH}
-                        defaultProvider={fundingStrategy.defaultProvider}
-                        coinbaseRedirectUrl={buildOnrampReturnUrl({
-                          origin: typeof window !== 'undefined' ? window.location.origin : '',
-                          deprizeId,
-                          outcomeIndex,
-                          amountEth: betAmountNum > 0 ? String(betAmountNum) : undefined,
-                          capEth: String(maxBetEth),
-                          chainSlug: getChainSlug(chain),
-                        })}
-                        onCoinbaseBeforeNavigate={async () => {
-                          const ok = await persistOnrampSession()
-                          if (!ok) throw new Error('jwt_generate_error')
-                          trackOnrampEvent('provider_selected:coinbase')
-                        }}
-                        onMoonPayBeforeOpen={async () => {
-                          const ok = await persistOnrampSession()
-                          if (!ok) throw new Error('jwt_generate_error')
-                          trackOnrampEvent('provider_selected:moonpay')
-                        }}
-                      />
-                    )}
-                  </div>
-                  </Modal>
-                )}
+                    </Modal>
+                  ) : (
+                    // The onramp card carries its own header and close button,
+                    // so it is the window; the overlay scrolls when it is taller
+                    // than the screen.
+                    <Modal
+                      id="deprize-add-funds"
+                      setEnabled={(open) => !open && setShowFunding(false)}
+                      className="fixed inset-0 z-[9999] flex flex-col items-center justify-start overflow-y-auto bg-black/75 px-4 py-6 backdrop-blur-sm animate-fadeIn"
+                      showCloseButton={false}
+                      showToaster={false}
+                    >
+                      <div className="my-auto w-full max-w-md space-y-2">
+                        <div className="rounded-2xl bg-gray-950">
+                        <FundOnramp
+                          fullWidth
+                          address={wallet}
+                          selectedChain={chain}
+                          ethAmount={betAmountNum || ONRAMP_SUGGESTED_PURCHASE_ETH}
+                          defaultProvider={fundingStrategy.defaultProvider}
+                          onExit={() => setShowFunding(false)}
+                          coinbaseRedirectUrl={buildOnrampReturnUrl({
+                            origin: typeof window !== 'undefined' ? window.location.origin : '',
+                            deprizeId,
+                            outcomeIndex,
+                            amountEth: betAmountNum > 0 ? String(betAmountNum) : undefined,
+                            capEth: String(maxBetEth),
+                            chainSlug: getChainSlug(chain),
+                          })}
+                          onCoinbaseBeforeNavigate={async () => {
+                            const ok = await persistOnrampSession()
+                            if (!ok) throw new Error('jwt_generate_error')
+                            trackOnrampEvent('provider_selected:coinbase')
+                          }}
+                          onMoonPayBeforeOpen={async () => {
+                            const ok = await persistOnrampSession()
+                            if (!ok) throw new Error('jwt_generate_error')
+                            trackOnrampEvent('provider_selected:moonpay')
+                          }}
+                        />
+                        </div>
+                        <p className="px-2 text-center text-xs leading-relaxed text-gray-400">
+                          {drivenByPredict
+                            ? 'This buys ETH into your wallet for this bet. MoonDAO never holds it. When the ETH arrives, the button places the bet.'
+                            : 'This buys ETH into your own wallet. It is not a bet, MoonDAO never holds it, and MoonDAO cannot reverse it. You may still be unable to bet afterwards.'}
+                        </p>
+                      </div>
+                    </Modal>
+                  ))}
               </>
             )}
           </div>
