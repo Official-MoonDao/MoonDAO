@@ -340,6 +340,11 @@ export default function BetModal({
     if (fundsArrived) headingRef.current?.focus()
   }, [fundsArrived])
 
+  // The add-funds window has nothing to do once the balance covers the bet.
+  useEffect(() => {
+    if (!needsFunding) setShowFunding(false)
+  }, [needsFunding])
+
   useEffect(() => {
     if (!needsFunding || ctaShown.current) return
     if (fundingStrategy.kind === 'none') return
@@ -1072,7 +1077,14 @@ export default function BetModal({
                   </button>
                 )}
                 {showFunding && (
-                  <div className="space-y-2">
+                  <Modal
+                    id="deprize-add-funds"
+                    title="Add funds"
+                    size="md"
+                    showToaster={false}
+                    setEnabled={(open) => !open && setShowFunding(false)}
+                  >
+                  <div className="space-y-3">
                     <p className="text-gray-400 text-xs leading-relaxed">
                       {drivenByPredict
                         ? 'This buys ETH into your wallet for this bet. MoonDAO never holds it. When the ETH arrives, the button places the bet.'
@@ -1118,6 +1130,7 @@ export default function BetModal({
                       />
                     )}
                   </div>
+                  </Modal>
                 )}
               </>
             )}
