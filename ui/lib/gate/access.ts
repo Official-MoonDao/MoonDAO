@@ -35,16 +35,16 @@
 
 // Public launch switch for Moon Base Zero and DePrize.
 //
-// false (today): those routes stay behind the shared password, and the
-// homepage does not render the Moon Base Zero or DePrize sections.
-// true: the password stops applying and the homepage sections render, in the
-// same deploy. Flip this constant to launch. Do not launch by unsetting
-// MOONBASE_GATE_PASSWORD or MOONBASE_GATE_TOKEN — while this is false, a
-// missing variable locks the routes instead of publishing them.
+// true: the password does not apply to /moonbase or /deprize, and the
+// homepage sections render. /deprize/sep and /deprize-play stay gated
+// through ALWAYS_GATED_PREFIXES.
+// false would put /moonbase and /deprize back behind the password.
+// Do not launch or unlaunch by unsetting MOONBASE_GATE_PASSWORD or
+// MOONBASE_GATE_TOKEN. While this is false, a missing variable locks the
+// routes instead of publishing them.
 //
-// The access-gate unit test asserts this is still false. Update that
-// assertion in the same commit that flips it.
-export const MOONBASE_DEPRIZE_LAUNCHED = false
+// The access-gate unit test asserts this is true.
+export const MOONBASE_DEPRIZE_LAUNCHED = true
 
 // Everything under these prefixes is gated until MOONBASE_DEPRIZE_LAUNCHED.
 // Prefix-matched, so a route added under one of them later is covered without

@@ -7,21 +7,19 @@ without the pages being reachable.
 ## Launching
 
 Moon Base Zero and DePrize go public together. `MOONBASE_DEPRIZE_LAUNCHED` in
-`ui/lib/gate/access.ts` is the switch, and it starts as `false`.
+`ui/lib/gate/access.ts` is the switch, and it is `true`.
 
-While it is `false`:
+While it is `true`:
 
-- `/moonbase`, `/deprize` and `/deprize-play` stay behind this password.
-- The homepage does not render the Moon Base Zero or DePrize sections, so
-  those buttons cannot send a visitor into the password form.
+- `/moonbase` and `/deprize` are not behind the password, and the homepage
+  renders the Moon Base Zero and DePrize sections.
+- `/deprize/sep` and `/deprize-play` stay behind the password.
 
-Set it to `true` and deploy. That one change drops the password and renders
-the homepage sections. Do not launch by deleting `MOONBASE_GATE_PASSWORD` or
+Do not launch or unlaunch by deleting `MOONBASE_GATE_PASSWORD` or
 `MOONBASE_GATE_TOKEN`. While the flag is `false`, an unset variable locks the
 routes instead of publishing them.
 
-The access-gate unit test asserts the flag is still `false`. Update that
-assertion in the same commit.
+The access-gate unit test asserts the flag is `true`.
 
 ## Setting it up
 
