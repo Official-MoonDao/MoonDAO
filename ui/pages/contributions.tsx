@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
-import { useCitizen } from '@/lib/citizen/useCitizen'
+import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { contributionsTable, splitTextLinks } from '@/lib/contributions/onchain'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
 import ContributionSubmitModal, {
@@ -23,21 +23,9 @@ const CONTRIBUTION_FORM_URL =
 function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   const { authenticated, login } = usePrivy()
   const account = useActiveAccount()
-  const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
-  const [citizenCheckDone, setCitizenCheckDone] = useState(false)
-
-  useEffect(() => {
-    if (!account) {
-      setCitizenCheckDone(false)
-      return
-    }
-    if (isCitizen) {
-      setCitizenCheckDone(true)
-      return
-    }
-    const timer = setTimeout(() => setCitizenCheckDone(true), 1500)
-    return () => clearTimeout(timer)
-  }, [account, isCitizen])
+  // Waits for the lookup to settle instead of timing out, and checks linked
+  // wallets, so a slow RPC never shows a Citizen the mint prompt.
+  const citizen = usePrizeChainCitizen(DEFAULT_CHAIN_V5)
 
   const baseClass =
     'flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 whitespace-nowrap'
@@ -72,7 +60,7 @@ function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   }
 
   // Signed in but citizen check still in-flight
-  if (!citizenCheckDone) {
+  if (!account || citizen.isLoading) {
     return (
       <button disabled className={`${baseClass} bg-blue-500/50 text-white/60 cursor-not-allowed`}>
         <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -81,8 +69,24 @@ function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
     )
   }
 
+  if (citizen.lookupFailed) {
+    return (
+      <button
+        type="button"
+        onClick={citizen.retry}
+        className={`${baseClass} bg-blue-500/70 hover:bg-blue-500 text-white`}
+      >
+        Couldn&apos;t confirm Citizenship. Retry
+      </button>
+    )
+  }
+
+  // A Citizen on another linked wallet, or an expired one: the form explains
+  // what to do, so let them open it.
+  const formExplains = !!onOpenForm && (!!citizen.linkedCitizenAddress || citizen.expired)
+
   // Signed in but not a citizen
-  if (!isCitizen) {
+  if (!citizen.isCitizen && !formExplains) {
     return (
       <Link
         href="/citizen"
