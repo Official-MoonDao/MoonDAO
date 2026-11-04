@@ -98,9 +98,14 @@ export function encodeLinks(links: readonly string[]): string {
   return links.length ? JSON.stringify(links) : ''
 }
 
-/** Reads the JSON array this form writes, and plain newline-separated text from imports. */
-export function decodeLinks(stored: string | null | undefined): string[] {
-  if (!stored) return []
+/**
+ * Reads the JSON array this form writes, and plain newline-separated text from
+ * imports. The Tableland gateway parses JSON-looking text before returning it,
+ * so a row's `links` usually arrives as an array, not a string.
+ */
+export function decodeLinks(stored: unknown): string[] {
+  if (Array.isArray(stored)) return stored.filter((x): x is string => typeof x === 'string')
+  if (typeof stored !== 'string' || !stored) return []
   try {
     const parsed = JSON.parse(stored)
     if (Array.isArray(parsed)) return parsed.filter((x): x is string => typeof x === 'string')

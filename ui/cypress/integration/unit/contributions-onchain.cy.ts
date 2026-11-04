@@ -77,6 +77,15 @@ describe('onchain contribution fields', () => {
     expect(decodeLinks('https://a.org/1\nhttps://b.org/2')).to.deep.equal(links)
   })
 
+  it('reads links the Tableland gateway already parsed into an array', () => {
+    expect(decodeLinks(['https://a.org/1', 7, 'https://b.org/2'])).to.deep.equal([
+      'https://a.org/1',
+      'https://b.org/2',
+    ])
+    expect(decodeLinks(null)).to.deep.equal([])
+    expect(decodeLinks({})).to.deep.equal([])
+  })
+
   it('points Arbitrum and Sepolia at the deployed tables', () => {
     expect(contributionsTable('arbitrum')).to.deep.equal({
       address: '0xdf72dB1BB0a1aDdc6A97628513726090C6223669',
