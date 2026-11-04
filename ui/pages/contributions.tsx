@@ -17,9 +17,6 @@ import WebsiteHead from '../components/layout/Head'
 import { NoticeFooter } from '../components/layout/NoticeFooter'
 import type { Contribution } from './api/contributions/feed'
 
-const CONTRIBUTION_FORM_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform'
-
 function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   const { authenticated, login } = usePrivy()
   const account = useActiveAccount()
@@ -98,30 +95,22 @@ function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
     )
   }
 
-  // Citizen — open the in-app form, or the Google Form until it launches
-  if (onOpenForm) {
-    return (
-      <button
-        type="button"
-        onClick={onOpenForm}
-        className={`${baseClass} bg-blue-500 hover:bg-blue-400 text-white`}
-      >
-        Submit a Contribution
-        {arrowIcon}
-      </button>
-    )
-  }
-
+  // Citizen — open the in-app form. Disabled only before mount, or on a chain
+  // with no Contributions table.
   return (
-    <a
-      href={CONTRIBUTION_FORM_URL}
-      target="_blank"
-      rel="noreferrer"
-      className={`${baseClass} bg-blue-500 hover:bg-blue-400 text-white`}
+    <button
+      type="button"
+      onClick={onOpenForm}
+      disabled={!onOpenForm}
+      className={`${baseClass} ${
+        onOpenForm
+          ? 'bg-blue-500 hover:bg-blue-400 text-white'
+          : 'bg-blue-500/50 text-white/60 cursor-not-allowed'
+      }`}
     >
       Submit a Contribution
       {arrowIcon}
-    </a>
+    </button>
   )
 }
 
