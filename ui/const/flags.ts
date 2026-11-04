@@ -82,7 +82,7 @@ export function useDemoMarketsEnabled(): boolean {
 // table. Flip to true to retire the Google Form on the public site. Elsewhere
 // it is on as soon as the table is deployed on that chain. Starts off so
 // production never flashes the form before mount.
-export const ONCHAIN_CONTRIBUTIONS_LAUNCHED = false
+export const ONCHAIN_CONTRIBUTIONS_LAUNCHED = true
 
 export function useOnchainContributionsEnabled(): boolean {
   const [enabled, setEnabled] = useState(false)
