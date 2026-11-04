@@ -130,8 +130,8 @@ export default function PredictModal(props: {
         {(combineEth || isBet) && (
           <p className="text-sm text-gray-300">
             {combineEth
-              ? 'This records your prediction, weighted by your voting power. ETH below is optional; adding some also stakes on this competitor and moves the odds.'
-              : 'Real ETH. Your stake moves the odds and each share pays 1 ETH if this team wins. It does not save a MOONEY prediction.'}
+              ? 'Your pick is weighted by your voting power. Adding ETH is optional and backs this competitor in the market.'
+              : 'Real ETH. Each share pays 1 ETH if this team wins. This does not save a MOONEY prediction.'}
           </p>
         )}
 
@@ -165,7 +165,9 @@ export default function PredictModal(props: {
         {!isBet && props.connected && props.citizenNotice}
 
         {props.connected && props.error && !isBet && (
-          <p className="text-xs text-amber-200">{props.error}</p>
+          <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-200">
+            {props.error}
+          </p>
         )}
 
         {ethOffered ? (

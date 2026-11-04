@@ -64,6 +64,7 @@ import { deprizeReadChain, deprizeReadClient } from '@/lib/deprize/read'
 import { sendDePrizeTx } from '@/lib/deprize/tx'
 import { useDePrizeChainGuard } from '@/lib/deprize/useDePrizeChainGuard'
 import { useDePrizeLaunchpadToken } from '@/lib/deprize/useDePrizeLaunchpad'
+import { walletErrorMessage } from '@/lib/deprize/walletError'
 import useOnrampJWT from '@/lib/coinbase/useOnrampJWT'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -652,7 +653,7 @@ export default function BetModal({
       toast.dismiss('permit')
       toast.dismiss('bet')
       console.error('[deprize] bet failed', err)
-      toast.error(betFailureMessage(err) || err?.shortMessage || err?.message || 'Bet failed.', {
+      toast.error(betFailureMessage(err) || walletErrorMessage(err, 'Bet failed. Try again.'), {
         style: toastStyle,
         duration: 8000,
       })
@@ -796,61 +797,60 @@ export default function BetModal({
         )}
         {stakeUnlocked && (
         <>
-        <div>
-          <label className="text-xs text-gray-400">How much do you want to bet? (ETH)</label>
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="any"
-            autoFocus={!embedded && !fundsArrived}
-            value={betAmount}
-            onChange={(e) => setBetAmount(e.target.value)}
-            placeholder="e.g. 0.01"
-            className="mt-1 w-full px-4 py-3 text-base bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {betAmountNum > 0 && fmtUsdFromEth(betAmountNum, ethPrice) && (
-            <p className="text-white/55 text-xs mt-1 tabular-nums">
-              {fmtUsdFromEth(betAmountNum, ethPrice)}
-            </p>
-          )}
-          <div className="flex gap-2 mt-2 flex-wrap">
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="any"
+              aria-label="Bet amount in ETH"
+              autoFocus={!embedded && !fundsArrived}
+              value={betAmount}
+              onChange={(e) => setBetAmount(e.target.value)}
+              placeholder="0.00"
+              className="min-w-0 flex-1 bg-transparent text-2xl font-semibold tabular-nums text-white placeholder-gray-600 focus:outline-none"
+            />
+            <span className="text-sm font-medium text-gray-400">ETH</span>
+          </div>
+          <p className="mt-0.5 h-4 text-xs tabular-nums text-gray-500">
+            {betAmountNum > 0 ? fmtUsdFromEth(betAmountNum, ethPrice) : ''}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {betPresetEthAmounts(ethPrice, maxBetEth).map((eth) => {
               const amount = formatBetPresetEth(eth)
               const usd = fmtUsdFromEth(eth, ethPrice)
               return (
                 <button
                   key={amount}
+                  type="button"
                   onClick={() => setBetAmount(amount)}
-                  className={`px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-gray-300 text-xs ${TOUCH}`}
+                  title={`${amount} ETH`}
+                  className={`rounded-full border border-white/10 px-3 py-1 text-xs tabular-nums text-gray-300 transition-colors hover:border-white/25 hover:text-white ${TOUCH}`}
                 >
-                  {amount} ETH{usd ? ` (${usd})` : ''}
+                  {usd ?? `${amount} ETH`}
                 </button>
               )
             })}
           </div>
         </div>
 
-        {/* Payout + fee/slice breakdown */}
         {betAmountNum > 0 && (
-          <div className="p-4 rounded-xl bg-black/30 border border-white/10 flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5 px-1 text-sm">
             {quote ? (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">To win if it wins</span>
-                  <span className="text-moon-green text-lg font-bold">
-                    <EthUsd eth={quote.qty} usdClassName="text-moon-green/70 font-normal text-sm" />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-xs">Payout multiple</span>
-                  <span className="text-gray-300 text-xs">
-                    {betMult ? `${fmt(betMult, 2)}x` : '—'}
-                  </span>
-                </div>
-              </>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-gray-400">To win</span>
+                <span className="font-semibold text-moon-green tabular-nums">
+                  <EthUsd eth={quote.qty} usdClassName="text-moon-green/60 font-normal text-xs" />
+                  {betMult ? (
+                    <span className="ml-1.5 text-xs font-normal text-gray-500">
+                      {fmt(betMult, 2)}x
+                    </span>
+                  ) : null}
+                </span>
+              </div>
             ) : (
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-500">
                 {quoting
                   ? 'Calculating payout…'
                   : quoteFailed
@@ -858,55 +858,50 @@ export default function BetModal({
                   : 'Enter an amount'}
               </p>
             )}
-            <div className="flex items-center justify-between mt-1">
-              <span className="text-gray-500 text-xs">Prize contribution (5% → {prizeToken})</span>
-              <span className="text-gray-300 text-xs">
-                <EthUsd eth={sliceEth} prize usdClassName="text-gray-400 font-normal" />
+            <div className="flex items-baseline justify-between gap-3 text-xs">
+              <span className="text-gray-500">5% to the prize, paid in {prizeToken}</span>
+              <span className="text-gray-400 tabular-nums">
+                <EthUsd eth={sliceEth} prize usdClassName="text-gray-500 font-normal" />
               </span>
             </div>
           </div>
         )}
 
-        {/* Point-of-bet disclosure. Shown only once an amount is entered, since
-            a prediction with no stake does not need these acknowledgements.
-            Mirrors the non-custodial prediction-market approach (read the rules;
-            total-loss risk; equal-payout on void/cancel; final resolution). */}
+        {/* Point-of-bet disclosure, shown once an amount is entered. Each point
+            is required: total loss, final resolution, 1/N on cancel, where the
+            5% goes, MoonDAO's roles, and the U.S./restricted exclusion. */}
         {betAmountNum > 0 && (
         <>
-        <div className="text-amber-300/90 text-xs sm:text-[11px] leading-snug space-y-1.5">
-          <p>
-            You are buying outcome tokens for this competitor. If this competitor wins, they redeem
-            for their full share; if it loses, they are{' '}
-            <span className="font-semibold">worth $0</span>. Only bet what you can afford to lose.
-            Read this DePrize&apos;s rules before betting — resolution is final and cannot be
-            reversed.
-          </p>
-          <p>
+        <ul className="list-disc space-y-1 rounded-xl border border-white/10 bg-white/[0.02] py-3 pl-7 pr-3 text-xs sm:text-[11px] leading-snug text-gray-400 marker:text-gray-600">
+          <li>
+            If {teamName} loses, your tokens are{' '}
+            <span className="font-semibold text-gray-200">worth $0</span>. Only bet what you can
+            afford to lose. Resolution is final.
+          </li>
+          <li>
+            If the DePrize is cancelled or has no winner, each token redeems for{' '}
+            <span className="font-semibold text-gray-200">1/N</span>, which can be less than you
+            paid.
+          </li>
+          <li>
             {payloadCopy('fivePercentLine', payloadCopyMode(DEPRIZE_TERMS_VERSION))}
-            {launchpad.name ? ` (${launchpad.name})` : ''} — you receive {prizeToken} for that
-            slice. If the DePrize is cancelled or ends with no winner, it resolves on an
-            equal-payout basis — <span className="font-semibold">every token redeems for 1/N</span>,
-            not your original stake — so a bet placed at odds above the average (1/N) may redeem for
-            less than you put in.
-          </p>
-          <p>
+            {launchpad.name ? ` (${launchpad.name})` : ''}; you receive {prizeToken} for it.
+          </li>
+          <li>
             MoonDAO funds the market maker, receives the market fee, reports the result and sponsors
-            the prize. DePrize is{' '}
-            <span className="font-semibold">not available to U.S. persons</span> or in restricted
-            jurisdictions. See the{' '}
+            the prize. Not available to U.S. persons or in restricted jurisdictions.{' '}
             <a
               href={DEPRIZE_RISK_DISCLOSURES_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline hover:text-amber-200"
+              className="underline hover:text-white"
             >
               Risk Disclosures
             </a>
-            .
-          </p>
-        </div>
+          </li>
+        </ul>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5 px-1">
           <label className="flex items-start gap-2.5 text-xs sm:text-[11px] leading-snug text-gray-300 cursor-pointer">
             <input
               type="checkbox"
@@ -991,7 +986,7 @@ export default function BetModal({
             </span>
           </label>
           {acceptanceState === 'error' && (
-            <p className="text-amber-300 text-xs sm:text-[11px]">
+            <p className="text-amber-300 text-xs">
               {acceptanceError ||
                 'We could not record your acceptance. Recheck the boxes to try again.'}
             </p>
