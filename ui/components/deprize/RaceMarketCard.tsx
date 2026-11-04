@@ -284,6 +284,7 @@ export default function RaceMarketCard({
   // are a planning list: company names, no mock prices, no demo pool.
   const bettingOpenReal = marketTradable && !bettingBlockedReason
   const showLiveMarket = bound && hasRace
+  const oddsPending = showLiveMarket && !live.resolved && !live.oddsByProjectId
   const bettingEnabled = showLiveMarket && bettingOpenReal
   const forecastHref =
     bound && !!bettingBlockedReason && deprizeId !== undefined
@@ -574,6 +575,7 @@ export default function RaceMarketCard({
               color={o.color}
               probability={o.probability}
               showOdds={showLiveMarket}
+              loading={oddsPending}
               heldQty={o.heldQty}
               onPredict={bettingEnabled ? () => handleBet(o) : undefined}
             />
@@ -653,6 +655,7 @@ export default function RaceMarketCard({
                   color={o.color}
                   probability={o.probability}
                   showOdds={showLiveMarket}
+                  loading={oddsPending}
                   heldQty={o.heldQty}
                   onPredict={bettingEnabled ? () => handleBet(o) : undefined}
                 />
@@ -757,6 +760,7 @@ export default function RaceMarketCard({
                 color={o.color}
                 probability={o.probability}
                 showOdds={showLiveMarket}
+                loading={oddsPending}
                 heldQty={o.heldQty}
                 onPredict={bettingEnabled ? () => handleBet(o) : undefined}
               />
