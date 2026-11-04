@@ -34,8 +34,9 @@ Touchdown's six outcomes onto any other rung.
 
 Touchdown rules of record: [DEPRIZE_TOUCHDOWN.md](DEPRIZE_TOUCHDOWN.md). GTM context (read-only):
 [DEPRIZE_GTM_TOUCHDOWN.md](DEPRIZE_GTM_TOUCHDOWN.md). Purse destination:
-[DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md). First Tracks and Water Ice are
-live on Sepolia and Arbitrum. Their rules of record are still this page until a spec is published.
+[DEPRIZE_PAYLOAD_PURSE.md](DEPRIZE_PAYLOAD_PURSE.md). First Tracks rules of record:
+[DEPRIZE_FIRST_TRACKS.md](DEPRIZE_FIRST_TRACKS.md). Water Ice rules of record:
+[DEPRIZE_WATER_ICE.md](DEPRIZE_WATER_ICE.md).
 
 The purse for every rung is a **community payload purchase** on a future flight — the winner's next
 qualifying flight, or a nonprofit the Winner names if they do not claim, or the next prize if
