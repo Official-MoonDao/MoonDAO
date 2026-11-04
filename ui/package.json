@@ -3,7 +3,7 @@
   "private": true,
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=18 <25"
   },
   "resolutions": {
     "@noble/hashes": "1.8.0"
