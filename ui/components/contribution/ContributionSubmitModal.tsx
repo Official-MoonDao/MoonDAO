@@ -1,4 +1,5 @@
 import { getAccessToken } from '@privy-io/react-auth'
+import confetti from 'canvas-confetti'
 import ContributionsABI from 'const/abis/Contributions.json'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { useState } from 'react'
@@ -16,6 +17,7 @@ import {
   DESCRIPTION_MAX_BYTES,
   MAX_LINKS,
   TITLE_MAX_BYTES,
+  areaCode,
   areaLabel,
   contributionsTable,
   encodeLinks,
@@ -41,11 +43,57 @@ function submitErrorMessage(err: any): string {
   if (/NotCitizen/.test(text)) return 'This wallet does not hold an active Citizen.'
   if (/TextTooLong/.test(text)) return 'One of the fields is too long.'
   if (/EmptyField/.test(text)) return 'Fill in the title, area and description.'
+  if (/NotAuthor/.test(text)) return 'Only the wallet that submitted this entry can change it.'
+  if (/CycleClosedForEdits/.test(text))
+    return 'This quarter has closed, so its entries can no longer change.'
+  if (/NotFound/.test(text)) return 'This entry no longer exists.'
   if (/rejected|denied/i.test(text)) return 'The signature was cancelled.'
   if (err?.shortMessage) return err.shortMessage
   // Our own messages (gas sponsor) are short. Raw RPC errors are not.
   const message = typeof err?.message === 'string' ? err.message : ''
   return message && message.length < 200 ? message : 'Could not save your contribution. Try again.'
+}
+
+/** Tops up gas for an embedded wallet with no ETH. A funded wallet passes straight through. */
+async function sponsorGas(wallet: string, chainId: number) {
+  const accessToken = await getAccessToken().catch(() => null)
+  const res = await fetch('/api/contributions/sponsor-gas', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ wallet, chainId }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(
+      typeof body?.message === 'string' ? body.message : 'Could not cover gas for this change.'
+    )
+  }
+}
+
+function useContributionsContract() {
+  const chain = DEFAULT_CHAIN_V5
+  const table = contributionsTable(getChainSlug(chain))
+  const contract = useContract({
+    address: table?.address ?? '',
+    chain,
+    abi: ContributionsABI as any,
+  })
+  return { chain, table, contract }
+}
+
+function fireSubmitConfetti() {
+  confetti({
+    particleCount: 150,
+    spread: 100,
+    origin: { y: 0.6 },
+    shapes: ['circle', 'star'],
+    colors: ['#ffffff', '#FFD700', '#00FFFF', '#ff69b4', '#8A2BE2'],
+    // Draw above the modal overlay.
+    zIndex: 10001,
+  })
 }
 
 function ByteCounter({ used, max }: { used: number; max: number }) {
@@ -72,33 +120,40 @@ const inputClass =
 
 type ContributionSubmitModalProps = {
   setEnabled: (enabled: boolean) => void
-  /** Called with the new entry so the page can show it before the feed cache refreshes. */
+  /** An onchain entry of the caller's own to change. Omit to submit a new one. */
+  editing?: Contribution
+  /** Called with the saved entry so the page can show it before the feed cache refreshes. */
   onSubmitted?: (contribution: Contribution) => void
 }
 
 export default function ContributionSubmitModal({
   setEnabled,
+  editing,
   onSubmitted,
 }: ContributionSubmitModalProps) {
   const account = useActiveAccount()
-  const chain = DEFAULT_CHAIN_V5
-  const table = contributionsTable(getChainSlug(chain))
+  const { chain, table, contract } = useContributionsContract()
   const citizen = usePrizeChainCitizen(chain)
-  const contract = useContract({
-    address: table?.address ?? '',
-    chain,
-    abi: ContributionsABI as any,
-  })
+  const isEdit = editing?.id != null
 
-  const [title, setTitle] = useState('')
-  const [area, setArea] = useState('')
-  const [description, setDescription] = useState('')
-  const [links, setLinks] = useState<string[]>([''])
+  const [title, setTitle] = useState(editing?.title ?? '')
+  const [area, setArea] = useState(editing ? areaCode(editing.area) : '')
+  const [description, setDescription] = useState(editing?.description ?? '')
+  const [links, setLinks] = useState<string[]>(() => {
+    const existing = editing?.linkList?.length
+      ? editing.linkList
+      : editing?.links
+      ? [editing.links]
+      : []
+    return existing.length ? existing : ['']
+  })
   const [errors, setErrors] = useState<ContributionFieldErrors>({})
   const [status, setStatus] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const [acknowledged, setAcknowledged] = useState(false)
+  const [ackError, setAckError] = useState(false)
 
   const titleBytes = utf8Bytes(title.trim())
   const descriptionBytes = utf8Bytes(description.trim())
@@ -108,42 +163,33 @@ export default function ContributionSubmitModal({
     if (submitting) return
     const checked = validateContribution({ title, description, area, links })
     setErrors(checked.errors)
-    if (Object.keys(checked.errors).length || !account || !contract || !table) return
+    setAckError(!acknowledged)
+    if (Object.keys(checked.errors).length || !acknowledged) return
+    if (!account || !contract || !table) return
 
     setError(null)
     setSubmitting(true)
     try {
       setStatus('Covering gas…')
-      const accessToken = await getAccessToken().catch(() => null)
-      const sponsorRes = await fetch('/api/contributions/sponsor-gas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
-        body: JSON.stringify({ wallet: account.address, chainId: chain.id }),
-      })
-      if (!sponsorRes.ok) {
-        const body = await sponsorRes.json().catch(() => ({}))
-        throw new Error(
-          typeof body?.message === 'string'
-            ? body.message
-            : 'Could not cover gas for this submission.'
-        )
-      }
+      await sponsorGas(account.address, chain.id)
 
       setStatus('Confirm in your wallet…')
+      const fields = [title.trim(), description.trim(), area, encodeLinks(checked.links), '']
       const transaction = prepareContractCall({
         contract,
-        method: 'submit' as string,
-        params: [title.trim(), description.trim(), area, encodeLinks(checked.links), ''],
+        method: (isEdit ? 'update' : 'submit') as string,
+        params: isEdit ? [BigInt(editing!.id!), ...fields] : fields,
       })
       const receipt = await sendAndConfirmTransaction({ transaction, account })
 
       setStatus('Saving…')
-      const [log] = parseEventLogs({ logs: receipt.logs, events: [submittedEvent] })
-      const id = log ? Number(log.args.id) : null
-      if (id != null) {
+      let id: number | null = isEdit ? editing!.id! : null
+      if (!isEdit) {
+        const [log] = parseEventLogs({ logs: receipt.logs, events: [submittedEvent] })
+        id = log ? Number(log.args.id) : null
+      }
+      // An edit is already announced; only a new row waits for the table and posts.
+      if (!isEdit && id != null) {
         await waitForRowById(table.name, 'id', id, { timeout: 30_000, cacheBusting: true })
         // Discord is a nice-to-have. The entry is already saved.
         fetch('/api/contributions/notify', {
@@ -154,9 +200,10 @@ export default function ContributionSubmitModal({
       }
 
       onSubmitted?.({
-        timestamp: new Date().toISOString(),
+        ...editing,
+        timestamp: editing?.timestamp ?? new Date().toISOString(),
         walletAddress: account.address,
-        name: 'You',
+        name: editing?.name ?? 'You',
         description: description.trim(),
         links: checked.links[0] ?? '',
         area: areaLabel(area),
@@ -164,6 +211,7 @@ export default function ContributionSubmitModal({
         linkList: checked.links,
         ...(id != null ? { id } : {}),
       })
+      if (!isEdit) fireSubmitConfetti()
       setDone(true)
     } catch (err: any) {
       setError(submitErrorMessage(err))
@@ -210,7 +258,7 @@ export default function ContributionSubmitModal({
     <Modal
       id="contribution-submit"
       setEnabled={setEnabled}
-      title="Submit a contribution"
+      title={isEdit ? 'Edit your contribution' : 'Submit a contribution'}
       size="2xl"
     >
       <div className="p-6">
@@ -218,8 +266,9 @@ export default function ContributionSubmitModal({
           <div className="flex flex-col gap-4">
             <p className="text-white font-semibold">Saved.</p>
             <p className="text-sm text-white/60">
-              Your contribution is recorded onchain under your Citizen wallet. Senators review all
-              submissions at the end of the quarter. You can submit more work any time before then.
+              {isEdit
+                ? 'Your changes are recorded onchain. Others may see the old version for a few minutes while the feed refreshes.'
+                : 'Your contribution is recorded onchain under your Citizen wallet. Senators review all submissions at the end of the quarter. You can edit it or submit more work any time before then.'}
             </p>
             <button
               type="button"
@@ -233,11 +282,6 @@ export default function ContributionSubmitModal({
           gate
         ) : (
           <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
-            <p className="text-xs text-white/50">
-              Your name and wallet come from your Citizen profile. Everything below is public and
-              stored onchain.
-            </p>
-
             <label className="flex flex-col gap-1.5">
               <span className="flex items-center justify-between text-sm font-semibold text-white">
                 Title
@@ -330,6 +374,25 @@ export default function ContributionSubmitModal({
               {errors.links && <span className="text-xs text-red-400">{errors.links}</span>}
             </div>
 
+            <label className="flex items-start gap-3 rounded-lg border border-white/15 bg-white/5 p-3 text-xs text-white/70">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={acknowledged}
+                onChange={(e) => {
+                  setAcknowledged(e.target.checked)
+                  if (e.target.checked) setAckError(false)
+                }}
+              />
+              <span>
+                I understand this is public and permanently recorded onchain. Editing or removing it
+                later changes what the site shows, but earlier versions stay in the public record.
+              </span>
+            </label>
+            {ackError && (
+              <span className="-mt-3 text-xs text-red-400">Check the box above to continue.</span>
+            )}
+
             {error && <p className="text-sm text-red-400">{error}</p>}
 
             <button
@@ -337,10 +400,82 @@ export default function ContributionSubmitModal({
               disabled={submitting}
               className="self-start rounded-xl bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/50 disabled:cursor-not-allowed px-6 py-3 text-sm font-semibold text-white"
             >
-              {status ?? 'Submit contribution'}
+              {status ?? (isEdit ? 'Save changes' : 'Submit contribution')}
             </button>
           </form>
         )}
+      </div>
+    </Modal>
+  )
+}
+
+type ContributionRemoveModalProps = {
+  setEnabled: (enabled: boolean) => void
+  /** An onchain entry of the caller's own. */
+  contribution: Contribution
+  onRemoved?: (id: number) => void
+}
+
+/** Deletes the caller's own entry while its quarter is open, freeing a slot under the cap. */
+export function ContributionRemoveModal({
+  setEnabled,
+  contribution,
+  onRemoved,
+}: ContributionRemoveModalProps) {
+  const account = useActiveAccount()
+  const { chain, contract } = useContributionsContract()
+  const [status, setStatus] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function remove() {
+    if (status || !account || !contract || contribution.id == null) return
+    setError(null)
+    try {
+      setStatus('Covering gas…')
+      await sponsorGas(account.address, chain.id)
+      setStatus('Confirm in your wallet…')
+      const transaction = prepareContractCall({
+        contract,
+        method: 'remove' as string,
+        params: [BigInt(contribution.id)],
+      })
+      await sendAndConfirmTransaction({ transaction, account })
+      onRemoved?.(contribution.id)
+      setEnabled(false)
+    } catch (err: any) {
+      setError(submitErrorMessage(err))
+    } finally {
+      setStatus(null)
+    }
+  }
+
+  return (
+    <Modal id="contribution-remove" setEnabled={setEnabled} title="Remove contribution" size="md">
+      <div className="p-6 flex flex-col gap-4">
+        <p className="text-sm text-white/70">
+          Remove <span className="font-semibold text-white">{contribution.title}</span>? It is
+          deleted from the table and frees one of this quarter&apos;s submission slots. This
+          can&apos;t be undone. The original stays in the chain&apos;s public transaction history.
+        </p>
+        {!account && <p className="text-sm text-white/60">Sign in to remove it.</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={remove}
+            disabled={!!status || !account}
+            className="rounded-xl bg-red-500 hover:bg-red-400 disabled:bg-red-500/50 disabled:cursor-not-allowed px-5 py-2 text-sm font-semibold text-white"
+          >
+            {status ?? 'Remove'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEnabled(false)}
+            className="rounded-xl border border-white/20 px-5 py-2 text-sm text-white/70 hover:text-white"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </Modal>
   )

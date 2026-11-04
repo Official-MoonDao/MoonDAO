@@ -1,6 +1,7 @@
 import {
   AREA_MAX_BYTES,
   CONTRIBUTION_AREAS,
+  areaCode,
   DESCRIPTION_MAX_BYTES,
   TITLE_MAX_BYTES,
   contributionsTable,
@@ -75,6 +76,21 @@ describe('onchain contribution fields', () => {
     expect(decodeLinks(encodeLinks(links))).to.deep.equal(links)
     expect(encodeLinks([])).to.equal('')
     expect(decodeLinks('https://a.org/1\nhttps://b.org/2')).to.deep.equal(links)
+  })
+
+  it('maps a feed label or a stored code back to the area code', () => {
+    expect(areaCode('Technical Development')).to.equal('technical')
+    expect(areaCode('technical')).to.equal('technical')
+    expect(areaCode('Community Growth & Engagement (e.g., events)')).to.equal('')
+  })
+
+  it('reads links the Tableland gateway already parsed into an array', () => {
+    expect(decodeLinks(['https://a.org/1', 7, 'https://b.org/2'])).to.deep.equal([
+      'https://a.org/1',
+      'https://b.org/2',
+    ])
+    expect(decodeLinks(null)).to.deep.equal([])
+    expect(decodeLinks({})).to.deep.equal([])
   })
 
   it('points Arbitrum and Sepolia at the deployed tables', () => {

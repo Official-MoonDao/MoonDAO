@@ -5,10 +5,12 @@ import Image from 'next/image'
 import Link from 'next/link'
 import React, { useEffect, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
-import { useCitizen } from '@/lib/citizen/useCitizen'
+import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { contributionsTable, splitTextLinks } from '@/lib/contributions/onchain'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
-import ContributionSubmitModal from '../components/contribution/ContributionSubmitModal'
+import ContributionSubmitModal, {
+  ContributionRemoveModal,
+} from '../components/contribution/ContributionSubmitModal'
 import Container from '../components/layout/Container'
 import ContentLayout from '../components/layout/ContentLayout'
 import WebsiteHead from '../components/layout/Head'
@@ -21,21 +23,9 @@ const CONTRIBUTION_FORM_URL =
 function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   const { authenticated, login } = usePrivy()
   const account = useActiveAccount()
-  const isCitizen = useCitizen(DEFAULT_CHAIN_V5)
-  const [citizenCheckDone, setCitizenCheckDone] = useState(false)
-
-  useEffect(() => {
-    if (!account) {
-      setCitizenCheckDone(false)
-      return
-    }
-    if (isCitizen) {
-      setCitizenCheckDone(true)
-      return
-    }
-    const timer = setTimeout(() => setCitizenCheckDone(true), 1500)
-    return () => clearTimeout(timer)
-  }, [account, isCitizen])
+  // Waits for the lookup to settle instead of timing out, and checks linked
+  // wallets, so a slow RPC never shows a Citizen the mint prompt.
+  const citizen = usePrizeChainCitizen(DEFAULT_CHAIN_V5)
 
   const baseClass =
     'flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 font-semibold text-sm rounded-xl transition-all duration-200 whitespace-nowrap'
@@ -70,7 +60,7 @@ function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   }
 
   // Signed in but citizen check still in-flight
-  if (!citizenCheckDone) {
+  if (!account || citizen.isLoading) {
     return (
       <button disabled className={`${baseClass} bg-blue-500/50 text-white/60 cursor-not-allowed`}>
         <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -79,8 +69,24 @@ function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
     )
   }
 
+  if (citizen.lookupFailed) {
+    return (
+      <button
+        type="button"
+        onClick={citizen.retry}
+        className={`${baseClass} bg-blue-500/70 hover:bg-blue-500 text-white`}
+      >
+        Couldn&apos;t confirm Citizenship. Retry
+      </button>
+    )
+  }
+
+  // A Citizen on another linked wallet, or an expired one: the form explains
+  // what to do, so let them open it.
+  const formExplains = !!onOpenForm && (!!citizen.linkedCitizenAddress || citizen.expired)
+
   // Signed in but not a citizen
-  if (!isCitizen) {
+  if (!citizen.isCitizen && !formExplains) {
     return (
       <Link
         href="/citizen"
@@ -119,7 +125,49 @@ function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
   )
 }
 
-function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution[] }) {
+function entryTime(c: Contribution): number {
+  const t = new Date(c.timestamp).getTime()
+  return Number.isNaN(t) ? 0 : t
+}
+
+/** "3 submissions this quarter", or the all-time count for someone quiet this quarter. */
+function submissionCountLabel(items: Contribution[]): string {
+  const now = new Date()
+  const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1).getTime()
+  const recent = items.filter((c) => entryTime(c) >= quarterStart).length
+  const n = recent || items.length
+  return `${n} ${n === 1 ? 'submission' : 'submissions'}${recent ? ' this quarter' : ''}`
+}
+
+/** Google Form areas read "Label (e.g., examples)", several joined by commas. Keep the labels. */
+function shortArea(area: string): string {
+  return area.replace(/\s*\(e\.g\.[^)]*\)/g, '')
+}
+
+function entryDate(c: Contribution): string {
+  const t = entryTime(c)
+  return t
+    ? new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : ''
+}
+
+type ContributionFeedProps = {
+  justSubmitted?: Contribution[]
+  /** Local edits by id, or null for a removed entry, until the cached feed catches up. */
+  changed?: Record<number, Contribution | null>
+  /** Wallet that may edit its own onchain entries. Unset hides the controls. */
+  editor?: string
+  onEdit?: (c: Contribution) => void
+  onRemove?: (c: Contribution) => void
+}
+
+function ContributionFeed({
+  justSubmitted = [],
+  changed = {},
+  editor,
+  onEdit,
+  onRemove,
+}: ContributionFeedProps) {
   const [fetched, setFetched] = useState<Contribution[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
@@ -166,7 +214,13 @@ function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution
   const contributions = [
     ...justSubmitted.filter((c) => c.id == null || !fetchedIds.has(c.id)),
     ...fetched,
-  ]
+  ].flatMap((c) => {
+    if (c.id == null || !(c.id in changed)) return [c]
+    const next = changed[c.id]
+    return next ? [next] : []
+  })
+  const isOwn = (c: Contribution) =>
+    !!editor && c.id != null && c.walletAddress?.toLowerCase() === editor.toLowerCase()
 
   if (loading && !justSubmitted.length) {
     return (
@@ -239,9 +293,7 @@ function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution
                 })()}
                 <div className="min-w-0">
                   <p className="text-white font-semibold text-sm truncate">{name}</p>
-                  {items[0]?.area && (
-                    <p className="text-blue-400 text-xs truncate">{items[0].area}</p>
-                  )}
+                  <p className="text-white/50 text-xs truncate">{submissionCountLabel(items)}</p>
                 </div>
               </div>
               <svg
@@ -264,11 +316,19 @@ function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution
             {open && (
               <div
                 id={`contributions-panel-${name}`}
-                className="px-5 pb-5 pt-4 border-t border-white/10"
+                className="px-5 border-t border-white/10 divide-y divide-white/10"
               >
                 {items.map((c) => (
-                  <div key={`${c.walletAddress || 'anonymous'}:${c.timestamp}:${c.description}`}>
-                    {c.title && <p className="text-white font-semibold text-sm mb-1">{c.title}</p>}
+                  <div
+                    key={`${c.walletAddress || 'anonymous'}:${c.timestamp}:${c.description}`}
+                    className="py-4"
+                  >
+                    {c.title && <p className="text-white font-semibold text-sm">{c.title}</p>}
+                    <p className="text-xs mt-0.5 mb-2">
+                      {c.area && <span className="text-blue-400">{shortArea(c.area)}</span>}
+                      {c.area && entryDate(c) && <span className="text-white/30"> · </span>}
+                      <span className="text-white/40">{entryDate(c)}</span>
+                    </p>
                     <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line break-words">
                       {splitTextLinks(c.description).map((seg, i) =>
                         seg.href ? (
@@ -312,6 +372,24 @@ function ContributionFeed({ justSubmitted = [] }: { justSubmitted?: Contribution
                         </a>
                       )
                     )}
+                    {isOwn(c) && (
+                      <div className="flex gap-4 mt-3 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => onEdit?.(c)}
+                          className="text-white/50 hover:text-white underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemove?.(c)}
+                          className="text-white/50 hover:text-red-400 underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -328,6 +406,10 @@ export default function ContributionsPage() {
   const inApp = flagOn && !!contributionsTable(DEFAULT_CHAIN_V5_SLUG)
   const [formOpen, setFormOpen] = useState(false)
   const [justSubmitted, setJustSubmitted] = useState<Contribution[]>([])
+  const [changed, setChanged] = useState<Record<number, Contribution | null>>({})
+  const [editing, setEditing] = useState<Contribution | null>(null)
+  const [removing, setRemoving] = useState<Contribution | null>(null)
+  const account = useActiveAccount()
 
   return (
     <>
@@ -415,7 +497,13 @@ export default function ContributionsPage() {
                 <h2 className="text-white font-heading font-semibold text-xl mb-5">
                   Recent Submissions
                 </h2>
-                <ContributionFeed justSubmitted={justSubmitted} />
+                <ContributionFeed
+                  justSubmitted={justSubmitted}
+                  changed={changed}
+                  editor={inApp ? account?.address : undefined}
+                  onEdit={setEditing}
+                  onRemove={setRemoving}
+                />
               </div>
             </div>
           </ContentLayout>
@@ -425,6 +513,20 @@ export default function ContributionsPage() {
         <ContributionSubmitModal
           setEnabled={setFormOpen}
           onSubmitted={(c) => setJustSubmitted((prev) => [c, ...prev])}
+        />
+      )}
+      {editing && (
+        <ContributionSubmitModal
+          setEnabled={(open) => !open && setEditing(null)}
+          editing={editing}
+          onSubmitted={(c) => setChanged((prev) => ({ ...prev, [c.id!]: c }))}
+        />
+      )}
+      {removing && (
+        <ContributionRemoveModal
+          setEnabled={(open) => !open && setRemoving(null)}
+          contribution={removing}
+          onRemoved={(id) => setChanged((prev) => ({ ...prev, [id]: null }))}
         />
       )}
     </>

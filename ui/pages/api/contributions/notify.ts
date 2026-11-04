@@ -1,3 +1,4 @@
+import { DEFAULT_CHAIN_V5 } from 'const/config'
 import { rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
@@ -7,7 +8,8 @@ import {
   rowToFeedContribution,
 } from '@/lib/contributions/getOnchainContributions'
 import { buildContent, getRedis, postToDiscord } from '@/lib/contributions/notifyNewContributions'
-import { isSubmittedOrigin } from '@/lib/contributions/onchain'
+import { contributionsTable, isSubmittedOrigin } from '@/lib/contributions/onchain'
+import { getChainSlug } from '@/lib/thirdweb/chain'
 
 // Only fresh rows are announced, so this route can't be used to replay history.
 const ANNOUNCE_WINDOW_SECONDS = 24 * 60 * 60
@@ -42,15 +44,22 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     return res.status(200).json({ posted: false })
   }
 
+  const table = contributionsTable(getChainSlug(DEFAULT_CHAIN_V5))
   const redis = getRedis()
-  if (!redis) return res.status(503).json({ message: 'Notifications are not configured.' })
-  const key = `contributions:onchain:notified:${id}`
+  if (!redis || !table)
+    return res.status(503).json({ message: 'Notifications are not configured.' })
+
+  // Build the message before taking the lock, so a bad row can't leave it held.
+  const citizens = await getCitizensForAuthors([row.author])
+  const content = buildContent(rowToFeedContribution(row, citizens.get(row.author.toLowerCase())))
+
+  // Row IDs restart at 1 in every table, and local, preview and production
+  // share this Redis, so the key names the table.
+  const key = `contributions:onchain:notified:${table.name}:${id}`
   const claimed = await redis.set(key, '1', { nx: true, ex: NOTIFIED_TTL_SECONDS })
   if (claimed !== 'OK') return res.status(200).json({ posted: false, duplicate: true })
 
-  const citizens = await getCitizensForAuthors([row.author])
-  const contribution = rowToFeedContribution(row, citizens.get(row.author.toLowerCase()))
-  const ok = await postToDiscord(buildContent(contribution))
+  const ok = await postToDiscord(content)
   if (!ok) {
     // Let a retry claim it again.
     await redis.del(key).catch(() => {})
