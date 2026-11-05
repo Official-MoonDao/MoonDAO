@@ -150,6 +150,18 @@ export function findDePrizeChainSlugs(deprizeId: number | undefined): string[] {
     .map(([slug]) => slug)
 }
 
+/**
+ * `/deprize/1` names no registry, and most ids exist on both Arbitrum and the
+ * Sepolia rehearsal. Send it to the Arbitrum page instead of asking.
+ */
+export function unprefixedDePrizeRedirect(resolvedUrl: string): string | null {
+  const match = resolvedUrl.match(/^\/deprize\/(\d+)(\?.*)?$/)
+  if (!match) return null
+  const id = Number(match[1])
+  if (!findDePrizeChainSlugs(id).includes('arbitrum')) return null
+  return `${deprizePrefixedHref('arbitrum', id)}${match[2] ?? ''}`
+}
+
 /** Prize-page path that lands on the free prediction panel. */
 export function deprizeForecastHref(deprizeId: number | string): string {
   return `/deprize/${deprizeId}#deprize-forecast`

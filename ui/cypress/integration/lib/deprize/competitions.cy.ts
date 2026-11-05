@@ -15,6 +15,7 @@ import {
   getDePrizeRaceBinding,
   getFeaturedLiveDePrizeId,
   isCompetitorClaimed,
+  unprefixedDePrizeRedirect,
   isDePrizeGoalMarketBound,
   isKnownDePrizeCompetition,
   isRaceBindingComplete,
@@ -241,6 +242,16 @@ describe('deprize chain-prefixed links', () => {
     expect(findDePrizeChainSlugs(6)).to.deep.equal(['sepolia'])
     expect(findDePrizeChainSlugs(1).sort()).to.deep.equal(['arbitrum', 'sepolia'])
     expect(findDePrizeChainSlugs(99)).to.deep.equal([])
+  })
+
+  it('sends an unprefixed prize id straight to Arbitrum', () => {
+    expect(unprefixedDePrizeRedirect('/deprize/1')).to.equal('/deprize/arb/1')
+    expect(unprefixedDePrizeRedirect('/deprize/2?ref=x')).to.equal('/deprize/arb/2?ref=x')
+    // Sepolia-only ids, prefixed paths and race slugs are left alone.
+    expect(unprefixedDePrizeRedirect('/deprize/6')).to.equal(null)
+    expect(unprefixedDePrizeRedirect('/deprize/arb/1')).to.equal(null)
+    expect(unprefixedDePrizeRedirect('/deprize/sep/1')).to.equal(null)
+    expect(unprefixedDePrizeRedirect('/deprize/shared-next-landing')).to.equal(null)
   })
 })
 

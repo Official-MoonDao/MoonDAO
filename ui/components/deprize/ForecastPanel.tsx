@@ -9,6 +9,7 @@ import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
+import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { aggregateForecastVotes, votingPowerByOutcome } from '@/lib/forecasts/aggregate'
@@ -251,6 +252,10 @@ export default function ForecastPanel(props: {
   }, [account?.address, chainSlug, deprizeId])
 
   useEffect(() => {
+    setError(null)
+  }, [modalIndex])
+
+  useEffect(() => {
     let cancelled = false
     void (async () => {
       try {
@@ -363,7 +368,7 @@ export default function ForecastPanel(props: {
     } catch (err: any) {
       toast.dismiss('forecast-gas')
       if (sameForecastSession(sessionRef.current, started)) {
-        setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
+        setError(walletErrorMessage(err, 'Could not save your prediction.'))
       }
       return false
     } finally {
@@ -402,7 +407,7 @@ export default function ForecastPanel(props: {
       await refetchFresh()
     } catch (err: any) {
       if (sameForecastSession(sessionRef.current, started)) {
-        setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
+        setError(walletErrorMessage(err, 'Could not remove your prediction.'))
       }
     } finally {
       setWriting(false)

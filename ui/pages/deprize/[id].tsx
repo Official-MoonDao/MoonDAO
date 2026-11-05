@@ -25,6 +25,7 @@ import {
   isKnownDePrizeCompetition,
   isRaceBindingComplete,
   resolveLiveDePrizeId,
+  unprefixedDePrizeRedirect,
 } from '@/lib/deprize/competitions'
 import {
   resolveDePrizePageProps,
@@ -122,7 +123,12 @@ export default function DePrizeDetailPage({ restricted }: DePrizePageProps) {
 export const getServerSideProps: GetServerSideProps<DePrizePageProps> = async ({
   req,
   res,
-}) => resolveDePrizePageProps(req, res)
+  resolvedUrl,
+}) => {
+  const destination = unprefixedDePrizeRedirect(resolvedUrl)
+  if (destination) return { redirect: { destination, permanent: false } }
+  return resolveDePrizePageProps(req, res)
+}
 
 function DePrizeDetailContent({ restricted }: DePrizePageProps) {
   const router = useRouter()
@@ -642,37 +648,6 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
       </Shell>
     )
   }
-  // Unprefixed `/deprize/1` is Touchdown on both Arbitrum and Sepolia.
-  // A prefixed path already picked a registry; otherwise ask, so a refresh on
-  // the default chain does not open the other prize.
-  if (!forcedSlug && numericId !== undefined) {
-    const chains = findDePrizeChainSlugs(numericId)
-    if (chains.length > 1) {
-      const search = router.asPath.replace(/^[^?#]*/, '')
-      return (
-        <Shell
-          title={`DePrize #${numericId}`}
-          description={`DePrize #${numericId} is registered on more than one network.`}
-        >
-          <Notice tone="amber">
-            DePrize #{numericId} is on{' '}
-            {chains.map((slug, i) => (
-              <span key={slug}>
-                {i > 0 ? ' and ' : ''}
-                <Link
-                  href={`${deprizePrefixedHref(slug, numericId)}${search}`}
-                  className="underline underline-offset-2 hover:text-amber-100"
-                >
-                  {deprizeChainLabel(slug)}
-                </Link>
-              </span>
-            ))}
-            .
-          </Notice>
-        </Shell>
-      )
-    }
-  }
   if (goalFromSlug && boundFromSlug === undefined) {
     return <GoalDePrizeDetail goal={goalFromSlug} chainSlug={chainSlug} />
   }
@@ -715,7 +690,10 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
     )
   }
   if (deprize.state === DePrizeState.NONE) {
-    const elsewhere = findDePrizeChainSlugs(deprizeId).filter((slug) => slug !== chainSlug)
+    // The Sepolia rehearsal is internal; never offer it as an alternative.
+    const elsewhere = findDePrizeChainSlugs(deprizeId).filter(
+      (slug) => slug !== chainSlug && slug !== 'sepolia'
+    )
     return (
       <Shell title={shellTitle} description={competition.metaDescription}>
         <Notice tone="amber">

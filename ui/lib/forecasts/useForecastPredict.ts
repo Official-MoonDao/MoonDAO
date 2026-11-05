@@ -8,6 +8,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { resolveLiveDePrizeId } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
+import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { useClientDePrizeRestricted } from '@/lib/deprize/useClientDePrizeRestricted'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { votingPowerByOutcome } from '@/lib/forecasts/aggregate'
@@ -311,7 +312,7 @@ export function useForecastPredict(args: {
     } catch (err: any) {
       toast.dismiss('forecast-gas')
       if (sameForecastSession(sessionRef.current, started)) {
-        setError(err?.shortMessage || err?.message || 'Could not save your prediction.')
+        setError(walletErrorMessage(err, 'Could not save your prediction.'))
       }
       return false
     } finally {
@@ -350,7 +351,7 @@ export function useForecastPredict(args: {
       await refetchFresh()
     } catch (err: any) {
       if (sameForecastSession(sessionRef.current, started)) {
-        setError(err?.shortMessage || err?.message || 'Could not remove your prediction.')
+        setError(walletErrorMessage(err, 'Could not remove your prediction.'))
       }
     } finally {
       setWriting(false)
