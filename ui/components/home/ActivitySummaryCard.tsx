@@ -2,6 +2,7 @@ import {
   BriefcaseIcon,
   CalendarDaysIcon,
   CheckBadgeIcon,
+  HandRaisedIcon,
   PlayCircleIcon,
   SparklesIcon,
   StarIcon,
@@ -79,6 +80,12 @@ const SECTION_STYLES: Record<
     icon: TagIcon,
     gradient: 'from-orange-500 to-amber-600',
     text: 'text-amber-300',
+  },
+  contributions: {
+    label: 'Community Contributions',
+    icon: HandRaisedIcon,
+    gradient: 'from-fuchsia-500 to-purple-600',
+    text: 'text-fuchsia-300',
   },
 }
 

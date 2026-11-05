@@ -48,6 +48,7 @@ function snapshot(overrides: Partial<ActivitySnapshot> = {}): ActivitySnapshot {
     ],
     latestTownHall: null,
     mooney: { price: 0.0004, priceChange24h: 1.2 },
+    contributions: [],
     spotlight: {},
     ...overrides,
   }
@@ -259,6 +260,69 @@ describe('new citizens and the citizen spotlight', () => {
     expect(byKind.citizenSpotlight.links).to.deep.equal([
       { label: 'Grace Hopper', href: '/citizen/grace-hopper-88' },
     ])
+  })
+})
+
+describe('community contributions', () => {
+  const contributions = [
+    {
+      id: 41,
+      title: 'Lunar regolith simulant study',
+      area: 'Space Exploration & Research',
+      author: 'Ada Lovelace',
+      description: 'Tested three simulants for sintering.',
+      submittedAt: '2026-10-21T09:00:00.000Z',
+      image: 'ipfs://QmAda',
+    },
+    {
+      id: 40,
+      title: 'Discord moderation',
+      author: '0x1234â€¦abcd',
+      submittedAt: '2026-10-02T09:00:00.000Z',
+    },
+  ]
+  const week = snapshot({ contributions })
+
+  it('passes contributions with refs and without images', () => {
+    const prompt = buildSummaryUserPrompt(week)
+    expect(prompt).to.include('"ref": "contribution:41"')
+    expect(prompt).to.include('"submittedAt": "2026-10-02T09:00:00.000Z"')
+    expect(prompt).to.not.include('QmAda')
+  })
+
+  it('counts a cycle with only contributions as having something to show', () => {
+    expect(hasActivity({ ...emptySnapshot(), contributions })).to.equal(true)
+  })
+
+  it('links cited contributions and ends with the feed, as the last section', () => {
+    const raw = {
+      sections: [
+        {
+          kind: 'contributions',
+          summary: 'Ada Lovelace tested regolith simulants.',
+          refs: ['contribution:41', 'contribution:41', 'contribution:999', 'citizen:412', 'contribution:40'],
+        },
+        ...MODEL_OUTPUT.sections,
+      ],
+    }
+    const result = normalizeSummary({ raw, snapshot: week, model: 'm' })!
+    const last = result.sections[result.sections.length - 1]
+    expect(last.kind).to.equal('contributions')
+    expect(last.links).to.deep.equal([
+      {
+        label: 'Lunar regolith simulant study',
+        href: '/contributions',
+        image: 'ipfs://QmAda',
+        detail: 'Ada Lovelace',
+      },
+      { label: 'Discord moderation', href: '/contributions', detail: '0x1234â€¦abcd' },
+      { label: 'All contributions', href: '/contributions', more: true },
+    ])
+  })
+
+  it('drops a contributions section when the table has none', () => {
+    const raw = { sections: [{ kind: 'contributions', summary: 'Made up.', refs: [] }] }
+    expect(normalizeSummary({ raw, snapshot: snapshot(), model: 'm' })).to.equal(null)
   })
 })
 
@@ -548,8 +612,8 @@ describe('getOrCreateSummary', () => {
   })
 
   it('namespaces keys by environment', () => {
-    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v7:production:2026-10-23')
-    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v7:preview:latest')
+    expect(summaryKeys(NOW, 'production').day).to.equal('activity-summary:v8:production:2026-10-23')
+    expect(summaryKeys(NOW, 'preview').latest).to.equal('activity-summary:v8:preview:latest')
     expect(summaryKeys(NOW, 'preview').lock).to.not.equal(summaryKeys(NOW, 'production').lock)
   })
 

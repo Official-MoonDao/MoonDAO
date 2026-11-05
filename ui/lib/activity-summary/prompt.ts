@@ -11,7 +11,7 @@ export const ACTIVITY_SUMMARY_MODEL = 'openai/gpt-oss-120b'
 // part of the Redis key and of the URL the card requests, so a new deploy
 // regenerates instead of serving a summary stored or CDN-cached from older
 // code.
-export const ACTIVITY_SUMMARY_VERSION = 7
+export const ACTIVITY_SUMMARY_VERSION = 8
 
 export type SectionKind =
   | 'citizens'
@@ -22,6 +22,7 @@ export type SectionKind =
   | 'marketplace'
   | 'events'
   | 'townhall'
+  | 'contributions'
 
 const SECTION_ORDER: SectionKind[] = [
   'governance',
@@ -32,6 +33,7 @@ const SECTION_ORDER: SectionKind[] = [
   'teams',
   'jobs',
   'marketplace',
+  'contributions',
 ]
 
 export type SummaryLink = {
@@ -72,6 +74,9 @@ const MAX_NEW_CITIZEN_LINKS = 8
 // Proposals link to the vote page as a whole rather than one link each.
 const VOTE_LINK: SummaryLink = { label: 'Go to the vote', href: '/projects' }
 const PROPOSALS_LINK: SummaryLink = { label: 'View proposals', href: '/projects' }
+const CONTRIBUTIONS_LINK: SummaryLink = { label: 'All contributions', href: '/contributions', more: true }
+// Contribution chips the model may cite, before the "All contributions" link.
+const MAX_CONTRIBUTION_LINKS = 3
 
 export function buildSummarySystemPrompt(): string {
   return `You write the weekly activity summary shown on the MoonDAO citizen dashboard. MoonDAO is a DAO working toward a permanent settlement on the Moon. Readers are MoonDAO citizens who want to know what happened in the last 7 days and what needs their attention.
@@ -94,12 +99,18 @@ SPOTLIGHTS
 - Use the matching section kind: citizen → "citizenSpotlight", team → "teams", job → "jobs", listing → "marketplace", project → "governance".
 - The citizen spotlight is its own section, separate from "citizens". Never mention the spotlight citizen in the "citizens" section.
 
+COMMUNITY CONTRIBUTIONS
+- "communityContributions" are work citizens submitted to this quarter's Community Circle, newest first. Many were submitted before this week.
+- In the "contributions" section, highlight the 2 or 3 most interesting: concrete, mission-advancing work over routine items. Name the contributor and say what they did.
+- Only say a contribution is from this week when its "submittedAt" falls inside the period.
+- Cite the refs of the contributions you mention, at most 3.
+
 OUTPUT
 Return ONLY valid JSON (no markdown fences) matching this schema:
 {
   "sections": [
     {
-      "kind": "governance" | "events" | "townhall" | "citizens" | "citizenSpotlight" | "teams" | "jobs" | "marketplace",
+      "kind": "governance" | "events" | "townhall" | "citizens" | "citizenSpotlight" | "teams" | "jobs" | "marketplace" | "contributions",
       "summary": "1-2 sentences, at most 50 words",
       "refs": ["ref strings copied exactly from the input"]
     }
@@ -139,6 +150,7 @@ export function buildSummaryUserPrompt(snapshot: ActivitySnapshot): string {
     newTeams: snapshot.teams.map((t) => withRef(`team:${t.id}`, t)),
     newJobs: snapshot.jobs.map((j) => ({ ref: `job:${j.id}`, ...j })),
     newMarketplaceListings: snapshot.listings.map((l) => withRef(`listing:${l.id}`, l)),
+    communityContributions: snapshot.contributions.map((c) => withRef(`contribution:${c.id}`, c)),
     spotlight: {
       citizen: spotlight.citizen && withRef(`citizen:${spotlight.citizen.id}`, spotlight.citizen),
       team: spotlight.team && withRef(`team:${spotlight.team.id}`, spotlight.team),
@@ -205,6 +217,14 @@ export function buildRefIndex(snapshot: ActivitySnapshot): Map<string, SummaryLi
       detail: l.price ? `${l.price} ${l.currency ?? ''}`.trim() : undefined,
     })
   }
+  for (const c of snapshot.contributions) {
+    add(`contribution:${c.id}`, {
+      label: c.title,
+      href: '/contributions',
+      image: c.image,
+      detail: c.author,
+    })
+  }
   if (spotlight.project) {
     add(`project:${spotlight.project.mdp}`, {
       label: spotlight.project.name,
@@ -237,6 +257,7 @@ export function hasActivity(snapshot: ActivitySnapshot): boolean {
     snapshot.listings.length > 0 ||
     snapshot.upcomingEvents.length > 0 ||
     snapshot.latestTownHall !== null ||
+    snapshot.contributions.length > 0 ||
     spotlightKinds(snapshot).size > 0
   )
 }
@@ -278,6 +299,7 @@ export function normalizeSummary(params: {
     // "citizens" in a week nobody joined) would mislabel it; drop it.
     if (kind === 'citizens' && snapshot.citizens.length === 0) continue
     if (kind === 'citizenSpotlight' && !snapshot.spotlight.citizen) continue
+    if (kind === 'contributions' && snapshot.contributions.length === 0) continue
     const summary = cleanText(s.summary, 400)
     if (!summary) continue
 
@@ -308,6 +330,21 @@ export function normalizeSummary(params: {
     if (kind === 'citizenSpotlight') {
       const link = refIndex.get(`citizen:${snapshot.spotlight.citizen!.id}`)
       links = link ? [link] : []
+    }
+
+    // Every contribution chip opens the same feed, so dedupe by ref, not href.
+    if (kind === 'contributions') {
+      const cited = new Set<string>()
+      links = []
+      for (const ref of Array.isArray(s.refs) ? s.refs : []) {
+        if (typeof ref !== 'string' || cited.has(ref.trim())) continue
+        const link = refIndex.get(ref.trim())
+        if (!link || !ref.trim().startsWith('contribution:')) continue
+        cited.add(ref.trim())
+        links.push(link)
+        if (links.length >= MAX_CONTRIBUTION_LINKS) break
+      }
+      links.push(CONTRIBUTIONS_LINK)
     }
 
     byKind.set(kind, { kind, summary, links, spotlight: spotlit.has(kind) })
