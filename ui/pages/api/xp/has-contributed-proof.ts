@@ -3,6 +3,8 @@ import { authMiddleware } from 'middleware/authMiddleware'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Address } from 'thirdweb'
+import { getArchiveEntries, isArchiveConfigured } from '@/lib/contributions/archive'
+import { getOnchainContributionCount } from '@/lib/contributions/getOnchainContributions'
 import { getContributionCountForAddress } from '@/lib/contributions/getSheetContributions'
 import { addressBelongsToPrivyUser } from '@/lib/privy'
 import {
@@ -13,17 +15,27 @@ import {
 
 const CONTRIBUTIONS_THRESHOLD = BigInt(1) // changing this while using the same verifier will allow users to claim xp again
 
+async function countOlderContributions(user: Address): Promise<number> {
+  // The private archive holds everything from before the in-app form. Until
+  // it is set up, the published Google Sheet stands in for it.
+  if (!isArchiveConfigured()) return getContributionCountForAddress(user)
+  const wallet = user.toLowerCase()
+  return (await getArchiveEntries()).filter((e) => e.wallet === wallet).length
+}
+
 async function fetchUserContributions(user: Address): Promise<bigint> {
-  try {
-    // Count the user's submissions in the Community Circle contributions sheet
-    // (the Google Form / Sheet pipeline that replaced Coordinape).
-    const count = await getContributionCountForAddress(user)
-    return BigInt(count)
-  } catch (error) {
-    console.error('Error fetching user contributions:', error)
-    // If there's an error fetching contributions, return 0 to prevent XP claims
-    return BigInt(0)
-  }
+  // In-app submissions live onchain; everything older is offchain.
+  const [older, onchain] = await Promise.all([
+    countOlderContributions(user).catch((error) => {
+      console.error('Error fetching older contributions:', error)
+      return 0
+    }),
+    getOnchainContributionCount(user).catch((error) => {
+      console.error('Error fetching onchain contributions:', error)
+      return 0
+    }),
+  ])
+  return BigInt(older + onchain)
 }
 
 async function handler(req: NextApiRequest, res: NextApiResponse) {
