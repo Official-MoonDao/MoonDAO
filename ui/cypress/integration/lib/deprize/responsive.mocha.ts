@@ -137,7 +137,7 @@ describe('deprize responsive layout', () => {
       for (const tag of inputTags(readUi(file))) {
         if (/type="checkbox"/.test(tag)) continue
         expect(tag, `an input in ${file} is below 16px on mobile:\n${tag}`).to.match(
-          /text-base/
+          /text-(base|lg|xl|2xl|3xl)\b/
         )
       }
     }

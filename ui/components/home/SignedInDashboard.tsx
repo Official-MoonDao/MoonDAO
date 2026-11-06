@@ -819,15 +819,13 @@ export default function SignedInDashboard({
                 <p className="text-white text-sm font-semibold">What did you get done this week?</p>
                 <p className="text-white/40 text-xs mt-0.5">Earn financial rewards and voting power each quarter.</p>
               </div>
-              <a
-                href="https://docs.google.com/forms/d/e/1FAIpQLSdtHRzqDAAe1TOZ7Bp03TKVbxLFZzJeeKSUDQ-BpIZtDPxJWw/viewform"
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                href="/contributions"
                 className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all whitespace-nowrap flex-shrink-0 sm:self-auto"
               >
                 <TrophyIcon className="w-4 h-4" />
                 Submit Contribution
-              </a>
+              </Link>
             </div>
             <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 flex-1 flex flex-col lg:min-h-0">
               <SectionHeader

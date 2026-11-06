@@ -1,4 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { isArchiveConfigured } from '@/lib/contributions/archive'
+import { entryToFeedContribution, getContributions } from '@/lib/contributions/getContributions'
 import { getOnchainFeedContributions } from '@/lib/contributions/getOnchainContributions'
 import { getSheetContributions, type Contribution } from '@/lib/contributions/getSheetContributions'
 
@@ -15,6 +17,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Once the private archive is set up it replaces the published sheet, and
+    // the feed is every contribution from both stores.
+    if (isArchiveConfigured()) {
+      try {
+        const contributions = (await getContributions()).map(entryToFeedContribution)
+        res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
+        return res.status(200).json({ contributions })
+      } catch (err) {
+        console.error('[contributions/feed] archive read failed, using the sheet', err)
+      }
+    }
+
     // While the Google Form is still open, show both sources. The onchain read
     // is empty until the table is deployed, and a failed read must not hide the
     // sheet.

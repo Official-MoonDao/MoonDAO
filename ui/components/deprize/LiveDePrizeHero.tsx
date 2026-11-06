@@ -151,6 +151,7 @@ export default function LiveDePrizeHero({
                 color={o.color}
                 probability={o.probability}
                 showOdds
+                loading={!Number.isFinite(market.outcomes[o.index]?.probability)}
                 heldQty={
                   (market.outcomes[o.index]?.balance ?? 0) > 0
                     ? market.outcomes[o.index]?.balance

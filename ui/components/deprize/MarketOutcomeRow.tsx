@@ -12,6 +12,8 @@ type Props = {
   probability: number | undefined
   /** False for a race with no market yet — names only, no prices. */
   showOdds: boolean
+  /** Odds not read yet: placeholders instead of a 0% that looks real. */
+  loading?: boolean
   heldQty?: number
   /** Set only while this outcome can be bet on. */
   onPredict?: () => void
@@ -31,14 +33,27 @@ export default function MarketOutcomeRow({
   color,
   probability,
   showOdds,
+  loading = false,
   heldQty,
   onPredict,
   onCashOut,
   size = 'card',
 }: Props) {
   const hero = size === 'hero'
-  const pct = probability != null && Number.isFinite(probability) ? `${fmt(probability, 0)}%` : '—'
-  const multiple = showOdds ? payoutMultiple(probability) : undefined
+  const pending = showOdds && loading
+  const pct =
+    probability != null && Number.isFinite(probability) ? `${fmt(probability, 0)}%` : '—'
+  const pctLabel = pending ? (
+    <span
+      aria-label="Loading odds"
+      className={`inline-block animate-pulse rounded bg-white/15 align-middle ${
+        hero ? 'h-3.5 w-8' : 'h-3 w-7'
+      }`}
+    />
+  ) : (
+    pct
+  )
+  const multiple = showOdds && !pending ? payoutMultiple(probability) : undefined
   const pill = `shrink-0 rounded-lg border text-center font-semibold tabular-nums ${
     hero ? 'w-16 py-1.5 text-sm' : 'w-14 py-1 text-xs'
   }`
@@ -59,14 +74,20 @@ export default function MarketOutcomeRow({
           {name}
         </p>
         {showOdds && (
-          <div className="mt-1 h-0.5 w-full max-w-[9rem] rounded-full bg-white/[0.06]">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${Math.max(0, Math.min(100, probability ?? 0))}%`,
-                background: color,
-              }}
-            />
+          <div
+            className={`mt-1 h-0.5 w-full max-w-[9rem] rounded-full ${
+              pending ? 'animate-pulse bg-white/15' : 'bg-white/[0.06]'
+            }`}
+          >
+            {!pending && (
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.max(0, Math.min(100, probability ?? 0))}%`,
+                  background: color,
+                }}
+              />
+            )}
           </div>
         )}
         {!!heldQty && (
@@ -92,14 +113,14 @@ export default function MarketOutcomeRow({
             hover:border-blue-500 hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60`}
         >
           <span className="group-hover:hidden group-focus-visible:hidden">
-            {showOdds ? pct : DEPRIZE_PREDICT_CTA}
+            {showOdds ? pctLabel : DEPRIZE_PREDICT_CTA}
           </span>
           <span className="hidden group-hover:inline group-focus-visible:inline">
             {DEPRIZE_PREDICT_CTA}
           </span>
         </button>
       ) : showOdds ? (
-        <span className={`${pill} border-white/10 text-gray-200`}>{pct}</span>
+        <span className={`${pill} border-white/10 text-gray-200`}>{pctLabel}</span>
       ) : null}
       {onCashOut && (
         <button

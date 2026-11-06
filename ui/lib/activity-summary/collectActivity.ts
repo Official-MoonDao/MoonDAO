@@ -16,6 +16,12 @@ import { BLOCKED_CITIZENS, BLOCKED_TEAMS } from 'const/whitelist'
 import { getContract, readContract } from 'thirdweb'
 import { parseLocationData } from '@/lib/citizen/citizenDataService'
 import { getMooneyPrice } from '@/lib/coinstats'
+import {
+  getCitizensForAuthors,
+  getContributionRows,
+  getCurrentContributionCycle,
+} from '@/lib/contributions/getOnchainContributions'
+import { areaLabel } from '@/lib/contributions/onchain'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import { getLivePhaseOverride, resolveLivePhase } from '@/lib/operator/cyclePhase'
 import {
@@ -59,6 +65,15 @@ type ListingItem = {
   image?: string
 }
 type ProjectItem = { mdp: number; name: string; description?: string; image?: string }
+type ContributionItem = {
+  id: number
+  title: string
+  area?: string
+  author: string
+  description?: string
+  submittedAt: string
+  image?: string
+}
 type EventItem = {
   id: string
   name: string
@@ -83,6 +98,9 @@ export type ActivitySnapshot = {
   upcomingEvents: EventItem[]
   latestTownHall: { title: string; publishedAt: string; excerpt: string } | null
   mooney: { price: number; priceChange24h: number } | null
+  // The open contribution cycle's newest submissions, newest first. Most are
+  // older than this week: the cycle runs for a quarter.
+  contributions: ContributionItem[]
   // Featured items, picked by pickForDay. `citizen` is set every day (never
   // one of this week's new citizens). The others are only set when their
   // category above is empty: a funded project when no vote is open, a team
@@ -116,7 +134,7 @@ export function stripHtml(html: string): string {
 
 // Resolves to `fallback` when a source is slow or throws, so one bad source
 // drops out of the snapshot instead of failing the whole summary.
-async function settle<T>(
+export async function settle<T>(
   label: string,
   work: () => Promise<T>,
   fallback: T,
@@ -224,6 +242,30 @@ async function fetchOpenProposals(projectTable: string): Promise<ActivitySnapsho
     .sort((a, b) => a.mdp - b.mdp)
 }
 
+const MAX_CONTRIBUTIONS = 20
+
+// Reads the onchain Contributions table directly rather than /api/contributions/feed,
+// which also mixes in the retired Google Form sheet.
+async function fetchRecentContributions(): Promise<ContributionItem[]> {
+  const cycleId = await getCurrentContributionCycle()
+  if (cycleId == null) return []
+  const rows = (await getContributionRows(cycleId)).filter((r) => clip(r.title))
+  const recent = rows.slice(0, MAX_CONTRIBUTIONS)
+  const citizens = await getCitizensForAuthors(recent.map((r) => r.author))
+  return recent.map((row) => {
+    const citizen = citizens.get(String(row.author).toLowerCase())
+    return {
+      id: Number(row.id),
+      title: clip(row.title, 120)!,
+      area: clip(areaLabel(row.area), 60),
+      author: clip(citizen?.name, 80) || `${row.author.slice(0, 6)}…${row.author.slice(-4)}`,
+      description: clip(row.description, 400),
+      submittedAt: new Date(Number(row.createdAt) * 1000).toISOString(),
+      image: safeImage(citizen?.image),
+    }
+  })
+}
+
 // null = couldn't be read (see fetchMintTimestamps)
 type MintTimes = { citizen: Record<string, number> | null; team: Record<string, number> | null }
 
@@ -233,7 +275,7 @@ export function safeImage(value: unknown): string | undefined {
   return trimmed.startsWith('ipfs://') || trimmed.startsWith('https://') ? trimmed : undefined
 }
 
-function toCitizen(c: any): CitizenItem {
+export function toCitizen(c: any): CitizenItem {
   return {
     id: Number(c.id),
     name: clip(c.name, 80) || `Citizen #${c.id}`,
@@ -243,7 +285,7 @@ function toCitizen(c: any): CitizenItem {
   }
 }
 
-function toTeam(t: any): TeamItem {
+export function toTeam(t: any): TeamItem {
   return {
     id: Number(t.id),
     name: clip(t.name, 80) || `Team #${t.id}`,
@@ -252,7 +294,7 @@ function toTeam(t: any): TeamItem {
   }
 }
 
-function toJob(j: any): JobItem {
+export function toJob(j: any): JobItem {
   return {
     id: Number(j.id),
     title: clip(j.title, 120)!,
@@ -261,7 +303,7 @@ function toJob(j: any): JobItem {
   }
 }
 
-function toListing(l: any): ListingItem {
+export function toListing(l: any): ListingItem {
   return {
     id: Number(l.id),
     title: clip(l.title, 120)!,
@@ -437,6 +479,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     upcomingEvents,
     townHalls,
     mooney,
+    contributions,
   ] = await Promise.all([
     settle(
       'citizens',
@@ -504,6 +547,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
     settle('upcoming events', fetchUpcomingEvents, [] as EventItem[]),
     settle('town hall summaries', () => getSummaries({ limit: 1 }), null),
     settle('mooney price', () => getMooneyPrice(), null),
+    settle('contributions', fetchRecentContributions, [] as ContributionItem[]),
   ])
 
   // Tableland rows have no created-at column, so "new this week" comes from
@@ -563,6 +607,7 @@ export async function collectActivity(now: Date = new Date()): Promise<ActivityS
           }
         : null,
     mooney: mooney ? { price: mooney.price, priceChange24h: mooney.priceChange24h } : null,
+    contributions,
     spotlight,
   }
 }

@@ -26,6 +26,9 @@ namespace NodeJS {
     UPSTASH_REDIS_URL: string
     UPSTASH_REDIS_TOKEN: string
     CONTRIBUTIONS_SHEET_CSV_URL: string
+    CONTRIBUTIONS_ARCHIVE_SHEET_ID: string
+    CONTRIBUTIONS_ARCHIVE_CLIENT_EMAIL: string
+    CONTRIBUTIONS_ARCHIVE_PRIVATE_KEY: string
     CRON_SECRET: string
     // Moonbase / DePrize access gate. Both are server-side only — deliberately
     // NOT prefixed NEXT_PUBLIC_, so Next never inlines them into client code.
