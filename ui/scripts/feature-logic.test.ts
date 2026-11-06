@@ -623,12 +623,16 @@ describe('dates', () => {
 
   it('labels remaining time from whole days down to a single second', () => {
     const now = Date.now()
-    expect(formatTimeUntilDeadline(new Date(now - 1000))).to.equal('0 SECONDS')
-    expect(formatTimeUntilDeadline(new Date(now + 2 * DAY + 1000))).to.equal('2 DAYS')
-    expect(formatTimeUntilDeadline(new Date(now + DAY))).to.equal('24 HOURS, 0 MINUTES')
-    expect(formatTimeUntilDeadline(new Date(now + 90 * 60 * 1000))).to.equal('1 HOUR, 30 MINUTES')
-    expect(formatTimeUntilDeadline(new Date(now + 60 * 1000))).to.equal('1 MINUTE, 0 SECONDS')
-    expect(formatTimeUntilDeadline(new Date(now + 1000))).to.equal('1 SECOND')
+    withNow(now, () => {
+      expect(formatTimeUntilDeadline(new Date(now - 1000))).to.equal('0 SECONDS')
+      expect(formatTimeUntilDeadline(new Date(now + 2 * DAY + 1000))).to.equal('2 DAYS')
+      expect(formatTimeUntilDeadline(new Date(now + DAY))).to.equal('24 HOURS, 0 MINUTES')
+      expect(formatTimeUntilDeadline(new Date(now + 90 * 60 * 1000))).to.equal(
+        '1 HOUR, 30 MINUTES'
+      )
+      expect(formatTimeUntilDeadline(new Date(now + 60 * 1000))).to.equal('1 MINUTE, 0 SECONDS')
+      expect(formatTimeUntilDeadline(new Date(now + 1000))).to.equal('1 SECOND')
+    })
   })
 
   it('rejects a submission deadline that is not a calendar date', () => {
