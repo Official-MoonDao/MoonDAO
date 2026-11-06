@@ -9,16 +9,19 @@
 # DePrize capability ladder
 
 **Owner:** *unassigned — product*  
-**Last updated:** 2026-09-17
+**Last updated:** 2026-11-05
 
-Touchdown, First Tracks, Water Ice, and Night Shift are registered on Sepolia and on Arbitrum. Nothing on this page is an offer to award a prize.
+Touchdown is the only rung registered on the public registries (Arbitrum #1, Sepolia #1).
+First Tracks, Water Ice, and Night Shift ran as dress rehearsals on earlier Sepolia and
+Arbitrum registries, and the site no longer lists those markets. Nothing on this page is an
+offer to award a prize.
 
 | Rung | Name | Bar | Status |
 |---|---|---|---|
-| 0 | Touchdown | next upright working landing | LIVE (Sepolia #7) · Arbitrum #2 |
-| 1 | First Tracks | commercial rover egress + drive | LIVE (Sepolia #5) · Arbitrum #4 |
-| 2 | Water Ice | 2027 in-situ surface water ice | LIVE (Sepolia #6) · Arbitrum #5 |
-| 3 | Night Shift | chamber proxy now · surface 2028+ | LIVE (Sepolia #3) · Arbitrum #3 |
+| 0 | Touchdown | next upright working landing | LIVE · Arbitrum #1 · Sepolia #1 |
+| 1 | First Tracks | commercial rover egress + drive | Rehearsal: LIVE (Sepolia #5) · Arbitrum #4, earlier registries |
+| 2 | Water Ice | 2027 in-situ surface water ice | Rehearsal: LIVE (Sepolia #6) · Arbitrum #5, earlier registries |
+| 3 | Night Shift | chamber proxy now · surface 2028+ | Rehearsal: LIVE (Sepolia #3) · Arbitrum #3, earlier registries |
 
 **Why this order.** Upright landing is proven (Blue Ghost 1). Wheels are not. Ice is the 2027
 science prize. Night is later.
@@ -26,7 +29,7 @@ science prize. Night is later.
 **Why Night Shift is 2028+ (placeholder only).** No 2026–27 lander on the Touchdown roster is
 designed to operate through a full lunar night. Zeno RHU on Blue Ghost is NET 2028. A chamber
 prize was drafted as a proxy and then taken out of the public repo. This rung's public text
-is this paragraph only: chamber proxy now · surface-night market 2028+. Sepolia id 3 is the dress rehearsal. Arbitrum id 3 is the same roster on mainnet.
+is this paragraph only: chamber proxy now · surface-night market 2028+. Sepolia id 3 is the dress rehearsal. Arbitrum id 3 is the same roster on the earlier Arbitrum registry.
 
 **Each rung has its own roster** (when it has one at all). Touchdown slots are landing-vehicle
 operators. First Tracks slots will be rover operators — not a crewed LTV race. Do not copy

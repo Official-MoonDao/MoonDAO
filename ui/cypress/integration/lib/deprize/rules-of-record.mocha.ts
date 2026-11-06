@@ -15,6 +15,14 @@ const REQUIRED = [
   'This prize is not registered on the public Arbitrum registry.',
   '0xAF26a002d716508b7e375f1f620338442F5470c0',
   '24 months',
+  '### Definitions',
+  '### Slots',
+  '### Open Field',
+  '### Ties',
+  '### Before open',
+  'Eligibility Review Committee',
+  'challenge window of at least 72',
+  'Not available to U.S. persons or anyone located in the United States or another restricted jurisdiction.',
 ]
 
 // Built from parts so this file is not a docs-hygiene gate-1 hit. Those
@@ -48,9 +56,10 @@ describe('rules of record', () => {
     ['First Tracks', firstTracks],
     ['Water Ice', waterIce],
   ] as const) {
-    it(`${name} has the four sections, the oracle, and no old market`, () => {
+    it(`${name} has the required sections, the oracle, and no old market`, () => {
+      const unwrapped = text.replace(/\s+/g, ' ')
       for (const needle of REQUIRED) {
-        expect(text, needle).to.include(needle)
+        expect(unwrapped, needle).to.include(needle)
       }
       for (const needle of FORBIDDEN) {
         expect(text, needle).to.not.include(needle)
@@ -84,6 +93,19 @@ describe('rules of record', () => {
     }
     expect(waterIce).to.not.include('MDP-262')
     expect(waterIce).to.not.include('10 metres')
+  })
+
+  it('First Tracks slots are rover operators and government rovers cannot win', () => {
+    expect(firstTracks).to.include('A named slot is the **rover operator**, not one rover.')
+    expect(firstTracks).to.include('A government rover cannot win through Open Field.')
+    expect(firstTracks).to.match(/No person may be aboard/)
+  })
+
+  it('Water Ice requires ice, not hydrogen or hydroxyl, from a named source', () => {
+    expect(waterIce).to.include('A named slot is the **mission** listed.')
+    expect(waterIce).to.match(/Hydrogen alone[\s\S]*hydroxyl \(OH\)[\s\S]*are not water ice/)
+    expect(waterIce).to.match(/A statement by\s+a company alone is not enough\./)
+    expect(waterIce).to.include('peer-reviewed paper')
   })
 
   it('Night Shift has no spec file and no ladder link', () => {
