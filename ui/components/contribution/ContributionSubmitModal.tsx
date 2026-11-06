@@ -14,13 +14,14 @@ import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import type { Contribution } from '@/lib/contributions/getSheetContributions'
 import {
   CONTRIBUTION_AREAS,
-  DESCRIPTION_MAX_BYTES,
+  DESCRIPTION_FORM_MAX_BYTES,
   MAX_LINKS,
   TITLE_MAX_BYTES,
   areaCode,
   areaLabel,
   contributionsTable,
   encodeLinks,
+  sqlTextBytes,
   utf8Bytes,
   validateContribution,
   type ContributionFieldErrors,
@@ -156,7 +157,7 @@ export default function ContributionSubmitModal({
   const [ackError, setAckError] = useState(false)
 
   const titleBytes = utf8Bytes(title.trim())
-  const descriptionBytes = utf8Bytes(description.trim())
+  const descriptionBytes = sqlTextBytes(description.trim())
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -314,7 +315,7 @@ export default function ContributionSubmitModal({
             <label className="flex flex-col gap-1.5">
               <span className="flex items-center justify-between text-sm font-semibold text-white">
                 What did you do?
-                <ByteCounter used={descriptionBytes} max={DESCRIPTION_MAX_BYTES} />
+                <ByteCounter used={descriptionBytes} max={DESCRIPTION_FORM_MAX_BYTES} />
               </span>
               <textarea
                 className={`${inputClass} min-h-[180px]`}

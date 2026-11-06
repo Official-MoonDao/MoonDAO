@@ -14,6 +14,16 @@ export const AREA_MAX_BYTES = 32
 export const LINKS_MAX_BYTES = 1000
 export const MAX_LINKS = 10
 
+// Our Tableland validator rejects any text value over 1,024 bytes, so a longer
+// description passes the contract but never reaches the table. Until the
+// validator matches the contract, the form stops short of that. Counted with
+// apostrophes doubled, as they are in the SQL the contract writes.
+export const DESCRIPTION_FORM_MAX_BYTES = 1000
+
+export function sqlTextBytes(text: string): number {
+  return utf8Bytes(text.replace(/'/g, "''"))
+}
+
 // The same five areas as the 2026 Google Form, stored as short codes so they fit
 // the contract's 32-byte `area` column. One main area per contribution.
 export const CONTRIBUTION_AREAS = [
@@ -149,7 +159,7 @@ export function validateContribution(draft: ContributionDraft): {
   else if (utf8Bytes(title) > TITLE_MAX_BYTES) errors.title = 'The title is too long.'
 
   if (!description) errors.description = 'Describe what you did.'
-  else if (utf8Bytes(description) > DESCRIPTION_MAX_BYTES)
+  else if (sqlTextBytes(description) > DESCRIPTION_FORM_MAX_BYTES)
     errors.description = 'The description is too long. Shorten it or link to a longer write-up.'
 
   if (!CONTRIBUTION_AREAS.some((a) => a.code === draft.area)) errors.area = 'Pick an area.'
