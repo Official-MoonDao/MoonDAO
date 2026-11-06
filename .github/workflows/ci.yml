@@ -406,6 +406,33 @@ jobs:
           SPLIT: ${{ strategy.job-total }}
           SPLIT_INDEX: ${{ strategy.job-index }}
 
+  # Pure feature logic. Does not need a Next.js build or a browser.
+  logic-unit:
+    name: Feature logic unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+          cache-dependency-path: ui/yarn.lock
+
+      - name: Install dependencies
+        working-directory: ui
+        run: yarn install --frozen-lockfile
+
+      - name: Unit tests
+        working-directory: ui
+        env:
+          NEXT_PUBLIC_THIRDWEB_CLIENT_ID: unit-test-client
+          NEXT_PUBLIC_TEST_ENV: "true"
+        run: yarn test:feature-logic
+
   # Component tests - split into 4 parallel jobs using cypress-split.
   # timeout-minutes is the backstop: a wedged Cypress process does not exit,
   # and the default job limit is 6 hours.
