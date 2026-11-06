@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import fs from 'fs'
 import path from 'path'
 import {
@@ -58,12 +59,14 @@ describe('capability ladder', () => {
 
   it('keeps First Tracks, Water Ice, and Night Shift planned on the new Sepolia registry', () => {
     const result = getLadderForCompetition('sepolia', 1)
+    const byKey = Object.fromEntries(result.rungs.map((rung) => [rung.key, rung]))
     for (const key of ['first-tracks', 'ice', 'night-shift'] as const) {
-      const rung = result.rungs.find((r) => r.key === key)
-      expect(rung?.status, key).to.equal('planned')
-      expect(rung?.deprizeId, key).to.equal(undefined)
-      expect(rung?.href, key).to.equal(undefined)
+      expect(byKey[key]?.status, key).to.equal('planned')
+      expect(byKey[key]?.deprizeId, key).to.equal(undefined)
     }
+    expect(byKey['first-tracks']?.href).to.include('DEPRIZE_FIRST_TRACKS.md')
+    expect(byKey['ice']?.href).to.include('DEPRIZE_WATER_ICE.md')
+    expect(byKey['night-shift']?.href).to.equal(undefined)
   })
 
   it('no ladder entry references the chamber spec', () => {

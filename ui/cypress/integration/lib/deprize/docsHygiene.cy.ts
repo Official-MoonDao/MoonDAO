@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
@@ -19,12 +20,16 @@ const FORBIDDEN_HREF_RE =
 
 const A_PRIME_DOCS = [
   'DEPRIZE_TOUCHDOWN.md',
+  'DEPRIZE_FIRST_TRACKS.md',
+  'DEPRIZE_WATER_ICE.md',
   'DEPRIZE_CAPABILITY_LADDER.md',
   'DEPRIZE_GTM_TOUCHDOWN.md',
 ]
 
 const A_PRIME_ALLOWLIST = [
   'docs/DEPRIZE_TOUCHDOWN.md',
+  'docs/DEPRIZE_FIRST_TRACKS.md',
+  'docs/DEPRIZE_WATER_ICE.md',
   'docs/DEPRIZE_CAPABILITY_LADDER.md',
   'docs/DEPRIZE_GTM_TOUCHDOWN.md',
   'ui/cypress/integration/lib/deprize/docsHygiene.cy.ts',

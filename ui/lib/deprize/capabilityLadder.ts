@@ -46,7 +46,7 @@ export const CAPABILITY_LADDER: readonly CapabilityRung[] = [
     label: 'First Tracks',
     bar: 'First commercial rover egress and drive',
     sharedGoalId: 'shared-first-tracks',
-    specHref: '',
+    specHref: SPEC('DEPRIZE_FIRST_TRACKS.md'),
   },
   {
     rung: 2,
@@ -54,7 +54,7 @@ export const CAPABILITY_LADDER: readonly CapabilityRung[] = [
     label: 'Water Ice',
     bar: '2027 in-situ surface water ice',
     sharedGoalId: 'shared-ice',
-    specHref: '',
+    specHref: SPEC('DEPRIZE_WATER_ICE.md'),
   },
   {
     rung: 3,
