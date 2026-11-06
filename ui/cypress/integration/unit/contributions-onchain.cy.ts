@@ -2,6 +2,7 @@ import {
   AREA_MAX_BYTES,
   CONTRIBUTION_AREAS,
   areaCode,
+  DESCRIPTION_FORM_MAX_BYTES,
   DESCRIPTION_MAX_BYTES,
   TITLE_MAX_BYTES,
   contributionsTable,
@@ -11,6 +12,7 @@ import {
   isSubmittedOrigin,
   normalizeLink,
   splitTextLinks,
+  sqlTextBytes,
   utf8Bytes,
   validateContribution,
 } from '@/lib/contributions/onchain'
@@ -38,12 +40,22 @@ describe('onchain contribution fields', () => {
     expect(DESCRIPTION_MAX_BYTES).to.equal(8000)
   })
 
+  it('stops the form under the validator text limit', () => {
+    // The validator rejects text over 1,024 bytes even though the contract allows more.
+    expect(DESCRIPTION_FORM_MAX_BYTES).to.be.at.most(1024)
+    expect(sqlTextBytes("it's")).to.equal(5)
+    const quoted = "'".repeat(DESCRIPTION_FORM_MAX_BYTES / 2 + 1)
+    expect(validateContribution({ ...valid, description: quoted }).errors.description).to.be.a(
+      'string'
+    )
+  })
+
   it('counts bytes, not characters, like the contract', () => {
     expect(utf8Bytes('é')).to.equal(2)
-    const atMax = 'a'.repeat(DESCRIPTION_MAX_BYTES)
+    const atMax = 'a'.repeat(DESCRIPTION_FORM_MAX_BYTES)
     expect(validateContribution({ ...valid, description: atMax }).errors).to.deep.equal({})
     // One two-byte character past the cap.
-    const over = 'é'.repeat(DESCRIPTION_MAX_BYTES / 2 + 1)
+    const over = 'é'.repeat(DESCRIPTION_FORM_MAX_BYTES / 2 + 1)
     expect(validateContribution({ ...valid, description: over }).errors.description).to.be.a(
       'string'
     )
