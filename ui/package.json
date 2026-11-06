@@ -35,6 +35,7 @@
     "snapshot:path-vote": "ts-node -r tsconfig-paths/register scripts/snapshot-path-vote.ts",
     "snapshot:election": "ts-node -r tsconfig-paths/register scripts/snapshot-election.ts",
     "test:cypress-unit": "node node_modules/mocha/bin/mocha.js --config scripts/.mocharc-cypress-unit.json",
+    "test:feature-logic": "TS_NODE_COMPILER_OPTIONS='{\"jsx\":\"react-jsx\"}' node node_modules/mocha/bin/mocha.js --require scripts/mocha-test-env.cjs --require ts-node/register --require tsconfig-paths/register --timeout 20000 scripts/feature-logic.test.ts",
     "test:onboarding-image": "node node_modules/mocha/bin/mocha.js --require ts-node/register --require tsconfig-paths/register scripts/citizen-onboarding-image.test.ts",
     "test:submission-window": "TS_NODE_COMPILER_OPTIONS='{\"types\":[\"node\",\"mocha\"]}' node node_modules/mocha/bin/mocha.js --require ts-node/register --require tsconfig-paths/register --spec scripts/submission-window.test.ts",
     "test:citizen-renewal": "node node_modules/mocha/bin/mocha.js --require ts-node/register --require tsconfig-paths/register --spec scripts/citizen-renewal-coverage.test.ts --spec scripts/citizen-renewal-live.test.ts",
