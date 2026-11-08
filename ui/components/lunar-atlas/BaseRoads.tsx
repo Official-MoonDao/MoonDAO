@@ -1,4 +1,4 @@
-// The graded roads of Moon Base Zero: one spine and a branch per district.
+// The graded roads of Moon Base Zero: a grid of avenues and cross streets.
 //
 // A road network is the one cue that says every asset on the plain belongs to
 // the same operation, so this is what turns a scatter of hardware into a
@@ -38,12 +38,11 @@
 // about how they are found lives.
 //
 // This is what an earlier version could not do, because it faded a windrow only
-// from that road's OWN ends. That handled a branch dying into the road it
-// starts on and nothing else, and on this plan NOTHING dies into anything: the
-// spine crosses all seven branches in the middle of its own run, and each
-// branch crosses the spine in the middle of ITS run. Faded from the ends alone,
-// every one of those crossings got a half-meter wall of rubble and a line of
-// boulders driven straight through it.
+// from that road's OWN ends. That handles a street dying into the road it
+// starts on and nothing else, and on a grid most crossings are in the middle of
+// both roads' runs: Main Avenue crosses three cross streets halfway along each
+// of them. Faded from the ends alone, every one of those crossings gets a
+// half-meter wall of rubble and a line of boulders driven straight through it.
 //
 // Everything is LIT and takes light like the hardware standing on it, which is
 // what the berms are for: they are the only part with enough relief to catch
@@ -891,9 +890,9 @@ function RoadPiece({
   )
 }
 
-// The spine arrives with the settlement. A branch waits for whatever stands on
-// its crossing, and on the same threshold the model itself uses — otherwise a
-// road crosses a lot the hardware hasn't landed on yet.
+// Main Avenue arrives with the settlement. Every other street waits for the
+// first district on it, and on the same threshold the model itself uses —
+// otherwise the town is graded out years before anything stands on it.
 function roadPresence(
   piece: Piece,
   presence: number,
@@ -916,8 +915,8 @@ export default function BaseRoads({
   // How far along the timeline the settlement is, 0–1. The groundworks come in
   // with the first hardware rather than sitting on an empty plain years early.
   presence?: number
-  // Per-site presence, so a spur is only graded once there is something at the
-  // end of it to drive to.
+  // Per-site presence, so a street is only graded once there is something on
+  // it to drive to.
   siteOpacity?: Map<string, number>
 }) {
   const surface = useMemo(makeSurfaceMaps, [])

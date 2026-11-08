@@ -22,7 +22,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   BASE_PLAN,
-  BRANCH_TAIL_M,
   PATROL,
   ROAD_HALF_M,
   ROAD_RUNS,
@@ -32,12 +31,9 @@ import {
   SPINE_END_M,
   SPINE_START_M,
   at,
-  dirFor,
-  districtAlongM,
   onRoad,
   shuttleAt,
   shuttleLapM,
-  spineCoords,
   withinDistrictGround,
   type ShuttleRun,
   type Slot,
@@ -142,7 +138,7 @@ export type ColonyLayout = {
   districts: Map<string, Vec3>
   // Which race stands in each zoned district of the base plan. The plan is
   // drawn in hardware types, but a race is not a type, so anything keyed to the
-  // built environment — the graded branch roads above all — needs this to get
+  // built environment — the graded streets above all — needs this to get
   // from "the rover district" to the race actually parked in it. A race with no
   // district of its own never appears here.
   districtOwner: Map<ProjectType, string>
@@ -544,9 +540,9 @@ function CompetitorPlot({
 // Everything above is a competitor's plot, one district's worth at a time.
 // This is the one layer that renders ONCE for the
 // whole base rather than per-district, because most of the plan by area is
-// neither a district nor a road: it's the open regolith either side of the
-// spine, and the spine itself stitching the districts together. Left bare, that
-// is most of what the camera actually sees on approach.
+// neither a district nor a road: it's the open regolith round the edge of town
+// and in the hollow south of Main Avenue, and the streets between the blocks.
+// Left bare, that is most of what the camera actually sees on approach.
 //
 // A boulder field fills the open ground — native rock, not manifested cargo,
 // so it belongs on unclaimed regolith in a way none of the logistics props in
@@ -575,11 +571,9 @@ function hash1(n: number): number {
 // past the settlement in every direction rather than stopping at a boundary the
 // eye can find.
 //
-// The across figure is set by the district that stands furthest off the spine,
-// which is no longer the landing zone: the pads reach 70 m, but the comms race
-// is now out at the end of a 145 m branch and its ground reaches 160 m. A band
-// sized for the pads would have stopped short of the two longest branches and
-// left the outer half of the base standing on conspicuously clean regolith.
+// The across figure runs well past the outer avenues, 90 m either side, and the
+// second solar field behind North Avenue, so the scatter carries on beyond the
+// edge of town rather than stopping at its last street.
 const BOULDER_ALONG_MIN_M = SPINE_START_M - 60
 const BOULDER_ALONG_MAX_M = SPINE_END_M + 60
 const BOULDER_ACROSS_M = 200
@@ -615,9 +609,9 @@ const BOULDER_FOOTPRINT_SAMPLES: [number, number][] = [
 // either one alone reopens the gaps or doubles the post count for nothing.
 const STREET_LIGHT_SPACING_M = 26
 
-// Roads narrower than this are left dark. A lit street is a street with traffic
-// on it, and a rover track out to four relay masts has none — see `width` in
-// baseplan.ts' Street, and the branches that ask for 0.72.
+// Roads narrower than this are left dark: the avenues carry the haul traffic
+// and are lit, the cross streets and the launcher's drive are not — see `width`
+// in baseplan.ts' Street.
 const LIT_ROAD_WIDTH = 1
 
 // Staged cargo along the shoulders of every road — the manifested-cargo
@@ -645,22 +639,14 @@ const EXCAVATOR_COUNT = 6
 const EXCAVATOR_SHOULDER_MIN_M = 2.6
 const EXCAVATOR_SHOULDER_MAX_M = 6.5
 
-// Fixed spot for the base's own dig: beside the habitat's branch, on the long
-// stretch between where its spur leaves and where its own lots begin.
+// Fixed spot for the base's own dig: across North Avenue from the habitat
+// block, on the open ground behind it at the middle of the block.
 //
-// It used to sit in the middle of the habitat district, which was possible
-// because that district was a ring of five plots around an empty plaza. There
-// is no plaza and no crossing now — the district is a cluster at the end of a
-// 130 m branch — so the dig takes the one stretch of that branch that is both
-// served by the road and nobody's lot: past the spur junction at 55 m, short of
-// the buried modules' own lots at 102 m.
+// What this is digging is the vaults the buried habitats stand in, and the
+// next vault along is exactly what a cut-and-cover excavation across the street
+// from them would be. Nobody's lot is on that side of the avenue there — the
+// second solar field stops a block short, behind the construction block.
 //
-// That is arguably where it belonged all along, since what this is digging is
-// the vaults those buried habitats stand in, and the next vault along is
-// exactly what a cut-and-cover excavation beside the access road would be.
-//
-// On the LEFT of the branch's outbound direction, which is the side the spur is
-// not on, so the machine has open regolith behind it rather than another road.
 // Offset far enough off the centreline to clear the windrow, so it works beside
 // its road rather than in it. The composite itself (ConstructionPit +
 // its Excavator, both authored together in ProjectModel.tsx) is asymmetric —
@@ -669,22 +655,12 @@ const EXCAVATOR_SHOULDER_MAX_M = 6.5
 // (no `noseAlong` given here) turns that whole composite toward the home
 // camera on its own, the same as any other un-steered installation, so this
 // only ever needs to pick a location, never an orientation.
-// Meters out along the habitat branch. Between the spur junction and the lots,
-// with room for the composite's own 13 m span at either end — asserted in
-// lunar-atlas-baseplan.cy.ts rather than trusted, since both bounds move if the
-// habitat's roster or its spur does.
-const UGC_ALONG_BRANCH_M = 78
 const UGC_SITE = (() => {
-  const plan = BASE_PLAN.habitat!
-  const branch = plan.branch!
-  const crossing = at(plan.alongM)
-  const [de, dn] = dirFor(branch.bearingDeg)
-  return {
-    east:
-      crossing.east + de * UGC_ALONG_BRANCH_M - dn * (ROAD_HALF_M + 8),
-    north:
-      crossing.north + dn * UGC_ALONG_BRANCH_M + de * (ROAD_HALF_M + 8),
-  }
+  const block = BASE_PLAN.habitat!.cityBlock!
+  return at(
+    (block.alongM[0] + block.alongM[1]) / 2,
+    block.acrossM[1] + ROAD_HALF_M + 8
+  )
 })()
 const UGC_EAST_M = UGC_SITE.east
 const UGC_NORTH_M = UGC_SITE.north
@@ -950,10 +926,10 @@ function InterDistrictFiller({
         if (lastAt !== null && d - lastAt < STREET_LIGHT_SPACING_M) continue
         const side = placed % 2 ? -1 : 1
         const post = run.at(d, side * (ROAD_HALF_M + 1.4))
-        // A narrower margin than the boulders': a thin post just needs to clear
-        // a district's own ground, not stand well back from it, so lights still
-        // line the road right up to each district's crossing.
-        if (withinDistrictGround(post.east, post.north, 11)) continue
+        // A thin post just needs to clear a district's own ground, not stand
+        // well back from it. A block's ground starts a setback off its streets,
+        // just outside the post, so the avenues stay lit the length of town.
+        if (withinDistrictGround(post.east, post.north, 0)) continue
         lastAt = d
         placed++
 
@@ -1058,9 +1034,10 @@ function InterDistrictFiller({
       out.push({
         dir,
         seat: radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS,
-        // The landing zone's apron is 62 m across on its own, so it gets a
-        // wider pool than a district whose plots line one short branch.
-        radiusM: site === 'lander' ? 46 : 28,
+        // A block district's lots line all four sides of a 100 x 90 m block,
+        // and the landing zone's pads string out down Main Avenue, so both get
+        // a wider pool than a district whose plots line one short drive.
+        radiusM: plan.cityBlock ? 44 : site === 'lander' ? 46 : 28,
         key: site,
       })
     }

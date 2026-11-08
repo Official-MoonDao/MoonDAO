@@ -418,30 +418,28 @@ budget: the race stood on a paved hardstand inside a ring road, so a bigger
 ILRS meant widening the ring itself, and the ring was near its ceiling because
 the power district's own lots were closing in on it from outside.
 
-There is no ring, and no hardstand. The race is a `terminus` district at the
-far end of its own branch (`BASE_PLAN.habitat`, off the ridge centre), which
-means growth is absorbed by the branch's own `lengthM` — 130 m, with a 38 m
-spur at 55 m — and by its `block`, the half-width of the keep-out capsule
-around its roads. Currently 39 m against a roster that needs 36.5 m, so about
-2.5 m of slack; `scripts/pack-size-tmp.ts` reports that margin per district if
-you need to check after a size change.
+There is no ring, and no hardstand. The base is a street grid now, and the
+race has a 100 x 90 m city block of its own (`CITY_BLOCKS.habitat`, the middle
+of the north row), so growth comes out of the block's frontage. `districtSlots`
+walks each of the block's four sides in the order the district's `faces` asks
+for — North Avenue first for the habitats — and stands each plot, largest
+first, at the first station that is a setback off that street and clear of
+every lot already placed. A model that outgrows its block does not overlap
+anything; it falls back to the block centre, which the unit tests catch
+because every lot has to sit exactly a setback off the street it fronts.
 
 That is a much cheaper place to grow than the ring was. The ring's diameter
 was shared by every plot at once, so one big model widened the whole thing; a
-branch is a line, so a big model either takes more of the branch's length or
-pushes the district's `block` out laterally, and the two are independent. What
-it has to stay clear of is its neighbours' capsules, which is checked
-plan-wide rather than only up the street — a diagonal branch can reach past
-its own along-spine neighbour toward somebody two crossings away, so
-"neighbours in spine order" is no longer a sufficient check and the tests do
-not use it.
+block has about 300 m of frontage round four streets, and a big model just
+takes more of one side. Blocks are fixed by the grid rather than sized to
+their rosters, so no district's keep-out needs retuning after a size change:
+its keep-out is its block, inset to the setback line.
 
 The landing zone kept its own separation for the same reason it always had
-one. `BASE_PLAN.lander` sits 280 m southwest along the spine, standing beside
-the road as a `flank` with no branch at all, because a Starship-class descent
-has to clear the nearest structure by more than the 30 m ejecta-standoff floor
-the unit tests assert, and its 62 m apron is why its `block` (71 m) is nearly
-twice any other district's.
+one. `BASE_PLAN.lander` sits 280 m southwest down Main Avenue, past the end of
+town, standing beside the road as a `flank` with no city block at all, because
+a descending lander has to clear the nearest structure by more than the 30 m
+ejecta-standoff floor the unit tests assert.
 
 ---
 

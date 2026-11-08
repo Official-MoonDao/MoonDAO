@@ -1,10 +1,10 @@
 // The site plan for Moon Base Zero.
 //
-// The base is laid out as eight DISTRICTS, one per capability race, arranged as
-// a compact zoned settlement on the ridge crest rather than at the projects'
-// (approximate, heavily overlapping) real coordinates — so the patch reads as
-// one base instead of scattered hardware. Offsets are REAL METERS in the
-// terrain's map frame [+east, +north]; the base is true to scale.
+// The base is laid out as eight DISTRICTS, one per capability race, on a CITY
+// GRID on the ridge crest rather than at the projects' (approximate, heavily
+// overlapping) real coordinates — so the patch reads as one town instead of
+// scattered hardware. Offsets are REAL METERS in the terrain's map frame
+// [+east, +north]; the base is true to scale.
 //
 // A district is a lot shared by everyone competing to do one thing: all three
 // fission bids stand in the power district, all four comms bids in the comms
@@ -15,132 +15,73 @@
 // lot is what lets you see the bet: press a race and its whole field lights up
 // in one place, at one scale, on the same regolith.
 //
-// THE STREET PLAN HAS THREE TIERS. One straight SPINE runs the length of the
-// ridge crest. Each district is reached by its own BRANCH off that spine, and
-// the district stands at the FAR END of its branch, not at the crossing. The
-// larger races put their smaller competitors out on a SPUR off their own
-// branch. There is no core, no plaza and no ring: an address on this base is a
-// road you drive to the end of.
+// THE STREET PLAN IS A GRID
 //
-// WHY THE DISTRICTS SIT AT THE ENDS OF THEIR BRANCHES
+// Three AVENUES run northeast along the ridge, 90 m apart, and CROSS STREETS
+// run square across them every 100 m. Every district is zoned onto one CITY
+// BLOCK, and its competitors are seated round the inside of that block facing
+// the streets that bound it, every one of them the same setback off the
+// pavement. The middle avenue is MAIN AVENUE: it runs the whole length of the
+// base, out past the town at both ends to the landing zone and the mass driver,
+// and it is the street the rovers drive.
 //
-// Because that is what makes a road mean anything. The plan this replaces put
-// every district ON the spine, taking the four corner lots of its own crossing,
-// which left eight identical perpendicular stubs ticked off one line and every
-// asset on the base crowded against the same through road. It read as a
-// fishbone rather than a settlement: nothing was anywhere, because everything
-// was on the main street.
+// The plan this replaces was one straight spine with a dead-end branch out to
+// each district. It was correct and it read as a road with things hung off it:
+// one line across the frame, with eight clusters at the ends of eight stubs and
+// open regolith between all of them. A grid reads as a town, because the blocks
+// share streets — every district has neighbours across the road on two or three
+// sides, and the streets frame each lot as a parcel rather than as a cul-de-sac.
 //
-// Standing each race at the end of its own branch buys three things at once. A
-// branch acquires a destination, so it reads as a road TO somewhere instead of
-// a stub across something. The districts stop competing for frontage on one
-// road, so they can be spaced by where they actually are rather than by how far
-// apart their blocks are along a single line. And the settlement gains depth
-// from every angle, because a district is now separated from its neighbours
-// across two axes instead of one.
+// WHY THE GRID IS IRREGULAR
 //
-// WHY THE BRANCHES ARE DIAGONAL, AND WHY THEY ARE NOT SYMMETRIC
+// Because the ridge is. The old plan avoided square crossings on the grounds
+// that square to the crest is the fall line, and that is true of one stretch of
+// it: a hollow on the southeast flank between about -130 and +20 m along. Every
+// candidate cross street was profiled off the rendered height field at 5 m
+// stations over the full width of a two-row grid (-80 to +90 m across):
 //
-// This is the ground's decision, not a stylistic one, and it is the reason the
-// layout comes out varied rather than regular.
+//      along     relief    worst step
+//      -200       6.7 m       8.1%
+//      -100      14.3 m      18.2%     <- through the hollow
+//         0      12.8 m      14.6%     <- through the hollow
+//      +100       8.0 m       7.9%
+//      +200       2.7 m       7.2%
+//      +300       5.7 m       8.3%
 //
-// A branch has to run somewhere buildable, and perpendicular to the spine is
-// very nearly the FALL LINE off the crest. Every crossing was profiled off the
-// rendered height field, sweeping all 36 ten-degree bearings and walking out to
-// 260 m at 5 m stations, scoring the longest run that holds under a 10% worst
-// step grade and 12 m of relief. Three things came out of it:
+// North of Main Avenue the ground is flat everywhere — under 10 m of relief over
+// the whole 500 m length of North Avenue. South of it, only the northeast half
+// is. So the town is a full row of blocks north of Main Avenue and a short row
+// south of it, from +100 m on, and the cross streets through the hollow stop at
+// Main Avenue rather than running down into it. The hollow stays open ground in
+// the foreground of the home camera, which is the one place on the plan an empty
+// stretch is worth having: it is the sightline into town.
 //
-//   1. The buildable direction is DIAGONAL. Perpendicular (130 deg) dies inside
-//      100 m at four of the eight crossings. Bearings 40 to 70 deg off the
-//      spine run the full 260 m almost everywhere, because they hold a contour
-//      instead of crossing them.
+// WHY THE AVENUES RUN ON 40 DEGREES
 //
-//   2. The buildable diagonal ROTATES along the spine, because the ridge does.
-//      At the southwest end it is 70-100 deg; by the middle 90-120; at the
-//      northeast end 130-180. So the branches fan, and they fan because the
-//      crest fans.
-//
-//   3. The two sides of the spine are NOT equivalent. The southeast flank falls
-//      away hard around `along` -40 to 0 — every bearing into it dies inside
-//      25 m — while the northwest side runs long there. So branches cannot
-//      mirror, and a district's side is chosen for it.
-//
-// The result is seven branches between 55 and 145 m long, at +40, -130, +55,
-// -35, +80, -50 and +60 degrees off the spine, four to the northwest and three
-// to the southeast. None of that spread was designed. It is what the ridge
-// allows, and it is why the plan no longer looks ruled.
-//
-// WHY LINEAR, AND NOT THE RADIAL-CONCENTRIC PLAN THIS REPLACES
-//
-// SOM's Moon Village master plan (with ESA) reviewed the obvious precedents —
-// grid plans from Roman military camps to the Public Land Survey, radial plans
-// from Howard's Garden City — and picked the Linear City as "best suited for the
-// irregular terrain at the lunar south pole", on grounds of safety, efficiency
-// and expandability, and specifically because it adapts to the rim of
-// Shackleton. That is this site. Their plan runs parallel BANDS along the rim:
-// habitation, then infrastructure, then staging, with power and transport
-// pushed furthest out. On a spine those bands become position ALONG the road,
-// which is the order the districts are declared in below.
-//
-// A ring road says a settlement grew outward from one landing and stopped. A
-// spine says it is still being built, in both directions, which is the truer
-// thing to say about a base whose whole subject is who gets there. It also
-// grows without redrawing: a new race is a new branch further along, where on
-// the concentric plan it was another wedge of a circle that only held eight.
-//
-// WHY THE SPINE RUNS ON 40 DEGREES
-//
-// Because a straight road 730 m long has nowhere to hide from grade, so the
-// bearing is measured off the same rendered height field the terrain draws
-// from rather than chosen. Every whole bearing was profiled over the spine's
-// true extent (SPINE_START_M to SPINE_END_M, which is not symmetric about the
-// origin), sampling every 5 m, and scored two ways: total relief end to end,
-// and the worst grade over any one 5 m step. Those two disagree, which is the
-// only interesting thing in the measurement:
-//
-//                    relief          worst grade
-//      19 deg       16.4 m  ( 88)      7.2%  (  1)
-//      40 deg       12.7 m  ( 24)      8.0%  ( 14)   <- this
-//      45 deg       11.9 m  ( 19)      8.6%  ( 23)
-//      57 deg       11.1 m  (  1)     12.3%  ( 63)
-//      90 deg       17.8 m  ( 60)     15.3%  ( 74)
-//     135 deg       41.5 m  (167)     25.6%  (154)
-//     144 deg       43.2 m  (180)     30.9%  (177)
-//
-// (rank out of 180 in brackets). The flattest axis end to end, 57 deg, gets
-// there by climbing and descending steeply; the gentlest local grade, 19 deg,
-// pays 5 m of extra fall for it. 40 deg is the only bearing in the top 15% on
-// BOTH, so it is what the spine runs on: 12.7 m over 730 m is a 1.7% average,
-// and nothing on it pitches past 8%.
-//
-// That it is also the guideway's heading (TRACK_HEADING_DEG, see trackplan) is
-// not a coincidence and not a constraint imposed here — the guideway was
-// levelled against this same field for its own reasons, needing flat because
-// fall is leg height. Two independent answers to the same question about the
-// same ridge landing on the same line is the measurement agreeing with itself.
-// The launcher therefore reads as the street continuing out of town.
-//
-// The spine is also ~79 deg off the home camera's view axis (HOME_CAM looks
-// from east 171, north -211 at east 20, north 10), so it lies ACROSS the frame
-// and reads as a long street rather than receding to a point.
+// Main Avenue is the old spine, on the old spine's bearing, and the reasons it
+// was chosen still hold. A straight road 730 m long has nowhere to hide from
+// grade, so the bearing was measured off the same height field the terrain
+// draws from: profiled over its true extent, every whole bearing, at 5 m
+// stations, 40 deg comes out at 12.7 m of relief end to end (24th of 180) and
+// never pitches past 8.0% (14th of 180) — the only bearing in the top 15% on
+// both. It is also the mass driver guideway's heading (TRACK_HEADING_DEG, see
+// trackplan), levelled against the same field for its own reasons, so the
+// launcher reads as the street continuing out of town. And it lies ~79 deg off
+// the home camera's view axis, so the avenues run ACROSS the frame and the
+// cross streets recede into it, which is the view of a grid that reads as one.
 //
 // WHAT IS HERE THAT IS NOT A RACE
 //
-// One thing: the SOLAR FARM (see SOLAR_ARRAYS, below the district keep-out).
-// Nobody is competing to build the colony's own generation, so it is not a
-// district and has no roster — it is the only shared infrastructure left on the
-// plan, now that the rover depot's yard is gone and every district's ground is
-// its own competitors'. It is also the answer to the one thing the
-// tiered plan made worse: standing the districts at the ends of their branches
-// left large wedges of the flanks between them, and a solar farm is the one
-// kind of built ground that is SUPPOSED to be mostly empty. It is surveyed to
-// the sun rather than to the ridge, for reasons argued where it is defined.
+// The SOLAR FARM (see SOLAR_ARRAYS, below the district keep-out). Nobody is
+// competing to build the colony's own generation, so it is not a district and
+// has no roster. It takes one city block of its own, beside the power district,
+// and a strip behind North Avenue.
 //
-// Nothing here is hand-authored twice: the districts declare where their branch
-// leaves the spine and which way it runs, and the district's own position, its
-// plot packing (districtSlots) and the road network (BASE_STREETS) are all
-// derived from that. A race that gains a competitor gets a lot on its own
-// street; it never needs a road drawn for it.
+// Nothing here is hand-authored twice. The districts name their block, and the
+// district's position, its plot packing (districtSlots), the ground it keeps and
+// the street network (BASE_STREETS) are all derived from that: a block that is
+// zoned brings its four streets with it, and a race that gains a competitor gets
+// another lot round its block without a road being drawn for it.
 //
 // This lives in lib because three unrelated parts of the scene need the same
 // plan: the page places the sites from it, the model layer takes each site's
@@ -153,9 +94,14 @@
 import { SUN_LOCAL_BEARING_DEG, SUN_LOCAL_ELEV_DEG } from './sun'
 import type { ProjectType } from './types'
 
-// Heading of the spine, degrees CCW from east (see `dirFor`). See the table
-// above for why it is this and not one of the other 179.
+// Heading of Main Avenue, and so of every avenue, degrees CCW from east (see
+// `dirFor`). The cross streets run square to it. Still called the SPINE because
+// it is still the frame every other coordinate on the plan is measured in.
 export const SPINE_BEARING_DEG = 40
+
+// Heading of every cross street: square to the avenues, outbound to the
+// northwest, which is `across` positive in the spine's frame.
+export const CROSS_STREET_BEARING_DEG = SPINE_BEARING_DEG + 90
 
 // Road cross-section, in meters. HALF is the centreline to the outside of the
 // windrow (see PROFILE in BaseRoads, which must agree); SETBACK is the clear
@@ -170,16 +116,15 @@ export const SETBACK_M = 1.8
 // number sets how tightly the whole colony is packed.
 //
 // It is the FLOOR rather than the figure actually used in either place. Plots
-// down the same verge get LANE_CLEAR_M, which is this plus both their setbacks,
-// because nothing else gives them a strip against the pavement; plots facing
-// each other across a street are held apart by the road (see ROAD_HALF_M),
-// which is far more than this.
+// round the same block get LANE_CLEAR_M, which is this plus both their
+// setbacks, because nothing else gives them a strip against each other; plots
+// facing each other across a street are held apart by the road (see
+// ROAD_HALF_M), which is far more than this.
 export const DISTRICT_GAP_M = 6
 
 // How far past the last thing it serves a road runs before it stops: the
-// turning circle a hauler needs at a dead end. A branch that stops short of its
-// own district reads as unfinished, and one that overshoots reads as a road to
-// nowhere, so this is the only slack either is given.
+// turning circle a hauler needs at a dead end, and the stub an avenue runs on
+// past the last cross street so the corner is a crossing rather than a notch.
 export const BRANCH_TAIL_M = 7
 
 // ---------------------------------------------------------------------------
@@ -188,8 +133,8 @@ export const BRANCH_TAIL_M = 7
 
 // Unit vector for a heading, measured in degrees CCW from EAST — the maths
 // convention, not the surveyor's. So 0 is +east, 90 is +north, and the spine's
-// 40 is northeast. Every `bearingDeg` in this file, including every branch and
-// spur, is in these terms; a compass bearing read off a map is 90 minus this.
+// 40 is northeast. Every `bearingDeg` in this file is in these terms; a compass
+// bearing read off a map is 90 minus this.
 export function dirFor(bearingDeg: number): [number, number] {
   const r = (bearingDeg * Math.PI) / 180
   return [Math.cos(r), Math.sin(r)]
@@ -210,10 +155,8 @@ export function spineNormal(): [number, number] {
 // northeast of the ridge centre, `across` meters to the left of that.
 //
 // Every crossing on the plan goes through here rather than being written as a
-// coordinate pair, for the same reason the concentric plan wrote bearings
-// instead of coordinates: a hand-rounded pair sits centimeters off the road,
-// and every plot's setback is then measured from a crossing that is not quite
-// on the street it fronts.
+// coordinate pair: a hand-rounded pair sits centimeters off the road, and every
+// plot's setback is then measured from a street it is not quite on.
 export function at(alongM: number, acrossM = 0): { east: number; north: number } {
   const [de, dn] = spineDir()
   const [ne, nn] = spineNormal()
@@ -236,30 +179,74 @@ export function spineCoords(p: { east: number; north: number }): {
   }
 }
 
-// Where the spine starts and stops, in meters along: far enough past the
-// crossings at each end — the landing zone to the southwest, the mass driver's
+// Where Main Avenue starts and stops, in meters along: far enough past the
+// districts at each end — the landing zone to the southwest, the mass driver's
 // breach works to the northeast — to run clear of both, and asserted against
 // them rather than eyeballed.
 export const SPINE_START_M = -330
 export const SPINE_END_M = 400
 
 // ---------------------------------------------------------------------------
+// The grid
+// ---------------------------------------------------------------------------
+
+// Where the cross streets cross Main Avenue, southwest to northeast. 100 m
+// apart, which is a block deep enough for the habitat race's five plots (see
+// BASE_PLAN.habitat) and shallow enough that eight districts fit between the
+// landing zone and the launcher.
+export const CROSS_STREET_ALONG_M = [-200, -100, 0, 100, 200, 300] as const
+
+// Where the two outer avenues run, meters across Main Avenue: North Avenue on
+// the flat side of the crest, South Avenue on the side that falls away.
+export const NORTH_AVENUE_ACROSS_M = 90
+export const SOUTH_AVENUE_ACROSS_M = -90
+
+// One city block: the street centrelines that bound it, in the spine's frame.
+// A block's ground is everything between its four streets; what anyone can
+// build on is that, less the road and the setback on every side.
+export type CityBlock = {
+  alongM: [number, number]
+  acrossM: [number, number]
+}
+
+// The four sides of a block, by the compass direction they face out of it: a
+// block's `southeast` side fronts the avenue at its low `across` edge, its
+// `southwest` side the cross street at its low `along` edge.
+export type BlockSide = 'southwest' | 'northeast' | 'southeast' | 'northwest'
+
+// The block in column `col` (between cross streets col and col + 1) on one side
+// of Main Avenue.
+function cityBlock(col: number, side: 'north' | 'south'): CityBlock {
+  return {
+    alongM: [CROSS_STREET_ALONG_M[col], CROSS_STREET_ALONG_M[col + 1]],
+    acrossM: side === 'north' ? [0, NORTH_AVENUE_ACROSS_M] : [SOUTH_AVENUE_ACROSS_M, 0],
+  }
+}
+
+// Every block the grid is built out to, named for what stands on it. Districts
+// and the solar farm both take their ground from here, and the streets are
+// derived from the whole set, so zoning a block is what lays its streets.
+export const CITY_BLOCKS = {
+  isru: cityBlock(0, 'north'),
+  construction: cityBlock(1, 'north'),
+  habitat: cityBlock(2, 'north'),
+  rover: cityBlock(3, 'north'),
+  comms: cityBlock(4, 'north'),
+  solar: cityBlock(3, 'south'),
+  power: cityBlock(4, 'south'),
+}
+
+// ---------------------------------------------------------------------------
 // How a district is reached
 // ---------------------------------------------------------------------------
 
 // A SPUR: a short road off a branch, taking the `takes` smallest competitors of
-// the race out to their own dead end.
-//
-// This is what stops a big roster reading as a queue. Five paving bids all
-// fronting one branch is a terrace; three on the branch and two round a corner
-// is a neighbourhood, and it costs one extra road. Only the larger races get
-// one — a spur to a single competitor would be a road built for one shed.
+// the race out to their own dead end. Nothing on the grid uses one today; it
+// stays available to a district that stands off the grid on a branch.
 export type Spur = {
   // Meters along the parent branch, from the spine, where the spur leaves it.
   atM: number
-  // Absolute compass bearing, degrees CCW from east. Absolute rather than
-  // relative to the parent so it can be read straight off the height-field
-  // survey, which is what picked it.
+  // Absolute compass bearing, degrees CCW from east.
   bearingDeg: number
   lengthM: number
   // How many of the race's SMALLEST competitors stand out here.
@@ -267,10 +254,10 @@ export type Spur = {
   width?: number
 }
 
-// A district's BRANCH: the road that leaves the spine and runs to it.
+// A district's BRANCH: a dead-end road off Main Avenue, for a district that
+// stands off the grid. The mass driver is the one that does.
 export type Branch = {
-  // Absolute compass bearing, degrees CCW from east — see the survey notes at
-  // the top for why each of these is the value it is.
+  // Absolute compass bearing, degrees CCW from east.
   bearingDeg: number
   // Meters from the spine to the district's centre, which is where this road's
   // centreline ends and its turning circle begins.
@@ -281,68 +268,63 @@ export type Branch = {
 
 // How a district's competitors stand relative to the streets around them.
 export type Frontage =
+  // Round the inside of the district's own city block, each lot facing the
+  // nearest street and set back from it like every other lot on the base. The
+  // default for anything with a `cityBlock`.
+  | 'block'
   // Around the dead end of the district's own branch: the largest competitor
   // standing at the head where the road runs out, the rest lining the final
-  // approach, alternating sides. The default, and what makes a branch read as
-  // a road to somewhere.
+  // approach, alternating sides. The default for anything with a `branch`.
   | 'terminus'
-  // Flanking the spine itself, one plot each side, with no branch of its own.
-  // For the landing zone, whose pads are both far too big to stand at the end
-  // of a road and far too dangerous to put down one — see BASE_PLAN.lander.
+  // Flanking Main Avenue itself, one plot each side, with no block or branch.
+  // For the landing zone, whose pads must not be boxed in by streets or put at
+  // the end of a dead end — see BASE_PLAN.lander.
   | 'flank'
   // No road through the lot at all, assets standing in a line along one shared
-  // axis. For a district whose competitors read as a procession rather than a
-  // block — nothing currently uses this, but it stays available as a frontage a
-  // future single-file district can ask for.
+  // axis. For the unzoned races standing past the end of town (see
+  // FALLBACK_ALONG_M).
   | 'lot'
 
 export type SitePlan = {
-  // Meters east and north of the ridge center — the CENTER of the district,
-  // which for a terminus district is the point its branch reaches and so a
-  // point no asset stands on. Individual plots are placed by districtSlots.
+  // Meters east and north of the ridge center — the CENTER of the district:
+  // the middle of its block, or for a terminus district the point its branch
+  // reaches. Individual plots are placed by districtSlots.
   //
-  // DERIVED, never written by hand: `district()` walks it out from the crossing
-  // along the branch, so a district is exactly at the end of exactly its own
-  // road however either is edited.
+  // DERIVED, never written by hand: `onBlock()` and `offGrid()` work it out
+  // from the block or the branch, so a district is exactly where its streets
+  // say it is however either is edited.
   east: number
   north: number
-  // Meters along the spine where this district's branch leaves it. The one
-  // coordinate that orders the districts, and for a flank district the only
-  // one it has.
+  // Meters along the spine of the district's centre (for a block district) or
+  // of the crossing its branch leaves from (for a terminus).
   alongM: number
   // Degrees this installation is turned off the base's common heading.
   //
   // Every site shares ONE bearing by default (see facingYaw in ProjectModel).
   // That shared axis is the whole trick: sites spread over 700 m that each aim
-  // independently at a viewpoint 130 m away splay by tens of degrees, and that
-  // splay is what made the settlement read as unrelated hardware dropped on a
-  // plain. Holding one axis makes it read as surveyed. These are the
-  // deliberate departures from it — enough to keep the plan from looking like
-  // a chorus line, never enough to turn an asset's back on the viewer.
-  //
-  // Note this is NOT the branch's bearing. The roads fan; the buildings do not,
-  // because a building turned to face a diagonal street 200 m from the camera
-  // turns its back on the camera, and the streets already carry the variety.
+  // independently at a viewpoint splay by tens of degrees, and that splay is
+  // what made the settlement read as unrelated hardware dropped on a plain.
+  // Holding one axis makes it read as surveyed. These are the deliberate
+  // departures from it — enough to keep the plan from looking like a chorus
+  // line, never enough to turn an asset's back on the viewer.
   turn: number
   front?: Frontage
+  // The block the district is zoned onto.
+  cityBlock?: CityBlock
+  // For a block district: which sides of the block its competitors take,
+  // largest first, in order of preference. Defaults to Main Avenue's side,
+  // then the two cross streets, then the back.
+  faces?: BlockSide[]
   branch?: Branch
-  // Meters of ground the district occupies in ANY direction from its centre —
-  // its keep-out, used to hold base-wide filler off it.
-  //
-  // One number rather than a width and a depth, because the shape it stands in
-  // for is a CAPSULE and not a box: a terminus district's ground is the corridor
-  // either side of its own branch, plus the turning circle at the end of it (see
-  // districtGround). So this is simply the farthest any of its plots reaches
-  // from its centre, which is what districtExtentM computes and what the tests
-  // assert it against — the value is hand-set and the rosters are not.
+  // Meters of ground a terminus or flank district occupies in ANY direction
+  // from its roads — its keep-out, used to hold base-wide filler off it. A
+  // block district keeps its whole block instead and does not use this.
   block?: number
   // For a 'lot' district only: the compass bearing, degrees CCW from east, that
   // its assets stand along, largest to smallest.
   lotAxis?: number
   // For a 'flank' district only: which side of the spine the largest plot
-  // takes, +1 for left of the outbound (northeast) direction. The landing
-  // zone's Starship is the tallest thing on the base and it wants to stand
-  // clear of the frame's centre.
+  // takes, +1 for left of the outbound (northeast) direction.
   flankSide?: 1 | -1
 }
 
@@ -362,13 +344,19 @@ export type Slot = {
 // this module must not depend on what the assets look like.
 export type Plot = { id: string; radiusM: number }
 
-// Walk a district out from its crossing to the end of its branch.
-//
-// The district's coordinates are derived here and nowhere else, which is the
-// invariant that keeps a district on its own road: edit the bearing, the length
-// or the crossing and the position follows, where a hand-written pair would
-// quietly stay behind.
-function district(
+// A district zoned onto a city block, centred on it.
+function onBlock(
+  cityBlock: CityBlock,
+  spec: Omit<SitePlan, 'east' | 'north' | 'alongM' | 'cityBlock' | 'front'>
+): SitePlan {
+  const alongM = (cityBlock.alongM[0] + cityBlock.alongM[1]) / 2
+  const acrossM = (cityBlock.acrossM[0] + cityBlock.acrossM[1]) / 2
+  return { ...at(alongM, acrossM), alongM, front: 'block', cityBlock, ...spec }
+}
+
+// A district off the grid: on Main Avenue itself at `alongM`, or out at the end
+// of a branch that leaves it there.
+function offGrid(
   alongM: number,
   spec: Omit<SitePlan, 'east' | 'north' | 'alongM'>
 ): SitePlan {
@@ -413,45 +401,79 @@ function frontageM(radiusM: number): number {
 }
 
 // Meters from the point a road's centreline ENDS to the centre of a plot
-// standing square across that end.
-//
-// Not the same as frontageM, and the difference is the whole reason this
-// exists. A plot BESIDE a road is set back from a centreline that runs past it,
-// so what it clears is the road's half-width. A plot at the HEAD of a dead end
-// stands square across the end of the pavement, and the end of the pavement is
-// a TURNING CIRCLE — a disc about as wide as the road, not a point. So it has
-// to clear the tail, then the circle, then its own setback.
-//
-// Getting this wrong is not subtle and it is not cosmetic: measuring only the
-// tail put the rover depot's own plot 4 m from the middle of its turning
-// circle, which is to say in it.
+// standing square across that end: clear of the tail, then the turning circle
+// (a disc about as wide as the road, not a point), then its own setback.
 function headM(radiusM: number): number {
   return BRANCH_TAIL_M + ROAD_HALF_M + SETBACK_M + radiusM
 }
 
-// Meters between the edges of two plots that stand one behind the other down
-// the SAME side of a road.
+// Meters between the edges of two plots with no road between them — down the
+// same side of a road, or round the same block.
 //
 // More than DISTRICT_GAP_M, and the extra is both setbacks. Plots facing each
 // other across a street are held apart by the road, and each keeps its own
 // clear strip against the pavement as a side effect. Two plots on the same
-// verge are the one pair on this plan with no road between them at all, so
-// nothing gives them that strip unless it is put here — and without it a race
-// with three competitors down one side reads as a terrace, its buildings closer
-// to each other than any of them is to the road they front.
-const LANE_CLEAR_M = DISTRICT_GAP_M + 2 * SETBACK_M
+// block have nothing between them unless it is put here, and without it a race
+// reads as a terrace, its buildings closer to each other than any of them is to
+// the street they front.
+export const LANE_CLEAR_M = DISTRICT_GAP_M + 2 * SETBACK_M
+
+// Step, in meters, a plot is slid along a block side while looking for room.
+const BLOCK_SLIDE_STEP_M = 0.25
+
+// The order a block's sides are offered in when a district names none: Main
+// Avenue's side first, so a district's biggest machine fronts the main street,
+// then the two cross streets, then the back avenue.
+function defaultFaces(b: CityBlock): BlockSide[] {
+  return b.acrossM[0] >= 0
+    ? ['southeast', 'southwest', 'northeast', 'northwest']
+    : ['northwest', 'southwest', 'northeast', 'southeast']
+}
+
+// Where a plot of radius `r` can stand on one side of a block, in the spine's
+// frame: the line it slides along (exactly one frontage off that side's
+// street) and the order it is tried in.
+//
+// Each side is walked from a DIFFERENT corner, round the block counter-
+// clockwise — the southeast side from its southwest end, the northeast side
+// from its southeast end, and so on. So the first lot on each side takes a
+// different corner, and a district fills its block outward from all four
+// rather than piling into one.
+function blockSideStations(b: CityBlock, side: BlockSide, r: number) {
+  const f = frontageM(r)
+  const [a0, a1] = b.alongM
+  const [c0, c1] = b.acrossM
+  const stations: { a: number; c: number }[] = []
+  const walk = (from: number, to: number, place: (s: number) => { a: number; c: number }) => {
+    if (from <= to) {
+      for (let s = from; s <= to + 1e-9; s += BLOCK_SLIDE_STEP_M) stations.push(place(s))
+    } else {
+      for (let s = from; s >= to - 1e-9; s -= BLOCK_SLIDE_STEP_M) stations.push(place(s))
+    }
+  }
+  if (a1 - a0 < 2 * f || c1 - c0 < 2 * f) return stations
+  switch (side) {
+    case 'southeast':
+      walk(a0 + f, a1 - f, (s) => ({ a: s, c: c0 + f }))
+      break
+    case 'northeast':
+      walk(c0 + f, c1 - f, (s) => ({ a: a1 - f, c: s }))
+      break
+    case 'northwest':
+      walk(a1 - f, a0 + f, (s) => ({ a: s, c: c1 - f }))
+      break
+    case 'southwest':
+      walk(c1 - f, c0 + f, (s) => ({ a: a0 + f, c: s }))
+      break
+  }
+  return stations
+}
 
 // Place a race's competitors on the streets of their district, largest first.
 //
-// Positions come back absolute. The terminus and flank cases each work in the
-// frame of the road they front — `along` out from the spine, `across` to its
-// left — which is a flat offset from a straight line and therefore exact. That
-// is the simplification the linear plan buys: on the concentric plan each
-// district had its own rotated frame and the corner lots had to be solved in
-// POLAR terms, because the two streets a district fronted were a circle and a
-// radial and only polar offsets were exactly the setback from both. Every road
-// here is straight, so the arc-versus-tangent correction that used to eat the
-// whole setback is simply gone.
+// Positions come back absolute. Every case works in the frame of the road it
+// fronts — `along` and `across` it — which is a flat offset from a straight
+// line and therefore exact.
 export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> {
   const out = new Map<string, Slot>()
   if (!plots.length) return out
@@ -474,11 +496,6 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
   // Pack a field around the dead end of one road: the largest standing square
   // across the head where the pavement runs out, the rest lining the final
   // approach and alternating sides so the road keeps a building on both hands.
-  //
-  // Working BACK from the head rather than out from the spine is what makes the
-  // arrangement independent of how long the road is: lengthen a branch and its
-  // buildings stay clustered at the end of it, where lengthening it from the
-  // other direction would leave the cluster stranded halfway down.
   const packDeadEnd = (
     field: Plot[],
     headEast: number,
@@ -510,12 +527,44 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
     })
   }
 
-  switch (plan.front ?? 'terminus') {
+  switch (plan.front ?? (plan.cityBlock ? 'block' : 'terminus')) {
+    case 'block': {
+      // Round the inside of the block, each competitor fronting one of its four
+      // streets at exactly one frontage off it. Largest first, each offered the
+      // block's sides in the district's order and slid along a side until it
+      // clears everything already standing, by the same strip two lots on one
+      // verge keep. A lot that fits nowhere on the frontage is a block too small
+      // for its race, which the plan's tests catch; it is seated at the block's
+      // centre rather than dropped, so the failure is visible rather than silent.
+      const b = plan.cityBlock!
+      const faces = plan.faces ?? defaultFaces(b)
+      const placed: { a: number; c: number; r: number }[] = []
+      for (const plot of order) {
+        const r = plot.radiusM
+        let spot: { a: number; c: number } | undefined
+        for (const side of faces) {
+          spot = blockSideStations(b, side, r).find((s) =>
+            placed.every(
+              (q) => Math.hypot(s.a - q.a, s.c - q.c) - r - q.r >= LANE_CLEAR_M
+            )
+          )
+          if (spot) break
+        }
+        spot ??= {
+          a: (b.alongM[0] + b.alongM[1]) / 2,
+          c: (b.acrossM[0] + b.acrossM[1]) / 2,
+        }
+        placed.push({ ...spot, r })
+        const p = at(spot.a, spot.c)
+        put(plot, p.east, p.north)
+      }
+      return out
+    }
+
     case 'lot': {
       // No street through the lot, so the assets simply stand along an axis,
       // offset so the district center falls at the middle of their combined
-      // FRONTAGE rather than between their centres — which, for a 38 m base
-      // camp beside a 12 m stack, are not the same point.
+      // FRONTAGE rather than between their centres.
       const [ue, un] = dirFor(plan.lotAxis ?? SPINE_BEARING_DEG)
       let cursor = 0
       const span = order.reduce(
@@ -531,9 +580,10 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
     }
 
     case 'flank': {
-      // The spine itself with a plot either side. Plots opposite each other are
-      // held apart by the road's full width plus both setbacks, so they never
-      // need spacing along it; a third and a fourth would, which is the step.
+      // Main Avenue itself with a plot either side. Plots opposite each other
+      // are held apart by the road's full width plus both setbacks, so they
+      // never need spacing along it; a third and a fourth would, which is the
+      // step.
       const [alongE, alongN] = spineDir()
       const [acrossE, acrossN] = spineNormal()
       let step = 0
@@ -558,11 +608,10 @@ export function districtSlots(plan: SitePlan, plots: Plot[]): Map<string, Slot> 
     }
 
     default: {
-      // The dead end of the district's own branch, and — for the larger races —
-      // of a spur off it. The spur takes the SMALLEST competitors, which is the
-      // only split that reads correctly: the race's headline hardware stands
-      // where its road ends and the camera arrives, and the small stuff is what
-      // gets sent round the corner.
+      // The dead end of the district's own branch, and — if it has one — of a
+      // spur off it, which takes the SMALLEST competitors: the race's headline
+      // hardware stands where its road ends and the small stuff goes round the
+      // corner.
       const branch = plan.branch
       if (!branch) {
         // A terminus with no branch has nowhere to be but its own centre.
@@ -601,16 +650,13 @@ export type DistrictRoad = {
   from: { east: number; north: number }
   to: { east: number; north: number }
   lengthM: number
-  // Where in the hierarchy: RANK_BRANCH for the branch, RANK_SPUR for the spur.
+  // Where in the hierarchy: RANK_STREET for a branch, RANK_LANE for a spur.
   rank: number
 }
 
-// The roads a district owns, branch first. Empty for a flank district, which
-// owns none — it stands on the spine, which belongs to the settlement.
-//
-// Every other derivation about a district's geometry goes through here — the
-// streets, the plot packing, the ground it keeps, which road a lot fronts — so
-// there is exactly one place that knows a spur hangs off a branch at `atM`.
+// The roads a district owns, branch first. Empty for a block district, whose
+// streets belong to the grid, and for a flank district, which stands on Main
+// Avenue.
 export function districtRoads(plan: SitePlan): DistrictRoad[] {
   const branch = plan.branch
   if (!branch) return []
@@ -626,7 +672,7 @@ export function districtRoads(plan: SitePlan): DistrictRoad[] {
       from: crossing,
       to,
       lengthM: branch.lengthM,
-      rank: RANK_BRANCH,
+      rank: RANK_STREET,
     },
   ]
   if (branch.spur) {
@@ -643,15 +689,14 @@ export function districtRoads(plan: SitePlan): DistrictRoad[] {
         north: from.north + sn * branch.spur.lengthM,
       },
       lengthM: branch.spur.lengthM,
-      rank: RANK_SPUR,
+      rank: RANK_LANE,
     })
   }
   return out
 }
 
 // Radius in meters of the ground a district occupies once packed — the farthest
-// any of its plots reaches from the district center. The road network and the
-// district spacing are both checked against this.
+// any of its plots reaches from the district center.
 export function districtExtentM(plan: SitePlan, plots: Plot[]): number {
   const slots = districtSlots(plan, plots)
   let max = 0
@@ -662,35 +707,46 @@ export function districtExtentM(plan: SitePlan, plots: Plot[]): number {
   return max
 }
 
-// How far along the spine a district's branch leaves it.
+// How far along the spine a district sits: its block's middle, or the crossing
+// its branch leaves Main Avenue from.
 export function districtAlongM(plan: SitePlan): number {
   return plan.alongM
 }
 
-// The road a point inside a district actually FRONTS, and which side of it that
-// point lies on: the bearing of the nearer of the district's own branch and
-// spur, and the signed lateral offset from it (+ is left of that road's own
-// outbound direction).
+// The street a point inside a district actually FRONTS, and which side of it
+// that point lies on: the street's bearing, the signed lateral offset from it
+// (+ is left of that street's own outbound direction), and `head` — for a
+// district road, the point its centreline ends; for a block, the foot of the
+// perpendicular from the point onto the street.
 //
-// Needed because "which way does this lot face" stopped having a single answer
-// when the plan grew a second tier. It used to be read off the spine, which was
-// correct while every district straddled the spine; a lot on a 95 deg branch
-// asked the same question gets an answer 55 degrees wrong, and for anything
-// laid out along an axis — the buried vaults, whose mounds are 28 m long — that
-// is the difference between a mound running away from its road into open ground
-// and one running down the middle of it.
-//
-// Read off the point rather than stored per project because lots are assigned by
-// roster rank: changing any competitor's footprint can move it to the other side
-// of its road, or out onto the spur, and a stored bearing would then be silently
-// stale.
+// Read off the point rather than stored per project because lots are assigned
+// by roster rank: changing any competitor's footprint can move it to another
+// side of its block, and a stored bearing would then be silently stale. The
+// buried habitats lay their vaults square to this street (see subplan.ts).
 export function frontingRoad(
   plan: SitePlan,
   p: { east: number; north: number }
 ): { bearingDeg: number; acrossM: number; head: { east: number; north: number } } {
+  if (plan.cityBlock) {
+    const { alongM: a, acrossM: c } = spineCoords(p)
+    const [a0, a1] = plan.cityBlock.alongM
+    const [c0, c1] = plan.cityBlock.acrossM
+    // Distance to each of the four streets, and what fronting it means: the
+    // avenues run outbound northeast with +across on their left, the cross
+    // streets outbound northwest with -along on theirs.
+    const sides = [
+      { d: c - c0, bearingDeg: SPINE_BEARING_DEG, acrossM: c - c0, head: at(a, c0) },
+      { d: c1 - c, bearingDeg: SPINE_BEARING_DEG, acrossM: c - c1, head: at(a, c1) },
+      { d: a - a0, bearingDeg: CROSS_STREET_BEARING_DEG, acrossM: a0 - a, head: at(a0, c) },
+      { d: a1 - a, bearingDeg: CROSS_STREET_BEARING_DEG, acrossM: a1 - a, head: at(a1, c) },
+    ]
+    const best = sides.reduce((x, y) => (y.d < x.d ? y : x))
+    return { bearingDeg: best.bearingDeg, acrossM: best.acrossM, head: best.head }
+  }
+
   const roads = districtRoads(plan)
   if (!roads.length) {
-    // A flank district fronts the spine itself.
+    // A flank district fronts Main Avenue itself.
     return {
       bearingDeg: SPINE_BEARING_DEG,
       acrossM: spineCoords(p).acrossM,
@@ -717,206 +773,98 @@ export function frontingRoad(
 // Where the districts stand
 // ---------------------------------------------------------------------------
 
-// Eight districts down one street, declared southwest to northeast, which is
-// also the order SOM's bands run in: transport and energy at the ends,
-// habitation in the middle, the infrastructure that serves it either side.
+// Eight districts, six of them in town. Which race gets which block is function
+// first and composition second, and follows SOM's Moon Village bands (habitation
+// in the middle, the infrastructure that serves it either side, transport and
+// energy at the ends) laid out along Main Avenue rather than across the rim.
 //
-// Which race gets which crossing is function first and composition second.
-// Landing goes at one end and the launcher at the other because both throw
-// things and neither should throw them over the base. Power sits beside the
-// launcher because a reluctance launcher's capacitor hall is the largest
-// electrical load on the plan, and it lands 300 m from the habitat, which is
-// the ejecta-and-radiation logic the concentric plan could not express at all
-// with everything pinned to one 96 m ring. ISRU sits between the habitat and
-// the pads because the entire argument for making oxygen on the Moon is pumping
-// it into a lander. Rover and construction take the crossings nearest the
-// camera so the foreground carries something at human scale and the one moving
-// thing on the base starts close to the eye.
-//
-// WHICH SIDE, AND HOW FAR OUT, IS THE GROUND'S CALL. Each branch's bearing and
-// length come off the height-field survey described at the top of this file —
-// the longest run at that crossing that holds under a 10% step grade and 12 m
-// of relief — and the survey is what makes them uneven. Every branch and spur
-// below was re-profiled at its final bearing and length: the steepest is the
-// habitat spur at 9.8% and the flattest the comms branch at 2.1%, with relief
-// between 0.3 and 3.9 m. Distances between districts are then measured centre to
-// centre in the plan rather than along the spine, because a district is no
-// longer on the spine — which is what lets the crossings sit closer together
-// than their blocks are wide.
+// The landing zone and the launcher are the two things on the plan that throw
+// mass, so they stand off the grid at opposite ends of Main Avenue, out of town.
+// The ISRU yard takes the block nearest the pads, because the whole argument for
+// making oxygen on the Moon is pumping it into a lander. The habitat race takes
+// the middle of the north row, the quietest address on the plan. Power takes the
+// far end of the south row — across Main Avenue and two blocks up from the
+// habitats, beside the solar block and the launcher's breach works that are its
+// biggest load.
 export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
-  // LANDING ZONE, at the southwest end. The pads FLANK the spine rather than
-  // standing at the end of a branch, and this is the one district the survey
-  // could have moved and shouldn't.
+  // LANDING ZONE, 280 m southwest, past the end of town. The pads FLANK Main
+  // Avenue rather than taking a block, and this is the one district that must
+  // not be boxed in by streets.
   //
-  // A branch here is buildable — 260 m at 70-100 deg, comfortably. The reason
-  // the pads stay on the through road is not grade, it is that a landing zone
-  // is the one installation you must not put at the end of a cul-de-sac. With
-  // no air to slow it, plume-thrown regolith travels ballistic arcs that stay
-  // dangerous for hundreds of meters, so what a pad wants is the longest clear
-  // sightline on the plan and two ways out of it, not a dead end 80 m from the
-  // nearest building. So the haul road runs BETWEEN the pads and carries
-  // straight on out to the end of the spine. (When this district hosted the
-  // crewed-lander race, Starship's 62 m apron was the other half of the
-  // argument — no branch was long enough to make it a terminus rather than a
-  // blockage. Touchdown's CLPS-class pads no longer force that, but the
-  // cul-de-sac argument alone still does.)
-  lander: district(-280, {
+  // With no air to slow it, plume-thrown regolith travels ballistic arcs that
+  // stay dangerous for hundreds of meters, so what a pad wants is the longest
+  // clear sightline on the plan and two ways out of it, not four streets of
+  // neighbours. So the pads stand either side of Main Avenue, 80 m short of the
+  // first cross street, and the haul road runs BETWEEN them and carries straight
+  // on into town.
+  lander: offGrid(-280, {
     turn: 0,
     front: 'flank',
     flankSide: 1,
-    // Blue Moon MK1's 4.8 m pad plus its frontage off the spine, with the
-    // other four Touchdown pads packed down both flanks. Far smaller than the
-    // 71 m the Starship-era crewed race needed: the landing race here is now
-    // Touchdown (shared-next-landing), whose biggest entrant is an 8 m
-    // cargo lander rather than a 52 m Starship.
+    // Blue Moon MK1's 4.8 m pad plus its frontage off the avenue, with the other
+    // Touchdown pads packed down both flanks.
     block: 20,
   }),
 
-  // ISRU YARD, 200 m southwest, out on an 80 m branch to the northwest. The
-  // propellant run is 200 m of flat spine to the pads and never enters the
-  // settlement, and the yard itself is now off the through road rather than
-  // sitting on it, which is what a tank farm should be.
-  isru_plant: district(-200, {
-    turn: 8,
-    branch: { bearingDeg: 80, lengthM: 80 },
-    block: 21,
-  }),
+  // ISRU YARD, the first block in from the pads. The propellant run is 80 m of
+  // Main Avenue to the landing zone and never enters the rest of town.
+  isru_plant: onBlock(CITY_BLOCKS.isru, { turn: 8 }),
 
-  // ROVER DEPOT, 120 m southwest, on the shortest branch on the plan — 55 m,
-  // and the only one that runs southeast, back down the fall of the ridge
-  // toward the pads. A motor pool wants to be off the main road and first on
-  // the way out of town, which is exactly where this lands.
-  //
-  // This is the one district that shows its field TWICE, and the duplication is
-  // deliberate. Each LTV stands on its own lot here, exactly as every other
-  // race's hardware stands on its: a capability race whose entrants cannot be
-  // lined up and compared is one nobody can read, and four bids for the same
-  // contract are worth seeing side by side. A SECOND copy of the same four then
-  // drives the spine (see PATROL), which is what makes rovers the only moving
-  // things on the base.
-  //
-  // The depot yard and recharge station that used to stand at the head of this
-  // branch are gone. They existed to answer a district whose every lot was bare
-  // — the fleet being out driving — by giving the ground something built to
-  // read. Its lots are not bare any more, and the yard sat squarely on the two
-  // of them nearest the head.
-  rover: district(-120, {
-    turn: -6,
-    branch: { bearingDeg: 270, lengthM: 55, width: 0.72 },
-    // Sized for the roster, now that the roster actually parks here: five
-    // First Tracks lots off the 55 m branch, with the head one — FLIP, at a 1 m
-    // radius the only vehicle in the field bigger than a shoebox — standing
-    // 16.1 m past the dead end. That lot is the binding constraint, and 9 is
-    // the least block that still covers the district; 12 leaves a working
-    // margin without claiming ground the filler could use.
-    //
-    // Was 20 for the four LTV-class lots that used to stand here, and 27 before
-    // that while the yard's 9 m apron set it instead. The district lost an
-    // order of magnitude of vehicle when the capability race took it off the
-    // crewed LTV bids, so the keep-out had to come down with it — left at 20 it
-    // was reserving 11 m more than the roster occupies, which on a plan with
-    // eight districts on eleven roads is ground the boulder field needs.
-    block: 12,
-  }),
+  // CONSTRUCTION, the second block: the ground these machines are all bidding to
+  // pave, with Main Avenue frontage near the camera. Turned toward the work.
+  construction: onBlock(CITY_BLOCKS.construction, { turn: 22 }),
 
-  // THE HABITAT RACE, on the longest branch but one: 130 m northwest off the
-  // ridge centre, with a spur at 85 m taking the two smaller modules.
-  // Artemis Base Camp and China/Russia's ILRS stand against Thales' MPH,
-  // Sierra's LIFE and Toyota's Lunar Cruiser.
+  // THE HABITAT RACE, the middle block of the north row: Artemis Base Camp and
+  // China/Russia's ILRS against Thales' MPH, Sierra's LIFE and Toyota's Lunar
+  // Cruiser.
   //
-  // The longest branch of any inhabited district, and that is the point. On the
-  // plan this replaces the habitat race stood ON the spine — and before that it
-  // had a plaza of its own inside a perimeter road, on a 60.5 m paved
-  // hardstand. Both put the crew's front door on the road every hauler,
-  // propellant tank and paving machine on the base uses. 130 m up a branch off
-  // it is a quiet address, which is what habitation on a linear plan is for,
-  // and the spur gives the two buried modules their own frontage instead of a
-  // place in a line of five.
-  //
-  // Its crossing is still at the origin, which keeps the home camera's framing
-  // and the buried vaults where they were (see subplan.ts).
-  habitat: district(0, {
+  // Faces North Avenue first, so the two largest lots — Artemis Base Camp and a
+  // buried module — front the back street rather than the haul road every
+  // tanker and paving machine on the base uses; the smaller ones fill in round
+  // the block. Its block straddles the crossing at the origin, which keeps the
+  // home camera's framing and the buried vaults near where they were (see
+  // subplan.ts).
+  habitat: onBlock(CITY_BLOCKS.habitat, {
     turn: 0,
-    branch: {
-      bearingDeg: 95,
-      lengthM: 130,
-      spur: { atM: 55, bearingDeg: 30, lengthM: 38, takes: 2, width: 0.55 },
-    },
-    block: 39,
+    faces: ['northwest', 'southwest', 'northeast', 'southeast'],
   }),
 
-  // CONSTRUCTION, 60 m northeast on a 72 m branch southeast, with a spur at
-  // 45 m. The ground these machines are all bidding to pave, and near the
-  // camera. Turned toward the work.
-  //
-  // Its branch leaves the spine at only 35 deg — the shallowest divergence on
-  // the plan — so it reads as a fork off the main road rather than a crossing
-  // of it, which is the right note for the one district whose business is the
-  // road surface itself.
-  construction: district(60, {
-    turn: 22,
-    branch: {
-      bearingDeg: 5,
-      lengthM: 72,
-      width: 0.72,
-      spur: { atM: 30, bearingDeg: 275, lengthM: 32, takes: 2, width: 0.55 },
-    },
-    block: 23,
-  }),
+  // ROVER DEPOT, the fourth block. This is the one district that shows its field
+  // TWICE, and the duplication is deliberate: each rover stands on its own lot
+  // here, exactly as every other race's hardware stands on its, and a SECOND
+  // copy of the same field drives Main Avenue (see PATROL), which is what makes
+  // rovers the only moving things on the base.
+  rover: onBlock(CITY_BLOCKS.rover, { turn: -6 }),
 
-  // COMMS AND NAVIGATION, 150 m northeast on the longest branch on the plan:
-  // 145 m northwest, with a spur at 95 m for two of the four terminals.
-  //
-  // Ground stations want their horizon clear of the structures that would
-  // clutter it, and four terminals looking at the same sky want the same thing,
-  // so this race goes further from the settlement than any other — and the
-  // ground happens to agree, because this is the flattest branch on the base
-  // (0.5 m of relief over 145 m, worst grade 2.1%).
+  // COMMS AND NAVIGATION, the last block of the north row, at the far end of
+  // town. Ground stations want their horizon clear of structures, so the field
+  // faces North Avenue — the edge of town, with nothing beyond it but ridge.
   //
   // Note there is deliberately no `orbital` district. buildTechTrees treats
-  // orbital as a non-surface type, so Gateway can never occupy ground here — a
-  // lot for it would be a branch to a dead end that stays bare regolith at
-  // every year on the scrubber.
-  comms_pnt: district(150, {
+  // orbital as a non-surface type, so Gateway can never occupy ground here.
+  comms_pnt: onBlock(CITY_BLOCKS.comms, {
     turn: -12,
-    branch: {
-      bearingDeg: 120,
-      lengthM: 145,
-      width: 0.72,
-      spur: { atM: 95, bearingDeg: 60, lengthM: 40, takes: 2, width: 0.55 },
-    },
-    block: 17,
+    faces: ['northwest', 'northeast', 'southwest', 'southeast'],
   }),
 
-  // POWER, 245 m northeast on a 95 m branch southeast — the opposite side of
-  // the spine from the habitat, which is most of the point. Fission plants go
-  // where the crew isn't, and putting the reactors across the street and 300 m
-  // up it from the habitat's own branch end is the whole standoff argument
-  // stated as geometry.
-  power: district(245, {
-    turn: 6,
-    branch: { bearingDeg: 350, lengthM: 95 },
-    block: 23,
-  }),
+  // POWER, the last block of the south row: across Main Avenue from the comms
+  // block and 200 m from the habitats. Fission plants go where the crew isn't.
+  power: onBlock(CITY_BLOCKS.power, { turn: 6 }),
 
-  // LUNAR MASS DRIVER, 345 m northeast, at the head of the spine, on a 70 m
-  // branch northwest.
+  // LUNAR MASS DRIVER, past the end of town at the head of Main Avenue, on a
+  // 60 m drive square off it to the northwest.
   //
   // What stands on this lot is the launcher's BREACH WORKS — capacitor hall,
   // power feed, solar field — and that is all this entry describes. The guideway
   // itself runs 600 m out of the lot on its own heading, is not packed as a
   // disc, and is checked as a corridor; see lib/lunar-atlas/trackplan.
   //
-  // Its heading and the spine's are the same line, which is not a coincidence:
-  // both are answers to the same question about the same ground, the guideway
-  // needing level because fall is leg height and the spine needing it because a
-  // 730 m road cannot dodge. Standing the breach works 70 m off the spine puts
-  // the guideway on a line PARALLEL to the street and offset from it, so the
-  // launcher reads as the street continuing out of town while firing over none
-  // of it.
-  mass_driver: district(345, {
+  // The drive puts the breach works almost exactly on the line of North Avenue,
+  // 60 m past where it ends. The guideway leaves on the avenues' own bearing, so
+  // it reads as North Avenue carrying on out of town, and fires over none of it.
+  mass_driver: offGrid(360, {
     turn: 0,
-    branch: { bearingDeg: 100, lengthM: 70, width: 0.72 },
+    branch: { bearingDeg: CROSS_STREET_BEARING_DEG, lengthM: 60, width: 0.72 },
     block: 24,
   }),
 }
@@ -925,52 +873,114 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
 // The streets
 // ---------------------------------------------------------------------------
 
-// Where a road sits in the hierarchy. Higher CARRIES a crossing: the spine's
-// surface runs through unbroken and a branch stops at its lane edge, a branch's
-// runs through and a spur stops at its.
-//
-// A rank rather than the single boolean this replaces, because the plan now has
-// three tiers and not two. A boolean could say "the spine wins" and had nothing
-// to say about a spur meeting its own branch — that fell through to the
-// width tie-break and then to whichever road the plan happened to list first,
-// which is a correct answer only until somebody reorders BASE_STREETS. See
-// throughRoad in junctions.ts.
-export const RANK_SPINE = 2
-export const RANK_BRANCH = 1
-export const RANK_SPUR = 0
+// Where a road sits in the hierarchy. Higher CARRIES a crossing: Main Avenue's
+// surface runs through unbroken and everything meeting it stops at its lane
+// edge; an avenue carries the cross streets that meet it, and a district's own
+// branch carries its spur. See throughRoad in junctions.ts.
+export const RANK_MAIN = 2
+export const RANK_AVENUE = 1
+export const RANK_STREET = 0
+export const RANK_LANE = -1
 
 // Roads, as polylines of [east, north] waypoints in meters. Curves are splined
-// through these, so a handful of waypoints describes a road that bends the way
-// a graded one does — though on this plan nothing bends: every road is straight
-// and two waypoints describe it exactly.
+// through these, though on this plan nothing bends: every road is straight and
+// two waypoints describe it exactly.
 export type Street = {
   points: [number, number][]
   closed?: boolean
-  // Lane width as a fraction of a full haul road. The routes that carry cargo
-  // and propellant run full width; a track that only ever takes a crew rover
-  // out to one machine is narrower, and a spur to two small modules is narrower
-  // still. That difference is most of what stops eleven roads reading as one
-  // road drawn eleven times.
+  // Lane width as a fraction of a full haul road. The avenues carry cargo and
+  // propellant and run full width; the cross streets are town streets, and a
+  // drive out to one lot is narrower still.
   width?: number
   // The sites this road exists to reach. It stands as long as any of them do,
-  // so a road never runs out to a plot that is still bare regolith at the year
-  // on the scrubber — the comms terminals, for one, aren't in service until the
-  // back half of the decade. The spine has no `serves`: it is the settlement's
-  // own frame and arrives with it.
+  // so a street is graded when the first district on it is, and the town is
+  // built out block by block as the scrubber moves rather than standing as an
+  // empty grid years early. Main Avenue has no `serves`: it is the
+  // settlement's own frame and arrives with it, and so does any street that
+  // fronts nothing but the solar farm.
   serves?: ProjectType[]
-  // Which tier this road belongs to. See RANK_SPINE above.
+  // Which tier this road belongs to. See RANK_MAIN above.
   rank?: number
 }
 
-// THE SPINE. Two waypoints, because it is a straight line and a spline through
-// two points is one.
-function spineStreet(): Street {
+// Lane width of a cross street, as a fraction of an avenue's.
+export const CROSS_STREET_WIDTH = 0.85
+
+// The districts zoned onto a block, by block — so a street can say which of
+// them it serves.
+function blockDistricts(b: CityBlock): ProjectType[] {
+  return (Object.keys(BASE_PLAN) as ProjectType[]).filter(
+    (k) => BASE_PLAN[k]!.cityBlock === b
+  )
+}
+
+const ALL_BLOCKS: CityBlock[] = Object.values(CITY_BLOCKS)
+
+function street(
+  rank: number,
+  width: number,
+  from: { east: number; north: number },
+  to: { east: number; north: number },
+  serves: ProjectType[]
+): Street {
+  return {
+    rank,
+    width,
+    serves: serves.length ? serves : undefined,
+    points: [
+      [from.east, from.north],
+      [to.east, to.north],
+    ],
+  }
+}
+
+// MAIN AVENUE, the whole length of the base.
+function mainAvenue(): Street {
   const a = at(SPINE_START_M)
   const b = at(SPINE_END_M)
   return {
-    rank: RANK_SPINE,
+    rank: RANK_MAIN,
     points: [[a.east, a.north], [b.east, b.north]],
   }
+}
+
+// How far an outer avenue runs on past its last cross street. Longer than the
+// sweep a cross street's junction grades back along the avenue (its lane plus
+// JUNCTION_FILLET_M, about 8 m), or the stub is all junction apron and its end
+// can never fade out on its own.
+const AVENUE_TAIL_M = 20
+
+// An outer avenue at `acrossM`, along the full run of blocks that front it and a
+// tail past each end, so its last crossings are crossings rather than corners.
+function outerAvenue(acrossM: number): Street | null {
+  const fronting = ALL_BLOCKS.filter((b) => b.acrossM.includes(acrossM))
+  if (!fronting.length) return null
+  const from = Math.min(...fronting.map((b) => b.alongM[0])) - AVENUE_TAIL_M
+  const to = Math.max(...fronting.map((b) => b.alongM[1])) + AVENUE_TAIL_M
+  return street(
+    RANK_AVENUE,
+    1,
+    at(from, acrossM),
+    at(to, acrossM),
+    fronting.flatMap(blockDistricts)
+  )
+}
+
+// A cross street at `alongM`, across the full depth of the blocks that front it,
+// from avenue centreline to avenue centreline — it starts and ends ON the
+// avenues, so both its ends are junctions and neither is a dead end.
+function crossStreet(alongM: number): Street | null {
+  const fronting = ALL_BLOCKS.filter((b) => b.alongM.includes(alongM))
+  if (!fronting.length) return null
+  const from = Math.min(...fronting.map((b) => b.acrossM[0]))
+  const to = Math.max(...fronting.map((b) => b.acrossM[1]))
+  return street(
+    RANK_STREET,
+    CROSS_STREET_WIDTH,
+    at(alongM, from),
+    at(alongM, to),
+    fronting.flatMap(blockDistricts)
+  )
 }
 
 // One of a district's own roads as a street: its centreline, run on past the
@@ -982,7 +992,7 @@ function districtStreet(site: ProjectType, road: DistrictRoad): Street {
   return {
     rank: road.rank,
     serves: [site],
-    width: road.rank === RANK_SPUR ? branch.spur!.width : branch.width,
+    width: road.rank === RANK_LANE ? branch.spur!.width : branch.width,
     points: [
       [road.from.east, road.from.north],
       [road.from.east + de * end, road.from.north + dn * end],
@@ -990,54 +1000,42 @@ function districtStreet(site: ProjectType, road: DistrictRoad): Street {
   }
 }
 
-// Which districts own roads, southwest to northeast, which is the order
-// BASE_PLAN declares them in.
+// Which districts own roads of their own, in BASE_PLAN order.
 const BRANCHED = (Object.keys(BASE_PLAN) as ProjectType[]).filter(
   (k) => !!BASE_PLAN[k]!.branch
 )
 
-// Every road on the base, derived from the districts rather than listed, so a
-// district that moves, lengthens its branch, or gains or loses a spur cannot
-// leave a road behind or a road stranded.
+// Every road on the base, derived from the blocks and the districts rather than
+// listed, so a block that is zoned, or a district that moves, cannot leave a
+// road behind or a road stranded.
 //
-// Ordered by TIER rather than by district — the spine, then all seven branches,
-// then the three spurs — so that a consumer walking BASE_STREETS in order draws
-// the network from the top down. BaseRoads relies on nothing about the order and
-// junctions.ts explicitly refuses to (see throughRoad), but the road runs the
-// filler walks come out of it, and lighting the spine before the driveways is
-// the right default for anything that stops early.
+// Ordered by TIER — Main Avenue, the outer avenues, the cross streets, then the
+// district drives — so a consumer walking BASE_STREETS in order draws the
+// network from the top down. BaseRoads relies on nothing about the order and
+// junctions.ts explicitly refuses to (see throughRoad).
 export const BASE_STREETS: Street[] = [
-  // THE SPINE, southwest to northeast: the one road that makes this a
-  // settlement rather than eight installations. Every branch starts on it, the
-  // pads flank it and the rovers drive it. Arrives with the settlement, so it
-  // has no `serves`.
-  spineStreet(),
-
-  // One branch per district that has one — every race except the landing zone,
-  // whose pads flank the spine itself.
-  ...BRANCHED.map((k) => districtStreet(k, districtRoads(BASE_PLAN[k]!)[0])),
-
-  // And a spur for each of the three whose roster is big enough to want a
-  // second frontage.
-  ...BRANCHED.filter((k) => !!BASE_PLAN[k]!.branch!.spur).map((k) =>
-    districtStreet(k, districtRoads(BASE_PLAN[k]!)[1])
+  mainAvenue(),
+  ...[NORTH_AVENUE_ACROSS_M, SOUTH_AVENUE_ACROSS_M].map(outerAvenue),
+  ...CROSS_STREET_ALONG_M.map(crossStreet),
+  ...BRANCHED.flatMap((k) =>
+    districtRoads(BASE_PLAN[k]!).map((road) => districtStreet(k, road))
   ),
-]
+].filter((s): s is Street => !!s)
 
 // ---------------------------------------------------------------------------
 // The ground the districts keep
 // ---------------------------------------------------------------------------
 
-// A stretch of ground a district occupies, as a capsule: everything within
-// `halfM` of the segment from `a` to `b`.
-//
-// A capsule and not a box because a terminus district IS a corridor — its
-// buildings line its own branch and cluster at the end of it — so the shape
-// that describes it is the road it fronts, fattened. The plan this replaces
-// could use a box in spine coordinates because every district straddled the
-// spine; now that they stand off it on seven different bearings, a box in
-// anyone's frame is either wrong or enormous.
-export type Zone = { a: [number, number]; b: [number, number]; halfM: number }
+// A stretch of ground something on the plan occupies: everything within `halfM`
+// of the segment from `a` to `b`. With no `endM` the ends are round — a capsule,
+// for ground that is a road fattened. With `endM` the ends are square and run
+// that far past `a` and `b` — a box, for a city block.
+export type Zone = {
+  a: [number, number]
+  b: [number, number]
+  halfM: number
+  endM?: number
+}
 
 // Distance from a point to a segment.
 function segDistM(
@@ -1056,28 +1054,58 @@ function segDistM(
   return Math.hypot(east - (ax + dx * t), north - (ay + dy * t))
 }
 
-// The ground one district keeps, as capsules along the roads it fronts.
+// How far a point stands OUTSIDE a zone, in meters: negative inside, zero on its
+// edge. The one question everything that keeps clear of ground asks.
+export function zoneGapM(z: Zone, east: number, north: number): number {
+  if (z.endM === undefined) return segDistM(east, north, z.a, z.b) - z.halfM
+  const [ax, ay] = z.a
+  const len = Math.hypot(z.b[0] - ax, z.b[1] - ay)
+  const ux = len > 0 ? (z.b[0] - ax) / len : 1
+  const uy = len > 0 ? (z.b[1] - ay) / len : 0
+  const u = (east - ax) * ux + (north - ay) * uy
+  const v = -(east - ax) * uy + (north - ay) * ux
+  const du = Math.max(-u, u - len) - z.endM
+  const dv = Math.abs(v) - z.halfM
+  if (du <= 0 && dv <= 0) return Math.max(du, dv)
+  return Math.hypot(Math.max(du, 0), Math.max(dv, 0))
+}
+
+// The buildable ground of a city block: everything inside its four streets that
+// is clear of the road and its setback, which is exactly where a lot's edge may
+// begin. As a box along the block's own long axis.
+export function blockGround(b: CityBlock): Zone {
+  const inset = ROAD_HALF_M + SETBACK_M
+  const cMid = (b.acrossM[0] + b.acrossM[1]) / 2
+  const p = at(b.alongM[0] + inset, cMid)
+  const q = at(b.alongM[1] - inset, cMid)
+  return {
+    a: [p.east, p.north],
+    b: [q.east, q.north],
+    halfM: (b.acrossM[1] - b.acrossM[0]) / 2 - inset,
+    endM: 0,
+  }
+}
+
+// The ground one district keeps.
 //
-// Deliberately conservative rather than exact: it does not know how many
-// competitors a race currently has, only the widest plausible reach its own
-// `block` allows for, and it applies that reach sideways as well as ahead. So
-// anything checked against it can never spawn on top of a competitor's plot no
-// matter how a roster changes.
+// A block district keeps its whole block: it is zoned, and nothing else may be
+// put on it whatever its roster does. A terminus district keeps capsules along
+// the roads it fronts, `block` meters wide and run on past each dead end by the
+// same; a flank district a stretch of Main Avenue.
 export function districtGround(plan: SitePlan): Zone[] {
+  if (plan.cityBlock) return [blockGround(plan.cityBlock)]
+
   const halfM = plan.block ?? 20
   const roads = districtRoads(plan)
 
   if (!roads.length) {
-    // A flank district straddles the spine, so its ground is a stretch OF the
-    // spine — short, because its plots sit beside the road rather than along it.
+    // A flank district straddles Main Avenue, so its ground is a stretch OF it
+    // — short, because its plots sit beside the road rather than along it.
     const a = at(plan.alongM - halfM * 0.5)
     const b = at(plan.alongM + halfM * 0.5)
     return [{ a: [a.east, a.north], b: [b.east, b.north], halfM }]
   }
 
-  // Each of the district's roads, fattened by `halfM` sideways and run on past
-  // its own dead end by the same, which is what covers whatever stands at the
-  // head of it.
   return roads.map((r) => {
     const [de, dn] = dirFor(r.bearingDeg)
     return {
@@ -1098,10 +1126,7 @@ const DISTRICT_ZONES: Zone[] = Object.values(BASE_PLAN)
 // half the answer the filler wants — the solar farm keeps ground too, and it is
 // laid out against this, so the public check below cannot be this one.
 function onRaceGround(east: number, north: number, marginM: number): boolean {
-  for (const z of DISTRICT_ZONES) {
-    if (segDistM(east, north, z.a, z.b) <= z.halfM + marginM) return true
-  }
-  return false
+  return DISTRICT_ZONES.some((z) => zoneGapM(z, east, north) <= marginM)
 }
 
 // ---------------------------------------------------------------------------
@@ -1116,10 +1141,9 @@ function onRaceGround(east: number, north: number, marginM: number): boolean {
 // driver, an ISRU plant and a construction yard needs power on the order of
 // hundreds of kilowatts, and the reactors in the power district are only part
 // of that answer — a real base pairs fission with photovoltaics, because at the
-// pole PV is nearly continuous and fission is what covers the rest. And a farm
-// is the one kind of built ground that is SUPPOSED to be mostly empty, which
-// makes it the honest way to fill the wedges between districts that otherwise
-// read as nothing at all.
+// pole PV is nearly continuous and fission is what covers the rest. And it is
+// what a town of this size zones a block for: generation, beside the district
+// that draws on it.
 //
 // WHY THE ARRAYS ARE TILTED RATHER THAN LAID FLAT
 //
@@ -1251,104 +1275,61 @@ type SolarField = {
   // Bearing the rows STACK along — so the row LINES, which are what the eye
   // actually reads a field by, run across this. Defaults to the sun's own
   // bearing, which is the orientation that costs the least shadow. Set it to
-  // survey a field to something on the ground instead; see field 1.
+  // survey a field to something on the ground instead.
   bearingDeg?: number
 }
 
-// The farm is TWO fields rather than one, on opposite sides of the spine.
+// The farm is TWO fields rather than one, at opposite ends of town.
 //
 // Split for the reason any real installation splits its generation: a single
 // field is a single point of failure, and losing all of it to one impact, one
 // bad dust event or one blown switchyard is the outcome the whole plant exists
 // to avoid. Distributing it is also how a base actually grows — you build the
 // field you need, and when you need more you build another one where there is
-// room, rather than going back and widening the first. Putting the two on
-// OPPOSITE flanks is the strongest version of that: no one event reaches both.
+// room, rather than going back and widening the first.
 //
-// It also happens to be what the plan needs. Standing every district at the end
-// of its branch left large clear wedges on both flanks reading as nothing at
-// all, and one field could only ever fill one of them.
+// Both are SURVEYED TO THE GRID rather than to the sun: on a town of square
+// blocks, a lattice at its own angle reads as debris rather than as plant. It
+// costs them almost nothing, because the sun's bearing is only 10 degrees off
+// the avenues' — the rows are pitched for that sun (above), and the spec checks
+// every PAIR of arrays against its shadow rather than arguing from the pitch,
+// because a lattice off the sun's axis is the case where pitch alone stops being
+// proof. Each array still turns onto the sun individually; the lattice and the
+// panel aim are separate decisions.
 //
-// WHY THESE TWO WEDGES AND NOT THE OTHERS
-//
-// The plan's open ground was mapped rather than eyeballed, and these are the
-// pockets that answer every constraint at once:
-//
-//   - They are the largest clear wedges that reach in toward the spine, so each
-//     field is served off the main street and needs no road of its own. Most
-//     other pockets this size sit 40 m or more from the nearest pavement, and a
-//     field with no access is the one installation this plan could not explain.
-//   - Both are hundreds of meters from the landing pads. Ejecta off an airless
-//     body leaves at orbital speed and does not come back down, so a field of
-//     glass is close to the worst thing to put near a pad — which is also the
-//     reason the large empty ground BESIDE the landing zone has to stay empty,
-//     and is not a candidate however dead it reads.
-//   - The larger field adjoins the power district's own crossing, so the base's
-//     two kinds of generation read as one complex rather than as panels dropped
-//     in a gap.
+// Both are also hundreds of meters from the landing pads. Ejecta off an airless
+// body leaves at orbital speed and does not come back down, so a field of glass
+// is close to the worst thing to put near a pad.
 const SOLAR_FIELDS: SolarField[] = [
-  // The main field, in the wedge between the construction and power crossings,
-  // on the southeast flank — the side the ridge falls away on, which is the
-  // side with the fewest districts on it and so the side with ground to spare.
-  // Surveyed to the sun, since nothing on the ground here has a claim on it.
-  { alongM: 200, acrossM: -62, rows: 4, bays: 7 },
-  // The second, in the northwest pocket short of the habitat crossing, and the
-  // larger of the two.
-  //
-  // Larger because of what it is next to. This is the settled end of the base —
-  // the habitats are the one district with a continuous, non-negotiable load,
-  // and life support is the load you least want at the far end of a run from
-  // the other flank. Generation built near the demand is how any real plant is
-  // sited, and it also means the two fields are not redundant copies: field 0
-  // backs the industrial end, this one backs the people.
-  //
-  // Surveyed to the HABITAT ROAD rather than to the sun, so its rows run
-  // PARALLEL to that road — hence the stacking bearing is the road's own 95 deg
-  // turned by a quarter turn.
-  //
-  // It shares a frame with that road from most of the spine, and a lattice
-  // sitting at its own private angle next to the one strong line near it would
-  // read as debris rather than as plant. Aligning it is the whole difference.
-  //
-  // WHY 5 x 7 AND NOT LARGER
-  //
-  // Because it is a FULL RECTANGLE, and a lattice with its corners bitten off
-  // reads as broken rather than as built out. That is the binding constraint
-  // here, not the ground: this pocket is hemmed by the isru_plant's ground to
-  // the southwest, the rover's to the south and the spine's own setback, and a
-  // lattice much bigger than this loses stations to one of the three whichever
-  // way it is nudged. Wider rectangles do exist further out on the flank, but
-  // only by walking the field a long way north of where it belongs, which puts
-  // it behind the habitats instead of beside them.
-  //
-  // So the size is the answer rather than the input: 5 x 7 is the largest
-  // complete rectangle that fits without moving north. If this needs to grow,
-  // the thing to move is the isru_plant, not the field.
-  //
-  // It is also as far EAST, toward the habitat road, as it can get: the field
-  // stands about 50 m off that road and every complete rectangle that fits
-  // anywhere in this pocket stands about 50 m off it too, whatever its size,
-  // because what caps the distance is the habitat district's own ground rather
-  // than the lattice. Shrinking the field to buy the last few meters was tried
-  // and buys nothing — a 4 x 6 gets 11 m closer to the spine and no closer to
-  // the road. Anyone tempted to nudge it east again should move the habitats.
-  //
-  // It costs the field nothing measurable: the rows are pitched for a 20 deg
-  // sun (above), and even projected onto the sun's bearing from this angle that
-  // pitch still clears every row's shadow — which is checked over every PAIR of
-  // arrays in the spec rather than argued from the pitch, precisely because a
-  // lattice off the sun's axis is the case where pitch alone stops being proof.
-  //
-  // Note this is the field's SURVEY only. Each array on it still turns onto the
-  // sun individually, exactly as the arrays on field 0 do — the lattice angle
-  // and the panel aim are separate decisions, and conflating them is what would
-  // actually cost output.
+  // The main field, on its own city block in the south row, beside the power
+  // district, so the base's two kinds of generation read as one complex. Rows
+  // square across Main Avenue, parallel to the cross streets either side of the
+  // block. 6 x 6 is the whole block: one more bay in either direction puts an
+  // array inside a street's setback.
   {
-    alongM: -55,
-    acrossM: 55,
-    rows: 5,
-    bays: 7,
-    bearingDeg: BASE_PLAN.habitat!.branch!.bearingDeg + 90,
+    alongM: (CITY_BLOCKS.solar.alongM[0] + CITY_BLOCKS.solar.alongM[1]) / 2,
+    acrossM: (CITY_BLOCKS.solar.acrossM[0] + CITY_BLOCKS.solar.acrossM[1]) / 2,
+    rows: 6,
+    bays: 6,
+    bearingDeg: SPINE_BEARING_DEG,
+  },
+  // The second, on the edge of town behind North Avenue, backing onto the
+  // construction block across the street.
+  //
+  // Here because of what it is near. The habitats are the one district with a
+  // continuous, non-negotiable load, and generation built near the demand is how
+  // any real plant is sited, so the two fields are not redundant copies: field 0
+  // backs the industrial end, this one the settled end. And the far side of
+  // North Avenue is the flattest open ground on the plan — under 4 m of relief
+  // over the whole field.
+  //
+  // Rows parallel to North Avenue, which it fronts, a setback off the pavement.
+  {
+    alongM: -50,
+    acrossM: NORTH_AVENUE_ACROSS_M + 32,
+    rows: 4,
+    bays: 9,
+    bearingDeg: CROSS_STREET_BEARING_DEG,
   },
 ]
 
@@ -1408,11 +1389,9 @@ export const SOLAR_ARRAYS: SolarArray[] = (() => {
 // The ground the farm keeps, as one capsule per planted row rather than a box
 // round each field.
 //
-// Per row because a field is a lattice at an angle to everything else on the
-// plan, and a box in any frame either misses a corner of it or swallows the
-// clear ground either side. The rows are what is actually built, so the rows
-// are what is reserved — and a row that lost bays to the checks above reserves
-// only as far as its own last standing array.
+// Per row because the rows are what is actually built, so the rows are what is
+// reserved — and a row that lost bays to the checks above reserves only as far
+// as its own last standing array.
 //
 // The clear ground BETWEEN two rows is deliberately left unreserved. It is a
 // shadow gap, not a yard: a boulder standing in it is fine and costs the field
@@ -1447,10 +1426,7 @@ export function withinDistrictGround(
   marginM: number
 ): boolean {
   if (onRaceGround(east, north, marginM)) return true
-  for (const z of SOLAR_FARM_ZONES) {
-    if (segDistM(east, north, z.a, z.b) <= z.halfM + marginM) return true
-  }
-  return false
+  return SOLAR_FARM_ZONES.some((z) => zoneGapM(z, east, north) <= marginM)
 }
 
 // ---------------------------------------------------------------------------
@@ -1462,11 +1438,9 @@ export function withinDistrictGround(
 //
 // This exists because the base-wide filler — street lighting, roadside cargo,
 // the maintenance fleet — needs to place things at a spacing measured along the
-// pavement, and it should not have to know that a road is a spine, a branch or
-// a spur to do it. On the concentric plan the same code walked DEGREES around
-// two circles and converted to arc length per radius, which is why a station on
-// the ring and a station on main street covered different ground for the same
-// step; here a meter is a meter on every road.
+// pavement, and it should not have to know that a road is an avenue, a cross
+// street or a drive to do it. Every road is straight, so a meter is a meter on
+// every road.
 export type RoadRun = {
   bearingDeg: number
   lengthM: number
@@ -1476,8 +1450,8 @@ export type RoadRun = {
   // the filler can put street lighting on the routes that carry cargo and leave
   // a rover track dark.
   width: number
-  // Tier, mirroring Street.rank, so filler can tell a haul road from a spur
-  // without inferring it from width.
+  // Tier, mirroring Street.rank, so filler can tell an avenue from a cross
+  // street without inferring it from width.
   rank: number
 }
 
@@ -1490,7 +1464,7 @@ export const ROAD_RUNS: RoadRun[] = BASE_STREETS.map((street) => {
   return {
     lengthM,
     width: street.width ?? 1,
-    rank: street.rank ?? RANK_BRANCH,
+    rank: street.rank ?? RANK_STREET,
     bearingDeg: (Math.atan2(dn, de) * 180) / Math.PI,
     at: (d, offM) => ({
       east: ax + de * d - dn * offM,
@@ -1501,11 +1475,8 @@ export const ROAD_RUNS: RoadRun[] = BASE_STREETS.map((street) => {
 
 // Distance in meters from a map-frame point to the nearest road centreline.
 //
-// Exact rather than approximate, which it could not have been on the concentric
-// plan: main street was a spline through 24 waypoints that bulged inside the
-// true circle between them, so a check against the waypoints was not a check
-// against the road. Every road here is straight and described by its two
-// endpoints, so the segment distance below IS the distance to the road.
+// Exact rather than approximate: every road here is straight and described by
+// its two endpoints, so the segment distance below IS the distance to the road.
 export function distToRoadM(east: number, north: number): number {
   let best = Infinity
   for (const street of BASE_STREETS) {
@@ -1534,7 +1505,7 @@ export function onRoad(east: number, north: number): boolean {
 // by nature, so a settlement full of immaculate hardware reads as an
 // architectural render until something in it is working — and a street reads as
 // a street when there is something on it. The whole field drives, spread along
-// the run, so the spine carries movement wherever you look rather than one
+// the run, so Main Avenue carries movement wherever you look rather than one
 // vehicle doing laps for an audience.
 //
 // NASA specifies the LTV around 15 km/h, and a little under half of that is
@@ -1543,12 +1514,9 @@ export function onRoad(east: number, north: number): boolean {
 // is what guarantees the field never closes up on itself — see the run in
 // MarkerLayer.
 //
-// A SHUTTLE, not a lap, and that is forced. The concentric plan could drive its
-// fleet round main street as a rigid rotation about the patch centre, which is
-// only a road if the road is a circle. There is no circle now, so the fleet
-// runs the length of the spine and turns around, which is also what a motor
-// pool on a linear base would actually do: everything anyone needs a rover for
-// is somewhere on this street or on a branch off it.
+// A SHUTTLE along Main Avenue, out past town to the landing zone at one end and
+// the launcher at the other, and back: the one street that reaches every end of
+// the base, and the one the whole town fronts.
 export type ShuttleRun = {
   speedMps: number
   fromAlongM: number
@@ -1601,9 +1569,8 @@ export function shuttleAt(
 }
 
 // Where a category the plan doesn't zone explicitly stands: past the head of
-// the spine, so a race added to the dataset lands on open regolith beyond the
-// built plan instead of inside somebody's district. Fanned out ACROSS the
-// spine from there, which the concentric plan could only do by adding another
-// wedge to a ring that was already full.
+// Main Avenue, so a race added to the dataset lands on open regolith beyond the
+// built plan instead of inside somebody's block. Fanned out ACROSS the avenue
+// from there.
 export const FALLBACK_ALONG_M = SPINE_END_M + 70
 export const FALLBACK_SPREAD_M = 60
