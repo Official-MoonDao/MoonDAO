@@ -418,9 +418,10 @@ budget: the race stood on a paved hardstand inside a ring road, so a bigger
 ILRS meant widening the ring itself, and the ring was near its ceiling because
 the power district's own lots were closing in on it from outside.
 
-There is no ring, and no hardstand. The base is a street grid now, and the
-race has a 100 x 90 m city block of its own (`CITY_BLOCKS.habitat`, the middle
-of the north row), so growth comes out of the block's frontage. `districtSlots`
+There is no ring, and no hardstand. The base is a street grid on 55 m cells
+now, and the race has a four-cell 110 x 110 m superblock of its own
+(`CITY_BLOCKS.habitat`, the far end of the north side), so growth comes out of
+the block's frontage. `districtSlots`
 walks each of the block's four sides in the order the district's `faces` asks
 for — North Avenue first for the habitats — and stands each plot, largest
 first, at the first station that is a setback off that street and clear of
@@ -431,9 +432,12 @@ because every lot has to sit exactly a setback off the street it fronts.
 That is a much cheaper place to grow than the ring was. The ring's diameter
 was shared by every plot at once, so one big model widened the whole thing; a
 block has about 300 m of frontage round four streets, and a big model just
-takes more of one side. Blocks are fixed by the grid rather than sized to
-their rosters, so no district's keep-out needs retuning after a size change:
-its keep-out is its block, inset to the setback line.
+takes more of one side. Blocks are whole grid cells, so no district's keep-out
+needs retuning after a size change: its keep-out is its block, inset to the
+setback line. But the town is packed with no spare cells, so a race that
+outgrows its block needs another cell, and that moves its neighbours — the
+unit tests check both that every block fits its roster and that none fits in
+a cell less.
 
 The landing zone kept its own separation for the same reason it always had
 one. `BASE_PLAN.lander` sits 280 m southwest down Main Avenue, past the end of

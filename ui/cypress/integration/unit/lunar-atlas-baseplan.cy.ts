@@ -32,9 +32,11 @@ import {
   BASE_PLAN,
   BASE_STREETS,
   BRANCH_TAIL_M,
+  CITY_BLOCKS,
   CROSS_STREET_ALONG_M,
   CROSS_STREET_BEARING_DEG,
   DISTRICT_GAP_M,
+  GRID_PITCH_M,
   NORTH_AVENUE_ACROSS_M,
   PATROL,
   RANK_AVENUE,
@@ -52,10 +54,10 @@ import {
   SOLAR_ROW_PITCH_M,
   SOLAR_SHADOW_PITCH_M,
   solarArrayFrame,
-  SOUTH_AVENUE_ACROSS_M,
   SPINE_BEARING_DEG,
   SPINE_END_M,
   SPINE_START_M,
+  TOWN_START_ALONG_M,
   at,
   blockGround,
   dirFor,
@@ -507,19 +509,16 @@ describe('moon base zero street plan', () => {
         )
         expect(plan.east, `${category} east`).to.be.closeTo(centre.east, 1e-9)
         expect(plan.north, `${category} north`).to.be.closeTo(centre.north, 1e-9)
-        // A block is bounded by streets the plan actually lays: two cross
-        // streets, Main Avenue, and one of the outer avenues.
+        // Every edge of every block is on a grid line.
         for (const along of b.alongM) {
           expect(
-            CROSS_STREET_ALONG_M as readonly number[],
+            (along - TOWN_START_ALONG_M) % GRID_PITCH_M,
             `${category} block edge at along ${along}`
-          ).to.include(along)
+          ).to.equal(0)
         }
-        expect(Math.min(...b.acrossM.map(Math.abs)), `${category} on Main Avenue`).to.equal(0)
-        expect(
-          [NORTH_AVENUE_ACROSS_M, SOUTH_AVENUE_ACROSS_M],
-          `${category} backs onto an avenue`
-        ).to.include(b.acrossM[0] === 0 ? b.acrossM[1] : b.acrossM[0])
+        for (const across of b.acrossM) {
+          expect(across % GRID_PITCH_M, `${category} block edge at across ${across}`).to.equal(0)
+        }
       }
       // The two that stay off the grid do so for reasons of their own: the pads
       // flank Main Avenue, and the launcher's breach works stand at the head
@@ -529,6 +528,61 @@ describe('moon base zero street plan', () => {
         1e-9
       )
       expect(BASE_PLAN.mass_driver!.branch, 'the launcher has a drive').to.exist
+    })
+
+    it('packs the town tight, with no empty cell and no block on top of another', () => {
+      // The complaint the grid's second pass answered: blocks sized for the
+      // largest race stood mostly empty, with open regolith between the
+      // clusters. So every block, the solar farm's included, together has to
+      // cover the town's bounding rectangle EXACTLY — no two overlapping and no
+      // cell left over.
+      const blocks = Object.values(CITY_BLOCKS)
+      const area = (b: CityBlock) =>
+        (b.alongM[1] - b.alongM[0]) * (b.acrossM[1] - b.acrossM[0])
+      const a0 = Math.min(...blocks.map((b) => b.alongM[0]))
+      const a1 = Math.max(...blocks.map((b) => b.alongM[1]))
+      const c0 = Math.min(...blocks.map((b) => b.acrossM[0]))
+      const c1 = Math.max(...blocks.map((b) => b.acrossM[1]))
+      for (let i = 0; i < blocks.length; i++) {
+        for (let j = i + 1; j < blocks.length; j++) {
+          const [p, q] = [blocks[i], blocks[j]]
+          const overlapA = Math.min(p.alongM[1], q.alongM[1]) - Math.max(p.alongM[0], q.alongM[0])
+          const overlapC =
+            Math.min(p.acrossM[1], q.acrossM[1]) - Math.max(p.acrossM[0], q.acrossM[0])
+          expect(overlapA > 0 && overlapC > 0, `blocks ${i} and ${j} overlap`).to.equal(false)
+        }
+      }
+      expect(
+        blocks.reduce((sum, b) => sum + area(b), 0),
+        'the blocks fill the town'
+      ).to.equal((a1 - a0) * (c1 - c0))
+      // And no block is bigger than its race needs by more than a cell: every
+      // multi-cell block's race does NOT fit in one cell fewer.
+      for (const [category, field] of races) {
+        const plan = BASE_PLAN[category]!
+        const b = plan.cityBlock
+        if (!b) continue
+        const cellsA = (b.alongM[1] - b.alongM[0]) / GRID_PITCH_M
+        const cellsC = (b.acrossM[1] - b.acrossM[0]) / GRID_PITCH_M
+        const fitsIn = (alongCells: number, acrossCells: number) => {
+          if (alongCells < 1 || acrossCells < 1) return false
+          const smaller: CityBlock = {
+            alongM: [b.alongM[0], b.alongM[0] + alongCells * GRID_PITCH_M],
+            acrossM: [b.acrossM[0], b.acrossM[0] + acrossCells * GRID_PITCH_M],
+          }
+          const trial = { ...plan, cityBlock: smaller }
+          const slots = districtSlots(trial, field)
+          return field.every(
+            (plot) =>
+              Math.abs(
+                Math.abs(frontingRoad(trial, slots.get(plot.id)!).acrossM) -
+                  (ROAD_HALF_M + SETBACK_M + plot.radiusM)
+              ) < 1e-6
+          )
+        }
+        expect(fitsIn(cellsA - 1, cellsC), `${category} fits a cell narrower`).to.equal(false)
+        expect(fitsIn(cellsA, cellsC - 1), `${category} fits a cell shallower`).to.equal(false)
+      }
     })
 
     it('lays the town out as a grid rather than down one road', () => {
@@ -562,10 +616,12 @@ describe('moon base zero street plan', () => {
           .map((b) => Math.sign(b.acrossM[0] + b.acrossM[1]))
       )
       expect([...blockSides].sort(), 'blocks either side of Main').to.deep.equal([-1, 1])
-      // 3. A regular rhythm of cross streets. Uneven spacing would read as roads
-      //    that happened, not a town that was planned.
-      const gaps = CROSS_STREET_ALONG_M.slice(1).map((a, i) => a - CROSS_STREET_ALONG_M[i])
-      expect(new Set(gaps).size, 'cross streets evenly spaced').to.equal(1)
+      // 3. A regular rhythm of cross streets: every one on a line of the grid.
+      //    A street off the grid would read as a road that happened, not a
+      //    town that was planned.
+      for (const a of CROSS_STREET_ALONG_M) {
+        expect((a - TOWN_START_ALONG_M) % GRID_PITCH_M, `cross street at ${a}`).to.equal(0)
+      }
       expect(
         BASE_STREETS.filter((st) => st.rank === RANK_STREET && !st.serves?.includes('mass_driver')),
         'a cross street at every grid line'
@@ -654,32 +710,25 @@ describe('moon base zero street plan', () => {
     })
 
     it('clears each district of every other, in the plan and not just up the street', () => {
-      // The spacing used to be one-dimensional: every district sat on the spine,
-      // so the only question was how far apart along it their blocks reached.
-      // Now that they stand off the road on seven bearings, two districts can be
-      // 60 m apart along the street and 200 m apart on the ground — which is
-      // exactly what lets the crossings sit closer together than their blocks
-      // are wide, and why this is measured centre to centre in the plan.
-      const zones = races.map(([category, field]) => ({
-        category,
-        plan: BASE_PLAN[category]!,
-        need: districtNeed(category, field),
-      }))
-      for (let i = 0; i < zones.length; i++) {
-        for (let j = i + 1; j < zones.length; j++) {
-          const a = zones[i]
-          const b = zones[j]
-          const apart = Math.hypot(
-            a.plan.east - b.plan.east,
-            a.plan.north - b.plan.north
-          )
-          // Each district's own reach, whichever direction it reaches furthest.
-          const reach = (z: typeof a) =>
-            Math.max(z.need.lateral, z.need.ahead, z.need.behind)
-          expect(
-            apart - reach(a) - reach(b),
-            `${a.category} to ${b.category}`
-          ).to.be.at.least(DISTRICT_GAP_M)
+      // Measured against the ground each district actually keeps rather than
+      // centre to centre: a block district's ground is a rectangle, and the
+      // circle round its centre that would contain it claims the streets and
+      // half the neighbouring blocks. So every lot of every district has to
+      // stand at least the district gap outside every OTHER district's ground.
+      for (const [a] of races) {
+        const ground = districtGround(BASE_PLAN[a]!)
+        for (const [b, field] of races) {
+          if (a === b) continue
+          const slots = districtSlots(BASE_PLAN[b]!, field)
+          for (const plot of field) {
+            const slot = slots.get(plot.id)!
+            const gap = Math.min(
+              ...ground.map((z) => zoneGapM(z, slot.east, slot.north))
+            )
+            expect(gap - plot.radiusM, `${b}/${plot.id} to ${a}'s ground`).to.be.at.least(
+              DISTRICT_GAP_M
+            )
+          }
         }
       }
     })
@@ -743,13 +792,15 @@ describe('moon base zero street plan', () => {
         'the headline lot fronts North Avenue'
       ).to.be.closeTo(ROAD_HALF_M + SETBACK_M + largest.radiusM, 1e-6)
 
-      // And it is not on the landing zone's or the reactors' end of town:
-      // the blocks either side of it are construction and rovers, not fuel
-      // and fission.
+      // And it is not on the landing zone's or the reactors' end of town.
       const apart = (c: ProjectType) =>
         Math.abs(districtAlongM(BASE_PLAN[c]!) - districtAlongM(habitat))
-      expect(apart('power'), 'the reactors are blocks away').to.be.at.least(200)
-      expect(apart('lander'), 'the pads are blocks away').to.be.at.least(300)
+      expect(apart('power'), 'the reactors are blocks away').to.be.at.least(
+        2 * GRID_PITCH_M
+      )
+      expect(apart('lander'), 'the pads are blocks away').to.be.at.least(
+        3 * GRID_PITCH_M
+      )
     })
 
     it('leaves every plot clear of every road, not just its own two', () => {
@@ -930,13 +981,17 @@ describe('moon base zero street plan', () => {
         districtExtentM(homes, ROSTERS.habitat!)
       expect(gap).to.be.greaterThan(30)
       // And the launcher fires from the OTHER end, so the two things on the plan
-      // that throw mass are as far apart as the street is long.
-      expect(
-        Math.abs(
-          districtAlongM(BASE_PLAN.mass_driver!) - districtAlongM(pad)
-        ),
-        'the pads and the launcher share an end'
-      ).to.be.greaterThan(500)
+      // that throw mass have the whole town between them.
+      for (const [category] of races) {
+        if (category === 'lander' || category === 'mass_driver') continue
+        const along = districtAlongM(BASE_PLAN[category]!)
+        expect(along, `the pads are past ${category}`).to.be.greaterThan(
+          districtAlongM(pad)
+        )
+        expect(along, `the launcher is past ${category}`).to.be.lessThan(
+          districtAlongM(BASE_PLAN.mass_driver!)
+        )
+      }
     })
   })
 
@@ -1176,7 +1231,7 @@ describe('moon base zero street plan', () => {
       // Asserted RELATIVE to what the plan already accepts rather than against
       // an absolute standoff, because an absolute one here would be invented.
       // The plan's own floor is the 30 m the pressurized structures get, and
-      // the closest race ground (the ISRU block) actually stands 88 m off; a
+      // the closest race ground (the power block) actually stands 64 m off; a
       // fixed figure for the farm would either duplicate that argument or
       // contradict it. What
       // is defensible is the ordering: whatever standoff the races are held to,
@@ -1329,7 +1384,14 @@ describe('moon base zero street plan', () => {
   describe('the street network', () => {
     const spine = BASE_STREETS.find((st) => st.rank === RANK_MAIN)!
     const branches = BASE_STREETS.filter((st) => st.rank === RANK_STREET)
-    const spurs = BASE_STREETS.filter((st) => st.rank === RANK_LANE)
+    // A spur is a lane off a district's own drive; a lane inside the grid
+    // runs between two blocks of one column.
+    const spurs = BASE_STREETS.filter(
+      (st) => st.rank === RANK_LANE && !!BASE_PLAN[st.serves![0]]!.branch
+    )
+    const lanes = BASE_STREETS.filter(
+      (st) => st.rank === RANK_LANE && !BASE_PLAN[st.serves![0]]!.branch
+    )
 
     it('lays one spine, straight, on the bearing the ground chose', () => {
       // Every road on this plan is described by its two endpoints and nothing
@@ -1465,18 +1527,28 @@ describe('moon base zero street plan', () => {
       expect(spurs.length, 'a spur per district that asks for one').to.equal(
         drives.filter(([c]) => !!BASE_PLAN[c]!.branch!.spur).length
       )
+      // A lane ends on a cross street at both ends: it is the one street that
+      // only exists because a block line runs between two blocks of a column.
+      for (const lane of lanes) {
+        for (const [e, n] of lane.points) {
+          const { alongM } = spineCoords({ east: e, north: n })
+          expect(CROSS_STREET_ALONG_M, 'a lane ends on a cross street').to.include(
+            Math.round(alongM * 1e6) / 1e6
+          )
+        }
+      }
       expect(BASE_STREETS.length, 'and nothing else').to.equal(
-        1 + avenues.length + branches.length + spurs.length
+        1 + avenues.length + branches.length + spurs.length + lanes.length
       )
       // Every road but Main Avenue serves somebody, so it is graded only once
       // something stands on it (see roadPresence in BaseRoads).
-      for (const street of [...avenues, ...branches, ...spurs]) {
+      for (const street of [...avenues, ...branches, ...spurs, ...lanes]) {
         expect(street.serves, 'every road serves a district').to.not.be.empty
       }
       // And the hierarchy reads at a glance: Main Avenue and the avenues are
       // full width, the cross streets narrower, a drive narrower still.
       for (const st of avenues) expect(st.width ?? 1).to.equal(1)
-      for (const st of branches) expect(st.width ?? 1).to.be.lessThan(1)
+      for (const st of [...branches, ...lanes]) expect(st.width ?? 1).to.be.lessThan(1)
     })
 
     it('walks every road as a straight run of its own length', () => {

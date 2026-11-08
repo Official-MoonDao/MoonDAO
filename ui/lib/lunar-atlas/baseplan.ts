@@ -17,51 +17,51 @@
 //
 // THE STREET PLAN IS A GRID
 //
-// Three AVENUES run northeast along the ridge, 90 m apart, and CROSS STREETS
-// run square across them every 100 m. Every district is zoned onto one CITY
-// BLOCK, and its competitors are seated round the inside of that block facing
-// the streets that bound it, every one of them the same setback off the
-// pavement. The middle avenue is MAIN AVENUE: it runs the whole length of the
-// base, out past the town at both ends to the landing zone and the mass driver,
-// and it is the street the rovers drive.
+// Three AVENUES run northeast along the ridge and CROSS STREETS run square
+// across them, all on one 55 m grid. Every district is zoned onto a CITY BLOCK
+// of one or more grid cells, and its competitors are seated round the inside of
+// that block facing the streets that bound it, every one of them the same
+// setback off the pavement. The middle avenue is MAIN AVENUE: it runs the whole
+// length of the base, out past the town at both ends to the landing zone and
+// the mass driver, and it is the street the rovers drive.
+//
+// The grid is as TIGHT as the rosters allow. 55 m is the smallest cell the
+// one-cell races fit at full setback, and every cell in town is taken: a race
+// that needs more ground takes more cells as one block, rather than every block
+// being sized for the largest race and standing half empty. The town is a 4 x 3
+// rectangle of cells with no gaps in it, so every district has neighbours
+// across the street on every side it has a street.
 //
 // The plan this replaces was one straight spine with a dead-end branch out to
 // each district. It was correct and it read as a road with things hung off it:
 // one line across the frame, with eight clusters at the ends of eight stubs and
-// open regolith between all of them. A grid reads as a town, because the blocks
-// share streets — every district has neighbours across the road on two or three
-// sides, and the streets frame each lot as a parcel rather than as a cul-de-sac.
+// open regolith between all of them.
 //
-// WHY THE GRID IS IRREGULAR
+// WHERE THE TOWN STANDS
 //
-// Because the ridge is. The old plan avoided square crossings on the grounds
-// that square to the crest is the fall line, and that is true of one stretch of
-// it: a hollow on the southeast flank between about -130 and +20 m along. Every
-// candidate cross street was profiled off the rendered height field at 5 m
-// stations over the full width of a two-row grid (-80 to +90 m across):
+// The ridge decides. South of the crest there is a hollow, between about -130
+// and +20 m along, and a cross street running down into it pitches at 15-20%.
+// Every candidate was profiled off the rendered height field at 5 m stations,
+// and the town starts where the hollow ends. Each cross street, over the full
+// depth of the grid (-55 to +110 m across):
 //
 //      along     relief    worst step
-//      -200       6.7 m       8.1%
-//      -100      14.3 m      18.2%     <- through the hollow
-//         0      12.8 m      14.6%     <- through the hollow
-//      +100       8.0 m       7.9%
-//      +200       2.7 m       7.2%
-//      +300       5.7 m       8.3%
+//        20      11.1 m      12.3%
+//        75       9.5 m       8.2%
+//       130       2.9 m       6.4%
+//       240       1.5 m       5.1%
 //
-// North of Main Avenue the ground is flat everywhere — under 10 m of relief over
-// the whole 500 m length of North Avenue. South of it, only the northeast half
-// is. So the town is a full row of blocks north of Main Avenue and a short row
-// south of it, from +100 m on, and the cross streets through the hollow stop at
-// Main Avenue rather than running down into it. The hollow stays open ground in
-// the foreground of the home camera, which is the one place on the plan an empty
-// stretch is worth having: it is the sightline into town.
+// And North and South Avenue, end to end: 7.8 m and 6.3 m of relief, worst
+// steps 10.6% and 6.0%. Starting the town at 0 instead puts the first cross
+// street at 14.6%; starting it further northeast buys nothing and moves the
+// whole base away from the centre of the patch.
 //
 // WHY THE AVENUES RUN ON 40 DEGREES
 //
 // Main Avenue is the old spine, on the old spine's bearing, and the reasons it
-// was chosen still hold. A straight road 730 m long has nowhere to hide from
-// grade, so the bearing was measured off the same height field the terrain
-// draws from: profiled over its true extent, every whole bearing, at 5 m
+// was chosen still hold. A long straight road has nowhere to hide from grade,
+// so the bearing was measured off the same height field the terrain draws
+// from: profiled over the old spine's 730 m, every whole bearing, at 5 m
 // stations, 40 deg comes out at 12.7 m of relief end to end (24th of 180) and
 // never pitches past 8.0% (14th of 180) — the only bearing in the top 15% on
 // both. It is also the mass driver guideway's heading (TRACK_HEADING_DEG, see
@@ -74,8 +74,8 @@
 //
 // The SOLAR FARM (see SOLAR_ARRAYS, below the district keep-out). Nobody is
 // competing to build the colony's own generation, so it is not a district and
-// has no roster. It takes one city block of its own, beside the power district,
-// and a strip behind North Avenue.
+// has no roster. It takes a two-cell block of its own in the south row, and a
+// strip behind North Avenue facing the habitats.
 //
 // Nothing here is hand-authored twice. The districts name their block, and the
 // district's position, its plot packing (districtSlots), the ground it keeps and
@@ -183,23 +183,30 @@ export function spineCoords(p: { east: number; north: number }): {
 // districts at each end — the landing zone to the southwest, the mass driver's
 // breach works to the northeast — to run clear of both, and asserted against
 // them rather than eyeballed.
-export const SPINE_START_M = -330
-export const SPINE_END_M = 400
+export const SPINE_START_M = -90
+export const SPINE_END_M = 320
 
 // ---------------------------------------------------------------------------
 // The grid
 // ---------------------------------------------------------------------------
 
-// Where the cross streets cross Main Avenue, southwest to northeast. 100 m
-// apart, which is a block deep enough for the habitat race's five plots (see
-// BASE_PLAN.habitat) and shallow enough that eight districts fit between the
-// landing zone and the launcher.
-export const CROSS_STREET_ALONG_M = [-200, -100, 0, 100, 200, 300] as const
+// The grid's spacing, in meters between street centrelines, both ways. The
+// smallest block that seats every one-block race's real roster at the full
+// setback (power and ISRU are the binding ones, at 55 x 55); a race that needs
+// more takes two or four cells as one block rather than the grid widening for
+// everyone.
+export const GRID_PITCH_M = 55
 
-// Where the two outer avenues run, meters across Main Avenue: North Avenue on
-// the flat side of the crest, South Avenue on the side that falls away.
-export const NORTH_AVENUE_ACROSS_M = 90
-export const SOUTH_AVENUE_ACROSS_M = -90
+// Meters along Main Avenue where the town's first cross street crosses it. The
+// hollow south of the crest ends about here, so every cross street from this
+// one northeast stays under 12.5% where it runs down into the south row.
+export const TOWN_START_ALONG_M = 20
+
+// Where the two outer avenues run, meters across Main Avenue: North Avenue two
+// cells out on the flat side of the crest, South Avenue one cell out on the
+// side that falls away.
+export const NORTH_AVENUE_ACROSS_M = 2 * GRID_PITCH_M
+export const SOUTH_AVENUE_ACROSS_M = -GRID_PITCH_M
 
 // One city block: the street centrelines that bound it, in the spine's frame.
 // A block's ground is everything between its four streets; what anyone can
@@ -210,31 +217,52 @@ export type CityBlock = {
 }
 
 // The four sides of a block, by the compass direction they face out of it: a
-// block's `southeast` side fronts the avenue at its low `across` edge, its
+// block's `southeast` side fronts the street at its low `across` edge, its
 // `southwest` side the cross street at its low `along` edge.
 export type BlockSide = 'southwest' | 'northeast' | 'southeast' | 'northwest'
 
-// The block in column `col` (between cross streets col and col + 1) on one side
-// of Main Avenue.
-function cityBlock(col: number, side: 'north' | 'south'): CityBlock {
+// The block spanning grid columns `col0` to `col1` (counted in cells northeast
+// from the first cross street) and rows `row0` to `row1` (cells across Main
+// Avenue, negative to the south). A multi-cell block has no streets inside it.
+function cityBlock(col0: number, col1: number, row0: number, row1: number): CityBlock {
   return {
-    alongM: [CROSS_STREET_ALONG_M[col], CROSS_STREET_ALONG_M[col + 1]],
-    acrossM: side === 'north' ? [0, NORTH_AVENUE_ACROSS_M] : [SOUTH_AVENUE_ACROSS_M, 0],
+    alongM: [
+      TOWN_START_ALONG_M + col0 * GRID_PITCH_M,
+      TOWN_START_ALONG_M + col1 * GRID_PITCH_M,
+    ],
+    acrossM: [row0 * GRID_PITCH_M, row1 * GRID_PITCH_M],
   }
 }
 
-// Every block the grid is built out to, named for what stands on it. Districts
-// and the solar farm both take their ground from here, and the streets are
-// derived from the whole set, so zoning a block is what lays its streets.
+// Every block the town is built out to, named for what stands on it: four
+// columns, two rows north of Main Avenue and one south, every cell taken.
+// Districts and the solar farm both take their ground from here, and the
+// streets are derived from the whole set, so zoning a block is what lays its
+// streets.
+//
+//              col 0          col 1        cols 2-3
+//   north 2  construction     rovers       habitat
+//   north 1  (two cells)      ISRU        (four cells)
+//   ---------------------- Main Avenue --------------------
+//   south 1    power          comms        solar farm (two cells)
 export const CITY_BLOCKS = {
-  isru: cityBlock(0, 'north'),
-  construction: cityBlock(1, 'north'),
-  habitat: cityBlock(2, 'north'),
-  rover: cityBlock(3, 'north'),
-  comms: cityBlock(4, 'north'),
-  solar: cityBlock(3, 'south'),
-  power: cityBlock(4, 'south'),
+  construction: cityBlock(0, 1, 0, 2),
+  isru: cityBlock(1, 2, 0, 1),
+  rover: cityBlock(1, 2, 1, 2),
+  habitat: cityBlock(2, 4, 0, 2),
+  power: cityBlock(0, 1, -1, 0),
+  comms: cityBlock(1, 2, -1, 0),
+  solar: cityBlock(2, 4, -1, 0),
 }
+
+const ALL_BLOCKS: CityBlock[] = Object.values(CITY_BLOCKS)
+
+// Where cross streets cross Main Avenue, southwest to northeast: every block
+// edge across the grid's columns. Derived, so a line no block has an edge on —
+// the middle of the habitat's superblock — gets no street.
+export const CROSS_STREET_ALONG_M: readonly number[] = [
+  ...new Set(ALL_BLOCKS.flatMap((b) => b.alongM)),
+].sort((x, y) => x - y)
 
 // ---------------------------------------------------------------------------
 // How a district is reached
@@ -774,30 +802,27 @@ export function frontingRoad(
 // ---------------------------------------------------------------------------
 
 // Eight districts, six of them in town. Which race gets which block is function
-// first and composition second, and follows SOM's Moon Village bands (habitation
-// in the middle, the infrastructure that serves it either side, transport and
-// energy at the ends) laid out along Main Avenue rather than across the rim.
+// first and composition second.
 //
 // The landing zone and the launcher are the two things on the plan that throw
-// mass, so they stand off the grid at opposite ends of Main Avenue, out of town.
-// The ISRU yard takes the block nearest the pads, because the whole argument for
-// making oxygen on the Moon is pumping it into a lander. The habitat race takes
-// the middle of the north row, the quietest address on the plan. Power takes the
-// far end of the south row — across Main Avenue and two blocks up from the
-// habitats, beside the solar block and the launcher's breach works that are its
-// biggest load.
+// mass, so they stand off the grid at opposite ends of Main Avenue, just out of
+// town. Construction takes the first column, on the corner the pads and the
+// haul road come in by, and ISRU the Main Avenue cell next to it, because the
+// whole argument for making oxygen on the Moon is pumping it into a lander.
+// The habitat race takes the far end of the north side, the quietest address
+// on the plan; power takes the opposite corner of town, across Main Avenue and
+// two cells down from it. Fission plants go where the crew isn't.
 export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
-  // LANDING ZONE, 280 m southwest, past the end of town. The pads FLANK Main
-  // Avenue rather than taking a block, and this is the one district that must
-  // not be boxed in by streets.
+  // LANDING ZONE, just southwest of town. The pads FLANK Main Avenue rather
+  // than taking a block, and this is the one district that must not be boxed in
+  // by streets.
   //
-  // With no air to slow it, plume-thrown regolith travels ballistic arcs that
-  // stay dangerous for hundreds of meters, so what a pad wants is the longest
-  // clear sightline on the plan and two ways out of it, not four streets of
-  // neighbours. So the pads stand either side of Main Avenue, 80 m short of the
-  // first cross street, and the haul road runs BETWEEN them and carries straight
-  // on into town.
-  lander: offGrid(-280, {
+  // With no air to slow it, plume-thrown regolith travels ballistic arcs, so
+  // what a pad wants is a clear sightline and two ways out of it, not four
+  // streets of neighbours. So the pads stand either side of Main Avenue, 55 m
+  // short of the first cross street, and the haul road runs BETWEEN them and
+  // carries straight on into town.
+  lander: offGrid(-35, {
     turn: 0,
     front: 'flank',
     flankSide: 1,
@@ -806,65 +831,65 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
     block: 20,
   }),
 
-  // ISRU YARD, the first block in from the pads. The propellant run is 80 m of
-  // Main Avenue to the landing zone and never enters the rest of town.
+  // ISRU YARD, on Main Avenue in the second column, a block from the pads.
   isru_plant: onBlock(CITY_BLOCKS.isru, { turn: 8 }),
 
-  // CONSTRUCTION, the second block: the ground these machines are all bidding to
-  // pave, with Main Avenue frontage near the camera. Turned toward the work.
+  // CONSTRUCTION, the first column, two cells deep: the ground these machines
+  // are all bidding to pave, on the corner of town nearest the camera. Five
+  // paving bids need more frontage than one cell has. Turned toward the work.
   construction: onBlock(CITY_BLOCKS.construction, { turn: 22 }),
 
-  // THE HABITAT RACE, the middle block of the north row: Artemis Base Camp and
-  // China/Russia's ILRS against Thales' MPH, Sierra's LIFE and Toyota's Lunar
-  // Cruiser.
+  // THE HABITAT RACE, a four-cell superblock at the far end of the north side:
+  // Artemis Base Camp and China/Russia's ILRS against Thales' MPH, Sierra's
+  // LIFE and Toyota's Lunar Cruiser. Five plots up to 38 m across need about
+  // 90 m of block each way, which is why this is the one race on more than two
+  // cells.
   //
   // Faces North Avenue first, so the two largest lots — Artemis Base Camp and a
   // buried module — front the back street rather than the haul road every
   // tanker and paving machine on the base uses; the smaller ones fill in round
-  // the block. Its block straddles the crossing at the origin, which keeps the
-  // home camera's framing and the buried vaults near where they were (see
-  // subplan.ts).
+  // the block.
   habitat: onBlock(CITY_BLOCKS.habitat, {
     turn: 0,
     faces: ['northwest', 'southwest', 'northeast', 'southeast'],
   }),
 
-  // ROVER DEPOT, the fourth block. This is the one district that shows its field
-  // TWICE, and the duplication is deliberate: each rover stands on its own lot
-  // here, exactly as every other race's hardware stands on its, and a SECOND
-  // copy of the same field drives Main Avenue (see PATROL), which is what makes
-  // rovers the only moving things on the base.
+  // ROVER DEPOT, behind ISRU on the lane. This is the one district that shows
+  // its field TWICE, and the duplication is deliberate: each rover stands on its
+  // own lot here, exactly as every other race's hardware stands on its, and a
+  // SECOND copy of the same field drives Main Avenue (see PATROL), which is what
+  // makes rovers the only moving things on the base.
   rover: onBlock(CITY_BLOCKS.rover, { turn: -6 }),
 
-  // COMMS AND NAVIGATION, the last block of the north row, at the far end of
-  // town. Ground stations want their horizon clear of structures, so the field
-  // faces North Avenue — the edge of town, with nothing beyond it but ridge.
+  // COMMS AND NAVIGATION, the middle of the south row. Ground stations want
+  // their horizon clear of structures, so the field faces South Avenue — the
+  // edge of town on the side the ridge falls away.
   //
   // Note there is deliberately no `orbital` district. buildTechTrees treats
   // orbital as a non-surface type, so Gateway can never occupy ground here.
   comms_pnt: onBlock(CITY_BLOCKS.comms, {
     turn: -12,
-    faces: ['northwest', 'northeast', 'southwest', 'southeast'],
+    faces: ['southeast', 'southwest', 'northeast', 'northwest'],
   }),
 
-  // POWER, the last block of the south row: across Main Avenue from the comms
-  // block and 200 m from the habitats. Fission plants go where the crew isn't.
+  // POWER, the first cell of the south row, on the corner across Main Avenue
+  // from construction and as far from the habitats as the town allows.
   power: onBlock(CITY_BLOCKS.power, { turn: 6 }),
 
-  // LUNAR MASS DRIVER, past the end of town at the head of Main Avenue, on a
-  // 60 m drive square off it to the northwest.
+  // LUNAR MASS DRIVER, just past the end of town at the head of Main Avenue,
+  // on a short drive square off it to the northwest.
   //
   // What stands on this lot is the launcher's BREACH WORKS — capacitor hall,
   // power feed, solar field — and that is all this entry describes. The guideway
   // itself runs 600 m out of the lot on its own heading, is not packed as a
   // disc, and is checked as a corridor; see lib/lunar-atlas/trackplan.
   //
-  // The drive puts the breach works almost exactly on the line of North Avenue,
-  // 60 m past where it ends. The guideway leaves on the avenues' own bearing, so
-  // it reads as North Avenue carrying on out of town, and fires over none of it.
-  mass_driver: offGrid(360, {
+  // The drive puts the breach works on the town's middle grid line, one cell
+  // out from Main Avenue, so the guideway leaves on the avenues' own bearing as
+  // a grid line carried on out of town, and fires over none of it.
+  mass_driver: offGrid(275, {
     turn: 0,
-    branch: { bearingDeg: CROSS_STREET_BEARING_DEG, lengthM: 60, width: 0.72 },
+    branch: { bearingDeg: CROSS_STREET_BEARING_DEG, lengthM: 26, width: 0.72 },
     block: 24,
   }),
 }
@@ -875,8 +900,8 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
 
 // Where a road sits in the hierarchy. Higher CARRIES a crossing: Main Avenue's
 // surface runs through unbroken and everything meeting it stops at its lane
-// edge; an avenue carries the cross streets that meet it, and a district's own
-// branch carries its spur. See throughRoad in junctions.ts.
+// edge; an avenue carries the cross streets that meet it, and a cross street
+// carries the lanes that end on it. See throughRoad in junctions.ts.
 export const RANK_MAIN = 2
 export const RANK_AVENUE = 1
 export const RANK_STREET = 0
@@ -914,8 +939,6 @@ function blockDistricts(b: CityBlock): ProjectType[] {
   )
 }
 
-const ALL_BLOCKS: CityBlock[] = Object.values(CITY_BLOCKS)
-
 function street(
   rank: number,
   width: number,
@@ -950,21 +973,39 @@ function mainAvenue(): Street {
 // can never fade out on its own.
 const AVENUE_TAIL_M = 20
 
-// An outer avenue at `acrossM`, along the full run of blocks that front it and a
-// tail past each end, so its last crossings are crossings rather than corners.
-function outerAvenue(acrossM: number): Street | null {
+// A street running with the avenues at `acrossM`, along the full run of
+// blocks that front it. On the edge of town it is an OUTER AVENUE, with a tail
+// past each end so its last crossings are crossings rather than corners.
+// Inside the town it is a LANE between two blocks of one column, running from
+// cross street to cross street with both ends on them.
+function avenueLine(acrossM: number): Street | null {
   const fronting = ALL_BLOCKS.filter((b) => b.acrossM.includes(acrossM))
   if (!fronting.length) return null
-  const from = Math.min(...fronting.map((b) => b.alongM[0])) - AVENUE_TAIL_M
-  const to = Math.max(...fronting.map((b) => b.alongM[1])) + AVENUE_TAIL_M
+  const outer =
+    acrossM === NORTH_AVENUE_ACROSS_M || acrossM === SOUTH_AVENUE_ACROSS_M
+  const tail = outer ? AVENUE_TAIL_M : 0
+  const from = Math.min(...fronting.map((b) => b.alongM[0])) - tail
+  const to = Math.max(...fronting.map((b) => b.alongM[1])) + tail
   return street(
-    RANK_AVENUE,
-    1,
+    outer ? RANK_AVENUE : RANK_LANE,
+    outer ? 1 : CROSS_STREET_WIDTH,
     at(from, acrossM),
     at(to, acrossM),
     fronting.flatMap(blockDistricts)
   )
 }
+
+// Every line across Main Avenue a block has an edge on, other than Main
+// Avenue's own, outer avenues first.
+const AVENUE_LINES_M = [
+  NORTH_AVENUE_ACROSS_M,
+  SOUTH_AVENUE_ACROSS_M,
+  ...[...new Set(ALL_BLOCKS.flatMap((b) => b.acrossM))]
+    .filter(
+      (c) => c !== 0 && c !== NORTH_AVENUE_ACROSS_M && c !== SOUTH_AVENUE_ACROSS_M
+    )
+    .sort((x, y) => x - y),
+]
 
 // A cross street at `alongM`, across the full depth of the blocks that front it,
 // from avenue centreline to avenue centreline — it starts and ends ON the
@@ -1009,13 +1050,13 @@ const BRANCHED = (Object.keys(BASE_PLAN) as ProjectType[]).filter(
 // listed, so a block that is zoned, or a district that moves, cannot leave a
 // road behind or a road stranded.
 //
-// Ordered by TIER — Main Avenue, the outer avenues, the cross streets, then the
-// district drives — so a consumer walking BASE_STREETS in order draws the
+// Ordered by TIER — Main Avenue, the outer avenues and the lanes, the cross
+// streets, then the district drives — so a consumer walking BASE_STREETS in order draws the
 // network from the top down. BaseRoads relies on nothing about the order and
 // junctions.ts explicitly refuses to (see throughRoad).
 export const BASE_STREETS: Street[] = [
   mainAvenue(),
-  ...[NORTH_AVENUE_ACROSS_M, SOUTH_AVENUE_ACROSS_M].map(outerAvenue),
+  ...AVENUE_LINES_M.map(avenueLine),
   ...CROSS_STREET_ALONG_M.map(crossStreet),
   ...BRANCHED.flatMap((k) =>
     districtRoads(BASE_PLAN[k]!).map((road) => districtStreet(k, road))
@@ -1279,7 +1320,7 @@ type SolarField = {
   bearingDeg?: number
 }
 
-// The farm is TWO fields rather than one, at opposite ends of town.
+// The farm is TWO fields rather than one, either side of town.
 //
 // Split for the reason any real installation splits its generation: a single
 // field is a single point of failure, and losing all of it to one impact, one
@@ -1301,31 +1342,29 @@ type SolarField = {
 // body leaves at orbital speed and does not come back down, so a field of glass
 // is close to the worst thing to put near a pad.
 const SOLAR_FIELDS: SolarField[] = [
-  // The main field, on its own city block in the south row, beside the power
-  // district, so the base's two kinds of generation read as one complex. Rows
-  // square across Main Avenue, parallel to the cross streets either side of the
-  // block. 6 x 6 is the whole block: one more bay in either direction puts an
-  // array inside a street's setback.
+  // The main field, on its own two-cell block in the south row, so it fills a
+  // block like any district does. Rows square across Main Avenue, parallel to
+  // the cross streets either side of the block. 7 x 3 is the whole block: one
+  // more bay in either direction puts an array inside a street's setback.
   {
     alongM: (CITY_BLOCKS.solar.alongM[0] + CITY_BLOCKS.solar.alongM[1]) / 2,
     acrossM: (CITY_BLOCKS.solar.acrossM[0] + CITY_BLOCKS.solar.acrossM[1]) / 2,
-    rows: 6,
-    bays: 6,
+    rows: 7,
+    bays: 3,
     bearingDeg: SPINE_BEARING_DEG,
   },
   // The second, on the edge of town behind North Avenue, backing onto the
-  // construction block across the street.
+  // habitat superblock across the street.
   //
   // Here because of what it is near. The habitats are the one district with a
   // continuous, non-negotiable load, and generation built near the demand is how
-  // any real plant is sited, so the two fields are not redundant copies: field 0
-  // backs the industrial end, this one the settled end. And the far side of
-  // North Avenue is the flattest open ground on the plan — under 4 m of relief
-  // over the whole field.
+  // any real plant is sited. And the far side of North Avenue is the flattest
+  // open ground on the plan.
   //
-  // Rows parallel to North Avenue, which it fronts, a setback off the pavement.
+  // Rows parallel to North Avenue, which it fronts, a setback off the pavement,
+  // and exactly as long as the habitat block it faces.
   {
-    alongM: -50,
+    alongM: (CITY_BLOCKS.habitat.alongM[0] + CITY_BLOCKS.habitat.alongM[1]) / 2,
     acrossM: NORTH_AVENUE_ACROSS_M + 32,
     rows: 4,
     bays: 9,
@@ -1571,6 +1610,8 @@ export function shuttleAt(
 // Where a category the plan doesn't zone explicitly stands: past the head of
 // Main Avenue, so a race added to the dataset lands on open regolith beyond the
 // built plan instead of inside somebody's block. Fanned out ACROSS the avenue
-// from there.
+// from there, centred south of it: the guideway leaves town one grid cell
+// north of Main Avenue and runs on through here.
 export const FALLBACK_ALONG_M = SPINE_END_M + 70
+export const FALLBACK_ACROSS_M = -40
 export const FALLBACK_SPREAD_M = 60

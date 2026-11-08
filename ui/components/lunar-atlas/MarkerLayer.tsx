@@ -598,8 +598,8 @@ const BOULDER_FOOTPRINT_SAMPLES: [number, number][] = [
 ]
 
 // A post every ~26 m of pavement, just outside the windrow — close enough
-// together to actually read as street lighting, far enough apart that 730 m of
-// spine doesn't need dozens of them.
+// together to actually read as street lighting, far enough apart that the
+// avenues don't need dozens of them.
 //
 // Tightened from 40 m once the fixtures started throwing real pools of light on
 // the ground. At 40 m the lit patches did not touch, so under the true sun the
@@ -639,13 +639,13 @@ const EXCAVATOR_COUNT = 6
 const EXCAVATOR_SHOULDER_MIN_M = 2.6
 const EXCAVATOR_SHOULDER_MAX_M = 6.5
 
-// Fixed spot for the base's own dig: across North Avenue from the habitat
-// block, on the open ground behind it at the middle of the block.
+// Fixed spot for the base's own dig: across North Avenue from the rover
+// depot, on the corner diagonal from the habitat superblock.
 //
 // What this is digging is the vaults the buried habitats stand in, and the
-// next vault along is exactly what a cut-and-cover excavation across the street
-// from them would be. Nobody's lot is on that side of the avenue there — the
-// second solar field stops a block short, behind the construction block.
+// next vault along is exactly what a cut-and-cover excavation just up the
+// street from them would be. Nobody's lot is on that side of the avenue there —
+// the second solar field starts across the cross street, behind the habitats.
 //
 // Offset far enough off the centreline to clear the windrow, so it works beside
 // its road rather than in it. The composite itself (ConstructionPit +
@@ -656,7 +656,7 @@ const EXCAVATOR_SHOULDER_MAX_M = 6.5
 // camera on its own, the same as any other un-steered installation, so this
 // only ever needs to pick a location, never an orientation.
 const UGC_SITE = (() => {
-  const block = BASE_PLAN.habitat!.cityBlock!
+  const block = BASE_PLAN.rover!.cityBlock!
   return at(
     (block.alongM[0] + block.alongM[1]) / 2,
     block.acrossM[1] + ROAD_HALF_M + 8
@@ -1034,10 +1034,20 @@ function InterDistrictFiller({
       out.push({
         dir,
         seat: radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS,
-        // A block district's lots line all four sides of a 100 x 90 m block,
-        // and the landing zone's pads string out down Main Avenue, so both get
-        // a wider pool than a district whose plots line one short drive.
-        radiusM: plan.cityBlock ? 44 : site === 'lander' ? 46 : 28,
+        // A block district's lots line all four sides of its block, so its
+        // pool reaches the block's edges; the landing zone's pads string out
+        // down Main Avenue. Both are wider than a district whose plots line one
+        // short drive.
+        radiusM: plan.cityBlock
+          ? Math.max(
+              plan.cityBlock.alongM[1] - plan.cityBlock.alongM[0],
+              plan.cityBlock.acrossM[1] - plan.cityBlock.acrossM[0]
+            ) /
+              2 +
+            4
+          : site === 'lander'
+            ? 46
+            : 28,
         key: site,
       })
     }

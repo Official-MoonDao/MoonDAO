@@ -425,7 +425,7 @@ describe('moon base zero road junctions', () => {
       // drawing the cross streets at all. A road gives way over the corridors
       // of the roads that carry it and over NOTHING else: every station clear
       // of them is at full strength. Asserted station by station rather than as
-      // a fraction of the road alone, because the roads run from 60 m to 730 m
+      // a fraction of the road alone, because the roads run from 33 m to 410 m
       // and a fraction that passes for Main Avenue says nothing about a drive.
       expect(subordinate.length, 'some roads give way').to.be.above(0)
       for (const i of subordinate) {
@@ -442,10 +442,11 @@ describe('moon base zero road junctions', () => {
             `street ${i} withheld at ${p.x.toFixed(1)}, ${p.y.toFixed(1)}`
           ).to.equal(1)
         }
-        // The overwhelming majority of it, not merely some: the cut corridors
-        // are a few meters each on roads tens of meters long.
+        // The great majority of it, not merely some: the cut corridors are a
+        // few meters each, on roads at least a grid cell long — the shortest is
+        // a lane cut at both ends.
         expect(clear / at(i).plan.length, `street ${i} keeps its own surface`).to.be.above(
-          0.8
+          0.75
         )
       }
     })

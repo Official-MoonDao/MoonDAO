@@ -5,6 +5,7 @@ import { capOffsetLatLon } from '@/lib/lunar-atlas/southpole'
 import {
   BASE_PLAN,
   FALLBACK_ALONG_M,
+  FALLBACK_ACROSS_M,
   FALLBACK_SPREAD_M,
   PATROL,
   at,
@@ -108,11 +109,11 @@ export function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       // A category the plan doesn't zone stands past the head of the spine, so a
       // race added to the dataset appears on open regolith beyond the built
       // plan rather than at the origin on top of the habitat district. Spread
-      // ACROSS the spine from there, centred on it, which keeps them together
-      // as a row of outliers instead of scattered round the settlement.
+      // ACROSS the spine from there, which keeps them together as a row of
+      // outliers instead of scattered round the settlement.
       const t = nUnmapped > 1 ? fallbackIdx / (nUnmapped - 1) - 0.5 : 0
       plan = {
-        ...at(FALLBACK_ALONG_M, t * FALLBACK_SPREAD_M * 2),
+        ...at(FALLBACK_ALONG_M, FALLBACK_ACROSS_M + t * FALLBACK_SPREAD_M * 2),
         alongM: FALLBACK_ALONG_M,
         turn: 0,
         // No road runs out here, so there is no dead end to arrange around and
