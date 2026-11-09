@@ -1214,6 +1214,26 @@ export function ProjectRewards({
               </div>
             </div>
 
+            {/* Become a Citizen call to action */}
+            <div className="bg-black/20 rounded-none sm:rounded-xl px-3 py-4 sm:p-5 border-y sm:border border-white/10">
+              <div className="flex flex-col gap-3">
+                <h2 className="font-heading font-semibold text-white text-base sm:text-lg">
+                  Want a say in what gets funded?
+                </h2>
+                <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                  Every project here was chosen and funded by MoonDAO Citizens. Join 260+ Citizens
+                  from dozens of countries, and your vote helps decide which space projects get
+                  funded next.
+                </p>
+                <Link
+                  href="/join"
+                  className="inline-block w-fit gradient-2 rounded-full px-5 py-2 text-white font-semibold"
+                >
+                  Become a Citizen
+                </Link>
+              </div>
+            </div>
+
             {/* Tabs - switch between Project Proposals, Active Projects, Past Projects */}
             {(() => {
               const pastProjectsWithReports = pastProjects?.filter(hasFinalReport) ?? []
