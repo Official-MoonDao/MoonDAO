@@ -21,6 +21,8 @@ export async function subscribeEmailToKit(input: {
   email: string
   formId: string
   fields?: Record<string, string>
+  /** Kit tag IDs applied in the same subscribe call. */
+  tags?: number[]
   apiKey: string
   fetchImpl?: FetchLike
   sleep?: (ms: number) => Promise<void>
@@ -40,7 +42,7 @@ export async function subscribeEmailToKit(input: {
       response = await fetchImpl(`${KIT_FORM_SUBSCRIBE}/${input.formId}/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(kitPayload(input.apiKey, input.email, fields)),
+        body: JSON.stringify(kitPayload(input.apiKey, input.email, fields, input.tags)),
       })
     } catch {
       transientTries += 1
@@ -90,10 +92,12 @@ export async function subscribeEmailToKit(input: {
 export function kitPayload(
   apiKey: string,
   email: string,
-  fields?: Record<string, string>
+  fields?: Record<string, string>,
+  tags?: number[]
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = { api_key: apiKey, email }
   if (fields && Object.keys(fields).length) payload.fields = fields
+  if (tags && tags.length) payload.tags = tags
   return payload
 }
 

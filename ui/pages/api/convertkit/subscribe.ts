@@ -11,6 +11,13 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const FORM_ID = /^\d{1,12}$/
 /** Same value as CK_NEWSLETTER_FORM_ID. Kept local so this route does not load contract config. */
 const NEWSLETTER_FORM_ID = '3715552'
+/**
+ * Named signup lists a form may ask for, mapped to Kit tag IDs on the server so
+ * a browser can never apply an arbitrary tag.
+ */
+export const SIGNUP_LIST_TAGS: Record<string, number> = {
+  moonbase: 25644518,
+}
 
 export type NewsletterSubscribeDeps = {
   now: () => number
@@ -98,10 +105,15 @@ export async function handleNewsletterSubscribe(
   }
 
   const fields = fieldsFromRequestBody(body.fields)
+  const listTag =
+    typeof body.list === 'string' && Object.hasOwn(SIGNUP_LIST_TAGS, body.list)
+      ? SIGNUP_LIST_TAGS[body.list]
+      : undefined
   const result = await subscribeEmailToKit({
     email,
     formId,
     fields,
+    tags: listTag ? [listTag] : undefined,
     apiKey,
     fetchImpl: deps.fetchImpl,
     sleep: deps.sleep,
