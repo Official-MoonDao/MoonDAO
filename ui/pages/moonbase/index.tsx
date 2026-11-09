@@ -834,12 +834,6 @@ export default function MoonBaseZeroIndex() {
                   program is racing here. Click a site to explore its capability race, competitors,
                   and sources.
                 </p>
-                <p className="mt-1.5 hidden text-xs text-white/45 sm:block">
-                  Drag to rotate · right-drag or WASD to move (Shift for speed) · scroll to zoom
-                </p>
-                <p className="mt-1.5 text-xs text-white/45 sm:hidden">
-                  Drag to rotate · two-finger drag to move · pinch to zoom
-                </p>
                 <Link
                   href="/moonbase/tour"
                   className="mt-2 inline-flex text-sm font-semibold text-cyan-300 hover:text-cyan-200"

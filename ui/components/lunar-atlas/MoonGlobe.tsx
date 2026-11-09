@@ -11,7 +11,7 @@
 // The world is still a sphere mathematically — positions are directions
 // scaled by a radius — so all the geo.ts framing math carries over; only the
 // rendered patch is the ridge.
-import { OrbitControls, Stars } from '@react-three/drei'
+import { Stars, TrackballControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer, ToneMapping } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
@@ -22,6 +22,7 @@ import {
   heroFraming,
   heroMinDistanceM,
   MOON_RADIUS_M,
+  orbitUpVector,
   skyViewFraming,
   subViewFraming,
   surfaceNormal,
@@ -199,25 +200,15 @@ const SKY_VIEW_OPTS = {
   standoff: 150 / MOON_RADIUS_M,
 }
 
-// Keyboard travel speed, in eye-to-pivot distances per second, and the Shift
-// multiplier on it.
-const MOVE_SPEED = 0.2
-const MOVE_BOOST = 3
-// How far from straight down the camera may tilt: 88°, just shy of the
-// horizon. The hero framings sit near 75°, well inside it.
-const MAX_TILT_RAD = THREE.MathUtils.degToRad(88)
-const MOVE_KEYS = new Set(['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'])
-
 // Animates the camera toward a lat/lon focus (or back to the home framing)
 // ONLY while a transition is active. It arcs the view direction and eases the
 // distance/target rather than sliding in a straight line. Once it arrives (or
 // the moment the user grabs the controls) it fully releases the camera back
-// to the OrbitControls, so the user can always freely rotate.
+// to the TrackballControls, so the user can always freely rotate.
 function CameraRig({
   focus,
   controlsRef,
   userInteracting,
-  moveKeys,
   onAnimatingChange,
   radiusAt,
   glide,
@@ -225,8 +216,6 @@ function CameraRig({
   focus: GlobeFocus
   controlsRef: React.MutableRefObject<any>
   userInteracting: boolean
-  // Movement keys currently held (lower-cased `KeyboardEvent.key`).
-  moveKeys: React.MutableRefObject<Set<string>>
   onAnimatingChange: (animating: boolean) => void
   glide: number
   // Rendered terrain radius lookup — framings and the camera floor work
@@ -237,7 +226,7 @@ function CameraRig({
   const desiredPos = useRef(DEFAULT_CAM.clone())
   const desiredTarget = useRef(HOME_TARGET.clone())
   const desiredUp = useRef(HOME_UP.clone())
-  // The look-at point when there are no OrbitControls to hold one.
+  // The look-at point when there is no TrackballControls to hold one.
   const ownTarget = useRef(HOME_TARGET.clone())
   const animating = useRef(false)
   // Per-transition easing base (larger = slower, more cinematic glide).
@@ -302,13 +291,14 @@ function CameraRig({
       desiredTarget.current.set(target[0], target[1], target[2])
       // Surface, sky and cutaway views roll the camera so "up" is the local
       // outward normal — otherwise the view is upside down at the pole. Orbit
-      // views keep the base's own up: OrbitControls fixes its up at creation,
-      // and a camera rolled away from it turns every later drag sideways.
+      // views use a pole-safe up (raw world-Y is parallel to the view axis when
+      // looking straight down at the pole).
       if (focus.view === 'surface' || focus.view === 'sky' || focus.view === 'sub') {
         const n = surfaceNormal(focus.lat, focus.lon)
         desiredUp.current.set(n[0], n[1], n[2])
       } else {
-        desiredUp.current.copy(HOME_UP)
+        const up = orbitUpVector(focus.lat, focus.lon)
+        desiredUp.current.set(up[0], up[1], up[2])
       }
     } else {
       easeBase.current = 0.0022
@@ -351,66 +341,20 @@ function CameraRig({
     if (controls) {
       const pivotDist = camera.position.distanceTo(curTarget)
       const feel = Math.sqrt(THREE.MathUtils.clamp(pivotDist / (2000 * M_TO_UNITS), 0, 1))
-      controls.rotateSpeed = THREE.MathUtils.lerp(0.35, 0.9, feel)
-      controls.zoomSpeed = THREE.MathUtils.lerp(0.7, 1.8, feel)
+      controls.rotateSpeed = THREE.MathUtils.lerp(0.3, 2.2, feel)
+      controls.zoomSpeed = THREE.MathUtils.lerp(0.5, 1.2, feel)
     }
 
     // Once the camera pulls well away from a drill-in pivot, glide the pivot
     // back to the ridge center. Without this, zooming out from a site leaves
     // the patch hanging half off-screen, orbiting a surface point the user
     // can no longer even see.
-    if (
-      !animating.current &&
-      !moveKeys.current.size &&
-      curTarget.distanceToSquared(HOME_TARGET) > (1 * M_TO_UNITS) ** 2
-    ) {
+    if (!animating.current && curTarget.distanceToSquared(HOME_TARGET) > (1 * M_TO_UNITS) ** 2) {
       // Altitude above the base's ground level, in meters.
       const altM = (camera.position.length() - HOME_GROUND.length()) / M_TO_UNITS
       const recenter = THREE.MathUtils.clamp((altM / 2500 - 1) / 0.8, 0, 1)
       if (recenter > 0) {
         curTarget.lerp(HOME_TARGET, 1 - Math.pow(0.02, delta * recenter))
-      }
-    }
-
-    // Keyboard travel: slide the camera AND its pivot across the ground, so the
-    // view walks somewhere new instead of only orbiting the point it started
-    // on. "Forward" is the view direction flattened onto the local horizontal
-    // (radial up at the pivot), so W goes where you're looking, not into the
-    // ground. Speed scales with how far the eye is from the pivot: a crawl at a
-    // rover's wheel, a glide over the whole ridge.
-    const keys = moveKeys.current
-    if (keys.size && controls) {
-      let f = 0
-      let r = 0
-      if (keys.has('w') || keys.has('arrowup')) f += 1
-      if (keys.has('s') || keys.has('arrowdown')) f -= 1
-      if (keys.has('d') || keys.has('arrowright')) r += 1
-      if (keys.has('a') || keys.has('arrowleft')) r -= 1
-      if (f || r) {
-        if (animating.current) setAnimating(false)
-        const up = curTarget.clone().normalize()
-        const fwd = curTarget.clone().sub(camera.position)
-        fwd.addScaledVector(up, -fwd.dot(up))
-        // Looking straight down there is no horizontal view direction; the
-        // top of the screen is forward instead.
-        if (fwd.lengthSq() < 1e-12) fwd.copy(camera.up).addScaledVector(up, -camera.up.dot(up))
-        fwd.normalize()
-        const right = fwd.clone().cross(up).normalize()
-        const groundAt = (v: THREE.Vector3) => {
-          const ll = vector3ToLatLon([v.x, v.y, v.z])
-          return radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS
-        }
-        // The pivot keeps its height above the ground it travels over, so it
-        // follows the terrain rather than ploughing into a rise.
-        const pivotLift = curTarget.length() - groundAt(curTarget)
-        const eyeOffset = camera.position.clone().sub(curTarget)
-        const speed =
-          eyeOffset.length() * MOVE_SPEED * (keys.has('shift') ? MOVE_BOOST : 1) * delta
-        curTarget
-          .add(fwd.multiplyScalar(f).addScaledVector(right, r).normalize().multiplyScalar(speed))
-          .setLength(groundAt(curTarget) + pivotLift)
-        camera.position.copy(curTarget).add(eyeOffset)
-        controls.update()
       }
     }
 
@@ -458,7 +402,7 @@ function CameraRig({
       }
       return
     }
-    // Idle: the camera holds still. OrbitControls owns free rotation.
+    // Idle: the camera holds still. TrackballControls owns free rotation.
   })
 
   return null
@@ -838,50 +782,6 @@ export default function MoonGlobe({
     }
   }, [])
 
-  // WASD / arrow keys walk the camera across the base (see CameraRig). Held
-  // keys count as interacting, so a flight in progress yields and the frame
-  // budget runs at full rate for as long as the camera is travelling.
-  const moveKeys = useRef<Set<string>>(new Set())
-  useEffect(() => {
-    if (!interactive) return
-    const keys = moveKeys.current
-    const typing = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null
-      return (
-        !!el &&
-        (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))
-      )
-    }
-    const onDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase()
-      if (key === 'shift') {
-        keys.add(key)
-        return
-      }
-      if (!MOVE_KEYS.has(key) || typing(e) || e.metaKey || e.ctrlKey || e.altKey) return
-      e.preventDefault()
-      keys.add(key)
-      setUserInteracting(true)
-    }
-    const onUp = (e: KeyboardEvent) => {
-      keys.delete(e.key.toLowerCase())
-      if (![...keys].some((k) => MOVE_KEYS.has(k))) setUserInteracting(false)
-    }
-    const onBlur = () => {
-      keys.clear()
-      setUserInteracting(false)
-    }
-    window.addEventListener('keydown', onDown)
-    window.addEventListener('keyup', onUp)
-    window.addEventListener('blur', onBlur)
-    return () => {
-      window.removeEventListener('keydown', onDown)
-      window.removeEventListener('keyup', onUp)
-      window.removeEventListener('blur', onBlur)
-      keys.clear()
-    }
-  }, [interactive])
-
   const handleWheel = () => {
     setUserInteracting(true)
     if (wheelTimer.current) clearTimeout(wheelTimer.current)
@@ -1019,8 +919,7 @@ export default function MoonGlobe({
           ? (e) => {
               const down = pointerDownAt.current
               const moved = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) : 0
-              // Left button only: the right button pans now.
-              if (e.button === 0 && moved <= CLICK_DRAG_TOLERANCE_PX) onBackgroundClick?.()
+              if (moved <= CLICK_DRAG_TOLERANCE_PX) onBackgroundClick?.()
             }
           : undefined
       }
@@ -1098,29 +997,15 @@ export default function MoonGlobe({
         focus={focus}
         controlsRef={controlsRef}
         userInteracting={userInteracting}
-        moveKeys={moveKeys}
         onAnimatingChange={setIsAnimating}
         radiusAt={radiusAt}
         glide={glide}
       />
 
-      {/* Map-style controls: left-drag orbits with the horizon held level,
-          right-drag (two-finger drag on touch) slides across the GROUND rather
-          than the screen plane, and the wheel zooms toward the cursor. This
-          replaced a TrackballControls that tumbled freely, rolled the horizon
-          and panned in screen space, so a vertical pan on a tilted view
-          climbed straight up and read as a sudden zoom-out.
-
-          The camera is created with the base's local up (see the Canvas
-          camera), which OrbitControls takes as its fixed up. Over a 16 km
-          patch the true radial up drifts by half a degree, so one up serves
-          the whole ridge. The tilt stops just short of the horizon so the
-          camera can't swing under it; the sky and cutaway views are exempt,
-          because both look upward on purpose.
-
-          The pivot starts at the ridge center; drill-ins move it to the
-          focused site. Distances are real: from 12 m off a rover out to 40 km
-          above the patch — past that there is nothing more to see.
+      {/* Trackball gives full free tumble around the current pivot. The pivot
+          starts at the ridge center; drill-ins move it to the focused site.
+          Distances are real: from 12 m off a rover out to 40 km above the
+          patch — past that there is nothing more to see.
 
           The vault cutaway has to be let closer than that, and the floor is not
           a preference there but a wall. Its eye stands two meters inside the end
@@ -1130,16 +1015,13 @@ export default function MoonGlobe({
           filled the screen with the inside of the end wall. Underground the only
           real limit is the near plane. */}
       {interactive && (
-        <OrbitControls
+        <TrackballControls
           ref={controlsRef}
           makeDefault
-          enableDamping
-          dampingFactor={0.12}
-          screenSpacePanning={false}
-          zoomToCursor
-          maxPolarAngle={
-            focus?.view === 'sky' || focus?.view === 'sub' ? Math.PI : MAX_TILT_RAD
-          }
+          noPan
+          rotateSpeed={2.2}
+          zoomSpeed={1.2}
+          dynamicDampingFactor={0.12}
           minDistance={
             (focus?.view === 'sub'
               ? 1.5
