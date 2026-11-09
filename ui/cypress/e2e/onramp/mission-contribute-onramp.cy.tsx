@@ -1,7 +1,19 @@
 describe('Mission Contribute Onramp E2E Flow', () => {
   const mockAddress = '0x1234567890123456789012345678901234567890'
+  // /mission/1 server-renders through Tableland and chain reads, and
+  // getServerSideProps retries that whole path. A stalled read holds cy.visit
+  // until the 120s page-load timeout, then CI retries the test twice. Four
+  // visits did that for about 17 minutes on BrowserStack, and the 20-minute
+  // job was killed (exit 124) as the spec passed. These tests only need the
+  // mission page to mount and leave the JWT they stored in place. The dummy
+  // mission is that page with the live reads skipped.
+  const missionUrl = '/mission/dummy?stage=1&onrampSuccess=true'
 
   beforeEach(() => {
+    // Privy and thirdweb throw during hydration. That is unrelated to the JWT
+    // assertions, and a failed attempt re-runs the visit.
+    cy.on('uncaught:exception', () => false)
+
     // Mock API endpoints
     cy.intercept('GET', '/api/coinbase/eth-price', { fixture: 'coinbase/eth-price.json' }).as(
       'ethPrice'
@@ -47,7 +59,7 @@ describe('Mission Contribute Onramp E2E Flow', () => {
     const mockJWT = `header.${encodedPayload}.signature`
 
     // Visit mission page with onrampSuccess query param
-    cy.visit('/mission/1?onrampSuccess=true', {
+    cy.visit(missionUrl, {
       onBeforeLoad: (win) => {
         ;(win as any).__CYPRESS_MOCK_ADDRESS__ = mockAddress
         win.localStorage.setItem('coinbase_onramp_jwt', mockJWT)
@@ -64,7 +76,7 @@ describe('Mission Contribute Onramp E2E Flow', () => {
   })
 
   it('should handle missing JWT gracefully', () => {
-    cy.visit('/mission/1?onrampSuccess=true', {
+    cy.visit(missionUrl, {
       onBeforeLoad: (win) => {
         ;(win as any).__CYPRESS_MOCK_ADDRESS__ = mockAddress
         // Don't set JWT - simulate missing JWT scenario
@@ -88,7 +100,7 @@ describe('Mission Contribute Onramp E2E Flow', () => {
     const encodedPayload = btoa(JSON.stringify(jwtPayload))
     const mockJWT = `header.${encodedPayload}.signature`
 
-    cy.visit('/mission/1?onrampSuccess=true', {
+    cy.visit(missionUrl, {
       onBeforeLoad: (win) => {
         ;(win as any).__CYPRESS_MOCK_ADDRESS__ = mockAddress
         win.localStorage.setItem('coinbase_onramp_jwt', mockJWT)
@@ -122,7 +134,7 @@ describe('Mission Contribute Onramp E2E Flow', () => {
       },
     }).as('verifyJWTInvalid')
 
-    cy.visit('/mission/1?onrampSuccess=true', {
+    cy.visit(missionUrl, {
       onBeforeLoad: (win) => {
         ;(win as any).__CYPRESS_MOCK_ADDRESS__ = mockAddress
         win.localStorage.setItem('coinbase_onramp_jwt', 'invalid.jwt.token')

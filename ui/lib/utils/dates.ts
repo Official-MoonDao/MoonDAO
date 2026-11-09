@@ -47,8 +47,10 @@ export function daysUntilDate(date: Date) {
 }
 
 export function formatTimeUntilDeadline(deadline: Date): string {
-  const now = new Date()
-  const timeDifference = deadline.getTime() - now.getTime()
+  // Date.now, not `new Date()`. The unit test freezes Date.now, and a
+  // constructed Date reads the system clock instead, so an exact 24h span
+  // was coming back as 23 hours and 59 minutes.
+  const timeDifference = deadline.getTime() - Date.now()
 
   // If deadline has passed
   if (timeDifference <= 0) {

@@ -17,31 +17,25 @@
 // numbers that have to be kept in step.
 //
 // WHY THE CROSSINGS ARE FOUND AND NOT DECLARED. The plan already derives its
-// branches from the districts (see BASE_STREETS), so a race that moves to another
-// crossing, or a branch lengthened by a district that grew, takes its
-// junctions with it. A hand-written list of crossings is one more thing that
-// would quietly go stale when that happened, and the failure would be silent:
-// rubble through a junction looks like scenery, not like a bug.
+// streets from the blocks it zones (see BASE_STREETS), so a block that is added
+// or a district that moves takes its junctions with it. A hand-written list of
+// crossings is one more thing that would quietly go stale when that happened,
+// and the failure would be silent: rubble through a junction looks like
+// scenery, not like a bug.
 //
-// WHY IT IS A DISTANCE MINIMUM AND NOT A SEGMENT CROSSING. Because on this plan
-// nothing crosses anything: every junction is a T. A branch STARTS on the spine
-// and runs away from it to the district at its far end, and a spur starts on its
-// parent branch and does the same. A segment-intersection test would find a
-// touch at the very end of one segment in all ten cases, which is the numerically
-// worst place to ask it, and would find nothing at all the moment a road was
-// nudged a centimetre short of the one it joins.
-//
-// This is a change from the plan before it, where each branch straddled the
-// spine at its own midpoint and carried on out the far side, so all seven really
-// were crossings. The search did not need editing for that, which is the point
-// of having written it this way: a minimum locates a T and a crossing with the
-// same code.
+// WHY IT IS A DISTANCE MINIMUM AND NOT A SEGMENT CROSSING. Because the grid has
+// both kinds. A cross street through the middle of town crosses Main Avenue
+// halfway along itself, and Ts into the outer avenues at both of its ends. A
+// segment-intersection test would find those Ts as touches at the very end of a
+// segment, which is the numerically worst place to ask it, and would find
+// nothing at all the moment a road was nudged a centimetre short of the one it
+// joins. A minimum locates a T and a crossing with the same code.
 //
 // The minimum also gives the fillet a CENTRE to grade around, which the
 // intersection of two infinitely thin lines does not.
 
 import * as THREE from 'three'
-import { RANK_BRANCH, ROAD_HALF_M, type Street } from './baseplan'
+import { RANK_STREET, ROAD_HALF_M, type Street } from './baseplan'
 
 // One station roughly every 2.5 m of road: close enough that the bed follows
 // the terrain's undulations, and that the berm's jitter reads as rubble rather
@@ -90,10 +84,9 @@ export const JUNCTION_FILLET_M = 4.5
 //
 // A road meeting another SQUARE crosses its graded width in that width. A road
 // meeting it at an angle lies inside it for width/sin(angle) — which runs away
-// fast, and the plan's branches now leave the spine at 35 to 80 degrees rather
-// than all at 90. Construction's branch diverges at 35, so it is inside the
-// spine's windrow for 11 m of its own length where the fillet sweeps 8.6, and
-// the last 2 m of that had a windrow standing on the spine's shoulder.
+// fast. Every crossing on the grid is square, so this binds nowhere on it
+// today; an earlier plan's branches left the spine at 35 degrees, where the
+// fillet alone left a windrow standing on the spine's shoulder.
 //
 // Kept as a separate, smaller margin rather than reusing JUNCTION_FILLET_M so
 // that the square junctions come out at exactly the figure they always did:
@@ -112,8 +105,8 @@ export const JUNCTION_TAPER_M = 7
 // Long enough not to read as a ruled line, and short enough to fit between
 // BED_HALF_M and SPOIL_OPAQUE_OFF_M with the windrow's lateral jitter allowed
 // for — which is the invariant, and is asserted. That gap is 1.5 m at full
-// width and 0.8 m on a 0.55-width spur, so a merge fixed in absolute meters
-// fits the spine and overruns everything narrower: it would bring a road's
+// width and 0.8 m on a 0.55-width road, so a merge fixed in absolute meters
+// fits an avenue and overruns everything narrower: it would bring a road's
 // surface back on ground where the road it is joining has already faded to
 // gravel, which is the ring of unpaved ground the seam is meant to avoid.
 export const JUNCTION_MERGE_M = 1.1
@@ -170,28 +163,16 @@ export type Junction = {
 // edge and picks up again on the far side, which leaves precisely one surface on
 // every patch of ground and puts the only seam where a road's edge belongs.
 //
-// The HIGHER-RANKED road wins (see `rank` in Street): the spine carries its
-// crossings with the branches, and a branch carries its crossing with its own
-// spur. That is the same rule the ground gives you — you do not break a street
-// to let a driveway across it — and it falls out of the plan's three tiers
-// rather than being decided here. Failing a rank difference the wider road
-// carries it, and failing that the earlier one, so the answer never depends on
-// the order the plan happens to list its streets in.
-//
-// This was a BOOLEAN before the plan grew a third tier, and the boolean was
-// only ever half an answer. It could say "the spine is the through route", which
-// settled the seven spine-and-branch crossings, and it had nothing at all to
-// say about a spur meeting its parent branch: both were false, so those fell
-// through to the width tie-break — and a 0.55-width spur off a 0.55-width
-// branch ties there too — and then to "whichever road the plan listed first".
-// That is a correct answer for exactly as long as nobody reorders BASE_STREETS,
-// and a wrong one silently, because a spur laid ACROSS its own branch looks
-// like scenery rather than like a bug.
-//
-// Before the boolean it was inferred from `closed`, which was sound while the
-// network was two ring roads and a fan of radial spurs — a loop is continuous
-// by construction and a spur is not — and stopped deciding anything the moment
-// nothing was closed.
+// The HIGHER-RANKED road wins (see `rank` in Street): Main Avenue carries every
+// crossing on it, an avenue carries the cross streets that meet it, and a
+// district's drive carries its own spur. That is the same rule the ground gives
+// you — you do not break a street to let a driveway across it — and it falls
+// out of the plan's tiers rather than being decided here. Failing a rank
+// difference the wider road carries it, and failing that the earlier one, so
+// the answer never depends on the order the plan happens to list its streets
+// in: two roads of one rank and width tied there, and the tie went to whichever
+// BASE_STREETS listed first, which is a wrong answer silently the moment
+// somebody reorders it.
 function throughRoad(i: number, li: Centreline, j: number, lj: Centreline) {
   if (li.rank !== lj.rank) return li.rank > lj.rank ? i : j
   if (li.bedHalfM !== lj.bedHalfM) return li.bedHalfM > lj.bedHalfM ? i : j
@@ -221,7 +202,7 @@ export function centreline(street: Street): Centreline | null {
     spans,
     lengthM,
     closed: !!street.closed,
-    rank: street.rank ?? RANK_BRANCH,
+    rank: street.rank ?? RANK_STREET,
     bedHalfM: BED_HALF_M * widthScale,
     toeHalfM: ROAD_HALF_M * widthScale,
     widthScale,
@@ -336,8 +317,8 @@ export function findJunctions(lines: (Centreline | null)[]): Junction[] {
       const lb = lines[b]
       if (!la || !lb) continue
       // Walk the shorter road against the longer one's segments: the same
-      // answer either way, and on this plan it means walking a branch rather
-      // than a loop. Distance is measured to the other road's SEGMENTS rather
+      // answer either way, and on this plan it usually means walking a cross
+      // street against an avenue. Distance is measured to the other road's SEGMENTS rather
       // than to its stations, so the junction is located to well inside a meter
       // however coarsely the road it meets happens to be sampled.
       const swap = la.plan.length > lb.plan.length
@@ -422,7 +403,7 @@ export function junctionBermLevel(
 
 // The crossings where this road gives way, as the through road's centreline and
 // the half-width of the lane its surface has to stop at. Empty for a road that
-// carries all of its own junctions, which on this plan is the spine.
+// carries all of its own junctions, which on this plan is Main Avenue.
 export function junctionCutsOn(
   junctions: Junction[],
   streetIdx: number,
