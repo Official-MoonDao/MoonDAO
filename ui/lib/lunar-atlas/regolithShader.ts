@@ -28,6 +28,7 @@
 // No three import here — pure strings, so the test is a plain mocha run.
 import { HAPKE_GLSL } from './regolith'
 import { HORIZON_AZIMUTHS } from './horizon'
+import { M_TO_UNITS } from './southpole'
 
 export type ShaderPatch = {
   // Named so the throw says which one, since the anchors are long.
@@ -307,6 +308,180 @@ export function worldPosVertexPatches(varying: string): ShaderPatch[] {
   ]
 }
 
+// ---------------------------------------------------------------------------
+// Shadow lookups that are as sharp as the shadow map
+//
+// three looks a fragment up in the shadow map by its WORLD position, computed on
+// the GPU as modelMatrix * position. This scene's world origin is the centre of the
+// Moon and its unit is 868 km, so every position on the base is a float32 of
+// magnitude 2 — and a float32 of magnitude 2 resolves 2.4e-7, which is 21 cm of
+// ground. Every vertex therefore snaps to a 21 cm lattice before the shadow matrix
+// ever sees it. Under the old 19.5 cm shadow texels that was hidden inside the
+// blur; it is also why contact shadows never quite met the feet casting them, and
+// why a 12 cm normal bias was needed to stop hardware striping itself.
+//
+// The fix is the usual one for a world this big: never form the big number. The
+// model-view matrix is multiplied out on the CPU in doubles, so mvPosition is the
+// vertex relative to the CAMERA, accurate to microns. Rotating it back into world
+// axes — rotation only, no translation — gives a camera-relative world position
+// that is just as accurate, and MoonGlobe's Sun appends the matching translation to
+// the light's shadow matrix so that the product comes out identical in exact
+// arithmetic. Same shadow, looked up with coordinates that can address it.
+//
+// Every material that RECEIVES the sun's shadow must carry this patch, because the
+// matrix now expects camera-relative input: a material without it samples far
+// outside the map and simply renders unshadowed.
+// ---------------------------------------------------------------------------
+export const PRECISE_SHADOW_VERTEX_PATCH: ShaderPatch = {
+  label: 'camera-relative shadow coordinates',
+  find: '#include <shadowmap_vertex>',
+  insert: `#include <shadowmap_vertex>
+#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
+{
+  // v * M is transpose(M) * v, and the transpose of a rotation is its inverse.
+  vec3 preciseShadowPos = ( vec4( mvPosition.xyz, 0.0 ) * viewMatrix ).xyz;
+  vec3 preciseShadowNormal = inverseTransformDirection( transformedNormal, viewMatrix );
+  #pragma unroll_loop_start
+  for ( int i = 0; i < NUM_DIR_LIGHT_SHADOWS; i ++ ) {
+    vDirectionalShadowCoord[ i ] = directionalShadowMatrix[ i ] * vec4( preciseShadowPos + preciseShadowNormal * directionalLightShadows[ i ].shadowNormalBias, 1.0 );
+  }
+  #pragma unroll_loop_end
+}
+#endif`,
+}
+
+// ---------------------------------------------------------------------------
+// Surface noise: one small tiling texture, three bands
+//
+// A render gives itself away by being CLEAN. Every real surface carries variation
+// at every scale — soil is patchy, paint chalks and stains, sheet metal is never
+// quite flat — and a material that is one colour and one roughness from edge to
+// edge reads as plastic no matter how correct its BRDF is. This is the cheapest
+// possible answer to that: one RGBA tile of band-limited noise (fine grain in R,
+// blotches in G, slow cloud in B), sampled at a few scales by the ground and by the
+// hardware. Generated in surfaceNoise.ts; bound as surfaceNoiseMap.
+// ---------------------------------------------------------------------------
+
+// Patchiness of the soil itself, as a multiplicative albedo factor centred on 1.
+//
+// Three scales, because the eye reads ground at three distances: grain underfoot
+// (a 2.7 m tile), the mottling of a work site (28 m), and the broad tonal patches
+// that keep a kilometre of plain from being one flat value (300 m). The repeats
+// are deliberately not multiples of one another or of the slope octaves, so no two
+// bands tile in step. Amplitudes are a few percent each — mature regolith is very
+// uniform, and more than this starts to read as camouflage.
+export const TERRAIN_ALBEDO_BANDS: [number, 'r' | 'g' | 'b', number][] = [
+  [5900, 'g', 0.1],
+  [570, 'b', 0.09],
+  [53, 'b', 0.12],
+]
+
+const TERRAIN_ALBEDO_GLSL = `{
+  float soil = 1.0;
+${TERRAIN_ALBEDO_BANDS.map(
+  ([repeat, ch, amp]) =>
+    `  soil += (texture2D(surfaceNoiseMap, vUv * ${repeat.toFixed(1)}).${ch} - 0.5) * ${amp.toFixed(3)};`
+).join('\n')}
+  diffuseColor.rgb *= soil;
+}`
+
+// Hardware surface detail. Sampled in the mesh's OWN frame, scaled to metres, so
+// the pattern is the same physical size on a rover and on a 50 m tank, rides along
+// with anything that moves, and is addressed with small numbers (see the precision
+// note on the shadow patch — a world position cannot resolve a paint chip).
+// Triplanar, because hand-built primitives have no UVs worth the name.
+const HW_UNITS_TO_M = (1 / M_TO_UNITS).toFixed(1)
+// Tiles per metre for the two bands: a 0.7 m tile for grain and scuffing, and a
+// 6 m one for staining and the slow unevenness of sheet metal.
+const HW_FINE_PER_M = (1 / 0.7).toFixed(4)
+const HW_BROAD_PER_M = (1 / 6).toFixed(4)
+
+export const HARDWARE_SURFACE_VERTEX_PATCHES: ShaderPatch[] = [
+  {
+    label: 'declare the hardware detail varyings',
+    find: '#include <common>',
+    insert: `#include <common>
+varying vec3 vHwDetailPos;
+varying vec3 vHwDetailNormal;`,
+  },
+  {
+    label: 'hardware detail coordinates, in metres in the mesh frame',
+    find: '#include <begin_vertex>',
+    insert: `#include <begin_vertex>
+vHwDetailPos = transformed * vec3( length( modelMatrix[ 0 ].xyz ), length( modelMatrix[ 1 ].xyz ), length( modelMatrix[ 2 ].xyz ) ) * ${HW_UNITS_TO_M};
+vHwDetailNormal = objectNormal;`,
+  },
+  PRECISE_SHADOW_VERTEX_PATCH,
+]
+
+// What the detail does to a surface, and how much. All three are small on purpose:
+// the aim is that no square metre of hardware is perfectly uniform, not that the
+// hardware looks dirty — the dust pass in SurfaceAnchor is what makes it dirty.
+//
+//   albedo     ±6% in broad blotches, ±3% at hand scale. Chalking, handling,
+//              uneven dust.
+//   roughness  ±0.14. This is the one that matters most on anything shiny: a
+//              highlight that slides across a panel without ever changing width
+//              is the signature of a CG surface.
+//   normal     a bump of half a millimetre over centimetres and a few millimetres
+//              over metres. Sheet metal, blankets and composite skins are never
+//              flat, and it is that slight waviness — oil-canning — that breaks a
+//              reflection up into something that looks manufactured.
+//
+// The tile's finest band (R) is deliberately NOT used here. Stood next to a
+// panel, its texels are a few millimetres across and magnify into visible
+// squares; the blotch band is the finest thing that survives a close camera.
+export const HARDWARE_SURFACE_FRAGMENT_PATCHES: ShaderPatch[] = [
+  {
+    label: 'declare the hardware detail sampler',
+    find: '#include <common>',
+    insert: `#include <common>
+uniform sampler2D surfaceNoiseMap;
+varying vec3 vHwDetailPos;
+varying vec3 vHwDetailNormal;
+vec4 hwTriplanar( vec3 p, vec3 w ) {
+  return texture2D( surfaceNoiseMap, p.yz ) * w.x + texture2D( surfaceNoiseMap, p.zx ) * w.y + texture2D( surfaceNoiseMap, p.xy ) * w.z;
+}
+// Bump from a height's screen-space derivatives (Mikkelsen), written out because
+// three only compiles its own copy in when a bumpMap is bound.
+vec3 hwBump( vec3 viewPos, vec3 n, float h ) {
+  vec3 sx = dFdx( viewPos );
+  vec3 sy = dFdy( viewPos );
+  vec3 r1 = cross( sy, n );
+  vec3 r2 = cross( n, sx );
+  float det = dot( sx, r1 );
+  vec3 grad = sign( det ) * ( dFdx( h ) * r1 + dFdy( h ) * r2 );
+  return normalize( abs( det ) * n - grad );
+}`,
+  },
+  {
+    label: 'hardware albedo variation',
+    find: '#include <color_fragment>',
+    insert: `#include <color_fragment>
+vec3 hwWeights = pow( abs( normalize( vHwDetailNormal ) ), vec3( 4.0 ) );
+hwWeights /= hwWeights.x + hwWeights.y + hwWeights.z;
+vec4 hwFine = hwTriplanar( vHwDetailPos * ${HW_FINE_PER_M}, hwWeights );
+vec4 hwBroad = hwTriplanar( vHwDetailPos * ${HW_BROAD_PER_M}, hwWeights );
+diffuseColor.rgb *= 1.0 + ( hwBroad.g - 0.5 ) * 0.12 + ( hwFine.g - 0.5 ) * 0.06;`,
+  },
+  {
+    label: 'hardware roughness variation',
+    find: '#include <roughnessmap_fragment>',
+    insert: `#include <roughnessmap_fragment>
+roughnessFactor = clamp( roughnessFactor + ( hwBroad.b - 0.5 ) * 0.2 + ( hwFine.b - 0.5 ) * 0.08, 0.045, 1.0 );`,
+  },
+  {
+    label: 'hardware micro relief',
+    find: '#include <normal_fragment_maps>',
+    insert: `#include <normal_fragment_maps>
+normal = hwBump( - vViewPosition, normal, ( ( hwFine.g - 0.5 ) * 0.0012 + ( hwBroad.b - 0.5 ) * 0.012 ) * ${M_TO_UNITS.toExponential(8)} );`,
+  },
+]
+
+// Lit materials that are not Standard or Physical (the odd Lambert or Phong part)
+// still stand under the same sun and must look the shadow up the same way.
+export const HARDWARE_SHADOW_ONLY_VERTEX_PATCHES: ShaderPatch[] = [PRECISE_SHADOW_VERTEX_PATCH]
+
 // Graded regolith — the road bed and its crust, wheel tracks, blade scuff, spoil
 // heaps, and the boulders turned out alongside. These already carry their own
 // albedo and normal maps describing the worked surface, so they need none of the
@@ -360,23 +535,30 @@ diffuseColor = vec4(mix(vec3(1.0), diffuseColor.rgb, diffuseColor.a), 1.0);`,
 // x800 is 20 m grain, and x6400 is 2.5 m soil texture for ground-level views.
 //
 // The amplitudes are SLOPES, and they are solved against a target rather than
-// eyeballed. The tile's own height field measures an RMS gradient of 0.72 (its
+// eyeballed. The tile's own height field measures an RMS gradient of 0.53 (its
 // heights are in pixel units, so that is already dimensionless), and mature lunar
-// regolith runs about 0.26-0.34 RMS at meter scale — 15° to 19°. Weighting the
-// octaves 1 : 1 : 0.7 : 0.5 and scaling to hit 0.30 gives the numbers below;
-// scripts can re-solve them by measuring the tile if the crater population
-// changes.
+// regolith runs about 0.26-0.34 RMS at meter scale — 15° to 19°. The octaves are
+// weighted nearly evenly and scaled to sum, in quadrature, to 0.31; a unit test
+// re-measures the tile and holds the sum in that range, so a change to the crater
+// population cannot quietly flatten or roughen the ground.
 //
 // The first version of these was 0.1 / 0.1 / 0.07 / 0.05, which summed to an RMS
 // slope of 0.128 — 7°, less than half of real ground. That is what made the near
 // field read as smooth plaster: the DEM genuinely has no information below ~10 m
 // (LOLA's grids are interpolated from sparse tracks), so if this tile is too
 // shallow there is nothing else to supply foreground texture.
+//
+// The fifth octave is the ground at arm's length: a 62 cm tile, so its pits and
+// clods run from a few millimetres to a few centimetres. Without it the finest
+// relief on the Moon was 10 cm across, and a camera standing at walking height
+// saw smooth putty between the craterlets — where every surface photograph shows
+// a soil that is gritty all the way down to the grain of the film.
 export const DETAIL_OCTAVES: [number, number][] = [
-  [60, 0.25],
-  [250, 0.25],
-  [800, 0.18],
-  [6400, 0.13],
+  [60, 0.28],
+  [250, 0.28],
+  [800, 0.24],
+  [6400, 0.26],
+  [25600, 0.24],
 ]
 
 // Fade the patch rim into the dark of space, so the 16 km square reads as a
@@ -390,11 +572,16 @@ const RIM_FADE_GLSL = `diffuseColor.rgb *= 1.0 - smoothstep(0.82, 1.34, length(v
 // a direction error of 1e-7 radians. It would matter if this were used as a
 // POSITION; it is normalized to get the local vertical, and differenced against the
 // patch origin at a scale where 21 cm is a thousandth of a skyline texel.
-export const TERRAIN_VERTEX_PATCHES: ShaderPatch[] = worldPosVertexPatches('vRegolithWorldPos')
+export const TERRAIN_VERTEX_PATCHES: ShaderPatch[] = [
+  ...worldPosVertexPatches('vRegolithWorldPos'),
+  PRECISE_SHADOW_VERTEX_PATCH,
+]
 
 // The graded surfaces need the same world position, for the same skyline lookup.
-export const GRADED_SURFACE_VERTEX_PATCHES: ShaderPatch[] =
-  worldPosVertexPatches('vRegolithWorldPos')
+export const GRADED_SURFACE_VERTEX_PATCHES: ShaderPatch[] = [
+  ...worldPosVertexPatches('vRegolithWorldPos'),
+  PRECISE_SHADOW_VERTEX_PATCH,
+]
 
 // ---------------------------------------------------------------------------
 // Hardware under the skyline
@@ -457,12 +644,13 @@ export const TERRAIN_FRAGMENT_PATCHES: ShaderPatch[] = [
   regolithDeclarationsPatch(`uniform sampler2D terrainNormalMap;
 uniform sampler2D terrainSlopeSqMap;
 uniform sampler2D detailSlopeMap;
+uniform sampler2D surfaceNoiseMap;
 uniform vec3 mapXDir;
 `),
   {
-    label: 'rim fade',
+    label: 'soil patchiness and rim fade',
     find: '#include <color_fragment>',
-    insert: `#include <color_fragment>\n${RIM_FADE_GLSL}`,
+    insert: `#include <color_fragment>\n${TERRAIN_ALBEDO_GLSL}\n${RIM_FADE_GLSL}`,
   },
   {
     // Injected after normal_fragment_MAPS, not after normal_fragment_begin, so
