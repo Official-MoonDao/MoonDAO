@@ -243,6 +243,12 @@ module.exports = withBundleAnalyzer(
             destination: '/moonbase',
             statusCode: 301,
           },
+          // Campaign shorthand for the first Arbitrum DePrize race.
+          {
+            source: '/touchdown',
+            destination: '/deprize/arb/1',
+            statusCode: 301,
+          },
           {
             source: '/twitter',
             destination: 'https://twitter.com/OfficialMoonDAO',
