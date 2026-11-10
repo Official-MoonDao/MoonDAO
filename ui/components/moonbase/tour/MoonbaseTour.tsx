@@ -62,9 +62,10 @@ export default function MoonbaseTour() {
               }
             >
               A model of the first lunar base, built from real hardware. Every lander, rover and
-              habitat here is a real project from a real company or space agency, standing where it
-              would on the Shackleton ridge. First a walk down the base, then one of its races from
-              first bet to payout.
+              habitat here is a real project from a real company or space agency, gathered on the
+              Shackleton ridge where NASA&apos;s first Moon Base landing is aimed. No base site has
+              been chosen yet. First a walk down the base, then one of its races from first bet to
+              payout.
             </TourCard>
             <p className="mt-10 flex items-center gap-3 font-RobotoMono text-[11px] uppercase tracking-[0.24em] text-white/50">
               <span className="block h-px w-8 bg-white/40" />
@@ -75,9 +76,10 @@ export default function MoonbaseTour() {
           <TourChapter id="power">
             <TourCard location={TOUR_STOPS.power.label} title="Every district is a race.">
               The base is laid out along one road, a district for each thing the Moon needs. Each
-              district holds the teams racing to deliver it. Out here at the east end is power: two
-              weeks of sunlight, then two weeks of night, and the base has to survive both. Working
-              through that night is a race of its own, called Night Shift.
+              district holds the teams racing to deliver it. Out here at the east end is power. On
+              this ridge the sun never climbs more than a couple of degrees above the horizon, and
+              for long stretches of the year it drops below it, so the base has to ride out the
+              dark. Working through a lunar night is a race of its own, called Night Shift.
             </TourCard>
           </TourChapter>
 
@@ -85,14 +87,14 @@ export default function MoonbaseTour() {
             <TourCard location={TOUR_STOPS.comms.label} title="A line home.">
               Relays and beacons that keep the base talking to Earth and let everything on the
               surface know where it is. Like every machine on this map, each one is a real mission
-              from a real team, placed where it would stand.
+              from a real team.
             </TourCard>
           </TourChapter>
 
           <TourChapter id="habitat">
             <TourCard location={TOUR_STOPS.habitat.label} title="Where people will live.">
               The heart of the base. Pressurized modules, from single habitats up to flagship
-              programs like Artemis Base Camp and ILRS, stand here side by side, racing to keep
+              programs like NASA&apos;s Moon Base and ILRS, stand here side by side, racing to keep
               people living on the Moon.
             </TourCard>
           </TourChapter>
@@ -117,9 +119,9 @@ export default function MoonbaseTour() {
               }
             >
               Six landers stand in the landing zone: Blue Ghost, Nova-C, Blue Moon MK1, Griffin,
-              HAKUTO-R and Chang&apos;e-7. Touchdown asks which one makes the next upright, working
-              lunar landing. Here is how a DePrize turns that question into a market, from the first
-              bet to the payout.
+              ispace&apos;s ULTRA and Chang&apos;e-7. Touchdown asks which one makes the next
+              upright, working lunar landing. Here is how a DePrize turns that question into a
+              market, from the first bet to the payout.
             </TourCard>
           </TourChapter>
 

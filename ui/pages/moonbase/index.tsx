@@ -762,7 +762,7 @@ export default function MoonBaseZeroIndex() {
         title={selectedProject ? `${selectedProject.name} · Moon Base Zero` : 'Moon Base Zero'}
         description={
           selectedProject?.summary.slice(0, 160) ??
-          "A true-to-scale moonbase on the Shackleton connecting ridge — real NASA LOLA terrain at 5 m/px. Explore capability races, competitors, and who's leading each tech tree."
+          "A true-to-scale model moonbase on the Shackleton connecting ridge, where NASA's first Moon Base landing is aimed — real NASA LOLA terrain at 5 m/px. Explore capability races, competitors, and who's leading each tech tree."
         }
       />
       {/* Only the 4rem top nav is subtracted: ProjectBanner lists /moonbase as
@@ -830,9 +830,9 @@ export default function MoonBaseZeroIndex() {
                   <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
                 </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                  A true-to-scale moonbase on the Shackleton connecting ridge — every serious
-                  program is racing here. Click a site to explore its capability race, competitors,
-                  and sources.
+                  A true-to-scale model base on the Shackleton connecting ridge, where NASA&apos;s
+                  first Moon Base landing is aimed. Click a site to explore its capability race,
+                  competitors, and sources.
                 </p>
                 <Link
                   href="/moonbase/tour"
