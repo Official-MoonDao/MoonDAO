@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-04",
+  "updatedAt": "2026-11-09",
   "organizations": [
     {
       "id": "nasa",
@@ -391,6 +391,22 @@
       ]
     },
     {
+      "id": "cnsa",
+      "name": "CNSA",
+      "kind": "agency",
+      "country": "China",
+      "website": "https://www.cnsa.gov.cn/english/",
+      "brandColor": "#C8102E",
+      "summary": "China's national space agency, which runs the Chang'e lunar programme: four successful Chang'e landings in a row, and Chang'e-7, the first South Pole reconnaissance mission of the China–Russia International Lunar Research Station.",
+      "sources": [
+        {
+          "label": "CNSA",
+          "url": "https://www.cnsa.gov.cn/english/",
+          "retrievedAt": "2026-11-09"
+        }
+      ]
+    },
+    {
       "id": "unassigned",
       "name": "Unassigned",
       "kind": "consortium",
@@ -547,15 +563,15 @@
     {
       "id": "nasa-artemis-base-camp",
       "orgId": "nasa",
-      "name": "Artemis Base Camp",
+      "name": "NASA Moon Base",
       "type": "habitat",
-      "summary": "NASA's planned sustained surface habitation at the lunar South Pole, including a foundation surface habitat, mobility (LTV and habitable mobility platform), and power — the anchor of a long-term human presence.",
+      "summary": "NASA's Moon Base Program, announced at Ignition in March 2026 in place of the 2020 Artemis Base Camp plan, builds a South Pole outpost in three phases: robotic access and experiments through 2029; power, communications, logistics and the first pressurized modules for short stays from 2029 to 2032; and 100 m³-class modules, airlocks and operational fission power for long-duration stays from 2032. NASA has not chosen a site. It is studying several areas across a region near the South Pole spanning hundreds of square miles.",
       "location": {
         "lat": -89.5,
         "lon": 0
       },
       "locationPrecision": "region",
-      "regionLabel": "Lunar South Pole",
+      "regionLabel": "Lunar South Pole — NASA has not chosen a base site",
       "milestones": [
         {
           "id": "abc-concept",
@@ -573,30 +589,50 @@
           ]
         },
         {
-          "id": "a3-landing",
-          "title": "Artemis III crewed South Pole landing",
-          "targetDate": "2027",
-          "datePrecision": "year",
-          "status": "planned",
+          "id": "moonbase-ignition",
+          "title": "Three-phase Moon Base Program announced at Ignition, replacing the Artemis Base Camp plan",
+          "targetDate": "2026-03",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
           "sources": [
             {
-              "label": "NASA — Artemis III",
-              "url": "https://www.nasa.gov/mission/artemis-iii/",
-              "retrievedAt": "2026-07-01"
+              "label": "NASA — NASA Unveils Initiatives to Achieve America's National Space Policy (Ignition, March 2026)",
+              "url": "https://www.nasa.gov/news-release/nasa-unveils-initiatives-to-achieve-americas-national-space-policy/",
+              "retrievedAt": "2026-11-09"
             }
           ]
         },
         {
-          "id": "abc-habitat",
-          "title": "Foundation surface habitat delivery",
-          "targetDate": "2033",
+          "id": "moonbase-phase-two-modules",
+          "title": "Phase Two: first pressurized modules for short crewed stays, by 2032",
+          "targetDate": "2032",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
             {
-              "label": "NASA — Artemis",
-              "url": "https://www.nasa.gov/humans-in-space/artemis/",
-              "retrievedAt": "2026-07-01"
+              "label": "NASA — Moon Base Systems",
+              "url": "https://www.nasa.gov/moonbase-systems/",
+              "retrievedAt": "2026-11-09"
+            },
+            {
+              "label": "NASA — Moon Base FAQs",
+              "url": "https://www.nasa.gov/moon-base-frequently-asked-questions/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        },
+        {
+          "id": "moonbase-phase-three-habitat",
+          "title": "Phase Three, from 2032: 100 m³-class modules, airlocks and aggregation nodes for long-duration stays",
+          "targetDate": "2032",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Moon Base Systems",
+              "url": "https://www.nasa.gov/moonbase-systems/",
+              "retrievedAt": "2026-11-09"
             }
           ]
         }
@@ -607,9 +643,19 @@
       "rosterStatus": "listed",
       "sources": [
         {
-          "label": "NASA — Artemis Base Camp",
-          "url": "https://www.nasa.gov/wp-content/uploads/2020/12/artemis_plan-20200921.pdf",
-          "retrievedAt": "2026-07-01"
+          "label": "NASA — Moon Base",
+          "url": "https://www.nasa.gov/reference/moonbase-about/",
+          "retrievedAt": "2026-11-09"
+        },
+        {
+          "label": "NASA — Moon Base Systems",
+          "url": "https://www.nasa.gov/moonbase-systems/",
+          "retrievedAt": "2026-11-09"
+        },
+        {
+          "label": "NASA — Moon Base FAQs",
+          "url": "https://www.nasa.gov/moon-base-frequently-asked-questions/",
+          "retrievedAt": "2026-11-09"
         }
       ],
       "visibility": "public"
@@ -619,7 +665,7 @@
       "orgId": "cnsa-roscosmos",
       "name": "International Lunar Research Station",
       "type": "habitat",
-      "summary": "A China–Russia lunar base aimed at the South Pole, built up in robotic phases (command/power/telecom, science, ISRU, biomedical, astronomy facilities) ahead of a crewed utilization phase, then expanded through the 2040s into a considerable-scale, stably-operating \"extended model\" hubbed to a lunar-orbiting station — developed independently of, and on a slower timeline than, Artemis Base Camp.",
+      "summary": "A China–Russia lunar base aimed at the South Pole, built up in robotic phases (command/power/telecom, science, ISRU, biomedical, astronomy facilities) ahead of a crewed utilization phase, then expanded through the 2040s into a considerable-scale, stably-operating \"extended model\" hubbed to a lunar-orbiting station — developed independently of, and on a slower timeline than, NASA's Moon Base.",
       "location": {
         "lat": -84.3,
         "lon": 82.8
@@ -720,23 +766,48 @@
     {
       "id": "nasa-gateway",
       "orgId": "nasa",
-      "name": "Gateway Station",
+      "name": "Gateway Station (paused)",
       "type": "orbital",
-      "summary": "A small space station in a near-rectilinear halo orbit around the Moon, serving as a staging point and comms relay for surface missions.",
+      "summary": "The lunar-orbit station NASA planned as a staging point and relay for surface missions. At Ignition in March 2026 NASA paused Gateway in its current form and shifted to surface infrastructure: the Power and Propulsion Element was reassigned to the Space Reactor-1 Freedom mission, and applicable hardware is being repurposed for the Moon Base.",
       "locationPrecision": "region",
       "regionLabel": "Near-rectilinear halo orbit (cislunar)",
       "milestones": [
         {
-          "id": "gw-hpe",
-          "title": "Launch of HALO + Power and Propulsion Element",
-          "targetDate": "2027",
-          "datePrecision": "estimated",
-          "status": "in_progress",
+          "id": "gw-paused",
+          "title": "Gateway paused in its current form at Ignition",
+          "targetDate": "2026-03",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
           "sources": [
             {
-              "label": "NASA — Gateway",
-              "url": "https://www.nasa.gov/mission/gateway/",
-              "retrievedAt": "2026-07-01"
+              "label": "NASA — NASA Unveils Initiatives to Achieve America's National Space Policy (Ignition, March 2026)",
+              "url": "https://www.nasa.gov/news-release/nasa-unveils-initiatives-to-achieve-americas-national-space-policy/",
+              "retrievedAt": "2026-11-09"
+            },
+            {
+              "label": "NASASpaceFlight — NASA outlines Moon Base plans, pivots on Gateway",
+              "url": "https://www.nasaspaceflight.com/2026/03/nasa-moon-base-pivots-gateway/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        },
+        {
+          "id": "gw-hpe",
+          "title": "Launch of HALO + Power and Propulsion Element — not proceeding while Gateway is paused",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "cancelled",
+          "sources": [
+            {
+              "label": "NASA — NASA Unveils Initiatives to Achieve America's National Space Policy (Ignition, March 2026)",
+              "url": "https://www.nasa.gov/news-release/nasa-unveils-initiatives-to-achieve-americas-national-space-policy/",
+              "retrievedAt": "2026-11-09"
+            },
+            {
+              "label": "NASASpaceFlight — NASA outlines Moon Base plans, pivots on Gateway",
+              "url": "https://www.nasaspaceflight.com/2026/03/nasa-moon-base-pivots-gateway/",
+              "retrievedAt": "2026-11-09"
             }
           ]
         }
@@ -744,9 +815,14 @@
       "sharedGoalIds": [],
       "sources": [
         {
-          "label": "NASA — Gateway",
-          "url": "https://www.nasa.gov/mission/gateway/",
-          "retrievedAt": "2026-07-01"
+          "label": "NASA — NASA Unveils Initiatives to Achieve America's National Space Policy (Ignition, March 2026)",
+          "url": "https://www.nasa.gov/news-release/nasa-unveils-initiatives-to-achieve-americas-national-space-policy/",
+          "retrievedAt": "2026-11-09"
+        },
+        {
+          "label": "NASASpaceFlight — NASA outlines Moon Base plans, pivots on Gateway",
+          "url": "https://www.nasaspaceflight.com/2026/03/nasa-moon-base-pivots-gateway/",
+          "retrievedAt": "2026-11-09"
         }
       ],
       "visibility": "public"
@@ -892,10 +968,15 @@
         {
           "id": "flip-surface",
           "title": "FLIP rover to the south pole aboard Griffin-1 (Moon Base II)",
-          "targetDate": "2026-11",
-          "datePrecision": "month",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA — Launch Schedule",
+              "url": "https://www.nasa.gov/event-type/launch-schedule/",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "NASA — Moon Base cargo landers and tech demonstrations update",
               "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
@@ -999,7 +1080,7 @@
       "orgId": "westinghouse",
       "name": "eVinci Lunar Microreactor",
       "type": "power",
-      "summary": "Westinghouse's eVinci-based heat-pipe microreactor, developed with Aerojet Rocketdyne for NASA's Fission Surface Power project, to deliver ~40 kW of continuous power through the two-week lunar night. NASA and the DOE contract the reactor to industry — Westinghouse was selected to continue its design in 2025, racing Lockheed Martin (with BWXT) and the IX (Intuitive Machines–X-energy) team.",
+      "summary": "Westinghouse's eVinci-based heat-pipe microreactor, developed with Aerojet Rocketdyne for NASA's Fission Surface Power project, to deliver ~40 kW of continuous power through the lunar night. Westinghouse was selected to continue its design in 2025. NASA is now competing the flight reactor as Lunar Reactor-1 under its SPARC contract, and no vendor has been selected.",
       "location": {
         "lat": -89,
         "lon": 45
@@ -1009,11 +1090,16 @@
       "milestones": [
         {
           "id": "fsp-demo",
-          "title": "Fission surface power demonstration",
+          "title": "Flight reactor on the surface, if selected for Lunar Reactor-1",
           "targetDate": "2031",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA Glenn — Space Power and Reactor Capabilities (SPARC) draft RFP, Lunar Reactor-1",
+              "url": "https://govtribe.com/opportunity/federal-contract-opportunity/space-power-and-reactor-capabilities-sparc-draft-request-for-proposals-drfp-80grc026r0009",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "NASA — Fission Surface Power",
               "url": "https://www.nasa.gov/tdm/fission-surface-power/",
@@ -1036,6 +1122,11 @@
           "label": "NASA — Fission Surface Power",
           "url": "https://www.nasa.gov/tdm/fission-surface-power/",
           "retrievedAt": "2026-07-01"
+        },
+        {
+          "label": "NASA Glenn — Space Power and Reactor Capabilities (SPARC) draft RFP, Lunar Reactor-1",
+          "url": "https://govtribe.com/opportunity/federal-contract-opportunity/space-power-and-reactor-capabilities-sparc-draft-request-for-proposals-drfp-80grc026r0009",
+          "retrievedAt": "2026-11-09"
         }
       ],
       "visibility": "public"
@@ -1046,7 +1137,7 @@
       "name": "Starship Human Landing System",
       "type": "lander",
       "modelURI": "/moonbase/models/starship-hls.glb",
-      "summary": "A lunar-optimized Starship variant contracted by NASA to carry Artemis III and IV astronauts from lunar orbit to the South Pole surface and back.",
+      "summary": "SpaceX's lunar Starship, one of NASA's two crewed landers. Under the 2026 contract changes a test version docks with Orion in low Earth orbit on Artemis III in 2027, and neither lander is assigned to a landing mission yet: NASA will choose on readiness which one carries the first crew to the surface in 2028. An uncrewed demonstration landing, using propellant aggregation in Earth orbit, must come first.",
       "location": {
         "lat": -85,
         "lon": 5
@@ -1055,30 +1146,45 @@
       "regionLabel": "South Pole candidate regions",
       "milestones": [
         {
-          "id": "hls-uncrewed",
-          "title": "Uncrewed lunar landing demonstration",
-          "targetDate": "2026",
-          "datePrecision": "estimated",
+          "id": "hls-artemis3-leo",
+          "title": "Artemis III — rendezvous and docking test with Orion in low Earth orbit",
+          "targetDate": "2027",
+          "datePrecision": "year",
           "status": "planned",
+          "location": "earth",
           "sources": [
             {
-              "label": "NASA — SpaceX HLS",
-              "url": "https://www.nasa.gov/humans-in-space/human-landing-system/",
-              "retrievedAt": "2026-07-01"
+              "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+              "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+              "retrievedAt": "2026-11-09"
             }
           ]
         },
         {
-          "id": "hls-artemis3",
-          "title": "Crewed landing for Artemis III",
+          "id": "hls-uncrewed",
+          "title": "Uncrewed demonstration landing, required before any crewed landing",
           "targetDate": "2027",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+              "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        },
+        {
+          "id": "hls-first-crew",
+          "title": "First crewed landing opportunity — lander chosen on readiness",
+          "targetDate": "2028",
           "datePrecision": "year",
           "status": "planned",
           "sources": [
             {
-              "label": "SpaceX — Moon",
-              "url": "https://www.spacex.com/human-spaceflight/moon/",
-              "retrievedAt": "2026-07-01"
+              "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+              "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+              "retrievedAt": "2026-11-09"
             }
           ]
         }
@@ -1087,6 +1193,11 @@
         "shared-crewed-lander"
       ],
       "sources": [
+        {
+          "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+          "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+          "retrievedAt": "2026-11-09"
+        },
         {
           "label": "SpaceX — Human Spaceflight: Moon",
           "url": "https://www.spacex.com/human-spaceflight/moon/",
@@ -1112,11 +1223,16 @@
       "milestones": [
         {
           "id": "mk1-first-landing",
-          "title": "Moon Base I — first MK1 landing, the first privately funded lunar lander mission",
-          "targetDate": "2026",
+          "title": "Moon Base I — Endurance's first landing, on the Shackleton Connecting Ridge",
+          "targetDate": "2027",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA — Moon Base Phases",
+              "url": "https://www.nasa.gov/moonbase-phases/",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "Blue Origin — Blue Moon",
               "url": "https://www.blueorigin.com/blue-moon",
@@ -1143,6 +1259,21 @@
               "retrievedAt": "2026-08-28"
             }
           ]
+        },
+        {
+          "id": "mk1-promise-delivery",
+          "title": "Selected to deliver NASA's PROMISE rover",
+          "targetDate": "2026-11",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "NASA — NASA Awards Moon Base Transportation, Technology, Science Projects (7 Nov 2026)",
+              "url": "https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
         }
       ],
       "sharedGoalIds": [
@@ -1163,7 +1294,7 @@
       "orgId": "blue-origin",
       "name": "Blue Moon MK2 Crewed Lander",
       "type": "lander",
-      "summary": "Blue Origin's crewed lunar lander, selected by NASA to land Artemis V astronauts at the South Pole, developed with the National Team.",
+      "summary": "Blue Origin's crewed lunar lander. For the accelerated 2028 landing it flies as the Blue Moon Mark 2 Alpha, sent to an elliptical polar lunar orbit by three transfer stages with propellant transfer deferred. A test version joins Artemis III in low Earth orbit in 2027, an uncrewed demonstration of the full mission profile comes before crew, and NASA has not assigned it to a specific landing mission.",
       "location": {
         "lat": -85.5,
         "lon": -10
@@ -1172,16 +1303,45 @@
       "regionLabel": "South Pole candidate regions",
       "milestones": [
         {
-          "id": "mk2-artemis5",
-          "title": "Crewed landing for Artemis V",
-          "targetDate": "2030",
+          "id": "mk2-artemis3-leo",
+          "title": "Artemis III — rendezvous and docking test with Orion in low Earth orbit",
+          "targetDate": "2027",
+          "datePrecision": "year",
+          "status": "planned",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+              "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        },
+        {
+          "id": "mk2-uncrewed",
+          "title": "Uncrewed Mark 2 Alpha demonstration of the full mission profile",
+          "targetDate": "2028",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
             {
-              "label": "NASA — Blue Origin Artemis V lander",
-              "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-as-second-artemis-lunar-lander-provider/",
-              "retrievedAt": "2026-07-01"
+              "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+              "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        },
+        {
+          "id": "mk2-first-crew",
+          "title": "First crewed landing opportunity — lander chosen on readiness",
+          "targetDate": "2028",
+          "datePrecision": "year",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+              "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+              "retrievedAt": "2026-11-09"
             }
           ]
         }
@@ -1190,6 +1350,11 @@
         "shared-crewed-lander"
       ],
       "sources": [
+        {
+          "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+          "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+          "retrievedAt": "2026-11-09"
+        },
         {
           "label": "NASA — Second Artemis lunar lander provider",
           "url": "https://www.nasa.gov/news-release/nasa-selects-blue-origin-as-second-artemis-lunar-lander-provider/",
@@ -1570,11 +1735,16 @@
         },
         {
           "id": "bg-m2",
-          "title": "Blue Ghost Mission 2 — far side, carrying ESA's Lunar Pathfinder",
-          "targetDate": "2026",
+          "title": "Blue Ghost Mission 2, Riders on the Dark — far side, carrying ESA's Lunar Pathfinder",
+          "targetDate": "2027",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA — Moon Base Phases",
+              "url": "https://www.nasa.gov/moonbase-phases/",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "Firefly Aerospace — Blue Ghost",
               "url": "https://fireflyspace.com/blue-ghost/",
@@ -1640,11 +1810,21 @@
         },
         {
           "id": "griffin-1",
-          "title": "Moon Base II — Griffin-1 lands Astrolab's FLIP rover at Nobile Crater",
-          "targetDate": "2026-11",
-          "datePrecision": "month",
+          "title": "Moon Base II — Griffin-1 lands Astrolab's FLIP rover in the South Pole region",
+          "targetDate": "2027",
+          "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA — Launch Schedule",
+              "url": "https://www.nasa.gov/event-type/launch-schedule/",
+              "retrievedAt": "2026-11-09"
+            },
+            {
+              "label": "NASA — Moon Base Phases",
+              "url": "https://www.nasa.gov/moonbase-phases/",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "NASA — Moon Base cargo landers and tech demonstrations update",
               "url": "https://www.nasa.gov/missions/moon-base/nasa-provides-updates-on-moon-base-cargo-landers-tech-demonstrations/",
@@ -1686,13 +1866,13 @@
       "orgId": "ispace",
       "name": "HAKUTO-R & ULTRA Landers",
       "type": "lander",
-      "summary": "ispace's lander line. Two HAKUTO-R landing attempts ended in crashes — an altitude misread in 2023 and a rangefinder failure in 2025. In March 2026 ispace dropped the VoidRunner engine and merged its Japanese Series 3 and US APEX 1.0 designs into one lander, ULTRA, which flies Mission 3 in 2028; the Draper/CLPS far-side flight slipped to Mission 5 in 2030.",
+      "summary": "ispace's lander line. Two HAKUTO-R landing attempts ended in crashes — an altitude misread in 2023 and a rangefinder failure in 2025. In March 2026 ispace dropped the VoidRunner engine and merged its Japanese Series 3 and US APEX 1.0 designs into one lander, ULTRA, which flies Mission 3 in 2028. NASA and Draper ended the CLPS CP-12 far-side task order in July 2026 after the redesign pushed its landing to 2030 or later.",
       "location": {
         "lat": -87.4,
         "lon": 132
       },
       "locationPrecision": "approximate",
-      "regionLabel": "Schrödinger basin, lunar far side (Mission 5, 2030)",
+      "regionLabel": "Lunar surface (Mission 3, 2028)",
       "milestones": [
         {
           "id": "hakuto-m1",
@@ -1758,11 +1938,16 @@
         },
         {
           "id": "ultra-m5-cp12",
-          "title": "Mission 5 — ULTRA to Schrödinger basin for Draper/CLPS CP-12, pending NASA approval",
+          "title": "Mission 5 — ULTRA to Schrödinger basin for Draper's CLPS CP-12; task order ended July 2026",
           "targetDate": "2030",
           "datePrecision": "estimated",
-          "status": "planned",
+          "status": "cancelled",
           "sources": [
+            {
+              "label": "SpaceNews — NASA terminates Draper lunar lander mission",
+              "url": "https://spacenews.com/nasa-terminates-draper-lunar-lander-mission/",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "ispace — Announces new \"ULTRA\" lunar lander integrating Japanese and U.S. lander models",
               "url": "https://www.ispace-inc.com/2026/03/27/ispace-announces-new-ultra-lunar-lander-integrating-japanese-and-u-s-lander-models/",
@@ -1833,10 +2018,15 @@
         {
           "id": "im-3",
           "title": "Moon Base III — Nova-C Trinity carries Lunar Vertex to the Reiner Gamma swirl",
-          "targetDate": "2026",
+          "targetDate": "2027",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA — Moon Base Phases",
+              "url": "https://www.nasa.gov/moonbase-phases/",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "Intuitive Machines — Lunar Access",
               "url": "https://www.intuitivemachines.com/lunaraccess",
@@ -1865,10 +2055,10 @@
     },
     {
       "id": "cnsa-change-7",
-      "orgId": "cnsa-roscosmos",
+      "orgId": "cnsa",
       "name": "Chang'e-7",
       "type": "lander",
-      "summary": "CNSA's next South Pole robotic scout — orbiter, lander, rover, and hopper. Four Chang'e landings have succeeded in a row; this is the first ILRS reconnaissance flight and cannot be the next landing of 2026 after the August 2026 stand-down.",
+      "summary": "CNSA's next South Pole robotic scout — orbiter, lander, rover, and hopper, and the first reconnaissance flight of the International Lunar Research Station. Four Chang'e landings have succeeded in a row. The launch was called off in August 2026 for this year's window, and no new date has been announced; 2027 is expected.",
       "location": {
         "lat": -85.5,
         "lon": 31.5
@@ -1878,12 +2068,22 @@
       "milestones": [
         {
           "id": "change7-standdown",
-          "title": "2026 launch window stood down; retargeted to 2027",
+          "title": "2026 launch window stood down; no new date announced",
           "targetDate": "2026-08",
           "datePrecision": "month",
           "status": "delayed",
           "location": "earth",
           "sources": [
+            {
+              "label": "CNSA — Chang'e-7 does not meet launch conditions for this year's window (23 Aug 2026)",
+              "url": "https://www.cnsa.gov.cn/n6758823/n6758838/c10770822/content.html",
+              "retrievedAt": "2026-11-09"
+            },
+            {
+              "label": "Reuters — China postpones Chang'e-7 lunar mission",
+              "url": "https://www.reuters.com/science/china-postpones-change-7-lunar-mission-2026-08-23/",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "Wikipedia — Chang'e 7",
               "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
@@ -1918,6 +2118,16 @@
       "rosterStatus": "listed",
       "sources": [
         {
+          "label": "CNSA — Chang'e-7 does not meet launch conditions for this year's window (23 Aug 2026)",
+          "url": "https://www.cnsa.gov.cn/n6758823/n6758838/c10770822/content.html",
+          "retrievedAt": "2026-11-09"
+        },
+        {
+          "label": "Reuters — China postpones Chang'e-7 lunar mission",
+          "url": "https://www.reuters.com/science/china-postpones-change-7-lunar-mission-2026-08-23/",
+          "retrievedAt": "2026-11-09"
+        },
+        {
           "label": "Wikipedia — Chang'e 7",
           "url": "https://en.wikipedia.org/wiki/Chang%27e_7",
           "retrievedAt": "2026-09-04"
@@ -1930,7 +2140,7 @@
       "orgId": "lockheed-martin",
       "name": "Fission Surface Power Reactor",
       "type": "power",
-      "summary": "Lockheed Martin's 40 kWe surface reactor design, developed with BWXT and Creare under one of NASA's three Fission Surface Power Phase 1 contracts. Fission is the only demonstrated way to carry a base through the 14-day lunar night.",
+      "summary": "Lockheed Martin's 40 kWe surface reactor design, developed with BWXT and Creare under one of NASA's three 2022 Fission Surface Power Phase 1 contracts. NASA is now competing the flight reactor as Lunar Reactor-1 under its SPARC contract, and no vendor has been selected.",
       "location": {
         "lat": -88.6,
         "lon": 62
@@ -1967,11 +2177,16 @@
         },
         {
           "id": "lmt-fsp-flight",
-          "title": "Flight reactor demonstration on the surface",
+          "title": "Flight reactor on the surface, if selected for Lunar Reactor-1",
           "targetDate": "2030",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA Glenn — Space Power and Reactor Capabilities (SPARC) draft RFP, Lunar Reactor-1",
+              "url": "https://govtribe.com/opportunity/federal-contract-opportunity/space-power-and-reactor-capabilities-sparc-draft-request-for-proposals-drfp-80grc026r0009",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "NASA — Fission Surface Power",
               "url": "https://www.nasa.gov/tdm/fission-surface-power/",
@@ -1989,6 +2204,11 @@
           "label": "NASA — Fission Surface Power",
           "url": "https://www.nasa.gov/tdm/fission-surface-power/",
           "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "NASA Glenn — Space Power and Reactor Capabilities (SPARC) draft RFP, Lunar Reactor-1",
+          "url": "https://govtribe.com/opportunity/federal-contract-opportunity/space-power-and-reactor-capabilities-sparc-draft-request-for-proposals-drfp-80grc026r0009",
+          "retrievedAt": "2026-11-09"
         }
       ],
       "visibility": "public"
@@ -2035,11 +2255,16 @@
         },
         {
           "id": "ix-fsp-flight",
-          "title": "Flight reactor demonstration on the surface",
+          "title": "Flight reactor on the surface, if selected for Lunar Reactor-1",
           "targetDate": "2031",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA Glenn — Space Power and Reactor Capabilities (SPARC) draft RFP, Lunar Reactor-1",
+              "url": "https://govtribe.com/opportunity/federal-contract-opportunity/space-power-and-reactor-capabilities-sparc-draft-request-for-proposals-drfp-80grc026r0009",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "NASA — Fission Surface Power",
               "url": "https://www.nasa.gov/tdm/fission-surface-power/",
@@ -2057,6 +2282,11 @@
           "label": "NASA — Fission Surface Power",
           "url": "https://www.nasa.gov/tdm/fission-surface-power/",
           "retrievedAt": "2026-07-27"
+        },
+        {
+          "label": "NASA Glenn — Space Power and Reactor Capabilities (SPARC) draft RFP, Lunar Reactor-1",
+          "url": "https://govtribe.com/opportunity/federal-contract-opportunity/space-power-and-reactor-capabilities-sparc-draft-request-for-proposals-drfp-80grc026r0009",
+          "retrievedAt": "2026-11-09"
         }
       ],
       "visibility": "public"
@@ -2557,10 +2787,15 @@
         {
           "id": "pathfinder-launch",
           "title": "Lunar Pathfinder launched on Blue Ghost Mission 2",
-          "targetDate": "2026",
+          "targetDate": "2027",
           "datePrecision": "estimated",
           "status": "planned",
           "sources": [
+            {
+              "label": "NASA — Moon Base Phases",
+              "url": "https://www.nasa.gov/moonbase-phases/",
+              "retrievedAt": "2026-11-09"
+            },
             {
               "label": "ESA — Moonlight",
               "url": "https://www.esa.int/Applications/Connectivity_and_Secure_Communications/Moonlight",
@@ -3442,6 +3677,173 @@
         }
       ],
       "visibility": "public"
+    },
+    {
+      "id": "nasa-promise",
+      "orgId": "nasa",
+      "name": "PROMISE Rover",
+      "type": "rover",
+      "summary": "Polar Rover for Observation, Mapping, and In-Situ Exploration: a six-wheeled, nuclear-powered JPL rover built from spare and test hardware of NASA's Curiosity and Perseverance Mars rovers, with a flight-spare MMRTG. It carries a 1 m regolith and ice drill and VIPER's spectrometers, works through the lunar night and inside permanently shadowed regions, and scouts for Moon Base landing sites and resources in a different South Pole area from VIPER. Late 2028 launch on a Blue Moon Mark 1, 18-month mission. NASA has not named its landing site.",
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole — site not yet announced",
+      "milestones": [
+        {
+          "id": "promise-announced",
+          "title": "PROMISE announced; Blue Origin awarded its delivery on Blue Moon Mark 1",
+          "targetDate": "2026-11",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "NASA — NASA Awards Moon Base Transportation, Technology, Science Projects (7 Nov 2026)",
+              "url": "https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        },
+        {
+          "id": "promise-launch",
+          "title": "Launch to the lunar South Pole; 18-month primary mission",
+          "targetDate": "2028",
+          "datePrecision": "estimated",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — PROMISE",
+              "url": "https://www.nasa.gov/mission/promise/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "NASA — PROMISE",
+          "url": "https://www.nasa.gov/mission/promise/",
+          "retrievedAt": "2026-11-09"
+        },
+        {
+          "label": "NASA — NASA Awards Moon Base Transportation, Technology, Science Projects (7 Nov 2026)",
+          "url": "https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/",
+          "retrievedAt": "2026-11-09"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "nasa-moonfall",
+      "orgId": "nasa",
+      "name": "MoonFall Drones",
+      "type": "other",
+      "summary": "Four propulsive JPL drones, built on the legacy of the Ingenuity Mars Helicopter, that Firefly's Elytra spacecraft deploys during descent to the South Pole. They map candidate landing sites at very high resolution, measure radiation, and search for ice beneath the surface ahead of crewed missions.",
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole region",
+      "milestones": [
+        {
+          "id": "moonfall-arrival",
+          "title": "Drones deployed over the South Pole region",
+          "targetDate": "2028",
+          "datePrecision": "year",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Moon Base Phases",
+              "url": "https://www.nasa.gov/moonbase-phases/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "NASA — Moon Base Phases",
+          "url": "https://www.nasa.gov/moonbase-phases/",
+          "retrievedAt": "2026-11-09"
+        },
+        {
+          "label": "NASA — NASA Awards Moon Base Transportation, Technology, Science Projects (7 Nov 2026)",
+          "url": "https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/",
+          "retrievedAt": "2026-11-09"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "nasa-capstone-02",
+      "orgId": "nasa",
+      "name": "CAPSTONE 02",
+      "type": "orbital",
+      "summary": "Two small spacecraft in lunar orbit that take turns as chaser and target to demonstrate rendezvous and proximity operations, autonomous navigation with less tracking from Earth, and cislunar communications, while characterizing the radiation around the Moon.",
+      "locationPrecision": "region",
+      "regionLabel": "Lunar orbit",
+      "milestones": [
+        {
+          "id": "capstone02-launch",
+          "title": "Launch to lunar orbit",
+          "targetDate": "2027",
+          "datePrecision": "year",
+          "status": "planned",
+          "sources": [
+            {
+              "label": "NASA — Moon Base Phases",
+              "url": "https://www.nasa.gov/moonbase-phases/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "NASA — Moon Base Phases",
+          "url": "https://www.nasa.gov/moonbase-phases/",
+          "retrievedAt": "2026-11-09"
+        },
+        {
+          "label": "NASA — NASA Awards Moon Base Transportation, Technology, Science Projects (7 Nov 2026)",
+          "url": "https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/",
+          "retrievedAt": "2026-11-09"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "nasa-minicast",
+      "orgId": "nasa",
+      "name": "Mini-Communications and Solar Tower (miniCAST)",
+      "type": "power",
+      "summary": "A small tower combining power and communications for early Moon Base activity, assembled and tested at Marshall from commercial components: energy storage from Honeybee Robotics, power generation from Redwire, and wireless power transfer from Yank Technologies. NASA plans a separate solicitation for fully integrated power systems in early 2027.",
+      "locationPrecision": "region",
+      "regionLabel": "Lunar South Pole — site not yet announced",
+      "milestones": [
+        {
+          "id": "minicast-components",
+          "title": "Component awards to Honeybee Robotics, Redwire and Yank Technologies",
+          "targetDate": "2026-11",
+          "datePrecision": "month",
+          "status": "achieved",
+          "location": "earth",
+          "sources": [
+            {
+              "label": "NASA — NASA Awards Moon Base Transportation, Technology, Science Projects (7 Nov 2026)",
+              "url": "https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/",
+              "retrievedAt": "2026-11-09"
+            }
+          ]
+        }
+      ],
+      "sharedGoalIds": [],
+      "sources": [
+        {
+          "label": "NASA — NASA Awards Moon Base Transportation, Technology, Science Projects (7 Nov 2026)",
+          "url": "https://www.nasa.gov/news-release/nasa-awards-moon-base-transportation-technology-science-projects/",
+          "retrievedAt": "2026-11-09"
+        }
+      ],
+      "visibility": "public"
     }
   ],
   "sharedGoals": [
@@ -3530,7 +3932,7 @@
     {
       "id": "shared-crewed-lander",
       "title": "First commercial crewed lunar landing",
-      "description": "NASA's Human Landing System program put two competing landers under contract: SpaceX's Starship HLS (Artemis III) and Blue Origin's Blue Moon MK2 (Artemis V). Which system puts crew on the lunar surface first is the defining near-term race in the lander tech tree — schedules on both sides have moved, and each vehicle still has major flight-test milestones ahead.",
+      "description": "NASA has two crewed landers in development: SpaceX's Starship HLS and Blue Origin's Blue Moon Mark 2. Under the 2026 contract changes both fly test versions on Artemis III, a 2027 rendezvous and docking test with Orion in low Earth orbit, and neither is assigned to a landing mission. Each must fly an uncrewed demonstration first. NASA will then choose on readiness which lander carries the first crew to the surface in 2028, with a second crewed landing to follow.",
       "projectIds": [
         "spacex-starship-hls",
         "blue-origin-blue-moon-mk2"
@@ -3541,7 +3943,7 @@
       },
       "regionLabel": "Lunar South Pole — Artemis candidate landing zone",
       "targetWindow": {
-        "from": "2027",
+        "from": "2028",
         "to": "2031"
       },
       "market": {
@@ -3553,6 +3955,11 @@
         }
       },
       "sources": [
+        {
+          "label": "NASA — NASA, Partners Accelerate Lander Development for 2028 Moon Missions (23 Oct 2026)",
+          "url": "https://www.nasa.gov/missions/artemis/nasa-partners-accelerate-lander-development-for-2028-moon-missions/",
+          "retrievedAt": "2026-11-09"
+        },
         {
           "label": "NASA — Human Landing System",
           "url": "https://www.nasa.gov/reference/human-landing-systems/",
@@ -3871,7 +4278,7 @@
     {
       "id": "shared-fission-power",
       "title": "First operational fission surface power on the Moon",
-      "description": "Nothing else carries a base through the 14-day lunar night. NASA and the Department of Energy funded three 40 kWe reactor designs in 2022 — Lockheed Martin with BWXT and Creare, Westinghouse with Aerojet Rocketdyne, and IX, the Intuitive Machines and X-energy joint venture — but the bar has since moved a long way: a July 2025 directive raised the requirement to a minimum of 100 kWe on HALEU fuel with up to 15 tonnes of lander mass, and the January 2026 NASA–DOE memorandum of understanding committed both agencies to a surface reactor ready for launch by the first quarter of FY2030, with NASA rather than the vendor providing the ride. The three teams started from identical contracts, which makes this the closest-run race on the board.",
+      "description": "NASA's Moon Base plan lists operational fission surface power under Phase Three, from 2032; until then solar arrays, radioisotope heater units and RTGs carry assets through the dark. NASA and the Department of Energy funded three 40 kWe reactor concept designs in 2022 — Lockheed Martin with BWXT and Creare, Westinghouse with Aerojet Rocketdyne, and IX, the Intuitive Machines and X-energy joint venture. The flight reactor is now being competed as Lunar Reactor-1 under NASA's Space Power and Reactor Capabilities (SPARC) contract. The 2026 draft asks for at least 20 kWe after a single failure, five years of continuous operation at the South Pole, HALEU fuel, Brayton power conversion and under 15 tonnes, designed for deployment by December 2030, with awards expected in April 2027. No vendor has been selected; the 2022 teams are listed on their concept work, not as confirmed bidders.",
       "projectIds": [
         "westinghouse-fission-surface-power",
         "lockheed-fission-surface-power",
@@ -3881,17 +4288,17 @@
         {
           "id": "night-power",
           "statement": "Deliver continuous electrical power through a full lunar night",
-          "threshold": "≥ 100 kWe for ≥ 354 hours without solar input — NASA's raised bar, not the 40 kWe of the 2022 concept studies"
+          "threshold": "≥ 20 kWe after a single failure, through 354 hours of darkness — NASA's 2026 Lunar Reactor-1 draft requirement"
         },
         {
           "id": "autonomy",
           "statement": "Operate without crew intervention on the surface",
-          "threshold": "Autonomous start-up, load-following, and safe shutdown"
+          "threshold": "Automatic operation through intermittent communications, and restart without external power"
         },
         {
           "id": "endurance",
-          "statement": "Qualify for a decade of surface operation",
-          "threshold": "10-year design life with no human maintenance or refuelling"
+          "statement": "Run for years without maintenance",
+          "threshold": "5 years of continuous full-power operation on the lunar surface"
         },
         {
           "id": "fuel",
@@ -3901,7 +4308,7 @@
         {
           "id": "launch-mass",
           "statement": "Fit a single lander delivery",
-          "threshold": "≤ 15 t, the heavy-class lander allowance NASA raised the concept to"
+          "threshold": "< 15,000 kg including lander adapters and harness"
         }
       ],
       "targetWindow": {
@@ -3918,6 +4325,16 @@
         }
       },
       "sources": [
+        {
+          "label": "NASA Glenn — Space Power and Reactor Capabilities (SPARC) draft RFP, Lunar Reactor-1",
+          "url": "https://govtribe.com/opportunity/federal-contract-opportunity/space-power-and-reactor-capabilities-sparc-draft-request-for-proposals-drfp-80grc026r0009",
+          "retrievedAt": "2026-11-09"
+        },
+        {
+          "label": "NASA — Moon Base Systems",
+          "url": "https://www.nasa.gov/moonbase-systems/",
+          "retrievedAt": "2026-11-09"
+        },
         {
           "label": "NASA — Fission Surface Power",
           "url": "https://www.nasa.gov/tdm/fission-surface-power/",
@@ -3949,7 +4366,7 @@
     {
       "id": "shared-habitat",
       "title": "First pressurized habitat occupied on the lunar surface",
-      "description": "Five different bets on where crews will actually live, from a single delivered module to a fully integrated base. NASA's Artemis Base Camp and the China–Russia International Lunar Research Station (ILRS) are the flagship sustained-presence programs, building up habitats, power, and mobility over years; Thales Alenia Space's rigid Multi-Purpose Habitat, Sierra Space's inflatable LIFE, and Japan's Lunar Cruiser are single-element bets, any of which could stand alone or become the first piece of one of the larger camps. A base isn't a different kind of hardware from a habitat, just more of it integrated together, so all five race here. The crewed landers that ferry astronauts down are raced separately in the lander tech tree.",
+      "description": "Five different bets on where crews will actually live, from a single delivered module to a fully integrated base. NASA's Moon Base and the China–Russia International Lunar Research Station (ILRS) are the flagship sustained-presence programs, building up habitats, power, and mobility over years; Thales Alenia Space's rigid Multi-Purpose Habitat, Sierra Space's inflatable LIFE, and Japan's Lunar Cruiser are single-element bets, any of which could stand alone or become the first piece of one of the larger camps. A base isn't a different kind of hardware from a habitat, just more of it integrated together, so all five race here. The crewed landers that ferry astronauts down are raced separately in the lander tech tree.",
       "projectIds": [
         "nasa-artemis-base-camp",
         "ilrs",
@@ -3961,7 +4378,7 @@
         "lat": -89.2,
         "lon": 18
       },
-      "regionLabel": "Lunar South Pole — Artemis Base Camp",
+      "regionLabel": "Lunar South Pole — NASA has not chosen a base site",
       "criteria": [
         {
           "id": "occupied",
@@ -4000,6 +4417,11 @@
         }
       },
       "sources": [
+        {
+          "label": "NASA — Moon Base Systems",
+          "url": "https://www.nasa.gov/moonbase-systems/",
+          "retrievedAt": "2026-11-09"
+        },
         {
           "label": "NASA — Artemis",
           "url": "https://www.nasa.gov/humans-in-space/artemis/",
@@ -4139,7 +4561,7 @@
       "id": "shared-first-tracks",
       "category": "rover",
       "title": "First Tracks — first commercial rover egress and drive",
-      "description": "The first commercial rover to leave its lander and drive at least 10 metres on the lunar surface, then return a picture taken by the rover. Government rovers such as CADRE can drive first and the prize stays open. This is not the crewed lunar terrain vehicle.",
+      "description": "Which commercial rover will be first to leave its lander and drive at least 10 metres across the lunar surface? The slot is the rover operator, not one rover. Government rovers such as VIPER and PROMISE cannot win; if one drives first, the prize stays open. This is not the crewed lunar terrain vehicle.",
       "projectIds": [
         "astrolab-flip",
         "voyager-cuberover",
@@ -4150,27 +4572,40 @@
       "indexCategory": "rover",
       "criteria": [
         {
+          "id": "after-open",
+          "statement": "The whole 10 metres is driven after the prize opens",
+          "threshold": "A rover in transit or already on the surface is eligible; distance driven before open does not count"
+        },
+        {
           "id": "egress",
-          "statement": "The rover leaves the lander under a published deploy procedure",
-          "threshold": "Free of the lander deck. A tip-over that spills the rover does not count"
+          "statement": "The whole rover has left the lander and rests on the lunar surface",
+          "threshold": "Deployment by ramp, crane, or release is allowed. Still mounted on or attached to the lander is not egress"
         },
         {
-          "id": "traverse",
-          "statement": "Drive at least 10 metres under its own power",
-          "threshold": "Published odometry or an equivalent traverse reconstruction of ≥ 10 m"
+          "id": "drive",
+          "statement": "Drive at least 10 metres under its own propulsion",
+          "threshold": "Ground actually covered, added across drives. Slipping in place, pushing, towing, or carrying does not count"
         },
         {
-          "id": "imagery",
-          "statement": "Return a picture from the rover after egress",
-          "threshold": "At least one frame originated by the rover showing the lunar surface"
+          "id": "distance-evidence",
+          "statement": "The 10 metres is shown",
+          "threshold": "A traverse map, image sequence, or distance statement published by the rover operator, the lander operator, or a national space agency"
+        },
+        {
+          "id": "independent",
+          "statement": "Independent confirmation that it drove",
+          "threshold": "A national space agency statement, imagery from a camera the rover operator does not control, or surface telemetry received by a third party"
         },
         {
           "id": "commercial",
           "statement": "A commercial operator",
-          "threshold": "Government rovers cannot win. If one drives first, the prize stays open"
+          "threshold": "Companies and universities qualify. A government agency rover does not, whoever built it"
         }
       ],
-      "targetWindow": { "from": "2026", "to": "2029" },
+      "targetWindow": {
+        "from": "2026",
+        "to": "2029"
+      },
       "market": {
         "status": "planned",
         "resolutionAuthority": "senate",
@@ -4193,7 +4628,7 @@
     {
       "id": "shared-ice",
       "title": "Water Ice — first published in-situ lunar surface water ice",
-      "description": "Which organization first publishes an in-situ confirmation of lunar surface water ice from a 2027-window attempt. A press claim without a dataset does not pay. Orbital inference alone does not pay. Chang'e-7 can win Touchdown and still have to publish ice data to win this prize.",
+      "description": "Which mission will be first to publish confirmation, from in-situ measurements on the lunar surface, that water ice is present? The publication must state plainly that water ice was detected, and it must come from a national space agency that operates the mission or instrument, or be a peer-reviewed paper by the instrument team. A company statement alone, orbital data, and hydrogen or hydration signals do not count. There is no deadline: 2027 is when the named missions are expected to fly. A mission not on the roster, such as NASA's PROMISE rover, wins through the Open Field. Chang'e-7 can win Touchdown and still have to publish ice to win this prize.",
       "projectIds": [
         "cnsa-change-7",
         "blue-origin-viper",
@@ -4202,22 +4637,30 @@
       "indexCategory": "prospecting",
       "criteria": [
         {
+          "id": "after-open",
+          "statement": "The qualifying publication appears after the prize opens",
+          "threshold": "Earlier publications do not count"
+        },
+        {
           "id": "in-situ",
-          "statement": "Measured on or just above the surface by a landed asset",
-          "threshold": "Not solely from orbit"
+          "statement": "Measured in situ by that mission",
+          "threshold": "An instrument on a vehicle resting on the surface. Orbit, flyby, impact plume, telescope, and returned samples do not count"
         },
         {
           "id": "water-ice",
-          "statement": "The dataset supports water ice",
-          "threshold": "H₂O ice, not only hydrogen or volatiles consistent with ice"
+          "statement": "Ice, stated plainly",
+          "threshold": "The publication states water ice was detected. Water, hydrogen, or hydration, or ice called only possible, does not count"
         },
         {
-          "id": "published",
-          "statement": "Published with data",
-          "threshold": "A dataset, a DOI'd paper, or an agency science release with plots or tables"
+          "id": "authoritative",
+          "statement": "An authoritative source",
+          "threshold": "A statement or data release by the operating national space agency, or a peer-reviewed paper by the instrument team. A company alone is not enough"
         }
       ],
-      "targetWindow": { "from": "2027", "to": "2027" },
+      "targetWindow": {
+        "from": "2027",
+        "to": "2027"
+      },
       "market": {
         "status": "planned",
         "resolutionAuthority": "senate",
