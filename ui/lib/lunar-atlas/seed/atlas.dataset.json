@@ -4589,12 +4589,12 @@
         {
           "id": "distance-evidence",
           "statement": "The 10 metres is shown",
-          "threshold": "A traverse map, image sequence, or distance statement published by the rover operator, the lander operator, or a national space agency"
+          "threshold": "A traverse map, image sequence, or distance statement published by the rover operator, the lander operator, or a national space agency that flew or sponsored the rover"
         },
         {
           "id": "independent",
           "statement": "Independent confirmation that it drove",
-          "threshold": "A national space agency statement, imagery from a camera the rover operator does not control, or surface telemetry received by a third party"
+          "threshold": "A statement by a national space agency that flew or sponsored the rover, imagery from a camera the rover operator does not control, or surface telemetry received by a third party"
         },
         {
           "id": "commercial",
@@ -4628,7 +4628,7 @@
     {
       "id": "shared-ice",
       "title": "Water Ice — first published in-situ lunar surface water ice",
-      "description": "Which mission will be first to publish confirmation, from in-situ measurements on the lunar surface, that water ice is present? The publication must state plainly that water ice was detected, and it must come from a national space agency that operates the mission or instrument, or be a peer-reviewed paper by the instrument team. A company statement alone, orbital data, and hydrogen or hydration signals do not count. There is no deadline: 2027 is when the named missions are expected to fly. A mission not on the roster, such as NASA's PROMISE rover, wins through the Open Field. Chang'e-7 can win Touchdown and still have to publish ice to win this prize.",
+      "description": "Which mission will be first to publish confirmation, from in-situ measurements on the lunar surface, that water ice is present? The publication must state plainly that water ice was detected, and it must come from a national space agency that operates the mission or instrument, or be a peer-reviewed paper by the instrument team. A company statement alone, orbital data, and hydrogen or hydration signals do not count. There is no deadline: 2027 is when the named missions are expected to fly. A mission not on the roster, such as NASA's PROMISE rover, can win only through the Open Field. Chang'e-7 can win Touchdown and still have to publish ice to win this prize.",
       "projectIds": [
         "cnsa-change-7",
         "blue-origin-viper",
