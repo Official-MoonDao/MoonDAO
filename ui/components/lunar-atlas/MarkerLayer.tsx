@@ -28,8 +28,6 @@ import {
   SOLAR_ARRAYS,
   solarArrayKey,
   SPINE_BEARING_DEG,
-  SPINE_END_M,
-  SPINE_START_M,
   at,
   onRoad,
   shuttleAt,
@@ -73,8 +71,6 @@ import type {
   ProjectType,
 } from '@/lib/lunar-atlas/types'
 import ProjectModel, {
-  Boulder,
-  boulderClusterLayout,
   BrickPallet,
   CableReel,
   CargoCrate,
@@ -544,9 +540,9 @@ function CompetitorPlot({
 // and in the hollow south of Main Avenue, and the streets between the blocks.
 // Left bare, that is most of what the camera actually sees on approach.
 //
-// A boulder field fills the open ground — native rock, not manifested cargo,
-// so it belongs on unclaimed regolith in a way none of the logistics props in
-// ProjectModel.tsx do — and street lights line the haul routes. Both are kept
+// Street lights line the haul routes, and the settlement's own fleet and cargo
+// stand along them. (The native rock that fills the open ground is drawn by
+// RockField, which is not a marker and so does not live here.) All of it is kept
 // off every district's own ground by `withinDistrictGround` (baseplan.ts),
 // which is deliberately generous rather than exact: it doesn't know any
 // district's live roster, only the widest spread its `block` allows along the
@@ -559,43 +555,6 @@ function hash1(n: number): number {
   const s = Math.sin(n * 127.1) * 43758.5453
   return s - Math.floor(s)
 }
-
-// The ground a boulder can land on: a band running the length of the spine and
-// a good way either side of it, sampled as a grid in the spine's own frame with
-// per-cell jitter and a low keep-rate — which is what makes a grid read as
-// scatter rather than as rows. Roads and district ground are skipped as the
-// walk goes (see the filter below), so the band can simply cover the whole base
-// instead of being an annulus threaded between two ring roads.
-//
-// Wider across than the base is and longer than the spine, so the scatter runs
-// past the settlement in every direction rather than stopping at a boundary the
-// eye can find.
-//
-// The across figure runs well past the outer avenues, 90 m either side, and the
-// second solar field behind North Avenue, so the scatter carries on beyond the
-// edge of town rather than stopping at its last street.
-const BOULDER_ALONG_MIN_M = SPINE_START_M - 60
-const BOULDER_ALONG_MAX_M = SPINE_END_M + 60
-const BOULDER_ACROSS_M = 200
-// Kept in proportion to the band so widening it scatters more rock rather than
-// thinning what there is.
-const BOULDER_ALONG_STEPS = 34
-const BOULDER_ACROSS_STEPS = 20
-const BOULDER_KEEP_FRACTION = 0.34
-// Half-width of a boulder's footprint as a multiple of its size: `Boulder`
-// stretches its unit icosahedron up to 1.25x sideways.
-const BOULDER_FOOTPRINT = 1.25
-const BOULDER_FOOTPRINT_SAMPLES: [number, number][] = [
-  [0, 0],
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-  [0.7, 0.7],
-  [-0.7, 0.7],
-  [0.7, -0.7],
-  [-0.7, -0.7],
-]
 
 // A post every ~26 m of pavement, just outside the windrow — close enough
 // together to actually read as street lighting, far enough apart that the
@@ -856,48 +815,6 @@ function InterDistrictFiller({
   // gone rather than faint, because a ghost street light is still a street
   // light standing on a Moon that has none.
   const built = presence > MODEL_PRESENCE
-  const boulders = useMemo(() => {
-    const out: { dir: Vec3; seat: number; size: number; seed: number }[] = []
-    for (let ai = 0; ai < BOULDER_ALONG_STEPS; ai++) {
-      for (let ci = 0; ci < BOULDER_ACROSS_STEPS; ci++) {
-        const k = ai * 977 + ci * 31 + 1
-        if (hash1(k) > BOULDER_KEEP_FRACTION) continue
-        const alongM =
-          BOULDER_ALONG_MIN_M +
-          ((ai + hash1(k + 1)) / BOULDER_ALONG_STEPS) *
-            (BOULDER_ALONG_MAX_M - BOULDER_ALONG_MIN_M)
-        const acrossM =
-          -BOULDER_ACROSS_M +
-          ((ci + hash1(k + 2)) / BOULDER_ACROSS_STEPS) * BOULDER_ACROSS_M * 2
-        const { east, north } = at(alongM, acrossM)
-        if (onRoad(east, north) || withinDistrictGround(east, north, 20)) {
-          continue
-        }
-        const size = 0.3 + hash1(k + 3) * 1.4
-        for (const rock of boulderClusterLayout(k, size)) {
-          const e = east + rock.x
-          const n = north + rock.z
-          const ll = capOffsetLatLon(e, n)
-          const dir = latLonToVector3(ll.lat, ll.lon, 1)
-          // No SEAT_LIFT: a rock is meant to cut into the ground, and that lift
-          // is taller than most of these rocks are. Seated on the lowest ground
-          // under its footprint instead of the ground under its centre, so the
-          // downhill side of a rock on a slope is buried rather than overhanging.
-          const reach = rock.s * BOULDER_FOOTPRINT
-          let ground = Infinity
-          for (const [dx, dz] of BOULDER_FOOTPRINT_SAMPLES) {
-            const p = capOffsetLatLon(e + dx * reach, n + dz * reach)
-            ground = Math.min(
-              ground,
-              radiusAt ? radiusAt(p.lat, p.lon) : GLOBE_RADIUS
-            )
-          }
-          out.push({ dir, seat: ground, size: rock.s, seed: rock.k })
-        }
-      }
-    }
-    return out
-  }, [radiusAt])
 
   const lights = useMemo(() => {
     const out: { dir: Vec3; seat: number; noseAlong: Vec3 }[] = []
@@ -1107,18 +1024,6 @@ function InterDistrictFiller({
 
   return (
     <group>
-      {boulders.map((b, i) => (
-        <SurfaceAnchor
-          key={`boulder:${i}`}
-          dir={b.dir}
-          surfaceRadius={b.seat}
-          scale={M_TO_UNITS}
-          castShadows={false}
-          interactive={false}
-        >
-          <Boulder seed={b.seed} size={b.size} />
-        </SurfaceAnchor>
-      ))}
       {lights.map((l, i) => (
         <SurfaceAnchor
           key={`light:${i}`}

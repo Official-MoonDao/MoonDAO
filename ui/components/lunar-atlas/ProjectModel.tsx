@@ -39,6 +39,8 @@ import {
 } from '@/lib/lunar-atlas/trackplan'
 import type { ModelTransform, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
+import { ROCK_VARIANTS, makeRockMaterial, rockGeometry } from './rocks'
+import { REGOLITH_MATERIAL_NAME, finishHardwareMaterial } from './surfaceDetail'
 
 // Fallback seat while the height maps decode (ridge heights are within
 // ±0.12% of the sphere radius, so the sphere itself is a fine placeholder).
@@ -3243,14 +3245,10 @@ function SurveyTripod({ seed = 0 }: { seed?: number }) {
 // `withinDistrictGround` in baseplan.ts) so native rock never reads as
 // clutter dropped in somebody's lot.
 
-const BOULDER_GEO = new THREE.IcosahedronGeometry(1, 0) // 0 subdivisions: angular facets read as fractured rock, not the smoother TAILINGS_LUMP_GEO worked-spoil look
-const BOULDER_COLOR_A = '#7d7972'
-const BOULDER_COLOR_B = '#8f8b82'
-
-// A single weathered boulder: non-uniformly scaled and tipped off-axis so it
-// reads as an irregular fractured rock rather than a squashed sphere, sunk a
-// little into the ground so it sits embedded rather than resting on top of
-// the regolith.
+// A single weathered boulder, `size` meters across. The shape, the burial and the
+// material all come from rocks.ts, which is where the argument for each lives:
+// a fractured, sandblasted fragment, modelled part-buried so it sits IN the
+// regolith rather than on it, and lit by the same law as the ground.
 export function Boulder({
   size = 1,
   seed = 0,
@@ -3258,22 +3256,21 @@ export function Boulder({
   size?: number
   seed?: number
 }) {
-  const sx = size * (0.75 + hash1(seed * 41 + 1) * 0.5)
-  const sy = size * (0.55 + hash1(seed * 41 + 2) * 0.45)
-  const sz = size * (0.75 + hash1(seed * 41 + 3) * 0.5)
+  const material = useMemo(makeRockMaterial, [])
+  useEffect(() => () => material.dispose(), [material])
+  const variant = Math.floor(hash1(seed * 41 + 1) * ROCK_VARIANTS)
   const yaw = hash1(seed * 41 + 4) * Math.PI * 2
-  const tilt = (hash1(seed * 41 + 5) - 0.5) * 0.5
-  const bury = sy * 0.32
-  const color = hash1(seed * 41 + 6) > 0.5 ? BOULDER_COLOR_A : BOULDER_COLOR_B
+  const tilt = (hash1(seed * 41 + 5) - 0.5) * 0.4
+  const stretch = 0.8 + hash1(seed * 41 + 2) * 0.45
+  // `size` was the old shape's half-height; these are about twice that across.
+  const across = size * 1.7
   return (
     <mesh
-      geometry={BOULDER_GEO}
-      position={[0, sy - bury, 0]}
+      geometry={rockGeometry(variant, 3)}
+      material={material}
       rotation={[tilt, yaw, tilt * 0.6]}
-      scale={[sx, sy, sz]}
-    >
-      <meshStandardMaterial color={color} roughness={1} flatShading />
-    </mesh>
+      scale={[across, across * stretch, across]}
+    />
   )
 }
 
@@ -18226,7 +18223,8 @@ function coverMoundGeometry(g: VaultGeometry): THREE.BufferGeometry {
   const pos: number[] = []
   const col: number[] = []
   const idx: number[] = []
-  const base = new THREE.Color(COVER)
+  // A tint, not an albedo: the cover is lit by the ground's own BRDF.
+  const base = soilTint(new THREE.Color(COVER))
 
   for (let i = 0; i <= MOUND_NX; i++) {
     const x = -g.moundHalfLengthM + (2 * g.moundHalfLengthM * i) / MOUND_NX
@@ -18281,12 +18279,17 @@ function CoverMound({ g }: { g: VaultGeometry }) {
     <mesh geometry={geo}>
       {/* White base colour: the tone rides on the vertex colours instead, so
           SurfaceAnchor's dust and wear passes still have material.color to
-          themselves and compose over the banding rather than erasing it. */}
+          themselves and compose over the banding rather than erasing it. That
+          also hides what this is made of from the finish pass, which reads
+          material.color — hence the explicit name. (A name and not userData:
+          R3F re-assigns a userData prop on every render, which would wipe the
+          flags the finish pass keeps there.) */}
       <meshStandardMaterial
         color="#ffffff"
         vertexColors
         roughness={0.96}
         metalness={0.02}
+        name={REGOLITH_MATERIAL_NAME}
       />
     </mesh>
   )
@@ -19471,7 +19474,14 @@ const CLICK_DRAG_TOLERANCE_PX = 8
 // so a rover ends up dusty nearly all over and the guideway ends up dusty only
 // around the feet of its legs. A fraction-of-model rule would have got the
 // rover right and painted the guideway's roof.
-const DUST = new THREE.Color('#9b948a')
+// As dark as the ground it came from. Hardware is shaded Lambertian and the soil
+// by the regolith BRDF, which at this scene's phase angles returns a quarter to an
+// eighth of what a Lambertian surface of the same albedo would — so a dust colour
+// picked to LOOK like regolith in a swatch renders several times brighter than the
+// regolith beside it, and a dusty footpad came out paler than the hull above it.
+// This is the Lambertian albedo that lands on the lit ground's own value across
+// the views the base is usually seen from.
+const DUST = new THREE.Color('#403c37')
 // How far up the dust reaches. Generous for footfall alone; this is a working
 // site with vehicles running laps of it and landers coming in.
 const DUST_HEIGHT_M = 2.2
@@ -19500,6 +19510,63 @@ const DUST_BURIED_M = -1
 const DUST_BOX = new THREE.Box3()
 const DUST_MAT = new THREE.Matrix4()
 const DUST_WANT = new THREE.Color()
+
+// ---------------------------------------------------------------------------
+// Paint that looks like paint
+// ---------------------------------------------------------------------------
+//
+// The models here were authored as swatches: pure white hulls, fully saturated
+// accent colours, regolith berms in whatever beige looked right in a colour
+// picker. Each is reasonable alone, and together they are most of why the base
+// read as a toy set. Real hardware under an unfiltered sun does not look like its
+// swatch, for three reasons this pass applies to every authored colour, once:
+//
+//   NOTHING IS WHITE. The best white thermal paints reflect about 85%; anything
+//   authored brighter is brighter than any real coating, and it is the first thing
+//   to clip.
+//
+//   NOTHING STAYS SATURATED. Pigments chalk under hard UV and everything carries a
+//   film of grey dust, so flown hardware is markedly less saturated than its
+//   drawing. Accent colours keep their hue and lose a third of their chroma.
+//
+//   REGOLITH IS LIT AS REGOLITH. A berm, a printed pad, a spoil heap or a
+//   sandbag is made of the ground, and surfaceDetail.ts shades those with the
+//   ground's own BRDF. Their authored colour then stops being an albedo and
+//   becomes a TINT on the soil's — so it is normalised here to sit near 1, keeping
+//   its hue and how much lighter or darker than plain soil its author meant it.
+const PAINT_MAX = 0.84
+const PAINT_CHROMA = 0.66
+// The lightness (linear HSL) the models' regolith swatches centre on; a soil
+// material authored at this value is drawn at exactly the ground's own tone.
+const SOIL_SWATCH_L = 0.34
+const PAINT_HSL = { h: 0, s: 0, l: 0 }
+
+// An authored regolith swatch as a tint on the ground's own albedo: same hue, and
+// as much lighter or darker than plain soil as the swatch was than the swatches'
+// centre. Clamped, because sintered or churned regolith differs from the soil it
+// was made of by tens of percent, never by multiples.
+function soilTint(src: THREE.Color): THREE.Color {
+  const out = src.clone()
+  out.getHSL(PAINT_HSL)
+  const tone = THREE.MathUtils.clamp(PAINT_HSL.l / SOIL_SWATCH_L, 0.68, 1.4)
+  return out.multiplyScalar(tone / Math.max(PAINT_HSL.l, 1e-3))
+}
+
+function realisticPaint(src: THREE.Color, mat: THREE.MeshStandardMaterial): THREE.Color {
+  const out = src.clone()
+  out.getHSL(PAINT_HSL)
+  if (mat.userData.soilFinish) {
+    // A soil whose tone rides on vertex colours was normalised where those were
+    // built (see soilTint's callers); its material colour is already a tint.
+    return mat.vertexColors ? out : soilTint(out)
+  }
+  if ((mat.metalness ?? 0) <= 0.5) {
+    out.setHSL(PAINT_HSL.h, PAINT_HSL.s * PAINT_CHROMA, PAINT_HSL.l)
+  }
+  const peak = Math.max(out.r, out.g, out.b)
+  if (peak > PAINT_MAX) out.multiplyScalar(PAINT_MAX / peak)
+  return out
+}
 
 // ---------------------------------------------------------------------------
 // Per-instance weathering
@@ -19655,6 +19722,9 @@ export function SurfaceAnchor({
       m.receiveShadow = !unlit
 
       if (!mat) return
+      // Shadow lookups that can resolve a footpad, and a surface that is not one
+      // flat value from edge to edge. See surfaceDetail.ts.
+      finishHardwareMaterial(mat)
 
       // Dust, thickest at grade and thinning with height (see DUST_HEIGHT_M).
       // Recomputed from a remembered base colour every pass rather than applied
@@ -19689,13 +19759,16 @@ export function SurfaceAnchor({
         // into the ground, and those are still standing on it.
         if (bb && centreY >= DUST_BURIED_M) {
           if (!mat.userData.dustBaseColor)
-            mat.userData.dustBaseColor = tint.color.clone()
+            mat.userData.dustBaseColor = realisticPaint(tint.color, tint)
           const flat = DUST_BOX.max.y - DUST_BOX.min.y < DUST_FLAT_M * localPerM
           const t = Math.min(
             1,
             Math.max(0, (centreY - DUST_FULL_M) / (DUST_HEIGHT_M - DUST_FULL_M))
           )
-          const w = flat ? 0 : DUST_MAX * (1 - t) * (1 - t)
+          // Soil-finished surfaces are already the ground's tone and are lit by
+          // its BRDF; blending them toward a Lambertian dust colour would only
+          // pull them off it.
+          const w = flat || mat.userData.soilFinish ? 0 : DUST_MAX * (1 - t) * (1 - t)
           // Dust first, then this unit's own wear over the top of it — the
           // order matters: wear is a property of THIS unit's surface, so it has
           // to modulate what that surface actually looks like now, coating and
