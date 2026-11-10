@@ -69,6 +69,7 @@
     "cypress/integration/unit/cookie-consent.cy.ts",
     "cypress/integration/unit/contribution-amount.cy.ts",
     "cypress/integration/unit/contributions-onchain.cy.ts",
+    "cypress/integration/unit/contributions-wallet-chain.cy.ts",
     "cypress/integration/unit/contributions-archive.cy.ts",
     "cypress/integration/unit/contributions-backfill.cy.ts",
     "cypress/integration/unit/safe-transaction-actions.cy.tsx",
