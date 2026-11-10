@@ -71,6 +71,8 @@ async function sponsorGas(wallet: string, chainId: number) {
     body: JSON.stringify({ wallet, chainId }),
   })
   if (!res.ok) {
+    // The auth check answers 401 with no message when the session has expired.
+    if (res.status === 401) throw new Error('Your sign-in has expired. Sign in again to submit.')
     const body = await res.json().catch(() => ({}))
     throw new Error(
       typeof body?.message === 'string' ? body.message : 'Could not cover gas for this change.'
