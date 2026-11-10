@@ -525,6 +525,14 @@ const PAD_ROAD_GAP = 0.62
 // which is why it is one number rather than a per-model table.
 const PAD_CUT_OFFSET = -0.375
 
+// The bearing (degrees CCW from east) to point a padded model's +X along so its
+// pad's road cut faces `roadBearingDeg`, for a pad steered with `noseAlong`
+// rather than facing the camera. The cut is the model's +Z, a quarter turn
+// clockwise of +X, swung by PAD_CUT_OFFSET.
+export function padNoseBearingDeg(roadBearingDeg: number): number {
+  return roadBearingDeg + 90 - (PAD_CUT_OFFSET * 180) / Math.PI
+}
+
 // Only LANDERS get a pad — every other installation sits directly on the
 // regolith (a pedestal under a rover or reactor read as a plinth in a museum,
 // not equipment on the Moon). A landing pad is real infrastructure though, and

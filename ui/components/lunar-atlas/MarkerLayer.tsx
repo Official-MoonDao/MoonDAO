@@ -82,6 +82,7 @@ import ProjectModel, {
   Excavator,
   gradedDeckRadiusM,
   displaySizeM,
+  padNoseBearingDeg,
   SparePartsPallet,
   DistrictFloodPool,
   StreetLight,
@@ -108,6 +109,9 @@ export function rankedMembers(tree: TechTree): Project[] {
 // Scratch quaternion for the shuttle's per-frame rotation, so driving the fleet
 // allocates nothing.
 const TURN = new THREE.Quaternion()
+
+// The crewed pad's road is North Avenue, leaving it northeast along the grid.
+const CREWED_PAD_NOSE = capLocalDirection(padNoseBearingDeg(SPINE_BEARING_DEG), 0)
 
 // Seconds-ish for a patrolling vehicle to reach speed, or to come to a stand
 // when its race is opened. A vehicle that stops dead reads as a paused
@@ -272,10 +276,13 @@ function CompetitorPlot({
   radiusAt,
   cinematic,
   scenery,
+  noseAlong,
 }: {
   project: Project
   slot: Slot
   dir: Vec3
+  // World direction to hold the model's +X along instead of facing the camera.
+  noseAlong?: Vec3
   // Where a DRIVING copy sets off from on the run, precomputed in the shared
   // layout (see ColonyLayout). Absent on the parked rendering of the same
   // competitor, which uses `dir`.
@@ -484,7 +491,7 @@ function CompetitorPlot({
         dir={[ndir.x, ndir.y, ndir.z]}
         accent={accent}
         turn={THREE.MathUtils.degToRad(slot.turn)}
-        noseAlong={driveAlong ?? vaultAlong ?? track?.along}
+        noseAlong={driveAlong ?? vaultAlong ?? track?.along ?? noseAlong}
         dim={dim}
         onSelect={scenery ? undefined : onSelect}
         onHover={scenery ? undefined : (id) => onHover?.(Boolean(id))}
@@ -1636,6 +1643,7 @@ export default function MarkerLayer({
             radiusAt={radiusAt}
             cinematic={cinematic}
             scenery
+            noseAlong={CREWED_PAD_NOSE}
           />
         )
       })}
