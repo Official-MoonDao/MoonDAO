@@ -18,7 +18,7 @@ import {
   earthSideVenue,
   orgColor,
 } from '@/lib/lunar-atlas/display'
-import { centroidDirection, MOON_RADIUS_M, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
+import { centroidDirection, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import {
   atlasNowYear,
@@ -542,8 +542,14 @@ export default function MoonBaseZeroIndex() {
       layout.plots.get(CARRIED_BY[project.id] ?? '') ??
       layout.plots.get(SAME_VEHICLE[project.id] ?? '')
     const dir = plot?.dir ?? siteDir(race)
-    const ll = dir ? vector3ToLatLon(dir) : project.location
-    if (!ll) return
+    // Nothing of it stands on the base. Its catalogue location is tens of
+    // kilometres off the terrain patch, where there is only sky to frame, so
+    // keep the base in view and let the panel carry it.
+    if (!dir) {
+      setFocus(null)
+      return
+    }
+    const ll = vector3ToLatLon(dir)
     // Framed against this machine's own size rather than the ~10 m the hero
     // shot assumes. A district keeps the default, because a district's shot
     // has to hold a whole roster; a single competitor gets framed as itself,
@@ -716,12 +722,9 @@ export default function MoonBaseZeroIndex() {
       // place.
       flyToSite(g.id)
     } else if (g?.location) {
-      setFocus({
-        lat: g.location.lat,
-        lon: g.location.lon,
-        // ~200 m above the site — close enough that a real-scale base reads.
-        distanceRadii: 200 / MOON_RADIUS_M,
-      })
+      // A race with no ground on the base (the crewed landing) has only a
+      // catalogue location far off the terrain patch. Hold the base view.
+      setFocus(null)
     }
     if (!opts?.skipUrl) replaceMoonbaseQuery({ race: goalId, year })
   }
