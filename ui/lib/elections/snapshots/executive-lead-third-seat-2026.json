@@ -1,0 +1,180 @@
+{
+  "voters": [
+    {
+      "address": "0xb2d3900807094d4fe47405871b0c8adb58e10d42",
+      "votingPower": 6878.539814427651,
+      "ballot": [
+        2,
+        0,
+        1
+      ],
+      "citizenName": "Ryan",
+      "citizenId": 1
+    },
+    {
+      "address": "0x679d87d8640e66778c3419d164998e720d7495f6",
+      "votingPower": 6274.233719797932,
+      "ballot": [
+        2,
+        0,
+        1
+      ],
+      "citizenName": "Pablo Moncada-Larrotiz",
+      "citizenId": 3
+    },
+    {
+      "address": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+      "votingPower": 2367.75198293907,
+      "ballot": [
+        0
+      ],
+      "citizenName": "Miguel",
+      "citizenId": 119
+    },
+    {
+      "address": "0x86c779b3741e83a36a2a236780d436e4ec673af4",
+      "votingPower": 1816.7585343801998,
+      "ballot": [
+        1,
+        2,
+        0
+      ],
+      "citizenName": "Andrew \"Titan\" Parris",
+      "citizenId": 7
+    },
+    {
+      "address": "0xa64f2228ccec96076c82abb903021c33859082f8",
+      "votingPower": 1350.3605407051252,
+      "ballot": [
+        1,
+        2
+      ],
+      "citizenName": "Rod Mamin",
+      "citizenId": 59
+    },
+    {
+      "address": "0x37e6c43ae0341304ff181da55e8d2593f1728c45",
+      "votingPower": 696.4629383663022,
+      "ballot": [
+        1
+      ],
+      "citizenName": "sheepianna",
+      "citizenId": 90
+    },
+    {
+      "address": "0x79d0b453dd5d694da4685fbb94798335d5f77760",
+      "votingPower": 676.7042301410845,
+      "ballot": [
+        1,
+        2
+      ],
+      "citizenName": "Astro.gio",
+      "citizenId": 24
+    },
+    {
+      "address": "0x977e3f778d1afce209fa0d2299374b1875f5238a",
+      "votingPower": 558.2289933861093,
+      "ballot": [
+        1
+      ],
+      "citizenName": "austin3wilson",
+      "citizenId": 55
+    },
+    {
+      "address": "0xe6d26d4b4785679e029a406c1e85b2a72e2c603b",
+      "votingPower": 519.3553217444972,
+      "ballot": [
+        1,
+        2
+      ],
+      "citizenName": "William S. Rabelo",
+      "citizenId": 148
+    },
+    {
+      "address": "0x04877685e94e0694944d08a43d021e5768b595f0",
+      "votingPower": 465.9591680556217,
+      "ballot": [
+        2,
+        1
+      ],
+      "citizenName": "Elliot Briant",
+      "citizenId": 28
+    },
+    {
+      "address": "0x4911503fcf75ecb454ded9e4677e16a185569e25",
+      "votingPower": 404.2738243506204,
+      "ballot": [
+        1,
+        2,
+        0
+      ],
+      "citizenName": "Rosana \"Zen\" Sotile",
+      "citizenId": 70
+    },
+    {
+      "address": "0x4340005d30c7237e772faf5a580eb993dd5e2ae0",
+      "votingPower": 8.920755403326027,
+      "ballot": [
+        2
+      ],
+      "citizenName": "Kyle \"Longarm\" Arcurio",
+      "citizenId": 248
+    },
+    {
+      "address": "0x81369c54866d4c5e1e9cdfd78f2b01898414128d",
+      "votingPower": 0.08412612801735418,
+      "ballot": [
+        1,
+        2,
+        0
+      ],
+      "citizenName": "Alessandro Morano",
+      "citizenId": 247
+    }
+  ],
+  "totalVoters": 13,
+  "totalVP": 22017.63394982556,
+  "tally": {
+    "choices": [
+      {
+        "key": 1,
+        "label": "Trent “Moonshot” Tresch"
+      },
+      {
+        "key": 2,
+        "label": "AnastasiaAdAstra"
+      },
+      {
+        "key": 0,
+        "label": "None of the above"
+      }
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "totals": {
+          "0": 2367.75198293907,
+          "1": 6022.228509201956,
+          "2": 13627.653457684532
+        },
+        "continuingVP": 22017.633949825555,
+        "exhaustedVP": 0,
+        "eliminated": []
+      }
+    ],
+    "winnerKey": 2,
+    "winnerLabel": "AnastasiaAdAstra",
+    "noneWon": false,
+    "tied": false,
+    "totalParticipationVP": 22017.63394982556,
+    "ballotCount": 13
+  },
+  "powerSource": "historical",
+  "closeBlocks": {
+    "arbitrum": 26371211,
+    "ethereum": 26371211,
+    "polygon": 96965429,
+    "base": 54816126
+  },
+  "generatedAt": "2026-11-10T21:13:22.264Z"
+}
