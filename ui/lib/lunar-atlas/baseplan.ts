@@ -895,6 +895,33 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
 }
 
 // ---------------------------------------------------------------------------
+// The crewed pad
+// ---------------------------------------------------------------------------
+
+// Starship HLS, on a pad of its own at the southwest end of North Avenue.
+//
+// Scenery rather than a district. The landing zone is Touchdown's, and the
+// crewed-landing race it used to host has no ground of its own (see
+// buildColonyLayout), so this stands the one vehicle without a roster, a
+// beacon or a click target.
+//
+// The ground picks the spot. A 64 m deck seats on the highest point under it,
+// so relief across the footprint is skirt standing proud of the regolith. At
+// the head of Main Avenue that is 8.8 m; here, on North Avenue's own line, it
+// is 1.5 m, 65 m clear of every district. North Avenue runs on out of town onto
+// the deck (see avenueLine), and that stretch never pitches past 2.9%.
+export const CREWED_PAD_PROJECT_ID = 'spacex-starship-hls'
+
+// Radius of the pad's graded deck. The model layer's own deck for a 52 m
+// lander is 31.2 m (GRADED_DECK_FRACTION in ProjectModel); this is that,
+// rounded up, because this module must not depend on what the assets look like.
+export const CREWED_PAD_R_M = 32
+
+export const CREWED_PAD_ALONG_M = -85
+
+export const CREWED_PAD = at(CREWED_PAD_ALONG_M, NORTH_AVENUE_ACROSS_M)
+
+// ---------------------------------------------------------------------------
 // The streets
 // ---------------------------------------------------------------------------
 
@@ -984,7 +1011,10 @@ function avenueLine(acrossM: number): Street | null {
   const outer =
     acrossM === NORTH_AVENUE_ACROSS_M || acrossM === SOUTH_AVENUE_ACROSS_M
   const tail = outer ? AVENUE_TAIL_M : 0
-  const from = Math.min(...fronting.map((b) => b.alongM[0])) - tail
+  // North Avenue runs on southwest out of town to the crewed pad's deck.
+  const padEnd =
+    acrossM === NORTH_AVENUE_ACROSS_M ? CREWED_PAD_ALONG_M + CREWED_PAD_R_M : Infinity
+  const from = Math.min(padEnd, Math.min(...fronting.map((b) => b.alongM[0])) - tail)
   const to = Math.max(...fronting.map((b) => b.alongM[1])) + tail
   return street(
     outer ? RANK_AVENUE : RANK_LANE,
@@ -1455,7 +1485,7 @@ export const SOLAR_FARM_ZONES: Zone[] = (() => {
 })()
 
 // True if a map-frame point can plausibly stand on ground the base has already
-// built on — any district's own ground, or the solar farm's.
+// built on — any district's own ground, the solar farm's, or the crewed pad.
 //
 // Used to keep base-wide filler (a boulder field, roadside lighting) off it
 // without that filler needing to know the roster, or that the farm exists.
@@ -1465,6 +1495,12 @@ export function withinDistrictGround(
   marginM: number
 ): boolean {
   if (onRaceGround(east, north, marginM)) return true
+  if (
+    Math.hypot(east - CREWED_PAD.east, north - CREWED_PAD.north) - CREWED_PAD_R_M <=
+    marginM
+  ) {
+    return true
+  }
   return SOLAR_FARM_ZONES.some((z) => zoneGapM(z, east, north) <= marginM)
 }
 

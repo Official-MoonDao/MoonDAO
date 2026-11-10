@@ -33,6 +33,8 @@ import {
   BASE_STREETS,
   BRANCH_TAIL_M,
   CITY_BLOCKS,
+  CREWED_PAD,
+  CREWED_PAD_R_M,
   CROSS_STREET_ALONG_M,
   CROSS_STREET_BEARING_DEG,
   DISTRICT_GAP_M,
@@ -992,6 +994,38 @@ describe('moon base zero street plan', () => {
           districtAlongM(BASE_PLAN.mass_driver!)
         )
       }
+    })
+
+    it('ends North Avenue on the crewed pad, clear of every district', () => {
+      const { alongM, acrossM } = spineCoords(CREWED_PAD)
+      expect(acrossM, 'on North Avenue').to.be.closeTo(NORTH_AVENUE_ACROSS_M, 1e-9)
+      const north = BASE_STREETS.find(
+        (s) =>
+          s.rank === RANK_AVENUE &&
+          s.points.every(
+            ([e, n]) =>
+              Math.abs(spineCoords({ east: e, north: n }).acrossM - NORTH_AVENUE_ACROSS_M) < 1e-9
+          )
+      )!
+      const start = Math.min(
+        ...north.points.map(([e, n]) => spineCoords({ east: e, north: n }).alongM)
+      )
+      expect(start, 'the avenue runs onto the deck').to.be.closeTo(
+        alongM + CREWED_PAD_R_M,
+        1e-9
+      )
+      for (const [category] of races) {
+        for (const z of districtGround(BASE_PLAN[category]!)) {
+          expect(
+            zoneGapM(z, CREWED_PAD.east, CREWED_PAD.north) - CREWED_PAD_R_M,
+            `pad clears ${category}`
+          ).to.be.greaterThan(DISTRICT_GAP_M)
+        }
+      }
+      expect(
+        withinDistrictGround(CREWED_PAD.east, CREWED_PAD.north, 0),
+        'filler keeps off the pad'
+      ).to.equal(true)
     })
   })
 

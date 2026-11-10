@@ -79,7 +79,9 @@ const TYPE_SIZE_M: Partial<Record<ProjectType, number>> = {
   mass_driver: TRACK_LENGTH_M,
 }
 const PROJECT_SIZE_M: Record<string, number> = {
-  'spacex-starship-hls': 52, // Ship upper stage ~50 m + gear
+  // Footpad to nose tip: the ~50 m Ship stack on its landing gear. SHLS_M
+  // inverts this exact number, so StarshipHls is authored in real meters.
+  'spacex-starship-hls': 52,
   // Dome-to-dome across the connector spine (see CAMP_M, which this exact
   // number inverts). Without an entry here `projectSizeM` fell back to
   // TYPE_SIZE_M.habitat (11 m, the generic single-module default) once
@@ -428,11 +430,6 @@ export function displayFootprintRadiusM(project: Project): number {
 const MODEL_FRONT_AZ: Record<string, number> = {
   // Z 3.1 > X 2.7: chassis length across the frame.
   '/moonbase/models/perseverance-rover.glb': Math.PI / 2,
-  // Z 3.6 > X 1.9 puts broadside at PI/2, which also lands within 1.5° of
-  // the bare stainless flank: the Heatshield_Tiles material's vertices
-  // centroid at local azimuth -91.5°, so the un-tiled side faces +88.5°.
-  // Without this the ship shows the camera its black heat shield.
-  '/moonbase/models/starship-hls.glb': 1.545,
   // Height is the long axis (authored Y 0.0195 > X 0.0147 > Z 0.0146, before
   // the loader normalizes). The named front — Tank_mid_front, Front_piece —
   // is local +Z, which is also the slightly shorter plan axis, so broadside
@@ -527,6 +524,14 @@ const PAD_ROAD_GAP = 0.62
 // BASE_STREETS). It is a property of where the landing zone sits in the plan,
 // which is why it is one number rather than a per-model table.
 const PAD_CUT_OFFSET = -0.375
+
+// The bearing (degrees CCW from east) to point a padded model's +X along so its
+// pad's road cut faces `roadBearingDeg`, for a pad steered with `noseAlong`
+// rather than facing the camera. The cut is the model's +Z, a quarter turn
+// clockwise of +X, swung by PAD_CUT_OFFSET.
+export function padNoseBearingDeg(roadBearingDeg: number): number {
+  return roadBearingDeg + 90 - (PAD_CUT_OFFSET * 180) / Math.PI
+}
 
 // Only LANDERS get a pad — every other installation sits directly on the
 // regolith (a pedestal under a rover or reactor read as a plinth in a museum,
@@ -1241,6 +1246,278 @@ function BlueMoonMk2({ accent }: { accent: string }) {
         />
         <Bm2UpperHull accent={accent} />
         <Bm2Nose />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// SpaceX Starship HLS — crewed lunar lander
+// ---------------------------------------------------------------------------
+//
+// Replaces starship-hls.glb, which was Ship 24 — an Earth-launch test article —
+// with its booster cut off: forward and aft flaps, a black heat shield, and no
+// gear to stand on. The lunar variant never re-enters an atmosphere, so it
+// carries neither flaps nor tiles. What it has instead, per SpaceX's and NASA's
+// published renders: landing legs on the aft skirt; a ring of landing thrusters
+// high on the hull, so the Raptors are not fired into the regolith at
+// touchdown; a crew cabin with windows under the nose; and an elevator that
+// lowers crew from an airlock to the surface. Same 9 m barrel as Ship.
+//
+// Authored in meters, footpad to nose tip on PROJECT_SIZE_M's 52 m. Windows
+// face local +Z, like every other procedural model's front; the elevator runs
+// down the hull 50 degrees round from them, so the home view sees both.
+const SHLS_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['spacex-starship-hls'] ?? 52)
+
+const SHLS_STEEL = '#e1e4e8'
+const SHLS_SEAM = '#9ea3ab'
+const SHLS_R = 4.5
+const SHLS_BASE_Y = 1.6 // aft skirt's lower edge, held up by the gear
+const SHLS_BARREL_TOP = 33.6
+const SHLS_TOP = 52
+const SHLS_NOSE_L = SHLS_TOP - SHLS_BARREL_TOP
+const SHLS_FOOT_R = 6.4
+const SHLS_THRUSTER_Y = 29
+const SHLS_AIRLOCK_Y = 31.6
+const SHLS_WINDOW_Y = 37.5
+// Azimuths in the XZ plane, atan2(z, x). +Z (PI/2) is the front.
+const SHLS_ELEVATOR_AZ = (40 * Math.PI) / 180
+
+// Hull radius at height y: the barrel, then a tangent ogive into the nose.
+function shlsR(y: number): number {
+  if (y <= SHLS_BARREL_TOP) return SHLS_R
+  const fromTip = Math.max(0, SHLS_TOP - y)
+  const rho = (SHLS_R * SHLS_R + SHLS_NOSE_L * SHLS_NOSE_L) / (2 * SHLS_R)
+  const r = Math.sqrt(rho * rho - (SHLS_NOSE_L - fromTip) ** 2) + SHLS_R - rho
+  return Math.max(0, r)
+}
+
+function ShlsLeg({ az }: { az: number }) {
+  const c = Math.cos(az)
+  const s = Math.sin(az)
+  const foot: [number, number, number] = [c * SHLS_FOOT_R, 0.35, s * SHLS_FOOT_R]
+  return (
+    <group>
+      <Strut from={[c * SHLS_R, 5.2, s * SHLS_R]} to={foot} r={0.26} color={METAL} />
+      <Strut
+        from={[c * (SHLS_R - 0.1), SHLS_BASE_Y + 0.3, s * (SHLS_R - 0.1)]}
+        to={foot}
+        r={0.18}
+        color={HULL_DARK}
+      />
+      <mesh position={[foot[0], 0.15, foot[2]]}>
+        <cylinderGeometry args={[0.75, 0.9, 0.3, 16]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.4} roughness={0.55} />
+      </mesh>
+    </group>
+  )
+}
+
+// Landing thruster pod: a fairing on the hull with its nozzle canted out and
+// down, so the plume clears the hull and meets the ground far from the deck.
+function ShlsThruster({ az }: { az: number }) {
+  return (
+    <group rotation={[0, -az, 0]}>
+      <mesh position={[SHLS_R + 0.25, SHLS_THRUSTER_Y, 0]}>
+        <boxGeometry args={[0.6, 1.7, 0.95]} />
+        <meshStandardMaterial color={SHLS_SEAM} metalness={0.7} roughness={0.35} />
+      </mesh>
+      <mesh
+        position={[SHLS_R + 0.62, SHLS_THRUSTER_Y - 1.05, 0]}
+        rotation={[0, 0, 0.45]}
+      >
+        <coneGeometry args={[0.36, 0.7, 14, 1, true]} />
+        <meshStandardMaterial
+          color={DARK}
+          metalness={0.7}
+          roughness={0.35}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The airlock and the elevator that serves it: twin rails down the hull to a
+// cage standing deployed on the deck, with a crew member just stepped out.
+// Built along local +X, then turned onto SHLS_ELEVATOR_AZ.
+function ShlsElevator({ accent }: { accent: string }) {
+  const railX = SHLS_R + 0.28
+  const cageX = SHLS_R + 1.5
+  const cageW = 2.2
+  const cageH = 2.5
+  const corners: [number, number][] = [
+    [cageX - cageW / 2, -cageW / 2],
+    [cageX + cageW / 2, -cageW / 2],
+    [cageX + cageW / 2, cageW / 2],
+    [cageX - cageW / 2, cageW / 2],
+  ]
+  return (
+    <group rotation={[0, -SHLS_ELEVATOR_AZ, 0]}>
+      <group position={[SHLS_R + 0.02, SHLS_AIRLOCK_Y, 0]}>
+        <mesh>
+          <boxGeometry args={[0.1, 2.5, 1.7]} />
+          <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+        </mesh>
+        <mesh position={[0.06, 0, 0]}>
+          <boxGeometry args={[0.04, 2.1, 1.3]} />
+          <meshStandardMaterial color={DARK} roughness={0.6} />
+        </mesh>
+      </group>
+      {[-0.95, 0.95].map((z) => (
+        <Strut
+          key={z}
+          from={[railX, SHLS_AIRLOCK_Y + 1.2, z]}
+          to={[railX, 0.3, z]}
+          r={0.08}
+          color={METAL}
+        />
+      ))}
+      {[0.4, SHLS_AIRLOCK_Y - 1.4].map((y) => (
+        <Strut
+          key={y}
+          from={[SHLS_R, y, 0]}
+          to={[cageX - cageW / 2, y, 0]}
+          r={0.06}
+          color={METAL}
+        />
+      ))}
+      <mesh position={[cageX, 0.12, 0]}>
+        <boxGeometry args={[cageW, 0.24, cageW]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.4} roughness={0.6} />
+      </mesh>
+      {corners.map(([x, z]) => (
+        <Strut key={`${x}:${z}`} from={[x, 0.24, z]} to={[x, cageH, z]} r={0.05} color={METAL} />
+      ))}
+      {corners.map(([x, z], i) => {
+        const [nx, nz] = corners[(i + 1) % corners.length]
+        return (
+          <Strut key={i} from={[x, cageH, z]} to={[nx, cageH, nz]} r={0.05} color={METAL} />
+        )
+      })}
+      <PatrollingAstronaut center={[cageX + 3.2, 0.6]} radius={1.1} seed={14} accent={accent} />
+    </group>
+  )
+}
+
+function StarshipHls({ accent }: { accent: string }) {
+  const nose = useMemo(() => {
+    const pts: THREE.Vector2[] = []
+    const steps = 36
+    for (let i = 0; i <= steps; i++) {
+      const y = SHLS_BARREL_TOP + (SHLS_NOSE_L * i) / steps
+      pts.push(new THREE.Vector2(shlsR(y), y))
+    }
+    return new THREE.LatheGeometry(pts, 48)
+  }, [])
+  useEffect(() => () => nose.dispose(), [nose])
+
+  const legAzs = Array.from(
+    { length: 6 },
+    (_, i) => SHLS_ELEVATOR_AZ + Math.PI / 6 + (i * Math.PI) / 3
+  )
+  const thrusterAzs = Array.from(
+    { length: 8 },
+    (_, i) => SHLS_ELEVATOR_AZ + Math.PI / 8 + (i * Math.PI) / 4
+  )
+  const windowAzs = [-30, -15, 0, 15, 30].map((d) => Math.PI / 2 + (d * Math.PI) / 180)
+  const seamYs = Array.from({ length: 10 }, (_, i) => SHLS_BASE_Y + 3 + i * 3)
+  const barrelH = SHLS_BARREL_TOP - SHLS_BASE_Y
+
+  return (
+    <group>
+      <LandingPad r={0.85} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={SHLS_M}>
+        {legAzs.map((az) => (
+          <ShlsLeg key={az} az={az} />
+        ))}
+
+        {/* Raptor bells under the aft skirt: three centre, three outer. */}
+        {[0, 1, 2].map((i) => {
+          const a = SHLS_ELEVATOR_AZ + (i * Math.PI * 2) / 3
+          return (
+            <group key={i}>
+              {[
+                [1.15, 0.55],
+                [2.9, 0.95],
+              ].map(([rr, bell]) => (
+                <mesh
+                  key={rr}
+                  position={[
+                    Math.cos(a + (rr > 2 ? Math.PI / 3 : 0)) * rr,
+                    SHLS_BASE_Y - bell / 2,
+                    Math.sin(a + (rr > 2 ? Math.PI / 3 : 0)) * rr,
+                  ]}
+                >
+                  <coneGeometry args={[bell, bell * 1.3, 18, 1, true]} />
+                  <meshStandardMaterial
+                    color={DARK}
+                    metalness={0.7}
+                    roughness={0.4}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+              ))}
+            </group>
+          )
+        })}
+        <mesh position={[0, SHLS_BASE_Y + 0.15, 0]}>
+          <cylinderGeometry args={[SHLS_R - 0.05, SHLS_R - 0.05, 0.3, 48]} />
+          <meshStandardMaterial color={DARK} metalness={0.5} roughness={0.5} />
+        </mesh>
+
+        <mesh position={[0, SHLS_BASE_Y + barrelH / 2, 0]}>
+          <cylinderGeometry args={[SHLS_R, SHLS_R, barrelH, 48]} />
+          <meshStandardMaterial color={SHLS_STEEL} metalness={0.55} roughness={0.4} />
+        </mesh>
+        {seamYs.map((y) => (
+          <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[SHLS_R + 0.01, 0.035, 6, 48]} />
+            <meshStandardMaterial color={SHLS_SEAM} metalness={0.8} roughness={0.4} />
+          </mesh>
+        ))}
+        <mesh geometry={nose}>
+          <meshStandardMaterial color={SHLS_STEEL} metalness={0.55} roughness={0.4} />
+        </mesh>
+
+        {thrusterAzs.map((az) => (
+          <ShlsThruster key={az} az={az} />
+        ))}
+
+        {windowAzs.map((az) => {
+          const r = shlsR(SHLS_WINDOW_Y)
+          return (
+            <group key={az} rotation={[0, Math.PI / 2 - az, 0]}>
+              <group position={[0, SHLS_WINDOW_Y, r]} rotation={[-0.2, 0, 0]}>
+                <mesh>
+                  <boxGeometry args={[0.95, 1.2, 0.08]} />
+                  <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+                </mesh>
+                <mesh position={[0, 0, 0.05]}>
+                  <boxGeometry args={[0.75, 1.0, 0.02]} />
+                  <meshStandardMaterial
+                    color={WINDOW}
+                    emissive={WINDOW}
+                    emissiveIntensity={1.3}
+                    toneMapped={false}
+                  />
+                </mesh>
+              </group>
+            </group>
+          )
+        })}
+
+        <ShlsElevator accent={accent} />
+
+        <mesh position={[0, SHLS_WINDOW_Y + 3, shlsR(SHLS_WINDOW_Y + 3) + 0.05]}>
+          <sphereGeometry args={[0.14, 8, 8]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.8}
+            toneMapped={false}
+          />
+        </mesh>
       </group>
     </group>
   )
@@ -19270,8 +19547,10 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // See CisluneExcavationSite.
   'cislune-lunar-isru': CisluneExcavationSite,
   // The crewed-lander race's second competitor, replacing the InSight-lander
-  // stand-in. See BlueMoonMk2. `spacex-starship-hls` keeps its GLB.
+  // stand-in. See BlueMoonMk2.
   'blue-origin-blue-moon-mk2': BlueMoonMk2,
+  // Its rival, replacing the Ship 24 GLB. See StarshipHls.
+  'spacex-starship-hls': StarshipHls,
   // Touchdown's largest entrant. The mesh on screen is bluemoon-mk1.glb;
   // this component is only the Suspense fallback, because ProjectModel
   // branches on modelURI before it reaches ProceduralModel. See BlueMoonMk1.
@@ -19895,5 +20174,4 @@ export default function ProjectModel({
 ;[
   '/moonbase/models/perseverance-rover.glb',
   '/moonbase/models/bluemoon-mk1.glb',
-  '/moonbase/models/starship-hls.glb',
 ].forEach((u) => useGLTF.preload(u, DRACO_PATH))

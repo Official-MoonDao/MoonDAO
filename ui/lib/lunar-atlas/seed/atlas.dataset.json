@@ -1136,7 +1136,6 @@
       "orgId": "spacex",
       "name": "Starship Human Landing System",
       "type": "lander",
-      "modelURI": "/moonbase/models/starship-hls.glb",
       "summary": "SpaceX's lunar Starship, one of NASA's two crewed landers. Under the 2026 contract changes a test version docks with Orion in low Earth orbit on Artemis III in 2027, and neither lander is assigned to a landing mission yet: NASA will choose on readiness which one carries the first crew to the surface in 2028. An uncrewed demonstration landing, using propellant aggregation in Earth orbit, must come first.",
       "location": {
         "lat": -85,

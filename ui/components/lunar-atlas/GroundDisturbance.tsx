@@ -443,6 +443,33 @@ export default function GroundDisturbance({
       geometry.setIndex(buffers.index)
       out.push({ raceId: tree.raceId, geometry, style })
     }
+
+    // Scenery has no race, so its patch is keyed by project id instead.
+    for (const { project, dir } of layout.scenery) {
+      const buffers: Buffers = { positions: [], colors: [], index: [] }
+      addPatch(
+        {
+          dir,
+          radiusM: displayFootprintRadiusM(project),
+          seed: project.id.length * 31 + project.id.charCodeAt(0),
+        },
+        SCOUR_STYLE,
+        radiusAt,
+        origin,
+        buffers
+      )
+      const geometry = new THREE.BufferGeometry()
+      geometry.setAttribute(
+        'position',
+        new THREE.Float32BufferAttribute(buffers.positions, 3)
+      )
+      geometry.setAttribute(
+        'color',
+        new THREE.Float32BufferAttribute(buffers.colors, 4)
+      )
+      geometry.setIndex(buffers.index)
+      out.push({ raceId: project.id, geometry, style: SCOUR_STYLE })
+    }
     return out
   }, [trees, layout, radiusAt, origin])
 
