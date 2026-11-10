@@ -148,6 +148,9 @@ export type ColonyLayout = {
   // itself still stands on `dir`, its own plot, which is what the camera aims
   // at.
   plots: Map<string, { dir: Vec3; slot: Slot; standDir?: Vec3 }>
+  // Hardware standing on the base with no district behind it, and so no beacon,
+  // name card or click target: the crewed pad's Starship (see CREWED_PAD).
+  scenery: { project: Project; dir: Vec3; slot: Slot }[]
 }
 
 type MarkerLayerProps = {
@@ -1613,6 +1616,27 @@ export default function MarkerLayer({
               />
             )}
           </group>
+        )
+      })}
+
+      {layout.scenery.map(({ project, dir, slot }) => {
+        const style = getProjectStyle?.(project) ?? { opacity: 1, visible: true }
+        if (!style.visible) return null
+        return (
+          <CompetitorPlot
+            key={project.id}
+            project={project}
+            slot={slot}
+            dir={dir}
+            accent={orgColor(orgMap.get(project.orgId))}
+            opacity={style.opacity}
+            dim={raceOpen && !litProjectIds?.has(project.id) ? DIM_FACTOR : 1}
+            raceOpen={false}
+            called={false}
+            radiusAt={radiusAt}
+            cinematic={cinematic}
+            scenery
+          />
         )
       })}
 

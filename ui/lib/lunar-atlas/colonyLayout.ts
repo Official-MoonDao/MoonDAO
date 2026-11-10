@@ -4,6 +4,8 @@ import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import { capOffsetLatLon } from '@/lib/lunar-atlas/southpole'
 import {
   BASE_PLAN,
+  CREWED_PAD,
+  CREWED_PAD_PROJECT_ID,
   FALLBACK_ALONG_M,
   FALLBACK_ACROSS_M,
   FALLBACK_SPREAD_M,
@@ -156,7 +158,21 @@ export function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       plots.set(id, { dir: dirAt(slot.east, slot.north), slot, standDir })
     }
   }
-  return { districts, districtOwner, plots }
+
+  // Starship stands on the crewed pad only while no race has given it a plot,
+  // so a crewed-landing district can never stand it twice.
+  const scenery: ColonyLayout['scenery'] = []
+  const starship = trees
+    .flatMap((t) => t.projects)
+    .find((p) => p.id === CREWED_PAD_PROJECT_ID)
+  if (starship && !plots.has(starship.id)) {
+    scenery.push({
+      project: starship,
+      dir: dirAt(CREWED_PAD.east, CREWED_PAD.north),
+      slot: { ...CREWED_PAD, turn: 0, offsetM: 0 },
+    })
+  }
+  return { districts, districtOwner, plots, scenery }
 }
 
 // Everything the scene needs to stand the base up, from a project list and its

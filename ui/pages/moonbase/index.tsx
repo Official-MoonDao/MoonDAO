@@ -541,7 +541,10 @@ export default function MoonBaseZeroIndex() {
       layout.plots.get(project.id) ??
       layout.plots.get(CARRIED_BY[project.id] ?? '') ??
       layout.plots.get(SAME_VEHICLE[project.id] ?? '')
-    const dir = plot?.dir ?? siteDir(race)
+    const dir =
+      plot?.dir ??
+      layout.scenery.find((s) => s.project.id === project.id)?.dir ??
+      siteDir(race)
     // Nothing of it stands on the base. Its catalogue location is tens of
     // kilometres off the terrain patch, where there is only sky to frame, so
     // keep the base in view and let the panel carry it.

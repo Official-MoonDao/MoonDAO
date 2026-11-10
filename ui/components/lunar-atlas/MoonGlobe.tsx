@@ -726,8 +726,13 @@ export default function MoonGlobe({
   const sitePresence = useMemo(() => {
     const byRace = new Map<string, number>()
     for (const t of trees ?? []) byRace.set(t.raceId, siteOpacity(t, getProjectStyle))
+    // Scenery stands outside every race, so GroundDisturbance keys it by project.
+    for (const { project } of layout?.scenery ?? []) {
+      const s = getProjectStyle?.(project) ?? { opacity: 1, visible: true }
+      byRace.set(project.id, s.visible ? s.opacity : 0)
+    }
     return byRace
-  }, [trees, getProjectStyle])
+  }, [trees, layout, getProjectStyle])
   // The branch roads belong to the base PLAN, so each one serves a district —
   // a hardware type — and not a race. Translate through the district's actual
   // occupant. Keying the roads by race id instead left every branch looking up
