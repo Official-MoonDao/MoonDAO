@@ -935,7 +935,7 @@
       "orgId": "astrolab",
       "name": "CLV-1 (FLEX heritage)",
       "type": "rover",
-      "summary": "Venturi Astrolab's Crewed Lunar Vehicle, the design NASA actually bought in May 2026 for $219M. It takes after the company's earlier FLEX (Flexible Logistics and Exploration) proposal, simplified against NASA's revised call for a cheaper rover available sooner. Astrolab reaches the surface first with FLIP, a smaller FLEX-derived platform riding Griffin-1 to the south pole in late 2026 — flight heritage its rival does not have.",
+      "summary": "Venturi Astrolab's Crewed Lunar Vehicle, the design NASA actually bought in May 2026 for $219M. It takes after the company's earlier FLEX (Flexible Logistics and Exploration) proposal, simplified against NASA's revised call for a cheaper rover available sooner. Astrolab reaches the surface first with FLIP, a smaller FLEX-derived platform riding Griffin-1 to the south pole in 2027 — flight heritage its rival does not have.",
       "location": {
         "lat": -88.9,
         "lon": -8
