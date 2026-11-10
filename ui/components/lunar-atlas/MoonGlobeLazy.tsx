@@ -31,7 +31,9 @@ function GlobePoster({ onOpen }: { onOpen: () => void }) {
     <div className="relative h-full w-full">
       <Image src={TOUR_POSTER} alt="" fill priority sizes="100vw" className="object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-[#03040a] via-[#03040a]/40 to-transparent" />
-      <div className="absolute inset-x-0 bottom-24 flex flex-col items-center gap-3 px-6 text-center">
+      {/* Centred, not bottom-anchored: the page's year scrubber sits over the
+          bottom of this region and would cover the button. */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="max-w-sm text-sm text-white/70">
           The 3D base is heavy on phones and battery. The races and competitors are all in the
           panels.
