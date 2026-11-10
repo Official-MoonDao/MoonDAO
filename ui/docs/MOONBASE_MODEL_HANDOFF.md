@@ -208,7 +208,11 @@ softgoods module uses for its own power feed.
   struts, a windowed crew module with a deployable ladder opposite the
   docking hatch, two open lattice bays exposing the propellant tanks, and a
   tapered ascent hull and nose, built off NASA's own Artemis renders of the
-  selected lander. `spacex-starship-hls` still uses its GLB.
+  selected lander. `spacex-starship-hls` used to render `starship-hls.glb`,
+  which was Ship 24 (an Earth-launch test article, flaps and heat shield) cut
+  off its booster. It now renders `StarshipHls`: no flaps or tiles, landing
+  legs on the aft skirt, a ring of landing thrusters high on the hull, crew
+  windows under the nose, and an airlock elevator down to the deck.
 - `blue-origin-blue-moon-mk1` used to render `viking-lander.glb`, then a
   purpose-built `BlueMoonMk1`. It now renders `bluemoon-mk1.glb` (purchased
   model; `modelURI` on the dataset entry). `BlueMoonMk1` remains the loading
