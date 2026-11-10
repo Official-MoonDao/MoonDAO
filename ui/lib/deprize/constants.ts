@@ -85,8 +85,24 @@ export const DEPRIZE_AVAILABILITY_LEGEND =
 
 export const DEPRIZE_PREDICT_CTA = 'Predict'
 
+/** WebsiteHead cuts descriptions longer than this. */
+export const OG_DESCRIPTION_MAX = 160
+
+/**
+ * Page metadata for DePrize: the pitch first, so link previews lead with it,
+ * then the availability legend. The legend must ship unaltered
+ * (docs/DEPRIZE_MARKETING_CHECKLIST.md), so the pitch is shortened at a word
+ * boundary until the whole thing fits and the legend is never truncated.
+ */
 export function deprizeOgDescription(specific?: string): string {
-  const extra = specific?.trim()
+  const extra = specific?.trim().replace(/\s+/g, ' ')
   if (!extra) return DEPRIZE_AVAILABILITY_LEGEND
-  return `${DEPRIZE_AVAILABILITY_LEGEND} ${extra}`
+  const budget = OG_DESCRIPTION_MAX - DEPRIZE_AVAILABILITY_LEGEND.length - 1
+  let pitch = extra
+  if (pitch.length > budget) {
+    const cut = pitch.slice(0, budget - 1)
+    const space = cut.lastIndexOf(' ')
+    pitch = `${(space > 0 ? cut.slice(0, space) : cut).replace(/[\s,;:.—-]+$/, '')}…`
+  }
+  return `${pitch} ${DEPRIZE_AVAILABILITY_LEGEND}`
 }

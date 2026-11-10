@@ -7,6 +7,7 @@ import { trackSignUp } from '@/lib/analytics/ga4'
 import useSubscribe from '@/lib/convert-kit/useSubscribe'
 import { GATE_NEXT_PARAM, safeNextPath } from '@/lib/gate/access'
 import Container from '@/components/layout/Container'
+import WebsiteHead from '@/components/layout/Head'
 import { SignupHoneypot } from '@/components/newsletter/SignupHoneypot'
 
 type Mode = 'signup' | 'password'
@@ -47,65 +48,77 @@ export default function Gate() {
   }, [mode])
 
   return (
-    <Container>
-      <div className="relative min-h-screen bg-black">
-        {/* Earthrise backdrop. On phones the square photo sits at the top with
+    <>
+      {/* Links to /moonbase, /base and /deprize land here while they are
+          gated, so this is the preview social sites show for all of them. */}
+      <WebsiteHead
+        title="Coming Soon"
+        secondaryTitle="MoonDAO"
+        description="Moon Base Zero is a true-to-scale lunar base, built race by race through DePrize. Request early access."
+        image="/moonbase-og.png"
+        imageWidth={1200}
+        imageHeight={630}
+      />
+      <Container>
+        <div className="relative min-h-screen bg-black">
+          {/* Earthrise backdrop. On phones the square photo sits at the top with
             Earth visible above the card; on wider screens it covers the page,
             anchored to the bottom so Earth rises above the card and the card
             rests on the lunar horizon. */}
-        <div aria-hidden="true" className="pointer-events-none fixed inset-0">
-          <Image
-            src="/assets/landing/earthrise.jpg"
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-contain object-top md:object-cover md:object-bottom"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/70" />
-          <div className="absolute inset-x-0 top-[100vw] h-24 -translate-y-full bg-gradient-to-b from-transparent to-black md:hidden" />
-        </div>
+          <div aria-hidden="true" className="pointer-events-none fixed inset-0">
+            <Image
+              src="/assets/landing/earthrise.jpg"
+              alt=""
+              fill
+              priority
+              sizes="100vw"
+              className="object-contain object-top md:object-cover md:object-bottom"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/20 to-black/70" />
+            <div className="absolute inset-x-0 top-[100vw] h-24 -translate-y-full bg-gradient-to-b from-transparent to-black md:hidden" />
+          </div>
 
-        <div className="relative z-10 flex min-h-screen justify-center px-4 pb-12 pt-[55vw] md:items-center md:py-12">
-          <div className="mx-auto h-fit w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900/80 via-blue-900/30 to-purple-900/30 text-white shadow-2xl backdrop-blur-xl">
-            <div className="space-y-6 p-6">
-              {/* Both panels sit in the same two grid rows (header, form) via
+          <div className="relative z-10 flex min-h-screen justify-center px-4 pb-12 pt-[55vw] md:items-center md:py-12">
+            <div className="mx-auto h-fit w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900/80 via-blue-900/30 to-purple-900/30 text-white shadow-2xl backdrop-blur-xl">
+              <div className="space-y-6 p-6">
+                {/* Both panels sit in the same two grid rows (header, form) via
                   subgrid, so each row is as tall as the taller panel's version
                   of it: the card, the inputs, the buttons and the toggle below
                   stay put when switching, however the copy wraps. The hidden
                   panel is visibility:hidden, which also drops it from the tab
                   order and the accessibility tree. */}
-              <div className="grid grid-rows-[auto_auto] gap-6">
-                <div
-                  className={`${PANEL_CLASS} ${mode === 'signup' ? '' : 'invisible'}`}
-                  aria-hidden={mode !== 'signup'}
-                >
-                  <EarlyAccessForm />
+                <div className="grid grid-rows-[auto_auto] gap-6">
+                  <div
+                    className={`${PANEL_CLASS} ${mode === 'signup' ? '' : 'invisible'}`}
+                    aria-hidden={mode !== 'signup'}
+                  >
+                    <EarlyAccessForm />
+                  </div>
+                  <div
+                    className={`${PANEL_CLASS} ${mode === 'password' ? '' : 'invisible'}`}
+                    aria-hidden={mode !== 'password'}
+                  >
+                    <PasswordForm next={next} />
+                  </div>
                 </div>
-                <div
-                  className={`${PANEL_CLASS} ${mode === 'password' ? '' : 'invisible'}`}
-                  aria-hidden={mode !== 'password'}
-                >
-                  <PasswordForm next={next} />
-                </div>
-              </div>
 
-              <div className="border-t border-white/10 pt-4 text-center">
-                <button
-                  type="button"
-                  onClick={() => setMode(mode === 'signup' ? 'password' : 'signup')}
-                  className="text-sm text-blue-300 underline-offset-4 hover:text-blue-200 hover:underline"
-                >
-                  {mode === 'signup'
-                    ? 'Have an access password? Enter password'
-                    : 'No password? Sign up to learn more'}
-                </button>
+                <div className="border-t border-white/10 pt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setMode(mode === 'signup' ? 'password' : 'signup')}
+                    className="text-sm text-blue-300 underline-offset-4 hover:text-blue-200 hover:underline"
+                  >
+                    {mode === 'signup'
+                      ? 'Have an access password? Enter password'
+                      : 'No password? Sign up to learn more'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </Container>
+      </Container>
+    </>
   )
 }
 
@@ -181,8 +194,8 @@ function EarlyAccessForm() {
         icon={<RocketLaunchIcon className="h-10 w-10 text-blue-300" />}
         title="Want access?"
       >
-        This part of the site is still being built. Drop your email and we'll let you know as
-        soon as it opens.
+        This part of the site is still being built. Drop your email and we'll let you know as soon
+        as it opens.
       </GateHeader>
 
       <form onSubmit={submit} className="relative space-y-3" noValidate>
@@ -249,9 +262,11 @@ function PasswordForm({ next }: { next: string }) {
 
   return (
     <>
-      <GateHeader icon={<LockClosedIcon className="h-10 w-10 text-blue-300" />} title="Not open yet">
-        This part of the site is still being built. Enter the access password to have a look
-        around.
+      <GateHeader
+        icon={<LockClosedIcon className="h-10 w-10 text-blue-300" />}
+        title="Not open yet"
+      >
+        This part of the site is still being built. Enter the access password to have a look around.
       </GateHeader>
 
       <form onSubmit={submit} className="space-y-3">
