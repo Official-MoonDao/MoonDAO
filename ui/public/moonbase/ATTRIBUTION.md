@@ -15,15 +15,17 @@ remodeling) to keep web payloads small.
 
 | File | Source model | Used for |
 |---|---|---|
-| `starship-hls.glb` (edited) | Third-party "SpaceX Starship Ship 24 / Booster 7" community model (Sketchfab; verify license before production use) | Starship HLS — see note |
+| `starship-hls.glb` (edited) | "Spacex Starship Ship 24 & Booster 7 V4" by [clarence365](https://sketchfab.com/clarence365), [Sketchfab](https://sketchfab.com/3d-models/spacex-starship-ship-24-booster-7-v4-97875d14b63e4b9ca9ed425ef4253306), licensed [CC BY 4.0](http://creativecommons.org/licenses/by/4.0/). Modified: see note | Starship HLS — see note |
 | `bluemoon-mk1.glb` (optimized) | Purchased "Blue Moon MK1 lunar lander" (Sketchfab Standard License, FAB conversion). Textures resized to 2048² WebP and Draco-compressed, 40 MB → 1.7 MB; no remodeling. | Blue Moon MK1 cargo lander |
 | `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | NASA LTV (rover stand-in) |
 
 `starship-hls.glb` was produced from the full ship-24 + booster-7 stack by
 removing every mesh below the interstage (Y < 12.3 in model space), keeping only
 the **upper-stage Ship** — the part that lands on the Moon — then Draco-compressing
-the result (36 MB → ~1.9 MB). Its upstream Sketchfab source/license should be
-confirmed and recorded here before any production release.
+the result (36 MB → ~1.9 MB). The upstream licence is CC BY 4.0, as stated on
+the Sketchfab model page and recorded in the GLB's own `asset.extras`. It allows
+commercial use with credit to the author and a note of the changes made, which
+this entry provides; the moonbase legend links here.
 
 Blue Moon MK1 is the purchased model above. MK2 and the other commercial
 vehicles that are not Starship still have no photoreal file; they are

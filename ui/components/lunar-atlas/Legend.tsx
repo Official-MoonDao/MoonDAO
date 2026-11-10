@@ -290,7 +290,15 @@ export default function Legend({
               comparing two machines on screen deserves to know which of the
               two facts they are reading. See SCALE_NOTE. */}
           <p className="border-t border-white/10 pt-3 text-[10px] leading-snug text-white/35">
-            {SCALE_NOTE}
+            {SCALE_NOTE}{' '}
+            <a
+              href="/moonbase/ATTRIBUTION.md"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-white/20 underline-offset-2 hover:text-white/60"
+            >
+              Model and terrain credits
+            </a>
           </p>
         </div>
       )}
