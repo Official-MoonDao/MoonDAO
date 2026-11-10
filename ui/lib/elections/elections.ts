@@ -69,7 +69,7 @@ export const ELECTIONS: Election[] = [
       'The Member House elects a third Executive Lead to a two-year term, completing last year’s unfilled cycle. Rank the candidates in order of preference. If no candidate has a majority, the last-place candidate is eliminated and those ballots move to each voter’s next choice until someone does. If “None of the above” wins, the seat stays vacant. Pablo Moncada-Larrotiz’s second-term confirmation is a separate ballot on this page.',
     opensAt: '2026-10-27T16:00:00Z',
     closesAt: '2026-11-08T16:00:00Z',
-    closed: false,
+    closed: true,
     published: true,
     includeNone: true,
     candidates: [
@@ -106,7 +106,7 @@ export const ELECTIONS: Election[] = [
       'The Member House votes on whether to confirm Pablo Moncada-Larrotiz for a second and final term as Executive Lead. The ballot is Pablo or “None of the above”. If “None of the above” wins, the seat stays vacant.',
     opensAt: '2026-10-27T16:00:00Z',
     closesAt: '2026-11-08T16:00:00Z',
-    closed: false,
+    closed: true,
     published: true,
     includeNone: true,
     candidates: [
