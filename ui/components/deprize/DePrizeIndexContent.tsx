@@ -305,7 +305,7 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
       <Head
         title="DePrize"
         description={deprizeOgDescription(
-          'Back a team in open capability races — live odds, growing prize pools, payouts when a winner is declared.'
+          'Predict who reaches each lunar milestone first.'
         )}
       />
       <Container>
