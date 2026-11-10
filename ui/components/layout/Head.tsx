@@ -2,7 +2,12 @@
 import { DEPLOYED_ORIGIN } from 'const/config'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { DEFAULT_OG_IMAGE_PATH, normalizeOgImageUrl } from '@/lib/utils/ogImage'
+import {
+  DEFAULT_OG_IMAGE_PATH,
+  SECTION_OG_IMAGE_SIZE,
+  normalizeOgImageUrl,
+  sectionOgImage,
+} from '@/lib/utils/ogImage'
 
 const defaultTitle = "MoonDAO: The Internet's Space Program"
 const defaultDescription =
@@ -34,7 +39,7 @@ export default function WebsiteHead({
   title = defaultTitle,
   secondaryTitle,
   description = defaultDescription,
-  image = DEFAULT_OG_IMAGE_PATH,
+  image,
   keywords,
   author = 'MoonDAO',
   robots = 'index, follow',
@@ -46,7 +51,14 @@ export default function WebsiteHead({
 }: WebsiteHeadProps) {
   const router = useRouter()
   const canonicalUrl = canonical || `${DEPLOYED_ORIGIN}${router.asPath}`
-  const ogImage = normalizeOgImageUrl(image)
+  // A page's own image wins; otherwise fall back to its section's card
+  // (e.g. every /deprize/* race), then the site-wide default.
+  const sectionImage = image ? undefined : sectionOgImage(router.pathname)
+  const ogImage = normalizeOgImageUrl(image || sectionImage || DEFAULT_OG_IMAGE_PATH)
+  if (sectionImage) {
+    imageWidth = SECTION_OG_IMAGE_SIZE.width
+    imageHeight = SECTION_OG_IMAGE_SIZE.height
+  }
 
   const truncatedDescription =
     description.length > 160 ? description.substring(0, 160) + '...' : description

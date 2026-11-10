@@ -307,9 +307,6 @@ export default function DePrizeIndexContent({ restricted }: DePrizePageProps) {
         description={deprizeOgDescription(
           'Back a team in open capability races — live odds, growing prize pools, payouts when a winner is declared.'
         )}
-        image="/deprize-launch-og.png"
-        imageWidth={1200}
-        imageHeight={630}
       />
       <Container>
         <ContentLayout
