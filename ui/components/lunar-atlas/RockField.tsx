@@ -356,7 +356,7 @@ function Cobbles({ radiusAt, material }: { radiusAt: RadiusAt; material: THREE.M
         // Strewn fields are blockier as well as denser.
         size = Math.min(COBBLE_MAX_M, size * (1 + strewn * 0.8))
         if (onRoad(e, n)) continue
-        if (size > 0.2 && withinDistrictGround(e, n, 2)) continue
+        if (withinDistrictGround(e, n, 2)) continue
         const shape = Math.floor(cellHash(ix, iy, 5) * COBBLE_SHAPES)
         const slot = shape + (size >= 0.2 ? COBBLE_SHAPES : 0)
         const mesh = layer.meshes[slot]
