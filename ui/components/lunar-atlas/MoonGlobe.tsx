@@ -11,10 +11,10 @@
 // The world is still a sphere mathematically — positions are directions
 // scaled by a radius — so all the geo.ts framing math carries over; only the
 // rendered patch is the ridge.
-import { Stars, TrackballControls } from '@react-three/drei'
+import { TrackballControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Bloom, EffectComposer, ToneMapping } from '@react-three/postprocessing'
-import { ToneMappingMode } from 'postprocessing'
+import { Bloom, EffectComposer, Noise, ToneMapping, Vignette } from '@react-three/postprocessing'
+import { BlendFunction, ToneMappingMode } from 'postprocessing'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
@@ -52,7 +52,6 @@ import {
   SUN_LOCAL_ELEV_DEG,
   DESIGN_EXPOSURE,
   exposureFor,
-  screenAnchoredScale,
 } from '@/lib/lunar-atlas/sun'
 import {
   localElevationDeg,
@@ -67,6 +66,7 @@ import { setRegolithSun } from './regolithOcclusion'
 import EarthGlobe from './EarthGlobe'
 import GroundDisturbance from './GroundDisturbance'
 import MarkerLayer, { ColonyLayout, MarkerStyle, siteOpacity } from './MarkerLayer'
+import RockField from './RockField'
 import SkyLayer from './SkyLayer'
 import SouthPoleTerrain from './SouthPoleTerrain'
 import { buildLunarEnvironmentTexture } from './lunarEnvironment'
@@ -414,47 +414,64 @@ function CameraRig({
 // bearing 50°.
 const SUN_DIR = new THREE.Vector3(...SUN_DIR_ARR)
 
-// The shadow-casting light is parked 2 km up the sun vector and aimed at the
-// base, rather than out at the real sun: a directional light's shadow map
-// spans its orthographic frustum, so keeping that frustum tight on the
-// settlement is what buys resolution. 400 m of frustum across a 4096 map is
-// ~10 cm per texel — fine enough for a rover's shadow to read as its own
-// silhouette. Ground outside the frustum is simply unshadowed, which is
-// correct here: the terrain's own large-scale shadows are already baked in.
+// The shadow-casting light is parked 2 km up the sun vector and aimed at
+// whatever the camera is looking at, rather than out at the real sun: a
+// directional light's shadow map spans its orthographic frustum, so keeping
+// that frustum tight on what is in frame is what buys resolution.
+//
+// The frustum FOLLOWS THE CAMERA, and it used to be fixed. A fixed ±400 m box on
+// the colony is 19.5 cm per texel, which is fine from the overview and useless
+// from where this scene is actually judged: standing beside a rover, the shadow
+// that should pin its wheel to the soil was two texels of grey smear, and a
+// half-metre rock had no shadow at all. That missing contact shadow is most of
+// why hardware and rocks read as floating above the ground.
+//
+// So the box is sized to the camera's distance from its subject — SHADOW_REACH
+// times that, between the two limits below. At the overview it is the box it
+// always was; ten metres off a lander it is ±100 m across the same 4096 texels,
+// 4.9 cm each, and a footpad casts a footpad-shaped shadow. Ground outside the
+// box is simply unshadowed, which is the same trade the fixed box made, just
+// moved to where the camera is not looking.
 const SHADOW_LIGHT_DIST = 2000 * M_TO_UNITS
-const SHADOW_EXTENT = 400 * M_TO_UNITS
+const SHADOW_MAP_SIZE = 4096
+const SHADOW_EXTENT_MAX = 400 * M_TO_UNITS
+const SHADOW_EXTENT_MIN = 100 * M_TO_UNITS
+const SHADOW_REACH = 2
+// The box resizes in 19% steps rather than continuously. Every resize re-rasterises
+// every shadow edge against a new texel grid, so a continuously fitted box makes
+// the whole frame's shadows crawl for as long as the camera is dollying.
+const SHADOW_EXTENT_STEP = Math.pow(2, 0.25)
 
 // Lunar shadows are HARD, and this is the arithmetic that says so rather than
 // a preference. The sun subtends 0.533° from the Moon (SUN_ANGULAR_RADIUS_RAD),
 // so a penumbra widens by 2·tan(0.2664°) = 9.3 MILLIMETRES for every metre an
-// occluder stands off what it is shadowing. This shadow map spans 800 m across
-// 4096 texels — 19.5 cm per texel — so even the 52 m Starship casts a penumbra
-// only about a texel wide at its own tip, and everything smaller casts one that
-// is entirely sub-texel.
+// occluder stands off what it is shadowing. This shadow map's texels run from
+// 4.9 cm (close in) to 19.5 cm (the overview), so the 52 m Starship casts a
+// penumbra a texel wide at its own tip from far off and a few texels wide from
+// beside it, and nearly everything smaller casts one that is sub-texel.
 //
 // A PCSS pass (drei's SoftShadows) was the obvious move here and is the wrong
 // one: contact-hardening soft shadows exist to portray a penumbra that this
 // scene, uniquely, does not have. It would only invent softness the Moon has
 // none of, for a real per-frame cost. What the shadow edge actually needs is
 // antialiasing of a hard step, which is what PCFSoftShadowMap does — its fixed
-// filter works out to roughly a texel, i.e. about the penumbra of a 20 m
+// filter works out to roughly a texel, i.e. the penumbra of a 5 to 20 m
 // standoff, so the one place it errs it errs toward the truth.
 const SUN_PENUMBRA_PER_M = 2 * Math.tan(SUN_ANGULAR_RADIUS_RAD)
 
 // Offset along the surface normal to kill shadow acne on the terrain's sloped
 // cells. It buys that at the cost of sliding the shadow laterally by the same
-// distance, and at 0.35 m — nearly two shadow texels — that slide was visible
-// as a gap under every footpad: the classic detached, pasted-on-a-photo look
-// the shadow catcher exists to prevent. 12 cm is still over half a texel of
-// bias, which the 15.6 m polygon pitch of the terrain has ample slope margin
-// for, and it puts contact shadows back against the things casting them.
-const SHADOW_NORMAL_BIAS = 0.12 * M_TO_UNITS
+// distance, so it is quoted in SHADOW TEXELS rather than in metres: acne is a
+// texel-sized artifact, and a bias that does not shrink with the texel leaves a
+// gap under every footpad the moment the map gets sharp enough to show one —
+// the detached, pasted-on-a-photo look the shadows exist to prevent. 0.6 of a
+// texel is what the old fixed 12 cm was against its 19.5 cm texels.
+const SHADOW_NORMAL_BIAS_TEXELS = 0.6
 
-// The ceiling on the grazing-sun scaling above. 60 cm is five times the 44° value and
-// three shadow texels of lateral slide — the point past which a footpad's shadow
-// visibly leaves the footpad, which is the artifact this whole number exists to
-// avoid. See the derivation at its use site.
-const SHADOW_NORMAL_BIAS_MAX = 0.6 * M_TO_UNITS
+// The ceiling on the grazing-sun scaling below, also in texels. Three texels of
+// lateral slide is the point past which a footpad's shadow visibly leaves the
+// footpad. See the derivation at its use site.
+const SHADOW_NORMAL_BIAS_MAX_TEXELS = 3
 
 // The scene's sun, and now genuinely the only one. It shades the installations,
 // casts their shadows, and lights the ground: SouthPoleTerrain evaluates the
@@ -478,6 +495,7 @@ function useResolvedSun(sunPhase?: SunPhase): ResolvedSun {
 }
 
 function Sun({ dir, elevationDeg }: ResolvedSun) {
+  const lightRef = useRef<THREE.DirectionalLight>(null)
   // A directional light aims at its `target` object, which must be in the
   // scene for its world matrix to update.
   const target = useMemo(() => {
@@ -485,15 +503,6 @@ function Sun({ dir, elevationDeg }: ResolvedSun) {
     o.position.copy(HOME_GROUND)
     return o
   }, [])
-
-  const lightPos = useMemo(
-    // Anchored on HOME_GROUND, not the camera's look-at: the target was lifted
-    // 115 m above the deck to frame the base, and hanging the shadow light off
-    // it would tilt every shadow on the ridge to suit the framing. The
-    // DIRECTION is the resolved sun, so the light tracks the scrubber.
-    () => HOME_GROUND.clone().addScaledVector(dir, SHADOW_LIGHT_DIST),
-    [dir]
-  )
 
   // Everything the ground needs from the sun, in one call, because the shading and
   // the skyline test have to be looking at the same sun — a light moved without the
@@ -510,52 +519,136 @@ function Sun({ dir, elevationDeg }: ResolvedSun) {
     gl.toneMappingExposure = exposureFor(elevationDeg)
   }, [dir, elevationDeg, gl])
 
-  // Shadow-map bias, and the one number that genuinely cannot stay fixed across a
-  // sun this low.
+  // Shadow-map bias in texels, and the one number that genuinely cannot stay fixed
+  // across a sun this low.
   //
   // Acne is a depth-quantisation artifact whose size is the light-space texel
   // footprint projected onto the receiver: a ground plane at grazing incidence spans
-  // texel/tan(elevation) of depth within ONE texel, so the same 12 cm that is ample
-  // at 44° is 1/19th of what 2° needs, and the ground stripes itself. Paying it in
-  // full is not an option either — normalBias slides the shadow laterally by exactly
-  // its own value, so metres of it would detach every footpad from its own shadow,
-  // which is the failure this number was tuned down to 12 cm to fix in the first
-  // place.
+  // texel/tan(elevation) of depth within ONE texel, so the bias that is ample at 44°
+  // is 1/19th of what 2° needs, and the ground stripes itself. Paying it in full is
+  // not an option either — normalBias slides the shadow laterally by exactly its own
+  // value, so texels of it detach every footpad from its own shadow.
   //
   // So it is capped, and the cap is the honest half of this: past about 12° the bias
   // needed exceeds what the shadow can afford, and the artifact is accepted rather
   // than traded for peter-panning. It is the right trade here specifically because
   // at those elevations the shadow map is no longer doing the important work — the
   // skyline field is, at terrain scale, and it has no depth buffer to quantise.
-  // ANCHORED at the design sun, like the exposure, and for a sharper reason: the naive
-  // form is bias/sin(elevation), which at 44.46° is bias/0.70 = 1.43x — so writing it
-  // that way would have quietly moved the default scene's shadows 5 cm, undoing the
-  // tuning this constant records. Ratios against the design sun, so the design sun is
-  // exactly 1.0x by construction.
-  const shadowNormalBias = useMemo(() => {
+  // Ratios against the design sun, so the design sun is exactly 1.0x by construction.
+  const biasTexels = useMemo(() => {
     const design = Math.sin((SUN_LOCAL_ELEV_DEG * Math.PI) / 180)
     const graze = Math.max(Math.sin((elevationDeg * Math.PI) / 180), 0.02)
-    return Math.min((SHADOW_NORMAL_BIAS * design) / graze, SHADOW_NORMAL_BIAS_MAX)
+    return Math.min(
+      (SHADOW_NORMAL_BIAS_TEXELS * design) / graze,
+      SHADOW_NORMAL_BIAS_MAX_TEXELS
+    )
   }, [elevationDeg])
+
+  // Two axes square to the sun, fixed for as long as the sun is. The shadow box is
+  // snapped to whole texels along them, so a camera move slides the box across the
+  // ground without re-rasterising any edge that was already drawn.
+  const basis = useMemo(() => {
+    const right = new THREE.Vector3().crossVectors(HOME_UP, dir).normalize()
+    const up = new THREE.Vector3().crossVectors(dir, right).normalize()
+    return { right, up }
+  }, [dir])
+
+  // Camera-relative shadow lookups. See PRECISE_SHADOW_VERTEX_PATCH for the half of
+  // this that lives in the shaders, and for why it exists: a world position here
+  // is a float32 of magnitude 2, which resolves 21 cm, and no shadow map can be
+  // sharper than the coordinates it is looked up with.
+  //
+  // three rebuilds shadow.matrix (world -> shadow clip) inside every render, so the
+  // override has to ride on updateMatrices rather than be written once. Appending a
+  // translation to the camera makes the same matrix accept positions RELATIVE to
+  // the camera; the product is formed in doubles, and what reaches the GPU is a
+  // matrix whose offsets are metres rather than lunar radii.
+  const camera = useThree((s) => s.camera)
+  useEffect(() => {
+    const light = lightRef.current
+    if (!light) return
+    const shadow = light.shadow
+    const base = shadow.updateMatrices
+    const eye = new THREE.Vector3()
+    const shift = new THREE.Matrix4()
+    shadow.updateMatrices = function (l: THREE.Light) {
+      base.call(this, l)
+      eye.setFromMatrixPosition(camera.matrixWorld)
+      this.matrix.multiply(shift.makeTranslation(eye.x, eye.y, eye.z))
+    }
+    return () => {
+      shadow.updateMatrices = base
+    }
+  }, [camera])
+
+  const controls = useThree((s) => s.controls) as { target?: THREE.Vector3 } | null
+  const fit = useRef({ extent: 0, focus: new THREE.Vector3(), centre: new THREE.Vector3() })
+  useFrame(({ camera: cam }) => {
+    const light = lightRef.current
+    if (!light) return
+    const f = fit.current
+    // What the camera is looking at: the trackball's pivot when there is one, and
+    // otherwise the point the same distance down the view axis as the colony is.
+    if (controls?.target) f.focus.copy(controls.target)
+    else {
+      cam.getWorldDirection(f.focus)
+      f.focus.multiplyScalar(cam.position.distanceTo(HOME_GROUND)).add(cam.position)
+    }
+    const want = THREE.MathUtils.clamp(
+      cam.position.distanceTo(f.focus) * SHADOW_REACH,
+      SHADOW_EXTENT_MIN,
+      SHADOW_EXTENT_MAX
+    )
+    // Hysteresis of one step, so a camera hovering on a boundary cannot flip the
+    // box back and forth every frame.
+    if (f.extent === 0 || want > f.extent * SHADOW_EXTENT_STEP || want < f.extent / SHADOW_EXTENT_STEP) {
+      const steps = Math.round(Math.log(want / SHADOW_EXTENT_MAX) / Math.log(SHADOW_EXTENT_STEP))
+      f.extent = THREE.MathUtils.clamp(
+        SHADOW_EXTENT_MAX * Math.pow(SHADOW_EXTENT_STEP, steps),
+        SHADOW_EXTENT_MIN,
+        SHADOW_EXTENT_MAX
+      )
+      const sc = light.shadow.camera
+      sc.left = sc.bottom = -f.extent
+      sc.right = sc.top = f.extent
+      sc.updateProjectionMatrix()
+    }
+    const texel = (2 * f.extent) / SHADOW_MAP_SIZE
+    light.shadow.normalBias = biasTexels * texel
+
+    // Centred on the ground under the focus rather than on the focus itself: the
+    // home framing aims 69 m above the deck, and hanging the box off that would
+    // slide every shadow off the hardware casting it.
+    f.centre
+      .copy(f.focus)
+      .setLength(HOME_GROUND.length())
+    const along = f.centre.dot(dir)
+    const sx = Math.round(f.centre.dot(basis.right) / texel) * texel
+    const sy = Math.round(f.centre.dot(basis.up) / texel) * texel
+    f.centre
+      .set(0, 0, 0)
+      .addScaledVector(basis.right, sx)
+      .addScaledVector(basis.up, sy)
+      .addScaledVector(dir, along)
+    target.position.copy(f.centre)
+    target.updateMatrixWorld()
+    light.position.copy(f.centre).addScaledVector(dir, SHADOW_LIGHT_DIST)
+    light.updateMatrixWorld()
+  })
 
   return (
     <>
       <primitive object={target} />
       <directionalLight
-        position={lightPos}
+        ref={lightRef}
         target={target}
         intensity={SUN_INTENSITY}
         color={SUN_COLOR}
         castShadow
-        shadow-mapSize-width={4096}
-        shadow-mapSize-height={4096}
-        shadow-camera-left={-SHADOW_EXTENT}
-        shadow-camera-right={SHADOW_EXTENT}
-        shadow-camera-top={SHADOW_EXTENT}
-        shadow-camera-bottom={-SHADOW_EXTENT}
+        shadow-mapSize-width={SHADOW_MAP_SIZE}
+        shadow-mapSize-height={SHADOW_MAP_SIZE}
         shadow-camera-near={SHADOW_LIGHT_DIST * 0.6}
         shadow-camera-far={SHADOW_LIGHT_DIST * 1.6}
-        shadow-normalBias={shadowNormalBias}
       />
       {/* No hemisphere light and no ambient light, on purpose.
           
@@ -575,7 +668,7 @@ function Sun({ dir, elevationDeg }: ResolvedSun) {
   )
 }
 
-// The starfield, held at a constant screen brightness for the same reason as the sky.
+// The starfield.
 //
 // Worth saying what the STRICTLY correct answer would be, because this is not it: a
 // camera exposed for sunlit regolith records no stars at all. That is why every Apollo
@@ -585,74 +678,148 @@ function Sun({ dir, elevationDeg }: ResolvedSun) {
 //
 // They are kept because they are load-bearing for something else — this same camera
 // pulls back to orbit, where a starless void reads as a broken render rather than as an
-// airless one. So the conservative choice: hold them exactly where they are today and
-// stop them blowing up. Under true-sun exposure the unanchored version bloomed into
-// fat white blobs, which is worse than either principled answer.
+// airless one. So they are kept at the threshold of visibility, the way a long
+// exposure from the surface would just begin to pick them up, and built to look like
+// a sky rather than like a particle effect:
 //
-// drei's Stars leaves exactly one lever for this. Its material is a ShaderMaterial
-// whose fragment stage writes vec4(vColor, dotFalloff), so material.opacity is inert
-// and vColor — the geometry's colour attribute — is the only thing that reaches the
-// output. Scaled from a pristine copy rather than in place, so repeated scrubbing
-// cannot compound.
-function ScreenAnchoredStars({ elevationDeg }: { elevationDeg: number }) {
-  const group = useRef<THREE.Group>(null)
-  const pristine = useRef<Float32Array | null>(null)
-  const scale = screenAnchoredScale(elevationDeg)
+//   - POINTS, a pixel or two across. The previous field was drei's Stars, whose
+//     sprites scale with distance and came out as several-pixel discs — six
+//     thousand evenly bright dots, which is what a game skybox looks like.
+//   - A MAGNITUDE DISTRIBUTION. Real star counts rise about 2.5x per magnitude, so
+//     for every bright star there are dozens at the limit of sight. Brightness here
+//     is drawn from that law; a handful carry the sky and the rest are dust.
+//   - A galactic plane. A third of the field is concentrated toward one great
+//     circle, because a uniformly random sky has no structure and the real one does.
+//
+// Brightness is authored as a SCREEN value and divided by the exposure, so the stars
+// hold still while the exposure opens up under a low sun (see screenAnchoredScale).
+const STAR_COUNT = 5200
+// Linear screen brightness of the brightest star, after exposure and before the tone
+// curve. Mid-grey is 0.18: the brightest handful sit just above it and the faint
+// majority sit two to five stops below.
+const STAR_PEAK = 0.3
+// Magnitudes spanned, brightest to faintest.
+const STAR_MAG_SPAN = 5.5
+const GALACTIC_POLE = new THREE.Vector3(0.48, 0.62, -0.62).normalize()
 
-  useEffect(() => {
-    let attr: THREE.BufferAttribute | undefined
-    group.current?.traverse((o) => {
-      const g = (o as THREE.Points).geometry
-      const a = g?.getAttribute?.('color')
-      if (a) attr = a as THREE.BufferAttribute
-    })
-    if (!attr) return
-    const dst = attr.array as Float32Array
-    if (!pristine.current || pristine.current.length !== dst.length) {
-      pristine.current = Float32Array.from(dst)
+function buildStarfield(): THREE.BufferGeometry {
+  // Deterministic, so the sky is the same sky on every load.
+  let seed = 20260101
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0
+    return seed / 0x100000000
+  }
+  const positions = new Float32Array(STAR_COUNT * 3)
+  const colors = new Float32Array(STAR_COUNT * 3)
+  const sizes = new Float32Array(STAR_COUNT)
+  const v = new THREE.Vector3()
+  const a = new THREE.Vector3()
+  const b = new THREE.Vector3()
+  // Any two axes square to the galactic pole.
+  a.crossVectors(GALACTIC_POLE, new THREE.Vector3(0, 1, 0)).normalize()
+  b.crossVectors(GALACTIC_POLE, a).normalize()
+  const tint = new THREE.Color()
+  for (let i = 0; i < STAR_COUNT; i++) {
+    if (rand() < 0.36) {
+      // Toward the plane: a Gaussian in galactic latitude, ~9° wide.
+      const lon = rand() * Math.PI * 2
+      const g = Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(rand() * Math.PI * 2)
+      const lat = g * 0.16
+      v.copy(a)
+        .multiplyScalar(Math.cos(lon) * Math.cos(lat))
+        .addScaledVector(b, Math.sin(lon) * Math.cos(lat))
+        .addScaledVector(GALACTIC_POLE, Math.sin(lat))
+    } else {
+      const z = rand() * 2 - 1
+      const t = rand() * Math.PI * 2
+      const r = Math.sqrt(1 - z * z)
+      v.set(r * Math.cos(t), z, r * Math.sin(t))
     }
-    const src = pristine.current
-    for (let i = 0; i < dst.length; i++) dst[i] = src[i] * scale
-    attr.needsUpdate = true
-  }, [scale])
+    v.multiplyScalar(GLOBE_RADIUS * 18)
+    positions.set([v.x, v.y, v.z], i * 3)
 
-  return (
-    <group ref={group}>
-      <Stars
-        radius={GLOBE_RADIUS * 14}
-        depth={GLOBE_RADIUS * 6}
-        count={6000}
-        factor={GLOBE_RADIUS * 0.9}
-        saturation={0}
-        fade
-        speed={0.3}
-      />
-    </group>
-  )
+    // Counts go as 10^(0.4 m): invert that CDF so most stars land at the faint end.
+    const k = Math.pow(10, 0.4 * STAR_MAG_SPAN)
+    const mag = Math.log10(1 + rand() * (k - 1)) / 0.4
+    const flux = Math.pow(10, -0.4 * (STAR_MAG_SPAN - mag))
+    // Star colour by temperature, mostly near white: a few blue-white, a few orange.
+    const temp = rand()
+    if (temp < 0.14) tint.setRGB(0.78, 0.86, 1)
+    else if (temp > 0.86) tint.setRGB(1, 0.84, 0.68)
+    else tint.setRGB(1, 0.97, 0.93)
+    // Brightness beyond what one pixel can carry goes into size instead, as it does
+    // on a sensor: the brightest stars are two pixels across, not brighter pixels.
+    const brightness = Math.pow(flux, 0.8)
+    colors.set([tint.r * brightness, tint.g * brightness, tint.b * brightness], i * 3)
+    sizes[i] = 1 + 1.4 * Math.pow(flux, 0.5)
+  }
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3))
+  geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
+  return geo
 }
 
-// The sky, which on an airless world is simply the absence of one.
-//
-// SKY_COLOR is not black, and that is a deliberate authored choice rather than physics:
-// a hair of blue in the backdrop keeps the frame from reading as a dead region of the
-// page. The catch is that it is authored as a SCREEN value, so it only means what it
-// says at the exposure it was picked under. Under true-sun exposure the unmodified
-// colour came out visibly navy — the most unphysical thing in the whole frame, since
-// the one thing everybody knows about the lunar sky is that it is black.
-//
-// So it is held at a constant screen brightness instead of a constant radiance. At the
-// design sun the scale is exactly 1 and this is the same #03040a it always was.
-const SKY_COLOR = '#03040a'
+const STAR_VERTEX = /* glsl */ `
+attribute float size;
+attribute vec3 color;
+uniform float pixelRatio;
+varying vec3 vColor;
+void main() {
+  vColor = color;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  gl_PointSize = size * pixelRatio;
+}`
 
-function SkyBackdrop({ elevationDeg }: { elevationDeg: number }) {
+const STAR_FRAGMENT = /* glsl */ `
+uniform float gain;
+varying vec3 vColor;
+void main() {
+  // A soft-edged disc, so a star lands on the pixel grid as a star and not a square.
+  float d = length(gl_PointCoord - 0.5) * 2.0;
+  float a = 1.0 - smoothstep(0.35, 1.0, d);
+  gl_FragColor = vec4(vColor * gain * a, 1.0);
+}`
+
+function Starfield({ elevationDeg }: { elevationDeg: number }) {
+  const geometry = useMemo(buildStarfield, [])
+  useEffect(() => () => geometry.dispose(), [geometry])
+  const dpr = useThree((s) => s.viewport.dpr)
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        vertexShader: STAR_VERTEX,
+        fragmentShader: STAR_FRAGMENT,
+        uniforms: { gain: { value: 1 }, pixelRatio: { value: 1 } },
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        transparent: true,
+      }),
+    []
+  )
+  useEffect(() => () => material.dispose(), [material])
+  useEffect(() => {
+    material.uniforms.gain.value = STAR_PEAK / exposureFor(elevationDeg)
+    material.uniforms.pixelRatio.value = dpr
+  }, [material, elevationDeg, dpr])
+  return <points geometry={geometry} material={material} frustumCulled={false} raycast={NO_RAYCAST} />
+}
+
+const NO_RAYCAST = () => {}
+
+// The sky, which on an airless world is simply the absence of one: black, and
+// exactly black. It used to be a very dark blue, authored to keep the frame from
+// reading as a dead region of the page, and any colour at all in the backdrop turns
+// navy as soon as the exposure opens — the most unphysical thing a lunar frame can
+// contain, since the one thing everybody knows about that sky is that it is black.
+function SkyBackdrop() {
   const scene = useThree((s) => s.scene)
   useEffect(() => {
-    const c = new THREE.Color(SKY_COLOR).multiplyScalar(screenAnchoredScale(elevationDeg))
-    scene.background = c
+    scene.background = new THREE.Color(0, 0, 0)
     return () => {
       scene.background = null
     }
-  }, [scene, elevationDeg])
+  }, [scene])
   return null
 }
 
@@ -834,62 +1001,9 @@ export default function MoonGlobe({
         toneMapping: THREE.AgXToneMapping,
         // Read by the effect: three's tonemapping shader chunk declares
         // toneMappingExposure, and the renderer uploads it regardless of which
-        // curve is selected.
-        //
-        // 1.05 was solved, but for a scene that no longer exists, and the
-        // derivation is worth keeping because it explains what this number is
-        // waiting on.
-        //
-        // The terrain used to be unlit, so the only thing between its baked
-        // albedo and the screen was this curve, and that bake was authored to
-        // look right with no curve at all — sunlit regolith sat at sRGB 163,
-        // linear 0.366. AgX at 1.05 lands it on sRGB 163 again, leaving the
-        // ground where its author put it and spending the curve at the two ends:
-        // four stops of headroom above the regolith before anything approaches
-        // white, and a toe that still separates -6 stops from black. That matters
-        // on a world with a 0.5° sun and no atmosphere, where a sunlit panel and
-        // the shadow beside it are three orders of magnitude apart.
-        //
-        // What changed: the ground is now shaded by the regolith BRDF against
-        // this light, so its radiance is derived rather than painted, and it
-        // comes out at 0.021 at the home framing — 4.1 stops BELOW the bake it
-        // replaced. The bake was the thing that was wrong. Sunlit regolith at
-        // 0.12 albedo simply is that dark next to hardware, and the old numbers
-        // say so plainly: a sunlit white panel sat 0.59 stops above the painted
-        // ground and now sits 4.6 stops above the computed one. Six tenths of a
-        // stop of separation between white metal and lunar soil is most of why
-        // this scene kept being described as grey plastic.
-        //
-        // So this is deliberately NOT multiplied by 17 to put the ground back where
-        // the bake had it — that was tried, and it re-graded the whole shipped view.
-        //
-        // The original objection was that exposure is global while half the ground
-        // was unlit materials carrying colours authored as final screen values, so
-        // scaling the curve would blow those to white while doing nothing for the
-        // physics. Most of that is gone now. The road crust, the spoil and the
-        // rubble are lit by the same BRDF as the terrain (see BaseRoads), so they
-        // track exposure exactly as the ground does. The stains no longer carry
-        // absolute values at all — they are multiplicative albedo factors, so they
-        // are exposure-invariant by construction (see GroundDisturbance).
-        //
-        // What is left that would not survive a 17x is the annotation layer: the
-        // marker beacons, pin lines and labels in MarkerLayer. Those are arguably
-        // supposed to hold a fixed screen brightness, being UI drawn into the scene
-        // rather than objects in it, which means the re-anchor is now a decision
-        // about them specifically rather than a scene-wide re-authoring pass.
-        //
-        // RESOLVED: this stays exactly the shipped 1.05 at the design sun, and
-        // exposureFor() in lib/lunar-atlas/sun.ts opens up from it as the sun drops —
-        // but anchored to the HIGHLIGHTS (a slope facing the sun), not to flat ground.
-        //
-        // The distinction was learned the expensive way, twice in one day. Re-anchoring
-        // to put flat ground back at the bake's 0.366 re-graded this entire default
-        // view four stops brighter; and tracking flat ground at all sends the real sun
-        // to 220x, where every sun-facing bump on the patch clips white and grazing
-        // midnight light renders as chalky noon. Exposing for the highlights costs
-        // ~1.6x at the real sun instead, holds the brightest terrain at the same level
-        // under every sun, and lets flat ground fall away dark — which is what grazing
-        // light is. The full argument and both failed policies: sun.ts.
+        // curve is selected. The value, and the argument for it, are in
+        // lib/lunar-atlas/sun.ts: it is a camera setting, chosen for the ground,
+        // and exposureFor() opens up from it as the sun drops.
         toneMappingExposure: DESIGN_EXPOSURE,
         // A LOGARITHMIC depth buffer is the obvious choice for a scene that
         // spans orbit to millimeters, and it was used here, and it was the
@@ -933,15 +1047,17 @@ export default function MoonGlobe({
       }
       onWheel={interactive ? handleWheel : undefined}
     >
-      <SkyBackdrop elevationDeg={sun.elevationDeg} />
+      <SkyBackdrop />
 
       <Sun {...sun} />
       <LunarEnvironment />
       <EarthGlobe />
 
-      <ScreenAnchoredStars elevationDeg={sun.elevationDeg} />
+      <Starfield elevationDeg={sun.elevationDeg} />
 
       <SouthPoleTerrain onReady={onReady} onSurfaceClick={onBackgroundClick} />
+
+      <RockField radiusAt={radiusAt} />
 
       <BaseRoads radiusAt={radiusAt} presence={basePresence} siteOpacity={branchPresence} />
 
@@ -1070,7 +1186,13 @@ export default function MoonGlobe({
           getting the fill right: the regolith environment is bright below and
           black above, so a surface that faces the ground is lit and one that
           faces the sky is not. Orientation now does much of the work that
-          screen-space occlusion would have done by geometry. */}
+          screen-space occlusion would have done by geometry.
+
+          AFTER the tone curve come the two things a lens and a sensor add to any
+          photograph, and whose total absence is one of the ways a render
+          announces itself: a little light fall-off toward the corners, and grain.
+          Both are applied in display space, where a camera applies them, and
+          both are kept at the level where they are felt rather than seen. */}
       <EffectComposer
         // 4 rather than the library's default of 8, and stated rather than
         // inherited because this is now the scene's ONLY edge antialiasing (see
@@ -1105,6 +1227,8 @@ export default function MoonGlobe({
           // clip.
           mode={ToneMappingMode.AGX}
         />
+        <Vignette offset={0.32} darkness={0.42} />
+        <Noise premultiply blendFunction={BlendFunction.SOFT_LIGHT} opacity={0.28} />
       </EffectComposer>
     </Canvas>
   )

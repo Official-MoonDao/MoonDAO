@@ -235,13 +235,26 @@ describe('exposing for the sun that is actually up', () => {
   // HIGHLIGHT_SLOPE_DEG into the sun — and let flat ground fall away dark as the sun
   // drops, because dark is what grazing light is.
 
-  it('reproduces the shipped exposure EXACTLY at the design sun', () => {
-    // Not "close to". The design frame is the shipped scene and it must not move —
-    // this was violated once, by re-anchoring exposure to the old bake's 0.366, which
-    // re-graded the entire default view 4 stops brighter. equal(), so it cannot
-    // happen quietly again.
-    expect(DESIGN_EXPOSURE).to.equal(1.05)
+  it('reproduces the design exposure EXACTLY at the design sun', () => {
+    // Not "close to". The design frame must not move by accident — this was violated
+    // once, by re-anchoring exposure to the old bake's 0.366, which clipped every
+    // sunlit hull. equal(), so a re-grade is a decision and never a side effect.
+    expect(DESIGN_EXPOSURE).to.equal(4.2)
     expect(exposureFor(SUN_LOCAL_ELEV_DEG)).to.equal(DESIGN_EXPOSURE)
+  })
+
+  it('exposes for the ground, with sunlit white hardware still under the clip', () => {
+    // The anchor is a camera setting chosen for the soil, the way the surface
+    // cameras were set: level sunlit regolith within a stop and a half of mid-grey,
+    // and a sunlit white panel (Lambertian, albedo 0.8, square to this sun) still
+    // short of the tone curve's clip. AgX runs out at 2^4.026 scene-linear; a hull
+    // with less than a stop of room under that is a white silhouette.
+    const midGrey = 0.18
+    const agxClip = Math.pow(2, 4.026069)
+    const ground = litGroundRadiance(SUN_INTENSITY, SUN_LOCAL_ELEV_DEG) * DESIGN_EXPOSURE
+    const whitePanel = ((0.8 * SUN_INTENSITY) / Math.PI) * DESIGN_EXPOSURE
+    expect(Math.log2(ground / midGrey)).to.be.within(-1.5, 0)
+    expect(Math.log2(agxClip / whitePanel)).to.be.greaterThan(1)
   })
 
   it('holds the highlights at the same screen brightness under every sun', () => {
