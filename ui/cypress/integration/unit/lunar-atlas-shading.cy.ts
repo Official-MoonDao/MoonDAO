@@ -57,10 +57,13 @@ import {
   SUN_MAP_EL_DEG,
 } from '../../../lib/lunar-atlas/sun'
 import {
+  CRATER_REACH,
   buildDetailSlopeTile,
+  craterProfile,
   detailRmsSlope,
   valueNoise,
 } from '../../../lib/lunar-atlas/detailTile'
+import { buildSurfaceNoise } from '../../../lib/lunar-atlas/surfaceNoise'
 import { DETAIL_OCTAVES } from '../../../lib/lunar-atlas/regolithShader'
 
 const DEG = Math.PI / 180
@@ -717,5 +720,85 @@ describe('sub-resolution detail tile', () => {
       const n = valueNoise(96, 12, rand)
       for (let i = 0; i < n.length; i++) expect(Math.abs(n[i])).to.be.at.most(1)
     })
+  })
+})
+
+describe('crater rims in the detail tile', () => {
+  it('has no cliff at the rim crest', () => {
+    // The floor of each bowl used to end at zero where its apron began at 30% of
+    // the depth, which ringed every crater with a vertical step — drawn under a
+    // raking sun as a hard-edged circle around every crater on the Moon.
+    const eps = 1e-6
+    expect(craterProfile(1 - eps)).to.be.closeTo(craterProfile(1 + eps), 1e-4)
+  })
+
+  it('dies away to nothing at its outer edge, with no crease', () => {
+    const eps = 1e-4
+    expect(craterProfile(CRATER_REACH)).to.equal(0)
+    expect(craterProfile(CRATER_REACH - eps)).to.be.closeTo(0, 1e-6)
+    // Slope reaches zero too: a falloff that ends at an angle shows as a ring.
+    const slope = (craterProfile(CRATER_REACH - eps) - craterProfile(CRATER_REACH - 2 * eps)) / eps
+    expect(Math.abs(slope)).to.be.lessThan(1e-3)
+  })
+
+  it('is a bowl with a raised rim: deepest at the centre, highest at the crest', () => {
+    expect(craterProfile(0)).to.equal(-1)
+    let top = -Infinity
+    let at = 0
+    for (let r = 0; r <= CRATER_REACH; r += 0.01) {
+      const h = craterProfile(r)
+      if (h > top) {
+        top = h
+        at = r
+      }
+    }
+    expect(at).to.be.closeTo(1, 0.011)
+    // Rim height a modest fraction of depth — a degraded crater, not a fresh one.
+    expect(top).to.be.within(0.08, 0.25)
+  })
+})
+
+describe('shared surface noise tile', () => {
+  const size = 128
+  const tile = buildSurfaceNoise(size)
+
+  it('centres every band on one half, so (sample - 0.5) is zero-mean', () => {
+    for (let c = 0; c < 3; c++) {
+      let sum = 0
+      for (let i = 0; i < size * size; i++) sum += tile[i * 4 + c]
+      expect(sum / (size * size) / 255, `channel ${c}`).to.be.closeTo(0.5, 0.03)
+    }
+  })
+
+  it('uses the byte range without sitting on its ends', () => {
+    for (let c = 0; c < 3; c++) {
+      let lo = 255
+      let hi = 0
+      let clipped = 0
+      for (let i = 0; i < size * size; i++) {
+        const v = tile[i * 4 + c]
+        lo = Math.min(lo, v)
+        hi = Math.max(hi, v)
+        if (v === 0 || v === 255) clipped++
+      }
+      expect(hi - lo, `channel ${c} range`).to.be.greaterThan(110)
+      expect(clipped / (size * size), `channel ${c} clipped`).to.be.lessThan(0.02)
+    }
+  })
+
+  it('tiles: the wrap seam is no rougher than the interior', () => {
+    for (let c = 0; c < 3; c++) {
+      let seam = 0
+      let interior = 0
+      for (let y = 0; y < size; y++) {
+        seam += Math.abs(tile[(y * size) * 4 + c] - tile[(y * size + size - 1) * 4 + c])
+        interior += Math.abs(tile[(y * size + 40) * 4 + c] - tile[(y * size + 41) * 4 + c])
+      }
+      expect(seam, `channel ${c}`).to.be.lessThan(interior * 3 + size)
+    }
+  })
+
+  it('is opaque, so a material that reads alpha by accident is unaffected', () => {
+    for (let i = 3; i < tile.length; i += 4) expect(tile[i]).to.equal(255)
   })
 })

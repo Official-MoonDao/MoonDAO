@@ -78,9 +78,8 @@ export const SUN_ANGULAR_RADIUS_RAD = Math.atan(6.957e8 / 1.496e11)
 // grazing light as chalky noon, which is exactly what it looked like.
 //
 // (Tracking flat ground with the anchor ALSO re-solved to put it at the bake's 0.366
-// was the same mistake squared: 17.6x at the design sun re-graded the whole shipped
-// scene 4 stops brighter. Both are reverted; the design frame below is the shipped
-// one, bit for bit.)
+// was the same mistake squared: 17.6x at the design sun clipped every sunlit hull.
+// Both are reverted.)
 //
 // The second wrong answer is no exposure function at all. At a fixed 1.05 the real
 // sun's flat ground lands at sRGB ~7 and the frame dies entirely — the "hole where
@@ -92,7 +91,25 @@ export const SUN_ANGULAR_RADIUS_RAD = Math.atan(6.957e8 / 1.496e11)
 // flat ground falls away below it as the sun drops — dark, which grazing light IS —
 // and shadows go to black, which on an airless world they are. The drama of true-sun
 // mode comes from the geometry: bright rims, kilometre shadows, 57% of the patch dark.
-export const DESIGN_EXPOSURE = 1.05
+//
+// THE ANCHOR ITSELF is a camera setting, and it is set the way the surface cameras
+// were: for the GROUND. Every Apollo surface frame puts sunlit soil in the middle of
+// the scale and lets white hardware ride near the top of it, because the soil is most
+// of the picture. At 1.05 this scene did the reverse — hardware sat mid-scale and the
+// soil it stood on came out at sRGB ~65, a dim brown floor with every shadowed face
+// crushed to black, which read as a night level rather than as daylight on the Moon.
+//
+// 4.2 is two stops up from that. Level soil at the home framing (radiance 0.020)
+// lands a stop under mid-grey; a white panel square-on to the sun (0.79) lands 4.2
+// stops over it, which is 2.3 stops short of where AgX clips — high on the shoulder,
+// with its form still readable; and a shadowed white face, lit only by
+// the regolith around it, comes up out of black to a readable dark grey — which is
+// what it is in the photographs, where the ground is the fill light.
+//
+// It is NOT the 17x that put flat ground back at the old bake's 0.366. That frame
+// clipped every sunlit hull; this one is anchored to what the ground should read as
+// and checked against what the hardware then does.
+export const DESIGN_EXPOSURE = 4.2
 
 // The reference highlight: how far a "bright" slope leans into the sun. 25° is a
 // common steep-but-stable slope on this patch (repose for regolith is ~30-35°), so at
@@ -112,8 +129,8 @@ function highlightRadiance(elevationDeg: number): number {
   return litGroundRadiance(SUN_INTENSITY, Math.min(90, e + HIGHLIGHT_SLOPE_DEG))
 }
 
-// Anchored so the DESIGN sun comes out at exactly the 1.05 the scene shipped with —
-// the design frame does not move, at all, and there is an exact-equality test on it.
+// Anchored so the DESIGN sun comes out at exactly DESIGN_EXPOSURE, with an
+// exact-equality test on it: the design frame is re-graded on purpose or not at all.
 const HIGHLIGHT_ANCHOR = DESIGN_EXPOSURE * highlightRadiance(SUN_LOCAL_ELEV_DEG)
 
 export function exposureFor(elevationDeg: number): number {
@@ -127,9 +144,10 @@ export function exposureFor(elevationDeg: number): number {
 // constant means dividing by it. Exactly 1 at the design sun, so the shipped frame
 // is untouched.
 //
-// The class this fixes first showed up as a NAVY SKY: #03040a reads as black at 1.05
-// and as visible blue a few stops up, and the one thing everybody knows about the
-// lunar sky is that it is black.
+// The class this fixes first showed up as a NAVY SKY: a near-black backdrop colour
+// reads as black at one exposure and as visible blue a few stops up, and the one
+// thing everybody knows about the lunar sky is that it is black. The backdrop is
+// now true black, which no exposure can lift; the starfield still needs this.
 export function screenAnchoredScale(elevationDeg: number): number {
   return DESIGN_EXPOSURE / exposureFor(elevationDeg)
 }

@@ -79,6 +79,7 @@ import {
   applyShaderPatches,
 } from '@/lib/lunar-atlas/regolithShader'
 import { bindOcclusionUniforms } from './regolithOcclusion'
+import { makeRockMaterial, rockGeometry as rubbleGeometry } from './rocks'
 import { capOffsetLatLon, M_TO_UNITS } from '@/lib/lunar-atlas/southpole'
 import type { ProjectType } from '@/lib/lunar-atlas/types'
 import { MODEL_PRESENCE } from './MarkerLayer'
@@ -124,26 +125,36 @@ function gradedRegolithShader(shader: THREE.WebGLProgramParametersWithUniforms) 
 //
 // Bumped when the patches change shape, since a cached program from a previous
 // version would otherwise survive a hot reload and render without the new lookup.
-const GRADED_CACHE_KEY = () => 'regolith-graded-v2'
+const GRADED_CACHE_KEY = () => 'regolith-graded-v3'
 
-// Multiplied against the surface texture. The sintered crust runs a LITTLE
-// lighter than the regolith it was fused from — and "a little" was re-learned
-// the hard way: the first tones sat far enough above the terrain that every
-// road read as a pale ribbon PAINTED on the plan, which is the exact failure
-// this module's header promises to avoid. Sintering fuses the same dust that is
-// lying everywhere else; it changes texture far more than it changes colour. So
-// the value gap to the surrounding regolith is kept to a few percent and the
-// road's identity is carried by what this module already does well — the
-// smoothness contrast, the ruts, and the windrows.
-const BED = new THREE.Color('#a19d94')
-const TRACK = new THREE.Color('#918d85')
-const RUBBLE = new THREE.Color('#8b8781')
-const SPOIL = new THREE.Color('#94908a')
+// Multiplied against the surface texture, and against the SAME single-scattering
+// albedo the terrain shades with — so 1.0 here is exactly the tone of undisturbed
+// soil, and these are how far each worked surface departs from it.
+//
+// They depart by very little, and that was re-learned the hard way twice. The
+// first tones sat far enough ABOVE the terrain that every road read as a pale
+// ribbon painted on the plan. The second set were authored against a baked
+// hillshade and kept when the ground became a lit Hapke surface with a near-white
+// tint, which left them at about a third of the soil's brightness: every road a
+// black stripe ruled across the regolith, the single most drawn-looking thing on
+// the base.
+//
+// What the photographs show is narrower than either. Compacted and sintered
+// regolith is somewhat DARKER than loose soil (compaction collapses the porous
+// surface layer that makes undisturbed regolith backscatter; every rover track
+// and bootprint in the Apollo record is a darker line), by ten to twenty-five
+// percent. Freshly turned spoil is nearly the soil's own tone. So the road's
+// identity is carried mostly by what this module already does well — the
+// smoothness contrast, the ruts, and the windrows — and only a little by value.
+const BED = new THREE.Color('#e4e0d7')
+const TRACK = new THREE.Color('#d5d1c9')
+const RUBBLE = new THREE.Color('#ebe7df')
+const SPOIL = new THREE.Color('#f1ede5')
 // The blade's cut line is scuffed crust rather than tipped rock, so it sits
 // nearer the bed than the heap does. Keeping the dark tone to the heap PROPER is
 // what stops the shoulder reading as a wide dark band ruled down each side of
 // the road, which is half of what makes a road look drawn rather than built.
-const SCUFF = new THREE.Color('#99958d')
+const SCUFF = new THREE.Color('#ece8e0')
 
 type Lane = {
   off: number
@@ -739,16 +750,15 @@ function buildStreet(
         }
         // Seated on the lowest surface across its footprint, so a rock on the
         // windrow's steep flank is buried on the uphill side rather than
-        // overhanging the downhill one, then sunk a little further: tumbled
-        // to a random orientation, its lowest point can sit as little as
-        // ~0.18 of its size below its centre.
+        // overhanging the downhill one. The shape's own origin is its ground
+        // line (see rocks.ts), so no further sinking is needed.
         const reach = sizeM * 0.5
         const ground = Math.min(
           surfaceAt(off - reach),
           surfaceAt(off),
           surfaceAt(off + reach)
         )
-        const rise = ground + sizeM * 0.08
+        const rise = ground
         rocks.push({
           pos: base
             .addScaledVector(sides[i], off * M_TO_UNITS)
@@ -763,31 +773,6 @@ function buildStreet(
   return { geometry: finish(positions, colors, uvs, index), origin, rocks }
 }
 
-// The base shape every boulder is an instance of. A subdivided icosahedron
-// pushed about by noise and flat-shaded, rather than the bare solid: broken
-// rock has faces of wildly different sizes, and twenty identical equilateral
-// ones read as dice however they are rotated. One geometry for the whole base,
-// because per-instance rotation and a non-uniform squash are what carry the
-// variety from there.
-function makeRockGeometry() {
-  const geo = new THREE.IcosahedronGeometry(0.5, 1)
-  const pos = geo.getAttribute('position') as THREE.BufferAttribute
-  const v = new THREE.Vector3()
-  for (let i = 0; i < pos.count; i++) {
-    v.fromBufferAttribute(pos, i)
-    const n = v.clone().normalize()
-    const bump =
-      0.72 +
-      0.34 * hash(n.x * 31.7 + n.y * 57.1 + n.z * 93.3) +
-      0.14 * hash(n.x * 113.9 + n.y * 71.3 + n.z * 17.7)
-    v.multiplyScalar(bump)
-    pos.setXYZ(i, v.x, v.y, v.z)
-  }
-  pos.needsUpdate = true
-  geo.computeVertexNormals()
-  return geo
-}
-
 // One draw call for a road's boulders. Instance transforms live in a float32
 // buffer, so they are stored relative to the road's origin for the same reason
 // its vertices are.
@@ -796,50 +781,42 @@ function buildRubble(
   origin: THREE.Vector3,
   geo: THREE.BufferGeometry
 ) {
-  // Dust-coated rock rather than dust, but on this world that distinction does
-  // not survive contact with reality: every exposed surface is mantled in the
-  // same regolith, and a boulder shaded Lambertian beside Hapke ground reads as a
-  // polystyrene prop.
-  const mat = new THREE.MeshStandardMaterial({
-    roughness: 1,
-    metalness: 0,
-    flatShading: true,
-  })
-  mat.onBeforeCompile = gradedRegolithShader
-  mat.customProgramCacheKey = GRADED_CACHE_KEY
+  // The same rock, in the same material, as the native field around the base
+  // (see rocks.ts) — a windrow is that rock, pushed aside by a blade.
+  const mat = makeRockMaterial()
   const mesh = new THREE.InstancedMesh(geo, mat, rocks.length)
   const m = new THREE.Matrix4()
   const q = new THREE.Quaternion()
+  const lean = new THREE.Quaternion()
+  // One "up" for the whole road: the local vertical turns by 0.03° over a
+  // kilometre, which is nothing against a rock's own lean.
+  const upright = new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 1, 0),
+    origin.clone().normalize()
+  )
   const e = new THREE.Euler()
   const s = new THREE.Vector3()
   const p = new THREE.Vector3()
   const tint = new THREE.Color()
   rocks.forEach((rock, i) => {
     const size = rock.sizeM * M_TO_UNITS
-    e.set(
-      hash(i * 1.3) * Math.PI * 2,
-      hash(i * 2.7) * Math.PI * 2,
-      hash(i * 5.1) * Math.PI * 2
-    )
-    q.setFromEuler(e)
+    // Any heading, and a lean, but base down: the shapes are modelled part
+    // buried, and tumbling one end over end stands its buried face in the air.
+    e.set((hash(i * 1.3) - 0.5) * 0.7, hash(i * 2.7) * Math.PI * 2, (hash(i * 5.1) - 0.5) * 0.7, 'YXZ')
+    q.copy(upright).multiply(lean.setFromEuler(e))
     // Squashed a little, so they read as broken slabs rather than marbles.
-    s.set(
-      size,
-      size * (0.5 + hash(i * 9.4) * 0.42),
-      size * (0.74 + hash(i * 3.3) * 0.5)
-    )
+    s.set(size, size * (0.75 + hash(i * 9.4) * 0.45), size * (0.8 + hash(i * 3.3) * 0.4))
     p.copy(rock.pos).sub(origin)
     mesh.setMatrixAt(i, m.compose(p, q, s))
-    // The big ones run darker: a boulder is freshly broken rock with real
-    // shadow on it, where the gravel is half-buried in the bright fines it is
-    // lying in and takes their tone.
+    // Rock to rock the tone varies; the gravel is half-buried in the fines it
+    // is lying in and takes a little of their brightness.
     const buried = 1 - THREE.MathUtils.clamp(rock.sizeM / ROCK_MAX_M, 0, 1)
-    const v = 0.38 + rock.tone * 0.14 + buried * 0.1
-    mesh.setColorAt(i, tint.setRGB(v, v * 0.985, v * 0.95))
+    const v = 0.78 + rock.tone * 0.2 + buried * 0.08
+    mesh.setColorAt(i, tint.setRGB(v, v * 0.985, v * 0.955))
   })
   mesh.instanceMatrix.needsUpdate = true
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
-  mesh.castShadow = false
+  mesh.castShadow = true
   mesh.receiveShadow = true
   mesh.raycast = NO_RAYCAST
   return mesh
@@ -936,7 +913,7 @@ export default function BaseRoads({
     // the geometry: a road cannot be built until it knows where it is met.
     const lines = BASE_STREETS.map(centreline)
     const junctions = findJunctions(lines)
-    const rockGeometry = makeRockGeometry()
+    const rockGeometry = rubbleGeometry(1, 2)
 
     BASE_STREETS.forEach((street, i) => {
       const line = lines[i]
@@ -963,9 +940,6 @@ export default function BaseRoads({
         ;(p.rubble?.material as THREE.Material | undefined)?.dispose()
         p.rubble?.dispose()
       })
-      // Shared across every road, so it is disposed once here rather than with
-      // whichever piece happens to be torn down first.
-      pieces.rockGeometry?.dispose()
     },
     [pieces]
   )
