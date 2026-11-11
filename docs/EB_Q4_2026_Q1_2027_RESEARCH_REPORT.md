@@ -307,7 +307,7 @@ The main manual gaps are social posting, where an X contractor role is open at $
 | Revenue and flows | Etherscan v2 (`txlistinternal`, `txlist`, `tokentx`) for the treasuries, the EB Safe, and the payout Safe; LI.FI `/v1/status` for bridge legs |
 | Salary escrows | `start_time` and `end_time` on the four `Simple Vesting Escrow` clones |
 | Network | `totalSupply()` on the Citizen and Team NFTs; Tableland Citizen, Team, Jobs, Marketplace, Votes, and NonProjectProposal tables |
-| Frank | JB terminal store `balanceOf(…, 73, ETH)`; `lib/overview-path-vote/closed-snapshot.json`; `options.ts`; `frank-reopen-*.md` |
+| Frank | JB terminal store `balanceOf(…, 73, ETH)`; `lib/overview-path-vote/closed-snapshot.json`; `options.ts`; `docs/plans/frank-reopen-*.md` |
 | DePrize and Moon Base Zero | `docs/DEPRIZE*.md`, `ui/docs/MOONBASE_MODEL_HANDOFF.md`, `ui/docs/ACCESS_GATE.md`, `lib/lunar-atlas/seed/atlas.dataset.json` |
 | Budgets and rules | `ui/const/executiveFinance.ts`, `PROJECT_CYCLE` in `ui/const/config.ts`, `ui/docs/Q4_2026_CYCLE_OPEN_CHECKLIST.md` |
 | Activity | `git log origin/main --since=2026-05-01` |

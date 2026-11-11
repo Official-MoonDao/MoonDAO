@@ -6,7 +6,7 @@ import TestnetProviders from '../../mock/TestnetProviders'
  *
  * These tests verify that the header UI correctly adapts to different mission
  * stages — particularly stage 3 (refundable) and stage 4 (closed). This
- * validates the UI changes described in MANUAL_REFUNDS_SUMMARY.md:
+ * validates the UI changes described in docs/plans/manual-refunds-summary.md:
  *   - Stage 3 shows "REFUND" status and "Status" label
  *   - Stage 3 hides the Tokens/Payouts manager buttons
  *   - Stage 4 shows the closed date
@@ -198,7 +198,7 @@ describe('MissionProfileHeader — Refund stage behavior', () => {
     it('should hide Tokens/Payouts manager buttons when isManager=true', () => {
       // When stage 3 and deadlinePassed, manager buttons appear but are
       // functionally disabled (the component renders them when deadline
-      // has passed). The key behavior verified by the MANUAL_REFUNDS_SUMMARY
+      // has passed). The key behavior verified by the docs/plans/manual-refunds-summary.md
       // is that the MissionProfileHeader hides Tokens/Payouts when stage===3
       // from MissionProfile. This is enforced via the contributeButton prop
       // and the MissionProfile code that conditionally passes these props.
