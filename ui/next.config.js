@@ -243,12 +243,9 @@ module.exports = withBundleAnalyzer(
             destination: '/moonbase',
             statusCode: 301,
           },
-          // Campaign shorthand for the first Arbitrum DePrize race.
-          {
-            source: '/touchdown',
-            destination: '/deprize/arb/1',
-            statusCode: 301,
-          },
+          // /touchdown used to 301 to the first Arbitrum DePrize race. It is
+          // now the Touchdown game (pages/touchdown.tsx), which links on to
+          // that race from its result screen.
           {
             source: '/twitter',
             destination: 'https://twitter.com/OfficialMoonDAO',
