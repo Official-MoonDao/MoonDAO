@@ -202,7 +202,7 @@ export function ExpandedFooter({
                 same `NAV_GROUPS` the bar reads. These columns used to be six
                 hand-written arrays kept in sync by hand, and they had drifted:
                 "Create a Team" pointed somewhere else than it did in the bar,
-                and Moon Base Zero and DePrize had no columns at all.
+                and two sections had no columns at all.
 
                 The footer is also where the long tail lives. Each group's
                 `footerOnly` entries — templates, archives, reference pages —
@@ -261,6 +261,10 @@ export function ExpandedFooter({
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-gray-400 mb-4">
                 <Link href="/docs" className="hover:text-white transition-colors">
                   Documentation
+                </Link>
+                <span className="text-gray-600">•</span>
+                <Link href="/support" className="hover:text-white transition-colors">
+                  Support
                 </Link>
                 <span className="text-gray-600">•</span>
                 <Link
