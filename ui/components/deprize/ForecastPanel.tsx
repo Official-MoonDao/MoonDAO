@@ -40,6 +40,7 @@ import {
   type RosterOverlay,
 } from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
+import { forecastGasErrorMessage, requestForecastGas } from '@/lib/forecasts/sponsorForecastGas'
 import { useForecastWriter } from '@/lib/forecasts/useForecastWriter'
 import { forecastRosterKey, useGuestForecastHandoff } from '@/lib/forecasts/useGuestForecastHandoff'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
@@ -322,7 +323,7 @@ export default function ForecastPanel(props: {
     index: number,
     options?: { silent?: boolean; from?: typeof writer }
   ): Promise<boolean> {
-    const from = options?.from ?? writer
+    let from = options?.from ?? writer
     if (!from) return false
     if (!forecastsContract || !forecastsTableName) {
       setError('Predictions are not available on this network yet.')
@@ -338,28 +339,22 @@ export default function ForecastPanel(props: {
     const allocation = allocationForPick(index, n)
     try {
       toast.loading('Covering gas…', { id: 'forecast-gas', style: toastStyle })
-      const accessToken = await getAccessToken().catch(() => null)
-      const sponsorRes = await fetch('/api/deprize/sponsor-forecast-gas', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        },
-        body: JSON.stringify({
-          wallet: from.address,
-          chainId: chain.id,
-          deprizeId,
-        }),
+      const gas = await requestForecastGas({
+        writer: from,
+        chainId: chain.id,
+        deprizeId,
+        canRenewGuest: !account,
+        getToken: getAccessToken,
+        renewGuest: forecastWriter.renewGuestWriter,
       })
-      const sponsor = await sponsorRes.json().catch(() => ({}))
       toast.dismiss('forecast-gas')
-      if (!sponsorRes.ok) {
+      if (gas.writer !== from) {
+        from = gas.writer
+        started.address = from.address.toLowerCase()
+      }
+      if (!gas.reply.ok) {
         if (sameForecastSession(sessionRef.current, started)) {
-          setError(
-            typeof sponsor?.message === 'string'
-              ? sponsor.message
-              : 'Could not cover gas for this prediction.'
-          )
+          setError(forecastGasErrorMessage(gas.reply))
         }
         return false
       }
