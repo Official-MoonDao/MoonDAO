@@ -1298,8 +1298,8 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     const alt = altitudeAGL(sim)
     if (this.altMarks.length && alt < this.altMarks[0]) {
       const mark = this.altMarks.shift()!
-      if (mark >= 50) this.say(`${mark} metres.`, 'info')
-      else this.say(`${mark} metres. Easy does it.`, 'info')
+      if (mark >= 50) this.say(`${mark} meters.`, 'info')
+      else this.say(`${mark} meters. Easy does it.`, 'info')
     }
     if (!this.baseCalled && sim.t > 6) {
       this.baseCalled = true

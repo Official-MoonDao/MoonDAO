@@ -65,15 +65,15 @@ const HARD = [
 ]
 
 const LANDED_FAR = [
-  'A perfect landing, in the wrong postcode.',
-  'Soft, level and nowhere near the pad.',
+  'A perfect landing, in the wrong zip code.',
+  'Soft, level and nowhere near the target.',
   'Great landing. The rover has a long drive ahead.',
   'You landed on the Moon. The target was also on the Moon. Different part.',
-  'Lovely touchdown. Shame about the navigation.',
+  'Beautiful touchdown. Too bad about the navigation.',
 ]
 
 const LANDED = [
-  'Touchdown. Upright, soft and on the pad.',
+  'Touchdown. Upright, soft and on target.',
   'Tranquility Base would be proud.',
   'Clean landing. Mission control is breathing again.',
   'Feet down, engine off, science on.',
@@ -85,10 +85,10 @@ const LANDED = [
 
 const BULLSEYE = [
   'Bullseye. You could have landed on a picnic blanket.',
-  'Dead centre. The pad designers feel seen.',
+  'Dead center. Whoever painted that target feels seen.',
   'Pinpoint. Precision-landing engineers everywhere nod in respect.',
   'Right on the X. Somebody get this pilot a real lander.',
-  'Inside five metres. That is a parking job.',
+  'Inside the inner circle. That is a parking job.',
 ]
 
 function pick<T>(list: T[], salt: number): T {
