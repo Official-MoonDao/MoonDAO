@@ -6,8 +6,9 @@
  *   <prefix>:n:<mission>:<mode>   hash         name key -> display name
  *   <prefix>:a:<mission>:<mode>   hash         name key -> attempts
  *
- * Boards expire after three weeks. Development and production use different
- * prefixes, so local testing never writes to the live board.
+ * Boards expire after three weeks. Only the production deployment uses the
+ * live prefix (see isLiveBoard), so local and preview testing never writes to
+ * the live board.
  */
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
@@ -23,8 +24,18 @@ export function leaderboardRedis(env: Record<string, string | undefined> = proce
   return new Redis({ url, token })
 }
 
+/**
+ * Only the production deployment writes to the live board. Local development
+ * and preview deployments share a separate one, even when they are pointed at
+ * mainnet (which local .env files often are).
+ */
+export function isLiveBoard(env: Record<string, string | undefined> = process.env): boolean {
+  if (env.VERCEL_ENV) return env.VERCEL_ENV === 'production'
+  return env.NODE_ENV === 'production' && env.NEXT_PUBLIC_CHAIN === 'mainnet'
+}
+
 function prefix(env: Record<string, string | undefined> = process.env): string {
-  return `touchdown:lb:${env.NEXT_PUBLIC_CHAIN === 'mainnet' ? 'prod' : 'dev'}`
+  return `touchdown:lb:${isLiveBoard(env) ? 'prod' : 'dev'}`
 }
 
 function keys(mission: number, mode: ModeId) {
