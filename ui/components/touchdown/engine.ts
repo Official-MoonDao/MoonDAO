@@ -744,25 +744,18 @@ diffuseColor *= sampledDiffuseColor;`
     earth.name = 'earth'
     earth.position.copy(earthPos)
     earth.rotation.set(0.35, 2.2, 0.2)
-    // Atmosphere: a soft blue halo behind the disc.
-    const halo = new THREE.Sprite(
-      this.track(
-        new THREE.SpriteMaterial({
-          map: this.glowTexture([
-            [0, 'rgba(110,170,255,0)'],
-            [0.74, 'rgba(110,170,255,0)'],
-            [0.8, 'rgba(120,180,255,0.6)'],
-            [1, 'rgba(60,110,255,0)'],
-          ]),
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-          toneMapped: false,
-        })
+    // Atmosphere: a blue rim that brightens toward the limb, done inside the
+    // globe's own shader. One surface, so nothing to misalign or flicker.
+    const earthMat = earth.material as THREE.MeshStandardMaterial
+    earthMat.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+float earthRim = 1.0 - clamp(dot(normalize(vViewPosition), normal), 0.0, 1.0);
+totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow(earthRim, 7.0) * 1.6);`
       )
-    )
-    halo.position.copy(earthPos).multiplyScalar(1.01)
-    halo.scale.setScalar(er * 2.5)
-    this.skyGroup.add(halo, earth)
+    }
+    this.skyGroup.add(earth)
 
     // The sun: a hot disc with glare, sitting just above the horizon.
     const [sx, sy, sz] = this.terrain.sunDir
@@ -787,7 +780,7 @@ diffuseColor *= sampledDiffuseColor;`
     glare.scale.setScalar(34000)
     const disc = new THREE.Mesh(
       this.track(new THREE.CircleGeometry(900, 32)),
-      this.track(new THREE.MeshBasicMaterial({ color: new THREE.Color(30, 28, 24), toneMapped: false }))
+      this.track(new THREE.MeshBasicMaterial({ color: new THREE.Color(30, 28, 24), toneMapped: false, depthWrite: false }))
     )
     disc.position.copy(sunPos)
     disc.lookAt(0, 0, 0)

@@ -23,7 +23,10 @@
 import { TIPPED_TILT_DEG, type ModeId } from './modes'
 import { distanceToTarget, tiltDeg, type Outcome, type Sim } from './physics'
 
+/** Radius of the green ring. Centre inside it: full bullseye points. */
 export const BULLSEYE_M = 5
+/** Centre this far out, no footpad is in the ring any more: zero bullseye points. */
+export const BULLSEYE_OUTER_M = BULLSEYE_M + 2.7
 export const ACCURACY_RANGE_M = 90
 export const BASE_DAMAGE_PENALTY = 150
 export const BASE_DAMAGE_MAX = 10
@@ -87,7 +90,7 @@ export function scoreFlight(sim: Sim): FlightResult {
     const v = sim.touchdownSpeed
     parts.softness = Math.round(400 * clamp01((sim.mode.legCollapseSpeed - v) / (sim.mode.legCollapseSpeed - 1)))
     parts.accuracy = Math.round(400 * clamp01(1 - distance / ACCURACY_RANGE_M) ** 1.5)
-    parts.bullseye = distance < BULLSEYE_M ? 150 : 0
+    parts.bullseye = Math.round(150 * clamp01((BULLSEYE_OUTER_M - distance) / (BULLSEYE_OUTER_M - BULLSEYE_M)))
     parts.fuel = Math.round(200 * clamp01(fuelLeft))
     parts.level = Math.round(100 * clamp01(1 - tilt / TIPPED_TILT_DEG))
     const sum = parts.softness + parts.accuracy + parts.bullseye + parts.fuel + parts.level

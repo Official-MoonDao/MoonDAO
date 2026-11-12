@@ -220,6 +220,15 @@ export class TouchdownAudio {
     notes.forEach((n, i) => this.beep(n, i === 3 ? 0.7 : 0.26, 'sawtooth', 0.045, i * 0.26))
   }
 
+  /** Tab hidden: silence everything (the render loop that would stop the engine sound is paused too). */
+  suspend() {
+    if (this.ctx && this.ctx.state === 'running') void this.ctx.suspend()
+  }
+
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') void this.ctx.resume()
+  }
+
   dispose() {
     try {
       void this.ctx?.close()

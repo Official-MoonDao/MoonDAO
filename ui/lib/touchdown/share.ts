@@ -294,15 +294,24 @@ export async function shareCard(args: {
     }
   }
   if (blob && typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
-    // Open the composer first: a popup opened after an await is blocked.
-    const popup = window.open(xIntentUrl(text, url), '_blank', 'noopener')
+    // Start the clipboard write while this page still has focus, THEN open the
+    // composer (both inside the click; a popup opened after an await is
+    // blocked, and a write started after the new tab takes focus is refused).
+    let write: Promise<void>
     try {
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      write = navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+    } catch {
+      write = Promise.reject(new Error('clipboard unavailable'))
+    }
+    window.open(xIntentUrl(text, url), '_blank', 'noopener')
+    try {
+      await write
       return 'clipboard'
     } catch {
-      if (popup === null) return 'fallback'
       return 'fallback'
     }
   }
+  // No image to attach (it failed to render): still open the composer with the text.
+  if (!blob) window.open(xIntentUrl(text, url), '_blank', 'noopener')
   return 'fallback'
 }

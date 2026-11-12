@@ -87,7 +87,9 @@ function ModeToggle({ mode, onChange }: { mode: ModeId; onChange: (m: ModeId) =>
   )
 }
 
-export default function TouchdownGame({ challenge }: { challenge: Challenge | null }) {
+export default function TouchdownGame({ challenge: linked }: { challenge: Challenge | null }) {
+  // A challenge link may replay an earlier day's map, never preview a future one.
+  const [challenge] = useState(() => (linked && linked.mission <= missionNumberFor() ? linked : null))
   const router = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -280,7 +282,9 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
           { mobile: coarse || window.innerWidth < 760 }
         )
         engineRef.current = engine
-        engine.autopilot = new URLSearchParams(window.location.search).get('autopilot') === '1'
+        engine.autopilot =
+          process.env.NODE_ENV !== 'production' &&
+          new URLSearchParams(window.location.search).get('autopilot') === '1'
         if (engine.autopilot) (window as any).__touchdown = engine
         engine.prepare(MODES[prefs.mode], lateralOffsetFor(seed))
         engine.run()
@@ -300,6 +304,14 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
       engineRef.current?.dispose()
       engineRef.current = null
       audio.dispose()
+      setCardUrl((old) => {
+        if (old) URL.revokeObjectURL(old)
+        return null
+      })
+      setPhotoUrl((old) => {
+        if (old) URL.revokeObjectURL(old)
+        return null
+      })
     }
     // Boot once per mission; handlers are stable refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -318,8 +330,16 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
       setCallout(null)
       setShowCard(false)
       setLeaving(false)
-      setPhotoUrl(null)
+      blobRef.current = null
       frameRef.current = null
+      setCardUrl((old) => {
+        if (old) URL.revokeObjectURL(old)
+        return null
+      })
+      setPhotoUrl((old) => {
+        if (old) URL.revokeObjectURL(old)
+        return null
+      })
       setScreen('flying')
       trackTouchdown(retry ? 'touchdown_retry' : 'touchdown_start', { mode: m, mission })
       if (retry) trackTouchdown('touchdown_start', { mode: m, mission })
@@ -471,7 +491,15 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
     const set = (e: KeyboardEvent, down: boolean) => {
       const el = e.target as HTMLElement | null
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
-      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (down && (e.metaKey || e.ctrlKey || e.altKey)) return
+      if (
+        el &&
+        (el.tagName === 'BUTTON' || el.tagName === 'A') &&
+        screenRef.current !== 'flying' &&
+        (e.code === 'Space' || e.code === 'Enter')
+      ) {
+        return
+      }
       const k = keys.current
       let handled = true
       switch (e.code) {
@@ -629,6 +657,31 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
     touch.current.burn = true
     pushInput()
   }
+  // The stick and BURN unmount when a flight ends. If a thumb was still down,
+  // its pointer-up never arrives, so clear the touch state whenever we are not
+  // flying. Also silence and clear input when the tab is hidden.
+  useEffect(() => {
+    if (screen === 'flying') return
+    stickOrigin.current = null
+    touch.current = { x: 0, y: 0, burn: false }
+    pushInput()
+  }, [screen, pushInput])
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) {
+        keys.current = { left: false, right: false, up: false, down: false, burn: false }
+        touch.current = { x: 0, y: 0, burn: false }
+        stickOrigin.current = null
+        pushInput()
+        audioRef.current?.suspend()
+      } else {
+        audioRef.current?.resume()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [pushInput])
+
   const burnUp = () => {
     touch.current.burn = false
     pushInput()
@@ -691,7 +744,7 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
           <div className="flex items-baseline justify-between text-[10px] tracking-widest text-white/55">
             <span>FUEL</span>
             <span ref={fuelTextRef} className="text-xs text-white">
-              75 s
+              {MODES[mode].fuelSeconds} s
             </span>
           </div>
           <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/15">

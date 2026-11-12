@@ -255,17 +255,20 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
     const pvz = s.vz + (s.wx * ry - s.wy * rx)
     const vn = pvx * contact.nx + pvy * contact.ny + pvz * contact.nz
 
+    if (contact.structure >= 0 && !s.structureHit[contact.structure]) {
+      s.structureHit[contact.structure] = 1
+      s.baseDamage++
+      s.events.push({ type: 'structure', speed: Math.max(0, -vn) })
+    }
     if (!s.inContact[i]) {
       s.inContact[i] = 1
       const impact = -vn
-      if (contact.structure >= 0 && !s.structureHit[contact.structure]) {
-        s.structureHit[contact.structure] = 1
-        s.baseDamage++
-        s.events.push({ type: 'structure', speed: Math.max(0, impact) })
-      }
+      // "Touchdown speed" is the hardest arrival of the flight, not just the
+      // first brush: a gentle touch followed by a hop and a slam is not soft.
+      const arrival = Math.hypot(s.vx, s.vy, s.vz)
+      if (arrival > s.touchdownSpeed) s.touchdownSpeed = arrival
       if (s.firstContactT < 0) {
         s.firstContactT = s.t
-        s.touchdownSpeed = Math.hypot(s.vx, s.vy, s.vz)
         s.touchdownVertical = -s.vy
         s.events.push({ type: 'contact', speed: s.touchdownSpeed })
       }
@@ -421,7 +424,8 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
       s.restTimer = 0
       s.airTimer += dt
     }
-    if (s.restTimer > 0.8 || s.t - s.firstContactT > 25) {
+    const sinceContact = s.t - s.firstContactT
+    if (s.restTimer > 0.8 || (grounded && sinceContact > 25) || sinceContact > 90) {
       const tilt = tiltDeg(s)
       let outcome: Outcome
       // Upright is upright, even resting on a collapsed leg or its belly: that
