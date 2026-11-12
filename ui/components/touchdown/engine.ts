@@ -458,6 +458,8 @@ diffuseColor *= sampledDiffuseColor;`
     geo.computeBoundingSphere()
     const mesh = new THREE.Mesh(geo, mat)
     mesh.receiveShadow = true
+    // Terrain first, then ground markings, then everything else (see drapedRing).
+    mesh.renderOrder = -2
     return mesh
   }
 
@@ -542,6 +544,7 @@ diffuseColor *= sampledDiffuseColor;`
     geo.computeVertexNormals()
     geo.computeBoundingSphere()
     const outer = new THREE.Mesh(geo, mat)
+    outer.renderOrder = -2
     outer.frustumCulled = false
     this.scene.add(outer)
   }
@@ -810,9 +813,10 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       geo,
       this.track(
         new THREE.MeshBasicMaterial({
-          color,
-          transparent: true,
-          opacity,
+          // Drawn in the opaque pass straight after the terrain and without
+          // writing depth, so the lander, its legs and the rocks, which draw
+          // later, always cover it. The depth bias only has the terrain to beat.
+          color: color.clone().multiplyScalar(opacity),
           depthWrite: false,
           side: THREE.DoubleSide,
           polygonOffset: true,
@@ -822,7 +826,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
         })
       )
     )
-    mesh.renderOrder = 2
+    mesh.renderOrder = -1
     return mesh
   }
 
@@ -865,9 +869,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       rgeo,
       this.track(
         new THREE.MeshBasicMaterial({
-          color: new THREE.Color(2.4, 1.9, 0.5),
-          transparent: true,
-          opacity: 0.9,
+          color: new THREE.Color(2.2, 1.7, 0.45),
           depthWrite: false,
           side: THREE.DoubleSide,
           toneMapped: false,
@@ -877,7 +879,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
         })
       )
     )
-    ring.renderOrder = 3
+    ring.renderOrder = -1
     ring.frustumCulled = false
     this.impactRing = ring
     this.scene.add(ring)
