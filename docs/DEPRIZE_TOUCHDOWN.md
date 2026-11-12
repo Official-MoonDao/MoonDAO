@@ -97,7 +97,7 @@ is the evidence.
 | **Judged by** | Public facts. No referee panel. No lab |
 | **Purse** | **$25,000**, growing with 5% of betting volume |
 | **Deadline** | Rolling — open until it happens |
-| **Roster** | 5 named landing systems + Open Field |
+| **Roster** | 7 named landing systems, including SpaceX Starship HLS. No Open Field (see Part VII) |
 
 ---
 
@@ -302,13 +302,35 @@ summarised above).
 
 ---
 
-## Slot 5 — OPEN FIELD
+## Slot 6 — SpaceX, Starship HLS (United States)
 
-Anyone not named above who achieves a Qualifying Landing before the five named
-organizations do. The standard field instrument: bettors on this slot do not know
-which entity they are backing.
+*Replaces the Open Field in this outcome position (team id 24). See Part VII. Slot 5 is
+ispace, per Part VI(b).*
 
-**Who is actually in it, and why they are not named.**
+**One of NASA's two crewed landers, and the largest vehicle on the board.**
+
+| | |
+|---|---|
+| Vehicle | Starship Human Landing System, SpaceX's lunar Starship. No flaps or heat shield; landing thrusters high on the hull for touchdown |
+| Next landing | An **uncrewed demonstration landing**, using propellant aggregation in Earth orbit, must come before any crewed landing. Estimated 2027. A test version docks with Orion in low Earth orbit on Artemis III in 2027 — that is not a landing and does not count |
+| Crewed | NASA chooses on readiness whether Starship HLS or Blue Moon Mark 2 carries the first crew to the surface, from 2028 |
+| Site | South Pole candidate regions |
+
+**Scoring.** The slot is SpaceX, the landing-vehicle operator. The uncrewed
+demonstration landing is a Qualifying Landing if it meets all five tests in Part III §2,
+and so is a crewed landing. It is scored like every other slot: an upright vehicle
+returning 24 hours of surface data, independently confirmed.
+
+**Read.** No landing heritage and the longest pre-landing campaign on the board, but the
+only uncrewed demonstration on a NASA crewed-landing critical path.
+
+**Sources.** NASA, 23 Oct 2026 (NASA, Partners Accelerate Lander Development for 2028
+Moon Missions); SpaceX, Human Spaceflight: Moon.
+
+### Not on the roster
+
+These organizations have no slot. A Qualifying Landing by one of them before any rostered
+organization lands is covered by Part VII.
 
 | Organization | Next landing attempt | Why they are not a named slot |
 |---|---|---|
@@ -317,11 +339,10 @@ which entity they are backing.
 | **JAXA** | LUPEX rover, not the lander. SLIM (2024) already landed, on its side | They are not flying the next lander |
 | **Roscosmos / NPO Lavochkin** | Luna-26 orbiter 2028; **Luna-27A south pole 2029**, Luna-27B north pole 2030. Luna-25 crashed on approach, August 2023 | Wrong decade for “next” |
 | **Draper / ispace-U.S.** | CP-12 / APEX 1.0 to Schrödinger, **terminated July 2026**. NASA and Draper ended the task order after slips to 2030–31. $43M of $73M already spent | No longer a mission |
-| **SpaceX** | Starship HLS is the crewed Artemis lander, not a 2026–27 robotic attempt. ispace has booked a Starship cargo flight NET 2030 | Not in this race |
 | **ESA** | Argonaut / European Large Logistics Lander is end-of-decade. Lunar Pathfinder on Blue Ghost 2 is an orbiter | No lander of their own in this window |
 
-If Open Field implied odds climb past roughly a third, the honest response is to
-supersede and name whoever the market has discovered.
+*ispace was on this list in v0.1 and is now slot 5 (Part VI(b)). SpaceX was on it and is
+now slot 6 (Part VII).*
 
 ---
 
@@ -349,6 +370,7 @@ Worked examples, so this does not get argued later:
 | Chang'e-7 lander, rover and hopper | **CNSA** |
 | LUPEX / Chandrayaan-5 (ISRO lander, JAXA rover) | **ISRO** |
 | Artemis III crew on a Blue Origin Mark 2 | **Blue Origin** |
+| Starship HLS uncrewed demonstration landing | **SpaceX** |
 
 **Qualifying Landing** — all of the following, in order:
 
@@ -446,7 +468,7 @@ the same Safe batch so the hard-coded 30/70 split is invisible.
 | Item | Value |
 |---|---|
 | Purse | **$25,000**, plus 5% of betting volume |
-| Outcome slots | **6** — five named + Open Field |
+| Outcome slots | **7** — all named, no Open Field (Part VII) |
 | Deadline | Register at 24 months, extend annually with `setSunset` until claimed |
 | Resolution | Public checklist → Senate vote → Safe transaction |
 
@@ -617,3 +639,29 @@ mis-price the live question.
 
 A goal retired with no successor is the one manual ladder edit: flip that rung's status in
 `capabilityLadder.ts` on the resolution checklist.
+
+---
+
+# PART VII — v0.3 ADDENDUM (11 November 2026)
+
+**Version** 0.3-draft · **Status:** made before public launch, while the Arbitrum market had
+only internal test activity.
+
+## (a) The seventh outcome is SpaceX, Starship HLS
+
+The outcome at index 6 (team id 24) was the Open Field. It is now **SpaceX, Starship HLS**.
+Only its meaning changed: the CTF condition, the market, and the team id are the same, so
+there are still seven outcomes on-chain. The UI binds the slot to the `spacex-starship-hls`
+competitor, and Starship stands on its pad on the Moon Base as part of the race. See Slot 6
+in Part II.
+
+## (b) No Open Field
+
+The roster is now seven named organizations and nothing else. Part III §6's "absorbed by
+Open Field" and Part VI(f)'s field-odds trigger no longer apply to this market.
+
+If an organization that is not on the roster makes the next Qualifying Landing, no outcome
+names the winner. Under the DePrize Terms §8 the Senate then determines **No Winner**, and
+every outcome token redeems for 1/7 of a unit of collateral. Whether to keep that, or to keep
+the market open for the first rostered organization, is a decision to record before public
+launch.
