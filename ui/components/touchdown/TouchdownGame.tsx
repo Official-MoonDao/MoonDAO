@@ -80,7 +80,7 @@ function ModeToggle({ mode, onChange }: { mode: ModeId; onChange: (m: ModeId) =>
           </button>
         ))}
       </div>
-      <p className="mt-1.5 text-xs leading-snug text-white/55">
+      <p className="mt-1.5 hidden text-xs leading-snug text-white/55 sm:block">
         {mode === 'easy'
           ? 'Assisted tilt: the stick sets the lean and it levels itself when you let go.'
           : 'Apollo-style: the stick sets a rotation rate and the lander holds whatever attitude you leave it in.'}
@@ -115,6 +115,8 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   const [muted, setMuted] = useState(false)
   const [nickname, setNickname] = useState('')
   const [isTouch, setIsTouch] = useState(false)
+  /** Desktop layout (two cards) vs the phone sheet. */
+  const [wide, setWide] = useState(true)
   const [callout, setCallout] = useState<Callout | null>(null)
   const [result, setResult] = useState<FlightResult | null>(null)
   const [verdict, setVerdict] = useState('')
@@ -129,6 +131,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   const [hasFlown, setHasFlown] = useState(false)
   /** Desktop: show the "hold Space" hint until the engine is first fired this flight. */
   const [burnHint, setBurnHint] = useState(false)
+  /** The key widget fades out a few seconds into a flight. */
+  const [keysFaded, setKeysFaded] = useState(false)
+  const keysTimer = useRef<number>()
   // Daily leaderboard
   const [board, setBoard] = useState<BoardResponse | null>(null)
   /** Rank this flight's score would hold, before it is saved. */
@@ -155,6 +160,8 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   const baseRef = useRef<HTMLDivElement>(null)
   const stickRef = useRef<HTMLDivElement>(null)
   const knobRef = useRef<HTMLDivElement>(null)
+  /** Key caps of the on-screen controls widget, lit while pressed. */
+  const keyEls = useRef<Record<string, HTMLElement | null>>({})
 
   const setScreen = useCallback((s: Screen) => {
     screenRef.current = s
@@ -319,7 +326,8 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
           process.env.NODE_ENV !== 'production' &&
           new URLSearchParams(window.location.search).get('autopilot') === '1'
         if (engine.autopilot) (window as any).__touchdown = engine
-        engine.prepare(MODES[prefs.mode], lateralOffsetFor(seed))
+        // The start screen is the same view whatever mode is saved.
+        engine.prepare(MODES.easy, lateralOffsetFor(seed))
         engine.run()
         ro = new ResizeObserver(() => engine.resize())
         ro.observe(canvas)
@@ -334,6 +342,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       cancelled = true
       ro?.disconnect()
       window.clearTimeout(calloutTimer.current)
+      window.clearTimeout(keysTimer.current)
       engineRef.current?.dispose()
       engineRef.current = null
       audio.dispose()
@@ -364,6 +373,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       setShowCard(false)
       setLeaving(false)
       burnedRef.current = false
+      setKeysFaded(false)
+      window.clearTimeout(keysTimer.current)
+      keysTimer.current = window.setTimeout(() => setKeysFaded(true), 7000)
       setWouldRank(null)
       setSavedRank(null)
       savedRankRef.current = null
@@ -395,10 +407,6 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
         prefs.mode = m
         savePrefs(prefs)
         setBest(prefs.best[bestKey(mission, m)] ?? null)
-      }
-      // On the start screen, re-park the lander at the new approach.
-      if (screenRef.current === 'start') {
-        engineRef.current?.prepare(MODES[m], lateralOffsetFor(missionSeed(mission)))
       }
     },
     [mission]
@@ -641,6 +649,10 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
 
   // --- Input ------------------------------------------------------------------------
   const pushInput = useCallback(() => {
+    for (const name of ['up', 'down', 'left', 'right', 'burn'] as const) {
+      const el = keyEls.current[name]
+      if (el) el.dataset.on = keys.current[name] ? '1' : '0'
+    }
     const engine = engineRef.current
     if (!engine || engine.autopilot) return
     const k = keys.current
@@ -833,6 +845,14 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
     touch.current.burn = true
     pushInput()
   }
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)')
+    const update = () => setWide(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+
   // The stick and BURN unmount when a flight ends. If a thumb was still down,
   // its pointer-up never arrives, so clear the touch state whenever we are not
   // flying. Also silence and clear input when the tab is hidden.
@@ -868,74 +888,245 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   const beatChallenge = !!(challenge && result && result.score > challenge.score)
   const challenger = challenge?.nickname || 'a friend'
 
-  // Verdict, score and breakdown. Shown in the sheet on phones and in its own
-  // glass card top-left on desktop, so the sidebar can start with Share.
-  const scoreBlock = result && (
-    <div>
-      <p
-        className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
-          upright ? 'text-emerald-300' : 'text-rose-300'
-        }`}
-      >
-        {outcomeHeadline(result)}
-        {result.mode === 'pro' ? ' · PRO' : ''}
-      </p>
-      <div className="mt-0.5 flex items-baseline gap-2">
-        <span className="font-heading text-5xl font-extrabold tabular-nums">
-          {formatScore(result.score)}
-        </span>
-        <span className="text-sm text-white/55">pts</span>
-        {newBest && (
-          <span className="rounded bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200">
-            New best
+  // --- Result-screen pieces ----------------------------------------------------
+  // The same pieces are arranged two ways: on desktop, a glass card top-left
+  // (score, save, board) and an action panel on the right (image, share, race,
+  // Moon Base); on phones, one compact bottom sheet.
+  const canSave = !!(board?.enabled && boardLive && result && result.score > 0)
+
+  const renderScore = (compact: boolean) =>
+    result && (
+      <div>
+        <div className="flex items-baseline gap-2">
+          <p
+            className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
+              upright ? 'text-emerald-300' : 'text-rose-300'
+            }`}
+          >
+            {outcomeHeadline(result)}
+            {result.mode === 'pro' ? ' · PRO' : ''}
+          </p>
+          {newBest && (
+            <span className="rounded bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200">
+              New best
+            </span>
+          )}
+        </div>
+        <div className="mt-0.5 flex items-baseline gap-2">
+          <span
+            className={`font-heading font-extrabold tabular-nums ${
+              compact ? 'text-4xl' : 'text-5xl'
+            }`}
+          >
+            {formatScore(result.score)}
           </span>
-        )}
-      </div>
-      <p className="mt-1.5 text-[15px] font-semibold leading-snug">{verdict}</p>
-      <p className="mt-1 text-xs text-white/55">{bragLine(result)}</p>
-      {challenge && challenge.mission === mission && (
+          <span className="text-sm text-white/55">pts</span>
+          {compact && (
+            <span className="ml-auto text-right text-[11px] text-white/55">{bragLine(result)}</span>
+          )}
+        </div>
         <p
-          className={`mt-1.5 text-xs font-semibold ${
-            beatChallenge ? 'text-emerald-300' : 'text-amber-200'
+          className={`font-semibold leading-snug ${
+            compact ? 'mt-1 text-sm' : 'mt-1.5 text-[15px]'
           }`}
         >
-          {beatChallenge
-            ? `You beat ${challenger}'s ${formatScore(challenge.score)}.`
-            : `${challenger} still leads with ${formatScore(challenge.score)}.`}
+          {verdict}
         </p>
-      )}
-      {result.condition > 0 && result.condition < 1 && (
-        <p className="mt-2 rounded-md bg-amber-300/10 px-2 py-1 text-xs font-semibold text-amber-100">
-          Lander condition: {result.conditionLabel} · points ×{result.condition}
-        </p>
-      )}
-      {result.baseDamage > 0 && (
-        <p className="mt-2 rounded-md bg-rose-400/15 px-2 py-1 text-xs font-semibold text-rose-100">
-          Moon Base Zero: {result.baseDamage} {result.baseDamage === 1 ? 'structure' : 'structures'}{' '}
-          hit · −{formatScore(result.penalty)} pts
-        </p>
-      )}
-      {result.condition > 0 && (
-        <dl className="mt-2.5 grid grid-cols-5 gap-1 text-center">
-          {(
-            [
-              ['Soft', result.parts.softness, 400],
-              ['Accuracy', result.parts.accuracy, 400],
-              ['Target', result.parts.bullseye, 150],
-              ['Fuel', result.parts.fuel, 200],
-              ['Level', result.parts.level, 100],
-            ] as const
-          ).map(([label, value, max]) => (
-            <div key={label} className="rounded-md bg-white/[0.06] px-1 py-1.5">
-              <dt className="text-[9px] uppercase tracking-wide text-white/50">{label}</dt>
-              <dd className="text-sm font-bold tabular-nums">{value}</dd>
-              <dd className="text-[9px] text-white/35">/{max}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
+        {!compact && <p className="mt-1 text-xs text-white/55">{bragLine(result)}</p>}
+        {challenge && challenge.mission === mission && (
+          <p
+            className={`mt-1.5 text-xs font-semibold ${
+              beatChallenge ? 'text-emerald-300' : 'text-amber-200'
+            }`}
+          >
+            {beatChallenge
+              ? `You beat ${challenger}'s ${formatScore(challenge.score)}.`
+              : `${challenger} still leads with ${formatScore(challenge.score)}.`}
+          </p>
+        )}
+        {result.condition > 0 && result.condition < 1 && (
+          <p className="mt-2 rounded-md bg-amber-300/10 px-2 py-1 text-xs font-semibold text-amber-100">
+            Lander condition: {result.conditionLabel} · points ×{result.condition}
+          </p>
+        )}
+        {result.baseDamage > 0 && (
+          <p className="mt-2 rounded-md bg-rose-400/15 px-2 py-1 text-xs font-semibold text-rose-100">
+            Moon Base Zero: {result.baseDamage}{' '}
+            {result.baseDamage === 1 ? 'structure' : 'structures'} hit · −
+            {formatScore(result.penalty)} pts
+          </p>
+        )}
+        {result.condition > 0 && (
+          <dl className={`grid grid-cols-5 gap-1 text-center ${compact ? 'mt-2' : 'mt-2.5'}`}>
+            {(
+              [
+                ['Soft', result.parts.softness, 400],
+                ['Accuracy', result.parts.accuracy, 400],
+                ['Target', result.parts.bullseye, 150],
+                ['Fuel', result.parts.fuel, 200],
+                ['Level', result.parts.level, 100],
+              ] as const
+            ).map(([label, value, max]) => (
+              <div
+                key={label}
+                className={`rounded-md bg-white/[0.06] px-1 ${compact ? 'py-1' : 'py-1.5'}`}
+              >
+                <dt className="text-[9px] uppercase tracking-wide text-white/50">{label}</dt>
+                <dd className="text-sm font-bold tabular-nums leading-tight">
+                  {value}
+                  <span className="text-[9px] font-normal text-white/35">/{max}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+      </div>
+    )
+
+  // Name + Save: sits between the player's points and today's board.
+  const nameSave = result && (
+    <div>
+      <p className="text-xs font-semibold">
+        {canSave ? (
+          savedRank !== null ? (
+            <span className="text-emerald-300">Saved. You are #{savedRank} today.</span>
+          ) : wouldRank ? (
+            <span className="text-white">
+              That would put you <span className="text-emerald-300">#{wouldRank}</span> today
+            </span>
+          ) : (
+            <span className="text-white/85">Save your score to today&apos;s board</span>
+          )
+        ) : (
+          <span className="text-white/60">Name on your share image (optional)</span>
+        )}
+      </p>
+      <div className="mt-1.5 flex gap-2">
+        <input
+          ref={nameInputRef}
+          type="text"
+          maxLength={16}
+          defaultValue={nickname}
+          onBlur={(e) => void saveNickname(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter') return
+            if (canSave && savedRank === null) void saveScore()
+            else (e.target as HTMLInputElement).blur()
+          }}
+          placeholder="Your name"
+          aria-label="Your name"
+          autoComplete="off"
+          className="min-w-0 flex-1 select-text rounded-md border border-white/15 bg-white/5 px-2.5 py-1.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-300 focus:outline-none"
+        />
+        {canSave && savedRank === null && (
+          <button
+            type="button"
+            onClick={() => void saveScore()}
+            disabled={saving}
+            className="shrink-0 rounded-md bg-emerald-400 px-3.5 py-1.5 text-sm font-extrabold text-black transition hover:bg-emerald-300 disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        )}
+      </div>
+      {boardNote && <p className="mt-1.5 text-xs font-semibold text-amber-200">{boardNote}</p>}
     </div>
   )
+
+  const shareButton = result && (
+    <button
+      type="button"
+      onClick={() => void share()}
+      className="td-share relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 py-3 text-base font-extrabold text-black transition hover:brightness-110"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />
+      </svg>
+      Share your {upright ? 'landing' : result.outcome === 'crashed' ? 'crater' : 'wreck'}
+    </button>
+  )
+
+  const raceAndBase = result && (
+    <>
+      <RealRacePanel
+        result={result}
+        compact={!wide}
+        onMakeYourCall={() =>
+          trackTouchdown('touchdown_odds_click', {
+            mode: result.mode,
+            outcome: result.outcome,
+          })
+        }
+      />
+      <Link
+        href={`/moonbase?race=${TOUCHDOWN_GOAL_ID}`}
+        onClick={(e) => {
+          trackTouchdown('touchdown_moonbase_click', {
+            mode: result.mode,
+            outcome: result.outcome,
+          })
+          const engine = engineRef.current
+          if (!engine || e.metaKey || e.ctrlKey) return
+          // Hand the camera from the lander to the base, then open the sim.
+          e.preventDefault()
+          setLeaving(true)
+          engine.flyToBase(() => void router.push(`/moonbase?race=${TOUCHDOWN_GOAL_ID}`))
+        }}
+        className="flex w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 py-2.5 text-sm font-bold text-white transition hover:bg-white/10"
+      >
+        Explore Moon Base Zero →
+      </Link>
+    </>
+  )
+
+  const landAgain = (
+    <div className="flex items-center gap-3 border-t border-white/10 p-3">
+      <button
+        type="button"
+        onClick={() => fly(true)}
+        className="flex-1 rounded-xl bg-white py-3 text-base font-extrabold text-black transition hover:bg-white/90"
+      >
+        Land Again
+      </button>
+      <div
+        role="radiogroup"
+        aria-label="Difficulty"
+        className="inline-flex shrink-0 rounded-lg border border-white/15 bg-black/50 p-0.5"
+      >
+        {(['easy', 'pro'] as ModeId[]).map((m) => (
+          <button
+            key={m}
+            type="button"
+            role="radio"
+            aria-checked={mode === m}
+            onClick={() => changeMode(m)}
+            className={`rounded-md px-3 py-2 text-xs font-bold transition ${
+              mode === m
+                ? m === 'pro'
+                  ? 'bg-amber-300 text-black'
+                  : 'bg-white text-black'
+                : 'text-white/65'
+            }`}
+          >
+            {MODES[m].label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+
+  const keyCap =
+    "flex h-11 w-11 items-center justify-center rounded-lg border border-white/15 bg-black/55 text-lg text-white/70 backdrop-blur transition data-[on='1']:border-emerald-300 data-[on='1']:bg-emerald-500 data-[on='1']:text-white"
 
   return (
     <div
@@ -943,6 +1134,14 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       className="relative h-[100dvh] w-full select-none overflow-hidden bg-black text-white"
       style={{ touchAction: 'none', WebkitTouchCallout: 'none' }}
     >
+      <style>{`
+        @keyframes td-shine { 0% { transform: translateX(-140%) skewX(-20deg); } 55%, 100% { transform: translateX(320%) skewX(-20deg); } }
+        @keyframes td-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.6); } 55% { box-shadow: 0 0 0 12px rgba(251, 146, 60, 0); } }
+        .td-share { animation: td-glow 2.2s ease-out infinite; }
+        .td-share::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 38%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent); animation: td-shine 2.8s ease-in-out infinite; pointer-events: none; }
+        @media (prefers-reduced-motion: reduce) { .td-share, .td-share::after { animation: none; } }
+      `}</style>
+
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing"
@@ -955,7 +1154,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       />
 
       {/* The daily map number lives here and nowhere else. */}
-      <div className="pointer-events-none absolute bottom-2 left-3 z-10 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+      <div className="pointer-events-none absolute bottom-2 right-3 z-10 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
         Daily map #{mission} · {missionDateLabel(mission)}
       </div>
 
@@ -978,14 +1177,14 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
         }`}
         aria-hidden={!flying}
       >
-        <div className="absolute left-3 top-3 rounded-xl border border-white/10 bg-black/55 px-3 py-2 font-RobotoMono backdrop-blur-sm">
+        <div className="absolute left-3 top-3 rounded-xl border border-white/10 bg-black/55 px-2.5 py-1.5 font-RobotoMono backdrop-blur-sm sm:px-3 sm:py-2">
           <HudRow label="ALT" unit="m" valueRef={altRef} big />
           <HudRow label="V/S" unit="m/s" valueRef={vsRef} />
           <HudRow label="H/S" unit="m/s" valueRef={hsRef} />
           <HudRow label="TILT" unit="°" valueRef={tiltRef} />
         </div>
 
-        <div className="absolute right-3 top-14 w-36 rounded-xl border border-white/10 bg-black/55 px-3 py-2 font-RobotoMono backdrop-blur-sm sm:w-44">
+        <div className="absolute right-3 top-14 w-32 rounded-xl border border-white/10 bg-black/55 px-2.5 py-1.5 font-RobotoMono backdrop-blur-sm sm:w-44 sm:px-3 sm:py-2">
           <div className="flex items-baseline justify-between text-[10px] tracking-widest text-white/55">
             <span>FUEL</span>
             <span ref={fuelTextRef} className="text-xs text-white">
@@ -995,7 +1194,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
           <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/15">
             <div ref={fuelRef} className="h-full w-full origin-left rounded-full bg-emerald-300" />
           </div>
-          <div className="mt-2 flex items-baseline justify-between">
+          <div className="mt-1.5 flex items-baseline justify-between sm:mt-2">
             <span className="text-[10px] tracking-widest text-white/55">TARGET</span>
             <span className="text-sm text-white">
               <span ref={distRef}>0</span>
@@ -1009,7 +1208,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
 
         <div
           ref={promptRef}
-          className="absolute left-1/2 top-[19%] -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/60 px-4 py-2 text-center text-base font-bold tracking-wide opacity-0 backdrop-blur-sm transition-opacity sm:text-xl"
+          className="absolute left-1/2 top-[19%] max-w-[92%] -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/60 px-3 py-1.5 text-center text-sm font-bold tracking-wide opacity-0 backdrop-blur-sm transition-opacity sm:px-4 sm:py-2 sm:text-xl"
         />
 
         <div
@@ -1034,9 +1233,54 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
         </div>
       </div>
 
+      {/* Desktop: the keys, bottom-left, on the start screen and in flight. They
+          light up as they are pressed. */}
+      {wide && !isTouch && (screen === 'start' || flying) && (
+        <div
+          className={`pointer-events-none absolute bottom-5 left-5 z-20 flex items-end gap-5 transition-opacity duration-1000 ${
+            flying && keysFaded ? 'opacity-0' : 'opacity-100'
+          }`}
+          aria-hidden
+        >
+          <div className="text-center">
+            <div className="grid grid-cols-3 gap-1.5">
+              <span />
+              <span ref={(el) => void (keyEls.current.up = el)} className={keyCap}>
+                ↑
+              </span>
+              <span />
+              <span ref={(el) => void (keyEls.current.left = el)} className={keyCap}>
+                ←
+              </span>
+              <span ref={(el) => void (keyEls.current.down = el)} className={keyCap}>
+                ↓
+              </span>
+              <span ref={(el) => void (keyEls.current.right = el)} className={keyCap}>
+                →
+              </span>
+            </div>
+            <p className="mt-1.5 text-[10px] font-bold tracking-[0.3em] text-white/70">TILT</p>
+          </div>
+          <div className="text-center">
+            <span
+              ref={(el) => void (keyEls.current.burn = el)}
+              className="flex h-11 w-48 items-center justify-center rounded-lg bg-gradient-to-b from-amber-400 to-orange-500 font-RobotoMono text-base font-extrabold tracking-[0.3em] text-white shadow-lg transition data-[on='1']:scale-95 data-[on='1']:brightness-125"
+            >
+              SPACE
+            </span>
+            <p className="mt-1.5 text-[10px] font-bold tracking-[0.3em] text-white/70">BURN</p>
+          </div>
+          <p className="mb-5 hidden rounded-lg bg-black/60 px-3 py-2 text-xs font-semibold leading-relaxed text-white/90 backdrop-blur md:block">
+            WASD works too · drag to look
+            <br />
+            scroll to zoom · R to restart
+          </p>
+        </div>
+      )}
+
       {/* First thing a desktop player sees in flight: how to fire the engine. */}
       {flying && burnHint && !isTouch && !engineRef.current?.autopilot && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center px-4">
+        <div className="pointer-events-none absolute inset-x-0 bottom-28 z-20 flex justify-center px-4">
           <div className="animate-pulse rounded-2xl border-2 border-amber-300/80 bg-black/75 px-5 py-3 text-center shadow-2xl backdrop-blur">
             <p className="text-lg font-extrabold tracking-wide text-white sm:text-xl">
               Hold{' '}
@@ -1046,19 +1290,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
               to fire the engine
             </p>
             <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">
-              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">
-                W
-              </kbd>{' '}
-              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">
-                A
-              </kbd>{' '}
-              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">
-                S
-              </kbd>{' '}
-              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">
-                D
-              </kbd>{' '}
-              or arrow keys to tilt · tilt back and burn to brake
+              Arrow keys or WASD to tilt · tilt back and burn to brake
             </p>
           </div>
         </div>
@@ -1073,7 +1305,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       >
         {callout && (
           <span
-            className={`inline-block rounded-lg bg-black/60 px-3 py-1.5 text-sm font-semibold backdrop-blur-sm sm:text-base ${
+            className={`inline-block rounded-lg bg-black/60 px-3 py-1.5 text-xs font-semibold backdrop-blur-sm sm:text-base ${
               TONE[callout.tone]
             }`}
           >
@@ -1122,54 +1354,54 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
 
       {/* ------------------------------ Start screen ------------------------------ */}
       {(screen === 'start' || screen === 'loading' || screen === 'error') && (
-        <div className="absolute inset-0 z-20 flex items-end justify-center bg-gradient-to-t from-black/80 via-transparent to-transparent p-4 sm:items-center sm:justify-end sm:bg-none sm:pr-[6vw]">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-5 backdrop-blur-md">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/55">
+        <div className="absolute inset-0 z-20 flex items-end justify-center bg-gradient-to-t from-black/70 via-transparent to-transparent p-3 sm:items-center sm:justify-end sm:bg-none sm:p-4 sm:pr-[6vw]">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-4 backdrop-blur-md sm:p-5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">
               {mission !== today
                 ? 'Replaying an earlier landing site'
-                : 'Land beside Moon Base Zero'}
+                : 'Can you land on the Moon?'}
             </p>
-            <h1 className="mt-1 font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
+            <h1 className="mt-0.5 font-heading text-3xl font-extrabold tracking-tight sm:mt-1 sm:text-5xl">
               TOUCHDOWN
             </h1>
-            <p className="mt-2 text-sm leading-relaxed text-white/75">
+            <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
               Brake from orbit, thread the craters and boulders, and set it down soft, upright and
-              on target. A new landing site every day.
+              on target at Moon Base Zero. A new landing site every day.
             </p>
             {challenge && (
-              <p className="mt-3 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100">
+              <p className="mt-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100 sm:mt-3">
                 Beat {challenger}&apos;s {formatScore(challenge.score)}
                 {challenge.mode === 'pro' ? ' (PRO)' : ''} on this exact landing site.
               </p>
             )}
-            <div className="mt-4">
+            <div className="mt-3 flex items-stretch gap-2 sm:mt-4 sm:block">
               <ModeToggle mode={mode} onChange={changeMode} />
+              <button
+                type="button"
+                disabled={screen !== 'start'}
+                onClick={() => fly(false)}
+                className="flex-1 rounded-xl bg-white py-2.5 text-base font-extrabold tracking-wide text-black transition hover:bg-white/90 disabled:opacity-50 sm:mt-4 sm:w-full sm:py-3.5 sm:text-lg"
+              >
+                {screen === 'loading'
+                  ? 'Building the Moon…'
+                  : screen === 'error'
+                  ? 'Could not start 3D'
+                  : hasFlown
+                  ? 'LAND AGAIN'
+                  : 'LAND'}
+              </button>
             </div>
-            <button
-              type="button"
-              disabled={screen !== 'start'}
-              onClick={() => fly(false)}
-              className="mt-4 w-full rounded-xl bg-white py-3.5 text-lg font-extrabold tracking-wide text-black transition hover:bg-white/90 disabled:opacity-50"
-            >
-              {screen === 'loading'
-                ? 'Building the Moon…'
-                : screen === 'error'
-                ? 'Could not start 3D'
-                : hasFlown
-                ? 'LAND AGAIN'
-                : 'LAND'}
-            </button>
             {screen === 'error' && (
               <p className="mt-2 text-xs text-rose-200">
                 This browser could not start WebGL. Try another browser or device.
               </p>
             )}
-            <p className="mt-3 text-xs leading-relaxed text-white/55">
-              {isTouch
-                ? 'Left thumb: tilt stick. Right thumb: hold BURN. Drag the sky to look around.'
-                : 'WASD or arrows to tilt · hold Space to burn · drag to look around · scroll to zoom · R to restart'}
-              {best ? ` · Your best today: ${formatScore(best)}` : ''}
-            </p>
+            {(isTouch || best) && (
+              <p className="mt-2 text-[11px] leading-snug text-white/55 sm:mt-3 sm:text-xs">
+                {isTouch ? 'Left thumb tilts. Right thumb holds BURN.' : ''}
+                {best ? `${isTouch ? ' · ' : ''}Your best today: ${formatScore(best)}` : ''}
+              </p>
+            )}
             {mission !== today && (
               <a
                 href={SHARE_PATH}
@@ -1179,24 +1411,29 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
               </a>
             )}
             {board?.enabled && (
-              <div className="mt-3 border-t border-white/10 pt-3">
-                <Leaderboard board={board} highlight={nickname} rows={isTouch ? 5 : 8} showRace />
+              <div className="mt-2.5 border-t border-white/10 pt-2.5 sm:mt-3 sm:pt-3">
+                <Leaderboard
+                  board={board}
+                  highlight={nickname}
+                  rows={wide ? 8 : 3}
+                  showRace={wide}
+                />
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Photo button: out of the panel, in the corner of the scene. Phones get
-          an icon at the top (the result sheet covers the bottom); desktop gets a
-          labelled button bottom-left. */}
+      {/* Photo button: in the corner of the scene. Phones get an icon at the top
+          (the result sheet covers the bottom); desktop gets a labelled button
+          bottom-left. */}
       {screen === 'result' && result && !leaving && !showCard && (
         <button
           type="button"
           onClick={() => void takePhoto()}
           aria-label="Take a photo"
           title="Take a photo (P). Drag the scene to frame it first. Copies to your clipboard and becomes your share image."
-          className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full border border-white/25 bg-black/60 p-3 text-sm font-bold text-white backdrop-blur transition hover:bg-black/80 sm:bottom-8 sm:top-auto sm:rounded-xl sm:px-4 sm:py-2.5"
+          className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full border border-white/25 bg-black/60 p-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-black/80 sm:bottom-5 sm:top-auto sm:rounded-xl sm:px-4 sm:py-2.5"
         >
           <svg
             width="20"
@@ -1222,141 +1459,15 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
           ENTERING MOON BASE ZERO…
         </div>
       )}
-      {screen === 'result' && result && !leaving && (
-        <div className="absolute left-3 top-3 z-20 hidden max-h-[calc(100%-5.5rem)] w-[21rem] overflow-y-auto rounded-2xl border border-white/15 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:block">
-          {scoreBlock}
-          {board?.enabled && boardLive && (
-            <div className="mt-3 border-t border-white/10 pt-3">
-              <Leaderboard
-                board={board}
-                highlight={savedRank !== null ? nickname : undefined}
-                rows={5}
-              />
-            </div>
-          )}
-        </div>
-      )}
-      {screen === 'result' && result && !leaving && (
-        <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[66%] flex-col rounded-t-2xl border border-white/10 bg-black/80 backdrop-blur-md sm:bottom-3 sm:left-auto sm:right-3 sm:top-14 sm:max-h-none sm:w-[23.5rem] sm:rounded-2xl">
-          <div className="flex-1 space-y-3 overflow-y-auto p-4" style={{ touchAction: 'pan-y' }}>
-            {/* 1 + 2: verdict and score (phones; on desktop it is the card top-left) */}
-            <div className="sm:hidden">{scoreBlock}</div>
 
-            {/* 3: share */}
-            <div>
-              <button
-                type="button"
-                onClick={() => void share()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-sky-400 py-3 text-base font-extrabold text-black transition hover:bg-sky-300"
-              >
-                Share your {upright ? 'landing' : result.outcome === 'crashed' ? 'crater' : 'wreck'}
-              </button>
-              <p className="mt-1.5 text-xs leading-snug text-white/60">
-                {isTouch
-                  ? 'Opens your share sheet with the image attached.'
-                  : 'Copies your image and opens X. In the post, press Ctrl+V (⌘V on Mac) to paste it in.'}
-              </p>
-              {shareNote && (
-                <p className="mt-1.5 text-xs font-semibold text-emerald-300">{shareNote}</p>
-              )}
-              <div className="mt-2 flex items-center gap-2">
-                {cardUrl && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setModal('card')
-                      setShowCard(true)
-                    }}
-                    className="shrink-0 overflow-hidden rounded-md border border-white/15"
-                    aria-label="Preview share image"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={cardUrl} alt="" className="h-12 w-[5.35rem] object-cover" />
-                  </button>
-                )}
-                <label className="min-w-0 flex-1 text-[11px] text-white/50">
-                  {board?.enabled && boardLive && result.score > 0 ? (
-                    savedRank !== null ? (
-                      <span className="font-bold text-emerald-300">
-                        Saved · you are #{savedRank} today
-                      </span>
-                    ) : wouldRank ? (
-                      <span className="font-semibold text-white/85">
-                        That would put you #{wouldRank} today. Your name:
-                      </span>
-                    ) : (
-                      'Your name, to save your score'
-                    )
-                  ) : (
-                    'Name on the card (optional)'
-                  )}
-                  <input
-                    ref={nameInputRef}
-                    type="text"
-                    maxLength={16}
-                    defaultValue={nickname}
-                    onBlur={(e) => void saveNickname(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return
-                      if (board?.enabled && boardLive && result.score > 0 && savedRank === null)
-                        void saveScore()
-                      else (e.target as HTMLInputElement).blur()
-                    }}
-                    placeholder="Nickname"
-                    autoComplete="off"
-                    className="mt-0.5 w-full select-text rounded-md border border-white/15 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30 focus:border-sky-300 focus:outline-none"
-                  />
-                </label>
-                {board?.enabled && boardLive && result.score > 0 && savedRank === null && (
-                  <button
-                    type="button"
-                    onClick={() => void saveScore()}
-                    disabled={saving}
-                    className="shrink-0 self-end rounded-md bg-emerald-400 px-3 py-1.5 text-sm font-extrabold text-black transition hover:bg-emerald-300 disabled:opacity-60"
-                  >
-                    {saving ? 'Saving…' : 'Save'}
-                  </button>
-                )}
-              </div>
-              {boardNote && (
-                <p className="mt-1.5 text-xs font-semibold text-amber-200">{boardNote}</p>
-              )}
-            </div>
-
-            {/* 4: the real race */}
-            <RealRacePanel
-              result={result}
-              onMakeYourCall={() =>
-                trackTouchdown('touchdown_odds_click', {
-                  mode: result.mode,
-                  outcome: result.outcome,
-                })
-              }
-            />
-
-            {/* 5: step into Moonbase */}
-            <Link
-              href={`/moonbase?race=${TOUCHDOWN_GOAL_ID}`}
-              onClick={(e) => {
-                trackTouchdown('touchdown_moonbase_click', {
-                  mode: result.mode,
-                  outcome: result.outcome,
-                })
-                const engine = engineRef.current
-                if (!engine || e.metaKey || e.ctrlKey) return
-                // Hand the camera from the lander to the base, then open the sim.
-                e.preventDefault()
-                setLeaving(true)
-                engine.flyToBase(() => void router.push(`/moonbase?race=${TOUCHDOWN_GOAL_ID}`))
-              }}
-              className="flex w-full items-center justify-center rounded-xl border border-white/20 bg-white/5 py-2.5 text-sm font-bold text-white transition hover:bg-white/10"
-            >
-              Explore Moon Base Zero →
-            </Link>
-
-            {/* Today's board: last on phones, in the left card on desktop */}
+      {/* Desktop: score, save and board top-left; actions top-right, only as tall as they need. */}
+      {screen === 'result' && result && !leaving && wide && (
+        <>
+          <div className="absolute left-3 top-3 z-20 max-h-[calc(100%-5.5rem)] w-[21rem] overflow-y-auto rounded-2xl border border-white/15 bg-black/45 p-4 shadow-2xl backdrop-blur-xl">
+            {renderScore(false)}
+            <div className="mt-3 border-t border-white/10 pt-3">{nameSave}</div>
             {board?.enabled && boardLive && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3.5 sm:hidden">
+              <div className="mt-3 border-t border-white/10 pt-3">
                 <Leaderboard
                   board={board}
                   highlight={savedRank !== null ? nickname : undefined}
@@ -1366,40 +1477,75 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
             )}
           </div>
 
-          {/* 6: fly again, always one tap away */}
-          <div className="flex items-center gap-3 border-t border-white/10 p-3">
-            <button
-              type="button"
-              onClick={() => fly(true)}
-              className="flex-1 rounded-xl bg-white py-3 text-base font-extrabold text-black transition hover:bg-white/90"
-            >
-              Land Again
-            </button>
-            <div
-              role="radiogroup"
-              aria-label="Difficulty"
-              className="inline-flex shrink-0 rounded-lg border border-white/15 bg-black/50 p-0.5"
-            >
-              {(['easy', 'pro'] as ModeId[]).map((m) => (
+          <div className="absolute right-3 top-14 z-20 flex max-h-[calc(100%-4.25rem)] w-[23.5rem] flex-col rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md">
+            <div className="flex-1 space-y-3 overflow-y-auto p-4" style={{ touchAction: 'pan-y' }}>
+              <div>
                 <button
-                  key={m}
                   type="button"
-                  role="radio"
-                  aria-checked={mode === m}
-                  onClick={() => changeMode(m)}
-                  className={`rounded-md px-3 py-2 text-xs font-bold transition ${
-                    mode === m
-                      ? m === 'pro'
-                        ? 'bg-amber-300 text-black'
-                        : 'bg-white text-black'
-                      : 'text-white/65'
-                  }`}
+                  onClick={() => {
+                    setModal('card')
+                    setShowCard(true)
+                  }}
+                  disabled={!cardUrl}
+                  className="block aspect-[2/1] w-full overflow-hidden rounded-xl border border-white/15 bg-white/5"
+                  aria-label="Preview share image"
                 >
-                  {MODES[m].label}
+                  {cardUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={cardUrl} alt="" className="h-full w-full object-cover" />
+                  )}
                 </button>
-              ))}
+                <div className="mt-2.5">{shareButton}</div>
+                <p className="mt-2 text-xs leading-snug text-white/60">
+                  Copies this image and opens X. Paste it in with Ctrl+V (⌘V).
+                </p>
+                {shareNote && (
+                  <p className="mt-1.5 text-xs font-semibold text-emerald-300">{shareNote}</p>
+                )}
+              </div>
+              {raceAndBase}
             </div>
+            {landAgain}
           </div>
+        </>
+      )}
+
+      {/* Phones: one compact sheet. */}
+      {screen === 'result' && result && !leaving && !wide && (
+        <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[64%] flex-col rounded-t-2xl border border-white/10 bg-black/85 backdrop-blur-md">
+          <div className="flex-1 space-y-2.5 overflow-y-auto p-3" style={{ touchAction: 'pan-y' }}>
+            {renderScore(true)}
+            <div className="flex items-stretch gap-2">
+              {cardUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModal('card')
+                    setShowCard(true)
+                  }}
+                  className="shrink-0 overflow-hidden rounded-lg border border-white/15"
+                  aria-label="Preview share image"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={cardUrl} alt="" className="h-12 w-[5.35rem] object-cover" />
+                </button>
+              )}
+              <div className="min-w-0 flex-1">{shareButton}</div>
+            </div>
+            {shareNote && <p className="text-xs font-semibold text-emerald-300">{shareNote}</p>}
+            {nameSave}
+            {raceAndBase}
+            {board?.enabled && boardLive && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <Leaderboard
+                  board={board}
+                  highlight={savedRank !== null ? nickname : undefined}
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+          {landAgain}
         </div>
       )}
 

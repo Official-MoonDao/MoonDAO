@@ -156,9 +156,12 @@ export function composeCard(args: {
   const brandW = g.measureText('TOUCHDOWN').width
   g.font = `600 22px ${body}`
   g.fillStyle = 'rgba(255,255,255,0.75)'
-  g.fillText('Land beside Moon Base Zero', 48 + brandW + 18, 68)
+  const tagline = 'Land at Moon Base Zero'
+  g.fillText(tagline, 48 + brandW + 18, 68)
+  const taglineW = g.measureText(tagline).width
   if (result.mode === 'pro') {
-    const x = CARD_W - 48 - 96
+    // Beside the title: the top-right corner belongs to the Earth.
+    const x = 48 + brandW + 18 + taglineW + 20
     g.fillStyle = '#ffd34d'
     roundRect(g, x, 38, 96, 42, 8)
     g.fill()
