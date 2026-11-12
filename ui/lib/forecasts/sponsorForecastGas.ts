@@ -32,13 +32,14 @@ export async function postForecastGas(
  * A guest has no site session behind its Privy token, so a 401 means the
  * Privy session saved in this browser is dead. Try a fresh token first, then
  * a fresh guest. A signed-in account only gets the fresh token: starting a
- * guest would sign it out.
+ * guest would sign it out. The guest decision is read after the token retry,
+ * so a sign-in that lands while it is in flight is seen.
  */
 export async function requestForecastGas<W extends { address: string }>(input: {
   writer: W
   chainId: number
   deprizeId: number
-  canRenewGuest: boolean
+  canRenewGuest: () => boolean
   getToken: () => Promise<string | null>
   renewGuest: () => Promise<W | null>
   post?: (request: ForecastGasRequest, token: string | null) => Promise<ForecastGasReply>
@@ -55,7 +56,7 @@ export async function requestForecastGas<W extends { address: string }>(input: {
   if (reply.status !== 401) return { reply, writer }
 
   reply = await send(writer)
-  if (reply.status !== 401 || !input.canRenewGuest) return { reply, writer }
+  if (reply.status !== 401 || !input.canRenewGuest()) return { reply, writer }
 
   const renewed = await input.renewGuest().catch(() => null)
   if (!renewed) return { reply, writer }

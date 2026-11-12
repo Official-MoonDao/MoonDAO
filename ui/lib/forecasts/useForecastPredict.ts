@@ -285,7 +285,7 @@ export function useForecastPredict(args: {
         writer,
         chainId: chain.id,
         deprizeId,
-        canRenewGuest: !activeAccount,
+        canRenewGuest: forecastWriter.canRenewGuest,
         getToken: getAccessToken,
         renewGuest: forecastWriter.renewGuestWriter,
       })

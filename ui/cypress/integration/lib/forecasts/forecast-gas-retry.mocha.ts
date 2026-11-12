@@ -3,6 +3,7 @@
  * saved in the browser gets a 401, which used to end the prediction with a
  * generic gas error.
  */
+import { canRenewForecastGuest } from '@/lib/forecasts/retainForecastWriter'
 import {
   FORECAST_GAS_SESSION_EXPIRED,
   forecastGasErrorMessage,
@@ -37,7 +38,7 @@ describe('forecast gas request', () => {
       writer: OLD,
       chainId: 42161,
       deprizeId: 1,
-      canRenewGuest: true,
+      canRenewGuest: () => true,
       getToken: async () => 'token-1',
       renewGuest: async () => {
         renewed++
@@ -61,7 +62,7 @@ describe('forecast gas request', () => {
       writer: OLD,
       chainId: 42161,
       deprizeId: 1,
-      canRenewGuest: true,
+      canRenewGuest: () => true,
       getToken: async () => tokens.shift() ?? null,
       renewGuest: async () => {
         renewed++
@@ -81,7 +82,7 @@ describe('forecast gas request', () => {
       writer: OLD,
       chainId: 42161,
       deprizeId: 1,
-      canRenewGuest: true,
+      canRenewGuest: () => true,
       getToken: async () => null,
       renewGuest: async () => NEW,
       post: server.post,
@@ -102,8 +103,33 @@ describe('forecast gas request', () => {
       writer: OLD,
       chainId: 42161,
       deprizeId: 1,
-      canRenewGuest: false,
+      canRenewGuest: () => false,
       getToken: async () => 'token',
+      renewGuest: async () => {
+        renewed++
+        return NEW
+      },
+      post: server.post,
+    })
+    expect(out.reply.status).to.equal(401)
+    expect(out.writer).to.equal(OLD)
+    expect(renewed).to.equal(0)
+    expect(server.calls).to.have.length(2)
+  })
+
+  it('reads guest renewal after the token retry', async () => {
+    const server = scripted([UNAUTHORIZED, UNAUTHORIZED])
+    let renewed = 0
+    let allowGuest = true
+    const out = await requestForecastGas({
+      writer: OLD,
+      chainId: 42161,
+      deprizeId: 1,
+      canRenewGuest: () => allowGuest,
+      getToken: async () => {
+        if (server.calls.length > 0) allowGuest = false
+        return 'stale'
+      },
       renewGuest: async () => {
         renewed++
         return NEW
@@ -122,7 +148,7 @@ describe('forecast gas request', () => {
       writer: OLD,
       chainId: 42161,
       deprizeId: 1,
-      canRenewGuest: true,
+      canRenewGuest: () => true,
       getToken: async () => {
         throw new Error('no session')
       },
@@ -147,13 +173,39 @@ describe('forecast gas request', () => {
       writer: OLD,
       chainId: 42161,
       deprizeId: 1,
-      canRenewGuest: true,
+      canRenewGuest: () => true,
       getToken: async () => 'token',
       renewGuest: async () => NEW,
       post: server.post,
     })
     expect(out.reply).to.equal(capped)
     expect(server.calls).to.have.length(1)
+  })
+})
+
+describe('canRenewForecastGuest', () => {
+  it('renews a guest and a signed-out visitor', () => {
+    expect(
+      canRenewForecastGuest({ account: undefined, authenticated: true, isGuest: true })
+    ).to.equal(true)
+    expect(
+      canRenewForecastGuest({ account: undefined, authenticated: false, isGuest: false })
+    ).to.equal(true)
+  })
+
+  it('refuses a signed-in account whose wallet is not attached yet', () => {
+    expect(
+      canRenewForecastGuest({ account: undefined, authenticated: true, isGuest: false })
+    ).to.equal(false)
+  })
+
+  it('refuses when an account is already attached', () => {
+    expect(
+      canRenewForecastGuest({ account: { address: '0x1' }, authenticated: true, isGuest: false })
+    ).to.equal(false)
+    expect(
+      canRenewForecastGuest({ account: { address: '0x1' }, authenticated: false, isGuest: true })
+    ).to.equal(false)
   })
 })
 

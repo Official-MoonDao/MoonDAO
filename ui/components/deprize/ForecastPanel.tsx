@@ -343,7 +343,7 @@ export default function ForecastPanel(props: {
         writer: from,
         chainId: chain.id,
         deprizeId,
-        canRenewGuest: !account,
+        canRenewGuest: forecastWriter.canRenewGuest,
         getToken: getAccessToken,
         renewGuest: forecastWriter.renewGuestWriter,
       })

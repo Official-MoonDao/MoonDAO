@@ -280,7 +280,7 @@ describe('guest wiring', () => {
   it('keeps the guest signed in when a forecast cannot be snapshotted or deleted', () => {
     const src = readUi('lib', 'forecasts', 'useForecastWriter.ts')
     const start = src.indexOf('const switchToExistingAccount')
-    const end = src.indexOf('return { writer')
+    const end = src.indexOf('return {', start)
     const fn = src.slice(start, end)
     const logoutAt = fn.indexOf('await logout()')
     const snapshotAt = fn.indexOf('writePendingHandoffs(')
@@ -321,6 +321,23 @@ describe('guest wiring', () => {
       expect(panel).to.contain('deprizeId')
       expect(panel).not.to.contain('handoffChecked')
       expect(panel).not.to.contain('takePendingHandoff(')
+    }
+  })
+
+  it('does not start a guest for a signed-in account with no active wallet', () => {
+    const writer = readUi('lib', 'forecasts', 'useForecastWriter.ts')
+    const renewAt = writer.indexOf('const renewGuestWriter')
+    const handoffAt = writer.indexOf('const switchToExistingAccount')
+    const renew = writer.slice(renewAt, handoffAt)
+    expect(renew).to.contain('if (!canRenewGuest()) return null')
+    expect(renew).to.not.contain('if (account)')
+    for (const file of [
+      'components/deprize/ForecastPanel.tsx',
+      'lib/forecasts/useForecastPredict.ts',
+    ]) {
+      const src = readUi(file)
+      expect(src).to.contain('canRenewGuest: forecastWriter.canRenewGuest')
+      expect(src).to.not.match(/canRenewGuest:\s*!/)
     }
   })
 
