@@ -22,6 +22,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   BASE_PLAN,
+  CREWED_PAD_PROJECT_ID,
   PATROL,
   ROAD_HALF_M,
   ROAD_RUNS,
@@ -149,7 +150,8 @@ export type ColonyLayout = {
   // at.
   plots: Map<string, { dir: Vec3; slot: Slot; standDir?: Vec3 }>
   // Hardware standing on the base with no district behind it, and so no beacon,
-  // name card or click target: the crewed pad's Starship (see CREWED_PAD).
+  // name card or click target: the crewed pad's Starship (see CREWED_PAD) while
+  // no standing race fields it.
   scenery: { project: Project; dir: Vec3; slot: Slot }[]
 }
 
@@ -1485,6 +1487,9 @@ export default function MarkerLayer({
                     onHover={(h) => onHoverTree?.(h ? tree.raceId : null)}
                     radiusAt={radiusAt}
                     cinematic={cinematic}
+                    noseAlong={
+                      project.id === CREWED_PAD_PROJECT_ID ? CREWED_PAD_NOSE : undefined
+                    }
                   />
 
                   {patrol && (

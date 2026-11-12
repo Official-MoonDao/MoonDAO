@@ -53,6 +53,7 @@ export function buildColonyLayout(trees: TechTree[]): ColonyLayout {
     { dir: Vec3; slot: Slot; standDir?: Vec3 }
   >()
   let fallbackIdx = 0
+  let crewedPadRaced = false
   // The plan zones one district per hardware type, so when two races run the
   // same hardware only the first can stand in it — the second is as unzoned as
   // a type the plan never heard of. Count it that way or the outlier row is
@@ -125,13 +126,21 @@ export function buildColonyLayout(trees: TechTree[]): ColonyLayout {
       fallbackIdx++
     }
     districts.set(tree.raceId, dirAt(plan.east, plan.north))
+    // Starship is never packed into a district: its 64 m deck would set the
+    // spacing for every pad around it. A race that fields it stands it on the
+    // crewed pad instead (below).
+    if (tree.projects.some((p) => p.id === CREWED_PAD_PROJECT_ID)) {
+      crewedPadRaced = true
+    }
     // A competitor entered in two races (Chang'e-7 runs in Touchdown and Water
     // Ice) stands on one plot, owned by whichever race claims it first. Packing
     // still counts it in both districts so neither leaves a gap where it would
     // have stood.
     const slots = districtSlots(
       plan,
-      tree.projects.map((p) => ({ id: p.id, radiusM: footprintRadiusM(p) }))
+      tree.projects
+        .filter((p) => p.id !== CREWED_PAD_PROJECT_ID)
+        .map((p) => ({ id: p.id, radiusM: footprintRadiusM(p) }))
     )
     // A race whose hardware DRIVES is shown twice: parked on its plots like
     // everyone else, and again out on the spine as a moving scenery copy,
@@ -159,18 +168,19 @@ export function buildColonyLayout(trees: TechTree[]): ColonyLayout {
     }
   }
 
-  // Starship stands on the crewed pad only while no race has given it a plot,
-  // so a crewed-landing district can never stand it twice.
+  // Starship always stands on the crewed pad. It is a race plot there when a
+  // standing race fields it, and unclickable scenery when none does.
   const scenery: ColonyLayout['scenery'] = []
   const starship = trees
     .flatMap((t) => t.projects)
     .find((p) => p.id === CREWED_PAD_PROJECT_ID)
-  if (starship && !plots.has(starship.id)) {
-    scenery.push({
-      project: starship,
+  if (starship) {
+    const pad = {
       dir: dirAt(CREWED_PAD.east, CREWED_PAD.north),
       slot: { ...CREWED_PAD, turn: 0, offsetM: 0 },
-    })
+    }
+    if (crewedPadRaced) plots.set(starship.id, pad)
+    else scenery.push({ project: starship, ...pad })
   }
   return { districts, districtOwner, plots, scenery }
 }
