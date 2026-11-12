@@ -7,6 +7,7 @@ export class TouchdownAudio {
   private master: GainNode | null = null
   private engineGain: GainNode | null = null
   private engineFilter: BiquadFilterNode | null = null
+  private dustGain: GainNode | null = null
   private droneGain: GainNode | null = null
   private noise: AudioBuffer | null = null
   muted = false
@@ -53,6 +54,20 @@ export class TouchdownAudio {
       this.engineGain = gain
       this.engineFilter = filter
 
+      // Regolith spraying off the surface: a dry hiss that builds near the ground.
+      const grit = ctx.createBufferSource()
+      grit.buffer = buf
+      grit.loop = true
+      grit.playbackRate.value = 1.7
+      const gritFilter = ctx.createBiquadFilter()
+      gritFilter.type = 'highpass'
+      gritFilter.frequency.value = 1500
+      const gritGain = ctx.createGain()
+      gritGain.gain.value = 0
+      grit.connect(gritFilter).connect(gritGain).connect(master)
+      grit.start()
+      this.dustGain = gritGain
+
       // A quiet two-note drone so the silence of space has a floor.
       const drone = ctx.createGain()
       drone.gain.value = 0.035
@@ -75,6 +90,12 @@ export class TouchdownAudio {
     if (this.master && this.ctx) {
       this.master.gain.setTargetAtTime(muted ? 0 : 0.8, this.ctx.currentTime, 0.03)
     }
+  }
+
+  /** 0..1: how hard the plume is scouring the ground. */
+  setDust(level: number) {
+    if (!this.ctx || !this.dustGain) return
+    this.dustGain.gain.setTargetAtTime(Math.max(0, Math.min(1, level)) * 0.22, this.ctx.currentTime, 0.12)
   }
 
   setEngine(on: boolean) {

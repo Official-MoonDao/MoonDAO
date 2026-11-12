@@ -126,6 +126,15 @@ export class TouchdownEngine {
   private dustMax!: Float32Array
   private dustLit!: Float32Array
   private dustNext = 0
+  // Haze: soft sunlit puffs that make up the body of the blast sheet.
+  private haze!: THREE.Points
+  private hazePos!: Float32Array
+  private hazeCol!: Float32Array
+  private hazeVel!: Float32Array
+  private hazeLife!: Float32Array
+  private hazeMax!: Float32Array
+  private hazeLit!: Float32Array
+  private hazeNext = 0
   private debris: Debris[] = []
   private extras: THREE.Object3D[] = []
   private flash = new THREE.PointLight(0xffc27a, 0, 160, 1.5)
@@ -896,7 +905,7 @@ diffuseColor *= sampledDiffuseColor;`
   }
 
   private buildDust() {
-    const n = this.mobile ? 1800 : 5200
+    const n = this.mobile ? 2800 : 9000
     this.dustPos = new Float32Array(n * 6).fill(-9999)
     this.dustCol = new Float32Array(n * 6)
     this.dustVel = new Float32Array(n * 3)
@@ -922,6 +931,41 @@ diffuseColor *= sampledDiffuseColor;`
     )
     this.dust.frustumCulled = false
     this.scene.add(this.dust)
+
+    // Haze sheet: fine regolith thrown out almost flat, lit by the low sun. In
+    // vacuum it does not billow; it streams outward in a thin bright layer that
+    // washes out the ground under the lander, as in the Apollo descent films.
+    const hn = this.mobile ? 900 : 2600
+    this.hazePos = new Float32Array(hn * 3).fill(-9999)
+    this.hazeCol = new Float32Array(hn * 3)
+    this.hazeVel = new Float32Array(hn * 3)
+    this.hazeLife = new Float32Array(hn)
+    this.hazeMax = new Float32Array(hn)
+    this.hazeLit = new Float32Array(hn)
+    const hgeo = this.track(new THREE.BufferGeometry())
+    hgeo.setAttribute('position', new THREE.BufferAttribute(this.hazePos, 3))
+    hgeo.setAttribute('color', new THREE.BufferAttribute(this.hazeCol, 3))
+    this.haze = new THREE.Points(
+      hgeo,
+      this.track(
+        new THREE.PointsMaterial({
+          size: 2.6,
+          sizeAttenuation: true,
+          map: this.glowTexture([
+            [0, 'rgba(255,255,255,0.9)'],
+            [0.4, 'rgba(255,255,255,0.35)'],
+            [1, 'rgba(255,255,255,0)'],
+          ]),
+          vertexColors: true,
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          toneMapped: false,
+        })
+      )
+    )
+    this.haze.frustumCulled = false
+    this.scene.add(this.haze)
 
     // The blast sheet itself: a radial-streak disc hugging the ground under the engine.
     const c = document.createElement('canvas')
@@ -1009,6 +1053,8 @@ diffuseColor *= sampledDiffuseColor;`
     if (this.exploded) this.rebuildLander()
     this.lander.group.visible = true
     this.dustPos.fill(-9999)
+    this.hazePos.fill(-9999)
+    this.hazeLife.fill(0)
     this.dustLife.fill(0)
     this.flash.intensity = 0
     this.blast.visible = false
@@ -1390,12 +1436,28 @@ diffuseColor *= sampledDiffuseColor;`
         const nozzleY = s.py - 1.4 * uy
         const ground = heightAt(this.terrain, s.px, s.pz)
         const range = (nozzleY - ground) / uy
-        if (range < 30) {
+        if (range < 48) {
           const gx = s.px - ux * range
           const gz = s.pz - uz * range
           const gy = heightAt(this.terrain, gx, gz) + 0.06
-          strength = 1 - range / 30
-          const rate = (this.mobile ? 500 : 1500) * strength * strength
+          strength = 1 - range / 48
+          // Haze first: the sheet is visible well before individual grains are.
+          let hz = Math.floor((this.mobile ? 150 : 460) * strength * dt + Math.random())
+          while (hz-- > 0) {
+            const a = Math.random() * Math.PI * 2
+            const v = (10 + Math.random() * 34) * (0.4 + strength * 0.8)
+            const r = 0.6 + Math.random() * 2.4
+            const i = this.hazeNext
+            this.hazeNext = (i + 1) % this.hazeLife.length
+            const hx = gx + Math.cos(a) * r
+            const hzz = gz + Math.sin(a) * r
+            this.hazePos.set([hx, gy + 0.15, hzz], i * 3)
+            // Almost flat: a few degrees of elevation at most.
+            this.hazeVel.set([Math.cos(a) * v, v * (0.005 + Math.random() * 0.055), Math.sin(a) * v], i * 3)
+            this.hazeLife[i] = this.hazeMax[i] = 1.2 + Math.random() * 2.6
+            this.hazeLit[i] = (0.1 + 0.9 * sunAt(this.terrain, hx, hzz)) * (0.5 + strength * 0.5)
+          }
+          const rate = (this.mobile ? 800 : 2600) * strength * strength
           let n = Math.floor(rate * dt + Math.random())
           while (n-- > 0) {
             const a = Math.random() * Math.PI * 2
@@ -1416,12 +1478,12 @@ diffuseColor *= sampledDiffuseColor;`
           this.blast.position.set(gx, gy + 0.05, gz)
           this.blast.quaternion.setFromUnitVectors(Z_AXIS, scratchA.set(n3[0], n3[1], n3[2]))
           this.blast.rotateZ(Math.random() * Math.PI * 2)
-          this.blast.scale.setScalar(14 + (1 - strength) * 26)
+          this.blast.scale.setScalar(20 + (1 - strength) * 46)
         }
       }
     }
     const bm = this.blast.material as THREE.MeshBasicMaterial
-    bm.opacity += (strength * strength * 0.75 * (0.75 + Math.random() * 0.25) - bm.opacity) * 0.35
+    bm.opacity += (Math.pow(strength, 1.5) * 0.95 * (0.7 + Math.random() * 0.3) - bm.opacity) * 0.35
     this.blast.visible = bm.opacity > 0.01
 
     const p = this.dustPos
@@ -1443,9 +1505,9 @@ diffuseColor *= sampledDiffuseColor;`
         continue
       }
       // Tail trails the head by a fixed slice of time.
-      p[q + 3] = p[q] - vel[k] * 0.05
-      p[q + 4] = p[q + 1] - vel[k + 1] * 0.05
-      p[q + 5] = p[q + 2] - vel[k + 2] * 0.05
+      p[q + 3] = p[q] - vel[k] * 0.075
+      p[q + 4] = p[q + 1] - vel[k + 1] * 0.075
+      p[q + 5] = p[q + 2] - vel[k + 2] * 0.075
       const b = Math.min(1, life[i] / this.dustMax[i] + 0.15) * this.dustLit[i] * 0.6
       c[q] = b
       c[q + 1] = b * 0.96
@@ -1454,6 +1516,34 @@ diffuseColor *= sampledDiffuseColor;`
     }
     this.dust.geometry.attributes.position.needsUpdate = true
     this.dust.geometry.attributes.color.needsUpdate = true
+
+    const hp = this.hazePos
+    const hc = this.hazeCol
+    const hv = this.hazeVel
+    const hl = this.hazeLife
+    for (let i = 0; i < hl.length; i++) {
+      if (hl[i] <= 0) continue
+      hl[i] -= dt
+      const k = i * 3
+      hv[k + 1] -= 1.62 * dt
+      hp[k] += hv[k] * dt
+      hp[k + 1] += hv[k + 1] * dt
+      hp[k + 2] += hv[k + 2] * dt
+      if (hl[i] <= 0 || (hv[k + 1] < 0 && hp[k + 1] < heightAt(this.terrain, hp[k], hp[k + 2]) - 0.3)) {
+        hl[i] = 0
+        hp[k + 1] = -9999
+        continue
+      }
+      // Bright as it leaves the engine, thinning as it spreads.
+      const age = hl[i] / this.hazeMax[i]
+      const b = age * age * this.hazeLit[i] * 0.2
+      hc[k] = b
+      hc[k + 1] = b * 0.96
+      hc[k + 2] = b * 0.9
+    }
+    this.haze.geometry.attributes.position.needsUpdate = true
+    this.haze.geometry.attributes.color.needsUpdate = true
+    this.audio.setDust(this.phase === 'flying' ? strength : 0)
   }
 
   /** Break-up: the lander's real parts come apart and tumble. */
