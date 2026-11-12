@@ -243,12 +243,14 @@ module.exports = withBundleAnalyzer(
             destination: '/elections/executive-lead-third-seat-2026',
             statusCode: 301,
           },
-          // Shorthand for Moon Base Zero. While it is gated, the middleware
-          // then sends visitors on to /gate?next=/moonbase.
+          // Shorthand for Moon Base Zero, landing on the shared next-landing race
+          // (year 2050). 302, not 301, so browsers don't cache the target and
+          // it can change again. While gated, the middleware sends visitors on
+          // to /gate?next=... with the query string kept.
           {
             source: '/base',
-            destination: '/moonbase',
-            statusCode: 301,
+            destination: '/moonbase?race=shared-next-landing&year=2050',
+            statusCode: 302,
           },
           // /touchdown used to 301 to the first Arbitrum DePrize race. It is
           // now the Touchdown game (pages/touchdown.tsx), which links on to
