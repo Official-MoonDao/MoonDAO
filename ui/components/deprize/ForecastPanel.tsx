@@ -166,7 +166,10 @@ export default function ForecastPanel(props: {
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
   const [rosterPrize, setRosterPrize] = useState<string | null>(null)
   const [overlays, setOverlays] = useState<RosterOverlay[]>([])
-  const prizeKey = forecastRosterKey(chainSlug, deprizeId, account?.address)
+  // The writer, not the active account. A guest has no active account until
+  // they create one, and that upgrade keeps this same address.
+  const writerAddress = writer?.address?.toLowerCase()
+  const prizeKey = forecastRosterKey(chainSlug, deprizeId, writerAddress)
   // The panel instance is reused across prizes. Drop the previous roster's
   // pick before effects run, or a stale saved pick would discard the next handoff.
   if (rosterPrize !== null && rosterPrize !== prizeKey) {
@@ -209,17 +212,17 @@ export default function ForecastPanel(props: {
 
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
-      setRosterPrize(forecastRosterKey(chainSlug, deprizeId, account?.address))
+      setRosterPrize(prizeKey)
       setConsensus(body)
       setOverlays((prev) => pruneRosterOverlays(prev, body.leaderboard ?? [], labels))
-      const mine = writer?.address
-        ? body.leaderboard.find((row) => row.voterAddress === writer.address.toLowerCase())
+      const mine = writerAddress
+        ? body.leaderboard.find((row) => row.voterAddress === writerAddress)
         : undefined
       if (mine?.allocation?.length === n) {
         setSavedPick(pickFromAllocation(mine.allocation))
       }
     },
-    [writer?.address, labels, n, chainSlug, deprizeId, account?.address]
+    [writerAddress, labels, n, prizeKey]
   )
 
   useEffect(() => {
@@ -271,7 +274,7 @@ export default function ForecastPanel(props: {
     setSavedPick(null)
     setPreviousPick(null)
     setError(null)
-  }, [writer?.address, chainSlug, deprizeId])
+  }, [writerAddress, chainSlug, deprizeId])
 
   useEffect(() => {
     setError(null)

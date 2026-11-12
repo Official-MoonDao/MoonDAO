@@ -104,7 +104,10 @@ export function useForecastPredict(args: {
   const [rosterPrize, setRosterPrize] = useState<string | null>(null)
   const [overlays, setOverlays] = useState<RosterOverlay[]>([])
   const [chanceLoading, setChanceLoading] = useState(true)
-  const prizeKey = forecastRosterKey(chainSlug, deprizeId, activeAccount?.address)
+  // The writer, not useActiveAccount(). Creating an account attaches the
+  // guest wallet; that must not look like a different roster.
+  const writerAddress = account?.address?.toLowerCase()
+  const prizeKey = forecastRosterKey(chainSlug, deprizeId, writerAddress)
   // The same hook instance can move to another prize. Drop the previous
   // roster's pick before effects run, or a stale saved pick would discard
   // the next handoff.
@@ -148,17 +151,17 @@ export function useForecastPredict(args: {
 
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
-      setRosterPrize(forecastRosterKey(chainSlug, deprizeId, activeAccount?.address))
+      setRosterPrize(prizeKey)
       setConsensus(body)
       setOverlays((prev) => pruneRosterOverlays(prev, body.leaderboard ?? [], labels))
-      const mine = account?.address
-        ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
+      const mine = writerAddress
+        ? body.leaderboard.find((row) => row.voterAddress === writerAddress)
         : undefined
       if (mine?.allocation?.length === n) {
         setSavedPick(pickFromAllocation(mine.allocation))
       }
     },
-    [account?.address, labels, n, chainSlug, deprizeId, activeAccount?.address]
+    [writerAddress, labels, n, prizeKey]
   )
 
   useEffect(() => {
@@ -167,7 +170,7 @@ export function useForecastPredict(args: {
     setError(null)
     setConsensus(null)
     setOverlays([])
-  }, [account?.address, chainSlug, deprizeId])
+  }, [writerAddress, chainSlug, deprizeId])
 
   useEffect(() => {
     return subscribeRoster((notice) => {

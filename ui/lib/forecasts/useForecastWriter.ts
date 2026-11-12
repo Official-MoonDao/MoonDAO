@@ -27,6 +27,7 @@ import {
   writePendingHandoffs,
   type PendingHandoff,
 } from './guestHandoff'
+import { retainForecastWriter } from './retainForecastWriter'
 
 const GUEST_WALLET_WAIT_MS = 15_000
 
@@ -56,6 +57,7 @@ export function useForecastWriter() {
   walletsRef.current = wallets
   const sendRef = useRef(sendTransaction)
   sendRef.current = sendTransaction
+  const heldWriter = useRef<Account | undefined>(undefined)
 
   const makeGuestAccount = useCallback(
     (address: string) =>
@@ -76,7 +78,15 @@ export function useForecastWriter() {
     () => (guestAddress ? makeGuestAccount(guestAddress) : undefined),
     [guestAddress, makeGuestAccount]
   )
-  const writer: Account | undefined = account ?? guestAccount
+  // The active account is unset for a guest. Upgrading keeps this wallet, but
+  // the guest object drops out before thirdweb attaches it.
+  const retained = retainForecastWriter({
+    live: account ?? guestAccount,
+    held: heldWriter.current,
+    authenticated,
+  })
+  heldWriter.current = retained.held
+  const writer = retained.writer
 
   /**
    * Returns a wallet that can write, creating a guest account when the

@@ -16,6 +16,7 @@ import {
   takePendingHandoff,
   writePendingHandoffs,
 } from '@/lib/forecasts/guestHandoff'
+import { retainForecastWriter } from '@/lib/forecasts/retainForecastWriter'
 import { isGuestRecord, isPrivyGuest, rememberPrivyUser } from '@/lib/privy/guest'
 
 const UI_ROOT = path.resolve(__dirname, '../../../../')
@@ -80,6 +81,70 @@ describe('guest forecast account', () => {
       threw = true
     }
     expect(threw).to.equal(true)
+  })
+})
+
+describe('guest upgrade keeps the same forecast wallet', () => {
+  const guest = { address: '0xGuest' }
+  const sameWallet = { address: '0xGuest' }
+  const other = { address: '0xOther' }
+
+  it('holds the guest writer until that wallet becomes the active account', () => {
+    const duringGuest = retainForecastWriter({
+      live: guest,
+      held: undefined,
+      authenticated: true,
+    })
+    const gap = retainForecastWriter({
+      live: undefined,
+      held: duringGuest.held,
+      authenticated: true,
+    })
+    const attached = retainForecastWriter({
+      live: sameWallet,
+      held: gap.held,
+      authenticated: true,
+    })
+    expect(gap.writer).to.equal(guest)
+    expect(attached.writer).to.equal(sameWallet)
+  })
+
+  it('drops the held writer on logout', () => {
+    const loggedOut = retainForecastWriter({
+      live: undefined,
+      held: guest,
+      authenticated: false,
+    })
+    const nextSession = retainForecastWriter({
+      live: undefined,
+      held: loggedOut.held,
+      authenticated: true,
+    })
+    expect(loggedOut.writer).to.equal(undefined)
+    expect(loggedOut.held).to.equal(undefined)
+    expect(nextSession.writer).to.equal(undefined)
+  })
+
+  it('follows a different wallet as soon as it is live', () => {
+    const switched = retainForecastWriter({ live: other, held: guest, authenticated: true })
+    expect(switched.writer).to.equal(other)
+    expect(switched.held).to.equal(other)
+  })
+})
+
+describe('guest roster identity', () => {
+  it('keys the visible roster by the writer, not the active account', () => {
+    const panel = readUi('components', 'deprize', 'ForecastPanel.tsx')
+    const predict = readUi('lib', 'forecasts', 'useForecastPredict.ts')
+    for (const src of [panel, predict]) {
+      expect(src).to.contain('forecastRosterKey(chainSlug, deprizeId, writerAddress)')
+      expect(src).to.contain('setRosterPrize(prizeKey)')
+      expect(src).to.contain('}, [writerAddress, chainSlug, deprizeId])')
+    }
+    expect(panel).not.to.contain('forecastRosterKey(chainSlug, deprizeId, account?.address)')
+    expect(predict).not.to.contain(
+      'forecastRosterKey(chainSlug, deprizeId, activeAccount?.address)'
+    )
   })
 })
 
