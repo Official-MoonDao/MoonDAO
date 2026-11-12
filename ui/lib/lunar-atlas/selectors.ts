@@ -486,6 +486,45 @@ export function buildTechTrees(
   return trees.sort((a, b) => a.raceId.localeCompare(b.raceId))
 }
 
+// Which roster a competitor click belongs to.
+//
+// A project can be entered in two races, and the trees above are ordered by
+// race id. The first one that lists the project is whichever id sorts first —
+// for Starship, the crewed landing, which has no district of its own. Taking
+// that race switches off the live Touchdown market and opens the planned
+// crewed-landing panel, even though the pad and the Touchdown roster are what
+// was clicked.
+//
+// A click made while a race that already lists the project is open stays in
+// that race, so the Touchdown roster stays on Touchdown and the Water Ice
+// roster stays on Water Ice. Deep links do not: `/moonbase/[projectId]` reuses
+// the moonbase page without remounting, and a leftover race must not win.
+// Otherwise the click belongs to the district the asset stands in (the tree
+// the marker is drawn in), and only then to the first roster that mentions it.
+export function treeForProjectClick(
+  projectId: string,
+  surfaceTrees: readonly TechTree[],
+  trees: readonly TechTree[],
+  opts: {
+    openRaceId?: string | null
+    fromDeepLink?: boolean
+    hasDistrict: (raceId: string) => boolean
+  }
+): TechTree | undefined {
+  const contains = (t: TechTree) => t.projects.some((p) => p.id === projectId)
+  if (!opts.fromDeepLink && opts.openRaceId) {
+    const open =
+      surfaceTrees.find((t) => t.raceId === opts.openRaceId && contains(t)) ??
+      trees.find((t) => t.raceId === opts.openRaceId && contains(t))
+    if (open) return open
+  }
+  return (
+    surfaceTrees.find((t) => contains(t) && opts.hasDistrict(t.raceId)) ??
+    surfaceTrees.find(contains) ??
+    trees.find(contains)
+  )
+}
+
 /**
  * How built the settlement is: roads, lights, and the construction fleet.
  *

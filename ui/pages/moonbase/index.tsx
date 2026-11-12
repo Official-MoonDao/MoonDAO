@@ -33,6 +33,7 @@ import {
   sharedGoalById,
   racesSharingDistrict,
   standIdsForRace,
+  treeForProjectClick,
   marketShowsOdds,
 } from '@/lib/lunar-atlas/selectors'
 import { SKY_STATIONS, stationLatLon } from '@/lib/lunar-atlas/skyplan'
@@ -573,13 +574,15 @@ export default function MoonBaseZeroIndex() {
     const project = projectById(dataset, id)
     if (!project) return
 
-    // The cluster this asset actually stands in — not whichever race was
-    // already open. Each competitor has its own plot now, so picking a
-    // dimmed asset in another district must fill *that* district, the same
-    // way the hovering pin does.
-    const tree =
-      surfaceTrees.find((t) => t.projects.some((p) => p.id === id)) ??
-      trees.find((t) => t.projects.some((p) => p.id === id))
+    // The roster this click belongs to. A plain find() takes the first tree
+    // that lists the project, and for Starship that is the crewed landing,
+    // which switches off the live Touchdown market. A dimmed asset in another
+    // district still fills that district — the one it actually stands in.
+    const tree = treeForProjectClick(id, surfaceTrees, trees, {
+      openRaceId: selectedRaceId,
+      fromDeepLink: opts?.fromDeepLink,
+      hasDistrict: (raceId) => layout.districts.has(raceId),
+    })
     const raceId = tree?.raceId ?? `type:${project.type}`
 
     if (selectedGoalId) setRaceReturn({ kind: 'goal', id: selectedGoalId })

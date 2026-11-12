@@ -30,6 +30,7 @@ import {
   sharedGoalById,
   racesSharingDistrict,
   standIdsForRace,
+  treeForProjectClick,
 } from '../../../lib/lunar-atlas/selectors'
 import type {
   Milestone,
@@ -813,5 +814,79 @@ describe('racesSharingDistrict — races that can be opened from one district', 
 
   it('offers nothing for a race with no hardware on the base', () => {
     expect(sharing('shared-earthside')).to.deep.equal([])
+  })
+})
+
+describe('treeForProjectClick — a competitor entered in two races', () => {
+  const trees = buildTechTrees(SEED_ATLAS.projects, SEED_ATLAS.sharedGoals)
+  // Same membership the colony hands the page: a race's declared competitors.
+  const surfaceTrees = trees
+    .map((t) =>
+      t.goal
+        ? {
+            ...t,
+            projects: t.projects.filter((p) => t.goal!.projectIds.includes(p.id)),
+          }
+        : t
+    )
+    .filter((t) => t.projects.length > 0)
+  // Touchdown owns the lander zone. The crewed landing and Water Ice do not.
+  const hasDistrict = (raceId: string) => raceId === 'shared-next-landing'
+  const click = (
+    projectId: string,
+    opts?: { openRaceId?: string | null; fromDeepLink?: boolean }
+  ) =>
+    treeForProjectClick(projectId, surfaceTrees, trees, {
+      hasDistrict,
+      ...opts,
+    })?.raceId
+
+  it('sorts the crewed landing ahead of Touchdown, and both list Starship', () => {
+    const ids = surfaceTrees.map((t) => t.raceId)
+    expect(ids.indexOf('shared-crewed-lander')).to.be.greaterThan(-1)
+    expect(ids.indexOf('shared-crewed-lander')).to.be.lessThan(ids.indexOf('shared-next-landing'))
+    for (const raceId of ['shared-crewed-lander', 'shared-next-landing']) {
+      const tree = surfaceTrees.find((t) => t.raceId === raceId)
+      expect(tree?.projects.some((p) => p.id === 'spacex-starship-hls')).to.equal(true)
+    }
+  })
+
+  it('opens Starship in Touchdown when that market is already open', () => {
+    expect(click('spacex-starship-hls', { openRaceId: 'shared-next-landing' })).to.equal(
+      'shared-next-landing'
+    )
+  })
+
+  it('opens Starship in Touchdown from the pad when no race is open', () => {
+    expect(click('spacex-starship-hls')).to.equal('shared-next-landing')
+  })
+
+  it('sends a Starship click from another district to Touchdown', () => {
+    expect(click('spacex-starship-hls', { openRaceId: 'shared-first-tracks' })).to.equal(
+      'shared-next-landing'
+    )
+  })
+
+  it('does not let a leftover crewed race win a Starship deep link', () => {
+    expect(
+      click('spacex-starship-hls', {
+        openRaceId: 'shared-crewed-lander',
+        fromDeepLink: true,
+      })
+    ).to.equal('shared-next-landing')
+  })
+
+  it('stays on the crewed roster when that race is what was clicked', () => {
+    expect(click('spacex-starship-hls', { openRaceId: 'shared-crewed-lander' })).to.equal(
+      'shared-crewed-lander'
+    )
+  })
+
+  it('keeps Chang\'e-7 on Water Ice when that roster is open', () => {
+    expect(click('cnsa-change-7', { openRaceId: 'shared-ice' })).to.equal('shared-ice')
+  })
+
+  it('opens a one-race lander on its own race', () => {
+    expect(click('firefly-blue-ghost')).to.equal('shared-next-landing')
   })
 })
