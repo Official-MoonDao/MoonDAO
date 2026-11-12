@@ -17,6 +17,7 @@
  *
  * Dependency-free: imported by the headless bot.
  */
+import { baseColliders } from './baseLayout'
 import { mulberry32, type Rng } from './mission'
 
 export const MAP_SIZE = 2400
@@ -64,11 +65,7 @@ export type Terrain = {
   boulders: Float32Array
   boulderCellStart: Int32Array
   boulderCellItems: Int32Array
-  /**
-   * Moon Base Zero's solid parts as spheres: x, y, z, radius. Filled in by the
-   * renderer once the base is built (the headless bot flies without them; it
-   * never goes near the base).
-   */
+  /** Moon Base Zero's solid parts as spheres: x, y, z, radius (see baseLayout.ts). */
   structures: Float32Array
 }
 
@@ -540,6 +537,9 @@ export function generateTerrain(seed: number): Terrain {
   }
   terrain.boulderCellStart = counts
   terrain.boulderCellItems = items
+
+  // Moon Base Zero's solid parts, on the ground as it now stands.
+  terrain.structures = baseColliders(seed, terrain.base, (x, z) => heightAt(terrain, x, z))
 
   return terrain
 }

@@ -22,6 +22,7 @@ import {
   type Sim,
   type SimInput,
 } from '@/lib/touchdown/physics'
+import { quantise, recordTape, tapeToBase64 } from '@/lib/touchdown/replay'
 import { scoreFlight, type FlightResult } from '@/lib/touchdown/scoring'
 import {
   CELL,
@@ -183,6 +184,8 @@ export class TouchdownEngine {
   private dustCalled = false
   private baseCalled = false
   private runCount = 0
+  /** This flight's inputs, for the leaderboard to re-fly (see lib/touchdown/replay.ts). */
+  private tape: number[] = []
   private quindarOutAt = -1
   private rcsSoundAt = 0
 
@@ -923,8 +926,6 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     decals.instanceMatrix.needsUpdate = true
     this.base.group.add(decals)
     this.scene.add(this.base.group)
-    // Give the physics something to hit.
-    t.structures = new Float32Array(this.base.colliders)
   }
 
   private buildDust() {
@@ -1069,6 +1070,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     this.shake = 0
     this.legFold = [0, 0, 0, 0]
     this.stick.x = this.stick.y = 0
+    this.tape = []
     for (const d of this.debris) this.scene.remove(d.obj)
     for (const o of this.extras) this.scene.remove(o)
     this.debris = []
@@ -1116,6 +1118,11 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       this.frame(dt)
     }
     this.raf = requestAnimationFrame(tick)
+  }
+
+  /** The finished flight's input tape, base64, for score verification. */
+  tapeBase64(): string {
+    return tapeToBase64(this.tape)
   }
 
   /**
@@ -1199,6 +1206,9 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
         this.simInput.x = this.stick.y * s + this.stick.x * c
         this.simInput.burn = this.want.burn
       }
+      // The sim flies on the same quantised stick values the tape stores.
+      this.simInput.x = quantise(this.simInput.x)
+      this.simInput.y = quantise(this.simInput.y)
       this.acc += dt * this.timeScale
       let steps = 0
       while (this.acc >= SUBSTEP_DT && steps < 40) {
@@ -1209,6 +1219,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
         if (sim.outcome) break
       }
       if (steps === 40) this.acc = 0
+      recordTape(this.tape, steps, this.simInput.x, this.simInput.y, this.simInput.burn)
       this.audio.setEngine(sim.burning)
       this.flightCallouts()
     }
@@ -1346,17 +1357,13 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
   }
 
   /**
-   * Where the live end-shot camera aims. On wide screens the result panel
-   * covers the right side, so aim to the right of the subject and it sits in
-   * the clear left part of the frame.
+   * Where the live end-shot camera aims. On wide screens the score card sits
+   * top-left and the action panel on the right, so the clear area is the
+   * lower middle: aim a little above the subject and it sits there.
    */
-  private aimEnd(out: THREE.Vector3, angle: number) {
+  private aimEnd(out: THREE.Vector3, _angle: number) {
     out.copy(this.endAim)
-    if (this.camera.aspect >= 1) {
-      const shift = this.endDist * 0.3
-      out.x += Math.sin(angle) * shift
-      out.z -= Math.cos(angle) * shift
-    }
+    if (this.camera.aspect >= 1) out.y += this.endDist * 0.2
   }
 
   private placeEndCamera(out: THREE.Vector3, angle: number, dist = this.endDist) {

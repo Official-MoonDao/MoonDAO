@@ -2,7 +2,7 @@
  * Touchdown daily leaderboard.
  *
  *   GET    ?m=<mission>&mode=easy|pro[&score=N]   top 10, plus the rank `score` would hold
- *   POST   { mission, mode, name, score }         record an attempt, keep the best
+ *   POST   { mission, mode, name, replay }        re-fly the recorded inputs, record that score
  *   DELETE ?m=&mode=&name=                        moderation; needs x-touchdown-admin
  *
  * Returns `enabled: false` (200) when Redis is not configured, so the game
@@ -13,6 +13,7 @@ import { newsletterClientIp } from '@/lib/convert-kit/subscribeRateLimit'
 import { validateSubmission, type BoardResponse } from '@/lib/touchdown/leaderboard'
 import { leaderboardRedis, rankOf, readBoard, removeEntry, submitLimiter, submitScore } from '@/lib/touchdown/leaderboardStore'
 import { missionNumberFor } from '@/lib/touchdown/mission'
+import { base64ToTape, replayFlight } from '@/lib/touchdown/replay'
 import type { ModeId } from '@/lib/touchdown/modes'
 
 function modeOf(v: unknown): ModeId {
@@ -52,7 +53,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (!limited.success) {
         return res.status(429).json(empty(today, mode, 'Too many scores from this connection. Try again in a few minutes.'))
       }
-      const checked = validateSubmission(req.body, today, process.env.TOUCHDOWN_NAME_BLOCKLIST)
+      // Never trust a score from the browser: re-fly the recorded inputs here
+      // and use what the physics produces.
+      const mission = Number(req.body?.mission)
+      const tape = base64ToTape(req.body?.replay)
+      if (!tape || !Number.isInteger(mission) || (mission !== today && mission !== today - 1)) {
+        return res.status(400).json(empty(today, mode, 'Could not verify this flight.'))
+      }
+      const flown = replayFlight(mission, mode, tape)
+      if (!flown) return res.status(400).json(empty(today, mode, 'Could not verify this flight.'))
+      if (flown.score < 1) {
+        return res.status(400).json(empty(today, mode, 'Only landings that score points go on the board.'))
+      }
+      const checked = validateSubmission(
+        { ...req.body, score: flown.score },
+        today,
+        process.env.TOUCHDOWN_NAME_BLOCKLIST
+      )
       if (!checked.ok) return res.status(400).json(empty(today, mode, checked.error))
       const rank = await submitScore(redis, checked.value)
       const board = await readBoard(redis, checked.value.mission, checked.value.mode)
@@ -62,6 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         mode: checked.value.mode,
         ...board,
         rank,
+        verifiedScore: checked.value.score,
       })
     }
 

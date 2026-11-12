@@ -9,8 +9,12 @@
  * Axes: +x is the approach direction, +y up, +z screen-right from the chase
  * camera. The body's thrust axis is body +y.
  *
+ * The step uses only exactly-defined arithmetic (see detmath.ts), so a
+ * recorded flight replays identically on the server.
+ *
  * Dependency-free: imported by the headless bot.
  */
+import { datan2, dcos, dsin, dtan } from './detmath'
 import { LUNAR_G, TIPPED_TILT_DEG, type ModeConfig } from './modes'
 import { contactAt, heightAt, MAP_SIZE, type Contact, type Terrain } from './terrain'
 
@@ -55,7 +59,7 @@ export const POINTS = (() => {
   const ring = (y: number, r: number, phase: number) => {
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2 + phase
-      p.push(Math.cos(a) * r, y, Math.sin(a) * r)
+      p.push(dcos(a) * r, y, dsin(a) * r)
     }
   }
   ring(-0.9, 1.5, 0)
@@ -143,10 +147,10 @@ export function createSim(terrain: Terrain, mode: ModeConfig, lateralOffset = 0)
     vx: mode.startHorizontalSpeed,
     vy: mode.startVerticalSpeed,
     vz: 0,
-    qw: Math.cos(half),
+    qw: dcos(half),
     qx: 0,
     qy: 0,
-    qz: Math.sin(half),
+    qz: dsin(half),
     wx: 0,
     wy: 0,
     wz: 0,
@@ -265,7 +269,7 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
       const impact = -vn
       // "Touchdown speed" is the hardest arrival of the flight, not just the
       // first brush: a gentle touch followed by a hop and a slam is not soft.
-      const arrival = Math.hypot(s.vx, s.vy, s.vz)
+      const arrival = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz)
       if (arrival > s.touchdownSpeed) s.touchdownSpeed = arrival
       if (s.firstContactT < 0) {
         s.firstContactT = s.t
@@ -329,12 +333,12 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   let ay = 0
   let az = 0
   // Yaw hold: keep the body's +x pointing down-track.
-  const yaw = Math.atan2(-m[6], m[0])
+  const yaw = datan2(-m[6], m[0])
   ay = -4 * yaw - 3.5 * s.wy
   if (mode.control === 'angle') {
     const max = (mode.maxTiltDeg * Math.PI) / 180
-    const dxu = Math.tan(clamp(input.y, -1, 1) * max)
-    const dzu = Math.tan(clamp(input.x, -1, 1) * max)
+    const dxu = dtan(clamp(input.y, -1, 1) * max)
+    const dzu = dtan(clamp(input.x, -1, 1) * max)
     const inv = 1 / Math.sqrt(dxu * dxu + 1 + dzu * dzu)
     const ux = dxu * inv
     const uy = inv
@@ -414,8 +418,8 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
     return
   }
   if (s.firstContactT >= 0) {
-    const speed = Math.hypot(s.vx, s.vy, s.vz)
-    const spin = Math.hypot(s.wx, s.wy, s.wz)
+    const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz)
+    const spin = Math.sqrt(s.wx * s.wx + s.wy * s.wy + s.wz * s.wz)
     if (grounded) {
       s.airTimer = 0
       if (speed < 0.08 && spin < 0.06 && !burning) s.restTimer += dt

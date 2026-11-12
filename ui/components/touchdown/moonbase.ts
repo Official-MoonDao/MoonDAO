@@ -11,6 +11,7 @@
  */
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { baseSeeded } from '@/lib/touchdown/baseLayout'
 import { mulberry32 } from '@/lib/touchdown/mission'
 import type { Bag } from './models'
 
@@ -76,7 +77,9 @@ export function buildMoonBase(
   const parts = new Map<MatKey, THREE.BufferGeometry[]>()
 
   // Town frame: u runs along the avenues, v across them.
-  const rot = 0.32 * (rng() < 0.5 ? -1 : 1)
+  // Rotation and container stacks come from baseLayout so the picture matches the colliders.
+  const seeded = baseSeeded(seed)
+  const rot = seeded.rot
   const cu = Math.cos(rot)
   const su = Math.sin(rot)
   const world = (u: number, v: number) => {
@@ -312,7 +315,7 @@ export function buildMoonBase(
     for (let k = 0; k < 9; k++) {
       const du = -14 + (k % 3) * 7
       const dv = -12 + Math.floor(k / 3) * 5
-      const stack = 1 + Math.floor(rng() * 2.4)
+      const stack = seeded.stacks[k]
       for (let s = 0; s < stack; s++) {
         add(colours[Math.floor(rng() * colours.length)], new THREE.BoxGeometry(6, 2.5, 2.5), bu + du, bv + dv, 1.25 + s * 2.55)
       }

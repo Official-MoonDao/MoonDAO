@@ -3,8 +3,8 @@
  * the browser can import it. The store is in leaderboardStore.ts.
  *
  * One entry per name per day and mode, best score only, with an attempt count.
- * Scores are computed in the browser, so the server can only bound them (see
- * `validateSubmission`); replay verification is the planned next step.
+ * The browser sends its recorded inputs, not a score: the server re-flies them
+ * (lib/touchdown/replay.ts) and stores what the physics produces.
  */
 import type { ModeId } from './modes'
 
@@ -20,6 +20,8 @@ export type BoardResponse = {
   total: number
   /** Rank the queried or submitted score holds (1 = top). */
   rank?: number
+  /** The score the server's replay produced, on a saved submission. */
+  verifiedScore?: number
   /** Set on a rejected submission. */
   error?: string
 }

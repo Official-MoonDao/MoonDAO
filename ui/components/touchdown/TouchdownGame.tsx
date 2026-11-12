@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { trackTouchdown } from '@/lib/analytics/ga4'
+import { cleanBoardName, type BoardResponse } from '@/lib/touchdown/leaderboard'
 import { missionDateLabel, missionNumberFor, missionSeed } from '@/lib/touchdown/mission'
 import { MODES, type ModeId } from '@/lib/touchdown/modes'
 import { isUpright, type FlightResult } from '@/lib/touchdown/scoring'
@@ -28,11 +29,10 @@ import {
 import { bestKey, loadPrefs, savePrefs, type TouchdownPrefs } from '@/lib/touchdown/storage'
 import { generateTerrain } from '@/lib/touchdown/terrain'
 import { bragLine, formatScore, outcomeHeadline, verdictFor } from '@/lib/touchdown/verdicts'
-import { TouchdownAudio } from './audio'
-import type { Callout, HudState, TouchdownEngine } from './engine'
-import { cleanBoardName, type BoardResponse } from '@/lib/touchdown/leaderboard'
 import Leaderboard from './Leaderboard'
 import { TOUCHDOWN_GOAL_ID } from './RealRacePanel'
+import { TouchdownAudio } from './audio'
+import type { Callout, HudState, TouchdownEngine } from './engine'
 
 const RealRacePanel = dynamic(() => import('./RealRacePanel'), {
   ssr: false,
@@ -91,7 +91,9 @@ function ModeToggle({ mode, onChange }: { mode: ModeId; onChange: (m: ModeId) =>
 
 export default function TouchdownGame({ challenge: linked }: { challenge: Challenge | null }) {
   // A challenge link may replay an earlier day's map, never preview a future one.
-  const [challenge] = useState(() => (linked && linked.mission <= missionNumberFor() ? linked : null))
+  const [challenge] = useState(() =>
+    linked && linked.mission <= missionNumberFor() ? linked : null
+  )
   const router = useRouter()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -167,29 +169,39 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   // --- HUD writer (called ~20 Hz by the engine, no React) -----------------------
   const writeHud = useCallback((h: HudState) => {
     const cfg = MODES[modeRef.current]
-    if (altRef.current) altRef.current.textContent = h.alt < 100 ? h.alt.toFixed(1) : h.alt.toFixed(0)
+    if (altRef.current)
+      altRef.current.textContent = h.alt < 100 ? h.alt.toFixed(1) : h.alt.toFixed(0)
     if (vsRef.current) {
       vsRef.current.textContent = h.vspeed.toFixed(1)
       const sink = -h.vspeed
       const danger = sink > cfg.legCollapseSpeed && h.alt < 60
       const warn = sink > 2.5 + h.alt * 0.11
-      vsRef.current.style.color = danger ? '#ff6b6b' : warn ? '#ffd34d' : sink < 2 ? '#7dffb0' : '#fff'
+      vsRef.current.style.color = danger
+        ? '#ff6b6b'
+        : warn
+        ? '#ffd34d'
+        : sink < 2
+        ? '#7dffb0'
+        : '#fff'
     }
     if (hsRef.current) {
       hsRef.current.textContent = h.hspeed.toFixed(1)
       hsRef.current.style.color =
         h.alt < 25 ? (h.hspeed > 3 ? '#ff6b6b' : h.hspeed > 1.2 ? '#ffd34d' : '#7dffb0') : '#fff'
     }
-    if (distRef.current) distRef.current.textContent = h.dist < 100 ? h.dist.toFixed(1) : h.dist.toFixed(0)
+    if (distRef.current)
+      distRef.current.textContent = h.dist < 100 ? h.dist.toFixed(1) : h.dist.toFixed(0)
     if (tiltRef.current) {
       tiltRef.current.textContent = h.tilt.toFixed(0)
       tiltRef.current.style.color = h.alt < 15 && h.tilt > 12 ? '#ffd34d' : '#fff'
     }
     if (fuelRef.current) {
       fuelRef.current.style.transform = `scaleX(${Math.max(0, h.fuel)})`
-      fuelRef.current.style.background = h.fuel < 0.15 ? '#ff6b6b' : h.fuel < 0.3 ? '#ffd34d' : '#7dffb0'
+      fuelRef.current.style.background =
+        h.fuel < 0.15 ? '#ff6b6b' : h.fuel < 0.3 ? '#ffd34d' : '#7dffb0'
     }
-    if (fuelTextRef.current) fuelTextRef.current.textContent = `${Math.round(h.fuel * cfg.fuelSeconds)} s`
+    if (fuelTextRef.current)
+      fuelTextRef.current.textContent = `${Math.round(h.fuel * cfg.fuelSeconds)} s`
     if (promptRef.current) {
       promptRef.current.textContent = h.prompt
       promptRef.current.style.opacity = h.prompt ? '1' : '0'
@@ -240,7 +252,13 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       try {
         const frame = engine.capture()
         frameRef.current = frame
-        const card = composeCard({ frame, result: r, verdict: v, nickname: nicknameRef.current, rank: undefined })
+        const card = composeCard({
+          frame,
+          result: r,
+          verdict: v,
+          nickname: nicknameRef.current,
+          rank: undefined,
+        })
         const blob = await canvasToBlob(card)
         blobRef.current = blob
         setCardUrl((old) => {
@@ -412,7 +430,12 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
     const url = shareUrl()
     const method = await shareCard({ blob: blobRef.current, text, url, preferSheet: isTouch })
     if (method === 'cancelled') return
-    trackTouchdown('touchdown_share', { method, mode: result.mode, outcome: result.outcome, mission })
+    trackTouchdown('touchdown_share', {
+      method,
+      mode: result.mode,
+      outcome: result.outcome,
+      mission,
+    })
     if (method === 'clipboard') {
       setShareNote('Image copied. Press Ctrl+V (⌘V) in the post to attach it.')
     } else if (method === 'fallback') {
@@ -475,7 +498,12 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       const res = await fetch('/api/touchdown/leaderboard', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ mission, mode: result.mode, name, score: result.score }),
+        body: JSON.stringify({
+          mission,
+          mode: result.mode,
+          name,
+          replay: engineRef.current?.tapeBase64() ?? '',
+        }),
       })
       const data = (await res.json()) as BoardResponse
       if (!res.ok || data.error || !data.enabled) {
@@ -483,6 +511,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
         return
       }
       setBoard(data)
+      if (data.verifiedScore !== undefined && Math.abs(data.verifiedScore - result.score) > 1) {
+        setBoardNote(`Saved with a verified score of ${formatScore(data.verifiedScore)}.`)
+      }
       const rank = data.rank ?? null
       setSavedRank(rank)
       savedRankRef.current = rank
@@ -497,7 +528,13 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       if (engine) {
         try {
           const frame = frameRef.current ?? engine.capture()
-          const card = composeCard({ frame, result, verdict, nickname: name, rank: rank ?? undefined })
+          const card = composeCard({
+            frame,
+            result,
+            verdict,
+            nickname: name,
+            rank: rank ?? undefined,
+          })
           const blob = await canvasToBlob(card)
           blobRef.current = blob
           setCardUrl((old) => {
@@ -526,7 +563,13 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       if (!engine || !result) return
       try {
         const frame = frameRef.current ?? engine.capture()
-        const card = composeCard({ frame, result, verdict, nickname: nick, rank: savedRankRef.current ?? undefined })
+        const card = composeCard({
+          frame,
+          result,
+          verdict,
+          nickname: nick,
+          rank: savedRankRef.current ?? undefined,
+        })
         const blob = await canvasToBlob(card)
         blobRef.current = blob
         setCardUrl((old) => {
@@ -588,7 +631,12 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
     )
     setModal('photo')
     setShowCard(true)
-    trackTouchdown('touchdown_share', { method: 'photo', mode: result.mode, outcome: result.outcome, mission })
+    trackTouchdown('touchdown_share', {
+      method: 'photo',
+      mode: result.mode,
+      outcome: result.outcome,
+      mission,
+    })
   }, [mission, result, verdict])
 
   // --- Input ------------------------------------------------------------------------
@@ -600,7 +648,12 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
     const kx = (k.right ? 1 : 0) - (k.left ? 1 : 0)
     const ky = (k.up ? 1 : 0) - (k.down ? 1 : 0)
     const keyed = kx !== 0 || ky !== 0
-    engine.setControl(keyed ? kx : t.x, keyed ? ky : t.y, k.burn || t.burn, !keyed && (t.x !== 0 || t.y !== 0))
+    engine.setControl(
+      keyed ? kx : t.x,
+      keyed ? ky : t.y,
+      k.burn || t.burn,
+      !keyed && (t.x !== 0 || t.y !== 0)
+    )
     if ((k.burn || t.burn) && !burnedRef.current && screenRef.current === 'flying') {
       burnedRef.current = true
       setBurnHint(false)
@@ -610,7 +663,8 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   useEffect(() => {
     const set = (e: KeyboardEvent, down: boolean) => {
       const el = e.target as HTMLElement | null
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable))
+        return
       if (down && (e.metaKey || e.ctrlKey || e.altKey)) return
       if (
         el &&
@@ -654,7 +708,8 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
           }
           break
         case 'KeyR':
-          if (down && !e.repeat && screenRef.current !== 'start' && screenRef.current !== 'loading') fly(true)
+          if (down && !e.repeat && screenRef.current !== 'start' && screenRef.current !== 'loading')
+            fly(true)
           break
         case 'KeyM':
           if (down && !e.repeat) toggleMute()
@@ -759,7 +814,8 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
     }
     touch.current.x = dx
     touch.current.y = -dy
-    if (knobRef.current) knobRef.current.style.transform = `translate(${dx * STICK_R}px, ${dy * STICK_R}px)`
+    if (knobRef.current)
+      knobRef.current.style.transform = `translate(${dx * STICK_R}px, ${dy * STICK_R}px)`
     pushInput()
   }
   const onStickUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -811,6 +867,75 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   const upright = result ? isUpright(result.outcome) : false
   const beatChallenge = !!(challenge && result && result.score > challenge.score)
   const challenger = challenge?.nickname || 'a friend'
+
+  // Verdict, score and breakdown. Shown in the sheet on phones and in its own
+  // glass card top-left on desktop, so the sidebar can start with Share.
+  const scoreBlock = result && (
+    <div>
+      <p
+        className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
+          upright ? 'text-emerald-300' : 'text-rose-300'
+        }`}
+      >
+        {outcomeHeadline(result)}
+        {result.mode === 'pro' ? ' · PRO' : ''}
+      </p>
+      <div className="mt-0.5 flex items-baseline gap-2">
+        <span className="font-heading text-5xl font-extrabold tabular-nums">
+          {formatScore(result.score)}
+        </span>
+        <span className="text-sm text-white/55">pts</span>
+        {newBest && (
+          <span className="rounded bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200">
+            New best
+          </span>
+        )}
+      </div>
+      <p className="mt-1.5 text-[15px] font-semibold leading-snug">{verdict}</p>
+      <p className="mt-1 text-xs text-white/55">{bragLine(result)}</p>
+      {challenge && challenge.mission === mission && (
+        <p
+          className={`mt-1.5 text-xs font-semibold ${
+            beatChallenge ? 'text-emerald-300' : 'text-amber-200'
+          }`}
+        >
+          {beatChallenge
+            ? `You beat ${challenger}'s ${formatScore(challenge.score)}.`
+            : `${challenger} still leads with ${formatScore(challenge.score)}.`}
+        </p>
+      )}
+      {result.condition > 0 && result.condition < 1 && (
+        <p className="mt-2 rounded-md bg-amber-300/10 px-2 py-1 text-xs font-semibold text-amber-100">
+          Lander condition: {result.conditionLabel} · points ×{result.condition}
+        </p>
+      )}
+      {result.baseDamage > 0 && (
+        <p className="mt-2 rounded-md bg-rose-400/15 px-2 py-1 text-xs font-semibold text-rose-100">
+          Moon Base Zero: {result.baseDamage} {result.baseDamage === 1 ? 'structure' : 'structures'}{' '}
+          hit · −{formatScore(result.penalty)} pts
+        </p>
+      )}
+      {result.condition > 0 && (
+        <dl className="mt-2.5 grid grid-cols-5 gap-1 text-center">
+          {(
+            [
+              ['Soft', result.parts.softness, 400],
+              ['Accuracy', result.parts.accuracy, 400],
+              ['Target', result.parts.bullseye, 150],
+              ['Fuel', result.parts.fuel, 200],
+              ['Level', result.parts.level, 100],
+            ] as const
+          ).map(([label, value, max]) => (
+            <div key={label} className="rounded-md bg-white/[0.06] px-1 py-1.5">
+              <dt className="text-[9px] uppercase tracking-wide text-white/50">{label}</dt>
+              <dd className="text-sm font-bold tabular-nums">{value}</dd>
+              <dd className="text-[9px] text-white/35">/{max}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  )
 
   return (
     <div
@@ -877,7 +1002,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
               <span className="ml-1 text-[10px] text-white/55">m</span>
             </span>
           </div>
-          {mode === 'pro' && <div className="mt-1 text-[10px] tracking-widest text-amber-200/80">PRO</div>}
+          {mode === 'pro' && (
+            <div className="mt-1 text-[10px] tracking-widest text-amber-200/80">PRO</div>
+          )}
         </div>
 
         <div
@@ -896,7 +1023,10 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
           </div>
         </div>
 
-        <div ref={baseRef} className="absolute -translate-x-1/2 -translate-y-full opacity-0 transition-opacity">
+        <div
+          ref={baseRef}
+          className="absolute -translate-x-1/2 -translate-y-full opacity-0 transition-opacity"
+        >
           <div className="whitespace-nowrap rounded border border-amber-200/40 bg-black/50 px-1.5 py-0.5 text-[9px] font-bold tracking-[0.18em] text-amber-100">
             MOON BASE ZERO
           </div>
@@ -916,11 +1046,19 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
               to fire the engine
             </p>
             <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">
-              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">W</kbd>{' '}
-              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">A</kbd>{' '}
-              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">S</kbd>{' '}
-              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">D</kbd> or arrow
-              keys to tilt · tilt back and burn to brake
+              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">
+                W
+              </kbd>{' '}
+              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">
+                A
+              </kbd>{' '}
+              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">
+                S
+              </kbd>{' '}
+              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">
+                D
+              </kbd>{' '}
+              or arrow keys to tilt · tilt back and burn to brake
             </p>
           </div>
         </div>
@@ -934,7 +1072,11 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
         } ${callout && flying ? 'opacity-100' : 'opacity-0'}`}
       >
         {callout && (
-          <span className={`inline-block rounded-lg bg-black/60 px-3 py-1.5 text-sm font-semibold backdrop-blur-sm sm:text-base ${TONE[callout.tone]}`}>
+          <span
+            className={`inline-block rounded-lg bg-black/60 px-3 py-1.5 text-sm font-semibold backdrop-blur-sm sm:text-base ${
+              TONE[callout.tone]
+            }`}
+          >
             <span className="mr-2 text-[10px] tracking-widest text-white/45">CAPCOM</span>
             {callout.text}
           </span>
@@ -983,12 +1125,16 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
         <div className="absolute inset-0 z-20 flex items-end justify-center bg-gradient-to-t from-black/80 via-transparent to-transparent p-4 sm:items-center sm:justify-end sm:bg-none sm:pr-[6vw]">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-5 backdrop-blur-md">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/55">
-              {mission !== today ? 'Replaying an earlier landing site' : 'Land beside Moon Base Zero'}
+              {mission !== today
+                ? 'Replaying an earlier landing site'
+                : 'Land beside Moon Base Zero'}
             </p>
-            <h1 className="mt-1 font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">TOUCHDOWN</h1>
+            <h1 className="mt-1 font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
+              TOUCHDOWN
+            </h1>
             <p className="mt-2 text-sm leading-relaxed text-white/75">
-              Brake from orbit, thread the craters and boulders, and set it down soft, upright and on
-              target. A new landing site every day.
+              Brake from orbit, thread the craters and boulders, and set it down soft, upright and
+              on target. A new landing site every day.
             </p>
             {challenge && (
               <p className="mt-3 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100">
@@ -1005,7 +1151,13 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
               onClick={() => fly(false)}
               className="mt-4 w-full rounded-xl bg-white py-3.5 text-lg font-extrabold tracking-wide text-black transition hover:bg-white/90 disabled:opacity-50"
             >
-              {screen === 'loading' ? 'Building the Moon…' : screen === 'error' ? 'Could not start 3D' : hasFlown ? 'LAND AGAIN' : 'LAND'}
+              {screen === 'loading'
+                ? 'Building the Moon…'
+                : screen === 'error'
+                ? 'Could not start 3D'
+                : hasFlown
+                ? 'LAND AGAIN'
+                : 'LAND'}
             </button>
             {screen === 'error' && (
               <p className="mt-2 text-xs text-rose-200">
@@ -1019,7 +1171,10 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
               {best ? ` · Your best today: ${formatScore(best)}` : ''}
             </p>
             {mission !== today && (
-              <a href={SHARE_PATH} className="mt-2 inline-block text-xs font-semibold text-sky-300 underline">
+              <a
+                href={SHARE_PATH}
+                className="mt-2 inline-block text-xs font-semibold text-sky-300 underline"
+              >
                 Play today&apos;s landing site
               </a>
             )}
@@ -1043,7 +1198,17 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
           title="Take a photo (P). Drag the scene to frame it first. Copies to your clipboard and becomes your share image."
           className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full border border-white/25 bg-black/60 p-3 text-sm font-bold text-white backdrop-blur transition hover:bg-black/80 sm:bottom-8 sm:top-auto sm:rounded-xl sm:px-4 sm:py-2.5"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
             <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
             <circle cx="12" cy="13.5" r="3.6" />
           </svg>
@@ -1058,67 +1223,24 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
         </div>
       )}
       {screen === 'result' && result && !leaving && (
+        <div className="absolute left-3 top-3 z-20 hidden max-h-[calc(100%-5.5rem)] w-[21rem] overflow-y-auto rounded-2xl border border-white/15 bg-black/40 p-4 shadow-2xl backdrop-blur-xl sm:block">
+          {scoreBlock}
+          {board?.enabled && boardLive && (
+            <div className="mt-3 border-t border-white/10 pt-3">
+              <Leaderboard
+                board={board}
+                highlight={savedRank !== null ? nickname : undefined}
+                rows={5}
+              />
+            </div>
+          )}
+        </div>
+      )}
+      {screen === 'result' && result && !leaving && (
         <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[66%] flex-col rounded-t-2xl border border-white/10 bg-black/80 backdrop-blur-md sm:bottom-3 sm:left-auto sm:right-3 sm:top-14 sm:max-h-none sm:w-[23.5rem] sm:rounded-2xl">
           <div className="flex-1 space-y-3 overflow-y-auto p-4" style={{ touchAction: 'pan-y' }}>
-            {/* 1 + 2: verdict and score */}
-            <div>
-              <p
-                className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
-                  upright ? 'text-emerald-300' : 'text-rose-300'
-                }`}
-              >
-                {outcomeHeadline(result)}
-                {result.mode === 'pro' ? ' · PRO' : ''}
-              </p>
-              <div className="mt-0.5 flex items-baseline gap-2">
-                <span className="font-heading text-5xl font-extrabold tabular-nums">{formatScore(result.score)}</span>
-                <span className="text-sm text-white/55">pts</span>
-                {newBest && (
-                  <span className="rounded bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200">
-                    New best
-                  </span>
-                )}
-              </div>
-              <p className="mt-1.5 text-[15px] font-semibold leading-snug">{verdict}</p>
-              <p className="mt-1 text-xs text-white/55">{bragLine(result)}</p>
-              {challenge && challenge.mission === mission && (
-                <p className={`mt-1.5 text-xs font-semibold ${beatChallenge ? 'text-emerald-300' : 'text-amber-200'}`}>
-                  {beatChallenge
-                    ? `You beat ${challenger}'s ${formatScore(challenge.score)}.`
-                    : `${challenger} still leads with ${formatScore(challenge.score)}.`}
-                </p>
-              )}
-              {result.condition > 0 && result.condition < 1 && (
-                <p className="mt-2 rounded-md bg-amber-300/10 px-2 py-1 text-xs font-semibold text-amber-100">
-                  Lander condition: {result.conditionLabel} · points ×{result.condition}
-                </p>
-              )}
-              {result.baseDamage > 0 && (
-                <p className="mt-2 rounded-md bg-rose-400/15 px-2 py-1 text-xs font-semibold text-rose-100">
-                  Moon Base Zero: {result.baseDamage} {result.baseDamage === 1 ? 'structure' : 'structures'} hit ·
-                  −{formatScore(result.penalty)} pts
-                </p>
-              )}
-              {result.condition > 0 && (
-                <dl className="mt-2.5 grid grid-cols-5 gap-1 text-center">
-                  {(
-                    [
-                      ['Soft', result.parts.softness, 400],
-                      ['Accuracy', result.parts.accuracy, 400],
-                      ['Target', result.parts.bullseye, 150],
-                      ['Fuel', result.parts.fuel, 200],
-                      ['Level', result.parts.level, 100],
-                    ] as const
-                  ).map(([label, value, max]) => (
-                    <div key={label} className="rounded-md bg-white/[0.06] px-1 py-1.5">
-                      <dt className="text-[9px] uppercase tracking-wide text-white/50">{label}</dt>
-                      <dd className="text-sm font-bold tabular-nums">{value}</dd>
-                      <dd className="text-[9px] text-white/35">/{max}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </div>
+            {/* 1 + 2: verdict and score (phones; on desktop it is the card top-left) */}
+            <div className="sm:hidden">{scoreBlock}</div>
 
             {/* 3: share */}
             <div>
@@ -1134,7 +1256,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                   ? 'Opens your share sheet with the image attached.'
                   : 'Copies your image and opens X. In the post, press Ctrl+V (⌘V on Mac) to paste it in.'}
               </p>
-              {shareNote && <p className="mt-1.5 text-xs font-semibold text-emerald-300">{shareNote}</p>}
+              {shareNote && (
+                <p className="mt-1.5 text-xs font-semibold text-emerald-300">{shareNote}</p>
+              )}
               <div className="mt-2 flex items-center gap-2">
                 {cardUrl && (
                   <button
@@ -1150,8 +1274,22 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                     <img src={cardUrl} alt="" className="h-12 w-[5.35rem] object-cover" />
                   </button>
                 )}
-                <label className="flex-1 text-[11px] text-white/50">
-                  {board?.enabled && boardLive && result.score > 0 ? 'Your name' : 'Name on the card (optional)'}
+                <label className="min-w-0 flex-1 text-[11px] text-white/50">
+                  {board?.enabled && boardLive && result.score > 0 ? (
+                    savedRank !== null ? (
+                      <span className="font-bold text-emerald-300">
+                        Saved · you are #{savedRank} today
+                      </span>
+                    ) : wouldRank ? (
+                      <span className="font-semibold text-white/85">
+                        That would put you #{wouldRank} today. Your name:
+                      </span>
+                    ) : (
+                      'Your name, to save your score'
+                    )
+                  ) : (
+                    'Name on the card (optional)'
+                  )}
                   <input
                     ref={nameInputRef}
                     type="text"
@@ -1160,7 +1298,8 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                     onBlur={(e) => void saveNickname(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key !== 'Enter') return
-                      if (board?.enabled && boardLive && result.score > 0 && savedRank === null) void saveScore()
+                      if (board?.enabled && boardLive && result.score > 0 && savedRank === null)
+                        void saveScore()
                       else (e.target as HTMLInputElement).blur()
                     }}
                     placeholder="Nickname"
@@ -1168,53 +1307,41 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                     className="mt-0.5 w-full select-text rounded-md border border-white/15 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30 focus:border-sky-300 focus:outline-none"
                   />
                 </label>
+                {board?.enabled && boardLive && result.score > 0 && savedRank === null && (
+                  <button
+                    type="button"
+                    onClick={() => void saveScore()}
+                    disabled={saving}
+                    className="shrink-0 self-end rounded-md bg-emerald-400 px-3 py-1.5 text-sm font-extrabold text-black transition hover:bg-emerald-300 disabled:opacity-60"
+                  >
+                    {saving ? 'Saving…' : 'Save'}
+                  </button>
+                )}
               </div>
+              {boardNote && (
+                <p className="mt-1.5 text-xs font-semibold text-amber-200">{boardNote}</p>
+              )}
             </div>
-
-            {/* Leaderboard: rank first, then a name to claim it */}
-            {board?.enabled && boardLive && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3.5">
-                {result.score > 0 && savedRank === null && (
-                  <>
-                    <p className="text-sm font-semibold text-white">
-                      {wouldRank
-                        ? `That would put you #${wouldRank} today.`
-                        : 'Put your score on today’s leaderboard.'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void saveScore()}
-                      disabled={saving}
-                      className="mt-2 w-full rounded-lg bg-emerald-400 py-2 text-sm font-extrabold text-black transition hover:bg-emerald-300 disabled:opacity-60"
-                    >
-                      {saving ? 'Saving…' : 'Save my score'}
-                    </button>
-                    <p className="mt-1 text-[11px] text-white/45">Uses the name above. No sign-up.</p>
-                  </>
-                )}
-                {savedRank !== null && (
-                  <p className="text-sm font-bold text-emerald-300">
-                    Saved. You are #{savedRank} today. Share it before someone bumps you.
-                  </p>
-                )}
-                {boardNote && <p className="mt-1.5 text-xs font-semibold text-amber-200">{boardNote}</p>}
-                <div className={result.score > 0 || savedRank !== null ? 'mt-3 border-t border-white/10 pt-3' : ''}>
-                  <Leaderboard board={board} highlight={savedRank !== null ? nickname : undefined} rows={5} />
-                </div>
-              </div>
-            )}
 
             {/* 4: the real race */}
             <RealRacePanel
               result={result}
-              onMakeYourCall={() => trackTouchdown('touchdown_odds_click', { mode: result.mode, outcome: result.outcome })}
+              onMakeYourCall={() =>
+                trackTouchdown('touchdown_odds_click', {
+                  mode: result.mode,
+                  outcome: result.outcome,
+                })
+              }
             />
 
             {/* 5: step into Moonbase */}
             <Link
               href={`/moonbase?race=${TOUCHDOWN_GOAL_ID}`}
               onClick={(e) => {
-                trackTouchdown('touchdown_moonbase_click', { mode: result.mode, outcome: result.outcome })
+                trackTouchdown('touchdown_moonbase_click', {
+                  mode: result.mode,
+                  outcome: result.outcome,
+                })
                 const engine = engineRef.current
                 if (!engine || e.metaKey || e.ctrlKey) return
                 // Hand the camera from the lander to the base, then open the sim.
@@ -1226,6 +1353,17 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
             >
               Explore Moon Base Zero →
             </Link>
+
+            {/* Today's board: last on phones, in the left card on desktop */}
+            {board?.enabled && boardLive && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3.5 sm:hidden">
+                <Leaderboard
+                  board={board}
+                  highlight={savedRank !== null ? nickname : undefined}
+                  rows={5}
+                />
+              </div>
+            )}
           </div>
 
           {/* 6: fly again, always one tap away */}
@@ -1250,7 +1388,11 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                   aria-checked={mode === m}
                   onClick={() => changeMode(m)}
                   className={`rounded-md px-3 py-2 text-xs font-bold transition ${
-                    mode === m ? (m === 'pro' ? 'bg-amber-300 text-black' : 'bg-white text-black') : 'text-white/65'
+                    mode === m
+                      ? m === 'pro'
+                        ? 'bg-amber-300 text-black'
+                        : 'bg-white text-black'
+                      : 'text-white/65'
                   }`}
                 >
                   {MODES[m].label}
@@ -1275,8 +1417,10 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
               className="max-h-[70vh] w-full select-auto rounded-xl border border-white/15 object-contain"
             />
             <p className="mt-2 text-center text-xs text-white/65">
-              {isTouch ? 'Press and hold the image to save it' : 'Right-click the image to copy or save it'}, then
-              attach it to your post.
+              {isTouch
+                ? 'Press and hold the image to save it'
+                : 'Right-click the image to copy or save it'}
+              , then attach it to your post.
             </p>
             <div className="mt-3 flex justify-center gap-2">
               <a
