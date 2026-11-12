@@ -28,6 +28,7 @@ import {
   raceStandingForProject,
   settlementPresence,
   sharedGoalById,
+  dimmedClickOpensSite,
   racesSharingDistrict,
   standIdsForRace,
   treeForProjectClick,
@@ -888,5 +889,67 @@ describe('treeForProjectClick — a competitor entered in two races', () => {
 
   it('opens a one-race lander on its own race', () => {
     expect(click('firefly-blue-ghost')).to.equal('shared-next-landing')
+  })
+})
+
+describe('dimmedClickOpensSite — a click made while another race is open', () => {
+  const hasDistrict = (raceId: string) => raceId === 'shared-next-landing'
+  // The colony keeps Starship off the lander packing and plants it on the
+  // crewed pad. Touchdown still owns the lander district.
+  const keptOffDistrict = (projectId: string) => projectId === 'spacex-starship-hls'
+  const opens = (
+    projectId: string,
+    raceId: string,
+    opts?: { openRaceId?: string | null; fromDeepLink?: boolean }
+  ) =>
+    dimmedClickOpensSite(projectId, raceId, {
+      hasDistrict,
+      keptOffDistrict,
+      ...opts,
+    })
+
+  it('selects Starship instead of framing the Touchdown lander row', () => {
+    expect(
+      opens('spacex-starship-hls', 'shared-next-landing', {
+        openRaceId: 'shared-first-tracks',
+      })
+    ).to.equal(false)
+  })
+
+  it('still opens the district for a cargo lander standing in that row', () => {
+    expect(
+      opens('firefly-blue-ghost', 'shared-next-landing', {
+        openRaceId: 'shared-first-tracks',
+      })
+    ).to.equal(true)
+  })
+
+  it('still frames a district-less race on the plots that can be seen', () => {
+    expect(
+      opens('spacex-starship-hls', 'shared-crewed-lander', {
+        openRaceId: 'shared-first-tracks',
+      })
+    ).to.equal(true)
+  })
+
+  it('does not redirect a click made with that race already open', () => {
+    expect(
+      opens('spacex-starship-hls', 'shared-next-landing', {
+        openRaceId: 'shared-next-landing',
+      })
+    ).to.equal(false)
+  })
+
+  it('does not redirect a deep link', () => {
+    expect(
+      opens('firefly-blue-ghost', 'shared-next-landing', {
+        openRaceId: 'shared-first-tracks',
+        fromDeepLink: true,
+      })
+    ).to.equal(false)
+  })
+
+  it('does not redirect when no race is open', () => {
+    expect(opens('firefly-blue-ghost', 'shared-next-landing')).to.equal(false)
   })
 })

@@ -11,6 +11,7 @@ import { mergeLiveMarketInto } from '@/lib/deprize/goal-market'
 import { useDePrizeGoalOdds } from '@/lib/deprize/useDePrizeGoalOdds'
 import useTotalFunding from '@/lib/juicebox/useTotalFunding'
 import { SEED_ATLAS } from '@/lib/lunar-atlas'
+import { CREWED_PAD_PROJECT_ID } from '@/lib/lunar-atlas/baseplan'
 import { useSitedColony } from '@/lib/lunar-atlas/colonyLayout'
 import {
   PROJECT_TYPE_LABEL,
@@ -24,6 +25,7 @@ import {
   atlasNowYear,
   buildTechTrees,
   datasetYearRange,
+  dimmedClickOpensSite,
   filterProjects,
   milestoneArrivalYear,
   orgById,
@@ -576,8 +578,9 @@ export default function MoonBaseZeroIndex() {
 
     // The roster this click belongs to. A plain find() takes the first tree
     // that lists the project, and for Starship that is the crewed landing,
-    // which switches off the live Touchdown market. A dimmed asset in another
-    // district still fills that district — the one it actually stands in.
+    // which switches off the live Touchdown market. A dimmed asset still
+    // opens the district it stands in. One the layout kept off that district
+    // is selected on its own plot instead.
     const tree = treeForProjectClick(id, surfaceTrees, trees, {
       openRaceId: selectedRaceId,
       fromDeepLink: opts?.fromDeepLink,
@@ -592,7 +595,16 @@ export default function MoonBaseZeroIndex() {
     // Globe clicks on a dimmed asset open that district. Deep links must
     // still open the requested project — `/moonbase/[projectId]` reuses this
     // handler without remounting, so a prior race would otherwise win.
-    if (!opts?.fromDeepLink && selectedRaceId && selectedRaceId !== raceId) {
+    // Starship's roster is Touchdown, but the colony plants it on the crewed
+    // pad, so the district shot would leave the vehicle and select nothing.
+    if (
+      dimmedClickOpensSite(id, raceId, {
+        openRaceId: selectedRaceId,
+        fromDeepLink: opts?.fromDeepLink,
+        hasDistrict: (districtRaceId) => layout.districts.has(districtRaceId),
+        keptOffDistrict: (projectId) => projectId === CREWED_PAD_PROJECT_ID,
+      })
+    ) {
       // Same as the hovering district pin: fill this cluster, dim the rest,
       // show the race, and frame the site.
       setSelectedRaceId(raceId)

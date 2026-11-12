@@ -499,8 +499,11 @@ export function buildTechTrees(
 // that race, so the Touchdown roster stays on Touchdown and the Water Ice
 // roster stays on Water Ice. Deep links do not: `/moonbase/[projectId]` reuses
 // the moonbase page without remounting, and a leftover race must not win.
-// Otherwise the click belongs to the district the asset stands in (the tree
-// the marker is drawn in), and only then to the first roster that mentions it.
+// Otherwise the click belongs to the roster the marker is drawn with — the
+// race that has a district — and only then to the first roster that mentions
+// it. Drawn with a district is not the same as standing in it. Starship is
+// drawn with Touchdown and planted on the crewed pad; dimmedClickOpensSite
+// keeps that click from framing the lander row.
 export function treeForProjectClick(
   projectId: string,
   surfaceTrees: readonly TechTree[],
@@ -523,6 +526,31 @@ export function treeForProjectClick(
     surfaceTrees.find(contains) ??
     trees.find(contains)
   )
+}
+
+// Whether a click on a dimmed asset opens that asset's race site.
+//
+// It does when another race is open and this click is not a deep link: the
+// same gesture as the district pin, which fills the cluster and frames it.
+// The site camera prefers the race's district centre. That centre is where a
+// packed member stands, and the wrong pad for a member the colony kept off
+// the district. Starship is on the Touchdown roster, but its plot is the
+// crewed pad, clear of the lander row. Opening the district then looks at
+// the cargo pads and never selects the vehicle. `keptOffDistrict` names
+// that member; the click selects it and frames its own plot instead.
+export function dimmedClickOpensSite(
+  projectId: string,
+  raceId: string,
+  opts: {
+    openRaceId?: string | null
+    fromDeepLink?: boolean
+    hasDistrict: (raceId: string) => boolean
+    keptOffDistrict: (projectId: string) => boolean
+  }
+): boolean {
+  if (opts.fromDeepLink || !opts.openRaceId || opts.openRaceId === raceId) return false
+  if (opts.hasDistrict(raceId) && opts.keptOffDistrict(projectId)) return false
+  return true
 }
 
 /**
