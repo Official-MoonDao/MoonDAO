@@ -856,6 +856,8 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
       )
     )
     beam.position.set(t.target.x, t.target.y + 450, t.target.z)
+    // After the ground shadows (render order 1), so they never cut across it.
+    beam.renderOrder = 5
     this.beam = beam
     this.scene.add(beam)
 

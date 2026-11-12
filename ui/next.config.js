@@ -73,6 +73,13 @@ module.exports = withBundleAnalyzer(
             './public/metadata-image.png',
             './public/assets/MoonDAO-OG.png',
           ],
+          '/api/og/touchdown': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+            './public/touchdown/og.jpg',
+            './public/touchdown/og-base.jpg',
+          ],
         },
         optimizePackageImports: [
           '@heroicons/react',

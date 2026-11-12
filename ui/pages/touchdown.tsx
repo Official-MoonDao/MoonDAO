@@ -8,9 +8,9 @@
  * The shell, Open Graph tags and fonts are server-rendered; the game canvas is
  * client-only.
  */
+import { DEPLOYED_ORIGIN } from 'const/config'
 import type { GetServerSideProps } from 'next'
 import dynamic from 'next/dynamic'
-import { DEPLOYED_ORIGIN } from 'const/config'
 import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, previewOrigin } from '@/lib/og/preview'
 import { challengeQuery, parseChallenge, SHARE_PATH, type Challenge } from '@/lib/touchdown/share'
 import Head from '@/components/layout/Head'
@@ -39,7 +39,13 @@ export default function TouchdownPage({ challenge }: Props) {
       <Head
         title={title}
         description={description}
-        image={`${previewOrigin()}/api/og/touchdown${ogQuery}`}
+        // A plain link previews with the staged scene as a static file; a
+        // challenge link gets the same scene with the score to beat on it.
+        image={
+          challenge
+            ? `${previewOrigin()}/api/og/touchdown${ogQuery}`
+            : `${previewOrigin()}/touchdown/og.jpg`
+        }
         imageWidth={OG_IMAGE_WIDTH}
         imageHeight={OG_IMAGE_HEIGHT}
         canonical={`${DEPLOYED_ORIGIN}${SHARE_PATH}`}
