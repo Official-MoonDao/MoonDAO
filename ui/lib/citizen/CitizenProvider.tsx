@@ -1,15 +1,8 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { CITIZEN_TABLE_NAMES, DEFAULT_CHAIN_V5 } from 'const/config'
-import {
-  startTransition,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useRef,
-} from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import { setIsCitizen } from '@/lib/analytics/ga4'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { useTablelandQuery } from '../swr/useTablelandQuery'
 import { citizenRowToNFT } from '../tableland/convertRow'
 import { getChainSlug } from '../thirdweb/chain'
@@ -200,7 +193,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   const optimisticTimerRef = useRef<NodeJS.Timeout | null>(null)
   const reportedCitizen = useRef<'true' | 'false' | null>(null)
   const account = useActiveAccount()
-  const { authenticated, user } = usePrivy()
+  const { authenticated, user } = usePrivyAccount()
   const hasLoadedNonDefaultCache = useRef(false)
   // Mirror of `citizen` readable inside effects without adding it to their
   // dependency arrays (doing so would re-run the data effect after every
@@ -257,8 +250,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       // effect's error branch reads citizenRef and treats the new wallet as
       // a citizen because the old wallet's NFT is still there.
       const existing = citizenRef.current
-      const existingOwner =
-        typeof existing?.owner === 'string' ? existing.owner : ''
+      const existingOwner = typeof existing?.owner === 'string' ? existing.owner : ''
       if (existingOwner && existingOwner.toLowerCase() !== address.toLowerCase()) {
         citizenRef.current = undefined
         startTransition(() => setCitizen(undefined))
@@ -313,7 +305,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
         optimisticTimerRef.current = null
       }, OPTIMISTIC_WINDOW_MS)
     },
-    [address, mutate],
+    [address, mutate]
   )
 
   // Update citizen state when data changes
@@ -474,12 +466,9 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
   // must close every gated feature. `undefined` means "not checked yet", `null`
   // means "couldn't read it" — both are treated as unexpired so an RPC blip
   // never locks a paid-up citizen out.
-  const [expiresAt, setExpiresAt] = useState<number | null | undefined>(
-    undefined
-  )
+  const [expiresAt, setExpiresAt] = useState<number | null | undefined>(undefined)
   const [, setExpirationTick] = useState(0)
-  const citizenTokenId =
-    citizen?.metadata?.id != null ? String(citizen.metadata.id) : ''
+  const citizenTokenId = citizen?.metadata?.id != null ? String(citizen.metadata.id) : ''
 
   useEffect(() => {
     if (mock) {
@@ -520,10 +509,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     if (typeof expiresAt !== 'number') return
     const msUntilExpiry = expiresAt * 1000 - Date.now()
     if (msUntilExpiry <= 0 || msUntilExpiry > MAX_EXPIRY_TIMER_MS) return
-    const timer = setTimeout(
-      () => setExpirationTick((tick) => tick + 1),
-      msUntilExpiry + 1000
-    )
+    const timer = setTimeout(() => setExpirationTick((tick) => tick + 1), msUntilExpiry + 1000)
     return () => clearTimeout(timer)
   }, [expiresAt])
 
@@ -545,8 +531,7 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
       citizen: isExpired ? undefined : citizen,
       expiredCitizen: isExpired ? citizen : undefined,
       isExpired,
-      subscriptionExpiresAt:
-        typeof expiresAt === 'number' ? expiresAt : undefined,
+      subscriptionExpiresAt: typeof expiresAt === 'number' ? expiresAt : undefined,
       setCitizen,
       seedCitizen,
       isLoading: isLoading || isExpirationPending,
@@ -567,9 +552,5 @@ export default function CitizenProvider({ selectedChain, children, mock = false 
     ]
   )
 
-  return (
-    <CitizenContext.Provider value={contextValue}>
-      {children}
-    </CitizenContext.Provider>
-  )
+  return <CitizenContext.Provider value={contextValue}>{children}</CitizenContext.Provider>
 }

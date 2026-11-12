@@ -1,4 +1,3 @@
-import { usePrivy } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES } from 'const/config'
 import { useContext } from 'react'
@@ -6,6 +5,7 @@ import toast from 'react-hot-toast'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { useCitizenCheckoutLive, usePublicYearEth } from '@/lib/subscription/citizenCheckout'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -25,7 +25,7 @@ const CitizenTier = ({ setSelectedTier, compact = false }: CitizenTierProps) => 
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
-  const { authenticated } = usePrivy()
+  const { authenticated } = usePrivyAccount()
 
   const handleCitizenClick = async () => {
     // Let users enter the citizen creation flow without signing in first —

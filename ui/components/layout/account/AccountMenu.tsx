@@ -1,9 +1,9 @@
 import { ChevronDownIcon, UserCircleIcon } from '@heroicons/react/24/outline'
-import { usePrivy } from '@privy-io/react-auth'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { ACCOUNT_ACTIONS } from '@/lib/navigation/nav-config'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import IPFSRenderer from '../IPFSRenderer'
 import { NavLink } from '../NavLink'
@@ -30,7 +30,7 @@ export default function AccountMenu() {
 
   const { citizen, isExpired } = useContext(CitizenContext)
   const account = useActiveAccount()
-  const { authenticated } = usePrivy()
+  const { authenticated } = usePrivyAccount()
 
   const isSignedIn = authenticated || !!account?.address
 

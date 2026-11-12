@@ -1,7 +1,7 @@
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import { Options } from '@layerzerolabs/lz-v2-utilities'
 import { waitForMessageReceived } from '@layerzerolabs/scan-client'
-import { getAccessToken, usePrivy } from '@privy-io/react-auth'
+import { getAccessToken } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import {
   CITIZEN_ADDRESSES,
@@ -78,6 +78,7 @@ import {
   handleTypeformSubmission,
 } from '@/lib/onboarding/shared-utils'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { arbitrum, base, ethereum, sepolia, arbitrumSepolia } from '@/lib/rpc/chains'
 import { useGasPrice } from '@/lib/rpc/useGasPrice'
 import {
@@ -409,7 +410,7 @@ export default function CreateCitizen({
   // In test mode (Cypress), use mock address from window if available
   const mockAddress = typeof window !== 'undefined' && (window as any).__CYPRESS_MOCK_ADDRESS__
   const address = account?.address || mockAddress
-  const { authenticated, login } = usePrivy()
+  const { authenticated, login } = usePrivyAccount()
   const isClientHydrated = useClientHydrated()
 
   // Form state caching - needs to be defined before useOnrampInitialStage
@@ -2401,9 +2402,7 @@ export default function CreateCitizen({
   const copyInviteLink = useCallback(async () => {
     setAutoRedirectCancelled(true)
     try {
-      await navigator.clipboard.writeText(
-        `https://moondao.com/citizen/?referredBy=${address}`
-      )
+      await navigator.clipboard.writeText(`https://moondao.com/citizen/?referredBy=${address}`)
       toast.success('Invite link copied')
     } catch {
       toast.error('Could not copy. Try again.')

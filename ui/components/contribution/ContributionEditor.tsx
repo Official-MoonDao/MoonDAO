@@ -1,6 +1,5 @@
 import { ChevronDownIcon } from '@heroicons/react/24/outline'
 import { GetMarkdown, SetMarkdown } from '@nance/nance-editor'
-import { usePrivy } from '@privy-io/react-auth'
 import { DEPLOYED_ORIGIN } from 'const/config'
 import dynamic from 'next/dynamic'
 import Image from 'next/image'
@@ -11,6 +10,7 @@ import { useCitizen } from '@/lib/citizen/useCitizen'
 import sendDiscordMessage from '@/lib/discord/sendDiscordMessage'
 import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
 import useAccount from '@/lib/nance/useAccountAddress'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import '@nance/nance-editor/lib/css/dark.css'
 import '@nance/nance-editor/lib/css/editor.css'
@@ -56,7 +56,7 @@ Clear, detailed, and results-focused contributions help us understand the value 
 `
 
 const ContributionEditor: React.FC = () => {
-  const { authenticated } = usePrivy()
+  const { authenticated } = usePrivyAccount()
   const [submitting, setSubmitting] = useState(false)
   const [coordinapeLink, setCoordinapeLink] = useState<string | null>(null)
   const [templateExpanded, setTemplateExpanded] = useState(false)
@@ -126,9 +126,7 @@ const ContributionEditor: React.FC = () => {
         'networkNotifications',
         `## **New Contribution made by ${
           citizen?.metadata?.name
-            ? `[${
-                citizen?.metadata?.name
-              }](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(
+            ? `[${citizen?.metadata?.name}](${DEPLOYED_ORIGIN}/citizen/${generatePrettyLinkWithId(
                 citizen?.metadata?.name,
                 citizen?.id
               )})`
@@ -146,11 +144,7 @@ const ContributionEditor: React.FC = () => {
   }
 
   if (!authenticated) {
-    return (
-      <p className="w-full text-center py-24">
-        Please sign in to submit a contribution!
-      </p>
-    )
+    return <p className="w-full text-center py-24">Please sign in to submit a contribution!</p>
   }
 
   if (coordinapeLink) {
@@ -159,12 +153,7 @@ const ContributionEditor: React.FC = () => {
         <p className="text-2xl">Contribution submitted!</p>
         <p>
           View and edit your contribution{' '}
-          <a
-            href={coordinapeLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
-          >
+          <a href={coordinapeLink} target="_blank" rel="noopener noreferrer" className="underline">
             here
           </a>
         </p>
@@ -188,9 +177,7 @@ const ContributionEditor: React.FC = () => {
             />
           </button>
           <div className="text-sm text-gray-500">
-            {templateExpanded && (
-              <MarkdownWithTOC body={CONTRIBUTION_TEMPLATE} />
-            )}
+            {templateExpanded && <MarkdownWithTOC body={CONTRIBUTION_TEMPLATE} />}
           </div>
         </div>
         <div className="h-[600px]">
@@ -210,12 +197,8 @@ const ContributionEditor: React.FC = () => {
                 height={64}
                 className="mb-4"
               />
-              <p className="text-white text-lg font-medium">
-                Uploading image...
-              </p>
-              <p className="text-gray-300 text-sm mt-2">
-                Please wait, do not close this window
-              </p>
+              <p className="text-white text-lg font-medium">Uploading image...</p>
+              <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
             </div>
           )}
         </div>
@@ -239,13 +222,11 @@ const ContributionEditor: React.FC = () => {
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-yellow-400 mb-1">
-                Network Notice
-              </h3>
+              <h3 className="text-sm font-semibold text-yellow-400 mb-1">Network Notice</h3>
               <p className="text-sm text-yellow-200/80">
-                Please ensure you're connected to the correct blockchain network
-                before submitting. You may need to switch networks in your
-                wallet to complete your submission successfully.
+                Please ensure you're connected to the correct blockchain network before submitting.
+                You may need to switch networks in your wallet to complete your submission
+                successfully.
               </p>
             </div>
           </div>

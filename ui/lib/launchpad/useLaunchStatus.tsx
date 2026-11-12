@@ -5,9 +5,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { useShallowQueryRoute } from '@/lib/utils/hooks'
 import { LaunchStatus, LaunchStatusResult, UserTeam } from './types'
 
-export function useLaunchStatus(
-  userTeamsAsManager: UserTeam[] | undefined
-): LaunchStatusResult {
+export function useLaunchStatus(userTeamsAsManager: UserTeam[] | undefined): LaunchStatusResult {
   const router = useRouter()
   const shallowQuery = useShallowQueryRoute()
   const shallowQueryRef = useRef(shallowQuery)
@@ -15,7 +13,7 @@ export function useLaunchStatus(
 
   const account = useActiveAccount()
   const { user } = usePrivy()
-  
+
   const [status, setStatus] = useState<LaunchStatus>(
     (router.query.status as LaunchStatus) || 'idle'
   )
@@ -28,7 +26,7 @@ export function useLaunchStatus(
   const { login } = useLogin()
 
   const handleCreateMission = useCallback(async () => {
-    if (!user) {
+    if (!user || user.isGuest) {
       setStatus('loggingIn')
       login()
       return
@@ -86,4 +84,3 @@ export function useLaunchStatus(
     handleCreateMission,
   }
 }
-

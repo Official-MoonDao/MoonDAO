@@ -1,4 +1,3 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import {
@@ -8,6 +7,7 @@ import {
 } from '@/lib/citizen/discountInvite'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '../../components/layout/Container'
 import ContentLayout from '../../components/layout/ContentLayout'
@@ -19,7 +19,7 @@ type Status = 'idle' | 'generating' | 'success' | 'error'
 
 export default function CitizenInvitesAdmin() {
   useChainDefault()
-  const { authenticated, login } = usePrivy()
+  const { authenticated, login } = usePrivyAccount()
   const { isExecutive, status: authStatus } = useIsExecutive()
 
   const [count, setCount] = useState(1)

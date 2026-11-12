@@ -1,14 +1,3 @@
-import { useState } from 'react'
-import { useRouter } from 'next/router'
-import { useActiveAccount } from 'thirdweb/react'
-import { usePrivy } from '@privy-io/react-auth'
-import toast from 'react-hot-toast'
-import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
-import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
-import GoogleDocsImport from './GoogleDocsImport'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import Image from 'next/image'
 import {
   PencilSquareIcon,
   InformationCircleIcon,
@@ -16,7 +5,18 @@ import {
   TrashIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
+import { useState } from 'react'
+import toast from 'react-hot-toast'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { useActiveAccount } from 'thirdweb/react'
+import { pinBlobOrFile } from '@/lib/ipfs/pinBlobOrFile'
+import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import { ProposalStatus } from '@/lib/nance/useProposalStatus'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
+import GoogleDocsImport from './GoogleDocsImport'
 
 interface ProposalEditSectionProps {
   proposalJSON: any
@@ -38,7 +38,7 @@ export default function ProposalEditSection({
   const router = useRouter()
   const account = useActiveAccount()
   const address = account?.address
-  const { authenticated } = usePrivy()
+  const { authenticated } = usePrivyAccount()
 
   const [isEditing, setIsEditing] = useState(false)
   const [newBody, setNewBody] = useState<string | undefined>()
@@ -209,16 +209,13 @@ export default function ProposalEditSection({
                   <ExclamationTriangleIcon className="h-6 w-6 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Delete this proposal?
-                  </h3>
+                  <h3 className="text-lg font-semibold text-white">Delete this proposal?</h3>
                   <p className="mt-1 text-sm text-gray-400">
                     This withdraws{' '}
                     <span className="text-white">
                       MDP-{mdp}: {projectName}
                     </span>{' '}
-                    and removes it from all proposal listings. This cannot be
-                    undone.
+                    and removes it from all proposal listings. This cannot be undone.
                   </p>
                 </div>
               </div>
@@ -238,11 +235,7 @@ export default function ProposalEditSection({
                 >
                   {isDeleting ? (
                     <>
-                      <svg
-                        className="h-4 w-4 animate-spin"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                         <circle
                           className="opacity-25"
                           cx="12"
@@ -275,7 +268,10 @@ export default function ProposalEditSection({
   }
 
   return (
-    <div data-testid="edit-proposal-panel" className="mt-6 p-5 bg-gradient-to-r from-indigo-900/30 to-blue-900/30 border border-indigo-500/30 rounded-xl w-full basis-full">
+    <div
+      data-testid="edit-proposal-panel"
+      className="mt-6 p-5 bg-gradient-to-r from-indigo-900/30 to-blue-900/30 border border-indigo-500/30 rounded-xl w-full basis-full"
+    >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-white font-semibold text-lg flex items-center gap-2">
           <PencilSquareIcon className="w-5 h-5 text-indigo-400" />
@@ -299,8 +295,14 @@ export default function ProposalEditSection({
         <div className="text-sm text-gray-300">
           <p className="font-medium text-blue-300 mb-1">How to edit your proposal:</p>
           <ul className="list-disc list-inside space-y-1 text-gray-400">
-            <li>To <span className="text-white">rename</span> your proposal, edit the title below and click <span className="text-white">Update Proposal</span></li>
-            <li>To <span className="text-white">update the body</span>, paste your edited Google Doc link, import it, then click <span className="text-white">Update Proposal</span></li>
+            <li>
+              To <span className="text-white">rename</span> your proposal, edit the title below and
+              click <span className="text-white">Update Proposal</span>
+            </li>
+            <li>
+              To <span className="text-white">update the body</span>, paste your edited Google Doc
+              link, import it, then click <span className="text-white">Update Proposal</span>
+            </li>
           </ul>
         </div>
       </div>
@@ -309,7 +311,9 @@ export default function ProposalEditSection({
       <div className="flex flex-col gap-3 w-full mb-4">
         <div className="flex items-center gap-2 text-white">
           <PencilSquareIcon className="w-5 h-5 text-indigo-400" />
-          <label htmlFor="proposal-title" className="font-medium">Proposal Title</label>
+          <label htmlFor="proposal-title" className="font-medium">
+            Proposal Title
+          </label>
         </div>
         <div className="relative flex-1">
           <input
@@ -341,9 +345,7 @@ export default function ProposalEditSection({
           </div>
           <div className="p-4 max-h-[300px] overflow-y-auto">
             <div className="prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {newBody}
-              </ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{newBody}</ReactMarkdown>
             </div>
           </div>
         </div>
@@ -353,16 +355,16 @@ export default function ProposalEditSection({
       <div className="mt-4 flex justify-end">
         <button
           onClick={handleUpdate}
-          disabled={isUpdating || isImporting || (!newBody && (newTitle === undefined || newTitle.trim() === projectName.trim()))}
+          disabled={
+            isUpdating ||
+            isImporting ||
+            (!newBody && (newTitle === undefined || newTitle.trim() === projectName.trim()))
+          }
           className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-indigo-500/25 flex items-center gap-2"
         >
           {isUpdating ? (
             <>
-              <svg
-                className="animate-spin h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
                 <circle
                   className="opacity-25"
                   cx="12"
@@ -395,12 +397,8 @@ export default function ProposalEditSection({
             width={64}
             height={64}
           />
-          <p className="text-white text-lg font-medium">
-            Importing document...
-          </p>
-          <p className="text-gray-300 text-sm mt-2">
-            Please wait, do not close this window
-          </p>
+          <p className="text-white text-lg font-medium">Importing document...</p>
+          <p className="text-gray-300 text-sm mt-2">Please wait, do not close this window</p>
         </div>
       )}
     </div>

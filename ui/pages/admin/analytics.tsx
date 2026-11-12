@@ -1,5 +1,5 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '../../components/layout/Container'
 import ContentLayout from '../../components/layout/ContentLayout'
@@ -12,7 +12,7 @@ import AnalyticsDashboard from '@/components/executive/AnalyticsDashboard'
 // is the real gate since the page shell carries no data of its own.
 export default function Analytics() {
   useChainDefault()
-  const { authenticated, login } = usePrivy()
+  const { authenticated, login } = usePrivyAccount()
   const { isExecutive, status: authStatus } = useIsExecutive()
 
   const renderBody = () => {

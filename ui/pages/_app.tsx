@@ -30,6 +30,7 @@ import AttributionCapture from '@/components/analytics/AttributionCapture'
 import { Ga4Identity } from '@/components/analytics/Ga4Identity'
 import { MoonbaseEngagement } from '@/components/analytics/MoonbaseEngagement'
 import { OnrampReturnHandler } from '@/components/onramp/OnrampReturnHandler'
+import GuestUpgradeWatcher from '@/components/privy/GuestUpgradeWatcher'
 import '../styles/globals.css'
 
 function App({ Component, pageProps: { session, ...pageProps } }: any) {
@@ -145,6 +146,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: any) {
               <Ga4Identity />
               <WalletChainSync />
               <PrivyThirdwebV5Provider selectedChain={selectedChainV5}>
+                <GuestUpgradeWatcher />
                 <CitizenProvider selectedChain={selectedChainV5}>
                   <NextQueryParamProvider>
                     <OnrampReturnHandler />

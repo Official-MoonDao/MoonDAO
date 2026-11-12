@@ -1,8 +1,9 @@
-import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { useLogin, useWallets } from '@privy-io/react-auth'
 import { useRouter } from 'next/router'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import { LoadingSpinner } from '../layout/LoadingSpinner'
@@ -97,7 +98,7 @@ export function PrivyWeb3Button({
   const router = useRouter()
   const { selectedChain, setSelectedChain } = useContext(ChainContextV5)
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { user, authenticated } = usePrivy()
+  const { user, authenticated } = usePrivyAccount()
   const { login } = useLogin({
     onComplete: ({ user, wasAlreadyAuthenticated }) => {
       const isLoggingInViaWeb3Button = router.query.loggingInViaWeb3Button === 'true'
@@ -136,7 +137,7 @@ export function PrivyWeb3Button({
     const chainId = selectedChain?.id
     const requiredChainId = requiredChain?.id
 
-    if (!user) {
+    if (!user || user.isGuest) {
       setBtnState(0)
     } else if (!skipNetworkCheck && chainId !== +wallets[selectedWallet]?.chainId.split(':')[1]) {
       setBtnState(1)
@@ -279,9 +280,7 @@ export function PrivyWeb3Button({
               isProcessingRef.current = false
             }
           }}
-          isDisabled={
-            isDisabled || actionDisabled || isLoading || isProcessing
-          }
+          isDisabled={isDisabled || actionDisabled || isLoading || isProcessing}
           noPadding={noPadding}
           noGradient={noGradient}
         >

@@ -1,9 +1,9 @@
-import { usePrivy } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES, CITIZEN_TABLE_NAMES } from 'const/config'
 import { useEffect, useState } from 'react'
 import { getContract, readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { loadCitizenNft } from '@/lib/tableland/tableNft'
 import { getChainSlug } from '../thirdweb/chain'
 import client from '../thirdweb/client'
@@ -31,7 +31,7 @@ export function useCitizenQuery(
   const chainSlug = getChainSlug(selectedChain)
   const account = useActiveAccount()
   const address = account?.address
-  const { user, authenticated } = usePrivy()
+  const { user, authenticated } = usePrivyAccount()
   const [citizenNFT, setCitizenNFT] = useState<any>()
   // Identity `citizenNFT` was resolved for. Stays unset until that lookup
   // finishes, so the first paint is still pending for a connected wallet.

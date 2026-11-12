@@ -6,7 +6,6 @@ import {
   getActionsFromBody,
   trimActionsFromBody,
 } from '@nance/nance-sdk'
-import { usePrivy } from '@privy-io/react-auth'
 import { getUnixTime } from 'date-fns'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -22,6 +21,7 @@ import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useAccount from '@/lib/nance/useAccountAddress'
 import { ProposalStatus } from '@/lib/nance/useProposalStatus'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { Project } from '@/lib/project/useProjectData'
 import type { ProposalAIReviewResult } from '@/lib/proposals/aiReview'
 import { classNames } from '@/lib/utils/tailwind'
@@ -50,7 +50,7 @@ export default function ProposalEditor({ project }: { project: Project }) {
   const account = useActiveAccount()
   const address = account?.address
   const { selectedWallet } = useContext(PrivyWalletContext)
-  const { login, authenticated } = usePrivy()
+  const { login, authenticated } = usePrivyAccount()
 
   const [signingStatus, setSigningStatus] = useState<SignStatus>('idle')
   const [attachBudget, setAttachBudget] = useState<boolean>(false)

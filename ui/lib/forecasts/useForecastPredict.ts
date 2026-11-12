@@ -8,8 +8,8 @@ import { useActiveAccount } from 'thirdweb/react'
 import { resolveLiveDePrizeId } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
-import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { useClientDePrizeRestricted } from '@/lib/deprize/useClientDePrizeRestricted'
+import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { votingPowerByOutcome } from '@/lib/forecasts/aggregate'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
@@ -30,12 +30,21 @@ import {
   type RosterOverlay,
 } from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
+import { useForecastWriter } from '@/lib/forecasts/useForecastWriter'
+import { forecastRosterKey, useGuestForecastHandoff } from '@/lib/forecasts/useGuestForecastHandoff'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 
 export type ForecastPredictController = {
   connected: boolean
+  /** Signed out: Predict creates a guest wallet and saves, with no login. */
+  signedOutPredict: boolean
+  /** Saved from a guest wallet on this device, not an account. */
+  isGuest: boolean
+  /** Signed in with a real account, not a guest. */
+  signedIn: boolean
+  onExistingAccount: () => void
   /** vMOONEY balance is still loading. A non-Citizen can hold voting power. */
   votingPowerLoading: boolean
   regionRestricted: boolean
@@ -70,7 +79,9 @@ export function useForecastPredict(args: {
   const { chain, chainSlug, deprizeId, numOutcomes, labels, reported, marketLoading } = args
   const regionRestricted = useClientDePrizeRestricted()
   const { login } = useLogin()
-  const account = useActiveAccount()
+  const activeAccount = useActiveAccount()
+  const forecastWriter = useForecastWriter()
+  const account = forecastWriter.writer
   const sessionRef = useRef({
     address: account?.address?.toLowerCase(),
     chainSlug,
@@ -81,7 +92,7 @@ export function useForecastPredict(args: {
     chainSlug,
     deprizeId,
   }
-  const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(account?.address)
+  const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(activeAccount?.address)
   const votingWeight = totalVMOONEY || 0
 
   const n = numOutcomes
@@ -90,8 +101,20 @@ export function useForecastPredict(args: {
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
+  const [rosterPrize, setRosterPrize] = useState<string | null>(null)
   const [overlays, setOverlays] = useState<RosterOverlay[]>([])
   const [chanceLoading, setChanceLoading] = useState(true)
+  // The writer, not useActiveAccount(). Creating an account attaches the
+  // guest wallet; that must not look like a different roster.
+  const writerAddress = account?.address?.toLowerCase()
+  const prizeKey = forecastRosterKey(chainSlug, deprizeId, writerAddress)
+  // The same hook instance can move to another prize. Drop the previous
+  // roster's pick before effects run, or a stale saved pick would discard
+  // the next handoff.
+  if (rosterPrize !== null && rosterPrize !== prizeKey) {
+    setRosterPrize(null)
+    setSavedPick(null)
+  }
 
   const shownLeaderboard = useMemo(
     () => mergeCallerRoster(consensus?.leaderboard ?? [], overlays, labels),
@@ -128,16 +151,17 @@ export function useForecastPredict(args: {
 
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
+      setRosterPrize(prizeKey)
       setConsensus(body)
       setOverlays((prev) => pruneRosterOverlays(prev, body.leaderboard ?? [], labels))
-      const mine = account?.address
-        ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
+      const mine = writerAddress
+        ? body.leaderboard.find((row) => row.voterAddress === writerAddress)
         : undefined
       if (mine?.allocation?.length === n) {
         setSavedPick(pickFromAllocation(mine.allocation))
       }
     },
-    [account?.address, labels, n]
+    [writerAddress, labels, n, prizeKey]
   )
 
   useEffect(() => {
@@ -146,7 +170,7 @@ export function useForecastPredict(args: {
     setError(null)
     setConsensus(null)
     setOverlays([])
-  }, [account?.address, chainSlug, deprizeId])
+  }, [writerAddress, chainSlug, deprizeId])
 
   useEffect(() => {
     return subscribeRoster((notice) => {
@@ -218,14 +242,13 @@ export function useForecastPredict(args: {
     }
   }, [applyConsensus, loadConsensus, n])
 
-  function rememberRow(allocation: number[]) {
-    if (!account) return
+  function rememberRow(allocation: number[], from: { address: string }) {
     setConsensus((prev) => {
       if (!prev) return prev
       const row = {
-        voterAddress: account.address.toLowerCase(),
+        voterAddress: from.address.toLowerCase(),
         citizenId: '',
-        citizenName: account.address,
+        citizenName: from.address,
         citizenImage: undefined,
         allocation,
         weight: votingWeight,
@@ -240,13 +263,13 @@ export function useForecastPredict(args: {
     })
   }
 
-  async function commitPick(index: number): Promise<boolean> {
-    if (!account) return false
+  async function commitPick(index: number, from?: typeof account): Promise<boolean> {
+    const writer = from ?? account
+    if (!writer) return false
     if (!forecastsContract || !forecastsTableName) {
       setError('Predictions are not available on this network yet.')
       return false
     }
-    const writer = account
     const started = {
       address: writer.address.toLowerCase(),
       chainSlug,
@@ -304,7 +327,7 @@ export function useForecastPredict(args: {
       if (!sameForecastSession(sessionRef.current, started)) return false
       setPreviousPick(savedPick)
       setSavedPick(index)
-      rememberRow(allocation)
+      rememberRow(allocation, writer)
       toast.success('Prediction saved', { style: toastStyle })
       fireDePrizeConfetti()
       await refetchFresh()
@@ -368,12 +391,32 @@ export function useForecastPredict(args: {
       locked: inputsLocked,
     })
     if (plan.action === 'connect') {
-      login()
-      return false
+      setWriting(true)
+      const guest = await forecastWriter.ensureWriter().finally(() => setWriting(false))
+      if (!guest) {
+        login()
+        return false
+      }
+      return commitPick(index, guest)
     }
     if (plan.action !== 'write') return false
     return commitPick(plan.index)
   }
+
+  // A guest who signed in to an existing account left their pick in
+  // localStorage (useForecastWriter.switchToExistingAccount).
+  useGuestForecastHandoff({
+    chainSlug,
+    deprizeId,
+    accountAddress: activeAccount?.address,
+    isGuest: forecastWriter.isGuest,
+    rosterReady: rosterPrize === prizeKey && consensus != null,
+    inputsLocked,
+    writing,
+    savedPick,
+    n,
+    commitPick,
+  })
 
   function undo() {
     const plan = undoPlan({
@@ -388,7 +431,11 @@ export function useForecastPredict(args: {
 
   return {
     connected: !!account,
-    votingPowerLoading: !!account && votingPowerLoading,
+    signedOutPredict: !account,
+    isGuest: forecastWriter.isGuest,
+    signedIn: !!activeAccount,
+    onExistingAccount: () => void forecastWriter.switchToExistingAccount(),
+    votingPowerLoading: !!activeAccount && votingPowerLoading,
     regionRestricted,
     savedPick,
     writing,

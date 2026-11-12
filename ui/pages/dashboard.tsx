@@ -1,4 +1,4 @@
-import { useLogin, usePrivy } from '@privy-io/react-auth'
+import { useLogin } from '@privy-io/react-auth'
 import {
   CITIZEN_TABLE_ADDRESSES,
   CITIZEN_TABLE_NAMES,
@@ -30,10 +30,8 @@ import {
   getRecentCitizenTransfers,
   getRecentTeamTransfers,
 } from '@/lib/network/networkSubgraph'
-import {
-  getLivePhaseOverride,
-  resolveLivePhase,
-} from '@/lib/operator/cyclePhase'
+import { getLivePhaseOverride, resolveLivePhase } from '@/lib/operator/cyclePhase'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { enrichProjectNames } from '@/lib/project/enrichProjectNames'
 import { excludeNonProjectProposals } from '@/lib/project/excludeNonProjectProposals'
 import { getCurrentCycleProposals } from '@/lib/project/getCurrentCycleProposals'
@@ -77,7 +75,7 @@ export default function Dashboard({
   citizensCount,
 }: any) {
   const router = useRouter()
-  const { ready, authenticated } = usePrivy()
+  const { ready, authenticated } = usePrivyAccount()
   const { login } = useLogin()
   const { citizen, expiredCitizen, isLoading } = useContext(CitizenContext)
   const checking = !ready || isLoading
@@ -522,8 +520,7 @@ export async function getStaticProps() {
     // closed under quorum (`tallyVotes` does not flag those). The live phase
     // tells getCurrentCycleProposals to drop them once the Senate window ends.
     try {
-      const byMdpDesc = (a: Project, b: Project) =>
-        (b.MDP ?? b.id ?? 0) - (a.MDP ?? a.id ?? 0)
+      const byMdpDesc = (a: Project, b: Project) => (b.MDP ?? b.id ?? 0) - (a.MDP ?? a.id ?? 0)
       const livePhase = resolveLivePhase(await getLivePhaseOverride())
       const liveProposals = (
         await getCurrentCycleProposals(allProjects, DEFAULT_CHAIN_V5, {

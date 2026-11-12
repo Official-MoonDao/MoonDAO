@@ -9,27 +9,23 @@
 //     buttons, and the per-senator status grid in one balanced layout.
 //
 // Voting writes to the on-chain Proposals contract via voteTempCheck(mdp, pass).
-import { usePrivy } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ProposalsABI from 'const/abis/Proposals.json'
-import {
-  DEFAULT_CHAIN_V5,
-  OPERATORS,
-  PROPOSALS_ADDRESSES,
-} from 'const/config'
+import { DEFAULT_CHAIN_V5, OPERATORS, PROPOSALS_ADDRESSES } from 'const/config'
 import { useRouter } from 'next/router'
 import React, { memo, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 import { readContract } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { castSenateTempCheckVote } from '@/lib/project/castSenateTempCheckVote'
 import useProposalData from '@/lib/project/useProposalData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useIsSenator } from '@/lib/thirdweb/hooks/useIsSenator'
-import { LoadingSpinner } from '../layout/LoadingSpinner'
 import { PrivyWeb3Button } from '@/components/privy/PrivyWeb3Button'
+import { LoadingSpinner } from '../layout/LoadingSpinner'
 
 const VOTE_CONFETTI = (pass: boolean) =>
   confetti({
@@ -44,13 +40,7 @@ const VOTE_CONFETTI = (pass: boolean) =>
 
 // Senators Status Display – used by ProjectCard's compact right-rail variant.
 export const SenatorsStatus = memo(
-  ({
-    senatorVotes,
-    isLoading,
-  }: {
-    senatorVotes: any[]
-    isLoading: boolean
-  }) => {
+  ({ senatorVotes, isLoading }: { senatorVotes: any[]; isLoading: boolean }) => {
     const votedSenators = senatorVotes.filter((s) => s.hasVoted)
     const pendingSenators = senatorVotes.filter((s) => !s.hasVoted)
 
@@ -118,7 +108,7 @@ export const SenateVoteButtons = memo(
     const chain = DEFAULT_CHAIN_V5
     const chainSlug = getChainSlug(chain)
     const account = useActiveAccount()
-    const { authenticated } = usePrivy()
+    const { authenticated } = usePrivyAccount()
     const { isSenator, isLoading: isSenatorLoading } = useIsSenator()
 
     const proposalContract = useContract({
@@ -345,20 +335,14 @@ function CloseSenateVoteButton({
         disabled={!quorumReached || submitting}
         className="px-4 py-2 rounded-lg text-sm font-semibold transition-all bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black disabled:from-gray-600 disabled:to-gray-700 disabled:text-white/60 disabled:cursor-not-allowed"
       >
-        {submitting
-          ? 'Closing…'
-          : quorumReached
-          ? 'Close Senate Vote'
-          : 'Awaiting senate quorum'}
+        {submitting ? 'Closing…' : quorumReached ? 'Close Senate Vote' : 'Awaiting senate quorum'}
       </button>
       <p className="text-[11px] text-white/60">
         {quorum == null
           ? 'Loading quorum…'
           : `Quorum: ${votedCount}/${quorum} senators voted (${approvalCount} for · ${rejectionCount} against)`}
       </p>
-      {projectedOutcome && (
-        <p className="text-[11px] text-white/50">{projectedOutcome}</p>
-      )}
+      {projectedOutcome && <p className="text-[11px] text-white/50">{projectedOutcome}</p>}
     </div>
   )
 }
@@ -392,9 +376,7 @@ function StatPill({
         <span className="mr-1">{emoji}</span>
         {count}
       </div>
-      <div className="text-[10px] uppercase tracking-wider mt-1.5 opacity-80">
-        {label}
-      </div>
+      <div className="text-[10px] uppercase tracking-wider mt-1.5 opacity-80">{label}</div>
     </div>
   )
 }
@@ -456,7 +438,7 @@ export default function SenateVote({
   const chain = DEFAULT_CHAIN_V5
   const chainSlug = getChainSlug(chain)
   const account = useActiveAccount()
-  const { authenticated } = usePrivy()
+  const { authenticated } = usePrivyAccount()
   const { isSenator, isLoading: isSenatorLoading } = useIsSenator()
 
   const proposalContract = useContract({
@@ -465,10 +447,7 @@ export default function SenateVote({
     abi: ProposalsABI.abi as any,
   })
 
-  const { proposalData, senatorVotes, isLoading, refetch } = useProposalData(
-    proposalContract,
-    mdp
-  )
+  const { proposalData, senatorVotes, isLoading, refetch } = useProposalData(proposalContract, mdp)
 
   const handleVote = (pass: boolean) => async () => {
     if (!account) return
@@ -484,13 +463,9 @@ export default function SenateVote({
   }
 
   const approvalCount =
-    'tempCheckApprovalCount' in proposalData
-      ? Number(proposalData?.tempCheckApprovalCount || 0)
-      : 0
+    'tempCheckApprovalCount' in proposalData ? Number(proposalData?.tempCheckApprovalCount || 0) : 0
   const totalVoteCount =
-    'tempCheckVoteCount' in proposalData
-      ? Number(proposalData?.tempCheckVoteCount || 0)
-      : 0
+    'tempCheckVoteCount' in proposalData ? Number(proposalData?.tempCheckVoteCount || 0) : 0
   const rejectionCount = Math.max(totalVoteCount - approvalCount, 0)
   const tempCheckApproved = Boolean(
     'tempCheckApproved' in proposalData && proposalData?.tempCheckApproved
@@ -538,18 +513,8 @@ export default function SenateVote({
       {/* Summary stats — equal-width cards on every screen */}
       <div className="grid grid-cols-3 gap-3">
         <StatPill emoji="👍" label="For" count={approvalCount} tone="positive" />
-        <StatPill
-          emoji="👎"
-          label="Against"
-          count={rejectionCount}
-          tone="negative"
-        />
-        <StatPill
-          emoji="🗳️"
-          label={`of ${senatorTotal} voted`}
-          count={votedCount}
-          tone="neutral"
-        />
+        <StatPill emoji="👎" label="Against" count={rejectionCount} tone="negative" />
+        <StatPill emoji="🗳️" label={`of ${senatorTotal} voted`} count={votedCount} tone="neutral" />
       </div>
 
       {/* Action row — buttons for senators, status note for everyone
@@ -581,9 +546,7 @@ export default function SenateVote({
               </div>
             </>
           ) : (
-            <p className="text-xs text-white/50">
-              Only senators can cast a vote at this stage.
-            </p>
+            <p className="text-xs text-white/50">Only senators can cast a vote at this stage.</p>
           )}
         </div>
       )}
@@ -606,18 +569,12 @@ export default function SenateVote({
       {senatorTotal > 0 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-baseline justify-between">
-            <h4 className="text-xs uppercase tracking-wider text-white/60">
-              Senators
-            </h4>
+            <h4 className="text-xs uppercase tracking-wider text-white/60">Senators</h4>
             <span className="text-[11px] text-white/40">
               {votedCount}/{senatorTotal} voted
             </span>
           </div>
-          <div
-            className={`flex flex-wrap gap-1.5 ${
-              isLoading ? 'opacity-60' : ''
-            }`}
-          >
+          <div className={`flex flex-wrap gap-1.5 ${isLoading ? 'opacity-60' : ''}`}>
             {senatorVotes.map((s) => (
               <SenatorPill
                 key={s.address}
