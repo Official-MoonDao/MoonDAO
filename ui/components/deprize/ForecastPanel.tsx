@@ -17,11 +17,7 @@ import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
-import {
-  decodeForecastVote,
-  deprizeForecastVoteId,
-  encodeForecastVote,
-} from '@/lib/deprize/forecastVote'
+import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { aggregateForecastVotes, votingPowerByOutcome } from '@/lib/forecasts/aggregate'
@@ -36,7 +32,6 @@ import {
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
 import { sameForecastSession } from '@/lib/forecasts/forecastSession'
-import { takePendingHandoff } from '@/lib/forecasts/guestHandoff'
 import {
   mergeCallerRoster,
   notifyRoster,
@@ -46,6 +41,7 @@ import {
 } from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
 import { useForecastWriter } from '@/lib/forecasts/useForecastWriter'
+import { forecastRosterKey, useGuestForecastHandoff } from '@/lib/forecasts/useGuestForecastHandoff'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
 import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -168,7 +164,15 @@ export default function ForecastPanel(props: {
   const [writing, setWriting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [consensus, setConsensus] = useState<ForecastConsensus | null>(null)
+  const [rosterPrize, setRosterPrize] = useState<string | null>(null)
   const [overlays, setOverlays] = useState<RosterOverlay[]>([])
+  const prizeKey = forecastRosterKey(chainSlug, deprizeId, account?.address)
+  // The panel instance is reused across prizes. Drop the previous roster's
+  // pick before effects run, or a stale saved pick would discard the next handoff.
+  if (rosterPrize !== null && rosterPrize !== prizeKey) {
+    setRosterPrize(null)
+    setSavedPick(null)
+  }
   const shownLeaderboard = useMemo(
     () => mergeCallerRoster(consensus?.leaderboard ?? [], overlays, labels),
     [consensus, overlays, labels]
@@ -205,6 +209,7 @@ export default function ForecastPanel(props: {
 
   const applyConsensus = useCallback(
     (body: ForecastConsensus) => {
+      setRosterPrize(forecastRosterKey(chainSlug, deprizeId, account?.address))
       setConsensus(body)
       setOverlays((prev) => pruneRosterOverlays(prev, body.leaderboard ?? [], labels))
       const mine = writer?.address
@@ -214,7 +219,7 @@ export default function ForecastPanel(props: {
         setSavedPick(pickFromAllocation(mine.allocation))
       }
     },
-    [writer?.address, labels, n]
+    [writer?.address, labels, n, chainSlug, deprizeId, account?.address]
   )
 
   useEffect(() => {
@@ -458,20 +463,20 @@ export default function ForecastPanel(props: {
     }
   }
 
-  // A guest who signed in to an existing account left their pick here to be
-  // written again from that account (useForecastWriter.switchToExistingAccount).
-  const handoffChecked = useRef(false)
-  useEffect(() => {
-    if (handoffChecked.current || !account || forecastWriter.isGuest || !consensus) return
-    if (inputsLocked || writing) return
-    handoffChecked.current = true
-    const pending = takePendingHandoff(chainSlug, deprizeId)
-    if (!pending || savedPick != null) return
-    const decoded = decodeForecastVote(pending.vote, n)
-    const pick = decoded ? pickFromAllocation(decoded.allocation) : null
-    if (pick != null) void commitPick(pick)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, forecastWriter.isGuest, consensus, inputsLocked, writing, savedPick])
+  // A guest who signed in to an existing account left their pick in
+  // localStorage (useForecastWriter.switchToExistingAccount).
+  useGuestForecastHandoff({
+    chainSlug,
+    deprizeId,
+    accountAddress: account?.address,
+    isGuest: forecastWriter.isGuest,
+    rosterReady: rosterPrize === prizeKey && consensus != null,
+    inputsLocked,
+    writing,
+    savedPick,
+    n,
+    commitPick,
+  })
 
   function onUndo() {
     const plan = undoPlan({

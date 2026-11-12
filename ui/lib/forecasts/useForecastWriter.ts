@@ -21,7 +21,12 @@ import { tablelandQueryEndpoint } from '@/lib/tableland/endpoint'
 import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import { guestForecastAccount } from './guestAccount'
-import { readPendingHandoffs, writePendingHandoffs, type PendingHandoff } from './guestHandoff'
+import {
+  mergePendingHandoffs,
+  readPendingHandoffs,
+  writePendingHandoffs,
+  type PendingHandoff,
+} from './guestHandoff'
 
 const GUEST_WALLET_WAIT_MS = 15_000
 
@@ -107,16 +112,26 @@ export function useForecastWriter() {
   }, [authenticated, createGuestAccount, createWallet, isGuest, makeGuestAccount, ready, writer])
 
   /**
-   * Privy cannot merge a guest into an existing account. Remove the guest's
-   * forecasts, remember them, drop the guest, and sign in. The prize page
-   * writes them again from the account's wallet.
+   * Privy cannot merge a guest into an existing account. Copy the guest's
+   * forecasts, delete them, then drop the guest and sign in. The prize page
+   * writes them again from the account's wallet. A failed read or delete
+   * leaves the guest signed in — that wallet is the only way back to a
+   * forecast that never made it into the handoff.
    */
   const switchToExistingAccount = useCallback(async () => {
     if (!guestAccount) {
       login()
       return
     }
-    const pending: PendingHandoff[] = []
+
+    const keepGuest = (err?: unknown) => {
+      console.warn('[forecast] could not move a guest forecast', err)
+      toast.error('Could not move your prediction yet. You are still on this guest session.', {
+        style: toastStyle,
+      })
+    }
+
+    const found: PendingHandoff[] = []
     for (const chainSlug of Object.keys(FORECASTS_TABLE_NAMES)) {
       const tableName = FORECASTS_TABLE_NAMES[chainSlug]
       const tableAddress = FORECASTS_TABLE_ADDRESSES[chainSlug]
@@ -127,29 +142,62 @@ export function useForecastWriter() {
         const res = await fetch(
           `${tablelandQueryEndpoint(chain.id)}?statement=${encodeURIComponent(statement)}`
         )
-        if (!res.ok) continue
+        if (!res.ok) {
+          keepGuest(res.status)
+          return
+        }
         const rows = await res.json()
-        if (!Array.isArray(rows)) continue
+        if (!Array.isArray(rows)) {
+          keepGuest(rows)
+          return
+        }
+        for (const row of rows) {
+          const voteId = Number(row?.voteId)
+          if (!Number.isInteger(voteId)) continue
+          const vote = typeof row.vote === 'string' ? row.vote : JSON.stringify(row.vote)
+          found.push({ chainSlug, deprizeId: voteId, vote })
+        }
+      } catch (err) {
+        keepGuest(err)
+        return
+      }
+    }
+
+    // Snapshot before any delete. A later delete can fail once the stipend
+    // is spent; the copy has to exist before the guest wallet is dropped.
+    const stored = writePendingHandoffs(mergePendingHandoffs(readPendingHandoffs(), found))
+    if (found.length > 0 && !stored) {
+      keepGuest('handoff store unavailable')
+      return
+    }
+
+    try {
+      for (const row of found) {
+        const chain = v4SlugToV5Chain(row.chainSlug)
+        const tableAddress = FORECASTS_TABLE_ADDRESSES[row.chainSlug]
+        if (!chain || !tableAddress) {
+          keepGuest(`missing forecasts table for ${row.chainSlug}`)
+          return
+        }
         const contract = getContract({
           client,
           chain,
           address: tableAddress,
           abi: ForecastsTableABI.abi as any,
         })
-        for (const row of rows) {
-          const voteId = Number(row?.voteId)
-          if (!Number.isInteger(voteId)) continue
-          const vote = typeof row.vote === 'string' ? row.vote : JSON.stringify(row.vote)
-          pending.push({ chainSlug, deprizeId: voteId, vote })
-          // A guest row left behind would count this visitor twice.
-          await clearForecastVote({ forecastsContract: contract, account: guestAccount, voteId })
-        }
-      } catch (err) {
-        console.warn('[forecast] could not move a guest forecast', err)
+        // A guest row left behind would count this visitor twice.
+        await clearForecastVote({
+          forecastsContract: contract,
+          account: guestAccount,
+          voteId: row.deprizeId,
+        })
       }
+    } catch (err) {
+      keepGuest(err)
+      return
     }
-    writePendingHandoffs([...readPendingHandoffs(), ...pending])
-    if (pending.length > 0) {
+
+    if (found.length > 0) {
       toast('Sign in and your prediction moves to your account.', { style: toastStyle })
     }
     await logout()

@@ -10,6 +10,8 @@ import path from 'path'
 import { guestForecastAccount, toPrivyTransaction } from '@/lib/forecasts/guestAccount'
 import {
   GUEST_HANDOFF_STORAGE_KEY,
+  mergePendingHandoffs,
+  peekPendingHandoff,
   readPendingHandoffs,
   takePendingHandoff,
   writePendingHandoffs,
@@ -111,6 +113,31 @@ describe('guest handoff to an existing account', () => {
     store.setItem(GUEST_HANDOFF_STORAGE_KEY, JSON.stringify([{ chainSlug: 'x' }]))
     expect(readPendingHandoffs(store)).to.deep.equal([])
   })
+
+  it('peeks without removing the pending pick', () => {
+    const store = memoryStore()
+    writePendingHandoffs([{ chainSlug: 'arbitrum', deprizeId: 2, vote: '{"v":1}' }], store)
+    expect(peekPendingHandoff('arbitrum', 2, store)?.vote).to.equal('{"v":1}')
+    expect(peekPendingHandoff('sepolia', 2, store)).to.equal(null)
+    expect(readPendingHandoffs(store)).to.have.length(1)
+  })
+
+  it('keeps one row per prize when a retry reads the same forecast', () => {
+    const first = { chainSlug: 'arbitrum', deprizeId: 2, vote: '{"v":1}' }
+    const again = { chainSlug: 'arbitrum', deprizeId: 2, vote: '{"v":2}' }
+    const other = { chainSlug: 'sepolia', deprizeId: 2, vote: '{"v":3}' }
+    const merged = mergePendingHandoffs([first, other], [again])
+    expect(merged).to.have.length(2)
+    expect(merged.find((row) => row.chainSlug === 'arbitrum')?.vote).to.equal('{"v":2}')
+    expect(merged.find((row) => row.chainSlug === 'sepolia')?.vote).to.equal('{"v":3}')
+  })
+
+  it('reports when the handoff could not be stored', () => {
+    const row = { chainSlug: 'arbitrum', deprizeId: 2, vote: '{"v":1}' }
+    expect(writePendingHandoffs([row], null)).to.equal(false)
+    const store = memoryStore()
+    expect(writePendingHandoffs([row], store)).to.equal(true)
+  })
 })
 
 describe('server guest lookup', () => {
@@ -183,6 +210,53 @@ describe('guest wiring', () => {
     expect(writer).to.contain('uiOptions: { showWalletUIs: false }')
     const app = readUi('pages', '_app.tsx')
     expect(app).not.to.contain('showWalletUIs')
+  })
+
+  it('keeps the guest signed in when a forecast cannot be snapshotted or deleted', () => {
+    const src = readUi('lib', 'forecasts', 'useForecastWriter.ts')
+    const start = src.indexOf('const switchToExistingAccount')
+    const end = src.indexOf('return { writer')
+    const fn = src.slice(start, end)
+    const logoutAt = fn.indexOf('await logout()')
+    const snapshotAt = fn.indexOf('writePendingHandoffs(')
+    expect(snapshotAt).to.be.greaterThan(-1)
+    expect(logoutAt).to.be.greaterThan(snapshotAt)
+    const beforeLogout = fn.slice(0, logoutAt)
+    expect(beforeLogout).to.contain('if (!res.ok)')
+    expect(beforeLogout).to.contain('return')
+    expect(beforeLogout).to.contain('if (found.length > 0 && !stored)')
+    // A delete that throws must return before the guest is dropped.
+    const deleteTry = beforeLogout.indexOf('await clearForecastVote')
+    const deleteCatch = beforeLogout.indexOf('catch (err)', deleteTry)
+    expect(deleteCatch).to.be.greaterThan(deleteTry)
+    expect(beforeLogout.indexOf('return', deleteCatch)).to.be.greaterThan(deleteTry)
+  })
+
+  it('removes a guest handoff only after the account rewrite succeeds', () => {
+    const hook = readUi('lib', 'forecasts', 'useGuestForecastHandoff.ts')
+    expect(hook).to.contain('peekPendingHandoff(chainSlug, deprizeId)')
+    expect(hook).to.match(/if \(ok\) takePendingHandoff\(chainSlug, deprizeId\)/)
+    const peekAt = hook.indexOf('peekPendingHandoff(chainSlug, deprizeId)')
+    const commitAt = hook.indexOf('commitPickRef.current(pick)')
+    const takeAt = hook.indexOf('if (ok) takePendingHandoff')
+    expect(commitAt).to.be.greaterThan(peekAt)
+    expect(takeAt).to.be.greaterThan(commitAt)
+    // A decode miss returns without removing the stored copy.
+    const decodeAt = hook.indexOf('decodeForecastVote(pending.vote, n)')
+    const decodeReturn = hook.indexOf('if (pick == null) return', decodeAt)
+    expect(decodeReturn).to.be.greaterThan(decodeAt)
+    expect(hook.slice(decodeAt, decodeReturn)).not.to.contain('takePendingHandoff')
+    for (const file of [
+      'components/deprize/ForecastPanel.tsx',
+      'lib/forecasts/useForecastPredict.ts',
+    ]) {
+      const panel = readUi(file)
+      expect(panel).to.contain('useGuestForecastHandoff(')
+      expect(panel).to.contain('chainSlug')
+      expect(panel).to.contain('deprizeId')
+      expect(panel).not.to.contain('handoffChecked')
+      expect(panel).not.to.contain('takePendingHandoff(')
+    }
   })
 
   it('shows the terms line wherever a signed-out visitor can predict', () => {
