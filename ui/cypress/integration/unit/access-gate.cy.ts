@@ -27,11 +27,10 @@ const TOKEN = 'a'.repeat(64)
 
 describe('access gate', () => {
   describe('which routes are gated', () => {
-    // Launch checklist. Homepage sections in pages/index.tsx read this same
-    // constant, so flipping it publishes the pages and the homepage together.
-    // When that commit lands, change this assertion to true.
-    it('is not launched yet, so the password still holds', () => {
-      expect(MOONBASE_DEPRIZE_LAUNCHED).to.equal(false)
+    // Homepage sections in pages/index.tsx read this same constant, so the
+    // pages and the homepage went public together.
+    it('is launched, so the password no longer applies to public routes', () => {
+      expect(MOONBASE_DEPRIZE_LAUNCHED).to.equal(true)
     })
 
     it('gates the moonbase and DePrize, including their subroutes, until launch', () => {
@@ -40,7 +39,6 @@ describe('access gate', () => {
         '/moonbase/nasa-artemis-base-camp',
         '/deprize',
         '/deprize/1',
-        '/deprize-play',
       ]) {
         expect(isGatedPath(p), p).to.equal(!MOONBASE_DEPRIZE_LAUNCHED)
       }
