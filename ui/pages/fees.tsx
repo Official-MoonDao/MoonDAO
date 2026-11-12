@@ -27,6 +27,7 @@ import toastStyle from '../lib/marketplace/marketplace-utils/toastConfig'
 import useETHPrice from '@/lib/etherscan/useETHPrice'
 import { getWalletEthersProvider } from '@/lib/privy/getWalletEthersProvider'
 import PrivyWalletContext from '@/lib/privy/privy-wallet-context'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { arbitrum, base, ethereum, sepolia, arbitrumSepolia, Chain } from '@/lib/rpc/chains'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
@@ -187,7 +188,7 @@ function HowItWorksStep({
 export default function Fees() {
   const account = useActiveAccount()
   const address = account?.address
-  const { authenticated } = usePrivy()
+  const { authenticated } = usePrivyAccount()
   const router = useRouter()
 
   const { wallets } = useWallets()

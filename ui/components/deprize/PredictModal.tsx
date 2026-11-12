@@ -40,6 +40,15 @@ export default function PredictModal(props: {
   onPredict: () => void
   onUndo: () => void
   onConnect: () => void
+  /**
+   * Signed out, and Predict saves without a login: the site creates a guest
+   * wallet on the tap. "Sign in" stays available as the secondary action.
+   */
+  signedOutPredict?: boolean
+  /** Terms line shown under Predict for a visitor who has not signed in. */
+  consentNotice?: ReactNode
+  /** How a guest keeps a saved prediction. */
+  guestNotice?: ReactNode
   onClose: () => void
   /** Switch this window to the ETH form. Called only when staking is allowed. */
   onAddEth: () => void
@@ -165,7 +174,7 @@ export default function PredictModal(props: {
               </p>
             )}
 
-            {!props.connected && (
+            {!props.connected && !(props.signedOutPredict && !isBet) && (
               <button
                 type="button"
                 onClick={props.onConnect}
@@ -195,6 +204,8 @@ export default function PredictModal(props: {
               ))}
 
             {!isBet && props.connected && props.citizenNotice}
+
+            {!isBet && props.guestNotice}
 
             {props.connected && props.error && !isBet && (
               <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-200">
@@ -248,6 +259,35 @@ export default function PredictModal(props: {
               )}
             </div>
           )}
+
+          {!isBet && !props.connected && props.signedOutPredict && (
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={props.onPredict}
+                disabled={!props.predictEnabled || props.writing}
+                className={`w-full rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 disabled:opacity-40 ${TOUCH}`}
+                data-testid="guest-predict"
+              >
+                {props.writing ? 'Predicting…' : `Predict ${props.teamName}`}
+              </button>
+              {props.error && (
+                <p role="alert" className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                  {props.error}
+                </p>
+              )}
+              {props.consentNotice}
+              <button
+                type="button"
+                onClick={props.onConnect}
+                className="text-xs text-gray-400 underline hover:text-gray-200"
+              >
+                Sign in instead
+              </button>
+            </div>
+          )}
+
+          {!isBet && props.connected && !props.saved && props.consentNotice}
 
           {!isBet && props.regionRestricted && (
             <button

@@ -56,7 +56,7 @@ export default function Tier({
           onClick={() => {
             if (!compact) {
               if (gateOnAuth) {
-                if (!address && user) logout()
+                if (!address && user && !user.isGuest) logout()
                 if (!address) return login()
               }
 

@@ -1,6 +1,6 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { useEffect, useRef } from 'react'
 import { trackWalletConnect } from '@/lib/analytics/ga4'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 
 /**
  * Fires wallet_connect when a wallet is connected or an embedded wallet
@@ -8,7 +8,7 @@ import { trackWalletConnect } from '@/lib/analytics/ga4'
  * does not count as a new connection.
  */
 export function Ga4Identity() {
-  const { ready, authenticated, user } = usePrivy()
+  const { ready, authenticated, user } = usePrivyAccount()
   const seenReady = useRef(false)
   const lastWallet = useRef<string | null>(null)
 

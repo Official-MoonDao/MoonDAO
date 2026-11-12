@@ -23,3 +23,41 @@ export function forecastGasTopUpWei(balanceWei: bigint, budgetWei: bigint): bigi
 export function forecastGasSponsorKey(chainId: number, wallet: string): string {
   return `deprize:forecast-gas:${chainId}:${wallet.toLowerCase()}`
 }
+
+/**
+ * Guest accounts are free to create, so per-wallet limits do not bound them.
+ * Each guest top-up also counts against its IP and a daily ETH cap per chain.
+ */
+export const FORECAST_GUEST_TOPUPS_PER_IP_PER_DAY = 10
+const FORECAST_GUEST_DAILY_TOPUPS = 100n
+
+/** Default: 100 full top-ups a day (0.025 ETH on Arbitrum). `FORECAST_GUEST_DAILY_CAP_WEI` overrides. */
+export function forecastGuestDailyCapWei(chainId: number, override?: string): bigint {
+  if (override && /^\d+$/.test(override.trim())) return BigInt(override.trim())
+  return forecastGasBudgetWei(chainId) * FORECAST_GUEST_DAILY_TOPUPS
+}
+
+/** UTC day, so the cap resets at one moment for every server instance. */
+export function forecastGuestDay(now: Date): string {
+  return now.toISOString().slice(0, 10)
+}
+
+export function forecastGuestIpKey(chainId: number, ip: string, day: string): string {
+  return `deprize:forecast-gas:guest-ip:${chainId}:${day}:${ip}`
+}
+
+export function forecastGuestSpendKey(chainId: number, day: string): string {
+  return `deprize:forecast-gas:guest-wei:${chainId}:${day}`
+}
+
+export type GuestGasCheck = 'ok' | 'ip-capped' | 'budget-capped'
+
+export function guestGasCheck(input: {
+  ipCount: number
+  spentWei: bigint
+  capWei: bigint
+}): GuestGasCheck {
+  if (input.ipCount > FORECAST_GUEST_TOPUPS_PER_IP_PER_DAY) return 'ip-capped'
+  if (input.spentWei > input.capWei) return 'budget-capped'
+  return 'ok'
+}

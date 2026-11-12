@@ -30,7 +30,7 @@ function normalizeIp(ip?: string | null): string {
   return ip.toLowerCase()
 }
 
-function getTrustedClientIp(req: NextApiRequest): string {
+export function getTrustedClientIp(req: NextApiRequest): string {
   const h = req.headers
   const vercel = (h['x-vercel-proxied-for'] as string | undefined)?.trim()
   const real = (h['x-real-ip'] as string | undefined)?.trim()
@@ -48,11 +48,7 @@ function getTrustedClientIp(req: NextApiRequest): string {
   return normalizeIp(ip)
 }
 
-export async function rateLimit(
-  req: NextApiRequest,
-  res: NextApiResponse,
-  next: () => void
-) {
+export async function rateLimit(req: NextApiRequest, res: NextApiResponse, next: () => void) {
   if (process.env.NEXT_PUBLIC_ENV !== 'prod') return next()
 
   // Trusted IP + a stable key that also includes route & method (thwarts trivial IP rotation)
@@ -83,9 +79,7 @@ export async function rateLimit(
     const retryAfter = Math.max(1, Math.ceil((r.reset - Date.now()) / 1000))
     res.setHeader('Retry-After', String(retryAfter))
     res.setHeader('X-RateLimit-Reason', msg)
-    return res
-      .status(429)
-      .json({ message: 'Rate limit exceeded', detail: msg, retryAfter })
+    return res.status(429).json({ message: 'Rate limit exceeded', detail: msg, retryAfter })
   }
 
   if (!sec.success) return deny(sec, 'per-second')

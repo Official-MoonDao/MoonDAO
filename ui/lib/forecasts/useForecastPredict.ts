@@ -7,9 +7,13 @@ import type { Chain } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { resolveLiveDePrizeId } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
-import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
-import { walletErrorMessage } from '@/lib/deprize/walletError'
+import {
+  decodeForecastVote,
+  deprizeForecastVoteId,
+  encodeForecastVote,
+} from '@/lib/deprize/forecastVote'
 import { useClientDePrizeRestricted } from '@/lib/deprize/useClientDePrizeRestricted'
+import { walletErrorMessage } from '@/lib/deprize/walletError'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { votingPowerByOutcome } from '@/lib/forecasts/aggregate'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
@@ -22,6 +26,7 @@ import {
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
 import { sameForecastSession } from '@/lib/forecasts/forecastSession'
+import { takePendingHandoff } from '@/lib/forecasts/guestHandoff'
 import {
   mergeCallerRoster,
   notifyRoster,
@@ -30,12 +35,20 @@ import {
   type RosterOverlay,
 } from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
+import { useForecastWriter } from '@/lib/forecasts/useForecastWriter'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
 import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 
 export type ForecastPredictController = {
   connected: boolean
+  /** Signed out: Predict creates a guest wallet and saves, with no login. */
+  signedOutPredict: boolean
+  /** Saved from a guest wallet on this device, not an account. */
+  isGuest: boolean
+  /** Signed in with a real account, not a guest. */
+  signedIn: boolean
+  onExistingAccount: () => void
   /** vMOONEY balance is still loading. A non-Citizen can hold voting power. */
   votingPowerLoading: boolean
   regionRestricted: boolean
@@ -70,7 +83,9 @@ export function useForecastPredict(args: {
   const { chain, chainSlug, deprizeId, numOutcomes, labels, reported, marketLoading } = args
   const regionRestricted = useClientDePrizeRestricted()
   const { login } = useLogin()
-  const account = useActiveAccount()
+  const activeAccount = useActiveAccount()
+  const forecastWriter = useForecastWriter()
+  const account = forecastWriter.writer
   const sessionRef = useRef({
     address: account?.address?.toLowerCase(),
     chainSlug,
@@ -81,7 +96,7 @@ export function useForecastPredict(args: {
     chainSlug,
     deprizeId,
   }
-  const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(account?.address)
+  const { totalVMOONEY, isLoading: votingPowerLoading } = useTotalVMOONEY(activeAccount?.address)
   const votingWeight = totalVMOONEY || 0
 
   const n = numOutcomes
@@ -218,14 +233,13 @@ export function useForecastPredict(args: {
     }
   }, [applyConsensus, loadConsensus, n])
 
-  function rememberRow(allocation: number[]) {
-    if (!account) return
+  function rememberRow(allocation: number[], from: { address: string }) {
     setConsensus((prev) => {
       if (!prev) return prev
       const row = {
-        voterAddress: account.address.toLowerCase(),
+        voterAddress: from.address.toLowerCase(),
         citizenId: '',
-        citizenName: account.address,
+        citizenName: from.address,
         citizenImage: undefined,
         allocation,
         weight: votingWeight,
@@ -240,13 +254,13 @@ export function useForecastPredict(args: {
     })
   }
 
-  async function commitPick(index: number): Promise<boolean> {
-    if (!account) return false
+  async function commitPick(index: number, from?: typeof account): Promise<boolean> {
+    const writer = from ?? account
+    if (!writer) return false
     if (!forecastsContract || !forecastsTableName) {
       setError('Predictions are not available on this network yet.')
       return false
     }
-    const writer = account
     const started = {
       address: writer.address.toLowerCase(),
       chainSlug,
@@ -304,7 +318,7 @@ export function useForecastPredict(args: {
       if (!sameForecastSession(sessionRef.current, started)) return false
       setPreviousPick(savedPick)
       setSavedPick(index)
-      rememberRow(allocation)
+      rememberRow(allocation, writer)
       toast.success('Prediction saved', { style: toastStyle })
       fireDePrizeConfetti()
       await refetchFresh()
@@ -368,12 +382,32 @@ export function useForecastPredict(args: {
       locked: inputsLocked,
     })
     if (plan.action === 'connect') {
-      login()
-      return false
+      setWriting(true)
+      const guest = await forecastWriter.ensureWriter().finally(() => setWriting(false))
+      if (!guest) {
+        login()
+        return false
+      }
+      return commitPick(index, guest)
     }
     if (plan.action !== 'write') return false
     return commitPick(plan.index)
   }
+
+  // A guest who signed in to an existing account left their pick here to be
+  // written again from that account (useForecastWriter.switchToExistingAccount).
+  const handoffChecked = useRef(false)
+  useEffect(() => {
+    if (handoffChecked.current || !activeAccount || forecastWriter.isGuest || !consensus) return
+    if (inputsLocked || writing) return
+    handoffChecked.current = true
+    const pending = takePendingHandoff(chainSlug, deprizeId)
+    if (!pending || savedPick != null) return
+    const decoded = decodeForecastVote(pending.vote, n)
+    const pick = decoded ? pickFromAllocation(decoded.allocation) : null
+    if (pick != null) void commitPick(pick)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeAccount, forecastWriter.isGuest, consensus, inputsLocked, writing, savedPick])
 
   function undo() {
     const plan = undoPlan({
@@ -388,7 +422,11 @@ export function useForecastPredict(args: {
 
   return {
     connected: !!account,
-    votingPowerLoading: !!account && votingPowerLoading,
+    signedOutPredict: !account,
+    isGuest: forecastWriter.isGuest,
+    signedIn: !!activeAccount,
+    onExistingAccount: () => void forecastWriter.switchToExistingAccount(),
+    votingPowerLoading: !!activeAccount && votingPowerLoading,
     regionRestricted,
     savedPick,
     writing,

@@ -1,10 +1,10 @@
 import { Disclosure } from '@headlessui/react'
 import { ChevronRightIcon } from '@heroicons/react/20/solid'
-import { usePrivy } from '@privy-io/react-auth'
 import { useContext } from 'react'
 import { useActiveAccount } from 'thirdweb/react'
 import CitizenContext from '@/lib/citizen/citizen-context'
 import { ACCOUNT_ACTIONS } from '@/lib/navigation/nav-config'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { generatePrettyLinkWithId } from '@/lib/subscription/pretty-links'
 import { NavLink } from '../NavLink'
 import { UserProjectsList } from './UserProjectsList'
@@ -25,7 +25,7 @@ const ITEM_CLASS =
 export default function MobileAccountSection({ onNavigate }: { onNavigate?: () => void }) {
   const { citizen, isExpired } = useContext(CitizenContext)
   const account = useActiveAccount()
-  const { authenticated } = usePrivy()
+  const { authenticated } = usePrivyAccount()
 
   if (!authenticated && !account?.address) return null
 

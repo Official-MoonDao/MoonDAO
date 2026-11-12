@@ -1,6 +1,5 @@
 //This component dipslays a project card using project data directly from tableland
 import { trimActionsFromBody } from '@nance/nance-sdk'
-import { usePrivy } from '@privy-io/react-auth'
 import CitizenABI from 'const/abis/Citizen.json'
 import { CITIZEN_ADDRESSES, DEFAULT_CHAIN_V5 } from 'const/config'
 import { getProposalVideoUrl } from 'const/proposalVideos'
@@ -14,6 +13,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { PROJECT_ACTIVE, PROJECT_PENDING } from '@/lib/nance/types'
 import useProposalJSON from '@/lib/nance/useProposalJSON'
 import { useLivePhase } from '@/lib/operator/useLivePhase'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { getProjectDisplayName } from '@/lib/project/getProjectDisplayName'
 import { Project } from '@/lib/project/useProjectData'
 import { getChainSlug } from '@/lib/thirdweb/chain'
@@ -484,7 +484,7 @@ export default function ProjectCard({
   // (showing allocation steppers) and render `Budget: $undefined`.
   const loadHeavy = isVisible || isExpanded || !!distribute || isSenateVote
 
-  const { authenticated } = usePrivy()
+  const { authenticated } = usePrivyAccount()
 
   const { selectedChain } = useContext(ChainContextV5)
   const chainSlug = getChainSlug(selectedChain)

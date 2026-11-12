@@ -1,4 +1,3 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { DEFAULT_CHAIN_V5, DEFAULT_CHAIN_V5_SLUG } from 'const/config'
 import { useOnchainContributionsEnabled } from 'const/flags'
 import Image from 'next/image'
@@ -8,6 +7,7 @@ import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { contributionsTable, splitTextLinks } from '@/lib/contributions/onchain'
 import { getIPFSGateway } from '@/lib/ipfs/gateway'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import ContributionSubmitModal, {
   ContributionRemoveModal,
 } from '../components/contribution/ContributionSubmitModal'
@@ -18,7 +18,7 @@ import { NoticeFooter } from '../components/layout/NoticeFooter'
 import type { Contribution } from './api/contributions/feed'
 
 function CitizenSubmitButton({ onOpenForm }: { onOpenForm?: () => void }) {
-  const { authenticated, login } = usePrivy()
+  const { authenticated, login } = usePrivyAccount()
   const account = useActiveAccount()
   // Waits for the lookup to settle instead of timing out, and checks linked
   // wallets, so a slow RPC never shows a Citizen the mint prompt.

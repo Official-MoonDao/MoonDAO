@@ -24,6 +24,16 @@ export async function walletFromSession(
   res: NextApiResponse,
   claimedWallet?: string | null
 ): Promise<string | null> {
+  return (await sessionWallet(req, res, claimedWallet))?.wallet ?? null
+}
+
+/** Like `walletFromSession`, but also admits Privy guests and says which it is. */
+export async function sessionWallet(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  claimedWallet?: string | null,
+  options: { allowGuest?: boolean } = {}
+): Promise<{ wallet: string; isGuest: boolean } | null> {
   let accessToken = accessTokenFromRequest(req)
   if (!accessToken) {
     const session = await getServerSession(req, res, authOptions)
@@ -31,8 +41,9 @@ export async function walletFromSession(
   }
   if (!accessToken) return null
 
-  const privyUserData = await getPrivyUserData(accessToken)
+  const privyUserData = await getPrivyUserData(accessToken, options)
   if (!privyUserData) return null
 
-  return selectSessionWallet(privyUserData.walletAddresses, claimedWallet)
+  const wallet = selectSessionWallet(privyUserData.walletAddresses, claimedWallet)
+  return wallet ? { wallet, isGuest: privyUserData.isGuest } : null
 }

@@ -7,7 +7,8 @@ import {
   WalletIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { useLogin, usePrivy, useWallets } from '@privy-io/react-auth'
+import { useLogin, useWallets } from '@privy-io/react-auth'
+import { OVERVIEW_TOKEN_ADDRESS } from 'const/config'
 import { COIN_ICONS } from 'const/icons'
 import { ethers } from 'ethers'
 import Image from 'next/image'
@@ -22,6 +23,7 @@ import { clearAllCitizenCache } from '../../lib/citizen/CitizenProvider'
 import PrivyWalletContext from '../../lib/privy/privy-wallet-context'
 import { useNativeBalance } from '../../lib/thirdweb/hooks/useNativeBalance'
 import { useENS } from '../../lib/utils/hooks/useENS'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import {
   ethereum,
   arbitrum,
@@ -31,14 +33,13 @@ import {
   arbitrumSepolia,
   optimismSepolia,
 } from '@/lib/rpc/chains'
-import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
 import { addNetworkToWallet } from '@/lib/thirdweb/addNetworkToWallet'
+import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
 import ChainContextV5 from '@/lib/thirdweb/chain-context-v5'
 import client from '@/lib/thirdweb/client'
-import { OVERVIEW_TOKEN_ADDRESS } from 'const/config'
 import useWatchTokenBalance from '@/lib/tokens/hooks/useWatchTokenBalance'
-import { FundOnrampModal } from '../onramp/FundOnrampModal'
 import Modal from '../layout/Modal'
+import { FundOnrampModal } from '../onramp/FundOnrampModal'
 import CitizenProfileLink from '../subscription/CitizenProfileLink'
 import { LinkAccounts } from './LinkAccounts'
 import WalletAction from './WalletAction'
@@ -561,8 +562,8 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
   const address = account?.address
   const activeWallet = useActiveWallet()
   const { disconnect: disconnectThirdwebWallet } = useDisconnect()
-  const { logout, user, authenticated, ready, connectWallet, exportWallet }: any =
-    usePrivy()
+  const { logout, user, authenticated, isGuest, ready, connectWallet, exportWallet }: any =
+    usePrivyAccount()
   const { login } = useLogin()
   const { wallets } = useWallets()
   const [loginQueued, setLoginQueued] = useState(false)
@@ -609,7 +610,8 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
       return
     }
     setLoginQueued(false)
-    if (user && !authenticated) {
+    // login() upgrades a guest and keeps its forecasts. Logging out first would discard them.
+    if (user && !authenticated && !isGuest) {
       try {
         if (activeWallet) disconnectThirdwebWallet(activeWallet)
       } catch (err) {
@@ -636,6 +638,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
     ready,
     user,
     authenticated,
+    isGuest,
     activeWallet,
     wallets,
     logout,
@@ -769,9 +772,10 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
   }, [walletChainId, selectedChain, selectedWallet, wallets])
 
   const walletChainKnown = getChainById(walletChainId)
-  const walletNetworkLabel = (
-    walletChainKnown?.name ?? `Chain ${walletChainId}`
-  ).replace(' One', '')
+  const walletNetworkLabel = (walletChainKnown?.name ?? `Chain ${walletChainId}`).replace(
+    ' One',
+    ''
+  )
   const appNetworkLabel = (selectedChain.name ?? 'network').replace(' One', '')
 
   const alignAppToWalletChain = useCallback(() => {
@@ -845,8 +849,8 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                 {ens
                   ? ens
                   : displayAddress
-                    ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`
-                    : 'Connecting…'}
+                  ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`
+                  : 'Connecting…'}
               </p>
               <ChevronDownIcon
                 className={`w-4 h-4 text-black dark:text-white cursor-pointer transition-all duration-150 ${
@@ -903,8 +907,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                           className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors group"
                         >
                           <span className="font-mono">
-                            {ens ||
-                              `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`}
+                            {ens || `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`}
                           </span>
                           <ClipboardDocumentIcon className="w-3.5 h-3.5 group-hover:text-blue-400" />
                         </button>
@@ -1008,10 +1011,11 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                       </button>
                     </div>
                     <p className="text-gray-300 text-sm mb-4">
-                      Your wallet is on <span className="font-medium text-white">{walletNetworkLabel}</span>
-                      , but the app is set to{' '}
-                      <span className="font-medium text-white">{appNetworkLabel}</span>. Match the app to
-                      your wallet, or switch your wallet to the app network.
+                      Your wallet is on{' '}
+                      <span className="font-medium text-white">{walletNetworkLabel}</span>, but the
+                      app is set to{' '}
+                      <span className="font-medium text-white">{appNetworkLabel}</span>. Match the
+                      app to your wallet, or switch your wallet to the app network.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3">
                       {walletChainKnown ? (
@@ -1033,8 +1037,8 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                     </div>
                     {!walletChainKnown ? (
                       <p className="text-gray-500 text-xs mt-3">
-                        This wallet network is not in the MoonDAO network list. Switch your wallet to{' '}
-                        {appNetworkLabel} to continue.
+                        This wallet network is not in the MoonDAO network list. Switch your wallet
+                        to {appNetworkLabel} to continue.
                       </p>
                     ) : null}
                   </div>
@@ -1133,9 +1137,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                                 {getTokenIcon(token.symbol, token.contractAddress)}
                               </div>
                               <div>
-                                <p className="font-medium text-white">
-                                  {token.symbol}
-                                </p>
+                                <p className="font-medium text-white">{token.symbol}</p>
                                 <p className="text-gray-400 text-xs">{token.name}</p>
                               </div>
                             </div>
@@ -1265,10 +1267,7 @@ export function PrivyConnectWallet({ citizenContract, type }: PrivyConnectWallet
                         try {
                           disconnectThirdwebWallet(activeWallet)
                         } catch (err) {
-                          console.warn(
-                            'Failed to disconnect thirdweb wallet:',
-                            err
-                          )
+                          console.warn('Failed to disconnect thirdweb wallet:', err)
                         }
                       }
                       wallets.forEach((wallet) => wallet.disconnect())

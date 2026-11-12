@@ -1,8 +1,8 @@
 import { Redis } from '@upstash/redis'
 import { FORECASTS_TABLE_ADDRESSES } from 'const/config'
 import { providers } from 'ethers'
-import { authMiddleware } from 'middleware/authMiddleware'
-import { rateLimit } from 'middleware/rateLimit'
+import { guestAuthMiddleware } from 'middleware/authMiddleware'
+import { getTrustedClientIp, rateLimit } from 'middleware/rateLimit'
 import withMiddleware from 'middleware/withMiddleware'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import {
@@ -11,8 +11,14 @@ import {
   forecastGasBudgetWei,
   forecastGasSponsorKey,
   forecastGasTopUpWei,
+  forecastGuestDailyCapWei,
+  forecastGuestDay,
+  forecastGuestIpKey,
+  forecastGuestSpendKey,
+  guestGasCheck,
+  type GuestGasCheck,
 } from '@/lib/deprize/forecastGas'
-import { walletFromSession } from '@/lib/deprize/sessionWallet'
+import { sessionWallet } from '@/lib/deprize/sessionWallet'
 import { hsmRpcForChain, isHSMAvailable, sendEthFromHSM } from '@/lib/google/hsm-signer'
 import { jsonRpcWithFallback } from '@/lib/rpc/serverJsonRpc'
 import { getChainById, getChainSlug } from '@/lib/thirdweb/chain'
@@ -47,13 +53,60 @@ async function releaseForecastGasSlot(chainId: number, wallet: string) {
   }
 }
 
+type GuestReservation = { ipKey: string; spendKey: string; wei: bigint }
+
+/**
+ * Guests are free to create, so unlike the per-wallet counter this fails
+ * closed: no counter, no stipend.
+ */
+async function reserveGuestGas(
+  chainId: number,
+  ip: string,
+  wei: bigint
+): Promise<GuestGasCheck | 'unavailable' | GuestReservation> {
+  const day = forecastGuestDay(new Date())
+  const ipKey = forecastGuestIpKey(chainId, ip, day)
+  const spendKey = forecastGuestSpendKey(chainId, day)
+  try {
+    const ipCount = await redis.incr(ipKey)
+    if (ipCount === 1) await redis.expire(ipKey, FORECAST_GAS_SPONSOR_TTL_SECONDS)
+    const spent = await redis.incrby(spendKey, Number(wei))
+    if (spent === Number(wei)) await redis.expire(spendKey, 2 * FORECAST_GAS_SPONSOR_TTL_SECONDS)
+    const check = guestGasCheck({
+      ipCount,
+      spentWei: BigInt(spent),
+      capWei: forecastGuestDailyCapWei(chainId, process.env.FORECAST_GUEST_DAILY_CAP_WEI),
+    })
+    if (check !== 'ok') {
+      await releaseGuestGas({ ipKey, spendKey, wei })
+      return check
+    }
+    return { ipKey, spendKey, wei }
+  } catch (err) {
+    console.error('[deprize] guest forecast gas counter unavailable', err)
+    return 'unavailable'
+  }
+}
+
+async function releaseGuestGas(reservation: GuestReservation) {
+  try {
+    await Promise.all([
+      redis.decr(reservation.ipKey),
+      redis.decrby(reservation.spendKey, Number(reservation.wei)),
+    ])
+  } catch {
+    // The counter was already unreachable, or this release lost the race.
+  }
+}
+
 async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   const claimedWallet = typeof req.body?.wallet === 'string' ? req.body.wallet.trim() : ''
-  const wallet = await walletFromSession(req, res, claimedWallet)
+  const caller = await sessionWallet(req, res, claimedWallet, { allowGuest: true })
+  const wallet = caller?.wallet ?? null
   const chainId = Number(req.body?.chainId)
   const deprizeId = Number(req.body?.deprizeId)
 
@@ -132,11 +185,29 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
     })
   }
 
+  let guest: GuestReservation | null = null
+  if (caller?.isGuest) {
+    const reserved = await reserveGuestGas(chainId, getTrustedClientIp(req), topUp)
+    if (typeof reserved === 'string') {
+      if (slot === 'ok') await releaseForecastGasSlot(chainId, wallet)
+      return res.status(reserved === 'unavailable' ? 503 : 429).json({
+        sponsored: false,
+        guestLimited: true,
+        message:
+          reserved === 'unavailable'
+            ? 'Could not cover gas for this prediction. Try again.'
+            : 'Free predictions without an account are paused for today. Sign in to predict.',
+      })
+    }
+    guest = reserved
+  }
+
   try {
     const txHash = await sendEthFromHSM(wallet, topUp, chainId)
     return res.status(200).json({ sponsored: true, txHash })
   } catch (err) {
     if (slot === 'ok') await releaseForecastGasSlot(chainId, wallet)
+    if (guest) await releaseGuestGas(guest)
     console.error('[deprize] forecast gas sponsorship failed', err)
     return res.status(503).json({
       sponsored: false,
@@ -145,4 +216,4 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withMiddleware(handler, authMiddleware, rateLimit)
+export default withMiddleware(handler, guestAuthMiddleware, rateLimit)

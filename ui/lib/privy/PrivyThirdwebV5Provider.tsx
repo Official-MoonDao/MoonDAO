@@ -3,11 +3,7 @@ import { signIn, signOut } from 'next-auth/react'
 import { useContext, useEffect, useRef, useState } from 'react'
 import { defineChain } from 'thirdweb'
 import { ethers5Adapter } from 'thirdweb/adapters/ethers5'
-import {
-  useActiveWallet,
-  useDisconnect,
-  useSetActiveWallet,
-} from 'thirdweb/react'
+import { useActiveWallet, useDisconnect, useSetActiveWallet } from 'thirdweb/react'
 import { createWalletAdapter } from 'thirdweb/wallets'
 import { chainForDeprizePath } from '@/lib/deprize/route-chain'
 import { withClientFeeOverrides } from '@/lib/rpc/eip1559Fees'
@@ -16,7 +12,11 @@ import { getWalletEthersProvider } from './getWalletEthersProvider'
 import PrivyWalletContext from './privy-wallet-context'
 
 export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
-  const { user, ready, authenticated, getAccessToken } = usePrivy()
+  const { user, ready, authenticated: privyAuthenticated, getAccessToken } = usePrivy()
+  // A guest's wallet only writes forecasts (useForecastWriter). It never
+  // becomes the active wallet or gets a NextAuth session.
+  const isGuest = !!user?.isGuest
+  const authenticated = privyAuthenticated && !isGuest
   const { selectedWallet } = useContext(PrivyWalletContext)
   const { wallets, ready: walletsReady } = useWallets()
   const setActiveWallet = useSetActiveWallet()
@@ -41,34 +41,28 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         wallets[selectedWallet] ??
         wallets.find((candidate) => candidate.walletClientType === 'privy') ??
         wallets[0]
-      if (!wallet) {
+      if (!wallet || isGuest) {
         return
       }
 
       try {
-
         try {
           const walletClientType = wallet?.walletClientType
           // Only switch chain if:
           // 1. Wallet is not already on the target chain (prevents single-tab race condition)
           // 2. Wallet is an auto-switch type (Coinbase/Privy embedded wallets)
           // 3. This tab is visible (prevents multi-tab race condition where background tabs fight over the wallet chain)
-          const currentWalletChainId = wallet?.chainId
-            ? +wallet.chainId.split(':')[1]
-            : null
+          const currentWalletChainId = wallet?.chainId ? +wallet.chainId.split(':')[1] : null
           const isAutoSwitchWallet =
-            walletClientType === 'coinbase_wallet' ||
-            walletClientType === 'privy'
+            walletClientType === 'coinbase_wallet' || walletClientType === 'privy'
           const isTabVisible =
-            typeof document === 'undefined' ||
-            document.visibilityState === 'visible'
+            typeof document === 'undefined' || document.visibilityState === 'visible'
 
           // A /deprize/sep URL pins reads to Sepolia. Switching an external
           // wallet to match can reload the page; embedded Privy wallets switch
           // in-place without reloading.
           const routePinnedChain =
-            typeof window !== 'undefined' &&
-            chainForDeprizePath(window.location.pathname)
+            typeof window !== 'undefined' && chainForDeprizePath(window.location.pathname)
           const shouldSwitchChain =
             isAutoSwitchWallet &&
             isTabVisible &&
@@ -95,15 +89,10 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
         // reject with "insufficient funds for gas * price + value" even when
         // the signer has enough ETH for the real L2 fee. Stamp our gas-price
         // API values (2.4× base + priority) onto every send from this adapter.
-        const originalSendTransaction = adaptedAccount.sendTransaction.bind(
-          adaptedAccount
-        )
+        const originalSendTransaction = adaptedAccount.sendTransaction.bind(adaptedAccount)
         adaptedAccount.sendTransaction = async (tx) => {
           const txChainId = Number((tx as Record<string, unknown>)?.chainId) || selectedChain.id
-          const decorated = await withClientFeeOverrides(
-            tx as Record<string, unknown>,
-            txChainId
-          )
+          const decorated = await withClientFeeOverrides(tx as Record<string, unknown>, txChainId)
           return originalSendTransaction(decorated as typeof tx)
         }
 
@@ -148,7 +137,7 @@ export function PrivyThirdwebV5Provider({ selectedChain, children }: any) {
     }
 
     setActive()
-  }, [user, wallets, walletsReady, selectedWallet, selectedChain, activeWalletChainId])
+  }, [user, isGuest, wallets, walletsReady, selectedWallet, selectedChain, activeWalletChainId])
 
   useEffect(() => {
     async function handleAuth() {

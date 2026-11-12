@@ -1,5 +1,5 @@
-import { usePrivy } from '@privy-io/react-auth'
 import { useIsExecutive } from '@/lib/operator/useIsExecutive'
+import { usePrivyAccount } from '@/lib/privy/usePrivyAccount'
 import { useChainDefault } from '@/lib/thirdweb/hooks/useChainDefault'
 import Container from '../../components/layout/Container'
 import ContentLayout from '../../components/layout/ContentLayout'
@@ -13,7 +13,7 @@ import ExecutiveFinancials from '@/components/executive/ExecutiveFinancials'
 // page shell carries no numbers of its own, so the API gate is the real one.
 export default function FinancialOverview() {
   useChainDefault()
-  const { authenticated, login } = usePrivy()
+  const { authenticated, login } = usePrivyAccount()
   const { isExecutive, status: authStatus } = useIsExecutive()
 
   const renderBody = () => {

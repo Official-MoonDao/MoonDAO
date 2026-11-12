@@ -2,15 +2,27 @@ import { getAccessToken, useLogin, usePrivy, useWallets } from '@privy-io/react-
 import ForecastsTableABI from 'const/abis/Forecasts.json'
 import { FORECASTS_TABLE_ADDRESSES, FORECASTS_TABLE_NAMES } from 'const/config'
 import Link from 'next/link'
-import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import toast from 'react-hot-toast'
 import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
 import { deprizePrefixedHref, isCompetitorClaimed } from '@/lib/deprize/competitions'
 import { fireDePrizeConfetti } from '@/lib/deprize/confetti'
 import { useDePrizeRestricted } from '@/lib/deprize/deprizeRestrictedContext'
+import {
+  decodeForecastVote,
+  deprizeForecastVoteId,
+  encodeForecastVote,
+} from '@/lib/deprize/forecastVote'
 import { walletErrorMessage } from '@/lib/deprize/walletError'
-import { deprizeForecastVoteId, encodeForecastVote } from '@/lib/deprize/forecastVote'
 import { clearForecastVote, writeForecastVote } from '@/lib/deprize/writeForecastVote'
 import { aggregateForecastVotes, votingPowerByOutcome } from '@/lib/forecasts/aggregate'
 import { consensusQuery } from '@/lib/forecasts/consensusQuery'
@@ -24,6 +36,7 @@ import {
   undoPlan,
 } from '@/lib/forecasts/forecastPick'
 import { sameForecastSession } from '@/lib/forecasts/forecastSession'
+import { takePendingHandoff } from '@/lib/forecasts/guestHandoff'
 import {
   mergeCallerRoster,
   notifyRoster,
@@ -32,6 +45,7 @@ import {
   type RosterOverlay,
 } from '@/lib/forecasts/rosterRefresh'
 import { rowActions } from '@/lib/forecasts/rowActions'
+import { useForecastWriter } from '@/lib/forecasts/useForecastWriter'
 import { forecastPanelShouldMount } from '@/lib/forecasts/visibility'
 import { SEED_ATLAS, orgById, projectById } from '@/lib/lunar-atlas'
 import toastStyle from '@/lib/marketplace/marketplace-utils/toastConfig'
@@ -42,6 +56,7 @@ import useContract from '@/lib/thirdweb/hooks/useContract'
 import { useTotalVMOONEY } from '@/lib/tokens/hooks/useTotalVMOONEY'
 import CitizenPredictNotice from '@/components/deprize/CitizenPredictNotice'
 import DePrizeTeamCard from '@/components/deprize/DePrizeTeamCard'
+import { GuestConsentLine, GuestSaveNotice } from '@/components/deprize/GuestForecastNotice'
 import PredictModal from '@/components/deprize/PredictModal'
 
 export default function ForecastPanel(props: {
@@ -125,13 +140,15 @@ export default function ForecastPanel(props: {
   const { wallets } = useWallets()
   const { setSelectedWallet } = useContext(PrivyWalletContext)
   const account = useActiveAccount()
+  const forecastWriter = useForecastWriter()
+  const writer = forecastWriter.writer
   const sessionRef = useRef({
-    address: account?.address?.toLowerCase(),
+    address: writer?.address?.toLowerCase(),
     chainSlug,
     deprizeId,
   })
   sessionRef.current = {
-    address: account?.address?.toLowerCase(),
+    address: writer?.address?.toLowerCase(),
     chainSlug,
     deprizeId,
   }
@@ -181,7 +198,7 @@ export default function ForecastPanel(props: {
     bettingOpen,
     locked: inputsLocked,
     isCitizen,
-    connected: !!account,
+    connected: !!writer,
   })
   const predictAction = actions.find((action) => action.kind === 'predict')
   const showBet = actions.some((action) => action.kind === 'bet' && action.enabled)
@@ -190,14 +207,14 @@ export default function ForecastPanel(props: {
     (body: ForecastConsensus) => {
       setConsensus(body)
       setOverlays((prev) => pruneRosterOverlays(prev, body.leaderboard ?? [], labels))
-      const mine = account?.address
-        ? body.leaderboard.find((row) => row.voterAddress === account.address.toLowerCase())
+      const mine = writer?.address
+        ? body.leaderboard.find((row) => row.voterAddress === writer.address.toLowerCase())
         : undefined
       if (mine?.allocation?.length === n) {
         setSavedPick(pickFromAllocation(mine.allocation))
       }
     },
-    [account?.address, labels, n]
+    [writer?.address, labels, n]
   )
 
   useEffect(() => {
@@ -227,7 +244,7 @@ export default function ForecastPanel(props: {
   const refetchFresh = useCallback(async () => {
     if (n < 2) return
     const started = {
-      address: account?.address?.toLowerCase(),
+      address: writer?.address?.toLowerCase(),
       chainSlug,
       deprizeId,
     }
@@ -243,13 +260,13 @@ export default function ForecastPanel(props: {
     const body = (await res.json()) as ForecastConsensus
     if (!sameForecastSession(sessionRef.current, started)) return
     applyConsensus(body)
-  }, [account?.address, applyConsensus, chainSlug, deprizeId, n])
+  }, [writer?.address, applyConsensus, chainSlug, deprizeId, n])
 
   useEffect(() => {
     setSavedPick(null)
     setPreviousPick(null)
     setError(null)
-  }, [account?.address, chainSlug, deprizeId])
+  }, [writer?.address, chainSlug, deprizeId])
 
   useEffect(() => {
     setError(null)
@@ -272,14 +289,13 @@ export default function ForecastPanel(props: {
     }
   }, [applyConsensus, loadConsensus])
 
-  function rememberRow(allocation: number[]) {
-    if (!account) return
+  function rememberRow(allocation: number[], from: { address: string }) {
     setConsensus((prev) => {
       if (!prev) return prev
       const row = {
-        voterAddress: account.address.toLowerCase(),
+        voterAddress: from.address.toLowerCase(),
         citizenId: prizeCitizen.tokenId ?? '',
-        citizenName: account.address,
+        citizenName: from.address,
         citizenImage: undefined,
         allocation,
         weight: isCitizen ? totalVMOONEY || 0 : 0,
@@ -294,15 +310,18 @@ export default function ForecastPanel(props: {
     })
   }
 
-  async function commitPick(index: number, options?: { silent?: boolean }): Promise<boolean> {
-    if (!account) return false
+  async function commitPick(
+    index: number,
+    options?: { silent?: boolean; from?: typeof writer }
+  ): Promise<boolean> {
+    const from = options?.from ?? writer
+    if (!from) return false
     if (!forecastsContract || !forecastsTableName) {
       setError('Predictions are not available on this network yet.')
       return false
     }
-    const writer = account
     const started = {
-      address: writer.address.toLowerCase(),
+      address: from.address.toLowerCase(),
       chainSlug,
       deprizeId,
     }
@@ -319,7 +338,7 @@ export default function ForecastPanel(props: {
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
         body: JSON.stringify({
-          wallet: writer.address,
+          wallet: from.address,
           chainId: chain.id,
           deprizeId,
         }),
@@ -339,17 +358,17 @@ export default function ForecastPanel(props: {
       const vote = encodeForecastVote(allocation, isCitizen ? totalVMOONEY || 0 : 0)
       await writeForecastVote({
         forecastsContract,
-        account: writer,
+        account: from,
         forecastsTableName,
         chainId: chain.id,
         voteId: deprizeForecastVoteId(deprizeId),
-        address: writer.address,
+        address: from.address,
         vote,
       })
       notifyRoster({
         chain: chainSlug,
         deprizeId,
-        address: writer.address,
+        address: from.address,
         pick: labels[index],
         removed: false,
       })
@@ -358,7 +377,7 @@ export default function ForecastPanel(props: {
       if (!sameForecastSession(sessionRef.current, started)) return false
       setPreviousPick(savedPick)
       setSavedPick(index)
-      rememberRow(allocation)
+      rememberRow(allocation, from)
       if (!options?.silent) {
         toast.success('Prediction saved', { style: toastStyle })
         fireDePrizeConfetti()
@@ -377,8 +396,7 @@ export default function ForecastPanel(props: {
   }
 
   async function clearPick() {
-    if (!account || !forecastsContract) return
-    const writer = account
+    if (!writer || !forecastsContract) return
     const started = {
       address: writer.address.toLowerCase(),
       chainSlug,
@@ -419,12 +437,19 @@ export default function ForecastPanel(props: {
       index,
       savedPick,
       writing,
-      connected: !!account,
+      connected: !!writer,
       isCitizen,
       locked: inputsLocked,
     })
     if (plan.action === 'connect') {
-      login()
+      setWriting(true)
+      const guest = await forecastWriter.ensureWriter().finally(() => setWriting(false))
+      if (!guest) {
+        login()
+        return
+      }
+      const ok = await commitPick(index, { from: guest })
+      if (ok) onModalClose()
       return
     }
     if (plan.action === 'write') {
@@ -432,6 +457,21 @@ export default function ForecastPanel(props: {
       if (ok) onModalClose()
     }
   }
+
+  // A guest who signed in to an existing account left their pick here to be
+  // written again from that account (useForecastWriter.switchToExistingAccount).
+  const handoffChecked = useRef(false)
+  useEffect(() => {
+    if (handoffChecked.current || !account || forecastWriter.isGuest || !consensus) return
+    if (inputsLocked || writing) return
+    handoffChecked.current = true
+    const pending = takePendingHandoff(chainSlug, deprizeId)
+    if (!pending || savedPick != null) return
+    const decoded = decodeForecastVote(pending.vote, n)
+    const pick = decoded ? pickFromAllocation(decoded.allocation) : null
+    if (pick != null) void commitPick(pick)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account, forecastWriter.isGuest, consensus, inputsLocked, writing, savedPick])
 
   function onUndo() {
     const plan = undoPlan({
@@ -445,7 +485,7 @@ export default function ForecastPanel(props: {
   }
 
   const mine = consensus?.leaderboard.find(
-    (row) => row.voterAddress === account?.address?.toLowerCase()
+    (row) => row.voterAddress === writer?.address?.toLowerCase()
   )
   const undoEnabled = canUndo({ savedPick, writing, locked: inputsLocked })
 
@@ -572,6 +612,14 @@ export default function ForecastPanel(props: {
       {savedPick != null && (
         <p className="mt-2 text-xs text-gray-400">{FORECAST_COPY.singlePick}</p>
       )}
+      {savedPick != null && forecastWriter.isGuest && (
+        <div className="mt-2">
+          <GuestSaveNotice
+            onCreateAccount={login}
+            onExistingAccount={() => void forecastWriter.switchToExistingAccount()}
+          />
+        </div>
+      )}
       {error && <p className="mt-2 text-xs text-amber-200">{error}</p>}
       {modalIndex != null && (
         <PredictModal
@@ -581,8 +629,8 @@ export default function ForecastPanel(props: {
           chanceLoading={marketLoading}
           bettingAvailable={showBet}
           regionRestricted={restricted}
-          connected={!!account}
-          citizenLoading={prizeCitizen.isLoading}
+          connected={!!writer}
+          citizenLoading={!!account && prizeCitizen.isLoading}
           isCitizen={isCitizen}
           citizenNotice={renderCitizenNotice()}
           saved={savedPick === modalIndex}
@@ -593,6 +641,8 @@ export default function ForecastPanel(props: {
           onPredict={() => void onPredict(modalIndex)}
           onUndo={onUndo}
           onConnect={login}
+          signedOutPredict={!writer}
+          consentNotice={!account ? <GuestConsentLine /> : undefined}
           onClose={onModalClose}
           onAddEth={() => onModeChange('bet')}
           outcomeIndex={modalIndex}

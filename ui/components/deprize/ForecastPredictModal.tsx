@@ -1,5 +1,6 @@
 import type { Chain } from 'thirdweb'
 import { useForecastPredict } from '@/lib/forecasts/useForecastPredict'
+import { GuestConsentLine, GuestSaveNotice } from '@/components/deprize/GuestForecastNotice'
 import PredictModal from '@/components/deprize/PredictModal'
 
 /**
@@ -56,12 +57,24 @@ export default function ForecastPredictModal(props: {
       predictEnabled={session.predictEnabled}
       undoEnabled={session.undoEnabled && session.savedPick === index}
       onPredict={() => {
+        const wasSignedIn = session.signedIn
         void session.predict(index).then((ok) => {
-          if (ok) props.onClose()
+          // A guest stays on the window to see how to keep the prediction.
+          if (ok && wasSignedIn) props.onClose()
         })
       }}
       onUndo={session.undo}
       onConnect={session.onConnect}
+      signedOutPredict={session.signedOutPredict}
+      consentNotice={session.signedIn ? undefined : <GuestConsentLine />}
+      guestNotice={
+        session.isGuest && session.savedPick === index ? (
+          <GuestSaveNotice
+            onCreateAccount={session.onConnect}
+            onExistingAccount={session.onExistingAccount}
+          />
+        ) : undefined
+      }
       onClose={props.onClose}
       onAddEth={() => {
         // Moonbase opens the free forecast only. ETH staking stays on the DePrize page.
