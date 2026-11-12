@@ -30,6 +30,8 @@ import { generateTerrain } from '@/lib/touchdown/terrain'
 import { bragLine, formatScore, outcomeHeadline, verdictFor } from '@/lib/touchdown/verdicts'
 import { TouchdownAudio } from './audio'
 import type { Callout, HudState, TouchdownEngine } from './engine'
+import { cleanBoardName, type BoardResponse } from '@/lib/touchdown/leaderboard'
+import Leaderboard from './Leaderboard'
 import { TOUCHDOWN_GOAL_ID } from './RealRacePanel'
 
 const RealRacePanel = dynamic(() => import('./RealRacePanel'), {
@@ -125,6 +127,16 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   const [hasFlown, setHasFlown] = useState(false)
   /** Desktop: show the "hold Space" hint until the engine is first fired this flight. */
   const [burnHint, setBurnHint] = useState(false)
+  // Daily leaderboard
+  const [board, setBoard] = useState<BoardResponse | null>(null)
+  /** Rank this flight's score would hold, before it is saved. */
+  const [wouldRank, setWouldRank] = useState<number | null>(null)
+  /** Rank once saved under a name. */
+  const [savedRank, setSavedRank] = useState<number | null>(null)
+  const savedRankRef = useRef<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [boardNote, setBoardNote] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
   const burnedRef = useRef(false)
 
   // HUD refs
@@ -228,7 +240,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       try {
         const frame = engine.capture()
         frameRef.current = frame
-        const card = composeCard({ frame, result: r, verdict: v, nickname: nicknameRef.current })
+        const card = composeCard({ frame, result: r, verdict: v, nickname: nicknameRef.current, rank: undefined })
         const blob = await canvasToBlob(card)
         blobRef.current = blob
         setCardUrl((old) => {
@@ -334,6 +346,10 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       setShowCard(false)
       setLeaving(false)
       burnedRef.current = false
+      setWouldRank(null)
+      setSavedRank(null)
+      savedRankRef.current = null
+      setBoardNote('')
       setBurnHint(true)
       blobRef.current = null
       frameRef.current = null
@@ -392,7 +408,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
 
   const share = useCallback(async () => {
     if (!result) return
-    const text = shareText(result)
+    const text = shareText(result, savedRankRef.current ?? undefined)
     const url = shareUrl()
     const method = await shareCard({ blob: blobRef.current, text, url, preferSheet: isTouch })
     if (method === 'cancelled') return
@@ -408,6 +424,95 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
     }
   }, [isTouch, mission, result, shareUrl])
 
+  // --- Leaderboard --------------------------------------------------------------
+  // Only today's map has a live board; a replayed older map does not post.
+  const boardLive = mission === today
+  const loadBoard = useCallback(
+    async (m: ModeId, score?: number) => {
+      if (!boardLive) return null
+      try {
+        const q = new URLSearchParams({ m: String(mission), mode: m })
+        if (score && score > 0) q.set('score', String(score))
+        const res = await fetch(`/api/touchdown/leaderboard?${q.toString()}`)
+        if (!res.ok) return null
+        const data = (await res.json()) as BoardResponse
+        if (modeRef.current === m) setBoard(data)
+        return data
+      } catch {
+        return null
+      }
+    },
+    [boardLive, mission]
+  )
+  // Start screen: show the board for the selected mode.
+  useEffect(() => {
+    if (screen === 'start') void loadBoard(mode)
+  }, [screen, mode, loadBoard])
+  // Result screen: where would this score rank?
+  useEffect(() => {
+    if (screen !== 'result' || !result || result.score <= 0) return
+    if (engineRef.current?.autopilot) return
+    let stale = false
+    void loadBoard(result.mode, result.score).then((data) => {
+      if (!stale && data?.enabled && data.rank) setWouldRank(data.rank)
+    })
+    return () => {
+      stale = true
+    }
+  }, [screen, result, loadBoard])
+
+  const saveScore = useCallback(async () => {
+    if (!result || saving) return
+    const name = cleanBoardName(nameInputRef.current?.value ?? nicknameRef.current)
+    if (name.length < 2) {
+      setBoardNote('Enter a name to save your score.')
+      nameInputRef.current?.focus()
+      return
+    }
+    setSaving(true)
+    setBoardNote('')
+    try {
+      const res = await fetch('/api/touchdown/leaderboard', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mission, mode: result.mode, name, score: result.score }),
+      })
+      const data = (await res.json()) as BoardResponse
+      if (!res.ok || data.error || !data.enabled) {
+        setBoardNote(data.error || 'Could not save your score. Try again.')
+        return
+      }
+      setBoard(data)
+      const rank = data.rank ?? null
+      setSavedRank(rank)
+      savedRankRef.current = rank
+      // Remember the name and re-stamp the share card with name and rank.
+      setNickname(name)
+      nicknameRef.current = name
+      if (prefsRef.current) {
+        prefsRef.current.nickname = name
+        savePrefs(prefsRef.current)
+      }
+      const engine = engineRef.current
+      if (engine) {
+        try {
+          const frame = frameRef.current ?? engine.capture()
+          const card = composeCard({ frame, result, verdict, nickname: name, rank: rank ?? undefined })
+          const blob = await canvasToBlob(card)
+          blobRef.current = blob
+          setCardUrl((old) => {
+            if (old) URL.revokeObjectURL(old)
+            return blob ? URL.createObjectURL(blob) : null
+          })
+        } catch {}
+      }
+    } catch {
+      setBoardNote('Could not reach the leaderboard. Try again.')
+    } finally {
+      setSaving(false)
+    }
+  }, [mission, result, saving, verdict])
+
   const saveNickname = useCallback(
     async (raw: string) => {
       const nick = cleanNickname(raw)
@@ -421,7 +526,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       if (!engine || !result) return
       try {
         const frame = frameRef.current ?? engine.capture()
-        const card = composeCard({ frame, result, verdict, nickname: nick })
+        const card = composeCard({ frame, result, verdict, nickname: nick, rank: savedRankRef.current ?? undefined })
         const blob = await canvasToBlob(card)
         blobRef.current = blob
         setCardUrl((old) => {
@@ -462,7 +567,13 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       return blob ? URL.createObjectURL(blob) : null
     })
     try {
-      const card = composeCard({ frame: raw, result, verdict, nickname: nicknameRef.current })
+      const card = composeCard({
+        frame: raw,
+        result,
+        verdict,
+        nickname: nicknameRef.current,
+        rank: savedRankRef.current ?? undefined,
+      })
       const cardBlob = await canvasToBlob(card)
       blobRef.current = cardBlob
       setCardUrl((old) => {
@@ -912,6 +1023,11 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                 Play today&apos;s landing site
               </a>
             )}
+            {board?.enabled && (
+              <div className="mt-3 border-t border-white/10 pt-3">
+                <Leaderboard board={board} highlight={nickname} rows={isTouch ? 5 : 8} showRace />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1035,14 +1151,17 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                   </button>
                 )}
                 <label className="flex-1 text-[11px] text-white/50">
-                  Name on the card (optional)
+                  {board?.enabled && boardLive && result.score > 0 ? 'Your name' : 'Name on the card (optional)'}
                   <input
+                    ref={nameInputRef}
                     type="text"
                     maxLength={16}
                     defaultValue={nickname}
                     onBlur={(e) => void saveNickname(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                      if (e.key !== 'Enter') return
+                      if (board?.enabled && boardLive && result.score > 0 && savedRank === null) void saveScore()
+                      else (e.target as HTMLInputElement).blur()
                     }}
                     placeholder="Nickname"
                     autoComplete="off"
@@ -1051,6 +1170,39 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                 </label>
               </div>
             </div>
+
+            {/* Leaderboard: rank first, then a name to claim it */}
+            {board?.enabled && boardLive && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3.5">
+                {result.score > 0 && savedRank === null && (
+                  <>
+                    <p className="text-sm font-semibold text-white">
+                      {wouldRank
+                        ? `That would put you #${wouldRank} today.`
+                        : 'Put your score on today’s leaderboard.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void saveScore()}
+                      disabled={saving}
+                      className="mt-2 w-full rounded-lg bg-emerald-400 py-2 text-sm font-extrabold text-black transition hover:bg-emerald-300 disabled:opacity-60"
+                    >
+                      {saving ? 'Saving…' : 'Save my score'}
+                    </button>
+                    <p className="mt-1 text-[11px] text-white/45">Uses the name above. No sign-up.</p>
+                  </>
+                )}
+                {savedRank !== null && (
+                  <p className="text-sm font-bold text-emerald-300">
+                    Saved. You are #{savedRank} today. Share it before someone bumps you.
+                  </p>
+                )}
+                {boardNote && <p className="mt-1.5 text-xs font-semibold text-amber-200">{boardNote}</p>}
+                <div className={result.score > 0 || savedRank !== null ? 'mt-3 border-t border-white/10 pt-3' : ''}>
+                  <Leaderboard board={board} highlight={savedRank !== null ? nickname : undefined} rows={5} />
+                </div>
+              </div>
+            )}
 
             {/* 4: the real race */}
             <RealRacePanel
@@ -1135,7 +1287,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                 Save image
               </a>
               <a
-                href={xIntentUrl(shareText(result), shareUrl())}
+                href={xIntentUrl(shareText(result, savedRank ?? undefined), shareUrl())}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="rounded-lg bg-sky-400 px-4 py-2 text-sm font-bold text-black"

@@ -51,9 +51,10 @@ export function parseChallenge(query: Record<string, string | string[] | undefin
  * Prefilled post text. The image carries the picture; this carries the tone:
  * an emoji for what happened, the numbers people quote, and a dare.
  */
-export function shareText(result: FlightResult): string {
+export function shareText(result: FlightResult, rank?: number): string {
   const pro = result.mode === 'pro' ? ' (PRO 🏅)' : ''
-  const score = `${formatScore(result.score)} pts${pro}`
+  const place = rank ? ` · #${rank} today 🏆` : ''
+  const score = `${formatScore(result.score)} pts${pro}${place}`
   const dare = 'Can you do better? Play Touchdown 🚀'
   let lines: string[]
   if (result.baseDamage > 0) {
@@ -115,6 +116,8 @@ export function composeCard(args: {
   result: FlightResult
   verdict: string
   nickname?: string
+  /** Leaderboard rank, once the score is saved. */
+  rank?: number
 }): HTMLCanvasElement {
   const { frame, result, verdict } = args
   const c = document.createElement('canvas')
@@ -191,7 +194,8 @@ export function composeCard(args: {
   g.font = `600 22px ${body}`
   g.fillStyle = 'rgba(255,255,255,0.82)'
   const nick = cleanNickname(args.nickname)
-  g.fillText(`${nick ? `${nick} · ` : ''}${bragLine(result)}`, 48, CARD_H - 44)
+  const place = args.rank ? `#${args.rank} today · ` : ''
+  g.fillText(`${nick ? `${nick} · ` : ''}${place}${bragLine(result)}`, 48, CARD_H - 44)
   g.textAlign = 'right'
   g.font = `700 24px ${body}`
   g.fillStyle = '#fff'
