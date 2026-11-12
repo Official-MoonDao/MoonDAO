@@ -15,6 +15,9 @@
  * frugal, and only a break-up scores nothing. Any lander that reaches the
  * surface in one piece gets at least 50.
  *
+ * Hitting Moon Base Zero costs BASE_DAMAGE_PENALTY per structure, taken off
+ * after everything else, so a rampage through the base goes negative.
+ *
  * Dependency-free: imported by the headless bot.
  */
 import { TIPPED_TILT_DEG, type ModeId } from './modes'
@@ -22,6 +25,8 @@ import { distanceToTarget, tiltDeg, type Outcome, type Sim } from './physics'
 
 export const BULLSEYE_M = 5
 export const ACCURACY_RANGE_M = 90
+export const BASE_DAMAGE_PENALTY = 150
+export const BASE_DAMAGE_MAX = 10
 
 export type FlightResult = {
   outcome: Outcome
@@ -41,6 +46,9 @@ export type FlightResult = {
   /** 0..1 multiplier for the state the lander ended up in. */
   condition: number
   conditionLabel: string
+  /** Moon Base Zero structures hit, and the points that cost. */
+  baseDamage: number
+  penalty: number
   parts: { softness: number; accuracy: number; bullseye: number; fuel: number; level: number }
 }
 
@@ -85,6 +93,9 @@ export function scoreFlight(sim: Sim): FlightResult {
     const sum = parts.softness + parts.accuracy + parts.bullseye + parts.fuel + parts.level
     score = Math.max(50, Math.round(sum * sim.mode.scoreMultiplier * condition))
   }
+  const baseDamage = Math.min(BASE_DAMAGE_MAX, sim.baseDamage)
+  const penalty = baseDamage * BASE_DAMAGE_PENALTY
+  score -= penalty
   return {
     outcome,
     mode: sim.mode.id,
@@ -98,6 +109,8 @@ export function scoreFlight(sim: Sim): FlightResult {
     damaged,
     condition,
     conditionLabel,
+    baseDamage,
+    penalty,
     parts,
   }
 }

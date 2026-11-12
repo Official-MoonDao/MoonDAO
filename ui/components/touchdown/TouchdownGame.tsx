@@ -832,6 +832,25 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
         </div>
       )}
 
+      {/* Photo button: out of the panel, in the corner of the scene. Phones get
+          an icon at the top (the result sheet covers the bottom); desktop gets a
+          labelled button bottom-left. */}
+      {screen === 'result' && result && !leaving && !showCard && (
+        <button
+          type="button"
+          onClick={() => void takePhoto()}
+          aria-label="Take a photo"
+          title="Take a photo (P). Drag the scene to frame it first. Copies to your clipboard and becomes your share image."
+          className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full border border-white/25 bg-black/60 p-3 text-sm font-bold text-white backdrop-blur transition hover:bg-black/80 sm:bottom-8 sm:top-auto sm:rounded-xl sm:px-4 sm:py-2.5"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+            <circle cx="12" cy="13.5" r="3.6" />
+          </svg>
+          <span className="hidden sm:inline">Take a photo</span>
+        </button>
+      )}
+
       {/* ------------------------------ Result screen ------------------------------ */}
       {screen === 'result' && result && leaving && (
         <div className="pointer-events-none absolute inset-x-0 bottom-10 z-20 text-center text-sm font-semibold tracking-[0.2em] text-amber-100">
@@ -874,6 +893,12 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
                   Lander condition: {result.conditionLabel} · points ×{result.condition}
                 </p>
               )}
+              {result.baseDamage > 0 && (
+                <p className="mt-2 rounded-md bg-rose-400/15 px-2 py-1 text-xs font-semibold text-rose-100">
+                  Moon Base Zero: {result.baseDamage} {result.baseDamage === 1 ? 'structure' : 'structures'} hit ·
+                  −{formatScore(result.penalty)} pts
+                </p>
+              )}
               {result.condition > 0 && (
                 <dl className="mt-2.5 grid grid-cols-5 gap-1 text-center">
                   {(
@@ -910,17 +935,6 @@ export default function TouchdownGame({ challenge }: { challenge: Challenge | nu
                   : 'Copies your image and opens X. In the post, press Ctrl+V (⌘V on Mac) to paste it in.'}
               </p>
               {shareNote && <p className="mt-1.5 text-xs font-semibold text-emerald-300">{shareNote}</p>}
-              <button
-                type="button"
-                onClick={() => void takePhoto()}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 py-2.5 text-sm font-bold text-white transition hover:bg-white/10"
-              >
-                Take a photo
-              </button>
-              <p className="mt-1 text-[11px] leading-snug text-white/45">
-                Drag the scene to frame your shot{isTouch ? ', pinch to zoom' : ', scroll to zoom'}. The photo is copied
-                to your clipboard and used as your share image.
-              </p>
               <div className="mt-2 flex items-center gap-2">
                 {cardUrl && (
                   <button

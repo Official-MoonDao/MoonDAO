@@ -262,24 +262,35 @@ export class TouchdownEngine {
       this.scene.remove(this.base.group)
       this.buildBase()
     })
-    load('/touchdown/earth-day.jpg', (t) => {
+    // Earth: day map and cloud layer composited into ONE texture on one sphere.
+    // Two nested spheres 90 km away fight for the same depth and flicker.
+    const day = new Image()
+    const cloud = new Image()
+    let ready = 0
+    const compose = () => {
+      if (++ready < 2 || this.disposed) return
+      const c = document.createElement('canvas')
+      c.width = 2048
+      c.height = 1024
+      const g = c.getContext('2d')
+      if (!g) return
+      g.drawImage(day, 0, 0, c.width, c.height)
+      g.globalAlpha = 0.92
+      g.drawImage(cloud, 0, 0, c.width, c.height)
+      const tex = this.track(new THREE.CanvasTexture(c))
+      tex.colorSpace = THREE.SRGBColorSpace
+      tex.anisotropy = 8
       const earth = this.skyGroup.getObjectByName('earth') as THREE.Mesh | undefined
       if (!earth) return
       const m = earth.material as THREE.MeshStandardMaterial
-      m.map = t
+      m.map = tex
       m.color.set(0xffffff)
       m.needsUpdate = true
-    })
-    load('/touchdown/earth-clouds.png', (t) => {
-      const clouds = this.skyGroup.getObjectByName('clouds') as THREE.Mesh | undefined
-      if (!clouds) return
-      const m = clouds.material as THREE.MeshStandardMaterial
-      // The clouds are in the texture's alpha channel.
-      m.map = t
-      m.opacity = 0.95
-      clouds.visible = true
-      m.needsUpdate = true
-    })
+    }
+    day.onload = compose
+    cloud.onload = compose
+    day.src = '/touchdown/earth-day.jpg'
+    cloud.src = '/touchdown/earth-clouds.png'
   }
 
   private buildLights() {
@@ -724,16 +735,6 @@ diffuseColor *= sampledDiffuseColor;`
     earth.name = 'earth'
     earth.position.copy(earthPos)
     earth.rotation.set(0.35, 2.2, 0.2)
-    const clouds = new THREE.Mesh(
-      this.track(new THREE.SphereGeometry(er * 1.012, 64, 40)),
-      this.track(
-        new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0, roughness: 1, depthWrite: false })
-      )
-    )
-    clouds.name = 'clouds'
-    clouds.visible = false
-    clouds.position.copy(earthPos)
-    clouds.rotation.copy(earth.rotation)
     // Atmosphere: a soft blue halo behind the disc.
     const halo = new THREE.Sprite(
       this.track(
@@ -752,7 +753,7 @@ diffuseColor *= sampledDiffuseColor;`
     )
     halo.position.copy(earthPos).multiplyScalar(1.01)
     halo.scale.setScalar(er * 2.5)
-    this.skyGroup.add(halo, earth, clouds)
+    this.skyGroup.add(halo, earth)
 
     // The sun: a hot disc with glare, sitting just above the horizon.
     const [sx, sy, sz] = this.terrain.sunDir
@@ -890,6 +891,8 @@ diffuseColor *= sampledDiffuseColor;`
     decals.instanceMatrix.needsUpdate = true
     this.base.group.add(decals)
     this.scene.add(this.base.group)
+    // Give the physics something to hit.
+    t.structures = new Float32Array(this.base.colliders)
   }
 
   private buildDust() {
@@ -1091,8 +1094,8 @@ diffuseColor *= sampledDiffuseColor;`
 
   private say(text: string, tone: Callout['tone']) {
     this.audio.radio()
-    if (tone === 'warn' || tone === 'bad') this.audio.caution()
-    this.quindarOutAt = this.clock + 1.9
+    if (tone === 'bad') this.audio.caution()
+    this.quindarOutAt = this.clock + 2.3
     this.cb.onCallout({ text, tone })
   }
 
@@ -1181,6 +1184,15 @@ diffuseColor *= sampledDiffuseColor;`
         this.slowUntil = this.clock + 0.9
         this.audio.thud(1.3)
         this.say('Gear collapse!', 'bad')
+      } else if (ev.type === 'structure') {
+        this.shake = Math.max(this.shake, 1 + Math.min(1.2, ev.speed * 0.15))
+        this.slowUntil = Math.max(this.slowUntil, this.clock + 0.5)
+        this.audio.thud(1.4)
+        this.burst(sim.px, sim.pz, 160, 6 + ev.speed)
+        this.flash.position.set(sim.px, sim.py, sim.pz)
+        this.flash.intensity = 500
+        if (sim.baseDamage === 1) this.say('You just hit Moon Base Zero! That is coming off your score.', 'bad')
+        else if (sim.baseDamage === 3) this.say('Stop hitting the base!', 'bad')
       } else if (ev.type === 'hull') {
         this.shake = Math.max(this.shake, Math.min(1.2, ev.speed * 0.2))
         this.audio.thud(Math.min(1.4, ev.speed / 4))
@@ -1331,7 +1343,7 @@ diffuseColor *= sampledDiffuseColor;`
       }
     }
     if (firing && this.clock > this.rcsSoundAt) {
-      this.rcsSoundAt = this.clock + 0.11
+      this.rcsSoundAt = this.clock + 0.22
       this.audio.rcs()
     }
   }

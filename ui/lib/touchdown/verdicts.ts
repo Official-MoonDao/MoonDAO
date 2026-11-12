@@ -96,7 +96,19 @@ function pick<T>(list: T[], salt: number): T {
 }
 
 /** `salt` varies the pick so repeat players see new lines. */
+const BASE_HIT = [
+  'You landed on Moon Base Zero. Not near it. On it.',
+  'The residents of Moon Base Zero have filed a noise complaint.',
+  'Moon Base Zero now has one more lander and several fewer buildings.',
+  'Good news: you found the base. Bad news: with your landing gear.',
+  'That was load-bearing. So was that. And that.',
+  'Somebody is going to have to explain this to the base commander.',
+  'The base took years to build. You redecorated it in four seconds.',
+  'Insurance does not cover this. Nothing covers this.',
+]
+
 export function verdictFor(result: FlightResult, salt: number): string {
+  if (result.baseDamage > 0) return pick(BASE_HIT, salt)
   switch (result.outcome) {
     case 'crashed':
       return pick(CRASHED, salt)
@@ -116,6 +128,7 @@ export function verdictFor(result: FlightResult, salt: number): string {
 }
 
 export function outcomeHeadline(result: FlightResult): string {
+  if (result.baseDamage > 0) return 'BASE DAMAGED'
   switch (result.outcome) {
     case 'crashed':
       return 'CRASHED'

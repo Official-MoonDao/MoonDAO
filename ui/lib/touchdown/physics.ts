@@ -82,6 +82,7 @@ export type SimEvent =
   | { type: 'hull'; speed: number }
   | { type: 'breakup'; speed: number }
   | { type: 'fuelout' }
+  | { type: 'structure'; speed: number }
   | { type: 'done'; outcome: Outcome }
 
 export type Sim = {
@@ -106,6 +107,9 @@ export type Sim = {
   fuel: number
   burning: boolean
   padBroken: boolean[]
+  /** Which base structures this flight has hit, and how many. */
+  structureHit: Uint8Array
+  baseDamage: number
   inContact: Uint8Array
   padContacts: number
   hullContacts: number
@@ -149,6 +153,8 @@ export function createSim(terrain: Terrain, mode: ModeConfig, lateralOffset = 0)
     fuel: mode.fuelSeconds,
     burning: false,
     padBroken: [false, false, false, false],
+    structureHit: new Uint8Array(terrain.structures.length >> 2),
+    baseDamage: 0,
     inContact: new Uint8Array(POINT_COUNT),
     padContacts: 0,
     hullContacts: 0,
@@ -195,7 +201,7 @@ export function distanceToTarget(s: Sim): number {
   return Math.hypot(s.px - s.terrain.target.x, s.pz - s.terrain.target.z)
 }
 
-const contact: Contact = { depth: 0, nx: 0, ny: 1, nz: 0, boulder: false }
+const contact: Contact = { depth: 0, nx: 0, ny: 1, nz: 0, boulder: false, structure: -1 }
 
 export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void {
   if (s.outcome) return
@@ -252,6 +258,11 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
     if (!s.inContact[i]) {
       s.inContact[i] = 1
       const impact = -vn
+      if (contact.structure >= 0 && !s.structureHit[contact.structure]) {
+        s.structureHit[contact.structure] = 1
+        s.baseDamage++
+        s.events.push({ type: 'structure', speed: Math.max(0, impact) })
+      }
       if (s.firstContactT < 0) {
         s.firstContactT = s.t
         s.touchdownSpeed = Math.hypot(s.vx, s.vy, s.vz)

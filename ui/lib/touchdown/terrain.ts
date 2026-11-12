@@ -64,6 +64,12 @@ export type Terrain = {
   boulders: Float32Array
   boulderCellStart: Int32Array
   boulderCellItems: Int32Array
+  /**
+   * Moon Base Zero's solid parts as spheres: x, y, z, radius. Filled in by the
+   * renderer once the base is built (the headless bot flies without them; it
+   * never goes near the base).
+   */
+  structures: Float32Array
 }
 
 function smoothstep(a: number, b: number, x: number): number {
@@ -466,6 +472,7 @@ export function generateTerrain(seed: number): Terrain {
     boulders: new Float32Array(0),
     boulderCellStart: new Int32Array(0),
     boulderCellItems: new Int32Array(0),
+    structures: new Float32Array(0),
   }
   terrain.target.y = heightAt(terrain, tx, tz)
 
@@ -595,7 +602,15 @@ export function sunAt(t: Terrain, x: number, z: number): number {
   return bilinear(t.sun, GRID_N, (x + HALF) / CELL, (z + HALF) / CELL)
 }
 
-export type Contact = { depth: number; nx: number; ny: number; nz: number; boulder: boolean }
+export type Contact = {
+  depth: number
+  nx: number
+  ny: number
+  nz: number
+  boulder: boolean
+  /** Index of the base structure hit, or -1. */
+  structure: number
+}
 
 /**
  * Deepest penetration of a point into the ground or a boulder.
@@ -612,6 +627,7 @@ export function contactAt(t: Terrain, x: number, y: number, z: number, out: Cont
     out.ny = n[1]
     out.nz = n[2]
     out.boulder = false
+    out.structure = -1
     hit = true
   }
   if (y - h < 8 && t.boulderCount) {
@@ -641,9 +657,33 @@ export function contactAt(t: Terrain, x: number, y: number, z: number, out: Cont
             out.ny = ey / d
             out.nz = ez / d
             out.boulder = true
+            out.structure = -1
             hit = true
           }
         }
+      }
+    }
+  }
+  // Base structures: few enough to test directly, and only near the base.
+  const st = t.structures
+  if (st.length && Math.abs(x - t.base.x) < 360 && Math.abs(z - t.base.z) < 360) {
+    for (let k = 0; k < st.length; k += 4) {
+      const ex = x - st[k]
+      const ey = y - st[k + 1]
+      const ez = z - st[k + 2]
+      const r = st[k + 3]
+      const d2 = ex * ex + ey * ey + ez * ez
+      if (d2 >= r * r) continue
+      const d = Math.sqrt(d2) || 1e-6
+      const depth = Math.min(r - d, 1.5)
+      if (!hit || depth > out.depth) {
+        out.depth = depth
+        out.nx = ex / d
+        out.ny = ey / d
+        out.nz = ez / d
+        out.boulder = true
+        out.structure = k >> 2
+        hit = true
       }
     }
   }

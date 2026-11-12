@@ -26,7 +26,7 @@ export function cleanNickname(raw: string | undefined | null): string {
 export function challengeQuery(c: Challenge): string {
   const q = new URLSearchParams()
   q.set('m', String(c.mission))
-  q.set('s', String(Math.round(c.score)))
+  q.set('s', String(Math.max(0, Math.round(c.score))))
   if (c.mode === 'pro') q.set('p', '1')
   const nick = cleanNickname(c.nickname)
   if (nick) q.set('n', nick)
@@ -56,6 +56,15 @@ export function shareText(result: FlightResult): string {
   const score = `${formatScore(result.score)} pts${pro}`
   const dare = 'Can you do better? Play Touchdown 🚀'
   let lines: string[]
+  if (result.baseDamage > 0) {
+    const n = result.baseDamage
+    return [
+      `🏚️ I flew into Moon Base Zero and hit ${n} ${n === 1 ? 'building' : 'buildings'}. 😬`,
+      `${score}. They are not happy.`,
+      '',
+      dare,
+    ].join('\n')
+  }
   switch (result.outcome) {
     case 'crashed':
       lines = [

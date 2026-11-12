@@ -80,7 +80,7 @@ export class TouchdownAudio {
   setEngine(on: boolean) {
     if (!this.ctx || !this.engineGain || !this.engineFilter) return
     const t = this.ctx.currentTime
-    this.engineGain.gain.setTargetAtTime(on ? 0.5 : 0, t, on ? 0.04 : 0.09)
+    this.engineGain.gain.setTargetAtTime(on ? 0.3 : 0, t, on ? 0.04 : 0.09)
     this.engineFilter.frequency.setTargetAtTime(on ? 420 : 140, t, 0.08)
   }
 
@@ -104,13 +104,14 @@ export class TouchdownAudio {
    * 2,525 Hz keys the uplink on, 2,475 Hz keys it off, 250 ms each.
    */
   quindar(open: boolean) {
-    this.beep(open ? 2525 : 2475, 0.25, 'sine', 0.035)
+    this.beep(open ? 2525 : 2475, 0.25, 'sine', 0.16)
   }
 
   /** A breath of radio static under a transmission. */
   staticBurst(dur = 0.6) {
     if (!this.ctx || !this.master || !this.noise) return
-    const t = this.ctx.currentTime
+    // Starts after the Quindar tone so the tone is heard clean.
+    const t = this.ctx.currentTime + 0.27
     const src = this.ctx.createBufferSource()
     src.buffer = this.noise
     const f = this.ctx.createBiquadFilter()
@@ -119,8 +120,8 @@ export class TouchdownAudio {
     f.Q.value = 0.8
     const g = this.ctx.createGain()
     g.gain.setValueAtTime(0, t)
-    g.gain.linearRampToValueAtTime(0.5, t + 0.04)
-    g.gain.setValueAtTime(0.5, t + dur - 0.08)
+    g.gain.linearRampToValueAtTime(0.11, t + 0.04)
+    g.gain.setValueAtTime(0.11, t + dur - 0.08)
     g.gain.linearRampToValueAtTime(0, t + dur)
     src.connect(f).connect(g).connect(this.master)
     src.start(t, Math.random())
@@ -143,7 +144,7 @@ export class TouchdownAudio {
     f.type = 'highpass'
     f.frequency.value = 2600
     const g = this.ctx.createGain()
-    g.gain.setValueAtTime(0.55, t)
+    g.gain.setValueAtTime(0.1, t)
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09)
     src.connect(f).connect(g).connect(this.master)
     src.start(t, Math.random())
@@ -152,7 +153,7 @@ export class TouchdownAudio {
 
   /** Master caution: the two-tone warble. */
   caution() {
-    for (let i = 0; i < 4; i++) this.beep(i % 2 ? 1060 : 760, 0.14, 'square', 0.04, i * 0.16)
+    for (let i = 0; i < 4; i++) this.beep(i % 2 ? 1060 : 760, 0.14, 'square', 0.03, 0.3 + i * 0.16)
   }
 
   /** Camera shutter for the photo button. */

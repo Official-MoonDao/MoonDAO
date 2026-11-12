@@ -20,6 +20,8 @@ export type BaseModel = {
   beacons: THREE.Mesh[]
   /** Footprints for low-sun shadow decals: x, z, width, height. */
   shadows: { x: number; z: number; w: number; h: number }[]
+  /** Solid parts as spheres for the physics: x, y, z, radius. */
+  colliders: number[]
 }
 
 const PITCH = 55
@@ -114,6 +116,12 @@ export function buildMoonBase(
     const p = world(u, v)
     shadows.push({ x: p.x, z: p.z, w, h })
   }
+  const colliders: number[] = []
+  /** A solid sphere at town coords, `h` metres above the ground. */
+  const solid = (u: number, v: number, h: number, r: number) => {
+    const p = world(u, v)
+    colliders.push(p.x, p.y + h, p.z, r)
+  }
   const beacon = (u: number, v: number, h: number, r = 0.5) => {
     const p = world(u, v)
     const b = new THREE.Mesh(track(new THREE.SphereGeometry(r, 8, 6)), M.red)
@@ -180,6 +188,7 @@ export function buildMoonBase(
         add('dark', new THREE.BoxGeometry(2.6, 3, 3.4), bu + s * 13.2, bv + dv, 1.5)
       }
       shade(bu, bv + dv, 26, 5.6)
+      for (const du of [-8, 0, 8]) solid(bu + du, bv + dv, 2.2, 4.6)
     }
     add('hull', new THREE.CylinderGeometry(1.6, 1.6, 22, 10), bu, bv, 1.6, Math.PI / 2)
   }
@@ -189,6 +198,7 @@ export function buildMoonBase(
     add('metal', new THREE.CylinderGeometry(0.4, 0.4, 6, 8), bu, bv, 12)
     beacon(bu, bv, 15.4, 0.45)
     shade(bu, bv, 24, 10)
+    solid(bu, bv, -3.5, 13)
   }
   const solar = (bu: number, bv: number) => {
     // South-pole arrays stand vertical and face the horizon-hugging sun.
@@ -200,6 +210,7 @@ export function buildMoonBase(
         add('panel', new THREE.BoxGeometry(6.4, 5.6, 0.14), u, v, 4.3, 0, rot + (sunSide > 0 ? 0 : Math.PI))
         add('metal', new THREE.BoxGeometry(6.6, 0.16, 0.2), u, v, 1.45, 0, rot)
         shade(u, v, 6.6, 7.2)
+        solid(u, v, 4.3, 3.3)
       }
     }
   }
@@ -212,6 +223,8 @@ export function buildMoonBase(
       }
       add('metal', new THREE.CylinderGeometry(0.12, 0.12, 9, 5), bu + du, bv + 4.5, 2.6, Math.PI / 2)
       shade(bu + du, bv + 9, 8, 6.2)
+      solid(bu + du, bv, 1.4, 2.2)
+      solid(bu + du, bv + 10, 3.6, 4.2)
     }
   }
   const comms = (bu: number, bv: number) => {
@@ -227,6 +240,7 @@ export function buildMoonBase(
     add('hull', new THREE.SphereGeometry(2.4, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2.6), bu, bv, 29, Math.PI / 2.3)
     beacon(bu, bv, 34.6)
     shade(bu, bv, 3.2, 34)
+    for (let h = 2; h <= 32; h += 5) solid(bu, bv, h, 1.9)
     for (const [du, dv, s] of [
       [-15, 12, 4.2],
       [14, -13, 3.4],
@@ -234,6 +248,7 @@ export function buildMoonBase(
       add('metal', new THREE.CylinderGeometry(0.3, 0.5, 4, 8), bu + du, bv + dv, 2)
       add('hull', new THREE.SphereGeometry(s, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2.5), bu + du, bv + dv, 5.2, 2.2, du * 0.1)
       shade(bu + du, bv + dv, s * 2, 7)
+      solid(bu + du, bv + dv, 5, s)
     }
     add('hull', new THREE.BoxGeometry(6, 3, 4.5), bu + 10, bv + 12, 1.5)
   }
@@ -246,6 +261,7 @@ export function buildMoonBase(
       add('metal', new THREE.SphereGeometry(3.4, 16, 12), bu + du, bv + dv, 4.2)
       add('dark', new THREE.CylinderGeometry(0.2, 0.2, 2.4, 6), bu + du, bv + dv, 1)
       shade(bu + du, bv + dv, 6.6, 7.4)
+      solid(bu + du, bv + dv, 4.2, 3.5)
     }
     add('orange', new THREE.BoxGeometry(9, 5.5, 7), bu + 12, bv + 4, 2.75)
     add('dark', new THREE.CylinderGeometry(1.1, 1.1, 9, 10), bu + 12, bv + 4, 9)
@@ -253,6 +269,8 @@ export function buildMoonBase(
     add('metal', new THREE.BoxGeometry(14, 0.5, 1.4), bu + 12, bv - 10, 3, 0, 0, 0.28)
     add('berm', new THREE.ConeGeometry(4.5, 3.4, 12), bu + 19, bv - 10, 1.7)
     shade(bu + 12, bv + 4, 9, 13)
+    solid(bu + 12, bv + 4, 3, 5.2)
+    solid(bu + 12, bv + 4, 10, 1.6)
   }
   const greenhouse = (bu: number, bv: number) => {
     for (const dv of [-10, 0, 10]) {
@@ -261,6 +279,7 @@ export function buildMoonBase(
         add('metal', new THREE.TorusGeometry(3.45, 0.09, 5, 14, Math.PI), bu + k * 5, bv + dv, 0.1, 0, Math.PI / 2)
       }
       shade(bu, bv + dv, 30, 3.6)
+      for (const du of [-12, -6, 0, 6, 12]) solid(bu + du, bv + dv, 0.6, 3.4)
     }
   }
   const labs = (bu: number, bv: number) => {
@@ -272,6 +291,7 @@ export function buildMoonBase(
       add('cool', new THREE.BoxGeometry(12, 0.7, 6.6), bu + du, bv + dv, 4.4)
       for (const s of [-6, 6]) add('metal', new THREE.CylinderGeometry(0.2, 0.2, 2, 6), bu + du + s, bv + dv, 1)
       shade(bu + du, bv + dv, 16, 6.4)
+      for (const k of [-5, 0, 5]) solid(bu + du + k, bv + dv, 4, 3.6)
       void ry
     }
     add('foil', new THREE.BoxGeometry(4, 3, 4), bu + 10, bv - 10, 1.5)
@@ -283,6 +303,7 @@ export function buildMoonBase(
         add('dark', new THREE.BoxGeometry(1, 0.8, 5), bu + du - 4, bv + r * 9, 0.4)
         add('dark', new THREE.BoxGeometry(1, 0.8, 5), bu + du + 4, bv + r * 9, 0.4)
         shade(bu + du, bv + r * 9, 13, 5.4)
+        for (const k of [-4, 0, 4]) solid(bu + du + k, bv + r * 9, 2.9, 2.5)
       }
     }
   }
@@ -296,18 +317,21 @@ export function buildMoonBase(
         add(colours[Math.floor(rng() * colours.length)], new THREE.BoxGeometry(6, 2.5, 2.5), bu + du, bv + dv, 1.25 + s * 2.55)
       }
       shade(bu + du, bv + dv, 6, stack * 2.6)
+      solid(bu + du, bv + dv, stack * 1.3, 2.7)
     }
     // Gantry crane
     add('metal', new THREE.CylinderGeometry(0.3, 0.4, 16, 6), bu + 14, bv + 8, 8)
     add('metal', new THREE.BoxGeometry(18, 0.6, 0.6), bu + 7, bv + 8, 15.6)
     add('dark', new THREE.CylinderGeometry(0.05, 0.05, 7, 4), bu + 1, bv + 8, 12)
     shade(bu + 14, bv + 8, 1, 16)
+    for (let h = 2; h <= 14; h += 4) solid(bu + 14, bv + 8, h, 1.2)
   }
   const garage = (bu: number, bv: number) => {
     add('hull', new THREE.CylinderGeometry(9, 9, 22, 16, 1, true, 0, Math.PI), bu, bv, 0, 0, Math.PI / 2, Math.PI / 2)
     add('dark', new THREE.PlaneGeometry(17.8, 8.6), bu - 11, bv, 4.2, 0, -Math.PI / 2)
     add('cool', new THREE.BoxGeometry(0.2, 0.3, 14), bu + 11.1, bv, 6)
     shade(bu, bv, 22, 9)
+    for (const du of [-7, 0, 7]) solid(bu + du, bv, 2, 8)
   }
   const rover = (u: number, v: number, yaw: number) => {
     add('hull', new THREE.BoxGeometry(4.4, 1.5, 2.4), u, v, 1.6, 0, yaw)
@@ -322,6 +346,7 @@ export function buildMoonBase(
     }
     add('cool', new THREE.SphereGeometry(0.16, 6, 5), u + 2.25, v, 1.5)
     shade(u, v, 4.4, 3.4)
+    solid(u, v, 1.8, 2.4)
   }
 
   // --- Zoning: 4 blocks along, 3 across ----------------------------------------------
@@ -362,6 +387,7 @@ export function buildMoonBase(
     add('metal', new THREE.BoxGeometry(1.2, 20, 1.2), pu + 5.2, pv, 12)
     beacon(pu, pv, 48, 0.55)
     shade(pu, pv, 9.5, 47)
+    for (let h = 4; h <= 46; h += 6) solid(pu, pv, h, 4.8)
   }
 
   // --- Mass driver at the other end ---------------------------------------------------------
@@ -377,6 +403,7 @@ export function buildMoonBase(
     }
     add('hull', new THREE.BoxGeometry(10, 5, 8), u0 - 4, MAIN_V + 16, 2.5)
     shade(u0 + len / 2, MAIN_V + 16, len, 6)
+    for (let k = 0; k <= 20; k++) solid(u0 + k * 6, MAIN_V + 16, 3 + k * 0.33, 1.8)
   }
 
   // --- The flag, on the town square ---------------------------------------------------------
@@ -402,5 +429,5 @@ export function buildMoonBase(
     mesh.receiveShadow = key === 'road'
     group.add(mesh)
   })
-  return { group, beacons, shadows }
+  return { group, beacons, shadows, colliders }
 }
