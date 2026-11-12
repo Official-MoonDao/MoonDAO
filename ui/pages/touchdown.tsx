@@ -32,7 +32,7 @@ export default function TouchdownPage({ challenge }: Props) {
     ? `Beat ${challenge.nickname ? `${challenge.nickname}'s ` : ''}${score} on Touchdown`
     : 'Touchdown: can you land on the Moon?'
   const description =
-    'A one-minute 3D Moon landing game. Brake from orbit, dodge the boulders and set down soft, upright and on target. A new landing site beside Moon Base Zero every day.'
+    'A one-minute 3D Moon landing game. Brake from orbit, dodge the boulders and set down soft, upright and on target. A new landing site at Moon Base Zero every day.'
   const ogQuery = challenge ? `?${challengeQuery(challenge)}` : ''
   return (
     <>

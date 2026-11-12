@@ -131,6 +131,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   const [hasFlown, setHasFlown] = useState(false)
   /** Desktop: show the "hold Space" hint until the engine is first fired this flight. */
   const [burnHint, setBurnHint] = useState(false)
+  /** The key widget fades out a few seconds into a flight. */
+  const [keysFaded, setKeysFaded] = useState(false)
+  const keysTimer = useRef<number>()
   // Daily leaderboard
   const [board, setBoard] = useState<BoardResponse | null>(null)
   /** Rank this flight's score would hold, before it is saved. */
@@ -339,6 +342,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       cancelled = true
       ro?.disconnect()
       window.clearTimeout(calloutTimer.current)
+      window.clearTimeout(keysTimer.current)
       engineRef.current?.dispose()
       engineRef.current = null
       audio.dispose()
@@ -369,6 +373,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       setShowCard(false)
       setLeaving(false)
       burnedRef.current = false
+      setKeysFaded(false)
+      window.clearTimeout(keysTimer.current)
+      keysTimer.current = window.setTimeout(() => setKeysFaded(true), 7000)
       setWouldRank(null)
       setSavedRank(null)
       savedRankRef.current = null
@@ -1230,7 +1237,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
           light up as they are pressed. */}
       {wide && !isTouch && (screen === 'start' || flying) && (
         <div
-          className="pointer-events-none absolute bottom-5 left-5 z-20 flex items-end gap-5"
+          className={`pointer-events-none absolute bottom-5 left-5 z-20 flex items-end gap-5 transition-opacity duration-1000 ${
+            flying && keysFaded ? 'opacity-0' : 'opacity-100'
+          }`}
           aria-hidden
         >
           <div className="text-center">
@@ -1261,7 +1270,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
             </span>
             <p className="mt-1.5 text-[10px] font-bold tracking-[0.3em] text-white/70">BURN</p>
           </div>
-          <p className="hidden pb-5 text-[11px] leading-relaxed text-white/45 lg:block">
+          <p className="mb-5 hidden rounded-lg bg-black/60 px-3 py-2 text-xs font-semibold leading-relaxed text-white/90 backdrop-blur md:block">
             WASD works too · drag to look
             <br />
             scroll to zoom · R to restart
@@ -1357,7 +1366,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
             </h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
               Brake from orbit, thread the craters and boulders, and set it down soft, upright and
-              on target beside Moon Base Zero. A new landing site every day.
+              on target at Moon Base Zero. A new landing site every day.
             </p>
             {challenge && (
               <p className="mt-2 rounded-lg border border-amber-300/30 bg-amber-300/10 px-3 py-2 text-sm font-semibold text-amber-100 sm:mt-3">

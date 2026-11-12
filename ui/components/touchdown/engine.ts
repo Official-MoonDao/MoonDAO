@@ -75,6 +75,8 @@ type Debris = { obj: THREE.Object3D; v: THREE.Vector3; w: THREE.Vector3; r: numb
 
 const HALF = MAP_SIZE / 2
 const v3 = () => new THREE.Vector3()
+/** Sideways component of the Earth's direction (it sits ahead, on the side away from the sun). */
+const EARTH_DIR_Z = 0.3
 
 export class TouchdownEngine {
   autopilot = false
@@ -741,7 +743,7 @@ diffuseColor *= sampledDiffuseColor;`
     // Earth: low over the horizon ahead, as it sits from the south pole. About
     // 2.5× its true size, because this is a postcard.
     const side = Math.sign(this.terrain.sunDir[2]) || 1
-    const earthPos = new THREE.Vector3(1, 0.13, -0.3 * side).normalize().multiplyScalar(90000)
+    const earthPos = new THREE.Vector3(1, 0.13, -EARTH_DIR_Z * side).normalize().multiplyScalar(90000)
     const er = 5600
     const earth = new THREE.Mesh(
       this.track(new THREE.SphereGeometry(er, 64, 40)),
@@ -1342,8 +1344,17 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     else if (o === 'tipped' || o === 'inverted') this.audio.sadTrombone()
 
     // End shot: low, close, side-lit, with Earth and the base behind.
+    // Framed so the Earth sits to the upper right (clear of the card's title,
+    // top-left) and Moon Base Zero is in the background where the map allows.
+    // Yaw is measured from +x toward +z; looking along a yaw, +yaw is screen-right.
     const side = Math.sign(this.terrain.sunDir[2]) || 1
-    this.endAngle = Math.atan2(side * 0.62, -0.78)
+    const earthYaw = Math.atan2(-EARTH_DIR_Z * side, 1)
+    const baseYaw = Math.atan2(this.terrain.base.z - sim.pz, this.terrain.base.x - sim.px)
+    const deg = Math.PI / 180
+    // Earth 8° to 30° right of centre; within that, put the base about 9° right.
+    const earthRight = Math.min(30 * deg, Math.max(8 * deg, 9 * deg - (baseYaw - earthYaw)))
+    const viewYaw = earthYaw - earthRight
+    this.endAngle = viewYaw + Math.PI
     const portrait = this.camera.aspect < 1
     this.endDist = (o === 'crashed' ? 15 : 12.5) * (portrait ? 1.45 : 1)
     this.endFrom.copy(this.camera.position)
@@ -1929,14 +1940,15 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     r.setPixelRatio(1)
     r.setSize(width, height, false)
     cam.aspect = width / height
-    cam.fov = 48
+    cam.fov = 50
     cam.updateProjectionMatrix()
     if (this.phase === 'ending' || this.phase === 'result') {
       const portrait = size.x / size.y < 1
       const dist = this.endDist / (portrait ? 1.45 : 1)
       this.placeEndCamera(cam.position, this.endAngle, dist)
-      // Aim a little low so the subject clears the card's bottom text block.
-      cam.lookAt(scratchA.copy(this.endLook).setY(this.endLook.y - dist * 0.16))
+      // Aim just below the subject: it clears the card's bottom text block and
+      // the whole Earth stays inside the top of the frame.
+      cam.lookAt(scratchA.copy(this.endLook).setY(this.endLook.y - dist * 0.05))
     }
     this.skyGroup.position.copy(cam.position)
     r.setRenderTarget(null)
