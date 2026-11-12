@@ -39,6 +39,8 @@ import {
 } from '@/lib/lunar-atlas/trackplan'
 import type { ModelTransform, Project, ProjectType } from '@/lib/lunar-atlas/types'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
+import { ROCK_VARIANTS, makeRockMaterial, rockGeometry } from './rocks'
+import { REGOLITH_MATERIAL_NAME, finishHardwareMaterial } from './surfaceDetail'
 
 // Fallback seat while the height maps decode (ridge heights are within
 // ±0.12% of the sphere radius, so the sphere itself is a fine placeholder).
@@ -79,7 +81,9 @@ const TYPE_SIZE_M: Partial<Record<ProjectType, number>> = {
   mass_driver: TRACK_LENGTH_M,
 }
 const PROJECT_SIZE_M: Record<string, number> = {
-  'spacex-starship-hls': 52, // Ship upper stage ~50 m + gear
+  // Footpad to nose tip: the ~50 m Ship stack on its landing gear. SHLS_M
+  // inverts this exact number, so StarshipHls is authored in real meters.
+  'spacex-starship-hls': 52,
   // Dome-to-dome across the connector spine (see CAMP_M, which this exact
   // number inverts). Without an entry here `projectSizeM` fell back to
   // TYPE_SIZE_M.habitat (11 m, the generic single-module default) once
@@ -428,11 +432,6 @@ export function displayFootprintRadiusM(project: Project): number {
 const MODEL_FRONT_AZ: Record<string, number> = {
   // Z 3.1 > X 2.7: chassis length across the frame.
   '/moonbase/models/perseverance-rover.glb': Math.PI / 2,
-  // Z 3.6 > X 1.9 puts broadside at PI/2, which also lands within 1.5° of
-  // the bare stainless flank: the Heatshield_Tiles material's vertices
-  // centroid at local azimuth -91.5°, so the un-tiled side faces +88.5°.
-  // Without this the ship shows the camera its black heat shield.
-  '/moonbase/models/starship-hls.glb': 1.545,
   // Height is the long axis (authored Y 0.0195 > X 0.0147 > Z 0.0146, before
   // the loader normalizes). The named front — Tank_mid_front, Front_piece —
   // is local +Z, which is also the slightly shorter plan axis, so broadside
@@ -527,6 +526,14 @@ const PAD_ROAD_GAP = 0.62
 // BASE_STREETS). It is a property of where the landing zone sits in the plan,
 // which is why it is one number rather than a per-model table.
 const PAD_CUT_OFFSET = -0.375
+
+// The bearing (degrees CCW from east) to point a padded model's +X along so its
+// pad's road cut faces `roadBearingDeg`, for a pad steered with `noseAlong`
+// rather than facing the camera. The cut is the model's +Z, a quarter turn
+// clockwise of +X, swung by PAD_CUT_OFFSET.
+export function padNoseBearingDeg(roadBearingDeg: number): number {
+  return roadBearingDeg + 90 - (PAD_CUT_OFFSET * 180) / Math.PI
+}
 
 // Only LANDERS get a pad — every other installation sits directly on the
 // regolith (a pedestal under a rover or reactor read as a plinth in a museum,
@@ -1241,6 +1248,278 @@ function BlueMoonMk2({ accent }: { accent: string }) {
         />
         <Bm2UpperHull accent={accent} />
         <Bm2Nose />
+      </group>
+    </group>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// SpaceX Starship HLS — crewed lunar lander
+// ---------------------------------------------------------------------------
+//
+// Replaces starship-hls.glb, which was Ship 24 — an Earth-launch test article —
+// with its booster cut off: forward and aft flaps, a black heat shield, and no
+// gear to stand on. The lunar variant never re-enters an atmosphere, so it
+// carries neither flaps nor tiles. What it has instead, per SpaceX's and NASA's
+// published renders: landing legs on the aft skirt; a ring of landing thrusters
+// high on the hull, so the Raptors are not fired into the regolith at
+// touchdown; a crew cabin with windows under the nose; and an elevator that
+// lowers crew from an airlock to the surface. Same 9 m barrel as Ship.
+//
+// Authored in meters, footpad to nose tip on PROJECT_SIZE_M's 52 m. Windows
+// face local +Z, like every other procedural model's front; the elevator runs
+// down the hull 50 degrees round from them, so the home view sees both.
+const SHLS_M = UNIT_MAX_DIM / (PROJECT_SIZE_M['spacex-starship-hls'] ?? 52)
+
+const SHLS_STEEL = '#e1e4e8'
+const SHLS_SEAM = '#9ea3ab'
+const SHLS_R = 4.5
+const SHLS_BASE_Y = 1.6 // aft skirt's lower edge, held up by the gear
+const SHLS_BARREL_TOP = 33.6
+const SHLS_TOP = 52
+const SHLS_NOSE_L = SHLS_TOP - SHLS_BARREL_TOP
+const SHLS_FOOT_R = 6.4
+const SHLS_THRUSTER_Y = 29
+const SHLS_AIRLOCK_Y = 31.6
+const SHLS_WINDOW_Y = 37.5
+// Azimuths in the XZ plane, atan2(z, x). +Z (PI/2) is the front.
+const SHLS_ELEVATOR_AZ = (40 * Math.PI) / 180
+
+// Hull radius at height y: the barrel, then a tangent ogive into the nose.
+function shlsR(y: number): number {
+  if (y <= SHLS_BARREL_TOP) return SHLS_R
+  const fromTip = Math.max(0, SHLS_TOP - y)
+  const rho = (SHLS_R * SHLS_R + SHLS_NOSE_L * SHLS_NOSE_L) / (2 * SHLS_R)
+  const r = Math.sqrt(rho * rho - (SHLS_NOSE_L - fromTip) ** 2) + SHLS_R - rho
+  return Math.max(0, r)
+}
+
+function ShlsLeg({ az }: { az: number }) {
+  const c = Math.cos(az)
+  const s = Math.sin(az)
+  const foot: [number, number, number] = [c * SHLS_FOOT_R, 0.35, s * SHLS_FOOT_R]
+  return (
+    <group>
+      <Strut from={[c * SHLS_R, 5.2, s * SHLS_R]} to={foot} r={0.26} color={METAL} />
+      <Strut
+        from={[c * (SHLS_R - 0.1), SHLS_BASE_Y + 0.3, s * (SHLS_R - 0.1)]}
+        to={foot}
+        r={0.18}
+        color={HULL_DARK}
+      />
+      <mesh position={[foot[0], 0.15, foot[2]]}>
+        <cylinderGeometry args={[0.75, 0.9, 0.3, 16]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.4} roughness={0.55} />
+      </mesh>
+    </group>
+  )
+}
+
+// Landing thruster pod: a fairing on the hull with its nozzle canted out and
+// down, so the plume clears the hull and meets the ground far from the deck.
+function ShlsThruster({ az }: { az: number }) {
+  return (
+    <group rotation={[0, -az, 0]}>
+      <mesh position={[SHLS_R + 0.25, SHLS_THRUSTER_Y, 0]}>
+        <boxGeometry args={[0.6, 1.7, 0.95]} />
+        <meshStandardMaterial color={SHLS_SEAM} metalness={0.7} roughness={0.35} />
+      </mesh>
+      <mesh
+        position={[SHLS_R + 0.62, SHLS_THRUSTER_Y - 1.05, 0]}
+        rotation={[0, 0, 0.45]}
+      >
+        <coneGeometry args={[0.36, 0.7, 14, 1, true]} />
+        <meshStandardMaterial
+          color={DARK}
+          metalness={0.7}
+          roughness={0.35}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+// The airlock and the elevator that serves it: twin rails down the hull to a
+// cage standing deployed on the deck, with a crew member just stepped out.
+// Built along local +X, then turned onto SHLS_ELEVATOR_AZ.
+function ShlsElevator({ accent }: { accent: string }) {
+  const railX = SHLS_R + 0.28
+  const cageX = SHLS_R + 1.5
+  const cageW = 2.2
+  const cageH = 2.5
+  const corners: [number, number][] = [
+    [cageX - cageW / 2, -cageW / 2],
+    [cageX + cageW / 2, -cageW / 2],
+    [cageX + cageW / 2, cageW / 2],
+    [cageX - cageW / 2, cageW / 2],
+  ]
+  return (
+    <group rotation={[0, -SHLS_ELEVATOR_AZ, 0]}>
+      <group position={[SHLS_R + 0.02, SHLS_AIRLOCK_Y, 0]}>
+        <mesh>
+          <boxGeometry args={[0.1, 2.5, 1.7]} />
+          <meshStandardMaterial color={METAL} metalness={0.6} roughness={0.4} />
+        </mesh>
+        <mesh position={[0.06, 0, 0]}>
+          <boxGeometry args={[0.04, 2.1, 1.3]} />
+          <meshStandardMaterial color={DARK} roughness={0.6} />
+        </mesh>
+      </group>
+      {[-0.95, 0.95].map((z) => (
+        <Strut
+          key={z}
+          from={[railX, SHLS_AIRLOCK_Y + 1.2, z]}
+          to={[railX, 0.3, z]}
+          r={0.08}
+          color={METAL}
+        />
+      ))}
+      {[0.4, SHLS_AIRLOCK_Y - 1.4].map((y) => (
+        <Strut
+          key={y}
+          from={[SHLS_R, y, 0]}
+          to={[cageX - cageW / 2, y, 0]}
+          r={0.06}
+          color={METAL}
+        />
+      ))}
+      <mesh position={[cageX, 0.12, 0]}>
+        <boxGeometry args={[cageW, 0.24, cageW]} />
+        <meshStandardMaterial color={HULL_DARK} metalness={0.4} roughness={0.6} />
+      </mesh>
+      {corners.map(([x, z]) => (
+        <Strut key={`${x}:${z}`} from={[x, 0.24, z]} to={[x, cageH, z]} r={0.05} color={METAL} />
+      ))}
+      {corners.map(([x, z], i) => {
+        const [nx, nz] = corners[(i + 1) % corners.length]
+        return (
+          <Strut key={i} from={[x, cageH, z]} to={[nx, cageH, nz]} r={0.05} color={METAL} />
+        )
+      })}
+      <PatrollingAstronaut center={[cageX + 3.2, 0.6]} radius={1.1} seed={14} accent={accent} />
+    </group>
+  )
+}
+
+function StarshipHls({ accent }: { accent: string }) {
+  const nose = useMemo(() => {
+    const pts: THREE.Vector2[] = []
+    const steps = 36
+    for (let i = 0; i <= steps; i++) {
+      const y = SHLS_BARREL_TOP + (SHLS_NOSE_L * i) / steps
+      pts.push(new THREE.Vector2(shlsR(y), y))
+    }
+    return new THREE.LatheGeometry(pts, 48)
+  }, [])
+  useEffect(() => () => nose.dispose(), [nose])
+
+  const legAzs = Array.from(
+    { length: 6 },
+    (_, i) => SHLS_ELEVATOR_AZ + Math.PI / 6 + (i * Math.PI) / 3
+  )
+  const thrusterAzs = Array.from(
+    { length: 8 },
+    (_, i) => SHLS_ELEVATOR_AZ + Math.PI / 8 + (i * Math.PI) / 4
+  )
+  const windowAzs = [-30, -15, 0, 15, 30].map((d) => Math.PI / 2 + (d * Math.PI) / 180)
+  const seamYs = Array.from({ length: 10 }, (_, i) => SHLS_BASE_Y + 3 + i * 3)
+  const barrelH = SHLS_BARREL_TOP - SHLS_BASE_Y
+
+  return (
+    <group>
+      <LandingPad r={0.85} yaw={PAD_CUT_OFFSET} accent={accent} />
+      <group scale={SHLS_M}>
+        {legAzs.map((az) => (
+          <ShlsLeg key={az} az={az} />
+        ))}
+
+        {/* Raptor bells under the aft skirt: three centre, three outer. */}
+        {[0, 1, 2].map((i) => {
+          const a = SHLS_ELEVATOR_AZ + (i * Math.PI * 2) / 3
+          return (
+            <group key={i}>
+              {[
+                [1.15, 0.55],
+                [2.9, 0.95],
+              ].map(([rr, bell]) => (
+                <mesh
+                  key={rr}
+                  position={[
+                    Math.cos(a + (rr > 2 ? Math.PI / 3 : 0)) * rr,
+                    SHLS_BASE_Y - bell / 2,
+                    Math.sin(a + (rr > 2 ? Math.PI / 3 : 0)) * rr,
+                  ]}
+                >
+                  <coneGeometry args={[bell, bell * 1.3, 18, 1, true]} />
+                  <meshStandardMaterial
+                    color={DARK}
+                    metalness={0.7}
+                    roughness={0.4}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+              ))}
+            </group>
+          )
+        })}
+        <mesh position={[0, SHLS_BASE_Y + 0.15, 0]}>
+          <cylinderGeometry args={[SHLS_R - 0.05, SHLS_R - 0.05, 0.3, 48]} />
+          <meshStandardMaterial color={DARK} metalness={0.5} roughness={0.5} />
+        </mesh>
+
+        <mesh position={[0, SHLS_BASE_Y + barrelH / 2, 0]}>
+          <cylinderGeometry args={[SHLS_R, SHLS_R, barrelH, 48]} />
+          <meshStandardMaterial color={SHLS_STEEL} metalness={0.55} roughness={0.4} />
+        </mesh>
+        {seamYs.map((y) => (
+          <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[SHLS_R + 0.01, 0.035, 6, 48]} />
+            <meshStandardMaterial color={SHLS_SEAM} metalness={0.8} roughness={0.4} />
+          </mesh>
+        ))}
+        <mesh geometry={nose}>
+          <meshStandardMaterial color={SHLS_STEEL} metalness={0.55} roughness={0.4} />
+        </mesh>
+
+        {thrusterAzs.map((az) => (
+          <ShlsThruster key={az} az={az} />
+        ))}
+
+        {windowAzs.map((az) => {
+          const r = shlsR(SHLS_WINDOW_Y)
+          return (
+            <group key={az} rotation={[0, Math.PI / 2 - az, 0]}>
+              <group position={[0, SHLS_WINDOW_Y, r]} rotation={[-0.2, 0, 0]}>
+                <mesh>
+                  <boxGeometry args={[0.95, 1.2, 0.08]} />
+                  <meshStandardMaterial color={DARK} roughness={0.5} metalness={0.4} />
+                </mesh>
+                <mesh position={[0, 0, 0.05]}>
+                  <boxGeometry args={[0.75, 1.0, 0.02]} />
+                  <meshStandardMaterial
+                    color={WINDOW}
+                    emissive={WINDOW}
+                    emissiveIntensity={1.3}
+                    toneMapped={false}
+                  />
+                </mesh>
+              </group>
+            </group>
+          )
+        })}
+
+        <ShlsElevator accent={accent} />
+
+        <mesh position={[0, SHLS_WINDOW_Y + 3, shlsR(SHLS_WINDOW_Y + 3) + 0.05]}>
+          <sphereGeometry args={[0.14, 8, 8]} />
+          <meshStandardMaterial
+            color={accent}
+            emissive={accent}
+            emissiveIntensity={1.8}
+            toneMapped={false}
+          />
+        </mesh>
       </group>
     </group>
   )
@@ -3243,14 +3522,10 @@ function SurveyTripod({ seed = 0 }: { seed?: number }) {
 // `withinDistrictGround` in baseplan.ts) so native rock never reads as
 // clutter dropped in somebody's lot.
 
-const BOULDER_GEO = new THREE.IcosahedronGeometry(1, 0) // 0 subdivisions: angular facets read as fractured rock, not the smoother TAILINGS_LUMP_GEO worked-spoil look
-const BOULDER_COLOR_A = '#7d7972'
-const BOULDER_COLOR_B = '#8f8b82'
-
-// A single weathered boulder: non-uniformly scaled and tipped off-axis so it
-// reads as an irregular fractured rock rather than a squashed sphere, sunk a
-// little into the ground so it sits embedded rather than resting on top of
-// the regolith.
+// A single weathered boulder, `size` meters across. The shape, the burial and the
+// material all come from rocks.ts, which is where the argument for each lives:
+// a fractured, sandblasted fragment, modelled part-buried so it sits IN the
+// regolith rather than on it, and lit by the same law as the ground.
 export function Boulder({
   size = 1,
   seed = 0,
@@ -3258,22 +3533,21 @@ export function Boulder({
   size?: number
   seed?: number
 }) {
-  const sx = size * (0.75 + hash1(seed * 41 + 1) * 0.5)
-  const sy = size * (0.55 + hash1(seed * 41 + 2) * 0.45)
-  const sz = size * (0.75 + hash1(seed * 41 + 3) * 0.5)
+  const material = useMemo(makeRockMaterial, [])
+  useEffect(() => () => material.dispose(), [material])
+  const variant = Math.floor(hash1(seed * 41 + 1) * ROCK_VARIANTS)
   const yaw = hash1(seed * 41 + 4) * Math.PI * 2
-  const tilt = (hash1(seed * 41 + 5) - 0.5) * 0.5
-  const bury = sy * 0.32
-  const color = hash1(seed * 41 + 6) > 0.5 ? BOULDER_COLOR_A : BOULDER_COLOR_B
+  const tilt = (hash1(seed * 41 + 5) - 0.5) * 0.4
+  const stretch = 0.8 + hash1(seed * 41 + 2) * 0.45
+  // `size` was the old shape's half-height; these are about twice that across.
+  const across = size * 1.7
   return (
     <mesh
-      geometry={BOULDER_GEO}
-      position={[0, sy - bury, 0]}
+      geometry={rockGeometry(variant, 3)}
+      material={material}
       rotation={[tilt, yaw, tilt * 0.6]}
-      scale={[sx, sy, sz]}
-    >
-      <meshStandardMaterial color={color} roughness={1} flatShading />
-    </mesh>
+      scale={[across, across * stretch, across]}
+    />
   )
 }
 
@@ -18226,7 +18500,8 @@ function coverMoundGeometry(g: VaultGeometry): THREE.BufferGeometry {
   const pos: number[] = []
   const col: number[] = []
   const idx: number[] = []
-  const base = new THREE.Color(COVER)
+  // A tint, not an albedo: the cover is lit by the ground's own BRDF.
+  const base = soilTint(new THREE.Color(COVER))
 
   for (let i = 0; i <= MOUND_NX; i++) {
     const x = -g.moundHalfLengthM + (2 * g.moundHalfLengthM * i) / MOUND_NX
@@ -18281,12 +18556,17 @@ function CoverMound({ g }: { g: VaultGeometry }) {
     <mesh geometry={geo}>
       {/* White base colour: the tone rides on the vertex colours instead, so
           SurfaceAnchor's dust and wear passes still have material.color to
-          themselves and compose over the banding rather than erasing it. */}
+          themselves and compose over the banding rather than erasing it. That
+          also hides what this is made of from the finish pass, which reads
+          material.color — hence the explicit name. (A name and not userData:
+          R3F re-assigns a userData prop on every render, which would wipe the
+          flags the finish pass keeps there.) */}
       <meshStandardMaterial
         color="#ffffff"
         vertexColors
         roughness={0.96}
         metalness={0.02}
+        name={REGOLITH_MATERIAL_NAME}
       />
     </mesh>
   )
@@ -19270,8 +19550,10 @@ const PROJECT_MODEL: Record<string, ComponentType<{ accent: string }>> = {
   // See CisluneExcavationSite.
   'cislune-lunar-isru': CisluneExcavationSite,
   // The crewed-lander race's second competitor, replacing the InSight-lander
-  // stand-in. See BlueMoonMk2. `spacex-starship-hls` keeps its GLB.
+  // stand-in. See BlueMoonMk2.
   'blue-origin-blue-moon-mk2': BlueMoonMk2,
+  // Its rival, replacing the Ship 24 GLB. See StarshipHls.
+  'spacex-starship-hls': StarshipHls,
   // Touchdown's largest entrant. The mesh on screen is bluemoon-mk1.glb;
   // this component is only the Suspense fallback, because ProjectModel
   // branches on modelURI before it reaches ProceduralModel. See BlueMoonMk1.
@@ -19471,7 +19753,14 @@ const CLICK_DRAG_TOLERANCE_PX = 8
 // so a rover ends up dusty nearly all over and the guideway ends up dusty only
 // around the feet of its legs. A fraction-of-model rule would have got the
 // rover right and painted the guideway's roof.
-const DUST = new THREE.Color('#9b948a')
+// As dark as the ground it came from. Hardware is shaded Lambertian and the soil
+// by the regolith BRDF, which at this scene's phase angles returns a quarter to an
+// eighth of what a Lambertian surface of the same albedo would — so a dust colour
+// picked to LOOK like regolith in a swatch renders several times brighter than the
+// regolith beside it, and a dusty footpad came out paler than the hull above it.
+// This is the Lambertian albedo that lands on the lit ground's own value across
+// the views the base is usually seen from.
+const DUST = new THREE.Color('#403c37')
 // How far up the dust reaches. Generous for footfall alone; this is a working
 // site with vehicles running laps of it and landers coming in.
 const DUST_HEIGHT_M = 2.2
@@ -19500,6 +19789,63 @@ const DUST_BURIED_M = -1
 const DUST_BOX = new THREE.Box3()
 const DUST_MAT = new THREE.Matrix4()
 const DUST_WANT = new THREE.Color()
+
+// ---------------------------------------------------------------------------
+// Paint that looks like paint
+// ---------------------------------------------------------------------------
+//
+// The models here were authored as swatches: pure white hulls, fully saturated
+// accent colours, regolith berms in whatever beige looked right in a colour
+// picker. Each is reasonable alone, and together they are most of why the base
+// read as a toy set. Real hardware under an unfiltered sun does not look like its
+// swatch, for three reasons this pass applies to every authored colour, once:
+//
+//   NOTHING IS WHITE. The best white thermal paints reflect about 85%; anything
+//   authored brighter is brighter than any real coating, and it is the first thing
+//   to clip.
+//
+//   NOTHING STAYS SATURATED. Pigments chalk under hard UV and everything carries a
+//   film of grey dust, so flown hardware is markedly less saturated than its
+//   drawing. Accent colours keep their hue and lose a third of their chroma.
+//
+//   REGOLITH IS LIT AS REGOLITH. A berm, a printed pad, a spoil heap or a
+//   sandbag is made of the ground, and surfaceDetail.ts shades those with the
+//   ground's own BRDF. Their authored colour then stops being an albedo and
+//   becomes a TINT on the soil's — so it is normalised here to sit near 1, keeping
+//   its hue and how much lighter or darker than plain soil its author meant it.
+const PAINT_MAX = 0.84
+const PAINT_CHROMA = 0.66
+// The lightness (linear HSL) the models' regolith swatches centre on; a soil
+// material authored at this value is drawn at exactly the ground's own tone.
+const SOIL_SWATCH_L = 0.34
+const PAINT_HSL = { h: 0, s: 0, l: 0 }
+
+// An authored regolith swatch as a tint on the ground's own albedo: same hue, and
+// as much lighter or darker than plain soil as the swatch was than the swatches'
+// centre. Clamped, because sintered or churned regolith differs from the soil it
+// was made of by tens of percent, never by multiples.
+function soilTint(src: THREE.Color): THREE.Color {
+  const out = src.clone()
+  out.getHSL(PAINT_HSL)
+  const tone = THREE.MathUtils.clamp(PAINT_HSL.l / SOIL_SWATCH_L, 0.68, 1.4)
+  return out.multiplyScalar(tone / Math.max(PAINT_HSL.l, 1e-3))
+}
+
+function realisticPaint(src: THREE.Color, mat: THREE.MeshStandardMaterial): THREE.Color {
+  const out = src.clone()
+  out.getHSL(PAINT_HSL)
+  if (mat.userData.soilFinish) {
+    // A soil whose tone rides on vertex colours was normalised where those were
+    // built (see soilTint's callers); its material colour is already a tint.
+    return mat.vertexColors ? out : soilTint(out)
+  }
+  if ((mat.metalness ?? 0) <= 0.5) {
+    out.setHSL(PAINT_HSL.h, PAINT_HSL.s * PAINT_CHROMA, PAINT_HSL.l)
+  }
+  const peak = Math.max(out.r, out.g, out.b)
+  if (peak > PAINT_MAX) out.multiplyScalar(PAINT_MAX / peak)
+  return out
+}
 
 // ---------------------------------------------------------------------------
 // Per-instance weathering
@@ -19655,6 +20001,9 @@ export function SurfaceAnchor({
       m.receiveShadow = !unlit
 
       if (!mat) return
+      // Shadow lookups that can resolve a footpad, and a surface that is not one
+      // flat value from edge to edge. See surfaceDetail.ts.
+      finishHardwareMaterial(mat)
 
       // Dust, thickest at grade and thinning with height (see DUST_HEIGHT_M).
       // Recomputed from a remembered base colour every pass rather than applied
@@ -19689,13 +20038,16 @@ export function SurfaceAnchor({
         // into the ground, and those are still standing on it.
         if (bb && centreY >= DUST_BURIED_M) {
           if (!mat.userData.dustBaseColor)
-            mat.userData.dustBaseColor = tint.color.clone()
+            mat.userData.dustBaseColor = realisticPaint(tint.color, tint)
           const flat = DUST_BOX.max.y - DUST_BOX.min.y < DUST_FLAT_M * localPerM
           const t = Math.min(
             1,
             Math.max(0, (centreY - DUST_FULL_M) / (DUST_HEIGHT_M - DUST_FULL_M))
           )
-          const w = flat ? 0 : DUST_MAX * (1 - t) * (1 - t)
+          // Soil-finished surfaces are already the ground's tone and are lit by
+          // its BRDF; blending them toward a Lambertian dust colour would only
+          // pull them off it.
+          const w = flat || mat.userData.soilFinish ? 0 : DUST_MAX * (1 - t) * (1 - t)
           // Dust first, then this unit's own wear over the top of it — the
           // order matters: wear is a property of THIS unit's surface, so it has
           // to modulate what that surface actually looks like now, coating and
@@ -19895,5 +20247,4 @@ export default function ProjectModel({
 ;[
   '/moonbase/models/perseverance-rover.glb',
   '/moonbase/models/bluemoon-mk1.glb',
-  '/moonbase/models/starship-hls.glb',
 ].forEach((u) => useGLTF.preload(u, DRACO_PATH))

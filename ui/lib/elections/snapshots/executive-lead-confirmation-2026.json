@@ -1,0 +1,91 @@
+{
+  "voters": [
+    {
+      "address": "0xb2d3900807094d4fe47405871b0c8adb58e10d42",
+      "votingPower": 6878.539814427651,
+      "ballot": [
+        1,
+        0
+      ],
+      "citizenName": "Ryan",
+      "citizenId": 1
+    },
+    {
+      "address": "0xaf6f2a7643a97b849bd9cf6d3f57e142c5bbb0da",
+      "votingPower": 2367.75198293907,
+      "ballot": [
+        1
+      ],
+      "citizenName": "Miguel",
+      "citizenId": 119
+    },
+    {
+      "address": "0x79d0b453dd5d694da4685fbb94798335d5f77760",
+      "votingPower": 676.7042301410845,
+      "ballot": [
+        1
+      ],
+      "citizenName": "Astro.gio",
+      "citizenId": 24
+    },
+    {
+      "address": "0x4911503fcf75ecb454ded9e4677e16a185569e25",
+      "votingPower": 404.2738243506204,
+      "ballot": [
+        1,
+        0
+      ],
+      "citizenName": "Rosana \"Zen\" Sotile",
+      "citizenId": 70
+    },
+    {
+      "address": "0x81369c54866d4c5e1e9cdfd78f2b01898414128d",
+      "votingPower": 0.08412612801735418,
+      "ballot": [
+        1
+      ],
+      "citizenName": "Alessandro Morano",
+      "citizenId": 247
+    }
+  ],
+  "totalVoters": 5,
+  "totalVP": 10327.353977986442,
+  "tally": {
+    "choices": [
+      {
+        "key": 1,
+        "label": "Pablo Moncada-Larrotiz"
+      },
+      {
+        "key": 0,
+        "label": "None of the above"
+      }
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "totals": {
+          "0": 0,
+          "1": 10327.353977986442
+        },
+        "continuingVP": 10327.353977986442,
+        "exhaustedVP": 0,
+        "eliminated": []
+      }
+    ],
+    "winnerKey": 1,
+    "winnerLabel": "Pablo Moncada-Larrotiz",
+    "noneWon": false,
+    "tied": false,
+    "totalParticipationVP": 10327.353977986442,
+    "ballotCount": 5
+  },
+  "powerSource": "historical",
+  "closeBlocks": {
+    "arbitrum": 26371211,
+    "ethereum": 26371211,
+    "polygon": 96965429,
+    "base": 54816126
+  },
+  "generatedAt": "2026-11-10T21:13:22.384Z"
+}

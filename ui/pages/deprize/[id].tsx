@@ -33,6 +33,7 @@ import {
 } from '@/lib/deprize/pageEligibility'
 import { SEED_ATLAS, orgById, projectById, sharedGoalById } from '@/lib/lunar-atlas'
 import GoalDePrizeDetail from '@/components/deprize/GoalDePrizeDetail'
+import TouchdownTeaser, { TOUCHDOWN_RACE_GOAL_ID } from '@/components/touchdown/TouchdownTeaser'
 import { orgColor } from '@/lib/lunar-atlas/display'
 import {
   DePrizeState,
@@ -841,6 +842,7 @@ function DePrizeDetailContent({ restricted }: DePrizePageProps) {
           description={raceGoal?.description}
           criteria={raceGoal?.criteria}
         />
+        {raceBinding?.sharedGoalId === TOUCHDOWN_RACE_GOAL_ID && <TouchdownTeaser variant="prize" />}
         {isRaceBindingComplete(raceBinding?.outcomes) && (
           <p className="text-[11px] text-gray-600 leading-relaxed px-1">{ROSTER_DISCLAIMER}</p>
         )}

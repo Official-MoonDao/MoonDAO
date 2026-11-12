@@ -48,6 +48,7 @@ import {
 } from '@/lib/lunar-atlas/regolithShader'
 import { loadInnerField } from './useTerrainSampler'
 import { bindOcclusionUniforms, primeRegolithOcclusion } from './regolithOcclusion'
+import { surfaceNoiseUniform } from './surfaceDetail'
 
 // A pointer that travels farther than this between down and up is a drag
 // (camera tumble), not a click.
@@ -177,6 +178,11 @@ function toDetailTexture(): THREE.DataTexture {
   tex.magFilter = THREE.LinearFilter
   tex.minFilter = THREE.LinearMipmapLinearFilter
   tex.generateMipmaps = true
+  // The ground is almost always seen at a grazing angle, where an isotropic
+  // filter has to pick the mip that suits the LONG axis of a pixel's footprint
+  // and so blurs the short one by the same factor. Without this the finest two
+  // octaves were gone a few metres from the camera, and the foreground was putty.
+  tex.anisotropy = 16
   tex.needsUpdate = true
   return tex
 }
@@ -241,6 +247,7 @@ export default function SouthPoleTerrain({
       shader.uniforms.terrainNormalMap = { value: normalTex.normal }
       shader.uniforms.terrainSlopeSqMap = { value: normalTex.slopeSq }
       shader.uniforms.detailSlopeMap = { value: detail }
+      shader.uniforms.surfaceNoiseMap = surfaceNoiseUniform()
       shader.uniforms.mapXDir = { value: new THREE.Vector3(...MAP_X_DIR) }
       // The skyline field, the sun tested against it, and the shadow fill derived
       // from it. Shared boxes, not copies — see regolithOcclusion.ts — so the roads
@@ -292,7 +299,7 @@ export default function SouthPoleTerrain({
         defines={{ USE_UV: '' }}
         onBeforeCompile={onBeforeCompile}
         // onBeforeCompile changes don't retrigger compilation on their own.
-        customProgramCacheKey={() => 'sp-hapke-v2-rough'}
+        customProgramCacheKey={() => 'sp-hapke-v3-soil'}
       />
     </mesh>
   )

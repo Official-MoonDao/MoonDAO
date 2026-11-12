@@ -1,4 +1,4 @@
-import { getAccessToken } from '@privy-io/react-auth'
+import { getAccessToken, useWallets } from '@privy-io/react-auth'
 import confetti from 'canvas-confetti'
 import ContributionsABI from 'const/abis/Contributions.json'
 import { DEFAULT_CHAIN_V5 } from 'const/config'
@@ -7,7 +7,8 @@ import {
   parseEventLogs,
   prepareContractCall,
   prepareEvent,
-  sendAndConfirmTransaction,
+  sendTransaction,
+  waitForReceipt,
 } from 'thirdweb'
 import { useActiveAccount } from 'thirdweb/react'
 import { usePrizeChainCitizen } from '@/lib/citizen/usePrizeChainCitizen'
@@ -26,6 +27,7 @@ import {
   validateContribution,
   type ContributionFieldErrors,
 } from '@/lib/contributions/onchain'
+import { RECEIPT_WAIT_BLOCKS, ensureWalletOnChain } from '@/lib/contributions/walletChain'
 import { waitForRowById } from '@/lib/tableland/waitForRow'
 import { getChainSlug } from '@/lib/thirdweb/chain'
 import useContract from '@/lib/thirdweb/hooks/useContract'
@@ -48,6 +50,8 @@ function submitErrorMessage(err: any): string {
   if (/CycleClosedForEdits/.test(text))
     return 'This quarter has closed, so its entries can no longer change.'
   if (/NotFound/.test(text)) return 'This entry no longer exists.'
+  if (/Transaction not found after/.test(text))
+    return "Your wallet hasn't sent this yet. Check its activity before trying again, so it isn't sent twice."
   if (/rejected|denied/i.test(text)) return 'The signature was cancelled.'
   if (err?.shortMessage) return err.shortMessage
   // Our own messages (gas sponsor) are short. Raw RPC errors are not.
@@ -67,6 +71,8 @@ async function sponsorGas(wallet: string, chainId: number) {
     body: JSON.stringify({ wallet, chainId }),
   })
   if (!res.ok) {
+    // The auth check answers 401 with no message when the session has expired.
+    if (res.status === 401) throw new Error('Your sign-in has expired. Sign in again to submit.')
     const body = await res.json().catch(() => ({}))
     throw new Error(
       typeof body?.message === 'string' ? body.message : 'Could not cover gas for this change.'
@@ -133,6 +139,7 @@ export default function ContributionSubmitModal({
   onSubmitted,
 }: ContributionSubmitModalProps) {
   const account = useActiveAccount()
+  const { wallets } = useWallets()
   const { chain, table, contract } = useContributionsContract()
   const citizen = usePrizeChainCitizen(chain)
   const isEdit = editing?.id != null
@@ -174,6 +181,7 @@ export default function ContributionSubmitModal({
       setStatus('Covering gas…')
       await sponsorGas(account.address, chain.id)
 
+      await ensureWalletOnChain(wallets, account.address, chain)
       setStatus('Confirm in your wallet…')
       const fields = [title.trim(), description.trim(), area, encodeLinks(checked.links), '']
       const transaction = prepareContractCall({
@@ -181,7 +189,8 @@ export default function ContributionSubmitModal({
         method: (isEdit ? 'update' : 'submit') as string,
         params: isEdit ? [BigInt(editing!.id!), ...fields] : fields,
       })
-      const receipt = await sendAndConfirmTransaction({ transaction, account })
+      const sent = await sendTransaction({ transaction, account })
+      const receipt = await waitForReceipt({ ...sent, maxBlocksWaitTime: RECEIPT_WAIT_BLOCKS })
 
       setStatus('Saving…')
       let id: number | null = isEdit ? editing!.id! : null
@@ -424,6 +433,7 @@ export function ContributionRemoveModal({
   onRemoved,
 }: ContributionRemoveModalProps) {
   const account = useActiveAccount()
+  const { wallets } = useWallets()
   const { chain, contract } = useContributionsContract()
   const [status, setStatus] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -434,13 +444,15 @@ export function ContributionRemoveModal({
     try {
       setStatus('Covering gas…')
       await sponsorGas(account.address, chain.id)
+      await ensureWalletOnChain(wallets, account.address, chain)
       setStatus('Confirm in your wallet…')
       const transaction = prepareContractCall({
         contract,
         method: 'remove' as string,
         params: [BigInt(contribution.id)],
       })
-      await sendAndConfirmTransaction({ transaction, account })
+      const sent = await sendTransaction({ transaction, account })
+      await waitForReceipt({ ...sent, maxBlocksWaitTime: RECEIPT_WAIT_BLOCKS })
       onRemoved?.(contribution.id)
       setEnabled(false)
     } catch (err: any) {

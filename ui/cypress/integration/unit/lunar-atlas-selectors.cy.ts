@@ -295,15 +295,36 @@ describe('lunar-atlas selectors', () => {
     // dataset has to stand somewhere on it. Tightening the arrival rule once
     // emptied the whole regolith-construction district, because none of that
     // field has a manifested lunar date and nothing was standing in for one.
+    //
+    // A program outside every race with nothing headed for the surface — a
+    // paused orbital station, a tower with no delivery date yet — is a record,
+    // not a building, and has no lot to stand on.
     it('leaves nothing off the Moon at the end of the timeline', () => {
       const { max } = datasetYearRange(SEED_ATLAS, NOW)
       for (const p of SEED_ATLAS.projects) {
+        if (p.sharedGoalIds.length === 0 && projectDateRange(p, NOW) == null) continue
         expect(
           stateAt(p, max).revealed,
           `${p.id} never appears anywhere on the timeline`
         ).to.equal(true)
       }
     })
+  })
+
+  // NASA has not named a site for these, so they must not open a district or
+  // stand on open regolith beside one.
+  it('keeps unsited NASA Moon Base missions off the base', () => {
+    const unsited = ['nasa-promise', 'nasa-moonfall', 'nasa-capstone-02', 'nasa-minicast']
+    const trees = buildTechTrees(SEED_ATLAS.projects, SEED_ATLAS.sharedGoals)
+    for (const id of unsited) {
+      const p = SEED_ATLAS.projects.find((x) => x.id === id)
+      expect(p, `${id} is in the dataset`).to.not.equal(undefined)
+      expect(p!.location, `${id} has no location`).to.equal(undefined)
+      expect(
+        trees.some((t) => t.projects.some((x) => x.id === id)),
+        `${id} stands in no tree`
+      ).to.equal(false)
+    }
   })
 
   describe('filtering', () => {

@@ -4,6 +4,7 @@
 // ProjectPanel or by clicking the goal's region marker.
 import { FlagIcon, GlobeAmericasIcon, MapPinIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
+import TouchdownTeaser, { TOUCHDOWN_RACE_GOAL_ID } from '@/components/touchdown/TouchdownTeaser'
 import type { MouseEvent } from 'react'
 import { useMemo, useState } from 'react'
 import type { Chain } from 'thirdweb'
@@ -269,6 +270,7 @@ export default function SharedGoalPanel({
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto p-4">
+        {goal.id === TOUCHDOWN_RACE_GOAL_ID && <TouchdownTeaser variant="atlas" />}
         {/* Region anchor */}
         {goal.regionLabel && goal.id !== 'shared-next-landing' && (
           <div className="flex flex-wrap items-center gap-2">

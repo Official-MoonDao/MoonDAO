@@ -63,6 +63,27 @@ const CRATER_COUNT = 900
 const CRATER_MIN_R = 2 / REFERENCE_SIZE
 const CRATER_MAX_R = 24 / REFERENCE_SIZE
 const CRATER_DEPTH_FRAC: [number, number] = [0.12, 0.42]
+// Rim crest height as a fraction of the crater's depth. Fresh simple craters run
+// about 0.2; these are a degraded population, so a little under that.
+const RIM_CREST = 0.16
+
+// A crater's cross-section: height as a multiple of its depth, against radius as
+// a multiple of its rim radius. Zero from CRATER_REACH outward.
+//
+// Parabolic floor rising to a low rim crest at r = 1, then an ejecta apron that
+// dies away outside it. CONTINUOUS at the crest, and it was not: the floor used
+// to end at zero where the apron began at 0.3, so every crater was ringed by a
+// cliff 30% of its own depth. Under a raking sun that step drew each rim as a
+// hard-edged circle — rows of coffee stains — where a mature regolith crater is a
+// soft bowl whose rim you can barely find. The apron falls off as a square so the
+// outer edge has no crease either.
+export const CRATER_REACH = 1.4
+export function craterProfile(r: number): number {
+  if (r >= CRATER_REACH) return 0
+  if (r < 1) return -(1 - r * r) + RIM_CREST * r * r
+  const apron = (CRATER_REACH - r) / (CRATER_REACH - 1)
+  return RIM_CREST * apron * apron
+}
 
 // Wrapping value noise: random values on a coarse lattice, smoothstep
 // interpolated up to the tile.
@@ -126,15 +147,14 @@ export function buildDetailHeights(size: number): Float32Array {
     const cy = rand() * size
     const R = size * (CRATER_MIN_R + Math.pow(rand(), 2.2) * (CRATER_MAX_R - CRATER_MIN_R))
     const depth = R * (depthLo + rand() * (depthHi - depthLo))
-    const pad = Math.ceil(R * 1.4)
+    const pad = Math.ceil(R * CRATER_REACH)
     for (let y = Math.floor(cy) - pad; y <= Math.floor(cy) + pad; y++) {
       for (let x = Math.floor(cx) - pad; x <= Math.floor(cx) + pad; x++) {
         const dx = x - cx
         const dy = y - cy
         const r = Math.sqrt(dx * dx + dy * dy) / R
-        if (r >= 1.4) continue
-        // Parabolic floor inside the rim, a low raised rim outside it.
-        const bowl = r < 1 ? -(1 - r * r) : 0.3 * ((1.4 - r) / 0.4)
+        if (r >= CRATER_REACH) continue
+        const bowl = craterProfile(r)
         const xi = ((x % size) + size) % size
         const yi = ((y % size) + size) % size
         h[yi * size + xi] += bowl * depth

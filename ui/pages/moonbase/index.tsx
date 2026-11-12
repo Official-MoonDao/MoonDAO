@@ -18,7 +18,7 @@ import {
   earthSideVenue,
   orgColor,
 } from '@/lib/lunar-atlas/display'
-import { centroidDirection, MOON_RADIUS_M, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
+import { centroidDirection, vector3ToLatLon } from '@/lib/lunar-atlas/geo'
 import type { Vec3 } from '@/lib/lunar-atlas/geo'
 import {
   atlasNowYear,
@@ -541,9 +541,18 @@ export default function MoonBaseZeroIndex() {
       layout.plots.get(project.id) ??
       layout.plots.get(CARRIED_BY[project.id] ?? '') ??
       layout.plots.get(SAME_VEHICLE[project.id] ?? '')
-    const dir = plot?.dir ?? siteDir(race)
-    const ll = dir ? vector3ToLatLon(dir) : project.location
-    if (!ll) return
+    const dir =
+      plot?.dir ??
+      layout.scenery.find((s) => s.project.id === project.id)?.dir ??
+      siteDir(race)
+    // Nothing of it stands on the base. Its catalogue location is tens of
+    // kilometres off the terrain patch, where there is only sky to frame, so
+    // keep the base in view and let the panel carry it.
+    if (!dir) {
+      setFocus(null)
+      return
+    }
+    const ll = vector3ToLatLon(dir)
     // Framed against this machine's own size rather than the ~10 m the hero
     // shot assumes. A district keeps the default, because a district's shot
     // has to hold a whole roster; a single competitor gets framed as itself,
@@ -716,12 +725,9 @@ export default function MoonBaseZeroIndex() {
       // place.
       flyToSite(g.id)
     } else if (g?.location) {
-      setFocus({
-        lat: g.location.lat,
-        lon: g.location.lon,
-        // ~200 m above the site — close enough that a real-scale base reads.
-        distanceRadii: 200 / MOON_RADIUS_M,
-      })
+      // A race with no ground on the base (the crewed landing) has only a
+      // catalogue location far off the terrain patch. Hold the base view.
+      setFocus(null)
     }
     if (!opts?.skipUrl) replaceMoonbaseQuery({ race: goalId, year })
   }
@@ -762,7 +768,7 @@ export default function MoonBaseZeroIndex() {
         title={selectedProject ? `${selectedProject.name} · Moon Base Zero` : 'Moon Base Zero'}
         description={
           selectedProject?.summary.slice(0, 160) ??
-          "A true-to-scale moonbase on the Shackleton connecting ridge — real NASA LOLA terrain at 5 m/px. Explore capability races, competitors, and who's leading each tech tree."
+          "An interactive simulation of the mission-critical tech for a permanent lunar base."
         }
       />
       {/* Only the 4rem top nav is subtracted: ProjectBanner lists /moonbase as
@@ -830,15 +836,9 @@ export default function MoonBaseZeroIndex() {
                   <h1 className="text-lg font-semibold text-white">Moon Base Zero</h1>
                 </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-white/60">
-                  A true-to-scale moonbase on the Shackleton connecting ridge — every serious
-                  program is racing here. Click a site to explore its capability race, competitors,
-                  and sources.
-                </p>
-                <p className="mt-1.5 hidden text-xs text-white/45 sm:block">
-                  Drag to rotate · right-drag or WASD to move (Shift for speed) · scroll to zoom
-                </p>
-                <p className="mt-1.5 text-xs text-white/45 sm:hidden">
-                  Drag to rotate · two-finger drag to move · pinch to zoom
+                  A true-to-scale model base on the Shackleton connecting ridge, where NASA&apos;s
+                  first Moon Base landing is aimed. Click a site to explore its capability race,
+                  competitors, and sources.
                 </p>
                 <Link
                   href="/moonbase/tour"

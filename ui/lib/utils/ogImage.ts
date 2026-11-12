@@ -6,6 +6,23 @@ import { DEPLOYED_ORIGIN, IPFS_GATEWAY } from 'const/config'
 export const DEFAULT_OG_IMAGE_PATH = '/metadata-image.png'
 
 /**
+ * Section cards (1200×630) used when a page doesn't pass its own image, so
+ * every DePrize race (/deprize/arb/1, /deprize/arb/2, …) shares the DePrize
+ * card instead of the generic one.
+ */
+const SECTION_OG_IMAGES: { prefix: string; path: string }[] = [
+  { prefix: '/deprize', path: '/deprize-launch-og.png' },
+  { prefix: '/moonbase', path: '/moonbase-launch-og.png' },
+]
+export const SECTION_OG_IMAGE_SIZE = { width: 1200, height: 630 }
+
+export function sectionOgImage(pathname: string): string | undefined {
+  return SECTION_OG_IMAGES.find(
+    ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  )?.path
+}
+
+/**
  * Resolve any image reference to an absolute URL a link-preview crawler can
  * actually fetch.
  *

@@ -15,18 +15,11 @@ remodeling) to keep web payloads small.
 
 | File | Source model | Used for |
 |---|---|---|
-| `starship-hls.glb` (edited) | Third-party "SpaceX Starship Ship 24 / Booster 7" community model (Sketchfab; verify license before production use) | Starship HLS — see note |
 | `bluemoon-mk1.glb` (optimized) | Purchased "Blue Moon MK1 lunar lander" (Sketchfab Standard License, FAB conversion). Textures resized to 2048² WebP and Draco-compressed, 40 MB → 1.7 MB; no remodeling. | Blue Moon MK1 cargo lander |
 | `perseverance-rover.glb` | Mars 2020 Perseverance Rover (NASA) | NASA LTV (rover stand-in) |
 
-`starship-hls.glb` was produced from the full ship-24 + booster-7 stack by
-removing every mesh below the interstage (Y < 12.3 in model space), keeping only
-the **upper-stage Ship** — the part that lands on the Moon — then Draco-compressing
-the result (36 MB → ~1.9 MB). Its upstream Sketchfab source/license should be
-confirmed and recorded here before any production release.
-
-Blue Moon MK1 is the purchased model above. MK2 and the other commercial
-vehicles that are not Starship still have no photoreal file; they are
+Blue Moon MK1 is the purchased model above. Starship HLS, MK2 and the other
+commercial vehicles have no photoreal file; they are
 procedural geometry in `ProjectModel.tsx`, and the LTV still uses the
 Perseverance rover as a stand-in.
 

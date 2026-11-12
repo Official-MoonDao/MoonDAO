@@ -31,10 +31,9 @@ const ElectionBanner = dynamic(() => import('./ElectionBanner'), {
 const CookieBanner = dynamic(() => import('./CookieBanner'), {
   ssr: false,
 })
-const CitizenExpiredModal = dynamic(
-  () => import('@/components/subscription/CitizenExpiredModal'),
-  { ssr: false }
-)
+const CitizenExpiredModal = dynamic(() => import('@/components/subscription/CitizenExpiredModal'), {
+  ssr: false,
+})
 
 // Gate `ssr: false` dynamics so they never enter the SSR tree as dehydrated
 // Suspense boundaries. Mounting them only after hydration avoids React 18's
@@ -100,10 +99,15 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/roadmap',
     '/moonbase',
     '/moonbase/[projectId]',
+    '/moonbase/touchdown',
+    '/touchdown',
   ]
 
   const isFullscreen = fullscreenPaths.includes(router.pathname)
   const isHomepage = router.pathname === '/' || router.pathname === '/moonbase/tour'
+  // The Touchdown game owns the whole viewport: no nav, search button or
+  // campaign banners over the canvas. Only the cookie banner (consent) stays.
+  const isChromeless = router.pathname === '/touchdown' || router.pathname === '/moonbase/touchdown'
 
   return (
     <div
@@ -113,35 +117,39 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
       } min-h-screen relative`}
     >
       <>
-        <div className="xl:hidden">
-          <MobileMenuTop
-            setSidebarOpen={setSidebarOpen}
-            lightMode={lightMode}
-            setLightMode={setLightMode}
-            citizenContract={citizenContract}
-            isFullscreen={isFullscreen}
-          />
-        </div>
+        {!isChromeless && (
+          <>
+            <div className="xl:hidden">
+              <MobileMenuTop
+                setSidebarOpen={setSidebarOpen}
+                lightMode={lightMode}
+                setLightMode={setLightMode}
+                citizenContract={citizenContract}
+                isFullscreen={isFullscreen}
+              />
+            </div>
 
-        <MobileSidebar
-          navigation={navigation}
-          lightMode={lightMode}
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          isFullscreen={isFullscreen}
-        />
+            <MobileSidebar
+              navigation={navigation}
+              lightMode={lightMode}
+              sidebarOpen={sidebarOpen}
+              setSidebarOpen={setSidebarOpen}
+              isFullscreen={isFullscreen}
+            />
 
-        <div className="hidden xl:block">
-          <TopNavBar
-            navigation={navigation}
-            lightMode={lightMode}
-            setLightMode={setLightMode}
-            citizenContract={citizenContract}
-          />
-        </div>
+            <div className="hidden xl:block">
+              <TopNavBar
+                navigation={navigation}
+                lightMode={lightMode}
+                setLightMode={setLightMode}
+                citizenContract={citizenContract}
+              />
+            </div>
+          </>
+        )}
 
         <main
-          className={`pt-16 w-full min-h-screen relative z-10 ${
+          className={`${isChromeless ? '' : 'pt-16'} w-full min-h-screen relative z-10 ${
             isFullscreen || isHomepage ? '' : 'flex justify-center'
           }`}
         >
@@ -155,12 +163,16 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
         </main>
 
         <ClientOnly>
-          <GlobalSearch />
-          <MissionBanner />
-          <ProjectBanner />
-          <ElectionBanner />
+          {!isChromeless && (
+            <>
+              <GlobalSearch />
+              <MissionBanner />
+              <ProjectBanner />
+              <ElectionBanner />
+            </>
+          )}
           <CookieBanner />
-          <CitizenExpiredModal />
+          {!isChromeless && <CitizenExpiredModal />}
         </ClientOnly>
       </>
 

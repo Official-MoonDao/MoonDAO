@@ -236,6 +236,16 @@ module.exports = withBundleAnalyzer(
             destination: '/elections/executive-lead-third-seat-2026',
             statusCode: 301,
           },
+          // Shorthand for Moon Base Zero. While it is gated, the middleware
+          // then sends visitors on to /gate?next=/moonbase.
+          {
+            source: '/base',
+            destination: '/moonbase',
+            statusCode: 301,
+          },
+          // /touchdown used to 301 to the first Arbitrum DePrize race. It is
+          // now the Touchdown game (pages/touchdown.tsx), which links on to
+          // that race from its result screen.
           {
             source: '/twitter',
             destination: 'https://twitter.com/OfficialMoonDAO',

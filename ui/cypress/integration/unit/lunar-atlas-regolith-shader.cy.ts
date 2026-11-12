@@ -30,7 +30,12 @@ import {
   GRADED_SURFACE_VERTEX_PATCHES,
   HARDWARE_OCCLUSION_FRAGMENT_PATCHES,
   HARDWARE_OCCLUSION_VERTEX_PATCHES,
+  HARDWARE_SHADOW_ONLY_VERTEX_PATCHES,
+  HARDWARE_SURFACE_FRAGMENT_PATCHES,
+  HARDWARE_SURFACE_VERTEX_PATCHES,
+  PRECISE_SHADOW_VERTEX_PATCH,
   STAIN_FRAGMENT_PATCHES,
+  TERRAIN_ALBEDO_BANDS,
   TERRAIN_FRAGMENT_PATCHES,
   TERRAIN_VERTEX_PATCHES,
   applyShaderPatches,
@@ -679,5 +684,139 @@ describe('hardware occlusion patches against three s real Standard and Physical 
     // very occlusion it is derived from and vanish. Anchored on the full member
     // expression because "indirectDiffuse" ends with the string "directDiffuse".
     expect(frag).to.not.contain('reflectedLight.directDiffuse += siteLight')
+  })
+})
+
+describe('camera-relative shadow lookups', () => {
+  // A world position on this base is a float32 of magnitude 2, which resolves
+  // 21 cm, so a shadow looked up by world position can never be sharper than that.
+  // The patch swaps in a camera-relative position; MoonGlobe moves the matching
+  // translation into the light's shadow matrix. Every receiver needs it, so it has
+  // to hold against every lit material class a model might ship with.
+  for (const key of ['lambert', 'phong', 'toon', 'standard', 'physical'] as const) {
+    it(`applies cleanly to ShaderLib.${key}`, () => {
+      expect(() =>
+        applyShaderPatches(ShaderLib[key].vertexShader, [PRECISE_SHADOW_VERTEX_PATCH])
+      ).to.not.throw()
+    })
+  }
+
+  it('rides on every regolith and hardware vertex shader', () => {
+    for (const patches of [
+      TERRAIN_VERTEX_PATCHES,
+      GRADED_SURFACE_VERTEX_PATCHES,
+      HARDWARE_SURFACE_VERTEX_PATCHES,
+      HARDWARE_SHADOW_ONLY_VERTEX_PATCHES,
+    ]) {
+      expect(patches).to.include(PRECISE_SHADOW_VERTEX_PATCH)
+    }
+  })
+
+  const vert = applyShaderPatches(ShaderLib.physical.vertexShader, [PRECISE_SHADOW_VERTEX_PATCH])
+
+  it('overwrites the coordinate AFTER three has written its own', () => {
+    // Order is the whole mechanism: three's chunk assigns the varying from the
+    // world position, and this must be the last write to it.
+    const chunk = vert.indexOf('#include <shadowmap_vertex>')
+    const write = vert.indexOf('vDirectionalShadowCoord[ i ] =')
+    expect(chunk).to.be.greaterThan(-1)
+    expect(write).to.be.greaterThan(chunk)
+  })
+
+  it('builds the position from the model-view product, never from modelMatrix', () => {
+    // mvPosition is formed on the CPU in doubles and is camera-relative; rotating
+    // it back by the view matrix's transpose keeps it that way. Reaching for
+    // worldPosition or modelMatrix here would reintroduce the 21 cm lattice.
+    const body = vert.slice(vert.indexOf('preciseShadowPos'))
+    expect(body).to.contain('( vec4( mvPosition.xyz, 0.0 ) * viewMatrix ).xyz')
+    expect(PRECISE_SHADOW_VERTEX_PATCH.insert).to.not.contain('modelMatrix')
+    expect(PRECISE_SHADOW_VERTEX_PATCH.insert).to.not.contain('worldPosition')
+  })
+
+  it('is written in the exact form three s loop unroller recognises', () => {
+    // three expands light loops with a regex, not a parser. A loop it does not
+    // recognise is left as a GLSL for-loop indexing a varying array by a
+    // non-constant, which some drivers reject outright.
+    const unroll =
+      /#pragma unroll_loop_start\s+for\s*\(\s*int\s+i\s*=\s*(\d+)\s*;\s*i\s*<\s*(\w+)\s*;\s*i\s*\+\+\s*\)\s*{([\s\S]+?)}\s+#pragma unroll_loop_end/
+    expect(PRECISE_SHADOW_VERTEX_PATCH.insert).to.match(unroll)
+  })
+
+  it('names only things three s shadow vertex stage actually declares', () => {
+    const resolved = resolveIncludes(ShaderLib.physical.vertexShader)
+    for (const name of [
+      'mvPosition',
+      'transformedNormal',
+      'directionalShadowMatrix',
+      'directionalLightShadows',
+      'vDirectionalShadowCoord',
+      'inverseTransformDirection',
+    ]) {
+      expect(resolved, name).to.contain(name)
+    }
+  })
+})
+
+describe('hardware surface detail patches', () => {
+  for (const key of ['standard', 'physical'] as const) {
+    it(`applies cleanly to ShaderLib.${key}`, () => {
+      expect(() =>
+        applyShaderPatches(ShaderLib[key].vertexShader, HARDWARE_SURFACE_VERTEX_PATCHES)
+      ).to.not.throw()
+      expect(() =>
+        applyShaderPatches(ShaderLib[key].fragmentShader, HARDWARE_SURFACE_FRAGMENT_PATCHES)
+      ).to.not.throw()
+    })
+  }
+
+  const vert = applyShaderPatches(ShaderLib.physical.vertexShader, HARDWARE_SURFACE_VERTEX_PATCHES)
+  const frag = applyShaderPatches(
+    ShaderLib.physical.fragmentShader,
+    HARDWARE_SURFACE_FRAGMENT_PATCHES
+  )
+
+  it('samples in the mesh frame, where the numbers are small', () => {
+    // Detail addressed by world position would be quantised to the same 21 cm the
+    // shadows were, and would swim across anything that drives.
+    expect(vert).to.contain('vHwDetailPos = transformed *')
+    expect(vert).to.not.contain('vHwDetailPos = worldPosition')
+    expect(frag).to.contain('varying vec3 vHwDetailPos')
+  })
+
+  it('uses each sample only after it has been taken', () => {
+    const sample = frag.indexOf('vec4 hwBroad =')
+    expect(sample).to.be.greaterThan(-1)
+    expect(frag.indexOf('roughnessFactor = clamp( roughnessFactor +')).to.be.greaterThan(sample)
+    expect(frag.indexOf('normal = hwBump(')).to.be.greaterThan(sample)
+  })
+
+  it('keeps roughness off a perfect mirror', () => {
+    expect(frag).to.match(/roughnessFactor = clamp\( roughnessFactor \+ [^;]+, 0\.045, 1\.0 \);/)
+  })
+})
+
+describe('terrain soil patchiness', () => {
+  const src = applyShaderPatches(lambert.fragmentShader, TERRAIN_FRAGMENT_PATCHES)
+
+  it('is a factor centred on one, so it cannot change the ground s mean tone', () => {
+    expect(src).to.contain('float soil = 1.0;')
+    for (const [repeat, channel, amp] of TERRAIN_ALBEDO_BANDS) {
+      expect(src).to.contain(
+        `soil += (texture2D(surfaceNoiseMap, vUv * ${repeat.toFixed(1)}).${channel} - 0.5) * ${amp.toFixed(3)};`
+      )
+    }
+    expect(src).to.contain('diffuseColor.rgb *= soil;')
+  })
+
+  it('stays subtle: mature regolith is nearly uniform', () => {
+    const swing = TERRAIN_ALBEDO_BANDS.reduce((acc, [, , amp]) => acc + amp / 2, 0)
+    expect(swing).to.be.lessThan(0.2)
+  })
+
+  it('does not tile in step with itself or with the slope octaves', () => {
+    const repeats = TERRAIN_ALBEDO_BANDS.map(([r]) => r)
+    for (let i = 1; i < repeats.length; i++) {
+      expect(Number.isInteger(repeats[i - 1] / repeats[i])).to.equal(false)
+    }
   })
 })

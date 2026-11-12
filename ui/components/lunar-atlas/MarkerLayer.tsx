@@ -22,22 +22,16 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import {
   BASE_PLAN,
-  BRANCH_TAIL_M,
   PATROL,
   ROAD_HALF_M,
   ROAD_RUNS,
   SOLAR_ARRAYS,
   solarArrayKey,
   SPINE_BEARING_DEG,
-  SPINE_END_M,
-  SPINE_START_M,
   at,
-  dirFor,
-  districtAlongM,
   onRoad,
   shuttleAt,
   shuttleLapM,
-  spineCoords,
   withinDistrictGround,
   type ShuttleRun,
   type Slot,
@@ -77,8 +71,6 @@ import type {
   ProjectType,
 } from '@/lib/lunar-atlas/types'
 import ProjectModel, {
-  Boulder,
-  boulderClusterLayout,
   BrickPallet,
   CableReel,
   CargoCrate,
@@ -86,6 +78,7 @@ import ProjectModel, {
   Excavator,
   gradedDeckRadiusM,
   displaySizeM,
+  padNoseBearingDeg,
   SparePartsPallet,
   DistrictFloodPool,
   StreetLight,
@@ -112,6 +105,9 @@ export function rankedMembers(tree: TechTree): Project[] {
 // Scratch quaternion for the shuttle's per-frame rotation, so driving the fleet
 // allocates nothing.
 const TURN = new THREE.Quaternion()
+
+// The crewed pad's road is North Avenue, leaving it northeast along the grid.
+const CREWED_PAD_NOSE = capLocalDirection(padNoseBearingDeg(SPINE_BEARING_DEG), 0)
 
 // Seconds-ish for a patrolling vehicle to reach speed, or to come to a stand
 // when its race is opened. A vehicle that stops dead reads as a paused
@@ -142,7 +138,7 @@ export type ColonyLayout = {
   districts: Map<string, Vec3>
   // Which race stands in each zoned district of the base plan. The plan is
   // drawn in hardware types, but a race is not a type, so anything keyed to the
-  // built environment — the graded branch roads above all — needs this to get
+  // built environment — the graded streets above all — needs this to get
   // from "the rover district" to the race actually parked in it. A race with no
   // district of its own never appears here.
   districtOwner: Map<ProjectType, string>
@@ -152,6 +148,9 @@ export type ColonyLayout = {
   // itself still stands on `dir`, its own plot, which is what the camera aims
   // at.
   plots: Map<string, { dir: Vec3; slot: Slot; standDir?: Vec3 }>
+  // Hardware standing on the base with no district behind it, and so no beacon,
+  // name card or click target: the crewed pad's Starship (see CREWED_PAD).
+  scenery: { project: Project; dir: Vec3; slot: Slot }[]
 }
 
 type MarkerLayerProps = {
@@ -273,10 +272,13 @@ function CompetitorPlot({
   radiusAt,
   cinematic,
   scenery,
+  noseAlong,
 }: {
   project: Project
   slot: Slot
   dir: Vec3
+  // World direction to hold the model's +X along instead of facing the camera.
+  noseAlong?: Vec3
   // Where a DRIVING copy sets off from on the run, precomputed in the shared
   // layout (see ColonyLayout). Absent on the parked rendering of the same
   // competitor, which uses `dir`.
@@ -485,7 +487,7 @@ function CompetitorPlot({
         dir={[ndir.x, ndir.y, ndir.z]}
         accent={accent}
         turn={THREE.MathUtils.degToRad(slot.turn)}
-        noseAlong={driveAlong ?? vaultAlong ?? track?.along}
+        noseAlong={driveAlong ?? vaultAlong ?? track?.along ?? noseAlong}
         dim={dim}
         onSelect={scenery ? undefined : onSelect}
         onHover={scenery ? undefined : (id) => onHover?.(Boolean(id))}
@@ -544,13 +546,13 @@ function CompetitorPlot({
 // Everything above is a competitor's plot, one district's worth at a time.
 // This is the one layer that renders ONCE for the
 // whole base rather than per-district, because most of the plan by area is
-// neither a district nor a road: it's the open regolith either side of the
-// spine, and the spine itself stitching the districts together. Left bare, that
-// is most of what the camera actually sees on approach.
+// neither a district nor a road: it's the open regolith round the edge of town
+// and in the hollow south of Main Avenue, and the streets between the blocks.
+// Left bare, that is most of what the camera actually sees on approach.
 //
-// A boulder field fills the open ground — native rock, not manifested cargo,
-// so it belongs on unclaimed regolith in a way none of the logistics props in
-// ProjectModel.tsx do — and street lights line the haul routes. Both are kept
+// Street lights line the haul routes, and the settlement's own fleet and cargo
+// stand along them. (The native rock that fills the open ground is drawn by
+// RockField, which is not a marker and so does not live here.) All of it is kept
 // off every district's own ground by `withinDistrictGround` (baseplan.ts),
 // which is deliberately generous rather than exact: it doesn't know any
 // district's live roster, only the widest spread its `block` allows along the
@@ -564,48 +566,9 @@ function hash1(n: number): number {
   return s - Math.floor(s)
 }
 
-// The ground a boulder can land on: a band running the length of the spine and
-// a good way either side of it, sampled as a grid in the spine's own frame with
-// per-cell jitter and a low keep-rate — which is what makes a grid read as
-// scatter rather than as rows. Roads and district ground are skipped as the
-// walk goes (see the filter below), so the band can simply cover the whole base
-// instead of being an annulus threaded between two ring roads.
-//
-// Wider across than the base is and longer than the spine, so the scatter runs
-// past the settlement in every direction rather than stopping at a boundary the
-// eye can find.
-//
-// The across figure is set by the district that stands furthest off the spine,
-// which is no longer the landing zone: the pads reach 70 m, but the comms race
-// is now out at the end of a 145 m branch and its ground reaches 160 m. A band
-// sized for the pads would have stopped short of the two longest branches and
-// left the outer half of the base standing on conspicuously clean regolith.
-const BOULDER_ALONG_MIN_M = SPINE_START_M - 60
-const BOULDER_ALONG_MAX_M = SPINE_END_M + 60
-const BOULDER_ACROSS_M = 200
-// Kept in proportion to the band so widening it scatters more rock rather than
-// thinning what there is.
-const BOULDER_ALONG_STEPS = 34
-const BOULDER_ACROSS_STEPS = 20
-const BOULDER_KEEP_FRACTION = 0.34
-// Half-width of a boulder's footprint as a multiple of its size: `Boulder`
-// stretches its unit icosahedron up to 1.25x sideways.
-const BOULDER_FOOTPRINT = 1.25
-const BOULDER_FOOTPRINT_SAMPLES: [number, number][] = [
-  [0, 0],
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-  [0.7, 0.7],
-  [-0.7, 0.7],
-  [0.7, -0.7],
-  [-0.7, -0.7],
-]
-
 // A post every ~26 m of pavement, just outside the windrow — close enough
-// together to actually read as street lighting, far enough apart that 730 m of
-// spine doesn't need dozens of them.
+// together to actually read as street lighting, far enough apart that the
+// avenues don't need dozens of them.
 //
 // Tightened from 40 m once the fixtures started throwing real pools of light on
 // the ground. At 40 m the lit patches did not touch, so under the true sun the
@@ -615,9 +578,9 @@ const BOULDER_FOOTPRINT_SAMPLES: [number, number][] = [
 // either one alone reopens the gaps or doubles the post count for nothing.
 const STREET_LIGHT_SPACING_M = 26
 
-// Roads narrower than this are left dark. A lit street is a street with traffic
-// on it, and a rover track out to four relay masts has none — see `width` in
-// baseplan.ts' Street, and the branches that ask for 0.72.
+// Roads narrower than this are left dark: the avenues carry the haul traffic
+// and are lit, the cross streets and the launcher's drive are not — see `width`
+// in baseplan.ts' Street.
 const LIT_ROAD_WIDTH = 1
 
 // Staged cargo along the shoulders of every road — the manifested-cargo
@@ -645,22 +608,14 @@ const EXCAVATOR_COUNT = 6
 const EXCAVATOR_SHOULDER_MIN_M = 2.6
 const EXCAVATOR_SHOULDER_MAX_M = 6.5
 
-// Fixed spot for the base's own dig: beside the habitat's branch, on the long
-// stretch between where its spur leaves and where its own lots begin.
+// Fixed spot for the base's own dig: across North Avenue from the rover
+// depot, on the corner diagonal from the habitat superblock.
 //
-// It used to sit in the middle of the habitat district, which was possible
-// because that district was a ring of five plots around an empty plaza. There
-// is no plaza and no crossing now — the district is a cluster at the end of a
-// 130 m branch — so the dig takes the one stretch of that branch that is both
-// served by the road and nobody's lot: past the spur junction at 55 m, short of
-// the buried modules' own lots at 102 m.
+// What this is digging is the vaults the buried habitats stand in, and the
+// next vault along is exactly what a cut-and-cover excavation just up the
+// street from them would be. Nobody's lot is on that side of the avenue there —
+// the second solar field starts across the cross street, behind the habitats.
 //
-// That is arguably where it belonged all along, since what this is digging is
-// the vaults those buried habitats stand in, and the next vault along is
-// exactly what a cut-and-cover excavation beside the access road would be.
-//
-// On the LEFT of the branch's outbound direction, which is the side the spur is
-// not on, so the machine has open regolith behind it rather than another road.
 // Offset far enough off the centreline to clear the windrow, so it works beside
 // its road rather than in it. The composite itself (ConstructionPit +
 // its Excavator, both authored together in ProjectModel.tsx) is asymmetric —
@@ -669,22 +624,12 @@ const EXCAVATOR_SHOULDER_MAX_M = 6.5
 // (no `noseAlong` given here) turns that whole composite toward the home
 // camera on its own, the same as any other un-steered installation, so this
 // only ever needs to pick a location, never an orientation.
-// Meters out along the habitat branch. Between the spur junction and the lots,
-// with room for the composite's own 13 m span at either end — asserted in
-// lunar-atlas-baseplan.cy.ts rather than trusted, since both bounds move if the
-// habitat's roster or its spur does.
-const UGC_ALONG_BRANCH_M = 78
 const UGC_SITE = (() => {
-  const plan = BASE_PLAN.habitat!
-  const branch = plan.branch!
-  const crossing = at(plan.alongM)
-  const [de, dn] = dirFor(branch.bearingDeg)
-  return {
-    east:
-      crossing.east + de * UGC_ALONG_BRANCH_M - dn * (ROAD_HALF_M + 8),
-    north:
-      crossing.north + dn * UGC_ALONG_BRANCH_M + de * (ROAD_HALF_M + 8),
-  }
+  const block = BASE_PLAN.rover!.cityBlock!
+  return at(
+    (block.alongM[0] + block.alongM[1]) / 2,
+    block.acrossM[1] + ROAD_HALF_M + 8
+  )
 })()
 const UGC_EAST_M = UGC_SITE.east
 const UGC_NORTH_M = UGC_SITE.north
@@ -880,48 +825,6 @@ function InterDistrictFiller({
   // gone rather than faint, because a ghost street light is still a street
   // light standing on a Moon that has none.
   const built = presence > MODEL_PRESENCE
-  const boulders = useMemo(() => {
-    const out: { dir: Vec3; seat: number; size: number; seed: number }[] = []
-    for (let ai = 0; ai < BOULDER_ALONG_STEPS; ai++) {
-      for (let ci = 0; ci < BOULDER_ACROSS_STEPS; ci++) {
-        const k = ai * 977 + ci * 31 + 1
-        if (hash1(k) > BOULDER_KEEP_FRACTION) continue
-        const alongM =
-          BOULDER_ALONG_MIN_M +
-          ((ai + hash1(k + 1)) / BOULDER_ALONG_STEPS) *
-            (BOULDER_ALONG_MAX_M - BOULDER_ALONG_MIN_M)
-        const acrossM =
-          -BOULDER_ACROSS_M +
-          ((ci + hash1(k + 2)) / BOULDER_ACROSS_STEPS) * BOULDER_ACROSS_M * 2
-        const { east, north } = at(alongM, acrossM)
-        if (onRoad(east, north) || withinDistrictGround(east, north, 20)) {
-          continue
-        }
-        const size = 0.3 + hash1(k + 3) * 1.4
-        for (const rock of boulderClusterLayout(k, size)) {
-          const e = east + rock.x
-          const n = north + rock.z
-          const ll = capOffsetLatLon(e, n)
-          const dir = latLonToVector3(ll.lat, ll.lon, 1)
-          // No SEAT_LIFT: a rock is meant to cut into the ground, and that lift
-          // is taller than most of these rocks are. Seated on the lowest ground
-          // under its footprint instead of the ground under its centre, so the
-          // downhill side of a rock on a slope is buried rather than overhanging.
-          const reach = rock.s * BOULDER_FOOTPRINT
-          let ground = Infinity
-          for (const [dx, dz] of BOULDER_FOOTPRINT_SAMPLES) {
-            const p = capOffsetLatLon(e + dx * reach, n + dz * reach)
-            ground = Math.min(
-              ground,
-              radiusAt ? radiusAt(p.lat, p.lon) : GLOBE_RADIUS
-            )
-          }
-          out.push({ dir, seat: ground, size: rock.s, seed: rock.k })
-        }
-      }
-    }
-    return out
-  }, [radiusAt])
 
   const lights = useMemo(() => {
     const out: { dir: Vec3; seat: number; noseAlong: Vec3 }[] = []
@@ -950,10 +853,10 @@ function InterDistrictFiller({
         if (lastAt !== null && d - lastAt < STREET_LIGHT_SPACING_M) continue
         const side = placed % 2 ? -1 : 1
         const post = run.at(d, side * (ROAD_HALF_M + 1.4))
-        // A narrower margin than the boulders': a thin post just needs to clear
-        // a district's own ground, not stand well back from it, so lights still
-        // line the road right up to each district's crossing.
-        if (withinDistrictGround(post.east, post.north, 11)) continue
+        // A thin post just needs to clear a district's own ground, not stand
+        // well back from it. A block's ground starts a setback off its streets,
+        // just outside the post, so the avenues stay lit the length of town.
+        if (withinDistrictGround(post.east, post.north, 0)) continue
         lastAt = d
         placed++
 
@@ -1058,9 +961,20 @@ function InterDistrictFiller({
       out.push({
         dir,
         seat: radiusAt ? radiusAt(ll.lat, ll.lon) : GLOBE_RADIUS,
-        // The landing zone's apron is 62 m across on its own, so it gets a
-        // wider pool than a district whose plots line one short branch.
-        radiusM: site === 'lander' ? 46 : 28,
+        // A block district's lots line all four sides of its block, so its
+        // pool reaches the block's edges; the landing zone's pads string out
+        // down Main Avenue. Both are wider than a district whose plots line one
+        // short drive.
+        radiusM: plan.cityBlock
+          ? Math.max(
+              plan.cityBlock.alongM[1] - plan.cityBlock.alongM[0],
+              plan.cityBlock.acrossM[1] - plan.cityBlock.acrossM[0]
+            ) /
+              2 +
+            4
+          : site === 'lander'
+            ? 46
+            : 28,
         key: site,
       })
     }
@@ -1120,18 +1034,6 @@ function InterDistrictFiller({
 
   return (
     <group>
-      {boulders.map((b, i) => (
-        <SurfaceAnchor
-          key={`boulder:${i}`}
-          dir={b.dir}
-          surfaceRadius={b.seat}
-          scale={M_TO_UNITS}
-          castShadows={false}
-          interactive={false}
-        >
-          <Boulder seed={b.seed} size={b.size} />
-        </SurfaceAnchor>
-      ))}
       {lights.map((l, i) => (
         <SurfaceAnchor
           key={`light:${i}`}
@@ -1626,6 +1528,28 @@ export default function MarkerLayer({
               />
             )}
           </group>
+        )
+      })}
+
+      {layout.scenery.map(({ project, dir, slot }) => {
+        const style = getProjectStyle?.(project) ?? { opacity: 1, visible: true }
+        if (!style.visible) return null
+        return (
+          <CompetitorPlot
+            key={project.id}
+            project={project}
+            slot={slot}
+            dir={dir}
+            accent={orgColor(orgMap.get(project.orgId))}
+            opacity={style.opacity}
+            dim={raceOpen && !litProjectIds?.has(project.id) ? DIM_FACTOR : 1}
+            raceOpen={false}
+            called={false}
+            radiusAt={radiusAt}
+            cinematic={cinematic}
+            scenery
+            noseAlong={CREWED_PAD_NOSE}
+          />
         )
       })}
 

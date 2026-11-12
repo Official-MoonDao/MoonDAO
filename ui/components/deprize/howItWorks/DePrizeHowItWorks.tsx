@@ -79,7 +79,7 @@ export default function DePrizeHowItWorks() {
       <Head
         title="How DePrize works"
         description={deprizeOgDescription(
-          'Predict for free or bet ETH on who reaches a lunar milestone first. Every bet grows the prize.'
+          'Predict for free or bet ETH. Every bet grows the prize.'
         )}
       />
       <Container>
