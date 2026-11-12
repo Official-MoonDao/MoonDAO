@@ -27,7 +27,7 @@ import {
   writePendingHandoffs,
   type PendingHandoff,
 } from './guestHandoff'
-import { retainForecastWriter } from './retainForecastWriter'
+import { canRenewForecastGuest, retainForecastWriter } from './retainForecastWriter'
 
 const GUEST_WALLET_WAIT_MS = 15_000
 
@@ -58,6 +58,11 @@ export function useForecastWriter() {
   const sendRef = useRef(sendTransaction)
   sendRef.current = sendTransaction
   const heldWriter = useRef<Account | undefined>(undefined)
+  // Renewal runs after two token requests. The render that started them can
+  // be a guest who has since signed in, or a signed-in wallet still attaching.
+  const renewalRef = useRef({ account, authenticated, isGuest })
+  renewalRef.current = { account, authenticated, isGuest }
+  const canRenewGuest = useCallback(() => canRenewForecastGuest(renewalRef.current), [])
 
   const makeGuestAccount = useCallback(
     (address: string) =>
@@ -93,9 +98,7 @@ export function useForecastWriter() {
    * visitor is signed out. Null means the caller should fall back to login:
    * guests are off in Privy, or a signed-in wallet is still attaching.
    */
-  const ensureWriter = useCallback(async (): Promise<Account | null> => {
-    if (writer) return writer
-    if (!ready || (authenticated && !isGuest)) return null
+  const startGuest = useCallback(async (): Promise<Account | null> => {
     try {
       const guest = await createGuestAccount()
       let address = guest.wallet?.address
@@ -119,7 +122,30 @@ export function useForecastWriter() {
       console.warn('[forecast] guest account unavailable', err)
       return null
     }
-  }, [authenticated, createGuestAccount, createWallet, isGuest, makeGuestAccount, ready, writer])
+  }, [createGuestAccount, createWallet, makeGuestAccount])
+
+  const ensureWriter = useCallback(async (): Promise<Account | null> => {
+    if (writer) return writer
+    if (!ready || (authenticated && !isGuest)) return null
+    return startGuest()
+  }, [authenticated, isGuest, ready, startGuest, writer])
+
+  /**
+   * The Privy session saved in this browser no longer yields a token the
+   * server accepts. Drop it and start a guest again. Privy keeps the guest
+   * credential on the device, so this usually comes back as the same guest.
+   * A signed-in account is refused, including while its wallet is still attaching.
+   */
+  const renewGuestWriter = useCallback(async (): Promise<Account | null> => {
+    if (!canRenewGuest()) return null
+    try {
+      await logout()
+    } catch (err) {
+      console.warn('[forecast] could not clear the saved session', err)
+    }
+    walletsRef.current = []
+    return startGuest()
+  }, [canRenewGuest, logout, startGuest])
 
   /**
    * Privy cannot merge a guest into an existing account. Copy the guest's
@@ -214,5 +240,13 @@ export function useForecastWriter() {
     login()
   }, [guestAccount, login, logout])
 
-  return { writer, isGuest, ensureWriter, switchToExistingAccount, login }
+  return {
+    writer,
+    isGuest,
+    canRenewGuest,
+    ensureWriter,
+    renewGuestWriter,
+    switchToExistingAccount,
+    login,
+  }
 }
