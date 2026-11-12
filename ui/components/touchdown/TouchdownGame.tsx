@@ -795,16 +795,16 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
 
       {/* First thing a desktop player sees in flight: how to fire the engine. */}
       {flying && burnHint && !isTouch && (
-        <div className="pointer-events-none absolute inset-x-0 top-[34%] z-20 flex justify-center px-4">
-          <div className="animate-pulse rounded-2xl border-2 border-amber-300/80 bg-black/75 px-6 py-4 text-center shadow-2xl backdrop-blur">
-            <p className="text-lg font-extrabold tracking-wide text-white sm:text-2xl">
+        <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center px-4">
+          <div className="animate-pulse rounded-2xl border-2 border-amber-300/80 bg-black/75 px-5 py-3 text-center shadow-2xl backdrop-blur">
+            <p className="text-lg font-extrabold tracking-wide text-white sm:text-xl">
               Hold{' '}
               <kbd className="mx-1 inline-block rounded-lg border-2 border-white/70 bg-white/15 px-5 py-1 font-RobotoMono text-base sm:text-xl">
                 SPACE
               </kbd>{' '}
               to fire the engine
             </p>
-            <p className="mt-2 text-sm font-semibold text-white/75">
+            <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">
               <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">W</kbd>{' '}
               <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">A</kbd>{' '}
               <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">S</kbd>{' '}
