@@ -518,6 +518,26 @@ export function trackMoonbaseEngaged() {
   sendEvent('moonbase_engaged', gaDebugParam(), false)
 }
 
+export type TouchdownEventName =
+  | 'touchdown_start'
+  | 'touchdown_end'
+  | 'touchdown_share'
+  | 'touchdown_odds_click'
+  | 'touchdown_moonbase_click'
+  | 'touchdown_retry'
+
+/**
+ * Touchdown game events (/touchdown). Params are game telemetry only: mode,
+ * outcome, score, distance, speed, fuel, share method. Never a nickname.
+ */
+export function trackTouchdown(
+  name: TouchdownEventName,
+  params: Record<string, string | number | boolean | undefined> = {}
+) {
+  if (typeof window === 'undefined') return
+  sendEvent(name, { ...params, ...gaDebugParam() }, false)
+}
+
 /**
  * After a prediction write confirms. entry_path is the tab's first pathname.
  * Repeating a prediction sends again; reports that count people dedupe them.
