@@ -1035,7 +1035,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       </div>
 
       {/* First thing a desktop player sees in flight: how to fire the engine. */}
-      {flying && burnHint && !isTouch && (
+      {flying && burnHint && !isTouch && !engineRef.current?.autopilot && (
         <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center px-4">
           <div className="animate-pulse rounded-2xl border-2 border-amber-300/80 bg-black/75 px-5 py-3 text-center shadow-2xl backdrop-blur">
             <p className="text-lg font-extrabold tracking-wide text-white sm:text-xl">
