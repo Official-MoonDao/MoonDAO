@@ -852,24 +852,52 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
     this.beam = beam
     this.scene.add(beam)
 
-    // Where you come down if you do nothing.
+    // Where you come down if you do nothing. Draped on the ground every frame
+    // and depth-tested, so it lies on the surface and the lander passes in
+    // front of it.
+    const SEG = 48
+    const rgeo = this.track(new THREE.BufferGeometry())
+    rgeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SEG + 1) * 6), 3))
+    const ridx: number[] = []
+    for (let k = 0; k < SEG; k++) ridx.push(k * 2, k * 2 + 2, k * 2 + 1, k * 2 + 1, k * 2 + 2, k * 2 + 3)
+    rgeo.setIndex(ridx)
     const ring = new THREE.Mesh(
-      this.track(new THREE.RingGeometry(2.0, 2.4, 48)),
+      rgeo,
       this.track(
         new THREE.MeshBasicMaterial({
           color: new THREE.Color(2.4, 1.9, 0.5),
           transparent: true,
           opacity: 0.9,
           depthWrite: false,
-          depthTest: false,
           side: THREE.DoubleSide,
           toneMapped: false,
+          polygonOffset: true,
+          polygonOffsetFactor: -6,
+          polygonOffsetUnits: -6,
         })
       )
     )
     ring.renderOrder = 3
+    ring.frustumCulled = false
     this.impactRing = ring
     this.scene.add(ring)
+  }
+
+  /** Lay the trajectory ring on the terrain around (x, z). */
+  private drapeImpactRing(x: number, z: number, scale: number) {
+    const t = this.terrain
+    const pos = this.impactRing.geometry.attributes.position as THREE.BufferAttribute
+    const n = pos.count / 2 - 1
+    for (let k = 0; k <= n; k++) {
+      const a = (k / n) * Math.PI * 2
+      for (let j = 0; j < 2; j++) {
+        const r = (j ? 2.4 : 2.0) * scale
+        const px = x + Math.cos(a) * r
+        const pz = z + Math.sin(a) * r
+        pos.setXYZ(k * 2 + j, px, heightAt(t, px, pz) + 0.16, pz)
+      }
+    }
+    pos.needsUpdate = true
   }
 
   private buildBase() {
@@ -1802,11 +1830,7 @@ totalEmissiveRadiance += vec3(0.16, 0.42, 1.0) * (pow(earthRim, 2.2) * 0.9 + pow
         ix = s.px + s.vx * tt
         iz = s.pz + s.vz * tt
       }
-      const n = [0, 1, 0]
-      normalAt(t, ix, iz, n)
-      this.impactRing.position.set(ix, heightAt(t, ix, iz) + 0.3, iz)
-      this.impactRing.quaternion.setFromUnitVectors(Z_AXIS, scratchA.set(n[0], n[1], n[2]))
-      this.impactRing.scale.setScalar(1 + Math.min(6, alt / 60))
+      this.drapeImpactRing(ix, iz, 1 + Math.min(6, alt / 60))
     }
     ;(this.beam.material as THREE.MeshBasicMaterial).opacity =
       this.phase === 'flying' || this.phase === 'idle' ? 0.2 * Math.min(1, Math.max(0, alt - 12) / 120) : 0

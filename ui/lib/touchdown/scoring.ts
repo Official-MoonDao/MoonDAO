@@ -1,7 +1,7 @@
 /**
  * Touchdown scoring.
  *
- * Points: softness 400 + accuracy 400 + bullseye 150 + fuel 200 + level 100 =
+ * Points: softness 400 + accuracy 400 + target zone 150 + fuel 200 + level 100 =
  * 1,250, times 1.25 in Pro, times the lander's CONDITION:
  *
  *   intact and upright            x1.0
@@ -23,10 +23,38 @@
 import { TIPPED_TILT_DEG, type ModeId } from './modes'
 import { distanceToTarget, tiltDeg, type Outcome, type Sim } from './physics'
 
-/** Radius of the green ring. Centre inside it: full bullseye points. */
+/** Radius of the inner (green) target circle. */
 export const BULLSEYE_M = 5
-/** Centre this far out, no footpad is in the ring any more: zero bullseye points. */
-export const BULLSEYE_OUTER_M = BULLSEYE_M + 2.7
+/** Radius of the outer (blue) target circle. */
+export const ZONE_M = 20
+/** How far the footpads reach from the lander's centre. */
+export const FOOTPRINT_M = 2.7
+/** Target-zone points: all four pads inside the inner circle / inside the outer circle. */
+export const ZONE_POINTS_INNER = 150
+export const ZONE_POINTS_OUTER = 60
+
+/**
+ * Target-zone points from the lander's distance to the centre.
+ *   whole lander inside the inner circle           150  (the bullseye)
+ *   straddling the inner circle                    150 -> 60
+ *   whole lander inside the outer circle            60
+ *   straddling the outer circle                     60 -> 0
+ *   outside                                          0
+ */
+export function zonePoints(distance: number): number {
+  const innerFull = BULLSEYE_M - FOOTPRINT_M
+  const innerOut = BULLSEYE_M + FOOTPRINT_M
+  const outerFull = ZONE_M - FOOTPRINT_M
+  const outerOut = ZONE_M + FOOTPRINT_M
+  if (distance <= innerFull) return ZONE_POINTS_INNER
+  if (distance < innerOut) {
+    const t = (distance - innerFull) / (innerOut - innerFull)
+    return Math.round(ZONE_POINTS_INNER + (ZONE_POINTS_OUTER - ZONE_POINTS_INNER) * t)
+  }
+  if (distance <= outerFull) return ZONE_POINTS_OUTER
+  if (distance < outerOut) return Math.round(ZONE_POINTS_OUTER * (1 - (distance - outerFull) / (outerOut - outerFull)))
+  return 0
+}
 export const ACCURACY_RANGE_M = 90
 export const BASE_DAMAGE_PENALTY = 150
 export const BASE_DAMAGE_MAX = 10
@@ -90,7 +118,7 @@ export function scoreFlight(sim: Sim): FlightResult {
     const v = sim.touchdownSpeed
     parts.softness = Math.round(400 * clamp01((sim.mode.legCollapseSpeed - v) / (sim.mode.legCollapseSpeed - 1)))
     parts.accuracy = Math.round(400 * clamp01(1 - distance / ACCURACY_RANGE_M) ** 1.5)
-    parts.bullseye = Math.round(150 * clamp01((BULLSEYE_OUTER_M - distance) / (BULLSEYE_OUTER_M - BULLSEYE_M)))
+    parts.bullseye = zonePoints(distance)
     parts.fuel = Math.round(200 * clamp01(fuelLeft))
     parts.level = Math.round(100 * clamp01(1 - tilt / TIPPED_TILT_DEG))
     const sum = parts.softness + parts.accuracy + parts.bullseye + parts.fuel + parts.level
@@ -108,7 +136,8 @@ export function scoreFlight(sim: Sim): FlightResult {
     fuelLeft,
     tiltDeg: tilt,
     flightSeconds: sim.t,
-    bullseye: condition === 1 && distance < BULLSEYE_M,
+    // A bullseye is the whole lander inside the inner circle.
+    bullseye: condition === 1 && distance <= BULLSEYE_M - FOOTPRINT_M,
     damaged,
     condition,
     conditionLabel,

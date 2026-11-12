@@ -123,6 +123,9 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [modal, setModal] = useState<'card' | 'photo'>('card')
   const [hasFlown, setHasFlown] = useState(false)
+  /** Desktop: show the "hold Space" hint until the engine is first fired this flight. */
+  const [burnHint, setBurnHint] = useState(false)
+  const burnedRef = useRef(false)
 
   // HUD refs
   const hudRef = useRef<HTMLDivElement>(null)
@@ -330,6 +333,8 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
       setCallout(null)
       setShowCard(false)
       setLeaving(false)
+      burnedRef.current = false
+      setBurnHint(true)
       blobRef.current = null
       frameRef.current = null
       setCardUrl((old) => {
@@ -485,6 +490,10 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
     const ky = (k.up ? 1 : 0) - (k.down ? 1 : 0)
     const keyed = kx !== 0 || ky !== 0
     engine.setControl(keyed ? kx : t.x, keyed ? ky : t.y, k.burn || t.burn, !keyed && (t.x !== 0 || t.y !== 0))
+    if ((k.burn || t.burn) && !burnedRef.current && screenRef.current === 'flying') {
+      burnedRef.current = true
+      setBurnHint(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -784,6 +793,28 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
         </div>
       </div>
 
+      {/* First thing a desktop player sees in flight: how to fire the engine. */}
+      {flying && burnHint && !isTouch && (
+        <div className="pointer-events-none absolute inset-x-0 top-[34%] z-20 flex justify-center px-4">
+          <div className="animate-pulse rounded-2xl border-2 border-amber-300/80 bg-black/75 px-6 py-4 text-center shadow-2xl backdrop-blur">
+            <p className="text-lg font-extrabold tracking-wide text-white sm:text-2xl">
+              Hold{' '}
+              <kbd className="mx-1 inline-block rounded-lg border-2 border-white/70 bg-white/15 px-5 py-1 font-RobotoMono text-base sm:text-xl">
+                SPACE
+              </kbd>{' '}
+              to fire the engine
+            </p>
+            <p className="mt-2 text-sm font-semibold text-white/75">
+              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">W</kbd>{' '}
+              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">A</kbd>{' '}
+              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">S</kbd>{' '}
+              <kbd className="rounded border border-white/50 px-1.5 py-0.5 font-RobotoMono text-xs">D</kbd> or arrow
+              keys to tilt · tilt back and burn to brake
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Mission control ticker */}
       <div
         aria-live="polite"
@@ -958,7 +989,7 @@ export default function TouchdownGame({ challenge: linked }: { challenge: Challe
                     [
                       ['Soft', result.parts.softness, 400],
                       ['Accuracy', result.parts.accuracy, 400],
-                      ['Bullseye', result.parts.bullseye, 150],
+                      ['Target', result.parts.bullseye, 150],
                       ['Fuel', result.parts.fuel, 200],
                       ['Level', result.parts.level, 100],
                     ] as const
