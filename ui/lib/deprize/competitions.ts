@@ -179,7 +179,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       tagline:
         'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
       metaDescription:
-        'Arbitrum public Touchdown. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and the Open Field.',
+        'Arbitrum public Touchdown. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and SpaceX Starship HLS.',
       questionId: '0xd81ff517bc437933758e3679c1107fca6983ca98f2798926af562ab5bdf4b32e',
       sharedGoalId: 'shared-next-landing',
       raceLabel: 'Next lunar landing',
@@ -190,7 +190,8 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
         { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
         { projectId: 'ispace-apex', teamId: 606, vehicleLabel: 'ispace' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+        // Team 24 is the id this slot was registered with on-chain, as the old Open Field.
+        { projectId: 'spacex-starship-hls', teamId: 24, vehicleLabel: 'Starship HLS' },
       ],
     },
     // Historical copy from the previous Arbitrum registry. Unlisted and unbound
@@ -241,7 +242,7 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
       tagline:
         'Which landing-vehicle operator lands upright on the Moon next and returns 24 hours of surface data? Back a competitor — every bet grows the prize pool.',
       metaDescription:
-        'Sepolia public Touchdown. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and the Open Field.',
+        'Sepolia public Touchdown. Astrobotic Griffin, Intuitive Machines, Firefly Blue Ghost, Blue Origin Blue Moon MK1, CNSA Chang’e-7, ispace, and SpaceX Starship HLS.',
       questionId: '0x630a9aa92836f37341432d49dc77b38fcf42e7537d7b5f4aee2f015c816aeb41',
       sharedGoalId: 'shared-next-landing',
       raceLabel: 'Next lunar landing',
@@ -252,7 +253,8 @@ const DEPRIZE_COMPETITIONS: Record<string, Record<number, DePrizeCompetition>> =
         { projectId: 'blue-origin-blue-moon-mk1', teamId: 604, vehicleLabel: 'Blue Moon MK1' },
         { projectId: 'cnsa-change-7', teamId: 605, vehicleLabel: "Chang'e-7" },
         { projectId: 'ispace-apex', teamId: 606, vehicleLabel: 'ispace' },
-        { projectId: OPEN_FIELD_PROJECT_ID, teamId: 24, field: true },
+        // Team 24 is the id this slot was registered with on-chain, as the old Open Field.
+        { projectId: 'spacex-starship-hls', teamId: 24, vehicleLabel: 'Starship HLS' },
       ],
     },
     // Historical copy from the previous Sepolia registry. Unlisted so they

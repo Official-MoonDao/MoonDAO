@@ -1189,6 +1189,7 @@
         }
       ],
       "sharedGoalIds": [
+        "shared-next-landing",
         "shared-crewed-lander"
       ],
       "sources": [
@@ -3975,14 +3976,15 @@
       "id": "shared-next-landing",
       "title": "Touchdown — next successful lunar landing",
       "category": "lander",
-      "description": "Which landing-vehicle operator after market open first lands upright on the Moon and returns surface data for at least 24 hours. The slot is the vehicle operator, not the payload or launch provider. Win tests are binary and public: touchdown UTC after OPEN, controlled powered descent, stable planned orientation, ≥24 h surface data, and independent confirmation. Tip-overs (IM-1, IM-2, SLIM) do not count. ISRO and later flights sit in the Open Field.",
+      "description": "Which landing-vehicle operator after market open first lands upright on the Moon and returns surface data for at least 24 hours. The slot is the vehicle operator, not the payload or launch provider. Win tests are binary and public: touchdown UTC after OPEN, controlled powered descent, stable planned orientation, ≥24 h surface data, and independent confirmation. Tip-overs (IM-1, IM-2, SLIM) do not count. SpaceX's Starship HLS holds the seventh slot: its uncrewed demonstration landing, or a crewed one, scores for SpaceX.",
       "projectIds": [
         "astrobotic-griffin",
         "im-nova-c",
         "firefly-blue-ghost",
         "blue-origin-blue-moon-mk1",
         "cnsa-change-7",
-        "ispace-apex"
+        "ispace-apex",
+        "spacex-starship-hls"
       ],
       "location": {
         "lat": -85.5,
@@ -4024,12 +4026,13 @@
         "status": "planned",
         "resolutionAuthority": "senate",
         "impliedOdds": {
-          "firefly-blue-ghost": 0.26,
-          "im-nova-c": 0.21,
-          "cnsa-change-7": 0.19,
+          "firefly-blue-ghost": 0.25,
+          "im-nova-c": 0.2,
+          "cnsa-change-7": 0.18,
           "astrobotic-griffin": 0.16,
           "blue-origin-blue-moon-mk1": 0.1,
-          "ispace-apex": 0.08
+          "ispace-apex": 0.07,
+          "spacex-starship-hls": 0.04
         }
       },
       "sources": [
