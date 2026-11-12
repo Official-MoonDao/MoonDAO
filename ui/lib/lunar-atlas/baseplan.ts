@@ -900,10 +900,11 @@ export const BASE_PLAN: Partial<Record<ProjectType, SitePlan>> = {
 
 // Starship HLS, on a pad of its own at the southwest end of North Avenue.
 //
-// Scenery rather than a district. The landing zone is Touchdown's, and the
-// crewed-landing race it used to host has no ground of its own (see
-// buildColonyLayout), so this stands the one vehicle without a roster, a
-// beacon or a click target.
+// A pad rather than a district. The landing zone is Touchdown's, and a 52 m
+// vehicle packed in among its CLPS-class pads would set the spacing for all of
+// them, so Starship stands here even when it races in Touchdown. With no
+// standing race behind it (see buildColonyLayout) it is scenery: no beacon,
+// name card or click target.
 //
 // The ground picks the spot. A 64 m deck seats on the highest point under it,
 // so relief across the footprint is skirt standing proud of the regolith. At

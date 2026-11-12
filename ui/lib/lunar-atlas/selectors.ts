@@ -486,6 +486,73 @@ export function buildTechTrees(
   return trees.sort((a, b) => a.raceId.localeCompare(b.raceId))
 }
 
+// Which roster a competitor click belongs to.
+//
+// A project can be entered in two races, and the trees above are ordered by
+// race id. The first one that lists the project is whichever id sorts first —
+// for Starship, the crewed landing, which has no district of its own. Taking
+// that race switches off the live Touchdown market and opens the planned
+// crewed-landing panel, even though the pad and the Touchdown roster are what
+// was clicked.
+//
+// A click made while a race that already lists the project is open stays in
+// that race, so the Touchdown roster stays on Touchdown and the Water Ice
+// roster stays on Water Ice. Deep links do not: `/moonbase/[projectId]` reuses
+// the moonbase page without remounting, and a leftover race must not win.
+// Otherwise the click belongs to the roster the marker is drawn with — the
+// race that has a district — and only then to the first roster that mentions
+// it. Drawn with a district is not the same as standing in it. Starship is
+// drawn with Touchdown and planted on the crewed pad; dimmedClickOpensSite
+// keeps that click from framing the lander row.
+export function treeForProjectClick(
+  projectId: string,
+  surfaceTrees: readonly TechTree[],
+  trees: readonly TechTree[],
+  opts: {
+    openRaceId?: string | null
+    fromDeepLink?: boolean
+    hasDistrict: (raceId: string) => boolean
+  }
+): TechTree | undefined {
+  const contains = (t: TechTree) => t.projects.some((p) => p.id === projectId)
+  if (!opts.fromDeepLink && opts.openRaceId) {
+    const open =
+      surfaceTrees.find((t) => t.raceId === opts.openRaceId && contains(t)) ??
+      trees.find((t) => t.raceId === opts.openRaceId && contains(t))
+    if (open) return open
+  }
+  return (
+    surfaceTrees.find((t) => contains(t) && opts.hasDistrict(t.raceId)) ??
+    surfaceTrees.find(contains) ??
+    trees.find(contains)
+  )
+}
+
+// Whether a click on a dimmed asset opens that asset's race site.
+//
+// It does when another race is open and this click is not a deep link: the
+// same gesture as the district pin, which fills the cluster and frames it.
+// The site camera prefers the race's district centre. That centre is where a
+// packed member stands, and the wrong pad for a member the colony kept off
+// the district. Starship is on the Touchdown roster, but its plot is the
+// crewed pad, clear of the lander row. Opening the district then looks at
+// the cargo pads and never selects the vehicle. `keptOffDistrict` names
+// that member; the click selects it and frames its own plot instead.
+export function dimmedClickOpensSite(
+  projectId: string,
+  raceId: string,
+  opts: {
+    openRaceId?: string | null
+    fromDeepLink?: boolean
+    hasDistrict: (raceId: string) => boolean
+    keptOffDistrict: (projectId: string) => boolean
+  }
+): boolean {
+  if (opts.fromDeepLink || !opts.openRaceId || opts.openRaceId === raceId) return false
+  if (opts.hasDistrict(raceId) && opts.keptOffDistrict(projectId)) return false
+  return true
+}
+
 /**
  * How built the settlement is: roads, lights, and the construction fleet.
  *

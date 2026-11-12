@@ -46,7 +46,7 @@ describe('deprize competitions registry', () => {
     expect(getDePrizeQuestionId('sepolia', undefined)).to.equal(undefined)
   })
 
-  it('binds Sepolia DePrize 1 as the public Touchdown, including ispace', () => {
+  it('binds Sepolia DePrize 1 as the public Touchdown, including ispace and Starship HLS', () => {
     expect(isKnownDePrizeCompetition('sepolia', 1)).to.equal(true)
     const c = getDePrizeCompetition('sepolia', 1)
     expect(c.title).to.equal('Touchdown')
@@ -64,10 +64,10 @@ describe('deprize competitions registry', () => {
       'blue-origin-blue-moon-mk1',
       'cnsa-change-7',
       'ispace-apex',
-      '__open-field__',
+      'spacex-starship-hls',
     ])
     expect(binding!.outcomes.map((o) => o.teamId)).to.deep.equal([601, 602, 603, 604, 605, 606, 24])
-    expect(binding!.outcomes[6].field).to.equal(true)
+    expect(binding!.outcomes.some((o) => o.field)).to.equal(false)
   })
 
   it('keeps prior Sepolia Touchdown generations unlisted after the registry cutover', () => {
@@ -87,7 +87,7 @@ describe('deprize competitions registry', () => {
     }
   })
 
-  it('binds Arbitrum DePrize 1 as the public Touchdown, including ispace', () => {
+  it('binds Arbitrum DePrize 1 as the public Touchdown, including ispace and Starship HLS', () => {
     expect(isKnownDePrizeCompetition('arbitrum', 1)).to.equal(true)
     const c = getDePrizeCompetition('arbitrum', 1)
     expect(c.title).to.equal('Touchdown')
@@ -106,10 +106,10 @@ describe('deprize competitions registry', () => {
       'blue-origin-blue-moon-mk1',
       'cnsa-change-7',
       'ispace-apex',
-      '__open-field__',
+      'spacex-starship-hls',
     ])
     expect(binding!.outcomes.map((o) => o.teamId)).to.deep.equal([601, 602, 603, 604, 605, 606, 24])
-    expect(binding!.outcomes[6].field).to.equal(true)
+    expect(binding!.outcomes.some((o) => o.field)).to.equal(false)
     expect(getFeaturedLiveDePrizeId('arbitrum')).to.equal(undefined)
     expect(getFeaturedLiveDePrizeId('sepolia')).to.equal(undefined)
   })
