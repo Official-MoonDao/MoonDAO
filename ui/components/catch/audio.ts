@@ -152,10 +152,10 @@ export class CatchSound implements CatchAudio {
     // Lit is never quiet: the idle roar is plainly there, in a band small
     // speakers can play, and BURN opens it up and adds the crackle.
     const lit = th > 0
-    this.engineGain.gain.setTargetAtTime(lit ? 0.34 + 0.5 * Math.pow(th, 0.8) : 0, t, 0.08)
+    this.engineGain.gain.setTargetAtTime(lit ? 0.3 + 0.26 * Math.pow(th, 0.8) : 0, t, 0.08)
     this.engineTone.frequency.setTargetAtTime(520 + 1500 * th, t, 0.1)
-    this.crackleGain.gain.setTargetAtTime(lit ? 0.035 + 0.15 * th * th : 0, t, 0.08)
-    this.rumbleGain.gain.setTargetAtTime(lit ? 0.12 + 0.22 * th : 0, t, 0.1)
+    this.crackleGain.gain.setTargetAtTime(lit ? 0.03 + 0.07 * th * th : 0, t, 0.08)
+    this.rumbleGain.gain.setTargetAtTime(lit ? 0.12 + 0.1 * th : 0, t, 0.1)
     this.windGain.gain.setTargetAtTime(Math.min(0.22, (speed / 90) * 0.2), t, 0.25)
   }
 

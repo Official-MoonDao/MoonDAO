@@ -1137,7 +1137,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
               </button>
             </div>
             <p className="mt-2 text-[11px] leading-snug text-white/55 sm:mt-3 sm:text-xs">
-              {pro ? 'Pro: faster, less fuel, full wind, harder braking, and you close the arms yourself. Score ×1.25.' : 'Easy: holding BURN never sends it back up, and the tower closes the arms for you.'}
+              {pro ? 'Pro: faster, less fuel, full wind, a faster sink under BURN, and you close the arms yourself. Score ×1.25.' : 'Easy: holding BURN never sends it back up, and the tower closes the arms for you.'}
               {isTouch ? ' Left thumb steers. Right thumb holds BURN.' : ''}
             </p>
             {screen === 'error' && <p className="mt-2 text-xs text-rose-200">This browser could not start WebGL. Try another browser or device.</p>}

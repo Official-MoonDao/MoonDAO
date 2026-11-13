@@ -51,7 +51,7 @@ export function botInput(s: Sim, out: SimInput, opts: BotOptions = {}): SimInput
   const low = s.fuel / mode.fuelSeconds < 0.2
   const settled = held || (dist < (low ? 5 : 3) && hspeed < (low ? 3 : 2.2))
   // BURN cannot hover or climb in either mode, so stop a little high and use the slow sink to line up.
-  const hold = mode.sinkFloor > 0 ? 16 : 13
+  const hold = mode.sinkFloor > 0 ? 16 : 32
   let vyWant: number
   if (settled) vyWant = above > 5 ? -4.5 : -2.6
   else {
