@@ -370,6 +370,11 @@ function roads(mats: Mats, bag: Bag): THREE.Group {
     geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3))
     bag.push(geo)
     const mat = (kind === 0 ? mats.asphalt : mats.dirt) as THREE.MeshStandardMaterial
+    // Roads are flat on flat ground. Drawn right after it with no depth test,
+    // they can never flicker against it in the distance; everything built
+    // later still draws over them.
+    mat.depthTest = false
+    mat.depthWrite = false
     const mesh = new THREE.Mesh(geo, mat)
     mesh.receiveShadow = true
     mesh.renderOrder = -1

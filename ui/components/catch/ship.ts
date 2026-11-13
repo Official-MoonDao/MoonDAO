@@ -11,11 +11,44 @@ export type ShipModel = {
   group: THREE.Group
   /** Hull halves, flaps, engines: the pieces a break-up separates. */
   parts: THREE.Object3D[]
+  /** Each turns about its own hinge line: rotation.y 0 is straight out from the hull. */
   flaps: { fl: THREE.Group; fr: THREE.Group; al: THREE.Group; ar: THREE.Group }
   plume: THREE.Mesh
   plumeMat: THREE.ShaderMaterial
   engineGlow: THREE.MeshStandardMaterial
   light: THREE.PointLight
+  /** The bare-steel hull material, for the pieces a break-up makes. */
+  steel: THREE.MeshStandardMaterial
+}
+
+/**
+ * The bare-steel half of the hull cut into curved plates: `bands` up its
+ * height by `slices` round it. Each plate's geometry is centred on itself, so
+ * it tumbles about its own middle; `center` is where that middle sits in the
+ * ship's frame.
+ */
+export function hullFragments(steel: THREE.Material, bands: number, slices: number): { mesh: THREE.Mesh; center: THREE.Vector3 }[] {
+  const prof = hullProfile()
+  const out: { mesh: THREE.Mesh; center: THREE.Vector3 }[] = []
+  const wrap = 0.16
+  const phi0 = Math.PI / 2 + wrap
+  const span = Math.PI - wrap * 2
+  for (let b = 0; b < bands; b++) {
+    const i0 = Math.floor((b / bands) * (prof.length - 1))
+    const i1 = Math.floor(((b + 1) / bands) * (prof.length - 1))
+    const pts = prof.slice(i0, i1 + 1)
+    if (pts.length < 2) continue
+    for (let k = 0; k < slices; k++) {
+      const geo = new THREE.LatheGeometry(pts, 6, phi0 + (span * k) / slices, span / slices)
+      geo.computeBoundingBox()
+      const center = geo.boundingBox!.getCenter(new THREE.Vector3())
+      geo.translate(-center.x, -center.y, -center.z)
+      const mesh = new THREE.Mesh(geo, steel)
+      mesh.castShadow = true
+      out.push({ mesh, center })
+    }
+  }
+  return out
 }
 
 function hullProfile(): THREE.Vector2[] {
@@ -317,9 +350,18 @@ export function buildShip(env: THREE.Texture, bag: Bag): ShipModel {
     [6.0, 14.6],
     [3.2, 14.6],
   ])
-  const makeFlap = (shape: THREE.Shape, angle: number, name: string): THREE.Group => {
+  // Each flap swings on a hinge that runs up the hull where the flap meets it,
+  // not around the ship's axis: `mount` fixes the hinge to the hull and the
+  // group handed back turns about it.
+  const makeFlap = (shape: THREE.Shape, angle: number, hingeX: number, name: string): THREE.Group => {
+    const mount = new THREE.Group()
+    mount.name = name
+    mount.rotation.y = angle
     const g = new THREE.Group()
-    g.name = name
+    g.position.x = hingeX
+    mount.add(g)
+    group.add(mount)
+    parts.push(mount)
     const mirrored = Math.cos(angle) < 0
     const front = track(new THREE.ExtrudeGeometry(shape, { depth: 0.22, bevelEnabled: false }))
     const back = track(new THREE.ExtrudeGeometry(shape, { depth: 0.22, bevelEnabled: false }))
@@ -327,20 +369,19 @@ export function buildShip(env: THREE.Texture, bag: Bag): ShipModel {
     // After the rotation, local +z faces windward on the right flap and leeward on the left.
     const a = new THREE.Mesh(front, mirrored ? flapSteel : flapTileMat)
     const b = new THREE.Mesh(back, mirrored ? flapTileMat : flapSteel)
+    a.position.x = -hingeX
+    b.position.x = -hingeX
     g.add(a, b)
-    g.rotation.y = angle
     return g
   }
+  // All four hinges sit a little to leeward of the widest point of the hull.
   const lean = (20 * Math.PI) / 180
+  const aftLean = (10 * Math.PI) / 180
   const flaps = {
-    fr: makeFlap(fwdShape, lean, 'flap-fr'),
-    fl: makeFlap(fwdShape, Math.PI - lean, 'flap-fl'),
-    ar: makeFlap(aftShape, 0, 'flap-ar'),
-    al: makeFlap(aftShape, Math.PI, 'flap-al'),
-  }
-  for (const f of Object.values(flaps)) {
-    group.add(f)
-    parts.push(f)
+    fr: makeFlap(fwdShape, lean, 3.0, 'flap-fr'),
+    fl: makeFlap(fwdShape, Math.PI - lean, 3.0, 'flap-fl'),
+    ar: makeFlap(aftShape, aftLean, SHIP.radius - 0.1, 'flap-ar'),
+    al: makeFlap(aftShape, Math.PI - aftLean, SHIP.radius - 0.1, 'flap-al'),
   }
 
   // Engines: three sea-level Raptors in the centre, three vacuum Raptors around them.
@@ -406,5 +447,5 @@ export function buildShip(env: THREE.Texture, bag: Bag): ShipModel {
       m.receiveShadow = true
     }
   })
-  return { group, parts, flaps, plume, plumeMat, engineGlow, light }
+  return { group, parts, flaps, plume, plumeMat, engineGlow, light, steel }
 }

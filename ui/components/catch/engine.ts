@@ -33,7 +33,7 @@ import { quantise, recordTape, tapeToBase64 } from '@/lib/catch/replay'
 import { scoreFlight, type FlightResult } from '@/lib/catch/scoring'
 import { Effects } from './effects'
 import { buildGround, type Ground } from './ground'
-import { buildShip, type ShipModel } from './ship'
+import { buildShip, hullFragments, type ShipModel } from './ship'
 import { bakeSky, type BakedSky } from './sky'
 import { buildStarbase, type StarbaseModel } from './starbase'
 import type { Bag } from './util'
@@ -78,7 +78,10 @@ export type EngineCallbacks = {
 
 /** Sound hooks; all optional so the engine runs silent. */
 export type CatchAudio = {
-  setEngine?: (on: boolean) => void
+  /** Called every frame: engine throttle 0..1 and the ship's speed in m/s. */
+  setFlight?: (throttle: number, speed: number) => void
+  /** The double sonic boom. */
+  boom?: () => void
   explosion?: (size: number) => void
   clang?: () => void
   splash?: () => void
@@ -95,11 +98,11 @@ const smooth = (u: number) => {
 }
 
 /** Seconds of the automatic opening: belly-down fall, flip, relight, hand-over. */
-const INTRO_T = 6.4
-const FLOP_END = 3.8
+const INTRO_T = 2.9
+const FLOP_END = 0.7
 const FLOP_SPEED = 70
-/** Where on the opening the start screen is frozen: just after the flip. */
-const IDLE_T = 6.2
+/** Where on the opening the start screen is frozen: belly-down, so pressing play runs straight into the flip. */
+const IDLE_T = 0
 
 export class CatchEngine {
   autopilot = false
@@ -107,7 +110,7 @@ export class CatchEngine {
   private renderer: THREE.WebGLRenderer
   private composer: EffectComposer | null = null
   private scene = new THREE.Scene()
-  private camera = new THREE.PerspectiveCamera(50, 1, 1.5, 90000)
+  private camera = new THREE.PerspectiveCamera(50, 1, 4, 80000)
   private sun = new THREE.DirectionalLight(0xffffff, 1)
   private sunDir = v3()
   private sky: BakedSky
@@ -157,7 +160,12 @@ export class CatchEngine {
   private secondaries: { at: number; id: StructureId; done: boolean }[] = []
   private burning: { id: StructureId; until: number; next: number }[] = []
   private detached: THREE.Object3D[] = []
-  private armDroop = 0
+  /** How each catch arm fails, chosen afresh for every wreck. */
+  private armFx: { sagL: number; sagR: number; yawL: number; yawR: number; offL: boolean; offR: boolean; t: number } | null = null
+  /** A ship set down intact has no legs: it stands a moment, then goes over. */
+  private topple: { t: number; dx: number; dz: number; boom: boolean; q0: THREE.Quaternion } | null = null
+  private endHoldUntil = 0
+  private fragGeos: THREE.BufferGeometry[] = []
   private boosterFall = -1
   private booster: THREE.Object3D | null = null
   private boosterHome = v3()
@@ -425,7 +433,23 @@ export class CatchEngine {
     this.plumePower = 0
     this.secondaries = []
     this.burning = []
-    this.armDroop = 0
+    this.topple = null
+    this.endHoldUntil = 0
+    for (const g of this.fragGeos) g.dispose()
+    this.fragGeos = []
+    // Put back any arm a wreck tore off.
+    const p1 = this.base.pad1
+    for (const [arm, sx] of [
+      [p1.armR, 1],
+      [p1.armL, -1],
+    ] as const) {
+      if (arm.parent !== p1.carriage) p1.carriage.add(arm)
+      arm.position.set(sx * ARMS.pivotX, 0, -ARMS.pivotOut)
+      arm.rotation.set(0, 0, 0)
+      arm.quaternion.identity()
+      arm.visible = true
+    }
+    this.armFx = null
     this.boosterFall = -1
     this.saidArms = false
     this.saidFlip = false
@@ -464,7 +488,7 @@ export class CatchEngine {
     this.phase = 'intro'
     this.phaseT = 0
     this.resetCamera()
-    this.say('Ship is belly-down over Starbase, falling at 250 km/h.', 'info')
+    this.say('Belly-down at 250 km/h. Flip.', 'info')
   }
 
   run() {
@@ -520,6 +544,27 @@ export class CatchEngine {
     this.fixedCam = values && values.length === 6 ? values : null
   }
 
+  /**
+   * Test hook: end the flight a given way at a given spot, to look at an
+   * ending without having to fly into it. Not reachable from the game.
+   */
+  debugEnd(outcome: 'ditched' | 'splashdown' | 'crashed', x: number, z: number, speed = 3) {
+    if (this.phase !== 'flying') return
+    const s = this.sim
+    s.px = x
+    s.pz = z
+    s.py = COM_Y + 0.3
+    s.vx = outcome === 'crashed' ? speed * 0.4 : 1.2
+    s.vy = -speed
+    s.vz = 0.4
+    s.outcome = outcome
+    s.cause = outcome === 'splashdown' ? 'sea' : 'ground'
+    s.endVertical = speed
+    s.endHorizontal = Math.hypot(s.vx, s.vz)
+    if (outcome !== 'splashdown') s.damage = Math.hypot(x, z) < 60 ? ['mount', 'arms'] : []
+    this.finishFlight()
+  }
+
   /** Test hook: where the flight stands. */
   state(): { phase: Phase; outcome: string | null; score: number | null } {
     return { phase: this.phase, outcome: this.sim?.outcome ?? null, score: this.result?.score ?? null }
@@ -570,7 +615,7 @@ export class CatchEngine {
     qB.setFromAxisAngle(X_AXIS, roll)
     qA.multiply(qB)
     this.placeShip(x, y, s.pz, qA)
-    this.plumePower = smooth((t - FLOP_END - 0.15) / 0.5)
+    this.plumePower = smooth((t - FLOP_END - 0.15) / 0.5) * (t > T - 0.5 ? 1 - 0.55 * smooth((t - (T - 0.5)) / 0.5) : 1)
     // Flaps: spread wide to hold the fall, folding in as the engines take over.
     this.setFlaps(1 - smooth((t - FLOP_END) / 1.4))
   }
@@ -585,13 +630,15 @@ export class CatchEngine {
   }
 
   /** 1: flaps fully out for the belly-down fall. 0: tucked in for the landing burn. */
-  private setFlaps(spread: number) {
+  private setFlaps(spread: number, trimAft = 0, trimFwd = 0, roll = 0) {
     const f = this.ship.flaps
-    const fold = (1 - spread) * 0.9
-    f.ar.rotation.y = -fold
-    f.al.rotation.y = Math.PI + fold
-    f.fr.rotation.y = rad(20) - fold * 0.8 + 0.5 * (1 - spread)
-    f.fl.rotation.y = Math.PI - rad(20) + fold * 0.8 - 0.5 * (1 - spread)
+    // Folding swings each flap back about its hinge, toward the leeward side.
+    const aft = (1 - spread) * 0.7 + trimAft
+    const fwd = (1 - spread) * 0.55 + trimFwd
+    f.ar.rotation.y = aft + roll
+    f.al.rotation.y = -(aft - roll)
+    f.fr.rotation.y = fwd - roll
+    f.fl.rotation.y = -(fwd + roll)
   }
 
   // ---------------------------------------------------------------------------
@@ -609,9 +656,11 @@ export class CatchEngine {
 
     if (this.phase === 'intro') {
       this.poseIntro(Math.min(INTRO_T, this.phaseT))
-      if (this.phaseT > FLOP_END && !this.saidFlip) {
+      this.audio.setFlight?.(this.plumePower, FLOP_SPEED)
+      if (this.phaseT > FLOP_END + 1.5 && !this.saidFlip) {
+        // The flip ends tail-first and subsonic: the double boom reaches the ground about now.
         this.saidFlip = true
-        this.say('Flip.', 'info')
+        this.audio.boom?.()
       }
       if (this.phaseT >= INTRO_T) {
         this.phase = 'flying'
@@ -654,12 +703,16 @@ export class CatchEngine {
       }
       if (steps === 24) this.acc = 0
       recordTape(this.tape, steps, this.simInput.x, this.simInput.y, this.simInput.burn, this.simInput.arms)
-      this.audio.setEngine?.(sim.throttle > 0)
-      this.plumePower += (sim.throttle - this.plumePower) * Math.min(1, dt * 10)
+      this.audio.setFlight?.(sim.throttle, Math.hypot(sim.vx, sim.vy, sim.vz))
+      // Lit even at idle: a short flame that lengthens with the throttle.
+      const flame = sim.throttle > 0 ? 0.3 + 0.7 * sim.throttle : 0
+      this.plumePower += (flame - this.plumePower) * Math.min(1, dt * 10)
       if (!sim.outcome) this.flightCallouts()
       if (!this.exploded) this.syncShip()
     }
 
+    if (this.phase === 'idle') this.audio.setFlight?.(0, 0)
+    this.updateTopple(dt * Math.max(this.timeScale, 0.3))
     this.syncArms(dt)
     this.updateEffects(dt * Math.max(this.timeScale, 0.3))
     this.updateCamera(dt)
@@ -719,20 +772,68 @@ export class CatchEngine {
     const s = this.sim
     qA.set(s.qx, s.qy, s.qz, s.qw)
     this.placeShip(s.px, s.py, s.pz, qA)
-    this.setFlaps(0)
+    // The flaps keep working on the way down: they trim against the steering.
+    const live = this.phase === 'flying' ? 1 : 0
+    const wob = 0.035 * Math.sin(this.clock * 5.3) * live
+    this.setFlaps(0, 0.55 * s.gx * live + wob, -0.55 * s.gx * live - wob, 0.5 * s.gz * live)
+  }
+
+  /** Decide how the two catch arms fail this time: sag, swing wide, tear off, or survive. */
+  private wreckArms() {
+    if (this.armFx) return
+    const p = this.base.pad1
+    // The south arm is the pad's left-hand one. The arm nearer the impact fares worse.
+    const south = this.ship.group.position.z > 0
+    const fate = (near: boolean) => {
+      const u = Math.random() * (near ? 1 : 1.5)
+      return u < 0.28 ? 'off' : u < 0.72 ? 'sag' : u < 1.05 ? 'swing' : 'none'
+    }
+    let fl = fate(south)
+    let fr = fate(!south)
+    if (fl === 'none' && fr === 'none') {
+      if (south) fl = 'sag'
+      else fr = 'sag'
+    }
+    const sag = (f: string) => (f === 'sag' ? 0.18 + Math.random() * 0.7 : f === 'swing' ? 0.04 + Math.random() * 0.22 : 0)
+    const yaw = (f: string) => (f === 'swing' ? (Math.random() < 0.5 ? -1 : 1) * (0.2 + Math.random() * 0.5) : (Math.random() - 0.5) * 0.12)
+    this.armFx = { sagL: sag(fl), sagR: sag(fr), yawL: yaw(fl), yawR: yaw(fr), offL: fl === 'off', offR: fr === 'off', t: 0 }
+    for (const [arm, off] of [
+      [p.armL, fl === 'off'],
+      [p.armR, fr === 'off'],
+    ] as const) {
+      if (!off) continue
+      // Torn from its pivot: it falls as wreckage.
+      this.scene.attach(arm)
+      this.fx.debris.push({
+        obj: arm,
+        v: new THREE.Vector3((Math.random() - 0.5) * 10, 3 + Math.random() * 5, (Math.random() - 0.5) * 10),
+        w: new THREE.Vector3(Math.random() - 0.5, (Math.random() - 0.5) * 0.4, Math.random() - 0.5).multiplyScalar(0.9),
+        r: 3,
+        rest: false,
+        trail: 0,
+        wet: false,
+      })
+    }
+    this.audio.clang?.()
   }
 
   private syncArms(dt: number) {
     const s = this.sim
     const p = this.base.pad1
+    const fx = this.armFx
+    let e = 0
+    if (fx) {
+      fx.t = Math.min(1, fx.t + dt * 0.7)
+      e = smooth(fx.t)
+    }
     // The pad group is turned so its right-hand arm is the north one.
-    p.armR.rotation.y = -s.armN
-    p.armL.rotation.y = s.armS
-    if (this.armDroop > 0) {
-      // A wrecked arm sags on its pivot.
-      this.armDroop = Math.min(1, this.armDroop + dt * 0.7)
-      p.armL.rotation.x = -0.5 * smooth(this.armDroop)
-      p.armR.rotation.x = -0.16 * smooth(this.armDroop)
+    if (!fx || !fx.offR) {
+      p.armR.rotation.y = -s.armN + (fx ? fx.yawR * e : 0)
+      p.armR.rotation.x = fx ? -fx.sagR * e : 0
+    }
+    if (!fx || !fx.offL) {
+      p.armL.rotation.y = s.armS + (fx ? fx.yawL * e : 0)
+      p.armL.rotation.x = fx ? -fx.sagL * e : 0
     }
     if (this.boosterFall >= 0 && this.booster) {
       // The booster slips out of the second tower's arms and comes down.
@@ -805,7 +906,7 @@ export class CatchEngine {
     this.cb.onOver()
     this.phase = 'ending'
     this.phaseT = 0
-    this.audio.setEngine?.(false)
+    this.audio.setFlight?.(0, 0)
     this.plumePower = 0
     this.endFrom.copy(this.camera.position)
     this.endLookFrom.copy(this.camLook)
@@ -818,19 +919,35 @@ export class CatchEngine {
       this.shake = Math.max(this.shake, 0.25 + this.result.closingSpeed * 0.12)
       this.slowUntil = this.clock + 0.5
       this.caughtAt = this.clock
-      this.say(this.result.closingSpeed < 3 ? 'Catch. The tower has the ship.' : 'Caught. That one rang the tower.', 'good')
+      if (this.result.hard) {
+        this.shake = Math.max(this.shake, 1.1)
+        this.say('The pins missed. It is hanging by its forward flaps.', 'warn')
+      } else this.say(this.result.closingSpeed < 3 ? 'Catch. The tower has the ship.' : 'Caught. That one rang the tower.', 'good')
       this.endLook.set(PAD1.x + 6, PAD1.railY - 8, PAD1.z)
       // Sunlit side of the ship, with the Gulf behind the tower.
       this.endAngle = Math.PI + (this.sunDir.z >= 0 ? -0.75 : 0.75)
       this.endDist = 132
-    } else if (o === 'splashdown') {
+    } else if (o === 'splashdown' || o === 'ditched') {
+      // Down in one piece, but with no legs to stand on: it goes over.
       this.syncShip()
-      this.audio.splash?.()
-      this.fx.splash(s.px, s.pz, 1.4)
-      this.say('Splashdown. Soft, wet, and nowhere near the tower.', 'warn')
-      this.endLook.set(s.px, 16, s.pz)
-      this.endAngle = Math.PI + 0.5
-      this.endDist = 130
+      const wet = o === 'splashdown'
+      if (wet) {
+        this.audio.splash?.()
+        this.fx.splash(s.px, s.pz, 1.4)
+      }
+      const hs = Math.hypot(s.vx, s.vz)
+      const a = Math.random() * 6.283
+      this.topple = {
+        t: 0,
+        dx: hs > 0.6 ? s.vx / hs : Math.cos(a),
+        dz: hs > 0.6 ? s.vz / hs : Math.sin(a),
+        boom: !wet,
+        q0: this.ship.group.quaternion.clone(),
+      }
+      this.say(wet ? 'Splashdown. Soft, wet, and nowhere near the tower.' : 'Down in one piece. It has no legs.', 'warn')
+      this.endLook.set(s.px, 22, s.pz)
+      this.endAngle = Math.atan2(this.camera.position.z - s.pz, this.camera.position.x - s.px) + 0.4
+      this.endDist = 150
     } else if (o === 'lost') {
       this.say('We have lost the ship.', 'bad')
       this.endLook.set(PAD1.x, PAD1.railY - 20, PAD1.z)
@@ -842,60 +959,117 @@ export class CatchEngine {
     this.placeEnd(this.endTo, this.endAngle)
   }
 
-  /** Break the ship up where it is: fireball, thrown parts, and whatever the blast reached. */
-  private explode() {
+  /** A ship standing with no legs: it leans, gathers speed and goes over. On land that ends it. */
+  private updateTopple(dt: number) {
+    const tp = this.topple
+    if (!tp) return
+    tp.t += dt
+    const g = this.ship.group
+    const ang = Math.min(Math.PI / 2, 0.012 * Math.exp(2.1 * Math.max(0, tp.t - 0.5)))
+    // Tip the top toward (dx, dz): a turn about the horizontal axis square to it.
+    qB.setFromAxisAngle(scratchA.set(tp.dz, 0, -tp.dx), ang)
+    g.quaternion.copy(qB).multiply(tp.q0)
+    if (!tp.boom) g.position.y = Math.max(-2.5, g.position.y - dt * 0.5)
+    if (ang >= Math.PI / 2 - 0.001) {
+      this.topple = null
+      const nx = g.position.x + tp.dx * 30
+      const nz = g.position.z + tp.dz * 30
+      if (tp.boom) {
+        this.shake = Math.max(this.shake, 2)
+        this.explode(0.42, false)
+      } else {
+        this.fx.splash(nx, nz, 2.2)
+        this.audio.splash?.()
+        this.shake = Math.max(this.shake, 0.8)
+        this.endHoldUntil = this.clock + 2
+      }
+    }
+  }
+
+  /**
+   * Break the ship up where it is. How hard it hit decides how it goes: a slow
+   * crash splits the hull into a few big pieces under a modest fire; a fast
+   * one shreds it into plates inside a large fireball.
+   */
+  private explode(violenceOverride?: number, resync = true) {
     const s = this.sim
     const r = this.result!
-    this.syncShip()
+    if (resync) this.syncShip()
     this.exploded = true
-    this.slowUntil = this.clock + 1.3
-    this.shake = 5
+    const speed = Math.hypot(r.closingSpeed, r.horizontalSpeed)
+    const violence = violenceOverride ?? Math.max(0.22, Math.min(1, speed / 50))
+    this.slowUntil = this.clock + 0.6 + 0.9 * violence
+    this.shake = Math.max(this.shake, 1.5 + 4 * violence)
+    this.endHoldUntil = this.clock + 3.4
     const sea = r.cause === 'sea'
-    const bx = s.px
-    const by = Math.max(4, s.py - COM_Y * 0.5)
-    const bz = s.pz
-    const size = r.outcome === 'ditched' ? 0.7 : 0.8 + 0.6 * r.fuelLeft
+    const g = this.ship.group
+    g.updateMatrixWorld(true)
+    const mid = this.shipMid(scratchC).clone()
+    const bx = mid.x
+    const by = Math.max(4, mid.y - 6)
+    const bz = mid.z
+    const size = (0.5 + 0.8 * violence) * (0.8 + 0.4 * r.fuelLeft)
     this.fx.fireball(bx, by, bz, size * 1.25)
     if (sea) this.fx.splash(bx, bz, 2)
     this.audio.explosion?.(size)
     this.flash.position.set(bx, by + 20, bz)
-    this.flash.intensity = 3e5
+    this.flash.intensity = 3e5 * (0.4 + 0.6 * violence)
     if (!sea && by < 60) {
       this.scorch.position.set(bx, 0.3, bz)
       this.scorch.scale.set(150 * size, 1, 150 * size)
       this.scorch.visible = true
     }
-    // The ship comes apart into its real pieces.
-    const g = this.ship.group
-    g.updateMatrixWorld(true)
     this.ship.plume.visible = false
     this.ship.light.intensity = 0
     const rnd = () => Math.random()
-    // The heat shield does not stay in one piece: it sheds its tiles.
-    this.fx.shedTiles(g.matrixWorld, this.mobile ? 420 : 1300, s.vx, s.vy, s.vz)
-    for (const part of this.ship.parts) {
-      if (part.name === 'hull-belly') {
-        part.visible = false
-        continue
-      }
-      part.getWorldPosition(scratchA)
-      part.getWorldQuaternion(qA)
-      const radius = part.name.startsWith('hull') ? 5 : part.name === 'engines' ? 3 : 2
-      this.scene.add(part)
-      part.position.copy(scratchA)
-      part.quaternion.copy(qA)
-      this.detached.push(part)
-      const out = scratchB.set(rnd() - 0.5, 0, rnd() - 0.5).normalize()
-      const sp = 14 + rnd() * 30
+    const fling = 0.35 + violence
+    const throwPiece = (obj: THREE.Object3D, from: THREE.Vector3, radius: number) => {
+      // Outward from the hull's axis, and up.
+      const out = scratchB.copy(from).sub(mid)
+      out.y = 0
+      if (out.lengthSq() < 0.01) out.set(rnd() - 0.5, 0, rnd() - 0.5)
+      out.normalize().multiplyScalar(0.6).add(scratchA.set(rnd() - 0.5, 0, rnd() - 0.5)).normalize()
+      const sp = (5 + rnd() * 30) * fling
       this.fx.debris.push({
-        obj: part,
-        v: new THREE.Vector3(s.vx * 0.3 + out.x * sp, 14 + rnd() * 30, s.vz * 0.3 + out.z * sp),
-        w: new THREE.Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(3),
+        obj,
+        v: new THREE.Vector3(s.vx * 0.3 + out.x * sp, (4 + rnd() * 30) * fling, s.vz * 0.3 + out.z * sp),
+        w: new THREE.Vector3(rnd() - 0.5, rnd() - 0.5, rnd() - 0.5).multiplyScalar(1 + 4 * violence),
         r: radius,
         rest: false,
         trail: 0,
         wet: false,
       })
+    }
+    // The heat shield does not stay in one piece: it sheds its tiles.
+    this.fx.shedTiles(g.matrixWorld, Math.round((this.mobile ? 420 : 1300) * (0.4 + 0.6 * violence)), s.vx * fling, s.vy * 0.3, s.vz * fling)
+    // The steel half splits into plates: a few big ones in a slow crash, many in a fast one.
+    const bands = violence < 0.35 ? 2 : violence < 0.7 ? 4 : 6
+    const slices = violence < 0.35 ? 1 : violence < 0.7 ? 2 : 3
+    const plateMat = this.ship.steel.clone()
+    plateMat.side = THREE.DoubleSide
+    this.bag.push(plateMat)
+    g.getWorldQuaternion(qA)
+    for (const f of hullFragments(plateMat, bands, slices)) {
+      this.fragGeos.push(f.mesh.geometry)
+      f.mesh.position.copy(f.center).applyMatrix4(g.matrixWorld)
+      f.mesh.quaternion.copy(qA)
+      this.scene.add(f.mesh)
+      this.detached.push(f.mesh)
+      throwPiece(f.mesh, f.mesh.position, 3)
+    }
+    for (const part of this.ship.parts) {
+      if (part.name === 'hull-belly' || part.name === 'hull-lee') {
+        part.visible = false
+        continue
+      }
+      part.getWorldPosition(scratchA)
+      part.getWorldQuaternion(qB)
+      const at = scratchA.clone()
+      this.scene.add(part)
+      part.position.copy(at)
+      part.quaternion.copy(qB)
+      this.detached.push(part)
+      throwPiece(part, at, part.name === 'engines' ? 3 : 2)
     }
     g.visible = false
     // Whatever the blast reached goes up in turn.
@@ -904,11 +1078,11 @@ export class CatchEngine {
       this.secondaries.push({ at: this.clock + delay, id, done: false })
       delay += 0.35 + Math.random() * 0.4
     }
-    this.say(this.crashLine(r), 'bad')
+    if (violenceOverride === undefined) this.say(this.crashLine(r), 'bad')
     this.endLook.set(bx, Math.min(60, by + 25), bz)
     // Pull back the way the camera already was, swung a little to one side.
     this.endAngle = Math.atan2(this.camera.position.z - bz, this.camera.position.x - bx) + 0.5
-    this.endDist = 270
+    this.endDist = 190 + 110 * violence
   }
 
   private crashLine(r: FlightResult): string {
@@ -954,7 +1128,7 @@ export class CatchEngine {
         this.flash.position.set(p[0] + jx, p[1] + 20, p[2])
         this.flash.intensity = Math.max(this.flash.intensity, 1.6e5 * big)
       }
-      if (x.id === 'arms' || x.id === 'tower') this.armDroop = Math.max(this.armDroop, 0.01)
+      if (x.id === 'arms' || x.id === 'tower') this.wreckArms()
       if ((x.id === 'booster' || x.id === 'tower2') && this.boosterFall < 0) this.boosterFall = 0
       if (x.id === 'tankfarm') {
         // Tanks cook off one after another along the farm.
@@ -1065,17 +1239,19 @@ export class CatchEngine {
       return
     }
     if (this.phase === 'idle') {
-      // Start screen: the view the flight opens on, drifting slightly.
-      this.chase(1, true)
-      this.camPos.z += Math.sin(this.clock * 0.1) * 6
-      this.camPos.y += Math.sin(this.clock * 0.07) * 2
+      // Start screen: belly-down over Starbase, the same shot the flight opens on.
+      const mid = this.shipMid(scratchA)
+      const portrait = cam.aspect < 1
+      const drift = Math.sin(this.clock * 0.25) * 7
+      this.camPos.set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58) + Math.sin(this.clock * 0.17) * 3, mid.z + 34 + drift)
+      this.camLook.set(mid.x + 60, mid.y - 110, mid.z - 12)
     } else if (this.phase === 'intro') {
       // Ride above and behind the fall, Starbase spread out far below, then
       // drop in behind the ship for the hand-over.
       const mid = this.shipMid(scratchA).clone()
-      const u = smooth((this.phaseT - (FLOP_END - 1.2)) / (INTRO_T - FLOP_END + 0.9))
+      const u = smooth((this.phaseT - FLOP_END * 0.5) / (INTRO_T - FLOP_END * 0.5))
       const portrait = cam.aspect < 1
-      const drift = Math.sin(this.phaseT * 0.5) * 6
+      const drift = Math.sin(this.clock * 0.25) * 7
       const side = v3().set(mid.x - (portrait ? 96 : 78), mid.y + (portrait ? 78 : 58), mid.z + 34 + drift)
       const sideLook = v3().set(mid.x + 60, mid.y - 110, mid.z - 12)
       this.chase(1, true)
@@ -1091,8 +1267,8 @@ export class CatchEngine {
       if (this.phase === 'ending') {
         this.camPos.lerpVectors(this.endFrom, this.endTo, e)
         this.camLook.lerpVectors(this.endLookFrom, this.endLook, e)
-        const wait = this.exploded ? 3.4 : 1.4
-        if (u >= 1 && this.phaseT > T + wait && !this.endFired) {
+        const wait = 1.4
+        if (u >= 1 && this.phaseT > T + wait && !this.topple && this.clock > this.endHoldUntil && !this.endFired) {
           this.endFired = true
           this.phase = 'result'
           this.phaseT = 0

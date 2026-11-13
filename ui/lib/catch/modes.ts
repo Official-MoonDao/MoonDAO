@@ -4,8 +4,9 @@
  *
  * How it flies:
  *
- *  - Gravity never stops. Let go of BURN and the ship falls.
- *  - BURN fires the landing engines: it is the brake. On Easy the flight
+ *  - Gravity never stops. The engines stay lit after the flip but only idle:
+ *    let go of BURN and the ship still falls.
+ *  - BURN takes the engines to full thrust: it is the brake. On Easy the flight
  *    computer eases the throttle back once the ship is down to a crawl, so
  *    holding BURN settles into a slow sink and never sends it back up.
  *  - The ship stays upright. Steering swivels the engines while they burn: the
@@ -29,7 +30,9 @@ export type ModeConfig = {
   startVerticalSpeed: number
   /** m/s², landing engines at full thrust */
   engineAccel: number
-  /** Seconds of full-thrust burn aboard. */
+  /** Share of full thrust the engines idle at when BURN is released: well short of the ship's weight. */
+  idleThrottle: number
+  /** Seconds of full-thrust burn aboard; idling uses it more slowly. */
   fuelSeconds: number
   /** degrees the engines swivel at full stick */
   maxGimbalDeg: number
@@ -59,7 +62,8 @@ export const MODES: Record<ModeId, ModeConfig> = {
     startHorizontalSpeed: 44,
     startVerticalSpeed: -58,
     engineAccel: 17,
-    fuelSeconds: 26,
+    idleThrottle: 0.16,
+    fuelSeconds: 30,
     maxGimbalDeg: 22,
     sinkFloor: 1.2,
     autoArms: true,
@@ -77,7 +81,8 @@ export const MODES: Record<ModeId, ModeConfig> = {
     startHorizontalSpeed: 52,
     startVerticalSpeed: -68,
     engineAccel: 15.5,
-    fuelSeconds: 22,
+    idleThrottle: 0.16,
+    fuelSeconds: 25,
     maxGimbalDeg: 20,
     sinkFloor: 0,
     autoArms: false,

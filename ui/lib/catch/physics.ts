@@ -4,9 +4,10 @@
  * and the tower's two catch arms.
  *
  * The ship is a tall, heavy cylinder that flies tail-first and stays upright.
- * Its engines are off unless BURN is held. Steering swivels them, so the
- * flame swings to one side and pushes the ship the other way; the hull only
- * leans a little into the push. A catch is not scripted: the arms swing in until they
+ * Its engines stay lit from the flip, idling at their lowest throttle (not
+ * enough to hold it up) and going to full thrust while BURN is held. Steering
+ * swivels them, so the flame swings to one side and pushes the ship the other
+ * way; the hull only leans a little into the push. A catch is not scripted: the arms swing in until they
  * meet the hull, and the ship is caught when its two catch pins come down on
  * the arms' rails. Close the arms too early and the aft flaps land on them;
  * too late and the pins have already gone past.
@@ -49,8 +50,6 @@ const LEAN = 0.3
 const DRAG_SIDE = 0.0006
 const DRAG_AXIAL = 0.0003
 const WIND_PUSH = 0.05
-/** The lowest the engines throttle while burning. */
-const MIN_THROTTLE = 0.3
 
 /** Arm pivots: both stand this far east of the catch point, either side of the centre line. */
 export const PIVOT_X = PAD1.x + TOWER.catchDist - ARMS.pivotOut
@@ -123,6 +122,12 @@ export const POINTS = (() => {
 export const POINT_COUNT = POINTS.length / 3
 /** First flap point: everything before it is hull. */
 const FLAP_START = 8 * 4 + 4 + 1
+/** First forward-flap point. What the forward flaps do at the arms is worked out separately. */
+const FWD_FLAP_START = FLAP_START + 6
+/** m: the forward flaps run from just above the catch pins to this far above them. */
+const FLAP_SPAN = 9.6
+/** The forward flaps hold up to this many times the speed that shears the pins. */
+export const FLAP_HOLD = 1.6
 
 export type SimInput = {
   /** -1..1, positive pushes the ship toward screen-right (+z) */
@@ -185,6 +190,10 @@ export type Sim = {
   /** The pins went past the rails with the arms not holding: this pass is a miss. */
   missed: boolean
   pinsSheared: boolean
+  /** Caught, but by the forward flaps and not the pins: a hard catch. */
+  hard: boolean
+  /** Degrees off vertical when both arms took hold. */
+  hugTilt: number
   /** Closest the pin line has come to its resting place on the rails (m). */
   closest: number
   // Filled in when the flight ends.
@@ -228,7 +237,7 @@ export function createSim(mode: ModeConfig, conditions: Conditions): Sim {
     wz: 0,
     fuel: mode.fuelSeconds,
     burning: false,
-    throttle: 0,
+    throttle: mode.idleThrottle,
     gx: 0,
     gz: 0,
     armN: ARMS.openAngle,
@@ -239,6 +248,8 @@ export function createSim(mode: ModeConfig, conditions: Conditions): Sim {
     hugMargin: 0,
     missed: false,
     pinsSheared: false,
+    hard: false,
+    hugTilt: 0,
     closest: 1e9,
     outcome: null,
     cause: null,
@@ -330,24 +341,28 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   let fy = -EARTH_G
   let fz = 0
 
-  // Engines: off unless BURN is held.
+  // Engines: lit from the flip until the propellant is gone. They idle at
+  // their lowest throttle, which is not enough to hold the ship up, and go
+  // to full thrust while BURN is held.
   const burning = input.burn && s.fuel > 0
   // The swivel follows the stick at a limited rate.
   const maxG = (mode.maxGimbalDeg * Math.PI) / 180
   const slew = GIMBAL_RATE * dt
   s.gx += clamp(clamp(input.y, -1, 1) * maxG - s.gx, -slew, slew)
   s.gz += clamp(clamp(input.x, -1, 1) * maxG - s.gz, -slew, slew)
-  let throttle = 0
-  if (burning) {
+  let throttle = s.fuel > 0 ? mode.idleThrottle : 0
+  if (throttle > 0) {
     const tx = dtan(s.gx)
     const tz = dtan(s.gz)
     const inv = 1 / Math.sqrt(tx * tx + 1 + tz * tz)
-    throttle = 1
-    if (mode.sinkFloor > 0) {
-      // Easy: BURN is a brake, not a launch. Once the ship is down to a crawl
-      // the computer eases the throttle back to hold a slow sink, so holding
-      // BURN never sends it back up.
-      throttle = clamp((EARTH_G + 1.4 * (-mode.sinkFloor - s.vy)) / (mode.engineAccel * inv), MIN_THROTTLE, 1)
+    if (burning) {
+      throttle = 1
+      if (mode.sinkFloor > 0) {
+        // Easy: BURN is a brake, not a launch. Once the ship is down to a crawl
+        // the computer eases the throttle back to hold a slow sink, so holding
+        // BURN never sends it back up.
+        throttle = clamp((EARTH_G + 1.4 * (-mode.sinkFloor - s.vy)) / (mode.engineAccel * inv), mode.idleThrottle, 1)
+      }
     }
     const k = mode.engineAccel * throttle * inv
     fx += k * tx
@@ -517,6 +532,7 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
     }
     if (s.hugN && s.hugS && s.hugMargin === 0) {
       s.hugMargin = py - rail === 0 ? 0.001 : py - rail
+      s.hugTilt = tiltDeg(s)
       s.events.push({ type: 'hug' })
     }
   }
@@ -538,6 +554,17 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
       s.missed = true
       s.events.push({ type: 'missed' })
     }
+  }
+
+  // The pins are below the rails but the arms have the hull: the forward flaps
+  // come down on the arms next. They are not built for it. Slow and upright,
+  // they hold and the ship hangs by them; any faster and they tear off.
+  if (py <= rail && py + FLAP_SPAN > rail && s.hugN && s.hugS) {
+    if (m[4] > 0.82 && -s.vy <= mode.pinLimit * FLAP_HOLD) {
+      s.hard = true
+      finish(s, 'caught', null)
+    } else finish(s, 'crashed', 'flaps')
+    return
   }
 
   // --- Collisions -----------------------------------------------------------------
@@ -567,7 +594,7 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
       }
     }
     // The arms themselves: a beam along each rail.
-    if (wyp < rail + 0.6 && wyp > rail - ARM_DEPTH) {
+    if (i < FWD_FLAP_START && wyp < rail + 0.6 && wyp > rail - ARM_DEPTH) {
       for (let k = 0; k < 2; k++) {
         armFrame(k === 0 ? s.armN : s.armS, k === 0 ? -1 : 1, wxp, wzp, frame)
         if (frame.along > 0 && frame.along < ARMS.length && frame.across < ARM_RADIUS && frame.across > -ARM_RADIUS) {

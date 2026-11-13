@@ -3,7 +3,8 @@
  *
  * A catch earns up to 1,100, times 1.25 in Pro:
  *
- *   the catch itself   250
+ *   the catch itself   150
+ *   upright            100  how near vertical the ship was when the arms took hold
  *   sweet spot         350, for where in the arms the ship was taken:
  *       depth   150  how far along the rails the pins came down. The sweet
  *                    spot is marked by the ring; out at the arm tips or deep
@@ -16,6 +17,9 @@
  *   soft               250  how gently the pins met the rails
  *   steady             100  how little it was still drifting sideways when the pins landed
  *   fuel               150  share of the burn left
+ *
+ * A hard catch is one the pins missed or broke on, with the ship left hanging
+ * by its forward flaps. It still counts, at half of everything above.
  *
  * No catch still earns something: up to 200 for how close the pins came to
  * the sweet spot, plus 120 for a soft splashdown in the Gulf or 60 for
@@ -42,7 +46,10 @@ export const DAMAGE_COST: Record<StructureId, number> = {
   highway: 50,
 }
 
-export const CATCH_POINTS = 250
+export const CATCH_POINTS = 150
+export const UPRIGHT_POINTS = 100
+/** Share of a catch's points kept when the forward flaps did the catching. */
+export const HARD_CATCH_SHARE = 0.5
 export const DEPTH_POINTS = 150
 export const CENTER_POINTS = 100
 export const HEIGHT_POINTS = 100
@@ -60,10 +67,12 @@ export const DEPTH_REACH_TOWER = 15
 export type FlightResult = {
   mode: ModeId
   outcome: Outcome
+  /** Caught by the forward flaps, not the pins. */
+  hard: boolean
   cause: CrashCause | null
   score: number
   /** Points before damage and the mode multiplier, by part. */
-  parts: { caught: number; depth: number; center: number; height: number; soft: number; steady: number; fuel: number; near: number; water: number }
+  parts: { caught: number; upright: number; depth: number; center: number; height: number; soft: number; steady: number; fuel: number; near: number; water: number }
   damage: StructureId[]
   damageCost: number
   /** m/s the pins met the rails at, or the impact's vertical speed. */
@@ -100,28 +109,34 @@ export function heightFactor(margin: number): number {
 export function scoreFlight(s: Sim): FlightResult {
   const mode = s.mode
   const outcome: Outcome = s.outcome ?? 'lost'
-  const parts = { caught: 0, depth: 0, center: 0, height: 0, soft: 0, steady: 0, fuel: 0, near: 0, water: 0 }
+  const parts = { caught: 0, upright: 0, depth: 0, center: 0, height: 0, soft: 0, steady: 0, fuel: 0, near: 0, water: 0 }
   const fuelLeft = s.fuel / mode.fuelSeconds
   if (outcome === 'caught') {
     parts.caught = CATCH_POINTS
+    parts.upright = Math.round(UPRIGHT_POINTS * taper(s.hugTilt, 1.5, 8))
     parts.depth = Math.round(DEPTH_POINTS * depthFactor(s.endAlong))
     parts.center = Math.round(CENTER_POINTS * taper(Math.abs(s.endAcross), 0.5, 6))
     parts.height = Math.round(HEIGHT_POINTS * heightFactor(s.hugMargin))
     parts.soft = Math.round(SOFT_POINTS * taper(s.endVertical, 2, mode.pinLimit))
     parts.steady = Math.round(STEADY_POINTS * taper(s.endHorizontal, 0.5, 5))
     parts.fuel = Math.round(FUEL_POINTS * Math.min(1, fuelLeft / 0.3))
+    if (s.hard) {
+      const keys = ['caught', 'upright', 'depth', 'center', 'height', 'soft', 'steady', 'fuel'] as const
+      for (const k of keys) parts[k] = Math.round(parts[k] * HARD_CATCH_SHARE)
+    }
   } else {
     parts.near = Math.round(NEAR_MISS_POINTS * taper(s.closest, 2, 60))
     if (outcome === 'splashdown') parts.water = SPLASHDOWN_POINTS
     if (outcome === 'ditched') parts.water = DITCH_POINTS
   }
-  const sum = parts.caught + parts.depth + parts.center + parts.height + parts.soft + parts.steady + parts.fuel + parts.near + parts.water
+  const sum = parts.caught + parts.upright + parts.depth + parts.center + parts.height + parts.soft + parts.steady + parts.fuel + parts.near + parts.water
   let damageCost = 0
   for (const id of s.damage) damageCost += DAMAGE_COST[id]
   const score = Math.round(sum * mode.scoreMultiplier) - damageCost
   return {
     mode: mode.id,
     outcome,
+    hard: outcome === 'caught' && s.hard,
     cause: s.cause,
     score,
     parts,

@@ -11,6 +11,7 @@ import { conditionsFor } from '@/lib/catch/conditions'
 import { MODES, type ModeId } from '@/lib/catch/modes'
 import { DAMAGE_COST, type FlightResult } from '@/lib/catch/scoring'
 import { missionDateLabel, missionNumberFor } from '@/lib/touchdown/mission'
+import { CatchSound } from './audio'
 import type { Callout, CatchEngine, HudState } from './engine'
 
 type Screen = 'loading' | 'start' | 'flying' | 'ending' | 'result' | 'error'
@@ -38,6 +39,7 @@ const STRUCTURE_NAME: Record<string, string> = {
 function headline(r: FlightResult): string {
   switch (r.outcome) {
     case 'caught':
+      if (r.hard) return 'Hard catch · saved by the flaps'
       return r.closingSpeed < 3 ? 'Caught' : 'Caught, firmly'
     case 'splashdown':
       return 'Splashdown'
@@ -69,6 +71,18 @@ export default function CatchGame() {
   const calloutTimer = useRef(0)
   const [result, setResult] = useState<FlightResult | null>(null)
   const [burnHint, setBurnHint] = useState(false)
+  const audioRef = useRef<CatchSound | null>(null)
+  const [muted, setMuted] = useState(false)
+  const toggleMute = useCallback(() => {
+    setMuted((was) => {
+      const next = !was
+      if (audioRef.current) audioRef.current.muted = next
+      try {
+        window.localStorage.setItem('catch:muted', next ? '1' : '0')
+      } catch {}
+      return next
+    })
+  }, [])
   const burnedRef = useRef(false)
   const [keysFaded, setKeysFaded] = useState(false)
   const keysTimer = useRef(0)
@@ -151,6 +165,12 @@ export default function CatchGame() {
     let cancelled = false
     const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false
     setIsTouch(coarse)
+    const audio = new CatchSound()
+    try {
+      audio.muted = window.localStorage.getItem('catch:muted') === '1'
+    } catch {}
+    setMuted(audio.muted)
+    audioRef.current = audio
     let ro: ResizeObserver | undefined
     ;(async () => {
       try {
@@ -174,7 +194,7 @@ export default function CatchGame() {
               setScreen('result')
             },
           },
-          {},
+          audio,
           { mobile: coarse || window.innerWidth < 760, bloom: !(dev && params.get('bloom') === '0') }
         )
         engineRef.current = engine
@@ -202,6 +222,8 @@ export default function CatchGame() {
       window.clearTimeout(calloutTimer.current)
       window.clearTimeout(keysTimer.current)
       engineRef.current?.dispose()
+      audio.dispose()
+      audioRef.current = null
       engineRef.current = null
     }
   }, [conditions, setScreen, writeHud])
@@ -209,6 +231,8 @@ export default function CatchGame() {
   const fly = useCallback(() => {
     const engine = engineRef.current
     if (!engine) return
+    // A tap or key press is the only moment a browser lets sound start.
+    audioRef.current?.unlock()
     engine.prepare(MODES[modeRef.current])
     engine.start()
     setResult(null)
@@ -295,6 +319,9 @@ export default function CatchGame() {
         case 'KeyE':
           if (down) engineRef.current?.orbit(0.12, 0)
           break
+        case 'KeyM':
+          if (down && !e.repeat) toggleMute()
+          break
         case 'KeyV':
           if (down && !e.repeat) engineRef.current?.resetCamera()
           break
@@ -312,7 +339,10 @@ export default function CatchGame() {
       pushInput()
     }
     const onVisibility = () => {
-      if (document.hidden) clear()
+      if (document.hidden) {
+        clear()
+        audioRef.current?.suspend()
+      } else audioRef.current?.resume()
     }
     window.addEventListener('keydown', down)
     window.addEventListener('keyup', up)
@@ -324,7 +354,7 @@ export default function CatchGame() {
       window.removeEventListener('blur', clear)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [fly, pushInput])
+  }, [fly, pushInput, toggleMute])
 
   // Drag anywhere on the scene to look around; wheel or pinch to zoom.
   const look = useRef<Map<number, { x: number; y: number }>>(new Map())
@@ -453,7 +483,8 @@ export default function CatchGame() {
   const parts: [string, number, number][] = result
     ? good
       ? [
-          ['Catch', result.parts.caught, 250],
+          ['Catch', result.parts.caught, 150],
+          ['Upright', result.parts.upright, 100],
           ['Depth', result.parts.depth, 150],
           ['Center', result.parts.center, 100],
           ['Height', result.parts.height, 100],
@@ -483,6 +514,17 @@ export default function CatchGame() {
       <div className="pointer-events-none absolute bottom-2 right-3 z-10 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/45">
         Daily conditions #{mission} · {missionDateLabel(mission)}
       </div>
+
+      {/* Sound: always reachable */}
+      <button
+        type="button"
+        onClick={toggleMute}
+        aria-label={muted ? 'Unmute sound' : 'Mute sound'}
+        aria-pressed={muted}
+        className="absolute left-1/2 top-3 z-30 -translate-x-1/2 rounded-lg border border-white/15 bg-black/55 px-2.5 py-1.5 text-[11px] font-semibold text-white/80 backdrop-blur transition hover:text-white"
+      >
+        {muted ? 'Sound off' : 'Sound on'}
+      </button>
 
       {/* ------------------------------ HUD ------------------------------ */}
       <div className={`pointer-events-none absolute inset-0 z-10 transition-opacity duration-300 ${flying ? 'opacity-100' : 'invisible opacity-0'}`} aria-hidden={!flying}>
@@ -697,7 +739,7 @@ export default function CatchGame() {
       {screen === 'result' && result && (
         <div className="absolute inset-x-0 bottom-0 z-20 p-3 sm:inset-x-auto sm:bottom-auto sm:left-3 sm:top-3 sm:w-[22rem] sm:p-0">
           <div className="rounded-2xl border border-white/15 bg-black/55 p-4 shadow-2xl backdrop-blur-xl">
-            <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${good ? 'text-emerald-300' : 'text-rose-300'}`}>
+            <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${good ? (result.hard ? 'text-amber-300' : 'text-emerald-300') : 'text-rose-300'}`}>
               {headline(result)}
               {result.mode === 'pro' ? ' · PRO' : ''}
             </p>
@@ -707,7 +749,7 @@ export default function CatchGame() {
             </div>
             <p className="mt-1 text-xs text-white/60">
               {good
-                ? `${result.closingSpeed.toFixed(1)} m/s onto the rails · ${Math.abs(result.along).toFixed(1)} m ${result.along > 0 ? 'deep' : 'shallow'} · ${Math.abs(result.across).toFixed(1)} m off center · arms took hold ${result.armMargin.toFixed(1)} m up`
+                ? `${result.hard ? 'Half points: the flaps did the catching, not the pins · ' : ''}${result.closingSpeed.toFixed(1)} m/s onto the rails · ${result.tiltDeg.toFixed(1)}° off vertical · ${Math.abs(result.along).toFixed(1)} m ${result.along > 0 ? 'deep' : 'shallow'} · ${Math.abs(result.across).toFixed(1)} m off center · arms took hold ${result.armMargin.toFixed(1)} m up`
                 : `Closest the pins came to the rails: ${result.closest.toFixed(0)} m`}
             </p>
             <dl className={`mt-2.5 grid gap-1 text-center ${good ? 'grid-cols-4' : 'grid-cols-2'}`}>

@@ -183,7 +183,7 @@ function build(): MapData {
   // --- Roads -------------------------------------------------------------------
   const roads: MapData['roads'] = [
     // The highway: in from the south-west, past the production site, along the ridge to the beach.
-    { w: 9, k: 0, p: [-6400, 3900, -3700, 1560, -2880, 840, -2500, 520, -1750, 300, -900, 30, -330, -130, 110, -150, 380, -95] },
+    { w: 9, k: 0, p: [-6400, 3900, -3700, 1560, -2880, 840, -2500, 520, -1750, 300, -900, 30, -330, -130, 110, -150, 262, -118] },
     { w: 8, k: 0, p: [-3330, 1240, -3050, 990, -2880, 840] },
     { w: 8, k: 0, p: [-3560, 1010, -3330, 1240] },
     // Into the launch site.
@@ -191,8 +191,8 @@ function build(): MapData {
     { w: 7, k: 0, p: [-330, -130, -330, -40] },
     { w: 5, k: 1, p: [-50, 60, -200, 110, -360, 60] },
     { w: 4, k: 1, p: [110, -150, 150, 40, 100, 190] },
-    // Beach track.
-    { w: 4, k: 1, p: [372, -900, 392, -95, 420, 900] },
+    // A sand track from the end of the highway down onto the beach.
+    { w: 4, k: 1, p: [262, -118, 300, -112, 322, -104] },
   ]
   // Village streets.
   for (let i = 0; i < 4; i++) roads.push({ w: 6, k: 0, p: [-3010, 470 + i * 78, -2650, 520 + i * 78] })

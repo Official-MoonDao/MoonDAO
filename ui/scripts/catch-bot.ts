@@ -30,6 +30,7 @@ for (const modeId of ['easy', 'pro'] as ModeId[]) {
   if (only && only !== modeId) continue
   const mode = MODES[modeId]
   let caught = 0
+  let hard = 0
   let scoreSum = 0
   let replayBad = 0
   console.log(`\n${mode.label.toUpperCase()}`)
@@ -53,17 +54,18 @@ for (const modeId of ['easy', 'pro'] as ModeId[]) {
     const r = scoreFlight(sim)
     const again = replayFlight(mission, modeId, Uint8Array.from(tape))
     if (!again || again.score !== r.score || again.outcome !== r.outcome) replayBad++
-    if (r.outcome === 'caught') caught++
+    if (r.outcome === 'caught' && !r.hard) caught++
+    if (r.hard) hard++
     scoreSum += r.score
     console.log(
       `  #${String(mission).padStart(2)} wind ${c.windFrom.padEnd(3)} ${c.windSpeed.toFixed(1).padStart(4)} m/s  off ${String(c.lateral).padStart(3)} m  ` +
-        `${(r.outcome + (r.cause ? ':' + r.cause : '')).padEnd(16)} score ${String(r.score).padStart(5)}  ` +
+        `${((r.hard ? 'hard catch' : r.outcome) + (r.cause ? ':' + r.cause : '')).padEnd(16)} score ${String(r.score).padStart(5)}  ` +
         `${r.closingSpeed.toFixed(1).padStart(5)} m/s  across ${r.across.toFixed(1).padStart(5)}  along ${r.along.toFixed(1).padStart(5)}  ` +
         `tilt ${r.tiltDeg.toFixed(1).padStart(4)}  margin ${r.armMargin.toFixed(1).padStart(4)}  fuel ${(r.fuelLeft * 100).toFixed(0).padStart(2)}%  ${r.flightSeconds.toFixed(0)} s` +
         (r.damage.length ? `  damage ${r.damage.join(',')}` : '')
     )
   }
-  console.log(`  => ${caught}/${missions} caught, mean score ${(scoreSum / missions).toFixed(0)}, replay mismatches ${replayBad}`)
+  console.log(`  => ${caught}/${missions} caught on the pins, ${hard} on the flaps, mean score ${(scoreSum / missions).toFixed(0)}, replay mismatches ${replayBad}`)
   if (strict && (replayBad > 0 || (modeId === 'easy' && caught < missions))) failed = true
 }
 if (failed) {
