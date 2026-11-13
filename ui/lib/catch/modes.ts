@@ -65,7 +65,7 @@ export const MODES: Record<ModeId, ModeConfig> = {
     idleThrottle: 0.16,
     fuelSeconds: 30,
     maxGimbalDeg: 22,
-    sinkFloor: 1.2,
+    sinkFloor: 3.2,
     autoArms: true,
     armCloseSeconds: 1.0,
     pinLimit: 12,

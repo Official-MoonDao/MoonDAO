@@ -80,6 +80,13 @@ module.exports = withBundleAnalyzer(
             './public/touchdown/og.jpg',
             './public/touchdown/og-base.jpg',
           ],
+          '/api/og/catch': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+            './public/catch/og.jpg',
+            './public/catch/og-base.jpg',
+          ],
         },
         optimizePackageImports: [
           '@heroicons/react',

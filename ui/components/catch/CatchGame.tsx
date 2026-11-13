@@ -3,14 +3,35 @@
  * card. No three.js in React state: the engine owns the scene and the loop,
  * and writes the HUD straight into DOM refs so a flight never re-renders React.
  *
- * The full result layout (leaderboard, share image, the real-race panel) is
- * the next stage; this stage is the flight.
+ * After the flight: the score card with name save, today's leaderboard, the
+ * share image and photo, the real-race panel for Starship HLS, and the ways on.
  */
+import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { trackCatch } from '@/lib/analytics/ga4'
 import { conditionsFor } from '@/lib/catch/conditions'
+import { cleanBoardName, type CatchBoardResponse } from '@/lib/catch/leaderboard'
 import { MODES, type ModeId } from '@/lib/catch/modes'
 import { DAMAGE_COST, type FlightResult } from '@/lib/catch/scoring'
+import {
+  SHARE_PATH,
+  canvasToBlob,
+  challengeQuery,
+  cleanNickname,
+  composeCard,
+  copyImage,
+  shareCard,
+  shareText,
+  stampPhoto,
+  xIntentUrl,
+  type Challenge,
+} from '@/lib/catch/share'
+import { bestKey, loadPrefs, savePrefs, type CatchPrefs } from '@/lib/catch/storage'
+import { bragLine, formatScore, outcomeHeadline, verdictFor } from '@/lib/catch/verdicts'
 import { missionDateLabel, missionNumberFor } from '@/lib/touchdown/mission'
+import { TOUCHDOWN_RACE_GOAL_ID } from '@/components/touchdown/TouchdownTeaser'
+import CatchLeaderboard from './CatchLeaderboard'
 import { CatchSound } from './audio'
 import type { Callout, CatchEngine, HudState } from './engine'
 
@@ -36,25 +57,15 @@ const STRUCTURE_NAME: Record<string, string> = {
   highway: 'Highway 4',
 }
 
-function headline(r: FlightResult): string {
-  switch (r.outcome) {
-    case 'caught':
-      if (r.hard) return 'Hard catch · saved by the flaps'
-      return r.closingSpeed < 3 ? 'Caught' : 'Caught, firmly'
-    case 'splashdown':
-      return 'Splashdown'
-    case 'ditched':
-      return 'Set down. No legs'
-    case 'lost':
-      return 'Lost the ship'
-    default:
-      return r.damage.length > 2 ? 'Starbase is on fire' : 'No catch'
-  }
-}
+// The odds panel pulls in the chain reader: load it only when a flight has ended.
+const CatchRacePanel = dynamic(() => import('./CatchRacePanel'), {
+  ssr: false,
+  loading: () => <div className="h-44 rounded-xl border border-white/10 bg-white/[0.04]" />,
+})
 
 const fmt = (n: number) => n.toLocaleString('en-US')
 
-export default function CatchGame() {
+export default function CatchGame({ challenge = null }: { challenge?: Challenge | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const engineRef = useRef<CatchEngine | null>(null)
   const [screen, setScreenState] = useState<Screen>('loading')
@@ -88,6 +99,103 @@ export default function CatchGame() {
   const keysTimer = useRef(0)
   const [mission] = useState(() => missionNumberFor())
   const [conditions] = useState(() => conditionsFor(missionNumberFor()))
+
+  // --- After the flight ---------------------------------------------------------
+  const prefsRef = useRef<CatchPrefs | null>(null)
+  const [nickname, setNickname] = useState('')
+  const nicknameRef = useRef('')
+  const [verdict, setVerdict] = useState('')
+  const [best, setBest] = useState<number | null>(null)
+  const [newBest, setNewBest] = useState(false)
+  const [cardUrl, setCardUrl] = useState<string | null>(null)
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [modal, setModal] = useState<'card' | 'photo'>('card')
+  const [showCard, setShowCard] = useState(false)
+  const [shareNote, setShareNote] = useState('')
+  /** The frame behind the share card: the end shot, or the player's own photo. */
+  const frameRef = useRef<HTMLCanvasElement | null>(null)
+  const blobRef = useRef<Blob | null>(null)
+  const [board, setBoard] = useState<CatchBoardResponse | null>(null)
+  const [wouldRank, setWouldRank] = useState<number | null>(null)
+  const [savedRank, setSavedRank] = useState<number | null>(null)
+  const savedRankRef = useRef<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [boardNote, setBoardNote] = useState('')
+  const nameInputRef = useRef<HTMLInputElement>(null)
+  /** Wide enough for a panel either side of the scene. */
+  const [desk, setDesk] = useState(true)
+  const flownByBotRef = useRef(false)
+
+  useEffect(() => {
+    const prefs = loadPrefs()
+    prefsRef.current = prefs
+    setNickname(prefs.nickname)
+    nicknameRef.current = prefs.nickname
+    setBest(prefs.best[bestKey(mission, modeRef.current)] ?? null)
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const update = () => setDesk(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [mission])
+
+  /** Put the score, verdict, name and rank over a frame and make it the share image. */
+  const stampCard = useCallback(async (r: FlightResult, v: string, name: string, rank: number | null, frame?: HTMLCanvasElement) => {
+    try {
+      const f = frame ?? frameRef.current ?? engineRef.current?.capture()
+      if (!f) return
+      frameRef.current = f
+      const blob = await canvasToBlob(composeCard({ frame: f, result: r, verdict: v, nickname: name, rank: rank ?? undefined }))
+      blobRef.current = blob
+      setCardUrl((old) => {
+        if (old) URL.revokeObjectURL(old)
+        return blob ? URL.createObjectURL(blob) : null
+      })
+    } catch {
+      blobRef.current = null
+      setCardUrl(null)
+    }
+  }, [])
+
+  const handleEnd = useCallback(
+    (r: FlightResult) => {
+      const prefs = prefsRef.current ?? loadPrefs()
+      prefsRef.current = prefs
+      const bot = !!engineRef.current?.autopilot
+      flownByBotRef.current = bot
+      prefs.flights += 1
+      const v = verdictFor(r, prefs.flights * 7 + mission * 3 + Math.round(r.closest))
+      const key = bestKey(mission, r.mode)
+      const prev = prefs.best[key] ?? 0
+      const isBest = !bot && r.score > prev
+      if (isBest) prefs.best[key] = r.score
+      savePrefs(prefs)
+      setResult(r)
+      setVerdict(v)
+      setBest(Math.max(prev, bot ? 0 : r.score) || null)
+      setNewBest(isBest && r.score > 0 && prev > 0)
+      setShareNote('')
+      setBoardNote('')
+      setWouldRank(null)
+      setSavedRank(null)
+      savedRankRef.current = null
+      setScreen('result')
+      trackCatch('catch_end', {
+        outcome: r.hard ? 'hard_catch' : r.outcome,
+        score: r.score,
+        speed: Math.round(r.closingSpeed * 100) / 100,
+        fuel: Math.round(r.fuelLeft * 100),
+        damage: r.damage.length,
+        mode: r.mode,
+        mission,
+      })
+      frameRef.current = null
+      void stampCard(r, v, nicknameRef.current, null)
+    },
+    [mission, setScreen, stampCard]
+  )
+  const handleEndRef = useRef(handleEnd)
+  handleEndRef.current = handleEnd
 
   // HUD refs: written by the engine at 20 Hz without a React render.
   const altRef = useRef<HTMLSpanElement>(null)
@@ -189,10 +297,7 @@ export default function CatchGame() {
               calloutTimer.current = window.setTimeout(() => setCallout(null), 3200)
             },
             onOver: () => setScreen('ending'),
-            onEnd: (r) => {
-              setResult(r)
-              setScreen('result')
-            },
+            onEnd: (r) => handleEndRef.current(r),
           },
           audio,
           { mobile: coarse || window.innerWidth < 760, bloom: !(dev && params.get('bloom') === '0') }
@@ -228,9 +333,17 @@ export default function CatchGame() {
     }
   }, [conditions, setScreen, writeHud])
 
-  const fly = useCallback(() => {
+  const fly = useCallback((retry?: unknown) => {
     const engine = engineRef.current
     if (!engine) return
+    const m = modeRef.current
+    trackCatch(retry === true ? 'catch_retry' : 'catch_start', { mode: m, mission })
+    if (retry === true) trackCatch('catch_start', { mode: m, mission })
+    setShowCard(false)
+    setPhotoUrl((old) => {
+      if (old) URL.revokeObjectURL(old)
+      return null
+    })
     // A tap or key press is the only moment a browser lets sound start.
     audioRef.current?.unlock()
     engine.prepare(MODES[modeRef.current])
@@ -243,12 +356,159 @@ export default function CatchGame() {
     window.clearTimeout(keysTimer.current)
     keysTimer.current = window.setTimeout(() => setKeysFaded(true), 12000)
     setScreen('flying')
-  }, [setScreen])
+  }, [mission, setScreen])
 
-  const changeMode = useCallback((m: ModeId) => {
-    modeRef.current = m
-    setMode(m)
-  }, [])
+  const changeMode = useCallback(
+    (m: ModeId) => {
+      modeRef.current = m
+      setMode(m)
+      setBest(prefsRef.current?.best[bestKey(mission, m)] ?? null)
+    },
+    [mission]
+  )
+
+  // --- Sharing ------------------------------------------------------------------
+  const shareUrl = useCallback(() => {
+    const q = result ? challengeQuery({ mission, score: result.score, mode: result.mode, nickname: nicknameRef.current }) : ''
+    return `${window.location.origin}${SHARE_PATH}${q ? `?${q}` : ''}`
+  }, [mission, result])
+
+  const share = useCallback(async () => {
+    if (!result) return
+    const method = await shareCard({ blob: blobRef.current, text: shareText(result, savedRankRef.current ?? undefined), url: shareUrl(), preferSheet: isTouch })
+    if (method === 'cancelled') return
+    trackCatch('catch_share', { method, mode: result.mode, outcome: result.outcome, mission })
+    if (method === 'clipboard') setShareNote('Image copied. Press Ctrl+V (⌘V) in the post to attach it.')
+    else if (method === 'fallback') {
+      setModal('card')
+      setShowCard(true)
+      setShareNote('')
+    } else setShareNote('')
+  }, [isTouch, mission, result, shareUrl])
+
+  /**
+   * Take a photo of the scene exactly as the player has framed it. It is copied
+   * to the clipboard, offered for saving, and becomes the image on the share card.
+   */
+  const takePhoto = useCallback(async () => {
+    const engine = engineRef.current
+    if (!engine || !result) return
+    let raw: HTMLCanvasElement
+    try {
+      raw = engine.photo()
+    } catch {
+      return
+    }
+    const stamped = document.createElement('canvas')
+    stamped.width = raw.width
+    stamped.height = raw.height
+    stamped.getContext('2d')!.drawImage(raw, 0, 0)
+    stampPhoto(stamped)
+    // Hand the clipboard a promise so the write still counts as part of this tap.
+    const photoBlob = canvasToBlob(stamped)
+    const copied = await copyImage(photoBlob)
+    const blob = await photoBlob
+    setPhotoUrl((old) => {
+      if (old) URL.revokeObjectURL(old)
+      return blob ? URL.createObjectURL(blob) : null
+    })
+    await stampCard(result, verdict, nicknameRef.current, savedRankRef.current, raw)
+    setShareNote(copied ? 'Photo copied to your clipboard and set as your share image.' : 'Photo set as your share image. Save it from the preview.')
+    setModal('photo')
+    setShowCard(true)
+    trackCatch('catch_share', { method: 'photo', mode: result.mode, outcome: result.outcome, mission })
+  }, [mission, result, stampCard, verdict])
+  const takePhotoRef = useRef(takePhoto)
+  takePhotoRef.current = takePhoto
+
+  // --- Leaderboard ----------------------------------------------------------------
+  const loadBoard = useCallback(
+    async (m: ModeId, score?: number) => {
+      try {
+        const q = new URLSearchParams({ m: String(mission), mode: m })
+        if (score && score > 0) q.set('score', String(score))
+        const res = await fetch(`/api/catch/leaderboard?${q.toString()}`)
+        if (!res.ok) return null
+        const data = (await res.json()) as CatchBoardResponse
+        if (modeRef.current === m) setBoard(data)
+        return data
+      } catch {
+        return null
+      }
+    },
+    [mission]
+  )
+  // Start screen: the board for the selected mode.
+  useEffect(() => {
+    if (screen === 'start') void loadBoard(mode)
+  }, [screen, mode, loadBoard])
+  // Result screen: where would this score rank?
+  useEffect(() => {
+    if (screen !== 'result' || !result) return
+    let stale = false
+    void loadBoard(result.mode, flownByBotRef.current ? undefined : result.score).then((data) => {
+      if (!stale && data?.enabled && data.rank && result.score > 0 && !flownByBotRef.current) setWouldRank(data.rank)
+    })
+    return () => {
+      stale = true
+    }
+  }, [screen, result, loadBoard])
+
+  const saveScore = useCallback(async () => {
+    if (!result || saving) return
+    const name = cleanBoardName(nameInputRef.current?.value ?? nicknameRef.current)
+    if (name.length < 2) {
+      setBoardNote('Enter a name to save your score.')
+      nameInputRef.current?.focus()
+      return
+    }
+    setSaving(true)
+    setBoardNote('')
+    try {
+      const res = await fetch('/api/catch/leaderboard', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mission, mode: result.mode, name, replay: engineRef.current?.tapeBase64() ?? '' }),
+      })
+      const data = (await res.json()) as CatchBoardResponse
+      if (!res.ok || data.error || !data.enabled) {
+        setBoardNote(data.error || 'Could not save your score. Try again.')
+        return
+      }
+      setBoard((old) => ({ ...data, yesterday: data.yesterday ?? old?.yesterday }))
+      if (data.verifiedScore !== undefined && Math.abs(data.verifiedScore - result.score) > 1) {
+        setBoardNote(`Saved with a verified score of ${formatScore(data.verifiedScore)}.`)
+      }
+      const rank = data.rank ?? null
+      setSavedRank(rank)
+      savedRankRef.current = rank
+      setNickname(name)
+      nicknameRef.current = name
+      if (prefsRef.current) {
+        prefsRef.current.nickname = name
+        savePrefs(prefsRef.current)
+      }
+      await stampCard(result, verdict, name, rank)
+    } catch {
+      setBoardNote('Could not reach the leaderboard. Try again.')
+    } finally {
+      setSaving(false)
+    }
+  }, [mission, result, saving, stampCard, verdict])
+
+  const saveNickname = useCallback(
+    async (raw: string) => {
+      const nick = cleanNickname(raw)
+      setNickname(nick)
+      nicknameRef.current = nick
+      if (prefsRef.current) {
+        prefsRef.current.nickname = nick
+        savePrefs(prefsRef.current)
+      }
+      if (result) await stampCard(result, verdict, nick, savedRankRef.current)
+    },
+    [result, stampCard, verdict]
+  )
 
   // --- Input ------------------------------------------------------------------------
   const keys = useRef({ left: false, right: false, up: false, down: false, burn: false, arms: false })
@@ -300,18 +560,18 @@ export default function CatchGame() {
           break
         case 'Space':
           k.burn = down
-          if (down && !e.repeat && (screenRef.current === 'start' || screenRef.current === 'result')) fly()
+          if (down && !e.repeat && (screenRef.current === 'start' || screenRef.current === 'result')) fly(screenRef.current === 'result')
           break
         case 'Enter':
           if (screenRef.current === 'flying') k.arms = down
-          else if (down && !e.repeat && (screenRef.current === 'start' || screenRef.current === 'result')) fly()
+          else if (down && !e.repeat && (screenRef.current === 'start' || screenRef.current === 'result')) fly(screenRef.current === 'result')
           else handled = false
           break
         case 'KeyC':
           k.arms = down
           break
         case 'KeyR':
-          if (down && !e.repeat && screenRef.current !== 'start' && screenRef.current !== 'loading') fly()
+          if (down && !e.repeat && screenRef.current !== 'start' && screenRef.current !== 'loading') fly(true)
           break
         case 'KeyQ':
           if (down) engineRef.current?.orbit(-0.12, 0)
@@ -324,6 +584,9 @@ export default function CatchGame() {
           break
         case 'KeyV':
           if (down && !e.repeat) engineRef.current?.resetCamera()
+          break
+        case 'KeyP':
+          if (down && !e.repeat && screenRef.current === 'result') void takePhotoRef.current()
           break
         default:
           handled = false
@@ -498,8 +761,154 @@ export default function CatchGame() {
         ]
     : []
 
+  // Only a flight the player flew can go on the board, and only if it scored.
+  const canSave = !!result && result.score > 0 && !!board?.enabled && !flownByBotRef.current
+  const challenger = challenge?.nickname || 'Your challenger'
+  const beatChallenge = !!result && !!challenge && result.score > challenge.score
+
+  const scoreBlock = (compact: boolean) =>
+    result && (
+      <div>
+        <div className="flex items-baseline gap-2">
+          <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${good ? (result.hard ? 'text-amber-300' : 'text-emerald-300') : 'text-rose-300'}`}>
+            {outcomeHeadline(result)}
+            {result.mode === 'pro' ? ' · PRO' : ''}
+          </p>
+          {newBest && <span className="rounded bg-emerald-400/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200">New best</span>}
+        </div>
+        <div className="mt-0.5 flex items-baseline gap-2">
+          <span className={`font-heading font-extrabold tabular-nums ${compact ? 'text-4xl' : 'text-5xl'}`}>{fmt(result.score)}</span>
+          <span className="text-sm text-white/55">pts</span>
+          {compact && <span className="ml-auto text-right text-[11px] text-white/55">{bragLine(result)}</span>}
+        </div>
+        <p className={`font-semibold leading-snug ${compact ? 'mt-1 text-sm' : 'mt-1.5 text-[15px]'}`}>{verdict}</p>
+        {!compact && <p className="mt-1 text-xs text-white/55">{bragLine(result)}</p>}
+        {result.hard && <p className="mt-2 rounded-md bg-amber-300/10 px-2 py-1 text-xs font-semibold text-amber-100">The flaps did the catching, not the pins · points ×0.5</p>}
+        {challenge && challenge.mission === mission && (
+          <p className={`mt-1.5 text-xs font-semibold ${beatChallenge ? 'text-emerald-300' : 'text-amber-200'}`}>
+            {beatChallenge ? `You beat ${challenger}'s ${formatScore(challenge.score)}.` : `${challenger} still leads with ${formatScore(challenge.score)}.`}
+          </p>
+        )}
+        <dl className={`grid gap-1 text-center ${good ? 'grid-cols-4' : 'grid-cols-2'} ${compact ? 'mt-2' : 'mt-2.5'}`}>
+          {parts.map(([label, value, max]) => (
+            <div key={label} className={`rounded-md bg-white/[0.06] px-1 ${compact ? 'py-1' : 'py-1.5'}`}>
+              <dt className="text-[9px] uppercase tracking-wide text-white/50">{label}</dt>
+              <dd className="text-sm font-bold tabular-nums leading-tight">
+                {value}
+                <span className="text-[9px] font-normal text-white/35">/{max}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+        {result.damage.length > 0 && (
+          <ul className="mt-2 space-y-0.5 rounded-md bg-rose-400/15 px-2 py-1.5 text-xs font-semibold text-rose-100">
+            {result.damage.map((id) => (
+              <li key={id} className="flex justify-between">
+                <span>{STRUCTURE_NAME[id] ?? id}</span>
+                <span className="tabular-nums">−{fmt(DAMAGE_COST[id])}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    )
+
+  // Name + Save: between the player's points and today's board.
+  const nameSave = result && (
+    <div>
+      <p className="text-xs font-semibold">
+        {canSave ? (
+          savedRank !== null ? (
+            <span className="text-emerald-300">Saved. You are #{savedRank} today.</span>
+          ) : wouldRank ? (
+            <span className="text-white">
+              That would put you <span className="text-emerald-300">#{wouldRank}</span> today
+            </span>
+          ) : (
+            <span className="text-white/85">Save your score to today&apos;s board</span>
+          )
+        ) : (
+          <span className="text-white/60">Name on your share image (optional)</span>
+        )}
+      </p>
+      <div className="mt-1.5 flex gap-2">
+        <input
+          ref={nameInputRef}
+          type="text"
+          maxLength={16}
+          defaultValue={nickname}
+          onBlur={(e) => void saveNickname(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter') return
+            if (canSave && savedRank === null) void saveScore()
+            else (e.target as HTMLInputElement).blur()
+          }}
+          placeholder="Your name"
+          aria-label="Your name"
+          autoComplete="off"
+          className="min-w-0 flex-1 select-text rounded-md border border-white/15 bg-white/5 px-2.5 py-1.5 text-sm text-white placeholder:text-white/30 focus:border-emerald-300 focus:outline-none"
+        />
+        {canSave && savedRank === null && (
+          <button
+            type="button"
+            onClick={() => void saveScore()}
+            disabled={saving}
+            className="shrink-0 rounded-md bg-emerald-400 px-3.5 py-1.5 text-sm font-extrabold text-black transition hover:bg-emerald-300 disabled:opacity-60"
+          >
+            {saving ? 'Saving…' : 'Save'}
+          </button>
+        )}
+      </div>
+      {boardNote && <p className="mt-1.5 text-xs font-semibold text-amber-200">{boardNote}</p>}
+    </div>
+  )
+
+  const shareButton = result && (
+    <button
+      type="button"
+      onClick={() => void share()}
+      className="relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-amber-300 via-orange-400 to-rose-400 py-3 text-base font-extrabold text-black transition hover:brightness-110"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6" />
+      </svg>
+      Share your {good ? 'catch' : result.outcome === 'splashdown' ? 'splashdown' : result.outcome === 'crashed' ? 'fireball' : 'flight'}
+    </button>
+  )
+
+  const raceAndMore = result && (
+    <>
+      <CatchRacePanel compact={!desk} onMakeYourCall={() => trackCatch('catch_odds_click', { mode: result.mode, outcome: result.outcome })} />
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          href={`/moonbase?race=${TOUCHDOWN_RACE_GOAL_ID}`}
+          onClick={() => trackCatch('catch_moonbase_click', { mode: result.mode, outcome: result.outcome })}
+          className="flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-2 py-2.5 text-center text-[13px] font-bold text-white transition hover:bg-white/10"
+        >
+          Explore Moon Base Zero →
+        </Link>
+        <Link
+          href="/touchdown"
+          onClick={() => trackCatch('catch_touchdown_click', { mode: result.mode, outcome: result.outcome })}
+          className="flex items-center justify-center rounded-xl border border-white/20 bg-white/5 px-2 py-2.5 text-center text-[13px] font-bold text-white transition hover:bg-white/10"
+        >
+          Now land on the Moon →
+        </Link>
+      </div>
+    </>
+  )
+
+  const catchAgain = (
+    <div className="flex items-center gap-3 border-t border-white/10 p-3">
+      <button type="button" onClick={() => fly(true)} className="flex-1 rounded-xl bg-white py-3 text-base font-extrabold text-black transition hover:bg-white/90">
+        Catch Again
+      </button>
+      {modeToggle}
+    </div>
+  )
+
   return (
-    <div className="relative h-[100dvh] w-full select-none overflow-hidden bg-black text-white" style={{ touchAction: 'none', WebkitTouchCallout: 'none' }}>
+    <div className="relative h-[100dvh] w-full select-none overflow-hidden bg-black text-white\" style={{ touchAction: 'none', WebkitTouchCallout: 'none' }}>
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing"
@@ -720,7 +1129,7 @@ export default function CatchGame() {
               <button
                 type="button"
                 disabled={screen !== 'start'}
-                onClick={fly}
+                onClick={() => fly(false)}
                 className="flex-1 rounded-xl bg-white py-2.5 text-base font-extrabold tracking-wide text-black transition hover:bg-white/90 disabled:opacity-50 sm:mt-4 sm:w-full sm:py-3.5 sm:text-lg"
               >
                 {screen === 'loading' ? 'Rolling out to the pad…' : screen === 'error' ? 'Could not start 3D' : 'CATCH IT'}
@@ -731,53 +1140,146 @@ export default function CatchGame() {
               {isTouch ? ' Left thumb steers. Right thumb holds BURN.' : ''}
             </p>
             {screen === 'error' && <p className="mt-2 text-xs text-rose-200">This browser could not start WebGL. Try another browser or device.</p>}
+            {challenge && challenge.mission === mission && (
+              <p className="mt-2 text-xs font-semibold text-amber-200">
+                {challenge.nickname || 'A friend'} scored {formatScore(challenge.score)}
+                {challenge.mode === 'pro' ? ' on Pro' : ''} today. Beat it.
+              </p>
+            )}
+            {best !== null && best > 0 && <p className="mt-2 text-xs text-white/55">Your best today: {formatScore(best)}</p>}
+            {board?.enabled && (
+              <div className="mt-3 hidden border-t border-white/10 pt-3 sm:block">
+                <CatchLeaderboard board={board} highlight={nickname || undefined} rows={5} />
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* ------------------------------ End of flight ------------------------------ */}
-      {screen === 'result' && result && (
-        <div className="absolute inset-x-0 bottom-0 z-20 p-3 sm:inset-x-auto sm:bottom-auto sm:left-3 sm:top-3 sm:w-[22rem] sm:p-0">
-          <div className="rounded-2xl border border-white/15 bg-black/55 p-4 shadow-2xl backdrop-blur-xl">
-            <p className={`text-[11px] font-bold uppercase tracking-[0.18em] ${good ? (result.hard ? 'text-amber-300' : 'text-emerald-300') : 'text-rose-300'}`}>
-              {headline(result)}
-              {result.mode === 'pro' ? ' · PRO' : ''}
-            </p>
-            <div className="mt-0.5 flex items-baseline gap-2">
-              <span className="font-heading text-5xl font-extrabold tabular-nums">{fmt(result.score)}</span>
-              <span className="text-sm text-white/55">pts</span>
-            </div>
-            <p className="mt-1 text-xs text-white/60">
-              {good
-                ? `${result.hard ? 'Half points: the flaps did the catching, not the pins · ' : ''}${result.closingSpeed.toFixed(1)} m/s onto the rails · ${result.tiltDeg.toFixed(1)}° off vertical · ${Math.abs(result.along).toFixed(1)} m ${result.along > 0 ? 'deep' : 'shallow'} · ${Math.abs(result.across).toFixed(1)} m off center · arms took hold ${result.armMargin.toFixed(1)} m up`
-                : `Closest the pins came to the rails: ${result.closest.toFixed(0)} m`}
-            </p>
-            <dl className={`mt-2.5 grid gap-1 text-center ${good ? 'grid-cols-4' : 'grid-cols-2'}`}>
-              {parts.map(([label, value, max]) => (
-                <div key={label} className="rounded-md bg-white/[0.06] px-1 py-1.5">
-                  <dt className="text-[9px] uppercase tracking-wide text-white/50">{label}</dt>
-                  <dd className="text-sm font-bold tabular-nums leading-tight">
-                    {value}
-                    <span className="text-[9px] font-normal text-white/35">/{max}</span>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            {result.damage.length > 0 && (
-              <ul className="mt-2 space-y-0.5 rounded-md bg-rose-400/15 px-2 py-1.5 text-xs font-semibold text-rose-100">
-                {result.damage.map((id) => (
-                  <li key={id} className="flex justify-between">
-                    <span>{STRUCTURE_NAME[id] ?? id}</span>
-                    <span className="tabular-nums">−{fmt(DAMAGE_COST[id])}</span>
-                  </li>
-                ))}
-              </ul>
+      {/* Photo button: in the corner of the scene, clear of the panels. */}
+      {screen === 'result' && result && !showCard && (
+        <button
+          type="button"
+          onClick={() => void takePhoto()}
+          aria-label="Take a photo"
+          title="Take a photo (P). Drag the scene to frame it first. Copies to your clipboard and becomes your share image."
+          className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full border border-white/25 bg-black/60 p-2.5 text-sm font-bold text-white backdrop-blur transition hover:bg-black/80 lg:bottom-5 lg:left-1/2 lg:top-auto lg:-translate-x-1/2 lg:rounded-xl lg:px-4 lg:py-2.5"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" />
+            <circle cx="12" cy="13.5" r="3.6" />
+          </svg>
+          <span className="hidden lg:inline">Take a photo</span>
+        </button>
+      )}
+
+      {/* ------------------------------ Result: wide screens ------------------------------ */}
+      {/* A panel either side, so the ship in the arms stays in the open middle. */}
+      {screen === 'result' && result && desk && (
+        <>
+          <div className="absolute left-3 top-3 z-20 max-h-[calc(100%-1.5rem)] w-[21rem] overflow-y-auto rounded-2xl border border-white/15 bg-black/50 p-4 shadow-2xl backdrop-blur-xl" style={{ touchAction: 'pan-y' }}>
+            {scoreBlock(false)}
+            <div className="mt-3 border-t border-white/10 pt-3">{nameSave}</div>
+            {board?.enabled && (
+              <div className="mt-3 border-t border-white/10 pt-3">
+                <CatchLeaderboard board={board} highlight={savedRank !== null ? nickname : undefined} rows={5} />
+              </div>
             )}
-            <div className="mt-3 flex items-center gap-3 border-t border-white/10 pt-3">
-              <button type="button" onClick={fly} className="flex-1 rounded-xl bg-white py-3 text-base font-extrabold text-black transition hover:bg-white/90">
-                Catch Again
+          </div>
+          <div className="absolute right-3 top-3 z-20 flex max-h-[calc(100%-1.5rem)] w-[22.5rem] flex-col rounded-2xl border border-white/10 bg-black/80 backdrop-blur-md">
+            <div className="flex-1 space-y-3 overflow-y-auto p-4" style={{ touchAction: 'pan-y' }}>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModal('card')
+                    setShowCard(true)
+                  }}
+                  disabled={!cardUrl}
+                  className="block aspect-[16/9] w-full overflow-hidden rounded-xl border border-white/15 bg-white/5"
+                  aria-label="Preview share image"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {cardUrl && <img src={cardUrl} alt="" className="h-full w-full object-cover" />}
+                </button>
+                <div className="mt-2.5">{shareButton}</div>
+                <p className="mt-2 text-xs leading-snug text-white/60">Copies this image and opens X. Paste it in with Ctrl+V (⌘V).</p>
+                {shareNote && <p className="mt-1.5 text-xs font-semibold text-emerald-300">{shareNote}</p>}
+              </div>
+              {raceAndMore}
+            </div>
+            {catchAgain}
+          </div>
+        </>
+      )}
+
+      {/* ------------------------------ Result: phones ------------------------------ */}
+      {screen === 'result' && result && !desk && (
+        <div className="absolute inset-x-0 bottom-0 z-20 flex max-h-[58%] flex-col rounded-t-2xl border border-white/10 bg-black/85 backdrop-blur-md sm:left-1/2 sm:max-w-xl sm:-translate-x-1/2">
+          <div className="flex-1 space-y-2.5 overflow-y-auto p-3" style={{ touchAction: 'pan-y' }}>
+            {scoreBlock(true)}
+            <div className="flex items-stretch gap-2">
+              {cardUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModal('card')
+                    setShowCard(true)
+                  }}
+                  className="shrink-0 overflow-hidden rounded-lg border border-white/15"
+                  aria-label="Preview share image"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={cardUrl} alt="" className="h-12 w-[5.35rem] object-cover" />
+                </button>
+              )}
+              <div className="min-w-0 flex-1">{shareButton}</div>
+            </div>
+            {shareNote && <p className="text-xs font-semibold text-emerald-300">{shareNote}</p>}
+            {nameSave}
+            {raceAndMore}
+            {board?.enabled && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                <CatchLeaderboard board={board} highlight={savedRank !== null ? nickname : undefined} rows={3} />
+              </div>
+            )}
+          </div>
+          {catchAgain}
+        </div>
+      )}
+
+      {/* Share fallback / preview: the image to save, plus the X link */}
+      {showCard && (modal === 'photo' ? photoUrl : cardUrl) && result && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 p-4" onClick={() => setShowCard(false)}>
+          <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={(modal === 'photo' ? photoUrl : cardUrl) ?? ''}
+              alt={modal === 'photo' ? 'Your Catch photo' : 'Your Catch result card'}
+              className="max-h-[70vh] w-full select-auto rounded-xl border border-white/15 object-contain"
+            />
+            <p className="mt-2 text-center text-xs text-white/65">
+              {isTouch ? 'Press and hold the image to save it' : 'Right-click the image to copy or save it'}, then attach it to your post.
+            </p>
+            <div className="mt-3 flex justify-center gap-2">
+              <a
+                href={(modal === 'photo' ? photoUrl : cardUrl) ?? ''}
+                download={modal === 'photo' ? 'catch-photo.png' : 'catch.png'}
+                className="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold"
+              >
+                Save image
+              </a>
+              <a
+                href={xIntentUrl(shareText(result, savedRank ?? undefined), shareUrl())}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg bg-sky-400 px-4 py-2 text-sm font-bold text-black"
+              >
+                Post on X
+              </a>
+              <button type="button" onClick={() => setShowCard(false)} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-bold">
+                Close
               </button>
-              {modeToggle}
             </div>
           </div>
         </div>

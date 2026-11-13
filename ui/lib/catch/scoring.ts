@@ -117,7 +117,7 @@ export function scoreFlight(s: Sim): FlightResult {
     parts.depth = Math.round(DEPTH_POINTS * depthFactor(s.endAlong))
     parts.center = Math.round(CENTER_POINTS * taper(Math.abs(s.endAcross), 0.5, 6))
     parts.height = Math.round(HEIGHT_POINTS * heightFactor(s.hugMargin))
-    parts.soft = Math.round(SOFT_POINTS * taper(s.endVertical, 2, mode.pinLimit))
+    parts.soft = Math.round(SOFT_POINTS * taper(s.endVertical, 3.4, mode.pinLimit))
     parts.steady = Math.round(STEADY_POINTS * taper(s.endHorizontal, 0.5, 5))
     parts.fuel = Math.round(FUEL_POINTS * Math.min(1, fuelLeft / 0.3))
     if (s.hard) {

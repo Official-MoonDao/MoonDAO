@@ -164,7 +164,10 @@ void main() {
   // A touch of warm haze right at the horizon so sea and sky meet softly.
   // Below the horizon the reflection map sees ground, not more sky: it is
   // what keeps bare steel from reflecting white all the way down.
-  vec3 ground = vec3(0.17, 0.20, 0.22) * (0.4 + 0.6 * uDay);
+  // Sunlit sand and scrub inland (west, -x), the Gulf to seaward (east, +x).
+  vec3 land = vec3(0.34, 0.30, 0.23);
+  vec3 gulf = vec3(0.10, 0.19, 0.24);
+  vec3 ground = mix(land, gulf, smoothstep(-0.15, 0.45, dir.x)) * (0.4 + 0.6 * uDay);
   sky = mix(sky, ground, smoothstep(-0.005, -0.09, dir.y));
   gl_FragColor = vec4(sky * uExposure, 1.0);
 }`

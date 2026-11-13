@@ -470,6 +470,7 @@ export class CatchEngine {
     this.scorch.visible = false
     this.ring.visible = true
     this.beam.visible = true
+    this.targetRings.visible = true
     if (this.booster) {
       this.booster.visible = true
       this.booster.position.copy(this.boosterHome)
@@ -573,15 +574,60 @@ export class CatchEngine {
     return { phase: this.phase, outcome: this.sim?.outcome ?? null, score: this.result?.score ?? null }
   }
 
-  /** The current frame as a canvas, for the share card. */
-  capture(): HTMLCanvasElement {
-    if (this.composer) this.composer.render()
-    else this.renderer.render(this.scene, this.camera)
+  /** Render the scene once at a given size and hand it back as a 2D canvas, then restore the live view. */
+  private snapshot(w: number, h: number, frame?: () => void): HTMLCanvasElement {
+    const r = this.renderer
+    const cam = this.camera
+    const ratio = r.getPixelRatio()
+    const size = r.getSize(new THREE.Vector2())
+    const pos = cam.position.clone()
+    const quat = cam.quaternion.clone()
+    r.setPixelRatio(1)
+    r.setSize(w, h, false)
+    cam.aspect = w / h
+    cam.updateProjectionMatrix()
+    frame?.()
+    r.setRenderTarget(null)
+    r.clear()
+    r.render(this.scene, cam)
     const out = document.createElement('canvas')
-    out.width = this.canvas.width
-    out.height = this.canvas.height
-    out.getContext('2d')?.drawImage(this.canvas, 0, 0)
+    out.width = w
+    out.height = h
+    out.getContext('2d')!.drawImage(this.canvas, 0, 0, w, h)
+    r.setPixelRatio(ratio)
+    r.setSize(size.x, size.y, false)
+    this.resize()
+    cam.position.copy(pos)
+    cam.quaternion.copy(quat)
+    if (this.composer) this.composer.render()
+    else r.render(this.scene, cam)
     return out
+  }
+
+  /**
+   * The share-card frame: a fixed 16:9 shot of how the flight ended, the same
+   * on a phone as on a desktop, whatever the live view is showing.
+   */
+  capture(width = 1200, height = 675): HTMLCanvasElement {
+    return this.snapshot(width, height, () => {
+      if (this.phase !== 'ending' && this.phase !== 'result') return
+      const cam = this.camera
+      cam.fov = 48
+      cam.updateProjectionMatrix()
+      const d = this.endDist * 1.05
+      cam.position.set(this.endLook.x + Math.cos(this.endAngle) * d, Math.max(8, this.endLook.y + d * 0.2), this.endLook.z + Math.sin(this.endAngle) * d)
+      // Aim a little low so the subject clears the card's bottom text block.
+      cam.lookAt(scratchA.copy(this.endLook).setY(this.endLook.y - d * 0.1))
+    })
+  }
+
+  /** A photo: the live view exactly as the player has framed it, at the canvas's own shape. */
+  photo(maxDim = 1600): HTMLCanvasElement {
+    const size = this.renderer.getSize(new THREE.Vector2())
+    const aspect = size.x / size.y
+    const w = aspect >= 1 ? maxDim : Math.round(maxDim * aspect)
+    const h = aspect >= 1 ? Math.round(maxDim / aspect) : maxDim
+    return this.snapshot(w, h)
   }
 
   private say(text: string, tone: Callout['tone']) {
@@ -919,6 +965,7 @@ export class CatchEngine {
     this.endLookFrom.copy(this.camLook)
     this.ring.visible = false
     this.beam.visible = false
+    this.targetRings.visible = false
     const o = this.result.outcome
     if (o === 'caught') {
       this.syncShip()
@@ -931,8 +978,9 @@ export class CatchEngine {
         this.say('The pins missed. It is hanging by its forward flaps.', 'warn')
       } else this.say(this.result.closingSpeed < 3 ? 'Catch. The tower has the ship.' : 'Caught. That one rang the tower.', 'good')
       this.endLook.set(PAD1.x + 6, PAD1.railY - 8, PAD1.z)
-      // Sunlit side of the ship, with the Gulf behind the tower.
-      this.endAngle = Math.PI + (this.sunDir.z >= 0 ? -0.75 : 0.75)
+      // The chase camera is west of the tower. Everything from here turns the
+      // same way round it: on to the north side, then round to seaward.
+      this.endAngle = Math.PI + 0.6
       this.endDist = 132
     } else if (o === 'splashdown' || o === 'ditched') {
       // Down in one piece, but with no legs to stand on: it goes over.
@@ -1289,17 +1337,20 @@ export class CatchEngine {
           // behind the ship.
           const a0 = this.endAngle
           const portrait = this.camera.aspect < 1
-          // Far enough round that the tower does not stand in front of the ship.
-          const a1 = Math.PI * 2 - (portrait ? 0.75 : 0.95)
+          // Far enough round that the tower does not stand in front of the ship,
+          // and far enough back that ship, Tower 2 and the factory all sit in
+          // the open middle of the screen, between the result panels.
+          const a1 = Math.PI * 2 - 0.75
           const k = smooth(Math.min(1, Math.max(0, (this.phaseT - 0.4) / (4 + (a1 - a0) * 1.5))))
           const d0 = this.endDist * (portrait ? 1.5 : 1)
-          const d1 = portrait ? 330 : 172
+          const d1 = portrait ? 430 : 300
           const d = (d0 + (d1 - d0) * k) * this.camZoom
-          const ang = a0 + (a1 - a0) * k + Math.sin(this.phaseT * 0.12) * 0.05 * k + this.camYaw
+          const ang = a0 + (a1 - a0) * k + this.camYaw
           const y0 = Math.max(8, this.endLook.y + d0 * 0.2)
-          const y1 = PAD1.railY + (portrait ? 60 : 30)
+          const y1 = PAD1.railY + (portrait ? 70 : 46)
           this.camPos.set(this.endLook.x + Math.cos(ang) * d, y0 + (y1 - y0) * k + this.camPitch * 60, this.endLook.z + Math.sin(ang) * d)
-          scratchA.set(PAD1.x - 108, PAD1.railY - 26, PAD1.z - (portrait ? 35 : 15))
+          // On a phone the result sheet covers the lower part of the screen: aim low so the scene sits high.
+          scratchA.set(PAD1.x - 105, PAD1.railY - (portrait ? 190 : 34), PAD1.z - 35)
           this.camLook.lerpVectors(this.endLook, scratchA, k)
         } else {
           const angle = this.endAngle + Math.sin(this.phaseT * 0.1) * 0.35 + this.camYaw

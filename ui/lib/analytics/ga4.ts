@@ -538,6 +538,27 @@ export function trackTouchdown(
   sendEvent(name, { ...params, ...gaDebugParam() }, false)
 }
 
+export type CatchEventName =
+  | 'catch_start'
+  | 'catch_end'
+  | 'catch_share'
+  | 'catch_odds_click'
+  | 'catch_moonbase_click'
+  | 'catch_touchdown_click'
+  | 'catch_retry'
+
+/**
+ * Catch game events (/catch), mirroring Touchdown's. Params are game telemetry
+ * only: mode, outcome, score, speed, fuel, share method. Never a nickname.
+ */
+export function trackCatch(
+  name: CatchEventName,
+  params: Record<string, string | number | boolean | undefined> = {}
+) {
+  if (typeof window === 'undefined') return
+  sendEvent(name, { ...params, ...gaDebugParam() }, false)
+}
+
 /**
  * After a prediction write confirms. entry_path is the tab's first pathname.
  * Repeating a prediction sends again; reports that count people dedupe them.
