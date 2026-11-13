@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { ARMS, BOOSTER, MOUNT, PAD1, PAD2, TOWER, towerCentre, type Pad } from '@/lib/catch/layout'
 import { MAP } from '@/lib/catch/siteMap'
 import { buildBooster } from './booster'
+import { noiseTexture } from './ground'
 import { Builder, canvasTexture, type Bag } from './util'
 
 export type PadModel = {
@@ -27,13 +28,65 @@ export type StarbaseModel = {
 
 type Mats = Record<string, THREE.Material>
 
+/**
+ * Nothing at a launch site is clean. This adds, in world space so it needs no
+ * texture coordinates: rain streaks down the faces, broad patchiness, fine
+ * grain, optional pour or panel lines, and a skirt of dust splashed up from
+ * the ground.
+ */
+function weather(
+  mat: THREE.MeshStandardMaterial,
+  noise: THREE.Texture,
+  o: { streak?: number; tone?: number; base?: number; joint?: number }
+): THREE.MeshStandardMaterial {
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uWNoise = { value: noise }
+    shader.uniforms.uW = { value: new THREE.Vector4(o.streak ?? 0.25, o.tone ?? 0.1, o.base ?? 0.5, o.joint ?? 0) }
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', 'varying vec3 vWp;\n#include <common>')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;')
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', 'varying vec3 vWp;\nuniform sampler2D uWNoise;\nuniform vec4 uW;\n#include <common>')
+      .replace(
+        '#include <map_fragment>',
+        `#include <map_fragment>
+{
+  float ws = texture2D(uWNoise, vec2((vWp.x + vWp.z) / 7.0, vWp.y / 60.0)).r;
+  float wb = texture2D(uWNoise, (vWp.xz + vWp.y * 0.7) / 41.0).g;
+  float wf = texture2D(uWNoise, (vWp.xz * 1.3 + vWp.y) / 3.1).b;
+  vec3 c = diffuseColor.rgb;
+  c *= mix(1.0, 0.6 + 0.8 * ws, uW.x);
+  c *= 1.0 + uW.y * (wb * 2.0 - 1.0);
+  c *= 0.95 + 0.1 * wf;
+  if (uW.w > 0.0) c *= 1.0 - 0.18 * smoothstep(0.47, 0.5, abs(fract(vWp.y / uW.w) - 0.5));
+  float splash = smoothstep(2.4, 0.0, vWp.y) * (0.5 + 0.5 * wf);
+  c = mix(c, vec3(0.40, 0.34, 0.24), splash * uW.z);
+  diffuseColor.rgb = c;
+}`
+      )
+      .replace(
+        '#include <roughnessmap_fragment>',
+        `#include <roughnessmap_fragment>
+roughnessFactor = clamp(roughnessFactor * (0.78 + 0.5 * texture2D(uWNoise, (vWp.xz + vWp.y * 0.7) / 23.0).g), 0.05, 1.0);`
+      )
+  }
+  mat.customProgramCacheKey = () => 'catch-weather'
+  return mat
+}
+
 function materials(env: THREE.Texture, bag: Bag): Mats {
   const t = <T extends THREE.Material>(m: T): T => {
     bag.push(m)
     return m
   }
-  const std = (color: number, roughness: number, metalness: number, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) =>
-    t(new THREE.MeshStandardMaterial({ color, roughness, metalness, envMap: env, envMapIntensity: 0.9, ...extra }))
+  const noise = noiseTexture(77, bag)
+  const std = (
+    color: number,
+    roughness: number,
+    metalness: number,
+    extra: Partial<THREE.MeshStandardMaterialParameters> = {},
+    w: Parameters<typeof weather>[2] = {}
+  ) => weather(t(new THREE.MeshStandardMaterial({ color, roughness, metalness, envMap: env, envMapIntensity: 0.9, ...extra })), noise, w)
   // Corrugated cladding for the big bays: light vertical ribs.
   const ribs = canvasTexture(
     64,
@@ -50,20 +103,29 @@ function materials(env: THREE.Texture, bag: Bag): Mats {
   ribs.repeat.set(10, 1)
   const offset = { polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }
   return {
-    steel: std(0x2b2e32, 0.58, 0.6),
-    steelLight: std(0x70757a, 0.5, 0.7),
-    rail: std(0xa9adb0, 0.36, 0.85),
-    white: std(0xc9ccce, 0.42, 0.1),
-    frost: std(0xdfe5ea, 0.7, 0),
-    concreteWall: std(0x8a857b, 0.95, 0),
-    asphalt: std(0x55565a, 0.92, 0, { ...offset, polygonOffsetFactor: -3 }),
-    dirt: std(0xa89a7e, 1, 0, { ...offset, polygonOffsetFactor: -3 }),
-    black: std(0x17181b, 0.8, 0.2),
-    bay: std(0x8a929b, 0.7, 0.3, { map: ribs }),
-    bayDark: std(0x2a2d33, 0.75, 0.3),
-    roof: std(0xa9adb0, 0.6, 0.3),
-    house: std(0xb9b1a2, 0.9, 0),
-    plate: std(0x3b3e42, 0.5, 0.8, offset),
+    steel: std(0x2b2e32, 0.58, 0.6, {}, { streak: 0.2, tone: 0.12, base: 0.45 }),
+    steelLight: std(0x70757a, 0.5, 0.7, {}, { streak: 0.3, tone: 0.14, base: 0.5 }),
+    rail: std(0xa9adb0, 0.36, 0.85, {}, { streak: 0.2, tone: 0.1, base: 0 }),
+    white: std(0xc9ccce, 0.42, 0.1, {}, { streak: 0.34, tone: 0.1, base: 0.6, joint: 2.4 }),
+    tank: std(0xdcdfe1, 0.34, 0.15, {}, { streak: 0.26, tone: 0.06, base: 0.4 }),
+    frost: std(0xdfe5ea, 0.7, 0, {}, { streak: 0.15, tone: 0.08, base: 0.3 }),
+    concreteWall: std(0x8a857b, 0.95, 0, {}, { streak: 0.6, tone: 0.2, base: 0.65, joint: 1.25 }),
+    asphalt: std(0x55565a, 0.92, 0, { ...offset, polygonOffsetFactor: -3 }, { streak: 0, tone: 0.24, base: 0 }),
+    dirt: std(0xa89a7e, 1, 0, { ...offset, polygonOffsetFactor: -3 }, { streak: 0, tone: 0.2, base: 0 }),
+    paint: std(0xd2b23a, 0.8, 0, { ...offset, polygonOffsetFactor: -4 }, { streak: 0, tone: 0.3, base: 0 }),
+    paintEdge: std(0xcfcfca, 0.8, 0, { ...offset, polygonOffsetFactor: -4 }, { streak: 0, tone: 0.3, base: 0 }),
+    black: std(0x17181b, 0.8, 0.2, {}, { streak: 0.3, tone: 0.25, base: 0.3 }),
+    bay: std(0x8a929b, 0.7, 0.3, { map: ribs }, { streak: 0.34, tone: 0.1, base: 0.5 }),
+    bayDark: std(0x2a2d33, 0.75, 0.3, {}, { streak: 0.2, tone: 0.12, base: 0.5 }),
+    roof: std(0xa9adb0, 0.6, 0.3, {}, { streak: 0, tone: 0.2, base: 0 }),
+    house: std(0xb9b1a2, 0.9, 0, {}, { streak: 0.3, tone: 0.15, base: 0.6 }),
+    plate: std(0x3b3e42, 0.5, 0.8, offset, { streak: 0, tone: 0.2, base: 0 }),
+    car0: std(0xe2e2de, 0.4, 0.3, {}, { streak: 0.15, tone: 0.05, base: 0.7 }),
+    car1: std(0x2c5886, 0.5, 0.3, {}, { streak: 0.3, tone: 0.1, base: 0.6 }),
+    car2: std(0x94392c, 0.55, 0.3, {}, { streak: 0.35, tone: 0.12, base: 0.6 }),
+    car3: std(0xd09a1c, 0.5, 0.3, {}, { streak: 0.3, tone: 0.1, base: 0.6 }),
+    car4: std(0x62666b, 0.5, 0.4, {}, { streak: 0.3, tone: 0.1, base: 0.6 }),
+    glass: std(0x10161c, 0.08, 0.6),
         hull: std(0xb4b8bd, 0.3, 1),
   }
 }
@@ -274,8 +336,19 @@ function mapStructures(b: Builder, far: Builder) {
     if (len / wid > 1.5) {
       // Horizontal cryogenic tank on saddles.
       const r = Math.min(wid / 2, 2.6)
-      out.tank('white', r, len, x, r + 0.9, z, a)
+      out.tank('tank', r, len, x, r + 0.9, z, a)
       if (near) {
+        // Stiffening rings, a relief stack and the fill line dropping off one end.
+        const ax = Math.cos(-a)
+        const az = Math.sin(-a)
+        for (const u of [-0.2, 0.2]) {
+          rot.makeRotationY(a).multiply(m.makeRotationZ(Math.PI / 2)).setPosition(x + ax * len * u, r + 0.9, z + az * len * u)
+          out.add('steelLight', new THREE.CylinderGeometry(r + 0.07, r + 0.07, 0.4, 24, 1, true), rot)
+        }
+        out.cyl('steelLight', 0.14, 0.14, 1.6, x + ax * len * 0.1, r * 2 + 0.8, z + az * len * 0.1, 8)
+        const ex = x + ax * (len / 2 + 0.5)
+        const ez = z + az * (len / 2 + 0.5)
+        out.beam('frost', ex, r + 0.9, ez, ex, 1.6, ez, 0.45, true)
         for (const u of [-0.32, 0.32]) {
           out.box('concreteWall', 0.8, r + 0.9, wid * 0.9, x + Math.cos(-a) * len * u, (r + 0.9) / 2, z + Math.sin(-a) * len * u, a)
         }
@@ -283,9 +356,14 @@ function mapStructures(b: Builder, far: Builder) {
     } else {
       const r = (len + wid) / 4
       const h = hTag || (r > 5 ? 14 : r > 2.5 ? 9 : 5)
-      out.cyl('white', r, r, h, x, 0, z, near ? 24 : 12)
+      out.cyl('tank', r, r, h, x, 0, z, near ? 24 : 12)
+      if (near) {
+        out.cyl('concreteWall', r + 0.35, r + 0.35, 0.5, x, 0, z, 24)
+        out.cyl('steelLight', r + 0.06, r + 0.06, 0.3, x, h - 0.3, z, 24, true)
+        out.box('steelLight', 0.12, h, 0.6, x + r + 0.1, h / 2, z)
+      }
       const dome = new THREE.SphereGeometry(r, near ? 24 : 12, 6, 0, Math.PI * 2, 0, Math.PI / 2)
-      out.add('white', dome, m.makeScale(1, 0.35, 1).setPosition(x, h, z))
+      out.add('tank', dome, m.makeScale(1, 0.35, 1).setPosition(x, h, z))
     }
   }
   for (const [x, z, len, wid, ang, h, kind] of MAP.buildings) {
@@ -312,7 +390,100 @@ function mapStructures(b: Builder, far: Builder) {
       const key = kind === 3 ? (len * wid > 1500 ? 'bay' : 'steelLight') : len * wid > 2500 ? 'bay' : 'white'
       out.box(key, len, h, wid, x, h / 2, z, a)
       if (len * wid > 400) out.box('roof', len + 0.8, 0.6, wid + 0.8, x, h + 0.3, z, a)
+      if (near && h < 12) {
+        // A roller door on one long side and plant on the roof.
+        const ang2 = (ang * Math.PI) / 180
+        const vx = -Math.sin(ang2)
+        const vz = Math.cos(ang2)
+        const ux = Math.cos(ang2)
+        const uz = Math.sin(ang2)
+        out.box('bayDark', Math.min(4.5, len * 0.3), Math.min(3.6, h * 0.72), 0.25, x + vx * (wid / 2) - ux * len * 0.2, Math.min(3.6, h * 0.72) / 2, z + vz * (wid / 2) - uz * len * 0.2, a)
+        out.box('steelLight', Math.max(1.6, len * 0.18), 1.1, Math.max(1.4, wid * 0.3), x + ux * len * 0.22, h + 0.9, z + uz * len * 0.22, a)
+        out.cyl('steelLight', 0.3, 0.3, 1.8, x - ux * len * 0.3, h + 0.3, z - uz * len * 0.3, 10)
+      }
     }
+  }
+  // Vehicles and containers.
+  for (const [x, z, len, wid, ang, h, ci] of MAP.props) {
+    const a = (-ang * Math.PI) / 180
+    const key = `car${ci}`
+    const ux = Math.cos((ang * Math.PI) / 180)
+    const uz = Math.sin((ang * Math.PI) / 180)
+    if (len < 7 && h < 2.6) {
+      // A pickup or a small lift: chassis, body, cab.
+      b.box('black', len * 0.92, 0.5, wid * 1.02, x, 0.45, z, a)
+      b.box(key, len, 0.75, wid, x, 1.0, z, a)
+      b.box(key, len * 0.42, 0.7, wid * 0.94, x + ux * len * 0.08, 1.7, z + uz * len * 0.08, a)
+      b.box('glass', len * 0.43, 0.42, wid * 0.96, x + ux * len * 0.08, 1.74, z + uz * len * 0.08, a)
+    } else if (len > 13) {
+      // A tanker trailer and its tractor.
+      b.box('black', len, 0.6, wid * 0.9, x, 0.9, z, a)
+      b.tank('tank', 1.25, len - 3.6, x - ux * 1.4, 2.4, z - uz * 1.4, a)
+      b.box(key, 2.6, 2.6, wid, x + ux * (len / 2 - 1.3), 2.1, z + uz * (len / 2 - 1.3), a)
+    } else if (len < 10) {
+      // A truck: cab forward, box body behind.
+      b.box('black', len, 0.6, wid * 0.9, x, 0.8, z, a)
+      b.box(key, len * 0.68, h - 1.1, wid, x - ux * len * 0.15, 1.1 + (h - 1.1) / 2, z - uz * len * 0.15, a)
+      b.box('car0', len * 0.24, 2.0, wid * 0.96, x + ux * len * 0.37, 2.0, z + uz * len * 0.37, a)
+    } else {
+      // Shipping containers, one or two high.
+      b.box(key, len, 2.55, wid, x, 1.3, z, a)
+      if (h > 4) b.box(ci === 2 ? 'car1' : 'car2', len, 2.55, wid, x, 3.9, z, a)
+    }
+  }
+  // Crawler cranes: tracks, house, a lattice boom and its back-stay.
+  for (const [x, z, heading, L, elev] of MAP.cranes) {
+    const th = (heading * Math.PI) / 180
+    const el = (elev * Math.PI) / 180
+    const a = -th
+    const dx = Math.cos(th)
+    const dz = Math.sin(th)
+    const sx = -dz
+    const sz = dx
+    for (const s of [-1, 1]) b.box('black', 11, 1.5, 1.7, x + sx * 3.4 * s, 0.75, z + sz * 3.4 * s, a)
+    b.box('car2', 9, 3.2, 6, x - dx * 1.5, 3.3, z - dz * 1.5, a)
+    b.box('black', 3.4, 2.6, 6.4, x - dx * 6.6, 3.4, z - dz * 6.6, a)
+    b.box('glass', 2.2, 2.2, 1.9, x + dx * 2.8 + sx * 2.3, 4.2, z + dz * 2.8 + sz * 2.3, a)
+    // Boom: four chords tied by zig-zag lacing.
+    const fx = x + dx * 3
+    const fz = z + dz * 3
+    const fy = 4.6
+    const bx = Math.cos(el) * dx
+    const by = Math.sin(el)
+    const bz = Math.cos(el) * dz
+    // A second axis square to the boom and to the sideways axis.
+    const px = -Math.sin(el) * dx
+    const py = Math.cos(el)
+    const pz = -Math.sin(el) * dz
+    const hw = 1.05
+    const corner = (t: number, i: number): [number, number, number] => {
+      const taper = t > L - 6 ? (L - t) / 6 : t < 5 ? t / 5 : 1
+      const w = hw * (0.25 + 0.75 * taper)
+      const cs = i < 2 ? -1 : 1
+      const cp = i % 2 ? -1 : 1
+      return [fx + bx * t + (sx * cs + px * cp) * w, fy + by * t + py * cp * w, fz + bz * t + (sz * cs + pz * cp) * w]
+    }
+    const n = Math.round(L / 4)
+    for (let i = 0; i < 4; i++) {
+      for (let k = 0; k < n; k++) {
+        const p0 = corner((k / n) * L, i)
+        const p1 = corner(((k + 1) / n) * L, i)
+        b.beam('car2', p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], 0.24)
+        const q = corner(((k + 1) / n) * L, (i + (k % 2 ? 1 : 3)) % 4)
+        b.beam('car2', p0[0], p0[1], p0[2], q[0], q[1], q[2], 0.12)
+      }
+    }
+    const tipX = fx + bx * L
+    const tipY = fy + by * L
+    const tipZ = fz + bz * L
+    // Mast, pendants to the boom tip, back-stay to the counterweight, and the hook line.
+    const mx = x - dx * 2
+    const mz = z - dz * 2
+    b.beam('car2', mx, 5, mz, mx - dx * 7, 27, mz - dz * 7, 0.7)
+    for (const s of [-0.5, 0.5]) b.beam('steel', mx - dx * 7 + sx * s, 27, mz - dz * 7 + sz * s, tipX + sx * s, tipY, tipZ + sz * s, 0.1, true)
+    b.beam('steel', mx - dx * 7, 27, mz - dz * 7, x - dx * 6.6, 4.8, z - dz * 6.6, 0.14, true)
+    b.beam('steel', tipX, tipY, tipZ, tipX, tipY - 24, tipZ, 0.08, true)
+    b.box('car3', 1.2, 1.8, 0.8, tipX, tipY - 25, tipZ)
   }
   const segs = (p: number[], fn: (ax: number, az: number, bx: number, bz: number) => void) => {
     for (let i = 0; i + 3 < p.length; i += 2) fn(p[i], p[i + 1], p[i + 2], p[i + 3])
@@ -348,36 +519,50 @@ function mapStructures(b: Builder, far: Builder) {
   }
 }
 
+/** A flat strip along a centre line: `off` metres to one side of it, `hw` metres either way. */
+function ribbon(pos: number[], p: number[], off: number, hw: number, y: number) {
+  const n = p.length / 2
+  const left: number[] = []
+  const right: number[] = []
+  for (let i = 0; i < n; i++) {
+    const a = Math.max(0, i - 1)
+    const c = Math.min(n - 1, i + 1)
+    let dx = p[c * 2] - p[a * 2]
+    let dz = p[c * 2 + 1] - p[a * 2 + 1]
+    const L = Math.hypot(dx, dz) || 1
+    dx /= L
+    dz /= L
+    left.push(p[i * 2] - dz * (off + hw), p[i * 2 + 1] + dx * (off + hw))
+    right.push(p[i * 2] - dz * (off - hw), p[i * 2 + 1] + dx * (off - hw))
+  }
+  for (let i = 0; i < n - 1; i++) {
+    // Wound so the face normal points up (x east, z south).
+    pos.push(left[i * 2], y, left[i * 2 + 1], left[i * 2 + 2], y, left[i * 2 + 3], right[i * 2], y, right[i * 2 + 1])
+    pos.push(right[i * 2], y, right[i * 2 + 1], left[i * 2 + 2], y, left[i * 2 + 3], right[i * 2 + 2], y, right[i * 2 + 3])
+  }
+}
+
 /** Roads as flat ribbons following the mapped centre lines. */
 function roads(mats: Mats, bag: Bag): THREE.Group {
   const group = new THREE.Group()
-  for (const kind of [0, 1]) {
+  // Kinds 0 and 1 are the surfaces; 2 and 3 the highway's yellow centre line and white edge lines.
+  for (const kind of [0, 1, 2, 3]) {
     const pos: number[] = []
     for (const r of MAP.roads) {
       // Only the highway and streets are asphalt; service roads and tracks are graded dirt.
+      if (kind >= 2) {
+        if (r.k !== 0 || r.w < 9) continue
+        if (kind === 2) {
+          ribbon(pos, r.p, 0.16, 0.06, 0.1)
+          ribbon(pos, r.p, -0.16, 0.06, 0.1)
+        } else {
+          ribbon(pos, r.p, r.w / 2 - 0.45, 0.07, 0.1)
+          ribbon(pos, r.p, -(r.w / 2 - 0.45), 0.07, 0.1)
+        }
+        continue
+      }
       if ((r.k === 1 || r.w < 6 ? 1 : 0) !== kind) continue
-      const p = r.p
-      const n = p.length / 2
-      const hw = r.w / 2
-      const left: number[] = []
-      const right: number[] = []
-      for (let i = 0; i < n; i++) {
-        const a = Math.max(0, i - 1)
-        const c = Math.min(n - 1, i + 1)
-        let dx = p[c * 2] - p[a * 2]
-        let dz = p[c * 2 + 1] - p[a * 2 + 1]
-        const L = Math.hypot(dx, dz) || 1
-        dx /= L
-        dz /= L
-        left.push(p[i * 2] - dz * hw, p[i * 2 + 1] + dx * hw)
-        right.push(p[i * 2] + dz * hw, p[i * 2 + 1] - dx * hw)
-      }
-      for (let i = 0; i < n - 1; i++) {
-        const y = 0.1
-        // Wound so the face normal points up (x east, z south).
-        pos.push(left[i * 2], y, left[i * 2 + 1], left[i * 2 + 2], y, left[i * 2 + 3], right[i * 2], y, right[i * 2 + 1])
-        pos.push(right[i * 2], y, right[i * 2 + 1], left[i * 2 + 2], y, left[i * 2 + 3], right[i * 2 + 2], y, right[i * 2 + 3])
-      }
+      ribbon(pos, r.p, 0, r.w / 2, 0.1)
     }
     if (!pos.length) continue
     const geo = new THREE.BufferGeometry()
@@ -387,7 +572,7 @@ function roads(mats: Mats, bag: Bag): THREE.Group {
     for (let i = 1; i < nor.length; i += 3) nor[i] = 1
     geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3))
     bag.push(geo)
-    const mat = (kind === 0 ? mats.asphalt : mats.dirt) as THREE.MeshStandardMaterial
+    const mat = (kind === 0 ? mats.asphalt : kind === 1 ? mats.dirt : kind === 2 ? mats.paint : mats.paintEdge) as THREE.MeshStandardMaterial
     // Roads are flat on flat ground. Drawn right after it with no depth test,
     // they can never flicker against it in the distance; everything built
     // later still draws over them.
@@ -395,7 +580,7 @@ function roads(mats: Mats, bag: Bag): THREE.Group {
     mat.depthWrite = false
     const mesh = new THREE.Mesh(geo, mat)
     mesh.receiveShadow = true
-    mesh.renderOrder = -1
+    mesh.renderOrder = kind >= 2 ? -0.5 : -1
     group.add(mesh)
   }
   return group

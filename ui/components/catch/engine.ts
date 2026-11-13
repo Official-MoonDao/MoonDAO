@@ -240,7 +240,8 @@ export class CatchEngine {
     )
     this.scene.background = this.sky.background
     this.scene.environment = this.sky.env
-    this.scene.environmentIntensity = 0.75
+    // Sky light well under the sun: shadows stay dark enough to model everything.
+    this.scene.environmentIntensity = 0.5
     this.scene.fog = new THREE.FogExp2(this.sky.fogColor, 0.00007)
 
     this.buildLights()
@@ -272,22 +273,21 @@ export class CatchEngine {
   private buildLights() {
     const s = this.sky
     this.sun.color.copy(s.sunColor)
-    this.sun.intensity = 4.6 * s.sunStrength
+    this.sun.intensity = 5.6 * s.sunStrength
     this.sun.castShadow = true
     const sh = this.sun.shadow
     const size = this.mobile ? 2048 : 4096
     sh.mapSize.set(size, size)
-    sh.camera.left = -210
-    sh.camera.right = 210
-    sh.camera.top = 210
-    sh.camera.bottom = -210
+    sh.camera.left = -330
+    sh.camera.right = 330
+    sh.camera.top = 330
+    sh.camera.bottom = -330
     sh.camera.near = 50
     sh.camera.far = 1400
     sh.bias = -0.0004
     sh.normalBias = 0.12
-    // The shadow box sits on the pad: that is where shadows are read.
-    const tc = towerCentre(PAD1)
-    const f = v3().set(tc.x - 20, 60, tc.z)
+    // The shadow box takes in both pads and the tank farm between them.
+    const f = v3().set((PAD1.x + PAD2.x) / 2 + 20, 60, -20)
     this.sun.target.position.copy(f)
     this.sun.position.copy(f).addScaledVector(this.sunDir, 700)
     this.scene.add(this.sun, this.sun.target)

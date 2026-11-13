@@ -28,6 +28,10 @@ export type MapData = {
   pipes: number[][]
   /** Pipe bridges: runs carried overhead where a line crosses a road. */
   racks: number[][]
+  /** Vehicles and containers: [x, z, length, width, angleDeg, height, colour 0 white 1 blue 2 red 3 yellow 4 grey]. */
+  props: number[][]
+  /** Crawler cranes: [x, z, headingDeg, boomLength, boomElevationDeg]. */
+  cranes: number[][]
   buildings: number[][]
   tanks: number[][]
 }
@@ -259,6 +263,23 @@ function build(): MapData {
     }
   }
 
+  // --- The things a working site is littered with ---------------------------
+  const props: number[][] = []
+  // Pickups nosed in along the inside of the wall by the Pad 1 gate.
+  for (let i = 0; i < 9; i++) {
+    if (i === 3) continue
+    props.push([-34 + i * 3.4, -160 + (rnd() - 0.5) * 0.8, 5.4, 2, 90 + (rnd() - 0.5) * 5, 1.9, i % 4 === 1 ? 4 : 0])
+  }
+  for (let i = 0; i < 5; i++) props.push([-306 + i * 3.5, -158 + (rnd() - 0.5) * 0.8, 5.4, 2, 88 + (rnd() - 0.5) * 5, 1.9, i === 2 ? 1 : 0])
+  // Shipping containers, some stacked, by the workshops.
+  for (let i = 0; i < 5; i++) props.push([70 + i * 3, 122, 12.2, 2.5, 90, i % 2 ? 5.2 : 2.6, [1, 2, 4, 0, 1][i]])
+  for (let i = 0; i < 4; i++) props.push([-196 + i * 13.5, 172, 12.2, 2.5, 4, i === 1 ? 5.2 : 2.6, [4, 2, 1, 0][i]])
+  props.push([-318, -134, 12.2, 2.5, -4, 2.6, 2], [-318, -138, 12.2, 2.5, -4, 2.6, 4], [140, -120, 12.2, 2.5, 80, 2.6, 1])
+  // Tanker trailers at the farm's unloading bays, a lift and a water truck out on the yard.
+  for (let i = 0; i < 3; i++) props.push([-228 + i * 9, -8, 14, 2.6, 82, 3.6, 0])
+  props.push([-20, 34, 8, 2.5, 30, 3.2, 3], [-392, -30, 8, 2.5, 100, 3.2, 3], [-96, 96, 9, 2.6, -20, 3.2, 0], [52, -66, 6, 2.2, 70, 2.4, 3])
+  const cranes: number[][] = [[-292, 128, 150, 78, 68]]
+
   return {
     shore: { z0: SHORE_Z0, z1: SHORE_Z1, x: shoreLine() },
     water,
@@ -271,6 +292,8 @@ function build(): MapData {
     walls,
     pipes,
     racks,
+    props,
+    cranes,
     buildings,
     tanks,
   }

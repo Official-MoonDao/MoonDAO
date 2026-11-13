@@ -9,6 +9,7 @@
  * under the camera and shows no repeating tile from altitude.
  */
 import * as THREE from 'three'
+import { MOUNT, PAD1, PAD2, towerCentre } from '@/lib/catch/layout'
 import { MAP } from '@/lib/catch/siteMap'
 import { tileNoise } from '@/components/touchdown/models'
 import type { Bag } from './util'
@@ -17,8 +18,10 @@ export type Ground = { group: THREE.Group; time: { value: number } }
 
 const WIDE = { x: -3000, z: -1000, half: 8192, size: 2048 }
 const NEAR = { x: -160, z: 20, half: 1024, size: 1024 }
+/** The launch site itself, at 0.75 m a texel: contact shadow, wear and soot. */
+const SITE = { x: -170, z: -10, half: 384, size: 1024 }
 
-function noiseTexture(seed: number, bag: Bag): THREE.DataTexture {
+export function noiseTexture(seed: number, bag: Bag): THREE.DataTexture {
   const size = 512
   const chans = [0, 1, 2].map((c) => tileNoise(size, [4, 8, 16, 32, 64, 128], [1, 0.7, 0.5, 0.36, 0.26, 0.18], seed + c * 101))
   const data = new Uint8Array(size * size * 4)
@@ -93,6 +96,159 @@ function landMasks(area: typeof WIDE, bag: Bag): [THREE.CanvasTexture, THREE.Can
   ]
 }
 
+/**
+ * What years of work leave on the ground of the launch site:
+ *   red    the dark, damp margin round the foot of everything that stands on it
+ *   green  tyre tracks and worn ground
+ *   blue   soot from the engines round each mount and out of each flame trench
+ * Soft edges are built up from stacked translucent shapes, not a canvas blur
+ * filter, which some browsers do not have.
+ */
+function siteMask(bag: Bag): THREE.CanvasTexture {
+  const c = document.createElement('canvas')
+  c.width = c.height = SITE.size
+  const g = c.getContext('2d')!
+  const k = SITE.size / (SITE.half * 2)
+  const X = (x: number) => (x - SITE.x + SITE.half) * k
+  const Z = (z: number) => (z - SITE.z + SITE.half) * k
+  g.fillStyle = '#000'
+  g.fillRect(0, 0, SITE.size, SITE.size)
+  g.globalCompositeOperation = 'lighter'
+  const inside = (x: number, z: number) => Math.abs(x - SITE.x) < SITE.half + 40 && Math.abs(z - SITE.z) < SITE.half + 40
+  let seed = 991
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647
+    return seed / 2147483647
+  }
+
+  // --- Red: contact shadow ---------------------------------------------------
+  const foot = (x: number, z: number, len: number, wid: number, angDeg: number, round = false) => {
+    if (!inside(x, z)) return
+    g.save()
+    g.translate(X(x), Z(z))
+    g.rotate((angDeg * Math.PI) / 180)
+    for (const [grow, a] of [
+      [3.6, 0.16],
+      [2.4, 0.2],
+      [1.4, 0.26],
+      [0.5, 0.38],
+    ]) {
+      g.fillStyle = `rgba(255,0,0,${a})`
+      g.beginPath()
+      if (round) g.arc(0, 0, (len / 2 + grow) * k, 0, 6.2832)
+      else g.rect((-len / 2 - grow) * k, (-wid / 2 - grow) * k, (len + grow * 2) * k, (wid + grow * 2) * k)
+      g.fill()
+    }
+    g.restore()
+  }
+  for (const [x, z, len, wid, ang] of MAP.tanks) {
+    if (len / wid > 1.5) foot(x, z, len, Math.min(wid, 5.2), ang)
+    else foot(x, z, (len + wid) / 2, 0, 0, true)
+  }
+  for (const [x, z, len, wid, ang] of MAP.buildings) foot(x, z, len, wid, ang)
+  for (const [x, z, len, wid, ang] of MAP.props) foot(x, z, len, wid, ang)
+  for (const [x, z] of MAP.cranes) foot(x, z, 11, 8, 0)
+  for (const p of [PAD1, PAD2]) {
+    foot(p.x, p.z, MOUNT.size, MOUNT.size, 0)
+    const t = towerCentre(p)
+    foot(t.x, t.z, 15, 15, 0)
+  }
+  g.lineCap = 'round'
+  for (const w of MAP.walls) {
+    for (const [lw, a] of [
+      [5, 0.2],
+      [2.2, 0.35],
+    ]) {
+      g.strokeStyle = `rgba(255,0,0,${a})`
+      g.lineWidth = lw * k
+      g.beginPath()
+      for (let i = 0; i < w.p.length; i += 2) (i ? g.lineTo : g.moveTo).call(g, X(w.p[i]), Z(w.p[i + 1]))
+      g.stroke()
+    }
+  }
+
+  // --- Green: tracks and wear ---------------------------------------------------
+  const path = (p: number[], lw: number, a: number) => {
+    g.strokeStyle = `rgba(0,255,0,${a})`
+    g.lineWidth = lw * k
+    g.beginPath()
+    for (let i = 0; i < p.length; i += 2) (i ? g.lineTo : g.moveTo).call(g, X(p[i]), Z(p[i + 1]))
+    g.stroke()
+  }
+  for (const r of MAP.roads) {
+    if (r.k !== 1) continue
+    // A graded track: worn overall, with the two wheel lines darker.
+    path(r.p, r.w * 1.5, 0.14)
+    path(r.p, r.w * 0.9, 0.2)
+  }
+  // Loose tracks wandering between the places vehicles go.
+  const stops: [number, number][] = [
+    [-60, -40],
+    [-26, -6],
+    [-150, 130],
+    [100, 150],
+    [-330, -114],
+    [-362, -40],
+    [-230, 0],
+    [-292, 128],
+    [60, -150],
+    [-200, -150],
+    [118, 60],
+    [-420, 60],
+  ]
+  for (let i = 0; i < 46; i++) {
+    const a = stops[Math.floor(rnd() * stops.length)]
+    const b = stops[Math.floor(rnd() * stops.length)]
+    if (a === b) continue
+    const mx = (a[0] + b[0]) / 2 + (rnd() - 0.5) * 120
+    const mz = (a[1] + b[1]) / 2 + (rnd() - 0.5) * 120
+    const gauge = 1.1
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+    const nx = (-(b[1] - a[1]) / L) * gauge
+    const nz = ((b[0] - a[0]) / L) * gauge
+    for (const s of [-1, 1]) {
+      g.strokeStyle = `rgba(0,255,0,${(0.1 + rnd() * 0.16).toFixed(2)})`
+      g.lineWidth = 0.75 * k
+      g.beginPath()
+      g.moveTo(X(a[0] + nx * s), Z(a[1] + nz * s))
+      g.quadraticCurveTo(X(mx + nx * s), Z(mz + nz * s), X(b[0] + nx * s), Z(b[1] + nz * s))
+      g.stroke()
+    }
+  }
+
+  // --- Blue: soot -----------------------------------------------------------------
+  const soot = (x: number, z: number, rx: number, rz: number, a: number) => {
+    g.save()
+    g.translate(X(x), Z(z))
+    g.scale(rx * k, rz * k)
+    const grad = g.createRadialGradient(0, 0, 0, 0, 0, 1)
+    grad.addColorStop(0, `rgba(0,0,255,${a})`)
+    grad.addColorStop(0.45, `rgba(0,0,255,${a * 0.55})`)
+    grad.addColorStop(1, 'rgba(0,0,255,0)')
+    g.fillStyle = grad
+    g.beginPath()
+    g.arc(0, 0, 1, 0, 6.2832)
+    g.fill()
+    g.restore()
+  }
+  // Round each mount, and fanning out of each trench mouth (Pad 1 south, Pad 2 west).
+  soot(PAD1.x, PAD1.z, 30, 30, 0.75)
+  soot(PAD1.x, PAD1.z + 62, 17, 44, 0.9)
+  soot(PAD1.x, PAD1.z + 104, 30, 46, 0.5)
+  soot(PAD2.x, PAD2.z, 30, 30, 0.75)
+  soot(PAD2.x - 62, PAD2.z, 44, 17, 0.9)
+  soot(PAD2.x - 104, PAD2.z, 46, 30, 0.5)
+
+  const t = new THREE.CanvasTexture(c)
+  t.flipY = false
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping
+  t.minFilter = THREE.LinearMipmapLinearFilter
+  t.generateMipmaps = true
+  t.anisotropy = 8
+  bag.push(t)
+  return t
+}
+
 /** Shoreline x for every z, as a 1-D lookup. */
 function shoreTexture(bag: Bag): THREE.DataTexture {
   const xs = MAP.shore.x
@@ -114,6 +270,8 @@ uniform sampler2D uWideB;
 uniform sampler2D uNearA;
 uniform sampler2D uNearB;
 uniform sampler2D uShore;
+uniform sampler2D uSiteM;
+uniform vec3 uSite;
 uniform vec3 uWide;
 uniform vec3 uNear;
 uniform vec2 uShoreZ;
@@ -226,8 +384,25 @@ conc = mix(conc, conc * 0.8, smoothstep(0.5, 0.8, texture2D(uNoise, rp / 55.0 + 
 conc = mix(conc, vec3(0.70, 0.64, 0.53), smoothstep(0.55, 0.8, n3) * 0.35);
 conc *= 1.0 - joint * 0.35;
 lc = mix(lc, conc, slab * (1.0 - sea));
+// What the site has left on its own ground.
+vec2 uvS = (rp - uSite.xy) / uSite.z * 0.5 + 0.5;
+vec2 eS = abs(uvS - 0.5) * 2.0;
+vec3 mS = texture2D(uSiteM, uvS).rgb * (1.0 - smoothstep(0.9, 1.0, max(eS.x, eS.y))) * (1.0 - sea);
+// Tyre tracks and worn ground.
+lc = mix(lc, lc * vec3(0.78, 0.77, 0.76), clamp(mS.g * (0.7 + 0.6 * n5), 0.0, 1.0));
+// Soot from the engines, heaviest in streaks.
+float soot = smoothstep(0.1, 0.85, mS.b * (0.55 + 0.9 * n4)) * (0.75 + 0.25 * n5);
+lc = mix(lc, vec3(0.16, 0.15, 0.14) * (0.8 + 0.5 * n5), soot * 0.85);
+// Standing water in the low spots of the slabs after a deluge test.
+float puddle = smoothstep(0.60, 0.66, texture2D(uNoise, rp / 43.0 + 0.7).r * 0.65 + n3 * 0.35) * slab * (1.0 - soot);
+lc = mix(lc, lc * 0.5, puddle);
+// The damp, shaded margin round the foot of every structure.
+lc *= 1.0 - 0.68 * smoothstep(0.0, 0.9, mS.r);
 // Grain near the camera.
-lc *= 0.9 + 0.2 * mix(n6, 0.5, smoothstep(8.0, 60.0, gDist));
+// Gravel and grit under the camera, coarser stones a little further out.
+float grit = texture2D(uNoise, rr / 0.37 + 0.3).r;
+lc *= 0.8 + 0.4 * mix(n6 * 0.6 + grit * 0.4, 0.5, smoothstep(10.0, 90.0, gDist));
+lc = mix(lc, lc * 0.6, smoothstep(0.78, 0.9, n6) * (1.0 - smoothstep(20.0, 110.0, gDist)) * (1.0 - slab) * 0.7);
 lc *= 0.93 + 0.14 * mix(n5, 0.5, smoothstep(40.0, 260.0, gDist));
 
 // --- Water --------------------------------------------------------------
@@ -258,6 +433,7 @@ export function buildGround(env: THREE.Texture, seed: number, pads: THREE.Vector
   const [wideA, wideB] = landMasks(WIDE, bag)
   const [nearA, nearB] = landMasks(NEAR, bag)
   const shore = shoreTexture(bag)
+  const site = siteMask(bag)
   const time = { value: 0 }
   const group = new THREE.Group()
 
@@ -270,6 +446,8 @@ export function buildGround(env: THREE.Texture, seed: number, pads: THREE.Vector
       uNearA: { value: nearA },
       uNearB: { value: nearB },
       uShore: { value: shore },
+      uSiteM: { value: site },
+      uSite: { value: new THREE.Vector3(SITE.x, SITE.z, SITE.half) },
       uWide: { value: new THREE.Vector3(WIDE.x, WIDE.z, WIDE.half) },
       uNear: { value: new THREE.Vector3(NEAR.x, NEAR.z, NEAR.half) },
       uShoreZ: { value: new THREE.Vector2(MAP.shore.z0, MAP.shore.z1) },
@@ -287,6 +465,7 @@ export function buildGround(env: THREE.Texture, seed: number, pads: THREE.Vector
         `#include <roughnessmap_fragment>
 roughnessFactor = mix(roughnessFactor, 0.62, tidal * wetFlat * (1.0 - slab));
 roughnessFactor = mix(roughnessFactor, 0.15, wet);
+roughnessFactor = mix(roughnessFactor, 0.06, puddle);
 roughnessFactor = mix(roughnessFactor, 0.75, foam);`
       )
       .replace(
@@ -297,9 +476,10 @@ roughnessFactor = mix(roughnessFactor, 0.75, foam);`
   // Land relief: grain everywhere, hummocks in the dunes, bushes in the scrub.
   vec2 g = nSlope(rp / 29.0, 0) * 1.0 * nearFade;
   g += nSlope(rp / 4.1, 1) * 1.6 * (1.0 - smoothstep(30.0, 200.0, gDist));
+  g += nSlope(rq / 1.1, 2) * 2.2 * (1.0 - smoothstep(12.0, 90.0, gDist));
   g += nSlope(rp / 60.0, 2) * 5.0 * dune;
   g += (nSlope(rp / 4.1, 1) * 4.5 + nSlope(rp / 29.0, 0) * 3.0) * scrub * (1.0 - smoothstep(200.0, 1500.0, gDist));
-  g *= (1.0 - slab * 0.85) * (1.0 - wet);
+  g *= (1.0 - slab * 0.85) * (1.0 - wet) * (1.0 - puddle);
   // Water: wind ripples on the bays, swell and chop on the Gulf.
   vec2 flow = uTime * vec2(-0.011, 0.004);
   vec2 w = nSlope(rp / 46.0 + flow, 0) * 2.6
