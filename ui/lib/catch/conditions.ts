@@ -64,7 +64,7 @@ export function conditionsFor(mission: number): Conditions {
     windZ: -fz * speed,
     gust: 0.15 + Math.round(rng() * 20) / 100,
     gustPhase: Math.round(rng() * 600) / 100,
-    lateral: Math.round((rng() * 2 - 1) * 70),
+    lateral: Math.round((rng() * 2 - 1) * 26),
     sunElevation: 26 + Math.round(Math.sin(hour * Math.PI) * 30),
     sunAzimuth: 30 + Math.round(hour * 190),
     cloudCover: 0.2 + Math.round(rng() * 35) / 100,

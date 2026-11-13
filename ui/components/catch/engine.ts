@@ -21,6 +21,7 @@ import {
   pinZ,
   seaAt,
   stepSim,
+  SWEET_X,
   SUBSTEP_DT,
   tiltDeg,
   windAt,
@@ -130,6 +131,9 @@ export class CatchEngine {
   private exploded = false
   private plumePower = 0
   private washT = 0
+  private steamT = 0
+  private hazeT = 0
+  private caughtAt = -1
   private ring!: THREE.Mesh
   private beam!: THREE.Mesh
   private flash = new THREE.PointLight(0xffb066, 0, 900, 1.4)
@@ -292,11 +296,11 @@ export class CatchEngine {
     ringGeo.rotateX(Math.PI / 2)
     const ringMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.25, 2.2, 1.4), transparent: true, opacity: 0.85, depthWrite: false, fog: false })
     this.ring = new THREE.Mesh(ringGeo, ringMat)
-    this.ring.position.set(PAD1.x + 3, PAD1.railY + 0.6, PAD1.z)
+    this.ring.position.set(SWEET_X, PAD1.railY + 0.6, PAD1.z)
     const beamGeo = new THREE.CylinderGeometry(0.12, 0.12, 260, 8, 1, true)
     const beamMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 1.4, 0.9), transparent: true, opacity: 0.2, depthWrite: false, fog: false })
     this.beam = new THREE.Mesh(beamGeo, beamMat)
-    this.beam.position.set(PAD1.x + 3, PAD1.railY + 130, PAD1.z)
+    this.beam.position.set(SWEET_X, PAD1.railY + 130, PAD1.z)
     this.scene.add(this.ring, this.beam)
 
     const c = document.createElement('canvas')
@@ -390,6 +394,8 @@ export class CatchEngine {
     this.base.pad1.armR.rotation.set(0, -ARMS.openAngle, 0)
     this.base.pad1.armL.rotation.set(0, ARMS.openAngle, 0)
     this.altMarks = [200, 100, 50, 20].filter((a) => a < mode.startAltitude - PAD1.railY)
+    this.steamT = 0
+    this.caughtAt = -1
     this.fuelMarks = [0.5, 0.25, 0.1]
     this.resetCamera()
     this.poseIntro(IDLE_T)
@@ -553,7 +559,7 @@ export class CatchEngine {
       if (this.phaseT >= INTRO_T) {
         this.phase = 'flying'
         this.phaseT = 0
-        this.say(this.mode.coaching ? 'You have the ship. Hold BURN to slow down.' : 'Pro approach. You have the ship and the arms.', 'warn')
+        this.say(this.mode.coaching ? 'You have the ship. Hold BURN and lean back to brake.' : 'Pro approach. You have the ship and the arms.', 'warn')
       }
     } else if (this.phase === 'flying') {
       if (this.autopilot) {
@@ -724,6 +730,7 @@ export class CatchEngine {
       this.audio.clang?.()
       this.shake = Math.max(this.shake, 0.25 + this.result.closingSpeed * 0.12)
       this.slowUntil = this.clock + 0.5
+      this.caughtAt = this.clock
       this.say(this.result.closingSpeed < 3 ? 'Catch. The tower has the ship.' : 'Caught. That one rang the tower.', 'good')
       this.endLook.set(PAD1.x + 6, PAD1.railY - 8, PAD1.z)
       // Sunlit side of the ship, with the Gulf behind the tower.
@@ -870,6 +877,30 @@ export class CatchEngine {
       const tall = b.id === 'tower' || b.id === 'tower2'
       this.fx.smoke(p[0] + (Math.random() - 0.5) * spread, Math.max(3, p[1] * (tall ? Math.random() : 0.3)), p[2] + (Math.random() - 0.5) * 20, b.id === 'tankfarm' ? 16 : 9, 0.7)
     }
+    // The pad's water deluge flashes to steam as the ship comes in over the
+    // mount, and keeps boiling for a few seconds after a catch.
+    const mid = this.ship.group.position
+    const overPad = !this.exploded && Math.hypot(mid.x - PAD1.x, mid.z - PAD1.z) < 150 && mid.y < 230
+    const after = this.caughtAt >= 0 ? this.clock - this.caughtAt : -1
+    if ((this.phase === 'flying' && overPad) || (after >= 0 && after < 7)) {
+      this.steamT -= dt
+      const power = after >= 0 ? Math.max(0, 1 - after / 7) : 0.35 + 0.65 * (1 - Math.min(1, Math.max(0, mid.y - 40) / 190))
+      if (this.steamT <= 0) {
+        this.steamT = this.mobile ? 0.08 : 0.04
+        this.fx.steam(PAD1.x, PAD1.z, power)
+        if (!this.mobile) this.fx.steam(PAD1.x, PAD1.z, power)
+      }
+    }
+    // Residual propellant burning off under the engine bay after a catch.
+    if (after >= 0 && after < 5 && Math.random() < 0.5) this.fx.flame(mid.x, mid.y + 1, mid.z, 3.5 * (1 - after / 5) + 1)
+    // The faint haze the engines leave down the approach.
+    if (this.phase === 'flying' && s.burning && !this.exploded) {
+      this.hazeT -= dt
+      if (this.hazeT <= 0) {
+        this.hazeT = 0.07
+        this.fx.haze(s.px - s.m[1] * (COM_Y + 50), s.py - s.m[4] * (COM_Y + 50), s.pz - s.m[7] * (COM_Y + 50))
+      }
+    }
     // Exhaust washing over whatever is under a low burn.
     if (this.phase === 'flying' && s.burning && !this.exploded) {
       const base = s.py - s.m[4] * COM_Y
@@ -907,19 +938,20 @@ export class CatchEngine {
     const mid = this.shipMid(scratchA)
     const portrait = this.camera.aspect < 1
     // How far out the ship still is: wide on the way in, tight and to one side at the arms.
-    const far = Math.min(1, Math.hypot(mid.x - PAD1.x, mid.z - PAD1.z) / 380)
+    const far = Math.min(1, Math.hypot(mid.x - PAD1.x, mid.z - PAD1.z) / 200)
     const close = 1 - Math.min(1, Math.max(0, (mid.y - PAD1.railY - 10) / 120))
-    const back = (74 + 46 * far) * (portrait ? 1.45 : 1) * this.camZoom
-    const pitch = Math.max(-0.2, Math.min(1.4, 0.2 + 0.1 * far + 0.1 * close + this.camPitch))
-    // Swing a little to the south as it closes on the arms, so the gap to the tower reads.
-    const yaw = this.camYaw + 0.34 * close * (1 - far)
+    const back = (84 + 34 * far) * (portrait ? 1.5 : 1) * this.camZoom
+    const pitch = Math.max(-0.2, Math.min(1.4, 0.13 + 0.07 * far + 0.05 * close + this.camPitch))
+    // Stand off to the south side, the way the catch is filmed: the ship, the
+    // gap and the arms are all in view, and the lean reads against the horizon.
+    const yaw = this.camYaw + SIDE_YAW
     const cy = Math.cos(yaw)
     const sy = Math.sin(yaw)
     const want = scratchB.set(mid.x - Math.cos(pitch) * cy * back, mid.y + Math.sin(pitch) * back, mid.z + Math.cos(pitch) * sy * back)
     if (want.y < 6) want.y = 6
     // Look past the ship toward the arms, so the tower stays in frame.
-    const look = scratchC.set(PAD1.x + 8, PAD1.railY, PAD1.z).sub(mid).multiplyScalar(0.22 + 0.2 * far)
-    if (look.length() > 90) look.setLength(90)
+    const look = scratchC.set(SWEET_X, PAD1.railY, PAD1.z).sub(mid).multiplyScalar(0.5)
+    if (look.length() > 70) look.setLength(70)
     look.add(mid)
     if (snap) {
       this.camPos.copy(want)
@@ -1007,12 +1039,12 @@ export class CatchEngine {
     h.vspeed = flying ? s.vy : this.phase === 'intro' ? -FLOP_SPEED : s.vy
     h.hspeed = Math.hypot(s.vx, s.vz)
     h.fuel = s.fuel / s.mode.fuelSeconds
-    h.dist = Math.hypot(px - (PAD1.x + 3), pz - PAD1.z)
+    h.dist = Math.hypot(px - SWEET_X, pz - PAD1.z)
     h.tilt = flying ? tiltDeg(s) : 0
     h.burning = flying ? s.burning : this.plumePower > 0.5
     h.armsClosing = s.armsClosing
     // Marker on the catch point.
-    scratchA.set(PAD1.x + 3, PAD1.railY, PAD1.z).project(this.camera)
+    scratchA.set(SWEET_X, PAD1.railY, PAD1.z).project(this.camera)
     h.tOnScreen = scratchA.z < 1 && Math.abs(scratchA.x) < 0.94 && Math.abs(scratchA.y) < 0.9
     h.tx = Math.max(0.04, Math.min(0.96, scratchA.x * 0.5 + 0.5))
     h.ty = Math.max(0.06, Math.min(0.94, -scratchA.y * 0.5 + 0.5))
@@ -1021,16 +1053,25 @@ export class CatchEngine {
     h.promptTone = 'info'
     if (flying && !s.outcome) {
       const need = (s.vy * s.vy) / (2 * (s.mode.engineAccel - 9.81))
-      if (s.vy < -6 && h.above - need < 25 && !s.burning) {
+      if (s.vy < -6 && h.above - 3 - need < 22 && !s.burning) {
         h.prompt = 'BURN NOW'
         h.promptTone = 'warn'
       } else if (s.mode.coaching) {
-        if (h.hspeed > 12 && h.dist < 170) {
-          h.prompt = 'Tilt back and BURN to brake'
+        const toRing = SWEET_X - px
+        // Leaning back by more than about six degrees already counts as braking.
+        const braking = s.m[1] < -0.1 && s.burning
+        if (s.vx > 6 && toRing < s.vx * s.vx * 0.16 + 5 && !braking) {
+          h.prompt = 'Lean back and BURN to brake'
           h.promptTone = 'warn'
-        } else if (h.dist > 12 && h.above < 30) h.prompt = 'Line up over the ring before you come down'
-        else if (h.dist <= 12 && h.above > 12 && h.hspeed < 4) h.prompt = 'Lower it between the arms'
-        else if (h.dist <= 12 && h.above <= 12 && h.above > 0) h.prompt = 'Easy. Let the pins settle on the rails'
+        } else if (toRing > 9 && s.vx < 4 && h.above < 120) {
+          h.prompt = 'Short of the arms: lean forward'
+          h.promptTone = 'warn'
+        } else if (toRing < -5) {
+          h.prompt = 'Too deep: lean back, away from the tower'
+          h.promptTone = 'warn'
+        } else if (h.above > 25 && s.vy > -4 && s.burning) h.prompt = 'Ease off BURN: you are hovering, and fuel is short'
+        else if (h.dist <= 9 && h.above > 12 && h.hspeed < 4) h.prompt = 'Lower it between the arms'
+        else if (h.dist <= 9 && h.above <= 12 && h.above > 0) h.prompt = 'Easy. Let the pins settle on the rails'
       }
     }
     this.cb.onHud(h)
@@ -1074,3 +1115,5 @@ const Z_AXIS = new THREE.Vector3(0, 0, 1)
 /** Body frame to model frame: a quarter turn about the hull axis. */
 const MODEL_TURN = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2)
 const windTmp = { x: 0, z: 0 }
+/** How far round to the south the chase camera stands (radians). */
+const SIDE_YAW = 0.62

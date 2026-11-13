@@ -48,6 +48,10 @@ const DRAG_AXIAL = 0.0003
 /** Arm pivots: both stand this far east of the catch point, either side of the centre line. */
 export const PIVOT_X = PAD1.x + TOWER.catchDist - ARMS.pivotOut
 export const PIVOT_Z = ARMS.pivotX
+/** The sweet spot: where the pins should come to rest along the rails, and how
+ * high above the rails they should be when the arms take hold. */
+export const SWEET_X = PAD1.x + 6
+export const SWEET_MARGIN = 3
 /** The arms stop when their centre line is this far from the hull's axis. */
 const HUG = SHIP.radius + 1.6
 /** Half-thickness of an arm for collisions, and how far below the rail it counts. */
@@ -176,7 +180,7 @@ export type Sim = {
   endVertical: number
   endHorizontal: number
   endTilt: number
-  /** Offsets from the ideal catch position, along and across the arms (m). */
+  /** Offsets from the sweet spot, along the arms (+ toward the tower) and across them (m). */
   endAlong: number
   endAcross: number
   /** Structures the blast or the impact damaged. */
@@ -323,6 +327,11 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   }
   s.burning = burning
 
+  // Two arms holding the hull squeeze it toward the middle of the gap.
+  if (s.hugN && s.hugS) {
+    fz += -1.6 * (s.pz + m[7] * (PAD1.railY - s.py)) - 1.4 * s.vz
+  }
+
   // Air: the ship is a big sail broadside and a dart end-on.
   windAt(s, s.py, wind)
   const rvx = s.vx - wind.x
@@ -371,9 +380,6 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   }
   s.rcsX = ax
   s.rcsZ = az
-  const tx = ax * IX
-  const ty = ay * IY
-  const tz = az * IZ
 
   // --- Integrate (semi-implicit Euler) -------------------------------------------
   const pinBefore = pinY(s)
@@ -388,9 +394,12 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   const wbx = m[0] * s.wx + m[3] * s.wy + m[6] * s.wz
   const wby = m[1] * s.wx + m[4] * s.wy + m[7] * s.wz
   const wbz = m[2] * s.wx + m[5] * s.wy + m[8] * s.wz
-  const tbx = m[0] * tx + m[3] * ty + m[6] * tz
-  const tby = m[1] * tx + m[4] * ty + m[7] * tz
-  const tbz = m[2] * tx + m[5] * ty + m[8] * tz
+  // The commanded angular acceleration, taken into the body frame before it
+  // becomes torque: the hull is twenty times easier to spin about its own
+  // axis than to tip, so a world-frame torque would mostly twist it.
+  const tbx = IX * (m[0] * ax + m[3] * ay + m[6] * az)
+  const tby = IY * (m[1] * ax + m[4] * ay + m[7] * az)
+  const tbz = IZ * (m[2] * ax + m[5] * ay + m[8] * az)
   const nbx = wbx + ((tbx - (IZ - IY) * wby * wbz) / IX) * dt
   const nby = wby + ((tby - (IX - IZ) * wbz * wbx) / IY) * dt
   const nbz = wbz + ((tbz - (IY - IX) * wbx * wby) / IZ) * dt
@@ -427,16 +436,18 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   const spansRail = lift > -COM_Y && lift < SHIP.height - COM_Y
 
   // How near the pins are to where they would rest: scores a near miss.
-  const dAlong = px - PAD1.x
+  const dAlong = px - SWEET_X
   const near = Math.sqrt(dAlong * dAlong + pz * pz + (py - rail) * (py - rail))
   if (near < s.closest) s.closest = near
 
   if (!s.armsClosing) {
-    const inZone = px > PAD1.x - 9 && px < PAD1.x + 17 && pz > -7 && pz < 7
-    const wants = mode.autoArms
-      ? // Easy: close once the aft flaps are below the rails and the pins are still above them.
-        inZone && py > rail + 0.8 && py < rail + 11 && s.vy < 2
-      : input.arms
+    const inZone = px > PAD1.x - 9 && px < PAD1.x + 19 && pz > -7 && pz < 7
+    // Easy: the tower times the close for the sweet spot, allowing for how fast
+    // the ship is coming down, but never before the aft flaps are through.
+    const sink = s.vy < 0 ? -s.vy : 0
+    let lead = SWEET_MARGIN + 0.6 + sink * mode.armCloseSeconds
+    if (lead > 19) lead = 19
+    const wants = mode.autoArms ? inZone && py > rail + 0.8 && py < rail + lead && s.vy < 2 : input.arms
     if (wants) {
       s.armsClosing = true
       s.events.push({ type: 'armsclosing' })
@@ -451,10 +462,20 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
       if (next < 0) next = 0
       let held = false
       if (spansRail) {
-        armFrame(next, sideSign, hullX, hullZ, frame)
-        if (frame.along > -1 && frame.along < ARMS.length + 1 && frame.across < HUG && frame.across > -HUG) {
-          next = cur
-          held = true
+        // The swing at which this arm just touches the hull. The arm closes to
+        // it and then follows it: it gives way if the ship drifts into it and
+        // follows if the ship drifts off, as a force-limited arm does.
+        const A = PIVOT_X - hullX
+        const B = PIVOT_Z - sideSign * hullZ
+        const R = Math.sqrt(A * A + B * B)
+        if (A > 1 && A < ARMS.length - 1 && R > HUG) {
+          const q = HUG / R
+          let touch = datan2(q, Math.sqrt(1 - q * q)) - datan2(B, A)
+          if (touch < 0) touch = 0
+          if (touch <= ARMS.openAngle && next <= touch) {
+            next = touch
+            held = true
+          }
         }
       }
       if (k === 0) {
@@ -541,7 +562,7 @@ function finish(s: Sim, outcome: Outcome, cause: CrashCause | null) {
   s.endVertical = -s.vy
   s.endHorizontal = Math.sqrt(s.vx * s.vx + s.vz * s.vz)
   s.endTilt = tiltDeg(s)
-  s.endAlong = pinX(s) - PAD1.x
+  s.endAlong = pinX(s) - SWEET_X
   s.endAcross = pinZ(s)
   if (outcome === 'crashed' || outcome === 'ditched') {
     // The blast grows with the propellant still aboard.

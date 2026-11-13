@@ -7,7 +7,7 @@
 import * as THREE from 'three'
 import type { Bag } from './util'
 
-const MAX = 900
+const MAX = 1400
 
 type P = {
   x: number
@@ -106,7 +106,8 @@ export class Effects {
       g.fillRect(0, 0, 128, 128)
     }
     g.globalCompositeOperation = 'lighter'
-    blob(64, 64, 60, 0.85)
+    blob(64, 64, 58, 1)
+    blob(64, 64, 34, 0.6)
     for (let i = 0; i < 9; i++) {
       const a = (i / 9) * 6.283
       blob(64 + Math.cos(a) * 26, 64 + Math.sin(a) * 26, 26 + (i % 3) * 5, 0.3)
@@ -161,14 +162,14 @@ export class Effects {
         vz: Math.sin(a) * sp * (1 - up * 0.6),
         life: 0,
         max: 6 + this.rnd() * 7,
-        size: (12 + this.rnd() * 18) * scale,
-        grow: (10 + this.rnd() * 9) * scale,
-        heat: 1,
-        cool: 0.28 + this.rnd() * 0.34,
-        shade: 0.025 + this.rnd() * 0.06,
-        alpha: 0.88,
+        size: (8 + this.rnd() * 20) * scale,
+        grow: (6 + this.rnd() * 12) * scale,
+        heat: 0.75 + this.rnd() * 0.25,
+        cool: 0.25 + this.rnd() * 0.4,
+        shade: 0.05 + this.rnd() * 0.2,
+        alpha: 0.5 + this.rnd() * 0.25,
         drag: 1.1,
-        rise: 5 + this.rnd() * 6,
+        rise: 4 + this.rnd() * 12,
         gravity: 0,
         spin: (this.rnd() - 0.5) * 0.6,
       })
@@ -221,6 +222,80 @@ export class Effects {
       rise: 3,
       gravity: 0,
       spin: (this.rnd() - 0.5) * 0.4,
+    })
+  }
+
+  /** Deluge steam boiling off the launch mount: big, white, slow to rise, quick to spread. */
+  steam(x: number, z: number, strength: number) {
+    const a = this.rnd() * 6.283
+    const sp = 6 + this.rnd() * 20
+    this.add({
+      x: x + Math.cos(a) * 6,
+      y: 2 + this.rnd() * 8,
+      z: z + Math.sin(a) * 6,
+      vx: Math.cos(a) * sp,
+      vy: 2 + this.rnd() * 9,
+      vz: Math.sin(a) * sp,
+      life: 0,
+      max: 5 + this.rnd() * 4,
+      size: 7 + this.rnd() * 7,
+      grow: 7 + this.rnd() * 5,
+      heat: 0,
+      cool: 0,
+      shade: 0.78 + this.rnd() * 0.2,
+      alpha: 0.74 * strength,
+      drag: 1.1,
+      rise: 2.6,
+      gravity: 0,
+      spin: (this.rnd() - 0.5) * 0.3,
+    })
+  }
+
+  /** The thin brown haze a methane engine leaves along its path. */
+  haze(x: number, y: number, z: number) {
+    this.add({
+      x,
+      y,
+      z,
+      vx: (this.rnd() - 0.5) * 3,
+      vy: -4 - this.rnd() * 4,
+      vz: (this.rnd() - 0.5) * 3,
+      life: 0,
+      max: 3.5 + this.rnd() * 2,
+      size: 5 + this.rnd() * 3,
+      grow: 5,
+      heat: 0,
+      cool: 0,
+      shade: 0.42,
+      alpha: 0.1,
+      drag: 0.8,
+      rise: 0.5,
+      gravity: 0,
+      spin: 0,
+    })
+  }
+
+  /** A lick of flame, as from venting propellant burning off under the engines. */
+  flame(x: number, y: number, z: number, size: number) {
+    this.add({
+      x: x + (this.rnd() - 0.5) * size,
+      y,
+      z: z + (this.rnd() - 0.5) * size,
+      vx: (this.rnd() - 0.5) * 4,
+      vy: 3 + this.rnd() * 6,
+      vz: (this.rnd() - 0.5) * 4,
+      life: 0,
+      max: 0.7 + this.rnd() * 0.7,
+      size: size * (0.6 + this.rnd() * 0.6),
+      grow: size * 0.8,
+      heat: 1,
+      cool: 1.1,
+      shade: 0.08,
+      alpha: 0.35,
+      drag: 0.6,
+      rise: 5,
+      gravity: 0,
+      spin: (this.rnd() - 0.5) * 1.5,
     })
   }
 
@@ -305,9 +380,9 @@ export class Effects {
       const fade = Math.min(1, p.life * 6) * (1 - u) * (1 - u * 0.4)
       const h = p.heat
       // Flame: white core cooling through yellow and orange to deep red.
-      const fr = 2.6 * h
-      const fg = 1.5 * h * h + 0.22 * h
-      const fb = 0.75 * h * h * h * h
+      const fr = 1.9 * h
+      const fg = 1.0 * h * h + 0.16 * h
+      const fb = 0.42 * h * h * h * h
       const sa = p.alpha * fade * (1 - h * 0.85)
       const s = p.shade
       for (let c = 0; c < 4; c++) {

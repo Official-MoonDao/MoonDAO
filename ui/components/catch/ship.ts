@@ -219,12 +219,13 @@ void main() {
   float rim = pow(abs(dot(normalize(vN), normalize(vV))), 1.6);
   float flick = 0.9 + 0.1 * sin(uTime * 61.0 + along * 30.0) * sin(uTime * 37.0);
   // Shock diamonds near the nozzle.
-  float diamonds = 0.55 + 0.45 * pow(abs(sin(along * 26.0 - uTime * 3.0)), 3.0) * smoothstep(0.55, 0.0, along);
-  vec3 core = vec3(1.0, 0.93, 0.98);
-  vec3 mid = vec3(0.72, 0.5, 1.0);
-  vec3 tail = vec3(1.0, 0.5, 0.36);
-  vec3 c = mix(core, mid, smoothstep(0.0, 0.35, along));
-  c = mix(c, tail, smoothstep(0.3, 1.0, along));
+  float diamonds = 0.7 + 0.3 * pow(abs(sin(along * 34.0 - uTime * 3.0)), 3.0) * smoothstep(0.4, 0.0, along);
+  // Methane and oxygen in open air: a white-hot root, a long orange flame, a thin red tail.
+  vec3 core = vec3(1.0, 0.97, 0.86);
+  vec3 mid = vec3(1.0, 0.62, 0.22);
+  vec3 tail = vec3(0.95, 0.3, 0.1);
+  vec3 c = mix(core, mid, smoothstep(0.02, 0.3, along));
+  c = mix(c, tail, smoothstep(0.35, 1.0, along));
   float a = (0.35 + 0.65 * rim) * flick * diamonds * pow(1.0 - along, 1.2) * uPower * 1.5;
   a = clamp(a, 0.0, 1.0);
   gl_FragColor = vec4(c * a * (2.2 + 5.0 * pow(1.0 - along, 6.0)), a);
@@ -367,8 +368,8 @@ export function buildShip(env: THREE.Texture, bag: Bag): ShipModel {
   parts.push(engines)
 
   // Exhaust: soft additive cones under the centre engines.
-  const plumeGeo = track(new THREE.CylinderGeometry(0.66, 3.4, 44, 20, 12, true))
-  plumeGeo.translate(0, -22, 0)
+  const plumeGeo = track(new THREE.CylinderGeometry(0.66, 2.3, 58, 20, 14, true))
+  plumeGeo.translate(0, -29, 0)
   const plumeMat = track(
     new THREE.ShaderMaterial({
       vertexShader: PLUME_VERT,
@@ -394,7 +395,7 @@ export function buildShip(env: THREE.Texture, bag: Bag): ShipModel {
     }
   }
   group.add(plume)
-  const light = new THREE.PointLight(0xffb48a, 0, 220, 2)
+  const light = new THREE.PointLight(0xffa860, 0, 220, 2)
   light.position.y = -8
   group.add(light)
 

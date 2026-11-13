@@ -437,12 +437,13 @@ export default function CatchGame() {
   const parts: [string, number, number][] = result
     ? good
       ? [
-          ['Catch', result.parts.caught, 300],
-          ['Soft', result.parts.soft, 300],
-          ['Aligned', result.parts.align, 200],
+          ['Catch', result.parts.caught, 250],
+          ['Depth', result.parts.depth, 150],
+          ['Center', result.parts.center, 100],
+          ['Height', result.parts.height, 100],
+          ['Soft', result.parts.soft, 250],
           ['Upright', result.parts.upright, 100],
           ['Fuel', result.parts.fuel, 150],
-          ['Timing', result.parts.timing, 150],
         ]
       : [
           ['Near miss', result.parts.near, 200],
@@ -487,7 +488,7 @@ export default function CatchGame() {
             <div ref={fuelRef} className="h-full w-full origin-left rounded-full bg-emerald-300" />
           </div>
           <div className="mt-1.5 flex items-baseline justify-between sm:mt-2">
-            <span className="text-[10px] tracking-widest text-white/55">OFF CENTER</span>
+            <span className="text-[10px] tracking-widest text-white/55">TO RING</span>
             <span className="text-sm text-white">
               <span ref={distRef}>0</span>
               <span className="ml-1 text-[10px] text-white/55">m</span>
@@ -578,7 +579,7 @@ export default function CatchGame() {
             <p className="text-lg font-extrabold tracking-wide text-white sm:text-xl">
               Hold <kbd className="mx-1 inline-block rounded-lg border-2 border-white/70 bg-white/15 px-5 py-1 font-RobotoMono text-base sm:text-xl">SPACE</kbd> to fire the engines
             </p>
-            <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">Arrow keys or WASD to tilt · the engines push where the tail points</p>
+            <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">Down arrow leans back to brake · the engines push along the ship</p>
           </div>
         </div>
       )}
@@ -639,7 +640,7 @@ export default function CatchGame() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">Can you catch a Starship?</p>
             <h1 className="mt-0.5 font-heading text-3xl font-extrabold tracking-tight sm:mt-1 sm:text-5xl">CATCH</h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
-              The ship flips, relights and is yours. Brake, line it up and lower it into the tower&apos;s arms at Starbase, slow and upright. New wind every day.
+              The ship flips, relights and is yours. One landing burn: lean back to brake, slide it between the tower&apos;s arms at Starbase and set the pins on the rails, right in the ring. New wind every day.
             </p>
             <p className="mt-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/80">
               Today: wind from the {conditions.windFrom} at {conditions.windSpeed.toFixed(0)} m/s
@@ -678,10 +679,10 @@ export default function CatchGame() {
             </div>
             <p className="mt-1 text-xs text-white/60">
               {good
-                ? `${result.closingSpeed.toFixed(1)} m/s onto the rails · ${Math.hypot(result.across, result.along * 0.5).toFixed(1)} m off center · ${Math.round(result.fuelLeft * 100)}% fuel left`
+                ? `${result.closingSpeed.toFixed(1)} m/s onto the rails · ${Math.abs(result.along).toFixed(1)} m ${result.along > 0 ? 'deep' : 'shallow'} · ${Math.abs(result.across).toFixed(1)} m off center · arms took hold ${result.armMargin.toFixed(1)} m up`
                 : `Closest the pins came to the rails: ${result.closest.toFixed(0)} m`}
             </p>
-            <dl className={`mt-2.5 grid gap-1 text-center ${good ? 'grid-cols-6' : 'grid-cols-2'}`}>
+            <dl className={`mt-2.5 grid gap-1 text-center ${good ? 'grid-cols-4' : 'grid-cols-2'}`}>
               {parts.map(([label, value, max]) => (
                 <div key={label} className="rounded-md bg-white/[0.06] px-1 py-1.5">
                   <dt className="text-[9px] uppercase tracking-wide text-white/50">{label}</dt>
