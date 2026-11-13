@@ -148,6 +148,44 @@ function truncate(text: string, max: number): string {
   return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t
 }
 
+// Discord unfurls every bare http(s) URL into a preview card, which turns a
+// single announcement into a wall of embeds. Wrapping a URL in angle brackets
+// (`<https://…>`) keeps it clickable but suppresses the preview. Applies to any
+// URL anywhere in the message, including links pasted into the description and
+// masked `[text](url)` links. Already-bracketed URLs are left as-is.
+const URL_PATTERN = /<?(https?:\/\/[^\s<>]+)>?/g
+const TRAILING_PUNCTUATION = /[.,;:!?'"*_~]+$/
+
+export function suppressLinkPreviews(text: string): string {
+  return text.replace(URL_PATTERN, (_match, rawUrl: string) => {
+    let url = rawUrl
+    let trailing = ''
+    // Peel sentence punctuation / markdown off the end so "see https://x.com."
+    // doesn't swallow the period. Drop a closing paren only when it's
+    // unbalanced, so wiki-style URLs like `.../Foo_(bar)` survive but the paren
+    // closing a masked link `[text](url)` stays outside the brackets.
+    for (;;) {
+      const punct = url.match(TRAILING_PUNCTUATION)
+      if (punct) {
+        trailing = punct[0] + trailing
+        url = url.slice(0, -punct[0].length)
+        continue
+      }
+      if (url.endsWith(')')) {
+        const opens = (url.match(/\(/g) || []).length
+        const closes = (url.match(/\)/g) || []).length
+        if (closes > opens) {
+          trailing = ')' + trailing
+          url = url.slice(0, -1)
+          continue
+        }
+      }
+      break
+    }
+    return `<${url}>${trailing}`
+  })
+}
+
 export function buildContent(c: Contribution): string {
   const who =
     c.name && c.name !== 'Anonymous'
@@ -165,7 +203,7 @@ export function buildContent(c: Contribution): string {
     lines.push(`🔗 ${url}`)
   }
   lines.push(`\nView all contributions → ${DEPLOYED_ORIGIN}/contributions`)
-  const content = lines.join('\n')
+  const content = suppressLinkPreviews(lines.join('\n'))
   // Final guard: even with a capped description, `area`/`name`/`links` can push
   // the total past Discord's 2000-char limit, which would make this row fail
   // forever and block the queue. Hard-cap the whole message instead.
