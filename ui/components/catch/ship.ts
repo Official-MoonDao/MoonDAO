@@ -374,12 +374,13 @@ export function buildShip(env: THREE.Texture, bag: Bag): ShipModel {
     g.add(a, b)
     return g
   }
-  // All four hinges sit a little to leeward of the widest point of the hull.
-  const lean = (20 * Math.PI) / 180
-  const aftLean = (10 * Math.PI) / 180
+  // All four hinges sit just to leeward of the widest point of the hull, inside
+  // the edge of the heat shield, so every flap grows out of the tiles.
+  const lean = (5 * Math.PI) / 180
+  const aftLean = (5 * Math.PI) / 180
   const flaps = {
-    fr: makeFlap(fwdShape, lean, 3.0, 'flap-fr'),
-    fl: makeFlap(fwdShape, Math.PI - lean, 3.0, 'flap-fl'),
+    fr: makeFlap(fwdShape, lean, 3.4, 'flap-fr'),
+    fl: makeFlap(fwdShape, Math.PI - lean, 3.4, 'flap-fl'),
     ar: makeFlap(aftShape, aftLean, SHIP.radius - 0.1, 'flap-ar'),
     al: makeFlap(aftShape, Math.PI - aftLean, SHIP.radius - 0.1, 'flap-al'),
   }

@@ -95,7 +95,7 @@ export const BLAST_POINTS: Record<StructureId, [number, number, number]> = {
   mount2: [PAD2.x, 6, PAD2.z],
   plant: [-165, 4, -112],
   hopper: [-300, 9, -262],
-  highway: [-110, 0, -140],
+  highway: [-110, 0, -188],
 }
 
 /** Hull and flap sample points in the body frame (catch pins are not among them). */
@@ -580,7 +580,9 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
       const speed = Math.sqrt(s.vx * s.vx + s.vy * s.vy + s.vz * s.vz)
       // m[4] is the cosine of the tilt: 0.82 is about 35 degrees, 0.966 about 15.
       if (sea && speed < 11 && m[4] > 0.82) finish(s, 'splashdown', 'sea')
-      else if (!sea && speed < 5 && m[4] > 0.966) finish(s, 'ditched', 'ground')
+      // On land a gentle arrival, even one still sliding sideways, leaves the
+      // ship standing for a moment: it has no legs, so it goes over.
+      else if (!sea && -s.vy < 8 && s.vx * s.vx + s.vz * s.vz < 14 * 14 && m[4] > 0.94) finish(s, 'ditched', 'ground')
       else finish(s, 'crashed', sea ? 'sea' : 'ground')
       return
     }

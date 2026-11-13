@@ -26,6 +26,8 @@ export type MapData = {
   roads: { w: number; k: number; p: number[] }[]
   walls: { h: number; p: number[] }[]
   pipes: number[][]
+  /** Pipe bridges: runs carried overhead where a line crosses a road. */
+  racks: number[][]
   buildings: number[][]
   tanks: number[][]
 }
@@ -175,7 +177,7 @@ function build(): MapData {
   // --- Worked ground ---------------------------------------------------------
   const paved: number[][][] = [
     // Launch site: one graded yard holding both pads and the tank farm.
-    [[-410, -118, 150, -150, 168, 60, 110, 205, -150, 215, -400, 150]],
+    [[-450, -150, -338, -172, 108, -178, 160, -150, 168, 60, 110, 205, -150, 215, -420, 150]],
     rect(-3260, 960, 760, 560, 44), // production site
     rect(-2830, 590, 430, 330, 8), // the village
   ]
@@ -183,30 +185,35 @@ function build(): MapData {
   // --- Roads -------------------------------------------------------------------
   const roads: MapData['roads'] = [
     // The highway: in from the south-west, past the production site, along the ridge to the beach.
-    { w: 9, k: 0, p: [-6400, 3900, -3700, 1560, -2880, 840, -2500, 520, -1750, 300, -900, 30, -330, -130, 110, -150, 262, -118] },
+    { w: 9, k: 0, p: [-6400, 3900, -3700, 1560, -2880, 840, -2500, 520, -1750, 300, -900, 30, -520, -150, -330, -185, 110, -190, 262, -150] },
     { w: 8, k: 0, p: [-3330, 1240, -3050, 990, -2880, 840] },
     { w: 8, k: 0, p: [-3560, 1010, -3330, 1240] },
     // Into the launch site.
-    { w: 7, k: 0, p: [-60, -146, -50, -40, 30, 40] },
-    { w: 7, k: 0, p: [-330, -130, -330, -40] },
-    { w: 5, k: 1, p: [-50, 60, -200, 110, -360, 60] },
-    { w: 4, k: 1, p: [110, -150, 150, 40, 100, 190] },
+    // Each gate road stops at its pad's apron, clear of the mount and the flame trench.
+    { w: 7, k: 0, p: [-60, -188, -60, -40, -26, -6] },
+    { w: 7, k: 0, p: [-330, -185, -330, -114, -348, -108] },
+    // Graded service track round the south of the tank farm, joining the pads.
+    { w: 5, k: 1, p: [-60, -40, -72, 60, -200, 110, -360, 40, -362, -50] },
+    { w: 4, k: 1, p: [120, -166, 150, 40, 100, 190] },
     // A sand track from the end of the highway down onto the beach.
-    { w: 4, k: 1, p: [262, -118, 300, -112, 322, -104] },
+    { w: 4, k: 1, p: [262, -150, 300, -142, 322, -134] },
   ]
   // Village streets.
   for (let i = 0; i < 4; i++) roads.push({ w: 6, k: 0, p: [-3010, 470 + i * 78, -2650, 520 + i * 78] })
   for (let i = 0; i < 3; i++) roads.push({ w: 6, k: 0, p: [-2970 + i * 150, 450, -3000 + i * 150, 720] })
 
   const walls: MapData['walls'] = [
-    { h: 3.4, p: [-400, -122, -70, -133] },
-    { h: 3.4, p: [-48, -134, 140, -140] },
+    // The site wall runs along the highway's south side, with a gap at each gate.
+    { h: 3.4, p: [-440, -151, -338, -170] },
+    { h: 3.4, p: [-322, -171, -68, -174] },
+    { h: 3.4, p: [-52, -174, 104, -176] },
   ]
 
   // --- Tanks and plant ---------------------------------------------------------
   const tanks: number[][] = []
   const buildings: number[][] = []
   const pipes: number[][] = []
+  const racks: number[][] = []
   // Tank farm between the pads: banks of long horizontal tanks lying side by side.
   const bank = (x0: number, z0: number, count: number, len: number, wid: number, step: number, ang: number) => {
     const c = Math.cos(((ang + 90) * Math.PI) / 180)
@@ -225,7 +232,10 @@ function build(): MapData {
   buildings.push([-205, -112, 30, 13, -8, 7, 3], [-150, -118, 20, 11, -8, 6, 0], [-292, -152, 22, 10, -4, 4.5, 0], [-72, -112, 16, 9, 82, 5, 3])
   buildings.push([118, 84, 26, 12, 80, 6, 0], [96, 150, 18, 9, 80, 4.5, 0], [-150, 150, 34, 16, 4, 8, 3])
   // Feed lines from the farm to each mount.
-  pipes.push([-96, -52, -60, -20, PAD1.x - 14, PAD1.z - 6], [-262, -52, -330, -62, PAD2.x + 12, PAD2.z - 4])
+  // Pad 1's line crosses its gate road on a pipe bridge.
+  pipes.push([-96, -52, -70, -52], [-50, -52, -30, -52, PAD1.x - 13, PAD1.z - 13])
+  racks.push([-70, -52, -50, -52])
+  pipes.push([-262, -52, -320, -62, PAD2.x + 13, PAD2.z + 4])
   pipes.push([-250, -62, -100, -56])
   // The old hopper, parked by the highway as a monument.
   buildings.push([-300, -262, 9, 9, 0, 18, 5])
@@ -260,6 +270,7 @@ function build(): MapData {
     roads,
     walls,
     pipes,
+    racks,
     buildings,
     tanks,
   }

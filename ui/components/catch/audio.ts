@@ -149,10 +149,13 @@ export class CatchSound implements CatchAudio {
     if (!ctx || !this.engineGain || !this.engineTone || !this.crackleGain || !this.rumbleGain || !this.windGain) return
     const t = ctx.currentTime
     const th = Math.max(0, Math.min(1, throttle))
-    this.engineGain.gain.setTargetAtTime(th > 0 ? 0.1 + 0.6 * Math.pow(th, 0.8) : 0, t, 0.08)
-    this.engineTone.frequency.setTargetAtTime(150 + 950 * th, t, 0.1)
-    this.crackleGain.gain.setTargetAtTime(0.16 * th * th, t, 0.08)
-    this.rumbleGain.gain.setTargetAtTime(0.32 * th, t, 0.1)
+    // Lit is never quiet: the idle roar is plainly there, in a band small
+    // speakers can play, and BURN opens it up and adds the crackle.
+    const lit = th > 0
+    this.engineGain.gain.setTargetAtTime(lit ? 0.34 + 0.5 * Math.pow(th, 0.8) : 0, t, 0.08)
+    this.engineTone.frequency.setTargetAtTime(520 + 1500 * th, t, 0.1)
+    this.crackleGain.gain.setTargetAtTime(lit ? 0.035 + 0.15 * th * th : 0, t, 0.08)
+    this.rumbleGain.gain.setTargetAtTime(lit ? 0.12 + 0.22 * th : 0, t, 0.1)
     this.windGain.gain.setTargetAtTime(Math.min(0.22, (speed / 90) * 0.2), t, 0.25)
   }
 
@@ -201,8 +204,10 @@ export class CatchSound implements CatchAudio {
   /** Two sharp cracks a quarter of a second apart, each with a low tail. */
   boom() {
     for (const at of [0, 0.26]) {
-      this.thump(at, 95, 30, 0.9, 0.5)
-      this.burst({ at, type: 'lowpass', from: 2600, to: 90, gain: 0.8, attack: 0.004, decay: 0.42 })
+      // Pitched high enough for a phone speaker, with a hard crack on the front.
+      this.thump(at, 240, 55, 1, 0.45)
+      this.burst({ at, type: 'lowpass', from: 5200, to: 260, gain: 1, attack: 0.003, decay: 0.5 })
+      this.burst({ at, type: 'highpass', from: 2400, to: 1200, gain: 0.5, attack: 0.002, decay: 0.07 })
     }
   }
 

@@ -200,8 +200,11 @@ function carriage(mats: Mats, bag: Bag): THREE.Group {
   return b.build(mats, bag)
 }
 
-/** Launch mount: a steel deck over a flame trench, centred at local (0, cz). */
-function trenchMount(b: Builder, cz: number) {
+/**
+ * Launch mount: a steel deck over a flame trench, centred at local (0, cz).
+ * The trench leaves on one side only (`side`, along local x), away from the tank farm.
+ */
+function trenchMount(b: Builder, cz: number, side: 1 | -1) {
   const S = MOUNT.size
   const top = MOUNT.top
   b.box('steelLight', S, top - 0.5, S, 0, (top - 0.5) / 2, cz)
@@ -216,18 +219,19 @@ function trenchMount(b: Builder, cz: number) {
   b.box('steel', 3, top + 6, 3, S / 2 + 1.5, (top + 6) / 2, cz + S / 2 - 3)
   b.box('steelLight', 7, 0.3, 4, S / 2 - 2, top + 0.4, cz + S / 2 - 2)
   // Trench walls running out either side, with the scorched floor between them.
-  for (const s of [-1, 1]) {
-    b.box('concreteWall', 34, 5, 2, s * 29, 2.5, cz - 9)
-    b.box('concreteWall', 34, 5, 2, s * 29, 2.5, cz + 9)
-    b.box('black', 34, 0.4, 16, s * 29, 0.25, cz)
-  }
+  const s = side
+  b.box('concreteWall', 44, 5, 2, s * 34, 2.5, cz - 9)
+  b.box('concreteWall', 44, 5, 2, s * 34, 2.5, cz + 9)
+  b.box('black', 44, 0.4, 16, s * 34, 0.25, cz)
+  // The closed back of the mount on the other side.
+  b.box('concreteWall', 2, 5, 20, -s * 13, 2.5, cz)
 }
 
-function buildPad(p: Pad, mats: Mats, bag: Bag): PadModel {
+function buildPad(p: Pad, mats: Mats, bag: Bag, trenchSide: 1 | -1): PadModel {
   const group = new THREE.Group()
   const b = new Builder()
   tower(b, p.railY)
-  trenchMount(b, -TOWER.catchDist)
+  trenchMount(b, -TOWER.catchDist, trenchSide)
   // Floodlight masts round the pad.
   for (const [mx, mz] of [
     [34, -64],
@@ -322,6 +326,20 @@ function mapStructures(b: Builder, far: Builder) {
       b.box('black', L, w.h, 0.5, (ax + bx) / 2, w.h / 2, (az + bz) / 2, -Math.atan2(bz - az, bx - ax))
     })
   }
+  for (const p of MAP.racks) {
+    segs(p, (ax, az, bx, bz) => {
+      const top = 6.5
+      b.beam('frost', ax, top, az, bx, top, bz, 0.7, true)
+      for (const [x, z] of [
+        [ax, az],
+        [bx, bz],
+      ]) {
+        b.beam('frost', x, 1.6, z, x, top, z, 0.7, true)
+        b.box('steel', 0.6, top, 0.6, x + 1.2, top / 2, z + 1.2)
+        b.box('steel', 0.6, top, 0.6, x - 1.2, top / 2, z - 1.2)
+      }
+    })
+  }
   for (const p of MAP.pipes) {
     segs(p, (ax, az, bx, bz) => {
       b.beam('frost', ax, 1.6, az, bx, 1.6, bz, 0.7, true)
@@ -387,8 +405,9 @@ export function buildStarbase(env: THREE.Texture, bag: Bag): StarbaseModel {
   const mats = materials(env, bag)
   const group = new THREE.Group()
 
-  const pad1 = buildPad(PAD1, mats, bag)
-  const pad2 = buildPad(PAD2, mats, bag)
+  // Pad 1's trench runs south and Pad 2's west: both point away from the tank farm.
+  const pad1 = buildPad(PAD1, mats, bag, -1)
+  const pad2 = buildPad(PAD2, mats, bag, 1)
   group.add(pad1.group, pad2.group)
   setArms(pad1, 1)
   setArms(pad2, 0)

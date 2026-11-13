@@ -165,6 +165,8 @@ export class CatchEngine {
   /** A ship set down intact has no legs: it stands a moment, then goes over. */
   private topple: { t: number; dx: number; dz: number; boom: boolean; q0: THREE.Quaternion } | null = null
   private endHoldUntil = 0
+  private flapTrim = 0
+  private flapRoll = 0
   private fragGeos: THREE.BufferGeometry[] = []
   private boosterFall = -1
   private booster: THREE.Object3D | null = null
@@ -633,8 +635,8 @@ export class CatchEngine {
   private setFlaps(spread: number, trimAft = 0, trimFwd = 0, roll = 0) {
     const f = this.ship.flaps
     // Folding swings each flap back about its hinge, toward the leeward side.
-    const aft = (1 - spread) * 0.7 + trimAft
-    const fwd = (1 - spread) * 0.55 + trimFwd
+    const aft = (1 - spread) * 0.42 + trimAft
+    const fwd = (1 - spread) * 0.3 + trimFwd
     f.ar.rotation.y = aft + roll
     f.al.rotation.y = -(aft - roll)
     f.fr.rotation.y = fwd - roll
@@ -657,7 +659,7 @@ export class CatchEngine {
     if (this.phase === 'intro') {
       this.poseIntro(Math.min(INTRO_T, this.phaseT))
       this.audio.setFlight?.(this.plumePower, FLOP_SPEED)
-      if (this.phaseT > FLOP_END + 1.5 && !this.saidFlip) {
+      if (this.phaseT > FLOP_END + 0.9 && !this.saidFlip) {
         // The flip ends tail-first and subsonic: the double boom reaches the ground about now.
         this.saidFlip = true
         this.audio.boom?.()
@@ -703,15 +705,16 @@ export class CatchEngine {
       }
       if (steps === 24) this.acc = 0
       recordTape(this.tape, steps, this.simInput.x, this.simInput.y, this.simInput.burn, this.simInput.arms)
-      this.audio.setFlight?.(sim.throttle, Math.hypot(sim.vx, sim.vy, sim.vz))
+      // Only while it is still flying: the step above may have ended the flight.
+      if (this.phase === 'flying') this.audio.setFlight?.(sim.throttle, Math.hypot(sim.vx, sim.vy, sim.vz))
       // Lit even at idle: a short flame that lengthens with the throttle.
       const flame = sim.throttle > 0 ? 0.3 + 0.7 * sim.throttle : 0
-      this.plumePower += (flame - this.plumePower) * Math.min(1, dt * 10)
+      if (this.phase === 'flying') this.plumePower += (flame - this.plumePower) * Math.min(1, dt * 10)
       if (!sim.outcome) this.flightCallouts()
       if (!this.exploded) this.syncShip()
     }
 
-    if (this.phase === 'idle') this.audio.setFlight?.(0, 0)
+    if (this.phase === 'idle' || this.phase === 'ending' || this.phase === 'result') this.audio.setFlight?.(0, 0)
     this.updateTopple(dt * Math.max(this.timeScale, 0.3))
     this.syncArms(dt)
     this.updateEffects(dt * Math.max(this.timeScale, 0.3))
@@ -774,8 +777,11 @@ export class CatchEngine {
     this.placeShip(s.px, s.py, s.pz, qA)
     // The flaps keep working on the way down: they trim against the steering.
     const live = this.phase === 'flying' ? 1 : 0
-    const wob = 0.035 * Math.sin(this.clock * 5.3) * live
-    this.setFlaps(0, 0.55 * s.gx * live + wob, -0.55 * s.gx * live - wob, 0.5 * s.gz * live)
+    // Small, slow corrections: a few degrees, never a flutter.
+    const k = 1 - Math.pow(0.02, 1 / 60)
+    this.flapTrim += (0.16 * s.gx * live - this.flapTrim) * k
+    this.flapRoll += (0.14 * s.gz * live - this.flapRoll) * k
+    this.setFlaps(0, this.flapTrim, -this.flapTrim, this.flapRoll)
   }
 
   /** Decide how the two catch arms fail this time: sag, swing wide, tear off, or survive. */
@@ -938,7 +944,8 @@ export class CatchEngine {
       const hs = Math.hypot(s.vx, s.vz)
       const a = Math.random() * 6.283
       this.topple = {
-        t: 0,
+        // Still sliding when it touched: it goes over sooner.
+        t: Math.min(1.6, hs * 0.14),
         dx: hs > 0.6 ? s.vx / hs : Math.cos(a),
         dz: hs > 0.6 ? s.vz / hs : Math.sin(a),
         boom: !wet,
@@ -1275,9 +1282,29 @@ export class CatchEngine {
           if (this.result) this.cb.onEnd(this.result)
         }
       } else {
-        const angle = this.endAngle + Math.sin(this.phaseT * 0.1) * 0.35 + this.camYaw
-        this.placeEnd(this.camPos, angle)
-        this.camLook.copy(this.endLook)
+        if (this.result?.outcome === 'caught') {
+          // The victory lap: swing round the tower to its seaward side, so the
+          // booster held in Tower 2 and the factory on the horizon come into view
+          // behind the ship.
+          const a0 = this.endAngle
+          const portrait = this.camera.aspect < 1
+          // Far enough round that the tower does not stand in front of the ship.
+          const a1 = Math.PI * 2 - (portrait ? 0.75 : 0.95)
+          const k = smooth(Math.min(1, Math.max(0, (this.phaseT - 0.4) / (4 + (a1 - a0) * 1.5))))
+          const d0 = this.endDist * (portrait ? 1.5 : 1)
+          const d1 = portrait ? 330 : 172
+          const d = (d0 + (d1 - d0) * k) * this.camZoom
+          const ang = a0 + (a1 - a0) * k + Math.sin(this.phaseT * 0.12) * 0.05 * k + this.camYaw
+          const y0 = Math.max(8, this.endLook.y + d0 * 0.2)
+          const y1 = PAD1.railY + (portrait ? 60 : 30)
+          this.camPos.set(this.endLook.x + Math.cos(ang) * d, y0 + (y1 - y0) * k + this.camPitch * 60, this.endLook.z + Math.sin(ang) * d)
+          scratchA.set(PAD1.x - 108, PAD1.railY - 26, PAD1.z - (portrait ? 35 : 15))
+          this.camLook.lerpVectors(this.endLook, scratchA, k)
+        } else {
+          const angle = this.endAngle + Math.sin(this.phaseT * 0.1) * 0.35 + this.camYaw
+          this.placeEnd(this.camPos, angle)
+          this.camLook.copy(this.endLook)
+        }
       }
     }
     cam.position.copy(this.camPos)
