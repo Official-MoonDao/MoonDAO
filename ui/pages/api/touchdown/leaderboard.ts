@@ -11,7 +11,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { newsletterClientIp } from '@/lib/convert-kit/subscribeRateLimit'
 import { validateSubmission, type BoardResponse } from '@/lib/touchdown/leaderboard'
-import { leaderboardRedis, rankOf, readBoard, removeEntry, submitLimiter, submitScore } from '@/lib/touchdown/leaderboardStore'
+import {
+  leaderboardRedis,
+  rankOf,
+  readAllTimeHigh,
+  readBoard,
+  readYesterdaysWinner,
+  removeEntry,
+  submitLimiter,
+  submitScore,
+} from '@/lib/touchdown/leaderboardStore'
 import { missionNumberFor } from '@/lib/touchdown/mission'
 import { base64ToTape, replayFlight } from '@/lib/touchdown/replay'
 import type { ModeId } from '@/lib/touchdown/modes'
@@ -40,10 +49,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (!redis || !Number.isInteger(mission) || mission < 1 || mission > today) {
         return res.status(200).json(empty(Number.isInteger(mission) ? mission : today, mode))
       }
-      const board = await readBoard(redis, mission, mode)
+      const [board, yesterday, allTime] = await Promise.all([
+        readBoard(redis, mission, mode),
+        readYesterdaysWinner(redis, mission, mode),
+        readAllTimeHigh(redis, mode, today),
+      ])
       const score = Number(req.query.score)
       const rank = Number.isInteger(score) && score > 0 ? await rankOf(redis, mission, mode, score) : undefined
-      return res.status(200).json({ enabled: true, mission, mode, ...board, ...(rank ? { rank } : {}) })
+      return res.status(200).json({
+        enabled: true,
+        mission,
+        mode,
+        ...board,
+        ...(yesterday ? { yesterday } : {}),
+        ...(allTime ? { allTime } : {}),
+        ...(rank ? { rank } : {}),
+      })
     }
 
     if (req.method === 'POST') {
@@ -72,12 +93,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       )
       if (!checked.ok) return res.status(400).json(empty(today, mode, checked.error))
       const rank = await submitScore(redis, checked.value)
-      const board = await readBoard(redis, checked.value.mission, checked.value.mode)
+      const [board, yesterday, allTime] = await Promise.all([
+        readBoard(redis, checked.value.mission, checked.value.mode),
+        readYesterdaysWinner(redis, checked.value.mission, checked.value.mode),
+        readAllTimeHigh(redis, checked.value.mode, today),
+      ])
       return res.status(200).json({
         enabled: true,
         mission: checked.value.mission,
         mode: checked.value.mode,
         ...board,
+        ...(yesterday ? { yesterday } : {}),
+        ...(allTime ? { allTime } : {}),
         rank,
         verifiedScore: checked.value.score,
       })
