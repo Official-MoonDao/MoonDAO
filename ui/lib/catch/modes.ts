@@ -2,16 +2,16 @@
  * Easy / Pro tuning for Catch. The headless bot (scripts/catch-bot.ts) is the
  * check that Easy stays catchable after any change here or in physics.ts.
  *
- * How it flies, following real tower catches:
+ * How it flies:
  *
- *  - After the flip the engines stay lit all the way down. Released, they idle
- *    at part throttle and the ship keeps sinking at about the speed it has;
- *    holding BURN takes them to full thrust and slows it.
- *  - The ship stays upright. Steering swivels the engines: the flame swings
- *    out to one side and pushes the ship the other way, so it slides across
- *    without tipping over.
- *  - The ship arrives leaning on its engines the whole way: about fifteen to
- *    twenty seconds from the flip to the arms.
+ *  - Gravity never stops. Let go of BURN and the ship falls.
+ *  - BURN fires the landing engines: it is the brake. On Easy the flight
+ *    computer eases the throttle back once the ship is down to a crawl, so
+ *    holding BURN settles into a slow sink and never sends it back up.
+ *  - The ship stays upright. Steering swivels the engines while they burn: the
+ *    flame swings out one way and pushes the ship the other.
+ *  - It comes in high, fast and at a steep slant over the launch site. Leave
+ *    the braking too late and it sails past the tower toward the Gulf.
  */
 
 export type ModeId = 'easy' | 'pro'
@@ -29,14 +29,15 @@ export type ModeConfig = {
   startVerticalSpeed: number
   /** m/s², landing engines at full thrust */
   engineAccel: number
-  /** Share of full thrust the engines idle at when BURN is released. */
-  idleThrottle: number
-  /** Seconds of full-thrust burn aboard; idling uses it more slowly. */
+  /** Seconds of full-thrust burn aboard. */
   fuelSeconds: number
   /** degrees the engines swivel at full stick */
   maxGimbalDeg: number
-  /** true: the flight computer goes to full thrust by itself at the last point the ship can still stop */
-  brakeAssist: boolean
+  /**
+   * m/s. Above zero, holding BURN brakes down to this sink rate and then
+   * holds it, so the ship never climbs. Zero: BURN is always full thrust.
+   */
+  sinkFloor: number
   /** true: the arms close by themselves once the ship is in the catch zone */
   autoArms: boolean
   /** seconds for the arms to swing from open to closed */
@@ -53,15 +54,14 @@ export const MODES: Record<ModeId, ModeConfig> = {
   easy: {
     id: 'easy',
     label: 'Easy',
-    startAltitude: 620,
-    startDistance: 230,
-    startHorizontalSpeed: 27,
-    startVerticalSpeed: -48,
-    engineAccel: 20,
-    idleThrottle: 0.5,
-    fuelSeconds: 20,
-    maxGimbalDeg: 18,
-    brakeAssist: true,
+    startAltitude: 800,
+    startDistance: 520,
+    startHorizontalSpeed: 44,
+    startVerticalSpeed: -58,
+    engineAccel: 17,
+    fuelSeconds: 26,
+    maxGimbalDeg: 22,
+    sinkFloor: 1.2,
     autoArms: true,
     armCloseSeconds: 1.0,
     pinLimit: 12,
@@ -72,15 +72,14 @@ export const MODES: Record<ModeId, ModeConfig> = {
   pro: {
     id: 'pro',
     label: 'Pro',
-    startAltitude: 700,
-    startDistance: 300,
-    startHorizontalSpeed: 33,
-    startVerticalSpeed: -62,
-    engineAccel: 16,
-    idleThrottle: 0.45,
-    fuelSeconds: 20,
-    maxGimbalDeg: 16,
-    brakeAssist: false,
+    startAltitude: 900,
+    startDistance: 640,
+    startHorizontalSpeed: 52,
+    startVerticalSpeed: -68,
+    engineAccel: 15.5,
+    fuelSeconds: 22,
+    maxGimbalDeg: 20,
+    sinkFloor: 0,
     autoArms: false,
     armCloseSeconds: 1.3,
     pinLimit: 9,

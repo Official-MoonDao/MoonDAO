@@ -605,9 +605,9 @@ export default function CatchGame() {
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-20 flex justify-center px-4">
           <div className="animate-pulse rounded-2xl border-2 border-amber-300/80 bg-black/75 px-5 py-3 text-center shadow-2xl backdrop-blur">
             <p className="text-lg font-extrabold tracking-wide text-white sm:text-xl">
-              Hold <kbd className="mx-1 inline-block rounded-lg border-2 border-white/70 bg-white/15 px-5 py-1 font-RobotoMono text-base sm:text-xl">SPACE</kbd> for full thrust
+              Hold <kbd className="mx-1 inline-block rounded-lg border-2 border-white/70 bg-white/15 px-5 py-1 font-RobotoMono text-base sm:text-xl">SPACE</kbd> to fire the engines and brake
             </p>
-            <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">The engines idle when you let go · arrows swivel them to slide the ship: ↑ toward the tower, ↓ to brake</p>
+            <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">Let go and it falls · while burning, the arrows swing the flame to slide the ship: ↑ toward the tower, ↓ to brake</p>
           </div>
         </div>
       )}
@@ -668,7 +668,7 @@ export default function CatchGame() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">Can you catch a Starship?</p>
             <h1 className="mt-0.5 font-heading text-3xl font-extrabold tracking-tight sm:mt-1 sm:text-5xl">CATCH</h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
-              The ship falls belly-down over Starbase, flips, relights and is yours. Swivel the engines to slide it between the tower&apos;s arms, hold BURN to slow it, and set the pins on the rails, right in the ring. New wind every day.
+              The ship falls belly-down over Starbase, flips and is yours, coming in fast. Hold BURN to brake, swing the flame to steer, and set it down between the tower&apos;s arms, right over the green circle. Miss the brakes and it ends up in the Gulf. New wind every day.
             </p>
             <p className="mt-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/80">
               Today: wind from the {conditions.windFrom} at {conditions.windSpeed.toFixed(0)} m/s
@@ -685,7 +685,7 @@ export default function CatchGame() {
               </button>
             </div>
             <p className="mt-2 text-[11px] leading-snug text-white/55 sm:mt-3 sm:text-xs">
-              {pro ? 'Pro: faster, less fuel, full wind, and you close the arms yourself. Score ×1.25.' : 'Easy: brake assist is on and the tower closes the arms for you.'}
+              {pro ? 'Pro: faster, less fuel, full wind, full thrust only, and you close the arms yourself. Score ×1.25.' : 'Easy: holding BURN never sends it back up, and the tower closes the arms for you.'}
               {isTouch ? ' Left thumb steers. Right thumb holds BURN.' : ''}
             </p>
             {screen === 'error' && <p className="mt-2 text-xs text-rose-200">This browser could not start WebGL. Try another browser or device.</p>}

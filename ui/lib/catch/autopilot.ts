@@ -25,44 +25,49 @@ export function botInput(s: Sim, out: SimInput, opts: BotOptions = {}): SimInput
   const dz = PAD1.z - pinZ(s)
   const dist = Math.hypot(dx, dz)
   const hspeed = Math.hypot(s.vx, s.vz)
-  const netFull = mode.engineAccel - EARTH_G
-
   const maxG = (mode.maxGimbalDeg * Math.PI) / 180
-  // The hand-over is set up so steady braking all the way down arrives at rest.
-  const cruise = mode.startHorizontalSpeed
-  const brake = above < 18 ? 0.9 : ((1.25 * cruise * cruise) / (2 * mode.startDistance)) * skill
+  // Swivelled over to brake, the engines give this much sideways and this much up.
+  const lateral = mode.engineAccel * Math.sin(maxG * 0.8)
+  const netUp = mode.engineAccel * Math.cos(maxG * 0.8) - EARTH_G
 
   // Horizontal: a constant-deceleration braking curve into the sweet spot.
+  const brake = above < 18 ? 0.9 : 0.6 * lateral * skill
   const want = (d: number) => {
     const a = Math.abs(d)
-    const v = a < 3 ? a * 0.6 : Math.min(cruise, Math.sqrt(2 * brake * a))
+    const v = a < 3 ? a * 0.6 : Math.sqrt(2 * brake * a)
     return Math.sign(d) * v
   }
-  const axCmd = 2.2 * (want(dx) - s.vx)
+  // Never speed up toward the tower: only shed speed, or creep when close.
+  const wx = dx > 0 && s.vx > 0 ? Math.min(want(dx), Math.max(s.vx, 6)) : want(dx)
+  const axCmd = 2.2 * (wx - s.vx)
   const azCmd = 2.0 * (want(dz) - s.vz)
-  // The engines are always lit, so the swivel always works: assume about idle thrust.
-  const thrust = mode.engineAccel * (mode.idleThrottle + 0.2)
+  const thrust = mode.engineAccel * 0.9
   let gx = clamp(Math.atan(axCmd / thrust), -maxG, maxG)
   const room = Math.sqrt(Math.max(0, maxG * maxG - gx * gx))
   let gz = clamp(Math.atan(azCmd / thrust), -room, room)
 
-  // Vertical: brake to arrive a little above the arms, then lower in.
+  // Vertical: fall, then one braking burn that ends a little above the arms.
   const held = s.hugN && s.hugS
   const low = s.fuel / mode.fuelSeconds < 0.2
   const settled = held || (dist < (low ? 5 : 3) && hspeed < (low ? 3 : 2.2))
-  const hold = 8
+  // With a sink floor the ship cannot quite hover, so stop higher and use the slow sink to line up.
+  const hold = mode.sinkFloor > 0 ? 16 : 8
   let vyWant: number
   if (settled) vyWant = above > 5 ? -4.5 : -2.6
   else {
     const h = above - hold
-    vyWant = h > 0 ? -(Math.sqrt(2 * 0.72 * skill * netFull * h) + 2.2) : Math.min(1.5, -0.5 * h)
+    vyWant = h > 0 ? -(Math.sqrt(2 * 0.74 * skill * netUp * h) + 2.2) : Math.min(1.5, -0.5 * h)
   }
   if (held) {
     // The arms centre the ship; just hold it still along the rails.
     gx = clamp(Math.atan((-1.2 * s.vx) / thrust), -0.1, 0.1)
     gz = 0
   }
-  out.burn = s.vy < vyWant
+  // The swivel only pushes while the engines burn, so burn for braking too
+  // when the ship is behind its braking curve.
+  const overspeed = hspeed - Math.hypot(wx, want(dz))
+  const needSideways = overspeed > 2.5 && (mode.sinkFloor > 0 ? above < 420 : s.vy < 3)
+  out.burn = s.vy < vyWant || needSideways
   // Pro: close the arms so they take hold with the pins at the sweet height.
   const sink = s.vy < 0 ? -s.vy : 0
   out.arms = dist < 4.5 && above > 0.5 && above < SWEET_MARGIN + 0.6 + sink * mode.armCloseSeconds

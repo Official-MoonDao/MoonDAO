@@ -4,10 +4,9 @@
  * and the tower's two catch arms.
  *
  * The ship is a tall, heavy cylinder that flies tail-first and stays upright.
- * Its engines stay lit from the flip to the arms: they idle at part throttle
- * and go to full thrust on BURN. Steering swivels them, so the flame swings
- * to one side and pushes the ship the other way; the hull only leans a
- * little into the push. A catch is not scripted: the arms swing in until they
+ * Its engines are off unless BURN is held. Steering swivels them, so the
+ * flame swings to one side and pushes the ship the other way; the hull only
+ * leans a little into the push. A catch is not scripted: the arms swing in until they
  * meet the hull, and the ship is caught when its two catch pins come down on
  * the arms' rails. Close the arms too early and the aft flaps land on them;
  * too late and the pins have already gone past.
@@ -46,9 +45,12 @@ const TURN_ALPHA = 1.1
 const GIMBAL_RATE = 0.85
 const LEAN = 0.3
 
-/** Air: drag per unit mass, broadside and end-on (1/m). */
-const DRAG_SIDE = 0.003
+/** Air: drag per unit mass, broadside and end-on (1/m), and how hard the wind leans on the hull (1/s). */
+const DRAG_SIDE = 0.0006
 const DRAG_AXIAL = 0.0003
+const WIND_PUSH = 0.05
+/** The lowest the engines throttle while burning. */
+const MIN_THROTTLE = 0.3
 
 /** Arm pivots: both stand this far east of the catch point, either side of the centre line. */
 export const PIVOT_X = PAD1.x + TOWER.catchDist - ARMS.pivotOut
@@ -168,8 +170,6 @@ export type Sim = {
   burning: boolean
   /** Engine throttle this step, 0..1. */
   throttle: number
-  /** Easy's brake assist fired this step. */
-  assist: boolean
   /** Engine swivel in radians: positive pushes the ship toward +x, toward +z. */
   gx: number
   gz: number
@@ -228,8 +228,7 @@ export function createSim(mode: ModeConfig, conditions: Conditions): Sim {
     wz: 0,
     fuel: mode.fuelSeconds,
     burning: false,
-    throttle: mode.idleThrottle,
-    assist: false,
+    throttle: 0,
     gx: 0,
     gz: 0,
     armN: ARMS.openAngle,
@@ -331,31 +330,26 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   let fy = -EARTH_G
   let fz = 0
 
-  // Engines: lit all the way down, idling unless BURN is held.
-  let burning = input.burn && s.fuel > 0
-  s.assist = false
-  if (mode.brakeAssist && !burning && s.fuel > 0 && s.vy < 0) {
-    // Easy: the flight computer will not let the ship pass the last point it
-    // can still stop from. It takes the engines to full until the pilot does.
-    const h = s.py + m[4] * PIN_Y - PAD1.railY - 2
-    if (h > -3) {
-      const limit = Math.sqrt(2 * 0.85 * (mode.engineAccel - EARTH_G) * (h > 0 ? h : 0)) + 1.5
-      if (-s.vy > limit) {
-        burning = true
-        s.assist = true
-      }
-    }
-  }
-  const throttle = s.fuel > 0 ? (burning ? 1 : mode.idleThrottle) : 0
+  // Engines: off unless BURN is held.
+  const burning = input.burn && s.fuel > 0
   // The swivel follows the stick at a limited rate.
   const maxG = (mode.maxGimbalDeg * Math.PI) / 180
   const slew = GIMBAL_RATE * dt
   s.gx += clamp(clamp(input.y, -1, 1) * maxG - s.gx, -slew, slew)
   s.gz += clamp(clamp(input.x, -1, 1) * maxG - s.gz, -slew, slew)
-  if (throttle > 0) {
+  let throttle = 0
+  if (burning) {
     const tx = dtan(s.gx)
     const tz = dtan(s.gz)
-    const k = (mode.engineAccel * throttle) / Math.sqrt(tx * tx + 1 + tz * tz)
+    const inv = 1 / Math.sqrt(tx * tx + 1 + tz * tz)
+    throttle = 1
+    if (mode.sinkFloor > 0) {
+      // Easy: BURN is a brake, not a launch. Once the ship is down to a crawl
+      // the computer eases the throttle back to hold a slow sink, so holding
+      // BURN never sends it back up.
+      throttle = clamp((EARTH_G + 1.4 * (-mode.sinkFloor - s.vy)) / (mode.engineAccel * inv), MIN_THROTTLE, 1)
+    }
+    const k = mode.engineAccel * throttle * inv
     fx += k * tx
     fy += k
     fz += k * tz
@@ -384,9 +378,9 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   const sz = rvz - axial * m[7]
   const side = Math.sqrt(sx * sx + sy * sy + sz * sz)
   const ka = DRAG_AXIAL * (axial < 0 ? -axial : axial) * axial
-  fx -= DRAG_SIDE * side * sx + ka * m[1]
+  fx -= DRAG_SIDE * side * sx + ka * m[1] - WIND_PUSH * wind.x
   fy -= DRAG_SIDE * side * sy + ka * m[4]
-  fz -= DRAG_SIDE * side * sz + ka * m[7]
+  fz -= DRAG_SIDE * side * sz + ka * m[7] - WIND_PUSH * wind.z
 
   // --- Attitude control ---------------------------------------------------------
   let ax: number
