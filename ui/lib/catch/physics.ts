@@ -283,7 +283,10 @@ function refreshMatrix(s: Sim) {
 
 /** Degrees between the hull axis and straight up. */
 export function tiltDeg(s: Sim): number {
-  return (Math.acos(Math.min(1, Math.max(-1, s.m[4]))) * 180) / Math.PI
+  // Through the deterministic arctangent, not Math.acos: this feeds the score,
+  // and the server must get the same answer as every browser.
+  const c = Math.min(1, Math.max(-1, s.m[4]))
+  return (datan2(Math.sqrt(1 - c * c), c) * 180) / Math.PI
 }
 
 /** World position of the midpoint between the two catch pins. */

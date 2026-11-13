@@ -125,6 +125,20 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
   /** Wide enough for a panel either side of the scene. */
   const [desk, setDesk] = useState(true)
   const flownByBotRef = useRef(false)
+  /** Which flight the result screen belongs to: a save or a card that finishes late is dropped. */
+  const flightId = useRef(0)
+  const stampSeq = useRef(0)
+  const cardUrlRef = useRef<string | null>(null)
+  const photoUrlRef = useRef<string | null>(null)
+  cardUrlRef.current = cardUrl
+  photoUrlRef.current = photoUrl
+  useEffect(
+    () => () => {
+      if (cardUrlRef.current) URL.revokeObjectURL(cardUrlRef.current)
+      if (photoUrlRef.current) URL.revokeObjectURL(photoUrlRef.current)
+    },
+    []
+  )
 
   useEffect(() => {
     const prefs = loadPrefs()
@@ -141,19 +155,26 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
 
   /** Put the score, verdict, name and rank over a frame and make it the share image. */
   const stampCard = useCallback(async (r: FlightResult, v: string, name: string, rank: number | null, frame?: HTMLCanvasElement) => {
+    // Only the newest request may set the card: a slower, older one is dropped.
+    const seq = ++stampSeq.current
     try {
       const f = frame ?? frameRef.current ?? engineRef.current?.capture()
       if (!f) return
       frameRef.current = f
       const blob = await canvasToBlob(composeCard({ frame: f, result: r, verdict: v, nickname: name, rank: rank ?? undefined }))
+      if (seq !== stampSeq.current) return
       blobRef.current = blob
       setCardUrl((old) => {
         if (old) URL.revokeObjectURL(old)
         return blob ? URL.createObjectURL(blob) : null
       })
     } catch {
+      if (seq !== stampSeq.current) return
       blobRef.current = null
-      setCardUrl(null)
+      setCardUrl((old) => {
+        if (old) URL.revokeObjectURL(old)
+        return null
+      })
     }
   }, [])
 
@@ -339,6 +360,16 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
     const m = modeRef.current
     trackCatch(retry === true ? 'catch_retry' : 'catch_start', { mode: m, mission })
     if (retry === true) trackCatch('catch_start', { mode: m, mission })
+    // A new flight: nothing from the last one (a save in flight, its card, its photo) may show on this one.
+    flightId.current++
+    stampSeq.current++
+    setSaving(false)
+    blobRef.current = null
+    frameRef.current = null
+    setCardUrl((old) => {
+      if (old) URL.revokeObjectURL(old)
+      return null
+    })
     setShowCard(false)
     setPhotoUrl((old) => {
       if (old) URL.revokeObjectURL(old)
@@ -464,6 +495,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
     }
     setSaving(true)
     setBoardNote('')
+    const flight = flightId.current
     try {
       const res = await fetch('/api/catch/leaderboard', {
         method: 'POST',
@@ -471,6 +503,8 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
         body: JSON.stringify({ mission, mode: result.mode, name, replay: engineRef.current?.tapeBase64() ?? '' }),
       })
       const data = (await res.json()) as CatchBoardResponse
+      // The player has already flown again: this answer belongs to the last flight.
+      if (flight !== flightId.current) return
       if (!res.ok || data.error || !data.enabled) {
         setBoardNote(data.error || 'Could not save your score. Try again.')
         return
@@ -490,9 +524,9 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
       }
       await stampCard(result, verdict, name, rank)
     } catch {
-      setBoardNote('Could not reach the leaderboard. Try again.')
+      if (flight === flightId.current) setBoardNote('Could not reach the leaderboard. Try again.')
     } finally {
-      setSaving(false)
+      if (flight === flightId.current) setSaving(false)
     }
   }, [mission, result, saving, stampCard, verdict])
 
@@ -712,11 +746,14 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
     return () => mq.removeEventListener('change', update)
   }, [])
   // The stick and buttons unmount when a flight ends; a thumb still down never
-  // sends its pointer-up, so clear the touch state whenever we are not flying.
+  // sends its pointer-up, and a key released after the flight is over (or with a
+  // button focused) is not read as flight input. Clear both whenever we are not
+  // flying, so nothing held at the end of one flight is still held in the next.
   useEffect(() => {
     if (screen === 'flying') return
     stickOrigin.current = null
     touch.current = { x: 0, y: 0, burn: false, arms: false }
+    keys.current = { left: false, right: false, up: false, down: false, burn: false, arms: false }
     pushInput()
   }, [screen, pushInput])
 
@@ -909,7 +946,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
   )
 
   return (
-    <div className="relative h-[100dvh] w-full select-none overflow-hidden bg-black text-white\" style={{ touchAction: 'none', WebkitTouchCallout: 'none' }}>
+    <div className="relative h-[100dvh] w-full select-none overflow-hidden bg-black text-white" style={{ touchAction: 'none', WebkitTouchCallout: 'none' }}>
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing"

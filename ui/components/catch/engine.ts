@@ -166,6 +166,8 @@ export class CatchEngine {
   /** A ship set down intact has no legs: it stands a moment, then goes over. */
   private topple: { th: number; th0: number; w: number; dx: number; dz: number; boom: boolean; q0: THREE.Quaternion; down: boolean } | null = null
   private endHoldUntil = 0
+  /** Everything the current ship owns on the GPU, freed when a wreck is replaced. */
+  private shipBag: Bag = []
   private flapTrim = 0
   private flapRoll = 0
   private fragGeos: THREE.BufferGeometry[] = []
@@ -259,7 +261,7 @@ export class CatchEngine {
     this.scene.add(this.base.group)
     this.booster = this.base.pad2.group.getObjectByName('booster') ?? null
     if (this.booster) this.boosterHome.copy(this.booster.position)
-    this.ship = buildShip(this.sky.env, this.bag)
+    this.ship = buildShip(this.sky.env, this.shipBag)
     this.scene.add(this.ship.group)
     this.fx = new Effects(this.bag, this.sky.env)
     this.scene.add(this.fx.mesh, this.fx.tiles, this.flash)
@@ -409,7 +411,10 @@ export class CatchEngine {
       const composer = new EffectComposer(this.renderer, target)
       composer.addPass(new RenderPass(this.scene, this.camera))
       // Only genuinely hot pixels bloom: the engines, a fireball, the sun, glints off the sea.
-      composer.addPass(new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.32, 0.55, 2.6))
+      const bloom = new UnrealBloomPass(new THREE.Vector2(size.x, size.y), 0.32, 0.55, 2.6)
+      composer.addPass(bloom)
+      // The composer does not free its passes' render targets; the bag does.
+      this.bag.push(bloom)
       composer.addPass(new OutputPass())
       this.composer = composer
       this.bag.push(target)
@@ -463,7 +468,13 @@ export class CatchEngine {
     this.detached = []
     if (this.exploded) {
       this.scene.remove(this.ship.group)
-      this.ship = buildShip(this.sky.env, this.bag)
+      for (const d of this.shipBag) {
+        try {
+          d.dispose()
+        } catch {}
+      }
+      this.shipBag = []
+      this.ship = buildShip(this.sky.env, this.shipBag)
       this.scene.add(this.ship.group)
       this.exploded = false
     }
@@ -1061,6 +1072,11 @@ export class CatchEngine {
         this.shake = Math.max(this.shake, 2)
         // It lands harder the faster it was turning when it hit.
         this.explode(Math.min(0.7, 0.3 + 0.25 * tp.w), false)
+        // The blast moved the end shot: fly there from where the camera is now.
+        this.endFrom.copy(this.camera.position)
+        this.endLookFrom.copy(this.camLook)
+        this.phaseT = 0
+        this.placeEnd(this.endTo, this.endAngle)
       } else {
         tp.down = true
         this.fx.splash(nx, nz, 2.2)
@@ -1133,7 +1149,7 @@ export class CatchEngine {
     const slices = violence < 0.35 ? 1 : violence < 0.7 ? 2 : 3
     const plateMat = this.ship.steel.clone()
     plateMat.side = THREE.DoubleSide
-    this.bag.push(plateMat)
+    this.shipBag.push(plateMat)
     g.getWorldQuaternion(qA)
     for (const f of hullFragments(plateMat, bands, slices)) {
       this.fragGeos.push(f.mesh.geometry)
@@ -1399,7 +1415,8 @@ export class CatchEngine {
     }
     cam.lookAt(this.camLook)
     // Push the near plane out when nothing is close: depth precision goes where the scene is.
-    const near = Math.max(4, Math.min(60, 0.2 * Math.min(cam.position.y, cam.position.distanceTo(this.ship.group.position) - SHIP.height)))
+    const following = this.phase === 'idle' || this.phase === 'intro' || this.phase === 'flying'
+    const near = following ? Math.max(4, Math.min(60, 0.2 * Math.min(cam.position.y, cam.position.distanceTo(this.ship.group.position) - SHIP.height))) : 4
     if (Math.abs(near - cam.near) > 0.5) {
       cam.near = near
       cam.updateProjectionMatrix()
@@ -1492,6 +1509,16 @@ export class CatchEngine {
     this.disposed = true
     cancelAnimationFrame(this.raf)
     this.raf = 0
+    for (const g of this.fragGeos) g.dispose()
+    this.fragGeos = []
+    // The sun's shadow map.
+    this.sun.dispose()
+    for (const d of this.shipBag) {
+      try {
+        d.dispose()
+      } catch {}
+    }
+    this.shipBag = []
     for (const d of this.bag) {
       try {
         d.dispose()

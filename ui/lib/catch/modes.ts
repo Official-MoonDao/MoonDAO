@@ -38,8 +38,8 @@ export type ModeConfig = {
   /** degrees the engines swivel at full stick */
   maxGimbalDeg: number
   /**
-   * m/s. Above zero, holding BURN brakes down to this sink rate and then
-   * holds it, so the ship never climbs. Zero: BURN is always full thrust.
+   * Above zero marks the assisted mode (Easy); the autopilot plans by it.
+   * The sink rate BURN actually settles to, in both modes, is `burnSink`.
    */
   sinkFloor: number
   /**
