@@ -57,6 +57,15 @@ export default function Leaderboard({
           })}
         </ol>
       )}
+      {board.yesterday && (
+        <p className="mt-2 flex items-center gap-2 rounded border border-amber-300/20 bg-amber-300/[0.07] px-1.5 py-1 text-[12px] text-amber-100/90">
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-200/70">
+            Yesterday&apos;s winner
+          </span>
+          <span className="min-w-0 flex-1 truncate font-semibold">{board.yesterday.name}</span>
+          <span className="shrink-0 font-bold tabular-nums">{formatScore(board.yesterday.score)}</span>
+        </p>
+      )}
       {showRace && (
         <p className="mt-2 text-[11px] leading-snug text-white/45">
           Real landers tip over too. After you land, see who is tipped to land upright next.

@@ -81,6 +81,21 @@ export async function readBoard(
   return { top, total }
 }
 
+/** The top pilot on the day before `mission`, if anyone landed. */
+export async function readYesterdaysWinner(
+  redis: Redis,
+  mission: number,
+  mode: ModeId
+): Promise<{ name: string; score: number } | undefined> {
+  if (mission < 2) return undefined
+  const k = keys(mission - 1, mode)
+  const flat = await redis.zrange<(string | number)[]>(k.scores, 0, 0, { rev: true, withScores: true })
+  if (flat.length < 2) return undefined
+  const id = String(flat[0])
+  const name = await redis.hget<string>(k.names, id)
+  return { name: String(name ?? id), score: Number(flat[1]) }
+}
+
 /** Rank a score would hold today: one more than the number of strictly better scores. */
 export async function rankOf(redis: Redis, mission: number, mode: ModeId, score: number): Promise<number> {
   const better = await redis.zcount(keys(mission, mode).scores, `(${score}`, '+inf')
