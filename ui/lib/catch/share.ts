@@ -69,7 +69,7 @@ export function shareText(result: FlightResult, rank?: number): string {
   }
   // The very best and the very worst flights get a tag; a middling crash sometimes apologizes.
   const max = result.mode === 'pro' ? 1375 : 1100
-  if (result.outcome === 'caught' && !result.hard && result.score >= max * 0.93) lines.push('@elonmusk would be proud.')
+  if (result.outcome === 'caught' && !result.hard && result.score >= max * 0.88) lines.push('@elonmusk would be proud.')
   else if (result.score <= -500) lines.push('@elonmusk is NOT happy.')
   else if (result.outcome === 'crashed' && result.damage.length > 0 && Math.abs(result.score) % 3 === 0) lines.push('Sorry, @SpaceX.')
   return [...lines, '', DARE].join('\n')

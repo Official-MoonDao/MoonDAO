@@ -118,7 +118,8 @@ export function verdictFor(r: FlightResult, seed: number): string {
     case 'caught': {
       if (r.hard) return pick(HARD, seed)
       const max = r.mode === 'pro' ? 1375 : 1100
-      if (r.score >= max * 0.95) return pick(PERFECT, seed)
+      // Full marks need an exact catch, so 90% is already a rare one.
+      if (r.score >= max * 0.9) return pick(PERFECT, seed)
       return pick(r.closingSpeed > 6 ? FIRM : CAUGHT, seed)
     }
     case 'splashdown':

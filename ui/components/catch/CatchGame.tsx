@@ -13,7 +13,18 @@ import { trackCatch } from '@/lib/analytics/ga4'
 import { conditionsFor } from '@/lib/catch/conditions'
 import { cleanBoardName, type CatchBoardResponse } from '@/lib/catch/leaderboard'
 import { MODES, type ModeId } from '@/lib/catch/modes'
-import { DAMAGE_COST, type FlightResult } from '@/lib/catch/scoring'
+import {
+  CATCH_POINTS,
+  CENTER_POINTS,
+  DAMAGE_COST,
+  DEPTH_POINTS,
+  FUEL_POINTS,
+  HEIGHT_POINTS,
+  SOFT_POINTS,
+  STEADY_POINTS,
+  UPRIGHT_POINTS,
+  type FlightResult,
+} from '@/lib/catch/scoring'
 import {
   SHARE_PATH,
   canvasToBlob,
@@ -783,14 +794,14 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
   const parts: [string, number, number][] = result
     ? good
       ? [
-          ['Catch', result.parts.caught, 150],
-          ['Upright', result.parts.upright, 100],
-          ['Depth', result.parts.depth, 150],
-          ['Center', result.parts.center, 100],
-          ['Height', result.parts.height, 100],
-          ['Soft', result.parts.soft, 250],
-          ['Steady', result.parts.steady, 100],
-          ['Fuel', result.parts.fuel, 150],
+          ['Catch', result.parts.caught, CATCH_POINTS],
+          ['Upright', result.parts.upright, UPRIGHT_POINTS],
+          ['Depth', result.parts.depth, DEPTH_POINTS],
+          ['Center', result.parts.center, CENTER_POINTS],
+          ['Height', result.parts.height, HEIGHT_POINTS],
+          ['Soft', result.parts.soft, SOFT_POINTS],
+          ['Steady', result.parts.steady, STEADY_POINTS],
+          ['Fuel', result.parts.fuel, FUEL_POINTS],
         ]
       : [
           ['Near miss', result.parts.near, 200],

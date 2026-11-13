@@ -1,22 +1,27 @@
 /**
  * Catch scoring. Partial credit everywhere and no cliffs.
  *
- * A catch earns up to 1,100, times 1.25 in Pro:
+ * A catch earns up to 1,100, times 1.25 in Pro. Most of it is for alignment,
+ * and a full figure means a measurement that is all but exact: the alignment
+ * figures have no "good enough" band, and they fall fastest close to perfect,
+ * so the last few points are the hard ones.
  *
  *   the catch itself   150
- *   upright            100  how near vertical the ship was when the arms took hold
- *   sweet spot         350, for where in the arms the ship was taken:
- *       depth   150  how far along the rails the pins came down. The sweet
+ *   upright            150  how near vertical the ship was when the arms took hold
+ *   sweet spot         500, for where in the arms the ship was taken:
+ *       depth   200  how far along the rails the pins came down. The sweet
  *                    spot is marked by the ring; out at the arm tips or deep
  *                    in against the tower still holds, for less.
- *       center  100  how evenly it sat between the two arms
+ *       center  200  how evenly it sat between the two arms
  *       height  100  how high the pins were above the rails when the arms
  *                    took hold. About 3 m is ideal. Lower and they only just
  *                    got under the pins; higher and the ship had a long drop
  *                    onto them.
- *   soft               250  how gently the pins met the rails
+ *   soft               100  how gently the pins met the rails. BURN settles
+ *                           the ship to a fixed sink rate, so this only
+ *                           separates a braked arrival from a fast one.
  *   steady             100  how little it was still drifting sideways when the pins landed
- *   fuel               150  share of the burn left
+ *   fuel               100  share of the burn left
  *
  * A hard catch is one the pins missed or broke on, with the ship left hanging
  * by its forward flaps. It still counts, at half of everything above.
@@ -47,15 +52,15 @@ export const DAMAGE_COST: Record<StructureId, number> = {
 }
 
 export const CATCH_POINTS = 150
-export const UPRIGHT_POINTS = 100
+export const UPRIGHT_POINTS = 150
 /** Share of a catch's points kept when the forward flaps did the catching. */
 export const HARD_CATCH_SHARE = 0.5
-export const DEPTH_POINTS = 150
-export const CENTER_POINTS = 100
+export const DEPTH_POINTS = 200
+export const CENTER_POINTS = 200
 export const HEIGHT_POINTS = 100
-export const SOFT_POINTS = 250
+export const SOFT_POINTS = 100
 export const STEADY_POINTS = 100
-export const FUEL_POINTS = 150
+export const FUEL_POINTS = 100
 export const NEAR_MISS_POINTS = 200
 export const SPLASHDOWN_POINTS = 120
 export const DITCH_POINTS = 60
@@ -92,18 +97,27 @@ export type FlightResult = {
 
 const taper = (v: number, full: number, zero: number) => (v <= full ? 1 : v >= zero ? 0 : 1 - (v - full) / (zero - full))
 
+/**
+ * 0..1 for an error that should be zero. Only `exact` or less earns the full
+ * figure (that is a measurement tolerance, not a comfort band); from there it
+ * falls as the 3/2 power, steepest right next to perfect, reaching nothing at
+ * `zero`. Square root only, never Math.pow: the server must round the same way
+ * as every browser.
+ */
+const precision = (err: number, exact: number, zero: number) => {
+  const u = taper(err, exact, zero)
+  return u * Math.sqrt(u)
+}
+
 /** 0..1 for how far along the rails the pins came down. */
 export function depthFactor(along: number): number {
-  return along < 0 ? taper(-along, 1, DEPTH_REACH_TIPS) : taper(along, 1, DEPTH_REACH_TOWER)
+  return along < 0 ? precision(-along, 0.1, DEPTH_REACH_TIPS) : precision(along, 0.1, DEPTH_REACH_TOWER)
 }
 
 /** 0..1 for the height of the pins above the rails when the arms took hold. */
 export function heightFactor(margin: number): number {
-  const lo = SWEET_MARGIN - 1
-  const hi = SWEET_MARGIN + 1.5
-  if (margin < lo) return 0.25 + 0.75 * Math.max(0, margin / lo)
-  if (margin > hi) return 0.2 + 0.8 * taper(margin, hi, 16)
-  return 1
+  if (margin < SWEET_MARGIN) return 0.25 + 0.75 * precision(SWEET_MARGIN - margin, 0.15, SWEET_MARGIN)
+  return 0.2 + 0.8 * precision(margin - SWEET_MARGIN, 0.15, 13)
 }
 
 export function scoreFlight(s: Sim): FlightResult {
@@ -113,12 +127,12 @@ export function scoreFlight(s: Sim): FlightResult {
   const fuelLeft = s.fuel / mode.fuelSeconds
   if (outcome === 'caught') {
     parts.caught = CATCH_POINTS
-    parts.upright = Math.round(UPRIGHT_POINTS * taper(s.hugTilt, 1.5, 8))
+    parts.upright = Math.round(UPRIGHT_POINTS * precision(s.hugTilt, 0.1, 8))
     parts.depth = Math.round(DEPTH_POINTS * depthFactor(s.endAlong))
-    parts.center = Math.round(CENTER_POINTS * taper(Math.abs(s.endAcross), 0.5, 6))
+    parts.center = Math.round(CENTER_POINTS * precision(Math.abs(s.endAcross), 0.05, 6))
     parts.height = Math.round(HEIGHT_POINTS * heightFactor(s.hugMargin))
     parts.soft = Math.round(SOFT_POINTS * taper(s.endVertical, mode.burnSink + 0.2, mode.pinLimit))
-    parts.steady = Math.round(STEADY_POINTS * taper(s.endHorizontal, 0.5, 5))
+    parts.steady = Math.round(STEADY_POINTS * precision(s.endHorizontal, 0.05, 5))
     parts.fuel = Math.round(FUEL_POINTS * Math.min(1, fuelLeft / 0.3))
     if (s.hard) {
       const keys = ['caught', 'upright', 'depth', 'center', 'height', 'soft', 'steady', 'fuel'] as const

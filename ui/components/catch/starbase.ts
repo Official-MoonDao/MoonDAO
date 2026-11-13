@@ -545,13 +545,38 @@ function ribbon(pos: number[], p: number[], off: number, hw: number, y: number) 
   for (let i = 0; i < n; i++) {
     const a = Math.max(0, i - 1)
     const c = Math.min(n - 1, i + 1)
-    let dx = p[c * 2] - p[a * 2]
-    let dz = p[c * 2 + 1] - p[a * 2 + 1]
+    // Direction in and direction out, each to unit length; their sum is the
+    // direction across the bend.
+    let ix = p[i * 2] - p[a * 2]
+    let iz = p[i * 2 + 1] - p[a * 2 + 1]
+    let ox = p[c * 2] - p[i * 2]
+    let oz = p[c * 2 + 1] - p[i * 2 + 1]
+    const li = Math.hypot(ix, iz)
+    const lo = Math.hypot(ox, oz)
+    if (li > 0) {
+      ix /= li
+      iz /= li
+    } else {
+      ix = ox / (lo || 1)
+      iz = oz / (lo || 1)
+    }
+    if (lo > 0) {
+      ox /= lo
+      oz /= lo
+    } else {
+      ox = ix
+      oz = iz
+    }
+    let dx = ix + ox
+    let dz = iz + oz
     const L = Math.hypot(dx, dz) || 1
     dx /= L
     dz /= L
-    left.push(p[i * 2] - dz * (off + hw), p[i * 2 + 1] + dx * (off + hw))
-    right.push(p[i * 2] - dz * (off - hw), p[i * 2 + 1] + dx * (off - hw))
+    // Mitre: push the corner out so the ribbon keeps its full width round a
+    // bend and does not pinch. Capped so a hairpin does not grow a spike.
+    const m = 1 / Math.max(0.5, dx * ix + dz * iz)
+    left.push(p[i * 2] - dz * (off + hw) * m, p[i * 2 + 1] + dx * (off + hw) * m)
+    right.push(p[i * 2] - dz * (off - hw) * m, p[i * 2 + 1] + dx * (off - hw) * m)
   }
   for (let i = 0; i < n - 1; i++) {
     // Wound so the face normal points up (x east, z south).
@@ -693,7 +718,9 @@ function roads(mats: Mats, bag: Bag): THREE.Group {
     mat.depthWrite = false
     const mesh = new THREE.Mesh(geo, mat)
     mesh.receiveShadow = true
-    mesh.renderOrder = kind >= 2 ? -0.5 : -1
+    // Dirt tracks first, then asphalt over them: where a track leaves a road
+    // its square end is covered by the road and does not sit on top of it.
+    mesh.renderOrder = kind >= 2 ? -0.5 : kind === 1 ? -1.5 : -1
     group.add(mesh)
   }
   return group
