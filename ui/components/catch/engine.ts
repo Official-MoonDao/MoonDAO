@@ -978,7 +978,9 @@ export class CatchEngine {
     const sy = Math.sin(yaw)
     // Aim half-way between the ship and the ring, but never so far that the ship leaves the frame.
     const look = scratchC.set(SWEET_X, PAD1.railY - 14, PAD1.z).sub(mid).multiplyScalar(0.5)
-    const reach = Math.max(10, back * tanHalf - (this.camera.aspect < 1 ? 62 : 46))
+    // The ship is nearer the camera than the aim point, so it sits further from
+    // the middle of the frame than the shift alone suggests: leave a wide margin.
+    const reach = Math.max(10, back * tanHalf * 0.6 - 30)
     if (look.length() > reach) look.setLength(reach)
     look.add(mid)
     const want = scratchB.set(look.x - Math.cos(pitch) * cy * back, look.y + Math.sin(pitch) * back, look.z + Math.cos(pitch) * sy * back)
