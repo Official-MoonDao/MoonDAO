@@ -2,7 +2,8 @@
  * One-line verdicts for the Catch result screen and share card.
  *
  * Rules: jokes are aimed at the player, never at a company or a person. Never
- * the words bet, gamble or wager. US English.
+ * the words bet, gamble or wager. US English. Launch-fan shorthand (RUD,
+ * nominal, "excitement guaranteed") is welcome where it fits what happened.
  */
 import type { StructureId } from './physics'
 import type { FlightResult } from './scoring'
@@ -12,6 +13,7 @@ const PERFECT = [
   'Dead center, feather soft. Do that again and they will give you a console.',
   'That is the one they will put on the poster.',
   'Flight director has no notes. That never happens.',
+  'Nominal. Completely, boringly, beautifully nominal.',
 ]
 
 const CAUGHT = [
@@ -50,10 +52,13 @@ const DITCHED = [
   'A soft landing, followed by a slow, expensive lean.',
   'Down in one piece, for about four seconds.',
   'You landed a ship with no legs. Timber.',
+  'A soft landing, then a RUD in slow motion.',
 ]
 
 const CRASH_GROUND = [
   'Rapid unscheduled disassembly, Texas edition.',
+  'RUD. The data, at least, was excellent.',
+  'Excitement was guaranteed. A catch was not.',
   'The ship has been successfully distributed across the launch site.',
   'You found the ground. All at once.',
   'The good ending is one burn earlier.',
@@ -65,6 +70,7 @@ const CRASH_SEA = [
   'Into the Gulf at speed. That is not a splashdown, that is a delivery.',
   'The ocean was softer than the ground, but not that soft.',
   'You missed Texas.',
+  'RUD, with a splash.',
 ]
 
 const CRASH_ARMS = [
@@ -148,7 +154,7 @@ export function outcomeHeadline(r: FlightResult): string {
     case 'lost':
       return 'Lost the ship'
     default:
-      return r.damage.length > 2 ? 'Starbase is on fire' : r.damage.length ? 'Base damaged' : 'No catch'
+      return r.damage.length > 2 ? 'Starbase is on fire' : r.damage.length ? 'Base damaged' : 'RUD · no catch'
   }
 }
 

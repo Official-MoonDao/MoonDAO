@@ -43,7 +43,10 @@ export function noiseTexture(seed: number, bag: Bag): THREE.DataTexture {
   t.minFilter = THREE.LinearMipmapLinearFilter
   t.magFilter = THREE.LinearFilter
   t.generateMipmaps = true
-  t.anisotropy = 8
+  // No anisotropic filtering: the ground shader reads this texture some thirty
+  // times a pixel, and at 8x that was about half the cost of a frame for no
+  // difference anyone can see, even looking along the ground.
+  t.anisotropy = 1
   t.needsUpdate = true
   bag.push(t)
   return t

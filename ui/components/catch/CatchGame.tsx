@@ -1169,7 +1169,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">Can you catch a Starship?</p>
             <h1 className="mt-0.5 font-heading text-3xl font-extrabold leading-none tracking-tight sm:mt-1 sm:text-[2.6rem]">STARSHIP CATCH</h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
-              A Starship is falling out of the sky over Starbase. Brake, steer, and set it down in the tower&apos;s arms. Overshoot and it ends up in the Gulf. New weather every day.
+              A Starship is falling out of the sky over Starbase. Brake, steer, and set it down in the tower&apos;s arms. Overshoot and it ends up in the Gulf. New weather every day. Excitement guaranteed.
             </p>
             <p className="mt-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/80">
               Today: {conditions.sky.toLowerCase()}, wind from the {conditions.windFrom} at {conditions.windSpeed.toFixed(0)} m/s

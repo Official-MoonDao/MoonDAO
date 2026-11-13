@@ -64,7 +64,7 @@ export function shareText(result: FlightResult, rank?: number): string {
       break
     default: {
       const worst = worstDamage(result)
-      lines = [worst ? DAMAGE_POST[worst] : '💥 I just turned a Starship into a very large fireball.', `${score}${result.damage.length > 1 ? ` · ${result.damage.length} structures hit` : ''}`]
+      lines = [worst ? DAMAGE_POST[worst] : '💥 RUD. I just turned a Starship into a very large fireball.', `${score}${result.damage.length > 1 ? ` · ${result.damage.length} structures hit` : ''}`]
     }
   }
   // The very best and the very worst flights get a tag; a middling crash sometimes apologizes.
@@ -72,6 +72,7 @@ export function shareText(result: FlightResult, rank?: number): string {
   if (result.outcome === 'caught' && !result.hard && result.score >= max * 0.86) lines.push('@elonmusk would be proud.')
   else if (result.score <= -500) lines.push('@elonmusk is NOT happy.')
   else if (result.outcome === 'crashed' && result.damage.length > 0 && Math.abs(result.score) % 3 === 0) lines.push('Sorry, @SpaceX.')
+  else if (result.outcome === 'crashed' || result.outcome === 'ditched') lines.push('Excitement guaranteed.')
   return [...lines, '', DARE].join('\n')
 }
 

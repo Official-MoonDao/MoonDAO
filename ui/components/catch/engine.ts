@@ -99,6 +99,8 @@ const smooth = (u: number) => {
 }
 
 /** Seconds of the automatic opening: belly-down fall, flip, relight, hand-over. */
+/** Pixel ratios a machine that cannot hold the frame rate is stepped down through, best first. */
+const RATIO_STEPS = [2, 1.75, 1.5, 1.25, 1.1, 1, 0.85, 0.75]
 const INTRO_T = 2.9
 const FLOP_END = 0.7
 const FLOP_SPEED = 70
@@ -167,6 +169,18 @@ export class CatchEngine {
   private topple: { th: number; th0: number; w: number; dx: number; dz: number; boom: boolean; q0: THREE.Quaternion; down: boolean } | null = null
   private endHoldUntil = 0
   private baseRatio = 1
+  /**
+   * Highest pixel ratio the machine has shown it can hold at full frame rate.
+   * Starts unlimited; pace() lowers it when frames run long.
+   */
+  private ratioCap = Infinity
+  /** A ratio that proved too slow: never climb back to it. */
+  private ratioTooSlow = Infinity
+  private winMs = 0
+  private winFrames = 0
+  private goodWindows = 0
+  /** Frames are not judged while this runs down: loading, or just after a resize. */
+  private settleMs = 1500
   /** Everything the current ship owns on the GPU, freed when a wreck is replaced. */
   private shipBag: Bag = []
   private flapTrim = 0
@@ -535,11 +549,60 @@ export class CatchEngine {
     const tick = (now: number) => {
       if (this.disposed) return
       this.raf = requestAnimationFrame(tick)
-      const dt = Math.min(0.05, (now - this.last) / 1000)
+      const gap = now - this.last
+      const dt = Math.min(0.05, gap / 1000)
       this.last = now
+      this.pace(gap)
       this.frame(dt)
     }
     this.raf = requestAnimationFrame(tick)
+  }
+
+  /**
+   * Hold the frame rate by trading resolution. Frames are averaged over a
+   * second and a half. A slow window (under about 48 a second) lowers the
+   * pixel ratio, straight to the step that should hold the rate, since frame
+   * time follows the pixel count. A long steady run at full rate tries one
+   * step back up, but never to a ratio that has already proved too slow. A
+   * changed resolution reallocates the render targets, so steps are few.
+   */
+  private pace(gap: number) {
+    // A hidden tab, a shader compile or a resize is not the machine's pace.
+    if (gap > 250 || gap <= 0) return
+    if (this.settleMs > 0) {
+      this.settleMs -= gap
+      return
+    }
+    this.winMs += gap
+    this.winFrames++
+    if (this.winMs < 1500) return
+    const avg = this.winMs / this.winFrames
+    this.winMs = 0
+    this.winFrames = 0
+    const now = this.renderer.getPixelRatio()
+    const floor = Math.min(this.baseRatio, this.mobile ? 1 : 0.75)
+    if (avg > 21 && now > floor + 0.01) {
+      const want = now * Math.sqrt(15.5 / avg)
+      let to = floor
+      for (const r of RATIO_STEPS) {
+        if (r < now - 0.01 && r <= want && r >= floor) {
+          to = r
+          break
+        }
+      }
+      this.ratioTooSlow = now
+      this.ratioCap = to
+      this.goodWindows = 0
+      this.resize()
+    } else if (avg < 18 && this.ratioCap < this.ratioTooSlow) {
+      // Six steady windows in a row, about nine seconds.
+      if (++this.goodWindows < 6) return
+      this.goodWindows = 0
+      const up = [...RATIO_STEPS].reverse().find((r) => r > this.ratioCap + 0.01)
+      if (up === undefined || up >= this.ratioTooSlow - 0.01) return
+      this.ratioCap = up
+      this.resize()
+    } else this.goodWindows = 0
   }
 
   /** The finished flight's input tape, base64, for score verification. */
@@ -1572,6 +1635,12 @@ export class CatchEngine {
       const budget = Math.sqrt((still ? 6.5e6 : 3.4e6) / (w * hgt))
       ratio = Math.max(this.baseRatio, Math.min(still ? 2 : 1.5, budget))
     }
+    // Scaled down on a machine that cannot hold the frame rate (see pace).
+    ratio = Math.min(ratio, this.ratioCap)
+    // Let the new size settle before judging the frame rate again.
+    this.settleMs = Math.max(this.settleMs, 700)
+    this.winMs = 0
+    this.winFrames = 0
     if (Math.abs(ratio - this.renderer.getPixelRatio()) > 0.01) this.renderer.setPixelRatio(ratio)
     this.renderer.setSize(w, hgt, false)
     if (this.composer) {

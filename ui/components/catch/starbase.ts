@@ -604,7 +604,9 @@ function inRings(polys: number[][][], x: number, z: number): boolean {
  * slides against the ground as the camera moves.
  */
 function vegetation(env: THREE.Texture, bag: Bag, count: number): THREE.InstancedMesh {
-  let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(1, 2)
+  // Eighty faces a bush: there are thousands, each a few pixels across, and
+  // every one is drawn again for the shadow map.
+  let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(1, 1)
   geo.deleteAttribute('uv')
   geo.deleteAttribute('normal')
   geo = mergeVertices(geo)
