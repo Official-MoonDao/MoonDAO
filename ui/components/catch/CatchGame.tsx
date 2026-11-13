@@ -85,6 +85,8 @@ export default function CatchGame() {
   const fuelTextRef = useRef<HTMLSpanElement>(null)
   const promptRef = useRef<HTMLDivElement>(null)
   const markerRef = useRef<HTMLDivElement>(null)
+  const guideShipRef = useRef<SVGCircleElement>(null)
+  const guideVelRef = useRef<SVGLineElement>(null)
   const armsRef = useRef<HTMLSpanElement>(null)
   const keyEls = useRef<Record<string, HTMLElement | null>>({})
 
@@ -127,6 +129,19 @@ export default function CatchGame() {
       markerRef.current.dataset.off = h.tOnScreen ? '0' : '1'
       markerRef.current.style.opacity = h.dist < 14 && h.tOnScreen ? '0' : '1'
     }
+    // Top view: where the ship is over the arms, and which way it is drifting.
+    if (guideShipRef.current && guideVelRef.current) {
+      const gx = Math.max(-22, Math.min(22, h.across))
+      const gy = Math.max(-30, Math.min(44, -h.along))
+      const ok = h.dist < 2.5
+      guideShipRef.current.setAttribute('cx', gx.toFixed(1))
+      guideShipRef.current.setAttribute('cy', gy.toFixed(1))
+      guideShipRef.current.setAttribute('fill', ok ? '#7dffb0' : h.dist < 7 ? '#ffd34d' : '#ffffff')
+      guideVelRef.current.setAttribute('x1', gx.toFixed(1))
+      guideVelRef.current.setAttribute('y1', gy.toFixed(1))
+      guideVelRef.current.setAttribute('x2', (gx + h.vAcross * 1.6).toFixed(1))
+      guideVelRef.current.setAttribute('y2', (gy - h.vAlong * 1.6).toFixed(1))
+    }
   }, [])
 
   // --- Boot ------------------------------------------------------------------------
@@ -163,6 +178,7 @@ export default function CatchGame() {
           { mobile: coarse || window.innerWidth < 760, bloom: !(dev && params.get('bloom') === '0') }
         )
         engineRef.current = engine
+        engine.touch = coarse
         engine.autopilot = dev && params.get('autopilot') === '1'
         if (dev) {
           const cam = params.get('cam')
@@ -442,7 +458,7 @@ export default function CatchGame() {
           ['Center', result.parts.center, 100],
           ['Height', result.parts.height, 100],
           ['Soft', result.parts.soft, 250],
-          ['Upright', result.parts.upright, 100],
+          ['Steady', result.parts.steady, 100],
           ['Fuel', result.parts.fuel, 150],
         ]
       : [
@@ -474,7 +490,6 @@ export default function CatchGame() {
           <HudRow label="TO ARMS" unit="m" valueRef={altRef} big />
           <HudRow label="V/S" unit="m/s" valueRef={vsRef} />
           <HudRow label="H/S" unit="m/s" valueRef={hsRef} />
-          <HudRow label="TILT" unit="°" valueRef={tiltRef} />
         </div>
 
         <div className="absolute right-3 top-3 w-36 rounded-xl border border-white/10 bg-black/55 px-2.5 py-1.5 font-RobotoMono backdrop-blur-sm sm:w-48 sm:px-3 sm:py-2">
@@ -509,9 +524,22 @@ export default function CatchGame() {
           {pro && <div className="mt-1 text-[10px] tracking-widest text-amber-200/80">PRO</div>}
         </div>
 
+        {/* Top view of the arms: steer the dot into the ring. */}
+        <div className="absolute left-3 top-[6.6rem] rounded-xl border border-white/10 bg-black/55 p-1.5 backdrop-blur-sm sm:bottom-24 sm:left-auto sm:right-3 sm:top-auto sm:p-2">
+          <svg viewBox="-24 -32 48 78" className="block h-[6.6rem] w-[4.1rem] sm:h-[11rem] sm:w-[6.8rem]" aria-hidden>
+            <rect x="-6" y="-32" width="12" height="10" fill="#5b6068" />
+            <line x1="-5.7" y1="-20.5" x2="-5.7" y2="15.5" stroke="#9aa0a8" strokeWidth="1.6" />
+            <line x1="5.7" y1="-20.5" x2="5.7" y2="15.5" stroke="#9aa0a8" strokeWidth="1.6" />
+            <circle cx="0" cy="0" r="5.2" fill="none" stroke="#7dffb0" strokeWidth="1.2" />
+            <line ref={guideVelRef} x1="0" y1="30" x2="0" y2="30" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="1" />
+            <circle ref={guideShipRef} cx="0" cy="30" r="3.6" fill="#ffffff" />
+          </svg>
+          <p className="mt-0.5 text-center font-RobotoMono text-[8px] tracking-widest text-white/55 sm:text-[9px]">TOP VIEW</p>
+        </div>
+
         <div
           ref={promptRef}
-          className="absolute left-1/2 top-[19%] max-w-[92%] -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/60 px-3 py-1.5 text-center text-sm font-bold tracking-wide opacity-0 backdrop-blur-sm transition-opacity sm:px-4 sm:py-2 sm:text-xl"
+          className="absolute left-1/2 top-[31%] max-w-[92%] sm:top-[19%] -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/60 px-3 py-1.5 text-center text-sm font-bold tracking-wide opacity-0 backdrop-blur-sm transition-opacity sm:px-4 sm:py-2 sm:text-xl"
         />
 
         <div ref={markerRef} data-off="0" className="group absolute -translate-x-1/2 -translate-y-1/2 transition-opacity">
@@ -542,7 +570,7 @@ export default function CatchGame() {
                 →
               </span>
             </div>
-            <p className="mt-1.5 text-[10px] font-bold tracking-[0.3em] text-white/70">TILT</p>
+            <p className="mt-1.5 text-[10px] font-bold tracking-[0.3em] text-white/70">STEER</p>
           </div>
           <div className="text-center">
             <span
@@ -577,9 +605,9 @@ export default function CatchGame() {
         <div className="pointer-events-none absolute inset-x-0 bottom-28 z-20 flex justify-center px-4">
           <div className="animate-pulse rounded-2xl border-2 border-amber-300/80 bg-black/75 px-5 py-3 text-center shadow-2xl backdrop-blur">
             <p className="text-lg font-extrabold tracking-wide text-white sm:text-xl">
-              Hold <kbd className="mx-1 inline-block rounded-lg border-2 border-white/70 bg-white/15 px-5 py-1 font-RobotoMono text-base sm:text-xl">SPACE</kbd> to fire the engines
+              Hold <kbd className="mx-1 inline-block rounded-lg border-2 border-white/70 bg-white/15 px-5 py-1 font-RobotoMono text-base sm:text-xl">SPACE</kbd> for full thrust
             </p>
-            <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">Down arrow leans back to brake · the engines push along the ship</p>
+            <p className="mt-1.5 text-xs font-semibold text-white/75 sm:text-sm">The engines idle when you let go · arrows swivel them to slide the ship: ↑ toward the tower, ↓ to brake</p>
           </div>
         </div>
       )}
@@ -605,7 +633,7 @@ export default function CatchGame() {
           <div className="absolute bottom-0 left-0 top-[30%] z-20 w-[58%]" onPointerDown={onStickDown} onPointerMove={onStickMove} onPointerUp={onStickUp} onPointerCancel={onStickUp}>
             <div ref={stickRef} className="pointer-events-none absolute h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white/35 bg-white/5 opacity-45" style={{ left: '34%', top: '68%' }}>
               <div ref={knobRef} className="absolute left-1/2 top-1/2 -ml-6 -mt-6 h-12 w-12 rounded-full bg-white/70" />
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-widest text-white/60">TILT</span>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-widest text-white/60">STEER</span>
             </div>
           </div>
           <button
@@ -640,7 +668,7 @@ export default function CatchGame() {
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">Can you catch a Starship?</p>
             <h1 className="mt-0.5 font-heading text-3xl font-extrabold tracking-tight sm:mt-1 sm:text-5xl">CATCH</h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
-              The ship flips, relights and is yours. One landing burn: lean back to brake, slide it between the tower&apos;s arms at Starbase and set the pins on the rails, right in the ring. New wind every day.
+              The ship falls belly-down over Starbase, flips, relights and is yours. Swivel the engines to slide it between the tower&apos;s arms, hold BURN to slow it, and set the pins on the rails, right in the ring. New wind every day.
             </p>
             <p className="mt-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/80">
               Today: wind from the {conditions.windFrom} at {conditions.windSpeed.toFixed(0)} m/s
@@ -657,8 +685,8 @@ export default function CatchGame() {
               </button>
             </div>
             <p className="mt-2 text-[11px] leading-snug text-white/55 sm:mt-3 sm:text-xs">
-              {pro ? 'Pro: you steer by rate and close the arms yourself. Score ×1.25.' : 'Easy: the ship levels itself and the tower closes the arms.'}
-              {isTouch ? ' Left thumb tilts. Right thumb holds BURN.' : ''}
+              {pro ? 'Pro: faster, less fuel, full wind, and you close the arms yourself. Score ×1.25.' : 'Easy: brake assist is on and the tower closes the arms for you.'}
+              {isTouch ? ' Left thumb steers. Right thumb holds BURN.' : ''}
             </p>
             {screen === 'error' && <p className="mt-2 text-xs text-rose-200">This browser could not start WebGL. Try another browser or device.</p>}
           </div>

@@ -122,16 +122,22 @@ function tower(b: Builder, railY: number) {
   b.cyl('steel', 0.18, 0.3, TOWER.mastTop - H + 6, 4, H, 4, 6)
   // Hoist cables from the cap down to the carriage.
   for (const sx of [-1, 1]) b.beam('black', sx * 3, H - 6, -h - 6, sx * 3, railY + 2, -h - 6, 0.16)
-  // Ship quick-disconnect arm, swung clear of the catch corridor.
-  const qy = 100
-  b.box('steel', 4, 7, 4, -h - 1, qy, -h + 1)
-  b.beam('steel', -h - 2, qy + 3, -h, -h - 22, qy + 3, -h - 4, 1.0)
-  b.beam('steel', -h - 2, qy - 3, -h, -h - 22, qy + 1, -h - 4, 0.8)
+  // Ship quick-disconnect arm: well below the catch arms, reaching the same
+  // way they do, swung a little aside so a ship can come down past it.
+  const qy = 70
+  const qx0 = -h + 1.5
+  const qz0 = -h - 0.5
+  const qx1 = qx0 - 9
+  const qz1 = qz0 - 15
+  b.box('steel', 4, 7, 3, qx0, qy, -h + 0.5)
+  b.beam('steel', qx0, qy + 2.6, qz0, qx1, qy + 2.6, qz1, 0.9)
+  b.beam('steel', qx0, qy - 3, qz0, qx1, qy + 0.4, qz1, 0.7)
   for (let k = 1; k < 5; k++) {
     const u = k / 5
-    b.beam('steel', -h - 2 - 20 * u, qy + 3, -h - 4 * u, -h - 2 - 20 * (u - 0.2), qy - 3 + 4 * (u - 0.2), -h - 4 * (u - 0.2), 0.45)
+    const v = u - 0.2
+    b.beam('steel', qx0 + (qx1 - qx0) * u, qy + 2.6, qz0 + (qz1 - qz0) * u, qx0 + (qx1 - qx0) * v, qy - 3 + 3.4 * v, qz0 + (qz1 - qz0) * v, 0.4)
   }
-  b.box('steelLight', 3.4, 4.2, 3.4, -h - 23, qy + 2, -h - 4.2)
+  b.box('steelLight', 3, 3.6, 3, qx1 - 0.6, qy + 1.6, qz1 - 0.8)
   // Footing.
   b.box('concreteWall', 20, 2.4, 20, 0, 1.2, 0)
 }

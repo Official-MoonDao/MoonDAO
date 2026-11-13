@@ -1,6 +1,6 @@
 /**
  * Key-pressing bot for Catch. It only sees what a player sees (position,
- * velocity, attitude, fuel) and only acts through the same stick, BURN and
+ * velocity, fuel, the arms) and only acts through the same stick, BURN and
  * arms inputs, so it is a fair check that a mode is catchable. Used by
  * scripts/catch-bot.ts and by `?autopilot=1` in the browser.
  *
@@ -20,20 +20,17 @@ export function botInput(s: Sim, out: SimInput, opts: BotOptions = {}): SimInput
   const mode = s.mode
   const rail = PAD1.railY
   const above = pinY(s) - rail
-  // Aim a little short of the sweet spot while still high, so the tail never
-  // swings in toward the tower, then slide in for the last few metres.
-  const dx = SWEET_X - (above > 14 ? 7 : 0) - pinX(s)
+  // Aim a little short of the sweet spot while still high, then slide in.
+  const dx = SWEET_X - (above > 18 ? 5 : 0) - pinX(s)
   const dz = PAD1.z - pinZ(s)
   const dist = Math.hypot(dx, dz)
   const hspeed = Math.hypot(s.vx, s.vz)
-  const net = mode.engineAccel - EARTH_G
+  const netFull = mode.engineAccel - EARTH_G
 
-  // Lean hard on the way in, gently between the arms: the tail swings toward the tower.
-  const maxTilt = ((above < 16 ? 9 : mode.control === 'angle' ? mode.maxTiltDeg - 2 : 20) * Math.PI) / 180
-  // The hand-over is set up so a steady lean back all the way down arrives at rest.
+  const maxG = (mode.maxGimbalDeg * Math.PI) / 180
+  // The hand-over is set up so steady braking all the way down arrives at rest.
   const cruise = mode.startHorizontalSpeed
-  // Between the arms there is only a gentle lean to stop with, so creep in.
-  const brake = above < 16 ? 0.9 : ((1.3 * cruise * cruise) / (2 * mode.startDistance)) * skill
+  const brake = above < 18 ? 0.9 : ((1.25 * cruise * cruise) / (2 * mode.startDistance)) * skill
 
   // Horizontal: a constant-deceleration braking curve into the sweet spot.
   const want = (d: number) => {
@@ -41,57 +38,36 @@ export function botInput(s: Sim, out: SimInput, opts: BotOptions = {}): SimInput
     const v = a < 3 ? a * 0.6 : Math.min(cruise, Math.sqrt(2 * brake * a))
     return Math.sign(d) * v
   }
-  const axCmd = 2.4 * (want(dx) - s.vx)
+  const axCmd = 2.2 * (want(dx) - s.vx)
   const azCmd = 2.0 * (want(dz) - s.vz)
-  // Tilt only moves the ship while it is burning, which is most of the way down.
-  const lift = mode.engineAccel * 0.85
-  let tiltX = clamp(Math.atan(axCmd / lift), -maxTilt, maxTilt)
-  let tiltZ = clamp(Math.atan(azCmd / lift), -maxTilt, maxTilt)
-  // One lean to spend: braking toward the tower comes first, lining up second.
-  const room = Math.sqrt(Math.max(0, maxTilt * maxTilt - tiltX * tiltX))
-  tiltZ = clamp(tiltZ, -room, room)
+  // The engines are always lit, so the swivel always works: assume about idle thrust.
+  const thrust = mode.engineAccel * (mode.idleThrottle + 0.2)
+  let gx = clamp(Math.atan(axCmd / thrust), -maxG, maxG)
+  const room = Math.sqrt(Math.max(0, maxG * maxG - gx * gx))
+  let gz = clamp(Math.atan(azCmd / thrust), -room, room)
 
-  // Vertical: one braking burn that ends a little above the arms, then lower in.
-  // Lined up and nearly still; once the arms have hold, or propellant is short, commit.
+  // Vertical: brake to arrive a little above the arms, then lower in.
   const held = s.hugN && s.hugS
-  const low = s.fuel / mode.fuelSeconds < 0.22
+  const low = s.fuel / mode.fuelSeconds < 0.2
   const settled = held || (dist < (low ? 5 : 3) && hspeed < (low ? 3 : 2.2))
-  const hold = 7
+  const hold = 8
   let vyWant: number
   if (settled) vyWant = above > 5 ? -4.5 : -2.6
   else {
     const h = above - hold
-    // Plan on most of the net deceleration, leaving some for leaning over.
-    vyWant = h > 0 ? -(Math.sqrt(2 * 0.78 * skill * net * h) + 2.2) : Math.min(1.5, -0.5 * h)
-  }
-  if (above < 4) {
-    tiltX *= 0.6
-    tiltZ *= 0.6
+    vyWant = h > 0 ? -(Math.sqrt(2 * 0.72 * skill * netFull * h) + 2.2) : Math.min(1.5, -0.5 * h)
   }
   if (held) {
     // The arms centre the ship; just hold it still along the rails.
-    tiltX = clamp(Math.atan((-1.2 * s.vx) / lift), -0.1, 0.1)
-    tiltZ = 0
+    gx = clamp(Math.atan((-1.2 * s.vx) / thrust), -0.1, 0.1)
+    gz = 0
   }
-
-  const overspeed = hspeed - Math.hypot(want(dx), want(dz))
-  out.burn = s.vy < vyWant || (overspeed > 1.5 && s.vy < 4 && !settled)
+  out.burn = s.vy < vyWant
   // Pro: close the arms so they take hold with the pins at the sweet height.
   const sink = s.vy < 0 ? -s.vy : 0
   out.arms = dist < 4.5 && above > 0.5 && above < SWEET_MARGIN + 0.6 + sink * mode.armCloseSeconds
-
-  if (mode.control === 'angle') {
-    const max = (mode.maxTiltDeg * Math.PI) / 180
-    out.y = clamp(tiltX / max, -1, 1)
-    out.x = clamp(tiltZ / max, -1, 1)
-  } else {
-    // Rate command toward the wanted attitude.
-    const curX = Math.atan2(s.m[1], s.m[4])
-    const curZ = Math.atan2(s.m[7], s.m[4])
-    const rate = (mode.maxRateDeg * Math.PI) / 180
-    out.y = clamp((2.4 * (tiltX - curX) - 0.5 * -s.wz) / rate, -1, 1)
-    out.x = clamp((2.4 * (tiltZ - curZ) - 0.5 * s.wx) / rate, -1, 1)
-  }
+  out.y = clamp(gx / maxG, -1, 1)
+  out.x = clamp(gz / maxG, -1, 1)
   return out
 }
 

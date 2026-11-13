@@ -3,9 +3,11 @@
  * air drag and the day's wind, landing engines that thrust along the hull,
  * and the tower's two catch arms.
  *
- * The ship is a tall, heavy cylinder that flies tail-first and stays near
- * vertical; tilting it points the thrust, which is the only way to move
- * sideways or brake. A catch is not scripted: the arms swing in until they
+ * The ship is a tall, heavy cylinder that flies tail-first and stays upright.
+ * Its engines stay lit from the flip to the arms: they idle at part throttle
+ * and go to full thrust on BURN. Steering swivels them, so the flame swings
+ * to one side and pushes the ship the other way; the hull only leans a
+ * little into the push. A catch is not scripted: the arms swing in until they
  * meet the hull, and the ship is caught when its two catch pins come down on
  * the arms' rails. Close the arms too early and the aft flaps land on them;
  * too late and the pins have already gone past.
@@ -38,8 +40,11 @@ const IX = 230
 const IY = 12
 const IZ = 230
 
-/** Engine gimbal and thrusters: peak angular acceleration (rad/s²). */
+/** Thrusters holding the hull upright: peak angular acceleration (rad/s²). */
 const TURN_ALPHA = 1.1
+/** How fast the engines swivel (rad/s), and how much of the swivel the hull leans into. */
+const GIMBAL_RATE = 0.85
+const LEAN = 0.3
 
 /** Air: drag per unit mass, broadside and end-on (1/m). */
 const DRAG_SIDE = 0.003
@@ -118,10 +123,11 @@ export const POINT_COUNT = POINTS.length / 3
 const FLAP_START = 8 * 4 + 4 + 1
 
 export type SimInput = {
-  /** -1..1, positive tilts toward screen-right (+z) */
+  /** -1..1, positive pushes the ship toward screen-right (+z) */
   x: number
-  /** -1..1, positive tilts forward (+x); negative tilts back to brake */
+  /** -1..1, positive pushes it forward (+x, toward the tower); negative brakes */
   y: number
+  /** Full thrust. Released, the engines idle. */
   burn: boolean
   /** Pro: close the arms. */
   arms: boolean
@@ -156,9 +162,17 @@ export type Sim = {
   wx: number
   wy: number
   wz: number
-  /** Seconds of burn left. */
+  /** Seconds of full-thrust burn left. */
   fuel: number
+  /** At full thrust this step. */
   burning: boolean
+  /** Engine throttle this step, 0..1. */
+  throttle: number
+  /** Easy's brake assist fired this step. */
+  assist: boolean
+  /** Engine swivel in radians: positive pushes the ship toward +x, toward +z. */
+  gx: number
+  gz: number
   /** Arm swing in radians: ARMS.openAngle fully open, 0 closed. North arm (z < 0), south arm. */
   armN: number
   armS: number
@@ -193,9 +207,8 @@ export type Sim = {
 }
 
 export function createSim(mode: ModeConfig, conditions: Conditions): Sim {
-  const pitch = (mode.startPitchDeg * Math.PI) / 180
-  // Leaning back toward -x is a rotation about +z by +pitch.
-  const half = pitch / 2
+  // Upright at hand-over: the flip has just finished.
+  const half = 0
   const sim: Sim = {
     mode,
     conditions,
@@ -215,6 +228,10 @@ export function createSim(mode: ModeConfig, conditions: Conditions): Sim {
     wz: 0,
     fuel: mode.fuelSeconds,
     burning: false,
+    throttle: mode.idleThrottle,
+    assist: false,
+    gx: 0,
+    gz: 0,
     armN: ARMS.openAngle,
     armS: ARMS.openAngle,
     armsClosing: false,
@@ -314,18 +331,42 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   let fy = -EARTH_G
   let fz = 0
 
-  const burning = input.burn && s.fuel > 0
-  if (burning) {
-    fx += m[1] * mode.engineAccel
-    fy += m[4] * mode.engineAccel
-    fz += m[7] * mode.engineAccel
-    s.fuel -= dt
+  // Engines: lit all the way down, idling unless BURN is held.
+  let burning = input.burn && s.fuel > 0
+  s.assist = false
+  if (mode.brakeAssist && !burning && s.fuel > 0 && s.vy < 0) {
+    // Easy: the flight computer will not let the ship pass the last point it
+    // can still stop from. It takes the engines to full until the pilot does.
+    const h = s.py + m[4] * PIN_Y - PAD1.railY - 2
+    if (h > -3) {
+      const limit = Math.sqrt(2 * 0.85 * (mode.engineAccel - EARTH_G) * (h > 0 ? h : 0)) + 1.5
+      if (-s.vy > limit) {
+        burning = true
+        s.assist = true
+      }
+    }
+  }
+  const throttle = s.fuel > 0 ? (burning ? 1 : mode.idleThrottle) : 0
+  // The swivel follows the stick at a limited rate.
+  const maxG = (mode.maxGimbalDeg * Math.PI) / 180
+  const slew = GIMBAL_RATE * dt
+  s.gx += clamp(clamp(input.y, -1, 1) * maxG - s.gx, -slew, slew)
+  s.gz += clamp(clamp(input.x, -1, 1) * maxG - s.gz, -slew, slew)
+  if (throttle > 0) {
+    const tx = dtan(s.gx)
+    const tz = dtan(s.gz)
+    const k = (mode.engineAccel * throttle) / Math.sqrt(tx * tx + 1 + tz * tz)
+    fx += k * tx
+    fy += k
+    fz += k * tz
+    s.fuel -= dt * throttle
     if (s.fuel <= 0) {
       s.fuel = 0
       s.events.push({ type: 'fuelout' })
     }
   }
   s.burning = burning
+  s.throttle = throttle
 
   // Two arms holding the hull squeeze it toward the middle of the gap.
   if (s.hugN && s.hugS) {
@@ -348,29 +389,23 @@ export function stepSim(s: Sim, input: SimInput, dt: number = SUBSTEP_DT): void 
   fz -= DRAG_SIDE * side * sz + ka * m[7]
 
   // --- Attitude control ---------------------------------------------------------
-  let ax = 0
-  let az = 0
+  let ax: number
+  let az: number
   // Heading hold: keep the pins square to the arms.
   const yaw = datan2(-m[6], m[0])
   let ay = -4 * yaw - 3.5 * s.wy
-  if (mode.control === 'angle') {
-    const max = (mode.maxTiltDeg * Math.PI) / 180
-    const dxu = dtan(clamp(input.y, -1, 1) * max)
-    const dzu = dtan(clamp(input.x, -1, 1) * max)
-    const inv = 1 / Math.sqrt(dxu * dxu + 1 + dzu * dzu)
-    const ux = dxu * inv
-    const uy = inv
-    const uz = dzu * inv
-    // Error axis = up × desiredUp (world)
-    const ex = m[4] * uz - m[7] * uy
-    const ez = m[1] * uy - m[4] * ux
-    ax = 7 * ex - 4.2 * s.wx
-    az = 7 * ez - 4.2 * s.wz
-  } else {
-    const rate = (mode.maxRateDeg * Math.PI) / 180
-    ax = 5 * (clamp(input.x, -1, 1) * rate - s.wx)
-    az = 5 * (-clamp(input.y, -1, 1) * rate - s.wz)
-  }
+  // The hull is held upright, leaning a little into whatever the engines are pushing.
+  const dxu = dtan(LEAN * s.gx)
+  const dzu = dtan(LEAN * s.gz)
+  const inv = 1 / Math.sqrt(dxu * dxu + 1 + dzu * dzu)
+  const ux = dxu * inv
+  const uy = inv
+  const uz = dzu * inv
+  // Error axis = up × desiredUp (world)
+  const ex = m[4] * uz - m[7] * uy
+  const ez = m[1] * uy - m[4] * ux
+  ax = 7 * ex - 4.2 * s.wx
+  az = 7 * ez - 4.2 * s.wz
   const mag = Math.sqrt(ax * ax + ay * ay + az * az)
   if (mag > TURN_ALPHA) {
     const k = TURN_ALPHA / mag

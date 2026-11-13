@@ -64,9 +64,9 @@ export type Pad = {
 }
 
 /** Pad 1: the player's target. Its arms reach west, toward the incoming ship. */
-export const PAD1: Pad = { x: 0, z: 0, ax: -1, az: 0, railY: 86 }
+export const PAD1: Pad = { x: 0, z: 0, ax: -1, az: 0, railY: 118 }
 /** Pad 2: arms reach south. A booster hangs in them. */
-export const PAD2: Pad = { x: -362, z: -70, ax: 0, az: 1, railY: 96 }
+export const PAD2: Pad = { x: -362, z: -70, ax: 0, az: 1, railY: 112 }
 
 /** Launch mount: a square deck over a flame trench, centred under the catch point. */
 export const MOUNT = {

@@ -61,8 +61,20 @@ void main() {
 
 export type Debris = { obj: THREE.Object3D; v: THREE.Vector3; w: THREE.Vector3; r: number; rest: boolean; trail: number; wet: boolean }
 
+const TILE_MAX = 1300
+
 export class Effects {
   readonly mesh: THREE.Mesh
+  /** Loose heat-shield tiles: one instanced hexagon, flung and fluttering down. */
+  readonly tiles: THREE.InstancedMesh
+  private tilePos = new Float32Array(TILE_MAX * 3)
+  private tileVel = new Float32Array(TILE_MAX * 3)
+  private tileAxis = new Float32Array(TILE_MAX * 3)
+  private tileSpin = new Float32Array(TILE_MAX)
+  private tileAngle = new Float32Array(TILE_MAX)
+  private tileRest = new Uint8Array(TILE_MAX)
+  private tileCount = 0
+  private tilesMoving = false
   readonly debris: Debris[] = []
   private parts: P[] = []
   private center: Float32Array
@@ -71,7 +83,14 @@ export class Effects {
   private geo: THREE.BufferGeometry
   private rngState = 12345
 
-  constructor(bag: Bag) {
+  constructor(bag: Bag, env: THREE.Texture | null = null) {
+    const hex = new THREE.CylinderGeometry(0.46, 0.46, 0.07, 6)
+    const tileMat = new THREE.MeshStandardMaterial({ color: 0x1a1b1e, roughness: 0.36, metalness: 0.1, envMap: env, envMapIntensity: 1.1 })
+    this.tiles = new THREE.InstancedMesh(hex, tileMat, TILE_MAX)
+    this.tiles.count = 0
+    this.tiles.frustumCulled = false
+    this.tiles.castShadow = false
+    bag.push(hex, tileMat)
     const geo = new THREE.BufferGeometry()
     const uv = new Float32Array(MAX * 8)
     const idx = new Uint16Array(MAX * 6)
@@ -142,8 +161,89 @@ export class Effects {
 
   clear() {
     this.parts.length = 0
+    this.tileCount = 0
+    this.tiles.count = 0
+    this.tilesMoving = false
     this.debris.length = 0
     this.geo.setDrawRange(0, 0)
+  }
+
+  /**
+   * Shed the heat shield: hexagonal tiles from all over the windward half of
+   * the hull, thrown outward by the blast and left to flutter down.
+   * `hull` is the ship model's world matrix (base at the origin, belly +z).
+   */
+  shedTiles(hull: THREE.Matrix4, count: number, vx: number, vy: number, vz: number) {
+    const n = Math.min(TILE_MAX, count)
+    const p = new THREE.Vector3()
+    const nrm = new THREE.Vector3()
+    const rot = new THREE.Matrix3().setFromMatrix4(hull)
+    for (let i = 0; i < n; i++) {
+      // A point on the tiled half: the belly faces +z in the model.
+      const phi = (this.rnd() - 0.5) * Math.PI * 1.1
+      const y = this.rnd() * 50
+      const r = y < 34.5 ? 4.55 : Math.max(0.6, 4.55 * (1 - Math.pow((y - 34.5) / 17.6, 1.7)))
+      nrm.set(Math.sin(phi), 0, Math.cos(phi))
+      p.set(nrm.x * r, y, nrm.z * r).applyMatrix4(hull)
+      nrm.applyMatrix3(rot)
+      const sp = 6 + this.rnd() * this.rnd() * 70
+      const k = i * 3
+      this.tilePos[k] = p.x
+      this.tilePos[k + 1] = p.y
+      this.tilePos[k + 2] = p.z
+      this.tileVel[k] = vx * 0.35 + nrm.x * sp + (this.rnd() - 0.5) * 22
+      this.tileVel[k + 1] = vy * 0.2 + 6 + this.rnd() * 46
+      this.tileVel[k + 2] = vz * 0.35 + nrm.z * sp + (this.rnd() - 0.5) * 22
+      const ax = this.rnd() - 0.5
+      const ay = this.rnd() - 0.5
+      const az = this.rnd() - 0.5
+      const il = 1 / (Math.sqrt(ax * ax + ay * ay + az * az) || 1)
+      this.tileAxis[k] = ax * il
+      this.tileAxis[k + 1] = ay * il
+      this.tileAxis[k + 2] = az * il
+      this.tileSpin[i] = 3 + this.rnd() * 14
+      this.tileAngle[i] = this.rnd() * 6.283
+      this.tileRest[i] = 0
+    }
+    this.tileCount = n
+    this.tiles.count = n
+    this.tilesMoving = true
+  }
+
+  private updateTiles(dt: number, seaAt: (x: number, z: number) => boolean) {
+    if (!this.tilesMoving) return
+    let moving = 0
+    const drag = Math.exp(-0.75 * dt)
+    for (let i = 0; i < this.tileCount; i++) {
+      const k = i * 3
+      if (!this.tileRest[i]) {
+        // Light and flat: they slow quickly, then flutter down.
+        this.tileVel[k] *= drag
+        this.tileVel[k + 2] *= drag
+        this.tileVel[k + 1] = this.tileVel[k + 1] * drag - 9.81 * dt
+        if (this.tileVel[k + 1] < -13) this.tileVel[k + 1] = -13
+        this.tilePos[k] += this.tileVel[k] * dt
+        this.tilePos[k + 1] += this.tileVel[k + 1] * dt
+        this.tilePos[k + 2] += this.tileVel[k + 2] * dt
+        this.tileAngle[i] += this.tileSpin[i] * dt
+        if (this.tilePos[k + 1] < 0.06) {
+          this.tileRest[i] = 1
+          if (seaAt(this.tilePos[k], this.tilePos[k + 2])) this.tilePos[k + 1] = -1
+          else {
+            // Lying flat where it landed.
+            this.tilePos[k + 1] = 0.06
+            this.tileAxis[k] = 0
+            this.tileAxis[k + 1] = 1
+            this.tileAxis[k + 2] = 0
+          }
+        } else moving++
+        tq.setFromAxisAngle(tv.set(this.tileAxis[k], this.tileAxis[k + 1], this.tileAxis[k + 2]), this.tileAngle[i])
+        tm.compose(tp.set(this.tilePos[k], this.tilePos[k + 1], this.tilePos[k + 2]), tq, ONE)
+        this.tiles.setMatrixAt(i, tm)
+      }
+    }
+    this.tiles.instanceMatrix.needsUpdate = true
+    if (moving === 0) this.tilesMoving = false
   }
 
   /** A rolling fireball that becomes a smoke column. `scale` 1 is a full ship's worth. */
@@ -352,6 +452,7 @@ export class Effects {
   }
 
   update(dt: number, windX: number, windZ: number, seaAt: (x: number, z: number) => boolean) {
+    this.updateTiles(dt, seaAt)
     const parts = this.parts
     let n = 0
     for (let i = 0; i < parts.length; i++) {
@@ -439,3 +540,8 @@ export class Effects {
 }
 
 const scratch = new THREE.Vector3()
+const tp = new THREE.Vector3()
+const tv = new THREE.Vector3()
+const tq = new THREE.Quaternion()
+const tm = new THREE.Matrix4()
+const ONE = new THREE.Vector3(1, 1, 1)

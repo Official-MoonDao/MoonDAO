@@ -14,7 +14,7 @@
  *                    got under the pins; higher and the ship had a long drop
  *                    onto them.
  *   soft               250  how gently the pins met the rails
- *   upright            100  how near vertical it hung
+ *   steady             100  how little it was still drifting sideways when the pins landed
  *   fuel               150  share of the burn left
  *
  * No catch still earns something: up to 200 for how close the pins came to
@@ -47,7 +47,7 @@ export const DEPTH_POINTS = 150
 export const CENTER_POINTS = 100
 export const HEIGHT_POINTS = 100
 export const SOFT_POINTS = 250
-export const UPRIGHT_POINTS = 100
+export const STEADY_POINTS = 100
 export const FUEL_POINTS = 150
 export const NEAR_MISS_POINTS = 200
 export const SPLASHDOWN_POINTS = 120
@@ -63,7 +63,7 @@ export type FlightResult = {
   cause: CrashCause | null
   score: number
   /** Points before damage and the mode multiplier, by part. */
-  parts: { caught: number; depth: number; center: number; height: number; soft: number; upright: number; fuel: number; near: number; water: number }
+  parts: { caught: number; depth: number; center: number; height: number; soft: number; steady: number; fuel: number; near: number; water: number }
   damage: StructureId[]
   damageCost: number
   /** m/s the pins met the rails at, or the impact's vertical speed. */
@@ -100,7 +100,7 @@ export function heightFactor(margin: number): number {
 export function scoreFlight(s: Sim): FlightResult {
   const mode = s.mode
   const outcome: Outcome = s.outcome ?? 'lost'
-  const parts = { caught: 0, depth: 0, center: 0, height: 0, soft: 0, upright: 0, fuel: 0, near: 0, water: 0 }
+  const parts = { caught: 0, depth: 0, center: 0, height: 0, soft: 0, steady: 0, fuel: 0, near: 0, water: 0 }
   const fuelLeft = s.fuel / mode.fuelSeconds
   if (outcome === 'caught') {
     parts.caught = CATCH_POINTS
@@ -108,14 +108,14 @@ export function scoreFlight(s: Sim): FlightResult {
     parts.center = Math.round(CENTER_POINTS * taper(Math.abs(s.endAcross), 0.5, 6))
     parts.height = Math.round(HEIGHT_POINTS * heightFactor(s.hugMargin))
     parts.soft = Math.round(SOFT_POINTS * taper(s.endVertical, 2, mode.pinLimit))
-    parts.upright = Math.round(UPRIGHT_POINTS * taper(s.endTilt, 1.5, 14))
+    parts.steady = Math.round(STEADY_POINTS * taper(s.endHorizontal, 0.5, 5))
     parts.fuel = Math.round(FUEL_POINTS * Math.min(1, fuelLeft / 0.3))
   } else {
     parts.near = Math.round(NEAR_MISS_POINTS * taper(s.closest, 2, 60))
     if (outcome === 'splashdown') parts.water = SPLASHDOWN_POINTS
     if (outcome === 'ditched') parts.water = DITCH_POINTS
   }
-  const sum = parts.caught + parts.depth + parts.center + parts.height + parts.soft + parts.upright + parts.fuel + parts.near + parts.water
+  const sum = parts.caught + parts.depth + parts.center + parts.height + parts.soft + parts.steady + parts.fuel + parts.near + parts.water
   let damageCost = 0
   for (const id of s.damage) damageCost += DAMAGE_COST[id]
   const score = Math.round(sum * mode.scoreMultiplier) - damageCost
