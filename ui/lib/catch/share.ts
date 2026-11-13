@@ -1,5 +1,5 @@
 /**
- * Catch share card and share plumbing (client-only).
+ * Starship Catch share card and share plumbing (client-only).
  *
  * The image is the post: X suppresses links, so the card carries the end shot,
  * score, verdict and the URL printed on it. Challenge links, the clipboard and
@@ -21,8 +21,8 @@ import { bragLine, formatScore, outcomeHeadline, worstDamage } from './verdicts'
 export { canvasToBlob, challengeQuery, cleanNickname, copyImage, parseChallenge, xIntentUrl }
 export type { Challenge, ShareMethod }
 
-export const SHARE_PATH = '/catch'
-export const SHARE_URL_LABEL = 'moondao.com/catch'
+export const SHARE_PATH = '/starship'
+export const SHARE_URL_LABEL = 'moondao.com/starship'
 export const CARD_W = 1200
 export const CARD_H = 675
 
@@ -132,8 +132,8 @@ export function composeCard(args: { frame: HTMLCanvasElement; result: FlightResu
 
   g.fillStyle = '#fff'
   g.font = `800 34px ${head}`
-  g.fillText('CATCH STARSHIP', 48, 70)
-  const brandW = g.measureText('CATCH STARSHIP').width
+  g.fillText('STARSHIP CATCH', 48, 70)
+  const brandW = g.measureText('STARSHIP CATCH').width
   if (result.mode === 'pro') {
     const x = 48 + brandW + 22
     g.fillStyle = '#ffd34d'
@@ -191,7 +191,7 @@ export function stampPhoto(photo: HTMLCanvasElement): HTMLCanvasElement {
   g.shadowBlur = 8 * s
   g.fillStyle = 'rgba(255,255,255,0.92)'
   g.font = `800 ${Math.round(26 * s)}px "Archivo", "Lato", system-ui, sans-serif`
-  g.fillText('CATCH STARSHIP', photo.width - 28 * s, photo.height - 54 * s)
+  g.fillText('STARSHIP CATCH', photo.width - 28 * s, photo.height - 54 * s)
   g.font = `700 ${Math.round(20 * s)}px "Lato", system-ui, sans-serif`
   g.fillText(SHARE_URL_LABEL, photo.width - 28 * s, photo.height - 26 * s)
   g.shadowBlur = 0

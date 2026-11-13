@@ -548,7 +548,7 @@ export type CatchEventName =
   | 'catch_retry'
 
 /**
- * Catch game events (/catch), mirroring Touchdown's. Params are game telemetry
+ * Starship Catch game events (/starship), mirroring Touchdown's. Params are game telemetry
  * only: mode, outcome, score, speed, fuel, share method. Never a nickname.
  */
 export function trackCatch(

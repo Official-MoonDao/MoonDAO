@@ -1,8 +1,8 @@
 /**
- * Catch: a one-minute 3D game. Guide a Starship upper stage into the launch
+ * Starship Catch: a one-minute 3D game. Guide a Starship upper stage into the launch
  * tower's arms at Starbase.
  *
- * /catch is the public share link. The page is chromeless like /touchdown (see
+ * /starship is the public share link (/catch redirects here). The page is chromeless like /touchdown (see
  * Layout): no site nav over the game. The shell, Open Graph tags and fonts are
  * server-rendered; the game canvas is client-only.
  */
@@ -26,7 +26,7 @@ type Props = { challenge: Challenge | null }
 
 export default function CatchPage({ challenge }: Props) {
   const score = challenge ? challenge.score.toLocaleString('en-US') : ''
-  const title = challenge ? `Beat ${challenge.nickname ? `${challenge.nickname}'s ` : ''}${score} on Catch` : 'Catch: can you catch a Starship?'
+  const title = challenge ? `Beat ${challenge.nickname ? `${challenge.nickname}'s ` : ''}${score} on Starship Catch` : 'Starship Catch: can you catch a Starship?'
   const description =
     'A one-minute 3D game. A Starship falls out of the sky over Starbase: brake, steer, and set it down in the launch tower’s arms. New wind every day.'
   const ogQuery = challenge ? `?${challengeQuery(challenge)}` : ''

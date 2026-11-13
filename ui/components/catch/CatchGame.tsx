@@ -913,7 +913,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
       <canvas
         ref={canvasRef}
         className="absolute inset-0 h-full w-full cursor-grab active:cursor-grabbing"
-        aria-label="Catch: a Starship tower catch game"
+        aria-label="Starship Catch: a Starship tower catch game"
         onPointerDown={onLookDown}
         onPointerMove={onLookMove}
         onPointerUp={onLookUp}
@@ -1118,7 +1118,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
         <div className="absolute inset-0 z-20 flex items-end justify-center bg-gradient-to-t from-black/70 via-transparent to-transparent p-3 sm:items-center sm:justify-end sm:bg-none sm:p-4 sm:pr-[6vw]">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/70 p-4 backdrop-blur-md sm:p-5">
             <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/55 sm:text-[11px]">Can you catch a Starship?</p>
-            <h1 className="mt-0.5 font-heading text-3xl font-extrabold tracking-tight sm:mt-1 sm:text-5xl">CATCH</h1>
+            <h1 className="mt-0.5 font-heading text-3xl font-extrabold leading-none tracking-tight sm:mt-1 sm:text-[2.6rem]">STARSHIP CATCH</h1>
             <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
               The ship falls belly-down over Starbase, flips and is yours, coming in fast. Hold BURN to brake, swing the flame to steer, and set it down between the tower&apos;s arms, right over the green circle. Miss the brakes and it ends up in the Gulf. New wind every day.
             </p>
@@ -1256,7 +1256,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={(modal === 'photo' ? photoUrl : cardUrl) ?? ''}
-              alt={modal === 'photo' ? 'Your Catch photo' : 'Your Catch result card'}
+              alt={modal === 'photo' ? 'Your Starship Catch photo' : 'Your Starship Catch result card'}
               className="max-h-[70vh] w-full select-auto rounded-xl border border-white/15 object-contain"
             />
             <p className="mt-2 text-center text-xs text-white/65">

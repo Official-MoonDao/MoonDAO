@@ -259,6 +259,14 @@ module.exports = withBundleAnalyzer(
             destination: '/moonbase?race=shared-next-landing&year=2050',
             statusCode: 302,
           },
+          // The Starship Catch game lives at /starship; /catch was its working
+          // address. 302 so the short path stays free to point elsewhere later.
+          // Query strings (challenge links) carry over.
+          {
+            source: '/catch',
+            destination: '/starship',
+            statusCode: 302,
+          },
           // /touchdown used to 301 to the first Arbitrum DePrize race. It is
           // now the Touchdown game (pages/touchdown.tsx), which links on to
           // that race from its result screen.

@@ -101,7 +101,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
     '/moonbase/[projectId]',
     '/moonbase/touchdown',
     '/touchdown',
-    '/catch',
+    '/starship',
   ]
 
   const isFullscreen = fullscreenPaths.includes(router.pathname)
@@ -109,7 +109,7 @@ export default function Layout({ children, lightMode, setLightMode }: Layout) {
   // The games (Touchdown, Catch) own the whole viewport: no nav, search button or
   // campaign banners over the canvas. Only the cookie banner (consent) stays.
   const isChromeless =
-    router.pathname === '/touchdown' || router.pathname === '/moonbase/touchdown' || router.pathname === '/catch'
+    router.pathname === '/touchdown' || router.pathname === '/moonbase/touchdown' || router.pathname === '/starship'
 
   return (
     <div

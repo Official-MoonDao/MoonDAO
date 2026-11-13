@@ -1,7 +1,7 @@
 /**
- * Link-preview image for a Catch challenge link ("Beat Ryan's 1,042").
+ * Link-preview image for a Starship Catch challenge link ("Beat Ryan's 1,042").
  *
- * The plain /catch preview is a static file, public/catch/og.jpg, and
+ * The plain /starship preview is a static file, public/catch/og.jpg, and
  * never reaches this route. A challenge link gets the same staged scene
  * (public/catch/og-base.jpg, rendered from the game) with the score to
  * beat written over it.
@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   <defs></defs>
   ${text(
     'x="56" y="78" font-size="40" font-weight="700" letter-spacing="3" stroke="#fff" stroke-width="1.2"',
-    'CATCH STARSHIP'
+    'STARSHIP CATCH'
   )}
   ${text('x="1144" y="78" font-size="26" text-anchor="end"', escapeXml(SHARE_URL_LABEL))}
   ${text(
@@ -90,7 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Fallback: the generic text card.
   const svg = renderOgSvg({
-    eyebrow: 'MoonDAO  ·  Catch',
+    eyebrow: 'MoonDAO  ·  Starship Catch',
     title: challenge
       ? `Beat ${challenge.score.toLocaleString('en-US')} points`
       : 'Can you catch a Starship?',
