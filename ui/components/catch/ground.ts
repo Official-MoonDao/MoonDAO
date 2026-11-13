@@ -14,7 +14,13 @@ import { MAP } from '@/lib/catch/siteMap'
 import { tileNoise } from '@/components/touchdown/models'
 import type { Bag } from './util'
 
-export type Ground = { group: THREE.Group; time: { value: number } }
+export type Ground = {
+  group: THREE.Group
+  time: { value: number }
+  /** Shared with the structures so cloud shadows cross both alike. */
+  noise: THREE.Texture
+  cloud: { value: number }
+}
 
 const WIDE = { x: -3000, z: -1000, half: 8192, size: 2048 }
 const NEAR = { x: -160, z: 20, half: 1024, size: 1024 }
@@ -277,6 +283,7 @@ uniform vec3 uNear;
 uniform vec2 uShoreZ;
 uniform vec4 uPads[3];
 uniform float uTime;
+uniform float uCloud;
 vec2 nSlope(vec2 uv, int ch) {
   float e = 1.0 / 512.0;
   vec4 a = texture2D(uNoise, uv + vec2(e, 0.0)) - texture2D(uNoise, uv - vec2(e, 0.0));
@@ -338,12 +345,12 @@ float inland = -off;
 
 // --- Ground colours -----------------------------------------------------
 // Coastal prairie: pale sandy soil with dry grass.
-vec3 soil = mix(vec3(0.66, 0.59, 0.46), vec3(0.55, 0.50, 0.38), n3);
+vec3 soil = mix(vec3(0.62, 0.55, 0.42), vec3(0.47, 0.43, 0.32), n3 * 0.6 + n2 * 0.4);
 float tuft = smoothstep(0.42, 0.66, n4 * 0.5 + n5 * 0.5) * (0.35 + 0.65 * n2);
 vec3 lc = mix(soil, mix(vec3(0.47, 0.46, 0.27), vec3(0.36, 0.40, 0.22), n5), tuft * 0.75);
 // Tidal flats: smooth grey-brown mud, darker where wet, pale salt crust where dry.
 float wetFlat = smoothstep(0.50, 0.74, n2 * 0.5 + n3 * 0.3 + n7 * 0.2);
-vec3 mud = mix(vec3(0.66, 0.60, 0.50), vec3(0.47, 0.42, 0.35), wetFlat);
+vec3 mud = mix(vec3(0.58, 0.56, 0.45), vec3(0.40, 0.41, 0.33), wetFlat);
 mud = mix(mud, vec3(0.78, 0.75, 0.68), smoothstep(0.62, 0.86, n3 * 0.55 + n4 * 0.45) * (1.0 - wetFlat) * 0.5);
 mud = mix(mud, vec3(0.36, 0.37, 0.27), smoothstep(0.62, 0.80, n7 * 0.6 + n2 * 0.4) * 0.5); // algal mats
 lc = mix(lc, mud, tidal);
@@ -368,7 +375,7 @@ lc = mix(lc, vec3(0.87, 0.82, 0.70) * (0.95 + 0.1 * n5), beach);
 float wetSand = smoothstep(16.0, 3.0, inland) * (1.0 - sea);
 lc = mix(lc, vec3(0.57, 0.51, 0.42), wetSand);
 // Worked ground inside the sites: graded, compacted fill, bare of grass.
-vec3 fill = mix(vec3(0.71, 0.65, 0.53), vec3(0.60, 0.55, 0.45), n3 * 0.6 + n4 * 0.4);
+vec3 fill = mix(vec3(0.66, 0.60, 0.49), vec3(0.50, 0.46, 0.38), n3 * 0.6 + n4 * 0.4);
 fill = mix(fill, fill * 0.84, smoothstep(0.55, 0.75, texture2D(uNoise, rp / 70.0 + 0.2).r) * 0.6);
 lc = mix(lc, fill, paved * (1.0 - sea));
 // Poured slabs round the mounts, with joints, stains and tyre-worn dust.
@@ -394,8 +401,8 @@ lc = mix(lc, lc * vec3(0.78, 0.77, 0.76), clamp(mS.g * (0.7 + 0.6 * n5), 0.0, 1.
 float soot = smoothstep(0.1, 0.85, mS.b * (0.55 + 0.9 * n4)) * (0.75 + 0.25 * n5);
 lc = mix(lc, vec3(0.16, 0.15, 0.14) * (0.8 + 0.5 * n5), soot * 0.85);
 // Standing water in the low spots of the slabs after a deluge test.
-float puddle = smoothstep(0.60, 0.66, texture2D(uNoise, rp / 43.0 + 0.7).r * 0.65 + n3 * 0.35) * slab * (1.0 - soot);
-lc = mix(lc, lc * 0.5, puddle);
+float puddle = smoothstep(0.655, 0.70, texture2D(uNoise, rp / 43.0 + 0.7).r * 0.65 + n3 * 0.35) * slab * (1.0 - soot);
+lc = mix(lc, lc * 0.66, puddle);
 // The damp, shaded margin round the foot of every structure.
 lc *= 1.0 - 0.68 * smoothstep(0.0, 0.9, mS.r);
 // Grain near the camera.
@@ -425,16 +432,19 @@ float foam = clamp(crest * 0.9 + wash * 0.85, 0.0, 1.0) * (0.5 + 0.5 * n5) * sea
 vec3 seaCol = mix(sc * 0.72, vec3(0.93), foam);
 lc = mix(lc, seaCol, sea);
 float wet = max(sea * (1.0 - foam), still);
-diffuseColor.rgb = toLinear(lc) * mix(1.0, 0.62, wet);
+// Cloud shadows drifting over everything.
+float cloudSh = smoothstep(0.50, 0.72, texture2D(uNoise, rp / 3100.0 + uTime * vec2(0.0021, 0.0008)).r * 0.65 + texture2D(uNoise, rp / 1300.0 + uTime * vec2(0.0045, 0.0017)).g * 0.35);
+diffuseColor.rgb = toLinear(lc) * mix(1.0, 0.62, wet) * (1.0 - uCloud * cloudSh);
 `
 
-export function buildGround(env: THREE.Texture, seed: number, pads: THREE.Vector4[], bag: Bag): Ground {
+export function buildGround(env: THREE.Texture, seed: number, pads: THREE.Vector4[], bag: Bag, cloudStrength = 0.3): Ground {
   const noise = noiseTexture(seed, bag)
   const [wideA, wideB] = landMasks(WIDE, bag)
   const [nearA, nearB] = landMasks(NEAR, bag)
   const shore = shoreTexture(bag)
   const site = siteMask(bag)
   const time = { value: 0 }
+  const cloud = { value: cloudStrength }
   const group = new THREE.Group()
 
   const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0, envMap: env, envMapIntensity: 1 })
@@ -453,6 +463,7 @@ export function buildGround(env: THREE.Texture, seed: number, pads: THREE.Vector
       uShoreZ: { value: new THREE.Vector2(MAP.shore.z0, MAP.shore.z1) },
       uPads: { value: pads },
       uTime: time,
+      uCloud: cloud,
     })
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', 'varying vec3 vWp;\n#include <common>')
@@ -502,5 +513,5 @@ roughnessFactor = mix(roughnessFactor, 0.75, foam);`
   mesh.renderOrder = -2
   mesh.frustumCulled = false
   group.add(mesh)
-  return { group, time }
+  return { group, time, noise, cloud }
 }

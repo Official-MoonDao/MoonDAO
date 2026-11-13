@@ -249,11 +249,12 @@ export class CatchEngine {
     const pads = [
       new THREE.Vector4(PAD1.x + 12, PAD1.z, 52, 46),
       new THREE.Vector4(PAD2.x, PAD2.z - 12, 46, 52),
-      new THREE.Vector4(1e7, 1e7, 1, 1),
+      // The tank farm stands on its own slab.
+      new THREE.Vector4(-181, -66, 104, 56),
     ]
-    this.ground = buildGround(this.sky.env, c.seed, pads, this.bag)
+    this.ground = buildGround(this.sky.env, c.seed, pads, this.bag, 0.14 + 0.5 * c.cloudCover)
     this.scene.add(this.ground.group)
-    this.base = buildStarbase(this.sky.env, this.bag)
+    this.base = buildStarbase(this.sky.env, this.bag, this.ground, opts.mobile ? 1400 : 3000)
     this.scene.add(this.base.group)
     this.booster = this.base.pad2.group.getObjectByName('booster') ?? null
     if (this.booster) this.boosterHome.copy(this.booster.position)

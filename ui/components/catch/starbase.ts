@@ -6,9 +6,9 @@
  */
 import * as THREE from 'three'
 import { ARMS, BOOSTER, MOUNT, PAD1, PAD2, TOWER, towerCentre, type Pad } from '@/lib/catch/layout'
-import { MAP } from '@/lib/catch/siteMap'
+import { MAP, shoreX } from '@/lib/catch/siteMap'
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { buildBooster } from './booster'
-import { noiseTexture } from './ground'
 import { Builder, canvasTexture, type Bag } from './util'
 
 export type PadModel = {
@@ -28,6 +28,9 @@ export type StarbaseModel = {
 
 type Mats = Record<string, THREE.Material>
 
+/** What the structures share with the ground so cloud shadows match across both. */
+export type Weathering = { noise: THREE.Texture; time: { value: number }; cloud: { value: number } }
+
 /**
  * Nothing at a launch site is clean. This adds, in world space so it needs no
  * texture coordinates: rain streaks down the faces, broad patchiness, fine
@@ -36,17 +39,19 @@ type Mats = Record<string, THREE.Material>
  */
 function weather(
   mat: THREE.MeshStandardMaterial,
-  noise: THREE.Texture,
+  shared: Weathering,
   o: { streak?: number; tone?: number; base?: number; joint?: number }
 ): THREE.MeshStandardMaterial {
   mat.onBeforeCompile = (shader) => {
-    shader.uniforms.uWNoise = { value: noise }
+    shader.uniforms.uWNoise = { value: shared.noise }
+    shader.uniforms.uTime = shared.time
+    shader.uniforms.uCloud = shared.cloud
     shader.uniforms.uW = { value: new THREE.Vector4(o.streak ?? 0.25, o.tone ?? 0.1, o.base ?? 0.5, o.joint ?? 0) }
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', 'varying vec3 vWp;\n#include <common>')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;')
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', 'varying vec3 vWp;\nuniform sampler2D uWNoise;\nuniform vec4 uW;\n#include <common>')
+      .replace('#include <common>', 'varying vec3 vWp;\nuniform sampler2D uWNoise;\nuniform vec4 uW;\nuniform float uTime;\nuniform float uCloud;\n#include <common>')
       .replace(
         '#include <map_fragment>',
         `#include <map_fragment>
@@ -61,7 +66,8 @@ function weather(
   if (uW.w > 0.0) c *= 1.0 - 0.18 * smoothstep(0.47, 0.5, abs(fract(vWp.y / uW.w) - 0.5));
   float splash = smoothstep(2.4, 0.0, vWp.y) * (0.5 + 0.5 * wf);
   c = mix(c, vec3(0.40, 0.34, 0.24), splash * uW.z);
-  diffuseColor.rgb = c;
+  float cloudSh = smoothstep(0.50, 0.72, texture2D(uWNoise, vWp.xz / 3100.0 + uTime * vec2(0.0021, 0.0008)).r * 0.65 + texture2D(uWNoise, vWp.xz / 1300.0 + uTime * vec2(0.0045, 0.0017)).g * 0.35);
+  diffuseColor.rgb = c * (1.0 - uCloud * cloudSh);
 }`
       )
       .replace(
@@ -74,19 +80,18 @@ roughnessFactor = clamp(roughnessFactor * (0.78 + 0.5 * texture2D(uWNoise, (vWp.
   return mat
 }
 
-function materials(env: THREE.Texture, bag: Bag): Mats {
+function materials(env: THREE.Texture, bag: Bag, shared: Weathering): Mats {
   const t = <T extends THREE.Material>(m: T): T => {
     bag.push(m)
     return m
   }
-  const noise = noiseTexture(77, bag)
   const std = (
     color: number,
     roughness: number,
     metalness: number,
     extra: Partial<THREE.MeshStandardMaterialParameters> = {},
     w: Parameters<typeof weather>[2] = {}
-  ) => weather(t(new THREE.MeshStandardMaterial({ color, roughness, metalness, envMap: env, envMapIntensity: 0.9, ...extra })), noise, w)
+  ) => weather(t(new THREE.MeshStandardMaterial({ color, roughness, metalness, envMap: env, envMapIntensity: 0.9, ...extra })), shared, w)
   // Corrugated cladding for the big bays: light vertical ribs.
   const ribs = canvasTexture(
     64,
@@ -370,7 +375,10 @@ function mapStructures(b: Builder, far: Builder) {
     const near = Math.hypot(x, z) < 1200
     const out = near ? b : far
     const a = (-ang * Math.PI) / 180
-    if (kind === 5) {
+    if (kind === 6) {
+      // A low concrete kerb or bund wall.
+      out.box('concreteWall', len, h, wid, x, h / 2, z, a)
+    } else if (kind === 5) {
       // Vehicles on display: a steel cylinder with a nose.
       const r = Math.min(4.5, wid / 2)
       out.cyl('hull', r, r, h * 0.78, x, 0, z, 20)
@@ -400,6 +408,9 @@ function mapStructures(b: Builder, far: Builder) {
         out.box('bayDark', Math.min(4.5, len * 0.3), Math.min(3.6, h * 0.72), 0.25, x + vx * (wid / 2) - ux * len * 0.2, Math.min(3.6, h * 0.72) / 2, z + vz * (wid / 2) - uz * len * 0.2, a)
         out.box('steelLight', Math.max(1.6, len * 0.18), 1.1, Math.max(1.4, wid * 0.3), x + ux * len * 0.22, h + 0.9, z + uz * len * 0.22, a)
         out.cyl('steelLight', 0.3, 0.3, 1.8, x - ux * len * 0.3, h + 0.3, z - uz * len * 0.3, 10)
+        // A strip of windows along the other long side, and a canopy over the door.
+        if (h >= 4.4) out.box('glass', len * 0.62, 0.9, 0.16, x - vx * (wid / 2), h * 0.62, z - vz * (wid / 2), a)
+        out.box('roof', Math.min(5.5, len * 0.36), 0.18, 1.8, x + vx * (wid / 2 + 0.9) - ux * len * 0.2, Math.min(3.6, h * 0.72) + 0.4, z + vz * (wid / 2 + 0.9) - uz * len * 0.2, a)
       }
     }
   }
@@ -542,6 +553,105 @@ function ribbon(pos: number[], p: number[], off: number, hw: number, y: number) 
   }
 }
 
+function inRings(polys: number[][][], x: number, z: number): boolean {
+  for (const rings of polys) {
+    let inside = false
+    for (const r of rings) {
+      for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) {
+        if (r[i + 1] > z !== r[j + 1] > z && x < ((r[j] - r[i]) * (z - r[i + 1])) / (r[j + 1] - r[i + 1]) + r[i]) inside = !inside
+      }
+    }
+    if (inside) return true
+  }
+  return false
+}
+
+/**
+ * Brush: thick on the lomas and the back dunes, thin over the prairie, none on
+ * worked ground, water or the beach. Real geometry, so it casts shadows and
+ * slides against the ground as the camera moves.
+ */
+function vegetation(env: THREE.Texture, bag: Bag, count: number): THREE.InstancedMesh {
+  let geo: THREE.BufferGeometry = new THREE.IcosahedronGeometry(1, 2)
+  geo.deleteAttribute('uv')
+  geo.deleteAttribute('normal')
+  geo = mergeVertices(geo)
+  const p = geo.attributes.position
+  const col = new Float32Array(p.count * 3)
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i)
+    const y = p.getY(i)
+    const z = p.getZ(i)
+    // Lumpy, and flattened onto the ground.
+    const h = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453
+    const h2 = Math.sin(x * 3.1 + z * 2.3) * Math.cos(y * 2.7 + x * 1.9)
+    const k = 0.8 + 0.22 * (h - Math.floor(h)) + 0.2 * h2
+    p.setXYZ(i, x * k, Math.max(0, y * k * 0.62 + 0.42), z * k)
+    // Darker toward the ground: the inside of a bush is in its own shade.
+    const shade = 0.38 + 0.62 * Math.min(1, Math.max(0, y * 0.6 + 0.55))
+    col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = shade
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3))
+  geo.computeVertexNormals()
+  const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0, vertexColors: true, envMap: env, envMapIntensity: 0.6 })
+  bag.push(geo, mat)
+  const mesh = new THREE.InstancedMesh(geo, mat, count)
+  let seed = 31337
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647
+    return seed / 2147483647
+  }
+  const yard = [MAP.paved[0]]
+  const highway = MAP.roads[0].p
+  const nearRoad = (x: number, z: number) => {
+    for (let i = 0; i + 3 < highway.length; i += 2) {
+      const ax = highway[i]
+      const az = highway[i + 1]
+      const dx = highway[i + 2] - ax
+      const dz = highway[i + 3] - az
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)))
+      if (Math.hypot(x - ax - dx * t, z - az - dz * t) < 10) return true
+    }
+    return false
+  }
+  const m = new THREE.Matrix4()
+  const q = new THREE.Quaternion()
+  const pos = new THREE.Vector3()
+  const scl = new THREE.Vector3()
+  const up = new THREE.Vector3(0, 1, 0)
+  const c = new THREE.Color()
+  let n = 0
+  for (let tries = 0; n < count && tries < count * 40; tries++) {
+    const x = -1000 + rnd() * 1380
+    const z = -800 + rnd() * 1600
+    const inland = shoreX(z) - x
+    if (inland < 78) continue
+    if (inRings(yard, x, z) || inRings(MAP.water, x, z) || nearRoad(x, z)) continue
+    const scrub = inRings(MAP.scrub, x, z)
+    const dune = inland < 240
+    const want = scrub ? 0.95 : dune ? 0.55 * (1 - (inland - 78) / 400) : inRings(MAP.tidal, x, z) ? 0.015 : 0.07
+    if (rnd() > want) continue
+    const big = scrub ? 1.1 + rnd() * rnd() * 3.2 : dune ? 0.7 + rnd() * 1.5 : 0.5 + rnd() * 1.1
+    pos.set(x, 0, z)
+    q.setFromAxisAngle(up, rnd() * 6.283)
+    scl.set(big * (0.8 + rnd() * 0.6), big * (0.55 + rnd() * 0.6), big * (0.8 + rnd() * 0.6))
+    mesh.setMatrixAt(n, m.compose(pos, q, scl))
+    const t = rnd()
+    const dry = dune ? 0.5 + rnd() * 0.5 : rnd() * 0.6
+    c.setRGB(0.2 + 0.2 * dry + 0.06 * t, 0.25 + 0.15 * dry + 0.06 * t, 0.13 + 0.12 * dry, THREE.SRGBColorSpace)
+    mesh.setColorAt(n, c)
+    n++
+  }
+  mesh.count = n
+  mesh.instanceMatrix.needsUpdate = true
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  mesh.frustumCulled = false
+  mesh.name = 'vegetation'
+  return mesh
+}
+
 /** Roads as flat ribbons following the mapped centre lines. */
 function roads(mats: Mats, bag: Bag): THREE.Group {
   const group = new THREE.Group()
@@ -586,8 +696,8 @@ function roads(mats: Mats, bag: Bag): THREE.Group {
   return group
 }
 
-export function buildStarbase(env: THREE.Texture, bag: Bag): StarbaseModel {
-  const mats = materials(env, bag)
+export function buildStarbase(env: THREE.Texture, bag: Bag, shared: Weathering, bushes = 2600): StarbaseModel {
+  const mats = materials(env, bag, shared)
   const group = new THREE.Group()
 
   // Pad 1's trench runs south and Pad 2's west: both point away from the tank farm.
@@ -608,6 +718,7 @@ export function buildStarbase(env: THREE.Texture, bag: Bag): StarbaseModel {
   group.add(near.build(mats, bag))
   group.add(far.build(mats, bag, false))
   group.add(roads(mats, bag))
+  group.add(vegetation(env, bag, bushes))
 
   // Red obstruction lights on the tower tops.
   const beacons: THREE.Mesh[] = []

@@ -8,7 +8,7 @@
  * Local metres: x east, z south, origin on the ground under the Pad 1 catch
  * point. Polygons are lists of rings, each a flat [x, z, x, z, ...] array.
  * Buildings: [x, z, length, width, angleDeg, height, kind]
- *   kind 0 plain, 1 house, 3 industrial hall, 4 tall bay, 5 vehicle on display.
+ *   kind 0 plain, 1 house, 3 industrial hall, 4 tall bay, 5 vehicle on display, 6 concrete kerb.
  * Tanks: [x, z, length, width, angleDeg, height] (long ones lie down).
  *
  * Dependency-free: the headless bot and the server replay import it.
@@ -128,6 +128,7 @@ function build(): MapData {
     blob(380, 1480, 70, 130, 5, 7),
     blob(-390, 460, 140, 36, 8, 8, 0.3),
     blob(-1950, 1250, 260, 120, -30, 9, 0.3),
+    blob(-860, 780, 270, 190, 24, 10, 0.32), // the dark standing water out on the flat
     // The Rio Grande, winding to the Gulf well to the south.
     band(
       [
@@ -155,6 +156,8 @@ function build(): MapData {
     blob(-3400, -4100, 3000, 2700, 8, 25, 0.14, 44), // round South Bay
     blob(-5200, -500, 1500, 1300, 30, 26, 0.25, 36),
     blob(60, 900, 260, 520, 6, 27, 0.25),
+    // The great mud flat south of the highway, between the production site and the pads.
+    blob(-1500, 880, 1500, 780, -24, 28, 0.2, 44),
   ]
   const marsh: number[][][] = [blob(-4700, 2500, 260, 420, 20, 31), blob(-3900, 3300, 1300, 420, -20, 32, 0.25, 36), blob(-1500, 3500, 900, 260, 12, 33)]
 
@@ -170,6 +173,16 @@ function build(): MapData {
     blob(-1700, -2900, 700, 300, 25, 48, 0.25),
     blob(-4600, 900, 800, 420, 40, 49, 0.25, 36),
   ]
+  // North of the highway the lomas run in long stripes parallel to it.
+  for (let i = 0; i < 8; i++) {
+    const d = 150 + i * 92
+    const along = (rnd() - 0.5) * 420
+    scrub.push(blob(-1000 + 0.946 * along - 0.323 * d, 40 - 0.323 * along - 0.946 * d, 560 + rnd() * 260, 16 + rnd() * 16, -18.8, 200 + i, 0.12, 30))
+  }
+  // South of the pads the back-dune scrub is mottled: clumps with pale sand between.
+  for (let i = 0; i < 18; i++) {
+    scrub.push(blob(-430 + rnd() * 690, 270 + rnd() * 1500, 50 + rnd() * 110, 40 + rnd() * 90, rnd() * 180, 230 + i, 0.3, 20))
+  }
   for (let i = 0; i < 46; i++) {
     const x = -7500 + rnd() * 7600
     const z = -6500 + rnd() * 11500
@@ -223,6 +236,20 @@ function build(): MapData {
     const c = Math.cos(((ang + 90) * Math.PI) / 180)
     const s = Math.sin(((ang + 90) * Math.PI) / 180)
     for (let i = 0; i < count; i++) tanks.push([x0 + c * step * i, z0 + s * step * i, len, wid, ang, 0])
+    // Each bank stands in a low concrete bund, with a manifold along the fill ends.
+    const ax = Math.cos((ang * Math.PI) / 180)
+    const az = Math.sin((ang * Math.PI) / 180)
+    const span = step * (count - 1)
+    const cx = x0 + (c * span) / 2
+    const cz = z0 + (s * span) / 2
+    const L = len + 8
+    const W = span + wid + 5
+    for (const e of [-1, 1]) {
+      buildings.push([cx + (c * e * W) / 2, cz + (s * e * W) / 2, L, 0.5, ang, 0.9, 6])
+      buildings.push([cx + (ax * e * L) / 2, cz + (az * e * L) / 2, W, 0.5, ang + 90, 0.9, 6])
+    }
+    const off = len / 2 + 0.5
+    pipes.push([x0 + ax * off, z0 + az * off, x0 + c * span + ax * off, z0 + s * span + az * off])
   }
   bank(-250, -78, 9, 30, 4.6, 6.8, 82) // oxygen
   bank(-170, -74, 8, 30, 4.6, 6.8, 82) // nitrogen
