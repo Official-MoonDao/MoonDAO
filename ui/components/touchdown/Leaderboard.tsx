@@ -57,11 +57,30 @@ export default function Leaderboard({
           })}
         </ol>
       )}
+      {(board.yesterday || board.allTime) && (
+        <div className="mt-2 space-y-1">
+          {board.yesterday && <Benchmark label="Yesterday's best" entry={board.yesterday} />}
+          {board.allTime && <Benchmark label="All-time high" entry={board.allTime} />}
+        </div>
+      )}
       {showRace && (
         <p className="mt-2 text-[11px] leading-snug text-white/45">
           Real landers tip over too. After you land, see who is tipped to land upright next.
         </p>
       )}
     </section>
+  )
+}
+
+/** A score to aim for from outside today's board. */
+function Benchmark({ label, entry }: { label: string; entry: { name: string; score: number } }) {
+  return (
+    <p className="flex items-center gap-2 rounded border border-amber-300/20 bg-amber-300/[0.07] px-1.5 py-1 text-[12px] text-amber-100/90">
+      <span className="w-[7.5rem] shrink-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-200/70">
+        {label}
+      </span>
+      <span className="min-w-0 flex-1 truncate font-semibold">{entry.name}</span>
+      <span className="shrink-0 font-bold tabular-nums">{formatScore(entry.score)}</span>
+    </p>
   )
 }

@@ -18,6 +18,10 @@ export type BoardResponse = {
   top: BoardEntry[]
   /** Pilots on today's board. */
   total: number
+  /** The top pilot on the previous day's board, as a score to aim for. */
+  yesterday?: { name: string; score: number }
+  /** The best score ever saved in this mode, on any day's map. */
+  allTime?: { name: string; score: number }
   /** Rank the queried or submitted score holds (1 = top). */
   rank?: number
   /** The score the server's replay produced, on a saved submission. */

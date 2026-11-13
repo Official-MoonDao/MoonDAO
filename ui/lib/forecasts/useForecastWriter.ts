@@ -22,7 +22,7 @@ import { v4SlugToV5Chain } from '@/lib/thirdweb/chain'
 import client from '@/lib/thirdweb/client'
 import { guestForecastAccount } from './guestAccount'
 import {
-  mergePendingHandoffs,
+  handoffRows,
   readPendingHandoffs,
   writePendingHandoffs,
   type PendingHandoff,
@@ -167,7 +167,7 @@ export function useForecastWriter() {
       })
     }
 
-    const found: PendingHandoff[] = []
+    const fromChain: PendingHandoff[] = []
     for (const chainSlug of Object.keys(FORECASTS_TABLE_NAMES)) {
       const tableName = FORECASTS_TABLE_NAMES[chainSlug]
       const tableAddress = FORECASTS_TABLE_ADDRESSES[chainSlug]
@@ -191,7 +191,7 @@ export function useForecastWriter() {
           const voteId = Number(row?.voteId)
           if (!Number.isInteger(voteId)) continue
           const vote = typeof row.vote === 'string' ? row.vote : JSON.stringify(row.vote)
-          found.push({ chainSlug, deprizeId: voteId, vote })
+          fromChain.push({ chainSlug, deprizeId: voteId, vote })
         }
       } catch (err) {
         keepGuest(err)
@@ -199,9 +199,12 @@ export function useForecastWriter() {
       }
     }
 
+    // The gateway can still be empty after the write confirms. Local notes
+    // from those writes are included, and they win over a stale gateway row.
     // Snapshot before any delete. A later delete can fail once the stipend
     // is spent; the copy has to exist before the guest wallet is dropped.
-    const stored = writePendingHandoffs(mergePendingHandoffs(readPendingHandoffs(), found))
+    const found = handoffRows(fromChain, readPendingHandoffs())
+    const stored = writePendingHandoffs(found)
     if (found.length > 0 && !stored) {
       keepGuest('handoff store unavailable')
       return

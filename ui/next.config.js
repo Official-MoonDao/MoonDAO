@@ -80,6 +80,13 @@ module.exports = withBundleAnalyzer(
             './public/touchdown/og.jpg',
             './public/touchdown/og-base.jpg',
           ],
+          '/api/og/catch': [
+            './lib/og/fonts/Lato-Regular.ttf',
+            './public/metadata-image.png',
+            './public/assets/MoonDAO-OG.png',
+            './public/catch/og.jpg',
+            './public/catch/og-base.jpg',
+          ],
         },
         optimizePackageImports: [
           '@heroicons/react',
@@ -250,6 +257,14 @@ module.exports = withBundleAnalyzer(
           {
             source: '/base',
             destination: '/moonbase?race=shared-next-landing&year=2050',
+            statusCode: 302,
+          },
+          // The Starship Catch game lives at /starship; /catch was its working
+          // address. 302 so the short path stays free to point elsewhere later.
+          // Query strings (challenge links) carry over.
+          {
+            source: '/catch',
+            destination: '/starship',
             statusCode: 302,
           },
           // /touchdown used to 301 to the first Arbitrum DePrize race. It is
