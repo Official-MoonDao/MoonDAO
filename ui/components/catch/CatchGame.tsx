@@ -15,14 +15,12 @@ import { cleanBoardName, type CatchBoardResponse } from '@/lib/catch/leaderboard
 import { MODES, type ModeId } from '@/lib/catch/modes'
 import {
   CATCH_POINTS,
-  CENTER_POINTS,
   DAMAGE_COST,
-  DEPTH_POINTS,
+  DITCH_POINTS,
   FUEL_POINTS,
-  HEIGHT_POINTS,
+  NEAR_MISS_POINTS,
   SOFT_POINTS,
-  STEADY_POINTS,
-  UPRIGHT_POINTS,
+  SPLASHDOWN_POINTS,
   type FlightResult,
 } from '@/lib/catch/scoring'
 import {
@@ -795,17 +793,12 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
     ? good
       ? [
           ['Catch', result.parts.caught, CATCH_POINTS],
-          ['Upright', result.parts.upright, UPRIGHT_POINTS],
-          ['Depth', result.parts.depth, DEPTH_POINTS],
-          ['Center', result.parts.center, CENTER_POINTS],
-          ['Height', result.parts.height, HEIGHT_POINTS],
           ['Soft', result.parts.soft, SOFT_POINTS],
-          ['Steady', result.parts.steady, STEADY_POINTS],
           ['Fuel', result.parts.fuel, FUEL_POINTS],
         ]
       : [
-          ['Near miss', result.parts.near, 200],
-          ['Soft landing', result.parts.water, 120],
+          ['Near miss', result.parts.near, NEAR_MISS_POINTS],
+          ['Soft landing', result.parts.water, result.outcome === 'ditched' ? DITCH_POINTS : SPLASHDOWN_POINTS],
         ]
     : []
 
@@ -837,7 +830,7 @@ export default function CatchGame({ challenge = null }: { challenge?: Challenge 
             {beatChallenge ? `You beat ${challenger}'s ${formatScore(challenge.score)}.` : `${challenger} still leads with ${formatScore(challenge.score)}.`}
           </p>
         )}
-        <dl className={`grid gap-1 text-center ${good ? 'grid-cols-4' : 'grid-cols-2'} ${compact ? 'mt-2' : 'mt-2.5'}`}>
+        <dl className={`grid gap-1 text-center ${good ? 'grid-cols-3' : 'grid-cols-2'} ${compact ? 'mt-2' : 'mt-2.5'}`}>
           {parts.map(([label, value, max]) => (
             <div key={label} className={`rounded-md bg-white/[0.06] px-1 ${compact ? 'py-1' : 'py-1.5'}`}>
               <dt className="text-[9px] uppercase tracking-wide text-white/50">{label}</dt>

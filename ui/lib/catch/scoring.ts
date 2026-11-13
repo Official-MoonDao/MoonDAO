@@ -1,27 +1,27 @@
 /**
  * Catch scoring. Partial credit everywhere and no cliffs.
  *
- * A catch earns up to 1,100, times 1.25 in Pro. Most of it is for alignment,
- * and a full figure means a measurement that is all but exact: the alignment
- * figures have no "good enough" band, and they fall fastest close to perfect,
- * so the last few points are the hard ones.
+ * A catch earns up to 1,100, times 1.25 in Pro, in three figures:
  *
- *   the catch itself   150
- *   upright            150  how near vertical the ship was when the arms took hold
- *   sweet spot         500, for where in the arms the ship was taken:
- *       depth   200  how far along the rails the pins came down. The sweet
- *                    spot is marked by the ring; out at the arm tips or deep
- *                    in against the tower still holds, for less.
- *       center  200  how evenly it sat between the two arms
- *       height  100  how high the pins were above the rails when the arms
- *                    took hold. About 3 m is ideal. Lower and they only just
- *                    got under the pins; higher and the ship had a long drop
- *                    onto them.
- *   soft               100  how gently the pins met the rails. BURN settles
- *                           the ship to a fixed sink rate, so this only
- *                           separates a braked arrival from a fast one.
- *   steady             100  how little it was still drifting sideways when the pins landed
- *   fuel               100  share of the burn left
+ *   catch   700  the quality of the catch: where in the arms the ship was
+ *                taken and how square it sat. There is no award for simply
+ *                being caught beyond a 100-point floor; the other 600 are
+ *                  depth    30%  how far along the rails the pins came down.
+ *                                The sweet spot is marked by the ring; out at
+ *                                the arm tips or deep in against the tower
+ *                                still holds, for less.
+ *                  center   30%  how evenly it sat between the two arms
+ *                  upright  25%  how near vertical it was when the arms took hold
+ *                  height   15%  how high the pins were above the rails when
+ *                                the arms took hold. About 3 m is ideal.
+ *                None of these has a "good enough" band, and each falls
+ *                fastest close to perfect, so the last few points are the
+ *                hard ones.
+ *   soft    250  how gently the pins met the rails: 100 for the closing
+ *                speed (BURN settles the ship to a fixed sink rate, so this
+ *                only separates a braked arrival from a fast one) and 150
+ *                for how little it was still drifting sideways.
+ *   fuel    150  share of the burn left
  *
  * A hard catch is one the pins missed or broke on, with the ship left hanging
  * by its forward flaps. It still counts, at half of everything above.
@@ -51,16 +51,15 @@ export const DAMAGE_COST: Record<StructureId, number> = {
   highway: 50,
 }
 
-export const CATCH_POINTS = 150
-export const UPRIGHT_POINTS = 150
+export const CATCH_POINTS = 700
+/** What any catch on the pins is worth before its quality is counted. */
+export const CATCH_FLOOR = 100
+export const SOFT_POINTS = 250
+/** Of SOFT_POINTS, the share for closing speed; the rest is sideways drift. */
+export const SOFT_SPEED_POINTS = 100
+export const FUEL_POINTS = 150
 /** Share of a catch's points kept when the forward flaps did the catching. */
 export const HARD_CATCH_SHARE = 0.5
-export const DEPTH_POINTS = 200
-export const CENTER_POINTS = 200
-export const HEIGHT_POINTS = 100
-export const SOFT_POINTS = 100
-export const STEADY_POINTS = 100
-export const FUEL_POINTS = 100
 export const NEAR_MISS_POINTS = 200
 export const SPLASHDOWN_POINTS = 120
 export const DITCH_POINTS = 60
@@ -77,13 +76,15 @@ export type FlightResult = {
   cause: CrashCause | null
   score: number
   /** Points before damage and the mode multiplier, by part. */
-  parts: { caught: number; upright: number; depth: number; center: number; height: number; soft: number; steady: number; fuel: number; near: number; water: number }
+  parts: { caught: number; soft: number; fuel: number; near: number; water: number }
   damage: StructureId[]
   damageCost: number
   /** m/s the pins met the rails at, or the impact's vertical speed. */
   closingSpeed: number
   horizontalSpeed: number
   tiltDeg: number
+  /** Degrees off vertical when the arms took hold: what the catch figure is scored on. */
+  catchTilt: number
   /** m from the sweet spot: along the arms (+ toward the tower) and across them. */
   along: number
   across: number
@@ -123,19 +124,21 @@ export function heightFactor(margin: number): number {
 export function scoreFlight(s: Sim): FlightResult {
   const mode = s.mode
   const outcome: Outcome = s.outcome ?? 'lost'
-  const parts = { caught: 0, upright: 0, depth: 0, center: 0, height: 0, soft: 0, steady: 0, fuel: 0, near: 0, water: 0 }
+  const parts = { caught: 0, soft: 0, fuel: 0, near: 0, water: 0 }
   const fuelLeft = s.fuel / mode.fuelSeconds
   if (outcome === 'caught') {
-    parts.caught = CATCH_POINTS
-    parts.upright = Math.round(UPRIGHT_POINTS * precision(s.hugTilt, 0.1, 8))
-    parts.depth = Math.round(DEPTH_POINTS * depthFactor(s.endAlong))
-    parts.center = Math.round(CENTER_POINTS * precision(Math.abs(s.endAcross), 0.05, 6))
-    parts.height = Math.round(HEIGHT_POINTS * heightFactor(s.hugMargin))
-    parts.soft = Math.round(SOFT_POINTS * taper(s.endVertical, mode.burnSink + 0.2, mode.pinLimit))
-    parts.steady = Math.round(STEADY_POINTS * precision(s.endHorizontal, 0.05, 5))
+    const quality =
+      0.3 * depthFactor(s.endAlong) +
+      0.3 * precision(Math.abs(s.endAcross), 0.05, 6) +
+      0.25 * precision(s.hugTilt, 0.1, 8) +
+      0.15 * heightFactor(s.hugMargin)
+    parts.caught = Math.round(CATCH_FLOOR + (CATCH_POINTS - CATCH_FLOOR) * quality)
+    parts.soft = Math.round(
+      SOFT_SPEED_POINTS * taper(s.endVertical, mode.burnSink + 0.2, mode.pinLimit) + (SOFT_POINTS - SOFT_SPEED_POINTS) * precision(s.endHorizontal, 0.05, 5)
+    )
     parts.fuel = Math.round(FUEL_POINTS * Math.min(1, fuelLeft / 0.3))
     if (s.hard) {
-      const keys = ['caught', 'upright', 'depth', 'center', 'height', 'soft', 'steady', 'fuel'] as const
+      const keys = ['caught', 'soft', 'fuel'] as const
       for (const k of keys) parts[k] = Math.round(parts[k] * HARD_CATCH_SHARE)
     }
   } else {
@@ -143,7 +146,7 @@ export function scoreFlight(s: Sim): FlightResult {
     if (outcome === 'splashdown') parts.water = SPLASHDOWN_POINTS
     if (outcome === 'ditched') parts.water = DITCH_POINTS
   }
-  const sum = parts.caught + parts.upright + parts.depth + parts.center + parts.height + parts.soft + parts.steady + parts.fuel + parts.near + parts.water
+  const sum = parts.caught + parts.soft + parts.fuel + parts.near + parts.water
   let damageCost = 0
   for (const id of s.damage) damageCost += DAMAGE_COST[id]
   const score = Math.round(sum * mode.scoreMultiplier) - damageCost
@@ -159,6 +162,7 @@ export function scoreFlight(s: Sim): FlightResult {
     closingSpeed: s.endVertical,
     horizontalSpeed: s.endHorizontal,
     tiltDeg: s.endTilt,
+    catchTilt: s.hugTilt,
     along: s.endAlong,
     across: s.endAcross,
     closest: s.closest,

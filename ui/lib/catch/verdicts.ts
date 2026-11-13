@@ -159,7 +159,9 @@ export function formatScore(n: number): string {
 /** The numbers people quote, in one short line. */
 export function bragLine(r: FlightResult): string {
   if (r.outcome === 'caught') {
-    return `${r.closingSpeed.toFixed(1)} m/s onto the arms · ${Math.abs(r.across).toFixed(1)} m off center · ${Math.round(r.fuelLeft * 100)}% fuel left`
+    // What the Catch figure was measured on, then the arrival.
+    const along = Math.abs(r.along) < 0.05 ? 'on the mark' : `${Math.abs(r.along).toFixed(1)} m ${r.along > 0 ? 'deep' : 'short'}`
+    return `${Math.abs(r.across).toFixed(1)} m off center · ${along} · ${r.catchTilt.toFixed(1)}° tilt · ${r.closingSpeed.toFixed(1)} m/s`
   }
   if (r.damage.length) return `${r.damage.length} ${r.damage.length === 1 ? 'structure' : 'structures'} hit · ${Math.round(r.closingSpeed)} m/s at impact`
   if (r.outcome === 'splashdown' || r.outcome === 'ditched') return `${r.closingSpeed.toFixed(1)} m/s at touchdown · ${Math.round(r.closest)} m from the arms`
